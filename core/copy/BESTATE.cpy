@@ -44,6 +44,26 @@
           15 BE-SLOT-ITEM   BINARY-LONG.
           15 BE-SLOT-COUNT  BINARY-LONG.
           15 BE-SLOT-VAR    BINARY-LONG.
+*> Data of the types of parts 31-3 to 31-5 (be-31-3.cob, be-31-4.cob, be-31-5.cob; BEX-DEFAULTS sets the defaults); the roles of the cells by type:
+*>   sign, hanging sign (7, 8): XI 1 waxed, 2 allow_op_features, 3 editor set; side s (1 front, 2 back), b = 4 + 10 (s - 1): XI b colour id, b + 1 glowing,
+*>        b + 2..b + 5 line lengths, b + 6..b + 9 filtered line lengths; XT 8 (s - 1) + 1..4 the lines, + 5..8 the filtered lines; XT 17 the editor's UUID
+*>   banner (20): XI 1 layer count, XI 2.. dye ids of the layers; XT 1.. pattern ids. skull (16): XT 1 profile name, 2 note_block_sound, 4 profile id; XI 1 name
+*>        length, 2 sound length, 3 profile id set, 4 animationTickCount, 5 isAnimating. decorated pot (41): XT 1..4 sherds back, left, right, front, XI 1..4 lengths,
+*>        the item is slot 1. shelf (39): slots 1..3, XI 1 align_items_to_bottom
+*>   campfire (32): slots 1..4, XI 1..4 cookingProgress, 5..8 cookingTime. lectern (29): slot 1 book, XI 1 page, 2 pageCount. jukebox (4): slot 1 record, XI 1 ticks,
+*>        2 song playing, 3 song id. bell (30): XI 1 ticks, 2 shaking, 3 clickDirection (-1 none), 4 resonating, 5 resonationTicks, 6 lastRingTimestamp.
+*>   enchanting table (13): XF 1 flip, 2 oFlip, 3 flipT, 4 flipA, 5 open, 6 oOpen, 7 rot, 8 oRot, 9 tRot; XI 1 time. brushable (40): XI 1 brushCount, 2 resets at,
+*>        3 cooldown ends at, 4 hitDirection (-1 none), the item is slot 1. beehive (33): XI 1..4 flower_pos set and x, y, z, 5 bee count, bee i at 6 + 4 (i - 1):
+*>        ticks_in_hive, min_ticks_in_hive, HasNectar, id length; XT i the entity id
+*>   beacon (15): XT 1, 2 primary and secondary effect keys, XI 1, 2 their lengths, 3 levels, 4 lastCheckY, 5 section count, section i at 6 + 2 (i - 1): colour, height.
+*>        conduit (25): XI 1 tickCount, 2 isActive, 3 isHunting, 4 frame block count, 5 nextAmbientSoundActivation, 6 target set, 7..10 the target UUID as 4 ints.
+*>        end gateway (22): XI 1 Age, 2 exit_portal set, 3..5 x, y, z, 6 ExactTeleport, 7 teleportCooldown. creaking heart (10): XI 1 link set, 2 ticksExisted, 3 ticker,
+*>        4 emitter, 5 outputSignal, 6..9 the UUID as 4 ints
+*>   crafter (42): slots 1..9, XI 1 crafting_ticks_remaining, 2 triggered, 3..11 slot disabled. brewing stand (12): slots 1..5, XI 1 BrewTime, 2 total_brew_time,
+*>        3 Fuel, 4 total_fuel, 6 remembered ingredient item, 7..9 bottle flags; XF 1 speed_multiplier
+       10 BE-XI             BINARY-LONG OCCURS 64 TIMES.
+       10 BE-XT             PIC X(64) OCCURS 20 TIMES.
+       10 BE-XF             FLOAT-SHORT OCCURS 12 TIMES.
 *> The ender chest storage of each player (31-1 section 11, 45-3 section 5): one detached CORE-BE entity (dimension 0, type ender chest)
 *> per player UUID, created on the first open or when the player file is read, and kept while the world is open.
  78 ENDER-MAX             VALUE 64.

@@ -1,0 +1,1756 @@
+*> Block entities, part 3: signs, banners, skulls, decorated pots, shelves (docs/protocol/31-block-entities-3-signs-banners-skulls-pots-shelves.md; US12 phase 44).
+*> The model is core/src/be-31-1.cob (CORE-BE of BESTATE.cpy). The data of these types lives in the cells BE-XI, BE-XT and BE-XF of the entity (roles in BESTATE.cpy).
+*> Text components of sign lines are kept as plain strings (a literal component saved as a String tag); a line saved as a compound component, a profile with
+*> properties, an inline banner pattern, a sign text that is resolved against a command source and the click events of sign lines are not kept (gaps of this
+*> implementation, listed in the task lines); a line is at most 64 bytes.
+*>
+*>   BEX-DEFAULTS USING index                                    the defaults of every type's cells (BE-CREATE and the start of BE-LOAD)
+*>   BEX-SAVE USING index, PB-BUFFER                             the keys of the types of parts 31-3 to 31-5 (BE-SAVE, before components)
+*>   BEX-LOAD-KEY USING index, name, tag type, PB-BUFFER, handled out    one key of those types (BE-LOAD); handled 0 leaves the tag to the caller
+*>   BE3-REGISTRATION USING type, text width out, line height out, ticker out (1 SignBlockEntity.tick), slots out        section 1
+*>   BE3-DYE-INFO USING id, name out (X(32)), name length out, text colour out, texture diffuse colour out, firework colour out      section 8
+*>   BE3-DYE-ID USING name (X(32)), length, id out (-1 unknown)
+*>   BE3-SLOT-DECODE USING VarInt, slot out (0 back, 1 front)    2.3
+*>   BE3-SIGN-HAS-MESSAGE USING index, side (0 back, 1 front), result out                         2.2 hasMessage (filtering off)
+*>   BE3-SIGN-FACING USING sign block (1/0), player x, z, block x, z, centre x, z (FLOAT-LONG), sign yaw, side out (0 back, 1 front)      2.4
+*>   BE3-SIGN-USE-ITEM USING index, kind (1 dye, 2 ink sac, 3 glow ink sac, 4 honeycomb), dye id (-1 none), side, may build, player UUID (X(16)), result out
+*>        (1 success, 2 try with empty hand), level event out (3003 for honeycomb)                2.5
+*>   BE3-SIGN-USE-EMPTY USING index, side, player UUID, may build, click commands ran, result out (1 success, 0 pass), action out (1 failure sound, 2 editor opened)   2.6
+*>   BE3-CLICK-ACTION USING kind (1 run_command, 2 show_dialog, 3 custom, other 0 or 4), allow op features, ran out, counted out      2.7
+*>   BE3-CLICK-SUMMARY USING allow op features, counted, overlay message out; BE3-CLICK-CAN USING waxed, any run_command, result out
+*>   BE3-SIGN-STRIP USING text (X(384)), length in and out                                        2.8 step 1
+*>   BE3-SIGN-UPDATE USING index, side, player UUID, four lines (length BINARY-LONG then X(384) each), result out      2.8
+*>   BE3-SIGN-TICK USING index, editor in level (1/0), editor within 4.0 (1/0)                    2.9
+*>   BE3-SIGN-LINE-Y USING line index, line height, y offset out; BE3-SIGN-COLORS USING dye id, glowing, text colour out, dark colour out;
+*>   BE3-SIGN-OUTLINE USING dye id, glowing, squared camera distance, scoping, outline out        2.11
+*>   BE3-BANNER-PATTERN USING id (X(32), no namespace), length, index out (-1 unknown); BE3-BANNER-TAG USING index, kind out (1 no_item_required, 2 pattern_item)
+*>   BE3-BANNER-LIMITS USING layer count, tooltip layers out, drawn layers out; BE3-BANNER-NAME USING index, name out (X(32)), length out        section 3
+*>   BE3-SKULL-TICKS USING side (1 client), block name (X(32)), length, result out; BE3-SKULL-TICK USING index, has powered, powered;
+*>   BE3-SKULL-ANIM USING index, partial tick, animation out; BE3-SKULL-POWERED USING stored, neighbour signal, new value out, write out         4.4
+*>   BE3-SHERD-PATTERN USING item key (X(48)), length, pattern key out (X(16)), pattern length out (0 none)       5.2
+*>   BE3-POT-INSERT USING index, item, patch handle, maximum stack, result out, pitch out, wobble out; BE3-POT-DURATION USING style, ticks out
+*>   BE3-POT-EVENT USING index, type, data, game time, handled out; BE3-POT-PROGRESS USING index, game time, partial tick, progress out
+*>   BE3-POT-POSE USING style, progress, x rotation out, z rotation out, y rotation out; BE3-POT-BREAK USING breaks pots, prevents shattering, cracked out, flags out    5.3 to 5.5
+*>   BE3-SHELF-HOTBAR USING shelf count, shelf index, slot, hotbar index out; BE3-SHELF-SWAP USING index, slot (0 based), held item, held count, held patch (in and out),
+*>        creative, success out, sounds out (10 * first + second: 1 take, 2 swap, 3 place)         6.3
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-REGISTRATION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-TICKER               BINARY-LONG.
+ 01 L-SLOTS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-WIDTH L-HEIGHT L-TICKER L-SLOTS.
+     MOVE 0 TO L-WIDTH L-HEIGHT L-TICKER L-SLOTS
+     EVALUATE L-TYPE
+         WHEN 7
+             MOVE 90 TO L-WIDTH
+             MOVE 10 TO L-HEIGHT
+             MOVE 1 TO L-TICKER
+         WHEN 8
+             MOVE 60 TO L-WIDTH
+             MOVE 9 TO L-HEIGHT
+             MOVE 1 TO L-TICKER
+         WHEN 41
+             MOVE 1 TO L-SLOTS
+         WHEN 39
+             MOVE 3 TO L-SLOTS
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE3-REGISTRATION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-DYE-INFO.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(44) VALUE "white       FFFFFF F9FFFE F0F0F0".
+    05 FILLER PIC X(44) VALUE "orange      FF681F F9801D EB8844".
+    05 FILLER PIC X(44) VALUE "magenta     FF00FF C74EBD C354CD".
+    05 FILLER PIC X(44) VALUE "light_blue  9AC0CD 3AB3DA 6689D3".
+    05 FILLER PIC X(44) VALUE "yellow      FFFF00 FED83D DECF2A".
+    05 FILLER PIC X(44) VALUE "lime        BFFF00 80C71F 41CD34".
+    05 FILLER PIC X(44) VALUE "pink        FF69B4 F38BAA D88198".
+    05 FILLER PIC X(44) VALUE "gray        808080 474F52 434343".
+    05 FILLER PIC X(44) VALUE "light_gray  D3D3D3 9D9D97 ABABAB".
+    05 FILLER PIC X(44) VALUE "cyan        00FFFF 169C9C 287697".
+    05 FILLER PIC X(44) VALUE "purple      A020F0 8932B8 7B2FBE".
+    05 FILLER PIC X(44) VALUE "blue        0000FF 3C44AA 253192".
+    05 FILLER PIC X(44) VALUE "brown       8B4513 835432 51301A".
+    05 FILLER PIC X(44) VALUE "green       00FF00 5E7C16 3B511A".
+    05 FILLER PIC X(44) VALUE "red         FF0000 B02E26 B3312C".
+    05 FILLER PIC X(44) VALUE "black       000000 1D1D21 1E1B1B".
+ 01 FILLER REDEFINES WS-ROWS.
+    05 WS-ROW OCCURS 16 TIMES.
+       10 WS-NAME            PIC X(12).
+       10 WS-TEXT            PIC X(7).
+       10 WS-DIFFUSE         PIC X(7).
+       10 WS-FIREWORK        PIC X(6).
+       10 FILLER             PIC X(12).
+ 01 WS-HEX                 PIC X(6).
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DIGIT               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-TEXT                 BINARY-LONG.
+ 01 L-DIFFUSE              BINARY-LONG.
+ 01 L-FIREWORK             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-NAME L-LENGTH L-TEXT L-DIFFUSE L-FIREWORK.
+     MOVE L-ID TO WS-ID
+     IF WS-ID < 0 OR WS-ID > 15
+         MOVE 0 TO WS-ID
+     END-IF
+     MOVE SPACES TO L-NAME
+     MOVE WS-NAME(WS-ID + 1) TO L-NAME
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-NAME)) TO L-LENGTH
+     MOVE WS-TEXT(WS-ID + 1)(1:6) TO WS-HEX
+     PERFORM HEX-VALUE
+     MOVE WS-VALUE TO L-TEXT
+     MOVE WS-DIFFUSE(WS-ID + 1)(1:6) TO WS-HEX
+     PERFORM HEX-VALUE
+     MOVE WS-VALUE TO L-DIFFUSE
+     MOVE WS-FIREWORK(WS-ID + 1) TO WS-HEX
+     PERFORM HEX-VALUE
+     MOVE WS-VALUE TO L-FIREWORK
+     GOBACK.
+
+ HEX-VALUE.
+     MOVE 0 TO WS-VALUE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         COMPUTE WS-DIGIT = FUNCTION ORD(WS-HEX(WS-I:1)) - 1
+         IF WS-DIGIT >= 65
+             COMPUTE WS-DIGIT = WS-DIGIT - 55
+         ELSE
+             COMPUTE WS-DIGIT = WS-DIGIT - 48
+         END-IF
+         COMPUTE WS-VALUE = WS-VALUE * 16 + WS-DIGIT
+     END-PERFORM
+     .
+ END PROGRAM BE3-DYE-INFO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-DYE-ID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-INFO                PIC X(32).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-LENGTH L-ID.
+     MOVE -1 TO L-ID
+     IF L-LENGTH < 1
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-NAME
+     MOVE L-NAME(1:L-LENGTH) TO WS-NAME
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+         CALL "BE3-DYE-INFO" USING WS-I WS-INFO WS-LEN WS-A WS-B WS-C
+         IF WS-INFO = WS-NAME
+             MOVE WS-I TO L-ID
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE3-DYE-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SLOT-DECODE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-SLOT.
+     MOVE 0 TO L-SLOT
+     IF L-ID = 1
+         MOVE 1 TO L-SLOT
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SLOT-DECODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-HAS-MESSAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SIDE L-RESULT.
+     MOVE 0 TO L-RESULT
+     MOVE 14 TO WS-BASE
+     IF L-SIDE = 1
+         MOVE 4 TO WS-BASE
+     END-IF
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+         IF BE-XI(L-INDEX, WS-BASE + 1 + WS-L) > 0
+             MOVE 1 TO L-RESULT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE3-SIGN-HAS-MESSAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-FACING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-SIGN                 BINARY-LONG.
+ 01 L-PX                   FLOAT-LONG.
+ 01 L-PZ                   FLOAT-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ 01 L-CX                   FLOAT-LONG.
+ 01 L-CZ                   FLOAT-LONG.
+ 01 L-YAW                  FLOAT-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIGN L-PX L-PZ L-BX L-BZ L-CX L-CZ L-YAW L-SIDE.
+     MOVE 1 TO L-SIDE
+     IF L-SIGN = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-DX = L-PX - (L-BX + L-CX)
+     COMPUTE WS-DZ = L-PZ - (L-BZ + L-CZ)
+     CALL STATIC "cc_f64_atan2_lib" USING BY REFERENCE WS-DZ WS-DX WS-A
+     COMPUTE WS-A = WS-A * 57.2957763671875 - 90
+     COMPUTE WS-D = L-YAW - WS-A + 180
+     COMPUTE WS-D = WS-D - 360 * FUNCTION INTEGER(WS-D / 360) - 180
+     IF WS-D < 0
+         COMPUTE WS-D = 0 - WS-D
+     END-IF
+     IF WS-D > 90
+         MOVE 0 TO L-SIDE
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SIGN-FACING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-USE-ITEM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-MSG                 BINARY-LONG.
+ 01 WS-SIDE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-MAY-BUILD            BINARY-LONG.
+ 01 L-UUID                 PIC X(16).
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-KIND L-DYE L-SIDE L-MAY-BUILD L-UUID L-RESULT L-EVENT.
+     MOVE 2 TO L-RESULT
+     MOVE 0 TO L-EVENT
+     IF L-MAY-BUILD = 0 OR BE-XI(L-INDEX, 1) = 1
+         GOBACK
+     END-IF
+     IF BE-XI(L-INDEX, 3) = 1 AND BE-XT(L-INDEX, 17)(1:16) NOT = L-UUID
+         GOBACK
+     END-IF
+     MOVE 14 TO WS-BASE
+     IF L-SIDE = 1
+         MOVE 4 TO WS-BASE
+     END-IF
+     CALL "BE3-SIGN-HAS-MESSAGE" USING L-INDEX L-SIDE WS-MSG
+     IF L-KIND NOT = 4 AND WS-MSG = 0
+         GOBACK
+     END-IF
+     EVALUATE L-KIND
+         WHEN 1
+             IF L-DYE < 0 OR L-DYE = BE-XI(L-INDEX, WS-BASE)
+                 GOBACK
+             END-IF
+             MOVE L-DYE TO BE-XI(L-INDEX, WS-BASE)
+         WHEN 2
+             IF BE-XI(L-INDEX, WS-BASE + 1) = 0
+                 GOBACK
+             END-IF
+             MOVE 0 TO BE-XI(L-INDEX, WS-BASE + 1)
+         WHEN 3
+             IF BE-XI(L-INDEX, WS-BASE + 1) = 1
+                 GOBACK
+             END-IF
+             MOVE 1 TO BE-XI(L-INDEX, WS-BASE + 1)
+         WHEN OTHER
+             MOVE 1 TO BE-XI(L-INDEX, 1)
+             MOVE 3003 TO L-EVENT
+     END-EVALUATE
+     MOVE 1 TO L-RESULT
+     CALL "BE-MARK-CHUNK" USING L-INDEX
+     GOBACK.
+ END PROGRAM BE3-SIGN-USE-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-USE-EMPTY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-UUID                 PIC X(16).
+ 01 L-MAY-BUILD            BINARY-LONG.
+ 01 L-RAN                  BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SIDE L-UUID L-MAY-BUILD L-RAN L-RESULT L-ACTION.
+     MOVE 0 TO L-RESULT L-ACTION
+     IF BE-XI(L-INDEX, 1) = 1
+         MOVE 1 TO L-RESULT L-ACTION
+         GOBACK
+     END-IF
+     IF L-RAN = 1
+         MOVE 1 TO L-RESULT
+         GOBACK
+     END-IF
+     IF L-MAY-BUILD = 1 AND (BE-XI(L-INDEX, 3) = 0 OR BE-XT(L-INDEX, 17)(1:16) = L-UUID)
+         MOVE 1 TO BE-XI(L-INDEX, 3)
+         MOVE SPACES TO BE-XT(L-INDEX, 17)
+         MOVE L-UUID TO BE-XT(L-INDEX, 17)(1:16)
+         MOVE 1 TO L-RESULT
+         MOVE 2 TO L-ACTION
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SIGN-USE-EMPTY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-CLICK-ACTION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ALLOW                BINARY-LONG.
+ 01 L-RAN                  BINARY-LONG.
+ 01 L-COUNTED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-ALLOW L-RAN L-COUNTED.
+     MOVE 0 TO L-RAN L-COUNTED
+     IF L-KIND >= 1 AND L-KIND <= 3
+         MOVE 1 TO L-COUNTED
+         IF L-ALLOW = 1
+             MOVE 1 TO L-RAN
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-CLICK-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-CLICK-SUMMARY.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ALLOW                BINARY-LONG.
+ 01 L-COUNTED              BINARY-LONG.
+ 01 L-MESSAGE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ALLOW L-COUNTED L-MESSAGE.
+     MOVE 0 TO L-MESSAGE
+     IF L-ALLOW = 0 AND L-COUNTED = 1
+         MOVE 1 TO L-MESSAGE
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-CLICK-SUMMARY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-CLICK-CAN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WAXED                BINARY-LONG.
+ 01 L-RUN                  BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-WAXED L-RUN L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-WAXED = 1 AND L-RUN = 1
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-CLICK-CAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-STRIP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SIGN                PIC X(2).
+ 01 WS-OUT                 PIC X(384).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-CH                  PIC X.
+ 01 WS-SKIP                BINARY-LONG.
+ 01 WS-CODES               PIC X(22) VALUE "0123456789abcdefklmnor".
+ 01 WS-HIT                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(384).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TEXT L-LENGTH.
+     MOVE FUNCTION CHAR(195) TO WS-SIGN(1:1)
+     MOVE FUNCTION CHAR(168) TO WS-SIGN(2:1)
+     MOVE SPACES TO WS-OUT
+     MOVE 0 TO WS-N
+     MOVE 1 TO WS-I
+     PERFORM UNTIL WS-I > L-LENGTH
+         MOVE 0 TO WS-SKIP
+         IF WS-I + 2 <= L-LENGTH AND L-TEXT(WS-I:2) = WS-SIGN
+             MOVE FUNCTION LOWER-CASE(L-TEXT(WS-I + 2:1)) TO WS-CH
+             MOVE 0 TO WS-HIT
+             INSPECT WS-CODES TALLYING WS-HIT FOR ALL WS-CH
+             IF WS-HIT > 0
+                 MOVE 3 TO WS-SKIP
+             END-IF
+         END-IF
+         IF WS-SKIP = 0
+             ADD 1 TO WS-N
+             MOVE L-TEXT(WS-I:1) TO WS-OUT(WS-N:1)
+             ADD 1 TO WS-I
+         ELSE
+             ADD WS-SKIP TO WS-I
+         END-IF
+     END-PERFORM
+     MOVE WS-OUT TO L-TEXT
+     MOVE WS-N TO L-LENGTH
+     GOBACK.
+ END PROGRAM BE3-SIGN-STRIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-UPDATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-TB                  BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(384).
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-UUID                 PIC X(16).
+ 01 L-LINES.
+    05 L-LINE OCCURS 4 TIMES.
+       10 L-LINE-LENGTH    BINARY-LONG.
+       10 L-LINE-TEXT      PIC X(384).
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SIDE L-UUID L-LINES L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF BE-XI(L-INDEX, 1) = 1 OR BE-XI(L-INDEX, 3) = 0 OR BE-XT(L-INDEX, 17)(1:16) NOT = L-UUID
+         GOBACK
+     END-IF
+     MOVE 2 TO WS-S
+     MOVE 14 TO WS-BASE
+     MOVE 8 TO WS-TB
+     IF L-SIDE = 1
+         MOVE 1 TO WS-S
+         MOVE 4 TO WS-BASE
+         MOVE 0 TO WS-TB
+     END-IF
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+         MOVE L-LINE-TEXT(WS-L) TO WS-TEXT
+         MOVE L-LINE-LENGTH(WS-L) TO WS-LEN
+         CALL "BE3-SIGN-STRIP" USING WS-TEXT WS-LEN
+         IF WS-LEN > 64
+             MOVE 64 TO WS-LEN
+         END-IF
+         MOVE SPACES TO BE-XT(L-INDEX, WS-TB + WS-L) BE-XT(L-INDEX, WS-TB + 4 + WS-L)
+         MOVE WS-LEN TO BE-XI(L-INDEX, WS-BASE + 1 + WS-L) BE-XI(L-INDEX, WS-BASE + 5 + WS-L)
+         IF WS-LEN > 0
+             MOVE WS-TEXT(1:WS-LEN) TO BE-XT(L-INDEX, WS-TB + WS-L) BE-XT(L-INDEX, WS-TB + 4 + WS-L)
+         END-IF
+     END-PERFORM
+     MOVE 0 TO BE-XI(L-INDEX, 3)
+     MOVE SPACES TO BE-XT(L-INDEX, 17)
+     MOVE 1 TO L-RESULT
+     CALL "BE-MARK-CHUNK" USING L-INDEX
+     GOBACK.
+ END PROGRAM BE3-SIGN-UPDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-WITHIN               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-PRESENT L-WITHIN.
+     IF BE-XI(L-INDEX, 3) = 1 AND (L-PRESENT = 0 OR L-WITHIN = 0)
+         MOVE 0 TO BE-XI(L-INDEX, 3)
+         MOVE SPACES TO BE-XT(L-INDEX, 17)
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SIGN-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-LINE-Y.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LINE                 BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-LINE L-HEIGHT L-Y.
+     COMPUTE L-Y = L-LINE * L-HEIGHT - 2 * L-HEIGHT
+     GOBACK.
+ END PROGRAM BE3-SIGN-LINE-Y.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-COLORS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-DIFFUSE             BINARY-LONG.
+ 01 WS-FIREWORK            BINARY-LONG.
+ 01 WS-RGB                 BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-WIDE                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-GLOWING              BINARY-LONG.
+ 01 L-TEXT                 BINARY-LONG.
+ 01 L-DARK                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DYE L-GLOWING L-TEXT L-DARK.
+     CALL "BE3-DYE-INFO" USING L-DYE WS-NAME WS-LEN WS-RGB WS-DIFFUSE WS-FIREWORK
+     COMPUTE WS-WIDE = 4278190080 + WS-RGB
+     IF WS-WIDE >= 2147483648
+         COMPUTE WS-WIDE = WS-WIDE - 4294967296
+     END-IF
+     MOVE WS-WIDE TO L-TEXT
+     IF L-DYE = 15 AND L-GLOWING = 1
+         MOVE -988212 TO L-DARK
+         GOBACK
+     END-IF
+     COMPUTE WS-R = WS-RGB / 65536
+     COMPUTE WS-G = FUNCTION MOD(WS-RGB / 256, 256)
+     COMPUTE WS-B = FUNCTION MOD(WS-RGB, 256)
+     COMPUTE WS-R = FUNCTION INTEGER-PART(WS-R * 0.4)
+     COMPUTE WS-G = FUNCTION INTEGER-PART(WS-G * 0.4)
+     COMPUTE WS-B = FUNCTION INTEGER-PART(WS-B * 0.4)
+     COMPUTE WS-WIDE = 4278190080 + WS-R * 65536 + WS-G * 256 + WS-B
+     COMPUTE WS-WIDE = WS-WIDE - 4294967296
+     MOVE WS-WIDE TO L-DARK
+     GOBACK.
+ END PROGRAM BE3-SIGN-COLORS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-OUTLINE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-GLOWING              BINARY-LONG.
+ 01 L-DISTANCE             FLOAT-LONG.
+ 01 L-SCOPING              BINARY-LONG.
+ 01 L-OUTLINE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DYE L-GLOWING L-DISTANCE L-SCOPING L-OUTLINE.
+     MOVE 0 TO L-OUTLINE
+     IF L-GLOWING = 1 AND (L-DYE NOT = 15 OR L-SCOPING = 1 OR L-DISTANCE < 256)
+         MOVE 1 TO L-OUTLINE
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SIGN-OUTLINE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-BANNER-PATTERN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(24) VALUE "base".
+    05 FILLER PIC X(24) VALUE "border".
+    05 FILLER PIC X(24) VALUE "bricks".
+    05 FILLER PIC X(24) VALUE "circle".
+    05 FILLER PIC X(24) VALUE "creeper".
+    05 FILLER PIC X(24) VALUE "cross".
+    05 FILLER PIC X(24) VALUE "curly_border".
+    05 FILLER PIC X(24) VALUE "diagonal_left".
+    05 FILLER PIC X(24) VALUE "diagonal_right".
+    05 FILLER PIC X(24) VALUE "diagonal_up_left".
+    05 FILLER PIC X(24) VALUE "diagonal_up_right".
+    05 FILLER PIC X(24) VALUE "flow".
+    05 FILLER PIC X(24) VALUE "flower".
+    05 FILLER PIC X(24) VALUE "globe".
+    05 FILLER PIC X(24) VALUE "gradient".
+    05 FILLER PIC X(24) VALUE "gradient_up".
+    05 FILLER PIC X(24) VALUE "guster".
+    05 FILLER PIC X(24) VALUE "half_horizontal".
+    05 FILLER PIC X(24) VALUE "half_horizontal_bottom".
+    05 FILLER PIC X(24) VALUE "half_vertical".
+    05 FILLER PIC X(24) VALUE "half_vertical_right".
+    05 FILLER PIC X(24) VALUE "mojang".
+    05 FILLER PIC X(24) VALUE "piglin".
+    05 FILLER PIC X(24) VALUE "rhombus".
+    05 FILLER PIC X(24) VALUE "skull".
+    05 FILLER PIC X(24) VALUE "small_stripes".
+    05 FILLER PIC X(24) VALUE "square_bottom_left".
+    05 FILLER PIC X(24) VALUE "square_bottom_right".
+    05 FILLER PIC X(24) VALUE "square_top_left".
+    05 FILLER PIC X(24) VALUE "square_top_right".
+    05 FILLER PIC X(24) VALUE "straight_cross".
+    05 FILLER PIC X(24) VALUE "stripe_bottom".
+    05 FILLER PIC X(24) VALUE "stripe_center".
+    05 FILLER PIC X(24) VALUE "stripe_downleft".
+    05 FILLER PIC X(24) VALUE "stripe_downright".
+    05 FILLER PIC X(24) VALUE "stripe_left".
+    05 FILLER PIC X(24) VALUE "stripe_middle".
+    05 FILLER PIC X(24) VALUE "stripe_right".
+    05 FILLER PIC X(24) VALUE "stripe_top".
+    05 FILLER PIC X(24) VALUE "triangle_bottom".
+    05 FILLER PIC X(24) VALUE "triangle_top".
+    05 FILLER PIC X(24) VALUE "triangles_bottom".
+    05 FILLER PIC X(24) VALUE "triangles_top".
+ 01 FILLER REDEFINES WS-ROWS.
+    05 WS-NAME             PIC X(24) OCCURS 43 TIMES.
+ 01 WS-PROBE               PIC X(24).
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-LENGTH L-INDEX.
+     MOVE -1 TO L-INDEX
+     IF L-LENGTH < 1 OR L-LENGTH > 24
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-PROBE
+     MOVE L-ID(1:L-LENGTH) TO WS-PROBE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 43
+         IF WS-NAME(WS-I) = WS-PROBE
+             COMPUTE L-INDEX = WS-I - 1
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE3-BANNER-PATTERN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-BANNER-TAG.
+*> Kind per pattern in the order of the registry: 1 no_item_required (32 patterns), 2 the pattern of a pattern_item tag (10), 0 base.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KINDS               PIC X(43) VALUE "0121212111122211211112212111111111111111111".
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-KIND.
+     MOVE FUNCTION NUMVAL(WS-KINDS(L-INDEX + 1:1)) TO L-KIND
+     GOBACK.
+ END PROGRAM BE3-BANNER-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-BANNER-LIMITS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-TOOLTIP              BINARY-LONG.
+ 01 L-DRAWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT L-TOOLTIP L-DRAWN.
+     COMPUTE L-TOOLTIP = FUNCTION MIN(L-COUNT, 6)
+     COMPUTE L-DRAWN = FUNCTION MIN(L-COUNT, 16)
+     GOBACK.
+ END PROGRAM BE3-BANNER-LIMITS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-BANNER-NAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-NAME L-LENGTH.
+     MOVE SPACES TO L-NAME
+     IF BE-NAME-LENGTH(L-INDEX) > 0
+         MOVE BE-NAME(L-INDEX)(1:BE-NAME-LENGTH(L-INDEX)) TO L-NAME
+         MOVE BE-NAME-LENGTH(L-INDEX) TO L-LENGTH
+     ELSE
+         MOVE "block.minecraft.banner" TO L-NAME
+         MOVE 22 TO L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-BANNER-NAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SKULL-TICKS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(32).
+ LINKAGE SECTION.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-BLOCK                PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIDE L-BLOCK L-LENGTH L-RESULT.
+     MOVE 0 TO L-RESULT
+     MOVE SPACES TO WS-NAME
+     MOVE L-BLOCK(1:L-LENGTH) TO WS-NAME
+     IF L-SIDE = 1 AND (WS-NAME = "dragon_head" OR WS-NAME = "dragon_wall_head" OR WS-NAME = "piglin_head" OR WS-NAME = "piglin_wall_head")
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SKULL-TICKS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SKULL-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-HAS-POWERED          BINARY-LONG.
+ 01 L-POWERED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-HAS-POWERED L-POWERED.
+     IF L-HAS-POWERED = 1 AND L-POWERED = 1
+         MOVE 1 TO BE-XI(L-INDEX, 5)
+         ADD 1 TO BE-XI(L-INDEX, 4)
+     ELSE
+         MOVE 0 TO BE-XI(L-INDEX, 5)
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SKULL-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SKULL-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-PARTIAL              FLOAT-LONG.
+ 01 L-ANIMATION            FLOAT-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-PARTIAL L-ANIMATION.
+     COMPUTE L-ANIMATION = BE-XI(L-INDEX, 4)
+     IF BE-XI(L-INDEX, 5) = 1
+         COMPUTE L-ANIMATION = L-ANIMATION + L-PARTIAL
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SKULL-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SKULL-POWERED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STORED               BINARY-LONG.
+ 01 L-SIGNAL               BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-WRITE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STORED L-SIGNAL L-NEW L-WRITE.
+     MOVE L-SIGNAL TO L-NEW
+     MOVE 0 TO L-WRITE
+     IF L-STORED NOT = L-SIGNAL
+         MOVE 1 TO L-WRITE
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SKULL-POWERED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SHERD-PATTERN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(12) VALUE "angler".
+    05 FILLER PIC X(12) VALUE "archer".
+    05 FILLER PIC X(12) VALUE "arms_up".
+    05 FILLER PIC X(12) VALUE "blade".
+    05 FILLER PIC X(12) VALUE "brewer".
+    05 FILLER PIC X(12) VALUE "burn".
+    05 FILLER PIC X(12) VALUE "danger".
+    05 FILLER PIC X(12) VALUE "explorer".
+    05 FILLER PIC X(12) VALUE "flow".
+    05 FILLER PIC X(12) VALUE "friend".
+    05 FILLER PIC X(12) VALUE "guster".
+    05 FILLER PIC X(12) VALUE "heart".
+    05 FILLER PIC X(12) VALUE "heartbreak".
+    05 FILLER PIC X(12) VALUE "howl".
+    05 FILLER PIC X(12) VALUE "miner".
+    05 FILLER PIC X(12) VALUE "mourner".
+    05 FILLER PIC X(12) VALUE "plenty".
+    05 FILLER PIC X(12) VALUE "prize".
+    05 FILLER PIC X(12) VALUE "scrape".
+    05 FILLER PIC X(12) VALUE "sheaf".
+    05 FILLER PIC X(12) VALUE "shelter".
+    05 FILLER PIC X(12) VALUE "skull".
+    05 FILLER PIC X(12) VALUE "snort".
+ 01 FILLER REDEFINES WS-ROWS.
+    05 WS-NAME             PIC X(12) OCCURS 23 TIMES.
+ 01 WS-PROBE               PIC X(12).
+ 01 WS-KL                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-PATTERN              PIC X(16).
+ 01 L-PATTERN-LENGTH       BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-LENGTH L-PATTERN L-PATTERN-LENGTH.
+     MOVE 0 TO L-PATTERN-LENGTH
+     MOVE SPACES TO L-PATTERN
+*>   "minecraft:" + key + "_pottery_sherd": the key is 1 to 12 characters.
+     COMPUTE WS-KL = L-LENGTH - 24
+     IF WS-KL < 1 OR WS-KL > 12 OR L-KEY(1:10) NOT = "minecraft:"
+         GOBACK
+     END-IF
+     COMPUTE WS-I = L-LENGTH - 13
+     IF L-KEY(WS-I:14) NOT = "_pottery_sherd"
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-PROBE
+     MOVE L-KEY(11:WS-KL) TO WS-PROBE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 23
+         IF WS-NAME(WS-I) = WS-PROBE
+             MOVE WS-PROBE TO L-PATTERN
+             MOVE WS-KL TO L-PATTERN-LENGTH
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE3-SHERD-PATTERN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-INSERT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-LIMIT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-PITCH                FLOAT-LONG.
+ 01 L-WOBBLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ITEM L-VAR L-MAX L-RESULT L-PITCH L-WOBBLE.
+     MOVE 0 TO L-RESULT L-WOBBLE
+     MOVE 0 TO L-PITCH
+     IF BE-SLOT-COUNT(L-INDEX, 1) = 0
+         MOVE L-ITEM TO BE-SLOT-ITEM(L-INDEX, 1)
+         MOVE L-VAR TO BE-SLOT-VAR(L-INDEX, 1)
+         MOVE 1 TO BE-SLOT-COUNT(L-INDEX, 1)
+     ELSE
+         IF BE-SLOT-ITEM(L-INDEX, 1) = L-ITEM AND BE-SLOT-VAR(L-INDEX, 1) = L-VAR AND BE-SLOT-COUNT(L-INDEX, 1) < L-MAX
+             ADD 1 TO BE-SLOT-COUNT(L-INDEX, 1)
+         ELSE
+             GOBACK
+         END-IF
+     END-IF
+     MOVE 1 TO L-RESULT L-WOBBLE
+     COMPUTE L-PITCH = 0.7 + 0.5 * (BE-SLOT-COUNT(L-INDEX, 1) / L-MAX)
+     CALL "BE-MARK-CHUNK" USING L-INDEX
+     GOBACK.
+ END PROGRAM BE3-POT-INSERT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-DURATION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STYLE                BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STYLE L-TICKS.
+     MOVE 7 TO L-TICKS
+     IF L-STYLE = 1
+         MOVE 10 TO L-TICKS
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-POT-DURATION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-EVENT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-DATA                 BINARY-LONG.
+ 01 L-TIME                 BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-TYPE L-DATA L-TIME L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     IF L-TYPE = 1 AND L-DATA >= 0 AND L-DATA < 2
+         MOVE L-TIME TO BE-XI(L-INDEX, 5)
+         MOVE L-DATA TO BE-XI(L-INDEX, 6)
+         MOVE 1 TO L-HANDLED
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-POT-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-PROGRESS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-TICKS               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-TIME                 BINARY-LONG.
+ 01 L-PARTIAL              FLOAT-LONG.
+ 01 L-PROGRESS             FLOAT-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-TIME L-PARTIAL L-PROGRESS.
+     MOVE 0 TO L-PROGRESS
+     IF BE-XI(L-INDEX, 6) >= 0
+         CALL "BE3-POT-DURATION" USING BE-XI(L-INDEX, 6) WS-TICKS
+         COMPUTE L-PROGRESS = ((L-TIME - BE-XI(L-INDEX, 5)) + L-PARTIAL) / WS-TICKS
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-POT-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-POSE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-STYLE                BINARY-LONG.
+ 01 L-PROGRESS             FLOAT-LONG.
+ 01 L-RX                   FLOAT-LONG.
+ 01 L-RZ                   FLOAT-LONG.
+ 01 L-RY                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STYLE L-PROGRESS L-RX L-RZ L-RY.
+     MOVE 0 TO L-RX L-RZ L-RY
+     IF L-PROGRESS < 0 OR L-PROGRESS > 1
+         GOBACK
+     END-IF
+     IF L-STYLE = 0
+         COMPUTE WS-A = L-PROGRESS * 2 * FUNCTION PI
+         COMPUTE L-RX = (-1.5 * (FUNCTION COS(WS-A) + 0.5)) * FUNCTION SIN(WS-A / 2) * 0.015625
+         COMPUTE L-RZ = FUNCTION SIN(WS-A) * 0.015625
+     ELSE
+         COMPUTE WS-R = FUNCTION SIN(0 - L-PROGRESS * 3 * FUNCTION PI) * 0.125
+         COMPUTE L-RY = WS-R * (1 - L-PROGRESS)
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-POT-POSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-BREAK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BREAKS               BINARY-LONG.
+ 01 L-PREVENTS             BINARY-LONG.
+ 01 L-CRACKED              BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-BREAKS L-PREVENTS L-CRACKED L-FLAGS.
+     MOVE 0 TO L-CRACKED L-FLAGS
+     IF L-BREAKS = 1 AND L-PREVENTS = 0
+         MOVE 1 TO L-CRACKED
+         MOVE 260 TO L-FLAGS
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-POT-BREAK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SHELF-HOTBAR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-SHELF                BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-HOTBAR               BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT L-SHELF L-SLOT L-HOTBAR.
+     COMPUTE L-HOTBAR = 9 - L-COUNT * 3 + (L-SHELF * 3 + L-SLOT)
+     GOBACK.
+ END PROGRAM BE3-SHELF-HOTBAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SHELF-SWAP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-OLD-ITEM            BINARY-LONG.
+ 01 WS-OLD-COUNT           BINARY-LONG.
+ 01 WS-OLD-VAR             BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-SECOND              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-SOUNDS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SLOT L-ITEM L-COUNT L-VAR L-CREATIVE L-SUCCESS L-SOUNDS.
+     COMPUTE WS-S = L-SLOT + 1
+     MOVE BE-SLOT-ITEM(L-INDEX, WS-S) TO WS-OLD-ITEM
+     MOVE BE-SLOT-COUNT(L-INDEX, WS-S) TO WS-OLD-COUNT
+     MOVE BE-SLOT-VAR(L-INDEX, WS-S) TO WS-OLD-VAR
+     MOVE L-ITEM TO BE-SLOT-ITEM(L-INDEX, WS-S)
+     MOVE L-COUNT TO BE-SLOT-COUNT(L-INDEX, WS-S)
+     MOVE L-VAR TO BE-SLOT-VAR(L-INDEX, WS-S)
+     IF L-CREATIVE = 0 OR WS-OLD-COUNT > 0
+         MOVE WS-OLD-ITEM TO L-ITEM
+         MOVE WS-OLD-COUNT TO L-COUNT
+         MOVE WS-OLD-VAR TO L-VAR
+     END-IF
+     MOVE 0 TO L-SUCCESS WS-FIRST WS-SECOND
+     IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0 OR WS-OLD-COUNT > 0
+         MOVE 1 TO L-SUCCESS
+         MOVE 2 TO WS-FIRST
+         IF L-COUNT = 0
+             MOVE 1 TO WS-FIRST
+         END-IF
+         IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
+             MOVE 3 TO WS-SECOND
+         END-IF
+         CALL "BE-MARK-CHUNK" USING L-INDEX
+     END-IF
+     COMPUTE L-SOUNDS = WS-FIRST * 10 + WS-SECOND
+     GOBACK.
+ END PROGRAM BE3-SHELF-SWAP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BEX-DEFAULTS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         MOVE 0 TO BE-XI(L-INDEX, WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         MOVE SPACES TO BE-XT(L-INDEX, WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         MOVE 0 TO BE-XF(L-INDEX, WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 27
+         MOVE 0 TO BE-SLOT-ITEM(L-INDEX, WS-I) BE-SLOT-COUNT(L-INDEX, WS-I) BE-SLOT-VAR(L-INDEX, WS-I)
+     END-PERFORM
+     EVALUATE BE-TYPE(L-INDEX)
+         WHEN 7 WHEN 8
+             MOVE 15 TO BE-XI(L-INDEX, 4) BE-XI(L-INDEX, 14)
+         WHEN 41
+             MOVE -1 TO BE-XI(L-INDEX, 6)
+         WHEN 12
+             MOVE 400 TO BE-XI(L-INDEX, 2)
+             MOVE 20 TO BE-XI(L-INDEX, 4)
+             MOVE 1.0 TO BE-XF(L-INDEX, 1)
+         WHEN 30
+             MOVE -1 TO BE-XI(L-INDEX, 3)
+         WHEN 40
+             MOVE -1 TO BE-XI(L-INDEX, 4)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BEX-DEFAULTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-SAVE-SIDE.
+*> USING index, side (1 front, 2 back), PB-BUFFER: the compound of one SignText (2.2): messages, filtered_messages when it differs, colour, glow.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-T-STRING            BINARY-LONG VALUE 8.
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-TB                  BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SIDE PB-BUFFER.
+     COMPUTE WS-BASE = 4 + 10 * (L-SIDE - 1)
+     COMPUTE WS-TB = 8 * (L-SIDE - 1)
+     MOVE 0 TO WS-DIFF
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+         IF BE-XI(L-INDEX, WS-BASE + 1 + WS-L) NOT = BE-XI(L-INDEX, WS-BASE + 5 + WS-L)
+                 OR BE-XT(L-INDEX, WS-TB + WS-L) NOT = BE-XT(L-INDEX, WS-TB + 4 + WS-L)
+             MOVE 1 TO WS-DIFF
+         END-IF
+     END-PERFORM
+     MOVE "messages" TO WN
+     MOVE 8 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-STRING WS-FOUR
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+         MOVE -1 TO WL
+         MOVE BE-XT(L-INDEX, WS-TB + WS-L) TO WS-TEXT
+         MOVE BE-XI(L-INDEX, WS-BASE + 1 + WS-L) TO WS-LEN
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TEXT WS-LEN
+     END-PERFORM
+     IF WS-DIFF = 1
+         MOVE "filtered_messages" TO WN
+         MOVE 17 TO WL
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-STRING WS-FOUR
+         PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+             MOVE -1 TO WL
+             MOVE BE-XT(L-INDEX, WS-TB + 4 + WS-L) TO WS-TEXT
+             MOVE BE-XI(L-INDEX, WS-BASE + 5 + WS-L) TO WS-LEN
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TEXT WS-LEN
+         END-PERFORM
+     END-IF
+     CALL "BE3-DYE-INFO" USING BE-XI(L-INDEX, WS-BASE) WS-NAME WS-NAME-LENGTH WS-A WS-B WS-C
+     MOVE "color" TO WN
+     MOVE 5 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NAME WS-NAME-LENGTH
+     MOVE "has_glowing_text" TO WN
+     MOVE 16 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL BE-XI(L-INDEX, WS-BASE + 1)
+     GOBACK.
+ END PROGRAM BE3-SIGN-SAVE-SIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SIGN-READ-SIDE.
+*> USING index, side, PB-BUFFER: reads the compound payload of one SignText (2.2) into the cells; a text that fails to decode (messages not a list of 4 strings,
+*> filtered list of another size, colour not a dye name) is replaced by SignText.EMPTY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAP32               BINARY-LONG VALUE 32.
+ 01 WS-CAP96               BINARY-LONG VALUE 96.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ET                  BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-HAVE-F              BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-TB                  BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-GLOW                BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-TEXT                PIC X(96).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-TEMP.
+    05 WS-T-M OCCURS 4 TIMES.
+       10 WS-T-MLEN        BINARY-LONG.
+       10 WS-T-MTEXT       PIC X(64).
+    05 WS-T-F OCCURS 4 TIMES.
+       10 WS-T-FLEN        BINARY-LONG.
+       10 WS-T-FTEXT       PIC X(64).
+ 01 WS-HAVE-M              BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SIDE PB-BUFFER.
+     COMPUTE WS-BASE = 4 + 10 * (L-SIDE - 1)
+     COMPUTE WS-TB = 8 * (L-SIDE - 1)
+     MOVE 1 TO WS-OK
+     MOVE 0 TO WS-HAVE-M WS-HAVE-F WS-GLOW
+     MOVE 15 TO WS-COLOR
+     INITIALIZE WS-TEMP
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP32 WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN (WN = "messages" OR WN = "filtered_messages") AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ET WS-COUNT
+                 IF WS-COUNT NOT = 4 OR WS-ET NOT = 8
+                     MOVE 0 TO WS-OK
+                     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > WS-COUNT OR PB-ERROR = 1
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ET
+                     END-PERFORM
+                 ELSE
+                     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4 OR PB-ERROR = 1
+                         MOVE SPACES TO WS-TEXT
+                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP96 WS-LEN
+                         IF WS-LEN > 64
+                             MOVE 64 TO WS-LEN
+                         END-IF
+                         IF WN = "messages"
+                             MOVE WS-LEN TO WS-T-MLEN(WS-L)
+                             MOVE WS-TEXT(1:64) TO WS-T-MTEXT(WS-L)
+                         ELSE
+                             MOVE WS-LEN TO WS-T-FLEN(WS-L)
+                             MOVE WS-TEXT(1:64) TO WS-T-FTEXT(WS-L)
+                         END-IF
+                     END-PERFORM
+                     IF WN = "messages"
+                         MOVE 1 TO WS-HAVE-M
+                     ELSE
+                         MOVE 1 TO WS-HAVE-F
+                     END-IF
+                 END-IF
+             WHEN WN = "color" AND WS-TYPE = 8
+                 MOVE SPACES TO WS-NAME
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-NAME WS-CAP32 WS-NAME-LENGTH
+                 CALL "BE3-DYE-ID" USING WS-NAME WS-NAME-LENGTH WS-COLOR
+                 IF WS-COLOR < 0
+                     MOVE 0 TO WS-OK
+                 END-IF
+             WHEN WN = "has_glowing_text" AND WS-TYPE = 1
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-GLOW
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     IF WS-HAVE-M = 0
+         MOVE 0 TO WS-OK
+     END-IF
+     IF WS-OK = 0
+         INITIALIZE WS-TEMP
+         MOVE 15 TO WS-COLOR
+         MOVE 0 TO WS-GLOW WS-HAVE-F
+     END-IF
+     MOVE WS-COLOR TO BE-XI(L-INDEX, WS-BASE)
+     MOVE WS-GLOW TO BE-XI(L-INDEX, WS-BASE + 1)
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+         MOVE WS-T-MLEN(WS-L) TO BE-XI(L-INDEX, WS-BASE + 1 + WS-L)
+         MOVE WS-T-MTEXT(WS-L) TO BE-XT(L-INDEX, WS-TB + WS-L)
+         IF WS-HAVE-F = 1
+             MOVE WS-T-FLEN(WS-L) TO BE-XI(L-INDEX, WS-BASE + 5 + WS-L)
+             MOVE WS-T-FTEXT(WS-L) TO BE-XT(L-INDEX, WS-TB + 4 + WS-L)
+         ELSE
+             MOVE WS-T-MLEN(WS-L) TO BE-XI(L-INDEX, WS-BASE + 5 + WS-L)
+             MOVE WS-T-MTEXT(WS-L) TO BE-XT(L-INDEX, WS-TB + 4 + WS-L)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE3-SIGN-READ-SIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BEX-SAVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SIDE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-TYPE PB-BUFFER.
+     EVALUATE L-TYPE
+         WHEN 7 WHEN 8
+             IF BE-XI(L-INDEX, 2) = 1
+                 MOVE "allow_op_features" TO WN
+                 MOVE 17 TO WL
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ONE
+             END-IF
+             MOVE "front_text" TO WN
+             MOVE 10 TO WL
+             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+             MOVE 1 TO WS-SIDE
+             CALL "BE3-SIGN-SAVE-SIDE" USING L-INDEX WS-SIDE PB-BUFFER
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+             MOVE "back_text" TO WN
+             MOVE 9 TO WL
+             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+             MOVE 2 TO WS-SIDE
+             CALL "BE3-SIGN-SAVE-SIDE" USING L-INDEX WS-SIDE PB-BUFFER
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+             MOVE "is_waxed" TO WN
+             MOVE 8 TO WL
+             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL BE-XI(L-INDEX, 1)
+         WHEN 20
+             CALL "BE3-BANNER-SAVE" USING L-INDEX PB-BUFFER
+         WHEN 16
+             CALL "BE3-SKULL-SAVE" USING L-INDEX PB-BUFFER
+         WHEN 41
+             CALL "BE3-POT-SAVE" USING L-INDEX PB-BUFFER
+         WHEN 39
+             MOVE "align_items_to_bottom" TO WN
+             MOVE 21 TO WL
+             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL BE-XI(L-INDEX, 1)
+         WHEN 4 WHEN 13 WHEN 29 WHEN 32 WHEN 33 WHEN 40
+             CALL "BE4-SAVE" USING L-INDEX L-TYPE PB-BUFFER
+         WHEN 10 WHEN 15 WHEN 22 WHEN 25
+             CALL "BE5-SAVE" USING L-INDEX L-TYPE PB-BUFFER
+         WHEN 12 WHEN 42
+             CALL "BE2-SAVE" USING L-INDEX L-TYPE PB-BUFFER
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BEX-SAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-BANNER-SAVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ID                  PIC X(48).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX PB-BUFFER.
+     MOVE BE-XI(L-INDEX, 1) TO WS-COUNT
+     IF WS-COUNT > 0
+         MOVE "patterns" TO WN
+         MOVE 8 TO WL
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             MOVE SPACES TO WS-ID
+             STRING "minecraft:" FUNCTION TRIM(BE-XT(L-INDEX, WS-I)) DELIMITED BY SIZE INTO WS-ID
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LENGTH
+             MOVE "pattern" TO WN
+             MOVE 7 TO WL
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-ID WS-ID-LENGTH
+             CALL "BE3-DYE-INFO" USING BE-XI(L-INDEX, WS-I + 1) WS-NAME WS-NAME-LENGTH WS-A WS-B WS-C
+             MOVE "color" TO WN
+             MOVE 5 TO WL
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NAME WS-NAME-LENGTH
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         END-PERFORM
+     END-IF
+     IF BE-NAME-LENGTH(L-INDEX) > 0
+         MOVE "CustomName" TO WN
+         MOVE 10 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-NAME(L-INDEX) BE-NAME-LENGTH(L-INDEX)
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-BANNER-SAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SKULL-SAVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX PB-BUFFER.
+     IF BE-XI(L-INDEX, 1) > 0
+         MOVE "profile" TO WN
+         MOVE 7 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         MOVE "name" TO WN
+         MOVE 4 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-XT(L-INDEX, 1) BE-XI(L-INDEX, 1)
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-IF
+     IF BE-XI(L-INDEX, 2) > 0
+         MOVE "note_block_sound" TO WN
+         MOVE 16 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-XT(L-INDEX, 2) BE-XI(L-INDEX, 2)
+     END-IF
+     IF BE-NAME-LENGTH(L-INDEX) > 0
+         MOVE "custom_name" TO WN
+         MOVE 11 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-NAME(L-INDEX) BE-NAME-LENGTH(L-INDEX)
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-SKULL-SAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-SAVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ANY                 BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG.
+ 01 WS-SIDES               PIC X(20) VALUE "back left rightfront".
+ 01 FILLER REDEFINES WS-SIDES.
+    05 WS-SIDE             PIC X(5) OCCURS 4 TIMES.
+ 01 WS-SIDE-NAME           PIC X(5).
+ 01 WS-SIDE-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX PB-BUFFER.
+     MOVE 0 TO WS-ANY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         IF BE-XI(L-INDEX, WS-I) > 0
+             MOVE 1 TO WS-ANY
+         END-IF
+     END-PERFORM
+     IF WS-ANY = 1
+         MOVE "sherds" TO WN
+         MOVE 6 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             IF BE-XI(L-INDEX, WS-I) > 0
+                 MOVE SPACES TO WN
+                 MOVE WS-SIDE(WS-I) TO WN
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WN)) TO WL
+                 CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+                 MOVE "id" TO WN
+                 MOVE 2 TO WL
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-XT(L-INDEX, WS-I) BE-XI(L-INDEX, WS-I)
+                 MOVE "count" TO WN
+                 MOVE 5 TO WL
+                 CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-ONE
+                 CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+             END-IF
+         END-PERFORM
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-IF
+     IF BE-LOOT-LENGTH(L-INDEX) > 0
+         MOVE "LootTable" TO WN
+         MOVE 9 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-LOOT(L-INDEX) BE-LOOT-LENGTH(L-INDEX)
+         IF BE-SEED(L-INDEX) NOT = 0
+             MOVE "LootTableSeed" TO WN
+             MOVE 13 TO WL
+             CALL "NBT-WRITE-LONG" USING PB-BUFFER WN WL BE-SEED(L-INDEX)
+         END-IF
+     ELSE
+         IF BE-SLOT-COUNT(L-INDEX, 1) > 0
+             MOVE "item" TO WN
+             MOVE 4 TO WL
+             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+             CALL "KX-PATCH-KEEP" USING BE-SLOT-VAR(L-INDEX, 1) WS-KP
+             CALL "PNBT-STACK-WRITE" USING PB-BUFFER BE-SLOT-ITEM(L-INDEX, 1) BE-SLOT-COUNT(L-INDEX, 1) WS-KP
+             CALL "KX-PATCH-FREE" USING WS-KP
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE3-POT-SAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BEX-LOAD-KEY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-SIDE                BINARY-LONG.
+ 01 WS-CAP64               BINARY-LONG VALUE 64.
+ 01 WS-CAP32               BINARY-LONG VALUE 32.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     EVALUATE BE-TYPE(L-INDEX)
+         WHEN 7 WHEN 8
+             EVALUATE TRUE
+                 WHEN (L-NAME = "front_text" OR L-NAME = "back_text") AND L-TAG = 10
+                     MOVE 1 TO L-HANDLED
+                     MOVE 1 TO WS-SIDE
+                     IF L-NAME = "back_text"
+                         MOVE 2 TO WS-SIDE
+                     END-IF
+                     CALL "BE3-SIGN-READ-SIDE" USING L-INDEX WS-SIDE PB-BUFFER
+                 WHEN L-NAME = "is_waxed" AND L-TAG = 1
+                     MOVE 1 TO L-HANDLED
+                     CALL "PB-GET-BYTE" USING PB-BUFFER BE-XI(L-INDEX, 1)
+                 WHEN L-NAME = "allow_op_features" AND L-TAG = 1
+                     MOVE 1 TO L-HANDLED
+                     CALL "PB-GET-BYTE" USING PB-BUFFER BE-XI(L-INDEX, 2)
+             END-EVALUATE
+         WHEN 20
+             CALL "BE3-BANNER-LOAD" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
+         WHEN 16
+             CALL "BE3-SKULL-LOAD" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
+         WHEN 41
+             CALL "BE3-POT-LOAD" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
+         WHEN 39
+             IF L-NAME = "align_items_to_bottom" AND L-TAG = 1
+                 MOVE 1 TO L-HANDLED
+                 CALL "PB-GET-BYTE" USING PB-BUFFER BE-XI(L-INDEX, 1)
+             END-IF
+         WHEN 4 WHEN 13 WHEN 29 WHEN 32 WHEN 33 WHEN 40
+             CALL "BE4-LOAD-KEY" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
+         WHEN 10 WHEN 15 WHEN 22 WHEN 25
+             CALL "BE5-LOAD-KEY" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
+         WHEN 12 WHEN 42
+             CALL "BE2-LOAD-KEY" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BEX-LOAD-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-BANNER-LOAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAP32               BINARY-LONG VALUE 32.
+ 01 WS-CAP64               BINARY-LONG VALUE 64.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ET                  BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-GOT-P               BINARY-LONG.
+ 01 WS-GOT-C               BINARY-LONG.
+ 01 WS-PAT                 PIC X(64).
+ 01 WS-PAT-LENGTH          BINARY-LONG.
+ 01 WS-ID                  PIC X(32).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-CNAME               PIC X(32).
+ 01 WS-CNAME-LENGTH        BINARY-LONG.
+ 01 WS-TEMP.
+    05 WS-T-ID             PIC X(24) OCCURS 20 TIMES.
+    05 WS-T-COLOR          BINARY-LONG OCCURS 20 TIMES.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     EVALUATE TRUE
+         WHEN L-NAME = "CustomName" AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-STRING" USING PB-BUFFER BE-NAME(L-INDEX) WS-CAP64 BE-NAME-LENGTH(L-INDEX)
+         WHEN L-NAME = "patterns" AND L-TAG = 9
+             MOVE 1 TO L-HANDLED
+             MOVE 1 TO WS-OK
+             MOVE 0 TO WS-N
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ET WS-COUNT
+             IF WS-ET NOT = 10 AND WS-COUNT > 0
+                 MOVE 0 TO WS-OK
+                 PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > WS-COUNT OR PB-ERROR = 1
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ET
+                 END-PERFORM
+             ELSE
+                 PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > WS-COUNT OR PB-ERROR = 1
+                     MOVE 0 TO WS-GOT-P WS-GOT-C
+                     PERFORM UNTIL PB-ERROR = 1
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP32 WL
+                         IF WS-TYPE = 0
+                             EXIT PERFORM
+                         END-IF
+                         EVALUATE TRUE
+                             WHEN WN = "pattern" AND WS-TYPE = 8
+                                 MOVE SPACES TO WS-PAT
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-PAT WS-CAP64 WS-PAT-LENGTH
+                                 MOVE SPACES TO WS-ID
+                                 MOVE WS-PAT-LENGTH TO WS-ID-LENGTH
+                                 MOVE WS-PAT TO WS-ID
+                                 IF WS-PAT-LENGTH > 10 AND WS-PAT(1:10) = "minecraft:"
+                                     COMPUTE WS-ID-LENGTH = WS-PAT-LENGTH - 10
+                                     MOVE SPACES TO WS-ID
+                                     MOVE WS-PAT(11:WS-ID-LENGTH) TO WS-ID
+                                 END-IF
+                                 CALL "BE3-BANNER-PATTERN" USING WS-ID WS-ID-LENGTH WS-INDEX
+                                 IF WS-INDEX < 0
+                                     MOVE 0 TO WS-OK
+                                 ELSE
+                                     MOVE 1 TO WS-GOT-P
+                                     IF WS-N < 20
+                                         MOVE WS-ID TO WS-T-ID(WS-N + 1)
+                                     END-IF
+                                 END-IF
+                             WHEN WN = "color" AND WS-TYPE = 8
+                                 MOVE SPACES TO WS-CNAME
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-CNAME WS-CAP32 WS-CNAME-LENGTH
+                                 CALL "BE3-DYE-ID" USING WS-CNAME WS-CNAME-LENGTH WS-COLOR
+                                 IF WS-COLOR < 0
+                                     MOVE 0 TO WS-OK
+                                 ELSE
+                                     MOVE 1 TO WS-GOT-C
+                                     IF WS-N < 20
+                                         MOVE WS-COLOR TO WS-T-COLOR(WS-N + 1)
+                                     END-IF
+                                 END-IF
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+                     IF WS-GOT-P = 0 OR WS-GOT-C = 0
+                         MOVE 0 TO WS-OK
+                     END-IF
+                     ADD 1 TO WS-N
+                 END-PERFORM
+             END-IF
+             MOVE 0 TO BE-XI(L-INDEX, 1)
+             IF WS-OK = 1 AND WS-N > 0
+                 MOVE FUNCTION MIN(WS-N, 20) TO BE-XI(L-INDEX, 1)
+                 PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > BE-XI(L-INDEX, 1)
+                     MOVE WS-T-ID(WS-E) TO BE-XT(L-INDEX, WS-E)
+                     MOVE WS-T-COLOR(WS-E) TO BE-XI(L-INDEX, WS-E + 1)
+                 END-PERFORM
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE3-BANNER-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-SKULL-LOAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAP32               BINARY-LONG VALUE 32.
+ 01 WS-CAP64               BINARY-LONG VALUE 64.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     EVALUATE TRUE
+         WHEN L-NAME = "profile" AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             MOVE SPACES TO BE-XT(L-INDEX, 1)
+             CALL "NBT-READ-STRING" USING PB-BUFFER BE-XT(L-INDEX, 1) WS-CAP64 BE-XI(L-INDEX, 1)
+         WHEN L-NAME = "profile" AND L-TAG = 10
+             MOVE 1 TO L-HANDLED
+             MOVE 0 TO BE-XI(L-INDEX, 1)
+             MOVE SPACES TO BE-XT(L-INDEX, 1)
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP32 WL
+                 IF WS-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 IF WN = "name" AND WS-TYPE = 8
+                     CALL "NBT-READ-STRING" USING PB-BUFFER BE-XT(L-INDEX, 1) WS-CAP64 BE-XI(L-INDEX, 1)
+                 ELSE
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 END-IF
+             END-PERFORM
+         WHEN L-NAME = "note_block_sound" AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             MOVE SPACES TO BE-XT(L-INDEX, 2)
+             CALL "NBT-READ-STRING" USING PB-BUFFER BE-XT(L-INDEX, 2) WS-CAP64 BE-XI(L-INDEX, 2)
+         WHEN L-NAME = "custom_name" AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-STRING" USING PB-BUFFER BE-NAME(L-INDEX) WS-CAP64 BE-NAME-LENGTH(L-INDEX)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE3-SKULL-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE3-POT-LOAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WN2                    PIC X(32).
+ 01 WL2                    BINARY-LONG.
+ 01 WS-CAP32               BINARY-LONG VALUE 32.
+ 01 WS-CAP64               BINARY-LONG VALUE 64.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-TYPE2               BINARY-LONG.
+ 01 WS-SIDES               PIC X(20) VALUE "back left rightfront".
+ 01 FILLER REDEFINES WS-SIDES.
+    05 WS-SIDE             PIC X(5) OCCURS 4 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     EVALUATE TRUE
+         WHEN L-NAME = "sherds" AND L-TAG = 10
+             MOVE 1 TO L-HANDLED
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 MOVE 0 TO BE-XI(L-INDEX, WS-I)
+                 MOVE SPACES TO BE-XT(L-INDEX, WS-I)
+             END-PERFORM
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP32 WL
+                 IF WS-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 MOVE 0 TO WS-K
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                     IF WN(1:5) = WS-SIDE(WS-I)
+                         MOVE WS-I TO WS-K
+                     END-IF
+                 END-PERFORM
+                 EVALUATE TRUE
+                     WHEN WS-K > 0 AND WS-TYPE = 8
+                         CALL "NBT-READ-STRING" USING PB-BUFFER BE-XT(L-INDEX, WS-K) WS-CAP64 BE-XI(L-INDEX, WS-K)
+                     WHEN WS-K > 0 AND WS-TYPE = 10
+                         PERFORM UNTIL PB-ERROR = 1
+                             MOVE SPACES TO WN2
+                             CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE2 WN2 WS-CAP32 WL2
+                             IF WS-TYPE2 = 0
+                                 EXIT PERFORM
+                             END-IF
+                             IF WN2 = "id" AND WS-TYPE2 = 8
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER BE-XT(L-INDEX, WS-K) WS-CAP64 BE-XI(L-INDEX, WS-K)
+                             ELSE
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE2
+                             END-IF
+                         END-PERFORM
+                     WHEN OTHER
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 END-EVALUATE
+             END-PERFORM
+         WHEN L-NAME = "item" AND L-TAG = 10
+             MOVE 1 TO L-HANDLED
+             CALL "PNBT-STACK-READ" USING PB-BUFFER WS-SLOT WS-ITEM WS-COUNT WS-KP
+             CALL "KX-PATCH-TAKE" USING WS-KP WS-HANDLE
+             CALL "KX-PATCH-FREE" USING WS-KP
+             IF BE-LOOT-LENGTH(L-INDEX) = 0 AND WS-ITEM > 0 AND WS-COUNT > 0
+                 MOVE WS-ITEM TO BE-SLOT-ITEM(L-INDEX, 1)
+                 MOVE WS-COUNT TO BE-SLOT-COUNT(L-INDEX, 1)
+                 MOVE WS-HANDLE TO BE-SLOT-VAR(L-INDEX, 1)
+             END-IF
+         WHEN L-NAME = "LootTable" AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-STRING" USING PB-BUFFER BE-LOOT(L-INDEX) WS-CAP64 BE-LOOT-LENGTH(L-INDEX)
+             MOVE 0 TO BE-SLOT-ITEM(L-INDEX, 1) BE-SLOT-COUNT(L-INDEX, 1) BE-SLOT-VAR(L-INDEX, 1)
+         WHEN L-NAME = "LootTableSeed" AND L-TAG = 4
+             MOVE 1 TO L-HANDLED
+             CALL "PB-GET-LONG" USING PB-BUFFER BE-SEED(L-INDEX)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE3-POT-LOAD.
