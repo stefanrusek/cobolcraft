@@ -45,6 +45,22 @@
     05 FILLER PIC X(112) VALUE "minecraft:overworld/ridges".
  01 WS-KEY-TABLE REDEFINES WS-KEYS.
     05 WS-KEY              PIC X(112) OCCURS 6 TIMES.
+ COPY CLIMATE.
+ COPY CTWORLDGEN.
+ COPY NOISE.
+ COPY DMEMO.
+*> The quantised value of a parameter that did not read y (and reached no grid or blend node) by quart column and parameter, until the
+*> seed, the noises or the data change (the stamp): the cells of a chunk are sampled layer by layer, so the six evaluations per cell
+*> repeat in every layer of a column but the depth's. Direct mapped.
+ 01 WS-COLUMNS.
+    05 WS-COL OCCURS 32768 TIMES.
+       10 WS-COL-STAMP     BINARY-LONG VALUE 0.
+       10 WS-COL-QX        BINARY-LONG.
+       10 WS-COL-QZ        BINARY-LONG.
+       10 WS-COL-I         BINARY-LONG.
+       10 WS-COL-T         BINARY-DOUBLE.
+ 01 WS-STAMP               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -60,9 +76,27 @@
      COMPUTE WS-X = L-QX * 4
      COMPUTE WS-Y = L-QY * 4
      COMPUTE WS-Z = L-QZ * 4
+     MOVE CM-GEN TO WS-STAMP
+     ADD WG-LOAD-GEN TO WS-STAMP
+     ADD NZ-GEN TO WS-STAMP
+     ADD 1 TO WS-STAMP
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
-         CALL "DENSITY-EVAL" USING WS-KEY(WS-I) WS-X WS-Y WS-Z WS-V
-         CALL "CLIMATE-F32-QUANTIZE" USING WS-V L-T(WS-I)
+         COMPUTE WS-SLOT = FUNCTION MOD(L-QX * 73 + L-QZ * 1031 + WS-I * 7919, 32768) + 1
+         IF WS-COL-STAMP(WS-SLOT) = WS-STAMP AND WS-COL-QX(WS-SLOT) = L-QX AND WS-COL-QZ(WS-SLOT) = L-QZ
+                 AND WS-COL-I(WS-SLOT) = WS-I
+             MOVE WS-COL-T(WS-SLOT) TO L-T(WS-I)
+         ELSE
+             MOVE 0 TO DM-USES-Y DM-IMPURE
+             CALL "DENSITY-EVAL" USING WS-KEY(WS-I) WS-X WS-Y WS-Z WS-V
+             CALL "CLIMATE-F32-QUANTIZE" USING WS-V L-T(WS-I)
+             IF DM-USES-Y = 0 AND DM-IMPURE = 0
+                 MOVE WS-STAMP TO WS-COL-STAMP(WS-SLOT)
+                 MOVE L-QX TO WS-COL-QX(WS-SLOT)
+                 MOVE L-QZ TO WS-COL-QZ(WS-SLOT)
+                 MOVE WS-I TO WS-COL-I(WS-SLOT)
+                 MOVE L-T(WS-I) TO WS-COL-T(WS-SLOT)
+             END-IF
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM CLIMATE-SAMPLE.
@@ -153,10 +187,28 @@
 *> the squared distance of the target to the point (the offset squared plus the squared distance to each of the six intervals).
 *> With a best, the sum stops as soon as it exceeds the best fitness, or equals it for a point of a larger index than the best
 *> (it only grows); k out is above 6 when every parameter was added.
+*> The arithmetic is the shim's 64 bit one (cc_u64: a BINARY-DOUBLE ADD, SUBTRACT or MULTIPLY goes through decimals): a distance is the
+*> target plus the negated bound (two's complement), squared by multiplication. The negated bounds and the squared offsets of the points
+*> are tables built when the generation of the points changes (CM-GEN).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLIMATE.
+ 01 WS-BUILT               BINARY-LONG VALUE -1.
+ 01 WS-NEG.
+    05 WS-NEG-POINT OCCURS 8192 TIMES.
+       10 WS-NMIN          BINARY-DOUBLE OCCURS 6 TIMES.
+       10 WS-NMAX          BINARY-DOUBLE OCCURS 6 TIMES.
+       10 WS-OFF2          BINARY-DOUBLE.
  01 WS-D                   BINARY-DOUBLE.
+ 01 WS-SQ                  BINARY-DOUBLE.
+ 01 WS-D2                  BINARY-DOUBLE.
+ 01 WS-F2                  BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-F                   BINARY-DOUBLE.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-BEST-F              BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-TARGET.
     05 L-T                 BINARY-DOUBLE OCCURS 6 TIMES.
@@ -166,18 +218,36 @@
  01 L-F                    BINARY-DOUBLE.
  01 L-K                    BINARY-LONG.
  PROCEDURE DIVISION USING L-TARGET L-I L-BEST L-BEST-F L-F L-K.
-     COMPUTE L-F = CL-OFFSET(L-I) * CL-OFFSET(L-I)
-     PERFORM VARYING L-K FROM 1 BY 1 UNTIL L-K > 6 OR (L-BEST > 0 AND (L-F > L-BEST-F OR (L-F = L-BEST-F AND L-I > L-BEST)))
+     IF WS-BUILT NOT = CM-GEN
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-COUNT
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
+                 COMPUTE WS-NMIN(WS-I, WS-J) = 0 - CL-MIN(WS-I, WS-J)
+                 COMPUTE WS-NMAX(WS-I, WS-J) = 0 - CL-MAX(WS-I, WS-J)
+             END-PERFORM
+             COMPUTE WS-OFF2(WS-I) = CL-OFFSET(WS-I) * CL-OFFSET(WS-I)
+         END-PERFORM
+         MOVE CM-GEN TO WS-BUILT
+     END-IF
+     MOVE L-I TO WS-I
+     MOVE L-BEST TO WS-BEST
+     MOVE L-BEST-F TO WS-BEST-F
+     MOVE WS-OFF2(WS-I) TO WS-F
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6 OR (WS-BEST > 0 AND (WS-F > WS-BEST-F OR (WS-F = WS-BEST-F AND WS-I > WS-BEST)))
+         MOVE 0 TO WS-D
          EVALUATE TRUE
-             WHEN L-T(L-K) > CL-MAX(L-I, L-K)
-                 COMPUTE WS-D = L-T(L-K) - CL-MAX(L-I, L-K)
-             WHEN L-T(L-K) < CL-MIN(L-I, L-K)
-                 COMPUTE WS-D = CL-MIN(L-I, L-K) - L-T(L-K)
-             WHEN OTHER
-                 MOVE 0 TO WS-D
+             WHEN L-T(WS-K) > CL-MAX(WS-I, WS-K)
+                 CALL STATIC "cc_u64_add" USING BY REFERENCE L-T(WS-K) WS-NMAX(WS-I, WS-K) WS-D
+             WHEN L-T(WS-K) < CL-MIN(WS-I, WS-K)
+*>               the negative distance: its square is the same
+                 CALL STATIC "cc_u64_add" USING BY REFERENCE L-T(WS-K) WS-NMIN(WS-I, WS-K) WS-D
          END-EVALUATE
-         COMPUTE L-F = L-F + WS-D * WS-D
+         MOVE WS-D TO WS-D2
+         CALL STATIC "cc_u64_mul" USING BY REFERENCE WS-D WS-D2 WS-SQ
+         CALL STATIC "cc_u64_add" USING BY REFERENCE WS-F WS-SQ WS-F2
+         MOVE WS-F2 TO WS-F
      END-PERFORM
+     MOVE WS-K TO L-K
+     MOVE WS-F TO L-F
      GOBACK.
  END PROGRAM CLIMATE-FITNESS.
 
@@ -201,6 +271,8 @@
        10 WS-G-MIN         BINARY-DOUBLE OCCURS 3 TIMES.
        10 WS-G-MAX         BINARY-DOUBLE OCCURS 3 TIMES.
        10 WS-G-OFF         BINARY-DOUBLE.
+       10 WS-G-NMIN        BINARY-DOUBLE OCCURS 3 TIMES.
+       10 WS-G-NMAX        BINARY-DOUBLE OCCURS 3 TIMES.
        10 WS-G-START       BINARY-LONG.
        10 WS-G-COUNT       BINARY-LONG.
  01 WS-MEMBER-TABLE.
@@ -222,6 +294,11 @@
  01 WS-D                   BINARY-DOUBLE.
  01 WS-F                   BINARY-DOUBLE.
  01 WS-LB                  BINARY-DOUBLE.
+ 01 WS-LB2                 BINARY-DOUBLE.
+ 01 WS-D2                  BINARY-DOUBLE.
+ 01 WS-SQ                  BINARY-DOUBLE.
+ 01 WS-DK                  BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
  01 WS-OFF2                BINARY-DOUBLE.
  01 WS-BEST                BINARY-LONG.
  01 WS-BEST-F              BINARY-DOUBLE.
@@ -259,6 +336,8 @@
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
                      MOVE CL-MIN(WS-I, WS-DIM(WS-K)) TO WS-G-MIN(WS-J, WS-K)
                      MOVE CL-MAX(WS-I, WS-DIM(WS-K)) TO WS-G-MAX(WS-J, WS-K)
+                     COMPUTE WS-G-NMIN(WS-J, WS-K) = 0 - WS-G-MIN(WS-J, WS-K)
+                     COMPUTE WS-G-NMAX(WS-J, WS-K) = 0 - WS-G-MAX(WS-J, WS-K)
                  END-PERFORM
                  MOVE WS-OFF2 TO WS-G-OFF(WS-J)
                  MOVE 0 TO WS-G-COUNT(WS-J)
@@ -289,21 +368,26 @@
          MOVE WS-F TO WS-BEST-F
      END-IF
      PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > WS-GROUPS
-*>       WS-LB: a lower bound of the fitness of every member of the group
+*>       WS-LB: a lower bound of the fitness of every member of the group (the shim's 64 bit arithmetic, as CLIMATE-FITNESS)
          MOVE WS-G-OFF(WS-G) TO WS-LB
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+             MOVE WS-DIM(WS-K) TO WS-DK
+             MOVE 0 TO WS-D
              EVALUATE TRUE
-                 WHEN L-T(WS-DIM(WS-K)) > WS-G-MAX(WS-G, WS-K)
-                     COMPUTE WS-D = L-T(WS-DIM(WS-K)) - WS-G-MAX(WS-G, WS-K)
-                 WHEN L-T(WS-DIM(WS-K)) < WS-G-MIN(WS-G, WS-K)
-                     COMPUTE WS-D = WS-G-MIN(WS-G, WS-K) - L-T(WS-DIM(WS-K))
-                 WHEN OTHER
-                     MOVE 0 TO WS-D
+                 WHEN L-T(WS-DK) > WS-G-MAX(WS-G, WS-K)
+                     CALL STATIC "cc_u64_add" USING BY REFERENCE L-T(WS-DK) WS-G-NMAX(WS-G, WS-K) WS-D
+                 WHEN L-T(WS-DK) < WS-G-MIN(WS-G, WS-K)
+                     CALL STATIC "cc_u64_add" USING BY REFERENCE L-T(WS-DK) WS-G-NMIN(WS-G, WS-K) WS-D
              END-EVALUATE
-             COMPUTE WS-LB = WS-LB + WS-D * WS-D
+             MOVE WS-D TO WS-D2
+             CALL STATIC "cc_u64_mul" USING BY REFERENCE WS-D WS-D2 WS-SQ
+             CALL STATIC "cc_u64_add" USING BY REFERENCE WS-LB WS-SQ WS-LB2
+             MOVE WS-LB2 TO WS-LB
          END-PERFORM
          IF WS-BEST = 0 OR WS-LB NOT > WS-BEST-F
-             PERFORM VARYING WS-M FROM WS-G-START(WS-G) BY 1 UNTIL WS-M >= WS-G-START(WS-G) + WS-G-COUNT(WS-G)
+             MOVE WS-G-START(WS-G) TO WS-END
+             ADD WS-G-COUNT(WS-G) TO WS-END
+             PERFORM VARYING WS-M FROM WS-G-START(WS-G) BY 1 UNTIL WS-M >= WS-END
                  MOVE WS-MEMBER(WS-M) TO WS-I
                  CALL "CLIMATE-FITNESS" USING L-TARGET WS-I WS-BEST WS-BEST-F WS-F WS-K
                  IF WS-K > 6 AND (WS-BEST = 0 OR WS-F < WS-BEST-F OR (WS-F = WS-BEST-F AND WS-I < WS-BEST))
