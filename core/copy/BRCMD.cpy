@@ -40,6 +40,29 @@
  78 BC-FILL              VALUE 38.
  78 BC-EFFECT            VALUE 39.
  78 BC-EXECUTE           VALUE 40.
+*> The commands of core/src/cmds-admin.cob, cmds-state.cob and cmds-chat.cob added in the lane cmds-a (run by CX-DISPATCH-A).
+ 78 BC-CHASE             VALUE 101.
+ 78 BC-DEBUG             VALUE 102.
+ 78 BC-DEBUGCONFIG       VALUE 103.
+ 78 BC-DEBUGMOBSPAWNING  VALUE 104.
+ 78 BC-DEBUGPATH         VALUE 105.
+ 78 BC-FETCHPROFILE      VALUE 106.
+ 78 BC-PERF              VALUE 107.
+ 78 BC-PUBLISH           VALUE 108.
+ 78 BC-UNPUBLISH         VALUE 109.
+ 78 BC-RAID              VALUE 110.
+ 78 BC-SERVERPACK        VALUE 111.
+ 78 BC-SPAWN-ARMOR-TRIMS VALUE 112.
+ 78 BC-TRANSFER          VALUE 113.
+ 78 BC-WARDEN-SPAWN-TRACKER VALUE 114.
+ 78 BC-TICK              VALUE 115.
+ 78 BC-WORLDBORDER       VALUE 116.
+ 78 BC-BOSSBAR           VALUE 117.
+ 78 BC-DIALOG            VALUE 118.
+ 78 BC-POSTEFFECT        VALUE 119.
+ 78 BC-TEAMMSG           VALUE 120.
+ 78 BC-TELLRAW           VALUE 121.
+ 78 BC-TITLE             VALUE 122.
 *> The modifier ids of the clauses of execute (BR-N-MODIFIER of the node that ends a clause; core/src/cmds-execute.cob).
  78 MX-AS                 VALUE 1.
  78 MX-AT                 VALUE 2.

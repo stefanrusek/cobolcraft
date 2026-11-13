@@ -167,7 +167,7 @@
          WHEN BC-SAVE-OFF
              CALL "CX-SAVE-SWITCH"
          WHEN OTHER
-             CALL "CX-HELP"
+             CALL "CX-DISPATCH-A"
      END-EVALUATE
      GOBACK.
  END PROGRAM BR-CMD-CALL.
