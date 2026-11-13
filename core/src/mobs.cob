@@ -93,6 +93,8 @@
      CALL "MOB-INDEX" USING L-TYPE WS-M
      IF WS-M > 0
          MOVE MB-HEALTH(WS-M) TO EN-HEALTH(WS-ROW)
+     ELSE
+         CALL "STDMOB-HEALTH" USING L-TYPE EN-HEALTH(WS-ROW)
      END-IF
      CALL "ENTITY-TRACK" USING WS-ROW
      MOVE WS-ROW TO L-ROW
@@ -119,10 +121,18 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ITEM-ROW            BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "MOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-S
+         IF WS-S > 0
+             CALL "STDMOB-DIE" USING L-ROW
+             GOBACK
+         END-IF
+     END-IF
      MOVE EN-DIM(L-ROW) TO WS-DIM
      MOVE EN-X(L-ROW) TO WS-X
      MOVE EN-Y(L-ROW) TO WS-Y
@@ -345,6 +355,7 @@
  PROCEDURE DIVISION.
      CALL "MOB-TABLE-COUNT" USING WS-N
      IF WS-N = 0
+         CALL "STDMOB-SPAWN-TICK"
          GOBACK
      END-IF
      IF FUNCTION MOD(CW-TIME, MOB-SPAWN-TICKS) NOT = 0
@@ -601,6 +612,9 @@
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-DEEP                BINARY-LONG.
+ 01 WS-DEEP-Y              FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -613,18 +627,39 @@
      MOVE EN-X(WS-ROW) TO WS-X
      MOVE EN-Y(WS-ROW) TO WS-Y
      MOVE EN-Z(WS-ROW) TO WS-Z
-*>   1. and 2. Gravity, vertical drag, the move along Y.
-     COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+*>   1. and 2. Gravity, vertical drag, the move along Y. A mob whose box touches water (18 section 3.2 travelInWater, the FloatGoal): no gravity, the
+*>   vertical speed is (speed + 0.04 when the water is deeper than 0.4) x 0.8, less 0.005 while it is not rising; its horizontal step is halved.
+     CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-Y WS-Z WS-WET
+     IF WS-WET = 1
+         COMPUTE WS-DEEP-Y = WS-Y + 0.4
+         CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-DEEP-Y WS-Z WS-DEEP
+         MOVE EN-VY(WS-ROW) TO WS-VY
+         IF WS-DEEP = 1
+             ADD 0.04 TO WS-VY
+         END-IF
+         COMPUTE WS-VY = WS-VY * 0.8
+         IF WS-VY <= 0
+             SUBTRACT 0.005 FROM WS-VY
+         END-IF
+         COMPUTE L-HX = L-HX / 2
+         COMPUTE L-HZ = L-HZ / 2
+     ELSE
+         COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+     END-IF
      COMPUTE WS-NEW = WS-Y + WS-VY
      CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
-     IF WS-HIT = 0
-         MOVE WS-NEW TO WS-Y
-         MOVE 0 TO WS-GROUND
-     ELSE
-         COMPUTE WS-Y = WS-TOP + 1
-         MOVE 0 TO WS-VY
-         MOVE 1 TO WS-GROUND
-     END-IF
+     EVALUATE TRUE
+         WHEN WS-HIT = 0
+             MOVE WS-NEW TO WS-Y
+             MOVE 0 TO WS-GROUND
+         WHEN WS-VY > 0
+*>           Rising into a ceiling: stop, not on the ground.
+             MOVE 0 TO WS-VY WS-GROUND
+         WHEN OTHER
+             COMPUTE WS-Y = WS-TOP + 1
+             MOVE 0 TO WS-VY
+             MOVE 1 TO WS-GROUND
+     END-EVALUATE
 *>   3. The moves along X and Z, each with the step-up retry.
      COMPUTE WS-NEW = WS-X + L-HX
      CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
@@ -681,6 +716,7 @@
      MOVE L-ROW TO WS-ROW
      CALL "MOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
      IF WS-M = 0
+         CALL "STDMOB-STEP" USING WS-ROW
          GOBACK
      END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
@@ -710,6 +746,7 @@
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-M                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
@@ -722,14 +759,15 @@
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
      MOVE 0 TO WS-N
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
-         MOVE 0 TO WS-M
+         MOVE 0 TO WS-M WS-S
          IF EN-USED(WS-ROW) = 1
              CALL "MOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-S
          END-IF
          IF WS-M > 0 AND CS-HOSTILE-MOBS NOT = 1 AND MB-KIND(WS-M) = MOB-HOSTILE
              CALL "ENTITY-REMOVE" USING WS-ROW
          END-IF
-         IF WS-M > 0 AND EN-USED(WS-ROW) = 1
+         IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I
              MOVE 1 TO WS-SHIFT

@@ -47,6 +47,12 @@
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
     05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
     05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
+    05 CL-CAM-SET            PIC 9.           *> 1 = --camera / CC_CAMERA fixes the view: eye (CL-CAM-X, -Y, -Z), yaw and pitch in degrees
+    05 CL-CAM-X              FLOAT-LONG.
+    05 CL-CAM-Y              FLOAT-LONG.
+    05 CL-CAM-Z              FLOAT-LONG.
+    05 CL-CAM-YAW            FLOAT-LONG.
+    05 CL-CAM-PITCH          FLOAT-LONG.
     05 CL-SHOT-AUTO          PIC 9.           *> 1 = the screenshot waiting is the automatic one
     05 CL-SHOT-PENDING       PIC 9.           *> 1 = a screenshot waits for its frame (cc_vk_screenshot)
     05 CL-SHOT-NAME          PIC X(40).       *> its file name (YYYY-MM-DD_HH.MM.SS.png, _1, _2 ... after a clash)
@@ -454,6 +460,18 @@
        10 PL-VY              FLOAT-LONG.
        10 PL-ON-GROUND       PIC 9.
        10 PL-COLLIDED        PIC 9.
+*>     Fluids (29a section 8; client/src/physics-fluid.cob): the box touches water or lava, the eye is inside one, the fluid's
+*>     height above the feet (0 none), and the horizontal speed in blocks per tick kept while in a fluid.
+       10 PL-IN-WATER        PIC 9.
+       10 PL-IN-LAVA         PIC 9.
+       10 PL-EYE-WATER       PIC 9.
+       10 PL-EYE-LAVA        PIC 9.
+       10 PL-WATER-H         FLOAT-LONG.
+       10 PL-LAVA-H          FLOAT-LONG.
+       10 PL-VX              FLOAT-LONG.
+       10 PL-VZ              FLOAT-LONG.
+       10 PL-PUSH-X          FLOAT-LONG.    *> the current's push of this tick (29a section 8.3)
+       10 PL-PUSH-Z          FLOAT-LONG.
        10 PL-FLYING          PIC 9.
        10 PL-JUMP            PIC 9.
        10 PL-SPACE-MS        BINARY-DOUBLE.
@@ -920,6 +938,9 @@
        10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
        10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
        10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
+       10 ST-FLUID           PIC 9 OCCURS 65536 TIMES.        *> state id + 1: the fluid the cell holds (29a section 1.2): 0 none, 1 water, 2 lava (liquid blocks; always-wet blocks hold water)
+       10 ST-LEVEL           PIC 99 OCCURS 65536 TIMES.       *> state id + 1: the liquid block's level 0 to 15 (0 source; 1 to 7 amount 8 - level; 8 and over falling)
+       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -967,6 +988,7 @@
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
+       10 RL-FOG OCCURS 13 TIMES FLOAT-SHORT.    *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11 up-x up-y up-z render-distance-start end
        10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
        10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
        10 RL-DRAW-COUNT      BINARY-LONG.

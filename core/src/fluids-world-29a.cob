@@ -30,11 +30,11 @@
          MOVE CB-EPOCH TO WS-EPOCH
          MOVE -1 TO WS-WATER WS-LAVA
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-             IF CB-KEY(WS-I) = "minecraft:water"
+             IF CB-KEY(WS-I) = "minecraft:water" OR CB-KEY(WS-I) = "water"
                  COMPUTE WS-WATER = WS-I - 1
                  MOVE CB-FIRST-STATE(WS-I) TO WS-WATER-FIRST
              END-IF
-             IF CB-KEY(WS-I) = "minecraft:lava"
+             IF CB-KEY(WS-I) = "minecraft:lava" OR CB-KEY(WS-I) = "lava"
                  COMPUTE WS-LAVA = WS-I - 1
                  MOVE CB-FIRST-STATE(WS-I) TO WS-LAVA-FIRST
              END-IF
@@ -127,6 +127,10 @@
  PROCEDURE DIVISION USING L-STATE L-KEY L-FLAG.
      MOVE 0 TO L-FLAG
      IF CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) = L-KEY
+         MOVE 1 TO L-FLAG
+     END-IF
+*>   The standard set's rows have no namespace: "minecraft:ice" is also "ice".
+     IF L-KEY(1:10) = "minecraft:" AND CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) = L-KEY(11:38)
          MOVE 1 TO L-FLAG
      END-IF
      GOBACK.
@@ -240,6 +244,7 @@
      IF L-FLUID = 1
          MOVE 1 TO WS-CONVERT
      END-IF
+     CALL "FLUID-FAST" USING L-DIM WS-FAST
      CALL "FL-DELAY" USING L-FLUID WS-FAST WS-DELAY WS-FIND WS-DROP
      CALL "FL-NEW-LIQUID" USING WS-MAX WS-SOURCES WS-CONVERT WS-BELOW-SOLID WS-BELOW-SOURCE WS-ABOVE WS-DROP L-CODE L-AMOUNT L-FALLING
      GOBACK.
@@ -413,7 +418,7 @@
      IF L-FLUID = 2 AND L-DIRECTION = 0 AND WS-F = 1
          MOVE 0 TO WS-STONE
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-             IF CB-KEY(WS-I) = "minecraft:stone"
+             IF CB-KEY(WS-I) = "minecraft:stone" OR CB-KEY(WS-I) = "stone"
                  MOVE CB-DEFAULT-STATE(WS-I) TO WS-STONE
              END-IF
          END-PERFORM
@@ -498,6 +503,7 @@
      IF L-KIND = 0
          GOBACK
      END-IF
+     CALL "FLUID-FAST" USING L-DIM WS-FAST
      CALL "FL-DELAY" USING L-FLUID WS-FAST WS-DELAY WS-FIND WS-DROP
      MOVE 0 TO WS-SOURCES
      PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 4
@@ -663,6 +669,7 @@
              MOVE 1 TO WS-SAME
          END-IF
          CALL "FL-TICK-DECIDE" USING WS-SOURCE WS-EMPTY WS-SAME WS-ACTION
+         CALL "FLUID-FAST" USING L-DIM WS-FAST
          CALL "FL-DELAY" USING L-FLUID WS-FAST WS-DELAY WS-FIND WS-DROP
          MOVE 1 TO WS-BOTH
          MOVE 0 TO WS-STILL WS-TALLER
@@ -763,6 +770,7 @@
      IF WS-FLUID = 0
          GOBACK
      END-IF
+     CALL "FLUID-FAST" USING L-DIM WS-FAST
      CALL "FL-DELAY" USING WS-FLUID WS-FAST WS-DELAY WS-FIND WS-DROP
      EVALUATE TRUE
          WHEN L-KIND = 4
@@ -822,3 +830,171 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM FLUID-HOOK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FLUID-FLOW-AT.
+*> USING dimension row, x, y, z (BINARY-LONG), flow x, y, z out (FLOAT-LONG): FluidState.getFlow of the fluid in the cell (1.4) over the core tables: each
+*> horizontal side (north, east, south, west) that is empty or the same fluid adds its step times the delta of FL-FLOW-DELTA (the sides' own heights,
+*> the same fluid below an empty side, the drop of 0.8888889); a side blocks the flow when its block has a collision (the tag blocks_fluid_flow is the set of
+*> blocks that block motion: an approximation named here); a falling cell beside a solid face (a side, or the cell above a side; ice is not one) is
+*> turned down (FL-FLOW). The cell without a fluid has no flow.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-DXT.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE -1.
+ 01 WS-DXV REDEFINES WS-DXT.
+    05 WS-DX               BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-DZT.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 0.
+ 01 WS-DZV REDEFINES WS-DZT.
+    05 WS-DZ               BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-FALLING             BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-HOLDS               BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-N-STATE             BINARY-LONG.
+ 01 WS-N-FLUID             BINARY-LONG.
+ 01 WS-N-KIND              BINARY-LONG.
+ 01 WS-N-AMOUNT            BINARY-LONG.
+ 01 WS-N-FALLING           BINARY-LONG.
+ 01 WS-N-SOLID             BINARY-LONG.
+ 01 WS-N-HOLDS             BINARY-LONG.
+ 01 WS-A-STATE             BINARY-LONG.
+ 01 WS-A-FLUID             BINARY-LONG.
+ 01 WS-A-KIND              BINARY-LONG.
+ 01 WS-A-AMOUNT            BINARY-LONG.
+ 01 WS-A-FALLING           BINARY-LONG.
+ 01 WS-A-SOLID             BINARY-LONG.
+ 01 WS-A-HOLDS             BINARY-LONG.
+ 01 WS-AFFECTS             BINARY-LONG.
+ 01 WS-BAFFECTS            BINARY-LONG.
+ 01 WS-SAME                BINARY-LONG.
+ 01 WS-ICE                 BINARY-LONG.
+ 01 WS-ICE2                BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-ANY-SOLID           BINARY-LONG.
+ 01 WS-UP                  BINARY-LONG VALUE 0.
+ 01 WS-KEY-ICE             PIC X(48) VALUE "minecraft:ice".
+ 01 WS-KEY-FROSTED         PIC X(48) VALUE "minecraft:frosted_ice".
+ 01 WS-OWN                 FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-BH                  FLOAT-LONG.
+ 01 WS-DELTA               FLOAT-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
+ 01 WS-STEP                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FX                   FLOAT-LONG.
+ 01 L-FY                   FLOAT-LONG.
+ 01 L-FZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FX L-FY L-FZ.
+     MOVE 0 TO L-FX L-FY L-FZ
+     CALL "FLUID-CELL" USING L-DIM L-X L-Y L-Z WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
+     IF WS-FLUID = 0
+         GOBACK
+     END-IF
+     CALL "FL-OWN-HEIGHT" USING WS-AMOUNT WS-OWN
+     MOVE 0 TO WS-SX WS-SZ WS-ANY-SOLID
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 4
+         COMPUTE WS-NX = L-X + WS-DX(WS-D)
+         COMPUTE WS-NZ = L-Z + WS-DZ(WS-D)
+         CALL "FLUID-CELL" USING L-DIM WS-NX L-Y WS-NZ WS-N-STATE WS-N-FLUID WS-N-KIND WS-N-AMOUNT WS-N-FALLING
+             WS-N-SOLID WS-N-HOLDS
+         MOVE 0 TO WS-AFFECTS WS-SAME WS-H
+         IF WS-N-FLUID = 0 OR WS-N-FLUID = WS-FLUID
+             MOVE 1 TO WS-AFFECTS
+         END-IF
+         IF WS-N-FLUID = WS-FLUID
+             MOVE 1 TO WS-SAME
+             CALL "FL-OWN-HEIGHT" USING WS-N-AMOUNT WS-H
+         END-IF
+*>       The fluid below the side (for a side that holds none).
+         COMPUTE WS-NY = L-Y - 1
+         CALL "FLUID-CELL" USING L-DIM WS-NX WS-NY WS-NZ WS-A-STATE WS-A-FLUID WS-A-KIND WS-A-AMOUNT WS-A-FALLING
+             WS-A-SOLID WS-A-HOLDS
+         MOVE 0 TO WS-BAFFECTS WS-BH
+         IF WS-A-FLUID = 0 OR WS-A-FLUID = WS-FLUID
+             MOVE 1 TO WS-BAFFECTS
+         END-IF
+         IF WS-A-FLUID = WS-FLUID
+             CALL "FL-OWN-HEIGHT" USING WS-A-AMOUNT WS-BH
+         END-IF
+         CALL "FL-FLOW-DELTA" USING WS-AFFECTS WS-H WS-N-SOLID WS-BAFFECTS WS-BH WS-OWN WS-DELTA
+         COMPUTE WS-SX = WS-SX + WS-DX(WS-D) * WS-DELTA
+         COMPUTE WS-SZ = WS-SZ + WS-DZ(WS-D) * WS-DELTA
+         IF WS-FALLING = 1
+*>           isSolidFace of the side and of the cell above it (a horizontal direction, so never the UP case).
+             CALL "FLUID-KEY-IS" USING WS-N-STATE WS-KEY-ICE WS-ICE
+             CALL "FLUID-KEY-IS" USING WS-N-STATE WS-KEY-FROSTED WS-ICE2
+             COMPUTE WS-ICE = FUNCTION MAX(WS-ICE, WS-ICE2)
+             CALL "FL-SOLID-FACE" USING WS-SAME WS-UP WS-ICE WS-N-SOLID WS-OUT
+             IF WS-OUT = 1
+                 MOVE 1 TO WS-ANY-SOLID
+             END-IF
+             COMPUTE WS-NY = L-Y + 1
+             CALL "FLUID-CELL" USING L-DIM WS-NX WS-NY WS-NZ WS-A-STATE WS-A-FLUID WS-A-KIND WS-A-AMOUNT
+                 WS-A-FALLING WS-A-SOLID WS-A-HOLDS
+             MOVE 0 TO WS-SAME
+             IF WS-A-FLUID = WS-FLUID
+                 MOVE 1 TO WS-SAME
+             END-IF
+             CALL "FLUID-KEY-IS" USING WS-A-STATE WS-KEY-ICE WS-ICE
+             CALL "FLUID-KEY-IS" USING WS-A-STATE WS-KEY-FROSTED WS-ICE2
+             COMPUTE WS-ICE = FUNCTION MAX(WS-ICE, WS-ICE2)
+             CALL "FL-SOLID-FACE" USING WS-SAME WS-UP WS-ICE WS-A-SOLID WS-OUT
+             IF WS-OUT = 1
+                 MOVE 1 TO WS-ANY-SOLID
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "FL-FLOW" USING WS-SX WS-SZ WS-FALLING WS-ANY-SOLID L-FX L-FY L-FZ
+     GOBACK.
+ END PROGRAM FLUID-FLOW-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FLUID-FAST-KEY.
+*> USING dimension key (PIC X(32)), flag out (BINARY-LONG): the environment attribute gameplay/fast_lava (29a 2.1): true for minecraft:the_nether, else
+*> false.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(32).
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF L-KEY = "minecraft:the_nether"
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM FLUID-FAST-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FLUID-FAST.
+*> USING dimension row (BINARY-LONG), flag out: gameplay/fast_lava of the dimension (FLUID-FAST-KEY of its key).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-FLAG.
+     CALL "FLUID-FAST-KEY" USING DM-KEY(L-DIM) L-FLAG
+     GOBACK.
+ END PROGRAM FLUID-FAST.
+

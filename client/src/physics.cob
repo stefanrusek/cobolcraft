@@ -78,7 +78,14 @@
  01 WS-FORWARD             BINARY-LONG.
  01 WS-LEFT                BINARY-LONG.
  01 WS-RISE                BINARY-LONG.
+ 01 WS-SNEAK               BINARY-LONG.
  01 WS-JUMP                BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-DRAG                FLOAT-LONG.
+ 01 WS-DEPTH               FLOAT-LONG.
+ 01 WS-RAISED              FLOAT-LONG.
+ 01 WS-RX                  FLOAT-LONG.
+ 01 WS-RZ                  FLOAT-LONG.
  01 WS-SPEED               FLOAT-LONG.
  01 WS-LENGTH              FLOAT-LONG.
  01 WS-YAW                 FLOAT-LONG.
@@ -94,9 +101,10 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO WS-FORWARD WS-LEFT WS-RISE
+     MOVE 0 TO WS-FORWARD WS-LEFT WS-RISE WS-SNEAK
      MOVE PL-JUMP TO WS-JUMP
      MOVE 0 TO PL-JUMP
+     CALL "PHYS-FLUID" USING CLIENT-STATE
      IF SM-SCREEN = SCR-WORLD
          MOVE KB-CODE(KB-JUMP) TO WS-KJ
          MOVE KB-CODE(KB-FORWARD) TO WS-KF
@@ -107,6 +115,7 @@
          COMPUTE WS-LEFT = IN-KEY-DOWN(WS-KL + 1) - IN-KEY-DOWN(WS-KR + 1)
          MOVE KB-CODE(KB-SNEAK) TO WS-KS
          COMPUTE WS-RISE = IN-KEY-DOWN(WS-KJ + 1) - IN-KEY-DOWN(WS-KS + 1)
+         MOVE IN-KEY-DOWN(WS-KS + 1) TO WS-SNEAK
          IF IN-KEY-DOWN(WS-KJ + 1) = 1
              MOVE 1 TO WS-JUMP
          END-IF
@@ -114,7 +123,22 @@
          MOVE 0 TO WS-JUMP
      END-IF
 *>   Horizontal velocity.
+*>   In a fluid (not flying) the input accelerates by 0.02 a tick (13 section 1.3); the speed is kept in PL-VX and PL-VZ.
+     MOVE 0 TO WS-FLUID
+     IF PL-FLYING = 0
+         IF PL-IN-WATER = 1
+             MOVE 1 TO WS-FLUID
+         END-IF
+         IF PL-IN-LAVA = 1
+             MOVE 2 TO WS-FLUID
+         END-IF
+     END-IF
+     IF WS-FLUID = 0
+         MOVE 0 TO PL-VX PL-VZ
+     END-IF
      EVALUATE TRUE
+         WHEN WS-FLUID > 0
+             MOVE 0.02 TO WS-SPEED
          WHEN PL-FLYING = 1
              MOVE 0.5 TO WS-SPEED
          WHEN PL-SPRINTING = 1
@@ -131,11 +155,33 @@
          COMPUTE WS-HZ = (WS-FORWARD * FUNCTION COS(WS-YAW) + WS-LEFT * FUNCTION SIN(WS-YAW))
              * WS-SPEED / WS-LENGTH
      END-IF
+*>   In a fluid: Space adds 0.04 of vertical speed in water deeper than 0.4 or off the ground (a jump from the ground in
+*>   shallower water), in lava the same; sneaking in water takes 0.04 off (13 section 1.3).
+     IF WS-FLUID > 0
+         COMPUTE PL-VX = PL-VX + PL-PUSH-X + WS-HX
+         COMPUTE PL-VZ = PL-VZ + PL-PUSH-Z + WS-HZ
+         MOVE PL-WATER-H TO WS-DEPTH
+         IF WS-FLUID = 2
+             MOVE PL-LAVA-H TO WS-DEPTH
+         END-IF
+         IF WS-JUMP = 1
+             IF WS-DEPTH > 0.4 OR PL-ON-GROUND = 0
+                 COMPUTE PL-VY = PL-VY + 0.04
+             ELSE
+                 MOVE 0.42 TO PL-VY
+             END-IF
+         END-IF
+         IF WS-SNEAK = 1 AND WS-FLUID = 1
+             COMPUTE PL-VY = PL-VY - 0.04
+         END-IF
+         MOVE PL-VX TO WS-HX
+         MOVE PL-VZ TO WS-HZ
+     END-IF
 *>   Vertical velocity and the move along Y.
      EVALUATE TRUE
          WHEN PL-FLYING = 1
              COMPUTE PL-VY = WS-RISE * 0.375
-         WHEN WS-JUMP = 1 AND PL-ON-GROUND = 1
+         WHEN WS-FLUID = 0 AND WS-JUMP = 1 AND PL-ON-GROUND = 1
              MOVE 0.42 TO PL-VY
      END-EVALUATE
      MOVE 2 TO WS-AXIS
@@ -143,7 +189,7 @@
      IF WS-BLOCKED = 1
          MOVE 0 TO PL-VY
      END-IF
-     IF PL-FLYING = 0
+     IF PL-FLYING = 0 AND WS-FLUID = 0
          COMPUTE PL-VY = (PL-VY - 0.08) * 0.98
      END-IF
      MOVE 1 TO WS-AXIS
@@ -151,6 +197,51 @@
      MOVE 3 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-HZ WS-BLOCKED
      COMPUTE PL-COLLIDED = FUNCTION MAX(WS-BX, WS-BLOCKED)
+*>   The fluid's drag (18 section 3.2): water 0.8 on every axis (0.9 horizontally while sprinting) then, falling, 0.005 off the
+*>   vertical speed; lava 0.5 (0.5, 0.8, 0.5 in lava not deeper than 0.4, then the falling adjustment) and 0.02 off the vertical
+*>   speed. A blocked horizontal axis stops; a horizontal collision with the box 0.6 higher free sets the vertical speed to 0.3.
+     IF WS-FLUID > 0
+         IF WS-BX = 1
+             MOVE 0 TO PL-VX
+         END-IF
+         IF WS-BLOCKED = 1
+             MOVE 0 TO PL-VZ
+         END-IF
+         EVALUATE TRUE
+             WHEN WS-FLUID = 1
+                 MOVE 0.8 TO WS-DRAG
+                 IF PL-SPRINTING = 1
+                     MOVE 0.9 TO WS-DRAG
+                 END-IF
+                 COMPUTE PL-VX = PL-VX * WS-DRAG
+                 COMPUTE PL-VZ = PL-VZ * WS-DRAG
+                 COMPUTE PL-VY = PL-VY * 0.8
+                 IF PL-VY <= 0 AND PL-SPRINTING = 0
+                     COMPUTE PL-VY = PL-VY - 0.005
+                 END-IF
+             WHEN PL-LAVA-H > 0.4
+                 COMPUTE PL-VX = PL-VX * 0.5
+                 COMPUTE PL-VZ = PL-VZ * 0.5
+                 COMPUTE PL-VY = PL-VY * 0.5 - 0.02
+             WHEN OTHER
+                 COMPUTE PL-VX = PL-VX * 0.5
+                 COMPUTE PL-VZ = PL-VZ * 0.5
+                 COMPUTE PL-VY = PL-VY * 0.8
+                 IF PL-VY <= 0
+                     COMPUTE PL-VY = PL-VY - 0.005
+                 END-IF
+                 COMPUTE PL-VY = PL-VY - 0.02
+         END-EVALUATE
+         IF PL-COLLIDED = 1
+             COMPUTE WS-RAISED = PL-Y + 0.6
+             COMPUTE WS-RX = PL-X + PL-VX
+             COMPUTE WS-RZ = PL-Z + PL-VZ
+             CALL "PHYS-COLLIDES" USING CLIENT-STATE WS-RX WS-RAISED WS-RZ WS-HIT
+             IF WS-HIT = 0
+                 MOVE 0.3 TO PL-VY
+             END-IF
+         END-IF
+     END-IF
      COMPUTE WS-BELOW = PL-Y - 0.001
      MOVE PL-ON-GROUND TO WS-WAS-GROUND
      CALL "PHYS-COLLIDES" USING CLIENT-STATE PL-X WS-BELOW PL-Z WS-HIT
@@ -294,8 +385,13 @@
              MOVE 1 TO L-SOLID
          WHEN OTHER
              CALL "WORLD-CELL" USING CLIENT-STATE L-X L-Y L-Z WS-STATE WS-SKY WS-BLOCK
+*>           A cell that holds a fluid (water, lava, the always-wet plants) has no collision box (29a section 1.2); a waterlogged
+*>           block (4) keeps its own.
              IF WS-STATE NOT = 0
-                 MOVE 1 TO L-SOLID
+                 CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+                 IF ST-FLUID(WS-STATE + 1) = 0 OR ST-FLUID(WS-STATE + 1) = 4
+                     MOVE 1 TO L-SOLID
+                 END-IF
              END-IF
      END-EVALUATE
      GOBACK.

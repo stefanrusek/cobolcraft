@@ -923,6 +923,25 @@
  END PROGRAM TINT-BIOME-SET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. TINT-BIOME-FOG.
+*> USING biome id, water fog colour (ARGB, 0 = none), water fog end distance multiplier (COMP-2, 0 = none): the attributes
+*> visual/water_fog_color and the multiply argument of visual/water_fog_end_distance of the biome's row (43 section 5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLTINT.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BIOME                BINARY-LONG.
+ 01 L-COLOUR               BINARY-DOUBLE.
+ 01 L-END                  COMP-2.
+ PROCEDURE DIVISION USING L-BIOME L-COLOUR L-END.
+     COMPUTE WS-I = L-BIOME + 1
+     MOVE L-COLOUR TO TB-FOG(WS-I)
+     MOVE L-END TO TB-FOG-END(WS-I)
+     GOBACK.
+ END PROGRAM TINT-BIOME-FOG.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. TINT-HEX6.
 *> USING six hex digits (PIC X(6)), value out (BINARY-DOUBLE): the number they spell.
  DATA DIVISION.

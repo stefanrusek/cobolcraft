@@ -30,6 +30,8 @@
  01 WS-KEY-TABLE REDEFINES WS-KEYS.
     05 WS-KEY-NAME         PIC X(12) OCCURS 7 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-WET                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE "state tables are not built after CL-INIT" TO TL-CASE
@@ -118,6 +120,58 @@
      MOVE "T" TO TL-MODE
      MOVE "grass_block" TO TL-EXPECTED
      MOVE ST-BLOCK-NAME(WS-ID + 1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Fluids (29a section 1.2): water is block states 89 to 104 (level 0 to 15), lava 105 to 120; a block that is always
+*>   wet (kelp) holds water and keeps its own model (3); stone holds none.
+     MOVE "kelp" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+     MOVE SPACES TO TL-OBSERVED
+     STRING ST-FLUID(90) " " ST-LEVEL(93) " " ST-FLUID(106) " " ST-LEVEL(114) " " ST-FLUID(WS-STATE + 1) " "
+         ST-FLUID(2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "state tables the fluid of a state: water source 1, water level 3 is level 03, lava source 2, lava level 8 "
+         & "is 08, kelp holds water with a model (3), air none" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "1 03 2 08 3 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A waterlogged state holds water and keeps its model (4): of the six states of oak_slab (type 3 x waterlogged 2) three.
+     MOVE "oak_slab" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE WS-ROW TO CT-BLOCK-ROW
+     COMPUTE WS-STATE = FUNCTION NUMVAL(CT-BR-FIRST-STATE)
+     COMPUTE WS-N = FUNCTION NUMVAL(CT-BR-STATE-COUNT)
+     MOVE 0 TO WS-WET
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+         IF ST-FLUID(WS-STATE + WS-I + 1) = 4
+             ADD 1 TO WS-WET
+         END-IF
+     END-PERFORM
+     MOVE "state tables a waterlogged state holds water and keeps its model (4): half the states of oak_slab" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE WS-WET TO TL-OBSERVED-N
+     IF WS-N NOT = 6
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A neighbour that makes the water side face take the overlay sprite (29a 10.3: a HalfTransparentBlock or leaves): glass, oak_leaves and
+*>   ice do, stone and air do not.
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         EVALUATE WS-I
+             WHEN 1 MOVE "glass" TO WS-KEY
+             WHEN 2 MOVE "oak_leaves" TO WS-KEY
+             WHEN 3 MOVE "ice" TO WS-KEY
+             WHEN OTHER MOVE "stone" TO WS-KEY
+         END-EVALUATE
+         CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+         CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+         STRING FUNCTION TRIM(TL-OBSERVED) ST-OVERLAY(WS-STATE + 1) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-PERFORM
+     STRING FUNCTION TRIM(TL-OBSERVED) ST-OVERLAY(1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "state tables glass, oak_leaves and ice take the overlay sprite beside water; stone and air do not" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "11100" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CT-OPEN
      STOP RUN.

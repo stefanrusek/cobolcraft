@@ -250,7 +250,10 @@
          WHEN L-PACKET-ID = 43
              CALL "MOVE-SNEAK" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 67
-             CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
+             CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             IF WS-WORN = 0
+                 CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
+             END-IF
              IF WS-WORN = 0
                  CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
              END-IF

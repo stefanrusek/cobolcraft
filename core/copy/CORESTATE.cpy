@@ -120,6 +120,7 @@
        10 PL-FLYING          PIC 9.
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
+       10 PL-AIR             BINARY-LONG.        *> air supply in ticks (18 section 2.5 item 4: 300 at most, drowning at -20; core/src/breath.cob)
 *>     Hunger (standin §11; core/src/hunger.cob): exhaustion (§11.2, not saved), the sprinting flag of
 *>     Player Command, the food item being eaten (0 = not eating) with its hotbar slot and the CW-TICKS
 *>     of the Use Item that started it (§11.6), and the consecutive ticks at food 0 (§10.3).
@@ -258,6 +259,8 @@
        10 EN-TARGET          BINARY-LONG.
        10 EN-TARGET-ID       BINARY-LONG.
        10 EN-COOLDOWN        BINARY-LONG.
+       10 EN-BURN            BINARY-LONG.        *> ticks left on fire (a daylight-burning standard mob: 160, 1 damage every 20)
+       10 EN-KILLER          BINARY-LONG.        *> player row that last hit a mob (0 none): the killed_by_player loot condition (core/src/stdmobs.cob)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

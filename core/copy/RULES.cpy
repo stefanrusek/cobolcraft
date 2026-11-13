@@ -3,6 +3,7 @@
 *> Maximum health (the max_health attribute, 17 section 4.10): 20 for new and respawned players.
  78 RULE-MAX-HEALTH           VALUE 20.
 *> Maximum food level (17 section 4.9): 20; a new player has food 20 and saturation 5.0.
+ 78 RULE-MAX-AIR              VALUE 300.
  78 RULE-MAX-FOOD             VALUE 20.
  78 RULE-START-SATURATION     VALUE 5.
 *> Day length (shared rule of both world types, docs/protocol/33 §3, 12 §3.2c): the time of day runs 0..23999,
@@ -44,7 +45,10 @@
  78 CAUSE-STARVATION          VALUE 4.
  78 CAUSE-HAIL                VALUE 5.
  78 CAUSE-COMMAND             VALUE 6.
- 78 CAUSE-COUNT               VALUE 6.
+*> CAUSE-MOB (002-lane-mobs): a standard mob's melee hit on a player (damage type mob_attack, armor applies, 17 section 4.12).
+ 78 CAUSE-MOB                VALUE 7.
+ 78 CAUSE-DROWN               VALUE 8.
+ 78 CAUSE-COUNT               VALUE 8.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).
@@ -67,8 +71,14 @@
     05 FILLER BINARY-LONG VALUE 0.              *> command: cobolcraft:generic
     05 FILLER BINARY-LONG VALUE 0.
     05 FILLER BINARY-LONG VALUE 0.             *> exhaustion
+    05 FILLER BINARY-LONG VALUE 28.             *> mob: mob_attack (the standard set looks the id up by key: DAMAGE-TYPE-ID)
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 100.           *> exhaustion
+    05 FILLER BINARY-LONG VALUE 6.              *> drown: minecraft:drown (the sixth of the 51 types sorted by path, 17 4.12)
+    05 FILLER BINARY-LONG VALUE 2.
+    05 FILLER BINARY-LONG VALUE 0.             *> exhaustion
  01 RULE-CAUSE-TABLE REDEFINES RULE-CAUSE-DATA.
-    05 RULE-CAUSE OCCURS 6 TIMES.
+    05 RULE-CAUSE OCCURS 8 TIMES.
        10 RULE-CAUSE-TYPE    BINARY-LONG.
        10 RULE-CAUSE-AMOUNT  BINARY-LONG.
        10 RULE-CAUSE-EXHAUST BINARY-LONG.
