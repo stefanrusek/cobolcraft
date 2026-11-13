@@ -523,3 +523,437 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-KILL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-FLOAT.
+*> USING value (FLOAT-LONG), text out (PIC X(32)), length out: the decimal text of the value with its shortest exact form of at most six decimals
+*> and at least one ("4.0", "1.5", "-12.25"), the way the messages of the entity commands show a float.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SCALED              BINARY-DOUBLE.
+ 01 WS-INT                 BINARY-DOUBLE.
+ 01 WS-FRAC                BINARY-LONG.
+ 01 WS-FRAC-TEXT           PIC 9(6).
+ 01 WS-FLEN                BINARY-LONG.
+ 01 WS-INT-EDIT            PIC Z(17)9.
+ 01 WS-INT-TEXT            PIC X(18).
+ 01 WS-ILEN                BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-ABS                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-VALUE                FLOAT-LONG.
+ 01 L-TEXT                 PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALUE L-TEXT L-LENGTH.
+     MOVE FUNCTION ABS(L-VALUE) TO WS-ABS
+     COMPUTE WS-SCALED ROUNDED = WS-ABS * 1000000
+     DIVIDE WS-SCALED BY 1000000 GIVING WS-INT REMAINDER WS-FRAC
+     MOVE WS-FRAC TO WS-FRAC-TEXT
+     MOVE 6 TO WS-FLEN
+     PERFORM UNTIL WS-FLEN = 1 OR WS-FRAC-TEXT(WS-FLEN:1) NOT = "0"
+         SUBTRACT 1 FROM WS-FLEN
+     END-PERFORM
+     MOVE WS-INT TO WS-INT-EDIT
+     MOVE FUNCTION TRIM(WS-INT-EDIT) TO WS-INT-TEXT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-INT-EDIT)) TO WS-ILEN
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-POS
+     IF L-VALUE < 0 AND WS-SCALED > 0
+         MOVE "-" TO L-TEXT(1:1)
+         MOVE 2 TO WS-POS
+     END-IF
+     MOVE WS-INT-TEXT(1:WS-ILEN) TO L-TEXT(WS-POS:WS-ILEN)
+     ADD WS-ILEN TO WS-POS
+     MOVE "." TO L-TEXT(WS-POS:1)
+     ADD 1 TO WS-POS
+     MOVE WS-FRAC-TEXT(1:WS-FLEN) TO L-TEXT(WS-POS:WS-FLEN)
+     ADD WS-FLEN TO WS-POS
+     COMPUTE L-LENGTH = WS-POS - 1
+     GOBACK.
+ END PROGRAM CXB-FLOAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-SHOWN.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), name out (PIC X(48)), length out: the display name of the entity in the
+*> messages: a player's name, any other entity's entity type key.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-NAME                 PIC X(48).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-NAME L-LENGTH.
+     MOVE SPACES TO L-NAME
+     IF L-ROW > 0
+         MOVE PL-NAME(L-ROW) TO L-NAME
+         MOVE PL-NAME-LENGTH(L-ROW) TO L-LENGTH
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         COMPUTE WS-ROW = EN-TYPE(WS-ENTITY) + 1
+         MOVE ET-KEY(WS-ROW) TO L-NAME
+         MOVE ET-KEY-LENGTH(WS-ROW) TO L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-SHOWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DAMAGE.
+*> damage <target> <amount> [<damageType> [at <location> | by <entity> [from <cause>]]] (16 §5.7, level 2): the target takes the amount (a player
+*> by HEALTH-HURT in thousandths, a mob by HEALTH-MOB-DAMAGE in whole points) with the cause of the damage type (cobolcraft:hail and the standard
+*> keys fall, mob_attack, player_attack and starve their own cause, any other minecraft: type CAUSE-COMMAND, which stands for generic; another
+*> namespace is argument.resource.not_found [id, minecraft:damage_type]); by and from name the attacker (a player row or a mob). A target that
+*> ignores the damage (creative, inside the hurt window, dead, a ground item) is commands.damage.invulnerable; commands.damage.success
+*> [amount, target] is broadcast; the result is 1. BLOCKED: the position of at is not kept (no positional damage sources).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY RULES.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-AMOUNT         PIC X(32) VALUE "amount".
+ 01 WS-NAME-TYPE           PIC X(32) VALUE "damageType".
+ 01 WS-NAME-BY             PIC X(32) VALUE "entity".
+ 01 WS-NAME-FROM           PIC X(32) VALUE "cause".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-BY-ROWS.
+    05 WS-BY-COUNT          BINARY-LONG.
+    05 WS-BY-ROW            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-FROM                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-ATTACKER            BINARY-LONG.
+ 01 WS-SOURCE              BINARY-LONG.
+ 01 WS-MILLI               BINARY-LONG.
+ 01 WS-WHOLE               BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-AMOUNT              FLOAT-LONG.
+ 01 WS-ID                  PIC X(64).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-HAS-COLON           BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The cause of the damage type argument in WS-CAUSE; another namespace than minecraft: or cobolcraft:hail raises the failure.
+ FIND-CAUSE.
+     MOVE CAUSE-COMMAND TO WS-CAUSE
+     COMPUTE WS-ID-LENGTH = BA-END(WS-TYPE) - BA-START(WS-TYPE)
+     MOVE SPACES TO WS-ID
+     MOVE 0 TO WS-HAS-COLON
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-ID-LENGTH
+         IF BR-R-LINE(BA-START(WS-TYPE) + WS-I:1) = ":"
+             MOVE 1 TO WS-HAS-COLON
+         END-IF
+     END-PERFORM
+     IF WS-HAS-COLON = 1
+         MOVE BR-R-LINE(BA-START(WS-TYPE) + 1:WS-ID-LENGTH) TO WS-ID
+     ELSE
+         STRING "minecraft:" BR-R-LINE(BA-START(WS-TYPE) + 1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-ID
+         ADD 10 TO WS-ID-LENGTH
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-ID = "cobolcraft:hail"
+             MOVE CAUSE-HAIL TO WS-CAUSE
+         WHEN WS-ID = "minecraft:fall"
+             MOVE CAUSE-FALL TO WS-CAUSE
+         WHEN WS-ID = "minecraft:mob_attack"
+             MOVE CAUSE-ABEND TO WS-CAUSE
+         WHEN WS-ID = "minecraft:player_attack"
+             MOVE CAUSE-PLAYER TO WS-CAUSE
+         WHEN WS-ID = "minecraft:starve"
+             MOVE CAUSE-STARVATION TO WS-CAUSE
+         WHEN WS-ID(1:10) = "minecraft:"
+             CONTINUE
+         WHEN OTHER
+             MOVE "argument.resource.not_found" TO WS-KEY
+             MOVE 2 TO WS-N-ARGS
+             MOVE SPACES TO WS-A1 WS-A2
+             MOVE WS-ID TO WS-A1
+             MOVE WS-ID-LENGTH TO WS-L1
+             MOVE "minecraft:damage_type" TO WS-A2
+             MOVE 21 TO WS-L2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+     END-EVALUATE.
+
+*> The attacker of the by (and from) entity in WS-ATTACKER (a player row) and WS-SOURCE (its entity id), 0 when none.
+ FIND-ATTACKER.
+     MOVE 0 TO WS-ATTACKER WS-SOURCE
+     CALL "BX-FIND" USING WS-NAME-BY WS-BY
+     IF WS-BY > 0
+         CALL "BX-RESOLVE" USING WS-BY WS-BY-ROWS
+         CALL "BX-FIND" USING WS-NAME-FROM WS-FROM
+         IF WS-FROM > 0 AND BR-R-FAILED = 0
+             CALL "BX-RESOLVE" USING WS-FROM WS-BY-ROWS
+         END-IF
+         IF BR-R-FAILED = 0
+             MOVE WS-BY-ROW(1) TO WS-ROW
+             IF WS-ROW > 0
+                 MOVE WS-ROW TO WS-ATTACKER
+                 MOVE PL-ENTITY-ID(WS-ROW) TO WS-SOURCE
+             ELSE
+                 COMPUTE WS-ENTITY = 0 - WS-ROW
+                 MOVE EN-ID(WS-ENTITY) TO WS-SOURCE
+             END-IF
+         END-IF
+     END-IF.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     IF BR-R-FAILED = 0
+         MOVE CAUSE-COMMAND TO WS-CAUSE
+         CALL "BX-FIND" USING WS-NAME-TYPE WS-TYPE
+         IF WS-TYPE > 0
+             PERFORM FIND-CAUSE
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         PERFORM FIND-ATTACKER
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "BX-FIND" USING WS-NAME-AMOUNT WS-INDEX
+         MOVE BA-DVAL(WS-INDEX) TO WS-AMOUNT
+         COMPUTE WS-MILLI = WS-AMOUNT * 1000
+         COMPUTE WS-WHOLE = WS-AMOUNT
+         MOVE BX-ROW(1) TO WS-ROW
+         MOVE 0 TO WS-RESULT
+         IF WS-ROW > 0
+             CALL "HEALTH-HURT" USING WS-ROW WS-MILLI WS-CAUSE WS-SOURCE WS-ATTACKER WS-RESULT
+         ELSE
+             COMPUTE WS-ENTITY = 0 - WS-ROW
+             IF EN-TYPE(WS-ENTITY) NOT = CR-LOOSE-ITEM
+                 CALL "HEALTH-MOB-DAMAGE" USING WS-ENTITY WS-WHOLE WS-CAUSE WS-ATTACKER
+                 MOVE 1 TO WS-RESULT
+             END-IF
+         END-IF
+         IF WS-RESULT = 0
+             MOVE "commands.damage.invulnerable" TO WS-KEY
+             MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         ELSE
+             CALL "CXB-FLOAT" USING WS-AMOUNT WS-TEXT WS-TEXT-LENGTH
+             CALL "CXB-SHOWN" USING WS-ROW WS-SHOWN WS-SHOWN-LENGTH
+             MOVE "commands.damage.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 1 TO BR-R-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-DAMAGE.
+*> The forms of damage (16 §5.7).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-DAMAGE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "damage <target:entity> <amount:float:0>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc> at <location:vec3>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc> by <entity:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc> by <entity:entity> from <cause:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-PLACE.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension row (BINARY-LONG), x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT): where the
+*> entity stands (feet) and which way it faces.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-YAW L-PITCH.
+     IF L-ROW > 0
+         MOVE PL-DIM(L-ROW) TO L-DIM
+         MOVE PL-X(L-ROW) TO L-X
+         MOVE PL-Y(L-ROW) TO L-Y
+         MOVE PL-Z(L-ROW) TO L-Z
+         MOVE PL-YAW(L-ROW) TO L-YAW
+         MOVE PL-PITCH(L-ROW) TO L-PITCH
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         MOVE EN-DIM(WS-ENTITY) TO L-DIM
+         MOVE EN-X(WS-ENTITY) TO L-X
+         MOVE EN-Y(WS-ENTITY) TO L-Y
+         MOVE EN-Z(WS-ENTITY) TO L-Z
+         MOVE EN-YAW(WS-ENTITY) TO L-YAW
+         MOVE EN-PITCH(WS-ENTITY) TO L-PITCH
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-ROTATE.
+*> rotate <target> <yaw pitch> | facing <point> | facing entity <entity> [feet|eyes] (16 §5.5, level 2): the entity's rotation becomes the angles (a
+*> part with ~ is relative to its own; yaw wrapped to -180..180, pitch clamped to -90..90) or the look from its feet at the point or at the other
+*> entity's feet (eyes: 1.62 higher). A player is sent Player Position (CMD-MOVE-PLAYER, same place), a mob keeps the angles on its tracker row
+*> (BLOCKED: no entity head/rotation packet for mobs yet). commands.rotate.success [target] is broadcast; the result is 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-ROTATION       PIC X(32) VALUE "rotation".
+ 01 WS-NAME-POINT          PIC X(32) VALUE "facingLocation".
+ 01 WS-NAME-FACING         PIC X(32) VALUE "facingEntity".
+ 01 WS-NAME-ANCHOR         PIC X(32) VALUE "facingAnchor".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-FACE-ROWS.
+    05 WS-FACE-COUNT        BINARY-LONG.
+    05 WS-FACE-ROW          BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROT                 BINARY-LONG.
+ 01 WS-POINT               BINARY-LONG.
+ 01 WS-FACING              BINARY-LONG.
+ 01 WS-ANCHOR              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-W                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-FDIM                BINARY-LONG.
+ 01 WS-FYAW                FLOAT-SHORT.
+ 01 WS-FPITCH              FLOAT-SHORT.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     CALL "BX-FIND" USING WS-NAME-ROTATION WS-ROT
+     CALL "BX-FIND" USING WS-NAME-POINT WS-POINT
+     CALL "BX-FIND" USING WS-NAME-FACING WS-FACING
+     CALL "BX-FIND" USING WS-NAME-ANCHOR WS-ANCHOR
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     IF BR-R-FAILED = 0 AND WS-FACING > 0
+         CALL "BX-RESOLVE" USING WS-FACING WS-FACE-ROWS
+         IF BR-R-FAILED = 0
+             CALL "CXB-PLACE" USING WS-FACE-ROW(1) WS-FDIM WS-PX WS-PY WS-PZ WS-FYAW WS-FPITCH
+             IF WS-ANCHOR > 0 AND BA-IVAL(WS-ANCHOR) = 1
+                 ADD 1.62 TO WS-PY
+             END-IF
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE BX-ROW(1) TO WS-ROW
+         CALL "CXB-PLACE" USING WS-ROW WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
+         IF WS-POINT > 0
+             CALL "BX-POSITION" USING WS-POINT WS-PX WS-PY WS-PZ
+         END-IF
+         IF WS-ROT > 0
+             MOVE BA-NUM(WS-ROT, 1) TO WS-W
+             IF BA-KIND(WS-ROT, 1) = 1
+                 ADD WS-YAW TO WS-W
+             END-IF
+             COMPUTE WS-YAW = FUNCTION MOD(WS-W + 180, 360) - 180
+             MOVE BA-NUM(WS-ROT, 2) TO WS-W
+             IF BA-KIND(WS-ROT, 2) = 1
+                 ADD WS-PITCH TO WS-W
+             END-IF
+             IF WS-W < -90
+                 MOVE -90 TO WS-W
+             END-IF
+             IF WS-W > 90
+                 MOVE 90 TO WS-W
+             END-IF
+             MOVE WS-W TO WS-PITCH
+         ELSE
+             CALL "BX-LOOK" USING WS-X WS-Y WS-Z WS-PX WS-PY WS-PZ WS-YAW WS-PITCH
+         END-IF
+         IF WS-ROW > 0
+             MOVE WS-YAW TO PL-YAW(WS-ROW)
+             MOVE WS-PITCH TO PL-PITCH(WS-ROW)
+             CALL "CMD-MOVE-PLAYER" USING WS-ROW WS-DIM WS-X WS-Y WS-Z
+         ELSE
+             COMPUTE WS-ENTITY = 0 - WS-ROW
+             MOVE WS-YAW TO EN-YAW(WS-ENTITY)
+             MOVE WS-PITCH TO EN-PITCH(WS-ENTITY)
+         END-IF
+         CALL "CXB-SHOWN" USING WS-ROW WS-SHOWN WS-SHOWN-LENGTH
+         MOVE "commands.rotate.success" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-ROTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-ROTATE.
+*> The forms of rotate (16 §5.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-ROTATE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "rotate <target:entity> <rotation:rotation>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "rotate <target:entity> facing <facingLocation:vec3>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "rotate <target:entity> facing entity <facingEntity:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "rotate <target:entity> facing entity <facingEntity:entity> <facingAnchor:anchor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-ROTATE.

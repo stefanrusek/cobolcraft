@@ -166,6 +166,10 @@
          WHEN BC-SAVE-ON
          WHEN BC-SAVE-OFF
              CALL "CX-SAVE-SWITCH"
+         WHEN BC-DAMAGE
+             CALL "CX-DAMAGE"
+         WHEN BC-ROTATE
+             CALL "CX-ROTATE"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE
