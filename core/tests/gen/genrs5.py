@@ -24,7 +24,7 @@ def rnd(x): return int(math.floor(abs(x)+0.5))*(1 if x>=0 else -1)
 def sc(x,s): return rnd(x*s)
 OPP={1:3,2:4,3:1,4:2,5:6,6:5}
 STEP={1:(0,0,-1),2:(1,0,0),3:(0,0,1),4:(-1,0,0),5:(0,1,0),6:(0,-1,0)}
-NM=' 01 WS-NM                PIC X(32).\n'
+NM=' 01 WS-NM                PIC X(40).\n'
 def G5(n,subj,tasks,desc):
     g=GG(n,subj,tasks,desc); g.extra=NM; return g
 # ===== 0
@@ -176,7 +176,7 @@ def tstr(x,y,z,face):
     m={5:max(fx,fz),6:max(fx,fz),1:max(fx,fy),3:max(fx,fy),2:max(fy,fz),4:max(fy,fz)}[face]
     return max(1,int(math.ceil(15*max(0.0,min(1.0,(0.5-m)/0.5)))))
 g=G5(6,'Target block','T0774','strength from the hit position, the hit handler, release and placement.')
-tr=[(10.5,64.5,10.5,5),(10.75,64.0,10.5,5),(10.9,64.0,10.5,5),(10.5,64.5,10.0,1),(10.5,64.9,10.0,3),(10.0,64.5,10.5,2),(10.0,64.5,10.25,4),(10.0334,64.0,10.5,5),(10.04,64.0,10.5,5),(10.0,64.0,10.5,6),(10.01,64.5,10.99,5),(-3.25,70.5,-4.5,1)]
+tr=[(10.5,64.5,10.5,5),(10.75,64.0,10.5,5),(10.90625,64.0,10.5,5),(10.5,64.5,10.0,1),(10.5,64.90625,10.0,3),(10.0,64.5,10.5,2),(10.0,64.5,10.25,4),(10.5334,64.0,10.5,5),(10.0334,64.0,10.5,5),(10.04,64.0,10.5,5),(10.46875,64.0,10.5,5),(10.0,64.0,10.5,6),(10.01,64.5,10.99,5),(-3.25,70.5,-4.5,1)]
 run(g,'strength (6.1, V8): m is the larger deviation from the face centre on the two axes other than the face axis; strength = max(1, ceil(15 * (0.5 - m) / 0.5)); the centre gives 15, m 0.25 gives 8, the edge gives 1 (hit x, y, z, face)',"RS2-TARGET-STRENGTH","fffi",1,tr,tstr)
 def thit(arrow,pending,st,owner):
     dur=20 if arrow else 8
@@ -216,7 +216,8 @@ W(g,7)
 # ===== 8
 INST=[('harp','block.note_block.harp',1),('basedrum','block.note_block.basedrum',1),('snare','block.note_block.snare',1),('hat','block.note_block.hat',1),('bass','block.note_block.bass',1),('flute','block.note_block.flute',1),('bell','block.note_block.bell',1),('guitar','block.note_block.guitar',1),('chime','block.note_block.chime',1),('xylophone','block.note_block.xylophone',1),('iron_xylophone','block.note_block.iron_xylophone',1),('cow_bell','block.note_block.cow_bell',1),('didgeridoo','block.note_block.didgeridoo',1),('bit','block.note_block.bit',1),('banjo','block.note_block.banjo',1),('pling','block.note_block.pling',1),('trumpet','block.note_block.trumpet',1),('trumpet_exposed','block.note_block.trumpet_exposed',1),('trumpet_oxidized','block.note_block.trumpet_oxidized',1),('trumpet_weathered','block.note_block.trumpet_weathered',1),('zombie','block.note_block.imitate.zombie',2),('skeleton','block.note_block.imitate.skeleton',2),('creeper','block.note_block.imitate.creeper',2),('dragon','block.note_block.imitate.ender_dragon',2),('wither_skeleton','block.note_block.imitate.wither_skeleton',2),('piglin','block.note_block.imitate.piglin',2),('custom_head','ui.button.click',3)]
 g=G5(8,'Note block','T0778','the instrument table and predicates, choosing the instrument, powering, playing, tuning, the block event, the pitch table and the clamp.')
-g.case('instruments (8.1, V10): 27 constants in enum order with name and sound; trumpet_oxidized precedes trumpet_weathered; custom_head plays the placeholder ui.button.click',[("0","MOVE SPACES TO WS-T1 WS-T2\nCALL \"RS2-NOTE-NAME\" USING WS-I(1) WS-T1 WS-T2",'TEXT')]*0+[("%d"%n,"MOVE SPACES TO WS-T1 WS-T2\nCALL \"RS2-NOTE-NAME\" USING WS-I(1) WS-T1 WS-T2",'TEXT') for n in range(27)]," ".join(i[0]+"|"+i[1] for i in INST))
+for lo,hi in ((0,9),(9,18),(18,27)):
+    g.case('instruments (8.1, V10): the %d to %d of the 27 constants in enum order with name and sound; trumpet_oxidized precedes trumpet_weathered; custom_head plays the placeholder ui.button.click'%(lo,hi-1),[("%d"%n,"MOVE SPACES TO WS-T1 WS-T2\nCALL \"RS2-NOTE-NAME\" USING WS-I(1) WS-T1 WS-T2",'TEXT') for n in range(lo,hi)]," ".join(i[0]+"|"+i[1] for i in INST[lo:hi]))
 run(g,'predicates (8.1): type 1 base block, 2 mob head, 3 custom; isTunable is base block, hasCustomSound is custom, worksAboveNoteBlock is anything but base block (instrument number: type, tunable, custom sound, works above)',"RS2-NOTE-TYPE","i",4,[(n,) for n in range(27)],lambda n:(INST[n][2],int(INST[n][2]==1),int(INST[n][2]==3),int(INST[n][2]!=1)))
 run(g,'counts (V10): 20 base block instruments, 6 mob heads, 1 custom (type, count)',"RS2-NOTE-COUNT","i",1,[(1,),(2,),(3,),(0,)],lambda t:{1:20,2:6,3:1,0:27}[t])
 def choose(a,b):

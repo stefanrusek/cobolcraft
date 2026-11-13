@@ -86,7 +86,7 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "acceptance US12 30-5§1 The face-attached base: connected direction (1): floor gives up, ceiling down, wall the facing (face 0 floor 1 wall 2 ceiling)" TO TL-CASE

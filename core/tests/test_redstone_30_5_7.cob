@@ -86,7 +86,7 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "acceptance US12 30-5§7 Lightning rod: signals (7): ownSignal 15 when powered; getDirectSignal 15 only towards the facing (powered, direction, facing)" TO TL-CASE

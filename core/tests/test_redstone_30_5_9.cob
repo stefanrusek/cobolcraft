@@ -86,7 +86,7 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "acceptance US12 30-5§9 Jukebox signal output: ownSignal (9): 15 when the block entity exists and its song player is playing, whatever has_record says; after the song ends 0 (block entity," TO TL-CASE

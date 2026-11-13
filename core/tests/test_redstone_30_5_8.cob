@@ -86,10 +86,10 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
-     MOVE "acceptance US12 30-5§8 Note block: instruments (8.1, V10): 27 constants in enum order with name and sound; trumpet_oxidized precedes trumpet_weathered; custom_head plays the placeholder" TO TL-CASE
+     MOVE "acceptance US12 30-5§8 Note block: instruments (8.1, V10): the 0 to 8 of the 27 constants in enum order with name and sound; trumpet_oxidized precedes trumpet_weathered; custom_head plays the" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "0" TO WS-IN
      PERFORM LOAD-IN
@@ -136,6 +136,10 @@
      MOVE SPACES TO WS-T1 WS-T2
      CALL "RS2-NOTE-NAME" USING WS-I1 WS-T1 WS-T2
      PERFORM ADD-TEXT
+     MOVE "harp|block.note_block.harp basedrum|block.note_block.basedrum snare|block.note_block.snare hat|block.note_block.hat bass|block.note_block.bass flute|block.note_block.flute bell|block.note_block.bell guitar|block.note_block.guitar chime|block.note_block.chime" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-5§8 Note block: instruments (8.1, V10): the 9 to 17 of the 27 constants in enum order with name and sound; trumpet_oxidized precedes trumpet_weathered; custom_head plays the" TO TL-CASE
+     PERFORM BEGIN-CASE
      MOVE "9" TO WS-IN
      PERFORM LOAD-IN
      MOVE SPACES TO WS-T1 WS-T2
@@ -181,6 +185,10 @@
      MOVE SPACES TO WS-T1 WS-T2
      CALL "RS2-NOTE-NAME" USING WS-I1 WS-T1 WS-T2
      PERFORM ADD-TEXT
+     MOVE "xylophone|block.note_block.xylophone iron_xylophone|block.note_block.iron_xylophone cow_bell|block.note_block.cow_bell didgeridoo|block.note_block.didgeridoo bit|block.note_block.bit banjo|block.note_block.banjo pling|block.note_block.pling trumpet|block.note_block.trumpet trumpet_exposed|block.note_block.trumpet_exposed" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-5§8 Note block: instruments (8.1, V10): the 18 to 26 of the 27 constants in enum order with name and sound; trumpet_oxidized precedes trumpet_weathered; custom_head plays the" TO TL-CASE
+     PERFORM BEGIN-CASE
      MOVE "18" TO WS-IN
      PERFORM LOAD-IN
      MOVE SPACES TO WS-T1 WS-T2
@@ -226,7 +234,7 @@
      MOVE SPACES TO WS-T1 WS-T2
      CALL "RS2-NOTE-NAME" USING WS-I1 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "harp|block.note_block.harp basedrum|block.note_block.basedrum snare|block.note_block.snare hat|block.note_block.hat bass|block.note_block.bass flute|block.note_block.flute bell|block.note_block.bell guitar|block.note_block.guitar chime|block.note_block.chime xylophone|block.note_block.xylophone iron_xylophone|block.note_block.iron_xylophone cow_bell|block.note_block.cow_bell didgeridoo|block.note_block.didgeridoo bit|block.note_block.bit banjo|block.note_block.banjo pling|block.note_block.pling trumpet|block.note_block.trumpet trumpet_exposed|block.note_block.trumpet_exposed trumpet_oxidized|block.note_block.trumpet_oxidized trumpet_weathered|block.note_block.trumpet_weathered zombie|block.note_block.imitate.zombie skeleton|block.note_block.imitate.skeleton creeper|block.note_block.imitate.creeper dragon|block.note_block.imitate.ender_dragon wither_skeleton|block.note_block.imitate.wither_skeleton piglin|block.note_block.imitate.piglin custom_head|ui.button.click" TO TL-EXPECTED
+     MOVE "trumpet_oxidized|block.note_block.trumpet_oxidized trumpet_weathered|block.note_block.trumpet_weathered zombie|block.note_block.imitate.zombie skeleton|block.note_block.imitate.skeleton creeper|block.note_block.imitate.creeper dragon|block.note_block.imitate.ender_dragon wither_skeleton|block.note_block.imitate.wither_skeleton piglin|block.note_block.imitate.piglin custom_head|ui.button.click" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 30-5§8 Note block: predicates (8.1): type 1 base block, 2 mob head, 3 custom; isTunable is base block, hasCustomSound is custom, worksAboveNoteBlock is anything but base block" TO TL-CASE
      PERFORM BEGIN-CASE

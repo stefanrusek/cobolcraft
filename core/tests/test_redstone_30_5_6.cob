@@ -86,7 +86,7 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "acceptance US12 30-5§6 Target block: strength (6.1, V8): m is the larger deviation from the face centre on the two axes other than the face axis; strength = max(1, ceil(15 * (0.5 - m) / 0.5));" TO TL-CASE
@@ -101,7 +101,7 @@
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
      PERFORM ADD-N
-     MOVE "10.9 64.0 10.5 5" TO WS-IN
+     MOVE "10.90625 64.0 10.5 5" TO WS-IN
      PERFORM LOAD-IN
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
@@ -111,7 +111,7 @@
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
      PERFORM ADD-N
-     MOVE "10.5 64.9 10.0 3" TO WS-IN
+     MOVE "10.5 64.90625 10.0 3" TO WS-IN
      PERFORM LOAD-IN
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
@@ -126,12 +126,22 @@
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
      PERFORM ADD-N
+     MOVE "10.5334 64.0 10.5 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
      MOVE "10.0334 64.0 10.5 5" TO WS-IN
      PERFORM LOAD-IN
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
      PERFORM ADD-N
      MOVE "10.04 64.0 10.5 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "10.46875 64.0 10.5 5" TO WS-IN
      PERFORM LOAD-IN
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
@@ -151,7 +161,7 @@
      CALL "RS2-TARGET-STRENGTH" USING WS-FX1 WS-FX2 WS-FX3 WS-I4 WS-R1
      MOVE 1 TO WS-N
      PERFORM ADD-N
-     MOVE "15 8 3 15 3 15 8 2 2 1 1 8" TO TL-EXPECTED
+     MOVE "15 8 3 15 3 15 8 14 2 2 15 1 1 8" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 30-5§6 Target block: hit (6): duration 20 for an arrow, 8 for other projectiles; without a pending tick the strength is written and a tick scheduled, with one nothing changes;" TO TL-CASE
      PERFORM BEGIN-CASE

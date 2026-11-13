@@ -86,7 +86,7 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "acceptance US12 30-5§4 Pressure plates: shape (4.1): the outline is 1 high unpressed and 0.5 high pressed (x 10); the touch box is box(1, 0, 1)-(15, 4, 15)" TO TL-CASE

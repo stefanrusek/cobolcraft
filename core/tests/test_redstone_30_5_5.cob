@@ -86,7 +86,7 @@
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).
- 01 WS-NM                PIC X(32).
+ 01 WS-NM                PIC X(40).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "acceptance US12 30-5§5 Daylight detector: ticker (5): only on a server level of a dimension with sky light, and only when game time mod 20 is 0 (server, has sky light, game time)" TO TL-CASE
