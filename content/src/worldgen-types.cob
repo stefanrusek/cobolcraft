@@ -7,8 +7,8 @@
 *>   D R K Q J L V   a child node of the domain density function, surface rule, surface condition, ore rule test, int
 *>                   provider, float provider, height provider (WGN-CHILD); a string is a reference to the element of
 *>                   that id, a bare number a constant (domains 1, 5, 6), a height provider may be an anchor object
-*>   S U W Y         an array of surface rules, ore rule tests, ore targets, spawn boxes (WGN-CHILD: the first, the others
-*>                   follow WGN-NEXT)
+*>   S U W Y Z       an array of surface rules, ore rule tests, ore targets, spawn boxes, density functions (WGN-CHILD: the
+*>                   first, the others follow WGN-NEXT)
 *>   M               an array of numbers (WGN-CHILD: the first constant node; WGN-INT the count)
 *>   F               the placed features of a biome: an array per decoration step (domain 14 nodes in WGN-CHILD / WGN-NEXT)
 *>   N G             a number, a pair of numbers (WGN-NUM); a G field may name a second spelling of its member after "="
@@ -132,7 +132,7 @@
     05 FILLER PIC X(640) VALUE " ".
     05 FILLER PIC 99 VALUE 01.
     05 FILLER PIC X(32) VALUE "interval_select".
-    05 FILLER PIC X(640) VALUE " ".
+    05 FILLER PIC X(640) VALUE "D input;Z thresholds;Z functions".
     05 FILLER PIC 99 VALUE 01.
     05 FILLER PIC X(32) VALUE "slice".
     05 FILLER PIC X(640) VALUE " ".

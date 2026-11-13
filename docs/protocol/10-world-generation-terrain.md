@@ -334,7 +334,7 @@ Fields in `monospace` are JSON keys. All results are floats; `l` and `r` are the
 | `interpolated`, `cache` | see §4.1 | |
 | `blend_alpha`, `blend_offset`, `blend_density`, `beardifier` | | see §4.1 |
 
-Types that exist in the artifact but have no use in the overworld terrain data read: `interval_select`, `slice`, `pow`, `end_outer_islands`, `distance_to_point` (see Open questions).
+`interval_select` (input, thresholds, functions) is used by the cave densities inside `final_density`: it evaluates the input and then only the function at the first threshold strictly above it (the last function when none is), see [11](11-world-generation-caves-and-ores.md) section 2.3. Types that exist in the artifact but have no use in the overworld terrain data read: `slice`, `pow`, `end_outer_islands`, `distance_to_point` (see Open questions).
 
 `noise` nodes named `shift_x` and `shift_z` are the data functions `minecraft:shift_x = cache(shift_a(noise "minecraft:offset"))` and `minecraft:shift_z = cache(shift_b(noise "minecraft:offset"))`. `minecraft:y` is the gradient function from y = -4064 (value -4064) to y = 4062 (value 4062) on the y axis.
 

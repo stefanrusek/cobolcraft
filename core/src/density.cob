@@ -8,7 +8,7 @@
 *> 27 shift_b, 28 shift, 29 spline, 30 old_blended_noise, 31 find_top_surface, 32 interpolated, 33 blend_alpha,
 *> 34 blend_offset, 35 beardifier; a node of type 0 is a reference to the function of the id in WGN-TEXT-1. A fresh world
 *> has no blending data (10 section 4.1): blend_alpha 1, blend_offset 0, blend_density the identity, beardifier 0.
-*> The types after 35 (the overworld terrain data do not use them) evaluate to 0 here.
+*> 36 interval_select; the types after 36 (the overworld terrain data do not use them) evaluate to 0 here.
 *>
 *> Entry points:
 *>   DENSITY-SETUP USING seed (BINARY-DOUBLE UNSIGNED): the world seed; empties the noise store and the names
@@ -851,6 +851,23 @@
              CALL "DENSITY-INTERPOLATED" USING L-NODE L-X L-Y L-Z L-RESULT
          WHEN 33
              MOVE WS-ONE TO L-RESULT
+         WHEN 36
+*>           interval_select (11 section 2.3): the input, then only the function at the first threshold strictly above it, the last
+*>           function when the input is at or above every threshold (WGN-CHILD 1 input, 2 the thresholds, 3 the functions: chains)
+             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             MOVE WGN-CHILD(L-NODE, 2) TO LS-ROOT
+             MOVE WGN-CHILD(L-NODE, 3) TO LS-COORD
+             PERFORM UNTIL LS-ROOT = 0
+                 IF WGN-NUM(LS-ROOT, 1) > LS-A
+                     MOVE 0 TO LS-ROOT
+                 ELSE
+                     MOVE WGN-NEXT(LS-ROOT) TO LS-ROOT
+                     IF WGN-NEXT(LS-COORD) > 0
+                         MOVE WGN-NEXT(LS-COORD) TO LS-COORD
+                     END-IF
+                 END-IF
+             END-PERFORM
+             CALL "DENSITY-NODE" USING LS-COORD L-X L-Y L-Z L-RESULT
          WHEN OTHER
 *>           blend_offset and beardifier are 0 without blending data and structures; the types the overworld
 *>           terrain does not use (after 35) evaluate to 0 here.
