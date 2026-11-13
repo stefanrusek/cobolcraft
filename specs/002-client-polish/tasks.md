@@ -4300,6 +4300,9 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T3728 [US12-client] Write tests (`test_state_tables.cob`, `test_physics_fluid.cob`) for waterlogged states (a block with the property set true holds water, keeps its model and its collision) and the current of 29a §8.3 (E8, E9, lava lifted to 0.0045, a falling cell beside stone divided by sqrt(37), a source over a drop)
 - [x] T3729 [US12-client] Implement waterlogged states in `STATE-TABLES-BUILD` and the current in `PHYS-FLUID`, `CELL-FLOW`, `CURRENT-PUSH` (`client/src/physics-fluid.cob`; the Nether's `fast_lava` strength 0.007 is not applied: gap)
 - [ ] T3730 [US12-client] Gate: run `make gate-client` and record the command and real output
+- [x] T3731 [US12-core] Write test `core/tests/acc_us12_item_current.cob`: the current of 41 §3.2 on a ground item (E8 east 0.014, lava lifted to 0.0045, a source over a drop, another fluid beside, a falling cell beside stone and under stone), the flow of a cell without fluid (red: the lane's scratchpad `fluids/red7.txt`)
+- [x] T3732 [US12-core] Implement `FLUID-FLOW-AT` (`core/src/fluids-world-29a.cob`, getFlow of 29a 1.4 over the core tables) and the current in `IP-FLUID-SCAN` (`core/src/itemphys-41.cob`, via `EF-ACCUM`, `EF-STRENGTH`, `EF-CURRENT`); completes T0347 (the Nether's `fast_lava` is not read: 0)
+- [ ] T3733 [US12-core] Gate: run `make gate-core` and record the command and real output
 
 ---
 

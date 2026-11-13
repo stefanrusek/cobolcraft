@@ -1128,8 +1128,10 @@
  PROGRAM-ID. IP-FLUID-SCAN.
 *> USING tracker row: the box of the item deflated by 0.001 on every side; every cell from floor(min) to ceil(max) - 1 that holds a
 *> fluid whose surface (cell y + height) is not below the deflated box bottom raises the height of its fluid to max(previous, cell
-*> y + height - the undeflated box bottom). The water flag is set when the water height is above 0. (The current of the fluid, 3.2,
-*> needs the flow vector of the fluid, which the document does not give: no current is applied.)
+*> y + height - the undeflated box bottom). The water flag is set when the water height is above 0. The current (3.2): every counted
+*> cell adds its flow (FLUID-FLOW-AT, 29a 1.4) scaled by the accumulator height while that is below 0.4 (EF-ACCUM); then each fluid's sum
+*> is normalised, times 0.014 (water) or 0.0023333 (lava; fast_lava is not read: 0), lifted to 0.0045 for a slow item (EF-CURRENT), and
+*> added to the item's velocity.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1150,9 +1152,27 @@
  01 WS-KIND                BINARY-LONG.
  01 WS-CELL-H              FLOAT-LONG.
  01 WS-TOP                 FLOAT-LONG.
+ 01 WS-TRACKER             FLOAT-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-SUMS.
+    05 WS-SUM OCCURS 2 TIMES.
+       10 WS-ACC           FLOAT-LONG.
+       10 WS-SX            FLOAT-LONG.
+       10 WS-SY            FLOAT-LONG.
+       10 WS-SZ            FLOAT-LONG.
+       10 WS-SC            BINARY-LONG.
+ 01 WS-NO-FAST             BINARY-LONG VALUE 0.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
+ 01 WS-STRENGTH            FLOAT-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     INITIALIZE WS-SUMS
      COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-LOOSE-ITEM + 1) / 2000
      COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-LOOSE-ITEM + 1) / 1000
      COMPUTE WS-MIN-Y = EN-Y(L-ROW) + 0.001
@@ -1177,6 +1197,13 @@
                          IF WS-KIND = 2 AND WS-TOP > IP-I-LAVA-H(L-ROW)
                              MOVE WS-TOP TO IP-I-LAVA-H(L-ROW)
                          END-IF
+                         MOVE IP-I-WATER-H(L-ROW) TO WS-TRACKER
+                         IF WS-KIND = 2
+                             MOVE IP-I-LAVA-H(L-ROW) TO WS-TRACKER
+                         END-IF
+                         CALL "FLUID-FLOW-AT" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-FX WS-FY WS-FZ
+                         CALL "EF-ACCUM" USING WS-TRACKER WS-ACC(WS-KIND) WS-FX WS-FY WS-FZ WS-SX(WS-KIND) WS-SY(WS-KIND)
+                             WS-SZ(WS-KIND) WS-SC(WS-KIND)
                      END-IF
                  END-IF
              END-PERFORM
@@ -1186,6 +1213,15 @@
      IF IP-I-WATER-H(L-ROW) > 0
          MOVE 1 TO IP-I-WET(L-ROW)
      END-IF
+*>   The current of each fluid (3.2).
+     PERFORM VARYING WS-KIND FROM 1 BY 1 UNTIL WS-KIND > 2
+         CALL "EF-STRENGTH" USING WS-KIND WS-NO-FAST WS-STRENGTH
+         CALL "EF-CURRENT" USING WS-SX(WS-KIND) WS-SY(WS-KIND) WS-SZ(WS-KIND) WS-SC(WS-KIND) WS-NO-PLAYER WS-STRENGTH
+             EN-VX(L-ROW) EN-VZ(L-ROW) WS-PX WS-PY WS-PZ
+         ADD WS-PX TO EN-VX(L-ROW)
+         ADD WS-PY TO EN-VY(L-ROW)
+         ADD WS-PZ TO EN-VZ(L-ROW)
+     END-PERFORM
      GOBACK.
  END PROGRAM IP-FLUID-SCAN.
 
