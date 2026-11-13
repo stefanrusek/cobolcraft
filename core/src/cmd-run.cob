@@ -188,6 +188,8 @@
              CALL "CX-LOOT"
          WHEN BC-ADVANCEMENT
              CALL "CX-ADVANCEMENT"
+         WHEN BC-RIDE
+             CALL "CX-RIDE"
          WHEN BC-SPECTATE
              CALL "CX-SPECTATE"
          WHEN OTHER

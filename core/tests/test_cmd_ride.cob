@@ -45,11 +45,16 @@
      MOVE 4 TO WS-NAME-LENGTH
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ID-CLEO
      MOVE CN-PLAYER(WS-ID-ALICE) TO WS-ALICE-ROW
+     MOVE "execute in cobolcraft:subroutine run summon cobolcraft:sodgrazer 3.0 40.0 3.0" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /ride a vehicle in another dimension: wrong_dimension" TO TL-CASE
+     MOVE "ride Alice mount @e[type=cobolcraft:sodgrazer,limit=1]" TO WS-LINE
+     MOVE "commands.ride.mount.failure.wrong_dimension()" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "summon cobolcraft:sodgrazer 5.0 64.0 5.0" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "summon cobolcraft:abend 8.0 64.0 8.0" TO WS-LINE
-     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
-     MOVE "execute in cobolcraft:subroutine run summon cobolcraft:sodgrazer 3.0 40.0 3.0" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE 5 TO WS-X
      MOVE 5 TO WS-Z
@@ -70,10 +75,6 @@
      MOVE "ride @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] mount @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
      MOVE "commands.ride.mount.failure.loop()" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
-     MOVE "acceptance US13 /ride a vehicle in another dimension: wrong_dimension" TO TL-CASE
-     MOVE "ride Alice mount @e[type=cobolcraft:sodgrazer,x=3,y=40,z=3,sort=nearest,limit=1]" TO WS-LINE
-     MOVE "commands.ride.mount.failure.wrong_dimension()" TO WS-EXPECTED
-     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /ride a player mounts a mob: Alice started riding cobolcraft:sodgrazer" TO TL-CASE
      MOVE "ride Alice mount @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
      MOVE "commands.ride.mount.success(Alice,cobolcraft:sodgrazer)" TO WS-EXPECTED
@@ -92,6 +93,7 @@
      MOVE "ride Alice mount @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
      CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
      CALL "TA-CHECK-HEX" USING WS-ID-ALICE TL-CASE WS-WANTED WS-EXPECTED
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      MOVE "acceptance US13 /ride a rider that rides again: already_riding" TO TL-CASE
      MOVE "ride Alice mount @e[type=cobolcraft:abend,x=8,y=64,z=8,sort=nearest,limit=1]" TO WS-LINE
      MOVE "commands.ride.already_riding(Alice,cobolcraft:sodgrazer)" TO WS-EXPECTED
@@ -105,18 +107,18 @@
      MOVE "commands.ride.dismount.success(Alice,cobolcraft:sodgrazer)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /ride a mob mounts a mob" TO TL-CASE
-     MOVE "ride @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] mount @e[type=cobolcraft:abend]" TO WS-LINE
+     MOVE "ride @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] mount @e[type=cobolcraft:abend,limit=1]" TO WS-LINE
      MOVE "commands.ride.mount.success(cobolcraft:sodgrazer,cobolcraft:abend)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /ride the vehicle may not ride on its own passenger: loop" TO TL-CASE
-     MOVE "ride @e[type=cobolcraft:abend] mount @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
+     MOVE "ride @e[type=cobolcraft:abend,limit=1] mount @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
      MOVE "commands.ride.mount.failure.loop()" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /ride a mob rider dismounts" TO TL-CASE
      MOVE "ride @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] dismount" TO WS-LINE
      MOVE "commands.ride.dismount.success(cobolcraft:sodgrazer,cobolcraft:abend)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
-     MOVE "ride Alice mount @e[type=cobolcraft:abend]" TO WS-LINE
+     MOVE "ride Alice mount @e[type=cobolcraft:abend,limit=1]" TO WS-LINE
      CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-CLEO WS-DISCARD
@@ -128,9 +130,9 @@
      STRING WS-HEX-1(1:2) "00" DELIMITED BY SIZE INTO WS-EXPECTED
      CALL "TA-CHECK-HEX" USING WS-ID-CLEO TL-CASE WS-WANTED WS-EXPECTED
      MOVE "acceptance US13 /ride a vehicle that was removed drops out: not_riding" TO TL-CASE
-     MOVE "ride Alice mount @e[type=cobolcraft:abend]" TO WS-LINE
+     MOVE "ride Alice mount @e[type=cobolcraft:abend,limit=1]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
-     MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
+     MOVE "kill @e[type=cobolcraft:abend,limit=1]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "ride Alice dismount" TO WS-LINE
      MOVE "commands.ride.not_riding(Alice)" TO WS-EXPECTED

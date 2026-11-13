@@ -2494,3 +2494,324 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SPECTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ROW-OF-ID.
+*> USING network entity id, row out (BINARY-LONG): the player row, or the negated row of CORE-ENTITIES for any other entity (0 = no such entity).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ROW.
+     MOVE 0 TO L-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT OR L-ROW NOT = 0
+         IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) = L-ID
+             IF EN-PLAYER(WS-I) > 0
+                 MOVE EN-PLAYER(WS-I) TO L-ROW
+             ELSE
+                 COMPUTE L-ROW = 0 - WS-I
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-ROW-OF-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-DIM-OF.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension row out (BINARY-LONG).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DIM.
+     IF L-ROW > 0
+         MOVE PL-DIM(L-ROW) TO L-DIM
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         MOVE EN-DIM(WS-ENTITY) TO L-DIM
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-DIM-OF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RIDE-FIND.
+*> USING rider id, entry out (BINARY-LONG): the entry of CORE-RIDING of the rider (0 = it rides nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RIDESTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-RIDER                BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-RIDER L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX OR L-ENTRY > 0
+         IF RD-RIDER(WS-I) = L-RIDER
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-RIDE-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RIDE-FREE.
+*> USING entry out (BINARY-LONG): the first free entry of CORE-RIDING (a rider needs one: there are more entries than entities).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RIDESTORE.
+ LINKAGE SECTION.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTRY.
+     MOVE 1 TO L-ENTRY
+     PERFORM UNTIL RD-RIDER(L-ENTRY) = 0
+         ADD 1 TO L-ENTRY
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-RIDE-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RIDE-CLEAN.
+*> Frees the entries of CORE-RIDING whose rider or vehicle is no longer in the world.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RIDESTORE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-RIDER(WS-I) > 0
+             CALL "CXB-ROW-OF-ID" USING RD-RIDER(WS-I) WS-ROW-A
+             CALL "CXB-ROW-OF-ID" USING RD-VEHICLE(WS-I) WS-ROW-B
+             IF WS-ROW-A = 0 OR WS-ROW-B = 0
+                 MOVE 0 TO RD-RIDER(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-RIDE-CLEAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-PASSENGERS.
+*> USING vehicle id, dimension row: Set Passengers (05b 0x6D: the vehicle id, the passenger count, each passenger id as VarInts) with the passengers
+*> the riding table now holds for the vehicle, sent to every player in play in that dimension.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RIDESTORE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG VALUE 109.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-VEHICLE              BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-VEHICLE L-DIM.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-RIDER(WS-I) > 0 AND RD-VEHICLE(WS-I) = L-VEHICLE
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-VEHICLE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-RIDER(WS-I) > 0 AND RD-VEHICLE(WS-I) = L-VEHICLE
+             CALL "PB-PUT-VARINT" USING PB-BUFFER RD-RIDER(WS-I)
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-PLAYERS
+         IF PL-USED(WS-I) = 1 AND PL-STATE(WS-I) = PS-ALIVE AND PL-DIM(WS-I) = L-DIM
+             CALL "CORE-SEND" USING PL-CONN(WS-I) PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM CXB-PASSENGERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-RIDE.
+*> ride <target> mount <vehicle> | ride <target> dismount (16 §5.6, level 2): the riding table (RIDESTORE.cpy) holds who rides what; entities that left the world drop out
+*> first. dismount of a rider frees it, sends Set Passengers (CXB-PASSENGERS) and tells commands.ride.dismount.success [rider, vehicle] (broadcast); one that rides
+*> nothing is commands.ride.not_riding [rider]. mount checks, in this order (the catalog gives none): the rider already rides: already_riding [rider, its vehicle]; the vehicle
+*> is a player: mount.failure.cant_ride_players; the vehicle is the rider or rides, at any depth, on it: mount.failure.loop; the dimensions differ: mount.failure.wrong_dimension;
+*> the vehicle already has a passenger: mount.failure.generic [rider, vehicle] (the catalog does not say why startRiding fails: this core gives a vehicle one seat). Else the entry is
+*> added, Set Passengers sent and commands.ride.mount.success [rider, vehicle] broadcast. The result is 1. BLOCKED: nothing moves a rider with its vehicle.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RIDESTORE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-VEHICLE        PIC X(32) VALUE "vehicle".
+ 01 WS-NAME-MOUNT          PIC X(32) VALUE "mount".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-VEHICLE-ROWS.
+    05 WS-VEHICLE-COUNT     BINARY-LONG.
+    05 WS-VEHICLE-ROW       BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-MOUNT               BINARY-LONG.
+ 01 WS-RIDER               BINARY-LONG.
+ 01 WS-RIDER-ID            BINARY-LONG.
+ 01 WS-RIDER-DIM           BINARY-LONG.
+ 01 WS-VEHICLE             BINARY-LONG.
+ 01 WS-VEHICLE-ID          BINARY-LONG.
+ 01 WS-VEHICLE-DIM         BINARY-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-LOOP                BINARY-LONG.
+ 01 WS-TAKEN               BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-OTHER               PIC X(48).
+ 01 WS-OTHER-LENGTH        BINARY-LONG.
+ 01 WS-CURRENT             PIC X(48).
+ 01 WS-CURRENT-LENGTH      BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "CXB-RIDE-CLEAN"
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-LIT" USING WS-NAME-MOUNT WS-MOUNT
+     IF BR-R-FAILED = 0 AND WS-MOUNT > 0
+         CALL "BX-FIND" USING WS-NAME-VEHICLE WS-INDEX
+         CALL "BX-RESOLVE" USING WS-INDEX WS-VEHICLE-ROWS
+     END-IF
+     MOVE SPACES TO WS-KEY WS-A1 WS-A2
+     MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+     IF BR-R-FAILED = 0
+         MOVE BX-ROW(1) TO WS-RIDER
+         CALL "CXB-ENTITY-ID" USING WS-RIDER WS-RIDER-ID
+         CALL "CXB-DIM-OF" USING WS-RIDER WS-RIDER-DIM
+         CALL "CXB-SHOWN" USING WS-RIDER WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CXB-RIDE-FIND" USING WS-RIDER-ID WS-ENTRY
+         MOVE WS-SHOWN TO WS-A1
+         MOVE WS-SHOWN-LENGTH TO WS-L1
+     END-IF
+*> dismount
+     IF BR-R-FAILED = 0 AND WS-MOUNT = 0 AND WS-ENTRY = 0
+         MOVE "commands.ride.not_riding" TO WS-KEY
+         MOVE 1 TO WS-N-ARGS
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-MOUNT = 0 AND WS-ENTRY > 0
+         MOVE RD-VEHICLE(WS-ENTRY) TO WS-VEHICLE-ID
+         CALL "CXB-ROW-OF-ID" USING WS-VEHICLE-ID WS-VEHICLE
+         CALL "CXB-SHOWN" USING WS-VEHICLE WS-OTHER WS-OTHER-LENGTH
+         CALL "CXB-DIM-OF" USING WS-VEHICLE WS-VEHICLE-DIM
+         MOVE 0 TO RD-RIDER(WS-ENTRY)
+         CALL "CXB-PASSENGERS" USING WS-VEHICLE-ID WS-VEHICLE-DIM
+         MOVE "commands.ride.dismount.success" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-OTHER WS-OTHER-LENGTH
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+         MOVE SPACES TO WS-KEY
+     END-IF
+*> mount: the checks in order
+     IF BR-R-FAILED = 0 AND WS-MOUNT > 0
+         MOVE WS-VEHICLE-ROW(1) TO WS-VEHICLE
+         CALL "CXB-ENTITY-ID" USING WS-VEHICLE WS-VEHICLE-ID
+         CALL "CXB-DIM-OF" USING WS-VEHICLE WS-VEHICLE-DIM
+         CALL "CXB-SHOWN" USING WS-VEHICLE WS-OTHER WS-OTHER-LENGTH
+         MOVE WS-VEHICLE-ID TO WS-WALK
+         MOVE 0 TO WS-LOOP
+         PERFORM UNTIL WS-WALK = 0 OR WS-LOOP = 1
+             IF WS-WALK = WS-RIDER-ID
+                 MOVE 1 TO WS-LOOP
+             END-IF
+             CALL "CXB-RIDE-FIND" USING WS-WALK WS-STEP
+             MOVE 0 TO WS-WALK
+             IF WS-STEP > 0
+                 MOVE RD-VEHICLE(WS-STEP) TO WS-WALK
+             END-IF
+         END-PERFORM
+         MOVE 0 TO WS-TAKEN
+         PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > RD-MAX
+             IF RD-RIDER(WS-STEP) > 0 AND RD-VEHICLE(WS-STEP) = WS-VEHICLE-ID
+                 MOVE 1 TO WS-TAKEN
+             END-IF
+         END-PERFORM
+         MOVE WS-OTHER TO WS-A2
+         MOVE WS-OTHER-LENGTH TO WS-L2
+         MOVE 2 TO WS-N-ARGS
+         IF WS-ENTRY > 0
+             MOVE RD-VEHICLE(WS-ENTRY) TO WS-WALK
+             CALL "CXB-ROW-OF-ID" USING WS-WALK WS-STEP
+             CALL "CXB-SHOWN" USING WS-STEP WS-CURRENT WS-CURRENT-LENGTH
+             MOVE WS-CURRENT TO WS-A2
+             MOVE WS-CURRENT-LENGTH TO WS-L2
+             MOVE "commands.ride.already_riding" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-VEHICLE > 0
+             MOVE 0 TO WS-N-ARGS
+             MOVE "commands.ride.mount.failure.cant_ride_players" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-LOOP = 1
+             MOVE 0 TO WS-N-ARGS
+             MOVE "commands.ride.mount.failure.loop" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-VEHICLE-DIM NOT = WS-RIDER-DIM
+             MOVE 0 TO WS-N-ARGS
+             MOVE "commands.ride.mount.failure.wrong_dimension" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-TAKEN = 1
+             MOVE "commands.ride.mount.failure.generic" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES
+             CALL "CXB-RIDE-FREE" USING WS-STEP
+             MOVE WS-RIDER-ID TO RD-RIDER(WS-STEP)
+             MOVE WS-VEHICLE-ID TO RD-VEHICLE(WS-STEP)
+             CALL "CXB-PASSENGERS" USING WS-VEHICLE-ID WS-VEHICLE-DIM
+             MOVE "commands.ride.mount.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-OTHER WS-OTHER-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 1 TO BR-R-RESULT
+             MOVE SPACES TO WS-KEY
+         END-IF
+     END-IF
+     IF WS-KEY NOT = SPACES
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     GOBACK.
+ END PROGRAM CX-RIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-RIDE.
+*> The forms of ride (16 §5.6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-RIDE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "ride <target:entity> mount <vehicle:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "ride <target:entity> dismount" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-RIDE.
