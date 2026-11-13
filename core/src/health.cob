@@ -245,6 +245,10 @@
                      MOVE "death.attack.fall" TO WS-KEY
                  END-IF
              END-IF
+         WHEN CAUSE-ARROW
+*>           death.attack.arrow: the victim and the shooter (PL-KILLER-NAME set by the arrow)
+             MOVE "death.attack.arrow" TO WS-KEY
+             MOVE 2 TO WS-ARGS
          WHEN CAUSE-EXPLOSION
 *>           death.attack.explosion; with an attacker (a creeper: PL-KILLER-NAME set by the blast) death.attack.explosion.player
              MOVE "death.attack.explosion" TO WS-KEY
@@ -280,7 +284,7 @@
      MOVE PL-NAME(L-ROW) TO PB-TX-ARG-VALUE(1)
      MOVE PL-NAME-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(1)
      IF WS-ARGS > 1
-         IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB OR (L-CAUSE = CAUSE-EXPLOSION AND PL-KILLER-LENGTH(L-ROW) > 0)
+         IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB OR L-CAUSE = CAUSE-ARROW OR (L-CAUSE = CAUSE-EXPLOSION AND PL-KILLER-LENGTH(L-ROW) > 0)
              MOVE PL-KILLER-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
              MOVE PL-KILLER-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
          ELSE
@@ -386,7 +390,7 @@
      CALL "EFFECT-CLEAR-ALL" USING WS-ROW
      MOVE PS-DEAD TO PL-STATE(WS-ROW)
      MOVE L-CAUSE TO PL-DEATH-CAUSE(WS-ROW)
-     IF L-CAUSE NOT = CAUSE-MOB AND L-CAUSE NOT = CAUSE-EXPLOSION
+     IF L-CAUSE NOT = CAUSE-MOB AND L-CAUSE NOT = CAUSE-EXPLOSION AND L-CAUSE NOT = CAUSE-ARROW
          MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
          MOVE 0 TO PL-KILLER-LENGTH(WS-ROW)
      END-IF
@@ -509,6 +513,8 @@
              MOVE "minecraft:drown" TO WS-WANTED
          WHEN CAUSE-EXPLOSION
              MOVE "minecraft:explosion" TO WS-WANTED
+         WHEN CAUSE-ARROW
+             MOVE "minecraft:arrow" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE

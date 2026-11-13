@@ -1,6 +1,6 @@
 *> Acceptance test (002-lane-mobs; 16 section 5.8 `summon`): in a standard world /summon makes the standard mobs of core/copy/STDMOBS.cpy (pig, cow,
 *> sheep, chicken, mooshroom, zombie): the key is taken with or without minecraft:, the mob appears at the position with its full health, and
-*> commands.summon.success carries the namespaced key. A type with no row (skeleton, or a cobolcraft key) is entity.not_summonable; a monster in
+*> commands.summon.success carries the namespaced key. A type with no row (enderman, or a cobolcraft key) is entity.not_summonable; a monster in
 *> Peaceful is commands.summon.failed.peaceful.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STDMOB-SUMMON.
@@ -70,8 +70,8 @@
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
 
      MOVE "acceptance US15 /summon a type with no row is not summonable" TO TL-CASE
-     MOVE "summon minecraft:skeleton 8.0 64.0 5.0" TO WS-LINE
-     MOVE "entity.not_summonable(minecraft:skeleton)" TO WS-EXPECTED
+     MOVE "summon minecraft:enderman 8.0 64.0 5.0" TO WS-LINE
+     MOVE "entity.not_summonable(minecraft:enderman)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US15 /summon a cobolcraft key in a standard world is no entity type" TO TL-CASE

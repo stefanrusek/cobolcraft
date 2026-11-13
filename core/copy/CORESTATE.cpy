@@ -281,6 +281,8 @@
 *>     --- 002-lane-mobs2: creeper (core/src/stdmobs.cob STDMOB-SWELL) ---
        10 EN-SWELL           BINARY-LONG.        *> the swell counter (20 section 6.1), 0 to the fuse
        10 EN-SWELL-DIR       BINARY-LONG.        *> the last swell direction sent to the viewers (0 = none yet, the default -1)
+       10 EN-SHOOT-TIME      BINARY-LONG.        *> a bow mob's attackTime: ticks until it draws the bow again (20 section 5; EN-SWELL is its seeTime)
+       10 EN-DRAW            BINARY-LONG.        *> 0 = bow not drawn, else 1 + the ticks the bow has been drawn
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while

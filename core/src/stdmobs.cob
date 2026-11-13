@@ -24,7 +24,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 8 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS 9 TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -893,6 +893,9 @@
              GOBACK
          END-IF
      END-IF
+     IF SM-RANGED(WS-M) > 0
+         CALL "STDMOB-SHOOT" USING WS-ROW WS-M WS-STOP
+     END-IF
      EVALUATE TRUE
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.
@@ -913,7 +916,7 @@
                  COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
              END-IF
-             IF SM-FUSE(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
+             IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
                  MOVE SM-ATTACK-TICKS TO EN-COOLDOWN(WS-ROW)
