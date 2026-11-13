@@ -45,8 +45,16 @@
     05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
     05 CL-FRAMES             BINARY-DOUBLE.
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
+    05 CL-CMD-AT             BINARY-DOUBLE.   *> the frame from which CL-CMD-TEXT (console commands separated by ;, CC_COMMANDS) runs once (0 = none)
+    05 CL-CMD-TEXT           PIC X(256).
     05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
     05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
+    05 CL-CAM-SET            PIC 9.           *> 1 = --camera / CC_CAMERA fixes the view: eye (CL-CAM-X, -Y, -Z), yaw and pitch in degrees
+    05 CL-CAM-X              FLOAT-LONG.
+    05 CL-CAM-Y              FLOAT-LONG.
+    05 CL-CAM-Z              FLOAT-LONG.
+    05 CL-CAM-YAW            FLOAT-LONG.
+    05 CL-CAM-PITCH          FLOAT-LONG.
     05 CL-SHOT-AUTO          PIC 9.           *> 1 = the screenshot waiting is the automatic one
     05 CL-SHOT-PENDING       PIC 9.           *> 1 = a screenshot waits for its frame (cc_vk_screenshot)
     05 CL-SHOT-NAME          PIC X(40).       *> its file name (YYYY-MM-DD_HH.MM.SS.png, _1, _2 ... after a clash)
@@ -236,6 +244,10 @@
        10 BM-STATE-ID        BINARY-LONG.
        10 BM-TYPE            BINARY-LONG.    *> menu type of the open bench (12) or container screen (args 401 to 464 are its own slots)
        10 PL-XP-LEVEL        BINARY-LONG.    *> the player's experience level (Set Experience 05b 0x69)
+       10 PL-XP-PROGRESS     FLOAT-LONG.     *> its progress 0 to 1 and the total points (002-lane-mobs2)
+       10 PL-XP-TOTAL        BINARY-LONG.
+       10 PL-KB-X            FLOAT-LONG.     *> the horizontal push of an Explode packet's knockback, decaying each tick (physics.cob)
+       10 PL-KB-Z            FLOAT-LONG.
        10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
 *>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
 *>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
@@ -566,6 +578,9 @@
           15 WR-CZ           BINARY-LONG.
           15 WR-ADDR         USAGE POINTER.  *> one CE-CHUNK (contract/copy/CELLS.cpy, CE-CHUNK-BYTES)
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
+          15 WR-SURF-OK      PIC 9.          *> 1 = WR-SURF and WR-WTOP are current (SKY-STOPGAP-SURFACE, CC-0007 stopgap)
+          15 WR-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
+          15 WR-WTOP         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> one above the topmost fluid cell above WR-SURF, 0 = none
           15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
              20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (44 bytes each)
@@ -573,13 +588,6 @@
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
-*>  ---- SKY-STOPGAP (CC-0007 stopgap; sky-stopgap.cob): per mesh call, the rows whose sky light is to be assumed ----
-    05 SKG-STATE.
-       10 SKG-COUNT           BINARY-LONG.    *> entries in use (0 = real light only)
-       10 SKG-ENTRY OCCURS 5 TIMES.
-          15 SKG-ROW          BINARY-LONG.    *> the world replica row
-          15 SKG-FAKE         PIC 9 OCCURS 24 TIMES.   *> 1 = block section s has no sky light data
-          15 SKG-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.
@@ -978,11 +986,14 @@
        10 MB-FAKE-STEP       BINARY-LONG.    *> microseconds the injected clock advances per section meshed
        10 MB-MESHED          BINARY-LONG.    *> sections meshed by the last MESH-DIRTY
        10 MB-EMPTY           BINARY-LONG.    *> sections found all air (meshed at once, no vertices) since CL-INIT
+       10 MB-LIGHT-OFF       PIC 9.          *> 1 = MF-AT reads states only (MESH-FLUID's first look at a cell: most draw nothing)
        10 MB-LAST-US         BINARY-DOUBLE.  *> microseconds the last MESH-DIRTY took
+       10 MB-CREDIT-ON       PIC 9.          *> 1 = meshing is paid for from a credit that each frame refills (CL-RUN sets it; 0 in tests)
+       10 MB-CREDIT          BINARY-DOUBLE.  *> microseconds of meshing the next frames may spend; below 0 the frame meshes nothing
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
-       10 RL-FOG OCCURS 8 TIMES FLOAT-SHORT.     *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11
+       10 RL-FOG OCCURS 13 TIMES FLOAT-SHORT.    *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11 up-x up-y up-z render-distance-start end
        10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
        10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
        10 RL-DRAW-COUNT      BINARY-LONG.

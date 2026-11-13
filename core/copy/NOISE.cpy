@@ -16,7 +16,7 @@
        10 NZ-OY             FLOAT-LONG.
        10 NZ-OZ             FLOAT-LONG.
        10 NZ-FUDGE          FLOAT-LONG.
-       10 NZ-PERM           BINARY-SHORT UNSIGNED OCCURS 256 TIMES.
+       10 NZ-PERM           BINARY-LONG OCCURS 256 TIMES.
     05 NZ-NOISE OCCURS 512 TIMES.
        10 NZ-FIRST          BINARY-LONG.
        10 NZ-LAYER-N        BINARY-LONG.

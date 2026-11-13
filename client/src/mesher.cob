@@ -60,6 +60,18 @@
  01 L-BUDGET               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-BUDGET.
      MOVE 0 TO MB-MESHED
+*>   With the credit on (the running client), a frame whose meshing ran long (one section of a dense chunk can take 100 ms) is paid back by
+*>   frames that mesh nothing: the average is CL-MESH-CREDIT-US a frame, and the frame rate holds while the world loads.
+     IF MB-CREDIT-ON = 1
+         ADD CL-MESH-CREDIT-US TO MB-CREDIT
+         IF MB-CREDIT > CL-MESH-CREDIT-US
+             MOVE CL-MESH-CREDIT-US TO MB-CREDIT
+         END-IF
+         IF MB-CREDIT < 0
+             MOVE 0 TO MB-LAST-US
+             GOBACK
+         END-IF
+     END-IF
      CALL "MESH-CLOCK" USING CLIENT-STATE WS-T0
      MOVE FUNCTION MIN(L-BUDGET, 64) TO WS-K
      COMPUTE WS-PCX = FUNCTION INTEGER(PL-X / 16)
@@ -120,6 +132,9 @@
      END-PERFORM
      CALL "MESH-CLOCK" USING CLIENT-STATE WS-T1
      COMPUTE MB-LAST-US = WS-T1 - WS-T0
+     IF MB-CREDIT-ON = 1
+         SUBTRACT MB-LAST-US FROM MB-CREDIT
+     END-IF
      GOBACK.
  END PROGRAM MESH-DIRTY.
 
@@ -291,8 +306,6 @@
          CALL "WORLD-ROW" USING CLIENT-STATE WR-CX(L-ROW) WS-CZ WS-NROW(3)
          COMPUTE WS-CZ = WR-CZ(L-ROW) + 1
          CALL "WORLD-ROW" USING CLIENT-STATE WR-CX(L-ROW) WS-CZ WS-NROW(4)
-*>       CC-0007 stopgap: the sky light to assume where the core sent none (sky-stopgap.cob).
-         CALL "SKY-STOPGAP-PREPARE" USING CLIENT-STATE L-ROW WS-NEIGHBOURS
      END-IF
      MOVE 0 TO WS-CELL
      PERFORM VARYING WS-LY FROM 0 BY 1 UNTIL WS-LY > WS-LAST
@@ -683,9 +696,9 @@
              ELSE
                  DIVIDE WS-BYTE BY 16 GIVING L-BLOCK
              END-IF
-*>           CC-0007 stopgap (sky-stopgap.cob): assumed sky light where the section has none; remove with it.
-             IF SKG-COUNT > 0
-                 CALL "SKY-STOPGAP-CELL" USING CLIENT-STATE WS-ROW WS-NX WS-NY WS-NZ L-SKY
+*>           CC-0007 stopgap (sky-stopgap.cob): the sky light assumed where the core sent none (0); remove with it.
+             IF L-SKY = 0
+                 CALL "SKY-STOPGAP-LIGHT" USING CLIENT-STATE WS-ROW WS-NX WS-NY WS-NZ L-SKY
              END-IF
      END-EVALUATE
      GOBACK.

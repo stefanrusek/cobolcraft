@@ -89,6 +89,17 @@
      SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
      MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
      MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+*>   Two more, outside the view: chunk (-5, 0) lies behind the camera (it looks east), chunk (2, 5) far off to its right.
+     MOVE -5 TO WS-I
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-I WS-ZERO WS-ROW
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+     MOVE 5 TO WS-K
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-TWO WS-K WS-ROW
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     MOVE 1 TO WR-DIRTY(WS-ROW, 4)
      MOVE 1000000000 TO MB-BUDGET-US
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "SKY-UPDATE" USING CLIENT-STATE
@@ -156,6 +167,20 @@
          MOVE "order broken" TO TL-OBSERVED
      END-IF
      MOVE "112 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "render list sections of chunks behind the camera or far outside its view are not drawn (3 translucent draws, "
+         & "not 5) though their meshes are uploaded" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE RL-UPLOAD-COUNT TO TL-OBSERVED-N
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
+         IF RL-D-PIPELINE(WS-I) = 1
+             ADD 1 TO WS-K
+         END-IF
+     END-PERFORM
+     MOVE WS-K TO TL-OBSERVED-N
+     MOVE 3 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "render list translucent sections are drawn back to front: chunk 2, then -1, then 0"
@@ -329,6 +354,27 @@
      MOVE WS-E TO TL-OBSERVED
      MOVE " 0.0000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The render-distance fog (12 section 3.3, cylindrical): a view distance of 12 chunks gives end 192 and start 192 - clamp(19.2, 4, 64) = 172.8, in the sky colour at
+*>   strength 1, with the environment fog out of reach (start and end 1e9 and 2e9); the world up direction in view space is the second column of the view matrix.
+     MOVE 12 TO PL-VIEW-DISTANCE
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list a view distance of 12 chunks: render-distance fog 172.8 to 192 at strength 1 in the sky colour, up = the view matrix's second column"
+         TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED TL-EXPECTED
+     MOVE RL-FOG(12) TO WS-N
+     MOVE RL-FOG(13) TO WS-N2
+     MOVE WS-N TO WS-NE
+     MOVE WS-N2 TO WS-NE2
+     MOVE 0 TO WS-N4
+     IF RL-FOG(4) = 1 AND RL-FOG(1) = RL-CLEAR(1) AND RL-FOG(2) = RL-CLEAR(2) AND RL-FOG(3) = RL-CLEAR(3)
+             AND RL-FOG(9) = RL-VIEW(5) AND RL-FOG(10) = RL-VIEW(6) AND RL-FOG(11) = RL-VIEW(7)
+         MOVE 1 TO WS-N4
+     END-IF
+     STRING FUNCTION TRIM(WS-NE) " " FUNCTION TRIM(WS-NE2) " " WS-N4 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "172.80 192.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-VIEW-DISTANCE
      STOP RUN.
 
 *> TL-OBSERVED: "r g b strength start end p00-and-p11-match" of the fog of the frame.

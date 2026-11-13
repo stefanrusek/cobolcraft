@@ -466,7 +466,7 @@ static void vulkan(void) {
         cc_vk_daylight(&half);
         cc_vk_daylight(&full);
         tl_int("contract shim cc_vk_daylight takes a pointer to the factor and returns", 1, 1);
-        const float no_fog[8] = {0, 0, 0, 0, 0, 1, 1, 1};
+        const float no_fog[13] = {0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1e9f, 2e9f};
         cc_vk_fog(no_fog);
         tl_int("contract shim cc_vk_fog takes a pointer to 8 floats and returns", 1, 1);
     }

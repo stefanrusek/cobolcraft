@@ -232,6 +232,7 @@
      MOVE 9 TO WS-Z
      MOVE WS-SAPLING TO WS-STATE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 40 TO PL-SLOT-COUNT(WS-ROW, 1)
      MOVE 0 TO WS-K
 *>   The level random starts from a known state (Java's Random(0): nextFloat 0.731, 0.831, 0.241), so a success inside the four tries is certain.
      CALL "LEVEL-RANDOM-SEED" USING WS-SEED
@@ -241,7 +242,7 @@
          CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
          ADD 1 TO WS-K
      END-PERFORM
-     COMPUTE WS-N = 4 - WS-K
+     COMPUTE WS-N = 40 - WS-K
      MOVE SPACES TO TL-OBSERVED
      IF PL-SLOT-COUNT(WS-ROW, 1) = WS-N
          MOVE "one item a use" TO TL-OBSERVED

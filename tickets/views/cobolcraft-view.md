@@ -23,7 +23,6 @@ Nothing needs attention.
 | [CC-0005](../CC-0005-tests-free-port.md) | Server tests do not depend on port 25565 being free | bug | stefanrusek |  |  |
 | [CC-0006](../CC-0006-creative-cursor-throws.md) | A creative player's carried stack can be thrown out of the inventory window | bug | stefanrusek |  |  |
 | [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
-| [CC-0008](../CC-0008-gravity-blocks-fall.md) | Gravity blocks fall when the block beneath them is broken | bug | stefanrusek |  |  |
 
 ### implementing
 
@@ -33,4 +32,6 @@ Nothing needs attention.
 
 ## Recently Closed
 
-Nothing closed yet.
+| ID | Title | Resolution |
+|---|---|---|
+| [CC-0008](../CC-0008-gravity-blocks-fall.md) | Gravity blocks fall when the block beneath them is broken | done |

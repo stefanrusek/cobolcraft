@@ -30,11 +30,11 @@
          MOVE CB-EPOCH TO WS-EPOCH
          MOVE -1 TO WS-WATER WS-LAVA
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-             IF CB-KEY(WS-I) = "minecraft:water"
+             IF CB-KEY(WS-I) = "minecraft:water" OR CB-KEY(WS-I) = "water"
                  COMPUTE WS-WATER = WS-I - 1
                  MOVE CB-FIRST-STATE(WS-I) TO WS-WATER-FIRST
              END-IF
-             IF CB-KEY(WS-I) = "minecraft:lava"
+             IF CB-KEY(WS-I) = "minecraft:lava" OR CB-KEY(WS-I) = "lava"
                  COMPUTE WS-LAVA = WS-I - 1
                  MOVE CB-FIRST-STATE(WS-I) TO WS-LAVA-FIRST
              END-IF
@@ -127,6 +127,10 @@
  PROCEDURE DIVISION USING L-STATE L-KEY L-FLAG.
      MOVE 0 TO L-FLAG
      IF CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) = L-KEY
+         MOVE 1 TO L-FLAG
+     END-IF
+*>   The standard set's rows have no namespace: "minecraft:ice" is also "ice".
+     IF L-KEY(1:10) = "minecraft:" AND CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) = L-KEY(11:38)
          MOVE 1 TO L-FLAG
      END-IF
      GOBACK.
@@ -414,7 +418,7 @@
      IF L-FLUID = 2 AND L-DIRECTION = 0 AND WS-F = 1
          MOVE 0 TO WS-STONE
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-             IF CB-KEY(WS-I) = "minecraft:stone"
+             IF CB-KEY(WS-I) = "minecraft:stone" OR CB-KEY(WS-I) = "stone"
                  MOVE CB-DEFAULT-STATE(WS-I) TO WS-STONE
              END-IF
          END-PERFORM

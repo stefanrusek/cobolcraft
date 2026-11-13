@@ -162,6 +162,7 @@
  01 WS-KEY                 PIC X(64).
  01 WS-LOCAL               PIC X(48).
  01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
+ 01 WS-BARE                PIC X(48).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
@@ -186,8 +187,9 @@
                  MOVE SPACES TO WS-KEY
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
                  CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > IT-COUNT
-                     IF IT-KEY(WS-K) = WS-LOCAL
+                     IF IT-KEY(WS-K) = WS-LOCAL OR IT-KEY(WS-K) = WS-BARE
                          COMPUTE L-ITEM = WS-K - 1
                      END-IF
                  END-PERFORM

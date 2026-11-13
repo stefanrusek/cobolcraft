@@ -81,7 +81,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CAMERA-PLACE.
-*> USING CLIENT-STATE, view yaw out, view pitch out (degrees, FLOAT-LONG), eye (3 FLOAT-LONG) out.
+*> USING CLIENT-STATE, view yaw out, view pitch out (degrees, FLOAT-LONG), eye (3 FLOAT-LONG) out. With --camera (CL-CAM-SET 1) the view is that
+*> eye, yaw and pitch in every perspective, whatever the player does.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-YAW                 FLOAT-LONG.
@@ -102,6 +103,14 @@
      MOVE PL-Z TO L-EYE(3)
      MOVE PL-YAW TO L-YAW
      MOVE PL-PITCH TO L-PITCH
+     IF CL-CAM-SET = 1
+         MOVE CL-CAM-X TO L-EYE(1)
+         MOVE CL-CAM-Y TO L-EYE(2)
+         MOVE CL-CAM-Z TO L-EYE(3)
+         MOVE CL-CAM-YAW TO L-YAW
+         MOVE CL-CAM-PITCH TO L-PITCH
+         GOBACK
+     END-IF
      IF CL-CAMERA = 2
          COMPUTE L-YAW = PL-YAW + 180
          COMPUTE L-PITCH = 0 - PL-PITCH

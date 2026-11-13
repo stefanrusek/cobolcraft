@@ -142,3 +142,43 @@
      END-IF
      GOBACK.
  END PROGRAM SHOT-POLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STARTUP-COMMANDS.
+*> USING CLIENT-STATE: from the frame CL-CMD-AT (CC_COMMANDS_AT_FRAME) on the world screen runs the console commands of CL-CMD-TEXT (CC_COMMANDS: commands without
+*> the leading slash, separated by `;`, leading spaces dropped) once through the hosted world's console (CORE-CONSOLE), then clears CL-CMD-AT. For
+*> screenshot runs that need mobs, the time of day or the game mode without typing; nothing happens when CL-CMD-AT is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-LINE                PIC X(257).
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF CL-CMD-AT = 0 OR CL-FRAMES < CL-CMD-AT OR SM-SCREEN NOT = SCR-WORLD
+         GOBACK
+     END-IF
+     MOVE 0 TO CL-CMD-AT
+     MOVE 1 TO WS-START
+     PERFORM VARYING WS-POS FROM 1 BY 1 UNTIL WS-POS > 257
+         IF WS-POS = 257 OR CL-CMD-TEXT(WS-POS:1) = ";"
+             PERFORM UNTIL WS-START >= WS-POS OR CL-CMD-TEXT(WS-START:1) NOT = SPACE
+                 ADD 1 TO WS-START
+             END-PERFORM
+             COMPUTE WS-LENGTH = WS-POS - WS-START
+             PERFORM UNTIL WS-LENGTH = 0 OR CL-CMD-TEXT(WS-START + WS-LENGTH - 1:1) NOT = SPACE
+                 SUBTRACT 1 FROM WS-LENGTH
+             END-PERFORM
+             MOVE LOW-VALUES TO WS-LINE
+             IF WS-LENGTH > 0
+                 MOVE CL-CMD-TEXT(WS-START:WS-LENGTH) TO WS-LINE(1:WS-LENGTH)
+                 CALL "CORE-CONSOLE" USING WS-LINE
+             END-IF
+             COMPUTE WS-START = WS-POS + 1
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STARTUP-COMMANDS.

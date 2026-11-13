@@ -192,6 +192,22 @@
      IF PL-FLYING = 0 AND WS-FLUID = 0
          COMPUTE PL-VY = (PL-VY - 0.08) * 0.98
      END-IF
+*>   The push of an Explode packet's knockback adds to the horizontal move and decays by 0.546 a tick on the ground, 0.91 in the air.
+     COMPUTE WS-HX = WS-HX + PL-KB-X
+     COMPUTE WS-HZ = WS-HZ + PL-KB-Z
+     IF PL-ON-GROUND = 1
+         COMPUTE PL-KB-X = PL-KB-X * 0.546
+         COMPUTE PL-KB-Z = PL-KB-Z * 0.546
+     ELSE
+         COMPUTE PL-KB-X = PL-KB-X * 0.91
+         COMPUTE PL-KB-Z = PL-KB-Z * 0.91
+     END-IF
+     IF FUNCTION ABS(PL-KB-X) < 0.003
+         MOVE 0 TO PL-KB-X
+     END-IF
+     IF FUNCTION ABS(PL-KB-Z) < 0.003
+         MOVE 0 TO PL-KB-Z
+     END-IF
      MOVE 1 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-HX WS-BX
      MOVE 3 TO WS-AXIS
@@ -396,3 +412,41 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM PHYS-SOLID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EXPLODE-READ.
+*> USING CLIENT-STATE, packet (PROTO-PACKET reader): Explode 0x24 (05a): centre (3 doubles), radius (float), block count (Int), the optional knockback
+*> (Boolean, then 3 doubles); the particle, sound and block particles after it are not read. A knockback adds its x and z to the horizontal push (PL-KB-X,
+*> PL-KB-Z, spent by PHYS-TICK) and its y to the vertical speed (PL-VY).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-RADIUS              FLOAT-SHORT.
+ 01 WS-BLOCKS              BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-KX                  FLOAT-LONG.
+ 01 WS-KY                  FLOAT-LONG.
+ 01 WS-KZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-X
+     CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-Y
+     CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-Z
+     CALL "PB-GET-FLOAT" USING PB-BUFFER WS-RADIUS
+     CALL "PB-GET-INT" USING PB-BUFFER WS-BLOCKS
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+     IF WS-PRESENT = 1
+         CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-KX
+         CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-KY
+         CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-KZ
+         COMPUTE PL-KB-X = PL-KB-X + WS-KX
+         COMPUTE PL-KB-Z = PL-KB-Z + WS-KZ
+         COMPUTE PL-VY = PL-VY + WS-KY
+         MOVE 0 TO PL-ON-GROUND
+     END-IF
+     GOBACK.
+ END PROGRAM EXPLODE-READ.

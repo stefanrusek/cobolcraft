@@ -458,6 +458,8 @@
 
      MOVE "contract/fixtures/wire/play-s2c-0c-chunk-batch-start.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+*>   These cases read the sky light the packet stored; the sky light stopgap (CC-0007, sky-stopgap.cob) reads a stored 0 as lit, so it is off here (it has its own tests, test_sky_stopgap).
+     MOVE 0 TO PL-HAS-SKY
      MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract wire client Level Chunk With Light decodes into the replica: the marker "
@@ -488,10 +490,43 @@
          & "received.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-0b-chunk-batch-received.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+*>   Game Event 13 was received, so the client waits for the section of its camera (docs/protocol/50 section 7): Player Loaded is not sent with the batch and the
+*>   position, but when the wait ends (here by its 30 s deadline).
      MOVE 2 TO WS-INDEX
      CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
-     MOVE "contract wire client after the first batch and the position Player Loaded is sent "
+     MOVE "contract wire client after Game Event 13 the first batch and the position do not send Player Loaded yet"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     COMPUTE CL-NOW-MS = PL-WAIT-START + 30001
+     CALL "LOAD-WAIT-TICK" USING CLIENT-STATE
+     MOVE 2 TO WS-INDEX
+     CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
+     MOVE "contract wire client when the wait for the camera section ends Player Loaded is sent "
          & "(play-c2s-2c-player-loaded.hex)" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+*>   Without a wait for the level (no Game Event 13) Player Loaded goes out at once: on a finished chunk batch when the player is positioned, and on a position
+*>   after a batch (protocol-client.cob).
+     CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
+     MOVE 0 TO PL-LOADED PL-WAIT
+     MOVE "contract/fixtures/wire/play-s2c-0b-chunk-batch-finished.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 2 TO WS-INDEX
+     CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
+     MOVE "contract wire client with no wait a finished batch after the position sends Player Loaded at once" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
+     MOVE 0 TO PL-LOADED PL-WAIT
+     MOVE "contract/fixtures/wire/play-s2c-49-player-position.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 2 TO WS-INDEX
+     CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
+     MOVE "contract wire client with no wait a position after a finished batch sends Player Loaded at once" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
      CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
@@ -1264,6 +1299,8 @@
      MOVE 16 TO WR-BLOCK-BITS
      MOVE 1 TO CT-OPEN
      MOVE 35723 TO CT-STATE-COUNT
+*>   These cases read the sky light the packet stored; the sky light stopgap (CC-0007, sky-stopgap.cob) reads a stored 0 as lit, so it is off here (it has its own tests, test_sky_stopgap).
+     MOVE 0 TO PL-HAS-SKY
      MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-standard-24-sections.hex"
          TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH

@@ -960,10 +960,11 @@
  01 L-DRIVER               BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-DRIVER.
      MOVE 0 TO L-DRIVER
-     IF L-KEY = "minecraft:magma_block"
+*>   The standard set's keys have no namespace ("magma_block").
+     IF L-KEY = "minecraft:magma_block" OR L-KEY = "magma_block"
          MOVE 1 TO L-DRIVER
      END-IF
-     IF L-KEY = "minecraft:soul_sand"
+     IF L-KEY = "minecraft:soul_sand" OR L-KEY = "soul_sand"
          MOVE 2 TO L-DRIVER
      END-IF
      GOBACK.

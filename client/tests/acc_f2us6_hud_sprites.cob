@@ -227,8 +227,8 @@
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "UI-RENDER" USING CLIENT-STATE
-     MOVE "acceptance US6-5 the meters render 39 quads (234 vertices) of 9 x 9 sprites" TO TL-CASE
-     MOVE 234 TO TL-EXPECTED-N
+     MOVE "acceptance US6-5 the meters render 39 quads of 9 x 9 sprites, plus the experience bar background (240 vertices)" TO TL-CASE
+     MOVE 240 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-SURVIVAL-UI - RL-UI-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

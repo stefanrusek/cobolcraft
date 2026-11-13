@@ -10,6 +10,8 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY CBLOCKS.
+ COPY CMENU.
+ COPY CONTENT.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
@@ -38,6 +40,13 @@
  01 WS-TICKS               BINARY-LONG.
  01 WS-TEXT                PIC X(4096).
  01 WS-EDIT                PIC -(5)9.
+ 01 WS-DIR                 PIC X(1100).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ENCH-KEY            PIC X(112).
+ 01 WS-ENCH                BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-RESP-LEVEL          BINARY-LONG VALUE 3.
+ 01 WS-PADDED              PIC X(4100).
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
@@ -101,6 +110,23 @@
      MOVE "0 damage 1 type 6 source 0 | hurt 1 | health 18 food 17" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   The drowning particles: Entity Event 67 (0x22) is sent with the damage (42-7: drown bubbles x 8).
+     MOVE -19 TO PL-AIR(CN-PLAYER(WS-ALICE))
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+     MOVE 1 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+     MOVE "acceptance 42§7 given the air reaches -20 when the tick runs then the player is sent Entity Event 67 (packet 34)" TO TL-CASE
+     MOVE SPACES TO WS-PADDED
+     STRING " " FUNCTION TRIM(WS-TEXT) " " DELIMITED BY SIZE INTO WS-PADDED
+     MOVE 0 TO WS-N
+     INSPECT WS-PADDED TALLYING WS-N FOR ALL " 34 "
+     MOVE WS-N TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+
 *>   Out of water the air refills by 4 a tick up to 300: Alice walks up to y 103 (eye 104.6, no water).
      MOVE 103 TO WS-FY
      MOVE 0 TO WS-FLAGS
@@ -119,6 +145,38 @@
      MOVE PL-AIR(CN-PLAYER(WS-ALICE)) TO WS-EDIT
      MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
      MOVE "300" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Respiration III on the helmet (oxygen_bonus 3): air is lost on 1 tick of 4 (the draw is a hash of the tick, so 40 consecutive ticks lose 10).
+     MOVE 101 TO WS-FY
+     MOVE 1 TO WS-FLAGS
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     MOVE SPACES TO WS-DIR
+     MOVE "core/tests/fixtures/respiration-registry" TO WS-DIR
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     CALL "REGISTRY-LOAD-ALL" USING WS-DIR WS-STATUS
+     MOVE "minecraft:respiration" TO WS-ENCH-KEY
+     CALL "TOOL-ENCHANT-ID" USING WS-ENCH-KEY WS-ENCH
+     MOVE 0 TO WS-HANDLE
+     CALL "SP-ADD-ENCHANT" USING WS-HANDLE WS-ENCH WS-RESP-LEVEL
+     MOVE 5 TO MN-EQUIP-ITEM(CN-PLAYER(WS-ALICE), 4)
+     MOVE 1 TO MN-EQUIP-COUNT(CN-PLAYER(WS-ALICE), 4)
+     MOVE WS-HANDLE TO MN-EQUIP-VAR(CN-PLAYER(WS-ALICE), 4)
+     MOVE 300 TO PL-AIR(CN-PLAYER(WS-ALICE))
+     MOVE 40 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE "acceptance 17§4.12 given a helmet with Respiration III and the eye in water when 40 ticks pass then the air supply is 290" TO TL-CASE
+     MOVE PL-AIR(CN-PLAYER(WS-ALICE)) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "290" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO MN-EQUIP-COUNT(CN-PLAYER(WS-ALICE), 4)
+     MOVE 300 TO PL-AIR(CN-PLAYER(WS-ALICE))
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE "acceptance 18§2.5 given no helmet when 40 ticks pass under water then the air supply is 260" TO TL-CASE
+     MOVE PL-AIR(CN-PLAYER(WS-ALICE)) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "260" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A creative player breathes under water.
@@ -154,15 +212,17 @@
      MOVE WS-TEXT TO TL-OBSERVED
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   Water above the eye's cell too (a full column): the eye is under water.
+
+*>   Water above the cell of the eye (a third cell of water at y 103): the eye cell is full height there, so the eye is in the water at any height of the eye.
      MOVE 103 TO WS-BY
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-WATER
-     MOVE CN-PLAYER(WS-ALICE) TO WS-ALICE-ROW
-     CALL "BREATH-EYE-IN-WATER" USING WS-ALICE-ROW WS-IN
-     MOVE "N" TO TL-MODE
-     MOVE "acceptance 18§2.5 given water above the eye's cell when the eye is tested then it is in the water" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     MOVE WS-IN TO TL-OBSERVED-N
+     MOVE 300 TO PL-AIR(CN-PLAYER(WS-ALICE))
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE "acceptance 18§2.5 given water above the cell of the eye when 10 ticks pass then the air supply is 300 - 10" TO TL-CASE
+     MOVE PL-AIR(CN-PLAYER(WS-ALICE)) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "290" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

@@ -31,6 +31,7 @@
          END-PERFORM
      END-IF
 *>   An animated sprite whose frame changed: just its cell (the whole atlas upload above has it already).
+     CALL STATIC "cc_vk_texture_update_begin"
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AN-COUNT
          IF AN-DIRTY(WS-I) = 1
              MOVE AN-SPRITE(WS-I) TO WS-S
@@ -40,6 +41,7 @@
              MOVE 0 TO AN-DIRTY(WS-I)
          END-IF
      END-PERFORM
+     CALL STATIC "cc_vk_texture_update_end"
      IF AT-UPLOAD(2) = 1
          MOVE CC-TEX-ENTITIES TO WS-TEX
          CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE EA-W BY VALUE EA-H

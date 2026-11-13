@@ -18,6 +18,7 @@
  COPY FEATLEVEL.
  COPY CBLOCKS.
  01 WS-I                   BINARY-LONG.
+ 01 WS-FULL                PIC X(48).
  LINKAGE SECTION.
  01 L-ADDR                 USAGE POINTER.
  01 L-CX                   BINARY-LONG.
@@ -36,7 +37,9 @@
      IF FL-EPOCH NOT = CB-EPOCH + 1
          MOVE 0 TO FL-B-AIR FL-B-CAVE-AIR FL-B-VOID-AIR FL-B-WATER FL-B-LAVA FL-B-BEDROCK FL-S-AIR FL-S-VOID-AIR
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-             EVALUATE CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I))
+*>           The standard set keeps its keys without the namespace ("air", "water").
+             CALL "KEY-NAMESPACED" USING CB-KEY(WS-I) WS-FULL
+             EVALUATE FUNCTION TRIM(WS-FULL)
                  WHEN "minecraft:air"
                      MOVE WS-I TO FL-B-AIR
                      MOVE CB-DEFAULT-STATE(WS-I) TO FL-S-AIR

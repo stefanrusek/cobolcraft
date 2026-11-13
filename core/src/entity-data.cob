@@ -289,6 +289,7 @@
  01 WS-KEY                 PIC X(64).
  01 WS-LOCAL               PIC X(48).
  01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
+ 01 WS-BARE                PIC X(48).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-ENTITY-TYPE         BINARY-LONG.
@@ -329,8 +330,9 @@
                  MOVE SPACES TO WS-KEY
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
                  CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
-                     IF ET-KEY(WS-I) = WS-LOCAL
+                     IF ET-KEY(WS-I) = WS-LOCAL OR ET-KEY(WS-I) = WS-BARE
                          COMPUTE WS-ENTITY-TYPE = WS-I - 1
                      END-IF
                  END-PERFORM
@@ -366,8 +368,9 @@
                              CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY
                                  WS-KEY-LENGTH
                              CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                             CALL "KEY-BARE" USING WS-LOCAL WS-BARE
                              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
-                                 IF IT-KEY(WS-I) = WS-LOCAL
+                                 IF IT-KEY(WS-I) = WS-LOCAL OR IT-KEY(WS-I) = WS-BARE
                                      COMPUTE WS-ITEM = WS-I - 1
                                  END-IF
                              END-PERFORM

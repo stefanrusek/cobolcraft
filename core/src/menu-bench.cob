@@ -82,6 +82,7 @@
      END-IF
      COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
      IF CB-KEY(WS-BLOCK) = "cobolcraft:crafting_bench" OR CB-KEY(WS-BLOCK) = "minecraft:crafting_table"
+             OR CB-KEY(WS-BLOCK) = "crafting_table"
          MOVE 1 TO L-RESULT
      END-IF
      GOBACK.

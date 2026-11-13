@@ -1,6 +1,7 @@
 # Top-level commands (contracts/test-harness.md §1). Every output goes under build/.
 #   make bootstrap       check prerequisites, create build/, compile shaders
-#   make / make build    build/bin/cobolcraft and build/bin/cobolcraft-server
+#   make / make build    build/bin/cobolcraft and build/bin/cobolcraft-server (-debug)
+#   make build RELEASE=1 the same non-debug with -O2, under build/release/bin (gates and coverage stay -debug)
 #   make test            build and run every package's test programs, then the Convergence tests
 #                        (tests/convergence: cross-package acceptance tests)
 #   make lint            lint every package
@@ -17,6 +18,11 @@
 
 PYTHON   := python3
 BUILD    := $(CURDIR)/build
+RELEASE  ?= 0
+# Non-debug build: -O2 instead of -debug, kept under build/release so objects of the two never mix.
+ifeq ($(RELEASE),1)
+BUILD    := $(CURDIR)/build/release
+endif
 COVBUILD := $(BUILD)/coverage
 PKGS     := shim formats proto content extract core server client
 

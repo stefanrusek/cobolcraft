@@ -77,6 +77,7 @@
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE 1 TO PL-USED(1)
      MOVE PS-ALIVE TO PL-STATE(1)
+     MOVE 300 TO PL-AIR(1)
      MOVE 3 TO PL-DIM(1)
      MOVE 8.5 TO PL-X(1)
      MOVE 8.5 TO PL-Z(1)
@@ -292,13 +293,13 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   a tick under a wall limit of one hundredth of a second stops between two steps (a biome step takes more than that)
+*>   a tick under a wall limit of one hundredth of a second stops between two steps (a biome step takes about a millisecond on the fixture data, so a few steps fit; far below the 1000 asked for)
      MOVE 1000 TO WS-STEPS
      MOVE 1 TO WS-LIMIT
      CALL "GEN-QUEUE-STEPS" USING WS-STEPS WS-CHUNKS WS-LIMIT WS-RUN WS-DONE
      MOVE "test gen cost a wall limit stops the tick after a few steps, far below the step budget" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-RUN >= 1 AND WS-RUN <= 4
+     IF WS-RUN >= 1 AND WS-RUN <= 100
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      MOVE 1 TO TL-EXPECTED-N

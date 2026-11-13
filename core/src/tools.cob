@@ -269,7 +269,10 @@
  01 L-WATER                BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-WATER.
      MOVE 0 TO WS-HITS
-     INSPECT L-KEY TALLYING WS-HITS FOR ALL "minecraft:water "
+*>   The standard set's key is "water", the cobolcraft stand-ins' "minecraft:water".
+     IF L-KEY = "water" OR L-KEY = "minecraft:water"
+         MOVE 1 TO WS-HITS
+     END-IF
      MOVE WS-HITS TO L-WATER
      GOBACK.
  END PROGRAM TOOL-IS-WATER.

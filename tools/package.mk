@@ -10,6 +10,13 @@
 REPO     := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))..)
 BUILD    ?= $(REPO)/build
 COVERAGE ?= 0
+# RELEASE=1 (non-debug build, make build RELEASE=1): -O2 in place of -debug, never with COVERAGE.
+RELEASE  ?= 0
+ifeq ($(RELEASE)$(COVERAGE),10)
+DEBUGFLAG := -O2
+else
+DEBUGFLAG := -debug
+endif
 
 OUT  := $(BUILD)/$(PKG)
 OBJ  := $(OUT)/obj
@@ -20,7 +27,7 @@ LIB  := $(OUT)/$(LIBNAME)
 PKG_CONFIG := PKG_CONFIG_PATH=$(shell brew --prefix)/opt/openssl@3/lib/pkgconfig pkg-config
 
 TESTLIB  := $(REPO)/tools/testlib
-COBFLAGS := -free -debug -std=default -fstatic-call -I $(REPO)/contract/copy $(INCLUDES)
+COBFLAGS := -free $(DEBUGFLAG) -std=default -fstatic-call -I $(REPO)/contract/copy $(INCLUDES)
 CFLAGS   := -std=c11 -Wall -Wextra -I $(REPO)/contract/include $(INCLUDES)
 ifeq ($(COVERAGE),1)
 COBFLAGS += --coverage

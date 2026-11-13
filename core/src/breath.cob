@@ -2,8 +2,8 @@
 *> tick for every alive player (HEALTH-TICK). A survival player whose eye (feet + 1.6) is inside water loses 1 of the air supply (PL-AIR, 300 at most);
 *> at -20 or less it is reset to 0 and the player takes 2 drown damage (HEALTH-DAMAGE, CAUSE-DROWN), so that damage repeats every 20 ticks; out of
 *> water the air refills by 4 a tick up to 300. A creative player breathes anywhere (the abilities of a creative player are invulnerable). The player
-*> is sent Set Entity Data (slot 1, the Int air) whenever it changed. Not done: the oxygen_bonus and water-breathing rules, bubble columns, the drowning
-*> particles (Entity Event 67).
+*> is sent Set Entity Data (slot 1, the Int air) whenever it changed. Respiration (oxygen_bonus) slows the loss. Not done: water breathing, bubble columns, the bubble
+*> particles are the client's (Entity Event 67 is sent; the client does not wire it yet).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BREATH-EYE-IN-WATER.
@@ -85,8 +85,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY RULES.
  COPY PROTO.
+ 01 WS-BONUS               BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-ENCH-ID             BINARY-LONG.
+ 01 WS-ENCH-KEY            PIC X(112).
  01 WS-IN                  BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG VALUE 2.
@@ -94,6 +99,7 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-NONE2               BINARY-LONG VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 67.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -103,9 +109,27 @@
      ELSE
          CALL "BREATH-EYE-IN-WATER" USING L-ROW WS-IN
          IF WS-IN = 1
-             SUBTRACT 1 FROM PL-AIR(L-ROW)
+*>           Respiration of the helmet is oxygen_bonus b: the air is lost with probability 1 / (b + 1) (a hash of the tick and the player stands for the draw).
+             MOVE 0 TO WS-BONUS
+             IF MN-EQUIP-COUNT(L-ROW, 4) > 0
+                 MOVE "minecraft:respiration" TO WS-ENCH-KEY
+                 CALL "TOOL-ENCHANT-ID" USING WS-ENCH-KEY WS-ENCH-ID
+                     IF WS-ENCH-ID >= 0
+                     CALL "SP-ENCHANT-LEVEL" USING MN-EQUIP-VAR(L-ROW, 4) WS-ENCH-ID WS-BONUS
+                 END-IF
+             END-IF
+             COMPUTE WS-DRAW = FUNCTION MOD(CW-TICKS * 7 + L-ROW * 3, WS-BONUS + 1)
+             IF WS-DRAW = 0
+                 SUBTRACT 1 FROM PL-AIR(L-ROW)
+             END-IF
              IF PL-AIR(L-ROW) <= -20
                  MOVE 0 TO PL-AIR(L-ROW)
+*>               Entity Event 67 (the drown bubbles, 42 section 7) to the player and to those who see it.
+                 CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                 CALL "ENTITY-EVENT-BUILD" USING PL-ENTITY-ID(L-ROW) WS-EVENT PB-BUFFER
+                 CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+                 CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(L-ROW) PB-BUFFER
+                 CALL "PB-FREE" USING PB-BUFFER
                  CALL "HEALTH-DAMAGE" USING L-ROW WS-DAMAGE WS-CAUSE WS-NONE WS-NONE2
              END-IF
          ELSE

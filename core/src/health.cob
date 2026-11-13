@@ -150,11 +150,15 @@
  PROGRAM-ID. DEATH-TEXT-BUILD.
 *> USING cause (BINARY-LONG, RULES.cpy CAUSE-*), victim name (PIC X(16)), its length, attacker name
 *> (PIC X(16)), its length, PB-TEXT out: the cause's death message of MESSAGES.cpy, a `translate`
-*> component whose arguments are the victim's and the attacker's names as the message lists them.
+*> component whose arguments are the victim's and the attacker's names as the message lists them. A cobolcraft set uses the DTH- table, a standard
+*> set the vanilla keys of the DTS- table (17 section 4.13.2: death.attack.<message_id>; the .player and .item variants need a kill credit and a weapon
+*> name, which the core does not track yet).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY MESSAGES.
+ COPY CONTENT.
  01 WS-I                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-CAUSE                BINARY-LONG.
@@ -165,11 +169,22 @@
  PROCEDURE DIVISION USING L-CAUSE L-VICTIM L-VICTIM-LENGTH L-ATTACKER L-ATTACKER-LENGTH PB-TEXT.
      INITIALIZE PB-TEXT
      MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
-     MOVE DTH-KEY(L-CAUSE) TO PB-TX-VALUE
-     MOVE DTH-KEY-LENGTH(L-CAUSE) TO PB-TX-LENGTH
-     MOVE DTH-ARG-COUNT(L-CAUSE) TO PB-TX-ARG-COUNT
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         MOVE DTH-KEY(L-CAUSE) TO PB-TX-VALUE
+         MOVE DTH-KEY-LENGTH(L-CAUSE) TO PB-TX-LENGTH
+         MOVE DTH-ARG-COUNT(L-CAUSE) TO PB-TX-ARG-COUNT
+     ELSE
+         MOVE DTS-KEY(L-CAUSE) TO PB-TX-VALUE
+         MOVE DTS-KEY-LENGTH(L-CAUSE) TO PB-TX-LENGTH
+         MOVE DTS-ARG-COUNT(L-CAUSE) TO PB-TX-ARG-COUNT
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-TX-ARG-COUNT
-         IF DTH-ARG-KIND(L-CAUSE, WS-I) = MSG-ARG-VICTIM
+         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+             MOVE DTH-ARG-KIND(L-CAUSE, WS-I) TO WS-KIND
+         ELSE
+             MOVE DTS-ARG-KIND(L-CAUSE, WS-I) TO WS-KIND
+         END-IF
+         IF WS-KIND = MSG-ARG-VICTIM
              MOVE L-VICTIM TO PB-TX-ARG-VALUE(WS-I)
              MOVE L-VICTIM-LENGTH TO PB-TX-ARG-LENGTH(WS-I)
          ELSE
@@ -179,6 +194,112 @@
      END-PERFORM
      GOBACK.
  END PROGRAM DEATH-TEXT-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DEATH-TEXT-STD.
+*> USING player row, cause (RULES.cpy CAUSE-*), PB-TEXT out: the death message of a player in a standard world (17 section 4.13.2 and 4.13.3). A kill by a
+*> player or a mob (CAUSE-PLAYER, CAUSE-MOB) is death.attack.player or death.attack.mob with the victim and PL-KILLER-NAME, the .item form
+*> with the held item's custom name in brackets as third argument when PL-KILLER-ITEM is set. Every other cause has no entity: it takes the .player form
+*> with the kill credit (PL-CREDIT-NAME, valid while CW-TICKS - PL-CREDIT-TICK is at most 100) as second argument, else the plain key with the victim only. A
+*> fall of more than 5 blocks (PL-FALL-DISTANCE, thousandths) is death.fell.accident.generic, or death.fell.assist with the credit; a fall of at most 5 is
+*> death.attack.fall, or death.attack.fall.player with the credit. The fall location variants (ladder, vines, water) are not modelled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ 01 WS-CREDIT              PIC 9.
+ 01 WS-KEY                 PIC X(40).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-ARGS                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CAUSE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-CAUSE PB-TEXT.
+     MOVE 0 TO WS-CREDIT
+     IF PL-CREDIT-LENGTH(L-ROW) > 0 AND CW-TICKS - PL-CREDIT-TICK(L-ROW) <= 100
+         MOVE 1 TO WS-CREDIT
+     END-IF
+     MOVE SPACES TO WS-KEY
+     MOVE 1 TO WS-ARGS
+     EVALUATE L-CAUSE
+         WHEN CAUSE-PLAYER
+             MOVE "death.attack.player" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-MOB
+             MOVE "death.attack.mob" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-FALL
+             IF PL-FALL-DISTANCE(L-ROW) > 5000
+                 IF WS-CREDIT = 1
+                     MOVE "death.fell.assist" TO WS-KEY
+                     MOVE 2 TO WS-ARGS
+                 ELSE
+                     MOVE "death.fell.accident.generic" TO WS-KEY
+                 END-IF
+             ELSE
+                 IF WS-CREDIT = 1
+                     MOVE "death.attack.fall.player" TO WS-KEY
+                     MOVE 2 TO WS-ARGS
+                 ELSE
+                     MOVE "death.attack.fall" TO WS-KEY
+                 END-IF
+             END-IF
+         WHEN CAUSE-ARROW
+*>           death.attack.arrow: the victim and the shooter (PL-KILLER-NAME set by the arrow)
+             MOVE "death.attack.arrow" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-EXPLOSION
+*>           death.attack.explosion; with an attacker (a creeper: PL-KILLER-NAME set by the blast) death.attack.explosion.player
+             MOVE "death.attack.explosion" TO WS-KEY
+             IF PL-KILLER-LENGTH(L-ROW) > 0 OR WS-CREDIT = 1
+                 STRING FUNCTION TRIM(WS-KEY) ".player" DELIMITED BY SIZE INTO WS-KEY
+                 MOVE 2 TO WS-ARGS
+             END-IF
+         WHEN OTHER
+             EVALUATE L-CAUSE
+                 WHEN CAUSE-STARVATION
+                     MOVE "death.attack.starve" TO WS-KEY
+                 WHEN CAUSE-DROWN
+                     MOVE "death.attack.drown" TO WS-KEY
+                 WHEN CAUSE-COMMAND
+                     MOVE "death.attack.genericKill" TO WS-KEY
+                 WHEN OTHER
+                     MOVE "death.attack.generic" TO WS-KEY
+             END-EVALUATE
+             IF WS-CREDIT = 1
+                 STRING FUNCTION TRIM(WS-KEY) ".player" DELIMITED BY SIZE INTO WS-KEY
+                 MOVE 2 TO WS-ARGS
+             END-IF
+     END-EVALUATE
+     IF (L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB) AND PL-KILLER-ITEM-LENGTH(L-ROW) > 0
+         STRING FUNCTION TRIM(WS-KEY) ".item" DELIMITED BY SIZE INTO WS-KEY
+         MOVE 3 TO WS-ARGS
+     END-IF
+     INITIALIZE PB-TEXT
+     MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+     MOVE WS-KEY TO PB-TX-VALUE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO PB-TX-LENGTH
+     MOVE WS-ARGS TO PB-TX-ARG-COUNT
+     MOVE PL-NAME(L-ROW) TO PB-TX-ARG-VALUE(1)
+     MOVE PL-NAME-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(1)
+     IF WS-ARGS > 1
+         IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB OR L-CAUSE = CAUSE-ARROW OR (L-CAUSE = CAUSE-EXPLOSION AND PL-KILLER-LENGTH(L-ROW) > 0)
+             MOVE PL-KILLER-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
+             MOVE PL-KILLER-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
+         ELSE
+             MOVE PL-CREDIT-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
+             MOVE PL-CREDIT-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
+         END-IF
+     END-IF
+     IF WS-ARGS = 3
+         MOVE SPACES TO PB-TX-ARG-VALUE(3)
+         STRING "[" PL-KILLER-ITEM(L-ROW)(1:PL-KILLER-ITEM-LENGTH(L-ROW)) "]" DELIMITED BY SIZE
+             INTO PB-TX-ARG-VALUE(3)
+         COMPUTE PB-TX-ARG-LENGTH(3) = PL-KILLER-ITEM-LENGTH(L-ROW) + 2
+     END-IF
+     GOBACK.
+ END PROGRAM DEATH-TEXT-STD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-VIEWERS-SEND.
@@ -248,6 +369,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CONTENT.
  COPY CMENU.
  COPY RULES.
  COPY PROTO.
@@ -268,8 +390,10 @@
      CALL "EFFECT-CLEAR-ALL" USING WS-ROW
      MOVE PS-DEAD TO PL-STATE(WS-ROW)
      MOVE L-CAUSE TO PL-DEATH-CAUSE(WS-ROW)
-     MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
-     MOVE 0 TO PL-KILLER-LENGTH(WS-ROW)
+     IF L-CAUSE NOT = CAUSE-MOB AND L-CAUSE NOT = CAUSE-EXPLOSION AND L-CAUSE NOT = CAUSE-ARROW
+         MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
+         MOVE 0 TO PL-KILLER-LENGTH(WS-ROW)
+     END-IF
      IF L-ATTACKER > 0
          MOVE PL-NAME(L-ATTACKER) TO PL-KILLER-NAME(WS-ROW)
          MOVE PL-NAME-LENGTH(L-ATTACKER) TO PL-KILLER-LENGTH(WS-ROW)
@@ -278,8 +402,12 @@
      CALL "HUNGER-CANCEL" USING WS-ROW
      MOVE 0 TO PL-SPRINTING(WS-ROW)
      CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
-     CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
-         PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
+             PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
+     ELSE
+         CALL "DEATH-TEXT-STD" USING WS-ROW PL-DEATH-CAUSE(WS-ROW) PB-TEXT
+     END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "SYSTEM-CHAT-BUILD" USING PB-TEXT PB-BUFFER
      PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
@@ -309,6 +437,7 @@
              CALL "GI-DEATH-DROP" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
          END-IF
      END-PERFORM
+     CALL "XP-DEATH" USING WS-ROW
      CALL "MENU-RELEASE" USING WS-ROW WS-THROW
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
@@ -339,6 +468,114 @@
  END PROGRAM HEALTH-DAMAGE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. DAMAGE-TYPE-ID.
+*> USING cause (BINARY-LONG, RULES.cpy CAUSE-*), damage type id out (BINARY-LONG): the id of the cause's damage type in the open content set. The
+*> cobolcraft set numbers its types in RULES.cpy. A standard (or debug) set has the vanilla damage_type registry, a synchronized registry whose ids are
+*> the entries' positions (17 section 4.13.4): the cause's type is found there by key (fall, mob_attack for the abend and mob causes, player_attack,
+*> starve, generic for hail, generic_kill for the command, drown). Where the open set's registry has no such entry the RULES.cpy id is kept.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY RULES.
+ 01 WS-REGISTRY            PIC X(112) VALUE "minecraft:damage_type".
+ 01 WS-WANTED              PIC X(112).
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-PAYLOAD             PIC X(4096).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CAUSE                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CAUSE L-ID.
+     MOVE RULE-CAUSE-TYPE(L-CAUSE) TO L-ID
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-WANTED
+     EVALUATE L-CAUSE
+         WHEN CAUSE-FALL
+             MOVE "minecraft:fall" TO WS-WANTED
+         WHEN CAUSE-ABEND
+             MOVE "minecraft:mob_attack" TO WS-WANTED
+         WHEN CAUSE-MOB
+             MOVE "minecraft:mob_attack" TO WS-WANTED
+         WHEN CAUSE-PLAYER
+             MOVE "minecraft:player_attack" TO WS-WANTED
+         WHEN CAUSE-STARVATION
+             MOVE "minecraft:starve" TO WS-WANTED
+         WHEN CAUSE-COMMAND
+             MOVE "minecraft:generic_kill" TO WS-WANTED
+         WHEN CAUSE-DROWN
+             MOVE "minecraft:drown" TO WS-WANTED
+         WHEN CAUSE-EXPLOSION
+             MOVE "minecraft:explosion" TO WS-WANTED
+         WHEN CAUSE-ARROW
+             MOVE "minecraft:arrow" TO WS-WANTED
+         WHEN OTHER
+             MOVE "minecraft:generic" TO WS-WANTED
+     END-EVALUATE
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-COUNT OR WS-FOUND = 1
+         CALL "CONTENT-REGISTRY-ENTRY" USING WS-REGISTRY WS-I WS-KEY WS-KEY-LENGTH WS-PAYLOAD
+             WS-CAPACITY WS-LENGTH WS-STATUS
+         IF WS-KEY = WS-WANTED
+             MOVE WS-I TO L-ID
+             MOVE 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DAMAGE-TYPE-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HEALTH-MOB-HIT.
+*> USING player row, amount (BINARY-LONG points), mob tracker row: a mob's melee hit on a player (20 section 3.1: the difficulty scaling of a damage
+*> source that scales with difficulty: Peaceful 0, Easy min(d / 2 + 1, d), Normal d, Hard 3d / 2; the difficulty is BW-DIFFICULTY of the commands).
+*> The killer name for the death message is the mob's display name (STDMOB-NAME); the hurt itself is HEALTH-HURT with CAUSE-MOB (armor and Resistance
+*> apply, the damage type is mob_attack, the source entity is the mob).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY BRWORLD.
+ 01 WS-MILLI               BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-MOB                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-AMOUNT L-MOB.
+     CALL "BR-WORLD-READY"
+     COMPUTE WS-FULL = L-AMOUNT * 1000
+     COMPUTE WS-HALF = L-AMOUNT * 500 + 1000
+     EVALUATE BW-DIFFICULTY
+         WHEN 0
+             GOBACK
+         WHEN 1
+             COMPUTE WS-MILLI = FUNCTION MIN(WS-HALF, WS-FULL)
+         WHEN 2
+             MOVE WS-FULL TO WS-MILLI
+         WHEN OTHER
+             COMPUTE WS-MILLI = L-AMOUNT * 1500
+     END-EVALUATE
+     CALL "STDMOB-NAME" USING EN-TYPE(L-MOB) PL-KILLER-NAME(L-PLAYER) PL-KILLER-LENGTH(L-PLAYER)
+     MOVE 0 TO PL-KILLER-ITEM-LENGTH(L-PLAYER)
+     MOVE PL-KILLER-NAME(L-PLAYER) TO PL-CREDIT-NAME(L-PLAYER)
+     MOVE PL-KILLER-LENGTH(L-PLAYER) TO PL-CREDIT-LENGTH(L-PLAYER)
+     MOVE CW-TICKS TO PL-CREDIT-TICK(L-PLAYER)
+     CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-MOB EN-ID(L-MOB) WS-NO-ATTACKER WS-RESULT
+     GOBACK.
+ END PROGRAM HEALTH-MOB-HIT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-MOB-DAMAGE.
 *> USING mob tracker row, amount, cause (RULES.cpy CAUSE-*), attacker player row (0 = none)
 *> (BINARY-LONG each): the mob damage rules above.
@@ -353,6 +590,7 @@
  01 WS-SOURCE              BINARY-LONG.
  01 WS-APPLY               BINARY-LONG.
  01 WS-M                   BINARY-LONG.
+ 01 WS-DTYPE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -360,6 +598,15 @@
  01 L-ATTACKER             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-AMOUNT L-CAUSE L-ATTACKER.
      MOVE L-ROW TO WS-ROW
+     IF EN-HEALTH(WS-ROW) = 0
+         CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+         IF WS-M > 0
+             GOBACK
+         END-IF
+     END-IF
+     IF L-ATTACKER > 0
+         MOVE L-ATTACKER TO EN-KILLER(WS-ROW)
+     END-IF
      IF EN-HURT(WS-ROW) > RULE-HURT-FRESH
          IF L-AMOUNT > EN-LAST-HURT(WS-ROW)
              COMPUTE WS-APPLY = L-AMOUNT - EN-LAST-HURT(WS-ROW)
@@ -382,7 +629,8 @@
          COMPUTE WS-SOURCE = PL-ENTITY-ID(L-ATTACKER) + 1
      END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) RULE-CAUSE-TYPE(L-CAUSE) WS-SOURCE
+     CALL "DAMAGE-TYPE-ID" USING L-CAUSE WS-DTYPE
+     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) WS-DTYPE WS-SOURCE
          PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING WS-ROW PB-BUFFER
      CALL "PB-RESET" USING PB-BUFFER
@@ -393,6 +641,8 @@
      MOVE 0 TO WS-APPLY
      IF WS-M > 0
          MOVE MB-FLEE-MILLI(WS-M) TO WS-APPLY
+     ELSE
+         CALL "STDMOB-PANIC" USING EN-TYPE(WS-ROW) WS-APPLY
      END-IF
      IF L-ATTACKER > 0 AND WS-APPLY > 0
          MOVE MOB-FLEE-TICKS TO EN-FLEE(WS-ROW)
