@@ -46,3 +46,4 @@
  01 FK-INTERIOR       PIC X(40) VALUE "include_interior".
  01 FK-MIN-INC-X      PIC X(40) VALUE "min_inclusive".
  01 FK-PROPERTIES-UC  PIC X(40) VALUE "Properties".
+ 01 FK-DISTRIBUTION   PIC X(40) VALUE "distribution".

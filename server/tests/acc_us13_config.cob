@@ -114,7 +114,7 @@
      MOVE "port=25565 | default-game-mode=creative | description=A CobolCraft server | view-dis"
          & "tance=8 | player-combat=true | hostile-mobs=true | weather-changes=true | extra-dimen"
          & "sions=true | allow-list=false | pack-url= | pack-sha1= | pack-id= | pack-required=false"
-         & " | pack-prompt= | world-type=auto | generated-dir= | generation-workers=auto lines 34 uncommented 0" TO TL-EXPECTED
+         & " | pack-prompt= | world-type=auto | generated-dir= | generation-workers=auto | starter-kit=true lines 36 uncommented 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-LINE-NO TO WS-COUNT
      STRING FUNCTION TRIM(WS-PAIRS) " lines " FUNCTION TRIM(WS-COUNT) DELIMITED BY SIZE

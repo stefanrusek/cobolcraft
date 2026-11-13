@@ -16,7 +16,7 @@
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  PROCEDURE DIVISION.
-     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD
+     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT
      ADD 1 TO FD-GEN
      GOBACK.
  END PROGRAM FD-RESET.
@@ -189,16 +189,23 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-J-IP.
 *> USING doc, node, provider out (BINARY-LONG x 4: type, a, b, c), ok out. Types: 1 constant (a), 2 uniform (a to b), 3 biased_to_bottom (a to b), 4 very_biased_to_bottom
-*> (a to b), 5 trapezoid (min a, max b, plateau c). A bare number is a constant.
+*> (a to b), 5 trapezoid (min a, max b, plateau c), 6 weighted_list of constants (a the first pool entry of the pairs value and weight, b the pair count, c the total weight).
+*> A bare number is a constant.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FDKEYS.
+ COPY FEATDATA.
  01 WS-N                   BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-TEXT                PIC X(120).
  01 WS-LEN                 BINARY-LONG.
  01 WS-MN                  BINARY-LONG.
  01 WS-MX                  BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-E2                  BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -240,6 +247,39 @@
              CALL "FD-J-RANGE" USING JSON-DOC L-NODE WS-MN WS-MX L-OK
              MOVE WS-MN TO L-V(2)
              MOVE WS-MX TO L-V(3)
+         WHEN "minecraft:weighted_list"
+         WHEN "weighted_list"
+*>           pairs (value, weight) in the pool: a the first entry, b the entry count, c the total weight; the data are constants (a number, or a constant provider)
+             MOVE 6 TO L-V(1)
+             MOVE 1 TO L-OK
+             MOVE 0 TO L-V(3) L-V(4)
+             COMPUTE L-V(2) = FD-POOL-COUNT + 1
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-DISTRIBUTION WS-N
+             IF WS-N = 0
+                 MOVE 0 TO L-OK
+             ELSE
+                 PERFORM VARYING WS-MN FROM 0 BY 1 UNTIL WS-MN >= JN-COUNT(WS-N)
+                     CALL "JSON-ELEMENT" USING JSON-DOC WS-N WS-MN WS-MX
+                     CALL "FD-J-MEMBER" USING JSON-DOC WS-MX FK-DATA WS-E
+                     CALL "FD-J-INT" USING JSON-DOC WS-E WS-V WS-OK
+                     IF WS-OK = 0
+                         CALL "FD-J-MEMBER" USING JSON-DOC WS-E FK-VALUE WS-E2
+                         CALL "FD-J-INT" USING JSON-DOC WS-E2 WS-V WS-OK
+                     END-IF
+                     IF WS-OK = 0
+                         MOVE 0 TO L-OK
+                     END-IF
+                     CALL "FD-POOL-ADD" USING WS-V WS-IDX
+                     CALL "FD-J-MEMBER" USING JSON-DOC WS-MX FK-WEIGHT WS-E
+                     CALL "FD-J-INT" USING JSON-DOC WS-E WS-W WS-OK
+                     IF WS-OK = 0
+                         MOVE 0 TO L-OK
+                     END-IF
+                     CALL "FD-POOL-ADD" USING WS-W WS-IDX
+                     ADD WS-W TO L-V(4)
+                     ADD 1 TO L-V(3)
+                 END-PERFORM
+             END-IF
          WHEN "minecraft:trapezoid"
          WHEN "trapezoid"
              MOVE 5 TO L-V(1)
@@ -505,6 +545,7 @@
  01 LS-Z                   BINARY-LONG.
  01 LS-A                   BINARY-LONG.
  01 LS-B                   BINARY-LONG.
+ 01 LS-CAP                 BINARY-LONG VALUE 120.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -567,6 +608,25 @@
                      MOVE LS-CHILD TO LS-PREV
                  END-PERFORM
              END-IF
+         WHEN 7
+*>           would_survive of a sapling: the state is a plain id string; the pool holds the blocks of the tag supports_vegetation (a sapling stands on them)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-STATE LS-E
+             MOVE SPACES TO LS-TEXT
+             IF LS-E > 0
+                 CALL "JSON-STRING" USING JSON-DOC LS-E LS-TEXT LS-CAP LS-LEN
+             END-IF
+             MOVE 0 TO LS-N
+             IF LS-LEN > 7
+                 IF LS-TEXT(LS-LEN - 6:7) = "sapling"
+                     MOVE 1 TO LS-N
+                 END-IF
+             END-IF
+             IF LS-N = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             COMPUTE PR-POOL(LS-ROW) = FD-POOL-COUNT + 1
+             MOVE "minecraft:supports_vegetation" TO LS-TAG
+             CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
          WHEN 11
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PREDICATE LS-E
              CALL "FD-PRED-NODE" USING JSON-DOC LS-E PR-CHILD(LS-ROW)
@@ -1152,6 +1212,7 @@
  01 LS-CHANCE              BINARY-LONG.
  01 LS-CH                  BINARY-LONG.
  01 LS-NC                 BINARY-LONG.
+ 01 LS-SAVED-BAD           BINARY-LONG.
  01 LS-KIDS.
     05 LS-KID OCCURS 64 TIMES.
        10 LS-CPF            BINARY-LONG.
@@ -1248,6 +1309,16 @@
          WHEN 42
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-TO-PLACE LS-E
              CALL "FD-PROV-NODE" USING JSON-DOC LS-E FT-A(LS-ROW)
+         WHEN 51
+*>           a tree the compiler cannot place whole is an unsupported feature (type -1), never a half understood one; FD-BAD stays set for the caller
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-TREE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN OTHER
              MOVE -1 TO FT-TYPE(LS-ROW)
              MOVE 1 TO FD-BAD

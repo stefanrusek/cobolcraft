@@ -32,6 +32,7 @@ and uses them.
 | `pack-required` | `true`, `false` | `false` | required |
 | `pack-prompt` | text, or empty | empty | prompt message |
 | `generation-workers` | `auto`, or 0 to 4 | `auto` | chunk generation worker processes of a standard world (002 operator decision, docs/design/generation-worker.md): `auto` is half the processors online (at least 1, at most 4), 0 generates inside the tick; a world that is not of the standard type never starts one |
+| `starter-kit` | `true`, `false` | `true` | a first-time survival player of a standard world starts with 1 crafting table, 16 oak logs, 8 oak planks and 8 sticks in hotbar slots 0 to 3 (once: not on respawn, not on a later join); `false` gives an empty inventory. A cobolcraft world keeps its stand-in starting items whatever the key says (002 operator decision, docs/design/world-types.md "Starter kit") |
 
 A missing key takes its default. An unknown key or an invalid value is a fatal error (research R14): the
 console shows `FATAL configuration: <key>: <problem>` and the server exits with status 1.

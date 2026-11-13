@@ -21,6 +21,7 @@
     05 FD-POOL-COUNT        BINARY-LONG.
     05 FD-PV-COUNT          BINARY-LONG.
     05 FD-BAD               BINARY-LONG.
+    05 FD-TR-COUNT          BINARY-LONG.
 *>  placed features: PF-STATUS 0 stub (not compiled), 1 compiled, 2 unsupported; the modifiers PF-MD-FIRST on for PF-MD-COUNT; the feature index PF-FT
     05 FD-PF OCCURS 1024 TIMES.
        10 PF-KEY            PIC X(80).
@@ -76,3 +77,34 @@
        10 PV-A              BINARY-LONG.
        10 PV-POOL           BINARY-LONG.
        10 PV-N              BINARY-LONG.
+*>  tree features (type 51; core/src/feat-tree.cob FD-TREE-NODE and FR-TREE, docs/protocol/35-worldgen-features-3 sections 2 to 5): FT-A of the feature is the row. The trunk is the
+*>  straight placer (base height and the two random heights); the foliage placer TR-FKIND 1 blob, 2 spruce, 3 pine, each int provider four integers like FR-INT-SAMPLE (TR-FH the
+*>  height, TR-RAD the radius, TR-OFF the offset, TR-TH the spruce trunk_height); the size TR-SZ-LIMIT, TR-SZ-LOWER, TR-SZ-UPPER (two layers); the states are default states (the log's
+*>  axis y, the leaves at distance 7, not persistent, not waterlogged); TR-LEAF-BLOCK the block index of the leaves. The pools hold block indices: the tag replaceable_by_trees, the tag
+*>  logs and the tag cannot_replace_below_tree_trunk (the soil_beneath_tree provider puts TR-SOIL-STATE under the trunk where the block is not in that tag).
+    05 FD-TR OCCURS 256 TIMES.
+       10 TR-BASE           BINARY-LONG.
+       10 TR-RA             BINARY-LONG.
+       10 TR-RB             BINARY-LONG.
+       10 TR-LOG-STATE      BINARY-LONG.
+       10 TR-LEAF-STATE     BINARY-LONG.
+       10 TR-LEAF-BLOCK     BINARY-LONG.
+       10 TR-SOIL-STATE     BINARY-LONG.
+       10 TR-FKIND          BINARY-LONG.
+       10 TR-FH.
+          15 TR-FH-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-RAD.
+          15 TR-RAD-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-OFF.
+          15 TR-OFF-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-TH.
+          15 TR-TH-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-SZ-LIMIT       BINARY-LONG.
+       10 TR-SZ-LOWER       BINARY-LONG.
+       10 TR-SZ-UPPER       BINARY-LONG.
+       10 TR-REPL-START     BINARY-LONG.
+       10 TR-REPL-N         BINARY-LONG.
+       10 TR-LOGS-START     BINARY-LONG.
+       10 TR-LOGS-N         BINARY-LONG.
+       10 TR-CANT-START     BINARY-LONG.
+       10 TR-CANT-N         BINARY-LONG.

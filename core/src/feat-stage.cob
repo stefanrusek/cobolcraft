@@ -140,8 +140,10 @@
                          MOVE WGN-TEXT-1(WS-NODE)(1:80) TO WS-KEY
                          PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > FI-COUNT(WS-K)
                              IF FI-KEY(WS-K, WS-J) = WS-KEY
-                                 MOVE 1 TO WS-WANT-FLAG(WS-J)
-                                 MOVE 1 TO WS-HAVE
+                                 IF FI-ONLY NOT = 1 OR WS-KEY(1:16) = "minecraft:trees_"
+                                     MOVE 1 TO WS-WANT-FLAG(WS-J)
+                                     MOVE 1 TO WS-HAVE
+                                 END-IF
                              END-IF
                          END-PERFORM
                      END-IF

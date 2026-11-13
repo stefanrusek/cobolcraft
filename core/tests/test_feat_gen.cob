@@ -13,6 +13,7 @@
  COPY CLIMATE.
  COPY CBLOCKS.
  COPY CELLS.
+ COPY FEATINDEX.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/gen".
  01 WS-FEAT-DIR            PIC X(1100) VALUE "core/tests/fixtures/feat".
  01 WS-STATUS              BINARY-LONG.
@@ -194,6 +195,24 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   a world of the standard type runs only the tree features of its biomes (FI-ONLY, set by WORLD-GEN-DATA-OPEN): the flowers of the fixture lists are not placed
+     MOVE 1 TO FI-ONLY
+     CALL "GEN-QUEUE-RESET"
+     INITIALIZE GEN-STAGES
+     CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-REF3 WS-REF-Y
+     SET ADDRESS OF CE-CHUNK TO ADDRESS OF WS-REF3
+     MOVE 0 TO WS-FLOWERS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CE-STATE-CELLS
+         IF CE-STATE(WS-I) = 200 OR CE-STATE(WS-I) = 201
+             ADD 1 TO WS-FLOWERS
+         END-IF
+     END-PERFORM
+     MOVE 0 TO FI-ONLY
+     MOVE "acceptance feature generation: with only the tree features wanted a chunk of the flower lists has no flower" TO TL-CASE
+     MOVE WS-FLOWERS TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      GOBACK.
  END PROGRAM TEST-FEAT-GEN.
