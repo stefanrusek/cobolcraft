@@ -133,6 +133,17 @@
      MOVE "minecraft:zombie" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
 
+*>   The mooshroom is row 5 (as a cow, 19 section 2.3) and is not in the grass spawn cycle.
+     MOVE "minecraft:mooshroom" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "test stdmob slice: STDMOB-INDEX of the mooshroom is row 5" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+
 *>   A pig spawned by MOB-SPAWN has the full health of its row (19 section 2.1: max_health 10).
      MOVE PL-X(WS-PLAYER) TO WS-X
      MOVE PL-Y(WS-PLAYER) TO WS-Y

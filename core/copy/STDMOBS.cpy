@@ -4,7 +4,9 @@
 *> and the panic speed of the mob's goal list: (movement_speed x speedModifier) squared / 0.454 (18 section 3.2.1, the steady state of a mob on
 *> ground with friction 0.6). The loot of a mob is its table minecraft:entities/<key> (18 section 7.6; STDMOB-DROPS). The mob category is creature
 *> (18 section 1.2) for every row of this table.
- 78 SM-COUNT                 VALUE 4.
+ 78 SM-COUNT                 VALUE 5.
+*> The first SM-NATURAL rows spawn on grass in the natural cycle (18 section 6.8 animal rule); the rest need other ground or other rules.
+ 78 SM-NATURAL               VALUE 4.
  01 STD-MOB-DATA.
     05 FILLER.
        10 FILLER PIC X(24) VALUE "pig".
@@ -26,8 +28,13 @@
        10 FILLER BINARY-LONG VALUE 4.
        10 FILLER BINARY-LONG VALUE 138.            *> 0.25 x 1.0
        10 FILLER BINARY-LONG VALUE 270.            *> 0.25 x 1.4
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "mooshroom".
+       10 FILLER BINARY-LONG VALUE 10.
+       10 FILLER BINARY-LONG VALUE 88.             *> as cow: 0.2 x 1.0 (19 section 2.3)
+       10 FILLER BINARY-LONG VALUE 352.            *> 0.2 x 2.0
  01 STD-MOB-TABLE REDEFINES STD-MOB-DATA.
-    05 SM-ENTRY OCCURS 4 TIMES.
+    05 SM-ENTRY OCCURS 5 TIMES.
        10 SM-KEY                PIC X(24).
        10 SM-HEALTH             BINARY-LONG.
        10 SM-WALK-MILLI         BINARY-LONG.

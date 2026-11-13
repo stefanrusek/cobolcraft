@@ -22,7 +22,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 4 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS 5 TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -364,7 +364,7 @@
  PROGRAM-ID. STDMOB-SPAWN-RULE.
 *> USING dimension row, x, z, top (BINARY-LONG: the block column and the y of its ground block), r (BINARY-DOUBLE, a hash): one pack
 *> of the creature category at that column (18 section 6.5, the position rules of 6.8 and the animal rule): the type is table row
-*> 1 + (r div 4) mod SM-COUNT, the pack size 1 + r mod 4. A member needs grass_block below its cell, two air cells above and a raw
+*> 1 + (r div 4) mod SM-NATURAL, the pack size 1 + r mod 4. A member needs grass_block below its cell, two air cells above and a raw
 *> brightness above 8, and fewer than SM-LOCAL-CAP creatures within SM-CAP-CHUNKS chunks of its chunk (6.3 local cap). The first member
 *> stands at the column, each next one at a cursor that moves by nextInt(6) - nextInt(6) blocks per axis (6.5 step 1) at the same y.
  DATA DIVISION.
@@ -418,7 +418,7 @@
          MOVE CB-EPOCH TO WS-EPOCH
      END-IF
      COMPUTE WS-Q = L-R / 4
-     COMPUTE WS-M = FUNCTION MOD(WS-Q, SM-COUNT) + 1
+     COMPUTE WS-M = FUNCTION MOD(WS-Q, SM-NATURAL) + 1
      COMPUTE WS-SIZE = FUNCTION MOD(L-R, SM-PACK-MAX) + 1
      MOVE SPACES TO WS-KEY
      STRING "minecraft:" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO WS-KEY
