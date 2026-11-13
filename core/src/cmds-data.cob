@@ -1580,9 +1580,6 @@
                      MOVE 3 TO WS-LAST
                  END-IF
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-LAST
-                     IF WS-F = 1 AND WS-S > 1
-                         EXIT PERFORM
-                     END-IF
                      MOVE SPACES TO WS-PATH
                      MOVE 1 TO WS-POINTER
                      STRING "data modify " DELIMITED BY SIZE WS-TARGET(WS-H) DELIMITED BY "  "

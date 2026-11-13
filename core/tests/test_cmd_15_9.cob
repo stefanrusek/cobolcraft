@@ -286,6 +286,8 @@
          "@3".
     05 FILLER PIC X(300) VALUE "nt 1_$".
     05 FILLER PIC X(200) VALUE "err snbt.parser.undescore_not_allowed@3".
+    05 FILLER PIC X(300) VALUE "nt -e5$".
+    05 FILLER PIC X(200) VALUE "err snbt.parser.invalid_unquoted_start@3".
     05 FILLER PIC X(300) VALUE "nt ""abc$".
     05 FILLER PIC X(200) VALUE "err parsing.quote.expected.end@7".
     05 FILLER PIC X(300) VALUE "nt foo(1)$".
@@ -338,7 +340,7 @@
     05 FILLER PIC X(300) VALUE "np foo]$".
     05 FILLER PIC X(200) VALUE "err parsing.expected|.@6".
  01 WS-TABLE REDEFINES WS-CASES.
-    05 WS-CASE OCCURS 114 TIMES.
+    05 WS-CASE OCCURS 115 TIMES.
        10 WS-CASE-LINE PIC X(300).
        10 WS-CASE-EXPECTED PIC X(200).
  01 WS-LINE                PIC X(1024).
@@ -377,7 +379,7 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
          PERFORM ADD-TYPE
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 114
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 115
          MOVE WS-CASE-LINE(WS-I) TO WS-LINE
          MOVE WS-CASE-EXPECTED(WS-I) TO WS-EXPECTED
          PERFORM CHECK

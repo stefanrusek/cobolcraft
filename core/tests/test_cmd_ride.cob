@@ -145,6 +145,17 @@
      MOVE "ride Cleo dismount" TO WS-LINE
      MOVE "Cleo is not riding any vehicle" TO WS-EXPECTED
      CALL "TA-CHECK-CONSOLE" USING TL-CASE WS-LINE WS-EXPECTED
+     MOVE "summon cobolcraft:abend 12.0 64.0 12.0" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "summon cobolcraft:abend 14.0 64.0 14.0" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "ride Alice mount @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /ride a second rider while another is riding takes the next free riding entry" TO TL-CASE
+     MOVE "ride @e[type=cobolcraft:abend,x=12,y=64,z=12,sort=nearest,limit=1] mount @e[type=cobolcraft:abend,x=14,y=64,z=14,sort=nearest,limit=1]" TO WS-LINE
+     MOVE "commands.ride.mount.success(cobolcraft:abend,cobolcraft:abend)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      GOBACK.
  END PROGRAM TEST-CMD-RIDE.
 

@@ -281,6 +281,22 @@
     MOVE "team add green" TO WS-LINE
     MOVE 1 TO WS-EXPECTED-N
     CALL "TA-CHECK-N" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED-N
+    MOVE "acceptance US13 /team join a member to the team that is removed next" TO TL-CASE
+    MOVE "team join green Alice" TO WS-LINE
+    MOVE "commands.team.join.success.single(Alice,green)" TO WS-EXPECTED
+    CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+    MOVE "acceptance US13 /team remove a team with a member frees the member" TO TL-CASE
+    MOVE "team remove green" TO WS-LINE
+    MOVE "commands.team.remove.success(green)" TO WS-EXPECTED
+    CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+    MOVE "acceptance US13 /team add the removed team again" TO TL-CASE
+    MOVE "team add green" TO WS-LINE
+    MOVE "commands.team.add.success(green)" TO WS-EXPECTED
+    CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+    MOVE "acceptance US13 /team join from the console without members: an entity is required" TO TL-CASE
+    MOVE "team join green" TO WS-LINE
+    MOVE "An entity is required to run this command here" TO WS-EXPECTED
+    CALL "TA-CHECK-CONSOLE" USING TL-CASE WS-LINE WS-EXPECTED
     MOVE "acceptance US13 /team a player below level 2 cannot run it" TO TL-CASE
     MOVE "team list" TO WS-LINE
     MOVE "command.unknown.command() |" TO WS-EXPECTED

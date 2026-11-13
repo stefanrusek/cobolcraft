@@ -259,6 +259,38 @@
      MOVE "{} {patterns:[{pattern:minecraft:stripe_bottom,color:red}]}" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "acceptance US12 31-3§3 Banners: decode failure (3.2): a layer whose colour is not a dye name fails the whole list, so patterns load as EMPTY" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:blue_banner" TO WS-KEY
+     MOVE 21 TO WS-SVL
+     MOVE 20 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "patterns" TO WS-NM
+     MOVE 8 TO WS-NML
+     MOVE 10 TO WS-LT
+     MOVE 1 TO WS-LC
+     PERFORM NB-L
+     MOVE "pattern" TO WS-NM
+     MOVE 7 TO WS-NML
+     MOVE "minecraft:stripe_bottom" TO WS-SV
+     MOVE 23 TO WS-SVL
+     PERFORM NB-S
+     MOVE "color" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE "plaid" TO WS-SV
+     MOVE 5 TO WS-SVL
+     PERFORM NB-S
+     PERFORM NB-E
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "acceptance US12 31-3§3 Banners: pattern registry (3.2): the 43 banner_pattern ids in the order of the list (base 0, border 1, stripe_bottom 31, mojang 21, triangles_top 42); an unknown or differently cased id is -1" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "base" TO WS-N32

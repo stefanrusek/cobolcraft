@@ -2050,6 +2050,34 @@
  END PROGRAM CXB-TWO-DECIMALS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-SPREAD-AWAY.
+*> USING pile x, pile z, mean dx, mean dz of the neighbours (FLOAT-LONG each), then the box min x, max x, min z, max z: moves the pile one block away from the
+*> neighbours; a zero mean (the neighbours cancel out or sit on the pile) puts the pile at a random place of the box instead.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LEN                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-PX                   FLOAT-LONG.
+ 01 L-PZ                   FLOAT-LONG.
+ 01 L-AX                   FLOAT-LONG.
+ 01 L-AZ                   FLOAT-LONG.
+ 01 L-MINX                 FLOAT-LONG.
+ 01 L-MAXX                 FLOAT-LONG.
+ 01 L-MINZ                 FLOAT-LONG.
+ 01 L-MAXZ                 FLOAT-LONG.
+ PROCEDURE DIVISION USING L-PX L-PZ L-AX L-AZ L-MINX L-MAXX L-MINZ L-MAXZ.
+     COMPUTE WS-LEN = FUNCTION SQRT(L-AX * L-AX + L-AZ * L-AZ)
+     IF WS-LEN > 0
+         COMPUTE L-PX = L-PX - L-AX / WS-LEN
+         COMPUTE L-PZ = L-PZ - L-AZ / WS-LEN
+     ELSE
+         COMPUTE L-PX = L-MINX + FUNCTION RANDOM * (L-MAXX - L-MINX)
+         COMPUTE L-PZ = L-MINZ + FUNCTION RANDOM * (L-MAXZ - L-MINZ)
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-SPREAD-AWAY.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-SPREADPLAYERS.
 *> spreadplayers <center> <spreadDistance> <maxRange> [under <maxHeight>] <respectTeams> <targets> (16 §5.3, level 2): the piles (one per target; with respectTeams
 *> one for all, the core keeps no teams) start at random in the box of maxRange around the centre, then each iteration (at most 10000, ending when none moves) moves
@@ -2101,7 +2129,6 @@
  01 WS-N                   BINARY-LONG.
  01 WS-AX                  FLOAT-LONG.
  01 WS-AZ                  FLOAT-LONG.
- 01 WS-LEN                 FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
  01 WS-D                   FLOAT-LONG.
@@ -2181,13 +2208,7 @@
      IF WS-N > 0
          COMPUTE WS-AX = WS-AX / WS-N
          COMPUTE WS-AZ = WS-AZ / WS-N
-         COMPUTE WS-LEN = FUNCTION SQRT(WS-AX * WS-AX + WS-AZ * WS-AZ)
-         IF WS-LEN > 0
-             COMPUTE WS-PX(WS-P) = WS-PX(WS-P) - WS-AX / WS-LEN
-             COMPUTE WS-PZ(WS-P) = WS-PZ(WS-P) - WS-AZ / WS-LEN
-         ELSE
-             PERFORM RANDOMIZE
-         END-IF
+         CALL "CXB-SPREAD-AWAY" USING WS-PX(WS-P) WS-PZ(WS-P) WS-AX WS-AZ WS-MINX WS-MAXX WS-MINZ WS-MAXZ
          MOVE 1 TO WS-MOVED
      END-IF
      IF WS-PX(WS-P) < WS-MINX
