@@ -186,6 +186,20 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An item whose definition is code-drawn (a chest: a select whose fallback is a special model; also banners, beds, shields) shows
+*>   its base model's particle texture instead of no icon (user bug: a flat olive hotbar slot).
+     MOVE "chest" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SLOT
+     MOVE SPACES TO WS-SPRITE-ID
+     MOVE "minecraft:block/stone" TO WS-SPRITE-ID
+     MOVE 21 TO WS-SPRITE-LENGTH
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-SPRITE-ID WS-SPRITE-LENGTH WS-SPRITE-FOUND
+     MOVE "standard models a code-drawn item's icon is its base model's particle sprite" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-SPRITE-FOUND TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The hand draws a block item with the faces of its model, not one icon on every face (user bug: a flat coloured cube).
      MOVE "grass_block" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
