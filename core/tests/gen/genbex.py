@@ -17,6 +17,10 @@ WSV=''.join(' 01 WS-%s                 BINARY-LONG.\n'%c for c in 'ABCEFGHPQRSUV
  01 WS-T2                 PIC X(64).
  01 WS-TAB.
     05 WS-TV              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TAB2.
+    05 WS-TV2            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TAB3.
+    05 WS-TV3            BINARY-LONG OCCURS 192 TIMES.
  01 WS-LONG1              BINARY-DOUBLE.
  01 WS-LONG2              BINARY-DOUBLE.
 '''

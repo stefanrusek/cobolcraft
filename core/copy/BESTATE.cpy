@@ -65,7 +65,7 @@
        10 BE-XT             PIC X(64) OCCURS 20 TIMES.
        10 BE-XF             FLOAT-SHORT OCCURS 12 TIMES.
        10 BE-TIME2          BINARY-DOUBLE SIGNED.
-       10 BE-XD             FLOAT-LONG OCCURS 4 TIMES.
+       10 BE-XD             FLOAT-LONG OCCURS 8 TIMES.
        10 BE-UUID           BINARY-LONG OCCURS 640 TIMES.
        10 BE-CMD-LENGTH     BINARY-LONG.
        10 BE-CMD            PIC X(256).
@@ -85,6 +85,11 @@
 *>        3 connected_particles_range; XT 4 display item id, XI 6 length, XI 7 count; XI 8 connected players (BE-UUID 513..640); XI 25 rewarded players (BE-UUID 1..512, at most 128);
 *>        XT 5..12 the items to eject (XI 59 their count, counts in BE-SLOT-COUNT 1..8, XI 60 total_ejections_needed, not saved); BE-SEED state_updating_resumes_at, BE-TIME2 lastInsertFailTimestamp
 *>        (not saved); XI 61 shared data dirty, XI 62 server data dirty
+*>   sculk sensor (34), calibrated sculk sensor (35), sculk shrieker (37): XI 1 last_vibration_frequency (warning_level of the shrieker); the vibration data of 31-8 section 3.4: XI 2 a vibration is in
+*>        flight, XT 1 its game event key (XI 3 length), XF 1 distance, XD 1..3 position, XI 4 source UUID set (BE-UUID 1..4), XI 5 projectile owner set (BE-UUID 5..8), XI 6 travel time (event_delay);
+*>        the selector: XI 7 a candidate is held, XT 2 its key (XI 8 length), XF 2 distance, XD 4..6 position, XI 9 source set (BE-UUID 9..12), XI 10 owner set (BE-UUID 13..16), BE-SEED its tick;
+*>        XI 11 reloadVibrationParticle. sculk catalyst (36): XI 1 cursor count (at most 32), cursor i at BE-UUID 7 (i - 1) + 1..7: x, y, z, charge, decay_delay, update_delay, facings (-1 absent, else a
+*>        bit mask of the six directions). potent sulfur (48): XI 1 countdown (-1), BE-TIME2 eruptionTick (-1, not saved)
 *> The ender chest storage of each player (31-1 section 11, 45-3 section 5): one detached CORE-BE entity (dimension 0, type ender chest)
 *> per player UUID, created on the first open or when the player file is read, and kept while the world is open.
  78 ENDER-MAX             VALUE 64.
