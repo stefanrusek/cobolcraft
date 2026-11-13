@@ -51,6 +51,11 @@
  78 BC-RECIPE            VALUE 208.
  78 BC-ITEM              VALUE 209.
  78 BC-LOOT              VALUE 210.
+ 78 BC-ADVANCEMENT       VALUE 211.
+ 78 BC-ATTRIBUTE         VALUE 212.
+ 78 BC-RIDE              VALUE 213.
+ 78 BC-SPECTATE          VALUE 214.
+ 78 BC-WAYPOINT          VALUE 215.
 *> The commands of core/src/cmds-admin.cob, cmds-state.cob and cmds-chat.cob added in the lane cmds-a (run by CX-DISPATCH-A).
  78 BC-CHASE             VALUE 101.
  78 BC-DEBUG             VALUE 102.

@@ -2373,3 +2373,1340 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SPREADPLAYERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-SET-CAMERA.
+*> USING player row, camera entity id: Set Camera (05b 0x5F, the VarInt network entity id the client views from) sent to the player.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 16.
+ 01 WS-PACKET              BINARY-LONG VALUE 95.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY-ID            BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY-ID.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM CXB-SET-CAMERA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SPECTATE.
+*> spectate | spectate <target> | spectate <target> <player> (16 §5.4, level 2): the spectating player is the named player, else the source (the console
+*> raises permissions.requires.player). Checks in the order of the catalog: the target is the spectating player itself: commands.spectate.self (only when a
+*> target is typed); the spectating player is not in spectator mode (PL-MODE 3): commands.spectate.not_spectator [its name]; then Set Camera (05b 0x5F) with
+*> the target's entity id (the player's own entity id when there is no target) goes to the spectating player and commands.spectate.success.started [target
+*> name] (or .stopped) is told to the source only (not broadcast). The result is 1. The cannot_spectate check (a client tracking range of 0) is not made:
+*> no cobolcraft entity type has such a range. The spectating player's camera is not kept anywhere else.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-PLAYER         PIC X(32) VALUE "player".
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TARGET-ROWS.
+    05 WS-TARGET-COUNT      BINARY-LONG.
+    05 WS-TARGET-ROW        BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SPECTATOR           BINARY-LONG.
+ 01 WS-TARGET              BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "BX-TARGETS-OR-SELF" USING WS-NAME-PLAYER WS-ROWS
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     IF BR-R-FAILED = 0 AND WS-INDEX > 0
+         CALL "BX-RESOLVE" USING WS-INDEX WS-TARGET-ROWS
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE BX-ROW(1) TO WS-SPECTATOR
+         MOVE WS-SPECTATOR TO WS-TARGET
+         IF WS-INDEX > 0
+             MOVE WS-TARGET-ROW(1) TO WS-TARGET
+         END-IF
+         MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+         MOVE SPACES TO WS-A1 WS-A2
+         IF WS-INDEX > 0 AND WS-TARGET = WS-SPECTATOR
+             MOVE "commands.spectate.self" TO WS-KEY
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0 AND PL-MODE(WS-SPECTATOR) NOT = 3
+         MOVE "commands.spectate.not_spectator" TO WS-KEY
+         MOVE 1 TO WS-N-ARGS
+         MOVE PL-NAME(WS-SPECTATOR) TO WS-A1
+         MOVE PL-NAME-LENGTH(WS-SPECTATOR) TO WS-L1
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "CXB-ENTITY-ID" USING WS-TARGET WS-ID
+         CALL "CXB-SET-CAMERA" USING WS-SPECTATOR WS-ID
+         IF WS-INDEX > 0
+             MOVE "commands.spectate.success.started" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CXB-SHOWN" USING WS-TARGET WS-SHOWN WS-SHOWN-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+         ELSE
+             MOVE "commands.spectate.success.stopped" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         MOVE 1 TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-SPECTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-SPECTATE.
+*> The forms of spectate (16 §5.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-SPECTATE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "spectate" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "spectate <target:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "spectate <target:entity> <player:player>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-SPECTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ROW-OF-ID.
+*> USING network entity id, row out (BINARY-LONG): the player row, or the negated row of CORE-ENTITIES for any other entity (0 = no such entity).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ROW.
+     MOVE 0 TO L-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT OR L-ROW NOT = 0
+         IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) = L-ID
+             IF EN-PLAYER(WS-I) > 0
+                 MOVE EN-PLAYER(WS-I) TO L-ROW
+             ELSE
+                 COMPUTE L-ROW = 0 - WS-I
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-ROW-OF-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-DIM-OF.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension row out (BINARY-LONG).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DIM.
+     IF L-ROW > 0
+         MOVE PL-DIM(L-ROW) TO L-DIM
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         MOVE EN-DIM(WS-ENTITY) TO L-DIM
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-DIM-OF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RIDE-FIND.
+*> USING rider id, entry out (BINARY-LONG): the entry of CORE-RIDING of the rider (0 = it rides nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RIDESTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-RIDER                BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-RIDER L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX OR L-ENTRY > 0
+         IF RD-RIDER(WS-I) = L-RIDER
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-RIDE-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RIDE-FREE.
+*> USING entry out (BINARY-LONG): the first free entry of CORE-RIDING (a rider needs one: there are more entries than entities).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RIDESTORE.
+ LINKAGE SECTION.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTRY.
+     MOVE 1 TO L-ENTRY
+     PERFORM UNTIL RD-RIDER(L-ENTRY) = 0
+         ADD 1 TO L-ENTRY
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-RIDE-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RIDE-CLEAN.
+*> Frees the entries of CORE-RIDING whose rider or vehicle is no longer in the world.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RIDESTORE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-RIDER(WS-I) > 0
+             CALL "CXB-ROW-OF-ID" USING RD-RIDER(WS-I) WS-ROW-A
+             CALL "CXB-ROW-OF-ID" USING RD-VEHICLE(WS-I) WS-ROW-B
+             IF WS-ROW-A = 0 OR WS-ROW-B = 0
+                 MOVE 0 TO RD-RIDER(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-RIDE-CLEAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-PASSENGERS.
+*> USING vehicle id, dimension row: Set Passengers (05b 0x6D: the vehicle id, the passenger count, each passenger id as VarInts) with the passengers
+*> the riding table now holds for the vehicle, sent to every player in play in that dimension.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RIDESTORE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG VALUE 109.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-VEHICLE              BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-VEHICLE L-DIM.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-RIDER(WS-I) > 0 AND RD-VEHICLE(WS-I) = L-VEHICLE
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-VEHICLE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-RIDER(WS-I) > 0 AND RD-VEHICLE(WS-I) = L-VEHICLE
+             CALL "PB-PUT-VARINT" USING PB-BUFFER RD-RIDER(WS-I)
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-PLAYERS
+         IF PL-USED(WS-I) = 1 AND PL-STATE(WS-I) = PS-ALIVE AND PL-DIM(WS-I) = L-DIM
+             CALL "CORE-SEND" USING PL-CONN(WS-I) PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM CXB-PASSENGERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-RIDE.
+*> ride <target> mount <vehicle> | ride <target> dismount (16 §5.6, level 2): the riding table (RIDESTORE.cpy) holds who rides what; entities that left the world drop out
+*> first. dismount of a rider frees it, sends Set Passengers (CXB-PASSENGERS) and tells commands.ride.dismount.success [rider, vehicle] (broadcast); one that rides
+*> nothing is commands.ride.not_riding [rider]. mount checks, in this order (the catalog gives none): the rider already rides: already_riding [rider, its vehicle]; the vehicle
+*> is a player: mount.failure.cant_ride_players; the vehicle is the rider or rides, at any depth, on it: mount.failure.loop; the dimensions differ: mount.failure.wrong_dimension;
+*> the vehicle already has a passenger: mount.failure.generic [rider, vehicle] (the catalog does not say why startRiding fails: this core gives a vehicle one seat). Else the entry is
+*> added, Set Passengers sent and commands.ride.mount.success [rider, vehicle] broadcast. The result is 1. BLOCKED: nothing moves a rider with its vehicle.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RIDESTORE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-VEHICLE        PIC X(32) VALUE "vehicle".
+ 01 WS-NAME-MOUNT          PIC X(32) VALUE "mount".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-VEHICLE-ROWS.
+    05 WS-VEHICLE-COUNT     BINARY-LONG.
+    05 WS-VEHICLE-ROW       BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-MOUNT               BINARY-LONG.
+ 01 WS-RIDER               BINARY-LONG.
+ 01 WS-RIDER-ID            BINARY-LONG.
+ 01 WS-RIDER-DIM           BINARY-LONG.
+ 01 WS-VEHICLE             BINARY-LONG.
+ 01 WS-VEHICLE-ID          BINARY-LONG.
+ 01 WS-VEHICLE-DIM         BINARY-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-LOOP                BINARY-LONG.
+ 01 WS-TAKEN               BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-OTHER               PIC X(48).
+ 01 WS-OTHER-LENGTH        BINARY-LONG.
+ 01 WS-CURRENT             PIC X(48).
+ 01 WS-CURRENT-LENGTH      BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "CXB-RIDE-CLEAN"
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-LIT" USING WS-NAME-MOUNT WS-MOUNT
+     IF BR-R-FAILED = 0 AND WS-MOUNT > 0
+         CALL "BX-FIND" USING WS-NAME-VEHICLE WS-INDEX
+         CALL "BX-RESOLVE" USING WS-INDEX WS-VEHICLE-ROWS
+     END-IF
+     MOVE SPACES TO WS-KEY WS-A1 WS-A2
+     MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+     IF BR-R-FAILED = 0
+         MOVE BX-ROW(1) TO WS-RIDER
+         CALL "CXB-ENTITY-ID" USING WS-RIDER WS-RIDER-ID
+         CALL "CXB-DIM-OF" USING WS-RIDER WS-RIDER-DIM
+         CALL "CXB-SHOWN" USING WS-RIDER WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CXB-RIDE-FIND" USING WS-RIDER-ID WS-ENTRY
+         MOVE WS-SHOWN TO WS-A1
+         MOVE WS-SHOWN-LENGTH TO WS-L1
+     END-IF
+*> dismount
+     IF BR-R-FAILED = 0 AND WS-MOUNT = 0 AND WS-ENTRY = 0
+         MOVE "commands.ride.not_riding" TO WS-KEY
+         MOVE 1 TO WS-N-ARGS
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-MOUNT = 0 AND WS-ENTRY > 0
+         MOVE RD-VEHICLE(WS-ENTRY) TO WS-VEHICLE-ID
+         CALL "CXB-ROW-OF-ID" USING WS-VEHICLE-ID WS-VEHICLE
+         CALL "CXB-SHOWN" USING WS-VEHICLE WS-OTHER WS-OTHER-LENGTH
+         CALL "CXB-DIM-OF" USING WS-VEHICLE WS-VEHICLE-DIM
+         MOVE 0 TO RD-RIDER(WS-ENTRY)
+         CALL "CXB-PASSENGERS" USING WS-VEHICLE-ID WS-VEHICLE-DIM
+         MOVE "commands.ride.dismount.success" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-OTHER WS-OTHER-LENGTH
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+         MOVE SPACES TO WS-KEY
+     END-IF
+*> mount: the checks in order
+     IF BR-R-FAILED = 0 AND WS-MOUNT > 0
+         MOVE WS-VEHICLE-ROW(1) TO WS-VEHICLE
+         CALL "CXB-ENTITY-ID" USING WS-VEHICLE WS-VEHICLE-ID
+         CALL "CXB-DIM-OF" USING WS-VEHICLE WS-VEHICLE-DIM
+         CALL "CXB-SHOWN" USING WS-VEHICLE WS-OTHER WS-OTHER-LENGTH
+         MOVE WS-VEHICLE-ID TO WS-WALK
+         MOVE 0 TO WS-LOOP
+         PERFORM UNTIL WS-WALK = 0 OR WS-LOOP = 1
+             IF WS-WALK = WS-RIDER-ID
+                 MOVE 1 TO WS-LOOP
+             END-IF
+             CALL "CXB-RIDE-FIND" USING WS-WALK WS-STEP
+             MOVE 0 TO WS-WALK
+             IF WS-STEP > 0
+                 MOVE RD-VEHICLE(WS-STEP) TO WS-WALK
+             END-IF
+         END-PERFORM
+         MOVE 0 TO WS-TAKEN
+         PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > RD-MAX
+             IF RD-RIDER(WS-STEP) > 0 AND RD-VEHICLE(WS-STEP) = WS-VEHICLE-ID
+                 MOVE 1 TO WS-TAKEN
+             END-IF
+         END-PERFORM
+         MOVE WS-OTHER TO WS-A2
+         MOVE WS-OTHER-LENGTH TO WS-L2
+         MOVE 2 TO WS-N-ARGS
+         IF WS-ENTRY > 0
+             MOVE RD-VEHICLE(WS-ENTRY) TO WS-WALK
+             CALL "CXB-ROW-OF-ID" USING WS-WALK WS-STEP
+             CALL "CXB-SHOWN" USING WS-STEP WS-CURRENT WS-CURRENT-LENGTH
+             MOVE WS-CURRENT TO WS-A2
+             MOVE WS-CURRENT-LENGTH TO WS-L2
+             MOVE "commands.ride.already_riding" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-VEHICLE > 0
+             MOVE 0 TO WS-N-ARGS
+             MOVE "commands.ride.mount.failure.cant_ride_players" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-LOOP = 1
+             MOVE 0 TO WS-N-ARGS
+             MOVE "commands.ride.mount.failure.loop" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-VEHICLE-DIM NOT = WS-RIDER-DIM
+             MOVE 0 TO WS-N-ARGS
+             MOVE "commands.ride.mount.failure.wrong_dimension" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES AND WS-TAKEN = 1
+             MOVE "commands.ride.mount.failure.generic" TO WS-KEY
+         END-IF
+         IF WS-KEY = SPACES
+             CALL "CXB-RIDE-FREE" USING WS-STEP
+             MOVE WS-RIDER-ID TO RD-RIDER(WS-STEP)
+             MOVE WS-VEHICLE-ID TO RD-VEHICLE(WS-STEP)
+             CALL "CXB-PASSENGERS" USING WS-VEHICLE-ID WS-VEHICLE-DIM
+             MOVE "commands.ride.mount.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-OTHER WS-OTHER-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 1 TO BR-R-RESULT
+             MOVE SPACES TO WS-KEY
+         END-IF
+     END-IF
+     IF WS-KEY NOT = SPACES
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     GOBACK.
+ END PROGRAM CX-RIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-RIDE.
+*> The forms of ride (16 §5.6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-RIDE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "ride <target:entity> mount <vehicle:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "ride <target:entity> dismount" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-RIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-CLEAN.
+*> Frees the entries of CORE-ATTRS (ATTRSTORE.cpy) whose entity is no longer in the world.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ATTRSTORE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AB-MAX
+         IF AB-ID(WS-I) > 0
+             CALL "CXB-ROW-OF-ID" USING AB-ID(WS-I) WS-ROW
+             IF WS-ROW = 0
+                 MOVE 0 TO AB-ID(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AM-MAX
+         IF AM-ID(WS-I) > 0
+             CALL "CXB-ROW-OF-ID" USING AM-ID(WS-I) WS-ROW
+             IF WS-ROW = 0
+                 MOVE 0 TO AM-ID(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-ATTR-CLEAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-INFO.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), attribute identifier (PIC X(64), with its namespace), its length, attribute number out (ATTRDEF.cpy;
+*> 0 = the entity does not have it: not a minecraft: name, not in the registry, or not in the entity's set), default, lowest and highest value out (FLOAT-LONG). A player has the
+*> living attributes and the player's; a mob the living attributes and follow_range; the rows of WS-OVERRIDES are the base values of the player (core 17 §1.5, 13 §1.2), the abend and
+*> any other mob (the sodgrazer's values; standin core §5.5), and the abend also has attack_damage.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY ATTRDEF.
+ 01 WS-OVERRIDE-ROWS.
+    05 FILLER              PIC 9 VALUE 1.
+    05 FILLER              PIC X(32) VALUE "attack_damage".
+    05 FILLER              PIC S9(9)V9(9) VALUE 1.
+    05 FILLER              PIC 9 VALUE 1.
+    05 FILLER              PIC X(32) VALUE "movement_speed".
+    05 FILLER              PIC S9(9)V9(9) VALUE 0.1.
+    05 FILLER              PIC 9 VALUE 2.
+    05 FILLER              PIC X(32) VALUE "max_health".
+    05 FILLER              PIC S9(9)V9(9) VALUE 12.
+    05 FILLER              PIC 9 VALUE 2.
+    05 FILLER              PIC X(32) VALUE "movement_speed".
+    05 FILLER              PIC S9(9)V9(9) VALUE 0.12.
+    05 FILLER              PIC 9 VALUE 2.
+    05 FILLER              PIC X(32) VALUE "step_height".
+    05 FILLER              PIC S9(9)V9(9) VALUE 1.
+    05 FILLER              PIC 9 VALUE 2.
+    05 FILLER              PIC X(32) VALUE "follow_range".
+    05 FILLER              PIC S9(9)V9(9) VALUE 20.
+    05 FILLER              PIC 9 VALUE 2.
+    05 FILLER              PIC X(32) VALUE "attack_damage".
+    05 FILLER              PIC S9(9)V9(9) VALUE 3.
+    05 FILLER              PIC 9 VALUE 3.
+    05 FILLER              PIC X(32) VALUE "max_health".
+    05 FILLER              PIC S9(9)V9(9) VALUE 8.
+    05 FILLER              PIC 9 VALUE 3.
+    05 FILLER              PIC X(32) VALUE "movement_speed".
+    05 FILLER              PIC S9(9)V9(9) VALUE 0.1.
+    05 FILLER              PIC 9 VALUE 3.
+    05 FILLER              PIC X(32) VALUE "step_height".
+    05 FILLER              PIC S9(9)V9(9) VALUE 1.
+    05 FILLER              PIC 9 VALUE 3.
+    05 FILLER              PIC X(32) VALUE "follow_range".
+    05 FILLER              PIC S9(9)V9(9) VALUE 16.
+ 01 WS-OVERRIDE-TABLE REDEFINES WS-OVERRIDE-ROWS.
+    05 WS-OVERRIDE         OCCURS 11 TIMES.
+       10 WS-OV-KIND         PIC 9.
+       10 WS-OV-NAME         PIC X(32).
+       10 WS-OV-VALUE        PIC S9(9)V9(9).
+ 01 WS-ABEND-KEY           PIC X(16) VALUE "cobolcraft:abend".
+ 01 WS-NAME                PIC X(32).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-TYPE-ROW            BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ID                   PIC X(64).
+ 01 L-ID-LENGTH            BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-DEFAULT              FLOAT-LONG.
+ 01 L-MIN                  FLOAT-LONG.
+ 01 L-MAX                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ID L-ID-LENGTH L-INDEX L-DEFAULT L-MIN L-MAX.
+     MOVE 0 TO L-INDEX
+     MOVE SPACES TO WS-NAME
+     COMPUTE WS-LEN = L-ID-LENGTH - 10
+     IF WS-LEN > 0 AND WS-LEN <= 32 AND L-ID(1:10) = "minecraft:"
+         MOVE L-ID(11:WS-LEN) TO WS-NAME
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AD-COUNT OR L-INDEX > 0
+             IF AD-NAME(WS-I) = WS-NAME
+                 MOVE WS-I TO L-INDEX
+             END-IF
+         END-PERFORM
+     END-IF
+     IF L-INDEX > 0
+         MOVE 1 TO WS-KIND
+         IF L-ROW < 0
+             COMPUTE WS-ENTITY = 0 - L-ROW
+             COMPUTE WS-TYPE-ROW = EN-TYPE(WS-ENTITY) + 1
+             MOVE 3 TO WS-KIND
+             IF ET-KEY(WS-TYPE-ROW) = WS-ABEND-KEY
+                 MOVE 2 TO WS-KIND
+             END-IF
+         END-IF
+         MOVE AD-DEFAULT(L-INDEX) TO L-DEFAULT
+         MOVE AD-MIN(L-INDEX) TO L-MIN
+         MOVE AD-MAX(L-INDEX) TO L-MAX
+         MOVE AD-LIVING(L-INDEX) TO WS-HAS
+         IF WS-KIND = 1 AND AD-PLAYER(L-INDEX) = 1
+             MOVE 1 TO WS-HAS
+         END-IF
+         IF WS-KIND > 1 AND AD-MOB(L-INDEX) = 1
+             MOVE 1 TO WS-HAS
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+             IF WS-OV-KIND(WS-I) = WS-KIND AND WS-OV-NAME(WS-I) = WS-NAME
+                 MOVE WS-OV-VALUE(WS-I) TO L-DEFAULT
+                 MOVE 1 TO WS-HAS
+             END-IF
+         END-PERFORM
+         IF WS-HAS = 0
+             MOVE 0 TO L-INDEX
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-ATTR-INFO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-BASE.
+*> USING entity id, attribute number, default (FLOAT-LONG), base out (FLOAT-LONG), entry out (BINARY-LONG): the base value set with base set (its entry of CORE-ATTRS), else the default (entry 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ATTRSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-DEFAULT              FLOAT-LONG.
+ 01 L-BASE                 FLOAT-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-INDEX L-DEFAULT L-BASE L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     MOVE L-DEFAULT TO L-BASE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AB-MAX OR L-ENTRY > 0
+         IF AB-ID(WS-I) = L-ID AND AB-ATTR(WS-I) = L-INDEX
+             MOVE WS-I TO L-ENTRY
+             MOVE AB-VALUE(WS-I) TO L-BASE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-ATTR-BASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-VALUE.
+*> USING entity id, attribute number, base, lowest, highest value (FLOAT-LONG), value out (FLOAT-LONG): the value of the attribute (18 §1.3): v = base + the add_value amounts; v + v x the
+*> add_multiplied_base amounts; then x (1 + amount) for each add_multiplied_total modifier; limited to the range.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ATTRSTORE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-MULTIPLIED          FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-BASE                 FLOAT-LONG.
+ 01 L-MIN                  FLOAT-LONG.
+ 01 L-MAX                  FLOAT-LONG.
+ 01 L-VALUE                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ID L-INDEX L-BASE L-MIN L-MAX L-VALUE.
+     MOVE L-BASE TO WS-V
+     MOVE 0 TO WS-MULTIPLIED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AM-MAX
+         IF AM-ID(WS-I) = L-ID AND AM-ATTR(WS-I) = L-INDEX
+             EVALUATE AM-OP(WS-I)
+                 WHEN 0
+                     ADD AM-AMOUNT(WS-I) TO WS-V
+                 WHEN 1
+                     ADD AM-AMOUNT(WS-I) TO WS-MULTIPLIED
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     COMPUTE L-VALUE = WS-V + WS-V * WS-MULTIPLIED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AM-MAX
+         IF AM-ID(WS-I) = L-ID AND AM-ATTR(WS-I) = L-INDEX AND AM-OP(WS-I) = 2
+             COMPUTE L-VALUE = L-VALUE * (1 + AM-AMOUNT(WS-I))
+         END-IF
+     END-PERFORM
+     IF L-VALUE < L-MIN
+         MOVE L-MIN TO L-VALUE
+     END-IF
+     IF L-VALUE > L-MAX
+         MOVE L-MAX TO L-VALUE
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-ATTR-VALUE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-EFFECTIVE.
+*> USING row, attribute identifier (PIC X(64)), its length, has out (1 when the entity has the attribute), value out (FLOAT-LONG): the value of the attribute of the entity
+*> (default or base value, modifiers, range; CXB-ATTR-VALUE).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-DEFAULT             FLOAT-LONG.
+ 01 WS-MIN                 FLOAT-LONG.
+ 01 WS-MAX                 FLOAT-LONG.
+ 01 WS-BASE                FLOAT-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-NAME                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-VALUE                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-NAME L-LENGTH L-HAS L-VALUE.
+     MOVE 0 TO L-HAS L-VALUE
+     CALL "CXB-ATTR-INFO" USING L-ROW L-NAME L-LENGTH WS-INDEX WS-DEFAULT WS-MIN WS-MAX
+     IF WS-INDEX > 0
+         MOVE 1 TO L-HAS
+         CALL "CXB-ENTITY-ID" USING L-ROW WS-ID
+         CALL "CXB-ATTR-BASE" USING WS-ID WS-INDEX WS-DEFAULT WS-BASE WS-ENTRY
+         CALL "CXB-ATTR-VALUE" USING WS-ID WS-INDEX WS-BASE WS-MIN WS-MAX L-VALUE
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-ATTR-EFFECTIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-INT.
+*> USING value, scale (FLOAT-LONG), result out (BINARY-LONG): (int)(value x scale), limited to the integer range.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRODUCT             FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-VALUE                FLOAT-LONG.
+ 01 L-SCALE                FLOAT-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALUE L-SCALE L-RESULT.
+     COMPUTE WS-PRODUCT = L-VALUE * L-SCALE
+     EVALUATE TRUE
+         WHEN WS-PRODUCT >= 2147483647
+             MOVE 2147483647 TO L-RESULT
+         WHEN WS-PRODUCT <= -2147483648
+             MOVE -2147483648 TO L-RESULT
+         WHEN OTHER
+             COMPUTE L-RESULT = FUNCTION INTEGER-PART(WS-PRODUCT)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CXB-ATTR-INT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-TELL.
+*> USING key (PIC X(72)), four arguments each as text (PIC X(64)) and length (0 = no argument): the translate text told to the source only (not broadcast).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(72).
+ 01 L-A1                   PIC X(64).
+ 01 L-N1                   BINARY-LONG.
+ 01 L-A2                   PIC X(64).
+ 01 L-N2                   BINARY-LONG.
+ 01 L-A3                   PIC X(64).
+ 01 L-N3                   BINARY-LONG.
+ 01 L-A4                   PIC X(64).
+ 01 L-N4                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-A1 L-N1 L-A2 L-N2 L-A3 L-N3 L-A4 L-N4.
+     CALL "BX-KEY" USING PB-TEXT L-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT L-A1 L-N1
+     CALL "CMD-TEXT-ARG" USING PB-TEXT L-A2 L-N2
+     CALL "CMD-TEXT-ARG" USING PB-TEXT L-A3 L-N3
+     IF L-N4 > 0
+         CALL "CMD-TEXT-ARG" USING PB-TEXT L-A4 L-N4
+     END-IF
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     GOBACK.
+ END PROGRAM CXB-ATTR-TELL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-MOD-FIND.
+*> USING entity id, attribute number, modifier id (PIC X(64)), its length, entry out (BINARY-LONG): the entry of CORE-ATTRS for that modifier (0 = none).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ATTRSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-INDEX L-NAME L-LENGTH L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AM-MAX OR L-ENTRY > 0
+         IF AM-ID(WS-I) = L-ID AND AM-ATTR(WS-I) = L-INDEX AND AM-NAME-LENGTH(WS-I) = L-LENGTH AND AM-NAME(WS-I) = L-NAME
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-ATTR-MOD-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ATTR-FREE.
+*> USING kind (1 = a base value entry, 2 = a modifier entry), entry out (BINARY-LONG): the first free entry of that table (a command adds at most one entry per entity and attribute;
+*> the tables hold more entries than a world has attribute values).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ATTRSTORE.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-ENTRY.
+     MOVE 1 TO L-ENTRY
+     IF L-KIND = 1
+         PERFORM UNTIL AB-ID(L-ENTRY) = 0
+             ADD 1 TO L-ENTRY
+         END-PERFORM
+     ELSE
+         PERFORM UNTIL AM-ID(L-ENTRY) = 0
+             ADD 1 TO L-ENTRY
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-ATTR-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-ATTRIBUTE.
+*> attribute <target> <attribute> get [scale] | base get [scale] | base set <value> | base reset | modifier add <id> <value> <operation> | modifier remove <id> |
+*> modifier value get <id> [scale] (16 §5.12, level 2): the target is one living entity (a ground item is commands.attribute.failed.entity [entity]) that has the attribute
+*> (CXB-ATTR-INFO; else commands.attribute.failed.no_attribute [entity, attribute], also for a name that is no attribute). The attribute is shown with its namespace, values with
+*> CXB-FLOAT. get tells the value (default or base value with the modifiers, 18 §1.3, limited to the range), base get the base value, base set keeps a base value, base reset forgets
+*> it (told the default), modifier add keeps a modifier (an id that is present is modifier_already_present [id, attribute, entity]), modifier remove frees it and modifier value get tells its
+*> amount (no such id: no_modifier [attribute, entity, id]); every message is told to the source only. The result is (int)(value x scale) (CXB-ATTR-INT, scale 1 without one) for the
+*> get forms and 1 for base set, base reset, modifier add and modifier remove (the catalog does not state the last). The id suggestions of modifier remove are BLOCKED.
+*> The values are kept in CORE-ATTRS; no rule of the game reads them yet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY ATTRSTORE.
+ COPY BRIGADIER.
+ COPY BRRUN.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-ATTRIBUTE      PIC X(32) VALUE "attribute".
+ 01 WS-NAME-SCALE          PIC X(32) VALUE "scale".
+ 01 WS-NAME-VALUE          PIC X(32) VALUE "value".
+ 01 WS-NAME-ID             PIC X(32) VALUE "id".
+ 01 WS-NAME-BASE           PIC X(32) VALUE "base".
+ 01 WS-NAME-MODIFIER       PIC X(32) VALUE "modifier".
+ 01 WS-NAME-SET            PIC X(32) VALUE "set".
+ 01 WS-NAME-RESET          PIC X(32) VALUE "reset".
+ 01 WS-NAME-ADD            PIC X(32) VALUE "add".
+ 01 WS-NAME-REMOVE         PIC X(32) VALUE "remove".
+ 01 WS-NAME-MULTI-BASE     PIC X(32) VALUE "add_multiplied_base".
+ 01 WS-NAME-MULTI-TOTAL    PIC X(32) VALUE "add_multiplied_total".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SCALE-INDEX         BINARY-LONG.
+ 01 WS-LIT-BASE            BINARY-LONG.
+ 01 WS-LIT-MODIFIER        BINARY-LONG.
+ 01 WS-LIT-SET             BINARY-LONG.
+ 01 WS-LIT-RESET           BINARY-LONG.
+ 01 WS-LIT-ADD             BINARY-LONG.
+ 01 WS-LIT-REMOVE          BINARY-LONG.
+ 01 WS-LIT-MULTI-BASE      BINARY-LONG.
+ 01 WS-LIT-MULTI-TOTAL     BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ENTITY-ID           BINARY-LONG.
+ 01 WS-ATTR                PIC X(64).
+ 01 WS-ATTR-LENGTH         BINARY-LONG.
+ 01 WS-ATTR-NUMBER         BINARY-LONG.
+ 01 WS-MID                 PIC X(64).
+ 01 WS-MID-LENGTH          BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-E                   PIC X(64).
+ 01 WS-E-LENGTH            BINARY-LONG.
+ 01 WS-DEFAULT             FLOAT-LONG.
+ 01 WS-MIN                 FLOAT-LONG.
+ 01 WS-MAX                 FLOAT-LONG.
+ 01 WS-BASE                FLOAT-LONG.
+ 01 WS-BASE-ENTRY          BINARY-LONG.
+ 01 WS-VALUE               FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-KIND-BASE           BINARY-LONG VALUE 1.
+ 01 WS-KIND-MODIFIER       BINARY-LONG VALUE 2.
+ 01 WS-OP                  BINARY-LONG.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-V                   PIC X(64).
+ 01 WS-V-LENGTH            BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-A3                  PIC X(64).
+ 01 WS-A4                  PIC X(64).
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-L3                  BINARY-LONG.
+ 01 WS-L4                  BINARY-LONG.
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "CXB-ATTR-CLEAN"
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-FIND" USING WS-NAME-ATTRIBUTE WS-INDEX
+     CALL "BX-NAMESPACED" USING WS-INDEX WS-ATTR WS-ATTR-LENGTH
+     CALL "BX-LIT" USING WS-NAME-BASE WS-LIT-BASE
+     CALL "BX-LIT" USING WS-NAME-MODIFIER WS-LIT-MODIFIER
+     CALL "BX-LIT" USING WS-NAME-SET WS-LIT-SET
+     CALL "BX-LIT" USING WS-NAME-RESET WS-LIT-RESET
+     CALL "BX-LIT" USING WS-NAME-ADD WS-LIT-ADD
+     CALL "BX-LIT" USING WS-NAME-REMOVE WS-LIT-REMOVE
+     CALL "BX-LIT" USING WS-NAME-MULTI-BASE WS-LIT-MULTI-BASE
+     CALL "BX-LIT" USING WS-NAME-MULTI-TOTAL WS-LIT-MULTI-TOTAL
+     MOVE SPACES TO WS-KEY WS-A1 WS-A2 WS-A3 WS-A4
+     MOVE 0 TO WS-N-ARGS WS-L1 WS-L2 WS-L3 WS-L4
+     IF BR-R-FAILED = 0
+         MOVE BX-ROW(1) TO WS-ROW
+         CALL "CXB-SHOWN" USING WS-ROW WS-SHOWN WS-SHOWN-LENGTH
+         MOVE WS-SHOWN TO WS-E
+         MOVE WS-SHOWN-LENGTH TO WS-E-LENGTH
+         MOVE WS-E TO WS-A1
+         MOVE WS-E-LENGTH TO WS-L1
+         MOVE 1 TO WS-N-ARGS
+         MOVE 1 TO WS-ENTITY
+         IF WS-ROW < 0
+             COMPUTE WS-ENTITY = 0 - WS-ROW
+             IF EN-TYPE(WS-ENTITY) = CR-LOOSE-ITEM
+                 MOVE 0 TO WS-ENTITY
+             END-IF
+         END-IF
+         IF WS-ENTITY = 0
+             MOVE "commands.attribute.failed.entity" TO WS-KEY
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES
+         CALL "CXB-ATTR-INFO" USING WS-ROW WS-ATTR WS-ATTR-LENGTH WS-ATTR-NUMBER WS-DEFAULT WS-MIN WS-MAX
+         IF WS-ATTR-NUMBER = 0
+             MOVE "commands.attribute.failed.no_attribute" TO WS-KEY
+             MOVE 2 TO WS-N-ARGS
+             MOVE WS-ATTR TO WS-A2
+             MOVE WS-ATTR-LENGTH TO WS-L2
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES
+         CALL "CXB-ENTITY-ID" USING WS-ROW WS-ENTITY-ID
+         CALL "CXB-ATTR-BASE" USING WS-ENTITY-ID WS-ATTR-NUMBER WS-DEFAULT WS-BASE WS-BASE-ENTRY
+         MOVE 1 TO WS-SCALE
+         CALL "BX-FIND" USING WS-NAME-SCALE WS-SCALE-INDEX
+         IF WS-SCALE-INDEX > 0
+             MOVE BA-DVAL(WS-SCALE-INDEX) TO WS-SCALE
+         END-IF
+         MOVE WS-ATTR TO WS-A1
+         MOVE WS-ATTR-LENGTH TO WS-L1
+         MOVE WS-E TO WS-A2
+         MOVE WS-E-LENGTH TO WS-L2
+         MOVE 1 TO BR-R-RESULT
+     END-IF
+*> value get, base get
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES AND WS-LIT-MODIFIER = 0 AND (WS-LIT-BASE = 0 OR (WS-LIT-SET = 0 AND WS-LIT-RESET = 0))
+         MOVE WS-BASE TO WS-VALUE
+         MOVE "commands.attribute.base_value.get.success" TO WS-KEY
+         IF WS-LIT-BASE = 0
+             CALL "CXB-ATTR-VALUE" USING WS-ENTITY-ID WS-ATTR-NUMBER WS-BASE WS-MIN WS-MAX WS-VALUE
+             MOVE "commands.attribute.value.get.success" TO WS-KEY
+         END-IF
+         CALL "CXB-FLOAT" USING WS-VALUE WS-TEXT WS-TEXT-LENGTH
+         MOVE WS-TEXT TO WS-A3
+         MOVE WS-TEXT-LENGTH TO WS-L3
+         CALL "CXB-ATTR-INT" USING WS-VALUE WS-SCALE BR-R-RESULT
+         CALL "CXB-ATTR-TELL" USING WS-KEY WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-A4 WS-L4
+         MOVE SPACES TO WS-KEY
+     END-IF
+*> base set, base reset
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES AND WS-LIT-BASE > 0 AND (WS-LIT-SET > 0 OR WS-LIT-RESET > 0)
+         IF WS-BASE-ENTRY = 0
+             CALL "CXB-ATTR-FREE" USING WS-KIND-BASE WS-BASE-ENTRY
+             MOVE WS-ENTITY-ID TO AB-ID(WS-BASE-ENTRY)
+             MOVE WS-ATTR-NUMBER TO AB-ATTR(WS-BASE-ENTRY)
+         END-IF
+         MOVE WS-DEFAULT TO WS-VALUE
+         MOVE "commands.attribute.base_value.reset.success" TO WS-KEY
+         IF WS-LIT-SET > 0
+             CALL "BX-FIND" USING WS-NAME-VALUE WS-INDEX
+             MOVE BA-DVAL(WS-INDEX) TO WS-VALUE
+             MOVE "commands.attribute.base_value.set.success" TO WS-KEY
+         END-IF
+         MOVE WS-VALUE TO AB-VALUE(WS-BASE-ENTRY)
+         IF WS-LIT-RESET > 0
+             MOVE 0 TO AB-ID(WS-BASE-ENTRY)
+         END-IF
+         CALL "CXB-FLOAT" USING WS-VALUE WS-TEXT WS-TEXT-LENGTH
+         MOVE WS-TEXT TO WS-A3
+         MOVE WS-TEXT-LENGTH TO WS-L3
+         CALL "CXB-ATTR-TELL" USING WS-KEY WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-A4 WS-L4
+         MOVE SPACES TO WS-KEY
+     END-IF
+*> modifiers: the id, then add, remove or value get
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES AND WS-LIT-MODIFIER > 0
+         CALL "BX-FIND" USING WS-NAME-ID WS-INDEX
+         CALL "BX-NAMESPACED" USING WS-INDEX WS-MID WS-MID-LENGTH
+         CALL "CXB-ATTR-MOD-FIND" USING WS-ENTITY-ID WS-ATTR-NUMBER WS-MID WS-MID-LENGTH WS-ENTRY
+         MOVE WS-MID TO WS-A1
+         MOVE WS-MID-LENGTH TO WS-L1
+         MOVE WS-ATTR TO WS-A2
+         MOVE WS-ATTR-LENGTH TO WS-L2
+         MOVE WS-E TO WS-A3
+         MOVE WS-E-LENGTH TO WS-L3
+         MOVE 3 TO WS-N-ARGS
+         IF WS-LIT-ADD > 0 AND WS-ENTRY > 0
+             MOVE "commands.attribute.failed.modifier_already_present" TO WS-KEY
+         END-IF
+         IF WS-LIT-ADD = 0 AND WS-ENTRY = 0
+             MOVE "commands.attribute.failed.no_modifier" TO WS-KEY
+             MOVE WS-ATTR TO WS-A1
+             MOVE WS-ATTR-LENGTH TO WS-L1
+             MOVE WS-E TO WS-A2
+             MOVE WS-E-LENGTH TO WS-L2
+             MOVE WS-MID TO WS-A3
+             MOVE WS-MID-LENGTH TO WS-L3
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES AND WS-LIT-MODIFIER > 0 AND WS-LIT-ADD > 0
+         CALL "CXB-ATTR-FREE" USING WS-KIND-MODIFIER WS-ENTRY
+         CALL "BX-FIND" USING WS-NAME-VALUE WS-INDEX
+         MOVE 0 TO WS-OP
+         IF WS-LIT-MULTI-BASE > 0
+             MOVE 1 TO WS-OP
+         END-IF
+         IF WS-LIT-MULTI-TOTAL > 0
+             MOVE 2 TO WS-OP
+         END-IF
+         MOVE WS-ENTITY-ID TO AM-ID(WS-ENTRY)
+         MOVE WS-ATTR-NUMBER TO AM-ATTR(WS-ENTRY)
+         MOVE WS-MID-LENGTH TO AM-NAME-LENGTH(WS-ENTRY)
+         MOVE WS-MID TO AM-NAME(WS-ENTRY)
+         MOVE BA-DVAL(WS-INDEX) TO AM-AMOUNT(WS-ENTRY)
+         MOVE WS-OP TO AM-OP(WS-ENTRY)
+         MOVE "commands.attribute.modifier.add.success" TO WS-KEY
+         CALL "CXB-ATTR-TELL" USING WS-KEY WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-A4 WS-L4
+         MOVE SPACES TO WS-KEY
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES AND WS-LIT-MODIFIER > 0 AND WS-LIT-REMOVE > 0
+         MOVE 0 TO AM-ID(WS-ENTRY)
+         MOVE "commands.attribute.modifier.remove.success" TO WS-KEY
+         CALL "CXB-ATTR-TELL" USING WS-KEY WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-A4 WS-L4
+         MOVE SPACES TO WS-KEY
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-KEY = SPACES AND WS-LIT-MODIFIER > 0 AND WS-LIT-ADD = 0 AND WS-LIT-REMOVE = 0
+         MOVE AM-AMOUNT(WS-ENTRY) TO WS-VALUE
+         CALL "CXB-FLOAT" USING WS-VALUE WS-TEXT WS-TEXT-LENGTH
+         MOVE WS-TEXT TO WS-A4
+         MOVE WS-TEXT-LENGTH TO WS-L4
+         CALL "CXB-ATTR-INT" USING WS-VALUE WS-SCALE BR-R-RESULT
+         MOVE "commands.attribute.modifier.value.get.success" TO WS-KEY
+         CALL "CXB-ATTR-TELL" USING WS-KEY WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-A4 WS-L4
+         MOVE SPACES TO WS-KEY
+     END-IF
+     IF WS-KEY NOT = SPACES
+         CALL "BR-RAISE-3" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-RC
+         MOVE WS-KEY TO BR-E-KEY
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     GOBACK.
+ END PROGRAM CX-ATTRIBUTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-ATTRIBUTE.
+*> The forms of attribute (16 §5.12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-ATTRIBUTE.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-FORMS.
+    05 FILLER              PIC X(72) VALUE "get".
+    05 FILLER              PIC X(72) VALUE "get <scale:double>".
+    05 FILLER              PIC X(72) VALUE "base get".
+    05 FILLER              PIC X(72) VALUE "base get <scale:double>".
+    05 FILLER              PIC X(72) VALUE "base set <value:double>".
+    05 FILLER              PIC X(72) VALUE "base reset".
+    05 FILLER              PIC X(72) VALUE "modifier add <id:resloc> <value:double> add_value".
+    05 FILLER              PIC X(72) VALUE "modifier add <id:resloc> <value:double> add_multiplied_base".
+    05 FILLER              PIC X(72) VALUE "modifier add <id:resloc> <value:double> add_multiplied_total".
+    05 FILLER              PIC X(72) VALUE "modifier remove <id:resloc>".
+    05 FILLER              PIC X(72) VALUE "modifier value get <id:resloc>".
+    05 FILLER              PIC X(72) VALUE "modifier value get <id:resloc> <scale:double>".
+ 01 WS-FORM-TABLE REDEFINES WS-FORMS.
+    05 WS-FORM             PIC X(72) OCCURS 12 TIMES.
+ 01 WS-F                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 12
+         MOVE SPACES TO WS-PATH
+         STRING "attribute <target:entity> <attribute:resloc> " FUNCTION TRIM(WS-FORM(WS-F)) DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-ATTRIBUTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-WP-CLEAN.
+*> Frees the entries of CORE-WAYPOINTS (WPSTORE.cpy) whose entity is no longer in the world.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WPSTORE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WP-MAX
+         IF WP-ID(WS-I) > 0
+             CALL "CXB-ROW-OF-ID" USING WP-ID(WS-I) WS-ROW
+             IF WS-ROW = 0
+                 MOVE 0 TO WP-ID(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-WP-CLEAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-WP-ENTRY.
+*> USING entity id, entry out (BINARY-LONG): the entry of CORE-WAYPOINTS of the entity; an entity without one gets the first free entry, with no colour and the default style.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WPSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WP-MAX OR L-ENTRY > 0
+         IF WP-ID(WS-I) = L-ID
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     IF L-ENTRY = 0
+         MOVE 1 TO L-ENTRY
+         PERFORM UNTIL WP-ID(L-ENTRY) = 0
+             ADD 1 TO L-ENTRY
+         END-PERFORM
+         MOVE L-ID TO WP-ID(L-ENTRY)
+         MOVE 0 TO WP-COLOR-KIND(L-ENTRY) WP-COLOR(L-ENTRY) WP-STYLE-LENGTH(L-ENTRY)
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-WP-ENTRY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-WAYPOINT.
+*> waypoint list | waypoint modify <waypoint> color <team colour> | color hex <hex> | color reset | style reset | style set <style> (16 §5.15, level 2). A waypoint is a living entity (a ground
+*> item is no waypoint: argument.entity.notfound.entity). list: the waypoints of the source's dimension are the living entities there whose waypoint_transmit_range (CXB-ATTR-EFFECTIVE; 0
+*> unless /attribute raised it) is above 0, in the order of CORE-ENTITIES; commands.waypoint.list.success [count, dimension id, the block coordinates "x, y, z" of each joined by ", "] or
+*> .list.empty [dimension id]; the result is the count. modify keeps colour and style of the entity (WPSTORE.cpy) and tells commands.waypoint.modify.color [team colour name or #RRGGBB] /
+*> .color.reset / .style, all told to the source only; the result is 1 (the catalog gives none). BLOCKED: nothing draws, sends (Tracked Waypoint 05b 0x8D) or saves the settings,
+*> and the locator_bar rule is not read; the click-to-teleport hover text of a list entry is not made.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY DIMENSIONS.
+ COPY WPSTORE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-WAYPOINT       PIC X(32) VALUE "waypoint".
+ 01 WS-NAME-COLOR          PIC X(32) VALUE "color".
+ 01 WS-NAME-STYLE          PIC X(32) VALUE "style".
+ 01 WS-NAME-LIST           PIC X(32) VALUE "list".
+ 01 WS-NAME-HEX            PIC X(32) VALUE "hex".
+ 01 WS-NAME-RESET          PIC X(32) VALUE "reset".
+ 01 WS-RANGE-ID            PIC X(64) VALUE "minecraft:waypoint_transmit_range".
+ 01 WS-RANGE-LENGTH        BINARY-LONG VALUE 33.
+ 01 WS-COLORS.
+    05 FILLER              PIC X(16) VALUE "black".
+    05 FILLER              PIC X(16) VALUE "dark_blue".
+    05 FILLER              PIC X(16) VALUE "dark_green".
+    05 FILLER              PIC X(16) VALUE "dark_aqua".
+    05 FILLER              PIC X(16) VALUE "dark_red".
+    05 FILLER              PIC X(16) VALUE "dark_purple".
+    05 FILLER              PIC X(16) VALUE "gold".
+    05 FILLER              PIC X(16) VALUE "gray".
+    05 FILLER              PIC X(16) VALUE "dark_gray".
+    05 FILLER              PIC X(16) VALUE "blue".
+    05 FILLER              PIC X(16) VALUE "green".
+    05 FILLER              PIC X(16) VALUE "aqua".
+    05 FILLER              PIC X(16) VALUE "red".
+    05 FILLER              PIC X(16) VALUE "light_purple".
+    05 FILLER              PIC X(16) VALUE "yellow".
+    05 FILLER              PIC X(16) VALUE "white".
+ 01 WS-COLOR-TABLE REDEFINES WS-COLORS.
+    05 WS-COLOR-NAME       PIC X(16) OCCURS 16 TIMES.
+ 01 WS-DIGITS              PIC X(16) VALUE "0123456789ABCDEF".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-LIT-LIST            BINARY-LONG.
+ 01 WS-LIT-COLOR           BINARY-LONG.
+ 01 WS-LIT-HEX             BINARY-LONG.
+ 01 WS-LIT-RESET           BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ENTITY-ID           BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-LIST                PIC X(1024).
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-LIST-LENGTH         BINARY-LONG.
+ 01 WS-REMAINDER           BINARY-LONG.
+ 01 WS-DIGIT               BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-STYLE               PIC X(64).
+ 01 WS-STYLE-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "CXB-WP-CLEAN"
+     CALL "BX-LIT" USING WS-NAME-LIST WS-LIT-LIST
+     IF WS-LIT-LIST > 0
+         MOVE 0 TO WS-COUNT
+         MOVE SPACES TO WS-LIST
+         MOVE 1 TO WS-POINTER
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             MOVE 0 TO WS-HAS
+             IF EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = BS-DIM AND EN-TYPE(WS-I) NOT = CR-LOOSE-ITEM
+                 MOVE EN-PLAYER(WS-I) TO WS-ROW
+                 IF WS-ROW = 0
+                     COMPUTE WS-ROW = 0 - WS-I
+                 END-IF
+                 CALL "CXB-ATTR-EFFECTIVE" USING WS-ROW WS-RANGE-ID WS-RANGE-LENGTH WS-HAS WS-RANGE
+             END-IF
+             IF WS-HAS = 1 AND WS-RANGE > 0
+                 CALL "CXB-PLACE" USING WS-ROW WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
+                 IF WS-COUNT > 0
+                     STRING ", " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+                 END-IF
+                 ADD 1 TO WS-COUNT
+                 COMPUTE WS-ENTITY = FUNCTION INTEGER(WS-X)
+                 MOVE WS-ENTITY TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) ", " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+                 COMPUTE WS-ENTITY = FUNCTION INTEGER(WS-Y)
+                 MOVE WS-ENTITY TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) ", " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+                 COMPUTE WS-ENTITY = FUNCTION INTEGER(WS-Z)
+                 MOVE WS-ENTITY TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+             END-IF
+         END-PERFORM
+         COMPUTE WS-LIST-LENGTH = FUNCTION MIN(WS-POINTER - 1, 1024)
+         IF WS-COUNT = 0
+             MOVE "commands.waypoint.list.empty" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+         ELSE
+             MOVE "commands.waypoint.list.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNT
+         END-IF
+         CALL "CMD-TEXT-ARG" USING PB-TEXT DM-KEY(BS-DIM) DM-KEY-LENGTH(BS-DIM)
+         IF WS-COUNT > 0
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-LIST WS-LIST-LENGTH
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         MOVE WS-COUNT TO BR-R-RESULT
+     ELSE
+         CALL "BX-FIND" USING WS-NAME-WAYPOINT WS-INDEX
+         CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+         IF BR-R-FAILED = 0
+             MOVE BX-ROW(1) TO WS-ROW
+             IF WS-ROW < 0
+                 COMPUTE WS-ENTITY = 0 - WS-ROW
+                 IF EN-TYPE(WS-ENTITY) = CR-LOOSE-ITEM
+                     MOVE "argument.entity.notfound.entity" TO WS-KEY
+                     MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+                     MOVE SPACES TO WS-A1 WS-A2
+                     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+                     MOVE 1 TO BR-R-FAILED
+                 END-IF
+             END-IF
+         END-IF
+         IF BR-R-FAILED = 0
+             CALL "CXB-ENTITY-ID" USING WS-ROW WS-ENTITY-ID
+             CALL "CXB-WP-ENTRY" USING WS-ENTITY-ID WS-ENTRY
+             CALL "BX-LIT" USING WS-NAME-COLOR WS-LIT-COLOR
+             CALL "BX-LIT" USING WS-NAME-HEX WS-LIT-HEX
+             CALL "BX-LIT" USING WS-NAME-RESET WS-LIT-RESET
+             MOVE 1 TO BR-R-RESULT
+         END-IF
+         IF BR-R-FAILED = 0 AND WS-LIT-COLOR > 0 AND WS-LIT-RESET > 0
+             MOVE 0 TO WP-COLOR-KIND(WS-ENTRY) WP-COLOR(WS-ENTRY)
+             MOVE "commands.waypoint.modify.color.reset" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         END-IF
+         IF BR-R-FAILED = 0 AND WS-LIT-COLOR > 0 AND WS-LIT-RESET = 0
+             CALL "BX-FIND" USING WS-NAME-COLOR WS-INDEX
+             MOVE SPACES TO WS-TEXT
+             IF WS-LIT-HEX > 0
+                 MOVE 2 TO WP-COLOR-KIND(WS-ENTRY)
+                 MOVE BA-IVAL(WS-INDEX) TO WP-COLOR(WS-ENTRY)
+                 MOVE "#" TO WS-TEXT(1:1)
+                 MOVE WP-COLOR(WS-ENTRY) TO WS-REMAINDER
+                 PERFORM VARYING WS-I FROM 7 BY -1 UNTIL WS-I < 2
+                     DIVIDE WS-REMAINDER BY 16 GIVING WS-REMAINDER REMAINDER WS-DIGIT
+                     MOVE WS-DIGITS(WS-DIGIT + 1:1) TO WS-TEXT(WS-I:1)
+                 END-PERFORM
+                 MOVE 7 TO WS-TEXT-LENGTH
+             ELSE
+                 MOVE 1 TO WP-COLOR-KIND(WS-ENTRY)
+                 MOVE BA-IVAL(WS-INDEX) TO WP-COLOR(WS-ENTRY)
+                 MOVE WS-COLOR-NAME(WP-COLOR(WS-ENTRY) + 1) TO WS-TEXT
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO WS-TEXT-LENGTH
+             END-IF
+             MOVE "commands.waypoint.modify.color" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         END-IF
+         IF BR-R-FAILED = 0 AND WS-LIT-COLOR = 0
+             MOVE 0 TO WP-STYLE-LENGTH(WS-ENTRY)
+             IF WS-LIT-RESET = 0
+                 CALL "BX-FIND" USING WS-NAME-STYLE WS-INDEX
+                 CALL "BX-NAMESPACED" USING WS-INDEX WS-STYLE WS-STYLE-LENGTH
+                 MOVE WS-STYLE TO WP-STYLE(WS-ENTRY)
+                 MOVE WS-STYLE-LENGTH TO WP-STYLE-LENGTH(WS-ENTRY)
+             END-IF
+             MOVE "commands.waypoint.modify.style" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-WAYPOINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-WAYPOINT.
+*> The forms of waypoint (16 §5.15).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-WAYPOINT.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "waypoint list" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> color <color:teamcolor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> color hex <color:hexcolor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> color reset" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> style reset" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> style set <style:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-WAYPOINT.

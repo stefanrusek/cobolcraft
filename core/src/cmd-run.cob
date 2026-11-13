@@ -186,6 +186,16 @@
              CALL "CX-ITEM"
          WHEN BC-LOOT
              CALL "CX-LOOT"
+         WHEN BC-WAYPOINT
+             CALL "CX-WAYPOINT"
+         WHEN BC-ADVANCEMENT
+             CALL "CX-ADVANCEMENT"
+         WHEN BC-ATTRIBUTE
+             CALL "CX-ATTRIBUTE"
+         WHEN BC-RIDE
+             CALL "CX-RIDE"
+         WHEN BC-SPECTATE
+             CALL "CX-SPECTATE"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE
