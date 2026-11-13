@@ -145,15 +145,26 @@
  PROGRAM-ID. SURFACE-CELL-BIOME.
 *> USING job, quart x, quart y, quart z, id out: the stored biome of a quart cell of the chunk or of the ring of cells around it
 *> (the surface stage's neighbours, GJ-SF-RING); the quart y is clamped to the dimension.
+*> Table lookups and ADD instead of COMPUTE, DIVIDE and FUNCTION MAX / MIN (each of them goes through decimals): this runs eight times
+*> for every quart layer of every column.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CELLS.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-TABLES.
+    05 WS-CBASE            BINARY-LONG OCCURS 96 TIMES.
+    05 WS-RBASE            BINARY-LONG OCCURS 96 TIMES.
+    05 WS-RZ4              BINARY-LONG OCCURS 4 TIMES.
+    05 WS-RZ6              BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
  01 WS-RX                  BINARY-LONG.
  01 WS-RZ                  BINARY-LONG.
  01 WS-LAYER               BINARY-LONG.
- 01 WS-SECTION             BINARY-LONG.
- 01 WS-LY                  BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-RING                BINARY-LONG.
  LINKAGE SECTION.
  01 L-JOB.
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
@@ -162,18 +173,55 @@
  01 L-QZ                   BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-JOB L-QX L-QY L-QZ L-ID.
+     IF WS-READY = 0
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 95
+             DIVIDE WS-I BY 4 GIVING WS-S REMAINDER WS-L
+             COMPUTE WS-CBASE(WS-I + 1) = WS-S * 64 + WS-L * 16 + 1
+             COMPUTE WS-RBASE(WS-I + 1) = WS-I * 36 + 2
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-RZ4(WS-I + 1) = WS-I * 4
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+             COMPUTE WS-RZ6(WS-I) = (WS-I - 1) * 6
+         END-PERFORM
+         MOVE 1 TO WS-READY
+     END-IF
      MOVE 0 TO L-ID
-     COMPUTE WS-RX = L-QX - J-CX * 4
-     COMPUTE WS-RZ = L-QZ - J-CZ * 4
-     COMPUTE WS-LAYER = FUNCTION MAX(0, FUNCTION MIN(95, L-QY + 16))
+     MOVE J-CX TO WS-BASE
+     ADD J-CX TO WS-BASE
+     ADD J-CX TO WS-BASE
+     ADD J-CX TO WS-BASE
+     MOVE L-QX TO WS-RX
+     SUBTRACT WS-BASE FROM WS-RX
+     MOVE J-CZ TO WS-BASE
+     ADD J-CZ TO WS-BASE
+     ADD J-CZ TO WS-BASE
+     ADD J-CZ TO WS-BASE
+     MOVE L-QZ TO WS-RZ
+     SUBTRACT WS-BASE FROM WS-RZ
+*>   the layer: quart y + 16 clamped to 0 .. 95
+     MOVE L-QY TO WS-LAYER
+     ADD 16 TO WS-LAYER
+     IF WS-LAYER < 0
+         MOVE 0 TO WS-LAYER
+     END-IF
+     IF WS-LAYER > 95
+         MOVE 95 TO WS-LAYER
+     END-IF
      IF WS-RX >= 0 AND WS-RX <= 3 AND WS-RZ >= 0 AND WS-RZ <= 3
          SET ADDRESS OF CE-CHUNK TO J-ADDR
-         DIVIDE WS-LAYER BY 4 GIVING WS-SECTION REMAINDER WS-LY
-         COMPUTE WS-CELL = WS-SECTION * 64 + WS-LY * 16 + WS-RZ * 4 + WS-RX + 1
+         MOVE WS-CBASE(WS-LAYER + 1) TO WS-CELL
+         ADD WS-RZ4(WS-RZ + 1) TO WS-CELL
+         ADD WS-RX TO WS-CELL
          MOVE CE-BIOME(WS-CELL) TO L-ID
      ELSE
-         IF J-SF-RING(WS-LAYER * 36 + (WS-RZ + 1) * 6 + WS-RX + 2) > 0
-             COMPUTE L-ID = J-SF-RING(WS-LAYER * 36 + (WS-RZ + 1) * 6 + WS-RX + 2) - 1
+         MOVE WS-RBASE(WS-LAYER + 1) TO WS-RING
+         ADD WS-RZ6(WS-RZ + 2) TO WS-RING
+         ADD WS-RX TO WS-RING
+         IF J-SF-RING(WS-RING) > 0
+             MOVE J-SF-RING(WS-RING) TO L-ID
+             SUBTRACT 1 FROM L-ID
          END-IF
      END-IF
      GOBACK.
@@ -201,6 +249,12 @@
  01 WS-CELLS.
     05 WS-CELL             BINARY-LONG OCCURS 8 TIMES.
  01 WS-SAME                BINARY-LONG.
+ 01 WS-INIT                BINARY-LONG VALUE 0.
+ 01 WS-LAST-X              BINARY-LONG VALUE -2000000000.
+ 01 WS-LAST-Z              BINARY-LONG VALUE -2000000000.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-QYTAB.
+    05 WS-QYT              BINARY-LONG OCCURS 480 TIMES.
  01 WS-S                   BINARY-DOUBLE UNSIGNED.
  01 WS-SEED                BINARY-DOUBLE.
  01 WS-INC                 BINARY-DOUBLE.
@@ -229,16 +283,38 @@
  01 L-Z                    BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-JOB L-X L-Y L-Z L-ID.
-     COMPUTE WS-X1 = L-X - 2
-     COMPUTE WS-Y1 = L-Y - 2
-     COMPUTE WS-Z1 = L-Z - 2
-     COMPUTE WS-QX = FUNCTION INTEGER(WS-X1 / 4)
-     COMPUTE WS-QY = FUNCTION INTEGER(WS-Y1 / 4)
-     COMPUTE WS-QZ = FUNCTION INTEGER(WS-Z1 / 4)
+*>   x and z are those of the column most of the time: their quart cells are kept, and the quart cell of y (y - 2 div 4) comes from
+*>   a table for the block rows (no decimals on the way to the answer remembered per quart layer)
+     IF WS-INIT = 0
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 479
+             COMPUTE WS-T = WS-I - 68
+             COMPUTE WS-QYT(WS-I + 1) = FUNCTION INTEGER(WS-T / 4)
+         END-PERFORM
+         MOVE 1 TO WS-INIT
+     END-IF
+     IF L-X NOT = WS-LAST-X OR L-Z NOT = WS-LAST-Z
+         COMPUTE WS-X1 = L-X - 2
+         COMPUTE WS-Z1 = L-Z - 2
+         COMPUTE WS-QX = FUNCTION INTEGER(WS-X1 / 4)
+         COMPUTE WS-QZ = FUNCTION INTEGER(WS-Z1 / 4)
+         MOVE L-X TO WS-LAST-X
+         MOVE L-Z TO WS-LAST-Z
+     END-IF
+     IF L-Y >= -66 AND L-Y <= 413
+         MOVE L-Y TO WS-I
+         ADD 67 TO WS-I
+         MOVE WS-QYT(WS-I) TO WS-QY
+     ELSE
+         COMPUTE WS-Y1 = L-Y - 2
+         COMPUTE WS-QY = FUNCTION INTEGER(WS-Y1 / 4)
+     END-IF
      IF WS-QY = SC-BIO-Q AND SC-BIO-ID >= 0
          MOVE SC-BIO-ID TO L-ID
          GOBACK
      END-IF
+     COMPUTE WS-X1 = L-X - 2
+     COMPUTE WS-Y1 = L-Y - 2
+     COMPUTE WS-Z1 = L-Z - 2
      MOVE 1 TO WS-SAME
      PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 7
          DIVIDE WS-C BY 4 GIVING WS-T
