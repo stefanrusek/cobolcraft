@@ -35,6 +35,9 @@
  01 WS-COMPOUND-TYPE       BINARY-LONG VALUE 10.
  01 WS-ID-TEXT             PIC X(32) VALUE "minecraft:future_thing".
  01 WS-ID-LENGTH           BINARY-LONG VALUE 22.
+ 01 WS-BARE-TEXT           PIC X(16) VALUE "future_bare".
+ 01 WS-BARE-LENGTH         BINARY-LONG VALUE 11.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
@@ -56,12 +59,16 @@
      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
 *>   A block entity of a type the core does not know (31-1: it would be dropped on load) stays as it was.
      MOVE "block_entities" TO WN MOVE 14 TO WL
-     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-COMPOUND-TYPE WS-ONE-BYTE
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-COMPOUND-TYPE WS-TWO
      CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
      MOVE "id" TO WN MOVE 2 TO WL
      CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-ID-TEXT WS-ID-LENGTH
      MOVE "x" TO WN MOVE 1 TO WL
      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+     MOVE "id" TO WN MOVE 2 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-BARE-TEXT WS-BARE-LENGTH
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
      MOVE "structures" TO WN MOVE 10 TO WL
@@ -90,7 +97,7 @@
      MOVE "sections[0].Y" TO WS-PATH PERFORM ADD-GET
      MOVE "block_entities" TO WS-PATH PERFORM ADD-GET
      MOVE "test chunk merge in the 26.3 layout a saved chunk keeps InhabitedTime, structures, unknown keys and unknown block entities, drops isLightOn, rewrites its own keys" TO TL-CASE
-     MOVE "999 5 {starts:{minecraft:village:{}}} absent 4 0 [{id:minecraft:future_thing,x:5}]" TO TL-EXPECTED
+     MOVE "999 5 {starts:{minecraft:village:{}}} absent 4 0 [{id:minecraft:future_thing,x:5},{id:future_bare}]" TO TL-EXPECTED
      PERFORM CHECK
 
 *>   Layout 1 with no chunk in the file (a new chunk): the defaults of the CobolCraft writer.

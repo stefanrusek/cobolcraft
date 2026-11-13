@@ -802,23 +802,6 @@
  END PROGRAM BE-CHUNK-WRITE-MERGE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BE-CHUNK-WRITE.
-*> USING dim, chunk x, chunk z, PB-BUFFER: the block_entities list of a chunk with no old chunk to keep (BE-CHUNK-WRITE-MERGE).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
- 01 WS-NONE                BINARY-LONG VALUE 0.
- LINKAGE SECTION.
- COPY PROTO.
- 01 L-DIM                  BINARY-LONG.
- 01 L-CX                   BINARY-LONG.
- 01 L-CZ                   BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER.
-     CALL "BE-CHUNK-WRITE-MERGE" USING L-DIM L-CX L-CZ PB-BUFFER WK-BUFFER WS-NONE
-     GOBACK.
- END PROGRAM BE-CHUNK-WRITE.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-IN-CHUNK.
 *> USING index, dim, chunk x, chunk z, result out: 1 when the entity is live and stands in that chunk of that dimension.
  DATA DIVISION.

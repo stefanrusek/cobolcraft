@@ -44,7 +44,7 @@
      CALL "LEVEL-DAT-READ"
      PERFORM SHOW-STATE
      MOVE "acceptance vanfmt given a 26.3 folder when read then clock, weather and rules come from the saved-data files" TO TL-CASE
-     MOVE "Vanfmt Fixture|2000|11 22 33 1 0|0 7" TO TL-EXPECTED
+     MOVE "Vanfmt Fixture|2000|11 22 33 1 1|0 7" TO TL-EXPECTED
      PERFORM CHECK
 
 *>   100 ticks pass, then the world is saved.
@@ -99,7 +99,7 @@
      MOVE SPACES TO WS-OBSERVED
      MOVE "data" TO WS-PATH PERFORM ADD-GET
      MOVE "acceptance vanfmt when saved then weather.dat holds the five fields" TO TL-CASE
-     MOVE "{clear_weather_time:11,rain_time:22,thunder_time:33,raining:1,thundering:0}" TO TL-EXPECTED
+     MOVE "{clear_weather_time:11,rain_time:22,thunder_time:33,raining:1,thundering:1,extra:9}" TO TL-EXPECTED
      PERFORM CHECK
 
 *>   Files that are missing are created by the save (a 26.3 level.dat with no saved-data files yet).
@@ -115,12 +115,25 @@
      MOVE "50100 absent" TO TL-EXPECTED
      PERFORM CHECK
 
+*>   A file that is not gzip NBT is ignored by the read (the state stays as it was).
+     MOVE "echo not-nbt > build/vanfmt-folder/data/minecraft/weather.dat" TO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
 *>   A second read gives the same state.
      MOVE 0 TO CW-TIME
      CALL "LEVEL-DAT-READ"
      PERFORM SHOW-STATE
      MOVE "acceptance vanfmt given the saved folder when read again then the clock has moved 100 ticks and the rest is the same" TO TL-CASE
-     MOVE "Vanfmt Fixture|2100|11 22 33 1 0|0 7" TO TL-EXPECTED
+     MOVE "Vanfmt Fixture|2100|11 22 33 1 1|0 7" TO TL-EXPECTED
+     PERFORM CHECK
+*>   A world with no name saves an empty LevelName.
+     MOVE SPACES TO CW-NAME
+     CALL "LEVEL-DAT-WRITE"
+     MOVE "build/vanfmt-folder/level.dat" TO WS-FILE
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "Data.GameType" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanfmt given a world without a name when saved then level.dat is still written" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 
