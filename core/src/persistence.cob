@@ -569,3 +569,24 @@
      END-IF
      GOBACK.
  END PROGRAM PERSIST-NAMESPACED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PERSIST-LOCAL-KEY.
+*> USING key as the folder stores it (PIC X(64), space filled), key out (PIC X(48)): the key as the open set names it,
+*> the inverse of PERSIST-NAMESPACED. A standard set holds some keys without "minecraft:" (CITEMS.cpy, CBLOCKS.cpy), so
+*> the prefix is cut for it; the cobolcraft set keeps every key as it is.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(64).
+ 01 L-OUT                  PIC X(48).
+ PROCEDURE DIVISION USING L-KEY L-OUT.
+     MOVE SPACES TO L-OUT
+     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND L-KEY(1:10) = "minecraft:"
+         MOVE L-KEY(11:54) TO L-OUT
+     ELSE
+         MOVE L-KEY TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM PERSIST-LOCAL-KEY.
