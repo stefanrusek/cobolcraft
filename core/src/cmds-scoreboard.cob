@@ -1994,6 +1994,16 @@
              CALL "CX-TEAM"
          WHEN BC-TRIGGER
              CALL "CX-TRIGGER"
+         WHEN BC-STOPWATCH
+             CALL "CX-STOPWATCH"
+         WHEN BC-SCHEDULE
+             CALL "CX-SCHEDULE"
+         WHEN BC-RETURN
+             CALL "CX-RETURN"
+         WHEN BC-FUNCTION
+             CALL "CX-FUNCTION"
+         WHEN BC-DATAPACK
+             CALL "CX-DATAPACK"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE
