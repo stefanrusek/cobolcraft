@@ -1588,21 +1588,24 @@
  01 WS-NAME-TABLE REDEFINES WS-NAMES.
     05 WS-FIRE-ITEM        PIC X(40) OCCURS 16 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-FULL                PIC X(48).
  LINKAGE SECTION.
  01 L-ITEM                 BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
  PROCEDURE DIVISION USING L-ITEM L-TYPE L-RESULT.
      MOVE 0 TO L-RESULT
+*>   The standard set keeps its item keys without the namespace ("netherite_ingot").
+     CALL "KEY-NAMESPACED" USING IT-KEY(L-ITEM + 1) WS-FULL
      IF L-TYPE >= 1 AND L-TYPE <= 8
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
-             IF IT-KEY(L-ITEM + 1)(1:IT-KEY-LENGTH(L-ITEM + 1)) = FUNCTION TRIM(WS-FIRE-ITEM(WS-I))
+             IF FUNCTION TRIM(WS-FULL) = FUNCTION TRIM(WS-FIRE-ITEM(WS-I))
                  MOVE 1 TO L-RESULT
              END-IF
          END-PERFORM
      END-IF
      IF L-TYPE >= 9 AND L-TYPE <= 12
-         IF IT-KEY(L-ITEM + 1)(1:IT-KEY-LENGTH(L-ITEM + 1)) = "minecraft:nether_star"
+         IF WS-FULL = "minecraft:nether_star"
              MOVE 1 TO L-RESULT
          END-IF
      END-IF
