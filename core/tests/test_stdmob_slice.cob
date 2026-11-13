@@ -53,6 +53,10 @@
  01 WS-MOVED               BINARY-LONG.
  01 WS-TICKS               BINARY-LONG VALUE 400.
  01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-TYPE-TEXT           PIC Z(5)9.
+ 01 WS-FOUND               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 2 TO CS-VIEW-DISTANCE
@@ -140,6 +144,23 @@
      MOVE "test stdmob slice: a spawned cow has 10 health" TO TL-CASE
      MOVE EN-HEALTH(WS-COW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The viewer is sent an Add Entity of the vanilla type id for the pig (the client draws its model from that id's key).
+     CALL "TEST-DRAIN-ENTITIES" USING WS-CONN WS-TEXT
+     MOVE WS-PIG-TYPE TO WS-TYPE-TEXT
+     MOVE SPACES TO WS-NEEDLE
+     STRING "," FUNCTION TRIM(WS-TYPE-TEXT) "@" DELIMITED BY SIZE INTO WS-NEEDLE
+     MOVE 0 TO WS-FOUND
+     INSPECT WS-TEXT TALLYING WS-FOUND FOR ALL FUNCTION TRIM(WS-NEEDLE)
+     MOVE "test stdmob slice: the viewer gets an Add Entity of the pig's type id" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "yes" TO TL-EXPECTED
+     MOVE "no" TO TL-OBSERVED
+     IF WS-FOUND > 0
+         MOVE "yes" TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
 
 *>   A hit of 3 by the player leaves 7 and makes the pig panic for 40 ticks away from the player.
      MOVE 3 TO WS-AMOUNT
