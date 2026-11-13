@@ -9,7 +9,7 @@
 *>   STDMOB-PANIC USING entity type id, panic milli out     the panic speed (blocks per tick x 1000), 0 for no row
 *>   STDMOB-DIE USING tracker row                           death: loot, Entity Event 3, dying for 20 ticks
 *>   STDMOB-VANISH USING tracker row                        Entity Event 60 and removal
-*>   STDMOB-DROPS USING dim, x, y, z, entity id, type       the loot pools of the type on the ground (18 section 7.5, 7.6)
+*>   STDMOB-DROPS USING dim, x, y, z, type, killed        the loot table of the type on the ground (18 section 7.5, 7.6)
 *>   STDMOB-STEP USING tracker row                          one tick of one mob: stroll or panic, then the physics
 *>   STDMOB-SPAWN-RULE USING dim, x, z, top, r              one natural pack on the block at (x, top)
 *>   STDMOB-SPAWN-TRY USING dim, player row                 one attempt around the player
@@ -90,68 +90,43 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DROPS.
-*> USING dim, x, y, z (FLOAT-LONG), entity id, entity type (BINARY-LONG): each pool of the row is one item roll, uniform(min, max)
-*> (19 sections 2.1 and 2.2; no looting, and no smelting without fire), the stack spawned at the position as Entity.spawnAtLocation
-*> does (IP-AT-LOCATION). The random numbers are RNG-HASH of the entity id, the pool and the time.
+*> USING dim, x, y, z (FLOAT-LONG), entity type (BINARY-LONG), killed by a player (BINARY-LONG, 0 or 1): the loot table of the type,
+*> minecraft:entities/<key> (18 sections 7.5 and 7.6, rolled by LOOT-ROLL of docs 26), with this_entity the mob's type key and
+*> last_damage_player set when a player killed it; every stack it yields lands on the ground at the mob's position as
+*> Entity.spawnAtLocation does (IP-AT-LOCATION). A set without the table drops nothing. The type must be a table mob (the caller, STDMOB-DIE, has checked).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ COPY LOOTCTX.
  01 WS-M                   BINARY-LONG.
- 01 WS-POOL                BINARY-LONG.
- 01 WS-COUNT               BINARY-LONG VALUE 3.
- 01 WS-ARGS.
-    05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
- 01 WS-R                   BINARY-DOUBLE.
  01 WS-KEY                 PIC X(112).
- 01 WS-ITEM                BINARY-LONG.
- 01 WS-ITEM-ROW            PIC X(270).
- 01 WS-STATUS              BINARY-LONG.
- 01 WS-MIN                 BINARY-LONG.
- 01 WS-MAX                 BINARY-LONG.
- 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
  01 WS-OFFSET              FLOAT-LONG VALUE 0.
- 01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-ITEM-ENTITY         BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
- 01 L-ID                   BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ID L-TYPE.
+ 01 L-KILLED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLED.
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
-     IF WS-M = 0
-         GOBACK
-     END-IF
-     PERFORM VARYING WS-POOL FROM 1 BY 1 UNTIL WS-POOL > 2
-         MOVE SPACES TO WS-KEY
-         IF WS-POOL = 1
-             MOVE SM-DROP-MIN-1(WS-M) TO WS-MIN
-             MOVE SM-DROP-MAX-1(WS-M) TO WS-MAX
-             IF SM-DROP-KEY-1(WS-M) NOT = SPACES
-                 STRING "minecraft:" DELIMITED BY SIZE SM-DROP-KEY-1(WS-M) DELIMITED BY SPACE INTO WS-KEY
-             END-IF
-         ELSE
-             MOVE SM-DROP-MIN-2(WS-M) TO WS-MIN
-             MOVE SM-DROP-MAX-2(WS-M) TO WS-MAX
-             IF SM-DROP-KEY-2(WS-M) NOT = SPACES
-                 STRING "minecraft:" DELIMITED BY SIZE SM-DROP-KEY-2(WS-M) DELIMITED BY SPACE INTO WS-KEY
-             END-IF
-         END-IF
-         IF WS-KEY NOT = SPACES
-             MOVE L-ID TO WS-ARG(1)
-             MOVE WS-POOL TO WS-ARG(2)
-             MOVE CW-TIME TO WS-ARG(3)
-             CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
-             COMPUTE WS-AMOUNT = WS-MIN + FUNCTION MOD(WS-R, WS-MAX - WS-MIN + 1)
-             CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
-             IF WS-AMOUNT > 0 AND WS-ITEM > 0
-                 CALL "IP-AT-LOCATION" USING L-DIM L-X L-Y L-Z WS-OFFSET WS-ITEM WS-AMOUNT WS-NONE
-                     WS-ITEM-ENTITY
-             END-IF
-         END-IF
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:entities/" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO WS-KEY
+     INITIALIZE LOOT-CONTEXT
+     MOVE 1 TO LC-ORIGIN-SET LC-THIS-SET
+     MOVE L-X TO LC-X
+     MOVE L-Y TO LC-Y
+     MOVE L-Z TO LC-Z
+     STRING "minecraft:" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO LC-THIS-TYPE
+     MOVE L-KILLED TO LC-KILLER
+     MOVE CW-SEED TO LC-WORLD-SEED
+     CALL "LOOT-ROLL" USING WS-KEY LOOT-CONTEXT LOOT-RESULT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LR-COUNT
+         CALL "IP-AT-LOCATION" USING L-DIM L-X L-Y L-Z WS-OFFSET LR-ITEM(WS-I) LR-AMOUNT(WS-I) LR-HANDLE(WS-I)
+             WS-ITEM-ENTITY
      END-PERFORM
      GOBACK.
  END PROGRAM STDMOB-DROPS.
@@ -173,6 +148,7 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
+ 01 WS-KILLED              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -187,7 +163,11 @@
      CALL "ENTITY-EVENT-BUILD" USING WS-ID WS-EVENT PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
-     CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-ID WS-TYPE
+     MOVE 0 TO WS-KILLED
+     IF EN-KILLER(L-ROW) > 0
+         MOVE 1 TO WS-KILLED
+     END-IF
+     CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
      GOBACK.
  END PROGRAM STDMOB-DIE.
 
