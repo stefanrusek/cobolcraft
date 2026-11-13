@@ -1,0 +1,44 @@
+*> Implementation test (002-lane-mobs2, T4132; docs/protocol/45 player data XpLevel, XpP, XpTotal): a player's experience level, progress and total
+*> survive leaving, a save and a reopen of the world: players/<uuid>.dat keeps them and the next join restores them.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-XP-PERSIST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ 01 WS-WORLD               PIC X(64) VALUE Z"build/core-test-world".
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE 5 TO PL-XP-LEVEL(WS-ROW)
+     MOVE 3 TO PL-XP-POINTS(WS-ROW)
+     MOVE 80 TO PL-XP-TOTAL(WS-ROW)
+     CALL "CORE-CONN-CLOSED" USING WS-CONN
+     CALL "CORE-SAVE"
+     CALL "CORE-WORLD-OPEN" USING WS-WORLD CORE-SETTINGS WS-CREATED
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE "N" TO TL-MODE
+     MOVE "test xp persist: the level survives a save and a reopen" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE PL-XP-LEVEL(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test xp persist: the points into the level survive" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE PL-XP-POINTS(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test xp persist: the total survives" TO TL-CASE
+     MOVE 80 TO TL-EXPECTED-N
+     MOVE PL-XP-TOTAL(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-XP-PERSIST.
+ COPY CORETEST.
