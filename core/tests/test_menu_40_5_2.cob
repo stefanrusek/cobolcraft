@@ -1327,6 +1327,15 @@
      PERFORM ADD-N
      MOVE "2 0 3 8 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§2 Merchant: 2.10, E3 drag: a mouse far above the bar clamps scrollOff to 0" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "-100 0 10" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-M-DRAG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 40-5§2 Merchant: 2.10 out-of-stock cross: drawn when the offer list is not empty, th" &
          "e selected index is valid and out of stock; the sprite at (leftPos + 182, topPos + 35)" TO TL-CASE
      PERFORM BEGIN-CASE

@@ -250,6 +250,11 @@
  01 WS-N                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-KA                  BINARY-LONG.
+ 01 WS-KB                  BINARY-LONG.
+ 01 WS-SGN                 BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
  01 WS-COL                 BINARY-LONG.
  01 WS-SID                 BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
@@ -294,27 +299,18 @@
                  END-EVALUATE
              END-PERFORM
          END-IF
+*>       The highest lowest source of the four horizontal neighbour columns: west, east, north, south.
          MOVE WS-MINV TO WS-NBR
-         COMPUTE WS-X = L-X - 1
-         CALL "L32-SKY-LOWEST" USING WS-X L-Z WS-MINV WS-N
-         IF WS-N > WS-NBR
-             MOVE WS-N TO WS-NBR
-         END-IF
-         COMPUTE WS-X = L-X + 1
-         CALL "L32-SKY-LOWEST" USING WS-X L-Z WS-MINV WS-N
-         IF WS-N > WS-NBR
-             MOVE WS-N TO WS-NBR
-         END-IF
-         COMPUTE WS-Y = L-Z - 1
-         CALL "L32-SKY-LOWEST" USING L-X WS-Y WS-MINV WS-N
-         IF WS-N > WS-NBR
-             MOVE WS-N TO WS-NBR
-         END-IF
-         COMPUTE WS-Y = L-Z + 1
-         CALL "L32-SKY-LOWEST" USING L-X WS-Y WS-MINV WS-N
-         IF WS-N > WS-NBR
-             MOVE WS-N TO WS-NBR
-         END-IF
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 3
+             DIVIDE WS-K BY 2 GIVING WS-KA REMAINDER WS-KB
+             COMPUTE WS-SGN = 2 * WS-KB - 1
+             COMPUTE WS-X = L-X + WS-SGN * (1 - WS-KA)
+             COMPUTE WS-NZ = L-Z + WS-SGN * WS-KA
+             CALL "L32-SKY-LOWEST" USING WS-X WS-NZ WS-MINV WS-N
+             IF WS-N > WS-NBR
+                 MOVE WS-N TO WS-NBR
+             END-IF
+         END-PERFORM
          MOVE WS-BOTTOM TO WS-Y
          IF L-LOWEST > WS-Y
              MOVE L-LOWEST TO WS-Y

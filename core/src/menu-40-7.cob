@@ -287,6 +287,9 @@
  01 W-BG                   BINARY-LONG.
  01 W-SCROLL               BINARY-LONG.
  01 W-SHOW                 BINARY-LONG.
+ 01 W-DROW                 BINARY-LONG.
+ 01 W-DCOL                 BINARY-LONG.
+ 01 W-DIST                 BINARY-LONG.
  01 W-TABS.
     05 W-T                 OCCURS 14 TIMES.
        10 W-ROW            BINARY-LONG.
@@ -300,9 +303,10 @@
     END-PERFORM
     PERFORM VARYING W-I FROM 1 BY 1 UNTIL W-I > 13
         PERFORM VARYING W-J FROM W-I BY 1 UNTIL W-J > 13
-            IF W-ROW(W-I) = W-ROW(W-J + 1) AND W-COL(W-I) = W-COL(W-J + 1)
-                ADD 1 TO L-CLASHES
-            END-IF
+            COMPUTE W-DROW = FUNCTION ABS(W-ROW(W-I) - W-ROW(W-J + 1))
+            COMPUTE W-DCOL = FUNCTION ABS(W-COL(W-I) - W-COL(W-J + 1))
+            COMPUTE W-DIST = FUNCTION MIN(1, W-DROW + W-DCOL)
+            COMPUTE L-CLASHES = L-CLASHES + 1 - W-DIST
         END-PERFORM
     END-PERFORM
     GOBACK.

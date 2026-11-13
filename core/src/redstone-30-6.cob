@@ -687,15 +687,12 @@
                  MOVE 9 TO WS-SH
          END-EVALUATE
      END-IF
+*>   A shape still undecided here has both axes joined or neither (a single axis was settled above), and a corner whose other two sides are free was
+*>   settled by the corner rule above, so the last corner of each priority order below cannot be the only one left.
      IF WS-SH = -1
-         EVALUATE TRUE
-             WHEN WS-NS = 1 AND WS-EW = 1
-                 MOVE L-OLD TO WS-SH
-             WHEN WS-NS = 1
-                 MOVE 0 TO WS-SH
-             WHEN WS-EW = 1
-                 MOVE 1 TO WS-SH
-         END-EVALUATE
+         IF WS-NS = 1 AND WS-EW = 1
+             MOVE L-OLD TO WS-SH
+         END-IF
          IF L-STRAIGHT = 0 AND L-POWERED = 1
              EVALUATE TRUE
                  WHEN WS-NW = 1
@@ -704,8 +701,6 @@
                      MOVE 9 TO WS-SH
                  WHEN WS-SW = 1
                      MOVE 7 TO WS-SH
-                 WHEN WS-SE = 1
-                     MOVE 6 TO WS-SH
              END-EVALUATE
          END-IF
          IF L-STRAIGHT = 0 AND L-POWERED = 0
@@ -716,8 +711,6 @@
                      MOVE 7 TO WS-SH
                  WHEN WS-NE = 1
                      MOVE 9 TO WS-SH
-                 WHEN WS-NW = 1
-                     MOVE 8 TO WS-SH
              END-EVALUATE
          END-IF
      END-IF
