@@ -149,7 +149,11 @@
      DISPLAY "time set day;say hi" UPON ENVIRONMENT-VALUE
      CALL "CL-INIT" USING CLIENT-STATE
      INITIALIZE CL-ARGS
-     MOVE 0 TO AR-COUNT
+     MOVE 2 TO AR-COUNT
+     MOVE "--name" TO AR-TEXT(1)
+     MOVE 6 TO AR-LENGTH(1)
+     MOVE "Bob" TO AR-TEXT(2)
+     MOVE 3 TO AR-LENGTH(2)
      CALL "ARGS-PARSE" USING CLIENT-STATE CL-ARGS
      MOVE "args CC_COMMANDS_AT_FRAME and CC_COMMANDS set the start frame and the command text" TO TL-CASE
      MOVE "7/time set day;say hi" TO TL-EXPECTED
