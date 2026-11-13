@@ -60,6 +60,37 @@
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      CALL "CV-STEP" USING CONVH
 
+*>   US16-6 (feature 002): the options screen from the title screen; changing an option and Done writes
+*>   options.txt in the game directory ("version:5023" first); no options.dat is written.
+     MOVE ACT-OPTIONS TO WS-ACTION
+     MOVE 0 TO WS-ARG
+     CALL "CV-CLICK" USING CONVH WS-ALICE WS-ACTION WS-ARG WS-FOUND
+     MOVE SM-SCREEN TO WS-E1
+     MOVE ACT-OPTION TO WS-ACTION
+     CALL "CV-CLICK" USING CONVH WS-ALICE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-OPTIONS-DONE TO WS-ACTION
+     CALL "CV-CLICK" USING CONVH WS-ALICE WS-ACTION WS-ARG WS-FOUND
+     MOVE SM-SCREEN TO WS-E2
+     MOVE SPACES TO WS-PATH
+     STRING WS-DIR(1:WS-DIR-LENGTH) "/Alice/options.txt" DELIMITED BY SIZE INTO WS-PATH
+     CALL "U16-FILE-EXISTS" USING WS-PATH WS-EXISTS
+     CALL "U16-FIRST-LINE" USING WS-PATH WS-LOG
+     MOVE WS-EXISTS TO WS-E3
+     MOVE SPACES TO WS-PATH
+     STRING WS-DIR(1:WS-DIR-LENGTH) "/Alice/options.dat" DELIMITED BY SIZE INTO WS-PATH
+     CALL "U16-FILE-EXISTS" USING WS-PATH WS-EXISTS
+     MOVE WS-EXISTS TO WS-E4
+     MOVE "acceptance US16-6 given the title screen when the Player opens the options, changes one and "
+         & "leaves them then the game directory holds options.txt starting with version:5023 and no "
+         & "options.dat" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "options screen 18 back to 1 options.txt 1 first version:5023 options.dat 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "options screen " FUNCTION TRIM(WS-E1) " back to " FUNCTION TRIM(WS-E2)
+         " options.txt " FUNCTION TRIM(WS-E3) " first " FUNCTION TRIM(WS-LOG(1:20))
+         " options.dat " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   US16-1 create: title, Single-player, the world list (empty), New World, the name typed over
 *>   the default name, creative chosen, Create.
      MOVE ACT-SINGLE-PLAYER TO WS-ACTION
@@ -132,10 +163,10 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "acceptance US16-2 the single-player world has the server's content and rules: a "
-         & "first-time survival Player at the world spawn with the starting inventory, health 30 "
-         & "and food 24" TO TL-CASE
+         & "first-time survival Player at the world spawn with the starting inventory, health 20 "
+         & "and food 20" TO TL-CASE
      MOVE "mode 0 at 4.5/54.0/8.5 slots 2x64 3x64 4x64 5x64 6x64 7x64 8x64 9x64 10x1 11x1 0x0 "
-         & "health 30 food 24" TO TL-EXPECTED
+         & "health 20 food 20" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      MOVE PL-MODE TO WS-E1
@@ -160,32 +191,33 @@
 *>   US16-3: every command is available to the host; acting on another player finds nobody; the
 *>   ban list accepts any valid name.
      MOVE "acceptance US16-3 given a single-player world when the Player uses chat commands then "
-         & "every command of the command set is available to them" TO TL-CASE
-     MOVE "/howto" TO WS-TEXT
-     MOVE 6 TO WS-LENGTH
-     MOVE "Commands you may use (35):" TO TL-EXPECTED
+         & "the standard commands are available to them (list answers with the players online)" TO TL-CASE
+     MOVE "/list" TO WS-TEXT
+     MOVE 5 TO WS-LENGTH
+     MOVE "commands.list.players" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
      MOVE "acceptance US16-3 in a world not opened to others the private-message command naming "
-         & "another player reports the player-not-found message" TO TL-CASE
-     MOVE "/murmur Bobby hello" TO WS-TEXT
-     MOVE 19 TO WS-LENGTH
-     MOVE "No player named Bobby is online" TO TL-EXPECTED
+         & "another player reports that no such player is online" TO TL-CASE
+     MOVE "/msg Bobby hello" TO WS-TEXT
+     MOVE 16 TO WS-LENGTH
+     MOVE "argument.entity.notfound.player" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
-     MOVE "acceptance US16-3 in a world not opened to others the disconnect-player command naming "
-         & "another player reports the player-not-found message" TO TL-CASE
-     MOVE "/eject Bobby" TO WS-TEXT
-     MOVE 12 TO WS-LENGTH
+     MOVE "acceptance US16-3 in a world not opened to others the kick command naming another "
+         & "player reports that a single-player world has no one to kick" TO TL-CASE
+     MOVE "/kick Bobby" TO WS-TEXT
+     MOVE 11 TO WS-LENGTH
+     MOVE "commands.kick.singleplayer.failed" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
      MOVE "acceptance US16-3 the ban command naming a valid offline name records the ban"
          TO TL-CASE
-     MOVE "/bar Bobby" TO WS-TEXT
+     MOVE "/ban Bobby" TO WS-TEXT
      MOVE 10 TO WS-LENGTH
-     MOVE "Barred Bobby" TO TL-EXPECTED
+     MOVE "commands.ban.success" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
      MOVE "acceptance US16-3 the ban list then holds the offline name" TO TL-CASE
-     MOVE "/barlist" TO WS-TEXT
+     MOVE "/banlist" TO WS-TEXT
      MOVE 8 TO WS-LENGTH
-     MOVE "Barred (1): Bobby" TO TL-EXPECTED
+     MOVE "commands.banlist.entry" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
 
 *>   US16-4: the pause menu pauses the world (no core tick while it is open).
@@ -220,14 +252,14 @@
 
 *>   US16-5: changes made (an item supplied, the time set, a block broken in creative, the Player
 *>   moved by falling into the hole) are there after quitting to the menu and opening it again.
-     MOVE "/supply Alice slag 5" TO WS-TEXT
-     MOVE 20 TO WS-LENGTH
+     MOVE "/give Alice cobolcraft:slag 5" TO WS-TEXT
+     MOVE 29 TO WS-LENGTH
      CALL "SP-COMMAND" USING CONVH WS-ALICE WS-TEXT WS-LENGTH WS-LOG
-     MOVE "/clock 20000" TO WS-TEXT
-     MOVE 12 TO WS-LENGTH
+     MOVE "/time set 20000" TO WS-TEXT
+     MOVE 15 TO WS-LENGTH
      CALL "SP-COMMAND" USING CONVH WS-ALICE WS-TEXT WS-LENGTH WS-LOG
-     MOVE "/mode Alice creative" TO WS-TEXT
-     MOVE 20 TO WS-LENGTH
+     MOVE "/gamemode creative" TO WS-TEXT
+     MOVE 18 TO WS-LENGTH
      CALL "SP-COMMAND" USING CONVH WS-ALICE WS-TEXT WS-LENGTH WS-LOG
      MOVE 90 TO PL-PITCH
      CALL "CV-STEP" USING CONVH
@@ -236,8 +268,8 @@
      CALL "CV-BUTTON-SET" USING CONVH WS-ALICE WS-BUTTON WS-KIND
      MOVE CC-EV-BUTTON-UP TO WS-KIND
      CALL "CV-BUTTON-SET" USING CONVH WS-ALICE WS-BUTTON WS-KIND
-     MOVE "/mode Alice survival" TO WS-TEXT
-     MOVE 20 TO WS-LENGTH
+     MOVE "/gamemode survival" TO WS-TEXT
+     MOVE 18 TO WS-LENGTH
      CALL "SP-COMMAND" USING CONVH WS-ALICE WS-TEXT WS-LENGTH WS-LOG
      MOVE 40 TO WS-COUNT
      CALL "CV-STEPS" USING CONVH WS-COUNT
@@ -274,6 +306,14 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "count " FUNCTION TRIM(WS-E1) " " WL-NAME(1)(1:WL-NAME-LENGTH(1)) " "
          WL-NAME(2)(1:WL-NAME-LENGTH(2)) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US2-3 given two worlds created without choosing a type when the world list is "
+         & "shown then each is of the cobolcraft type (level.dat WorldType), the default while no "
+         & "standard content is extracted" TO TL-CASE
+     MOVE "types cobolcraft cobolcraft" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "types " FUNCTION TRIM(WL-TYPE(1)) " " FUNCTION TRIM(WL-TYPE(2)) DELIMITED BY SIZE
+         INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE ACT-SELECT TO WS-ACTION
      MOVE 2 TO WS-ARG
@@ -349,7 +389,7 @@
      MOVE SPACES TO WS-PATH
      STRING WS-DIR(1:WS-DIR-LENGTH) "/Alice/saves/Meadow/level.dat" DELIMITED BY SIZE
          INTO WS-PATH
-     CALL "FILE-EXISTS" USING WS-PATH WS-EXISTS
+     CALL "U16-FILE-EXISTS" USING WS-PATH WS-EXISTS
      MOVE "acceptance US16-1 the Player deletes a world after confirming: it leaves the list and "
          & "its folder is gone" TO TL-CASE
      MOVE "confirm 15 screen 13 count 1 Prairie gone 1" TO TL-EXPECTED
@@ -468,7 +508,7 @@
  END PROGRAM POSITION-TEXT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FILE-EXISTS.
+ PROGRAM-ID. U16-FILE-EXISTS.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PATH                PIC X(257).
@@ -486,7 +526,7 @@
          MOVE 1 TO L-EXISTS
      END-IF
      GOBACK.
- END PROGRAM FILE-EXISTS.
+ END PROGRAM U16-FILE-EXISTS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SP-SAY.
@@ -516,3 +556,31 @@
      CALL "CV-KEY" USING CONVH L-INDEX WS-ENTER
      GOBACK.
  END PROGRAM SP-SAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. U16-FIRST-LINE.
+*> USING path (PIC X(256), space-padded), line out (PIC X(4096)): the first line of the file (spaces when it cannot be read).
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT LINE-FILE ASSIGN TO WS-NAME ORGANIZATION LINE SEQUENTIAL FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD LINE-FILE.
+ 01 LINE-TEXT              PIC X(4096).
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-LINE                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PATH L-LINE.
+     MOVE SPACES TO L-LINE
+     MOVE FUNCTION TRIM(L-PATH) TO WS-NAME
+     OPEN INPUT LINE-FILE
+     IF WS-STATUS = "00"
+         READ LINE-FILE INTO L-LINE
+         CLOSE LINE-FILE
+     END-IF
+     GOBACK.
+ END PROGRAM U16-FIRST-LINE.
