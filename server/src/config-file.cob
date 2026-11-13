@@ -11,6 +11,7 @@
 *> non-empty pack-url sets CS-PACK-OFFERED; the Resource Pack Push carries a pack UUID, so with an
 *> empty pack-id it is derived from pack-url and pack-sha1 (SV-PACK-ID-DERIVE: a new pack version
 *> gets a new id).
+*> generation-workers: auto (the default: half the processors, at least 1, at most 4) or 0 to 4 (docs/design/generation-worker.md); 0 keeps the generation in the tick.
 *> The description limit of 256 is counted in bytes: CS-DESCRIPTION holds 256 bytes of UTF-8.
 
  IDENTIFICATION DIVISION.
@@ -79,6 +80,7 @@
  01 WS-MODE-PROBLEM        PIC X(64) VALUE "must be creative or survival".
  01 WS-TEXT-PROBLEM        PIC X(64) VALUE "longer than 256 characters".
  01 WS-BOOLEAN-PROBLEM     PIC X(64) VALUE "must be true or false".
+ 01 WS-WORKERS-PROBLEM     PIC X(64) VALUE "must be auto or a number from 0 to 4".
  01 WS-UNKNOWN-PROBLEM     PIC X(64) VALUE "unknown key".
  01 WS-URL-LENGTH-PROBLEM  PIC X(64) VALUE "longer than 1024 characters".
  01 WS-URL-PROBLEM         PIC X(64) VALUE "must be empty or an http:// or https:// URL".
@@ -165,6 +167,15 @@
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-VIEW-PROBLEM
              END-IF
              MOVE WS-NUMBER TO CS-VIEW-DISTANCE
+         WHEN "generation-workers"
+             EVALUATE TRUE
+                 WHEN WS-VALUE = "auto"
+                     CALL "GEN-WORKERS-AUTO"
+                 WHEN WS-VALID = 1 AND WS-NUMBER <= 4
+                     CALL "GEN-WORKERS-CONFIG" USING WS-NUMBER
+                 WHEN OTHER
+                     CALL "SV-CONFIG-FATAL" USING WS-KEY WS-WORKERS-PROBLEM
+             END-EVALUATE
          WHEN "pack-url"
              IF WS-VALUE-LENGTH > 1024
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-URL-LENGTH-PROBLEM
@@ -275,8 +286,11 @@
     05 FILLER PIC X(128) VALUE "pack-required=false".
     05 FILLER PIC X(128) VALUE "# Message shown when the pack is offered, up to 256 characters, or empty".
     05 FILLER PIC X(128) VALUE "pack-prompt=".
+    05 FILLER PIC X(128) VALUE "# Chunk generation worker processes of the standard world: auto (half the pr"
+        & "ocessors), or 0 to 4 (0 generates inside the tick)".
+    05 FILLER PIC X(128) VALUE "generation-workers=auto".
  01 WS-DEFAULT-TABLE REDEFINES WS-DEFAULTS.
-    05 WS-DEFAULT          PIC X(128) OCCURS 28 TIMES.
+    05 WS-DEFAULT          PIC X(128) OCCURS 30 TIMES.
  PROCEDURE DIVISION.
      OPEN OUTPUT CONF-FILE
      IF WS-STATUS NOT = "00"
@@ -284,7 +298,7 @@
          CALL "SV-PRINT" USING WS-PTR WS-ERROR-LENGTH
          GOBACK
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 28
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 30
          WRITE CONF-LINE FROM WS-DEFAULT(WS-I)
      END-PERFORM
      CLOSE CONF-FILE
@@ -325,6 +339,7 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
      MOVE "world" TO CS-NEW-WORLD-NAME
+     CALL "GEN-WORKERS-AUTO"
      OPEN INPUT CONF-FILE
      EVALUATE WS-STATUS
          WHEN "00"

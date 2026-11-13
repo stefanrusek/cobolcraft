@@ -121,7 +121,7 @@ does not stop the server; use `shutdown`.
 ## Running the client
 
 ```sh
-build/bin/cobolcraft --name <name> [--gamedir <path>] [--screenshot-after-frames <N>] [--screenshot-then-exit]
+build/bin/cobolcraft --name <name> [--gamedir <path>] [--world <save folder>] [--screenshot-after-frames <N>] [--screenshot-then-exit]
 ```
 
 `--name` is required: your player name, 1 to 16 letters, digits or `_`. `--gamedir` is where the client
@@ -139,6 +139,25 @@ keeps its data (default `~/.cobolcraft`, created if absent):
 From the title screen, **Multiplayer** opens the server list: add a server by its address (`host` or
 `host:port`, default port 25565); each entry shows its description and players online; select one and
 join. **Single-player** lists your worlds. **Resource Packs** opens the pack screen.
+
+### Opening a world from the command line
+
+```sh
+build/bin/cobolcraft --name <name> --world "<save folder name>"
+```
+
+`--world` (or the environment variable `CC_WORLD`; the option wins) opens that single-player save, the
+folder name under `<gamedir>/saves/`, straight after start-up, exactly as selecting it in the world list
+and pressing Play does (a standard world and a cobolcraft world are told apart the same way, with the same
+refusals). If there is no such folder, or the world is refused (for example a standard world while the
+generated packs are not ok), the reason is printed to standard error and the client stays on the title
+screen. Combined with the screenshot options (`--screenshot-after-frames <N>` and `--screenshot-then-exit`,
+an agent can capture a real world frame without touching the window:
+
+```sh
+build/bin/cobolcraft --name Agent --gamedir <scratch gamedir> --generated-dir <generated> \
+  --world "New World (9)" --screenshot-after-frames 300 --screenshot-then-exit
+```
 
 ### Controls
 

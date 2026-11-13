@@ -199,6 +199,13 @@
              CALL "PB-GET-UBYTE" USING L-PACKET WS-VALUE
              CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
              EVALUATE WS-VALUE
+                 WHEN 13
+*>                   LEVEL_CHUNKS_LOAD_START: the wait for the camera section begins (docs/protocol/50 section 7.1)
+                     IF PL-LOADED = 0 AND PL-WAIT = 0
+                         MOVE 1 TO PL-WAIT
+                         MOVE SCR-CONNECTING TO WS-VALUE
+                         CALL "SCREEN-OPEN" USING CLIENT-STATE WS-VALUE
+                     END-IF
                  WHEN 3
                      MOVE WS-FLOAT TO PL-MODE
                      IF PL-MODE = 1
@@ -250,7 +257,7 @@
 *>           The first position after a finished chunk batch: the spawn area has arrived, so
 *>           Player Loaded now (05c 0x2C; CobolCraft's join sends the position after the initial
 *>           batch, which may be the only one).
-             IF PL-LOADED = 0 AND PL-BATCHES > 0
+             IF PL-LOADED = 0 AND PL-WAIT = 0 AND PL-BATCHES > 0
                  MOVE 1 TO PL-LOADED
                  MOVE 44 TO WS-ID
                  CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID
@@ -389,7 +396,7 @@
              ADD 1 TO PL-BATCHES
              CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE
              CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
-             IF PL-LOADED = 0 AND PL-POSITIONED = 1
+             IF PL-LOADED = 0 AND PL-WAIT = 0 AND PL-POSITIONED = 1
                  MOVE 1 TO PL-LOADED
                  MOVE 44 TO WS-ID
                  CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID

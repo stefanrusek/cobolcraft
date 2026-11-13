@@ -170,7 +170,8 @@
        10 PL-BREAK-Y         BINARY-LONG.
        10 PL-BREAK-Z         BINARY-LONG.
        10 PL-BREAK-START     BINARY-DOUBLE.      *> CW-TICKS of START_DESTROY_BLOCK
-       10 PL-BREAK-RATE      FLOAT-SHORT.        *> progress per tick (13 section 2.1), fixed at the start
+       10 PL-BREAK-RATE      FLOAT-SHORT.        *> progress per tick on the ground (13 section 2.1), fixed at the start
+       10 PL-BREAK-PROGRESS  FLOAT-LONG.         *> accumulated progress: each tick adds the rate, divided by 5 while airborne
        10 PL-BREAK-ITEM      BINARY-LONG.        *> the held item at the start (0 = empty hand)
        10 PL-BREAK-STATE     BINARY-LONG.        *> the target's block state at the start
        10 PL-BREAK-DELAYED   PIC 9.              *> 1 after a STOP that came early (13 section 2.4)

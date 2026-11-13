@@ -15,3 +15,6 @@
        10 DM-Z              BINARY-LONG.
        10 DM-UY             BINARY-LONG.
        10 DM-RES            FLOAT-LONG.
+*> The root a reference node (type 0) resolved to, valid while DM-REF-STAMP is the stamp above: WG-FIND scans every function by key.
+       10 DM-REF-STAMP      BINARY-LONG.
+       10 DM-REF            BINARY-LONG.

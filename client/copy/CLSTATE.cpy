@@ -31,6 +31,8 @@
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-WORLD              PIC X(80).       *> --world <save folder> / CC_WORLD: opened right after start-up (WORLD-OPEN-ARG)
+    05 CL-WORLD-LENGTH       BINARY-LONG.     *> 0 = none
     05 CL-OPENER             PIC X(256).      *> the program that opens a folder (US4): /usr/bin/open, one argument
     05 CL-OPENER-LENGTH      BINARY-LONG.
     05 CL-OPEN-FAILED        PIC 9.           *> 1 = the last Open Pack Folder could not start the opener
@@ -112,6 +114,11 @@
        10 SM-EDIT-ADDR-LENGTH BINARY-LONG.
        10 SM-CONNECT-ADDR    PIC X(256).     *> connecting screen: the address joined
        10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
+       10 SM-LOAD-CELLS      PIC X(1225).    *> the loading screen grid (docs/protocol/50 section 2.5): 35 x 35 cells, row by row, each one byte holding status code + 1 (GEN-LOAD-GRID)
+       10 SM-LOAD-SMOOTH     BINARY-LONG.    *> the loading bar's smoothed progress in millionths (0.2 of the gap per 50 ms tick, 50 section 2.2)
+       10 SM-LOAD-TICK-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last smoothing tick, 0 before the first
+       10 SM-LOAD-GRID-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last read of the grid
+       10 SM-LOAD-SHOWN      BINARY-LONG.    *> 1 once the loading screen has been shown for the hosted world being opened
        10 SM-MESSAGE         PIC X(512).     *> the last disconnect message, rendered
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
        10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
@@ -415,6 +422,10 @@
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
+       10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
+       10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
+       10 PL-READY-AT        BINARY-DOUBLE.  *> CL-NOW-MS at which the wait ended
+       10 PL-CLOSE-DELAY     BINARY-LONG.    *> ms between the end of the wait and Player Loaded: 500 for a newly created local world, else 0
        10 PL-POSITIONED      PIC 9.          *> 1 after the first Player Position
        10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
        10 PL-CENTER-CX       BINARY-LONG.    *> Set Chunk Cache Center
@@ -550,6 +561,13 @@
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
+*>  ---- SKY-STOPGAP (CC-0007 stopgap; sky-stopgap.cob): per mesh call, the rows whose sky light is to be assumed ----
+    05 SKG-STATE.
+       10 SKG-COUNT           BINARY-LONG.    *> entries in use (0 = real light only)
+       10 SKG-ENTRY OCCURS 5 TIMES.
+          15 SKG-ROW          BINARY-LONG.    *> the world replica row
+          15 SKG-FAKE         PIC 9 OCCURS 24 TIMES.   *> 1 = block section s has no sky light data
+          15 SKG-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.
@@ -1100,6 +1118,7 @@
           15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
+       10 RL-UI-TINT         BINARY-LONG.    *> RGB integer multiplied into the next UI quads (0 none): the loading screen's status colours and bar
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.
