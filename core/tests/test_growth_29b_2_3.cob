@@ -1,0 +1,308 @@
+*> Test of 29b part 2 section 3, The `CropBlock` family (core/src/growth-29b-2.cob; T0539): the class table, random ticks and bone meal of 3.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-ISG), calls the program with the input group (and the key) and shows the first outputs of WS-RSG joined by "/", one group per
+*> call; expected values come from the rules, tables and worked cases of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-2-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A                   PIC X(48).
+ 01 WS-B                   PIC X(48).
+ 01 WS-C                   PIC X(48).
+ 01 WS-STEM                BINARY-LONG.
+ 01 WS-T1                  BINARY-LONG.
+ 01 WS-T2                  BINARY-LONG.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: class table (3.1): wheat 2 + 2a, carrots and potatoes 2 + a, max age 7, pick items" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "7/7/16/2/0/1/0/1 7/7/16/16/0/1/1/0 7/7/16/2/0/2/0/1 7/7/16/9/0/2/1/0 7/7/16/5/0/3/0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: class table: beetroots 3 ages 2 + 2a with their own tick; torchflower max age 2 over 2 property values, width 6, 6 + 4a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "4 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-CLASS" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "3/3/16/2/1/4/0/1 3/3/16/6/1/4/0/1 3/3/16/8/1/4/1/0 2/1/6/6/1/5/0/1 2/1/6/10/1/5/0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: random tick (3.2, 14.1): light 9 and age below max; bound int(25 / speed) + 1 = 3, 13, 7, 6 for speed 10, 2, 4, 5; one draw" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 9 3 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 9 3 200 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 9 3 400 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 12 0 500 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 8 3 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 12 7 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/1/4/0 1/13/1/4/0 1/7/0/3/0 1/6/1/1/0 0/0/0/3/0 0/0/0/7/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: carrots ignore the nextInt(3) gate; beetroots draw it first: 0 ends the tick, otherwise the full tick runs (3.3, 2/9 per tick in the full case)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 0 9 1 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 9 1 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 9 1 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 2 8 1 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 9 3 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 9 1 1000 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/1/2/0 1/0/0/1/0 2/3/1/2/0 1/0/0/1/0 1/0/0/3/0 2/3/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: torchflower crop (3.4, 14.9): gate nextInt(3), then light and speed tests with max 2; age 1 growing gives the torchflower" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "5 1 9 1 400 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 1 9 0 400 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 0 9 1 400 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 2 9 1 400 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-TICK" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/7/1/2/1 2/7/1/1/0 1/0/0/1/0 2/7/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: bone meal wheat, carrots, potatoes (3.2): below max age 7, age + nextInt(4) + 2 capped, one draw" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 7 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 6 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/2/1/0 1/1/5/1/0 1/1/7/1/0 0/1/7/0/0 1/1/7/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: bone meal beetroots (14.2): U(2, 5) / 3 gives 0, 1, 1, 1; torchflower crop: always valid, +1, no draw, age 1 becomes the flower" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "4 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-CROP-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/1/0 1/1/2/1/0 1/1/2/1/0 1/1/3/1/0 0/1/3/0/0 1/1/1/0/0 1/1/2/0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§3 The `CropBlock` family: entityInside (3.2): a Ravager on a server level with mob_griefing destroys the block with drops; nothing else does" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-RAVAGER" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-RAVAGER" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-RAVAGER" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-RAVAGER" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-A) "|" FUNCTION TRIM(WS-B) "|" FUNCTION TRIM(WS-C) "|" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T1 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T2 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-2-3.
