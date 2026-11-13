@@ -250,3 +250,65 @@ sc_=[(1,1,1,0,1),(1,1,1,0,0),(1,1,0,0,0),(1,0,0,1,0),(1,0,0,0,0),(1,0,1,0,0),(0,
 g.run('golem statue use (6.3): an axe on an unaffected statue removes the statue, damages the axe by 1, adds the produced entity and removes the block (success); an axe on an aged statue passes; honeycomb passes; any other item changes the pose (result 1 success 0 pass, action 1 remove 2 pose, damage, entity added, block removed)',[S(*c) for c in sc_],'CALL "GC5-STATUE-USE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join(show(*stu(*c)) for c in sc_))
 g.run('door oxidation (9.3 example): the lower half becomes the next weather state and the upper half takes it with half = upper: the lower half ticks (1), the upper never (0)',["2 0 0 0 0","2 1 0 0 0"],'CALL "GC5-HOOK-RUNS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1)',1,"1 0")
 W(g,6)
+# ===== 7
+g=GG(7,'Waxing, scraping, wax-off','T0623','honeycomb wax on, the dispenser, the axe transformations, the BlockTransformer steps and the hoe and shovel rows.')
+def waxon(hw,sp,ch):
+    if not hw: return (0,0,0,0,0,0)
+    return (1,int(sp),1,11,3003,int(ch))
+wc=[(1,1,0),(1,0,0),(1,1,1),(1,0,1),(0,1,0),(0,0,1)]
+g.run('wax on (7.1): a block without a waxed entry passes (V9); else the advancement for a server player, shrink 1, setBlock flags 11, level event 3003, the same on the connected half of a double chest (result, advancement, shrink, flags, event, partner)',[S(*c) for c in wc],'CALL "GC5-WAX-ON" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-R(6)',6," ".join(show(*waxon(*c)) for c in wc))
+g.run('dispenser (7.2): a waxed block exists in front: set with flags 3, event 3003, shrink the stack by 1 and success; otherwise the default behaviour (waxed, flags, event, shrink, success)',["1","0"],'CALL "GC5-DISPENSE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5,"1/3/3003/1/1 0/0/0/0/0")
+def entry(i):
+    return [(25,1,0,1,0),(39,2,1,1,0),(3,2,1,0,1),(3,2,1,0,0),(52,3,2,1,0),(4,3,2,0,1),(4,3,2,0,0)][i]
+g.run('the 7 transformations of axe.json (7.3): strip (25 rules), scrape (39 = 13 x 3), scrape chest (3, copper_chest), scrape door (3), wax off (52 = 13 x 4), wax-off chest (4), wax-off door (4); sound 1 strip 2 scrape 3 wax off, particle 0 none 1 scrape 2 wax off, update_from_neighbors, transform_type copper_chest',[str(i) for i in range(7)],'CALL "GC5-AXE-ENTRY" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join(show(*entry(i)) for i in range(7)))
+g.run('particle events (7.3 step 9): scrape 3005, wax on 3003, wax off 3004',["1","2","3"],'CALL "GC5-AXE-PARTICLE" USING WS-I(1) WS-R(1)',1,"3005 3003 3004")
+def tr(main,shield,sneak,applies,stack,chest,nons):
+    if main and shield and not sneak: return (0,0,0,0)
+    if not applies: return (0,0,0,0)
+    return (1,1 if stack else 2,11,int(chest and nons))
+tc=[(1,1,0,1,0,0,0),(1,1,1,1,0,0,0),(0,1,0,1,0,0,0),(1,0,0,1,0,0,0),(1,0,0,0,0,0,0),(1,0,0,1,1,0,0),(1,0,0,1,0,1,1),(1,0,0,1,0,1,0),(1,0,0,1,0,0,1),(0,1,0,1,1,1,1)]
+g.run('transformBlock (7.3 steps 1 to 12, V10): a shield in the off-hand with the main hand used and no sneaking passes; no applicable transformation passes; else the item cost (1 consume a stackable stack, 2 damage by item_damage_per_use), setBlock flags 11, and the partner events only for the copper_chest type with an old state that is not single (result, cost, flags, partner)',[S(*c) for c in tc],'CALL "GC5-AXE-TRANSFORM" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join(show(*tr(*c)) for c in tc))
+def hoe(cls,air,face):
+    if face!=1 and air and cls==1: return (1,0,1)
+    if face!=1 and air and cls==2: return (2,0,1)
+    if cls==3: return (2,1,1)
+    return (0,0,0)
+hc_=[(1,1,2),(1,1,1),(1,0,2),(2,1,2),(2,1,1),(2,0,2),(3,0,1),(3,1,2),(0,1,2)]
+g.run('hoe.json (7.3): index 0 skips the down face; rule 1 a tag turns_into_farmland block with air above gives farmland, rule 2 coarse dirt with air above gives dirt; index 1 rooted dirt gives dirt and drops the till/rooted_dirt loot (result 1 farmland 2 dirt, loot, damage 1)',[S(*c) for c in hc_],'CALL "GC5-HOE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*hoe(*c)) for c in hc_))
+sh=[(1,1,2),(1,1,1),(1,0,2),(0,1,2)]
+g.run('shovel.json (7.3): a block in tag turns_into_dirt_path with air above gives dirt_path, never from the down face',[S(*c) for c in sh],'CALL "GC5-SHOVEL" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1,"1 0 0 0")
+W(g,7)
+# ===== 8
+g=GG(8,'Lightning','T0625','the strike block, the lightning rod, clearCopperOnLightningStrike and the order of the bolt actions.')
+def fl(v): return int(math.floor(v))
+pos=[(0.5,64.0,0.5),(10.2,70.0000001,-3.7),(-0.2,64.5,-0.2),(1.0,65.0,2.0),(5.9,0.0,5.1),(-8.0,-1.0,-8.1)]
+g.run('strike position (8): the block containing (x, y - 1.0E-6, z): a bolt standing on the top face of a block strikes that block',[S(*c) for c in pos],'CALL "GC5-LIGHT-POS" USING WS-FX(1) WS-FX(2) WS-FX(3) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(fl(x),fl(y-1e-6),fl(z)) for x,y,z in pos))
+g.run('constants (8): ACTIVATION_TICKS 8, rod RANGE 128, the draw ranges of the walks 3 + nextInt(3) walks and 1 + nextInt(8) steps',["0"],'CALL "GC5-ROD-CONST" USING WS-R(1) WS-R(2)',2,"8/128")
+g.run('counts (8 step 3): the number of walks is nextInt(3) + 3 (3 to 5, kind 1); the steps of a walk nextInt(8) + 1 (1 to 8, kind 2)',["1 0","1 2","2 0","2 7"],'CALL "GC5-LIGHT-COUNT" USING WS-I(1) WS-I(2) WS-R(1)',1,"3 5 1 8")
+def clr(wx,wt):
+    return (int(wt),int(wx or wt))
+cc=[(0,0),(1,0),(0,1)]
+g.run('clearCopperOnLightningStrike (8 steps 1 to 3): nothing happens for a block that is neither waxed nor weathering; a weathering block is reset to getFirst and the walks run; a waxed block is not changed but the walks still run (reset, walks run)',[S(*c) for c in cc],'CALL "GC5-LIGHT-CLEAR" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2," ".join(show(*clr(*c)) for c in cc))
+def step2(cells):
+    for i,c in enumerate(cells):
+        if c!=0: return (i+1,int(c==1),3002,-1,3*(i+1))
+    return (0,0,0,0,30)
+sc10=[[1]*10,[0,0,2]+[0]*7,[0]*9+[1],[0]*10,[2]+[0]*9,[0,1,1,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,2,1]]
+g.case('random step (8): the first of the 10 candidate cells of randomInCube that is a weathering copper block wins (3 nextInt(3) draws per attempt, none after the hit); every hit sends level event 3002 with data -1; a block with a previous state is set back, an unaffected one has none and stays; waxed cells are never taken',[("0",setarr('A10',c)+'CALL "GC5-LIGHT-STEP" USING WS-A10G WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5) for c in sc10]," ".join(show(*step2(c)) for c in sc10))
+g.extra=TBL('A10',10)
+def walk(m,h):
+    mv=min(m,h); calls=mv+(1 if h<m else 0)
+    return mv,calls
+wk=[(1,0),(1,5),(8,3),(8,8),(8,20),(5,0),(3,2)]
+g.run('walk (8 step 3): a walk of up to m steps ends at the first step that finds no weathering block; the position restarts at the strike for every walk (moves, steps tried)',[S(*c) for c in wk],'CALL "GC5-LIGHT-WALK" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2," ".join(show(*walk(*c)) for c in wk))
+def rod(f):
+    opp={1:2,2:1,3:4,4:3,5:6,6:5}[f]
+    ax={1:1,2:1,3:2,4:2,5:0,6:0}[f]
+    return (1,opp,8,3002,ax)
+g.run('LightningRodBlock.onLightningStrike (8): powered true, one updateNeighborsAt at the position opposite to facing (down 1, up 2, north 3, south 4, west 5, east 6), a tick after 8 ticks, level event 3002 with the axis ordinal of facing (x 0, y 1, z 2) as data (powered, update direction, delay, event, data)',[str(f) for f in range(1,7)],'CALL "GC5-ROD-STRIKE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join(show(*rod(f)) for f in range(1,7)))
+def sig(p,f,d): return (15*p, 15*p if d==f else 0)
+sg=[(1,2,2),(1,2,1),(0,2,2),(0,3,3),(1,6,6)]
+g.run('rod signals (8): a powered rod outputs 15 as its own signal and as direct signal towards its facing; unpowered 0 (own, direct)',[S(*c) for c in sg],'CALL "GC5-ROD-SIGNAL" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join(show(*sig(*c)) for c in sg))
+def order(d): return (int(d>=2),1,2,3)
+g.run('bolt order at life 2 (8): the optional fire (difficulty normal 2 or hard 3 only) first, then powerLightningRod (1), clearCopperOnLightningStrike (2), the game event lightning_strike (3)',["0","1","2","3"],'CALL "GC5-BOLT-ORDER" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join(show(*order(d)) for d in range(4)))
+W(g,8)
