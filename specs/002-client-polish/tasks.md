@@ -4397,7 +4397,7 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T4501 [US7-content] contract/copy/CTBSHAPE.cpy, content/src/block-shapes.cob (BSH-BUILD and the queries BSH-COLL-ID, BSH-OUT-ID, BSH-OVERLAPS, BSH-CLIP, BSH-RAY), content/copy/CTBSDATA.cpy rule rows; test_block_shapes first observed red (the builder absent)
 - [ ] T4502 [US7-client] Player collision by collision shape: PHYS-SOLID, PHYS-COLLIDES, PHYS-MOVE through the shape tables, step-up 0.6 (slabs, stairs), ground check on slab tops; tests first
 - [ ] T4503 [US7-client] Targeting by outline shape: RAYCAST tests the boxes of the cell's outline, so torches, buttons, ladders, slabs and stairs are targeted where they are; tests first
-- [ ] T4504 [US7-core] Server movement check by collision shape: MOVE-COLLIDES, MOVE-SUPPORTED, MOVE-CLIMBING agree with the client; BLOCKS-OPEN builds the shape tables; tests first
+- [x] T4504 [US7-core] Server movement check by collision shape: MOVE-COLLIDES, MOVE-SUPPORTED, MOVE-CLIMBING agree with the client; BLOCKS-OPEN builds the shape tables; tests first
 - [ ] T4505 [US7-docs] Open questions of 51 (offset plants, tall plants, hopper, cauldron, bell, scaffolding, shulker box, piston, chest joins, bed legs, skull variants): clean-room round when the operator reports a block that is still wrong
 
 ---

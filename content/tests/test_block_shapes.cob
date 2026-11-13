@@ -70,6 +70,18 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE BSH-READY TO TL-OBSERVED-N
      PERFORM ASSERT-N
+     MOVE 77 TO BSH-COUNT
+     CALL "BSH-BUILD"
+     MOVE "shapes: a set already built is not built again" TO TL-CASE
+     MOVE 77 TO TL-EXPECTED-N
+     MOVE BSH-COUNT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO BSH-TYPE
+     CALL "BSH-BUILD"
+     MOVE "shapes: a built set of another type is built again" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE BSH-TYPE TO TL-OBSERVED-N
+     PERFORM ASSERT-N
      MOVE 99999 TO WS-STATE
      CALL "BSH-COLL-ID" USING WS-STATE WS-ID
      MOVE "shapes: a state beyond the table is the full cube" TO TL-CASE

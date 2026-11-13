@@ -4,7 +4,7 @@
 *> time is two table reads. A block with no rule gets the default of 51 section 1.2: no collision when its flags hold noCollision
 *> or air, else the full cube; the outline is the full cube except for air and liquids (empty).
 *> Entry points:
-*>   BSH-BUILD (no parameters): the tables from the open set; BSH-READY stays 0 with no set open.
+*>   BSH-BUILD (no parameters): the tables from the open set (not again for a set type it has built); BSH-READY is 0 with no set open.
 *>   BSH-COLL-ID, BSH-OUT-ID USING state id, shape id out (the full cube while the tables are not built).
 *>   BSH-OVERLAPS USING shape id, cell x, y, z, box (6 FLOAT-LONG x1 y1 z1 x2 y2 z2 in blocks), hit out (1 when a box of the shape
 *>     placed in that cell overlaps the box with positive volume, 1e-7 tolerance).
@@ -627,6 +627,13 @@
  01 WS-NAME                PIC X(24).
  01 WS-VALUE               PIC X(16).
  PROCEDURE DIVISION.
+     IF CT-OPEN = 0
+         MOVE 0 TO BSH-READY BSH-TYPE
+         GOBACK
+     END-IF
+     IF BSH-READY = 1 AND BSH-TYPE = CT-SET-TYPE + 1
+         GOBACK
+     END-IF
      MOVE 0 TO BSH-READY
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-HASH-SIZE
          MOVE 0 TO BSH-HASH(WS-S)
@@ -639,9 +646,6 @@
      MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
      MOVE BSC-SHAPE TO BSH-SHAPE(2)
      MOVE 2 TO BSH-COUNT
-     IF CT-OPEN = 0
-         GOBACK
-     END-IF
      CALL "BSH-RULES-LOAD"
      MOVE 0 TO WS-ID
      CALL "BLOCK-ROW-AT" USING WS-ID WS-ROW WS-STATUS WS-COUNT
@@ -715,6 +719,7 @@
          END-PERFORM
      END-PERFORM
      MOVE 1 TO BSH-READY
+     COMPUTE BSH-TYPE = CT-SET-TYPE + 1
      GOBACK.
  END PROGRAM BSH-BUILD.
 
