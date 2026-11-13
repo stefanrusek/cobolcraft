@@ -238,21 +238,10 @@
 *> USING node, x, y, z, result out: 10 section 4.1, the trilinear interpolation of the input evaluated at the eight
 *> corners of the cell (cell sizes WGN-INT 1 horizontal and 2 vertical, anchored at multiples of them); evaluated
 *> directly when the position is a corner.
-*> Grid mode (the node has a slot in the chunk grids and the position is inside them): the corners are read from the grid
-*> and the fractions from tables, with the integer divisions as DIVIDE (a COMPUTE with a division goes through decimals).
+*> Grid mode is DENSITY-INTERP-GRID, tried first by DENSITY-NODE-RAW.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
- COPY DENSITY.
- 01 DG-GRID BASED.
- COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
- 01 WS-INIT                BINARY-LONG VALUE 0.
- 01 WS-FRACTIONS.
-    05 WS-FXT              FLOAT-LONG OCCURS 4 TIMES.
-    05 WS-FYT              FLOAT-LONG OCCURS 8 TIMES.
-    05 WS-FZT              FLOAT-LONG OCCURS 4 TIMES.
- 01 WS-N4                  BINARY-LONG VALUE 4.
- 01 WS-N8                  BINARY-LONG VALUE 8.
  LOCAL-STORAGE SECTION.
  01 LS-SLOT                BINARY-LONG.
  01 LS-GI                  BINARY-LONG.
@@ -290,54 +279,6 @@
  PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
      MOVE WGN-INT(L-NODE, 1) TO LS-CX
      MOVE WGN-INT(L-NODE, 2) TO LS-CY
-*>   grid mode: the slot of this node in the chunk grids, 0 when the node has none or the position is outside them
-     MOVE 0 TO LS-SLOT
-     IF DNG-ACTIVE = 1 AND LS-CX = 4 AND LS-CY = 8
-         AND L-X >= DNG-X0 AND L-X < DNG-X0 + 16 AND L-Z >= DNG-Z0 AND L-Z < DNG-Z0 + 16
-         AND L-Y >= -64 AND L-Y < 320
-         SET ADDRESS OF DG-GRID TO DNG-PTR
-         PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > DG-G-COUNT OR LS-SLOT > 0
-             IF DG-G-NODE(LS-I) = L-NODE
-                 MOVE LS-I TO LS-SLOT
-             END-IF
-         END-PERFORM
-     END-IF
-*>   grid slot LS-SLOT, position inside the grids (cells of 4 by 8 by 4 anchored at the chunk's corner and y = -64; the grid of a
-*>   node holds 5 x 5 x 49 values, x the slowest, then z, then y): the grid index of the cell, its eight corners at the offsets of
-*>   one cell in x (245), z (49) and y (1).
-     IF LS-SLOT > 0
-         COMPUTE LS-LX = L-X - DNG-X0
-         COMPUTE LS-LZ = L-Z - DNG-Z0
-         COMPUTE LS-LY = L-Y + 64
-         DIVIDE LS-LX BY 4 GIVING LS-CI REMAINDER LS-RX
-         DIVIDE LS-LZ BY 4 GIVING LS-CK REMAINDER LS-RZ
-         DIVIDE LS-LY BY 8 GIVING LS-CJ REMAINDER LS-RY
-         COMPUTE LS-GI = (LS-SLOT - 1) * 1225 + (LS-CI * 5 + LS-CK) * 49 + LS-CJ + 1
-         IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
-             MOVE DG-G-VAL(LS-GI) TO L-RESULT
-         ELSE
-             IF WS-INIT = 0
-                 PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 3
-                     CALL "DENSITY-FRACTION" USING LS-I WS-N4 WS-FXT(LS-I + 1)
-                     MOVE WS-FXT(LS-I + 1) TO WS-FZT(LS-I + 1)
-                 END-PERFORM
-                 PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 7
-                     CALL "DENSITY-FRACTION" USING LS-I WS-N8 WS-FYT(LS-I + 1)
-                 END-PERFORM
-                 MOVE 1 TO WS-INIT
-             END-IF
-             MOVE DG-G-VAL(LS-GI) TO LS-G-ITEM(1)
-             MOVE DG-G-VAL(LS-GI + 245) TO LS-G-ITEM(2)
-             MOVE DG-G-VAL(LS-GI + 1) TO LS-G-ITEM(3)
-             MOVE DG-G-VAL(LS-GI + 246) TO LS-G-ITEM(4)
-             MOVE DG-G-VAL(LS-GI + 49) TO LS-G-ITEM(5)
-             MOVE DG-G-VAL(LS-GI + 294) TO LS-G-ITEM(6)
-             MOVE DG-G-VAL(LS-GI + 50) TO LS-G-ITEM(7)
-             MOVE DG-G-VAL(LS-GI + 295) TO LS-G-ITEM(8)
-             CALL "NOISE-TRILERP" USING WS-FXT(LS-RX + 1) WS-FYT(LS-RY + 1) WS-FZT(LS-RZ + 1) LS-G L-RESULT
-         END-IF
-         GOBACK
-     END-IF
      COMPUTE LS-RX = FUNCTION MOD(L-X, LS-CX)
      COMPUTE LS-RY = FUNCTION MOD(L-Y, LS-CY)
      COMPUTE LS-RZ = FUNCTION MOD(L-Z, LS-CX)
@@ -364,6 +305,154 @@
      CALL "NOISE-TRILERP" USING LS-FX LS-FY LS-FZ LS-G L-RESULT
      GOBACK.
  END PROGRAM DENSITY-INTERPOLATED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DENSITY-INTERP-GRID.
+*> USING node, x, y, z, result out, handled out (BINARY-LONG): grid mode of the interpolated node (10 section 4.1): when the
+*> node has a slot in the chunk grids (DNG-PTR, GENGRID.cpy; cells of 4 by 8 by 4 anchored at the chunk's corner and y = -64) and
+*> the position is inside them, the eight corners are read from the grid and the fractions from tables: handled 1 and the
+*> trilinear value in result; else handled 0 and the result is left alone. Not recursive (a recursive frame costs a memory
+*> allocation per call), and the integer divisions and the grid index are table lookups (a COMPUTE or DIVIDE goes through decimals).
+*> A grid holds 5 x 5 x 49 values per node, x the slowest, then z, then y: the corners are at the offsets 245 (x), 49 (z), 1 (y).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ COPY DENSITY.
+ 01 DG-GRID BASED.
+ COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
+ 01 WS-INIT                BINARY-LONG VALUE 0.
+ 01 WS-FRACTIONS.
+    05 WS-FXT              FLOAT-LONG OCCURS 4 TIMES.
+    05 WS-FYT              FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-N4                  BINARY-LONG VALUE 4.
+ 01 WS-N8                  BINARY-LONG VALUE 8.
+ 01 WS-TABLES.
+    05 WS-QX               BINARY-LONG OCCURS 16 TIMES.
+    05 WS-RX               BINARY-LONG OCCURS 16 TIMES.
+    05 WS-QY               BINARY-LONG OCCURS 384 TIMES.
+    05 WS-RY               BINARY-LONG OCCURS 384 TIMES.
+    05 WS-COL              BINARY-LONG OCCURS 25 TIMES.
+    05 WS-BASE             BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-GI                  BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-CI                  BINARY-LONG.
+ 01 WS-CK                  BINARY-LONG.
+ 01 WS-RXI                 BINARY-LONG.
+ 01 WS-RYI                 BINARY-LONG.
+ 01 WS-RZI                 BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-M1                  FLOAT-LONG.
+ 01 WS-M2                  FLOAT-LONG.
+ 01 WS-M3                  FLOAT-LONG.
+ 01 WS-M4                  FLOAT-LONG.
+ 01 WS-N1                  FLOAT-LONG.
+ 01 WS-N2                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     IF DNG-ACTIVE NOT = 1 OR WGN-INT(L-NODE, 1) NOT = 4 OR WGN-INT(L-NODE, 2) NOT = 8
+         GOBACK
+     END-IF
+     MOVE L-X TO WS-LX
+     SUBTRACT DNG-X0 FROM WS-LX
+     MOVE L-Z TO WS-LZ
+     SUBTRACT DNG-Z0 FROM WS-LZ
+     MOVE L-Y TO WS-LY
+     ADD 64 TO WS-LY
+     IF WS-LX < 0 OR WS-LX > 15 OR WS-LZ < 0 OR WS-LZ > 15 OR WS-LY < 0 OR WS-LY > 383
+         GOBACK
+     END-IF
+     SET ADDRESS OF DG-GRID TO DNG-PTR
+     MOVE 0 TO WS-SLOT
+     MOVE 1 TO WS-I
+     PERFORM UNTIL WS-I > DG-G-COUNT OR WS-SLOT > 0
+         IF DG-G-NODE(WS-I) = L-NODE
+             MOVE WS-I TO WS-SLOT
+         END-IF
+         ADD 1 TO WS-I
+     END-PERFORM
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     IF WS-INIT = 0
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+             DIVIDE WS-I BY 4 GIVING WS-CI REMAINDER WS-RXI
+             MOVE WS-CI TO WS-QX(WS-I + 1)
+             MOVE WS-RXI TO WS-RX(WS-I + 1)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 383
+             DIVIDE WS-I BY 8 GIVING WS-CI REMAINDER WS-RXI
+             MOVE WS-CI TO WS-QY(WS-I + 1)
+             MOVE WS-RXI TO WS-RY(WS-I + 1)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 4
+             PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 4
+                 COMPUTE WS-COL(WS-I * 5 + WS-K + 1) = (WS-I * 5 + WS-K) * 49
+             END-PERFORM
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             COMPUTE WS-BASE(WS-I) = (WS-I - 1) * 1225 + 1
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+             CALL "DENSITY-FRACTION" USING WS-I WS-N4 WS-FXT(WS-I + 1)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 7
+             CALL "DENSITY-FRACTION" USING WS-I WS-N8 WS-FYT(WS-I + 1)
+         END-PERFORM
+         MOVE 1 TO WS-INIT
+     END-IF
+     MOVE 1 TO L-HANDLED
+     MOVE WS-QX(WS-LX + 1) TO WS-CI
+     MOVE WS-QX(WS-LZ + 1) TO WS-CK
+     MOVE WS-RX(WS-LX + 1) TO WS-RXI
+     MOVE WS-RX(WS-LZ + 1) TO WS-RZI
+     MOVE WS-QY(WS-LY + 1) TO WS-K
+     MOVE WS-RY(WS-LY + 1) TO WS-RYI
+     MOVE WS-COL(WS-CI * 5 + WS-CK + 1) TO WS-GI
+     ADD WS-BASE(WS-SLOT) TO WS-GI
+     ADD WS-K TO WS-GI
+     IF WS-RXI = 0 AND WS-RYI = 0 AND WS-RZI = 0
+         MOVE DG-G-VAL(WS-GI) TO L-RESULT
+         GOBACK
+     END-IF
+     MOVE DG-G-VAL(WS-GI) TO WS-A
+     MOVE DG-G-VAL(WS-GI + 245) TO WS-B
+     MOVE DG-G-VAL(WS-GI + 1) TO WS-C
+     MOVE DG-G-VAL(WS-GI + 246) TO WS-D
+     MOVE DG-G-VAL(WS-GI + 49) TO WS-E
+     MOVE DG-G-VAL(WS-GI + 294) TO WS-F
+     MOVE DG-G-VAL(WS-GI + 50) TO WS-G
+     MOVE DG-G-VAL(WS-GI + 295) TO WS-H
+     ADD 1 TO WS-RXI WS-RYI WS-RZI
+*>   the z fractions are the x ones (cells of 4)
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FXT(WS-RXI) WS-A WS-B WS-M1
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FXT(WS-RXI) WS-C WS-D WS-M2
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FXT(WS-RXI) WS-E WS-F WS-M3
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FXT(WS-RXI) WS-G WS-H WS-M4
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FYT(WS-RYI) WS-M1 WS-M2 WS-N1
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FYT(WS-RYI) WS-M3 WS-M4 WS-N2
+     CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-FXT(WS-RZI) WS-N1 WS-N2 L-RESULT
+     GOBACK.
+ END PROGRAM DENSITY-INTERP-GRID.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DENSITY-FRACTION.
@@ -556,8 +645,17 @@
  COPY CTWORLDGEN.
  COPY NOISE.
  COPY DMEMO.
+ 01 WS-COLUMNS.
+    05 WS-COL-ENTRY OCCURS 65536 TIMES.
+       10 WS-COL-STAMP     BINARY-LONG VALUE 0.
+       10 WS-COL-NODE      BINARY-LONG.
+       10 WS-COL-X         BINARY-LONG.
+       10 WS-COL-Z         BINARY-LONG.
+       10 WS-COL-RES       FLOAT-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  LOCAL-STORAGE SECTION.
  01 LS-STAMP               BINARY-LONG.
+ 01 LS-NODE                BINARY-LONG.
  01 LS-OUTER-Y             BINARY-LONG.
  01 LS-OUTER-IMPURE        BINARY-LONG.
  01 LS-ENTRY-PTR           USAGE POINTER.
@@ -579,8 +677,31 @@
          MOVE 0 TO L-RESULT
          GOBACK
      END-IF
-     COMPUTE LS-STAMP = WG-LOAD-GEN + NZ-GEN + 1
-     SET LS-ENTRY-PTR TO ADDRESS OF DM-ENTRY(L-NODE)
+     MOVE WG-LOAD-GEN TO LS-STAMP
+     ADD NZ-GEN TO LS-STAMP
+     ADD 1 TO LS-STAMP
+*>   A reference (its root already resolved) or blend_density node only passes its input's value (and flags) on: follow it
+*>   here instead of paying two evaluator calls and a memo entry per hop.
+     MOVE L-NODE TO LS-NODE
+     PERFORM UNTIL 1 = 0
+         EVALUATE WGN-TYPE(LS-NODE)
+             WHEN 0
+                 IF DM-REF-STAMP(LS-NODE) = LS-STAMP
+                     MOVE DM-REF(LS-NODE) TO LS-NODE
+                 ELSE
+                     EXIT PERFORM
+                 END-IF
+             WHEN 20
+                 MOVE WGN-CHILD(LS-NODE, 1) TO LS-NODE
+             WHEN OTHER
+                 EXIT PERFORM
+         END-EVALUATE
+     END-PERFORM
+     IF LS-NODE = 0
+         MOVE 0 TO L-RESULT
+         GOBACK
+     END-IF
+     SET LS-ENTRY-PTR TO ADDRESS OF DM-ENTRY(LS-NODE)
      SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
      IF B-STAMP = LS-STAMP AND B-X = L-X AND B-Z = L-Z
              AND (B-UY = 0 OR B-Y = L-Y)
@@ -590,10 +711,36 @@
          END-IF
          GOBACK
      END-IF
+*>   A cache node (a cache_2d, flat cache or cache once of the data) whose value did not read y and reached no grid or blend node is
+*>   also kept by column in a larger table (WS-COLUMNS), so that the next position of the column, at any y, takes it from there
+*>   after the single entry above (one per node, the last position) was overwritten by another column.
+     MOVE 0 TO WS-SLOT
+     IF WGN-TYPE(LS-NODE) = 19
+         COMPUTE WS-SLOT = FUNCTION MOD(L-X * 31 + L-Z * 17 + LS-NODE * 131, 65536) + 1
+         IF WS-COL-STAMP(WS-SLOT) = LS-STAMP AND WS-COL-NODE(WS-SLOT) = LS-NODE
+                 AND WS-COL-X(WS-SLOT) = L-X AND WS-COL-Z(WS-SLOT) = L-Z
+             MOVE WS-COL-RES(WS-SLOT) TO L-RESULT
+             SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
+             MOVE LS-STAMP TO B-STAMP
+             MOVE L-X TO B-X
+             MOVE L-Y TO B-Y
+             MOVE L-Z TO B-Z
+             MOVE 0 TO B-UY
+             MOVE L-RESULT TO B-RES
+             GOBACK
+         END-IF
+     END-IF
      MOVE DM-USES-Y TO LS-OUTER-Y
      MOVE DM-IMPURE TO LS-OUTER-IMPURE
      MOVE 0 TO DM-USES-Y DM-IMPURE
-     CALL "DENSITY-NODE-RAW" USING L-NODE L-X L-Y L-Z L-RESULT
+     CALL "DENSITY-NODE-RAW" USING LS-NODE L-X L-Y L-Z L-RESULT
+     IF WS-SLOT > 0 AND DM-IMPURE = 0 AND DM-USES-Y = 0
+         MOVE LS-STAMP TO WS-COL-STAMP(WS-SLOT)
+         MOVE LS-NODE TO WS-COL-NODE(WS-SLOT)
+         MOVE L-X TO WS-COL-X(WS-SLOT)
+         MOVE L-Z TO WS-COL-Z(WS-SLOT)
+         MOVE L-RESULT TO WS-COL-RES(WS-SLOT)
+     END-IF
      IF DM-IMPURE = 0
          SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
          MOVE LS-STAMP TO B-STAMP
@@ -629,6 +776,11 @@
  01 WS-24                  FLOAT-LONG VALUE 24.
  01 WS-MINUS-ONE           FLOAT-LONG VALUE -1.
  01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 LS-OP-ADD              BINARY-LONG VALUE 1.
+ 01 LS-OP-SUB              BINARY-LONG VALUE 2.
+ 01 LS-OP-MUL              BINARY-LONG VALUE 3.
+ 01 LS-OP-DIV              BINARY-LONG VALUE 4.
+ 01 LS-KEY                 PIC X(112).
  LOCAL-STORAGE SECTION.
  01 LS-A                   FLOAT-LONG.
  01 LS-B                   FLOAT-LONG.
@@ -653,11 +805,6 @@
  01 LS-FROM                BINARY-LONG.
  01 LS-TO                  BINARY-LONG.
  01 LS-OP                  BINARY-LONG.
- 01 LS-OP-ADD              BINARY-LONG VALUE 1.
- 01 LS-OP-SUB              BINARY-LONG VALUE 2.
- 01 LS-OP-MUL              BINARY-LONG VALUE 3.
- 01 LS-OP-DIV              BINARY-LONG VALUE 4.
- 01 LS-KEY                 PIC X(112).
  01 LS-STAMP               BINARY-LONG.
  LINKAGE SECTION.
  01 L-NODE                 BINARY-LONG.
@@ -669,7 +816,9 @@
      MOVE 0 TO L-RESULT
      EVALUATE WGN-TYPE(L-NODE)
          WHEN 0
-             COMPUTE LS-STAMP = WG-LOAD-GEN + NZ-GEN + 1
+             MOVE WG-LOAD-GEN TO LS-STAMP
+             ADD NZ-GEN TO LS-STAMP
+             ADD 1 TO LS-STAMP
              IF DM-REF-STAMP(L-NODE) = LS-STAMP
                  MOVE DM-REF(L-NODE) TO LS-ROOT
              ELSE
@@ -684,7 +833,8 @@
          WHEN 1
              CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 1) L-RESULT
          WHEN 2 THRU 5
-             COMPUTE LS-OP = WGN-TYPE(L-NODE) - 1
+             MOVE WGN-TYPE(L-NODE) TO LS-OP
+             SUBTRACT 1 FROM LS-OP
              CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
              CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-B
              CALL "DENSITY-F32" USING LS-OP LS-A LS-B L-RESULT
@@ -786,35 +936,7 @@
                  CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 3) L-X L-Y L-Z L-RESULT
              END-IF
          WHEN 24
-*>           gradient: from + (float)(c - from_coordinate) * ((to - from) / (float)(to_coordinate - from_coordinate))
-             IF WGN-TEXT-1(L-NODE)(1:1) = "y"
-                 MOVE 1 TO DM-USES-Y
-             END-IF
-             EVALUATE WGN-TEXT-1(L-NODE)(1:1)
-                 WHEN "x"
-                     MOVE L-X TO LS-COORD
-                 WHEN "y"
-                     MOVE L-Y TO LS-COORD
-                 WHEN OTHER
-                     MOVE L-Z TO LS-COORD
-             END-EVALUATE
-             MOVE WGN-INT(L-NODE, 1) TO LS-FROM
-             MOVE WGN-INT(L-NODE, 2) TO LS-TO
-             IF LS-FROM < LS-TO
-                 COMPUTE LS-COORD = FUNCTION MAX(LS-FROM, FUNCTION MIN(LS-TO, LS-COORD))
-             ELSE
-                 COMPUTE LS-COORD = FUNCTION MAX(LS-TO, FUNCTION MIN(LS-FROM, LS-COORD))
-             END-IF
-             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 1) LS-LO
-             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 2) LS-HI
-             CALL "DENSITY-F32" USING LS-OP-SUB LS-HI LS-LO LS-T
-             COMPUTE LS-OP = LS-TO - LS-FROM
-             CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE LS-OP LS-U
-             CALL "DENSITY-F32" USING LS-OP-DIV LS-T LS-U LS-A
-             COMPUTE LS-OP = LS-COORD - LS-FROM
-             CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE LS-OP LS-U
-             CALL "DENSITY-F32" USING LS-OP-MUL LS-U LS-A LS-B
-             CALL "DENSITY-F32" USING LS-OP-ADD LS-LO LS-B L-RESULT
+             CALL "DENSITY-GRADIENT" USING L-NODE L-X L-Y L-Z L-RESULT
          WHEN 25
 *>           noise: N.get(x * xz_scale + shift_x, y * y_scale + shift_y, z * xz_scale + shift_z)
              MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
@@ -871,7 +993,10 @@
              CALL "DENSITY-TOP-SURFACE" USING L-NODE L-X L-Y L-Z L-RESULT
          WHEN 32
              MOVE 1 TO DM-IMPURE
-             CALL "DENSITY-INTERPOLATED" USING L-NODE L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-INTERP-GRID" USING L-NODE L-X L-Y L-Z L-RESULT LS-OP
+             IF LS-OP = 0
+                 CALL "DENSITY-INTERPOLATED" USING L-NODE L-X L-Y L-Z L-RESULT
+             END-IF
          WHEN 33
              MOVE WS-ONE TO L-RESULT
          WHEN 36
@@ -898,6 +1023,66 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM DENSITY-NODE-RAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DENSITY-GRADIENT.
+*> USING node, x, y, z, result out: the gradient node (type 24; not recursive, so its frame is the static one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ COPY DMEMO.
+ 01 WS-OP-ADD              BINARY-LONG VALUE 1.
+ 01 WS-OP-SUB              BINARY-LONG VALUE 2.
+ 01 WS-OP-MUL              BINARY-LONG VALUE 3.
+ 01 WS-OP-DIV              BINARY-LONG VALUE 4.
+ 01 WS-OP                  BINARY-LONG.
+ 01 WS-COORD               BINARY-LONG.
+ 01 WS-FROM                BINARY-LONG.
+ 01 WS-TO                  BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
+*>           gradient: from + (float)(c - from_coordinate) * ((to - from) / (float)(to_coordinate - from_coordinate))
+     IF WGN-TEXT-1(L-NODE)(1:1) = "y"
+         MOVE 1 TO DM-USES-Y
+     END-IF
+     EVALUATE WGN-TEXT-1(L-NODE)(1:1)
+         WHEN "x"
+             MOVE L-X TO WS-COORD
+         WHEN "y"
+             MOVE L-Y TO WS-COORD
+         WHEN OTHER
+             MOVE L-Z TO WS-COORD
+     END-EVALUATE
+     MOVE WGN-INT(L-NODE, 1) TO WS-FROM
+     MOVE WGN-INT(L-NODE, 2) TO WS-TO
+     IF WS-FROM < WS-TO
+         COMPUTE WS-COORD = FUNCTION MAX(WS-FROM, FUNCTION MIN(WS-TO, WS-COORD))
+     ELSE
+         COMPUTE WS-COORD = FUNCTION MAX(WS-TO, FUNCTION MIN(WS-FROM, WS-COORD))
+     END-IF
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 1) WS-LO
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 2) WS-HI
+     CALL "DENSITY-F32" USING WS-OP-SUB WS-HI WS-LO WS-T
+     COMPUTE WS-OP = WS-TO - WS-FROM
+     CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE WS-OP WS-U
+     CALL "DENSITY-F32" USING WS-OP-DIV WS-T WS-U WS-A
+     COMPUTE WS-OP = WS-COORD - WS-FROM
+     CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE WS-OP WS-U
+     CALL "DENSITY-F32" USING WS-OP-MUL WS-U WS-A WS-B
+     CALL "DENSITY-F32" USING WS-OP-ADD WS-LO WS-B L-RESULT
+     GOBACK.
+ END PROGRAM DENSITY-GRADIENT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DENSITY-EVAL.

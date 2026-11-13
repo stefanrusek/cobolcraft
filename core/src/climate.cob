@@ -45,6 +45,22 @@
     05 FILLER PIC X(112) VALUE "minecraft:overworld/ridges".
  01 WS-KEY-TABLE REDEFINES WS-KEYS.
     05 WS-KEY              PIC X(112) OCCURS 6 TIMES.
+ COPY CLIMATE.
+ COPY CTWORLDGEN.
+ COPY NOISE.
+ COPY DMEMO.
+*> The quantised value of a parameter that did not read y (and reached no grid or blend node) by quart column and parameter, until the
+*> seed, the noises or the data change (the stamp): the cells of a chunk are sampled layer by layer, so the six evaluations per cell
+*> repeat in every layer of a column but the depth's. Direct mapped.
+ 01 WS-COLUMNS.
+    05 WS-COL OCCURS 32768 TIMES.
+       10 WS-COL-STAMP     BINARY-LONG VALUE 0.
+       10 WS-COL-QX        BINARY-LONG.
+       10 WS-COL-QZ        BINARY-LONG.
+       10 WS-COL-I         BINARY-LONG.
+       10 WS-COL-T         BINARY-DOUBLE.
+ 01 WS-STAMP               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -60,9 +76,27 @@
      COMPUTE WS-X = L-QX * 4
      COMPUTE WS-Y = L-QY * 4
      COMPUTE WS-Z = L-QZ * 4
+     MOVE CM-GEN TO WS-STAMP
+     ADD WG-LOAD-GEN TO WS-STAMP
+     ADD NZ-GEN TO WS-STAMP
+     ADD 1 TO WS-STAMP
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
-         CALL "DENSITY-EVAL" USING WS-KEY(WS-I) WS-X WS-Y WS-Z WS-V
-         CALL "CLIMATE-F32-QUANTIZE" USING WS-V L-T(WS-I)
+         COMPUTE WS-SLOT = FUNCTION MOD(L-QX * 73 + L-QZ * 1031 + WS-I * 7919, 32768) + 1
+         IF WS-COL-STAMP(WS-SLOT) = WS-STAMP AND WS-COL-QX(WS-SLOT) = L-QX AND WS-COL-QZ(WS-SLOT) = L-QZ
+                 AND WS-COL-I(WS-SLOT) = WS-I
+             MOVE WS-COL-T(WS-SLOT) TO L-T(WS-I)
+         ELSE
+             MOVE 0 TO DM-USES-Y DM-IMPURE
+             CALL "DENSITY-EVAL" USING WS-KEY(WS-I) WS-X WS-Y WS-Z WS-V
+             CALL "CLIMATE-F32-QUANTIZE" USING WS-V L-T(WS-I)
+             IF DM-USES-Y = 0 AND DM-IMPURE = 0
+                 MOVE WS-STAMP TO WS-COL-STAMP(WS-SLOT)
+                 MOVE L-QX TO WS-COL-QX(WS-SLOT)
+                 MOVE L-QZ TO WS-COL-QZ(WS-SLOT)
+                 MOVE WS-I TO WS-COL-I(WS-SLOT)
+                 MOVE L-T(WS-I) TO WS-COL-T(WS-SLOT)
+             END-IF
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM CLIMATE-SAMPLE.
