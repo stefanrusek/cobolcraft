@@ -237,6 +237,26 @@ int main(void) {
         snprintf(name, sizeof name, "test cc_vk %s", fogs[c].what);
         tl_str(name, fogs[c].expect, pixels[0]);
     }
+    /* A texel whose alpha is under 0.1 is discarded on every world pipeline (the cut-out of entity textures, 12 section 6: the unused or
+     * transparent texels of a model's skin and of its overlay layers leave the pixel as it was): the centre stays the clear colour. */
+    static const uint8_t clear_texel[2 * 2 * 4] = {255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0};
+    cc_vk_texture(CC_TEX_BLOCKS, 2, 2, clear_texel);
+    float one = 1;
+    cc_vk_daylight(&one);
+    static const float OFF_FOG[13] = {0, 0, 0, 0, 1e9f, 2e9f, 1, 1, 0, 1, 0, 1e9f, 2e9f};
+    cc_vk_fog(OFF_FOG);
+    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_TRANSLUCENT; p++) {
+        cc_vk_frame_begin(clear);
+        cc_vk_draw(3, p, CC_TEX_BLOCKS, IDENTITY);
+        cc_vk_submit();
+        int xs[1] = {(int)S.extent.width / 2};
+        int ys[1] = {(int)S.extent.height / 2};
+        char pixels[1][9];
+        read_pixels(1, xs, ys, pixels);
+        cc_vk_present();
+        snprintf(name, sizeof name, "test cc_vk %s pipeline discards a texel with alpha 0 (the clear colour stays)", names[p]);
+        tl_str(name, "000000FF", pixels[0]);
+    }
     cc_vk_shutdown();
     cc_win_close();
     return 0;
