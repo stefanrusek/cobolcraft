@@ -281,6 +281,11 @@
        10 MC-DISP OCCURS 21 TIMES.
           15 MC-DISP-ITEM    BINARY-LONG.
           15 MC-DISP-COUNT   BINARY-LONG.
+       10 SC-COUNT           BINARY-LONG.            *> the stonecutter list: the entries of the latest Update Recipes (core/src/menu-station.cob sends the ones of the input item)
+       10 SC-ENTRY OCCURS 32 TIMES.
+          15 SC-ITEM         BINARY-LONG.            *> the result item of the entry
+          15 SC-AMOUNT       BINARY-LONG.
+       10 SC-START           BINARY-LONG.            *> the index of the first visible entry (a multiple of 4)
        10 CX-DRAG-ON         BINARY-LONG.
        10 CX-DRAG-BUTTON     BINARY-LONG.
        10 CX-DRAG-N          BINARY-LONG.

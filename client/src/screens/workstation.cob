@@ -244,6 +244,8 @@
                          WS-TEXT WS-LENGTH WS-STATE
                  END-IF
              END-PERFORM
+         WHEN BM-TYPE = 24
+             CALL "STONECUTTER-DECOR" USING CLIENT-STATE L-LEFT L-TOP
          WHEN BM-TYPE = 21
              CALL "SMITH-CYCLE-DRAW" USING CLIENT-STATE L-LEFT L-TOP
 *>           5.5 the smithing error icon at (65, 46) while the error flag (data 0) is 1.
