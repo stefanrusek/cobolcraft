@@ -174,6 +174,8 @@
              CALL "CX-TAG"
          WHEN BC-SWING
              CALL "CX-SWING"
+         WHEN BC-EXPERIENCE
+             CALL "CX-EXPERIENCE"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE

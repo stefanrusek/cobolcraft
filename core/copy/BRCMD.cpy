@@ -45,6 +45,7 @@
  78 BC-ROTATE            VALUE 202.
  78 BC-TAG               VALUE 203.
  78 BC-SWING             VALUE 204.
+ 78 BC-EXPERIENCE        VALUE 205.
 *> The modifier ids of the clauses of execute (BR-N-MODIFIER of the node that ends a clause; core/src/cmds-execute.cob).
  78 MX-AS                 VALUE 1.
  78 MX-AT                 VALUE 2.

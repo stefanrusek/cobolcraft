@@ -1369,3 +1369,334 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SWING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-XP-NEEDED.
+*> USING level (BINARY-LONG), needed out (BINARY-LONG): the points to go from the level to the next (17 §4.10): 7 + 2L below 15, 37 + 5 (L - 15) below 30,
+*> else 112 + 9 (L - 30).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-NEEDED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-NEEDED.
+     EVALUATE TRUE
+         WHEN L-LEVEL < 15
+             COMPUTE L-NEEDED = 7 + 2 * L-LEVEL
+         WHEN L-LEVEL < 30
+             COMPUTE L-NEEDED = 37 + 5 * (L-LEVEL - 15)
+         WHEN OTHER
+             COMPUTE L-NEEDED = 112 + 9 * (L-LEVEL - 30)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CXB-XP-NEEDED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-XP-BASE.
+*> USING level (BINARY-LONG), total out (BINARY-DOUBLE): the total points at the start of the level (the sum of CXB-XP-NEEDED below it, in closed form).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-TOTAL                BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-LEVEL L-TOTAL.
+     EVALUATE TRUE
+         WHEN L-LEVEL <= 15
+             COMPUTE L-TOTAL = L-LEVEL * L-LEVEL + 6 * L-LEVEL
+         WHEN L-LEVEL <= 30
+             COMPUTE WS-N = L-LEVEL - 15
+             COMPUTE L-TOTAL = 315 + 37 * WS-N + 5 * WS-N * (WS-N - 1) / 2
+         WHEN OTHER
+             COMPUTE WS-N = L-LEVEL - 30
+             COMPUTE L-TOTAL = 1395 + 112 * WS-N + 9 * WS-N * (WS-N - 1) / 2
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CXB-XP-BASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-XP-SPLIT.
+*> USING total (BINARY-DOUBLE), level out, points inside the level out, points needed for the next level out (BINARY-LONG each).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-BASE                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-TOTAL                BINARY-DOUBLE.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-POINTS               BINARY-LONG.
+ 01 L-NEEDED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TOTAL L-LEVEL L-POINTS L-NEEDED.
+     MOVE 0 TO L-LEVEL
+     MOVE 1 TO WS-NEXT
+     CALL "CXB-XP-BASE" USING WS-NEXT WS-BASE
+     PERFORM UNTIL WS-BASE > L-TOTAL
+         ADD 1 TO L-LEVEL
+         COMPUTE WS-NEXT = L-LEVEL + 1
+         CALL "CXB-XP-BASE" USING WS-NEXT WS-BASE
+     END-PERFORM
+     CALL "CXB-XP-BASE" USING L-LEVEL WS-BASE
+     COMPUTE L-POINTS = L-TOTAL - WS-BASE
+     CALL "CXB-XP-NEEDED" USING L-LEVEL L-NEEDED
+     GOBACK.
+ END PROGRAM CXB-XP-SPLIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-XP-GET.
+*> USING player row, total out (BINARY-DOUBLE): the total points of the player (0 when the entry of the row belongs to another player).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY XPSTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-TOTAL                BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-ROW L-TOTAL.
+     MOVE 0 TO L-TOTAL
+     IF XP-ENTITY(L-ROW) = PL-ENTITY-ID(L-ROW)
+         MOVE XP-TOTAL(L-ROW) TO L-TOTAL
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-XP-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-XP-PUT.
+*> USING player row, total (BINARY-DOUBLE): the player's total points become the total (at least 0, at most 2147483647) and the player is sent
+*> Set Experience (0x69, 05b: progress inside the level as a float, level, total).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY XPSTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 105.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-POINTS              BINARY-LONG.
+ 01 WS-NEEDED              BINARY-LONG.
+ 01 WS-PROGRESS            FLOAT-SHORT.
+ 01 WS-SENT                BINARY-LONG.
+ 01 WS-KEEP                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-TOTAL                BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-ROW L-TOTAL.
+     MOVE L-TOTAL TO WS-KEEP
+     IF WS-KEEP < 0
+         MOVE 0 TO WS-KEEP
+     END-IF
+     IF WS-KEEP > 2147483647
+         MOVE 2147483647 TO WS-KEEP
+     END-IF
+     MOVE PL-ENTITY-ID(L-ROW) TO XP-ENTITY(L-ROW)
+     MOVE WS-KEEP TO XP-TOTAL(L-ROW)
+     CALL "CXB-XP-SPLIT" USING WS-KEEP WS-LEVEL WS-POINTS WS-NEEDED
+     COMPUTE WS-PROGRESS = WS-POINTS / WS-NEEDED
+     MOVE WS-KEEP TO WS-SENT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PROGRESS
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-LEVEL
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SENT
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM CXB-XP-PUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-EXPERIENCE.
+*> experience add|set <players> <amount> [points|levels] and experience query <player> points|levels (16 §5.13, level 2; xp is the alias): the experience is the
+*> total points of CXB-XP-GET (the level and the points inside it come from it, 17 §4.10). add: points (default) or levels (the level at least 0) change the total,
+*> any amount; set: points need an amount below the points of the current level, levels set the level keeping the points inside it (below the points needed); the
+*> amount of levels is at most 100000 (the total is capped at 2147483647). The player is sent Set Experience. The players that were changed count: none (set
+*> points) is commands.experience.set.points.invalid; commands.experience.<add|set>.<points|levels>.success.single [amount, name] / .multiple [amount, count],
+*> broadcast; the result is the count. query: commands.experience.query.<points|levels> [name, value], not broadcast; the result is the value.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-AMOUNT         PIC X(32) VALUE "amount".
+ 01 WS-NAME-ADD            PIC X(32) VALUE "add".
+ 01 WS-NAME-SET            PIC X(32) VALUE "set".
+ 01 WS-NAME-LEVELS         PIC X(32) VALUE "levels".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ADD                 BINARY-LONG.
+ 01 WS-SET                 BINARY-LONG.
+ 01 WS-LEVELS              BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-DOUBLE.
+ 01 WS-AMOUNT-LONG         BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-TRACKED             BINARY-LONG.
+ 01 WS-TOTAL               BINARY-DOUBLE.
+ 01 WS-NEW                 BINARY-DOUBLE.
+ 01 WS-BASE                BINARY-DOUBLE.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-POINTS              BINARY-LONG.
+ 01 WS-NEEDED              BINARY-LONG.
+ 01 WS-NEW-LEVEL           BINARY-DOUBLE.
+ 01 WS-LEVEL-NUMBER        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The change of the player WS-ROW: WS-TRACKED counts it when it took effect.
+ CHANGE-ONE.
+     CALL "CXB-XP-GET" USING WS-ROW WS-TOTAL
+     CALL "CXB-XP-SPLIT" USING WS-TOTAL WS-LEVEL WS-POINTS WS-NEEDED
+     EVALUATE TRUE
+         WHEN WS-ADD > 0 AND WS-LEVELS = 0
+             COMPUTE WS-NEW = WS-TOTAL + WS-AMOUNT
+             PERFORM STORE-ONE
+         WHEN WS-SET > 0 AND WS-LEVELS = 0
+             IF WS-AMOUNT < WS-NEEDED
+                 CALL "CXB-XP-BASE" USING WS-LEVEL WS-BASE
+                 COMPUTE WS-NEW = WS-BASE + WS-AMOUNT
+                 PERFORM STORE-ONE
+             END-IF
+         WHEN WS-ADD > 0
+             COMPUTE WS-NEW-LEVEL = WS-LEVEL + WS-AMOUNT
+             PERFORM STORE-LEVEL
+         WHEN OTHER
+             MOVE WS-AMOUNT TO WS-NEW-LEVEL
+             PERFORM STORE-LEVEL
+     END-EVALUATE.
+
+ STORE-ONE.
+     CALL "CXB-XP-PUT" USING WS-ROW WS-NEW
+     ADD 1 TO WS-TRACKED
+     MOVE WS-ROW TO WS-LAST.
+
+*> WS-NEW-LEVEL (0 to 100000) with the points inside the level kept below the points it needs.
+ STORE-LEVEL.
+     IF WS-NEW-LEVEL < 0
+         MOVE 0 TO WS-NEW-LEVEL
+     END-IF
+     IF WS-NEW-LEVEL > 100000
+         MOVE 100000 TO WS-NEW-LEVEL
+     END-IF
+     MOVE WS-NEW-LEVEL TO WS-LEVEL-NUMBER
+     CALL "CXB-XP-NEEDED" USING WS-LEVEL-NUMBER WS-NEEDED
+     IF WS-POINTS >= WS-NEEDED
+         COMPUTE WS-POINTS = WS-NEEDED - 1
+     END-IF
+     CALL "CXB-XP-BASE" USING WS-LEVEL-NUMBER WS-BASE
+     COMPUTE WS-NEW = WS-BASE + WS-POINTS
+     PERFORM STORE-ONE.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-LIT" USING WS-NAME-ADD WS-ADD
+     CALL "BX-LIT" USING WS-NAME-SET WS-SET
+     CALL "BX-LIT" USING WS-NAME-LEVELS WS-LEVELS
+     IF BR-R-FAILED = 0 AND WS-ADD + WS-SET = 0
+         MOVE BX-ROW(1) TO WS-ROW
+         CALL "CXB-XP-GET" USING WS-ROW WS-TOTAL
+         CALL "CXB-XP-SPLIT" USING WS-TOTAL WS-LEVEL WS-POINTS WS-NEEDED
+         IF WS-LEVELS > 0
+             MOVE "commands.experience.query.levels" TO WS-KEY
+             MOVE WS-LEVEL TO BR-R-RESULT
+         ELSE
+             MOVE "commands.experience.query.points" TO WS-KEY
+             MOVE WS-POINTS TO BR-R-RESULT
+         END-IF
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CXB-SHOWN" USING WS-ROW WS-A1 WS-L1
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-A1 WS-L1
+         CALL "CMD-TEXT-INT" USING PB-TEXT BR-R-RESULT
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-ADD + WS-SET > 0
+         CALL "BX-FIND" USING WS-NAME-AMOUNT WS-INDEX
+         MOVE BA-IVAL(WS-INDEX) TO WS-AMOUNT
+         MOVE BA-IVAL(WS-INDEX) TO WS-AMOUNT-LONG
+         MOVE 0 TO WS-TRACKED WS-LAST
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             MOVE BX-ROW(WS-I) TO WS-ROW
+             PERFORM CHANGE-ONE
+         END-PERFORM
+         IF WS-TRACKED = 0
+             MOVE "commands.experience.set.points.invalid" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         ELSE
+             EVALUATE TRUE
+                 WHEN WS-ADD > 0 AND WS-LEVELS = 0 AND WS-TRACKED = 1
+                     MOVE "commands.experience.add.points.success.single" TO WS-KEY
+                 WHEN WS-ADD > 0 AND WS-LEVELS = 0
+                     MOVE "commands.experience.add.points.success.multiple" TO WS-KEY
+                 WHEN WS-ADD > 0 AND WS-TRACKED = 1
+                     MOVE "commands.experience.add.levels.success.single" TO WS-KEY
+                 WHEN WS-ADD > 0
+                     MOVE "commands.experience.add.levels.success.multiple" TO WS-KEY
+                 WHEN WS-LEVELS = 0 AND WS-TRACKED = 1
+                     MOVE "commands.experience.set.points.success.single" TO WS-KEY
+                 WHEN WS-LEVELS = 0
+                     MOVE "commands.experience.set.points.success.multiple" TO WS-KEY
+                 WHEN WS-TRACKED = 1
+                     MOVE "commands.experience.set.levels.success.single" TO WS-KEY
+                 WHEN OTHER
+                     MOVE "commands.experience.set.levels.success.multiple" TO WS-KEY
+             END-EVALUATE
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-AMOUNT-LONG
+             IF WS-TRACKED = 1
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
+             ELSE
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+             END-IF
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE WS-TRACKED TO BR-R-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-EXPERIENCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-EXPERIENCE.
+*> The forms of experience and its alias xp (16 §5.13, §14).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-EXPERIENCE.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-ALIAS               PIC X(32) VALUE "xp".
+ 01 WS-ALIAS-LENGTH        BINARY-LONG VALUE 2.
+ 01 WS-TARGET              PIC X(32) VALUE "experience".
+ 01 WS-TARGET-LENGTH       BINARY-LONG VALUE 10.
+ PROCEDURE DIVISION.
+     MOVE "experience add <target:players> <amount:int>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience add <target:players> <amount:int> points" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience add <target:players> <amount:int> levels" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience set <target:players> <amount:int:0>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience set <target:players> <amount:int:0> points" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience set <target:players> <amount:int:0> levels" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience query <target:player> points" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "experience query <target:player> levels" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     CALL "BR-REG-ALIAS" USING WS-ALIAS WS-ALIAS-LENGTH WS-TARGET WS-TARGET-LENGTH
+     GOBACK.
+ END PROGRAM CMDS-REG-EXPERIENCE.
