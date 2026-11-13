@@ -5,8 +5,14 @@ from gentest import *
 OUT="core/tests"
 def S(*a): return " ".join(str(x) for x in a)
 def show(*v): return "/".join(str(x) for x in v)
+class Gen10(Gen):
+    # the shown outputs hold ten digits (2147483647)
+    def write(self, path):
+        Gen.write(self, path)
+        t=open(path).read().replace("PIC -(9)9.","PIC -(10)9.")
+        open(path,'w').write(t)
 def GG(prog,sec,subj,tasks,desc,path):
-    return Gen(prog,sec,subj,'Test of %s section, %s (%s): %s'%(sec,subj,tasks,desc),' 01 WS-NM                PIC X(32).\n')
+    return Gen10(prog,sec,subj,'Test of %s section, %s (%s): %s'%(sec,subj,tasks,desc),' 01 WS-NM                PIC X(32).\n')
 def C(name,ins,nout):
     toks=[]
     for j,c in enumerate(ins): toks.append(("WS-I(%d)" if c=='i' else "WS-FX(%d)")%(j+1))
