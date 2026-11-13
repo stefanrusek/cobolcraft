@@ -156,3 +156,74 @@ def nr(w,c,b):
 nrc=[(1,1,1),(1,1,0),(1,0,0),(1,0,1),(0,1,1),(0,1,0),(0,0,0),(0,0,1)]
 g.run('netherrack bone meal (4.3): both kinds found: nextBoolean() true gives warped, false crimson (one draw); only warped: warped; only crimson: crimson; neither: nothing (1 warped, 2 crimson; draws)',[S(*c) for c in nrc],'CALL "GC3-NETHERRACK-PERFORM" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%nr(*c) for c in nrc))
 W(g,4)
+# ===== 5
+g=GG(5,'Leaves','T0569','distance, triggers, decay and drops (5.1 to 5.4), the variants (5.5), client behaviour (5.6), mangrove leaves (5.7), leaf litter (5.8).')
+g.extra=" 01 WS-NBRS.\n    05 WS-NB BINARY-LONG OCCURS 6 TIMES.\n"
+g.run('leaf state (5.1): distance 1 to 7, persistent and waterlogged give 28 states; light dampening 1',["0"],'CALL "GC3-LEAF-STATES" USING WS-R(1) WS-R(2)',2,"28/1")
+def da(log,has,d): return (0 if log else (d if has else -1)), (0 if log else (d if has else 7))
+dac=[(1,0,0),(1,1,4),(0,1,4),(0,1,7),(0,0,0)]
+g.run('getOptionalDistanceAt (5.2): a log state is 0, else the distance of a leaves state, else empty (-1), which getDistanceAt reads as 7',[S(*c) for c in dac],'CALL "GC3-LEAF-DIST-AT" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%da(*c) for c in dac))
+def upd(ns):
+    m=7;ex=0
+    for d in ns:
+        ex+=1; m=min(m,d+1)
+        if m==1: break
+    return m,ex
+uc=[[7]*6,[0,7,7,7,7,7],[7,0,7,7,7,7],[3,7,7,7,7,7],[7,7,7,7,7,5],[6,7,7,7,7,7],[6]*6,[2,1,0,0,0,0],[7,7,7,7,7,0]]
+g.run('updateDistance (5.2): 1 + the smallest neighbour distance over Direction.values() capped at 7, the loop ending early at 1 (distance, neighbours examined)',[S(*c) for c in uc],'MOVE WS-I(1) TO WS-NB(1)\nMOVE WS-I(2) TO WS-NB(2)\nMOVE WS-I(3) TO WS-NB(3)\nMOVE WS-I(4) TO WS-NB(4)\nMOVE WS-I(5) TO WS-NB(5)\nMOVE WS-I(6) TO WS-NB(6)\nCALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R(1) WS-R(2)',2," ".join("%d/%d"%upd(c) for c in uc))
+g.run('leaf placement (5.3 PL): persistent true, waterlogged from the fluid at the clicked position, then the updated distance',["0 3","1 1","1 7"],'CALL "GC3-LEAF-PLACE" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2) WS-R(3)',3,"1/0/3 1/1/1 1/1/7")
+def lsu(w,nd,own):
+    d=nd+1
+    return int(w), int(d!=1 or own!=d), (1 if (d!=1 or own!=d) else 0)
+lc=[(0,0,1),(0,0,2),(0,1,2),(1,0,1),(1,7,7),(0,6,7),(0,0,7)]
+g.run('leaf shape update (5.3 SU): waterlogged schedules the water tick; only the sender is read: d = its distance + 1, and a block tick of delay 1 is scheduled unless d is 1 and the own distance is 1',[S(*c) for c in lc],'CALL "GC3-LEAF-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%lsu(*c) for c in lc))
+g.run('leaf random ticks (5.3, 5.4): ticking only at distance 7 and not persistent; then the loot table with no tool is dropped and the block removed without a game event (ticking, drops, removes, event)',["7 0","7 1","6 0","1 0","1 1"],'CALL "GC3-LEAF-RANDOM" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"1/1/1/0 0/0/0/0 0/0/0/0 0/0/0/0 0/0/0/0")
+g.run('decay drops with no tool (5.4, fortune 0): the leaves item never; sapling 5% (50000 per million), sticks 2% and 1 to 2 of them, apple 0.5%: kind 1 leaves item, 2 sapling, 3 stick, 4 apple (chance, count min, count max)',["1","2","3","4"],'CALL "GC3-LEAF-DROP" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3,"0/0/0 50000/1/1 20000/1/2 5000/1/1")
+V=[("oak_leaves",1,100,1,0,0),("birch_leaves",1,100,1,0,0),("jungle_leaves",1,100,1,0,0),("acacia_leaves",1,100,1,0,0),("dark_oak_leaves",1,100,1,0,0),("spruce_leaves",2,0,0,0,0),("mangrove_leaves",4,100,1,0,0),("cherry_leaves",3,1000,2,0,0),("pale_oak_leaves",3,200,3,0,0),("red_poplar_leaves",3,100,4,0,1),("orange_poplar_leaves",3,100,5,0,1),("yellow_poplar_leaves",3,100,6,0,1),("azalea_leaves",3,100,1,-9399763,0),("flowering_azalea_leaves",3,100,1,-9399763,0)]
+for part,vs in (("a",V[:7]),("b",V[7:])):
+    g.case('variants (5.5, %s): class (1 tinted particle, 2 plain, 3 untinted, 4 mangrove), leafParticleChance x 10000, particle (1 tinted_leaves, 2 cherry, 3 pale_oak, 4 red_poplar, 5 orange_poplar, 6 yellow_poplar), fixed colour, ambient sound'%part,[("0",'MOVE "minecraft:%s" TO WS-T1\nCALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)'%v[0],5) for v in vs]," ".join("/".join(map(str,v[1:])) for v in vs))
+g.run('rain drip (5.6 step 2): raining draws nextInt(15) (not drawn when dry); a 1 spawns dripping_water unless the block below occludes with a sturdy UP face (spawn, draws)',["1 1 0","1 1 1","1 0 0","1 14 0","0 1 0"],'CALL "GC3-LEAF-DRIP" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2,"1/1 0/1 0/1 0/1 0/0")
+def amb(has,d,nb):
+    if not has: return 0,0
+    if d!=0: return 0,1
+    a=b=0
+    for i,c in enumerate(nb):
+        if c&1: a+=1
+        if c&2: b+=1
+        if a==1 and b==3: return 1,1
+    return 0,1
+ac=[(0,0,[1,2,2,2]),(1,5,[1,2,2,2]),(1,0,[1,2,2,2]),(1,0,[2,2,2,1]),(1,0,[2,2,2,2]),(1,0,[1,1,2,2]),(1,0,[0,2,2,2]),(1,0,[1,0,2,2]),(1,0,[1,2,2,3])]
+def acall(a):
+    return 'MOVE %d TO WS-NB(1)\nMOVE %d TO WS-NB(2)\nMOVE %d TO WS-NB(3)\nMOVE %d TO WS-NB(4)\nMOVE %d TO WS-I(15)\nMOVE %d TO WS-I(16)\nCALL "GC3-LEAF-AMBIENT" USING WS-I(15) WS-I(16) WS-NBRS WS-R(1) WS-R(2)'%(tuple(a[2])+(a[0],a[1]))
+g.case('ambient sound (5.6 step 3): only a variant with a sound draws nextInt(300); a 0 walks the four neighbours counting the satisfying tag (bit 1) and the same block (bit 2) and plays when a is exactly 1 and b exactly 3 (play, draws)',[("0",acall(a),2) for a in ac]," ".join("%d/%d"%amb(*a) for a in ac))
+fc=[(0.5,0.01,0),(0.005,0.01,0),(0.01,0.01,0),(0.0,0.01,1),(0.0,0.01,0),(0.05,0.1,0),(0.099,0.1,0),(0.1,0.1,0)]
+g.run('falling leaves (5.6 step 4): nextFloat() >= chance stops, a full UP collision face below stops, else the particle spawns',[S(*c) for c in fc],'CALL "GC3-LEAF-FALL" USING WS-FX(1) WS-FX(2) WS-I(3) WS-R(1)',1," ".join(str(int(c[0]<c[1] and not c[2])) for c in fc))
+g.run('face culling (5.6): with cutoutLeaves false a neighbour that is any leaves block skips the face (1), otherwise the generic rule applies (0); cutout on is the default',["1 1","1 0","0 1","0 0"],'CALL "GC3-LEAF-CULL" USING WS-I(1) WS-I(2) WS-R(1)',1,"0 0 1 0")
+g.run('mangrove leaves bone meal (5.7): valid when the block below is air, no height test, success always; performs setBlock of a hanging propagule age 0 below with flags 2',["1","0"],'CALL "GC3-MANGROVE-BONE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"1/1/2/0 0/1/2/0")
+g.run('leaf litter (5.8): survives on a block with a sturdy UP face; no random tick, scheduled tick or decay (survive, random tick, scheduled tick)',["1","0"],'CALL "GC3-LITTER" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3,"1/0/0 0/0/0")
+W(g,5)
+# ===== 6
+g=GG(6,'Snow layers and the snow block','T0571','shapes (6.1), survival, shape update, random tick, replacement and placement (6.2), drops (6.4), the snow block (6.5).')
+g.run('snow shapes (6.1): outline, support and visual height 2 x layers pixels, collision 2 x (layers - 1); shade 0.2 at 8 layers else 1.0 (x 10); land pathfinding below 5 layers; view blocking from 8 layers',[str(k) for k in range(1,9)],'CALL "GC3-SNOW-SHAPE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join("%d/%d/%d/%d/%d"%(2*k,2*(k-1),2 if k==8 else 10,int(k<5),int(k>=8)) for k in range(1,9)))
+def sv(cn,ov,fu,s8):
+    if cn: return 0
+    if ov: return 1
+    return int(fu or s8)
+svc=[(1,0,1,0),(1,1,1,1),(0,1,0,0),(0,0,1,0),(0,0,0,1),(0,0,0,0),(1,0,0,1)]
+g.run('snow survival (6.2): not on a cannot_support_snow_layer block; always on a support_override block; else a full UP face or a snow layer of 8 layers below',[S(*c) for c in svc],'CALL "GC3-SNOW-SURVIVE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1," ".join(str(sv(*c)) for c in svc))
+g.run('snow shape update (6.2 SU): a failed canSurvive returns air (1), else the generic rule (0)',["0","1"],'CALL "GC3-SNOW-SU" USING WS-I(1) WS-R(1)',1,"1 0")
+g.run('snow random tick (6.2 RT, 6.4): only block light above 11 melts it (sky light is ignored): dropResources, removeBlock, game event block_destroy; the drop call yields nothing (melt, drops yielded, event)',["0","11","12","15"],'CALL "GC3-SNOW-TICK" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3,"0/0/0 0/0/0 1/0/1 1/0/1")
+def rep(it,n,rc,fu):
+    if it and n<8: return fu if rc else 1
+    return int(n==1)
+rpc=[(1,3,1,1),(1,3,1,0),(1,3,0,0),(1,8,1,1),(0,1,1,1),(0,2,1,1),(1,8,0,0),(0,8,0,0),(1,1,1,0)]
+g.run('snow canBeReplaced (6.2): holding snow below 8 layers: when replacing the clicked block only the UP face, else true; otherwise only a single layer',[S(*c) for c in rpc],'CALL "GC3-SNOW-REPLACE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1," ".join(str(rep(*c)) for c in rpc))
+g.run('snow placement (6.2): snow already at the clicked position gains a layer up to 8; otherwise the generic placement (0)',["1 1","1 7","1 8","0 3"],'CALL "GC3-SNOW-PLACE" USING WS-I(1) WS-I(2) WS-R(1)',1,"2 8 8 0")
+def dr(silk,ent,l):
+    if not ent: return 0,0
+    if not silk: return 1,l
+    return (2,l) if l<8 else (3,1)
+drc=[(0,1,1),(0,1,8),(1,1,3),(1,1,7),(1,1,8),(0,0,4),(1,0,8)]
+g.run('snow drops (6.4): the pool needs an entity (a player break; the block-light melt has none); without silk touch snowball x layers, with it the snow item x layers (1 to 7) or snow_block at 8 (item 1 snowball, 2 snow, 3 snow_block; count 1 for the block as the table names no count)',[S(*c) for c in drc],'CALL "GC3-SNOW-DROPS" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%dr(*c) for c in drc))
+g.run('snow block (6.5): a plain block that requires the correct tool for drops; no random tick, no melting (random tick, correct tool)',["0"],'CALL "GC3-SNOW-BLOCK" USING WS-R(1) WS-R(2)',2,"0/1")
+W(g,6)

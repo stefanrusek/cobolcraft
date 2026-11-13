@@ -699,3 +699,509 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM GC3-NETHERRACK-PERFORM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-STATES.
+*> USING states, light dampening (BINARY-LONG out): the state of a leaves block (5.1): distance 1 to 7, persistent, waterlogged (28 states); dampening 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DISTANCE            BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATES               BINARY-LONG.
+ 01 L-DAMPENING            BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATES L-DAMPENING.
+     MOVE 0 TO L-STATES
+     PERFORM VARYING WS-DISTANCE FROM 1 BY 1 UNTIL WS-DISTANCE > 7
+         PERFORM VARYING WS-FLAGS FROM 0 BY 1 UNTIL WS-FLAGS > 3
+             ADD 1 TO L-STATES
+         END-PERFORM
+     END-PERFORM
+     MOVE 1 TO L-DAMPENING
+     GOBACK.
+ END PROGRAM GC3-LEAF-STATES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-DIST-AT.
+*> USING the state is in tag prevents_nearby_leaf_decay, it has the distance property, its distance (BINARY-LONG), optional distance (-1 for empty), getDistanceAt out: 5.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LOG                  BINARY-LONG.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-DISTANCE             BINARY-LONG.
+ 01 L-OPTIONAL             BINARY-LONG.
+ 01 L-AT                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-LOG L-HAS L-DISTANCE L-OPTIONAL L-AT.
+     MOVE -1 TO L-OPTIONAL
+     MOVE 7 TO L-AT
+     IF L-LOG = 1
+         MOVE 0 TO L-OPTIONAL L-AT
+         GOBACK
+     END-IF
+     IF L-HAS = 1
+         MOVE L-DISTANCE TO L-OPTIONAL L-AT
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-LEAF-DIST-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-UPDATE.
+*> USING getDistanceAt of the six neighbours in Direction.values() order (BINARY-LONG x 6), distance, neighbours examined out: updateDistance (5.2): m = 7, then
+*> min(m, d + 1) for each neighbour, the loop ending when m is 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STEP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NEIGHBOURS.
+    05 L-N                 BINARY-LONG OCCURS 6 TIMES.
+ 01 L-DISTANCE             BINARY-LONG.
+ 01 L-EXAMINED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-NEIGHBOURS L-DISTANCE L-EXAMINED.
+     MOVE 7 TO L-DISTANCE
+     MOVE 0 TO L-EXAMINED
+     PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 6 OR L-DISTANCE = 1
+         ADD 1 TO L-EXAMINED
+         IF L-N(WS-STEP) + 1 < L-DISTANCE
+             COMPUTE L-DISTANCE = L-N(WS-STEP) + 1
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GC3-LEAF-UPDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-PLACE.
+*> USING the fluid at the clicked position is water, the updated distance (BINARY-LONG), persistent, waterlogged, distance out: getStateForPlacement (5.3 PL).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-DISTANCE             BINARY-LONG.
+ 01 L-PERSISTENT           BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-OUT-DISTANCE         BINARY-LONG.
+ PROCEDURE DIVISION USING L-WATER L-DISTANCE L-PERSISTENT L-WATERLOGGED L-OUT-DISTANCE.
+     MOVE 1 TO L-PERSISTENT
+     MOVE L-WATER TO L-WATERLOGGED
+     MOVE L-DISTANCE TO L-OUT-DISTANCE
+     GOBACK.
+ END PROGRAM GC3-LEAF-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-SU.
+*> USING waterlogged, getDistanceAt of the neighbour that sent the update, the own distance (BINARY-LONG), a water tick is scheduled, a block tick is scheduled, its delay
+*> out: the shape update of 5.3 (d = the neighbour's distance + 1; scheduled unless d is 1 and the own distance is d).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-NEIGHBOUR            BINARY-LONG.
+ 01 L-OWN                  BINARY-LONG.
+ 01 L-WATER-TICK           BINARY-LONG.
+ 01 L-BLOCK-TICK           BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-WATERLOGGED L-NEIGHBOUR L-OWN L-WATER-TICK L-BLOCK-TICK L-DELAY.
+     MOVE L-WATERLOGGED TO L-WATER-TICK
+     MOVE 0 TO L-BLOCK-TICK L-DELAY
+     COMPUTE WS-D = L-NEIGHBOUR + 1
+     IF WS-D NOT = 1 OR L-OWN NOT = WS-D
+         MOVE 1 TO L-BLOCK-TICK L-DELAY
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-LEAF-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-RANDOM.
+*> USING distance, persistent (BINARY-LONG), randomly ticking, drops resources, removes the block, game event out: isRandomlyTicking and the decay of 5.3 and 5.4.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DISTANCE             BINARY-LONG.
+ 01 L-PERSISTENT           BINARY-LONG.
+ 01 L-TICKING              BINARY-LONG.
+ 01 L-DROPS                BINARY-LONG.
+ 01 L-REMOVES              BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DISTANCE L-PERSISTENT L-TICKING L-DROPS L-REMOVES L-EVENT.
+     MOVE 0 TO L-TICKING L-DROPS L-REMOVES L-EVENT
+     IF L-DISTANCE = 7 AND L-PERSISTENT = 0
+         MOVE 1 TO L-TICKING L-DROPS L-REMOVES
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-LEAF-RANDOM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-DROP.
+*> USING kind (1 the leaves item, 2 sapling, 3 stick, 4 apple), chance per million, count minimum, count maximum (BINARY-LONG out): the drops of a decayed oak leaf block with
+*> no tool and fortune 0 (5.4): the leaves item never; sapling 0.05, sticks 0.02 (1 to 2), apple 0.005.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-CHANCE               BINARY-LONG.
+ 01 L-MIN                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-CHANCE L-MIN L-MAX.
+     MOVE 0 TO L-CHANCE L-MIN L-MAX
+     EVALUATE L-KIND
+         WHEN 2
+             MOVE 50000 TO L-CHANCE
+             MOVE 1 TO L-MIN L-MAX
+         WHEN 3
+             MOVE 20000 TO L-CHANCE
+             MOVE 1 TO L-MIN
+             MOVE 2 TO L-MAX
+         WHEN 4
+             MOVE 5000 TO L-CHANCE
+             MOVE 1 TO L-MIN L-MAX
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC3-LEAF-DROP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-VARIANT.
+*> USING block key (PIC X(48)), class (1 TintedParticleLeavesBlock, 2 LeavesBlock, 3 UntintedParticleLeavesBlock, 4 MangroveLeavesBlock), leafParticleChance x 10000, particle
+*> (0 none, 1 tinted_leaves, 2 cherry_leaves, 3 pale_oak_leaves, 4 red_poplar_leaves, 5 orange_poplar_leaves, 6 yellow_poplar_leaves), fixed particle colour (0 when the
+*> position's tint is used), ambient sound (BINARY-LONG out): the variant table of 5.5.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-CLASS                BINARY-LONG.
+ 01 L-CHANCE               BINARY-LONG.
+ 01 L-PARTICLE             BINARY-LONG.
+ 01 L-COLOUR               BINARY-LONG.
+ 01 L-AMBIENT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-CLASS L-CHANCE L-PARTICLE L-COLOUR L-AMBIENT.
+     MOVE 0 TO L-CLASS L-CHANCE L-PARTICLE L-COLOUR L-AMBIENT
+     EVALUATE TRUE
+         WHEN L-KEY = "minecraft:oak_leaves" OR L-KEY = "minecraft:birch_leaves" OR L-KEY = "minecraft:jungle_leaves" OR L-KEY = "minecraft:acacia_leaves"
+              OR L-KEY = "minecraft:dark_oak_leaves"
+             MOVE 1 TO L-CLASS L-PARTICLE
+             MOVE 100 TO L-CHANCE
+         WHEN L-KEY = "minecraft:spruce_leaves"
+             MOVE 2 TO L-CLASS
+         WHEN L-KEY = "minecraft:mangrove_leaves"
+             MOVE 4 TO L-CLASS
+             MOVE 1 TO L-PARTICLE
+             MOVE 100 TO L-CHANCE
+         WHEN L-KEY = "minecraft:cherry_leaves"
+             MOVE 3 TO L-CLASS
+             MOVE 2 TO L-PARTICLE
+             MOVE 1000 TO L-CHANCE
+         WHEN L-KEY = "minecraft:pale_oak_leaves"
+             MOVE 3 TO L-CLASS
+             MOVE 3 TO L-PARTICLE
+             MOVE 200 TO L-CHANCE
+         WHEN L-KEY = "minecraft:red_poplar_leaves"
+             MOVE 3 TO L-CLASS
+             MOVE 4 TO L-PARTICLE
+             MOVE 100 TO L-CHANCE
+             MOVE 1 TO L-AMBIENT
+         WHEN L-KEY = "minecraft:orange_poplar_leaves"
+             MOVE 3 TO L-CLASS
+             MOVE 5 TO L-PARTICLE
+             MOVE 100 TO L-CHANCE
+             MOVE 1 TO L-AMBIENT
+         WHEN L-KEY = "minecraft:yellow_poplar_leaves"
+             MOVE 3 TO L-CLASS
+             MOVE 6 TO L-PARTICLE
+             MOVE 100 TO L-CHANCE
+             MOVE 1 TO L-AMBIENT
+         WHEN L-KEY = "minecraft:azalea_leaves" OR L-KEY = "minecraft:flowering_azalea_leaves"
+             MOVE 3 TO L-CLASS
+             MOVE 1 TO L-PARTICLE
+             MOVE 100 TO L-CHANCE
+             MOVE -9399763 TO L-COLOUR
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC3-LEAF-VARIANT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-DRIP.
+*> USING it is raining at the cell above, the draw nextInt(15), the block below occludes with a sturdy UP face (BINARY-LONG), spawn, draws out: the rain drip of 5.6 step 2
+*> (the draw is made only when it is raining).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RAINING              BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-STURDY               BINARY-LONG.
+ 01 L-SPAWN                BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-RAINING L-DRAW L-STURDY L-SPAWN L-DRAWS.
+     MOVE 0 TO L-SPAWN L-DRAWS
+     IF L-RAINING = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO L-DRAWS
+     IF L-DRAW = 1 AND L-STURDY = 0
+         MOVE 1 TO L-SPAWN
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-LEAF-DRIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-AMBIENT.
+*> USING the variant has an ambient sound, the draw nextInt(300) (BINARY-LONG), the four horizontal neighbours in order (BINARY-LONG x 4: bit 1 in the satisfying tag, bit 2 the
+*> same block), play, draws out: 5.6 step 3; after each neighbour the sound plays when a (satisfying) is exactly 1 and b (same block) exactly 3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-NEIGHBOURS.
+    05 L-N                 BINARY-LONG OCCURS 4 TIMES.
+ 01 L-PLAY                 BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-HAS L-DRAW L-NEIGHBOURS L-PLAY L-DRAWS.
+     MOVE 0 TO L-PLAY L-DRAWS WS-A WS-B
+     IF L-HAS = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO L-DRAWS
+     IF L-DRAW NOT = 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 4 OR L-PLAY = 1
+         IF L-N(WS-STEP) = 1 OR L-N(WS-STEP) = 3
+             ADD 1 TO WS-A
+         END-IF
+         IF L-N(WS-STEP) >= 2
+             ADD 1 TO WS-B
+         END-IF
+         IF WS-A = 1 AND WS-B = 3
+             MOVE 1 TO L-PLAY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GC3-LEAF-AMBIENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-FALL.
+*> USING nextFloat, leafParticleChance (FLOAT-LONG), the block below has a full UP collision face (BINARY-LONG), spawn out: falling leaves of 5.6 step 4.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 FLOAT-LONG.
+ 01 L-CHANCE               FLOAT-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-SPAWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-CHANCE L-FULL L-SPAWN.
+     MOVE 0 TO L-SPAWN
+     IF L-DRAW < L-CHANCE AND L-FULL = 0
+         MOVE 1 TO L-SPAWN
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-LEAF-FALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LEAF-CULL.
+*> USING cutoutLeaves (default 1), the neighbour is a LeavesBlock (BINARY-LONG), skip out (1 skips the face, 0 the generic rule applies): LeavesBlock.skipRendering (5.6).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CUTOUT               BINARY-LONG.
+ 01 L-LEAVES               BINARY-LONG.
+ 01 L-SKIP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-CUTOUT L-LEAVES L-SKIP.
+     MOVE 0 TO L-SKIP
+     IF L-CUTOUT = 0 AND L-LEAVES = 1
+         MOVE 1 TO L-SKIP
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-LEAF-CULL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-MANGROVE-BONE.
+*> USING the block below is air (BINARY-LONG), valid, success, setBlock flags, propagule age out: mangrove leaves bone meal (5.7): a hanging propagule of age 0 below, flags 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-VALID L-SUCCESS L-FLAGS L-AGE.
+     MOVE L-AIR TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     MOVE 2 TO L-FLAGS
+     MOVE 0 TO L-AGE
+     GOBACK.
+ END PROGRAM GC3-MANGROVE-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-LITTER.
+*> USING the block below has a sturdy UP face (BINARY-LONG), survives, random tick, scheduled tick out: leaf_litter (5.8) has no random tick, scheduled tick or decay.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STURDY               BINARY-LONG.
+ 01 L-SURVIVES             BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ 01 L-SCHEDULED            BINARY-LONG.
+ PROCEDURE DIVISION USING L-STURDY L-SURVIVES L-RANDOM L-SCHEDULED.
+     MOVE L-STURDY TO L-SURVIVES
+     MOVE 0 TO L-RANDOM L-SCHEDULED
+     GOBACK.
+ END PROGRAM GC3-LITTER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-SHAPE.
+*> USING layers 1 to 8 (BINARY-LONG), outline height (px), collision height (px), shade brightness x 10, land pathfinding, view blocking out: SnowLayerBlock (6.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LAYERS               BINARY-LONG.
+ 01 L-OUTLINE              BINARY-LONG.
+ 01 L-COLLISION            BINARY-LONG.
+ 01 L-SHADE                BINARY-LONG.
+ 01 L-PATH                 BINARY-LONG.
+ 01 L-VIEW                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-LAYERS L-OUTLINE L-COLLISION L-SHADE L-PATH L-VIEW.
+     COMPUTE L-OUTLINE = 2 * L-LAYERS
+     COMPUTE L-COLLISION = 2 * (L-LAYERS - 1)
+     MOVE 10 TO L-SHADE
+     MOVE 0 TO L-PATH L-VIEW
+     IF L-LAYERS = 8
+         MOVE 2 TO L-SHADE
+         MOVE 1 TO L-VIEW
+     END-IF
+     IF L-LAYERS < 5
+         MOVE 1 TO L-PATH
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOW-SHAPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-SURVIVE.
+*> USING the block below is in cannot_support_snow_layer, in support_override_snow_layer, its UP collision face is full, it is a snow layer of 8 layers (BINARY-LONG),
+*> survives out: canSurvive of 6.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CANNOT               BINARY-LONG.
+ 01 L-OVERRIDE             BINARY-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-EIGHT                BINARY-LONG.
+ 01 L-SURVIVES             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CANNOT L-OVERRIDE L-FULL L-EIGHT L-SURVIVES.
+     MOVE 0 TO L-SURVIVES
+     IF L-CANNOT = 1
+         GOBACK
+     END-IF
+     IF L-OVERRIDE = 1 OR L-FULL = 1 OR L-EIGHT = 1
+         MOVE 1 TO L-SURVIVES
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOW-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-SU.
+*> USING canSurvive (BINARY-LONG), air out (1 when the shape update returns air, 0 for the generic rule): 6.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SURVIVES             BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SURVIVES L-AIR.
+     MOVE 0 TO L-AIR
+     IF L-SURVIVES = 0
+         MOVE 1 TO L-AIR
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOW-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-TICK.
+*> USING the block light at the position (BINARY-LONG), melts, items yielded, game event block_destroy out: the random tick of 6.2 (block light above 11); the drop call has no
+*> entity so its loot pool yields nothing (6.4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LIGHT                BINARY-LONG.
+ 01 L-MELTS                BINARY-LONG.
+ 01 L-YIELDED              BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LIGHT L-MELTS L-YIELDED L-EVENT.
+     MOVE 0 TO L-MELTS L-YIELDED L-EVENT
+     IF L-LIGHT > 11
+         MOVE 1 TO L-MELTS L-EVENT
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOW-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-REPLACE.
+*> USING the held item is snow, layers, the placement replaces the clicked block, the clicked face is UP (BINARY-LONG), replaceable out: canBeReplaced of 6.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SNOW                 BINARY-LONG.
+ 01 L-LAYERS               BINARY-LONG.
+ 01 L-CLICKED              BINARY-LONG.
+ 01 L-UP                   BINARY-LONG.
+ 01 L-REPLACEABLE          BINARY-LONG.
+ PROCEDURE DIVISION USING L-SNOW L-LAYERS L-CLICKED L-UP L-REPLACEABLE.
+     MOVE 0 TO L-REPLACEABLE
+     IF L-SNOW = 1 AND L-LAYERS < 8
+         MOVE 1 TO L-REPLACEABLE
+         IF L-CLICKED = 1
+             MOVE L-UP TO L-REPLACEABLE
+         END-IF
+         GOBACK
+     END-IF
+     IF L-LAYERS = 1
+         MOVE 1 TO L-REPLACEABLE
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOW-REPLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-PLACE.
+*> USING the state at the clicked position is snow, its layers (BINARY-LONG), layers out (min(8, layers + 1); 0 for the generic placement): getStateForPlacement of 6.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SNOW                 BINARY-LONG.
+ 01 L-LAYERS               BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SNOW L-LAYERS L-NEW.
+     MOVE 0 TO L-NEW
+     IF L-SNOW = 1
+         COMPUTE L-NEW = FUNCTION MIN(8, L-LAYERS + 1)
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOW-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-DROPS.
+*> USING the tool has silk touch, the loot parameters hold an entity (a player break), layers (BINARY-LONG), item (1 snowball, 2 snow, 3 snow_block, 0 none), count out: the loot
+*> table of snow (6.4); the pool needs an entity, branch one (no silk touch) gives snowballs x layers, branch two the snow item x layers (1 to 7) or snow_block at 8 (count 1:
+*> the table names no count function for it).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SILK                 BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-LAYERS               BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SILK L-ENTITY L-LAYERS L-ITEM L-COUNT.
+     MOVE 0 TO L-ITEM L-COUNT
+     IF L-ENTITY = 0
+         GOBACK
+     END-IF
+     MOVE L-LAYERS TO L-COUNT
+     EVALUATE TRUE
+         WHEN L-SILK = 0
+             MOVE 1 TO L-ITEM
+         WHEN L-LAYERS < 8
+             MOVE 2 TO L-ITEM
+         WHEN OTHER
+             MOVE 3 TO L-ITEM
+             MOVE 1 TO L-COUNT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC3-SNOW-DROPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOW-BLOCK.
+*> USING random tick, requires the correct tool for drops (BINARY-LONG out): snow_block (6.5) is a plain block.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RANDOM               BINARY-LONG.
+ 01 L-TOOL                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-RANDOM L-TOOL.
+     MOVE 0 TO L-RANDOM
+     MOVE 1 TO L-TOOL
+     GOBACK.
+ END PROGRAM GC3-SNOW-BLOCK.
