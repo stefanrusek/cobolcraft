@@ -1212,6 +1212,7 @@
  01 LS-CHANCE              BINARY-LONG.
  01 LS-CH                  BINARY-LONG.
  01 LS-NC                 BINARY-LONG.
+ 01 LS-SAVED-BAD           BINARY-LONG.
  01 LS-KIDS.
     05 LS-KID OCCURS 64 TIMES.
        10 LS-CPF            BINARY-LONG.
@@ -1309,7 +1310,15 @@
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-TO-PLACE LS-E
              CALL "FD-PROV-NODE" USING JSON-DOC LS-E FT-A(LS-ROW)
          WHEN 51
+*>           a tree the compiler cannot place whole is an unsupported feature (type -1), never a half understood one; FD-BAD stays set for the caller
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
              CALL "FD-TREE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN OTHER
              MOVE -1 TO FT-TYPE(LS-ROW)
              MOVE 1 TO FD-BAD

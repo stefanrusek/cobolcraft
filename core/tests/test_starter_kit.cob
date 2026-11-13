@@ -18,6 +18,7 @@
  01 WS-UUID                PIC X(16) VALUE "0123456789abcdef".
  01 WS-UUID2               PIC X(16) VALUE "fedcba9876543210".
  01 WS-FLAG                BINARY-LONG.
+ 01 WS-GOT                 BINARY-LONG.
  01 WS-PTR                BINARY-LONG.
  01 WS-S                  BINARY-LONG.
  01 WS-IDX                BINARY-LONG.
@@ -55,6 +56,13 @@
 
      MOVE 0 TO WS-FLAG
      CALL "STARTER-KIT-CONFIG" USING WS-FLAG
+     CALL "STARTER-KIT-GET" USING WS-GOT
+     MOVE "test starter kit STARTER-KIT-GET reports the key switched off" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-GOT TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
      CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
      CALL "PLAYER-CREATE" USING WS-ID WS-NAME WS-NAME-LENGTH WS-UUID2 WS-ROW
      MOVE "test starter kit starter-kit=false gives a standard world player no kit and no stand-in items" TO TL-CASE
@@ -64,6 +72,13 @@
 
      MOVE 1 TO WS-FLAG
      CALL "STARTER-KIT-CONFIG" USING WS-FLAG
+     CALL "STARTER-KIT-GET" USING WS-GOT
+     MOVE "test starter kit STARTER-KIT-GET reports the key switched on" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-GOT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
      MOVE "cobolcraft" TO CW-WORLD-TYPE
      CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
      MOVE "0011223344556677" TO WS-UUID2

@@ -112,11 +112,18 @@
          CALL "FD-GET-FT" USING WS-KEY WS-FT
          CALL "FD-ENSURE-FT" USING WS-FT
          MOVE SPACES TO TL-CASE
-         STRING "test feat tree edges " FUNCTION TRIM(WS-KEY) " is flagged unsupported" DELIMITED BY SIZE INTO TL-CASE
-         MOVE FD-BAD TO TL-OBSERVED-N
-         MOVE 1 TO TL-EXPECTED-N
+         STRING "test feat tree edges " FUNCTION TRIM(WS-KEY) " is flagged unsupported and has type -1" DELIMITED BY SIZE INTO TL-CASE
+         COMPUTE TL-OBSERVED-N = FD-BAD * 10 - FT-TYPE(WS-FT)
+         MOVE 11 TO TL-EXPECTED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+     MOVE "minecraft:unsupported_ft" TO WS-KEY
+     CALL "FD-GET-FT" USING WS-KEY WS-FT
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE "test feat tree edges a feature type the compiler does not know is flagged unsupported (type -1)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = FT-TYPE(WS-FT) - FD-BAD
+     MOVE -2 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE FD-TR-COUNT TO WS-SAVED
      MOVE 256 TO FD-TR-COUNT
      MOVE "minecraft:oak_bees_005" TO WS-KEY
@@ -214,6 +221,19 @@
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   a tree with its own lower_size reads it
+     MOVE "minecraft:size_lower" TO WS-KEY
+     CALL "FD-GET-FT" USING WS-KEY WS-FT
+     PERFORM NEW-WORLD
+     MOVE 24 TO WS-X
+     MOVE 63 TO WS-Y
+     MOVE 40 TO WS-Z
+     PERFORM PLACE-TREE
+     MOVE "test feat tree edges a tree with lower_size 1 and limit 2 is placed on open ground" TO TL-CASE
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   a log of another tree in the way does not block the room (isFree accepts logs)
      MOVE "minecraft:oak" TO WS-KEY
      CALL "FD-GET-FT" USING WS-KEY WS-FT
@@ -303,6 +323,18 @@
          MOVE 0 TO TL-EXPECTED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+*>   a chosen child that is a placed feature the compiler refuses (a modifier it does not know) also falls back to the default tree
+     MOVE "minecraft:sel_badpf" TO WS-KEY
+     CALL "FD-GET-FT" USING WS-KEY WS-FT
+     PERFORM NEW-WORLD
+     MOVE 24 TO WS-X
+     MOVE 63 TO WS-Y
+     MOVE 40 TO WS-Z
+     PERFORM PLACE-TREE
+     MOVE "test feat tree edges sel_badpf: the unsupported chosen placed feature gives way to the default tree" TO TL-CASE
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  BUILD-TABLE.

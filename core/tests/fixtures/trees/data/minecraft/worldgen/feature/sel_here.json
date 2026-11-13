@@ -1,1 +1,1 @@
-{"type":"minecraft:random_selector","default":{"feature":"minecraft:oak_bees_005","placement":[]},"features":[{"chance":0.5,"feature":{"feature":"minecraft:fancy_missing","placement":[]}}]}
+{"type": "minecraft:random_selector", "default": {"feature": "minecraft:oak_bees_005", "placement": []}, "features": [{"chance": 1.0, "feature": {"feature": "minecraft:fancy_missing", "placement": []}}]}

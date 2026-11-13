@@ -859,17 +859,25 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-TREE-FALLBACK.
 *> USING chosen placed feature (in and out), default placed feature of the selector: a random_selector whose default is a tree and whose chosen child cannot be placed (a
-*> variant the compiler does not know: the fancy and the fallen trees) places its default tree instead; every other choice stays as it is.
+*> placed feature or a feature the compiler does not know: the fancy and the fallen trees) places its default tree instead; every other choice stays as it is.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
+ 01 WS-USABLE              BINARY-LONG.
  LINKAGE SECTION.
  01 L-CHOSEN               BINARY-LONG.
  01 L-DEFAULT              BINARY-LONG.
  PROCEDURE DIVISION USING L-CHOSEN L-DEFAULT.
      IF L-DEFAULT > 0
          CALL "FD-ENSURE-PF" USING L-CHOSEN
-         IF PF-STATUS(L-CHOSEN) NOT = 1
+         MOVE 0 TO WS-USABLE
+         IF PF-STATUS(L-CHOSEN) = 1
+             CALL "FD-ENSURE-FT" USING PF-FT(L-CHOSEN)
+             IF FT-TYPE(PF-FT(L-CHOSEN)) NOT = -1
+                 MOVE 1 TO WS-USABLE
+             END-IF
+         END-IF
+         IF WS-USABLE = 0
              CALL "FD-ENSURE-PF" USING L-DEFAULT
              IF PF-STATUS(L-DEFAULT) = 1
                  CALL "FD-ENSURE-FT" USING PF-FT(L-DEFAULT)
