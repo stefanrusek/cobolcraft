@@ -89,7 +89,8 @@
  01 WS-NM                PIC X(32).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
-     MOVE "acceptance US12 40-3§5 Smithing table: mayPlace (5.1): slot 0 takes an item of the smithing_template set, slot 1 of smithing_base, slot 2 of smithing_addition (slot, in template set, in base" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: mayPlace (5.1): slot 0 takes an item of the smithing_template" &
+         " set, slot 1 of smithing_base, slot 2 of smithing_addition (slot, in template set, in base" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "0 1 0 0" TO WS-IN
      PERFORM LOAD-IN
@@ -153,7 +154,8 @@
      PERFORM ADD-N
      MOVE "1 0 0 0 0 1 0 0 0 0 1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: error flag (5.2, 8.9): on a server level 1 exactly when the three inputs are present and the result is empty; on a client level it keeps the packet value" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: error flag (5.2, 8.9): on a server level 1 exactly when the t" &
+         "hree inputs are present and the result is empty; on a client level it keeps the packet value" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1 1 1 0 0" TO WS-IN
      PERFORM LOAD-IN
@@ -192,7 +194,8 @@
      PERFORM ADD-N
      MOVE "1 0 0 0 0 0 1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: createResult (5.3): on a client level no recipe, so the result is emptied; on a server level the first matching recipe sets the recipe used and the" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: createResult (5.3): on a client level no recipe, so the resul" &
+         "t is emptied; on a server level the first matching recipe sets the recipe used and the" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1 0" TO WS-IN
      PERFORM LOAD-IN
@@ -221,7 +224,8 @@
      PERFORM ADD-N
      MOVE "1/1 1/0 0/0 0/0 0/0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: take (5.4, E9): one item is taken from each non-empty input slot and level event 1044 is sent (count 0, count 1, count 2 -> new counts, event)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: take (5.4, E9): one item is taken from each non-empty input s" &
+         "lot and level event 1044 is sent (count 0, count 1, count 2 -> new counts, event)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1 1" TO WS-IN
      PERFORM LOAD-IN
@@ -250,7 +254,8 @@
      PERFORM ADD-N
      MOVE "0/0/0/1044 0/63/0/1044 0/2/0/1044 1/0/0/1044 0/0/0/1044" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: canMoveIntoInputSlots (5.4): an item the template set accepts while slot 0 is empty, or base set and slot 1 empty, or addition set and slot 2 empty" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: canMoveIntoInputSlots (5.4): an item the template set accepts" &
+         " while slot 0 is empty, or base set and slot 1 empty, or addition set and slot 2 empty" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 0 0 1 0 0" TO WS-IN
      PERFORM LOAD-IN
@@ -294,7 +299,8 @@
      PERFORM ADD-N
      MOVE "1 0 1 0 1 0 0 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: double-click gather (5.4): only the result slot 3 is excluded (slot -> canTakeItemForPickAll)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: double-click gather (5.4): only the result slot 3 is excluded" &
+         " (slot -> canTakeItemForPickAll)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "0" TO WS-IN
      PERFORM LOAD-IN
@@ -328,7 +334,8 @@
      PERFORM ADD-N
      MOVE "1 1 1 0 1 1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, tick (5.6): a different list is stored and the icon index reset (the tick counter is not); a non-empty list counts the tick and at" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, tick (5.6): a different list is stored an" &
+         "d the icon index reset (the tick counter is not); a non-empty list counts the tick and at" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 4 0 0" TO WS-IN
      PERFORM LOAD-IN
@@ -382,7 +389,8 @@
      PERFORM ADD-N
      MOVE "1/0 30/1 30/2 30/1 60/1 5/0 5/0 60/0 30/0 90/1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, draw (5.6): nothing for an empty list or an occupied slot; transitioning for a list of 2 or more from tick 30; alpha = min((tick mod" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, draw (5.6): nothing for an empty list or " &
+         "an occupied slot; transitioning for a list of 2 or more from tick 30; alpha = min((tick mod" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "2 0 0 0.0 0" TO WS-IN
      PERFORM LOAD-IN
@@ -419,9 +427,11 @@
      CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
      MOVE 6 TO WS-N
      PERFORM ADD-N
-     MOVE "1/0/1000000/0/0/0 1/0/1000000/0/0/0 1/1/0/1/0/1000000 1/1/375000/1/0/625000 1/1/312500/1/1/687500 1/1/937500/1/0/62500 1/1/1000000/0/0/0" TO TL-EXPECTED
+     MOVE "1/0/1000000/0/0/0 1/0/1000000/0/0/0 1/1/0/1/0/1000000 1/1/375000/1/0/625000 1/1/312500/1/1/687500 1/" &
+         "1/937500/1/0/62500 1/1/1000000/0/0/0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, draw again (5.6): nothing for an empty list or an occupied slot; transitioning for a list of 2 or more from tick 30; alpha = min((tick" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, draw again (5.6): nothing for an empty li" &
+         "st or an occupied slot; transitioning for a list of 2 or more from tick 30; alpha = min((tick" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "2 35 1 0.5 0" TO WS-IN
      PERFORM LOAD-IN
@@ -455,7 +465,8 @@
      PERFORM ADD-N
      MOVE "1/1/1000000/0/0/0 1/1/1000000/0/0/0 1/0/1000000/0/0/0 0/0/0/0/0/0 0/0/0/0/0/0 1/1/62500/1/3/937500" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): armor trim has 4 base and 7 addition icons, netherite upgrade 11 base and 1 addition; no template gives none (kind 1 armor trim 2" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): armor trim has 4 base and 7 addition icons," &
+         " netherite upgrade 11 base and 1 addition; no template gives none (kind 1 armor trim 2" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "0 1" TO WS-IN
      PERFORM LOAD-IN
@@ -489,7 +500,8 @@
      PERFORM ADD-N
      MOVE "0 0 4 7 11 1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 1 slot 1, in order (kind, slot, position from 1)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 1 slot 1, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1 1" TO WS-IN
      PERFORM LOAD-IN
@@ -507,9 +519,11 @@
      PERFORM LOAD-IN
      CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "container/slot/helmet|helmet container/slot/chestplate|chestplate container/slot/leggings|leggings container/slot/boots|boots" TO TL-EXPECTED
+     MOVE "container/slot/helmet|helmet container/slot/chestplate|chestplate container/slot/leggings|leggings c" &
+         "ontainer/slot/boots|boots" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 1 slot 2, in order (kind, slot, position from 1)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 1 slot 2, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 2 1" TO WS-IN
      PERFORM LOAD-IN
@@ -539,9 +553,12 @@
      PERFORM LOAD-IN
      CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "container/slot/ingot|ingot container/slot/redstone_dust|redstone_dust container/slot/lapis_lazuli|lapis_lazuli container/slot/quartz|quartz container/slot/diamond|diamond container/slot/emerald|emerald container/slot/amethyst_shard|amethyst_shard" TO TL-EXPECTED
+     MOVE "container/slot/ingot|ingot container/slot/redstone_dust|redstone_dust container/slot/lapis_lazuli|la" &
+         "pis_lazuli container/slot/quartz|quartz container/slot/diamond|diamond container/slot/emerald|emeral" &
+         "d container/slot/amethyst_shard|amethyst_shard" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 2 slot 1, in order (kind, slot, position from 1)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 2 slot 1, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "2 1 1" TO WS-IN
      PERFORM LOAD-IN
@@ -587,9 +604,13 @@
      PERFORM LOAD-IN
      CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "container/slot/helmet|helmet container/slot/sword|sword container/slot/chestplate|chestplate container/slot/pickaxe|pickaxe container/slot/leggings|leggings container/slot/axe|axe container/slot/boots|boots container/slot/hoe|hoe container/slot/shovel|shovel container/slot/nautilus_armor|nautilus_armor container/slot/spear|spear" TO TL-EXPECTED
+     MOVE "container/slot/helmet|helmet container/slot/sword|sword container/slot/chestplate|chestplate contain" &
+         "er/slot/pickaxe|pickaxe container/slot/leggings|leggings container/slot/axe|axe container/slot/boots" &
+         "|boots container/slot/hoe|hoe container/slot/shovel|shovel container/slot/nautilus_armor|nautilus_ar" &
+         "mor container/slot/spear|spear" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 2 slot 2, in order (kind, slot, position from 1)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 2 slot 2, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "2 2 1" TO WS-IN
      PERFORM LOAD-IN
@@ -597,7 +618,8 @@
      PERFORM ADD-TEXT
      MOVE "container/slot/ingot|ingot" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the two template icons of slot 0 (position 1 or 2)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the two template icons of slot 0 (position " &
+         "1 or 2)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1" TO WS-IN
      PERFORM LOAD-IN
@@ -607,9 +629,11 @@
      PERFORM LOAD-IN
      CALL "MN3-TEMPLATE-ICON" USING WS-I1 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "container/slot/smithing_template_armor_trim|armor_trim container/slot/smithing_template_netherite_upgrade|netherite_upgrade" TO TL-EXPECTED
+     MOVE "container/slot/smithing_template_armor_trim|armor_trim container/slot/smithing_template_netherite_up" &
+         "grade|netherite_upgrade" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: tooltip choice (5.7): the error tooltip over the 28 x 21 box, overridden by Add Smithing Template over an empty slot 0, or by the base or addition" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip choice (5.7): the error tooltip over the 28 x 21 box," &
+         " overridden by Add Smithing Template over an empty slot 0, or by the base or addition" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1 -1 0 0 0" TO WS-IN
      PERFORM LOAD-IN
@@ -678,7 +702,8 @@
      PERFORM ADD-N
      MOVE "1 0 0 2 2 0 3 4 0 0 0 0 3" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the error and the missing template (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the error and t" &
+         "he missing template (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1" TO WS-IN
      PERFORM LOAD-IN
@@ -688,9 +713,11 @@
      PERFORM LOAD-IN
      CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "container.upgrade.error_tooltip|Item can't be upgraded this way container.upgrade.missing_template_tooltip|Add Smithing Template" TO TL-EXPECTED
+     MOVE "container.upgrade.error_tooltip|Item can't be upgraded this way container.upgrade.missing_template_t" &
+         "ooltip|Add Smithing Template" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the armor trim descriptions (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the armor trim " &
+         "descriptions (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "3 1" TO WS-IN
      PERFORM LOAD-IN
@@ -700,9 +727,11 @@
      PERFORM LOAD-IN
      CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "item.minecraft.smithing_template.armor_trim.base_slot_description|Add a piece of armor item.minecraft.smithing_template.armor_trim.additions_slot_description|Add ingot or crystal" TO TL-EXPECTED
+     MOVE "item.minecraft.smithing_template.armor_trim.base_slot_description|Add a piece of armor item.minecraf" &
+         "t.smithing_template.armor_trim.additions_slot_description|Add ingot or crystal" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the netherite upgrade descriptions (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the netherite u" &
+         "pgrade descriptions (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "3 2" TO WS-IN
      PERFORM LOAD-IN
@@ -712,9 +741,12 @@
      PERFORM LOAD-IN
      CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
      PERFORM ADD-TEXT
-     MOVE "item.minecraft.smithing_template.netherite_upgrade.base_slot_description|Add diamond armor, weapon, or tool item.minecraft.smithing_template.netherite_upgrade.additions_slot_description|Add Netherite Ingot" TO TL-EXPECTED
+     MOVE "item.minecraft.smithing_template.netherite_upgrade.base_slot_description|Add diamond armor, weapon, " &
+         "or tool item.minecraft.smithing_template.netherite_upgrade.additions_slot_description|Add Netherite " &
+         "Ingot" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: armor stand preview (5.8, E9): an empty result clears everything; a head item that passes HumanoidArmorLayer.shouldRender is the head equipment, else the" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: armor stand preview (5.8, E9): an empty result clears everyth" &
+         "ing; a head item that passes HumanoidArmorLayer.shouldRender is the head equipment, else the" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1 1 1 0" TO WS-IN
      PERFORM LOAD-IN
@@ -758,7 +790,8 @@
      PERFORM ADD-N
      MOVE "1 2 3 4 5 6 6 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: preview update (5.8): updateArmorStandPreview runs from subInit and whenever slot 3 changes (slot -> update)" TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: preview update (5.8): updateArmorStandPreview runs from subIn" &
+         "it and whenever slot 3 changes (slot -> update)" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "0" TO WS-IN
      PERFORM LOAD-IN
@@ -777,7 +810,8 @@
      PERFORM ADD-N
      MOVE "0 1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 40-3§5 Smithing table: screen (5.5, E11): the error sprite 28 x 21 at (leftPos + 65, topPos + 46), the preview box (leftPos + 121, topPos + 20) to (leftPos + 161, topPos + 80)," TO TL-CASE
+     MOVE "acceptance US12 40-3§5 Smithing table: screen (5.5, E11): the error sprite 28 x 21 at (leftPos + 65," &
+         " topPos + 46), the preview box (leftPos + 121, topPos + 20) to (leftPos + 161, topPos + 80)," TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "339 157" TO WS-IN
      PERFORM LOAD-IN

@@ -59,19 +59,24 @@ TAIL='''     STOP RUN.
 '''
 def tbl(grp,name,usage,cnt):
     return (" 01 WS-%sG.\n"%grp)+"".join("    05 WS-%s%d %s.\n"%(name,i,usage) for i in range(1,cnt+1))+" 01 WS-%sT REDEFINES WS-%sG.\n    05 WS-%s %s OCCURS %d TIMES.\n"%(grp,grp,name,usage,cnt)
+def mv(s,target):
+    # MOVE of a literal to a field; a long literal is cut into pieces of at most 100 characters joined by & on their own lines
+    ps=[s[i:i+100] for i in range(0,len(s),100)] or [""]
+    if len(ps)==1: return '     MOVE "%s" TO %s\n'%(s,target)
+    return '     MOVE "%s" &\n'%ps[0]+"".join('         "%s" &\n'%q for q in ps[1:-1])+'         "%s" TO %s\n'%(ps[-1],target)
 class Gen:
     def __init__(self, program, section, subject, comment, extra=""):
         self.program=program; self.prefix="acceptance US12 %s %s: "%(section,subject); self.comment=comment; self.out=[]; self.extra=extra
     def case(self, text, calls, exp):
         text=self.prefix+text
         if len(text)>195: text=text[:195].rsplit(' ',1)[0]
-        s='     MOVE "%s" TO TL-CASE\n     PERFORM BEGIN-CASE\n'%text
+        s=mv(text,'TL-CASE')+'     PERFORM BEGIN-CASE\n'
         for inp,call,n in calls:
-            s+='     MOVE "%s" TO WS-IN\n     PERFORM LOAD-IN\n'%inp
+            s+=mv(inp,'WS-IN')+'     PERFORM LOAD-IN\n'
             for l in call.split('\n'): s+='     %s\n'%l
             if n=='TEXT': s+='     PERFORM ADD-TEXT\n'
             else: s+='     MOVE %d TO WS-N\n     PERFORM ADD-N\n'%n
-        s+='     MOVE "%s" TO TL-EXPECTED\n     CALL "TEST-ASSERT" USING TESTLIB-ASSERT\n'%exp
+        s+=mv(exp,'TL-EXPECTED')+'     CALL "TEST-ASSERT" USING TESTLIB-ASSERT\n'
         self.out.append(s)
     def run(self, text, inputs, call, n, exp):
         self.case(text,[(i,call,n) for i in inputs],exp)
