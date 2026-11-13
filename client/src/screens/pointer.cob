@@ -79,6 +79,8 @@
  01 WS-QUICK               BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
  01 WS-PX                 BINARY-LONG.
+ 01 WS-OTHER              BINARY-LONG.
+ 01 WS-OFF-ARG            BINARY-LONG VALUE 37.
  01 WS-DROP-SLOT           BINARY-LONG VALUE -1.
  01 WS-DROP-COUNT          BINARY-LONG.
  01 WS-DROP-ITEM           BINARY-LONG.
@@ -110,12 +112,12 @@
          MOVE -1 TO WS-TARGET
          IF WS-GX < WS-LEFT OR WS-GY < WS-TOP OR WS-GX >= WS-LEFT + WS-W OR WS-GY >= WS-TOP + WS-H
              MOVE WS-OUTSIDE TO WS-TARGET
-*>           The recipe book's panel beside the inventory and the crafting screens is inside the screen.
-             IF SM-SCREEN NOT = SCR-CONTAINER AND RK-OPEN(1) = 1 AND WS-GX >= WS-PX AND WS-GX < WS-PX + 147
-                     AND WS-GY >= WS-TOP AND WS-GY < WS-TOP + WS-H
-                 MOVE -1 TO WS-TARGET
-             END-IF
          END-IF
+     END-IF
+*>   The recipe book's panel (beside the screen, or over it in a narrow window) is no slot and not outside: its cells are its own.
+     IF SM-SCREEN NOT = SCR-CONTAINER AND RK-OPEN(1) = 1 AND WS-GX >= WS-PX AND WS-GX < WS-PX + 147
+             AND WS-GY >= WS-TOP AND WS-GY < WS-TOP + WS-H
+         MOVE -1 TO WS-TARGET WS-WIRE WS-ARG
      END-IF
      .
 
@@ -133,6 +135,17 @@
      PERFORM CLICK-OUT
      .
 
+ SWAP-SEND.
+*> The SWAP click of the hovered slot with the slot WS-OTHER (an off-hand or hotbar widget argument), the exchange predicted on the inventory and crafting screens.
+     MOVE 0 TO WS-S-CHANGED WS-S-COUNT WS-S-ITEM
+     IF SM-SCREEN NOT = SCR-CONTAINER AND WS-ARG >= 0 AND WS-ARG <= 35 AND WS-ARG NOT = WS-OTHER
+         CALL "CX-SWAP-PREDICT" USING CLIENT-STATE WS-ARG WS-OTHER
+         CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-S-COUNT WS-S-ITEM WS-DAMAGE
+         MOVE 1 TO WS-S-CHANGED
+     END-IF
+     PERFORM CLICK-OUT
+     .
+
  KEYS.
      IF WS-WIRE >= 0 AND RK-SEARCH-FOCUS = 0
          MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEYC
@@ -141,7 +154,8 @@
              MOVE WS-WIRE TO WS-S-SLOT
              MOVE 40 TO WS-S-BUTTON
              MOVE WS-SWAP TO WS-S-TYPE
-             PERFORM CLICK-PLAIN
+             MOVE WS-OFF-ARG TO WS-OTHER
+             PERFORM SWAP-SEND
          END-IF
          PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8
              MOVE KB-CODE(KB-HOTBAR-1 + WS-I) TO WS-KEYC
@@ -150,7 +164,8 @@
                  MOVE WS-WIRE TO WS-S-SLOT
                  MOVE WS-I TO WS-S-BUTTON
                  MOVE WS-SWAP TO WS-S-TYPE
-                 PERFORM CLICK-PLAIN
+                 MOVE WS-I TO WS-OTHER
+                 PERFORM SWAP-SEND
              END-IF
          END-PERFORM
          MOVE KB-CODE(KB-DROP) TO WS-KEYC
@@ -416,3 +431,26 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM CX-DRAG-APPLY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SWAP-PREDICT.
+*> USING CLIENT-STATE, widget argument, other widget argument: the two stacks exchange places on the replica (SWAP, 40-1 3.4 item 2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COUNT-A             BINARY-LONG.
+ 01 WS-ITEM-A              BINARY-LONG.
+ 01 WS-DAMAGE-A            BINARY-LONG.
+ 01 WS-COUNT-B             BINARY-LONG.
+ 01 WS-ITEM-B              BINARY-LONG.
+ 01 WS-DAMAGE-B            BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-A                    BINARY-LONG.
+ 01 L-B                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-A L-B.
+     CALL "MENU-STACK-GET" USING CLIENT-STATE L-A WS-COUNT-A WS-ITEM-A WS-DAMAGE-A
+     CALL "MENU-STACK-GET" USING CLIENT-STATE L-B WS-COUNT-B WS-ITEM-B WS-DAMAGE-B
+     CALL "MENU-STACK-PUT" USING CLIENT-STATE L-A WS-COUNT-B WS-ITEM-B WS-DAMAGE-B
+     CALL "MENU-STACK-PUT" USING CLIENT-STATE L-B WS-COUNT-A WS-ITEM-A WS-DAMAGE-A
+     GOBACK.
+ END PROGRAM CX-SWAP-PREDICT.
