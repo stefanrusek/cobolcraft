@@ -1296,3 +1296,121 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CMDS-REG-LOOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-ADVANCEMENT.
+*> advancement grant|revoke <targets> only <advancement> [<criterion>] | from | until | through <advancement> | everything (16 §6.6, level 2). The advancement
+*> engine (the 1866 definitions) is out of scope (BLOCKED), so the set of advancements is empty: an advancement that is named is unknown
+*> (advancement.advancementNotFound [id with its namespace], also before any criterion is looked at) and everything affects 0 advancements, which changes
+*> nothing and fails with commands.advancement.<grant|revoke>.many.to.<one|many>.failure [0, player name or player count]. Nothing is ever granted or
+*> revoked, so no success message, criterion message or commands.advancement.criterionNotFound is reached.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-ADVANCEMENT    PIC X(32) VALUE "advancement".
+ 01 WS-NAME-GRANT          PIC X(32) VALUE "grant".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-GRANT               BINARY-LONG.
+ 01 WS-ID                  PIC X(64).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-COUNT-EDIT          PIC Z(8)9.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-LIT" USING WS-NAME-GRANT WS-GRANT
+     CALL "BX-FIND" USING WS-NAME-ADVANCEMENT WS-INDEX
+     IF BR-R-FAILED = 0 AND WS-INDEX > 0
+         CALL "BX-NAMESPACED" USING WS-INDEX WS-ID WS-ID-LENGTH
+         MOVE "advancement.advancementNotFound" TO WS-KEY
+         MOVE 1 TO WS-N-ARGS
+         MOVE SPACES TO WS-A1 WS-A2
+         MOVE WS-ID(1:WS-ID-LENGTH) TO WS-A1
+         MOVE WS-ID-LENGTH TO WS-L1
+         MOVE 0 TO WS-L2
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE SPACES TO WS-A1 WS-A2
+         MOVE 2 TO WS-N-ARGS
+         MOVE "0" TO WS-A1
+         MOVE 1 TO WS-L1
+         IF BX-COUNT = 1
+             MOVE PL-NAME(BX-ROW(1)) TO WS-A2
+             MOVE PL-NAME-LENGTH(BX-ROW(1)) TO WS-L2
+             IF WS-GRANT > 0
+                 MOVE "commands.advancement.grant.many.to.one.failure" TO WS-KEY
+             ELSE
+                 MOVE "commands.advancement.revoke.many.to.one.failure" TO WS-KEY
+             END-IF
+         ELSE
+             MOVE BX-COUNT TO WS-COUNT-EDIT
+             MOVE FUNCTION TRIM(WS-COUNT-EDIT) TO WS-A2
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-COUNT-EDIT)) TO WS-L2
+             IF WS-GRANT > 0
+                 MOVE "commands.advancement.grant.many.to.many.failure" TO WS-KEY
+             ELSE
+                 MOVE "commands.advancement.revoke.many.to.many.failure" TO WS-KEY
+             END-IF
+         END-IF
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     GOBACK.
+ END PROGRAM CX-ADVANCEMENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-ADVANCEMENT.
+*> The forms of advancement (16 §6.6): grant and revoke, each with only (and an optional criterion), from, until, through and everything.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-ADVANCEMENT.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-VERBS.
+    05 FILLER              PIC X(8) VALUE "grant".
+    05 FILLER              PIC X(8) VALUE "revoke".
+ 01 WS-VERB-TABLE REDEFINES WS-VERBS.
+    05 WS-VERB             PIC X(8) OCCURS 2 TIMES.
+ 01 WS-MODES.
+    05 FILLER              PIC X(8) VALUE "from".
+    05 FILLER              PIC X(8) VALUE "until".
+    05 FILLER              PIC X(8) VALUE "through".
+ 01 WS-MODE-TABLE REDEFINES WS-MODES.
+    05 WS-MODE             PIC X(8) OCCURS 3 TIMES.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 2
+         MOVE SPACES TO WS-PATH
+         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> only <advancement:resloc>" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         MOVE SPACES TO WS-PATH
+         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> only <advancement:resloc> <criterion:greedy>"
+             DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         MOVE SPACES TO WS-PATH
+         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> everything" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         PERFORM VARYING WS-M FROM 1 BY 1 UNTIL WS-M > 3
+             MOVE SPACES TO WS-PATH
+             STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> " FUNCTION TRIM(WS-MODE(WS-M))
+                 " <advancement:resloc>" DELIMITED BY SIZE INTO WS-PATH
+             CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-ADVANCEMENT.

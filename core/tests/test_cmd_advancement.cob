@@ -74,7 +74,7 @@
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /advancement no player selected" TO TL-CASE
      MOVE "advancement grant Nobody everything" TO WS-LINE
-     MOVE "argument.entity.notfound.player() |" TO WS-EXPECTED
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /advancement a player without operator status does not know the command" TO TL-CASE
      MOVE "advancement grant Opal everything" TO WS-LINE

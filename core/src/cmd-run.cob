@@ -186,6 +186,8 @@
              CALL "CX-ITEM"
          WHEN BC-LOOT
              CALL "CX-LOOT"
+         WHEN BC-ADVANCEMENT
+             CALL "CX-ADVANCEMENT"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE
