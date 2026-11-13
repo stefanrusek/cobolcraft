@@ -1,9 +1,90 @@
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-UNKNOWN-SCAN.
+*> USING old PB-BUFFER (an entities/ chunk payload at its root payload), slices (a table of 256 start and end byte offsets, in
+*> the buffer), count out (BINARY-LONG): the entities of its Entities list that the core cannot hold (07 §10.7): an id the
+*> open set does not name, or a type that ENTITY-NBT-ONE does not spawn (neither the ground item nor a mob). Each
+*> one's compound payload bytes are the slice START + 1 to END; more than 256 are not kept.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ COPY MOBS.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-LOCAL               PIC X(48).
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-ENTITY-TYPE         BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SLICES.
+    05 L-SLICE OCCURS 256 TIMES.
+       10 L-SLICE-START    BINARY-LONG.
+       10 L-SLICE-END      BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-SLICES L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "Entities" AND WS-TYPE = 9
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-LIST-COUNT
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
+                 MOVE PB-POS TO WS-START
+                 MOVE -1 TO WS-ENTITY-TYPE
+                 PERFORM UNTIL PB-ERROR = 1
+                     MOVE SPACES TO WN
+                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-CAPACITY WL
+                     IF WS-INNER-TYPE = 0
+                         EXIT PERFORM
+                     END-IF
+                     IF WN = "id" AND WS-INNER-TYPE = 8
+                         MOVE SPACES TO WS-KEY
+                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
+                         CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > ET-COUNT
+                             IF ET-KEY(WS-K) = WS-LOCAL
+                                 COMPUTE WS-ENTITY-TYPE = WS-K - 1
+                             END-IF
+                         END-PERFORM
+                     ELSE
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                     END-IF
+                 END-PERFORM
+                 IF PB-ERROR = 0 AND L-COUNT < 256
+                     IF WS-ENTITY-TYPE NOT = CR-LOOSE-ITEM AND WS-ENTITY-TYPE < MOB-FIRST-TYPE
+                         ADD 1 TO L-COUNT
+                         MOVE WS-START TO L-SLICE-START(L-COUNT)
+                         MOVE PB-POS TO L-SLICE-END(L-COUNT)
+                     END-IF
+                 END-IF
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-UNKNOWN-SCAN.
+
 *> Entity persistence (07 section 9.3): the entities/ region files, one payload per chunk (ENTITY-NBT-*, PERSIST-ENTITIES-*).
 *> Split from persistence.cob (T0331).
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. ENTITY-NBT-WRITE.
-*> USING dimension row, chunk x, chunk z (BINARY-LONG), PB-BUFFER (appended to): the entities/ chunk
+ PROGRAM-ID. ENTITY-NBT-WRITE-MERGE.
+*> USING dimension row, chunk x, chunk z (BINARY-LONG), PB-BUFFER (appended to), old PB-BUFFER (the chunk's payload as the file
+*> holds it, at its root payload), found (BINARY-LONG: 1 when the old payload is given; then the entities of it that the core
+*> cannot hold, ENTITY-UNKNOWN-SCAN, are copied after the core's own, 07 §10.7): the entities/ chunk
 *> payload (07 §9.3) of that chunk: DataVersion, Position [chunk x, chunk z] and Entities, one
 *> compound per mob and ground item of that dimension whose position is in the chunk, in tracker
 *> order: id, Pos, Motion, Rotation, then Health (mobs) or Item {id, count} and Age (ground items).
@@ -30,13 +111,26 @@
  01 WS-NS-KEY              PIC X(64).
  01 WS-NS-LENGTH           BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
+ 01 WS-UNKNOWN-COUNT       BINARY-LONG.
+ 01 WS-SLICES.
+    05 WS-SLICE OCCURS 256 TIMES.
+       10 WS-SLICE-START   BINARY-LONG.
+       10 WS-SLICE-END     BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-POINTER             USAGE POINTER.
+ 01 B-SLICE                PIC X BASED.
  LINKAGE SECTION.
  COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  01 L-DIM                  BINARY-LONG.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER.
-     MOVE 0 TO WS-COUNT
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER WK-BUFFER L-FOUND.
+     MOVE 0 TO WS-COUNT WS-UNKNOWN-COUNT
+     IF L-FOUND = 1
+         CALL "ENTITY-UNKNOWN-SCAN" USING WK-BUFFER WS-SLICES WS-UNKNOWN-COUNT
+     END-IF
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
          IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-DIM(WS-ROW) = L-DIM
                  AND FUNCTION INTEGER(EN-X(WS-ROW) / 16) = L-CX
@@ -54,6 +148,7 @@
      MOVE L-CZ TO WS-POSITION-INT(2)
      CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-TWO WS-POSITION
      MOVE "Entities" TO WN
+     ADD WS-UNKNOWN-COUNT TO WS-COUNT
      CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-COUNT
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
          IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-DIM(WS-ROW) = L-DIM
@@ -100,8 +195,32 @@
              CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
          END-IF
      END-PERFORM
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > WS-UNKNOWN-COUNT
+         COMPUTE WS-SIZE = WS-SLICE-END(WS-ROW) - WS-SLICE-START(WS-ROW)
+         SET WS-POINTER TO WK-ADDR
+         SET WS-POINTER UP BY WS-SLICE-START(WS-ROW)
+         SET ADDRESS OF B-SLICE TO WS-POINTER
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER B-SLICE WS-SIZE
+     END-PERFORM
      CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM ENTITY-NBT-WRITE-MERGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-NBT-WRITE.
+*> USING dimension row, chunk x, chunk z, PB-BUFFER: the chunk's payload with no old payload to keep (ENTITY-NBT-WRITE-MERGE).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER.
+     CALL "ENTITY-NBT-WRITE-MERGE" USING L-DIM L-CX L-CZ PB-BUFFER WK-BUFFER WS-NONE
      GOBACK.
  END PROGRAM ENTITY-NBT-WRITE.
 
@@ -301,21 +420,30 @@
  01 WS-CZ                  BINARY-LONG.
  01 WS-SEEN                BINARY-LONG.
  01 WS-CHUNKS.
-    05 WS-CHUNK OCCURS 1024 TIMES.
+    05 WS-CHUNK OCCURS 4096 TIMES.
        10 WS-CHUNK-X       BINARY-LONG.
        10 WS-CHUNK-Z       BINARY-LONG.
  01 WS-CHUNK-COUNT         BINARY-LONG.
+ 01 WS-PARTS.
+    05 WS-PART             PIC X(32) OCCURS 4 TIMES.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
+ 01 WS-OLD-FOUND           BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM.
      IF WS-READY = 0
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-INIT" USING WK-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
      CALL "PERSIST-DIM-DIR" USING L-DIM WS-ENTITIES WS-DIR WS-LENGTH
      MOVE LOW-VALUES TO WS-DIRZ
      MOVE WS-DIR(1:WS-LENGTH) TO WS-DIRZ(1:WS-LENGTH)
-     MOVE 0 TO WS-LIST-COUNT
+     MOVE 0 TO WS-LIST-COUNT WS-CHUNK-COUNT
      CALL STATIC "cc_fs_list" USING BY REFERENCE WS-DIRZ BY REFERENCE WS-LIST
          BY VALUE WS-LIST-CAPACITY BY REFERENCE WS-LIST-COUNT RETURNING WS-RC
      MOVE 1 TO WS-PTR
@@ -324,11 +452,29 @@
          UNSTRING WS-LIST DELIMITED BY X"0A" INTO WS-ENTRY WITH POINTER WS-PTR
          MOVE SPACES TO WS-PATH
          STRING WS-DIR(1:WS-LENGTH) "/" WS-ENTRY(2:255) DELIMITED BY SIZE INTO WS-PATH
-         CALL "CBL_DELETE_FILE" USING WS-PATH
+         IF CW-LAYOUT = 0
+             CALL "CBL_DELETE_FILE" USING WS-PATH
+         ELSE
+*>           A world of the 26.3 layout keeps its files; the chunks that have a payload there are rewritten below.
+             MOVE SPACES TO WS-PART(1) WS-PART(2) WS-PART(3) WS-PART(4)
+             UNSTRING WS-ENTRY(2:255) DELIMITED BY "." INTO WS-PART(1) WS-PART(2) WS-PART(3) WS-PART(4)
+             COMPUTE WS-RX = FUNCTION NUMVAL(WS-PART(2))
+             COMPUTE WS-RZ = FUNCTION NUMVAL(WS-PART(3))
+             PERFORM VARYING WS-CZ FROM 0 BY 1 UNTIL WS-CZ > 31
+                 PERFORM VARYING WS-CX FROM 0 BY 1 UNTIL WS-CX > 31
+                     COMPUTE WS-K = WS-RX * 32 + WS-CX
+                     COMPUTE WS-I = WS-RZ * 32 + WS-CZ
+                     CALL "REGION-READ" USING WS-DIR WS-LENGTH WS-K WS-I WK-BUFFER WS-OUTCOME
+                     IF WS-OUTCOME = 0 AND WS-CHUNK-COUNT < 4096
+                         ADD 1 TO WS-CHUNK-COUNT
+                         MOVE WS-K TO WS-CHUNK-X(WS-CHUNK-COUNT)
+                         MOVE WS-I TO WS-CHUNK-Z(WS-CHUNK-COUNT)
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-IF
      END-PERFORM
      MOVE 0 TO RETURN-CODE
-*>   The distinct chunks that hold this dimension's mobs and ground items.
-     MOVE 0 TO WS-CHUNK-COUNT
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
          IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-DIM(WS-ROW) = L-DIM
              COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
@@ -349,7 +495,17 @@
      MOVE WS-DIR TO WS-PATH
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-CHUNK-COUNT
          CALL "PB-RESET" USING PB-BUFFER
-         CALL "ENTITY-NBT-WRITE" USING L-DIM WS-CHUNK-X(WS-K) WS-CHUNK-Z(WS-K) PB-BUFFER
+         MOVE 0 TO WS-OLD-FOUND
+         IF CW-LAYOUT = 1
+             CALL "REGION-READ" USING WS-DIR WS-LENGTH WS-CHUNK-X(WS-K) WS-CHUNK-Z(WS-K) WK-BUFFER
+                 WS-OUTCOME
+             IF WS-OUTCOME = 0
+                 CALL "NBT-READ-ROOT" USING WK-BUFFER WS-FRAMING WS-TYPE
+                 MOVE 1 TO WS-OLD-FOUND
+             END-IF
+         END-IF
+         CALL "ENTITY-NBT-WRITE-MERGE" USING L-DIM WS-CHUNK-X(WS-K) WS-CHUNK-Z(WS-K) PB-BUFFER
+             WK-BUFFER WS-OLD-FOUND
          CALL "REGION-WRITE" USING WS-DIR WS-LENGTH WS-CHUNK-X(WS-K) WS-CHUNK-Z(WS-K) PB-BUFFER
              WS-OUTCOME
          CALL "PERSIST-WRITE-CHECK" USING WS-OUTCOME WS-PATH WS-LENGTH

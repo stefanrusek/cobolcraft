@@ -4333,8 +4333,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T3795 [US12-core] Write test `core/tests/acc_vanfmt_save.cob` with fixture `core/tests/fixtures/gen_vanfmt.py`; implement `core/src/level-vanilla.cob`: a 26.3 world is read from and saved to `level.dat` `Data` (unmodelled keys kept, `level.dat_old`), `weather.dat`, `world_clocks.dat` and `game_rules.dat`
 - [x] T3796 [US12-core] Write test `core/tests/test_player_dat_vanilla.cob`; player files of a 26.3 world are `players/data/<uuid>.dat` (the old place is still read)
 - [x] T3797 [US12-core] Write test `core/tests/test_chunk_merge.cob`; a chunk saved in a 26.3 world keeps the keys the core does not model
-- [ ] T3798 [US12-core] Entities of types the core does not know, and the keys of known entities that it does not model, are kept when an `entities/` chunk is saved (07 §10.6, §10.7)
-- [ ] T3799 [US12-core] Block entities of types the core does not know are kept when a chunk is saved; `poi/` regions are read and kept, not written empty
+- [x] T3798 [US12-core] Write test `core/tests/test_entity_merge.cob`; entities of types the core does not know are kept when an `entities/` chunk is saved in a 26.3 world (07 §10.6, §10.7; the keys of known entities that the core does not model are still lost, see T3801)
+- [x] T3799 [US12-core] Block entities of types the core does not know are kept when a chunk is saved (test_chunk_merge.cob); `poi/` regions are neither read nor written, so the files stay as they are
+- [ ] T3801 [US12-core] Keep the keys of known entities and known block entities that the core does not model (vanilla `Brain`, `attributes`, `CustomName`, ...) across a save; read and write `poi/` from the blocks (07 §10.6)
 - [ ] T3800 Gate: run `make gate-core` and record the command and real output
 
 ---

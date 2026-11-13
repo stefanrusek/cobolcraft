@@ -1,0 +1,109 @@
+*> Implementation test (vanfmt lane; docs/protocol/07 section 10.6, 10.7): in a world of the 26.3 layout (CW-LAYOUT 1) the
+*> entities/ chunks are saved without losing the entities the core cannot hold: an entity whose id the core does not
+*> know stays in its chunk exactly as it was, a chunk of the file that holds only such entities is not deleted, and the
+*> entities of the core are written beside them. In the CobolCraft layout the files are replaced as before.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-MERGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG VALUE 6.
+ 01 WS-CZ                  BINARY-LONG VALUE 7.
+ 01 WS-ENTITIES            PIC X(8) VALUE "entities".
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-PATH                PIC X(128).
+ 01 WS-OBSERVED            PIC X(8192).
+ 01 WS-ONE                 PIC X(8192).
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-ONE-COUNT           BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(32) VALUE "minecraft:armor_stand".
+ 01 WS-KEY-LENGTH          BINARY-LONG VALUE 21.
+ 01 WS-NAME-TEXT           PIC X(8) VALUE "keep".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 4.
+ 01 WS-COMPOUND            BINARY-LONG VALUE 10.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE DIM-MAIN TO WS-DIM
+     CALL "PERSIST-DIRS"
+     PERFORM WRITE-OLD
+     MOVE 1 TO CW-LAYOUT
+     CALL "PERSIST-ENTITIES-SAVE" USING WS-DIM
+     PERFORM READ-BACK
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "Entities" TO WS-PATH PERFORM ADD-GET
+     MOVE "test entity merge in the 26.3 layout an entity of an unknown id stays in its chunk as it was" TO TL-CASE
+     MOVE "[{id:minecraft:armor_stand,CustomName:keep}]" TO TL-EXPECTED
+     PERFORM CHECK
+*>   Layout 0: the file is replaced, the chunk is gone.
+     PERFORM WRITE-OLD
+     MOVE 0 TO CW-LAYOUT
+     CALL "PERSIST-ENTITIES-SAVE" USING WS-DIM
+     PERFORM READ-BACK
+     MOVE "test entity merge in the CobolCraft layout the old file is replaced (the chunk reads as absent)" TO TL-CASE
+     MOVE "absent (no file)" TO TL-EXPECTED
+     MOVE WS-OUTCOME TO TL-OBSERVED-N
+     MOVE SPACES TO WS-OBSERVED
+     IF WS-OUTCOME = 1
+         MOVE "absent (no file)" TO WS-OBSERVED
+     ELSE
+         MOVE "present" TO WS-OBSERVED
+     END-IF
+     PERFORM CHECK
+     STOP RUN.
+
+*> The chunk (6, 7) of entities/ holds one armor_stand {CustomName: keep}.
+ WRITE-OLD.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "Entities" TO WN MOVE 8 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-COMPOUND WS-ONE-COUNT
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+     MOVE "id" TO WN MOVE 2 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-KEY WS-KEY-LENGTH
+     MOVE "CustomName" TO WN MOVE 10 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NAME-TEXT WS-NAME-LENGTH
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "PERSIST-DIM-DIR" USING WS-DIM WS-ENTITIES WS-DIR WS-LENGTH
+     CALL "REGION-WRITE" USING WS-DIR WS-LENGTH WS-CX WS-CZ PB-BUFFER WS-OUTCOME.
+
+ READ-BACK.
+     CALL "PERSIST-DIM-DIR" USING WS-DIM WS-ENTITIES WS-DIR WS-LENGTH
+     CALL "REGION-READ" USING WS-DIR WS-LENGTH WS-CX WS-CZ PB-BUFFER WS-OUTCOME
+     MOVE 0 TO PB-POS
+     IF WS-OUTCOME = 0
+         CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+         MOVE PB-POS TO WS-ROOT
+     ELSE
+         MOVE -1 TO WS-ROOT
+     END-IF.
+
+ ADD-GET.
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-ONE
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-ONE) DELIMITED BY SIZE INTO WS-OBSERVED.
+
+ CHECK.
+     MOVE FUNCTION TRIM(WS-OBSERVED) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTITY-MERGE.
+
+ COPY CORETEST.
