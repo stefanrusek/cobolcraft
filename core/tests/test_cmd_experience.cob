@@ -240,6 +240,15 @@
      MOVE "Gave 3 experience points to Alice" TO WS-EXPECTED
      CALL "TEST-RUN-CONSOLE" USING WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "experience set Alice 20 levels" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "experience add Alice 62 points" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "acceptance US13 /experience level 20 needs 37 + 5 * 5 = 62 points: 62 points more give level 21" TO TL-CASE
+     MOVE "experience query Alice levels" TO WS-LINE
+     MOVE "commands.experience.query.levels(Alice,21)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      GOBACK.
  END PROGRAM TEST-CMD-EXPERIENCE.
 

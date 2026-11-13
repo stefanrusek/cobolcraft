@@ -29,6 +29,7 @@
  01 WS-LENGTH              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      MOVE "Opal" TO WS-NAME
      MOVE 4 TO WS-NAME-LENGTH
@@ -220,6 +221,17 @@
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
      MOVE "1 11 0 [add,query,remove]" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "forceload add 0 0" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "execute in cobolcraft:subroutine run forceload add 0 0" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "forceload remove all" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /forceload remove all unmarks only the chunks of the dimension of the source" TO TL-CASE
+     MOVE "execute in cobolcraft:subroutine run forceload query 0 0" TO WS-LINE
+     MOVE "commands.forceload.query.success([0, 0],cobolcraft:subroutine)" TO WS-EXPECTED
+     PERFORM RUN-TEXT
      GOBACK.
 
 *> The line is run by Opal and the replies are compared with WS-EXPECTED.

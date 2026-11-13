@@ -1178,6 +1178,31 @@
      CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
      MOVE WS-TOTAL TO BR-R-RESULT.
 
+*> The message of a replace: none set is commands.drop.no_held_items.
+ TELL-REPLACE.
+     IF WS-TRACKED = 0
+         MOVE "commands.drop.no_held_items" TO WS-KEY
+         MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+         MOVE SPACES TO WS-A1 WS-A2
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     ELSE
+         IF WS-TRACKED = 1
+             MOVE "commands.item.entity.replace.success.single" TO WS-KEY
+         ELSE
+             MOVE "commands.item.entity.replace.success.multiple" TO WS-KEY
+         END-IF
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         IF WS-TRACKED = 1
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-LAST-PLACED
+             CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
+         ELSE
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE WS-TOTAL TO BR-R-RESULT
+     END-IF.
+
  MAIN-LINE.
      CALL "BX-FIND" USING WS-NAME-ENTITIES WS-I-ENTITIES
      CALL "BX-FIND" USING WS-NAME-PLAYERS WS-I-PLAYERS
@@ -1224,32 +1249,7 @@
                  END-IF
          END-EVALUATE
      END-IF
-     GOBACK.
-
-*> The message of a replace: none set is commands.drop.no_held_items.
- TELL-REPLACE.
-     IF WS-TRACKED = 0
-         MOVE "commands.drop.no_held_items" TO WS-KEY
-         MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
-         MOVE SPACES TO WS-A1 WS-A2
-         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
-         MOVE 1 TO BR-R-FAILED
-     ELSE
-         IF WS-TRACKED = 1
-             MOVE "commands.item.entity.replace.success.single" TO WS-KEY
-         ELSE
-             MOVE "commands.item.entity.replace.success.multiple" TO WS-KEY
-         END-IF
-         CALL "BX-KEY" USING PB-TEXT WS-KEY
-         IF WS-TRACKED = 1
-             CALL "CMD-TEXT-INT" USING PB-TEXT WS-LAST-PLACED
-             CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
-         ELSE
-             CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
-         END-IF
-         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
-         MOVE WS-TOTAL TO BR-R-RESULT
-     END-IF.
+     .
  END PROGRAM CX-LOOT.
 
  IDENTIFICATION DIVISION.

@@ -1581,6 +1581,129 @@
          "1},event_delay:0}}" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "acceptance US12 31-8§3 The vibration system: full persisted listener (3.4): an event with a source and a projectile owner, a selector whose candidate event also has them with a tick, and unknown keys skipped inside the listener and the selector, are read back and saved" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "listener" TO WS-NM
+     MOVE 8 TO WS-NML
+     PERFORM NB-C
+     MOVE "zzz" TO WS-NM
+     MOVE 3 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-I
+     MOVE "event" TO WS-NM
+     MOVE 5 TO WS-NML
+     PERFORM NB-C
+     MOVE "game_event" TO WS-NM
+     MOVE 10 TO WS-NML
+     MOVE "minecraft:step" TO WS-SV
+     MOVE 14 TO WS-SVL
+     PERFORM NB-S
+     MOVE "pos" TO WS-NM
+     MOVE 3 TO WS-NML
+     MOVE 6 TO WS-LT
+     MOVE 3 TO WS-LC
+     PERFORM NB-L
+     MOVE SPACES TO WS-NM
+     MOVE -1 TO WS-NML
+     COMPUTE WS-FA = 1.0
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA
+     MOVE SPACES TO WS-NM
+     MOVE -1 TO WS-NML
+     COMPUTE WS-FA = 2.0
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA
+     MOVE SPACES TO WS-NM
+     MOVE -1 TO WS-NML
+     COMPUTE WS-FA = 3.0
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA
+     MOVE "source" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE 2 TO WS-IAV(2)
+     MOVE 3 TO WS-IAV(3)
+     MOVE 4 TO WS-IAV(4)
+     MOVE 4 TO WS-LC
+     PERFORM NB-IA
+     MOVE "projectile_owner" TO WS-NM
+     MOVE 16 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE 2 TO WS-IAV(2)
+     MOVE 3 TO WS-IAV(3)
+     MOVE 4 TO WS-IAV(4)
+     MOVE 4 TO WS-LC
+     PERFORM NB-IA
+     PERFORM NB-E
+     MOVE "selector" TO WS-NM
+     MOVE 8 TO WS-NML
+     PERFORM NB-C
+     MOVE "zzz" TO WS-NM
+     MOVE 3 TO WS-NML
+     MOVE 2 TO WS-NV
+     PERFORM NB-I
+     MOVE "event" TO WS-NM
+     MOVE 5 TO WS-NML
+     PERFORM NB-C
+     MOVE "game_event" TO WS-NM
+     MOVE 10 TO WS-NML
+     MOVE "minecraft:step" TO WS-SV
+     MOVE 14 TO WS-SVL
+     PERFORM NB-S
+     MOVE "pos" TO WS-NM
+     MOVE 3 TO WS-NML
+     MOVE 6 TO WS-LT
+     MOVE 3 TO WS-LC
+     PERFORM NB-L
+     MOVE SPACES TO WS-NM
+     MOVE -1 TO WS-NML
+     COMPUTE WS-FA = 1.0
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA
+     MOVE SPACES TO WS-NM
+     MOVE -1 TO WS-NML
+     COMPUTE WS-FA = 2.0
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA
+     MOVE SPACES TO WS-NM
+     MOVE -1 TO WS-NML
+     COMPUTE WS-FA = 3.0
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA
+     MOVE "source" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE 2 TO WS-IAV(2)
+     MOVE 3 TO WS-IAV(3)
+     MOVE 4 TO WS-IAV(4)
+     MOVE 4 TO WS-LC
+     PERFORM NB-IA
+     MOVE "projectile_owner" TO WS-NM
+     MOVE 16 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE 2 TO WS-IAV(2)
+     MOVE 3 TO WS-IAV(3)
+     MOVE 4 TO WS-IAV(4)
+     MOVE 4 TO WS-LC
+     PERFORM NB-IA
+     PERFORM NB-E
+     MOVE "tick" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 77 TO WS-LV
+     PERFORM NB-LONG
+     PERFORM NB-E
+     PERFORM NB-E
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{last_vibration_frequency:0,listener:{event:{game_event:minecraft:step,distance:0.000,pos:[1.000,2.0" &
+         "00,3.000],source:I[1,2,3,4],projectile_owner:I[1,2,3,4]},selector:{event:{game_event:minecraft:step," &
+         "distance:0.000,pos:[1.000,2.000,3.000],source:I[1,2,3,4],projectile_owner:I[1,2,3,4]},tick:77},event" &
+         "_delay:0}}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      STOP RUN.
 
  BEGIN-CASE.

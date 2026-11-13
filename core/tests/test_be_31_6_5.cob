@@ -295,6 +295,33 @@
      MOVE "1 0 0 1 1 0 0 4 2 1 1 1 1 1 6 0 0 0 0 1 1 0 0 0 2 0 1 0 0 0 4 0 2 1 1 0 0 1 1 0 2 0 1 0 0 0 1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "acceptance US12 31-6§5 Command block packets and sync: when commandBlocksWork is off the command still changes, the message is advMode.setCommand.disabled (3) and a switch to AUTO with automatic set schedules the tick; nothing is sent as updated" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE SPACES TO WS-T256
+     MOVE "x" TO WS-T256
+     MOVE 1 TO WS-LEN
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 4 TO WS-F
+     CALL "BE6-SET-CB-PACKET" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-T256 WS-LEN WS-G WS-H WS-P
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "3 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "acceptance US12 31-6§5 Command block packets and sync: block of a mode (5.1 step 3): SEQUENCE chain_command_block, AUTO repeating_command_block, REDSTONE command_block" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE 0 TO WS-A

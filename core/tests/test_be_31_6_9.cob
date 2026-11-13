@@ -126,6 +126,31 @@
      MOVE "{mode:log,message:hello,powered:1}" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "acceptance US12 31-6§9 The test block entity: an unknown key of the saved data is skipped (9.1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:test_block" TO WS-KEY
+     MOVE 20 TO WS-SVL
+     MOVE 45 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "extra" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 7 TO WS-NV
+     PERFORM NB-I
+     MOVE "mode" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "log" TO WS-SV
+     MOVE 3 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{mode:log,message:,powered:0}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "acceptance US12 31-6§9 The test block entity: load defaults (9.1): a missing or invalid mode gives fail" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "minecraft:test_block" TO WS-KEY

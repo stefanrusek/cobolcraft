@@ -420,6 +420,27 @@
          "e:16,SpawnRange:4,SpawnPotentials:[{data:{entity:{}},weight:1}]}" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "acceptance US12 31-7§3 Mob spawner: Delay (3.1): a Delay stored as a short is loaded and saved back" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:spawner" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 9 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "Delay" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 33 TO WS-NV
+     CALL "NBT-WRITE-SHORT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{Delay:33,MinSpawnDelay:200,MaxSpawnDelay:800,SpawnCount:4,MaxNearbyEntities:6,RequiredPlayerRang" &
+         "e:16,SpawnRange:4,SpawnPotentials:[{data:{entity:{}},weight:1}]}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "acceptance US12 31-7§3 Mob spawner: update tag (3.2): the custom form with SpawnPotentials removed, the client keeps only the current SpawnData" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "minecraft:spawner" TO WS-KEY

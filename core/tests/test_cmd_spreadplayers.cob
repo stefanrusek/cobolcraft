@@ -44,6 +44,14 @@
  01 WS-PREFIX              PIC X(4096).
  01 WS-N                   BINARY-LONG.
  01 WS-EDIT-MIN            PIC -(9)9.
+ 01 WS-PXF                 FLOAT-LONG.
+ 01 WS-PZF                 FLOAT-LONG.
+ 01 WS-AXF                 FLOAT-LONG.
+ 01 WS-AZF                 FLOAT-LONG.
+ 01 WS-MINXF               FLOAT-LONG VALUE 10.
+ 01 WS-MAXXF               FLOAT-LONG VALUE 12.
+ 01 WS-MINZF               FLOAT-LONG VALUE 20.
+ 01 WS-MAXZF               FLOAT-LONG VALUE 22.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -168,6 +176,34 @@
      MOVE "Spread 1 entity/entities around 0.0, 0.0 with an average distance of 0.00 block(s) apart" TO WS-EXPECTED
      CALL "TEST-RUN-CONSOLE" USING WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /spreadplayers a relative centre (~ ~) is the position of the source" TO TL-CASE
+     MOVE "spreadplayers ~ ~ 1 4 false Alice" TO WS-LINE
+     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /spreadplayers a pile moves one block away from the mean of its neighbours (3, 4 moves it by 0.6 and 0.8)" TO TL-CASE
+     MOVE 11 TO WS-PXF
+     MOVE 21 TO WS-PZF
+     MOVE 3 TO WS-AXF
+     MOVE 4 TO WS-AZF
+     CALL "CXB-SPREAD-AWAY" USING WS-PXF WS-PZF WS-AXF WS-AZF WS-MINXF WS-MAXXF WS-MINZF WS-MAXZF
+     MOVE 0 TO WS-NUM
+     IF FUNCTION ABS(WS-PXF - 10.4) < 0.0000001 AND FUNCTION ABS(WS-PZF - 20.2) < 0.0000001
+         MOVE 1 TO WS-NUM
+     END-IF
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /spreadplayers neighbours that cancel out put the pile at a random place of the box" TO TL-CASE
+     MOVE 0 TO WS-PXF
+     MOVE 0 TO WS-PZF
+     MOVE 0 TO WS-AXF
+     MOVE 0 TO WS-AZF
+     CALL "CXB-SPREAD-AWAY" USING WS-PXF WS-PZF WS-AXF WS-AZF WS-MINXF WS-MAXXF WS-MINZF WS-MAXZF
+     MOVE 0 TO WS-NUM
+     IF WS-PXF >= 10 AND WS-PXF <= 12 AND WS-PZF >= 20 AND WS-PZF <= 22
+         MOVE 1 TO WS-NUM
+     END-IF
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
      GOBACK.
 
 *> The player WS-A stands at .5 in x and inside the columns of the box of range 4 around the origin (floor + 0.5 of -4 to 4).
