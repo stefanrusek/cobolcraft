@@ -187,7 +187,7 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK-KEY           PIC X(112).
- 01 WS-PAIRS               PIC X(64).
+ 01 WS-PAIRS               PIC X(160).
  01 WS-ENCH-KEY            PIC X(112).
  01 WS-ENCH-ID             BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.

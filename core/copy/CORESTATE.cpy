@@ -53,6 +53,9 @@
     05 CW-CONTENT-JAR        PIC X(64).          *> level.dat ContentJar (informational, WT-6); spaces when absent
     05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 23999 (RULES.cpy RULE-DAY-LENGTH; 33 §3)
     05 CW-TICKS              BINARY-DOUBLE.      *> ticks run since the world was opened
+    05 CW-LAYOUT             PIC 9.              *> 1 when level.dat came in the 26.3 layout (Data compound): saved back in it (07 §10)
+    05 CW-GAME-TIME          BINARY-DOUBLE.      *> `Time` of a 26.3 level.dat when read; saved as this + CW-TICKS
+    05 CW-CLOCK-BASE         BINARY-DOUBLE.      *> whole days of the overworld clock's total_ticks when read (CW-TIME is the rest)
     05 CW-SPAWN-X            FLOAT-LONG.
     05 CW-SPAWN-Y            FLOAT-LONG.
     05 CW-SPAWN-Z            FLOAT-LONG.

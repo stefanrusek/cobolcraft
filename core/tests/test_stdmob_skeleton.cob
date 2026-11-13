@@ -403,6 +403,38 @@
      MOVE 20 TO TL-EXPECTED-N
      MOVE EN-SHOOT-TIME(WS-SKELETON) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Beyond three quarters of the radius squared (d2 182.25 at 13.5 blocks, 168.75 < d2 <= 225) with the target seen for 20 ticks it still stands and
+*>   strafes but no longer backs away: the backwards flag is cleared.
+     COMPUTE EN-X(WS-SKELETON) = PL-X(WS-PLAYER) - 13.5
+     MOVE PL-Z(WS-PLAYER) TO EN-Z(WS-SKELETON)
+     MOVE 1 TO EN-STRAFE-BACK(WS-SKELETON)
+     MOVE 5 TO EN-STRAFE-TIME(WS-SKELETON)
+     MOVE 30 TO EN-SWELL(WS-SKELETON)
+     CALL "MOB-STEP" USING WS-SKELETON
+     MOVE "test stdmob skeleton: at 13.5 blocks (d2 > 168.75) it stops backing away" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-STRAFE-BACK(WS-SKELETON) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A drawing bow is let down once the target has been out of sight for more than 60 ticks (seeTime below -60): the wall is back between them.
+     COMPUTE WS-I = WS-BX + 5
+     PERFORM VARYING WS-INDEX FROM -8 BY 1 UNTIL WS-INDEX > 8
+         COMPUTE WS-K = WS-BZ + WS-INDEX
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-L = WS-BY + WS-J
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-L WS-K WS-STONE
+         END-PERFORM
+     END-PERFORM
+     COMPUTE EN-X(WS-SKELETON) = WS-BX + 0.5
+     MOVE PL-Z(WS-PLAYER) TO EN-Z(WS-SKELETON)
+     MOVE 5 TO EN-DRAW(WS-SKELETON)
+     MOVE -58 TO EN-SWELL(WS-SKELETON)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         CALL "MOB-STEP" USING WS-SKELETON
+     END-PERFORM
+     MOVE "test stdmob skeleton: a drawing bow is let down after 60 ticks unseen" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-DRAW(WS-SKELETON) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "PB-FREE" USING PB-BUFFER
      STOP RUN.
  COUNT-ARROWS.

@@ -27,7 +27,7 @@
  01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
- 01 WS-TEXT-OUT            PIC X(64).
+ 01 WS-TEXT-OUT            PIC X(160).
  01 WS-ROW                 PIC X(819).
  01 WS-BLOCK-NUMBER        BINARY-LONG VALUE 5.
  01 WS-FILL-STATE          BINARY-LONG.

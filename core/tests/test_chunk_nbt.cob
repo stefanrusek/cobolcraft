@@ -34,7 +34,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-PATH                PIC X(128).
- 01 WS-PROPS               PIC X(64).
+ 01 WS-PROPS               PIC X(160).
  01 WS-KEYLEN              BINARY-LONG.
  01 WS-TEXT                PIC X(8192).
  01 WS-OBSERVED            PIC X(8192).

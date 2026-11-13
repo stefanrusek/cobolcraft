@@ -18,6 +18,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY EXTRAS.
  COPY KNSTATE.
  COPY DIMENSIONS.
  COPY CONTENT.
@@ -41,7 +42,7 @@
          CALL "PB-FREE" USING PB-BUFFER
      END-IF
      INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS CORE-ENTITIES CORE-VIEWS
-         CORE-KNOWN CORE-KNOWN-EXTRA CORE-ACCESS
+         CORE-KNOWN CORE-KNOWN-EXTRA CORE-ACCESS CORE-EXTRA
      MOVE "Y" TO CW-OPEN
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
@@ -87,6 +88,11 @@
          CALL "GEN-SPAWN-OPEN"
      ELSE
          MOVE 1 TO L-CREATED
+*>       A new standard world is created in the 26.3 layout (07 section 10; operator rule: the standard type uses the
+*>       game's own format); the cobolcraft and debug types keep their flat layout (07 section 9).
+         IF CW-WORLD-TYPE = "standard"
+             MOVE 1 TO CW-LAYOUT
+         END-IF
          CALL "SEED-FROM-TEXT" USING CS-SEED-TEXT CW-SEED WS-RANDOM
          CALL "WORLDSIM-NEW-WORLD-SPAWN"
      END-IF

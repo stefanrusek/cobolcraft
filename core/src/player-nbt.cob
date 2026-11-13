@@ -24,10 +24,8 @@
  01 WS-ELEMENT             BINARY-LONG VALUE -1.
  01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
  01 WS-I                   BINARY-LONG.
- 01 WS-IN                  PIC X(48).
- 01 WS-IN-LENGTH           BINARY-LONG.
- 01 WS-OUT                 PIC X(64).
- 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-NS-KEY              PIC X(64).
+ 01 WS-NS-LENGTH           BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ITEM                 BINARY-LONG.
@@ -35,10 +33,8 @@
  01 L-KP                   BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-ITEM L-COUNT L-KP.
      MOVE "id" TO WN MOVE 2 TO WL
-     MOVE IT-KEY(L-ITEM + 1) TO WS-IN
-     MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-IN-LENGTH
-     CALL "PERSIST-NAMESPACED" USING WS-IN WS-IN-LENGTH WS-OUT WS-OUT-LENGTH
-     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-OUT WS-OUT-LENGTH
+     CALL "PERSIST-NAMESPACED" USING IT-KEY(L-ITEM + 1) IT-KEY-LENGTH(L-ITEM + 1) WS-NS-KEY WS-NS-LENGTH
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
      MOVE "count" TO WN MOVE 5 TO WL
      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL L-COUNT
      IF L-KP >= 1 AND L-KP <= KX-MAX-PATCHES
@@ -163,8 +159,9 @@
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
- 01 WS-KEY                 PIC X(48).
- 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 48.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-LOCAL               PIC X(48).
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
  01 WS-BARE                PIC X(48).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -189,10 +186,10 @@
              WHEN WN = "id" AND WS-TYPE = 8
                  MOVE SPACES TO WS-KEY
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-*>               A standard set's rows have no namespace; the folder holds "minecraft:" + path.
-                 CALL "KEY-BARE" USING WS-KEY WS-BARE
+                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > IT-COUNT
-                     IF IT-KEY(WS-K) = WS-KEY OR IT-KEY(WS-K) = WS-BARE
+                     IF IT-KEY(WS-K) = WS-LOCAL OR IT-KEY(WS-K) = WS-BARE
                          COMPUTE L-ITEM = WS-K - 1
                      END-IF
                  END-PERFORM

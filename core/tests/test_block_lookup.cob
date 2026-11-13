@@ -15,10 +15,10 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-KEY                 PIC X(112).
- 01 WS-PAIRS               PIC X(64).
+ 01 WS-PAIRS               PIC X(160).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
- 01 WS-TEXT                PIC X(64).
+ 01 WS-TEXT                PIC X(160).
  01 WS-B                   BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.

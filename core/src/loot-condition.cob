@@ -468,8 +468,8 @@
  WORKING-STORAGE SECTION.
  COPY JSONDOC.
  COPY LOOTSTATE.
- 01 WS-PROPS               PIC X(64).
- 01 WS-HAVE                PIC X(70).
+ 01 WS-PROPS               PIC X(160).
+ 01 WS-HAVE                PIC X(164).
  01 WS-CHILD               BINARY-LONG.
  01 WS-KEY                 PIC X(64).
  01 WS-KEY-LENGTH          BINARY-LONG.

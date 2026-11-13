@@ -648,9 +648,95 @@
  END PROGRAM BE-PLACE-STATE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BE-CHUNK-WRITE.
-*> USING dim, chunk x, chunk z, PB-BUFFER: the block_entities list of a saved chunk (31-1 section 6 step 1): one compound per live entity of
-*> the chunk, its full form with keepPacked false; an empty list of no type when the chunk has none.
+ PROGRAM-ID. BE-UNKNOWN-SCAN.
+*> USING old PB-BUFFER (a chunk payload at its root payload; its position is restored), slices (a table of 256 start and end
+*> byte offsets), count out (BINARY-LONG): the compounds of its block_entities list whose id names no block entity type of the
+*> core (31-1 section 3.1; such an entry is dropped when the chunk loads). The bytes START + 1 to END of each are its
+*> compound payload; more than 256 are not kept (07 section 10.7).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-HOME                BINARY-LONG.
+ 01 WS-ID                  PIC X(64).
+ 01 WS-ID-CAPACITY         BINARY-LONG VALUE 64.
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-BE-TYPE             BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SLICES.
+    05 L-SLICE OCCURS 256 TIMES.
+       10 L-SLICE-START    BINARY-LONG.
+       10 L-SLICE-END      BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-SLICES L-COUNT.
+     MOVE 0 TO L-COUNT
+     MOVE PB-POS TO WS-HOME
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "block_entities" AND WS-TYPE = 9
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-LIST-COUNT
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
+                 MOVE PB-POS TO WS-START
+                 MOVE -1 TO WS-BE-TYPE
+                 PERFORM UNTIL PB-ERROR = 1
+                     MOVE SPACES TO WN
+                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-CAPACITY WL
+                     IF WS-INNER-TYPE = 0
+                         EXIT PERFORM
+                     END-IF
+                     IF WN = "id" AND WS-INNER-TYPE = 8
+                         MOVE SPACES TO WS-ID
+                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-ID WS-ID-CAPACITY WS-ID-LENGTH
+                         MOVE SPACES TO WS-KEY
+                         MOVE WS-ID-LENGTH TO WS-KEY-LENGTH
+                         IF WS-ID(1:10) = "minecraft:"
+                             SUBTRACT 10 FROM WS-KEY-LENGTH
+                             MOVE WS-ID(11:14) TO WS-KEY
+                         ELSE
+                             MOVE WS-ID(1:24) TO WS-KEY
+                         END-IF
+                         IF WS-KEY-LENGTH <= 24
+                             CALL "BE-TYPE-ID" USING WS-KEY WS-KEY-LENGTH WS-BE-TYPE
+                         END-IF
+                     ELSE
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                     END-IF
+                 END-PERFORM
+                 IF PB-ERROR = 0 AND WS-BE-TYPE < 0 AND L-COUNT < 256
+                     ADD 1 TO L-COUNT
+                     MOVE WS-START TO L-SLICE-START(L-COUNT)
+                     MOVE PB-POS TO L-SLICE-END(L-COUNT)
+                 END-IF
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     MOVE WS-HOME TO PB-POS
+     MOVE 0 TO PB-ERROR
+     GOBACK.
+ END PROGRAM BE-UNKNOWN-SCAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-CHUNK-WRITE-MERGE.
+*> USING dim, chunk x, chunk z, PB-BUFFER, old PB-BUFFER (the chunk as the file holds it, at its root payload; its position is kept),
+*> found (BINARY-LONG, 1 when the old chunk is given): the block_entities list of a saved chunk (31-1 section 6 step 1): one compound
+*> per live entity of the chunk, its full form with keepPacked false, then the old chunk's compounds of types the core does not
+*> know as they were (BE-UNKNOWN-SCAN, 07 section 10.7); an empty list of no type when there are none.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -663,12 +749,28 @@
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-IN                  BINARY-LONG.
+ 01 WS-UNKNOWN-COUNT       BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-SLICES.
+    05 WS-SLICE OCCURS 256 TIMES.
+       10 WS-SLICE-START   BINARY-LONG.
+       10 WS-SLICE-END     BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-POINTER             USAGE POINTER.
+ 01 B-SLICE                PIC X BASED.
  LINKAGE SECTION.
  COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  01 L-DIM                  BINARY-LONG.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER WK-BUFFER L-FOUND.
+     MOVE 0 TO WS-UNKNOWN-COUNT
+     IF L-FOUND = 1
+         CALL "BE-UNKNOWN-SCAN" USING WK-BUFFER WS-SLICES WS-UNKNOWN-COUNT
+     END-IF
      MOVE "block_entities" TO WN
      MOVE 14 TO WL
      MOVE 0 TO WS-N
@@ -676,6 +778,7 @@
          CALL "BE-IN-CHUNK" USING WS-I L-DIM L-CX L-CZ WS-IN
          ADD WS-IN TO WS-N
      END-PERFORM
+     ADD WS-UNKNOWN-COUNT TO WS-N
      IF WS-N = 0
          CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-NONE WS-ZERO
          GOBACK
@@ -685,13 +788,22 @@
          CALL "BE-IN-CHUNK" USING WS-I L-DIM L-CX L-CZ WS-IN
          IF WS-IN = 1
              CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+             MOVE PB-LENGTH TO WS-START
              CALL "BE-SAVE-CHUNK" USING WS-I PB-BUFFER
+             CALL "EXTRA-APPEND" USING WS-KIND WS-I PB-BUFFER WS-START
              CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
          END-IF
      END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-UNKNOWN-COUNT
+         COMPUTE WS-SIZE = WS-SLICE-END(WS-I) - WS-SLICE-START(WS-I)
+         SET WS-POINTER TO WK-ADDR
+         SET WS-POINTER UP BY WS-SLICE-START(WS-I)
+         SET ADDRESS OF B-SLICE TO WS-POINTER
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER B-SLICE WS-SIZE
+     END-PERFORM
      CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
      GOBACK.
- END PROGRAM BE-CHUNK-WRITE.
+ END PROGRAM BE-CHUNK-WRITE-MERGE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-IN-CHUNK.
