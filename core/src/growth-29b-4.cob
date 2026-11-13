@@ -1209,3 +1209,894 @@
      END-IF
      GOBACK.
  END PROGRAM GC4-CFLOWER-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-CONST.
+*> USING MAX_HEIGHT, age maximum, stage maximum, shape width with large leaves, shape width otherwise, collision width, sapling shape width and top (BINARY-LONG out): 6.1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-LARGE                BINARY-LONG.
+ 01 L-SMALL                BINARY-LONG.
+ 01 L-COLLISION            BINARY-LONG.
+ 01 L-SAPLING              BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HEIGHT L-AGE L-STAGE L-LARGE L-SMALL L-COLLISION L-SAPLING L-TOP.
+     MOVE 16 TO L-HEIGHT
+     MOVE 1 TO L-AGE L-STAGE
+     MOVE 10 TO L-LARGE
+     MOVE 6 TO L-SMALL
+     MOVE 3 TO L-COLLISION
+     MOVE 8 TO L-SAPLING
+     MOVE 12 TO L-TOP
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-TICKING.
+*> USING stage (BINARY-LONG), isRandomlyTicking out: the stalk ticks only while it is growing (6.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-TICKING              BINARY-LONG.
+ PROCEDURE DIVISION USING L-STAGE L-TICKING.
+     MOVE 0 TO L-TICKING
+     IF L-STAGE = 0
+         MOVE 1 TO L-TICKING
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-TICKING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-PLACE.
+*> USING the fluid at the clicked position is empty, the block below is in supports_bamboo, the below kind (0 other, 1 bamboo_sapling, 2 bamboo), its age, the above kind (0 other,
+*> 1 bamboo), its age (BINARY-LONG), result (0 null, 1 stalk, 2 bamboo_sapling) and the stalk's age (-1 for none) out: getStateForPlacement (6.2 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EMPTY                BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-BELOW-AGE            BINARY-LONG.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-ABOVE-AGE            BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-EMPTY L-OK L-BELOW L-BELOW-AGE L-ABOVE L-ABOVE-AGE L-RESULT L-AGE.
+     MOVE -1 TO L-AGE
+     EVALUATE TRUE
+         WHEN L-EMPTY = 0 OR L-OK = 0
+             MOVE 0 TO L-RESULT
+         WHEN L-BELOW = 1
+             MOVE 1 TO L-RESULT
+             MOVE 0 TO L-AGE
+         WHEN L-BELOW = 2
+             MOVE 1 TO L-RESULT
+             MOVE 0 TO L-AGE
+             IF L-BELOW-AGE > 0
+                 MOVE 1 TO L-AGE
+             END-IF
+         WHEN L-ABOVE = 1
+             MOVE 1 TO L-RESULT
+             MOVE L-ABOVE-AGE TO L-AGE
+         WHEN OTHER
+             MOVE 2 TO L-RESULT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-SU.
+*> USING canSurvive, the changed direction is UP, the neighbour is bamboo, its age, this age (BINARY-LONG), block tick scheduled, the age after (-1 for unchanged) out: 6.2 step 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-UP                   BINARY-LONG.
+ 01 L-BAMBOO               BINARY-LONG.
+ 01 L-NEIGHBOUR-AGE        BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-AFTER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SURVIVE L-UP L-BAMBOO L-NEIGHBOUR-AGE L-AGE L-TICK L-AFTER.
+     MOVE 0 TO L-TICK
+     MOVE -1 TO L-AFTER
+     IF L-SURVIVE = 0
+         MOVE 1 TO L-TICK
+     END-IF
+     IF L-UP = 1 AND L-BAMBOO = 1 AND L-NEIGHBOUR-AGE > L-AGE
+         COMPUTE L-AFTER = 1 - L-AGE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-RT.
+*> USING stage, the nextInt(3) draw, the cell above is air, its raw brightness, the bamboo blocks below (BINARY-LONG), isRandomlyTicking, grows, h out: the stalk random tick
+*> (6.2 step 4); the draw is first, h is the bamboo below (at most 16) plus 1 and growth needs h < 16.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-BRIGHTNESS           BINARY-LONG.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-TICKING              BINARY-LONG.
+ 01 L-GROWS                BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-STAGE L-DRAW L-AIR L-BRIGHTNESS L-BELOW L-TICKING L-GROWS L-H.
+     MOVE 0 TO L-TICKING L-GROWS L-H
+     IF L-STAGE NOT = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO L-TICKING
+     COMPUTE L-H = FUNCTION MIN(L-BELOW, 16) + 1
+     IF L-DRAW = 0 AND L-AIR = 1 AND L-BRIGHTNESS >= 9 AND L-H < 16
+         MOVE 1 TO L-GROWS
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-RT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-GROW.
+*> USING h, the state below (0 not bamboo, 1 bamboo without leaves, 2 bamboo with leaves), a stalk is two below (BINARY-LONG), this stalk's age, the nextFloat draw (FLOAT-LONG),
+*> the new stalk's leaves (0 none, 1 small, 2 large), the stalk below is set small, the one two below is set none, the new age, the new stage, a draw was made out: growBamboo (6.2 step 5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-QUARTER             FLOAT-LONG VALUE 0.25.
+ LINKAGE SECTION.
+ 01 L-H                    BINARY-LONG.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-TWO                  BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-DRAW                 FLOAT-LONG.
+ 01 L-LEAVES               BINARY-LONG.
+ 01 L-SET1                 BINARY-LONG.
+ 01 L-SET2                 BINARY-LONG.
+ 01 L-NEW-AGE              BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-DREW                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-H L-BELOW L-TWO L-AGE L-DRAW L-LEAVES L-SET1 L-SET2 L-NEW-AGE L-STAGE L-DREW.
+     MOVE 0 TO L-LEAVES L-SET1 L-SET2 L-NEW-AGE L-STAGE L-DREW
+     IF L-H >= 1
+         IF L-BELOW < 2
+             MOVE 1 TO L-LEAVES
+         ELSE
+             MOVE 2 TO L-LEAVES
+             IF L-TWO = 1
+                 MOVE 1 TO L-SET1 L-SET2
+             END-IF
+         END-IF
+     END-IF
+     IF L-AGE = 1 OR L-TWO = 1
+         MOVE 1 TO L-NEW-AGE
+     END-IF
+     IF L-H >= 11
+         MOVE 1 TO L-DREW
+         IF L-DRAW < WS-QUARTER
+             MOVE 1 TO L-STAGE
+         END-IF
+     END-IF
+     IF L-H = 15
+         MOVE 1 TO L-STAGE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-GROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-BONE-VALID.
+*> USING the bamboo above pos, the bamboo below pos, the top stalk's stage, p is inside the build height, p is air (BINARY-LONG), valid, success out: 6.2 step 6.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ABOVE L-BELOW L-STAGE L-HEIGHT L-AIR L-VALID L-SUCCESS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     IF L-ABOVE + L-BELOW + 1 < 16 AND L-STAGE NOT = 1 AND L-HEIGHT = 1 AND L-AIR = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-BONE-VALID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BAMBOO-BONE.
+*> USING the bamboo above pos, below pos, the top stalk's stage, the free cells above the top (air and inside the height), the nextInt(2) draw (BINARY-LONG), two nextFloat draws
+*> (FLOAT-LONG), n, stalks grown, the total after, floats drawn out: the bone meal effect (6.2 step 6); each growth stops at total >= 16, stage 1 or no free cell.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-QUARTER             FLOAT-LONG VALUE 0.25.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-STAGE               BINARY-LONG.
+ 01 WS-FREE                BINARY-LONG.
+ 01 WS-DRAW                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-FREE                 BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-F1                   FLOAT-LONG.
+ 01 L-F2                   FLOAT-LONG.
+ 01 L-N                    BINARY-LONG.
+ 01 L-GROWN                BINARY-LONG.
+ 01 L-TOTAL                BINARY-LONG.
+ 01 L-DRAWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ABOVE L-BELOW L-STAGE L-FREE L-DRAW L-F1 L-F2 L-N L-GROWN L-TOTAL L-DRAWN.
+     COMPUTE L-TOTAL = L-ABOVE + L-BELOW + 1
+     COMPUTE L-N = 1 + L-DRAW
+     MOVE 0 TO L-GROWN L-DRAWN
+     MOVE L-STAGE TO WS-STAGE
+     MOVE L-FREE TO WS-FREE
+     PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > L-N OR L-TOTAL >= 16 OR WS-STAGE = 1 OR WS-FREE = 0
+         MOVE 0 TO WS-STAGE
+         IF L-TOTAL >= 11
+             ADD 1 TO L-DRAWN
+             MOVE L-F1 TO WS-DRAW
+             IF L-DRAWN = 2
+                 MOVE L-F2 TO WS-DRAW
+             END-IF
+             IF WS-DRAW < WS-QUARTER
+                 MOVE 1 TO WS-STAGE
+             END-IF
+         END-IF
+         IF L-TOTAL = 15
+             MOVE 1 TO WS-STAGE
+         END-IF
+         ADD 1 TO L-TOTAL L-GROWN
+         SUBTRACT 1 FROM WS-FREE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GC4-BAMBOO-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SAPLING-RT.
+*> USING the nextInt(3) draw, the cell above is air, its raw brightness (BINARY-LONG), grows, the new stalk's leaves (1 small) out: BambooSaplingBlock random tick (6.3 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-BRIGHTNESS           BINARY-LONG.
+ 01 L-GROWS                BINARY-LONG.
+ 01 L-LEAVES               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-AIR L-BRIGHTNESS L-GROWS L-LEAVES.
+     MOVE 0 TO L-GROWS
+     MOVE 1 TO L-LEAVES
+     IF L-DRAW = 0 AND L-AIR = 1 AND L-BRIGHTNESS >= 9
+         MOVE 1 TO L-GROWS
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SAPLING-RT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SAPLING-SU.
+*> USING canSurvive, the changed direction is UP, the neighbour is bamboo (BINARY-LONG), result (0 unchanged, 1 air, 2 the default stalk) out: 6.3 step 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-UP                   BINARY-LONG.
+ 01 L-BAMBOO               BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SURVIVE L-UP L-BAMBOO L-RESULT.
+     MOVE 0 TO L-RESULT
+     EVALUATE TRUE
+         WHEN L-SURVIVE = 0
+             MOVE 1 TO L-RESULT
+         WHEN L-UP = 1 AND L-BAMBOO = 1
+             MOVE 2 TO L-RESULT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-SAPLING-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SAPLING-BONE.
+*> USING the cell above is air, it is inside the build height (BINARY-LONG), valid, success out: 6.3 step 3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-HEIGHT L-VALID L-SUCCESS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     IF L-AIR = 1 AND L-HEIGHT = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SAPLING-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-GATE.
+*> USING the game rule spread_vines, the nextInt(4) draw (BINARY-LONG), the random tick goes on (BINARY-LONG out): the gate of 7.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RULE                 BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-PASS                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-RULE L-DRAW L-PASS.
+     MOVE 0 TO L-PASS
+     IF L-RULE = 1 AND L-DRAW = 0
+         MOVE 1 TO L-PASS
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-GATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-CROWD.
+*> USING the vine blocks in the box (BINARY-LONG), canSpread (at most 4), the volume of the box (9 x 3 x 9) out: 7.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-SPREAD               BINARY-LONG.
+ 01 L-VOLUME               BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT L-SPREAD L-VOLUME.
+     MOVE 0 TO L-SPREAD
+     IF L-COUNT <= 4
+         MOVE 1 TO L-SPREAD
+     END-IF
+     COMPUTE L-VOLUME = 9 * 3 * 9
+     GOBACK.
+ END PROGRAM GC4-VINE-CROWD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-BOX.
+*> USING the offset dx, dy, dz of a cell from the vine (BINARY-LONG), the cell is inside the crowding box (both corners inclusive) out: 7.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DX L-DY L-DZ L-INSIDE.
+     MOVE 0 TO L-INSIDE
+     IF L-DX >= -4 AND L-DX <= 4 AND L-DY >= -1 AND L-DY <= 1 AND L-DZ >= -4 AND L-DZ <= 4
+         MOVE 1 TO L-INSIDE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-BOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-WRAP.
+*> USING the nextFloat draw converted to double (FLOAT-LONG), the wrap-over happens (BINARY-LONG out): the draw is below 0.05 (7).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CHANCE              FLOAT-LONG VALUE 0.05.
+ LINKAGE SECTION.
+ 01 L-DRAW                 FLOAT-LONG.
+ 01 L-WRAP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-WRAP.
+     MOVE 0 TO L-WRAP
+     IF L-DRAW < WS-CHANCE
+         MOVE 1 TO L-WRAP
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-WRAP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-UPFACES.
+*> USING four nextBoolean draws (north, east, south, west) and four acceptances of the neighbour of the cell above (BINARY-LONG), the four faces of the new vine out: the face
+*> survives only when the draw is false and the neighbour is acceptable (7, copy to the block above).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-D1                   BINARY-LONG.
+ 01 L-D2                   BINARY-LONG.
+ 01 L-D3                   BINARY-LONG.
+ 01 L-D4                   BINARY-LONG.
+ 01 L-A1                   BINARY-LONG.
+ 01 L-A2                   BINARY-LONG.
+ 01 L-A3                   BINARY-LONG.
+ 01 L-A4                   BINARY-LONG.
+ 01 L-F1                   BINARY-LONG.
+ 01 L-F2                   BINARY-LONG.
+ 01 L-F3                   BINARY-LONG.
+ 01 L-F4                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-D1 L-D2 L-D3 L-D4 L-A1 L-A2 L-A3 L-A4 L-F1 L-F2 L-F3 L-F4.
+     MOVE 0 TO L-F1 L-F2 L-F3 L-F4
+     IF L-D1 = 0 AND L-A1 = 1
+         MOVE 1 TO L-F1
+     END-IF
+     IF L-D2 = 0 AND L-A2 = 1
+         MOVE 1 TO L-F2
+     END-IF
+     IF L-D3 = 0 AND L-A3 = 1
+         MOVE 1 TO L-F3
+     END-IF
+     IF L-D4 = 0 AND L-A4 = 1
+         MOVE 1 TO L-F4
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-UPFACES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-COPYDOWN.
+*> USING four nextBoolean draws (north, east, south, west) and whether the source vine has each face (BINARY-LONG), the faces the target gets out: copyRandomFaces (7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-D1                   BINARY-LONG.
+ 01 L-D2                   BINARY-LONG.
+ 01 L-D3                   BINARY-LONG.
+ 01 L-D4                   BINARY-LONG.
+ 01 L-S1                   BINARY-LONG.
+ 01 L-S2                   BINARY-LONG.
+ 01 L-S3                   BINARY-LONG.
+ 01 L-S4                   BINARY-LONG.
+ 01 L-T1                   BINARY-LONG.
+ 01 L-T2                   BINARY-LONG.
+ 01 L-T3                   BINARY-LONG.
+ 01 L-T4                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-D1 L-D2 L-D3 L-D4 L-S1 L-S2 L-S3 L-S4 L-T1 L-T2 L-T3 L-T4.
+     MOVE 0 TO L-T1 L-T2 L-T3 L-T4
+     IF L-D1 = 1 AND L-S1 = 1
+         MOVE 1 TO L-T1
+     END-IF
+     IF L-D2 = 1 AND L-S2 = 1
+         MOVE 1 TO L-T2
+     END-IF
+     IF L-D3 = 1 AND L-S3 = 1
+         MOVE 1 TO L-T3
+     END-IF
+     IF L-D4 = 1 AND L-S4 = 1
+         MOVE 1 TO L-T4
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-COPYDOWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-HCONN.
+*> USING the four horizontal faces (BINARY-LONG), hasHorizontalConnection out (7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-N                    BINARY-LONG.
+ 01 L-E                    BINARY-LONG.
+ 01 L-S                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-ANY                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-N L-E L-S L-W L-ANY.
+     MOVE 0 TO L-ANY
+     IF L-N = 1 OR L-E = 1 OR L-S = 1 OR L-W = 1
+         MOVE 1 TO L-ANY
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-HCONN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-UPCHECK.
+*> USING kind (1 the re-check of the up face, getUpdatedState, which passes DOWN and so tests the TOP face of the block above; 2 the random tick and placement, which pass UP and
+*> test its BOTTOM face), the top face is full, the bottom face is full (BINARY-LONG), isAcceptableNeighbour out: the quirk of 7 (open question 4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ 01 L-BOTTOM               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-TOP L-BOTTOM L-OK.
+     MOVE L-BOTTOM TO L-OK
+     IF L-KIND = 1
+         MOVE L-TOP TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-UPCHECK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-REPLACE.
+*> USING the faces of the vine (BINARY-LONG), canBeReplaced out: while it has fewer than 5 faces (7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FACES                BINARY-LONG.
+ 01 L-REPLACE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-FACES L-REPLACE.
+     MOVE 0 TO L-REPLACE
+     IF L-FACES < 5
+         MOVE 1 TO L-REPLACE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-REPLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-SU.
+*> USING the changed direction (1 down), the faces of the recomputed state (BINARY-LONG), result (0 the default, 1 the recomputed state, 2 air) out: updateShape (7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-FACES                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-FACES L-RESULT.
+     MOVE 1 TO L-RESULT
+     IF L-DIR = 1
+         MOVE 0 TO L-RESULT
+     ELSE
+         IF L-FACES = 0
+             MOVE 2 TO L-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-VINE-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-VINE-CONST.
+*> USING the flags of every write of the random tick, the entries of the face-property map (BINARY-LONG out): 7.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FLAGS                BINARY-LONG.
+ 01 L-FACES                BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAGS L-FACES.
+     MOVE 2 TO L-FLAGS
+     MOVE 5 TO L-FACES
+     GOBACK.
+ END PROGRAM GC4-VINE-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-CHORUS-CONST.
+*> USING the PipeBlock size, the boolean properties, the strength x 10 (BINARY-LONG out): the chorus plant (8.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SIZE                 BINARY-LONG.
+ 01 L-PROPS                BINARY-LONG.
+ 01 L-STRENGTH             BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIZE L-PROPS L-STRENGTH.
+     MOVE 10 TO L-SIZE
+     MOVE 6 TO L-PROPS
+     MOVE 4 TO L-STRENGTH
+     GOBACK.
+ END PROGRAM GC4-CHORUS-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-CHORUS-CONN.
+*> USING the direction, the neighbour is a plant or a flower, it is in supports_chorus_plant (BINARY-LONG), connected out: DOWN also connects to the tag, the rest only to
+*> a plant or a flower (8.1 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-PLANT                BINARY-LONG.
+ 01 L-SUPPORT              BINARY-LONG.
+ 01 L-CONNECTED            BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-PLANT L-SUPPORT L-CONNECTED.
+     MOVE L-PLANT TO L-CONNECTED
+     IF L-DIR = 1 AND L-SUPPORT = 1
+         MOVE 1 TO L-CONNECTED
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-CHORUS-CONN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-CHORUS-SU.
+*> USING canSurvive, the changed direction, the neighbour is a plant or flower, it is in supports_chorus_plant (BINARY-LONG), a block tick scheduled, the property of the changed
+*> direction (-1 when it is left to the default update) out: ChorusPlantBlock.updateShape (8.1 step 2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-PLANT                BINARY-LONG.
+ 01 L-SUPPORT              BINARY-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-PROP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SURVIVE L-DIR L-PLANT L-SUPPORT L-TICK L-PROP.
+     MOVE 0 TO L-TICK
+     MOVE -1 TO L-PROP
+     IF L-SURVIVE = 0
+         MOVE 1 TO L-TICK
+         GOBACK
+     END-IF
+     CALL "GC4-CHORUS-CONN" USING L-DIR L-PLANT L-SUPPORT L-PROP
+     GOBACK.
+ END PROGRAM GC4-CHORUS-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-CHORUS-SURVIVE.
+*> USING the block below is a plant or in supports_chorus_plant, the block below is air, the block above is air, then for north, east, south, west: the neighbour is a plant and
+*> the block below it is a plant or in the tag (BINARY-LONG pairs), canSurvive out: 8.1 step 4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BOTH                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BELOW-OK             BINARY-LONG.
+ 01 L-BELOW-AIR            BINARY-LONG.
+ 01 L-ABOVE-AIR            BINARY-LONG.
+ 01 L-P1                   BINARY-LONG.
+ 01 L-Q1                   BINARY-LONG.
+ 01 L-P2                   BINARY-LONG.
+ 01 L-Q2                   BINARY-LONG.
+ 01 L-P3                   BINARY-LONG.
+ 01 L-Q3                   BINARY-LONG.
+ 01 L-P4                   BINARY-LONG.
+ 01 L-Q4                   BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-BELOW-OK L-BELOW-AIR L-ABOVE-AIR L-P1 L-Q1 L-P2 L-Q2 L-P3 L-Q3 L-P4 L-Q4 L-SURVIVE.
+     MOVE 0 TO WS-BOTH
+     IF L-BELOW-AIR = 0 AND L-ABOVE-AIR = 0
+         MOVE 1 TO WS-BOTH
+     END-IF
+     EVALUATE TRUE
+         WHEN L-P1 = 1 AND WS-BOTH = 1
+             MOVE 0 TO L-SURVIVE
+         WHEN L-P1 = 1 AND L-Q1 = 1
+             MOVE 1 TO L-SURVIVE
+         WHEN L-P2 = 1 AND WS-BOTH = 1
+             MOVE 0 TO L-SURVIVE
+         WHEN L-P2 = 1 AND L-Q2 = 1
+             MOVE 1 TO L-SURVIVE
+         WHEN L-P3 = 1 AND WS-BOTH = 1
+             MOVE 0 TO L-SURVIVE
+         WHEN L-P3 = 1 AND L-Q3 = 1
+             MOVE 1 TO L-SURVIVE
+         WHEN L-P4 = 1 AND WS-BOTH = 1
+             MOVE 0 TO L-SURVIVE
+         WHEN L-P4 = 1 AND L-Q4 = 1
+             MOVE 1 TO L-SURVIVE
+         WHEN OTHER
+             MOVE L-BELOW-OK TO L-SURVIVE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-CHORUS-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-SURVIVE.
+*> USING the block below is a plant or in supports_chorus_flower, the block below is air, then for north, east, south, west the neighbour (0 air, 1 plant, 2 other)
+*> (BINARY-LONG), canSurvive out: ChorusFlowerBlock (8.2 step 1): with air below exactly one horizontal neighbour is a plant and the others are air.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SIDES.
+    05 WS-SIDE             BINARY-LONG OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ 01 L-BELOW-OK             BINARY-LONG.
+ 01 L-BELOW-AIR            BINARY-LONG.
+ 01 L-N                    BINARY-LONG.
+ 01 L-E                    BINARY-LONG.
+ 01 L-S                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-BELOW-OK L-BELOW-AIR L-N L-E L-S L-W L-SURVIVE.
+     MOVE 1 TO L-SURVIVE
+     IF L-BELOW-OK = 1
+         GOBACK
+     END-IF
+     MOVE 0 TO L-SURVIVE
+     IF L-BELOW-AIR = 0
+         GOBACK
+     END-IF
+     MOVE L-N TO WS-SIDE(1)
+     MOVE L-E TO WS-SIDE(2)
+     MOVE L-S TO WS-SIDE(3)
+     MOVE L-W TO WS-SIDE(4)
+     MOVE 0 TO WS-FOUND WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4 OR WS-BAD = 1
+         EVALUATE WS-SIDE(WS-I)
+             WHEN 1
+                 IF WS-FOUND = 1
+                     MOVE 1 TO WS-BAD
+                 END-IF
+                 MOVE 1 TO WS-FOUND
+             WHEN 2
+                 MOVE 1 TO WS-BAD
+         END-EVALUATE
+     END-PERFORM
+     IF WS-BAD = 0
+         MOVE WS-FOUND TO L-SURVIVE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-FLOWER-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-SU.
+*> USING the changed direction (2 up), canSurvive (BINARY-LONG), a block tick scheduled out: ChorusFlowerBlock.updateShape (8.2 step 2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-SURVIVE L-TICK.
+     MOVE 0 TO L-TICK
+     IF L-DIR NOT = 2 AND L-SURVIVE = 0
+         MOVE 1 TO L-TICK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-FLOWER-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-PROJ.
+*> USING the level is a server, the projectile may interact with the position, it may break blocks (BINARY-LONG), destroyBlock with drops out: onProjectileHit (8.2 step 3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-INTERACT             BINARY-LONG.
+ 01 L-BREAK                BINARY-LONG.
+ 01 L-DESTROY              BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-INTERACT L-BREAK L-DESTROY.
+     MOVE 0 TO L-DESTROY
+     IF L-SERVER = 1 AND L-INTERACT = 1 AND L-BREAK = 1
+         MOVE 1 TO L-DESTROY
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-FLOWER-PROJ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-COLUMN.
+*> USING the cells 2, 3 and 4 below the flower (1 plant, 2 end stone in supports_chorus_flower, 0 other) (BINARY-LONG), h, endBelow out: the look down a plant column (8.2 step 4.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-C2                   BINARY-LONG.
+ 01 L-C3                   BINARY-LONG.
+ 01 L-C4                   BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-END                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-C2 L-C3 L-C4 L-H L-END.
+     MOVE 1 TO L-H
+     MOVE 0 TO L-END
+     EVALUATE TRUE
+         WHEN L-C2 NOT = 1
+             IF L-C2 = 2
+                 MOVE 1 TO L-END
+             END-IF
+         WHEN L-C3 NOT = 1
+             MOVE 2 TO L-H
+             IF L-C3 = 2
+                 MOVE 1 TO L-END
+             END-IF
+         WHEN L-C4 NOT = 1
+             MOVE 3 TO L-H
+             IF L-C4 = 2
+                 MOVE 1 TO L-END
+             END-IF
+         WHEN OTHER
+             MOVE 4 TO L-H
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-FLOWER-COLUMN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-GROW.
+*> USING the block below (1 in supports_chorus_flower, 2 the plant, 3 air, 0 other), h, endBelow, the nextInt(5 or 4) draw (BINARY-LONG), grow, a draw was made out: the growth
+*> test of the random tick (8.2 step 4.2 to 4.4); a plant column grows when h < 2 or h <= the draw, the draw made only when h >= 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-END                  BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-GROW                 BINARY-LONG.
+ 01 L-DREW                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BELOW L-H L-END L-DRAW L-GROW L-DREW.
+     MOVE 0 TO L-GROW L-DREW
+     EVALUATE TRUE
+         WHEN L-BELOW = 1 OR L-BELOW = 3
+             MOVE 1 TO L-GROW
+         WHEN L-BELOW = 2 AND L-H < 2
+             MOVE 1 TO L-GROW
+         WHEN L-BELOW = 2
+             MOVE 1 TO L-DREW
+             IF L-H <= L-DRAW
+                 MOVE 1 TO L-GROW
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-FLOWER-GROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-EMPTY.
+*> USING the four horizontal neighbours north, east, south, west are air (BINARY-LONG), the excepted direction (0 none, else 1 to 4), all empty out: allNeighborsEmpty (8.2 step 5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-N                    BINARY-LONG.
+ 01 L-E                    BINARY-LONG.
+ 01 L-S                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-EXCEPT               BINARY-LONG.
+ 01 L-EMPTY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-N L-E L-S L-W L-EXCEPT L-EMPTY.
+     MOVE 1 TO L-EMPTY
+     IF L-N = 0 AND L-EXCEPT NOT = 1
+         MOVE 0 TO L-EMPTY
+     END-IF
+     IF L-E = 0 AND L-EXCEPT NOT = 2
+         MOVE 0 TO L-EMPTY
+     END-IF
+     IF L-S = 0 AND L-EXCEPT NOT = 3
+         MOVE 0 TO L-EMPTY
+     END-IF
+     IF L-W = 0 AND L-EXCEPT NOT = 4
+         MOVE 0 TO L-EMPTY
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-FLOWER-EMPTY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-RT.
+*> USING the cell above is air, it is inside the build height, age, grow, growing up is possible (allNeighborsEmpty of the cell above and air two above), the nextInt(4) draw, endBelow,
+*> and whether each of the first four side attempts finds a valid cell (BINARY-LONG), action (0 nothing, 1 grew up, 2 branched, 3 died after branching, 4 died), flowers placed, level
+*> event, the placed flower's age, direction draws out: the random tick of the flower (8.2 step 4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-GROW                 BINARY-LONG.
+ 01 L-UP-OK                BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-END                  BINARY-LONG.
+ 01 L-V1                   BINARY-LONG.
+ 01 L-V2                   BINARY-LONG.
+ 01 L-V3                   BINARY-LONG.
+ 01 L-V4                   BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-FLOWER-AGE           BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-HEIGHT L-AGE L-GROW L-UP-OK L-DRAW L-END L-V1 L-V2 L-V3 L-V4 L-ACTION L-PLACED L-EVENT L-FLOWER-AGE L-DRAWS.
+     MOVE 0 TO L-ACTION L-PLACED L-EVENT L-DRAWS
+     MOVE L-AGE TO L-FLOWER-AGE
+     IF L-AIR = 0 OR L-HEIGHT = 0 OR L-AGE >= 5
+         GOBACK
+     END-IF
+     IF L-GROW = 1 AND L-UP-OK = 1
+         MOVE 1 TO L-ACTION
+         MOVE 1033 TO L-EVENT
+         GOBACK
+     END-IF
+     IF L-AGE < 4
+         COMPUTE WS-N = L-DRAW + L-END
+         MOVE WS-N TO L-DRAWS
+         IF WS-N >= 1
+             ADD L-V1 TO L-PLACED
+         END-IF
+         IF WS-N >= 2
+             ADD L-V2 TO L-PLACED
+         END-IF
+         IF WS-N >= 3
+             ADD L-V3 TO L-PLACED
+         END-IF
+         IF WS-N >= 4
+             ADD L-V4 TO L-PLACED
+         END-IF
+         IF L-PLACED > 0
+             MOVE 2 TO L-ACTION
+             MOVE 1033 TO L-EVENT
+             COMPUTE L-FLOWER-AGE = L-AGE + 1
+             GOBACK
+         END-IF
+         MOVE 3 TO L-ACTION
+     ELSE
+         MOVE 4 TO L-ACTION
+     END-IF
+     MOVE 1034 TO L-EVENT
+     MOVE 5 TO L-FLOWER-AGE
+     GOBACK.
+ END PROGRAM GC4-FLOWER-RT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER-CONST.
+*> USING two ages, AGE_5 maximum, DEAD_AGE, isRandomlyTicking at the first age, at the second age, support shape width and top (BINARY-LONG out): 8.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AGE-A                BINARY-LONG.
+ 01 L-AGE-B                BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-DEAD                 BINARY-LONG.
+ 01 L-TICK-A               BINARY-LONG.
+ 01 L-TICK-B               BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE-A L-AGE-B L-MAX L-DEAD L-TICK-A L-TICK-B L-WIDTH L-TOP.
+     MOVE 5 TO L-MAX L-DEAD
+     MOVE 0 TO L-TICK-A L-TICK-B
+     IF L-AGE-A < 5
+         MOVE 1 TO L-TICK-A
+     END-IF
+     IF L-AGE-B < 5
+         MOVE 1 TO L-TICK-B
+     END-IF
+     MOVE 14 TO L-WIDTH
+     MOVE 15 TO L-TOP
+     GOBACK.
+ END PROGRAM GC4-FLOWER-CONST.

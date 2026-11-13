@@ -254,3 +254,180 @@ rows(g,'cactus random tick (5.1 step 4, example 5): nothing unless the cell abov
 rows(g,'cactus flower (5.2): no properties and no ticks; shape 14 wide 0 to 12; mayPlaceOn the block below in support_override_cactus_flower or with a CENTER-sturdy top face (properties, ticks, shape width, y from, y to)','GC4-CFLOWER-CONST',0,5,[()],lambda :(0,0,14,0,12))
 rows(g,'cactus flower mayPlaceOn (5.2): the block below in support_override_cactus_flower (cactus, farmland) or its top face is CENTER sturdy (tag, sturdy)','GC4-CFLOWER-PLACE',2,1,[(1,0),(0,1),(1,1),(0,0)],lambda t,s:(int(t or s),))
 W4(g,5)
+# ===== 6
+g=G4(6,'Bamboo','T0591','states and constants (6.1), the stalk (6.2), the sapling (6.3), worked example 6.')
+rows(g,'bamboo constants (6.1): MAX_HEIGHT 16, age and stage maximum 1, large leaves shape 10 wide, other 6, collision 3, sapling 8 wide to 12, stalk strength 1.0 (x 10)','GC4-BAMBOO-CONST',0,8,[()],lambda :(16,1,1,10,6,3,8,12))
+rows(g,'stalk ticking (6.1): isRandomlyTicking is stage == 0','GC4-BAMBOO-TICKING',1,1,[(0,),(1,)],lambda s:(int(s==0),))
+def bp(fe,bk,bkok,ak,aa,bage):
+    pass
+def bpl(fe,ok,bk,bage,ak,aage):
+    if not fe or not ok: return 0,-1
+    if bk==1: return 1,0
+    if bk==2: return 1,(1 if bage>0 else 0)
+    if ak==1: return 1,aage
+    return 2,-1
+bpc=[(0,1,0,0,0,0),(1,0,0,0,0,0),(1,1,1,0,0,0),(1,1,2,1,0,0),(1,1,2,0,0,0),(1,1,0,0,1,1),(1,1,0,0,1,0),(1,1,0,0,0,0)]
+rows(g,'stalk placement (6.2 step 1): null when the fluid is not empty or the block below is not in supports_bamboo; a sapling below gives age 0, a stalk below age 1 when its age > 0, else the stalk above gives its age, else a bamboo_sapling (fluid empty, below supported, below kind 0 other 1 sapling 2 bamboo, below age, above kind 0 other 1 bamboo, above age) (0 null 1 stalk 2 sapling; age)','GC4-BAMBOO-PLACE',6,2,bpc,bpl)
+def bsu(sv,up,nb,na,age):
+    tick=int(not sv); newage=-1
+    if up and nb and na>age: newage=1-age
+    return tick,newage
+bsc=[(0,0,0,0,0),(1,1,1,1,0),(1,1,1,0,0),(1,1,1,1,1),(1,0,1,1,0),(1,1,0,1,0),(0,1,1,1,0)]
+rows(g,'stalk shape update (6.2 step 2): a stalk that cannot survive schedules a tick; from UP a bamboo neighbour with a greater age cycles this age (0 becomes 1) (survive, direction is UP, neighbour is bamboo, neighbour age, age) (tick, new age or -1)','GC4-BAMBOO-SU',5,2,bsc,bsu)
+def brt(stage,d,air,br,below):
+    if stage!=0: return 0,0,0
+    h=min(below,16)+1
+    if d!=0: return 1,0,h
+    return 1,int(air and br>=9 and h<16),h
+brc=[(0,0,1,9,0),(0,1,1,9,0),(0,0,0,9,0),(0,0,1,8,0),(0,0,1,15,14),(0,0,1,9,15),(0,0,1,9,16),(1,0,1,9,0),(0,2,1,9,0)]
+rows(g,'stalk random tick (6.2 step 4): only while stage == 0; nextInt(3) is drawn first and must be 0; then the cell above must be air with raw brightness at least 9; h is the bamboo below (at most 16) plus 1 and growth needs h < 16 (stage, draw, air above, brightness, bamboo below) (ticking, grows, h)','GC4-BAMBOO-RT',5,3,brc,brt)
+def grow(h,b1,b2,age,f):
+    l=0;r1=r2=0
+    if h>=1:
+        if b1==0 or b1==1: l=1
+        else:
+            l=2
+            if b2: r1=r2=1
+    thick=int(age==1 or b2==1)
+    drew=int(h>=11)
+    done=int((h>=11 and f<0.25) or h==15)
+    return l,r1,r2,thick,done,drew
+grc=[(0,0,0,0,0.9),(1,0,0,0,0.9),(2,1,0,0,0.9),(2,2,0,0,0.9),(3,2,1,0,0.9),(2,1,1,0,0.9),(3,1,0,1,0.9),(5,2,1,1,0.9),(10,2,1,1,0.0),(11,2,1,1,0.24),(11,2,1,1,0.25),(14,2,1,1,0.9),(15,2,1,1,0.9),(15,2,1,1,0.0),(12,0,0,0,0.1)]
+rows(g,'growBamboo (6.2 step 5): leaves small when the stalk below is not bamboo or has no leaves, else large and, when a stalk two below is bamboo, the one below becomes small and the one two below none; thick when this age is 1 or a stalk two below is bamboo; done when h >= 11 and nextFloat < 0.25 (drawn only then) or h == 15 (h, below kind 0 not bamboo 1 no leaves 2 leaves, bamboo two below, age, draw) (leaves 0 none 1 small 2 large, below set small, two below set none, age, stage, drew)','GC4-BAMBOO-GROW',5,6,grc,grow,fl=(5,))
+# worked example 6: the whole column by the doc rules
+def simulate(steps):
+    col=[(0,0),(1,0)]   # [leaves, age] from the sapling conversion
+    out=[list(col)]
+    for _ in range(steps):
+        n=len(col); top=col[-1]; b1=col[-2] if n>=2 else None; b2=col[-3] if n>=3 else None
+        h=n
+        if b1 is None or b1[0]==0: leaves=1
+        else:
+            leaves=2
+            if b2 is not None: col[-2]=(1,col[-2][1]); col[-3]=(0,col[-3][1])
+        thick=1 if (top[1]==1 or b2 is not None) else 0
+        col.append((leaves,thick))
+        if thick: col=[(l,1) for l,a in col]
+        out.append(list(col))
+    return out
+cols=simulate(4)
+doc={2:[(0,0),(1,0)],3:[(0,0),(1,0),(1,0)],4:[(0,1),(1,1),(1,1),(2,1)],5:[(0,1),(0,1),(1,1),(2,1),(2,1)],6:[(0,1),(0,1),(0,1),(1,1),(2,1),(2,1)]}
+for k,v in doc.items(): assert cols[k-2]==v,(k,cols[k-2],v)
+gc=[]; ex=[]
+col=[(0,0),(1,0)]
+for _ in range(4):
+    n=len(col); top=col[-1]; b1=col[-2]; b2=col[-3] if n>=3 else None
+    b1k=1 if b1[0]==0 else 2
+    inp=(n,b1k,int(b2 is not None),top[1],0.9)
+    gc.append(inp); ex.append(grow(*inp)[:4])
+    col=cols[len(gc)]
+rows(g,'bamboo column growth (example 6): the new stalk for columns of 2, 3, 4 and 5 stalks, driven from the column states [none, small], [none, small, small], [none/1, small/1, small/1, large/1], [none, none, small, large, large] (leaves, below set small, two below set none, age, stage, drew)','GC4-BAMBOO-GROW',5,6,gc,grow,fl=(5,))
+def bbv(a,b,st,hh,air): return int(a+b+1<16 and st!=1 and hh and air),1
+bbc=[(0,0,0,1,1),(3,4,0,1,1),(7,8,0,1,1),(7,7,0,1,1),(0,0,1,1,1),(0,0,0,0,1),(0,0,0,1,0)]
+rows(g,'bamboo bone meal validity (6.2 step 6): a + b + 1 < 16, the top stalk has stage != 1, the cell above it is inside the build height and air; success always (above count, below count, top stage, in height, air) (valid, success)','GC4-BAMBOO-BONE-VALID',5,2,bbc,bbv)
+def bbone(a,b,st,free,nraw,f1,f2):
+    total=a+b+1; n=1+nraw; fs=[f1,f2]; k=0; grown=0
+    for _ in range(n):
+        if total>=16 or st==1 or free==0: break
+        if total>=11:
+            d=fs[k]; k+=1; done=int(d<0.25 or total==15)
+        else: done=int(total==15)
+        st=done; total+=1; grown+=1; free-=1
+    return n,grown,total,k
+bbe=[(0,0,0,5,0,0.9,0.9),(0,0,0,5,1,0.9,0.9),(0,0,0,1,1,0.9,0.9),(0,0,0,0,1,0.9,0.9),(0,0,1,5,1,0.9,0.9),(7,7,0,5,1,0.9,0.9),(10,0,0,5,1,0.1,0.9),(10,0,0,5,1,0.9,0.1),(10,0,0,5,1,0.9,0.9),(14,0,0,5,1,0.9,0.9),(0,15,0,5,1,0.9,0.9),(3,3,0,5,1,0.9,0.9)]
+rows(g,'bamboo bone meal effect (6.2 step 6): n = 1 + nextInt(2) growths; each stops when total >= 16, the top has stage 1, the cell above is not air or outside the height; the nextFloat of growBamboo is drawn only when total >= 11 (above count, below count, top stage, free cells above, nextInt(2), two float draws) (n, grown, total after, floats drawn)','GC4-BAMBOO-BONE',7,4,bbe,bbone,fl=(6,7))
+rows(g,'sapling random tick (6.3 step 1, example 6): nextInt(3) == 0, the cell above air and raw brightness >= 9 place a bamboo stalk with leaves small (age 0, stage 0) (draw, air above, brightness) (grows, leaves)','GC4-SAPLING-RT',3,2,[(0,1,9),(1,1,9),(0,0,9),(0,1,8)],lambda d,a,b:(int(d==0 and a and b>=9),1))
+def ssu(sv,up,nb):
+    if not sv: return (1,)
+    if up and nb: return (2,)
+    return (0,)
+rows(g,'sapling shape update (6.3 step 2): air when it cannot survive; from UP a bamboo neighbour replaces it by the default stalk (leaves none, age 0, stage 0); else unchanged (0 unchanged 1 air 2 stalk)','GC4-SAPLING-SU',3,1,[(0,0,0),(1,1,1),(1,1,0),(1,0,1)],ssu)
+rows(g,'sapling bone meal (6.3 step 3): valid when the cell above is air and inside the build height; success always','GC4-SAPLING-BONE',2,2,[(1,1),(1,0),(0,1)],lambda a,h:(int(a and h),1))
+W4(g,6)
+# ===== 7
+g=G4(7,'Vines','T0593','the numbers of 7 re-read in the artifact: gate, crowding box, draws, flags, the re-check of the up face, replacement and shape update.')
+rows(g,'vine random tick gate (7): the game rule spread_vines and nextInt(4) == 0 (rule, draw)','GC4-VINE-GATE',2,1,[(1,0),(1,1),(0,0),(0,3)],lambda r,d:(int(r and d==0),))
+rows(g,'vine crowding test (7): canSpread when at most 4 vine blocks lie in the box from pos + (-4, -1, -4) to pos + (4, 1, 4), both corners inclusive, 9 x 3 x 9 = 243 cells (count in box) (can spread, volume)','GC4-VINE-CROWD',1,2,[(1,),(4,),(5,),(9,)],lambda c:(int(c<=4),243))
+bx=[(0,0,0),(4,1,4),(-4,-1,-4),(5,0,0),(0,2,0),(0,-2,0),(0,0,-5),(-4,1,4)]
+rows(g,'vine crowding box (7): the offsets (dx, dy, dz) inside the box are -4 to 4 in x and z and -1 to 1 in y (inside)','GC4-VINE-BOX',3,1,bx,lambda x,y,z:(int(abs(x)<=4 and abs(z)<=4 and abs(y)<=1),))
+rows(g,'vine wrap-over chance (7): nextFloat() converted to double compared below 0.05, so the float nearest 0.05 (0.05000000074505806) is not below it (draw)','GC4-VINE-WRAP',1,1,[(0.049,),(0.05,),(0.05000000074505806,),(0.0,),(0.0499999,)],lambda d:(int(d<0.05),),fl=(1,))
+bs4=[(a,b,c,d) for a in (0,1) for b in (0,1) for c in (0,1) for d in (0,1)]
+rows(g,'vine faces copied up (7): for north, east, south, west nextBoolean() is drawn first and the face survives only when the draw is false and the neighbour of the cell above is acceptable (four draws, four acceptances) (four faces)','GC4-VINE-UPFACES',8,4,[(1,0,0,1,1,1,0,0),(0,0,0,0,1,1,1,1),(1,1,1,1,1,1,1,1),(0,1,0,1,1,1,1,0),(0,0,1,1,0,1,0,1)],lambda *a:tuple(int(a[i]==0 and a[4+i]==1) for i in range(4)))
+rows(g,'vine faces copied down (7): for each of north, east, south, west nextBoolean() is drawn and when true and the source vine has the face the target gets it (four draws, four source faces) (target faces)','GC4-VINE-COPYDOWN',8,4,[(1,0,0,1,1,1,1,1),(1,1,1,1,0,1,0,1),(0,0,0,0,1,1,1,1),(1,1,0,0,1,1,1,1),(0,1,0,1,1,0,1,0)],lambda *a:tuple(int(a[i]==1 and a[4+i]==1) for i in range(4)))
+rows(g,'vine horizontal connection (7): any of the four horizontal faces is true','GC4-VINE-HCONN',4,1,[(0,0,0,0),(1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)],lambda *a:(int(any(a)),))
+rows(g,'vine up-face quirk (7, open question 4): the re-check of the up face (getUpdatedState, kind 1) tests the TOP face of the block above; the random tick and placement (kind 2) test its BOTTOM face (kind, top face full, bottom face full) (acceptable)','GC4-VINE-UPCHECK',3,1,[(1,1,0),(1,0,1),(2,1,0),(2,0,1),(1,1,1),(2,0,0)],lambda k,t,b:(t if k==1 else b,))
+rows(g,'vine canBeReplaced (7): while it has fewer than 5 faces (the face map has five entries, no down)','GC4-VINE-REPLACE',1,1,[(0,),(1,),(4,),(5,)],lambda n:(int(n<5),))
+rows(g,'vine updateShape (7): for a change from below (down, 1) the default (0); otherwise the recomputed state, or air (2) when it has no face (direction, faces after getUpdatedState)','GC4-VINE-SU',2,1,[(1,0),(1,3),(2,2),(3,0),(2,0)],lambda d,f:(0 if d==1 else (2 if f==0 else 1),))
+rows(g,'vine constants (7): every write of the random tick uses flags 2; the face-property map has 5 entries','GC4-VINE-CONST',0,2,[()],lambda :(2,5))
+W4(g,7)
+# ===== 8
+g=G4(8,'Chorus plant and chorus flower','T0595','the plant (8.1), the flower (8.2) and worked example 7.')
+rows(g,'chorus plant constants (8.1): PipeBlock size 10, six boolean properties, strength 0.4 (x 10)','GC4-CHORUS-CONST',0,3,[()],lambda :(10,6,4))
+def cc(d,pf,sp): return (int(pf or (d==1 and sp)),)
+ccc=[(1,0,1),(1,1,0),(1,0,0),(2,0,1),(2,1,0),(3,1,1),(6,0,0),(5,0,1)]
+rows(g,'chorus plant connections (8.1 step 1): DOWN is connected to a plant, a flower or a block in supports_chorus_plant; the other five directions only to a plant or a flower (direction, neighbour is plant or flower, neighbour in supports_chorus_plant) (connected)','GC4-CHORUS-CONN',3,1,ccc,cc)
+def csu(sv,d,pf,sp):
+    if not sv: return 1,-1
+    return 0,int(pf or (d==1 and sp))
+csuc=[(0,3,0,0),(1,3,1,0),(1,3,0,1),(1,1,0,1),(1,1,0,0),(1,2,1,0)]
+rows(g,'chorus plant shape update (8.1 step 2): a plant that cannot survive schedules a tick; otherwise the property of the changed direction is set to connected: a plant or flower neighbour, or DOWN with a neighbour in supports_chorus_plant (survive, direction, plant or flower, supports) (tick, property or -1)','GC4-CHORUS-SU',4,2,csuc,csu)
+def cs8(bok,bair,aair,*pq):
+    both=not bair and not aair
+    for i in range(4):
+        p,q=pq[2*i],pq[2*i+1]
+        if p:
+            if both: return (0,)
+            if q: return (1,)
+    return (int(bok),)
+cs8c=[(1,0,1,0,0,0,0,0,0,0,0),(0,0,1,0,0,0,0,0,0,0,0),(0,0,0,1,1,0,0,0,0,0,0),(1,0,0,1,0,0,0,0,0,0,0),(0,1,1,1,1,0,0,0,0,0,0),(0,0,1,1,0,0,0,0,0,1,1),(0,0,1,1,0,1,1,0,0,0,0),(0,1,0,0,0,0,0,0,0,1,1),(0,0,0,0,0,1,1,0,0,0,0),(0,0,0,0,0,0,0,1,0,0,0),(0,1,1,0,0,0,0,1,1,0,0),(0,0,0,0,0,0,0,0,0,1,0)]
+rows(g,'chorus plant survival (8.1 step 4): for each horizontal neighbour that is a plant: false when the blocks below and above are both non-air; otherwise true at once when the block below that neighbour is a plant or in supports_chorus_plant; after the loop true when the block below is a plant or in the tag (below ok, below is air, above is air, then for north, east, south, west: neighbour is a plant, the block below it is a plant or in the tag) (survive)','GC4-CHORUS-SURVIVE',11,1,cs8c,cs8)
+def fs(bok,bair,*n):
+    if bok: return (1,)
+    if not bair: return (0,)
+    found=0
+    for k in n:
+        if k==1:
+            if found: return (0,)
+            found=1
+        elif k!=0: return (0,)
+    return (found,)
+fsc=[(1,0,0,0,0,0),(0,0,0,0,0,0),(0,1,0,0,0,0),(0,1,1,0,0,0),(0,1,0,0,0,1),(0,1,1,1,0,0),(0,1,1,2,0,0),(0,1,2,0,0,0),(0,1,0,0,2,1),(0,1,0,1,0,0),(1,1,1,1,1,1)]
+rows(g,'chorus flower survival (8.2 step 1): true when the block below is the plant or in supports_chorus_flower; false when it is another non-air block; with air below exactly one horizontal neighbour must be a plant and all others air (below ok, below is air, then the four neighbours 0 air 1 plant 2 other) (survive)','GC4-FLOWER-SURVIVE',6,1,fsc,fs)
+rows(g,'chorus flower shape update (8.2 step 2): for any changed direction other than UP a flower that cannot survive schedules a tick (delay 1) (direction, survive) (tick)','GC4-FLOWER-SU',2,1,[(1,0),(3,0),(2,0),(3,1),(2,1)],lambda d,s:(int(d!=2 and not s),))
+rows(g,'chorus flower projectile hit (8.2 step 3): on a server, when the projectile may interact with the position and may break blocks, the flower is destroyed with drops (server, mayInteract, mayBreak) (destroy)','GC4-FLOWER-PROJ',3,1,[(1,1,1),(0,1,1),(1,0,1),(1,1,0)],lambda a,b,c:(int(a and b and c),))
+def col(c2,c3,c4):
+    h=1;e=0
+    for c in (c2,c3,c4):
+        if c==1: h+=1
+        else:
+            e=int(c==2); break
+    return h,e
+colc=[(0,0,0),(2,0,0),(1,2,0),(1,1,2),(1,1,1),(1,1,0),(1,0,0)]
+rows(g,'chorus flower column (8.2 step 4.3): h is 1 plus the plants below, looking at up to 3 more cells from 2 below; the first non-plant cell ends the look and sets endBelow when it is in supports_chorus_flower (cells 2, 3 and 4 below: 1 plant, 2 end stone, 0 other) (h, endBelow)','GC4-FLOWER-COLUMN',3,2,colc,col)
+def fg(bk,h,e,d):
+    if bk==1 or bk==3: return 1,0
+    if bk==2:
+        if h<2: return 1,0
+        return int(h<=d),1
+    return 0,0
+fgc=[(1,1,0,0),(3,1,0,0),(0,1,0,0),(2,1,0,0),(2,2,0,0),(2,2,0,1),(2,2,0,2),(2,3,1,2),(2,3,1,3),(2,3,1,4),(2,4,0,3),(2,4,0,4)]
+rows(g,'chorus flower growth test (8.2 step 4.2 to 4.4, example 7): end stone below or air below grows; a plant column grows when h < 2 or h <= nextInt(5 with end stone below, else 4), the draw made only when h >= 2; any other block below does not (below kind 1 supports_chorus_flower 2 plant 3 air 0 other, h, endBelow, the nextInt draw) (grow, drew)','GC4-FLOWER-GROW',4,2,fgc,fg)
+def ne(n,ex):
+    for i in range(4):
+        if i+1!=ex and not n[i]: return (0,)
+    return (1,)
+nec=[((1,1,1,1),0),((0,1,1,1),0),((0,1,1,1),1),((1,0,1,1),2),((1,1,0,1),3),((1,1,1,0),4),((1,1,1,0),1),((0,0,0,0),0)]
+rows(g,'allNeighborsEmpty (8.2 step 5): for each horizontal direction other than the excepted one (0 none, else the index of north, east, south, west) the neighbour must be air; up and down are not tested (four air flags, except) (all empty)','GC4-FLOWER-EMPTY',5,1,[(*n,e) for n,e in nec],lambda *a:ne(a[:4],a[4]))
+def rt(air,hi,age,grow,upok,nraw,eb,*v):
+    if not air or not hi or age>=5: return 0,0,0,age,0
+    if grow and upok: return 1,0,1033,age,0
+    if age<4:
+        n=nraw+(1 if eb else 0)
+        placed=sum(v[:n])
+        if placed: return 2,placed,1033,age+1,n
+        return 3,0,1034,5,n
+    return 4,0,1034,5,0
+rtc=[(0,1,0,1,1,0,0,0,0,0,0),(1,0,0,1,1,0,0,0,0,0,0),(1,1,5,1,1,0,0,0,0,0,0),(1,1,0,1,1,0,0,0,0,0,0),(1,1,2,1,0,2,0,1,0,0,0),(1,1,2,0,1,3,0,0,0,1,1),(1,1,2,0,0,0,0,1,1,1,1),(1,1,3,0,0,1,1,0,0,0,0),(1,1,3,0,0,3,1,0,0,0,1),(1,1,4,1,0,2,0,1,1,1,1),(1,1,4,0,1,0,0,0,0,0,0),(1,1,1,0,0,2,0,1,1,0,0)]
+rows(g,'chorus flower random tick (8.2 step 4, example 7): nothing unless the cell above is air and in height and age < 5; growing up places a flower of the same age (event 1033); else at age < 4 nextInt(4) (plus 1 over end stone) side attempts, each valid cell receiving an age + 1 flower (1033), the flower becoming a plant when one grew, else dying (age 5, event 1034); at age 4 it dies (1034) (air above, in height, age, grow, room for growing up, nextInt(4), end stone below, validity of the first four attempts) (action 0 nothing 1 up 2 branched 3 died after branching 4 died, flowers placed, event, age of the flower, direction draws)','GC4-FLOWER-RT',11,5,rtc,rt)
+rows(g,'chorus flower constants (8.2): AGE_5 maximum and DEAD_AGE 5, isRandomlyTicking is age < 5, support shape 14 wide to 15 (max age, dead age, ticking at age 4, ticking at age 5, width, y to)','GC4-FLOWER-CONST',2,6,[(4,5)],lambda a,b:(5,5,1,0,14,15))
+W4(g,8)
