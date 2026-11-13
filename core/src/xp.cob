@@ -552,3 +552,26 @@
      END-PERFORM
      GOBACK.
  END PROGRAM XP-ORBS-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. XP-DEATH.
+*> USING player row: the experience of a player who died (17 section 4.10): min(level x 7, 100) points are awarded as orbs at the player's position and
+*> the level, the points and the total return to 0 (Set Experience sent). No orbs appear outside a standard world, the reset happens anyway.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-POINTS              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER.
+     COMPUTE WS-POINTS = FUNCTION MIN(PL-XP-LEVEL(L-PLAYER) * 7, 100)
+     CALL "XP-ORB-TYPE" USING WS-TYPE
+     IF WS-POINTS > 0 AND WS-TYPE > 0
+         CALL "XP-AWARD" USING PL-DIM(L-PLAYER) PL-X(L-PLAYER) PL-Y(L-PLAYER) PL-Z(L-PLAYER) WS-POINTS
+     END-IF
+     MOVE 0 TO PL-XP-LEVEL(L-PLAYER) PL-XP-POINTS(L-PLAYER) PL-XP-TOTAL(L-PLAYER)
+     CALL "XP-GIVE" USING L-PLAYER WS-ZERO
+     GOBACK.
+ END PROGRAM XP-DEATH.
