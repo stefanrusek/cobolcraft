@@ -105,6 +105,8 @@
  01 WS-K-UPLIM            PIC X(40) VALUE "upper_limit".
  01 WS-K-MIDDLE            PIC X(40) VALUE "middle_size".
  01 WS-K-CROWN             PIC X(40) VALUE "crown_height".
+ 01 WS-K-FOLIAGE-HEIGHT    PIC X(40) VALUE "foliage_height".
+ 01 WS-K-ATTEMPTS          PIC X(40) VALUE "leaf_placement_attempts".
  01 WS-TAG-LVS             PIC X(112) VALUE "minecraft:leaves".
  01 WS-DECOS.
     05 FILLER              PIC X(40) VALUE "minecraft:beehive".
@@ -196,6 +198,12 @@
          WHEN "minecraft:upwards_branching_trunk_placer"
              MOVE 7 TO TR-TKIND(WS-ROW)
              CALL "FD-TREE-UP-NODE" USING JSON-DOC WS-E WS-ROW
+         WHEN "minecraft:cherry_trunk_placer"
+             MOVE 8 TO TR-TKIND(WS-ROW)
+             CALL "FD-TREE-CHERRY-NODE" USING JSON-DOC WS-E WS-ROW
+         WHEN "minecraft:bending_trunk_placer"
+             MOVE 9 TO TR-TKIND(WS-ROW)
+             CALL "FD-TREE-BEND-NODE" USING JSON-DOC WS-E WS-ROW
          WHEN OTHER
              MOVE 1 TO FD-BAD
      END-EVALUATE
@@ -279,6 +287,16 @@
              MOVE WS-K-CROWN TO WS-HKEY
          WHEN "minecraft:dark_oak_foliage_placer"
              MOVE 8 TO TR-FKIND(WS-ROW)
+         WHEN "minecraft:bush_foliage_placer"
+             MOVE 9 TO TR-FKIND(WS-ROW)
+         WHEN "minecraft:random_spread_foliage_placer"
+             MOVE 10 TO TR-FKIND(WS-ROW)
+             MOVE WS-K-FOLIAGE-HEIGHT TO WS-HKEY
+             CALL "FD-J-MEMBER" USING JSON-DOC WS-E WS-K-ATTEMPTS WS-N
+             CALL "FD-J-INT" USING JSON-DOC WS-N TR-ATTEMPTS(WS-ROW) WS-OK
+         WHEN "minecraft:cherry_foliage_placer"
+             MOVE 11 TO TR-FKIND(WS-ROW)
+             CALL "FD-TREE-CHERRYF-NODE" USING JSON-DOC WS-E WS-ROW
          WHEN OTHER
              MOVE 1 TO FD-BAD
      END-EVALUATE

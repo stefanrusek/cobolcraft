@@ -855,14 +855,13 @@ id starts with `minecraft:trees_` (`FI-ONLY`; the other vegetation, flowers, gra
 the docs above specify the tree feature, the straight trunk, the blob, spruce and pine foliage and the two layer size.
 
 Supported: the `tree` feature (type 51) with the trunk placers `straight_trunk_placer`, `fancy_trunk_placer` (large oak), `dark_oak_trunk_placer`, `giant_trunk_placer` (2 x 2),
-`mega_jungle_trunk_placer`, `forking_trunk_placer` (acacia) and `upwards_branching_trunk_placer` (mangrove, with the `mangrove_root_placer`, core/src/feat-tree-root.cob), `min_clipped_height`, the foliage placers `blob`, `spruce`, `pine`, `acacia`, `fancy`, `jungle`, `mega_pine` and `dark_oak`,
+`mega_jungle_trunk_placer`, `forking_trunk_placer` (acacia) and `upwards_branching_trunk_placer` (mangrove, with the `mangrove_root_placer`, core/src/feat-tree-root.cob), `cherry_trunk_placer` and `bending_trunk_placer` (core/src/feat-tree-cherry.cob), `min_clipped_height`, the foliage placers `blob`, `spruce`, `pine`, `acacia`, `fancy`, `jungle`, `mega_pine`, `dark_oak`, `bush`, `random_spread` and `cherry` (with the hanging leaves),
 `two_layers_feature_size` and `three_layers_feature_size`, the `soil_beneath_tree` provider (under all four cells of a 2 x 2 trunk) and the tree decorators, which are accepted and ignored (see below). That is
 every oak, birch, spruce, pine, fancy oak, dark oak, jungle (small and mega), acacia, mega spruce and mega pine of the data. Also compiled for this: the
 `weighted_list` int provider of constants (the tree counts of the biomes), the `would_survive` predicate of a sapling (the block below is in the tag `supports_vegetation`, 24 part 4: VegetationBlock.canSurvive).
 The trunk and foliage code is in core/src/feat-tree-trunk.cob and feat-tree-foliage.cob (35-3 sections 4.1 to 4.6 and 5.2); the work grid is 21 x 40 x 21 around the origin (a tree whose logs
 or leaves leave it is refused, which only a radius beyond 9 does).
-Not supported (the feature compiles as unsupported, a `random_selector` falls back to its default tree): `bending`, `cherry` and `poplar` trunks, the
-`bush`, `random_spread`, `cherry` and `poplar` foliage, unknown decorators, and the fallen trees; huge mushrooms and bamboo are not part of the tree feature
+Not supported (the feature compiles as unsupported, a `random_selector` falls back to its default tree): the `poplar` trunk and foliage, unknown decorators, and the fallen trees; huge mushrooms and bamboo are not part of the tree feature
 and stay off. Their rules are in the docs (35-3 sections 4.7 to 4.10, 5, 6, 7 and 35-4 sections 5, 6 and 11) and are the next items.
 
 Deviations, all in the header of core/src/feat-tree.cob:

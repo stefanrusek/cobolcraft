@@ -143,3 +143,23 @@
        10 TR-MUD-N          BINARY-LONG.
        10 TR-MAXW           BINARY-LONG.
        10 TR-MAXL           BINARY-LONG.
+*>     batch 5 (35-3 4.7 bending, 4.9 cherry, 5.2 bush, random spread and cherry foliage): TR-TKIND 8 cherry, 9 bending; TR-FKIND 9 bush, 10 random spread, 11 cherry. TR-MHL the min_height_for_leaves
+*>     and TR-BEND the bend_length provider of the bending trunk; the cherry trunk's providers TR-BC (branch_count), TR-BHL (branch_horizontal_length), TR-BSO (branch_start_offset_from_top, the uniform
+*>     range: a and b of the provider) and TR-BEO (branch_end_offset_from_top); TR-ATTEMPTS the leaf_placement_attempts of the random spread; TR-CF1 to TR-CF4 the cherry foliage chances
+*>     (wide_bottom_layer_hole_chance, corner_hole_chance, hanging_leaves_chance, hanging_leaves_extension_chance)
+       10 TR-MHL            BINARY-LONG.
+       10 TR-ATTEMPTS       BINARY-LONG.
+       10 TR-BEND.
+          15 TR-BEND-V      BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BC.
+          15 TR-BC-V        BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BHL.
+          15 TR-BHL-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BSO.
+          15 TR-BSO-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BEO.
+          15 TR-BEO-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-CF1            FLOAT-LONG.
+       10 TR-CF2            FLOAT-LONG.
+       10 TR-CF3            FLOAT-LONG.
+       10 TR-CF4            FLOAT-LONG.
