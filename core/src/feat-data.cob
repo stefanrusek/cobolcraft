@@ -1319,6 +1319,17 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 0
+*>           bamboo (feat-bamboo.cob): registry id 0 marks an uncompiled feature, so a compiled one carries 1000
+             MOVE 1000 TO FT-TYPE(LS-ROW)
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 16
 *>           a fallen tree (feat-tree-fallen.cob): unsupported when it cannot be placed whole, as a tree
              MOVE FD-BAD TO LS-SAVED-BAD

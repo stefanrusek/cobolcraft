@@ -964,6 +964,8 @@
              CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 16
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 1000
+             CALL "FR-BAMBOO" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57
              MOVE 0 TO LS-TOTAL
              PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT)

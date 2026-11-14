@@ -861,8 +861,10 @@ every oak, birch, spruce, pine, fancy oak, dark oak, jungle (small and mega), ac
 `weighted_list` int provider of constants (the tree counts of the biomes), the `would_survive` predicate of a sapling (the block below is in the tag `supports_vegetation`, 24 part 4: VegetationBlock.canSurvive).
 The trunk and foliage code is in core/src/feat-tree-trunk.cob and feat-tree-foliage.cob (35-3 sections 4.1 to 4.6 and 5.2); the work grid is 21 x 40 x 21 around the origin (a tree whose logs
 or leaves leave it is refused, which only a radius beyond 9 does).
-Not supported (the feature compiles as unsupported, a `random_selector` falls back to its default tree): the `poplar` trunk and foliage, unknown decorators; huge mushrooms and bamboo are not part of the tree feature
-and stay off. Their rules are in the docs (35-3 sections 4.7 to 4.10, 5, 6, 7 and 35-4 sections 5, 6 and 11) and are the next items.
+Not supported (the feature compiles as unsupported, a `random_selector` falls back to its default tree): the `poplar` trunk and foliage (35-3 4.10, 5.4, 5.5) and unknown decorators.
+Also implemented as features, but only reachable through placed features whose id starts with `minecraft:trees_` (`FI-ONLY` still keeps every other placed feature off): the
+fallen tree (type 16) and bamboo (type 0, compiled as 1000, core/src/feat-bamboo.cob, 35-4 section 6). Huge mushrooms (35-4 section 11) are not implemented: the docs do not give the
+states of the cap and stem providers (down, up of the block states) that the cap builders leave as the provider has them, and there is no generic state builder from provider properties.
 
 Deviations, all in the header of core/src/feat-tree.cob:
 

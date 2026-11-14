@@ -152,6 +152,14 @@
      COMPUTE TL-OBSERVED-N = FD-BAD * 10 - FT-TYPE(WS-FT)
      MOVE 11 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO FD-BAD
+     MOVE "minecraft:bamboo_full" TO WS-KEY
+     CALL "FD-GET-FT" USING WS-KEY WS-FT
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE "test feat tree edges a full tree table flags the next bamboo unsupported" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = FD-BAD * 10 - FT-TYPE(WS-FT)
+     MOVE 11 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE WS-SAVED TO FD-TR-COUNT
 
 *>   placed features: status 1 compiled, 2 unsupported
