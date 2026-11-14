@@ -305,6 +305,17 @@
              CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
          END-IF
      END-IF
+     IF WS-KEY = "llama"
+*>       Llama: strength (20) and variant (21), both INT (19 section 3.7).
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE WS-SERIALIZER-INT TO CD-MX-SERIALIZER
+         MOVE 20 TO CD-MX-INDEX
+         MOVE EN-STRENGTH(L-ROW) TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         MOVE 21 TO CD-MX-INDEX
+         MOVE EN-WOOL(L-ROW) TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+     END-IF
      IF WS-KEY = "allay"
 *>       Allay: dancing (16) and canDuplicate (17, true by default, sent when the cooldown runs), both BOOLEAN (19 section 15).
          INITIALIZE CD-METADATA-ENTRY-X

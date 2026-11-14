@@ -353,6 +353,9 @@
              IF SM-KEY(WS-M) = "armadillo" AND EN-ARMA(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "llama" AND (EN-STRENGTH(L-ROW) > 0 OR EN-WOOL(L-ROW) > 0)
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "allay" AND (EN-ALLAY-DUP(L-ROW) > 0 OR EN-ALLAY-DANCE(L-ROW) = 1)
                  MOVE 1 TO L-NEEDED
              END-IF
@@ -519,6 +522,8 @@
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
+         WHEN "llama"
+             CALL "LLAMA-BORN" USING L-ROW
          WHEN "fox"
              CALL "FOX-BORN" USING L-ROW
          WHEN "panda"
@@ -656,6 +661,8 @@
      MOVE EN-WOOL(L-A) TO WS-COLOR-A
      MOVE EN-WOOL(L-B) TO WS-COLOR-B
      EVALUATE WS-KEY
+         WHEN "llama"
+             CALL "LLAMA-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "fox"
              CALL "FOX-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "panda"

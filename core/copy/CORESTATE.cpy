@@ -412,6 +412,7 @@
        10 EN-ALLAY-DUP        BINARY-LONG.        *> allay: ticks of duplication cooldown left (metadata 17 canDuplicate is true at 0)
        10 EN-ALLAY-DANCE      BINARY-LONG.        *> allay: 1 while dancing (metadata 16)
        10 EN-ALLAY-T          BINARY-LONG.        *> allay: ticks since the last regeneration
+       10 EN-STRENGTH         BINARY-LONG.        *> llama: strength 1 to 5 (metadata 20); the variant 0 to 3 is EN-WOOL (metadata 21)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
