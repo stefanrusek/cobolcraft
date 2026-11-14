@@ -1153,7 +1153,7 @@
  PROGRAM-ID. MOB-INTERACT.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Interact 0x1A): the main hand of an alive player on a standard passive mob of its dimension that is alive and whose box is
 *> within the attack reach: shears on a sheep (MOB-SHEAR-USE), an empty bucket on a cow or mooshroom (MOB-MILK-USE), shears or a bowl on a mooshroom (MOB-MOOSHROOM-USE),
-*> otherwise the held item as animal food (MOB-FEED-USE). A wolf: MOB-WOLF-USE. Anything else, and the off hand, is not handled yet.
+*> otherwise the held item as animal food (MOB-FEED-USE). A wolf: MOB-WOLF-USE; iron ingots on an iron golem: MOB-GOLEM-USE. Anything else, and the off hand, is not handled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1235,6 +1235,8 @@
              CALL "MOB-MOOSHROOM-USE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN WS-KEY = "wolf"
              CALL "MOB-WOLF-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "iron_golem" AND WS-HELD = "iron_ingot"
+             CALL "MOB-GOLEM-USE" USING WS-ROW WS-ENTITY
          WHEN OTHER
              CALL "MOB-FEED-USE" USING WS-ROW WS-ENTITY
      END-EVALUATE

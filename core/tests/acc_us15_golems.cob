@@ -1,0 +1,635 @@
+*> Acceptance test (US15; docs/protocol/19 sections 19 and 20): the iron golem and snow golem rows, the build patterns (a carved pumpkin on a T of iron blocks or on two snow
+*> blocks clears them and spawns the golem, GOLEM-BUILD; also through a real Use Item On), the iron golem's fight against hostile mobs (GOLEM-TICK) and its repair with iron ingots
+*> (Interact 0x1A). The world has a stone floor of 9 x 9 blocks.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-GOLEMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO.
+ COPY BRWORLD.
+ COPY XORO.
+ COPY STDMOBS.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-XLO                BINARY-LONG.
+ 01 WS-XHI                BINARY-LONG.
+ 01 WS-ZLO                BINARY-LONG.
+ 01 WS-ZHI                BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-WANT-KEY            PIC X(112).
+ 01 WS-WANT-TYPE           BINARY-LONG.
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-GIVE-COUNT          BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ 01 WS-ROW-C               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-ORBS                BINARY-LONG.
+ 01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-COUNT-ITEM          BINARY-LONG.
+ 01 WS-COUNT-TOTAL         BINARY-LONG.
+ 01 WS-ID-A                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-OBSERVE             BINARY-DOUBLE.
+ 01 WS-SLOT-ITEM           BINARY-LONG.
+ 01 WS-WHEAT               BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-V-BABY              BINARY-LONG.
+ 01 WS-V-WOOL              BINARY-LONG.
+ 01 WS-V-NEEDED            BINARY-LONG.
+
+ 01 WS-GOLEM-TYPE          BINARY-LONG.
+ 01 WS-SNOW-TYPE           BINARY-LONG.
+ 01 WS-GOLEM               BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-SAVE-X              BINARY-LONG.
+ 01 WS-SAVE-Z              BINARY-LONG.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-BLOCK-KEY           PIC X(24).
+ 01 WS-KEY48               PIC X(48).
+ 01 WS-FACE-UP             BINARY-LONG VALUE 1.
+ 01 WS-SEQ                 BINARY-LONG VALUE 7.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 6000 TO CW-TIME
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     COMPUTE WS-XLO = WS-CX - 4
+     COMPUTE WS-XHI = WS-CX + 4
+     COMPUTE WS-ZLO = WS-CZ - 4
+     COMPUTE WS-ZHI = WS-CZ + 4
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-STATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 COMPUTE WS-E = WS-FLOOR + WS-I
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-E WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE "minecraft:experience_orb" TO WS-WANT-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-WANT-KEY WS-ORB-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+
+
+     MOVE "iron_golem" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     MOVE WS-WANT-TYPE TO WS-GOLEM-TYPE
+     CALL "STDMOB-INDEX" USING WS-GOLEM-TYPE WS-M
+     MOVE "acceptance US15 19§19 Iron golem: the row exists" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-M > 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: max health 100" TO WS-CASE
+     MOVE 100 TO WS-EXPECT
+     MOVE SM-HEALTH(WS-M) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: attack damage 15, passive kind (no peaceful removal)" TO WS-CASE
+     MOVE 15 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = SM-ATTACK(WS-M) + SM-KIND(WS-M)
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: no experience (SM-XP -1)" TO WS-CASE
+     MOVE -1 TO WS-EXPECT
+     MOVE SM-XP(WS-M) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "snow_golem" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     MOVE WS-WANT-TYPE TO WS-SNOW-TYPE
+     CALL "STDMOB-INDEX" USING WS-SNOW-TYPE WS-M
+     MOVE "acceptance US15 19§20 Snow golem: max health 4" TO WS-CASE
+     MOVE 4 TO WS-EXPECT
+     MOVE SM-HEALTH(WS-M) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§20 Snow golem: speed 0.2 (88), no experience" TO WS-CASE
+     MOVE 87 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = SM-WALK-MILLI(WS-M) + SM-XP(WS-M)
+     PERFORM CHECK-N
+     PERFORM CHECK-ROWS
+*> Iron golem pattern along x
+     COMPUTE WS-BX = WS-CX + 2
+     COMPUTE WS-BZ = WS-CZ
+     MOVE 0 TO WS-AXIS
+     PERFORM BUILD-IRON
+     MOVE "acceptance US15 19§19 Iron golem: a pumpkin on a T of iron blocks (x arms) spawns a golem" TO WS-CASE
+     PERFORM COUNT-IRON
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the golem has 100 health" TO WS-CASE
+     MOVE 100 TO WS-EXPECT
+     MOVE EN-HEALTH(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: it stands on the bottom iron block, y + 0.05" TO WS-CASE
+     COMPUTE WS-EXPECT = (WS-FLOOR + 1) * 100 + 5
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(EN-Y(WS-ROW-A) * 100 + 0.5)
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: centred on the column" TO WS-CASE
+     COMPUTE WS-EXPECT = (WS-BX + WS-BZ) * 10 + 10
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(EN-X(WS-ROW-A) * 10 + 0.5) + FUNCTION INTEGER(EN-Z(WS-ROW-A) * 10 + 0.5)
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the pattern blocks are cleared" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM COUNT-PATTERN
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW-A
+*> z arms
+     COMPUTE WS-BX = WS-CX - 2
+     COMPUTE WS-BZ = WS-CZ + 2
+     MOVE 1 TO WS-AXIS
+     PERFORM BUILD-IRON
+     MOVE "acceptance US15 19§19 Iron golem: the T along z works too" TO WS-CASE
+     PERFORM COUNT-IRON
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW-A
+*> A missing arm builds nothing
+     MOVE 0 TO WS-AXIS
+     PERFORM SET-IRON
+     COMPUTE WS-Y = WS-FLOOR + 2
+     COMPUTE WS-X = WS-BX + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-BZ WS-AIR
+     MOVE "carved_pumpkin" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 3
+     PERFORM PUT-BLOCK
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ
+     PERFORM COUNT-IRON
+     MOVE "acceptance US15 19§19 Iron golem: a T with a missing arm builds nothing" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the blocks of an incomplete pattern stay" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     COMPUTE WS-Y = WS-FLOOR + 3
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-Y WS-BZ WS-STATE
+     MOVE 0 TO WS-OBSERVE
+     IF WS-STATE NOT = 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     PERFORM CLEAR-COLUMN
+*> A corner cell of the pattern that is not air builds nothing (x arms and z arms)
+     PERFORM VARYING WS-AXIS FROM 0 BY 1 UNTIL WS-AXIS > 1
+         PERFORM SET-IRON
+         MOVE "snow_block" TO WS-BLOCK-KEY
+         COMPUTE WS-Y = WS-FLOOR + 3
+         IF WS-AXIS = 0
+             COMPUTE WS-BX = WS-BX - 1
+         ELSE
+             COMPUTE WS-BZ = WS-BZ - 1
+         END-IF
+         PERFORM PUT-BLOCK
+         IF WS-AXIS = 0
+             COMPUTE WS-BX = WS-BX + 1
+         ELSE
+             COMPUTE WS-BZ = WS-BZ + 1
+         END-IF
+         MOVE "carved_pumpkin" TO WS-BLOCK-KEY
+         PERFORM PUT-BLOCK
+         CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ
+         PERFORM COUNT-IRON
+         MOVE "acceptance US15 19§19 Iron golem: a pattern with a block in a corner cell builds nothing" TO WS-CASE
+         MOVE 0 TO WS-EXPECT
+         MOVE WS-N TO WS-OBSERVE
+         PERFORM CHECK-N
+         PERFORM CLEAR-COLUMN
+     END-PERFORM
+     MOVE 0 TO WS-AXIS
+*> A block that is no pumpkin builds nothing
+     MOVE 0 TO WS-AXIS
+     PERFORM SET-IRON
+     MOVE "iron_block" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 3
+     PERFORM PUT-BLOCK
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ
+     PERFORM COUNT-IRON
+     MOVE "acceptance US15 19§19 Iron golem: an iron block on top is no pumpkin" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+*> Jack o'lantern too
+     MOVE "jack_o_lantern" TO WS-BLOCK-KEY
+     PERFORM PUT-BLOCK
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ
+     PERFORM COUNT-IRON
+     MOVE "acceptance US15 19§19 Iron golem: a jack o'lantern head works" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW-A
+*> Snow golem
+     COMPUTE WS-BX = WS-CX + 2
+     COMPUTE WS-BZ = WS-CZ - 2
+     MOVE "snow_block" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 1
+     PERFORM PUT-BLOCK
+     COMPUTE WS-Y = WS-FLOOR + 2
+     PERFORM PUT-BLOCK
+     MOVE "carved_pumpkin" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 3
+     PERFORM PUT-BLOCK
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ
+     MOVE WS-SNOW-TYPE TO WS-WANT-TYPE
+     PERFORM COUNT-TYPE
+     MOVE "acceptance US15 19§20 Snow golem: a pumpkin on two snow blocks spawns a snow golem" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§20 Snow golem: 4 health, at the lowest snow block y + 0.05" TO WS-CASE
+     COMPUTE WS-EXPECT = 4 * 100000 + (WS-FLOOR + 1) * 100 + 5
+     COMPUTE WS-OBSERVE = EN-HEALTH(WS-ROW-A) * 100000 + FUNCTION INTEGER(EN-Y(WS-ROW-A) * 100 + 0.5)
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§20 Snow golem: the three blocks are cleared" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         COMPUTE WS-Y = WS-FLOOR + WS-I
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-Y WS-BZ WS-STATE
+         IF WS-STATE NOT = 0
+             ADD 1 TO WS-OBSERVE
+         END-IF
+     END-PERFORM
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW-A
+*> One snow block is not enough
+     MOVE "snow_block" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 2
+     PERFORM PUT-BLOCK
+     MOVE "carved_pumpkin" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 3
+     PERFORM PUT-BLOCK
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ
+     PERFORM COUNT-TYPE
+     MOVE "acceptance US15 19§20 Snow golem: one snow block builds nothing" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     PERFORM CLEAR-COLUMN
+*> The real placement: a carved pumpkin used on the top of the body
+     MOVE 0 TO WS-AXIS
+     COMPUTE WS-BX = WS-CX + 2
+     COMPUTE WS-BZ = WS-CZ
+     PERFORM SET-IRON
+     MOVE "carved_pumpkin" TO WS-ITEM-KEY
+     MOVE 5 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     COMPUTE WS-Y = WS-FLOOR + 2
+     CALL "TEST-USE-ON" USING WS-CONN WS-BX WS-Y WS-BZ WS-FACE-UP WS-SEQ
+     PERFORM COUNT-IRON
+     MOVE "acceptance US15 19§19 Iron golem: placing a carved pumpkin on the T builds the golem" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+*> The golem fights hostile mobs
+     MOVE WS-ROW-A TO WS-GOLEM
+     COMPUTE EN-X(WS-GOLEM) = WS-CX + 0.5
+     COMPUTE EN-Z(WS-GOLEM) = WS-CZ - 2.5
+     MOVE "zombie" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE -2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE "cow" TO WS-WANT-KEY
+     MOVE 3 TO WS-DX
+     MOVE -2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-C
+     MOVE 0 TO WS-HX WS-HZ WS-WALK
+     CALL "GOLEM-TICK" USING WS-GOLEM WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 19§19 Iron golem: it takes a hostile mob as its foe" TO WS-CASE
+     MOVE WS-ROW-B TO WS-EXPECT
+     MOVE EN-FOE(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: in reach it hits at once" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     COMPUTE WS-N = 20 - EN-HEALTH(WS-ROW-B)
+     IF WS-N >= 7 AND WS-N <= 21
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the hit throws the target up (+0.4)" TO WS-CASE
+     MOVE 400 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(EN-VY(WS-ROW-B) * 1000 + 0.5)
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the attack timer is 20" TO WS-CASE
+     MOVE 20 TO WS-EXPECT
+     MOVE EN-PET-CD(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: a cow is no foe (health untouched)" TO WS-CASE
+     MOVE 10 TO WS-EXPECT
+     MOVE EN-HEALTH(WS-ROW-C) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-HEALTH(WS-ROW-B)
+     CALL "GOLEM-TICK" USING WS-GOLEM WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 19§19 Iron golem: a defeated foe is dropped" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-FOE(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> A far hostile mob is walked to at the chase speed 1.0 (138 milli), not the stroll speed 0.6
+     MOVE "zombie" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE 3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 0 TO EN-PET-CD(WS-GOLEM)
+     MOVE 0 TO WS-HX WS-HZ WS-WALK
+     CALL "GOLEM-TICK" USING WS-GOLEM WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 19§19 Iron golem: it walks toward a hostile mob 6 blocks away" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-WALK TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the walk is toward +z at 0.138 blocks a tick" TO WS-CASE
+     MOVE 138 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(WS-HZ * 1000 + 0.5)
+     PERFORM CHECK-N
+*> Repair with iron ingots
+     MOVE "iron_ingot" TO WS-ITEM-KEY
+     MOVE 3 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE 50 TO EN-HEALTH(WS-GOLEM)
+     MOVE EN-ID(WS-GOLEM) TO WS-ID-A
+     COMPUTE PL-X(WS-PLAYER) = EN-X(WS-GOLEM) + 1
+     COMPUTE PL-Z(WS-PLAYER) = EN-Z(WS-GOLEM)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§19 Iron golem: an iron ingot heals 25" TO WS-CASE
+     MOVE 75 TO WS-EXPECT
+     MOVE EN-HEALTH(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§19 Iron golem: the ingot is used up" TO WS-CASE
+     MOVE 2 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 90 TO EN-HEALTH(WS-GOLEM)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§19 Iron golem: healing stops at the maximum 100" TO WS-CASE
+     MOVE 100 TO WS-EXPECT
+     MOVE EN-HEALTH(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§19 Iron golem: a healthy golem keeps the ingot" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> STDMOB-STEP: the golem walks toward its foe, a snow golem stands, a golem gives no experience
+     MOVE EN-Z(WS-GOLEM) TO WS-FZ
+     MOVE 0 TO EN-FOE(WS-GOLEM) EN-PET-CD(WS-GOLEM)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         CALL "STDMOB-STEP" USING WS-GOLEM
+     END-PERFORM
+     MOVE "acceptance US15 19§19 Iron golem: STDMOB-STEP walks it toward the hostile mob" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-Z(WS-GOLEM) > WS-FZ + 0.3
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "snow_golem" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE 0 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-C
+     MOVE EN-X(WS-ROW-C) TO WS-FX
+     MOVE EN-Z(WS-ROW-C) TO WS-FZ
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
+         CALL "STDMOB-STEP" USING WS-ROW-C
+     END-PERFORM
+     MOVE "acceptance US15 19§20 Snow golem: it does not stroll" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(FUNCTION ABS(EN-X(WS-ROW-C) - WS-FX) * 1000) + FUNCTION INTEGER(FUNCTION ABS(EN-Z(WS-ROW-C) - WS-FZ) * 1000)
+     PERFORM CHECK-N
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EN-COUNT
+         IF EN-USED(WS-K) = 1
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE WS-N TO WS-COUNT-TOTAL
+     CALL "STDMOB-XP" USING WS-DIM EN-X(WS-GOLEM) EN-Y(WS-GOLEM) EN-Z(WS-GOLEM) EN-TYPE(WS-GOLEM) WS-PLAYER
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EN-COUNT
+         IF EN-USED(WS-K) = 1
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§19 Iron golem: killed by a player it gives no experience orb" TO WS-CASE
+     MOVE WS-COUNT-TOTAL TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     STOP RUN.
+
+ CHECK-ROWS.
+     MOVE "cat" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     CALL "STDMOB-INDEX" USING WS-WANT-TYPE WS-M
+     COMPUTE WS-OBSERVE = SM-HEALTH(WS-M) * 1000 + SM-WALK-MILLI(WS-M)
+     MOVE "acceptance US15 19§5.1 Cat: 10 health, stroll 0.8 (127)" TO WS-CASE
+     MOVE 10127 TO WS-EXPECT
+     PERFORM CHECK-N
+     MOVE "ocelot" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     CALL "STDMOB-INDEX" USING WS-WANT-TYPE WS-M
+     COMPUTE WS-OBSERVE = SM-HEALTH(WS-M) * 1000 + SM-WALK-MILLI(WS-M)
+     MOVE "acceptance US15 19§5.2 Ocelot: 10 health, stroll 0.8 (127)" TO WS-CASE
+     MOVE 10127 TO WS-EXPECT
+     PERFORM CHECK-N
+     MOVE "polar_bear" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     CALL "STDMOB-INDEX" USING WS-WANT-TYPE WS-M
+     COMPUTE WS-OBSERVE = SM-HEALTH(WS-M) * 1000000 + SM-WALK-MILLI(WS-M) * 1000 + SM-PANIC-MILLI(WS-M) - 551
+     MOVE "acceptance US15 19§9 Polar bear: 30 health, stroll 1.0 (138), panic 2.0 (551)" TO WS-CASE
+     MOVE 30138000 TO WS-EXPECT
+     PERFORM CHECK-N.
+
+ SET-IRON.
+     MOVE "iron_block" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 1
+     PERFORM PUT-BLOCK
+     COMPUTE WS-Y = WS-FLOOR + 2
+     PERFORM PUT-BLOCK
+     MOVE WS-BX TO WS-SAVE-X
+     MOVE WS-BZ TO WS-SAVE-Z
+     IF WS-AXIS = 0
+         COMPUTE WS-BX = WS-SAVE-X - 1
+         PERFORM PUT-BLOCK
+         COMPUTE WS-BX = WS-SAVE-X + 1
+         PERFORM PUT-BLOCK
+     ELSE
+         COMPUTE WS-BZ = WS-SAVE-Z - 1
+         PERFORM PUT-BLOCK
+         COMPUTE WS-BZ = WS-SAVE-Z + 1
+         PERFORM PUT-BLOCK
+     END-IF
+     MOVE WS-SAVE-X TO WS-BX
+     MOVE WS-SAVE-Z TO WS-BZ.
+
+ BUILD-IRON.
+     PERFORM SET-IRON
+     MOVE "carved_pumpkin" TO WS-BLOCK-KEY
+     COMPUTE WS-Y = WS-FLOOR + 3
+     PERFORM PUT-BLOCK
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-Y WS-BZ.
+
+ PUT-BLOCK.
+     MOVE SPACES TO WS-KEY48
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-BLOCK-KEY) DELIMITED BY SIZE INTO WS-KEY48
+     CALL "WORLDSIM-FIND-BLOCK" USING WS-KEY48 WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-Y WS-BZ WS-STATE.
+
+ CLEAR-COLUMN.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         COMPUTE WS-Y = WS-FLOOR + WS-I
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-Y WS-BZ WS-AIR
+         COMPUTE WS-X = WS-BX - 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-BZ WS-AIR
+         COMPUTE WS-X = WS-BX + 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-BZ WS-AIR
+         COMPUTE WS-Z = WS-BZ - 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-Y WS-Z WS-AIR
+         COMPUTE WS-Z = WS-BZ + 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-Y WS-Z WS-AIR
+     END-PERFORM.
+
+ COUNT-IRON.
+     MOVE WS-GOLEM-TYPE TO WS-WANT-TYPE
+     PERFORM COUNT-TYPE.
+
+ COUNT-TYPE.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EN-COUNT
+         IF EN-USED(WS-K) = 1 AND EN-TYPE(WS-K) = WS-WANT-TYPE
+             ADD 1 TO WS-N
+             MOVE WS-K TO WS-ROW-A
+         END-IF
+     END-PERFORM.
+
+ COUNT-PATTERN.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         COMPUTE WS-Y = WS-FLOOR + WS-I
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-Y WS-BZ WS-STATE
+         IF WS-STATE NOT = 0
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     COMPUTE WS-Y = WS-FLOOR + 2
+     COMPUTE WS-X = WS-BX - 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-BZ WS-STATE
+     IF WS-STATE NOT = 0
+         ADD 1 TO WS-N
+     END-IF
+     COMPUTE WS-X = WS-BX + 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-BZ WS-STATE
+     IF WS-STATE NOT = 0
+         ADD 1 TO WS-N
+     END-IF.
+
+ SPAWN-MOB.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+
+
+ FIND-TYPE.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS.
+
+
+ GIVE-HELD.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-ITEM-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE WS-GIVE-COUNT TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1).
+
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OBSERVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-GOLEMS.
+ COPY CORETEST.

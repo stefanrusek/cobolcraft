@@ -192,7 +192,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-XP.
 *> USING dim, x, y, z (FLOAT-LONG), type, killer player row (BINARY-LONG): the experience of a defeated standard mob (18 section 7.5 dropExperience):
-*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3)) as orbs at its position (XP-AWARD). Equipment bonuses and
+*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3); SM-XP -1: a golem, none) as orbs at its position (XP-AWARD). Equipment bonuses and
 *> the mob_drops game rule are not modelled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -216,7 +216,9 @@
              CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-POINTS
              ADD 1 TO WS-POINTS
          END-IF
-         CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
+         IF WS-POINTS > 0
+             CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-XP.
@@ -818,6 +820,7 @@
 *> - a hostile mob burns in daylight (STDMOB-BURN), keeps a target (STDMOB-TARGET), counts its attack timer down (EN-COOLDOWN), walks toward the
 *>   target at the walk speed until its box is within the melee reach, and with the timer at 0 and the target in reach hits it (HEALTH-MOB-HIT, the
 *>   attack damage of the row), the timer becoming SM-ATTACK-TICKS; with no target it strolls like the animals;
+*> - an iron golem fights hostile mobs (GOLEM-TICK) and golems never stroll;
 *> - a tame wolf obeys PET-TICK first (mob-pets.cob): sitting it stays, otherwise it bites the mob that targets its owner or follows the owner;
 *> - a mob that was hit panics (EN-FLEE ticks left, away from the attacker at the panic speed);
 *> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time):
@@ -920,6 +923,9 @@
      IF SM-KEY(WS-M) = "wolf" AND EN-TAMED(WS-ROW) = 1
          CALL "PET-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
+     IF SM-KEY(WS-M) = "iron_golem"
+         CALL "GOLEM-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
          IF WS-STOP = 2
@@ -998,6 +1004,9 @@
              MOVE WS-LIFE-HX TO WS-HX
              MOVE WS-LIFE-HZ TO WS-HZ
              CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem"
+*>           A golem does not stroll: the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN OTHER
              IF EN-COOLDOWN(WS-ROW) = 0
