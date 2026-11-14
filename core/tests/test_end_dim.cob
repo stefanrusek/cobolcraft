@@ -77,6 +77,8 @@
      MOVE WS-ALL TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO ND-PLACEHOLDER
+*>   a fixed level seed: the generated terrain is then the same on every run
+     MOVE 12345 TO CW-SEED
      CALL "END-DIM-READY" USING WS-READY
      MOVE "acceptance US12 38§2 End seam: with the real End on and the tables complete the generator is ready" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N

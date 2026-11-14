@@ -61,6 +61,8 @@
          STOP RUN
      END-IF
      MOVE 0 TO ND-PLACEHOLDER
+*>   a fixed level seed: the generated terrain is then the same on every run
+     MOVE 12345 TO CW-SEED
      MOVE "end_portal" TO WS-KEY
      CALL "PT-STATE" USING WS-KEY WS-PAIRS WS-PORTAL
      MOVE "dirt" TO WS-KEY
