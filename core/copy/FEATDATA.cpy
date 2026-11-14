@@ -108,3 +108,11 @@
        10 TR-LOGS-N         BINARY-LONG.
        10 TR-CANT-START     BINARY-LONG.
        10 TR-CANT-N         BINARY-LONG.
+*>     batch 3 (tree types): the trunk placer TR-TKIND (1 straight, 2 fancy, 3 dark oak, 4 giant, 5 mega jungle, 6 forking), the foliage placer TR-FKIND adds 4 acacia, 5 fancy, 6 jungle, 7 mega pine,
+*>     8 dark oak (TR-FH is its height or the crown_height of the mega pine); the size TR-SZ-KIND 0 two layers, 1 three layers (TR-SZ-UPLIM the upper_limit, TR-SZ-MID the middle_size)
+       10 TR-TKIND          BINARY-LONG.
+       10 TR-SZ-KIND        BINARY-LONG.
+       10 TR-SZ-UPLIM       BINARY-LONG.
+       10 TR-SZ-MID         BINARY-LONG.
+       10 TR-LVS-START      BINARY-LONG.
+       10 TR-LVS-N          BINARY-LONG.

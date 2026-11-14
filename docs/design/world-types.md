@@ -854,9 +854,16 @@ the feature stage of core/src/feat-stage.cob. The biome lists are loaded with th
 id starts with `minecraft:trees_` (`FI-ONLY`; the other vegetation, flowers, grass patches, mushrooms, stays off until it is reviewed). No clean-room round was needed:
 the docs above specify the tree feature, the straight trunk, the blob, spruce and pine foliage and the two layer size.
 
-Supported: the `tree` feature (type 51) with `straight_trunk_placer`, `blob_foliage_placer`, `spruce_foliage_placer`, `pine_foliage_placer`, `two_layers_feature_size`,
-the `soil_beneath_tree` provider and the `beehive` decorator (ignored). That is every plain oak, birch and spruce and pine of the data. Also compiled for this: the
+Supported: the `tree` feature (type 51) with the trunk placers `straight_trunk_placer`, `fancy_trunk_placer` (large oak), `dark_oak_trunk_placer`, `giant_trunk_placer` (2 x 2),
+`mega_jungle_trunk_placer` and `forking_trunk_placer` (acacia), the foliage placers `blob`, `spruce`, `pine`, `acacia`, `fancy`, `jungle`, `mega_pine` and `dark_oak`,
+`two_layers_feature_size` and `three_layers_feature_size`, the `soil_beneath_tree` provider (under all four cells of a 2 x 2 trunk) and the tree decorators, which are accepted and ignored (see below). That is
+every oak, birch, spruce, pine, fancy oak, dark oak, jungle (small and mega), acacia, mega spruce and mega pine of the data. Also compiled for this: the
 `weighted_list` int provider of constants (the tree counts of the biomes), the `would_survive` predicate of a sapling (the block below is in the tag `supports_vegetation`, 24 part 4: VegetationBlock.canSurvive).
+The trunk and foliage code is in core/src/feat-tree-trunk.cob and feat-tree-foliage.cob (35-3 sections 4.1 to 4.6 and 5.2); the work grid is 21 x 40 x 21 around the origin (a tree whose logs
+or leaves leave it is refused, which only a radius beyond 9 does).
+Not supported (the feature compiles as unsupported, a `random_selector` falls back to its default tree): `bending`, `upwards_branching` (mangrove), `cherry` and `poplar` trunks, the
+`bush`, `random_spread`, `cherry` and `poplar` foliage, root placers (mangrove), `min_clipped_height`, unknown decorators, and the fallen trees; huge mushrooms and bamboo are not part of the tree feature
+and stay off. Their rules are in the docs (35-3 sections 4.7 to 4.10, 5, 6, 7 and 35-4 sections 5, 6 and 11) and are the next items.
 
 Deviations, all in the header of core/src/feat-tree.cob:
 
@@ -864,6 +871,6 @@ Deviations, all in the header of core/src/feat-tree.cob:
 |---|---|
 | Chunk borders | The write window of the feature level is one chunk and the terrain of a neighbour is not known while a chunk is generated, so a tree cannot be completed from the other side. A tree is placed at its origin in the chunk being generated and the blocks that fall in a neighbouring chunk are cut off: the trunk is always whole, the canopy of a tree within two or three blocks of a chunk edge is cut flat at the edge. Completing it would need the ground height, top block, biome and cave carving of the neighbour's column, which only the neighbour's full generation gives (stages biomes to surface are about 80 percent of a chunk's cost, measured in the lane); a cheaper estimate disagrees with the real ground by a block or two and would leave floating or sunken canopies. Proposal if the cut canopies are not acceptable: carry the overflow blocks of a finished chunk in the install step of the game process (a pending list per chunk, applied when the neighbour is installed or loaded), which needs the worker protocol to return them. |
 | Variants | A `random_selector` whose default is a tree places that default when the chosen child cannot be compiled (the fancy and fallen trees), so plains and forests have plain oaks and birches where vanilla has some large oaks. Trees with other trunk or foliage placers (dark oak, jungle, acacia, mangrove, cherry, large spruce) place nothing. |
-| Bees | The beehive decorator is ignored: no nests. |
+| Decorators | Every tree decorator of the data is accepted and ignored, and its random draws are not made: the beehive (no nests), `trunk_vine` and `leave_vine` (no vines on jungle and mega jungle trees), `cocoa`, `alter_ground` (no podzol under mega spruce and pine), `place_on_ground` (no leaf litter), `shelf_mushroom`, `attached_to_logs` and `attached_to_leaves`, `pale_moss`, `creaking_heart`. A decorator type not registered in 35-4 section 3.1 makes the tree unsupported. The later random stream of the chunk therefore differs from vanilla for trees that have decorators. `ignore_vines` is not read: vines are not tested in the free height scan. |
 | Leaf distance | Section 2.4 of 35-3 is replaced by the breadth first distance from the tree's own logs through its own leaves; the hash set order of the layers is not reproduced and blocks outside the tree do not lower a distance. Leaves are written not persistent, not waterlogged. The shape update at the edge (2.5) only schedules leaf ticks and is not run. |
-| States | Block states are the default states of the blocks; the leaf distance state is derived from the 28 state layout (distance, persistent, waterlogged) when the leaf block has 28 states. |
+| States | Block states are the default states of the blocks, except the axis of the logs of a fancy trunk limb (x, y or z by the largest horizontal offset, 4.6); the leaf distance state is derived from the 28 state layout (distance, persistent, waterlogged) when the leaf block has 28 states. |
