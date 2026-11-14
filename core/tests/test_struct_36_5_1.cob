@@ -25,6 +25,15 @@
  01 WS-DY                  BINARY-LONG.
  01 WS-REACH               BINARY-LONG.
  01 WS-DX                  BINARY-LONG.
+01 WS-BOX.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==A-==.
+ 01 WS-LEN                 BINARY-LONG VALUE 0.
+ 01 WS-ZB                  BINARY-LONG VALUE 0.
+ 01 WS-ZC                  BINARY-LONG VALUE 0.
+ 01 WS-REACH-DIR           BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-CREATE-SEED         BINARY-DOUBLE UNSIGNED.
+ 01 WS-DIRN                BINARY-LONG.
  01 WS-E-COUNT             BINARY-LONG.
  01 WS-E-DY                BINARY-LONG.
  01 WS-E-HASH              BINARY-DOUBLE.
@@ -136,6 +145,91 @@
      MOVE "acceptance US12 36-5§2.3 Mineshaft: the mesa type makes no start (its vertical placement needs the terrain's base height)" TO TL-CASE
      MOVE WS-VALID TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the corridor candidate box in the four directions (2.6, 4.6): anchor (100,40,200), two sections (10 long)
+     MOVE 100 TO WS-CX
+     MOVE 40 TO WS-Y
+     MOVE 200 TO WS-Z
+     MOVE 2 TO WS-LEN
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+         MOVE WS-I TO WS-DIRN
+         CALL "MS-CORRIDOR-BOX" USING WS-CX WS-Y WS-Z WS-DIRN WS-LEN WS-BOX
+         MOVE SPACES TO WS-TEXT
+         MOVE A-X0 TO WS-EDIT
+         MOVE A-Z0 TO WS-EDIT2
+         MOVE A-X1 TO WS-EDIT3
+         MOVE A-Z1 TO WS-EDIT4
+         STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) " " FUNCTION TRIM(WS-EDIT4) DELIMITED BY SIZE INTO WS-TEXT
+         MOVE "T" TO TL-MODE
+         MOVE WS-TEXT TO TL-OBSERVED
+         EVALUATE WS-I
+             WHEN 0
+                 MOVE "100 200 102 209" TO TL-EXPECTED
+                 MOVE "acceptance US12 36-5§2.6 Mineshaft corridor box south: 3 wide, 10 long toward +z: x 100 to 102, z 200 to 209" TO TL-CASE
+             WHEN 1
+                 MOVE "91 200 100 202" TO TL-EXPECTED
+                 MOVE "acceptance US12 36-5§2.6 Mineshaft corridor box west: x 91 to 100, z 200 to 202" TO TL-CASE
+             WHEN 2
+                 MOVE "100 191 102 200" TO TL-EXPECTED
+                 MOVE "acceptance US12 36-5§2.6 Mineshaft corridor box north: z 191 to 200" TO TL-CASE
+             WHEN 3
+                 MOVE "100 200 109 202" TO TL-EXPECTED
+                 MOVE "acceptance US12 36-5§2.6 Mineshaft corridor box east: x 100 to 109" TO TL-CASE
+         END-EVALUATE
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   a candidate that collides with a piece makes none (crossing, stairs and corridor, every length): 60 seeds against a builder holding one huge piece
+     CALL "SPB-RESET"
+     MOVE -1000 TO A-X0
+     MOVE -1000 TO A-Y0
+     MOVE -1000 TO A-Z0
+     MOVE 1000 TO A-X1
+     MOVE 1000 TO A-Y1
+     MOVE 1000 TO A-Z1
+     MOVE 2 TO WS-DIRN
+     MOVE 0 TO WS-LEN
+     CALL "SPB-ADD" USING WS-LEN WS-DIRN WS-ZB WS-ZC WS-BOX WS-I
+     MOVE 0 TO WS-ALL-LOST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+         MOVE WS-I TO WS-CREATE-SEED
+         CALL "JRAND-SET-SEED" USING SP-RNG WS-CREATE-SEED
+         MOVE 0 TO WS-X
+         MOVE 0 TO WS-Z
+         MOVE 2 TO WS-DIRN
+         CALL "MS-CREATE" USING WS-X WS-Y WS-Z WS-DIRN WS-LEN WS-ZB WS-ROW
+         ADD WS-ROW TO WS-ALL-LOST
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 36-5§2.4 Mineshaft: every candidate box collides with the huge piece: no piece is made (60 seeds covering the three classes)" TO TL-CASE
+     MOVE WS-ALL-LOST TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   generateAndAddPiece: nothing more than 80 blocks in x or z from the parent's minimum corner (2.4)
+     CALL "SPB-RESET"
+     MOVE 0 TO A-X0
+     MOVE 50 TO A-Y0
+     MOVE 0 TO A-Z0
+     MOVE 9 TO A-X1
+     MOVE 55 TO A-Y1
+     MOVE 9 TO A-Z1
+     MOVE 2 TO WS-DIRN
+     MOVE 0 TO WS-LEN
+     MOVE -1 TO WS-REACH-DIR
+     CALL "SPB-ADD" USING WS-LEN WS-REACH-DIR WS-ZB WS-ZC WS-BOX WS-ROW
+     MOVE 81 TO WS-X
+     MOVE 50 TO WS-Y
+     MOVE 0 TO WS-Z
+     CALL "MS-GEN-ADD" USING WS-ROW WS-X WS-Y WS-Z WS-DIRN WS-LEN WS-I
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 36-5§2.4 Mineshaft: a child 81 blocks in x from the parent's minimum corner is refused" TO TL-CASE
+     MOVE WS-I TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-X
+     MOVE 81 TO WS-Z
+     CALL "MS-GEN-ADD" USING WS-ROW WS-X WS-Y WS-Z WS-DIRN WS-LEN WS-I
+     MOVE "acceptance US12 36-5§2.4 Mineshaft: and 81 blocks in z" TO TL-CASE
+     MOVE WS-I TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

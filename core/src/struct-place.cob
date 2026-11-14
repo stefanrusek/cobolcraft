@@ -57,7 +57,7 @@
                   OR "minecraft:anvil" OR "minecraft:chipped_anvil" OR "minecraft:damaged_anvil"
                   OR "minecraft:dragon_egg" OR "minecraft:suspicious_sand" OR "minecraft:suspicious_gravel"
                  MOVE 1 TO SB-FLAGS(WS-I)
-             WHEN WS-LEN > 15 AND WS-FULL(WS-LEN - 14:15) = "_concrete_powder"
+             WHEN WS-LEN > 16 AND WS-FULL(WS-LEN - 15:16) = "_concrete_powder"
                  MOVE 1 TO SB-FLAGS(WS-I)
              WHEN FUNCTION TRIM(WS-FULL) = "minecraft:glow_lichen" OR "minecraft:seagrass" OR "minecraft:tall_seagrass"
                  MOVE 2 TO SB-FLAGS(WS-I)

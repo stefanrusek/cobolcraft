@@ -71,9 +71,9 @@
      COMPUTE TL-OBSERVED-N = SD-ST-COUNT * 10 + ST-VARIANT(1) + ST-VARIANT(2) * 100
      MOVE 120 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-5§2.9 Mineshaft: the blocking biome tag holds deep_dark" TO TL-CASE
+     MOVE "acceptance US12 36-5§2.9 Mineshaft: the blocking biome tag of the fixture holds deep_dark and desert" TO TL-CASE
      MOVE SD-BLOCK-COUNT TO TL-OBSERVED-N
-     MOVE 1 TO TL-EXPECTED-N
+     MOVE 2 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   the room: box (2,50,2)-(10,56,10), no entrance
@@ -224,6 +224,133 @@
      MOVE WS-STONE TO WS-WANT
      MOVE "acceptance US12 36-5§2.12 Mineshaft stairs: below the diagonal at step 0 the rock stays: (5,46,6)" TO TL-CASE
      PERFORM CHECK-CELL
+
+*>   the corridor, north oriented: box (4,50,0)-(6,52,14), three sections (local z 0 to 14, world z = 14 - local z)
+     PERFORM STONE-WORLD
+     MOVE 0 TO WS-PT
+     MOVE 2 TO WS-PO
+     MOVE 4 TO A-X0
+     MOVE 50 TO A-Y0
+     MOVE 0 TO A-Z0
+     MOVE 6 TO A-X1
+     MOVE 52 TO A-Y1
+     MOVE 14 TO A-Z1
+     MOVE 1 TO WS-F1
+     MOVE 3 TO WS-F4
+     PERFORM ADD-PIECE
+     CALL "MS-POST" USING WS-ROW
+     MOVE 5 TO WS-X
+     MOVE 51 TO WS-Y
+     MOVE 9 TO WS-Z
+     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE "acceptance US12 36-5§2.6 Mineshaft corridor: the shaft (here local y 1) is air" TO TL-CASE
+     PERFORM CHECK-CELL
+     MOVE 4 TO WS-X
+     MOVE 50 TO WS-Y
+     MOVE 12 TO WS-Z
+     MOVE SB-FENCE-S(1, 2) TO WS-WANT
+     MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: a fence post with the west connection stands at local (0,0,2) of the first section" TO TL-CASE
+     PERFORM CHECK-CELL
+     MOVE 6 TO WS-X
+     MOVE SB-FENCE-S(1, 4) TO WS-WANT
+     MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: and one with the east connection on the other wall" TO TL-CASE
+     PERFORM CHECK-CELL
+     MOVE 4 TO WS-X
+     MOVE 51 TO WS-Y
+     MOVE SB-FENCE-S(1, 2) TO WS-WANT
+     MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: the post is two high (local y 0 and 1)" TO TL-CASE
+     PERFORM CHECK-CELL
+     MOVE 52 TO WS-Y
+     MOVE SB-PLANKS-S(1) TO WS-WANT
+     MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: a plank sits on the post (local y 2): beam or single plank" TO TL-CASE
+     PERFORM CHECK-CELL
+     MOVE 5 TO WS-X
+     MOVE 49 TO WS-Y
+     MOVE 9 TO WS-Z
+     MOVE WS-STONE TO WS-WANT
+     MOVE "acceptance US12 36-5§2.6 Mineshaft corridor: a stone floor is a full cube and is kept" TO TL-CASE
+     PERFORM CHECK-CELL
+     PERFORM COUNT-RAILS
+     MOVE "acceptance US12 36-5§2.6 Mineshaft corridor with rails: between 5 and 15 of the 15 cells of the track got a rail (70 percent on an interior floor)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     IF WS-COUNT >= 5 AND WS-COUNT <= 15
+         MOVE 1 TO TL-EXPECTED-N
+     END-IF
+     MOVE 1 TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the same corridor in the other three orientations: the fence post at the wall of local x 0 and z 2
+     MOVE 0 TO WS-F1
+     PERFORM STONE-WORLD
+     MOVE 0 TO WS-PO
+     PERFORM ADD-PIECE
+     CALL "MS-POST" USING WS-ROW
+     MOVE 4 TO WS-X
+     MOVE 50 TO WS-Y
+     MOVE 2 TO WS-Z
+     MOVE SB-FENCE-S(1, 2) TO WS-WANT
+     MOVE "acceptance US12 36-5§6.4 Mineshaft corridor south: local z grows south (world z = minZ + 2) and the west wall keeps its west connection (mirror left-right swaps north and south only)" TO TL-CASE
+     PERFORM CHECK-CELL
+     PERFORM STONE-WORLD
+     MOVE 1 TO WS-PO
+     MOVE 0 TO A-X0
+     MOVE 4 TO A-Z0
+     MOVE 14 TO A-X1
+     MOVE 6 TO A-Z1
+     MOVE 50 TO A-Y0
+     PERFORM ADD-PIECE
+     CALL "MS-POST" USING WS-ROW
+     MOVE 12 TO WS-X
+     MOVE 4 TO WS-Z
+     MOVE 50 TO WS-Y
+     MOVE SB-FENCE-S(1, 3) TO WS-WANT
+     MOVE "acceptance US12 36-5§6.4 Mineshaft corridor west: world x = maxX - 2, local x 0 is the north wall and its west connection turns to north" TO TL-CASE
+     PERFORM CHECK-CELL
+     PERFORM STONE-WORLD
+     MOVE 3 TO WS-PO
+     PERFORM ADD-PIECE
+     CALL "MS-POST" USING WS-ROW
+     MOVE 2 TO WS-X
+     MOVE SB-FENCE-S(1, 3) TO WS-WANT
+     MOVE "acceptance US12 36-5§6.4 Mineshaft corridor east: world x = minX + 2, north wall, connection north" TO TL-CASE
+     PERFORM CHECK-CELL
+
+*>   a spider corridor with the spawner and its block entity request, cobwebs; dark oak wood for the mesa type
+     PERFORM STONE-WORLD
+     MOVE 2 TO WS-PO
+     MOVE 4 TO A-X0
+     MOVE 0 TO A-Z0
+     MOVE 6 TO A-X1
+     MOVE 14 TO A-Z1
+     MOVE 0 TO WS-F1
+     MOVE 1 TO WS-F2
+     MOVE 1 TO WS-MST
+     PERFORM ADD-PIECE
+     CALL "MS-POST" USING WS-ROW
+     MOVE "acceptance US12 36-5§2.6 Mineshaft spider corridor: one spawner request for cave_spider (kind 2) in the channel" TO TL-CASE
+     MOVE GBL-COUNT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE GBL-X(1) TO WS-X
+     MOVE GBL-Y(1) TO WS-Y
+     MOVE GBL-Z(1) TO WS-Z
+     MOVE SB-S-SPAWNER TO WS-WANT
+     MOVE "acceptance US12 36-5§2.6 Mineshaft spider corridor: the requested cell holds the spawner block" TO TL-CASE
+     PERFORM CHECK-CELL
+     MOVE 4 TO WS-X
+     MOVE 50 TO WS-Y
+     MOVE 12 TO WS-Z
+     MOVE SB-FENCE-S(2, 2) TO WS-WANT
+     MOVE "acceptance US12 36-5§2.1 Mineshaft mesa corridor: the posts are dark oak fences" TO TL-CASE
+     PERFORM CHECK-CELL
+     PERFORM COUNT-WEBS
+     MOVE "acceptance US12 36-5§2.6 Mineshaft spider corridor: cobwebs fill part of the shaft (60 percent of interior cells)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     IF WS-COUNT >= 5
+         MOVE 1 TO TL-EXPECTED-N
+     END-IF
+     MOVE 1 TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  STONE-WORLD.
@@ -250,6 +377,28 @@
      MOVE WS-S TO TL-OBSERVED-N
      MOVE WS-WANT TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ COUNT-RAILS.
+     MOVE 0 TO WS-COUNT
+     MOVE 5 TO WS-X
+     MOVE 50 TO WS-Y
+     PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 14
+         PERFORM CELL-STATE
+         IF WS-S = SB-S-RAIL(1) OR WS-S = SB-S-RAIL(2)
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM.
+ COUNT-WEBS.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-X FROM 4 BY 1 UNTIL WS-X > 6
+         PERFORM VARYING WS-Y FROM 50 BY 1 UNTIL WS-Y > 51
+             PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 14
+                 PERFORM CELL-STATE
+                 IF WS-S = SB-S-COBWEB
+                     ADD 1 TO WS-COUNT
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM.
  CELL-STATE.
      COMPUTE WS-I = (WS-Y + 64) * 256 + WS-Z * 16 + WS-X + 1
      MOVE CE-STATE(WS-I) TO WS-S.

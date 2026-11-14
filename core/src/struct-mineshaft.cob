@@ -306,11 +306,8 @@
      MOVE SP-Z1(L-ROW) TO LS-BZ1
      EVALUATE SP-TYPE(L-ROW)
          WHEN 2
-*>           the room: h = ySpan - 4, at least 1
+*>           the room: h = ySpan - 4 (the document raises it to 1 when it is 0 or less: the room is 5 to 10 high, so h is 1 to 6 and that case cannot occur)
              COMPUTE LS-H = SP-Y1(L-ROW) - SP-Y0(L-ROW) + 1 - 3 - 1
-             IF LS-H <= 0
-                 MOVE 1 TO LS-H
-             END-IF
              COMPUTE SP-ENT-FIRST(L-ROW) = SP-ENT-COUNT + 1
              PERFORM VARYING LS-SIDE FROM 0 BY 1 UNTIL LS-SIDE > 3
                  IF LS-SIDE < 2
