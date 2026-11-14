@@ -95,7 +95,7 @@
      CALL "FD-RESET"
 
 *>   features the tree compiler refuses
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
          MOVE SPACES TO WS-KEY
          EVALUATE WS-I
              WHEN 1 MOVE "minecraft:bad_root" TO WS-KEY
@@ -110,6 +110,14 @@
              WHEN 10 MOVE "minecraft:bad_ip" TO WS-KEY
              WHEN 11 MOVE "minecraft:bad_root_type" TO WS-KEY
              WHEN 12 MOVE "minecraft:bad_cherry_start" TO WS-KEY
+             WHEN 13 MOVE "minecraft:bad_fallen_deco" TO WS-KEY
+             WHEN 14 MOVE "minecraft:bad_fallen_many_log" TO WS-KEY
+             WHEN 15 MOVE "minecraft:bad_fallen_many_stump" TO WS-KEY
+             WHEN 16 MOVE "minecraft:bad_fallen_kind" TO WS-KEY
+             WHEN 17 MOVE "minecraft:bad_fallen_nodirs" TO WS-KEY
+             WHEN 18 MOVE "minecraft:bad_fallen_dirs" TO WS-KEY
+             WHEN 19 MOVE "minecraft:bad_fallen_provider" TO WS-KEY
+             WHEN 20 MOVE "minecraft:bad_fallen_log_kind" TO WS-KEY
          END-EVALUATE
          CALL "FD-GET-FT" USING WS-KEY WS-FT
          CALL "FD-ENSURE-FT" USING WS-FT
@@ -134,6 +142,14 @@
      MOVE "test feat tree edges a full tree table flags the next tree unsupported" TO TL-CASE
      MOVE FD-BAD TO TL-OBSERVED-N
      MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO FD-BAD
+     MOVE "minecraft:fallen_full" TO WS-KEY
+     CALL "FD-GET-FT" USING WS-KEY WS-FT
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE "test feat tree edges a full tree table flags the next fallen tree unsupported" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = FD-BAD * 10 - FT-TYPE(WS-FT)
+     MOVE 11 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE WS-SAVED TO FD-TR-COUNT
 

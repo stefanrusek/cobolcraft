@@ -1,0 +1,1 @@
+{"type": "minecraft:fallen_tree", "trunk_provider": {"id": "minecraft:oak_log", "properties": {"axis": "y"}}, "log_length": 6, "stump_decorators": [], "log_decorators": [{"type": "minecraft:cocoa", "probability": 1.0}]}

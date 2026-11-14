@@ -163,3 +163,13 @@
        10 TR-CF2            FLOAT-LONG.
        10 TR-CF3            FLOAT-LONG.
        10 TR-CF4            FLOAT-LONG.
+*>     batch 6 (decorators): TR-NDEC decorators in TR-DEC(1 ..), the stump decorators of a fallen tree TR-NSDEC from TR-DEC(6); TD-KIND 0 accepted and ignored, 1 attached_to_logs,
+*>     TD-PROB the probability, TD-PV the provider (PV row), TD-ND and TD-DIR the directions (ordinals DOWN 0 UP 1 NORTH 2 SOUTH 3 WEST 4 EAST 5)
+       10 TR-NDEC           BINARY-LONG.
+       10 TR-NSDEC          BINARY-LONG.
+       10 TR-DEC OCCURS 10 TIMES.
+          15 TD-KIND        BINARY-LONG.
+          15 TD-PROB        FLOAT-LONG.
+          15 TD-PV          BINARY-LONG.
+          15 TD-ND          BINARY-LONG.
+          15 TD-DIR         BINARY-LONG OCCURS 6 TIMES.
