@@ -118,7 +118,7 @@
      PERFORM CELL-STATE
      MOVE "acceptance US12 36-5§2.5 Placing pieces: the root room (210,-59,114)-(221,-53,121) of the script: its middle (215,-57,118) is cave air" TO TL-CASE
      MOVE WS-CELL TO TL-OBSERVED-N
-     MOVE SB-S-CAVE-AIR TO TL-EXPECTED-N
+     MOVE SBK-S-CAVE-AIR TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 36-1§8 Placing pieces: the decoration discards no write (every cell written is inside the chunk's window) and the request lists were handed to the job" TO TL-CASE
      COMPUTE TL-OBSERVED-N = FL-DISCARDED + FL-OV-COUNT + GBL-COUNT
@@ -166,15 +166,15 @@
 *>   a terrain adapting structure: the start's box is inflated by 12 for the references, the pieces and the blocks are the same
      MOVE 0 TO WS-MS-ROW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SD-ST-COUNT
-         IF ST-KEY(WS-I) = "minecraft:mineshaft"
+         IF SDT-KEY(WS-I) = "minecraft:mineshaft"
              MOVE WS-I TO WS-MS-ROW
          END-IF
      END-PERFORM
-     MOVE 1 TO ST-ADAPT(WS-MS-ROW)
+     MOVE 1 TO SDT-ADAPT(WS-MS-ROW)
      MOVE 13 TO J-CX
      MOVE 7 TO J-CZ
      PERFORM RUN-CHUNK
-     MOVE 0 TO ST-ADAPT(WS-MS-ROW)
+     MOVE 0 TO SDT-ADAPT(WS-MS-ROW)
      MOVE "acceptance US12 36-1§5.6 Placing pieces: with terrain adaptation the start's box grows by 12 and the chunk gets the same blocks" TO TL-CASE
      MOVE WS-HASH TO TL-OBSERVED-N
      MOVE WS-HASH2 TO TL-EXPECTED-N
@@ -214,7 +214,7 @@
              COMPUTE WS-I = (WS-Y + 64) * 256 + WS-Z * 16 + WS-X + 1
              SET ADDRESS OF CE-CHUNK TO WS-PTR
              MOVE CE-STATE(WS-I) TO WS-CELL
-             IF WS-CELL = SB-S-CAVE-AIR
+             IF WS-CELL = SBK-S-CAVE-AIR
                  COMPUTE WS-I = (WS-Y + 64) * 256 + WS-Z * 16 + 1
                  SET ADDRESS OF CE-CHUNK TO WS-PTR2
                  IF CE-STATE(WS-I) NOT = WS-STONE

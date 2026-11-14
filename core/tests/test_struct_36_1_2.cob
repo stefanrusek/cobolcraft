@@ -213,7 +213,7 @@
      MOVE "N" TO TL-MODE
      CALL "STRUCT-LOAD" USING WS-DIR WS-STATUS
      MOVE "acceptance US12 36-1§2 Registries and id assignment: the fixture structures take type 5, 4, 14 and 13 (jigsaw, igloo, swamp_hut, stronghold)" TO TL-CASE
-     COMPUTE TL-OBSERVED-N = ST-TYPE(1) * 1000000 + ST-TYPE(2) * 10000 + ST-TYPE(3) * 100 + ST-TYPE(4)
+     COMPUTE TL-OBSERVED-N = SDT-TYPE(1) * 1000000 + SDT-TYPE(2) * 10000 + SDT-TYPE(3) * 100 + SDT-TYPE(4)
      MOVE 5041413 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

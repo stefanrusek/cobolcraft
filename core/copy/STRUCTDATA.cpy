@@ -24,7 +24,7 @@
     05 SD-STARTS-SEEN       BINARY-LONG.
     05 SD-GATE-COUNT        BINARY-LONG.
     05 SD-START-COUNT       BINARY-LONG.
-*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), ST-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa)
+*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa)
     05 SD-BLOCK-FIRST       BINARY-LONG.
     05 SD-BLOCK-COUNT       BINARY-LONG.
 *>  SS-KIND 0 concentric_rings, 1 dimension_origin, 2 random_spread (the placement registry ids); SS-SPREAD 0 linear 1 triangular; SS-METHOD the frequency reduction
@@ -58,13 +58,13 @@
        10 SE-STRUCT         BINARY-LONG.
        10 SE-WEIGHT         BINARY-LONG.
     05 SD-STRUCT OCCURS 128 TIMES.
-       10 ST-KEY            PIC X(80).
-       10 ST-TYPE           BINARY-LONG.
-       10 ST-STEP           BINARY-LONG.
-       10 ST-ADAPT          BINARY-LONG.
-       10 ST-BIOME-FIRST    BINARY-LONG.
-       10 ST-BIOME-COUNT    BINARY-LONG.
-       10 ST-VARIANT        BINARY-LONG.
+       10 SDT-KEY            PIC X(80).
+       10 SDT-TYPE           BINARY-LONG.
+       10 SDT-STEP           BINARY-LONG.
+       10 SDT-ADAPT          BINARY-LONG.
+       10 SDT-BIOME-FIRST    BINARY-LONG.
+       10 SDT-BIOME-COUNT    BINARY-LONG.
+       10 SDT-VARIANT        BINARY-LONG.
     05 SD-BIOME             PIC X(40) OCCURS 8192 TIMES.
 *>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N chunks SR-X, SR-Z
     05 SD-RING OCCURS 4 TIMES.
