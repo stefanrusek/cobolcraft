@@ -158,12 +158,15 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-POINTS              BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-LOOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-KILLER               BINARY-LONG.
@@ -173,7 +176,15 @@
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
      MOVE EN-TYPE(L-ROW) TO WS-TYPE
-     IF EN-VARIANT(L-ROW) <= 1
+     CALL "STDMOB-INDEX" USING WS-TYPE WS-M
+     MOVE 0 TO WS-LOOT
+     IF SM-KEY(WS-M) = "slime" AND EN-VARIANT(L-ROW) <= 1
+         MOVE 1 TO WS-LOOT
+     END-IF
+     IF SM-KEY(WS-M) = "magma_cube" AND EN-VARIANT(L-ROW) >= 2
+         MOVE 1 TO WS-LOOT
+     END-IF
+     IF WS-LOOT = 1
          CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE L-KILLER
      END-IF
      IF L-KILLER > 0
@@ -202,6 +213,10 @@
          IF EN-VARIANT(L-ROW) > 1
              MOVE EN-VARIANT(L-ROW) TO L-DAMAGE
          END-IF
+     END-IF
+*>   A magma cube hits for its size + 2 at every size (21 section 5.3: getAttackDamage + 2; it can always deal damage).
+     IF SM-KEY(L-M) = "magma_cube"
+         COMPUTE L-DAMAGE = FUNCTION MAX(EN-VARIANT(L-ROW), 1) + 2
      END-IF
      GOBACK.
  END PROGRAM STDMOB-ATTACK-DAMAGE.

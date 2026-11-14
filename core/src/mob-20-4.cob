@@ -17,6 +17,7 @@
  01 WS-EFF                 BINARY-LONG.
  01 WS-HUNGER              BINARY-LONG VALUE 16.
  01 WS-POISON              BINARY-LONG VALUE 18.
+ 01 WS-WITHER              BINARY-LONG VALUE 19.
  01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
  01 WS-FLAGS               BINARY-LONG VALUE 6.
  01 WS-DURATION            BINARY-LONG.
@@ -44,6 +45,10 @@
              IF WS-DURATION > 0
                  CALL "EFFECT-ADD" USING L-PLAYER WS-POISON WS-AMPLIFIER WS-DURATION WS-FLAGS
              END-IF
+         WHEN 3
+*>           The wither skeleton (21 section 5.4): Wither, amplifier 0, for 200 ticks on every difficulty.
+             MOVE 200 TO WS-DURATION
+             CALL "EFFECT-ADD" USING L-PLAYER WS-WITHER WS-AMPLIFIER WS-DURATION WS-FLAGS
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HIT-EFFECT.
@@ -64,6 +69,10 @@
      COMPUTE L-SPEED = SM-WALK-MILLI(L-M) / 1000
      IF EN-VARIANT(L-ROW) = 1 AND (SM-KEY(L-M) = "zombie" OR SM-KEY(L-M) = "zombie_villager" OR SM-KEY(L-M) = "husk")
          COMPUTE L-SPEED = L-SPEED * 2.25
+     END-IF
+*>   An angry zombified piglin has the transient +0.05 speed modifier (21 section 5.5.3): (0.23 + 0.05) squared / 0.454.
+     IF EN-ANGER(L-ROW) > 0 AND SM-KEY(L-M) = "zombified_piglin"
+         COMPUTE L-SPEED = 173 / 1000
      END-IF
      GOBACK.
  END PROGRAM STDMOB-SPEED.
