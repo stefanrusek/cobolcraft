@@ -224,6 +224,11 @@
          COMPUTE WS-PLANE(WS-C + 9) = (WS-FWD(WS-C) * WS-TANY - WS-UP(WS-C)) / WS-NORM
      END-PERFORM
      COMPUTE WS-HALF-H = PL-HEIGHT / 2 + 1
+*>   The planes also serve the entity figures (ENTITIES-MESH leaves out those wholly outside the view).
+     MOVE WS-WORLD TO RL-CULL-ON
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 12
+         MOVE WS-PLANE(WS-P) TO RL-CULL-PLANE(WS-P)
+     END-PERFORM
 *>   Uploads of changed meshes; opaque draws; translucent candidates.
      MOVE 0 TO WS-TCOUNT
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT

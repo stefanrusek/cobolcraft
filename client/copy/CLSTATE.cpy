@@ -1043,6 +1043,8 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
+       10 RL-CULL-ON         BINARY-LONG.    *> 1 when RL-CULL-PLANE holds this frame's view frustum (RENDER-LIST-BUILD)
+       10 RL-CULL-PLANE OCCURS 12 TIMES FLOAT-LONG.    *> left, right, bottom, top: unit normals pointing inward (a point is inside when n . (p - eye) >= 0)
        10 RL-EN-VERTEX OCCURS 49152 TIMES.
           15 RL-EN-X         FLOAT-SHORT.
           15 RL-EN-Y         FLOAT-SHORT.
