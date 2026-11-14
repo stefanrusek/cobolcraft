@@ -44,6 +44,9 @@
  WORKING-STORAGE SECTION.
  COPY CITEMS.
  COPY CTBSHAPE.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ 01 WS-BLK                 BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -89,7 +92,16 @@
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1 OR L-HIT = 1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1 OR L-HIT = 1
                  CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
-                 CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+*>               The cobolcraft stand-in set has no shapes: its states are full cubes (shape 1) or empty by CB-SOLID, as before the shapes.
+                 IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+                     MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+                     MOVE CB-SOLID(WS-BLK + 1) TO WS-SHAPE
+                     IF WS-SHAPE = 1
+                         CALL "BSH-ENSURE-CUBE"
+                     END-IF
+                 ELSE
+                     CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+                 END-IF
                  IF WS-SHAPE NOT = 0
                      CALL "BSH-OVERLAPS" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-BOX L-HIT
                  END-IF
