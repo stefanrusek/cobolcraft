@@ -93,6 +93,10 @@
      MOVE "test blocks a block placed in chunk (2, 0) next to the loaded but unlit chunk (3, 0) "
          & "sends Light Update for the lit chunk only" TO TL-CASE
      CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+*>   Lighting chunk (2, 0) lights its loaded neighbours (LIGHT-CHUNK); this one is made unlit again.
+     IF WS-ROW > 0
+         MOVE 0 TO CK-LIT(WS-ROW)
+     END-IF
      MOVE 47 TO WS-X
      MOVE 8 TO WS-Z
      MOVE 4 TO WS-SEQ
