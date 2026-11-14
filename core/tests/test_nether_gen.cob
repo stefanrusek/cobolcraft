@@ -14,6 +14,7 @@
  COPY COREAPI.
  COPY DIMENSIONS.
  COPY CELLS.
+ COPY NETHERDIM.
  COPY CBLOCKS.
  01 WS-DIR                 PIC X(1024).
  01 WS-SAVE-CBI            BINARY-LONG.
@@ -250,7 +251,8 @@
      MOVE "256 256 1 0 1 0 -1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The End, chunk (0, 0) holds the island, a far chunk is void.
+*>   The placeholder End (the real End is tested in test_end_dim): chunk (0, 0) holds the island, a far chunk is void.
+     MOVE 1 TO ND-PLACEHOLDER
      MOVE DIM-STANDARD-END TO WS-DIM
      MOVE 0 TO WS-CX
      MOVE LOW-VALUES TO WS-CHUNK
@@ -315,6 +317,7 @@
      MOVE "E A" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE 0 TO ND-PLACEHOLDER
 *>   Biomes through the dispatch point: the Nether biome source agrees with the biome cells the generator stored, and the end is the_end.
      MOVE DIM-STANDARD-NETHER TO WS-DIM
      MOVE 1 TO WS-CX
