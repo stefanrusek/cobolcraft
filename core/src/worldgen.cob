@@ -337,7 +337,7 @@
          WHEN DIM-GEN-STANDARD
              CALL "WORLDGEN-STANDARD-CHUNK" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN DIM-GEN-NETHER
-             CALL "WORLDGEN-NETHER-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+             CALL "NETHER-DIM-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN DIM-GEN-END
              CALL "WORLDGEN-END-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN OTHER
@@ -384,11 +384,7 @@
      IF DM-BIOME(L-DIM) < 0
          EVALUATE DM-GENERATOR(L-DIM)
              WHEN DIM-GEN-NETHER
-                 MOVE "minecraft:nether_wastes" TO WS-NAME
-                 CALL "SURFACE-BIOME-ID" USING WS-NAME WS-ID
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
-                     MOVE WS-ID TO L-BIOME(WS-I)
-                 END-PERFORM
+                 CALL "NETHER-DIM-BIOMES" USING L-CX L-CZ L-BIOMES
              WHEN DIM-GEN-END
                  MOVE "minecraft:the_end" TO WS-NAME
                  CALL "SURFACE-BIOME-ID" USING WS-NAME WS-ID

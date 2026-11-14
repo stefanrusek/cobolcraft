@@ -1,6 +1,6 @@
 *> Test infrastructure of the portal tests (lane nether; docs/protocol/39-portals.md). COPY it after the test program (after CORETEST).
 *>   PT-OPEN USING skip out: 1 and nothing opened when the generated packs are missing (CC_GENERATED_DIR, default /tmp/cc-test/generated);
-*>     else a standard world with the extra dimensions on is open (view distance 2, creative default, no hostile mobs, no weather).
+*>     else a standard world with the extra dimensions on is open (the Nether on its placeholder terrain: ND-PLACEHOLDER 1, NETHERDIM.cpy; a test of the real terrain moves 0 to it) (view distance 2, creative default, no hostile mobs, no weather).
 *>   PT-STATE USING key (PIC X(48)), pairs (PIC X(160)), state out: BLOCKS-STATE-OF of a block key and "name=value" pairs.
 *>   PT-FRAME USING dim, x, y, z of the bottom-left interior cell, axis (0 X, 1 Z), width, height: the obsidian frame (corners included)
 *>     round that interior, which is cleared to air; the right direction is WEST (X) or SOUTH (Z).
@@ -11,6 +11,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY COREAPI.
+ COPY NETHERDIM.
  01 WS-DIR                 PIC X(1024).
  01 WS-ENV                 PIC X(1024).
  01 WS-FILE                PIC X(1100).
@@ -39,6 +40,7 @@
      MOVE 2 TO CS-VIEW-DISTANCE
      MOVE 0 TO CS-HOSTILE-MOBS CS-WEATHER-CHANGES
      MOVE 1 TO CS-EXTRA-DIMENSIONS
+     MOVE 1 TO ND-PLACEHOLDER
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      GOBACK.
  END PROGRAM PT-OPEN.

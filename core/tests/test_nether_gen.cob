@@ -14,7 +14,17 @@
  COPY COREAPI.
  COPY DIMENSIONS.
  COPY CELLS.
+ COPY CBLOCKS.
  01 WS-DIR                 PIC X(1024).
+ 01 WS-SAVE-CBI            BINARY-LONG.
+ 01 WS-LAVA-LOW            BINARY-LONG.
+ 01 WS-LAVA-HIGH           BINARY-LONG.
+ 01 WS-RACK                BINARY-LONG.
+ 01 WS-BED0                BINARY-LONG.
+ 01 WS-BED127              BINARY-LONG.
+ 01 WS-AIR-TOP             BINARY-LONG.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
  01 WS-ENV                 PIC X(1024).
  01 WS-FILE                PIC X(1100).
  01 WS-FILE-INFO           PIC X(16).
@@ -117,6 +127,9 @@
      MOVE "3 3 4 5" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A world whose biome table lacks the Nether's keeps the placeholder terrain (NETHER-DIM-READY 0).
+     MOVE CBI-COUNT TO WS-SAVE-CBI
+     MOVE 0 TO CBI-COUNT
 *>   Nether, chunk (0, 0): even, the high floor.
      MOVE DIM-STANDARD-NETHER TO WS-DIM
      MOVE 0 TO WS-CX WS-CZ
@@ -178,6 +191,63 @@
          MOVE "other" TO TL-OBSERVED
      END-IF
      MOVE "lava" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE WS-SAVE-CBI TO CBI-COUNT
+
+*>   Ready tables: the real generator. Chunk (1, 0) in every column: bedrock at 0 and 127, a lava sea at y 1 to 31 only, netherrack, air above the roof.
+     MOVE DIM-STANDARD-NETHER TO WS-DIM
+     MOVE 1 TO WS-CX
+     MOVE 0 TO WS-CZ
+     MOVE LOW-VALUES TO WS-CHUNK
+     CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
+     MOVE 0 TO WS-BED0 WS-BED127 WS-LAVA-LOW WS-LAVA-HIGH WS-RACK WS-AIR-TOP
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
+         COMPUTE WS-CELL = WS-C
+         IF CE-STATE(WS-CELL) = WS-BEDROCK
+             ADD 1 TO WS-BED0
+         END-IF
+         COMPUTE WS-CELL = 127 * 256 + WS-C
+         IF CE-STATE(WS-CELL) = WS-BEDROCK
+             ADD 1 TO WS-BED127
+         END-IF
+         PERFORM VARYING WS-Y FROM 1 BY 1 UNTIL WS-Y > 126
+             COMPUTE WS-CELL = WS-Y * 256 + WS-C
+             EVALUATE TRUE
+                 WHEN CE-STATE(WS-CELL) = WS-LAVA AND WS-Y <= 31
+                     ADD 1 TO WS-LAVA-LOW
+                 WHEN CE-STATE(WS-CELL) = WS-LAVA
+                     ADD 1 TO WS-LAVA-HIGH
+                 WHEN CE-STATE(WS-CELL) = WS-NETHERRACK AND WS-Y > 32 AND WS-Y < 100
+                     ADD 1 TO WS-RACK
+             END-EVALUATE
+         END-PERFORM
+         PERFORM VARYING WS-Y FROM 128 BY 1 UNTIL WS-Y > 255
+             COMPUTE WS-CELL = WS-Y * 256 + WS-C
+             IF CE-STATE(WS-CELL) NOT = 0
+                 ADD 1 TO WS-AIR-TOP
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE "test nether gen the real terrain of chunk (1, 0): bedrock floor and roof in all 256 columns, lava only at y <= 31, "
+         & "netherrack in the open middle (an odd chunk's placeholder has none), nothing above the roof, no marker" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-LAVA-LOW > 0
+         MOVE 1 TO WS-LAVA-LOW
+     END-IF
+     IF WS-RACK > 1000
+         MOVE 1 TO WS-RACK
+     END-IF
+     MOVE WS-BED0 TO WS-E1
+     MOVE WS-BED127 TO WS-E2
+     MOVE WS-LAVA-LOW TO WS-E3
+     MOVE WS-LAVA-HIGH TO WS-E4
+     MOVE WS-RACK TO WS-E5
+     MOVE WS-AIR-TOP TO WS-E6
+     MOVE WS-MARKER TO WS-E7
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) " "
+         FUNCTION TRIM(WS-E5) " " FUNCTION TRIM(WS-E6) " " FUNCTION TRIM(WS-E7) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "256 256 1 0 1 0 -1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The End, chunk (0, 0) holds the island, a far chunk is void.
@@ -245,20 +315,45 @@
      MOVE "E A" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Biomes through the dispatch point.
+*>   Biomes through the dispatch point: the Nether biome source agrees with the biome cells the generator stored, and the end is the_end.
      MOVE DIM-STANDARD-NETHER TO WS-DIM
+     MOVE 1 TO WS-CX
+     MOVE 0 TO WS-CZ
+     MOVE LOW-VALUES TO WS-CHUNK
+     CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
      CALL "WORLDGEN-DIM-BIOMES" USING WS-DIM WS-CX WS-CZ WS-BIOMES
-     MOVE "test nether gen the biome of every nether column is minecraft:nether_wastes, of the end the_end" TO TL-CASE
+     MOVE "test nether gen the biomes of the nether columns are the biomes the generator stored (all rows of a section equal)" TO TL-CASE
+     MOVE 0 TO WS-DIFF
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 16
+         IF CE-BIOME(WS-C) NOT = WS-BIOME(WS-C)
+             ADD 1 TO WS-DIFF
+         END-IF
+     END-PERFORM
+     MOVE WS-DIFF TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 0 TO CBI-COUNT
+     CALL "WORLDGEN-DIM-BIOMES" USING WS-DIM WS-CX WS-CZ WS-BIOMES
+     MOVE WS-SAVE-CBI TO CBI-COUNT
+     MOVE "test nether gen without the Nether biomes in the table the placeholder biome is the first id 0 in every column" TO TL-CASE
      MOVE WS-BIOME(1) TO WS-E1
      MOVE WS-BIOME(16) TO WS-E2
-     MOVE WS-WASTES TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE DIM-STANDARD-END TO WS-DIM
      CALL "WORLDGEN-DIM-BIOMES" USING WS-DIM WS-CX WS-CZ WS-BIOMES
+     MOVE "test nether gen the biome of every end column is minecraft:the_end" TO TL-CASE
      MOVE WS-BIOME(7) TO WS-E4
      MOVE WS-THE-END TO WS-E5
      MOVE SPACES TO TL-OBSERVED TL-EXPECTED
-     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
-     STRING FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE FUNCTION TRIM(WS-E4) TO TL-OBSERVED
+     MOVE FUNCTION TRIM(WS-E5) TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The cache and the world calls: a block read in the nether generates it; bedrock at the floor, y 255 is air.
@@ -329,7 +424,7 @@
 
 *>   Saves: every dimension of the world has its folder, and a changed nether chunk is written into the nether's region folder.
      MOVE 41 TO WS-Y
-     MOVE WS-NETHERRACK TO WS-STATE
+     MOVE WS-BEDROCK TO WS-STATE
      CALL "WORLD-SET-BLOCK" USING DIM-STANDARD-NETHER WS-X WS-Y WS-Z WS-STATE
      CALL "CORE-SAVE"
      MOVE "test nether gen after a save the three dimension folders exist with a region file in the nether's" TO TL-CASE
@@ -363,7 +458,7 @@
      CALL "WORLD-GET-BLOCK" USING DIM-STANDARD-NETHER WS-X WS-Y WS-Z WS-STATE
      MOVE "test nether gen a reopened world holds the edit at (5, 41, 5) of the nether and three dimensions" TO TL-CASE
      MOVE 0 TO WS-E1
-     IF WS-STATE = WS-NETHERRACK
+     IF WS-STATE = WS-BEDROCK
          MOVE 1 TO WS-E1
      END-IF
      MOVE CW-DIM-COUNT TO WS-E2
