@@ -227,6 +227,91 @@
  END PROGRAM VFMT-FIND-CHILD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. VFMT-PUT-STRING.
+*> USING buffer (PROTO), name (PIC X(32)), value (PIC X(40)), both space filled: writes the String child; a blank value writes
+*> nothing (so an optional member is left out).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WL                     BINARY-LONG.
+ 01 WV                     BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X(32).
+ 01 L-VALUE                PIC X(40).
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-VALUE.
+     IF L-VALUE NOT = SPACES
+         COMPUTE WL = FUNCTION LENGTH(FUNCTION TRIM(L-NAME))
+         COMPUTE WV = FUNCTION LENGTH(FUNCTION TRIM(L-VALUE))
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER L-NAME WL L-VALUE WV
+     END-IF
+     GOBACK.
+ END PROGRAM VFMT-PUT-STRING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VFMT-WRITE-DIMENSIONS.
+*> USING buffer (PROTO, inside the compound `data` of world_gen_settings.dat): writes the child `dimensions` of the default
+*> standard world (07 section 10.4.5; the loader refuses a file without an overworld stem, "Overworld settings missing"). The
+*> shapes are those of a real 26.3 file: the nether and the end stems as the game writes them; the overworld stem follows the
+*> nether one (noise generator, settings and multi_noise preset named like the dimension).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WV                     PIC X(40).
+ 01 WK-STEM                PIC X(40).
+ 01 WK-SETTINGS            PIC X(40).
+ 01 WK-PRESET              PIC X(40).
+ 01 WK-BIOME               PIC X(40).
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     MOVE "dimensions" TO WN MOVE 10 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE "minecraft:overworld" TO WK-STEM
+                 MOVE "minecraft:overworld" TO WK-SETTINGS
+                 MOVE "minecraft:overworld" TO WK-PRESET
+                 MOVE "minecraft:multi_noise" TO WK-BIOME
+             WHEN 2
+                 MOVE "minecraft:the_nether" TO WK-STEM
+                 MOVE "minecraft:nether" TO WK-SETTINGS
+                 MOVE "minecraft:nether" TO WK-PRESET
+                 MOVE "minecraft:multi_noise" TO WK-BIOME
+             WHEN OTHER
+                 MOVE "minecraft:the_end" TO WK-STEM
+                 MOVE "minecraft:end" TO WK-SETTINGS
+                 MOVE SPACES TO WK-PRESET
+                 MOVE "minecraft:the_end" TO WK-BIOME
+         END-EVALUATE
+         COMPUTE WL = FUNCTION LENGTH(FUNCTION TRIM(WK-STEM))
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WK-STEM WL
+         MOVE "generator" TO WN MOVE 9 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         MOVE "settings" TO WN
+         CALL "VFMT-PUT-STRING" USING PB-BUFFER WN WK-SETTINGS
+         MOVE "biome_source" TO WN MOVE 12 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         MOVE "preset" TO WN
+         CALL "VFMT-PUT-STRING" USING PB-BUFFER WN WK-PRESET
+         MOVE "type" TO WN
+         CALL "VFMT-PUT-STRING" USING PB-BUFFER WN WK-BIOME
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         MOVE "type" TO WN
+         MOVE "minecraft:noise" TO WV
+         CALL "VFMT-PUT-STRING" USING PB-BUFFER WN WV
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         MOVE "type" TO WN
+         CALL "VFMT-PUT-STRING" USING PB-BUFFER WN WK-STEM
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-PERFORM
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM VFMT-WRITE-DIMENSIONS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. VANILLA-SAVED-WRITE.
 *> No parameters: writes data/minecraft/weather.dat (07 §10.4.1), world_clocks.dat (§10.4.2: the overworld clock, total_ticks =
 *> CW-CLOCK-BASE + CW-TIME, the other clocks as they were) and game_rules.dat (§10.4.3: the rules that are not at
@@ -354,7 +439,7 @@
      CALL "VFMT-COPY-OTHERS" USING PB-BUFFER WK-BUFFER WS-OWNED WS-MODE WS-FOUND
      CALL "VFMT-SAVED-END" USING WK-BUFFER WS-SUFFIX
 *>   world_gen_settings.dat (§10.4.5): the seed is the core's; a file that does not exist yet gets generate_structures true and
-*>   bonus_chest false (the `dimensions` map is not written, Open question 32 of §10).
+*>   bonus_chest false; a file without the `dimensions` map gets the default one (07 §10.8: the game refuses a file without it).
      MOVE "/data/minecraft/world_gen_settings.dat" TO WS-SUFFIX
      CALL "VFMT-OPEN-OLD" USING WS-SUFFIX WS-KEY-DATA PB-BUFFER WS-FOUND
      CALL "VFMT-SAVED-BEGIN" USING WK-BUFFER
@@ -367,9 +452,20 @@
          MOVE 0 TO WS-INT
          CALL "NBT-WRITE-BYTE" USING WK-BUFFER WN WL WS-INT
      END-IF
+     MOVE 0 TO WS-OVERWORLD
+     IF WS-FOUND = 1
+         MOVE PB-POS TO WS-HOME
+         MOVE "dimensions" TO WS-CLOCK-NAME
+         CALL "VFMT-FIND-CHILD" USING PB-BUFFER WS-CLOCK-NAME WS-OVERWORLD
+         MOVE WS-HOME TO PB-POS
+         MOVE 0 TO PB-ERROR
+     END-IF
      MOVE "|seed|" TO WS-OWNED
      MOVE 0 TO WS-MODE
      CALL "VFMT-COPY-OTHERS" USING PB-BUFFER WK-BUFFER WS-OWNED WS-MODE WS-FOUND
+     IF WS-OVERWORLD = 0
+         CALL "VFMT-WRITE-DIMENSIONS" USING WK-BUFFER
+     END-IF
      CALL "VFMT-SAVED-END" USING WK-BUFFER WS-SUFFIX
      GOBACK.
  END PROGRAM VANILLA-SAVED-WRITE.
@@ -401,26 +497,6 @@
      MOVE "WasModded" TO WN MOVE 9 TO WL
      MOVE 0 TO WS-INT
      CALL "NBT-WRITE-BYTE" USING WK-BUFFER WN WL WS-INT
-     MOVE "Version" TO WN MOVE 7 TO WL
-     CALL "NBT-WRITE-COMPOUND-BEGIN" USING WK-BUFFER WN WL
-     MOVE "Name" TO WN MOVE 4 TO WL
-     MOVE "26.3" TO WS-TEXT
-     MOVE 4 TO WS-TEXT-LENGTH
-     CALL "NBT-WRITE-STRING" USING WK-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
-     MOVE "Id" TO WN MOVE 2 TO WL
-     CALL "NBT-WRITE-INT" USING WK-BUFFER WN WL WS-DATA-VERSION
-     MOVE "Snapshot" TO WN MOVE 8 TO WL
-     MOVE 0 TO WS-INT
-     CALL "NBT-WRITE-BYTE" USING WK-BUFFER WN WL WS-INT
-     MOVE "Series" TO WN MOVE 6 TO WL
-     MOVE "main" TO WS-TEXT
-     MOVE 4 TO WS-TEXT-LENGTH
-     CALL "NBT-WRITE-STRING" USING WK-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
-     CALL "NBT-WRITE-COMPOUND-END" USING WK-BUFFER
-     MOVE "version_history" TO WN MOVE 15 TO WL
-     CALL "NBT-WRITE-LIST-BEGIN" USING WK-BUFFER WN WL WS-T-INT WS-ONE
-     CALL "NBT-WRITE-INT" USING WK-BUFFER WN WS-ELEMENT WS-DATA-VERSION
-     CALL "NBT-WRITE-LIST-END" USING WK-BUFFER
      MOVE "version" TO WN MOVE 7 TO WL
      MOVE 19133 TO WS-INT
      CALL "NBT-WRITE-INT" USING WK-BUFFER WN WL WS-INT
@@ -466,6 +542,62 @@
  END PROGRAM VFMT-NEW-LEVEL-KEYS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. VFMT-HISTORY.
+*> USING old PB-BUFFER (positioned at the first child of Data, left where it was), table (BINARY-LONG OCCURS 64 TIMES), count
+*> out: the Ints of the old version_history list (07 section 10.2), then 5023 appended when the list does not end with it
+*> (the game appends the saving data version only when it differs from the last entry); a file without the list gives [5023].
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-HOME                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TABLE.
+    05 L-ENTRY             BINARY-LONG OCCURS 64 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TABLE L-COUNT.
+     MOVE 0 TO L-COUNT
+     MOVE PB-POS TO WS-HOME
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WS-TYPE = 9 AND WN = "version_history"
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT WS-N
+             IF WS-ELEMENT = 3 AND PB-ERROR = 0
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR PB-ERROR = 1
+                     CALL "PB-GET-INT" USING PB-BUFFER WS-VALUE
+                     IF L-COUNT < 63
+                         ADD 1 TO L-COUNT
+                         MOVE WS-VALUE TO L-ENTRY(L-COUNT)
+                     END-IF
+                 END-PERFORM
+             END-IF
+             EXIT PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     MOVE WS-HOME TO PB-POS
+     MOVE 0 TO PB-ERROR
+     IF L-COUNT = 0 OR L-ENTRY(L-COUNT) NOT = WS-DATA-VERSION
+         ADD 1 TO L-COUNT
+         MOVE WS-DATA-VERSION TO L-ENTRY(L-COUNT)
+     END-IF
+     GOBACK.
+ END PROGRAM VFMT-HISTORY.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. VANILLA-LEVEL-WRITE.
 *> No parameters: saves a level.dat of the 26.3 layout (07 §10.2). The file as it was becomes level.dat_old; the new
 *> level.dat has the keys the core owns (DataVersion, GameType, spawn, Time = CW-GAME-TIME + CW-TICKS, LastPlayed,
@@ -482,10 +614,20 @@
  01 WL                     BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-MODE                BINARY-LONG VALUE 0.
+ 01 WS-FROM-OLD             BINARY-LONG.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-T-INT               BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-HIST-COUNT          BINARY-LONG.
+ 01 WS-HIST-TABLE.
+    05 WS-HIST-ENTRY       BINARY-LONG OCCURS 64 TIMES.
  01 WS-KEY-DATA            PIC X(16) VALUE "Data".
  01 WS-SUFFIX              PIC X(128).
  01 WS-OWNED               PIC X(512)
-    VALUE "|DataVersion|GameType|spawn|Time|LastPlayed|LevelName|".
+    VALUE "|DataVersion|GameType|spawn|Time|LastPlayed|LevelName|"
+    & "Version|version_history|".
  01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
  01 WS-INT                 BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
@@ -503,6 +645,13 @@
      END-IF
      MOVE "/level.dat" TO WS-SUFFIX
      CALL "VFMT-OPEN-OLD" USING WS-SUFFIX WS-KEY-DATA PB-BUFFER WS-FOUND
+*>   A level.dat without Data (a flat file an old build wrote over a real world) gives its keys nothing to keep: the real file
+*>   is then level.dat_old, whose other children are kept and which stays as it is.
+     MOVE 0 TO WS-FROM-OLD
+     IF WS-FOUND = 0
+         MOVE "/level.dat_old" TO WS-SUFFIX
+         CALL "VFMT-OPEN-OLD" USING WS-SUFFIX WS-KEY-DATA PB-BUFFER WS-FROM-OLD
+     END-IF
      IF WS-FOUND = 1
          MOVE "/level.dat_old" TO WS-SUFFIX
          CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-LENGTH
@@ -548,8 +697,42 @@
          MOVE 0 TO WS-INT
      END-IF
      CALL "NBT-WRITE-STRING" USING WK-BUFFER WN WL CW-NAME WS-INT
-     IF WS-FOUND = 0
+*>   Version and version_history are the writer's: the file now holds data of this version (07 section 10.7).
+     MOVE "Version" TO WN MOVE 7 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING WK-BUFFER WN WL
+     MOVE "Name" TO WN MOVE 4 TO WL
+     MOVE "26.3" TO WS-TEXT
+     MOVE 4 TO WS-TEXT-LENGTH
+     CALL "NBT-WRITE-STRING" USING WK-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
+     MOVE "Id" TO WN MOVE 2 TO WL
+     CALL "NBT-WRITE-INT" USING WK-BUFFER WN WL WS-DATA-VERSION
+     MOVE "Snapshot" TO WN MOVE 8 TO WL
+     MOVE 0 TO WS-INT
+     CALL "NBT-WRITE-BYTE" USING WK-BUFFER WN WL WS-INT
+     MOVE "Series" TO WN MOVE 6 TO WL
+     MOVE "main" TO WS-TEXT
+     MOVE 4 TO WS-TEXT-LENGTH
+     CALL "NBT-WRITE-STRING" USING WK-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
+     CALL "NBT-WRITE-COMPOUND-END" USING WK-BUFFER
+     MOVE 0 TO WS-HIST-COUNT
+     IF WS-FOUND = 1 OR WS-FROM-OLD = 1
+         CALL "VFMT-HISTORY" USING PB-BUFFER WS-HIST-TABLE WS-HIST-COUNT
+     ELSE
+         MOVE 1 TO WS-HIST-COUNT
+         MOVE WS-DATA-VERSION TO WS-HIST-ENTRY(1)
+     END-IF
+     MOVE "version_history" TO WN MOVE 15 TO WL
+     MOVE 3 TO WS-T-INT
+     CALL "NBT-WRITE-LIST-BEGIN" USING WK-BUFFER WN WL WS-T-INT WS-HIST-COUNT
+     PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > WS-HIST-COUNT
+         CALL "NBT-WRITE-INT" USING WK-BUFFER WN WS-ELEMENT WS-HIST-ENTRY(WS-H)
+     END-PERFORM
+     CALL "NBT-WRITE-LIST-END" USING WK-BUFFER
+     IF WS-FOUND = 0 AND WS-FROM-OLD = 0
          CALL "VFMT-NEW-LEVEL-KEYS" USING WK-BUFFER
+     END-IF
+     IF WS-FROM-OLD = 1
+         MOVE 1 TO WS-FOUND
      END-IF
      CALL "VFMT-COPY-OTHERS" USING PB-BUFFER WK-BUFFER WS-OWNED WS-MODE WS-FOUND
      CALL "NBT-WRITE-COMPOUND-END" USING WK-BUFFER

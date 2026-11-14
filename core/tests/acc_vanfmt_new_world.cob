@@ -26,6 +26,14 @@
  01 WS-ONE                 PIC X(8192).
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(19)9.
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-VCMD                PIC X(200).
+ 01 WS-KN                  PIC X(32).
+ 01 WS-KL                  BINARY-LONG.
+ 01 WS-KV                  BINARY-LONG.
+ 01 WS-KSEED               BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-STEM                PIC X(16).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
@@ -96,6 +104,49 @@
      MOVE "12345 1 0" TO TL-EXPECTED
      PERFORM CHECK
 
+*>   The loader needs the dimensions map with an overworld stem (07 section 10.4.5: "Overworld settings missing"); each stem has
+*>   type and generator, a noise generator has settings and a biome_source with a type.
+     MOVE SPACES TO WS-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         EVALUATE WS-I
+             WHEN 1 MOVE "overworld" TO WS-STEM
+             WHEN 2 MOVE "the_nether" TO WS-STEM
+             WHEN 3 MOVE "the_end" TO WS-STEM
+         END-EVALUATE
+         MOVE SPACES TO WS-PATH
+         STRING "data.dimensions.minecraft:" FUNCTION TRIM(WS-STEM) ".type" DELIMITED BY SIZE INTO WS-PATH
+         PERFORM ADD-GET
+         MOVE SPACES TO WS-PATH
+         STRING "data.dimensions.minecraft:" FUNCTION TRIM(WS-STEM) ".generator.type" DELIMITED BY SIZE INTO WS-PATH
+         PERFORM ADD-GET
+         MOVE SPACES TO WS-PATH
+         STRING "data.dimensions.minecraft:" FUNCTION TRIM(WS-STEM) ".generator.settings" DELIMITED BY SIZE INTO WS-PATH
+         PERFORM ADD-GET
+         MOVE SPACES TO WS-PATH
+         STRING "data.dimensions.minecraft:" FUNCTION TRIM(WS-STEM) ".generator.biome_source.type"
+             DELIMITED BY SIZE INTO WS-PATH
+         PERFORM ADD-GET
+     END-PERFORM
+     MOVE "data.dimensions.minecraft:overworld.generator.biome_source.preset" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.dimensions.minecraft:the_nether.generator.biome_source.preset" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanfmt new world: world_gen_settings.dat holds the dimensions map with the three standard stems" TO TL-CASE
+     STRING "minecraft:overworld minecraft:noise minecraft:overworld minecraft:multi_noise "
+         "minecraft:the_nether minecraft:noise minecraft:nether minecraft:multi_noise "
+         "minecraft:the_end minecraft:noise minecraft:end minecraft:the_end "
+         "minecraft:overworld minecraft:nether" DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK
+
+
+*>   The read-back checker (tools/validate_world.py) applies the loader's requirements to what was written.
+     MOVE "python3 -I tools/validate_world.py build/core-test-world > build/core-test-world.validate 2>&1" TO WS-VCMD
+     CALL "SYSTEM" USING WS-VCMD
+     MOVE RETURN-CODE TO WS-E1
+     MOVE SPACES TO WS-OBSERVED
+     MOVE FUNCTION TRIM(WS-E1) TO WS-OBSERVED
+     MOVE "acceptance vanwrite the saved folder passes the read-back checker (tools/validate_world.py: Data, dimensions, regions)" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     PERFORM CHECK
+
      MOVE "build/core-test-world/data/minecraft/world_clocks.dat" TO WS-NAME-FILE
      CALL "TEST-NBT-FILE" USING WS-NAME-FILE PB-BUFFER WS-ROOT
      MOVE SPACES TO WS-OBSERVED
@@ -114,6 +165,36 @@
          FUNCTION TRIM(WS-E2) "|" CW-LAYOUT DELIMITED BY SIZE INTO WS-OBSERVED
      MOVE "acceptance vanfmt new world: opened again it is the same standard world in the vanilla layout" TO TL-CASE
      MOVE "0|Vanilla New|standard|12345|1" TO TL-EXPECTED
+     PERFORM CHECK
+
+*>   A world_gen_settings.dat that an earlier build wrote without the dimensions map is repaired by the next save, and a member
+*>   the core does not know stays; a file that has the map keeps it as it is (the Seed of such a file is the core's).
+     MOVE "/data/minecraft/world_gen_settings.dat" TO WS-SUFFIX
+     CALL "VFMT-SAVED-BEGIN" USING PB-BUFFER
+     MOVE "seed" TO WS-KN MOVE 4 TO WS-KL
+     MOVE 12345 TO WS-KSEED
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-KN WS-KL WS-KSEED
+     MOVE "keep_me" TO WS-KN MOVE 7 TO WS-KL
+     MOVE 77 TO WS-KV
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-KN WS-KL WS-KV
+     CALL "VFMT-SAVED-END" USING PB-BUFFER WS-SUFFIX
+     CALL "CORE-SAVE"
+     MOVE "build/core-test-world/data/minecraft/world_gen_settings.dat" TO WS-NAME-FILE
+     CALL "TEST-NBT-FILE" USING WS-NAME-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "data.keep_me" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.dimensions.minecraft:overworld.generator.type" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.dimensions.minecraft:the_end.type" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanfmt new world: a file without dimensions gets them at the next save and keeps unknown members" TO TL-CASE
+     MOVE "77 minecraft:noise minecraft:the_end" TO TL-EXPECTED
+     PERFORM CHECK
+     CALL "CORE-SAVE"
+     CALL "TEST-NBT-FILE" USING WS-NAME-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "data.keep_me" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.dimensions.minecraft:overworld.type" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanfmt new world: a file that has the map keeps it at the next save" TO TL-CASE
+     MOVE "77 minecraft:overworld" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 
