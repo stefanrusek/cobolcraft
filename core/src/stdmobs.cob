@@ -919,6 +919,7 @@
  01 WS-LEAPT               BINARY-LONG.
  01 WS-PET-HX              FLOAT-LONG.
  01 WS-PET-HZ              FLOAT-LONG.
+ 01 WS-RIDE-DONE           BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -961,6 +962,12 @@
      IF SM-KEY(WS-M) = "phantom"
          CALL "STDMOB-PHANTOM-TICK" USING WS-ROW WS-M
          GOBACK
+     END-IF
+     IF EN-RIDER(WS-ROW) > 0
+         CALL "MOB-RIDE-TICK" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
      END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      MOVE 0 TO WS-HX WS-HZ WS-CHASE

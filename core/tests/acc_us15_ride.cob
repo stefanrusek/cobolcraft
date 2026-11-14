@@ -1,0 +1,421 @@
+*> Acceptance test (US15; docs/protocol/18-mob-framework.md sections 8.4 and 1.1.1, 19 sections 2.1 and 3.1 to 3.5, 44-7 section 10.4.1): saddles and riding through the real play
+*> path. A tamed adult horse or a pig takes a saddle from the main hand (Set Equipment slot 7), an empty hand mounts (Set Passengers), a ridden mob stands still for its own AI and
+*> follows the Move Vehicle position of its rider (speed test: moved2 - v2 > 100 is refused with a corrective Move Vehicle), the rider follows the seat, shift in Player Input
+*> dismounts, an untamed horse is tamed or throws its rider by RunAroundLikeCrazy.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-RIDE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY PROTO.
+ COPY BRWORLD.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-HAYSTACK            PIC X(1026).
+ 01 WS-NEEDLE              PIC X(12).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-WANT-KEY            PIC X(112).
+ 01 WS-WANT-TYPE           BINARY-LONG.
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-GIVE-COUNT          BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-HORSE               BINARY-LONG.
+ 01 WS-HORSE-ID            BINARY-LONG.
+ 01 WS-PIG                 BINARY-LONG.
+ 01 WS-PIG-ID              BINARY-LONG.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-OBSERVE             BINARY-DOUBLE.
+ 01 WS-INPUT               BINARY-LONG.
+ 01 WS-MV-ID               BINARY-LONG VALUE 34.
+ 01 WS-IN-ID               BINARY-LONG VALUE 43.
+ 01 WS-MV-X                FLOAT-LONG.
+ 01 WS-MV-Y                FLOAT-LONG.
+ 01 WS-MV-Z                FLOAT-LONG.
+ 01 WS-MV-FLAGS            BINARY-LONG VALUE 1.
+ 01 WS-HORSE-X0            FLOAT-LONG.
+ 01 WS-HORSE-Z0            FLOAT-LONG.
+ 01 WS-PROW                BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-PROW
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 6000 TO CW-TIME
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 8
+         PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 8
+             COMPUTE WS-E = WS-CX - 4 + WS-X
+             COMPUTE WS-I = WS-CZ - 4 + WS-Z
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-E WS-FLOOR WS-I WS-STATE
+             PERFORM VARYING WS-HITS FROM 1 BY 1 UNTIL WS-HITS > 3
+                 COMPUTE WS-ITEM-ID = WS-FLOOR + WS-HITS
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-E WS-ITEM-ID WS-I WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+
+*> A tamed adult horse takes a saddle
+     MOVE "horse" TO WS-WANT-KEY
+     MOVE 2 TO WS-DX
+     MOVE 0 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-HORSE
+     MOVE EN-ID(WS-HORSE) TO WS-HORSE-ID
+     MOVE "saddle" TO WS-ITEM-KEY
+     MOVE 2 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+*> an untamed horse refuses the saddle
+     CALL "TEST-INTERACT" USING WS-CONN WS-HORSE-ID WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 19§3.1 Horse: an untamed horse takes no saddle" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-SADDLE(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO EN-TAMED(WS-HORSE)
+     CALL "TEST-INTERACT" USING WS-CONN WS-HORSE-ID WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 19§3.1 Horse: a tamed adult horse is saddled" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-SADDLE(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§3.1 Horse: the saddle is used up one at a time" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE " 104" TO WS-NEEDLE
+     PERFORM COUNT-PACKET
+     MOVE "acceptance US15 19§3.1 Horse: Set Equipment goes to the viewer" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+*> a second saddle is not taken
+     CALL "TEST-INTERACT" USING WS-CONN WS-HORSE-ID WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 19§3.1 Horse: a saddled horse keeps one saddle" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*> An empty hand mounts the saddled horse
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-HORSE-ID WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 18§8.4 Riding: the empty hand mounts the horse" TO WS-CASE
+     MOVE WS-PLAYER TO WS-EXPECT
+     MOVE EN-RIDER(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 18§8.4 Riding: the player knows its vehicle" TO WS-CASE
+     MOVE WS-HORSE TO WS-EXPECT
+     MOVE EN-VEHICLE(WS-PROW) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE " 109" TO WS-NEEDLE
+     PERFORM COUNT-PACKET
+     MOVE "acceptance US15 18§8.4 Riding: Set Passengers is sent" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 18§8.4 Riding: the rider sits at the seat (1.44375 - 0.6)" TO WS-CASE
+     COMPUTE WS-EXPECT = (EN-Y(WS-HORSE) + 0.84375) * 1000
+     COMPUTE WS-OBSERVE = PL-Y(WS-PLAYER) * 1000
+     PERFORM CHECK-N
+*> the ridden horse stands where it is for its own AI
+     MOVE EN-X(WS-HORSE) TO WS-HORSE-X0
+     MOVE EN-Z(WS-HORSE) TO WS-HORSE-Z0
+     CALL "TEST-TICKS" USING 60
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 18§8.4 Riding: a ridden saddled horse does not stroll" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = FUNCTION ABS(EN-X(WS-HORSE) - WS-HORSE-X0) * 1000 + FUNCTION ABS(EN-Z(WS-HORSE) - WS-HORSE-Z0) * 1000
+     PERFORM CHECK-N
+*> Move Vehicle within the speed bound moves the horse, the rider follows
+     COMPUTE WS-MV-X = EN-X(WS-HORSE) + 1.5
+     MOVE EN-Y(WS-HORSE) TO WS-MV-Y
+     MOVE EN-Z(WS-HORSE) TO WS-MV-Z
+     PERFORM FEED-VEHICLE
+     MOVE "acceptance US15 18§8.4 Riding: Move Vehicle moves the horse" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-MV-X * 1000
+     COMPUTE WS-OBSERVE = EN-X(WS-HORSE) * 1000
+     PERFORM CHECK-N
+     MOVE "acceptance US15 18§8.4 Riding: the rider follows the horse" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-MV-X * 1000
+     COMPUTE WS-OBSERVE = PL-X(WS-PLAYER) * 1000
+     PERFORM CHECK-N
+*> a report 20 blocks away is refused and corrected
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE EN-X(WS-HORSE) TO WS-HORSE-X0
+     COMPUTE WS-MV-X = EN-X(WS-HORSE) + 20
+     PERFORM FEED-VEHICLE
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 44-7§10.4.1 Move Vehicle: too fast is not applied" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-HORSE-X0 * 1000
+     COMPUTE WS-OBSERVE = EN-X(WS-HORSE) * 1000
+     PERFORM CHECK-N
+     MOVE " 58" TO WS-NEEDLE
+     PERFORM COUNT-PACKET
+     MOVE "acceptance US15 44-7§10.4.1 Move Vehicle: a corrective Move Vehicle is sent" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+*> the rider's own Move Player is ignored
+     MOVE PL-X(WS-PLAYER) TO WS-HORSE-X0
+     COMPUTE WS-MV-X = PL-X(WS-PLAYER) + 5
+     MOVE PL-Y(WS-PLAYER) TO WS-MV-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-MV-Z
+     MOVE 30 TO WS-MV-ID
+     PERFORM FEED-MOVE-PLAYER
+     MOVE 34 TO WS-MV-ID
+     MOVE "acceptance US15 18§8.4 Riding: the rider's own position reports are ignored" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-HORSE-X0 * 1000
+     COMPUTE WS-OBSERVE = PL-X(WS-PLAYER) * 1000
+     PERFORM CHECK-N
+*> shift in Player Input dismounts
+     MOVE 32 TO WS-INPUT
+     PERFORM FEED-INPUT
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 18§8.4 Riding: shift dismounts" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = EN-RIDER(WS-HORSE) + EN-VEHICLE(WS-PROW)
+     PERFORM CHECK-N
+     MOVE " 109" TO WS-NEEDLE
+     PERFORM COUNT-PACKET
+     MOVE "acceptance US15 18§8.4 Riding: dismounting sends Set Passengers" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+*> a key other than shift while not riding does nothing
+     MOVE 1 TO WS-INPUT
+     PERFORM FEED-INPUT
+     MOVE "acceptance US15 18§8.4 Riding: input without a vehicle is ignored" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-RIDER(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> Move Vehicle without a vehicle changes nothing
+     MOVE EN-X(WS-HORSE) TO WS-HORSE-X0
+     COMPUTE WS-MV-X = EN-X(WS-HORSE) + 1
+     PERFORM FEED-VEHICLE
+     MOVE "acceptance US15 18§8.4 Riding: Move Vehicle without a vehicle is ignored" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-HORSE-X0 * 1000
+     COMPUTE WS-OBSERVE = EN-X(WS-HORSE) * 1000
+     PERFORM CHECK-N
+
+*> A pig takes a saddle without being tame
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE "pig" TO WS-WANT-KEY
+     MOVE -2 TO WS-DX
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-PIG
+     MOVE EN-ID(WS-PIG) TO WS-PIG-ID
+     MOVE "saddle" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+*> a pig without a saddle: an empty hand does not mount
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-PIG-ID WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.1 Pig: an unsaddled pig is not ridden" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-RIDER(WS-PIG) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "saddle" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     CALL "TEST-INTERACT" USING WS-CONN WS-PIG-ID WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.1 Pig: a pig is saddled" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-SADDLE(WS-PIG) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§2.1 Pig: the last saddle leaves the slot" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "TEST-INTERACT" USING WS-CONN WS-PIG-ID WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.1 Pig: the saddled pig is ridden" TO WS-CASE
+     MOVE WS-PLAYER TO WS-EXPECT
+     MOVE EN-RIDER(WS-PIG) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> a sneaking player does not mount (mount only with no sneaking player)
+     MOVE 32 TO WS-INPUT
+     PERFORM FEED-INPUT
+     MOVE 1 TO WS-SNEAK0
+     CALL "TEST-INTERACT" USING WS-CONN WS-PIG-ID WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.1 Pig: a sneaking player does not mount" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-RIDER(WS-PIG) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO WS-SNEAK0
+     MOVE 0 TO WS-INPUT
+     PERFORM FEED-INPUT
+     CALL "TEST-INTERACT" USING WS-CONN WS-PIG-ID WS-HAND0 WS-SNEAK0
+     MOVE 32 TO WS-INPUT
+     PERFORM FEED-INPUT
+
+*> An untamed adult horse is mounted by an empty hand; RunAroundLikeCrazy tames it at temper 100 (every tick has 1/50 chance), a temper of 0 throws the rider
+     MOVE 0 TO WS-INPUT
+     PERFORM FEED-INPUT
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE "horse" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE 2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-HORSE
+     MOVE EN-ID(WS-HORSE) TO WS-HORSE-ID
+     MOVE 0 TO EN-TEMPER(WS-HORSE)
+     CALL "TEST-INTERACT" USING WS-CONN WS-HORSE-ID WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§3.4 Horse: an untamed horse is mounted" TO WS-CASE
+     MOVE WS-PLAYER TO WS-EXPECT
+     MOVE EN-RIDER(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "TEST-TICKS-ANSWERED" USING 600
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 19§3.4 Horse: a temper 0 horse throws its rider and stays wild" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = EN-RIDER(WS-HORSE) + EN-TAMED(WS-HORSE)
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§3.4 Horse: a thrown rider raises the temper by 5" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE EN-TEMPER(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE " 109" TO WS-NEEDLE
+     MOVE 100 TO EN-TEMPER(WS-HORSE)
+     COMPUTE EN-X(WS-HORSE) = WS-CX + 0.5
+     COMPUTE EN-Y(WS-HORSE) = WS-FLOOR + 1
+     COMPUTE EN-Z(WS-HORSE) = WS-CZ + 2.5
+     MOVE 0 TO EN-VY(WS-HORSE)
+     MOVE EN-X(WS-HORSE) TO PL-X(WS-PLAYER)
+     MOVE EN-Y(WS-HORSE) TO PL-Y(WS-PLAYER)
+     MOVE EN-Z(WS-HORSE) TO PL-Z(WS-PLAYER)
+     CALL "TEST-INTERACT" USING WS-CONN WS-HORSE-ID WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§3.4 Horse: the thrown-and-remounted horse has its rider" TO WS-CASE
+     MOVE WS-PLAYER TO WS-EXPECT
+     MOVE EN-RIDER(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "TEST-TICKS-ANSWERED" USING 600
+     MOVE "acceptance US15 19§3.4 Horse: a temper 100 horse is tamed by its rider" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-TAMED(WS-HORSE) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§3.4 Horse: the tamed horse keeps its rider and the owner is the rider" TO WS-CASE
+     MOVE WS-PLAYER TO WS-EXPECT
+     MOVE EN-RIDER(WS-HORSE) TO WS-OBSERVE
+     IF EN-OWNER-UUID(WS-HORSE) NOT = PL-UUID(WS-PLAYER)
+         MOVE -1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     STOP RUN.
+
+ SPAWN-MOB.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+
+ GIVE-HELD.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-ITEM-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE WS-GIVE-COUNT TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1).
+
+ COUNT-PACKET.
+     MOVE SPACES TO WS-HAYSTACK
+     STRING " " DELIMITED BY SIZE WS-TEXT DELIMITED BY SIZE INTO WS-HAYSTACK
+     MOVE 0 TO WS-HITS
+     INSPECT WS-HAYSTACK TALLYING WS-HITS FOR ALL FUNCTION TRIM(WS-NEEDLE) .
+
+ FEED-VEHICLE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MV-ID
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-MV-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-MV-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-MV-Z
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-YAW
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PITCH
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-MV-FLAGS
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
+
+ FEED-MOVE-PLAYER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MV-ID
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-MV-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-MV-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-MV-Z
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-MV-FLAGS
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
+
+ FEED-INPUT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-IN-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-INPUT
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OBSERVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-RIDE.
+ COPY CORETEST.

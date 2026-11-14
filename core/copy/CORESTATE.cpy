@@ -365,6 +365,12 @@
 *>     --- 002-lane-mobsfull-h12: Nether and End mobs (core/src/mob-21-5.cob) ---
        10 EN-ANGER           BINARY-LONG.        *> zombified piglin, piglin: ticks of anger left (0 calm); the target is EN-TARGET
        10 EN-ALERT           BINARY-LONG.        *> ticks until an angry zombified piglin alerts the others again (alertOthers, 4 to 6 s)
+*>     --- 002-lane-mobsfull-h14: saddles, riding, leads (core/src/mob-18-ride.cob; 18 sections 8.3 and 8.4, 19 sections 2.1 and 3) ---
+       10 EN-SADDLE          BINARY-LONG.        *> 1 when the saddle slot holds a saddle (horse family, pig)
+       10 EN-RIDER           BINARY-LONG.        *> player row riding this mob (0 none)
+       10 EN-VEHICLE         BINARY-LONG.        *> on a player's entity: the tracker row of the mob it rides (0 none)
+       10 EN-TEMPER          BINARY-LONG.        *> horse family: temper 0 to 100 (19 section 3.4)
+       10 EN-LEASH           BINARY-LONG.        *> player row holding a lead on this mob (0 none; a fence knot is an open item)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

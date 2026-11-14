@@ -1181,6 +1181,7 @@
  01 WS-KEY                 PIC X(24).
  01 WS-KEY48               PIC X(48).
  01 WS-HELD                PIC X(24).
+ 01 WS-USED                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -1227,6 +1228,10 @@
      END-IF
      MOVE WS-KEY48 TO WS-HELD
      MOVE SM-KEY(WS-M) TO WS-KEY
+     CALL "MOB-RIDE-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
+     IF WS-USED = 1
+         GOBACK
+     END-IF
      EVALUATE TRUE
          WHEN WS-KEY = "sheep" AND WS-HELD = "shears"
              CALL "MOB-SHEAR-USE" USING WS-ROW WS-ENTITY
