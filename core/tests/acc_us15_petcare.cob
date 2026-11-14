@@ -173,14 +173,14 @@
      MOVE 40 TO WS-EXPECT
      MOVE EN-HEALTH(WS-ROW-A) TO WS-OBSERVE
      PERFORM CHECK-N
-*> A wolf at full health does not eat: the hand toggles the sit order instead
+*> A wolf at full health does not heal: the food puts it in love (the base Animal feeding) and the sit order is not toggled
      CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
-     MOVE "acceptance US15 19§6.1 Wolf: a healthy wolf does not eat" TO WS-CASE
-     MOVE 1 TO WS-EXPECT
+     MOVE "acceptance US15 19§6.1 Wolf: a healthy wolf eats the food for love, not for health" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
      MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
      PERFORM CHECK-N
-     MOVE "acceptance US15 19§6.1 Wolf: a healthy wolf's food use toggles the sit order" TO WS-CASE
-     MOVE 1 TO WS-EXPECT
+     MOVE "acceptance US15 19§6.1 Wolf: a healthy wolf's food use leaves the sit order" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
      MOVE EN-SIT(WS-ROW-A) TO WS-OBSERVE
      PERFORM CHECK-N
 *> Not a wolf food (an apple): nothing eaten, health stays

@@ -89,6 +89,8 @@
  01 WS-ARMOR-ID         BINARY-LONG.
  01 WS-SCUTE-ID         BINARY-LONG.
  01 WS-WANT-ROW         BINARY-LONG.
+ 01 WS-COIN0            BINARY-LONG VALUE 0.
+ 01 WS-ELEVEN           BINARY-LONG VALUE 11.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 2 TO CS-VIEW-DISTANCE
@@ -304,6 +306,13 @@
      COMPUTE WS-OBSERVE = EN-WOLF-ARM(WS-ROW-C) + PL-SLOT-COUNT(WS-PLAYER, 1)
      PERFORM CHECK-N
      MOVE 0 TO EN-MOBAGE(WS-ROW-C)
+     MOVE "x" TO EN-OWNER-UUID(WS-ROW-C)(1:1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§6.1 Wolf: only the owner puts armour on a wolf" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = EN-WOLF-ARM(WS-ROW-C) + PL-SLOT-COUNT(WS-PLAYER, 1)
+     PERFORM CHECK-N
+     MOVE PL-UUID(WS-PLAYER) TO EN-OWNER-UUID(WS-ROW-C)
      CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
      MOVE "acceptance US15 19§6.1 Wolf: a grown wolf wears the armour with no damage" TO WS-CASE
      COMPUTE WS-EXPECT = WS-ARMOR-ID * 10
@@ -332,6 +341,81 @@
      MOVE "acceptance US15 19§6.1 Wolf: a wolf without armour drops nothing" TO WS-CASE
      MOVE 1 TO WS-EXPECT
      MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+*> Breeding: tame wolves fall in love with food at full health, sitting wolves do not mate, the pup is tame with the mixed collar
+     PERFORM CLEAR-KILLERS
+     MOVE "wolf" TO WS-WANT-KEY
+     MOVE 3 TO WS-DX
+     MOVE 3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     PERFORM MAKE-TAME
+     MOVE "wolf" TO WS-WANT-KEY
+     MOVE 3 TO WS-DX
+     MOVE 2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE WS-ROW-B TO WS-ROW-D
+     MOVE WS-ROW-A TO WS-ROW-B
+     MOVE WS-ROW-D TO WS-ROW-A
+     PERFORM MAKE-TAME
+     MOVE WS-ROW-B TO WS-ROW-A
+     MOVE 1 TO EN-COLLAR(WS-ROW-A)
+     MOVE 12 TO EN-COLLAR(WS-ROW-D)
+     MOVE "cooked_beef" TO WS-ITEM-KEY
+     MOVE 2 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE EN-ID(WS-ROW-A) TO WS-ID-A
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§6.1 Wolf: a tame wolf at full health fed wolf food falls in love" TO WS-CASE
+     MOVE 600 TO WS-EXPECT
+     MOVE EN-LOVE(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§6.1 Wolf: feeding for love uses one item and does not toggle sit" TO WS-CASE
+     MOVE 10 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = PL-SLOT-COUNT(WS-PLAYER, 1) * 10 + EN-SIT(WS-ROW-A)
+     PERFORM CHECK-N
+     MOVE EN-ID(WS-ROW-D) TO WS-ID-A
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE 1 TO EN-SIT(WS-ROW-D)
+     MOVE WS-ROW-B TO WS-ROW-A
+     CALL "MOB-PARTNER" USING WS-ROW-A WS-WANT-ROW
+     MOVE "acceptance US15 19§6.1 Wolf: a sitting wolf is no partner" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-WANT-ROW TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-SIT(WS-ROW-D)
+     CALL "MOB-PARTNER" USING WS-ROW-A WS-WANT-ROW
+     MOVE "acceptance US15 19§6.1 Wolf: two tame wolves in love are partners" TO WS-CASE
+     MOVE WS-ROW-D TO WS-EXPECT
+     MOVE WS-WANT-ROW TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "MOB-BREED" USING WS-ROW-A WS-ROW-D
+     MOVE 0 TO WS-BABY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0 AND EN-MOBAGE(WS-I) < 0 AND EN-VARIANT(WS-I) = 1
+             MOVE WS-I TO WS-BABY
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§6.1 Wolf: breeding makes a pup" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-BABY > 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§6.1 Wolf: the pup of a tame wolf is tame, owned and at 40 health" TO WS-CASE
+     MOVE 40 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-TAMED(WS-BABY) = 1 AND EN-OWNER-UUID(WS-BABY) = PL-UUID(WS-PLAYER)
+         MOVE EN-HEALTH(WS-BABY) TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO WS-DRAW
+     CALL "M19-SHEEP-MIX" USING WS-ZERO WS-ELEVEN WS-COIN0 WS-COLOR
+     MOVE "acceptance US15 19§6.1 Wolf: the pup's collar is the mix of the parents' collars" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-COLOR + 1
+     MOVE EN-COLLAR(WS-BABY) TO WS-OBSERVE
      PERFORM CHECK-N
      STOP RUN.
 

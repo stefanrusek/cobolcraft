@@ -97,6 +97,12 @@
          IF L-SPECIES = "turtle" AND L-ITEM = "seagrass"
              MOVE 1 TO L-FOUND L-LOVE
          END-IF
+         IF L-SPECIES = "wolf"
+*>           wolf_food (19 section 6.1); only a tame wolf falls in love.
+             CALL "M195-FOOD" USING L-SPECIES L-ITEM L-FOUND WS-HEAL
+             MOVE L-FOUND TO L-LOVE
+             MOVE 1 TO L-TAME
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM M188-FOOD.
@@ -113,7 +119,7 @@
      MOVE 0 TO L-OK
      EVALUATE L-SPECIES
          WHEN "pig" WHEN "cow" WHEN "mooshroom" WHEN "sheep" WHEN "chicken" WHEN "horse" WHEN "donkey" WHEN "llama"
-         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda" WHEN "bee" WHEN "turtle"
+         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda" WHEN "bee" WHEN "turtle" WHEN "wolf"
              MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
@@ -572,8 +578,11 @@
              MOVE EN-LOVE(WS-E) TO WS-LOVE-B
              CALL "M188-CAN-MATE" USING WS-KEY WS-OTHER WS-LOVE-A WS-LOVE-B WS-OK
              MOVE 0 TO WS-HORSE
-             IF WS-KEY = "horse" OR "donkey" OR "llama" OR "camel"
+             IF WS-KEY = "horse" OR "donkey" OR "llama" OR "camel" OR "wolf"
                  COMPUTE WS-HORSE = 1 - EN-TAMED(L-ROW) * EN-TAMED(WS-E)
+             END-IF
+             IF WS-KEY = "wolf" AND (EN-SIT(L-ROW) = 1 OR EN-SIT(WS-E) = 1)
+                 MOVE 1 TO WS-HORSE
              END-IF
              IF WS-OK = 1 AND WS-HORSE = 0
                  COMPUTE WS-DX = EN-X(WS-E) - EN-X(L-ROW)
@@ -667,6 +676,8 @@
              CALL "FOX-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "panda"
              CALL "PANDA-BRED" USING L-A L-B WS-BABY
+         WHEN "wolf"
+             CALL "WOLF-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "sheep"
              COMPUTE WS-COLOR-A = FUNCTION MOD(EN-WOOL(L-A), 16)
              COMPUTE WS-COLOR-B = FUNCTION MOD(EN-WOOL(L-B), 16)
@@ -1186,6 +1197,9 @@
          CALL "WOLF-ARMOR-USE" USING L-ROW L-ENTITY WS-CONSUMED
          IF WS-CONSUMED = 0
              CALL "MOB-CARE-USE" USING L-ROW L-ENTITY WS-WOLF-MAX WS-WOLF-MULT WS-CONSUMED
+         END-IF
+         IF WS-CONSUMED = 0
+             CALL "WOLF-FEED-LOVE" USING L-ROW L-ENTITY WS-CONSUMED
          END-IF
          MOVE 0 TO WS-OWNER
          IF EN-OWNER-UUID(L-ENTITY) = PL-UUID(L-ROW)
