@@ -105,7 +105,8 @@
  PROGRAM-ID. WORLD-DIMS-SELECT.
 *> USING world type (PIC X(10)), extra-dimensions setting (PIC 9): fills CW-DIM and CW-DIM-COUNT with the dimensions
 *> the world has, in Login order. A cobolcraft world has cobolcraft:main and, while extra dimensions are on, the extras
-*> (DM-EXTRA 1); a standard or debug world has minecraft:overworld only (the DM-EXTRA 2 row), its first dimension.
+*> (DM-EXTRA 1); a standard or debug world has minecraft:overworld only (the DM-EXTRA 2 row), its first dimension; a standard world adds minecraft:the_nether and minecraft:the_end (DM-EXTRA 3) while
+*> the extra-dimensions setting is on (README decision 16), the debug world ignores the setting.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -119,6 +120,7 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
          IF (L-TYPE = "cobolcraft" AND (DM-EXTRA(WS-I) = 0 OR (DM-EXTRA(WS-I) = 1 AND L-EXTRA = 1)))
                  OR (L-TYPE NOT = "cobolcraft" AND DM-EXTRA(WS-I) = 2)
+                 OR (L-TYPE = "standard" AND DM-EXTRA(WS-I) = 3 AND L-EXTRA = 1)
              ADD 1 TO CW-DIM-COUNT
              MOVE WS-I TO CW-DIM(CW-DIM-COUNT)
          END-IF
