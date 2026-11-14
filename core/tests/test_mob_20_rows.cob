@@ -90,9 +90,9 @@
      MOVE 11 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "enderman" TO WS-KEY48
+     MOVE "witch" TO WS-KEY48
      CALL "MS6-SPECIES" USING WS-KEY48 WS-INDEX
-     MOVE "acceptance US15 20§19.3 enderman has no spawn logic yet" TO TL-CASE
+     MOVE "acceptance US15 20§19.3 witch has no spawn logic yet" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

@@ -292,6 +292,11 @@
        10 EN-STRAFE-BACK     BINARY-LONG.        *> strafingBackwards 0 or 1
        10 EN-STRAFE-X        FLOAT-LONG.         *> the strafe walk of this tick
        10 EN-STRAFE-Z        FLOAT-LONG.
+*>     --- 002-lane-mobsfull-h5: per-entity variant (core/src/mob-20-3.cob) ---
+       10 EN-VARIANT         BINARY-LONG.        *> zombie family: 1 = baby; creeper: 1 = powered; slime: its size (0 = not set, read as 1); the metadata sync is STDMOB-VARIANT-BUILD
+       10 EN-EQUIP           BINARY-LONG.        *> armour of a zombie or skeleton: 10 x (tier + 1) + number of slots worn (head, chest, legs, feet in that order); 0 none (20 section 3.6)
+       10 EN-REINF           BINARY-LONG.        *> zombie reinforcement chance in ten-thousandths (20 section 4.1)
+       10 EN-ENDER-TICKS     BINARY-LONG.        *> enderman: ticks since its target changed (the 600-tick daylight rule, 20 section 8.1)
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
