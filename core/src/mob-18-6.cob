@@ -1264,8 +1264,11 @@
          CALL "XORO-SEED" USING WS-SEED WS-STATE
          MOVE 1 TO WS-SEEDED
      END-IF
-     COMPUTE WS-CAT = 2 - SM-KIND(WS-S)
-     MOVE SM-KIND(WS-S) TO WS-REMOVABLE
+     CALL "MS6-ROW-CAT" USING WS-S WS-CAT
+     MOVE 0 TO WS-REMOVABLE
+     IF SM-KIND(WS-S) > 0
+         MOVE 1 TO WS-REMOVABLE
+     END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
      IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1
          MOVE 1 TO WS-PEACEFUL
@@ -1738,7 +1741,7 @@
              IF EN-USED(WS-ROW) = 1 AND EN-DIM(WS-ROW) = WS-DIM
                  CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-S
                  IF WS-S > 0
-                     COMPUTE WS-CAT = 2 - SM-KIND(WS-S)
+                     CALL "MS6-ROW-CAT" USING WS-S WS-CAT
                      ADD 1 TO WS-COUNT(WS-CAT)
                      COMPUTE WS-MCX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
                      COMPUTE WS-MCZ = FUNCTION INTEGER(EN-Z(WS-ROW) / 16)

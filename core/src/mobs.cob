@@ -85,6 +85,9 @@
      CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
      MOVE L-TYPE TO EN-TYPE(WS-ROW)
      CALL "ENTITY-SET-UUID" USING WS-ROW
+*>   INITIALIZE leaves the float fields of a reused row: the swimmers' (core/src/mob-21-4.cob) are cleared here.
+     MOVE 0 TO EN-SWIM-SPEED(WS-ROW) EN-SQ-MX(WS-ROW) EN-SQ-MY(WS-ROW) EN-SQ-MZ(WS-ROW) EN-SQ-PHASE(WS-ROW) EN-SQ-TSPEED(WS-ROW)
+     MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
      MOVE L-DIM TO EN-DIM(WS-ROW)
      MOVE L-X TO EN-X(WS-ROW)
      MOVE L-Y TO EN-Y(WS-ROW)

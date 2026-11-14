@@ -317,6 +317,19 @@
        10 EN-FOE             BINARY-LONG.        *> a pet's or golem's mob target: tracker row (0 none), its entity id in EN-FOE-ID
        10 EN-FOE-ID          BINARY-LONG.
        10 EN-PET-CD          BINARY-LONG.        *> ticks until the pet's next melee hit
+*>     --- 002-lane-mobsfull-h10: aquatic mobs (core/src/mob-21-4.cob; docs/protocol/21 section 4) ---
+       10 EN-DRY             BINARY-LONG.        *> ticks out of water (a fish: air 300 - EN-DRY; a dolphin: moistness 2400 - EN-DRY); 0 in water
+       10 EN-SWIM-SPEED      FLOAT-LONG.         *> a swimmer's current move speed (FishMoveControl lerp 0.125 toward attribute x modifier)
+       10 EN-DEST-Y          BINARY-LONG.        *> the cell y a swimmer is heading for (EN-DEST-X/-Z, EN-COOLDOWN the ticks left)
+       10 EN-IDLE            BINARY-LONG.        *> squid noActionTime: ticks without a player within 32 blocks
+       10 EN-SQ-MX           FLOAT-LONG.         *> a squid's movement vector m (blocks per tick, 21 section 4.5)
+       10 EN-SQ-MY           FLOAT-LONG.
+       10 EN-SQ-MZ           FLOAT-LONG.
+       10 EN-SQ-PHASE        FLOAT-LONG.         *> tentacleMovement phase, 0 to 2 pi
+       10 EN-SQ-TSPEED       FLOAT-LONG.         *> tentacleSpeed (0 = not drawn yet)
+       10 EN-DARK            BINARY-LONG.        *> glow squid: ticks left without glowing after a hit
+       10 EN-INFLATE         BINARY-LONG.        *> pufferfish inflateCounter (the puff state is EN-VARIANT, 0 to 2)
+       10 EN-DEFLATE         BINARY-LONG.        *> pufferfish deflateTimer
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while

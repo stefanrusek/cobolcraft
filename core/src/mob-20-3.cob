@@ -251,6 +251,16 @@
                  MOVE 18 TO WS-INDEX
                  MOVE MD-MDS-INT TO WS-SERIALIZER
                  MOVE EN-VARIANT(L-ROW) TO WS-VALUE
+             WHEN "salmon"
+             WHEN "tropical_fish"
+*>               EN-VARIANT is 1 + the variant (21 sections 4.2 and 4.4): metadata 17.
+                 MOVE 17 TO WS-INDEX
+                 MOVE MD-MDS-INT TO WS-SERIALIZER
+                 COMPUTE WS-VALUE = EN-VARIANT(L-ROW) - 1
+             WHEN "pufferfish"
+                 MOVE 17 TO WS-INDEX
+                 MOVE MD-MDS-INT TO WS-SERIALIZER
+                 MOVE EN-VARIANT(L-ROW) TO WS-VALUE
          END-EVALUATE
      END-IF
      IF WS-INDEX > 0
@@ -356,6 +366,9 @@
              END-IF
          WHEN "slime"
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "salmon"
+         WHEN "tropical_fish"
+             CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M
      END-EVALUATE
      CALL "STDMOB-VARIANT-SEND" USING L-ROW
      CALL "STDMOB-EQUIP-SEND" USING L-ROW

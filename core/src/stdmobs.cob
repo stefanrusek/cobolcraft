@@ -826,7 +826,7 @@
 *> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time):
 *>   it picks a cell up to 10 blocks away on each axis (RandomStrollGoal: 10 horizontally; EN-DEST-X/-Z), and walks to it by STDMOB-HEAD for at most
 *>   SM-STROLL-TICKS ticks (EN-COOLDOWN = the ticks left) or until it is in the cell;
-*> then MOB-PHYSICS moves it.
+*> then MOB-PHYSICS moves it. A water animal (SM-KIND 2 to 4) is STDMOB-AQUATIC-STEP's (core/src/mob-21-4.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -897,6 +897,10 @@
      END-IF
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
+     END-IF
+     IF SM-KIND(WS-M) >= 2
+         CALL "STDMOB-AQUATIC-STEP" USING WS-ROW WS-M
+         GOBACK
      END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      MOVE 0 TO WS-HX WS-HZ WS-CHASE
