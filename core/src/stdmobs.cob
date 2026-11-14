@@ -317,7 +317,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-NAME.
 *> USING entity type id (BINARY-LONG), name out (PIC X(16)), length out (BINARY-LONG): the display name of a table mob, its key with the first letter
-*> in capitals (zombie: Zombie), for the death message of a player it killed. A type with no row gives spaces and 0.
+*> in capitals, underscores as spaces (zombie: Zombie, zombie_villager: Zombie Villager), for the death message of a player it killed. A type with no row gives spaces and 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STDMOBS.
@@ -325,6 +325,7 @@
  01 WS-LOWER               PIC X(26) VALUE "abcdefghijklmnopqrstuvwxyz".
  01 WS-UPPER               PIC X(26) VALUE "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
  01 WS-TEXT                PIC X(24).
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-TYPE                 BINARY-LONG.
  01 L-NAME                 PIC X(16).
@@ -335,7 +336,13 @@
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
      IF WS-M > 0
          MOVE SM-KEY(WS-M) TO WS-TEXT
+         INSPECT WS-TEXT CONVERTING "_" TO " "
          INSPECT WS-TEXT(1:1) CONVERTING WS-LOWER TO WS-UPPER
+         PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > 24
+             IF WS-TEXT(WS-I - 1:1) = SPACE AND WS-TEXT(WS-I:1) NOT = SPACE
+                 INSPECT WS-TEXT(WS-I:1) CONVERTING WS-LOWER TO WS-UPPER
+             END-IF
+         END-PERFORM
          MOVE WS-TEXT(1:16) TO L-NAME
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO L-LENGTH
      END-IF
@@ -548,7 +555,8 @@
 *> USING tracker row, table row of a mob that burns in daylight (SM-BURNS 1, 20 section 3.5; STDMOB-STEP calls it for those rows only). While not burning, in the monsters_burn window of the day
 *> (SM-BURN-DAY-START to SM-BURN-DAY-END) and with raw light 13 or more at its eye cell (the sky is open there), a hash of the entity id and the time
 *> sets it on fire for SM-BURN-TICKS with the chance of the light (SM-BURN-CHANCE, per ten thousand). While burning EN-BURN counts down and every
-*> SM-BURN-STEP ticks the mob takes 1 point (HEALTH-MOB-DAMAGE, the generic cause). Water, rain and head items are not modelled.
+*> SM-BURN-STEP ticks the mob takes 1 point (HEALTH-MOB-DAMAGE, the generic cause). The chance is stopped when the mob is sheltered (STDMOB-SHELTERED: water, powder snow, no
+*> visible sky, rain); a worn helmet takes durability damage nextInt(2) instead of igniting the mob and breaks at its maximum (EN-HEAD-WEAR).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -566,6 +574,10 @@
  01 WS-AMOUNT              BINARY-LONG VALUE 1.
  01 WS-CAUSE               BINARY-LONG VALUE 6.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-FEET                BINARY-LONG.
+ 01 WS-SHELTERED           BINARY-LONG.
+ 01 WS-TIER                BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -593,7 +605,24 @@
      MOVE 11 TO WS-ARG(3)
      CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
      IF FUNCTION MOD(WS-R, 10000) < SM-BURN-CHANCE(WS-LIGHT - 12)
-         MOVE SM-BURN-TICKS TO EN-BURN(L-ROW)
+         COMPUTE WS-FEET = WS-BY - 1
+         CALL "STDMOB-SHELTERED" USING EN-DIM(L-ROW) WS-BX WS-FEET WS-BZ WS-SHELTERED
+         IF WS-SHELTERED = 0
+             IF EN-EQUIP(L-ROW) = 0 OR EN-HEAD-WEAR(L-ROW) = -1
+                 MOVE SM-BURN-TICKS TO EN-BURN(L-ROW)
+             ELSE
+*>               A worn helmet takes nextInt(2) points of durability instead and the mob does not ignite; at its maximum it breaks (3.5 step 5).
+                 MOVE 19 TO WS-ARG(3)
+                 CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+                 ADD FUNCTION MOD(WS-R, 2) TO EN-HEAD-WEAR(L-ROW)
+                 COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
+                 CALL "STDMOB-HEAD-MAX" USING WS-TIER WS-MAX
+                 IF EN-HEAD-WEAR(L-ROW) >= WS-MAX
+                     MOVE -1 TO EN-HEAD-WEAR(L-ROW)
+                     CALL "STDMOB-EQUIP-SEND" USING L-ROW
+                 END-IF
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-BURN.
@@ -697,7 +726,7 @@
      COMPUTE WS-DZ = EN-WAY-Z(L-ROW) - EN-Z(L-ROW)
      COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
      IF WS-H > 0.05
-         COMPUTE WS-SPEED = SM-WALK-MILLI(L-M) / 1000
+         CALL "STDMOB-SPEED" USING L-ROW L-M WS-SPEED
          COMPUTE L-HX = WS-SPEED * WS-DX / WS-H
          COMPUTE L-HZ = WS-SPEED * WS-DZ / WS-H
      END-IF

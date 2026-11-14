@@ -310,6 +310,9 @@
        10 EN-WOOL            BINARY-LONG.        *> sheep: the metadata byte (colour 0 to 15, +16 sheared); mooshroom: type 0 red 1 brown; pig, cow, chicken: variant
        10 EN-EGG             BINARY-LONG.        *> chicken: eggTime, ticks to the next egg
        10 EN-EAT             BINARY-LONG.        *> sheep: the EatBlock timer, 0 or the ticks left of the 40
+*>     --- 002-lane-mobsfull-h8: main hand, helmet wear (core/src/mob-20-3.cob) ---
+       10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1)
+       10 EN-HEAD-WEAR       BINARY-LONG.        *> durability damage of the helmet worn (EN-EQUIP head slot); -1 = broken, the head is empty (20 section 3.5)
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
