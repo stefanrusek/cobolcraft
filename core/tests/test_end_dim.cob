@@ -13,6 +13,8 @@
  COPY NETHERDIM.
  COPY CELLS.
  COPY END.
+ COPY ENDSPIKE.
+ COPY CONTENT.
  01 WS-SKIP                BINARY-LONG.
  01 WS-READY               BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
@@ -60,6 +62,20 @@
      MOVE WS-READY TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   The placeholder keeps the single biome the_end for every chunk.
+     MOVE 5 TO WS-CX
+     MOVE 5 TO WS-CZ
+     CALL "WORLDGEN-DIM-BIOMES" USING DIM-STANDARD-END WS-CX WS-CZ WS-BIOMES
+     MOVE "acceptance US12 38§2 End seam: the placeholder's biome of a far chunk is the_end in every column" TO TL-CASE
+     MOVE 1 TO WS-ALL
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         IF WS-BIOME(WS-I) NOT = WS-THE-END
+             MOVE 0 TO WS-ALL
+         END-IF
+     END-PERFORM
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-ALL TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO ND-PLACEHOLDER
      CALL "END-DIM-READY" USING WS-READY
      MOVE "acceptance US12 38§2 End seam: with the real End on and the tables complete the generator is ready" TO TL-CASE
@@ -125,6 +141,26 @@
      MOVE "acceptance US12 38§8 End seam: the pillar of chunk (2, 0) spawned one end_crystal entity at (42.5, 0.5) in the End" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A set without the end_crystal entity type spawns nothing.
+     MOVE 1 TO EC-COUNT
+     MOVE 5 TO EC-X(1)
+     MOVE 70 TO EC-Y(1)
+     MOVE 5 TO EC-Z(1)
+     MOVE 0 TO EC-YAW(1)
+     MOVE 0 TO CT-OPEN
+     CALL "END-CRYSTAL-SPAWN" USING DIM-STANDARD-END CRYSTAL-LIST
+     MOVE 1 TO CT-OPEN
+     MOVE 0 TO WS-A
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-CRYSTAL AND EN-X(WS-I) = 5.5
+             ADD 1 TO WS-A
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 38§8 End seam: a content set without end_crystal gets no crystal entity" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-A TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-END-DIM.

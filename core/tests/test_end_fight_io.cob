@@ -18,6 +18,16 @@
  01 WS-FILE                PIC X(1100).
  01 WS-FILE-INFO           PIC X(16).
  01 WS-ED                  PIC -(7)9.
+ 01 WS-SAVE-COUNT          BINARY-LONG.
+ 01 WS-ACCESS              PIC X COMP-X VALUE 2.
+ 01 WS-DENY                PIC X COMP-X VALUE 0.
+ 01 WS-DEVICE              PIC X COMP-X VALUE 0.
+ 01 WS-HANDLE              PIC X(4).
+ 01 WS-OFFSET              PIC X(8) COMP-X VALUE 0.
+ 01 WS-BYTES               PIC X(4) COMP-X VALUE 4.
+ 01 WS-FLAGS               PIC X COMP-X VALUE 0.
+ 01 WS-JUNK                PIC X(4) VALUE "junk".
+ 01 WS-SAVE                BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "PT-OPEN" USING WS-SKIP
@@ -60,6 +70,34 @@
      MOVE "acceptance US12 45§3 fight state file: the record read back keeps dragon_killed, the portal y 61 and the 20 gateways" TO TL-CASE
      COMPUTE TL-OBSERVED-N = EF-KILLED * 10000 + EF-PORTAL(2) * 100 + EF-GATEWAY-COUNT
      MOVE 16120 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A world without the End has no fight state: nothing is read or written.
+     INITIALIZE END-FIGHT
+     CALL "END-FIGHT-IO" USING WS-SET END-FIGHT
+     CALL "END-FIGHT-IO" USING WS-FORGET END-FIGHT
+     MOVE CW-DIM-COUNT TO WS-SAVE-COUNT
+     MOVE 1 TO CW-DIM-COUNT
+     CALL "END-FIGHT-IO" USING WS-LOAD END-FIGHT
+     CALL "END-FIGHT-IO" USING WS-SAVE END-FIGHT
+     MOVE WS-SAVE-COUNT TO CW-DIM-COUNT
+     CALL "END-FIGHT-IO" USING WS-GET END-FIGHT
+     MOVE "acceptance US12 45§3 fight state file: a world without the End loaded and saved no record" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EF-KILLED + EF-GATEWAY-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A file that is no gzip NBT gives the default of a new End.
+     CALL "CBL_CREATE_FILE" USING WS-FILE WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
+     CALL "CBL_WRITE_FILE" USING WS-HANDLE WS-OFFSET WS-BYTES WS-FLAGS WS-JUNK
+     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
+     CALL "END-FIGHT-IO" USING WS-FORGET END-FIGHT
+     CALL "END-FIGHT-IO" USING WS-LOAD END-FIGHT
+     INITIALIZE END-FIGHT
+     CALL "END-FIGHT-IO" USING WS-GET END-FIGHT
+     MOVE "acceptance US12 45§3 fight state file: an unreadable file gives the default of a new End (not killed, 20 gateways)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = EF-KILLED * 100 + EF-GATEWAY-COUNT
+     MOVE 20 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-END-FIGHT-IO.

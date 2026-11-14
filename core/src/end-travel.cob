@@ -238,6 +238,47 @@
  END PROGRAM END-CREDITS-RESPAWN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-TRAVEL-GO.
+*> USING player row, in the End (1/0): the transfer: out of the End to her respawn point (END-RETURN), else into the End when the world has it (platform
+*> rebuilt with its drops, arrival at (100.5, 49, 0.5) looking west, the portal sound).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ 01 WS-PLAYER              BINARY-LONG VALUE 1.
+ 01 WS-DEST                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DROPPED             BINARY-LONG.
+ 01 WS-ARRIVE-X            FLOAT-LONG.
+ 01 WS-ARRIVE-Y            FLOAT-LONG.
+ 01 WS-ARRIVE-Z            FLOAT-LONG.
+ 01 WS-ARRIVE-YAW          FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-IN-END               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-IN-END.
+     IF L-IN-END = 1
+         CALL "END-RETURN" USING L-ROW
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-DEST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CW-DIM-COUNT
+         IF DM-KEY(CW-DIM(WS-I)) = "minecraft:the_end"
+             MOVE CW-DIM(WS-I) TO WS-DEST
+         END-IF
+     END-PERFORM
+     IF WS-DEST > 0
+         CALL "END-PLATFORM-DROPS" USING WS-DEST
+         CALL "END-ARRIVE-BUILD" USING WS-DEST WS-DROPPED
+         CALL "END-ARRIVAL" USING WS-PLAYER WS-ARRIVE-X WS-ARRIVE-Y WS-ARRIVE-Z WS-ARRIVE-YAW
+         MOVE WS-ARRIVE-YAW TO PL-YAW(L-ROW)
+         CALL "DIM-SWITCH" USING L-ROW WS-DEST WS-ARRIVE-X WS-ARRIVE-Y WS-ARRIVE-Z
+         CALL "PORTAL-SOUND" USING PL-CONN(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM END-TRAVEL-GO.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. END-PLAYER-TICK.
 *> USING player row: one tick of the End's rules for a player in play: the portal cooldown counts down; in the End below y -64 she takes 4.0 damage (END-BELOW-WORLD, 9.3);
 *> an end_portal block touched by her box (0.6 x 1.8; the block's inside shape is the slab y 6/16 to 12/16) sends her to the End (PORTAL-END-INSIDE, transit time 0,
@@ -255,12 +296,10 @@
  01 WS-RESULT              BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG VALUE 4.
  01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-IN-END              BINARY-LONG.
  01 WS-INSIDE              BINARY-LONG.
  01 WS-SEND                BINARY-LONG.
- 01 WS-DEST                BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-DROPPED             BINARY-LONG.
  01 WS-MIN-X               BINARY-LONG.
  01 WS-MAX-X               BINARY-LONG.
  01 WS-MIN-Y               BINARY-LONG.
@@ -277,10 +316,6 @@
  01 WS-HIGH                FLOAT-LONG.
  01 WS-SLAB-LOW            FLOAT-LONG VALUE 0.375.
  01 WS-SLAB-HIGH           FLOAT-LONG VALUE 0.75.
- 01 WS-ARRIVE-X            FLOAT-LONG.
- 01 WS-ARRIVE-Y            FLOAT-LONG.
- 01 WS-ARRIVE-Z            FLOAT-LONG.
- 01 WS-ARRIVE-YAW          FLOAT-LONG.
  01 WS-EVENT               BINARY-LONG VALUE 4.
  01 WS-VALUE               FLOAT-SHORT VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
@@ -304,7 +339,7 @@
          COMPUTE WS-Y = FUNCTION INTEGER(PL-Y(L-ROW))
          CALL "END-BELOW-WORLD" USING WS-Y WS-LIVING WS-RESULT
          IF WS-RESULT = 2
-             CALL "HEALTH-DAMAGE" USING L-ROW WS-DAMAGE CAUSE-COMMAND WS-NONE WS-NONE
+             CALL "HEALTH-DAMAGE" USING L-ROW WS-DAMAGE CAUSE-COMMAND WS-NONE WS-NO-ATTACKER
          END-IF
      END-IF
      IF ET-S-PORTAL < 0 OR PL-MODE(L-ROW) = 3
@@ -357,31 +392,10 @@
                  MOVE WS-COOLDOWN TO ET-COOLDOWN(L-ROW)
              ELSE
                  MOVE WS-COOLDOWN TO ET-COOLDOWN(L-ROW)
-                 PERFORM TRAVEL
+                 CALL "END-TRAVEL-GO" USING L-ROW WS-IN-END
              END-IF
      END-EVALUATE
      GOBACK.
-
-*> The transfer: out of the End to her respawn point, else into the End when the world has it.
- TRAVEL.
-     IF WS-IN-END = 1
-         CALL "END-RETURN" USING L-ROW
-     ELSE
-         MOVE 0 TO WS-DEST
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CW-DIM-COUNT
-             IF DM-KEY(CW-DIM(WS-I)) = "minecraft:the_end"
-                 MOVE CW-DIM(WS-I) TO WS-DEST
-             END-IF
-         END-PERFORM
-         IF WS-DEST > 0
-             CALL "END-PLATFORM-DROPS" USING WS-DEST
-             CALL "END-ARRIVE-BUILD" USING WS-DEST WS-DROPPED
-             CALL "END-ARRIVAL" USING WS-PLAYER WS-ARRIVE-X WS-ARRIVE-Y WS-ARRIVE-Z WS-ARRIVE-YAW
-             MOVE WS-ARRIVE-YAW TO PL-YAW(L-ROW)
-             CALL "DIM-SWITCH" USING L-ROW WS-DEST WS-ARRIVE-X WS-ARRIVE-Y WS-ARRIVE-Z
-             CALL "PORTAL-SOUND" USING PL-CONN(L-ROW)
-         END-IF
-     END-IF.
  END PROGRAM END-PLAYER-TICK.
 
  IDENTIFICATION DIVISION.

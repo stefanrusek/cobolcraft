@@ -13,6 +13,7 @@
  COPY DIMENSIONS.
  COPY NETHERDIM.
  COPY ENDTRAVEL.
+ COPY BRWORLD.
  01 WS-SKIP                BINARY-LONG.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
@@ -165,6 +166,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Having seen the credits, the End portal takes her out at once.
+     CALL "BR-WORLD-READY"
+     MOVE 1 TO BW-SPAWN-SET(WS-ROW)
+     MOVE DIM-STANDARD-OVERWORLD TO BW-SPAWN-DIM(WS-ROW)
+     MOVE 50.5 TO BW-SPAWN-X(WS-ROW)
+     MOVE 80.0 TO BW-SPAWN-Y(WS-ROW)
+     MOVE 60.5 TO BW-SPAWN-Z(WS-ROW)
+     MOVE 0 TO BW-SPAWN-YAW(WS-ROW)
+     MOVE 0 TO BW-SPAWN-PITCH(WS-ROW)
      MOVE 5 TO WS-A
      CALL "DIM-SWITCH" USING WS-ROW WS-A PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
      MOVE 0.5 TO PL-X(WS-ROW)
@@ -175,6 +184,10 @@
      MOVE "acceptance US12-3 end travel: after the credits the end portal takes her to the overworld (row 3)" TO TL-CASE
      MOVE 3 TO TL-EXPECTED-N
      MOVE PL-DIM(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12-3 end travel: she arrives at her respawn point (50, 60) and not at the world spawn" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = PL-X(WS-ROW) * 1000 + PL-Z(WS-ROW)
+     MOVE 50560 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   An eye of ender on the last empty frame of a ring (200..204, 60, 200..204).
@@ -236,6 +249,31 @@
      INSPECT WS-IDS TALLYING WS-COUNT FOR ALL "47x2"
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The second eye on a frame that already holds one, and an empty hand on a frame: not handled, the eye count stays.
+     MOVE 202 TO WS-X MOVE 60 TO WS-Y MOVE 200 TO WS-Z
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE 0 TO PL-SLOT-COUNT(WS-ROW, 5)
+     MOVE 0 TO PL-SLOT-ITEM(WS-ROW, 5)
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE "acceptance US12-3 end travel: an eye on a frame that has one and an empty hand use nothing up" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-SLOT-COUNT(WS-ROW, 5) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A spectator in an end portal block is not moved.
+     MOVE 3 TO PL-MODE(WS-ROW)
+     MOVE 0 TO ET-COOLDOWN(WS-ROW)
+     MOVE 201.5 TO PL-X(WS-ROW)
+     MOVE 60.0 TO PL-Y(WS-ROW)
+     MOVE 201.5 TO PL-Z(WS-ROW)
+     CALL "TEST-TICKS" USING WS-TWO
+     MOVE "acceptance US12-3 end travel: a spectator in the end portal stays in the overworld (row 3)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE PL-DIM(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
