@@ -988,9 +988,6 @@
          IF SM-BURNS(WS-M) = 1
              CALL "STDMOB-BURN" USING WS-ROW WS-M
          END-IF
-         IF EN-HEALTH(WS-ROW) = 0
-             GOBACK
-         END-IF
          CALL "STDMOB-AGGRO" USING WS-ROW WS-M
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)

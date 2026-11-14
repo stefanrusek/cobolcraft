@@ -42,6 +42,10 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-CORNER-X            BINARY-LONG.
+ 01 WS-CORNER-Z            BINARY-LONG.
+ 01 WS-COL-X               BINARY-LONG.
+ 01 WS-COL-Z               BINARY-LONG.
  01 WS-VIEW BASED.
     05 WS-BYTE             PIC X OCCURS 64 TIMES.
  PROCEDURE DIVISION.
@@ -196,6 +200,26 @@
      MOVE 0 TO WS-I
      CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-N1 WS-BZ WS-I WS-OK
      MOVE "acceptance US15 21§3.2 the magma cube rule fails inside the floor block (no ground below)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
+*>   Spawn rule 11 (piglin): only the floor test, so it passes on Peaceful too.
+     MOVE "piglin" TO WS-NAME
+     CALL "TEST-TYPE" USING WS-NAME WS-TYPE WS-M
+     MOVE 0 TO BW-DIFFICULTY
+     MOVE 0 TO WS-N1
+     CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-N1 WS-OK
+     MOVE "acceptance US15 21§3.2 the piglin rule needs only the floor and passes on Peaceful" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
+     MOVE 2 TO BW-DIFFICULTY
+*>   A generation attempt with no species row (0) creates nothing.
+     MOVE 0 TO WS-M
+     MOVE 0 TO WS-OK
+     MOVE WS-BX TO WS-CORNER-X WS-COL-X
+     MOVE WS-BZ TO WS-CORNER-Z WS-COL-Z
+     MOVE SPACES TO WS-NAME
+     CALL "MS6-GEN-ATTEMPT" USING XR-STATE WS-DIM WS-M WS-CORNER-X WS-CORNER-Z WS-COL-X WS-COL-Z WS-OK WS-NAME
+     MOVE "acceptance US15 6.10 a chunk-generation attempt with species row 0 fails" TO WS-CASE
      MOVE 0 TO WS-EXP
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
      CALL "PB-FREE" USING PB-BUFFER

@@ -11,6 +11,8 @@
  COPY CONTENT.
  COPY CITEMS.
  COPY PROTO.
+ COPY BRWORLD.
+ COPY DIMENSIONS.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-NAME                PIC X(16) VALUE "Stefan".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
@@ -48,6 +50,10 @@
  01 WS-AMOUNT              BINARY-LONG VALUE 3.
  01 WS-CAUSE               BINARY-LONG VALUE 1.
  01 WS-LIGHT               BINARY-LONG.
+ 01 WS-HIGH                BINARY-LONG VALUE 100000.
+ 01 WS-ZOMBIE-TYPE         BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-BLK-TYPE            BINARY-LONG.
  01 WS-FARX                BINARY-LONG VALUE 100000.
  01 WS-FARZ                BINARY-LONG VALUE 100000.
  01 WS-X0                  FLOAT-LONG.
@@ -151,6 +157,11 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-LIGHT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "STDMOB-BRIGHT" USING WS-DIM WS-BX WS-HIGH WS-BZ WS-LIGHT
+     MOVE "test stdmob extra: the light of a cell above the dimension height is 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-LIGHT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test stdmob extra: the sky light high above the terrain is 15 on both nibbles" TO TL-CASE
      MOVE 15 TO TL-EXPECTED-N
      CALL "STDMOB-BRIGHT" USING WS-DIM WS-BX WS-BY WS-BZ WS-LIGHT
@@ -247,6 +258,29 @@
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A zombie deep in the terrain by day stands in light below 13: STDMOB-BURN leaves it alone.
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-M
+     COMPUTE WS-Y = WS-Y - 20
+     CALL "MOB-SPAWN" USING WS-DIM WS-ZOMBIE-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
+     MOVE 6000 TO CW-TIME
+     CALL "STDMOB-BURN" USING WS-PIG WS-M
+     MOVE "test stdmob extra: a zombie in the dark does not ignite by day" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-BURN(WS-PIG) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   On Peaceful a hostile mob is removed by its step.
+     CALL "BR-WORLD-READY"
+     MOVE BW-DIFFICULTY TO WS-BEFORE
+     MOVE 0 TO BW-DIFFICULTY
+     CALL "STDMOB-STEP" USING WS-PIG
+     MOVE WS-BEFORE TO BW-DIFFICULTY
+     MOVE "test stdmob extra: a hostile mob is removed on Peaceful" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-PIG) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Attempts around the player: many times, none crashes, and the cycle runs on ticks of 400 only.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
          MOVE WS-I TO CW-TIME
@@ -281,6 +315,18 @@
      PERFORM COUNT-ALL
      MOVE "test stdmob extra: an attempt on a stone floor spawns nothing" TO TL-CASE
      MOVE "N" TO TL-MODE
+     MOVE WS-BEFORE TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A column whose highest block touches the dimension top leaves no room for the pack: the attempt ends there.
+     COMPUTE WS-TOP = DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM) - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-TOP WS-BZ WS-STONE-STATE
+     PERFORM COUNT-ALL
+     MOVE WS-COUNT TO WS-BEFORE
+     MOVE WS-I TO CW-TIME
+     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-ANIMALS
+     PERFORM COUNT-ALL
+     MOVE "test stdmob extra: an attempt on a column up to the dimension top spawns nothing" TO TL-CASE
      MOVE WS-BEFORE TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
