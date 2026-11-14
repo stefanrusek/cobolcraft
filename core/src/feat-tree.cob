@@ -1,7 +1,7 @@
 *> The tree feature of the feature stage (docs/protocol/35-worldgen-features-3-tree-placers.md sections 1 to 5; feature type 51): FD-TREE-NODE compiles the data of a tree feature into FD-TR
 *> (FEATDATA.cpy), FR-TREE places it, the trunk placers are in feat-tree-trunk.cob (FR-TRUNK) and the foliage placers in feat-tree-foliage.cob (FR-FOLIAGE). Supported: the trunk placers straight,
-*> fancy, dark oak, giant, mega jungle and forking; the foliage placers blob, spruce, pine, acacia, fancy, jungle, mega pine and dark oak; the two and three layers feature sizes. Anything else
-*> (another placer, a root placer, a size without min_clipped_height support, an unknown decorator) marks the feature unsupported (FD-BAD).
+*> fancy, dark oak, giant, mega jungle, forking and upwards branching (mangrove, with its mangrove root placer: feat-tree-root.cob); the foliage placers blob, spruce, pine, acacia, fancy, jungle, mega pine and dark oak; the two and three layers feature sizes. Anything else
+*> (another placer or root placer, an unknown decorator) marks the feature unsupported (FD-BAD). min_clipped_height is supported (2.2 step 6).
 *> Deviations (the lane's notes, docs/design/world-types.md "Trees"): the tree is built in the grid of TREEWORK.cpy and written through the level, whose write window is one chunk: the trunk
 *> stands in the chunk of its origin and the leaves that fall in a neighbouring chunk are cut off (a neighbour's terrain is not known here, so a tree cannot be completed from the other side);
 *> every decorator of the data is ignored (the beehive, the vines, the cocoa pods, the podzol ground, the leaf litter, the shelf mushrooms, the moss and the creaking heart: no nest, no
@@ -148,10 +148,11 @@
      MOVE FD-TR-COUNT TO WS-ROW
      INITIALIZE FD-TR(WS-ROW)
      MOVE WS-ROW TO L-ROW
-*>   no root placer
+     MOVE -1 TO TR-MINCLIP(WS-ROW)
+*>   the root placer (the mangrove one)
      CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-ROOT-PLACER WS-E
      IF WS-E > 0
-         MOVE 1 TO FD-BAD
+         CALL "FD-TREE-ROOT-NODE" USING JSON-DOC WS-E WS-ROW
      END-IF
 *>   the decorators: every registered type is accepted and ignored, an unknown type is unsupported
      CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-DECORATORS WS-E
@@ -192,6 +193,9 @@
              MOVE 5 TO TR-TKIND(WS-ROW)
          WHEN "minecraft:forking_trunk_placer"
              MOVE 6 TO TR-TKIND(WS-ROW)
+         WHEN "minecraft:upwards_branching_trunk_placer"
+             MOVE 7 TO TR-TKIND(WS-ROW)
+             CALL "FD-TREE-UP-NODE" USING JSON-DOC WS-E WS-ROW
          WHEN OTHER
              MOVE 1 TO FD-BAD
      END-EVALUATE
@@ -251,7 +255,7 @@
      END-IF
      CALL "FD-J-MEMBER" USING JSON-DOC WS-E WS-K-CLIPPED WS-N
      IF WS-N > 0
-         MOVE 1 TO FD-BAD
+         CALL "FD-J-INT" USING JSON-DOC WS-N TR-MINCLIP(WS-ROW) WS-OK
      END-IF
 *>   the foliage placer
      CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-FOLIAGE-PLACER WS-E
@@ -338,7 +342,7 @@
  01 L-CELL                 BINARY-LONG.
  PROCEDURE DIVISION USING L-X L-Y L-Z L-CELL.
      COMPUTE WS-GX = L-X - TW-X0 + TW-OX
-     COMPUTE WS-GY = L-Y - TW-Y0 + 1
+     COMPUTE WS-GY = L-Y - TW-Y0 + TW-OY
      COMPUTE WS-GZ = L-Z - TW-Z0 + TW-OX
      MOVE 0 TO L-CELL
      IF WS-GX >= 1 AND WS-GX < TW-GX - 1 AND WS-GY >= 1 AND WS-GY < TW-GY - 1 AND WS-GZ >= 1 AND WS-GZ < TW-GZ - 1
@@ -532,7 +536,11 @@
  01 WS-BLOCK               BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-END                 BINARY-LONG.
+
  01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OFFY                BINARY-LONG.
+ 01 WS-MINY                BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-FT                   BINARY-LONG.
@@ -562,9 +570,16 @@
          CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-DRAW
          ADD WS-DRAW TO WS-LR
      END-IF
+*>   step 4: the root origin (a root placer draws trunk_offset_y)
+     MOVE 0 TO WS-OFFY
+     IF TR-ROOT(WS-ROW) = 1
+         CALL "FR-INT-SAMPLE" USING L-STATE TR-TOY(WS-ROW) WS-OFFY
+     END-IF
+     COMPUTE WS-OY = L-Y + WS-OFFY
 *>   step 5: the build height
-     COMPUTE WS-MAXY = L-Y + WS-H + 1
-     IF L-Y < FL-MIN-Y + 1 OR WS-MAXY > FL-MIN-Y + FL-HEIGHT
+     COMPUTE WS-MINY = FUNCTION MIN(L-Y, WS-OY)
+     COMPUTE WS-MAXY = FUNCTION MAX(L-Y, WS-OY) + WS-H + 1
+     IF WS-MINY < FL-MIN-Y + 1 OR WS-MAXY > FL-MIN-Y + FL-HEIGHT
          GOBACK
      END-IF
 *>   2.3: the free height
@@ -576,13 +591,16 @@
          PERFORM VARYING WS-DX FROM WS-LO BY 1 UNTIL WS-DX > WS-S OR WS-FREE < WS-H
              PERFORM VARYING WS-DZ FROM WS-LO BY 1 UNTIL WS-DZ > WS-S OR WS-FREE < WS-H
                  COMPUTE WS-PX = L-X + WS-DX
-                 COMPUTE WS-PY = L-Y + WS-YY
+                 COMPUTE WS-PY = WS-OY + WS-YY
                  COMPUTE WS-PZ = L-Z + WS-DZ
                  CALL "FL-GET-STATE" USING WS-PX WS-PY WS-PZ WS-STATE
                  CALL "FR-TREE-OK" USING TR-REPL-START(WS-ROW) TR-REPL-N(WS-ROW) WS-STATE WS-OK
                  IF WS-OK = 0
                      CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
                      CALL "FR-POOL-HAS" USING TR-LOGS-START(WS-ROW) TR-LOGS-N(WS-ROW) WS-BLOCK WS-OK
+                 END-IF
+                 IF WS-OK = 0 AND TR-CGT-N(WS-ROW) > 0
+                     CALL "FR-POOL-HAS" USING TR-CGT-START(WS-ROW) TR-CGT-N(WS-ROW) WS-BLOCK WS-OK
                  END-IF
                  IF WS-OK = 0
                      COMPUTE WS-FREE = WS-YY - 2
@@ -591,11 +609,20 @@
          END-PERFORM
      END-PERFORM
      IF WS-FREE < WS-H
-         GOBACK
+         IF TR-MINCLIP(WS-ROW) < 0 OR WS-FREE < TR-MINCLIP(WS-ROW)
+             GOBACK
+         END-IF
+     END-IF
+*>   step 7: the roots come before the trunk
+     IF TR-ROOT(WS-ROW) = 1
+         CALL "FR-ROOTS" USING L-STATE WS-ROW L-X L-Y L-Z WS-OY WS-OK
+         IF WS-OK = 0
+             GOBACK
+         END-IF
      END-IF
 *>   the work area
      MOVE L-X TO TW-X0
-     MOVE L-Y TO TW-Y0
+     MOVE WS-OY TO TW-Y0
      MOVE L-Z TO TW-Z0
      MOVE 0 TO TW-OUT TW-NLOG TW-NLEAF TW-NATT TW-NSOIL TW-NFC
      MOVE TR-REPL-START(WS-ROW) TO TW-REPL-START
@@ -604,9 +631,11 @@
      MOVE TR-LOGS-N(WS-ROW) TO TW-LOGS-N
      MOVE TR-LVS-START(WS-ROW) TO TW-LVS-START
      MOVE TR-LVS-N(WS-ROW) TO TW-LVS-N
+     MOVE TR-CGT-START(WS-ROW) TO TW-CGT-START
+     MOVE TR-CGT-N(WS-ROW) TO TW-CGT-N
      MOVE ALL "0" TO TW-GRIDS
 *>   2.2 step 8 and section 4: the soil, the logs and the attachments; step 9 and section 5: the foliage of each attachment in list order
-     CALL "FR-TRUNK" USING L-STATE WS-ROW L-X L-Y L-Z WS-FREE
+     CALL "FR-TRUNK" USING L-STATE WS-ROW L-X WS-OY L-Z WS-FREE
      PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > TW-NATT
          CALL "FR-FOLIAGE" USING L-STATE WS-ROW WS-A WS-FH WS-LR
      END-PERFORM

@@ -116,3 +116,30 @@
        10 TR-SZ-MID         BINARY-LONG.
        10 TR-LVS-START      BINARY-LONG.
        10 TR-LVS-N          BINARY-LONG.
+*>     batch 4 (mangrove, 35-3 4.8 and 6): TR-TKIND 7 upwards branching (TR-EBS extra_branch_steps and TR-EBL extra_branch_length are int providers, TR-PROB the branch probability, the
+*>     pool TR-CGT the can_grow_through blocks), TR-MINCLIP the min_clipped_height (-1 absent); the root placer (TR-ROOT 1): TR-TOY the trunk_offset_y provider, the states TR-ROOT-STATE,
+*>     TR-ABOVE-STATE (TR-ABOVE-ON, TR-ABOVE-CHANCE) and TR-MUD-STATE, the pools TR-RCG (root can_grow_through) and TR-MUD (muddy_roots_in), TR-MAXW and TR-MAXL the root width and length
+*>     limits, TR-SKEW the random skew chance
+       10 TR-EBS.
+          15 TR-EBS-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-EBL.
+          15 TR-EBL-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-TOY.
+          15 TR-TOY-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-PROB           FLOAT-LONG.
+       10 TR-ABOVE-CHANCE   FLOAT-LONG.
+       10 TR-SKEW           FLOAT-LONG.
+       10 TR-CGT-START      BINARY-LONG.
+       10 TR-CGT-N          BINARY-LONG.
+       10 TR-MINCLIP        BINARY-LONG.
+       10 TR-ROOT           BINARY-LONG.
+       10 TR-ROOT-STATE     BINARY-LONG.
+       10 TR-ABOVE-ON       BINARY-LONG.
+       10 TR-ABOVE-STATE    BINARY-LONG.
+       10 TR-MUD-STATE      BINARY-LONG.
+       10 TR-RCG-START      BINARY-LONG.
+       10 TR-RCG-N          BINARY-LONG.
+       10 TR-MUD-START      BINARY-LONG.
+       10 TR-MUD-N          BINARY-LONG.
+       10 TR-MAXW           BINARY-LONG.
+       10 TR-MAXL           BINARY-LONG.

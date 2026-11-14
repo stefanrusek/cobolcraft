@@ -30,6 +30,7 @@
  COPY TREEWORK.
  01 WS-CELL                BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -43,6 +44,10 @@
          IF TW-GRID(WS-CELL) = 0
              CALL "FL-GET-STATE" USING L-X L-Y L-Z WS-STATE
              CALL "FR-TREE-OK" USING TW-REPL-START TW-REPL-N WS-STATE L-PLACED
+             IF L-PLACED = 0 AND TW-CGT-N > 0
+                 CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
+                 CALL "FR-POOL-HAS" USING TW-CGT-START TW-CGT-N WS-BLOCK L-PLACED
+             END-IF
              IF L-PLACED = 1
                  ADD 1 TO TW-NLOG
                  MOVE L-X TO TW-LOG-X(TW-NLOG)
@@ -699,7 +704,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-TRUNK.
-*> USING state, feature row, x, y, z, height: runs the trunk placer of the row (TR-TKIND 1 straight, 2 fancy, 3 dark oak, 4 giant, 5 mega jungle, 6 forking).
+*> USING state, feature row, x, y, z, height: runs the trunk placer of the row (TR-TKIND 1 straight, 2 fancy, 3 dark oak, 4 giant, 5 mega jungle, 6 forking, 7 upwards branching in feat-tree-root.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -722,6 +727,8 @@
              CALL "FR-TRUNK-GIANT" USING L-ROW L-X L-Y L-Z L-H
          WHEN 5
              CALL "FR-TRUNK-MEGAJ" USING L-STATE L-ROW L-X L-Y L-Z L-H
+         WHEN 7
+             CALL "FR-TRUNK-UP" USING L-STATE L-ROW L-X L-Y L-Z L-H
          WHEN OTHER
              CALL "FR-TRUNK-FORK" USING L-STATE L-ROW L-X L-Y L-Z L-H
      END-EVALUATE
