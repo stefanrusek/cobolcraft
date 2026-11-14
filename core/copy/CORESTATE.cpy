@@ -317,6 +317,10 @@
        10 EN-FOE             BINARY-LONG.        *> a pet's or golem's mob target: tracker row (0 none), its entity id in EN-FOE-ID
        10 EN-FOE-ID          BINARY-LONG.
        10 EN-PET-CD          BINARY-LONG.        *> ticks until the pet's next melee hit
+*>     --- 002-lane-mobsfull-h8: main hand, helmet wear (core/src/mob-20-3.cob) ---
+       10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1), 4 bow (skeleton family, 5)
+       10 EN-HEAD-WEAR       BINARY-LONG.        *> durability damage of the helmet worn (EN-EQUIP head slot); -1 = broken, the head is empty (20 section 3.5)
+       10 EN-WAKE            BINARY-LONG.        *> silverfish: wake-up-friends timer, 20 after a hit by an attacker, counting down to the scan (20 section 9.1)
 *>     --- 002-lane-mobsfull-h10: aquatic mobs (core/src/mob-21-4.cob; docs/protocol/21 section 4) ---
        10 EN-DRY             BINARY-LONG.        *> ticks out of water (a fish: air 300 - EN-DRY; a dolphin: moistness 2400 - EN-DRY); 0 in water
        10 EN-SWIM-SPEED      FLOAT-LONG.         *> a swimmer's current move speed (FishMoveControl lerp 0.125 toward attribute x modifier)

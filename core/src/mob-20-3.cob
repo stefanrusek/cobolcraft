@@ -77,6 +77,72 @@
  END PROGRAM STDMOB-BRIGHTNESS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-HEAD-MAX.
+*> USING tier (0 leather, 1 copper, 2 golden, 3 chainmail, 4 iron, 5 diamond), durability out: the maximum damage of the helmet of that tier (25 section 8.4:
+*> 55, 121, 77, 165, 165, 363); 0 for another tier.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TIER                 BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-TIER L-MAX.
+     EVALUATE L-TIER
+         WHEN 0 MOVE 55 TO L-MAX
+         WHEN 1 MOVE 121 TO L-MAX
+         WHEN 2 MOVE 77 TO L-MAX
+         WHEN 3 MOVE 165 TO L-MAX
+         WHEN 4 MOVE 165 TO L-MAX
+         WHEN 5 MOVE 363 TO L-MAX
+         WHEN OTHER MOVE 0 TO L-MAX
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM STDMOB-HEAD-MAX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-SHELTERED.
+*> USING dim, x, y, z (BINARY-LONG feet cell), sheltered out: 1 when the daylight burn of a mob in that cell is stopped (3.5 step 4): its feet are in water or powder
+*> snow, the sky is not visible from its eye cell (the sky light there is below 15), or it rains (the dimension's rain level above 0.2) with the sky open. The
+*> biome's precipitation kind is not read (open item), so any rain counts.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-EYE                 BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-RAIN                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-SHELTERED            BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-SHELTERED.
+     MOVE 0 TO L-SHELTERED
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     IF WS-STATE > 0
+         COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         MOVE 0 TO WS-N
+         INSPECT CB-KEY(WS-BLOCK) TALLYING WS-N FOR ALL "water" ALL "powder_snow"
+         IF WS-N > 0
+             MOVE 1 TO L-SHELTERED
+         END-IF
+     END-IF
+     COMPUTE WS-EYE = L-Y + 1
+     CALL "STDMOB-LIGHTS" USING L-DIM L-X WS-EYE L-Z WS-SKY WS-BLK
+     IF WS-SKY < 15
+         MOVE 1 TO L-SHELTERED
+     END-IF
+     CALL "WEATHER-RAINING" USING L-DIM WS-RAIN
+     IF WS-RAIN = 1
+         MOVE 1 TO L-SHELTERED
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-SHELTERED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-EQUIP-ROLL.
 *> USING xoro state, difficulty id, special multiplier (thousandths), tier out (-1 none, else 0 leather to 5 diamond), slots out (0 to 4) (3.6 steps 1 and 2):
 *> with probability 0.15 x special: tier nextInt(3), then 3 attempts that each add 1 with probability 0.1087; slots are filled head, chest, legs, feet,
@@ -161,18 +227,37 @@
  END PROGRAM STDMOB-EQUIP-KEY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STDMOB-EQUIP-SEND.
-*> USING tracker row: Set Equipment (0x68) of the armour in EN-EQUIP (10 x (tier + 1) + slots worn) to the viewers: slot ordinals head 5, chest 4, legs 3,
-*> feet 2, bit 0x80 on every pair but the last. Nothing for EN-EQUIP 0 or an item the set does not know.
+ PROGRAM-ID. STDMOB-HAND-KEY.
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-KEY                  PIC X(40).
+ PROCEDURE DIVISION USING L-HAND L-KEY.
+     MOVE SPACES TO L-KEY
+     EVALUATE L-HAND
+         WHEN 1 MOVE "minecraft:iron_sword" TO L-KEY
+         WHEN 2 MOVE "minecraft:iron_spear" TO L-KEY
+         WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
+         WHEN 4 MOVE "minecraft:bow" TO L-KEY
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM STDMOB-HAND-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-EQUIP-BUILD.
+*> USING tracker row, PB-BUFFER (empty): Set Equipment (0x68) of the armour in EN-EQUIP (10 x (tier + 1) + slots worn) and the main-hand item EN-HAND: slot
+*> ordinals main hand 0, feet 2, legs 3, chest 4, head 5; bit 0x80 on every pair but the last (armour head to feet, then the hand). An item the set does
+*> not know, and a broken helmet (EN-HEAD-WEAR -1), is sent as an empty stack. Nothing is written for a row with neither armour nor weapon.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CONTENT.
- COPY PROTO.
- 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==EQ-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 104.
  01 WS-TIER                BINARY-LONG.
  01 WS-SLOTS               BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-ORDINAL             BINARY-LONG.
  01 WS-KEY40               PIC X(40).
@@ -182,31 +267,63 @@
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
-     IF EN-EQUIP(L-ROW) = 0
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     MOVE 0 TO WS-SLOTS WS-TIER
+     IF EN-EQUIP(L-ROW) > 0
+         COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
+         COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
+     END-IF
+     MOVE WS-SLOTS TO WS-TOTAL
+     IF EN-HAND(L-ROW) > 0
+         ADD 1 TO WS-TOTAL
+     END-IF
+     IF WS-TOTAL = 0
          GOBACK
      END-IF
-     COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
-     COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
-         CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TOTAL
+         IF WS-I <= WS-SLOTS
+             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
+             COMPUTE WS-ORDINAL = 6 - WS-I
+             IF WS-I = 1 AND EN-HEAD-WEAR(L-ROW) = -1
+                 MOVE SPACES TO WS-KEY40
+             END-IF
+         ELSE
+             CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-KEY40
+             MOVE 0 TO WS-ORDINAL
+         END-IF
          MOVE SPACES TO WS-KEY
          MOVE WS-KEY40 TO WS-KEY
          CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
-         COMPUTE WS-ORDINAL = 6 - WS-I
-         IF WS-I < WS-SLOTS
+         IF WS-I < WS-TOTAL
              ADD 128 TO WS-ORDINAL
          END-IF
          CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ORDINAL
-         INITIALIZE PB-ITEMSTACK-X
-         MOVE 1 TO PB-ISX-COUNT
-         MOVE WS-ITEM TO PB-ISX-ITEM
-         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+         INITIALIZE EQ-ITEMSTACK-X
+         IF WS-STATUS = CT-OK
+             MOVE 1 TO EQ-ISX-COUNT
+             MOVE WS-ITEM TO EQ-ISX-ITEM
+         END-IF
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER EQ-ITEMSTACK-X
      END-PERFORM
-     IF WS-STATUS = CT-OK
+     GOBACK.
+ END PROGRAM STDMOB-EQUIP-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-EQUIP-SEND.
+*> USING tracker row: STDMOB-EQUIP-BUILD to the viewers of the row (nothing when the row wears and holds nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-EQUIP-BUILD" USING L-ROW PB-BUFFER
+     IF PB-LENGTH > 0
          CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      END-IF
      CALL "PB-FREE" USING PB-BUFFER
@@ -317,7 +434,7 @@
 *> USING xoro state, tracker row: finalizeSpawn of a freshly spawned standard mob (4.1, 3.6). A zombie, zombie villager or husk is a baby with probability
 *> 0.05 (EN-VARIANT 1), rolls its armour (STDMOB-EQUIP-ROLL with the special multiplier of the effective difficulty; EN-EQUIP), gets the reinforcement
 *> chance nextDouble x 0.1 (EN-REINF, ten-thousandths) and with probability 0.05 x special is a leader: +0.5 + nextDouble x 0.25 chance and the maximum
-*> health times (1 + nextDouble x 3 + 1), the health full. A slime takes its size (STDMOB-SLIME-INIT). The viewers get the variant and equipment packets.
+*> health times (1 + nextDouble x 3 + 1), the health full; then the weapon draw of 4.1 (EN-HAND). A slime takes its size (STDMOB-SLIME-INIT). The viewers get the variant and equipment packets.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -332,6 +449,8 @@
  01 WS-P                   FLOAT-LONG.
  01 WS-TIER                BINARY-LONG.
  01 WS-SLOTS               BINARY-LONG.
+ 01 WS-SIX                 BINARY-LONG VALUE 6.
+ 01 WS-PICK                BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-ROW                  BINARY-LONG.
@@ -364,6 +483,30 @@
                  CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
                  COMPUTE EN-HEALTH(L-ROW) = SM-HEALTH(WS-M) * (2 + WS-D * 3)
              END-IF
+*>           The zombie weapon: probability 0.05 on Hard, 0.01 otherwise; nextInt(6) 0 iron sword, 1 iron spear, else iron shovel (4.1 step 5).
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             COMPUTE WS-P = 0.01
+             IF BW-DIFFICULTY = 3
+                 COMPUTE WS-P = 0.05
+             END-IF
+             IF WS-D < WS-P
+                 CALL "XORO-NEXT-INT" USING L-STATE WS-SIX WS-PICK
+                 EVALUATE WS-PICK
+                     WHEN 0 MOVE 1 TO EN-HAND(L-ROW)
+                     WHEN 1 MOVE 2 TO EN-HAND(L-ROW)
+                     WHEN OTHER MOVE 3 TO EN-HAND(L-ROW)
+                 END-EVALUATE
+             END-IF
+         WHEN "skeleton"
+         WHEN "stray"
+         WHEN "bogged"
+         WHEN "parched"
+*>           Armour as 3.6 and always a bow in the main hand (5, populateDefaultEquipmentSlots).
+             CALL "STDMOB-EQUIP-ROLL" USING L-STATE BW-DIFFICULTY WS-SPECIAL WS-TIER WS-SLOTS
+             IF WS-SLOTS > 0
+                 COMPUTE EN-EQUIP(L-ROW) = 10 * (WS-TIER + 1) + WS-SLOTS
+             END-IF
+             MOVE 4 TO EN-HAND(L-ROW)
          WHEN "slime"
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
          WHEN "salmon"

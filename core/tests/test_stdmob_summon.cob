@@ -26,6 +26,7 @@
  01 WS-KEY-TEXT            PIC X(48).
  01 WS-FIND-X              FLOAT-LONG.
  01 WS-HEALTH              BINARY-LONG.
+ 01 WS-VARIANT             BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -69,6 +70,22 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
 
+     MOVE "acceptance US15 /summon finalizes a mob: a slime gets a size of at least 1" TO TL-CASE
+     MOVE "summon slime 11.0 64.0 5.0" TO WS-LINE
+     MOVE "commands.summon.success(minecraft:slime)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "slime" TO WS-KEY-TEXT
+     MOVE 11.0 TO WS-FIND-X
+     PERFORM COUNT-MOBS
+     MOVE "acceptance US15 /summon a slime has its size in EN-VARIANT (STDMOB-FINALIZE ran)" TO TL-CASE
+     MOVE 1 TO WS-EXPECTED-N
+     MOVE 0 TO WS-NUM
+     IF WS-VARIANT >= 1
+         MOVE 1 TO WS-NUM
+     END-IF
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+
      MOVE "acceptance US15 /summon a type with no row is not summonable" TO TL-CASE
      MOVE "summon minecraft:witch 8.0 64.0 5.0" TO WS-LINE
      MOVE "entity.not_summonable(minecraft:witch)" TO WS-EXPECTED
@@ -93,13 +110,14 @@
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      STOP RUN.
  COUNT-MOBS.
-     MOVE 0 TO WS-NUM WS-HEALTH
+     MOVE 0 TO WS-NUM WS-HEALTH WS-VARIANT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
          IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0 AND EN-X(WS-I) = WS-FIND-X
              COMPUTE WS-KEEP = EN-TYPE(WS-I) + 1
              IF ET-KEY(WS-KEEP) = WS-KEY-TEXT
                  ADD 1 TO WS-NUM
                  MOVE EN-HEALTH(WS-I) TO WS-HEALTH
+                 MOVE EN-VARIANT(WS-I) TO WS-VARIANT
              END-IF
          END-IF
      END-PERFORM.
