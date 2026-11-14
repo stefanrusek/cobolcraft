@@ -1680,3 +1680,341 @@
      END-IF
      GOBACK.
  END PROGRAM CELEBRATE-DECISION.
+
+*> ---- 4.8 NeutralMob ------------------------------------------------------------------------------------------------------
+
+*> NEUTRAL-IS-ANGRY USING end time, game time (BINARY-LONG), angry out (1/0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-IS-ANGRY.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-END                 BINARY-LONG.
+ 01 LK-GAME                BINARY-LONG.
+ 01 LK-ANGRY               BINARY-LONG.
+ PROCEDURE DIVISION USING LK-END LK-GAME LK-ANGRY.
+     MOVE 0 TO LK-ANGRY
+     IF LK-END > 0 AND LK-END - LK-GAME > 0
+         MOVE 1 TO LK-ANGRY
+     END-IF
+     GOBACK.
+ END PROGRAM NEUTRAL-IS-ANGRY.
+
+*> NEUTRAL-SET-TIME USING game time, ticks, end time out: setTimeToRemainAngry.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-SET-TIME.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-GAME                BINARY-LONG.
+ 01 LK-TICKS               BINARY-LONG.
+ 01 LK-END                 BINARY-LONG.
+ PROCEDURE DIVISION USING LK-GAME LK-TICKS LK-END.
+     COMPUTE LK-END = LK-GAME + LK-TICKS
+     GOBACK.
+ END PROGRAM NEUTRAL-SET-TIME.
+
+*> NEUTRAL-STOP USING last hurt by, target, anger target (ids, set to 0), end time (set to -1): stopBeingAngry.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-STOP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-HURT                BINARY-LONG.
+ 01 LK-TARGET              BINARY-LONG.
+ 01 LK-ANGER               BINARY-LONG.
+ 01 LK-END                 BINARY-LONG.
+ PROCEDURE DIVISION USING LK-HURT LK-TARGET LK-ANGER LK-END.
+     MOVE 0 TO LK-HURT
+     MOVE 0 TO LK-TARGET
+     MOVE 0 TO LK-ANGER
+     MOVE -1 TO LK-END
+     GOBACK.
+ END PROGRAM NEUTRAL-STOP.
+
+*> NEUTRAL-LOAD-TIME USING has anger_end_time (1/0), anger_end_time, legacy AngerTime, game time, end time out.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-LOAD-TIME.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-HAS                 BINARY-LONG.
+ 01 LK-STORED              BINARY-LONG.
+ 01 LK-LEGACY              BINARY-LONG.
+ 01 LK-GAME                BINARY-LONG.
+ 01 LK-END                 BINARY-LONG.
+ PROCEDURE DIVISION USING LK-HAS LK-STORED LK-LEGACY LK-GAME LK-END.
+     IF LK-HAS = 1
+         MOVE LK-STORED TO LK-END
+     ELSE
+         COMPUTE LK-END = LK-GAME + LK-LEGACY
+     END-IF
+     GOBACK.
+ END PROGRAM NEUTRAL-LOAD-TIME.
+
+*> NEUTRAL-ANGRY-AT USING can attack, entity is a valid player target, universal_anger on, mob angry, has an anger target,
+*> entity is the anger target (all 1/0), angry-at out (1/0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-ANGRY-AT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-CAN                 BINARY-LONG.
+ 01 LK-PLAYER              BINARY-LONG.
+ 01 LK-UNIVERSAL           BINARY-LONG.
+ 01 LK-ANGRY               BINARY-LONG.
+ 01 LK-HAS                 BINARY-LONG.
+ 01 LK-MATCH               BINARY-LONG.
+ 01 LK-RESULT              BINARY-LONG.
+ PROCEDURE DIVISION USING LK-CAN LK-PLAYER LK-UNIVERSAL LK-ANGRY LK-HAS LK-MATCH LK-RESULT.
+     MOVE 0 TO LK-RESULT
+     EVALUATE TRUE
+         WHEN LK-CAN = 0
+             CONTINUE
+         WHEN LK-PLAYER = 1 AND LK-UNIVERSAL = 1 AND LK-ANGRY = 1 AND LK-HAS = 0
+             MOVE 1 TO LK-RESULT
+         WHEN LK-MATCH = 1
+             MOVE 1 TO LK-RESULT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM NEUTRAL-ANGRY-AT.
+
+*> NEUTRAL-UPDATE USING has anger target, anger target dead, it matches the persistent target, dead one is a Mob, has a valid
+*> target, target differs from the anger target, canTrackTarget, target is a valid player target, mob is angry, anger target
+*> is a creative or spectator player or the difficulty is Peaceful (all 1/0); stop out, start timer out, set anger target
+*> out (1/0): updatePersistentAnger in the order of section 4.8.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-UPDATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-HAS                 BINARY-LONG.
+ 01 LK-DEAD                BINARY-LONG.
+ 01 LK-MATCH               BINARY-LONG.
+ 01 LK-MOB                 BINARY-LONG.
+ 01 LK-VALID               BINARY-LONG.
+ 01 LK-DIFFERS             BINARY-LONG.
+ 01 LK-TRACK               BINARY-LONG.
+ 01 LK-PLAYER              BINARY-LONG.
+ 01 LK-ANGRY               BINARY-LONG.
+ 01 LK-EXEMPT              BINARY-LONG.
+ 01 LK-STOP                BINARY-LONG.
+ 01 LK-TIMER               BINARY-LONG.
+ 01 LK-SET                 BINARY-LONG.
+ PROCEDURE DIVISION USING LK-HAS LK-DEAD LK-MATCH LK-MOB LK-VALID LK-DIFFERS LK-TRACK LK-PLAYER LK-ANGRY LK-EXEMPT
+                          LK-STOP LK-TIMER LK-SET.
+     MOVE 0 TO LK-STOP
+     MOVE 0 TO LK-TIMER
+     MOVE 0 TO LK-SET
+     IF LK-HAS = 1 AND LK-DEAD = 1 AND LK-MATCH = 1 AND LK-MOB = 1
+         MOVE 1 TO LK-STOP
+     ELSE
+         IF LK-VALID = 1 AND LK-DIFFERS = 1
+             MOVE 1 TO LK-SET
+             MOVE 1 TO LK-TIMER
+         END-IF
+         IF LK-HAS = 1 AND LK-ANGRY = 0 AND NOT (LK-PLAYER = 1 AND LK-TRACK = 1)
+             MOVE 1 TO LK-STOP
+         END-IF
+         IF LK-HAS = 1 AND LK-EXEMPT = 1
+             MOVE 1 TO LK-STOP
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM NEUTRAL-UPDATE.
+
+*> NEUTRAL-PLAYER-DIED USING forgive_dead_players on, the dead player is the anger target (1/0), stop out (1/0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NEUTRAL-PLAYER-DIED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-FORGIVE             BINARY-LONG.
+ 01 LK-TARGET              BINARY-LONG.
+ 01 LK-STOP                BINARY-LONG.
+ PROCEDURE DIVISION USING LK-FORGIVE LK-TARGET LK-STOP.
+     MOVE 0 TO LK-STOP
+     IF LK-FORGIVE = 1 AND LK-TARGET = 1
+         MOVE 1 TO LK-STOP
+     END-IF
+     GOBACK.
+ END PROGRAM NEUTRAL-PLAYER-DIED.
+
+*> UNIVERSAL-ANGER-RESET-CAN-USE USING universal_anger on, hurt anew by a player (1/0), runs out (1/0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UNIVERSAL-ANGER-RESET-CAN-USE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-UNIVERSAL           BINARY-LONG.
+ 01 LK-HURT                BINARY-LONG.
+ 01 LK-RUNS                BINARY-LONG.
+ PROCEDURE DIVISION USING LK-UNIVERSAL LK-HURT LK-RUNS.
+     MOVE 0 TO LK-RUNS
+     IF LK-UNIVERSAL = 1 AND LK-HURT = 1
+         MOVE 1 TO LK-RUNS
+     END-IF
+     GOBACK.
+ END PROGRAM UNIVERSAL-ANGER-RESET-CAN-USE.
+
+*> ---- 4.9 Monster base class ----------------------------------------------------------------------------------------------
+
+*> LIGHT-MAGIC USING raw brightness 0..15 (BINARY-LONG), ambient light (FLOAT-LONG), value out (FLOAT-LONG):
+*> b = brightness / 15, v = b / (4 - 3b), result v + ambient x (1 - v).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-MAGIC.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 LK-BRIGHTNESS          BINARY-LONG.
+ 01 LK-AMBIENT             FLOAT-LONG.
+ 01 LK-VALUE               FLOAT-LONG.
+ PROCEDURE DIVISION USING LK-BRIGHTNESS LK-AMBIENT LK-VALUE.
+     COMPUTE WS-B = LK-BRIGHTNESS / 15
+     COMPUTE WS-V = WS-B / (4 - 3 * WS-B)
+     COMPUTE LK-VALUE = WS-V + LK-AMBIENT * (1 - WS-V)
+     GOBACK.
+ END PROGRAM LIGHT-MAGIC.
+
+*> MONSTER-WALK-VALUE USING magic value, walk target value out (FLOAT-LONG): magic value - 0.5.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MONSTER-WALK-VALUE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-MAGIC               FLOAT-LONG.
+ 01 LK-VALUE               FLOAT-LONG.
+ PROCEDURE DIVISION USING LK-MAGIC LK-VALUE.
+     COMPUTE LK-VALUE = LK-MAGIC - 0.5
+     GOBACK.
+ END PROGRAM MONSTER-WALK-VALUE.
+
+*> MONSTER-NO-ACTION USING magic value (FLOAT-LONG), noActionTime (BINARY-LONG, in and out): +2 above 0.5.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MONSTER-NO-ACTION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-MAGIC               FLOAT-LONG.
+ 01 LK-NOACTION            BINARY-LONG.
+ PROCEDURE DIVISION USING LK-MAGIC LK-NOACTION.
+     IF LK-MAGIC > 0.5
+         ADD 2 TO LK-NOACTION
+     END-IF
+     GOBACK.
+ END PROGRAM MONSTER-NO-ACTION.
+
+*> MONSTER-DEFAULTS USING attack_damage default (FLOAT-LONG), experience reward (BINARY-LONG).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MONSTER-DEFAULTS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-DAMAGE              FLOAT-LONG.
+ 01 LK-XP                  BINARY-LONG.
+ PROCEDURE DIVISION USING LK-DAMAGE LK-XP.
+     MOVE 2.0 TO LK-DAMAGE
+     MOVE 5 TO LK-XP
+     GOBACK.
+ END PROGRAM MONSTER-DEFAULTS.
+
+*> ---- 4.10 Conversion -----------------------------------------------------------------------------------------------------
+
+*> CONVERT-PLAN USING conversion type (1 SINGLE, 2 SPLIT_ON_DEATH), old mob removed, new mob can be created, level is a
+*> ServerLevel, keepEquipment (1/0), flags out (PIC X(5) of 0/1): created, add the new entity, discard the old mob, move
+*> equipment, copy position / velocity / vehicle / first passenger (the last three only for SINGLE).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONVERT-PLAN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-TYPE                BINARY-LONG.
+ 01 LK-REMOVED             BINARY-LONG.
+ 01 LK-CREATE              BINARY-LONG.
+ 01 LK-SERVER              BINARY-LONG.
+ 01 LK-KEEP                BINARY-LONG.
+ 01 LK-FLAGS               PIC X(5).
+ PROCEDURE DIVISION USING LK-TYPE LK-REMOVED LK-CREATE LK-SERVER LK-KEEP LK-FLAGS.
+     MOVE "00000" TO LK-FLAGS
+     IF LK-REMOVED = 0 AND LK-CREATE = 1
+         MOVE "1" TO LK-FLAGS(1:1)
+         IF LK-SERVER = 1
+             MOVE "1" TO LK-FLAGS(2:1)
+         END-IF
+         IF LK-TYPE = 1
+             MOVE "1" TO LK-FLAGS(3:1)
+             MOVE "1" TO LK-FLAGS(5:1)
+             IF LK-KEEP = 1
+                 MOVE "1" TO LK-FLAGS(4:1)
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CONVERT-PLAN.
+
+*> ---- 4.11 Bucketable -----------------------------------------------------------------------------------------------------
+
+*> BUCKET-PICKUP USING holds a water bucket, mob alive (1/0), pickup allowed out (1/0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BUCKET-PICKUP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-BUCKET              BINARY-LONG.
+ 01 LK-ALIVE               BINARY-LONG.
+ 01 LK-OK                  BINARY-LONG.
+ PROCEDURE DIVISION USING LK-BUCKET LK-ALIVE LK-OK.
+     MOVE 0 TO LK-OK
+     IF LK-BUCKET = 1 AND LK-ALIVE = 1
+         MOVE 1 TO LK-OK
+     END-IF
+     GOBACK.
+ END PROGRAM BUCKET-PICKUP.
+
+*> BUCKET-KEYS USING NoAI, Silent, NoGravity, Glowing, Invulnerable, PersistenceRequired (1/0), keys out (PIC X(80)): the keys
+*> of bucket_entity_data: Health always, the booleans only when true, in that order.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BUCKET-KEYS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER              PIC X(19) VALUE "NoAI".
+    05 FILLER              PIC X(19) VALUE "Silent".
+    05 FILLER              PIC X(19) VALUE "NoGravity".
+    05 FILLER              PIC X(19) VALUE "Glowing".
+    05 FILLER              PIC X(19) VALUE "Invulnerable".
+    05 FILLER              PIC X(19) VALUE "PersistenceRequired".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(19) OCCURS 6 TIMES.
+ 01 WS-FLAGS.
+    05 WS-FLAG             BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 LK-NOAI                BINARY-LONG.
+ 01 LK-SILENT              BINARY-LONG.
+ 01 LK-NOGRAVITY           BINARY-LONG.
+ 01 LK-GLOWING             BINARY-LONG.
+ 01 LK-INVULNERABLE        BINARY-LONG.
+ 01 LK-PERSISTENCE         BINARY-LONG.
+ 01 LK-KEYS                PIC X(80).
+ PROCEDURE DIVISION USING LK-NOAI LK-SILENT LK-NOGRAVITY LK-GLOWING LK-INVULNERABLE LK-PERSISTENCE LK-KEYS.
+     MOVE LK-NOAI TO WS-FLAG(1)
+     MOVE LK-SILENT TO WS-FLAG(2)
+     MOVE LK-NOGRAVITY TO WS-FLAG(3)
+     MOVE LK-GLOWING TO WS-FLAG(4)
+     MOVE LK-INVULNERABLE TO WS-FLAG(5)
+     MOVE LK-PERSISTENCE TO WS-FLAG(6)
+     MOVE SPACES TO LK-KEYS
+     MOVE "Health" TO LK-KEYS
+     MOVE 7 TO WS-POS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         IF WS-FLAG(WS-I) = 1
+             ADD 1 TO WS-POS
+             MOVE FUNCTION TRIM(WS-NAME(WS-I)) TO LK-KEYS(WS-POS:)
+             ADD FUNCTION LENGTH(FUNCTION TRIM(WS-NAME(WS-I))) TO WS-POS
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BUCKET-KEYS.
+
+*> BUCKET-LOAD-PERSISTENCE USING stored PersistenceRequired (1/0), set persistence out (1/0): only when the stored value is true.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BUCKET-LOAD-PERSISTENCE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 LK-STORED              BINARY-LONG.
+ 01 LK-SET                 BINARY-LONG.
+ PROCEDURE DIVISION USING LK-STORED LK-SET.
+     MOVE LK-STORED TO LK-SET
+     GOBACK.
+ END PROGRAM BUCKET-LOAD-PERSISTENCE.

@@ -41,8 +41,8 @@
  01 WS-G2                FLOAT-LONG.
  01 WS-G3                FLOAT-LONG.
  01 WS-G4                FLOAT-LONG.
- 01 WS-T                 PIC X(64).
- 01 WS-U                 PIC X(64).
+ 01 WS-T                 PIC X(80).
+ 01 WS-U                 PIC X(80).
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE 190 TO WS-F1
