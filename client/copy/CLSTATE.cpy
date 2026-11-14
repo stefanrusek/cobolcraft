@@ -34,6 +34,7 @@
     05 CL-SPEED              FLOAT-LONG.      *> blocks moved in the last client tick
     05 CL-GUI-OPTION         BINARY-LONG.     *> the guiScale option (0 = automatic), applied by SCREEN-BUILD
     05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
+    05 CL-FOV-EFFECT         FLOAT-LONG.      *> the fovEffectScale option squared (53 section 8.1): 1 by default, 0 no effect
     05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
     05 CL-KEYS.                                *> the GLFW key code of each key binding, KB-* of CLCONST.cpy (OPTIONS-APPLY)
        10 KB-CODE            BINARY-LONG OCCURS 25 TIMES.
@@ -509,6 +510,10 @@
        10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
        10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
+       10 PL-FOV-MOD         FLOAT-LONG.     *> the camera's field of view modifier (53 section 8: 1, 1.15 while sprinting; 0 = not set)
+       10 PL-TAP-MS          BINARY-DOUBLE.  *> CL-NOW-MS of the last press of forward that may be the first of a double tap (0 none)
+       10 PL-FWD-PREV        PIC 9.          *> forward was down in the frame before
+       10 PL-SPRINT-KEY      PIC 9.          *> 1 when the sprint was started with the sprint key (it ends when the key is released), 0 by a double tap
        10 RG-DIM-COUNT       BINARY-LONG.    *> dimension_type registry entries received
        10 RG-DIM OCCURS 8 TIMES.
           15 RG-DIM-NAME     PIC X(64).

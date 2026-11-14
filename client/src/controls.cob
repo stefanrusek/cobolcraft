@@ -527,7 +527,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTROLS-SPRINT.
-*> USING CLIENT-STATE.
+*> USING CLIENT-STATE: the sprint rules of docs/protocol/13 section 1.5, once a frame before the client tick.
+*>   Start: forward is held (and not back), sprinting is possible (survival food above 6, no Blindness, no item in use, not moving slowly: shift
+*>   up and not crouching, unless the eyes are in water) and either the sprint key is held or forward was pressed a second time within 350 ms of
+*>   its press (the double tap; sprintWindow 7 ticks).
+*>   Stop: any of those fails, a horizontal collision of the last tick, or (a sprint started by the key) the key is released.
+*>   Player Command 0x2A start or stop is sent when the state changes.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -540,19 +545,65 @@
  01 WS-K1                  BINARY-LONG.
  01 WS-K2                  BINARY-LONG.
  01 WS-K3                  BINARY-LONG.
+ 01 WS-K4                  BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
+ 01 WS-FWD                 BINARY-LONG.
+ 01 WS-KEY-DOWN            BINARY-LONG.
+ 01 WS-TAP                 BINARY-LONG.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-WINDOW              BINARY-DOUBLE VALUE 350.
+ 01 WS-BLINDNESS           BINARY-LONG VALUE 14.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO WS-WANT
      MOVE KB-CODE(KB-SPRINT) TO WS-K1
      MOVE KB-CODE(KB-FORWARD) TO WS-K2
      MOVE KB-CODE(KB-BACK) TO WS-K3
+     MOVE KB-CODE(KB-SNEAK) TO WS-K4
+     MOVE 0 TO WS-FWD WS-KEY-DOWN WS-TAP
+     IF SM-SCREEN = SCR-WORLD AND IN-KEY-DOWN(WS-K2 + 1) = 1 AND IN-KEY-DOWN(WS-K3 + 1) = 0
+         MOVE 1 TO WS-FWD
+     END-IF
      IF SM-SCREEN = SCR-WORLD AND IN-KEY-DOWN(WS-K1 + 1) = 1
-             AND IN-KEY-DOWN(WS-K2 + 1) = 1 AND IN-KEY-DOWN(WS-K3 + 1) = 0
-             AND (PL-MODE = 1 OR PL-FOOD > CL-SPRINT-FOOD)
-             AND ((PL-SNEAK-FLAG = 0 AND PL-POSE NOT = 5) OR PL-EYE-WATER = 1)
-         MOVE 1 TO WS-WANT
+         MOVE 1 TO WS-KEY-DOWN
+     END-IF
+*>   The double tap: the second press of forward within the window.
+     IF WS-FWD = 1 AND PL-FWD-PREV = 0
+         IF PL-TAP-MS > 0 AND CL-NOW-MS - PL-TAP-MS <= WS-WINDOW
+             MOVE 1 TO WS-TAP
+             MOVE 0 TO PL-TAP-MS
+         ELSE
+             MOVE CL-NOW-MS TO PL-TAP-MS
+         END-IF
+     END-IF
+     MOVE WS-FWD TO PL-FWD-PREV
+*>   Sprinting is possible.
+     MOVE 1 TO WS-CAN
+     IF PL-MODE NOT = 1 AND PL-FOOD <= CL-SPRINT-FOOD
+         MOVE 0 TO WS-CAN
+     END-IF
+     IF PL-EATING = 1
+         MOVE 0 TO WS-CAN
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EF-COUNT
+         IF EF-ID(WS-I) = WS-BLINDNESS
+             MOVE 0 TO WS-CAN
+         END-IF
+     END-PERFORM
+     IF PL-EYE-WATER = 0 AND (PL-SNEAK-FLAG = 1 OR PL-POSE = 5 OR IN-KEY-DOWN(WS-K4 + 1) = 1)
+         MOVE 0 TO WS-CAN
+     END-IF
+     MOVE PL-SPRINTING TO WS-WANT
+     IF WS-WANT = 1
+         IF WS-FWD = 0 OR WS-CAN = 0 OR PL-COLLIDED = 1 OR (PL-SPRINT-KEY = 1 AND WS-KEY-DOWN = 0)
+             MOVE 0 TO WS-WANT
+         END-IF
+     ELSE
+         IF WS-FWD = 1 AND WS-CAN = 1 AND PL-COLLIDED = 0 AND (WS-KEY-DOWN = 1 OR WS-TAP = 1)
+             MOVE 1 TO WS-WANT
+             MOVE WS-KEY-DOWN TO PL-SPRINT-KEY
+         END-IF
      END-IF
      IF WS-WANT NOT = PL-SPRINTING
          IF WS-READY = 0

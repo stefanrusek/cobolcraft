@@ -200,6 +200,11 @@
              COMPUTE PL-VY = WS-RISE * 0.375
          WHEN WS-FLUID = 0 AND WS-JUMP = 1 AND PL-ON-GROUND = 1
              MOVE 0.42 TO PL-VY
+*>           A sprint jump adds 0.2 forward on its tick (13 section 1.3 jumpFromGround).
+             IF PL-SPRINTING = 1
+                 COMPUTE WS-HX = WS-HX - FUNCTION SIN(WS-YAW) * 0.2
+                 COMPUTE WS-HZ = WS-HZ + FUNCTION COS(WS-YAW) * 0.2
+             END-IF
      END-EVALUATE
 *>   On a climbable block (ladder, vines, scaffolding: 13 section 1.3) the speed is clamped: 0.15 sideways, no faster than 0.15 down
 *>   and not down at all while sneaking.
@@ -326,8 +331,39 @@
          CALL "CLP-SEND-ABILITIES" USING CLIENT-STATE WS-CONN
      END-IF
      CALL "PHYS-POSE" USING CLIENT-STATE WS-SNEAK
+     CALL "PHYS-FOV" USING CLIENT-STATE
      GOBACK.
  END PROGRAM PHYS-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-FOV.
+*> USING CLIENT-STATE: the field of view modifier of a client tick (docs/protocol/53 section 8): the speed ratio is 1.3 while sprinting, the factor
+*> (ratio + 1) / 2 (1.15), times 1.1 while flying, mixed with 1 by the fovEffectScale (CL-FOV-EFFECT), then half the gap a tick,
+*> clamped to 0.1 .. 1.5. The first tick takes the target.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-RATIO               FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 1 TO WS-RATIO
+     IF PL-SPRINTING = 1
+         MOVE 1.3 TO WS-RATIO
+     END-IF
+     COMPUTE WS-F = (WS-RATIO + 1) / 2
+     IF PL-FLYING = 1
+         COMPUTE WS-F = WS-F * 1.1
+     END-IF
+     COMPUTE WS-F = 1 + CL-FOV-EFFECT * (WS-F - 1)
+     IF PL-FOV-MOD = 0
+         MOVE WS-F TO PL-FOV-MOD
+     ELSE
+         COMPUTE PL-FOV-MOD = PL-FOV-MOD + (WS-F - PL-FOV-MOD) * 0.5
+     END-IF
+     COMPUTE PL-FOV-MOD = FUNCTION MIN(1.5, FUNCTION MAX(0.1, PL-FOV-MOD))
+     GOBACK.
+ END PROGRAM PHYS-FOV.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-MOVE.
