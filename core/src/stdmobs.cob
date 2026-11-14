@@ -1038,6 +1038,12 @@
      IF SM-KEY(WS-M) = "frog"
          CALL "FROG-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
+     IF SM-KEY(WS-M) = "panda"
+         CALL "PANDA-TICK" USING WS-ROW
+         IF EN-TARGET(WS-ROW) > 0
+             MOVE 1 TO WS-CHASE
+         END-IF
+     END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
          IF WS-STOP = 2

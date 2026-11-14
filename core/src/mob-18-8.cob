@@ -353,6 +353,9 @@
              IF SM-KEY(WS-M) = "armadillo" AND EN-ARMA(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "panda" AND (EN-GENE-MAIN(L-ROW) > 0 OR EN-GENE-HIDDEN(L-ROW) > 0 OR EN-PANDA-SNEEZE(L-ROW) > 0)
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "bee"
 *>               The flags byte of a bee (19 section 16): 2 rolling, 4 stung, 8 nectar.
                  COMPUTE L-WOOL = 2 * EN-BEE-ROLL(L-ROW) + 4 * EN-BEE-STUNG(L-ROW) + 8 * EN-BEE-NECTAR(L-ROW)
@@ -510,6 +513,8 @@
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
+         WHEN "panda"
+             CALL "PANDA-BORN" USING L-ROW
          WHEN "turtle"
 *>           The home of a turtle is the block it spawned in (19 section 12).
              MOVE 1 TO EN-HOME-SET(L-ROW)
@@ -643,6 +648,8 @@
      MOVE EN-WOOL(L-A) TO WS-COLOR-A
      MOVE EN-WOOL(L-B) TO WS-COLOR-B
      EVALUATE WS-KEY
+         WHEN "panda"
+             CALL "PANDA-BRED" USING L-A L-B WS-BABY
          WHEN "sheep"
              COMPUTE WS-COLOR-A = FUNCTION MOD(EN-WOOL(L-A), 16)
              COMPUTE WS-COLOR-B = FUNCTION MOD(EN-WOOL(L-B), 16)

@@ -401,6 +401,9 @@
        10 EN-TONGUE-T         BINARY-LONG.        *> frog: animation timer of the tongue
        10 EN-TONGUE-ROW       BINARY-LONG.        *> frog: tracker row of the tongue target and its entity id in EN-TONGUE-ID
        10 EN-TONGUE-ID        BINARY-LONG.
+       10 EN-GENE-MAIN        BINARY-LONG.        *> panda: main gene (0 normal, 1 lazy, 2 worried, 3 playful, 4 brown, 5 weak, 6 aggressive)
+       10 EN-GENE-HIDDEN      BINARY-LONG.        *> panda: hidden gene
+       10 EN-PANDA-SNEEZE     BINARY-LONG.        *> panda: sneeze counter (metadata 19), 0 = not sneezing
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

@@ -152,8 +152,8 @@
        10 FILLER BINARY-LONG VALUE 50.
        10 FILLER BINARY-LONG VALUE 198.
        10 FILLER BINARY-LONG VALUE 0.
-       10 FILLER BINARY-LONG VALUE 0.
-       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 6.             *> attack_damage 6 (19 section 8), used when an aggressive panda has a target
+       10 FILLER BINARY-LONG VALUE 16.            *> follow_range (the Mob default 16)
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
