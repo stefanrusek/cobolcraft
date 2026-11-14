@@ -3,7 +3,7 @@
 *> and 0 at or below it (lucite included); block light L at a source and L minus the shortest path
 *> length through non-opaque cells elsewhere, across chunk borders in both directions; recompute of
 *> the affected chunks when a block is placed, broken or a glowtube toggled.
-*> Light is read straight from the cache (CHUNKMEM.cpy) of chunks that WORLD-CHUNK has lit.
+*> Light is read straight from the cache (CELLS.cpy) of chunks that WORLD-CHUNK has lit.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LIGHT.
  DATA DIVISION.
@@ -11,7 +11,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY COREAPI.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -21,6 +21,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
  01 WS-NUM                 BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.
  01 WS-TEXT                PIC X(1024).
@@ -145,17 +146,27 @@
      COMPUTE WS-CX = (WS-X - FUNCTION MOD(WS-X, 16)) / 16
      COMPUTE WS-CZ = (WS-Z - FUNCTION MOD(WS-Z, 16)) / 16
      CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-ROW
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW)
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
      COMPUTE WS-CELL = WS-Y * 256 + (WS-Z - WS-CZ * 16) * 16 + WS-X - WS-CX * 16 + 1.
 
  SKY-NUM.
      PERFORM LOCATE
-     MOVE CM-SKY(WS-CELL) TO WS-NUM
+     COMPUTE WS-BYTE = 2048 + (WS-CELL - 1) / 2 + 1
+     IF FUNCTION MOD(WS-CELL, 2) = 1
+         COMPUTE WS-NUM = FUNCTION MOD(CE-SKY(WS-BYTE), 16)
+     ELSE
+         COMPUTE WS-NUM = CE-SKY(WS-BYTE) / 16
+     END-IF
      PERFORM ADD-NUM.
 
  BLOCK-NUM.
      PERFORM LOCATE
-     MOVE CM-BLOCK(WS-CELL) TO WS-NUM
+     COMPUTE WS-BYTE = 2048 + (WS-CELL - 1) / 2 + 1
+     IF FUNCTION MOD(WS-CELL, 2) = 1
+         COMPUTE WS-NUM = FUNCTION MOD(CE-BLOCK-LIGHT(WS-BYTE), 16)
+     ELSE
+         COMPUTE WS-NUM = CE-BLOCK-LIGHT(WS-BYTE) / 16
+     END-IF
      PERFORM ADD-NUM.
 
  START-ROW.

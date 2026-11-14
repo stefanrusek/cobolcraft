@@ -1,0 +1,31 @@
+# file key value-kept (the in-memory default; fov in degrees)
+options-corrupt.txt renderDistance 12
+options-corrupt.txt gamma 0.5
+options-corrupt.txt graphicsPreset "fancy"
+options-corrupt.txt resourcePacks []
+options-corrupt.txt modelPart_hat true
+options-corrupt.txt chatVisibility 0
+options-corrupt.txt fov 70
+options-corrupt.txt mouseSensitivity 0.25 (loaded)
+options-out-of-range.txt renderDistance 12
+options-out-of-range.txt simulationDistance 12
+options-out-of-range.txt entityDistanceScaling 1.0
+options-out-of-range.txt maxFps 120
+options-out-of-range.txt fov 70
+options-out-of-range.txt biomeBlendRadius 2
+options-out-of-range.txt cloudRange 128
+options-out-of-range.txt weatherRadius 10
+options-out-of-range.txt chunkSectionFadeInTime 0.75
+options-out-of-range.txt mipmapLevels 4
+options-out-of-range.txt maxAnisotropyBit 2
+options-out-of-range.txt glintSpeed 0.5
+options-out-of-range.txt mouseSensitivity 0.5
+options-out-of-range.txt mouseWheelSensitivity 1.0
+options-out-of-range.txt sprintWindow 7
+options-out-of-range.txt gamma 0.5
+options-out-of-range.txt chatOpacity 1.0
+options-out-of-range.txt chatDelay 0.0
+options-out-of-range.txt notificationDisplayTime 1.0
+options-out-of-range.txt menuBackgroundBlurriness 5
+options-out-of-range.txt soundCategory_master 1.0
+options-out-of-range.txt guiScale 0

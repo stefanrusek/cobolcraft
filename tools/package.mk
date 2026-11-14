@@ -10,6 +10,13 @@
 REPO     := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))..)
 BUILD    ?= $(REPO)/build
 COVERAGE ?= 0
+# RELEASE=1 (non-debug build, make build RELEASE=1): -O2 in place of -debug, never with COVERAGE.
+RELEASE  ?= 0
+ifeq ($(RELEASE)$(COVERAGE),10)
+DEBUGFLAG := -O2
+else
+DEBUGFLAG := -debug
+endif
 
 OUT  := $(BUILD)/$(PKG)
 OBJ  := $(OUT)/obj
@@ -20,7 +27,7 @@ LIB  := $(OUT)/$(LIBNAME)
 PKG_CONFIG := PKG_CONFIG_PATH=$(shell brew --prefix)/opt/openssl@3/lib/pkgconfig pkg-config
 
 TESTLIB  := $(REPO)/tools/testlib
-COBFLAGS := -free -debug -std=default -fstatic-call -I $(REPO)/contract/copy $(INCLUDES)
+COBFLAGS := -free $(DEBUGFLAG) -std=default -fstatic-call -I $(REPO)/contract/copy $(INCLUDES)
 CFLAGS   := -std=c11 -Wall -Wextra -I $(REPO)/contract/include $(INCLUDES)
 ifeq ($(COVERAGE),1)
 COBFLAGS += --coverage
@@ -32,6 +39,9 @@ LINT_FILES  ?= $(SRC) $(TESTS)
 LIB_SRC     := $(filter-out src/main.cob,$(SRC))
 OBJS        := $(patsubst src/%,$(OBJ)/%.o,$(basename $(LIB_SRC)))
 TEST_PROGS  := $(patsubst tests/%,$(TOUT)/%,$(basename $(TESTS)))
+# Generated contract tests (tools/gen/gen_contract.py, written by tools/runtests.py) are built like TESTS.
+GENDIR      := $(BUILD)/gen/$(PKG)/tests
+GEN_PROGS   := $(patsubst $(GENDIR)/%,$(TOUT)/%,$(basename $(wildcard $(GENDIR)/*.cob)))
 TESTASSERT  := $(TOUT)/testassert.o
 COPYBOOKS   := $(wildcard $(REPO)/contract/copy/*.cpy copy/*.cpy)
 TESTCOPY    := $(wildcard tests/*.cpy)
@@ -42,7 +52,7 @@ HEADERS     := $(wildcard $(REPO)/contract/include/*.h)
 
 lib: $(LIB)
 
-tests: $(LIB) $(TEST_PROGS)
+tests: $(LIB) $(TEST_PROGS) $(GEN_PROGS)
 
 lint:
 	python3 $(REPO)/tools/lint.py -I $(TESTLIB) $(addprefix -I ,$(filter-out -I,$(INCLUDES))) $(LINT_FILES)
@@ -66,6 +76,10 @@ $(TESTASSERT): $(TESTLIB)/testassert.cob $(TESTLIB)/TESTLIB.cpy
 	cobc -c $(COBFLAGS) -I $(TESTLIB) -o $@ $<
 
 $(TOUT)/%: tests/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
+	@mkdir -p $(dir $@)
+	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
+
+$(TOUT)/%: $(GENDIR)/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
 	@mkdir -p $(dir $@)
 	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
 

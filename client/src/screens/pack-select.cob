@@ -13,9 +13,14 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLARGS.
  01 WS-KIND                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
@@ -92,26 +97,71 @@
          END-IF
      END-PERFORM
      MOVE WK-BUTTON TO WS-KIND
-     MOVE 80 TO WS-W
+     COMPUTE WS-W = FUNCTION MIN(80, (L-GW - 24) / 5)
      MOVE 20 TO WS-H
      COMPUTE WS-Y = L-GH - 24
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
-         COMPUTE WS-X = L-GW / 2 - 208 + (WS-I - 1) * 84
+         COMPUTE WS-X = (L-GW - 5 * WS-W - 16) / 2 + (WS-I - 1) * (WS-W + 4)
          MOVE WS-B-ACTION(WS-I) TO WS-ACTION
          MOVE WS-B-KEY(WS-I) TO WS-KEY
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
          CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
              WS-KEY-LENGTH
      END-PERFORM
+*>   Open Pack Folder (US4) above the row of buttons; a line when its opener could not start.
+     MOVE 120 TO WS-W
+     COMPUTE WS-X = L-GW / 2 - 60
+     COMPUTE WS-Y = L-GH - 46
+     MOVE ACT-OPEN-PACK-FOLDER TO WS-ACTION
+     MOVE "cobolcraft.screen.packs.open_folder" TO WS-KEY
+     MOVE 35 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     IF CL-OPEN-FAILED = 1
+         MOVE WK-LABEL TO WS-KIND
+         MOVE "cobolcraft.screen.packs.open_failed" TO WS-KEY
+         MOVE 35 TO WS-KEY-LENGTH
+         CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
+         MOVE 1 TO LA-COUNT
+         MOVE CL-OPENER TO LA-TEXT(1)
+         MOVE CL-OPENER-LENGTH TO LA-LENGTH(1)
+         CALL "LANG-FORMAT" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH LANG-ARGS WS-TEXT WS-LENGTH
+         MOVE 8 TO WS-X
+         COMPUTE WS-Y = L-GH - 56
+         COMPUTE WS-MAX = L-GW - 16
+         CALL "TEXT-FIT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-MAX
+         MOVE 0 TO WS-STATE
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 WS-X WS-Y WS-Z3 WS-Z4 WS-TEXT
+             WS-LENGTH WS-STATE
+     END-IF
      MOVE WK-LABEL TO WS-KIND
      MOVE 8 TO WS-X
      MOVE 0 TO WS-STATE
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PK-ERROR-COUNT
-         COMPUTE WS-Y = L-GH - 24 - WS-I * 10
-         MOVE PK-ERROR-TEXT(WS-I) TO WS-TEXT
-         MOVE PK-ERROR-LENGTH(WS-I) TO WS-LENGTH
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 WS-X WS-Y WS-Z3 WS-Z4 WS-TEXT
-             WS-LENGTH WS-STATE
+*>   A row has room for a cut problem only; the whole text of each problem and error is listed here,
+*>   wrapped at spaces, two lines of room for each.
+     MOVE PK-ERROR-COUNT TO WS-K
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > LP-COUNT
+         IF LP-VALID(WS-E) = 0
+             ADD 1 TO WS-K
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > LP-COUNT + PK-ERROR-COUNT
+         IF WS-E <= LP-COUNT
+             IF LP-VALID(WS-E) = 1
+                 EXIT PERFORM CYCLE
+             END-IF
+             MOVE LP-PROBLEM(WS-E) TO WS-TEXT
+             MOVE LP-PROBLEM-LENGTH(WS-E) TO WS-LENGTH
+         ELSE
+             COMPUTE WS-I = WS-E - LP-COUNT
+             MOVE PK-ERROR-TEXT(WS-I) TO WS-TEXT
+             MOVE PK-ERROR-LENGTH(WS-I) TO WS-LENGTH
+         END-IF
+         ADD 1 TO WS-N
+         COMPUTE WS-Y = L-GH - 56 - (WS-K - WS-N + 1) * 20
+         COMPUTE WS-MAX = L-GW - 16
+         CALL "LABELS-WRAPPED" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y WS-MAX WS-NEXT
      END-PERFORM
      GOBACK.
  END PROGRAM PACK-SELECT-BUILD.
@@ -126,6 +176,7 @@
  01 WS-KIND                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
@@ -178,12 +229,16 @@
      IF LP-VALID(L-ENTRY) = 0
          MOVE LP-PROBLEM(L-ENTRY) TO WS-TEXT
          MOVE LP-PROBLEM-LENGTH(L-ENTRY) TO WS-LENGTH
+         COMPUTE WS-MAX = CL-MIN-GUI-W - 160
+         CALL "TEXT-FIT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-MAX
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 WS-X L-Y WS-Z3 WS-Z4 WS-TEXT
              WS-LENGTH WS-STATE
          GOBACK
      END-IF
      MOVE LP-DESC(L-ENTRY) TO WS-TEXT
      MOVE LP-DESC-LENGTH(L-ENTRY) TO WS-LENGTH
+     COMPUTE WS-MAX = CL-MIN-GUI-W - 160
+     CALL "TEXT-FIT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-MAX
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 WS-X L-Y WS-Z3 WS-Z4 WS-TEXT
          WS-LENGTH WS-STATE
      COMPUTE WS-Y = L-Y + 9
@@ -285,3 +340,37 @@
      END-IF
      GOBACK.
  END PROGRAM PACK-SELECT-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PACK-FOLDER-OPEN.
+*> USING CLIENT-STATE: Open Pack Folder (US4): resourcepacks/ of the game directory is created when it is
+*> missing, the opener of CL-OPENER is started with it as its only argument (cc_open_path; CC-NOTFOUND when
+*> it cannot start sets CL-OPEN-FAILED, which the pack screen shows), a run line names the opener, and the
+*> local packs are listed again so a pack copied in shows without a restart.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-COMMAND             PIC X(1200).
+ 01 WS-OPENER              PIC X(300).
+ 01 WS-FOLDER              PIC X(1100).
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE LOW-VALUES TO WS-FOLDER WS-OPENER WS-COMMAND
+     STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/resourcepacks" DELIMITED BY SIZE INTO WS-FOLDER
+     STRING "mkdir -p '" CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/resourcepacks'" X"00"
+         DELIMITED BY SIZE INTO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     STRING CL-OPENER(1:CL-OPENER-LENGTH) DELIMITED BY SIZE INTO WS-OPENER
+     CALL STATIC "cc_open_path" USING BY REFERENCE WS-OPENER BY REFERENCE WS-FOLDER
+         RETURNING WS-RC
+     MOVE 0 TO CL-OPEN-FAILED
+     IF WS-RC NOT = 0
+         MOVE 1 TO CL-OPEN-FAILED
+     END-IF
+     DISPLAY "RUN " CL-OPENER(1:CL-OPENER-LENGTH) " " CL-GAME-DIR(1:CL-GAME-DIR-LENGTH)
+         "/resourcepacks" UPON SYSERR
+     CALL "LOCAL-PACKS-SCAN" USING CLIENT-STATE
+     GOBACK.
+ END PROGRAM PACK-FOLDER-OPEN.

@@ -6,7 +6,7 @@
 *> USING connection id, name (PIC X(16)), name length, offline UUID (PIC X(16)), player row out
 *> (BINARY-LONG; 0 when the table is full). A new player: the world spawn point facing its yaw
 *> (standin §5.2), the game mode of the settings (FR-007, FR-009; a guest of a world opened to
-*> others gets the guest mode, FR-017), full health and food (§10.1, §11.1), a new entity id, held
+*> others gets the guest mode, FR-017), full health 20, food 20 and saturation 5.0 (17 section 4.9), a new entity id, held
 *> slot 0, an empty inventory, state Joining. Operator status: ACCESS-OPERATOR-STATUS
 *> (core/src/access.cob: the operator list, the host, allowed guests). In a world
 *> hosted by the client (host kinds 1 and 2) new players get the world's GameMode (CW-GAME-MODE,
@@ -21,8 +21,28 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY RULES.
- COPY ITEMS.
+ COPY CITEMS.
+ COPY STARTKIT.
+ COPY STARTERCFG.
+ 01 WS-KIT-KEY             PIC X(48).
+ 01 WS-KIT-SAME            BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-KIT-TABLE.
+    05 FILLER PIC X(48) VALUE "minecraft:crafting_table".
+    05 FILLER PIC X(48) VALUE "minecraft:oak_log".
+    05 FILLER PIC X(48) VALUE "minecraft:oak_planks".
+    05 FILLER PIC X(48) VALUE "minecraft:stick".
+ 01 WS-KIT-KEYS REDEFINES WS-KIT-TABLE.
+    05 WS-KIT-NAME            PIC X(48) OCCURS 4 TIMES.
+ 01 WS-KIT-COUNTS.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 16.
+    05 FILLER BINARY-LONG VALUE 8.
+    05 FILLER BINARY-LONG VALUE 8.
+ 01 WS-KIT-COUNT-TABLE REDEFINES WS-KIT-COUNTS.
+    05 WS-KIT-N               BINARY-LONG OCCURS 4 TIMES.
  01 WS-ROW                 BINARY-LONG.
  01 WS-HOST                PIC 9.
  01 WS-KNOWN               BINARY-LONG.
@@ -43,7 +63,7 @@
          END-IF
      END-PERFORM
      IF L-ROW > 0
-         INITIALIZE PL-ENTRY(L-ROW)
+         INITIALIZE PL-ENTRY(L-ROW) MN-ENTRY(L-ROW)
          MOVE 1 TO PL-USED(L-ROW)
          MOVE L-CONN TO PL-CONN(L-ROW)
          MOVE L-ROW TO CN-PLAYER(L-CONN)
@@ -73,6 +93,8 @@
          CALL "ACCESS-OPERATOR-STATUS" USING L-ROW
          MOVE RULE-MAX-HEALTH TO PL-HEALTH(L-ROW)
          MOVE RULE-MAX-FOOD TO PL-FOOD(L-ROW)
+         MOVE RULE-MAX-AIR TO PL-AIR(L-ROW)
+         MOVE RULE-START-SATURATION TO PL-SATURATION(L-ROW)
          MOVE CS-VIEW-DISTANCE TO PL-VIEW-DISTANCE(L-ROW)
          COMPUTE PL-CENTER-X(L-ROW) = FUNCTION INTEGER(PL-X(L-ROW) / 16)
          COMPUTE PL-CENTER-Z(L-ROW) = FUNCTION INTEGER(PL-Z(L-ROW) / 16)
@@ -92,8 +114,11 @@
                      MOVE KN-MODE(WS-I) TO PL-MODE(L-ROW)
                      MOVE KN-HEALTH(WS-I) TO PL-HEALTH(L-ROW)
                      MOVE KN-FOOD(WS-I) TO PL-FOOD(L-ROW)
+                     COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-SATURATION(L-ROW), PL-FOOD(L-ROW))
                      MOVE KN-HELD(WS-I) TO PL-HELD(L-ROW)
                      MOVE KN-INVENTORY(WS-I) TO PL-INVENTORY(L-ROW)
+                     CALL "KX-FETCH" USING L-ROW WS-I
+                     COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-SATURATION(L-ROW), PL-FOOD(L-ROW))
                  END-IF
                  IF KN-DEATH-CAUSE(WS-I) > 0
                      MOVE 0 TO PL-MODE(L-ROW) PL-HEALTH(L-ROW)
@@ -107,16 +132,34 @@
              END-IF
          END-PERFORM
          IF WS-KNOWN = 0 AND PL-MODE(L-ROW) = 0
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > START-ITEM-COUNT
-                 MOVE SI-ITEM(WS-I) TO PL-SLOT-ITEM(L-ROW, SI-SLOT(WS-I) + 1)
-                 MOVE SI-COUNT(WS-I) TO PL-SLOT-COUNT(L-ROW, SI-SLOT(WS-I) + 1)
-             END-PERFORM
+             IF CW-WORLD-TYPE = "standard"
+*>               The standard type's own kit (world-types "Starter kit"): table, logs, planks, sticks in hotbar slots 0 to 3,
+*>               each item row found by key; a key the set lacks leaves its slot empty. Off with starter-kit=false.
+                 IF SK-OFF NOT = 1
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > IT-COUNT
+                             CALL "KEY-SAME" USING IT-KEY(WS-J) WS-KIT-NAME(WS-I) WS-KIT-SAME
+                             IF WS-KIT-SAME = 1
+                                 COMPUTE PL-SLOT-ITEM(L-ROW, WS-I) = WS-J - 1
+                                 MOVE WS-KIT-N(WS-I) TO PL-SLOT-COUNT(L-ROW, WS-I)
+                                 MOVE IT-COUNT TO WS-J
+                             END-IF
+                         END-PERFORM
+                     END-PERFORM
+                 END-IF
+             ELSE
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > START-ITEM-COUNT
+                     MOVE SI-ITEM(WS-I) TO PL-SLOT-ITEM(L-ROW, SI-SLOT(WS-I) + 1)
+                     MOVE SI-COUNT(WS-I) TO PL-SLOT-COUNT(L-ROW, SI-SLOT(WS-I) + 1)
+                 END-PERFORM
+             END-IF
          END-IF
          IF WS-KNOWN = 0 AND KN-COUNT < CORE-MAX-KNOWN
              ADD 1 TO KN-COUNT
              MOVE L-UUID TO KN-UUID(KN-COUNT)
              MOVE 0 TO KN-DEATH-CAUSE(KN-COUNT)
              INITIALIZE KN-PLACE(KN-COUNT) KN-STATE(KN-COUNT)
+             CALL "KX-ROW-FREE" USING KN-COUNT
          END-IF
      END-IF
      GOBACK.
@@ -176,22 +219,26 @@
  PROGRAM-ID. PLAYER-LEAVE.
 *> USING player row: the player leaves the world (OTHERS-LEAVE: the other players are told); the
 *> row is free again and its connection no longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
-*> Its known-player row keeps its state (PLAYER-REMEMBER).
+*> The cursor stack and the grids go back into the inventory first (MENU-RELEASE), then its known-player row keeps its
+*> state (PLAYER-REMEMBER).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-BACK                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     CALL "MENU-RELEASE" USING WS-ROW WS-BACK
      CALL "PLAYER-REMEMBER" USING WS-ROW
      CALL "OTHERS-LEAVE" USING WS-ROW
      IF PL-CONN(WS-ROW) > 0
          MOVE 0 TO CN-PLAYER(PL-CONN(WS-ROW))
      END-IF
-     INITIALIZE PL-ENTRY(WS-ROW)
+     INITIALIZE PL-ENTRY(WS-ROW) MN-ENTRY(WS-ROW)
      GOBACK.
  END PROGRAM PLAYER-LEAVE.
 
@@ -251,7 +298,43 @@
              MOVE PL-FOOD(WS-ROW) TO KN-FOOD(WS-I)
              MOVE PL-HELD(WS-ROW) TO KN-HELD(WS-I)
              MOVE PL-INVENTORY(WS-ROW) TO KN-INVENTORY(WS-I)
+             CALL "KX-STORE" USING WS-ROW WS-I
          END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM PLAYER-REMEMBER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STARTER-KIT-CONFIG.
+*> USING flag (BINARY-LONG): 1 gives a first-time survival player of a standard world the starter kit (the default), 0 turns it off
+*> (server key starter-kit).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STARTERCFG.
+ LINKAGE SECTION.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAG.
+     IF L-FLAG = 0
+         MOVE 1 TO SK-OFF
+     ELSE
+         MOVE 0 TO SK-OFF
+     END-IF
+     GOBACK.
+ END PROGRAM STARTER-KIT-CONFIG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STARTER-KIT-GET.
+*> USING flag out (BINARY-LONG): 1 when the starter kit is on.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STARTERCFG.
+ LINKAGE SECTION.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAG.
+     IF SK-OFF = 1
+         MOVE 0 TO L-FLAG
+     ELSE
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM STARTER-KIT-GET.

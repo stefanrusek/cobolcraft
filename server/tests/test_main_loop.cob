@@ -40,7 +40,7 @@
  01 WS-COMMAND             PIC X(64) VALUE Z"nosuchcommand".
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
- 01 WS-DEFAULTS            PIC X(1707).
+ 01 WS-DEFAULTS            PIC X(3829).
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
@@ -183,7 +183,7 @@
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
      MOVE "test main loop SV-ITERATE displays the drained console lines" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Unknown command nosuchcommand (howto lists the commands)" TO TL-EXPECTED
+     MOVE "Unknown or incomplete command. See below for error" TO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

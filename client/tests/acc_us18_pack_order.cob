@@ -1,5 +1,5 @@
 *> Acceptance test US18-2 (spec.md User Story 18 and its edge case "a local pack contains only some
-*> files"; 08 §3.1, §3.2; client-surface §2 options.dat; client/src/screens/pack-select.cob,
+*> files"; 08 §3.1, §3.2; client-surface §2 options.txt; client/src/screens/pack-select.cob,
 *> packs/stack.cob): packs enabled and ordered on the pack screen stack in that order, a higher
 *> pack's file wins, the built-in pack stays at the bottom, the choice and order are kept after a
 *> restart, and a pack's missing files come from the packs below.
@@ -32,6 +32,15 @@
      CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
      CALL "TEST-PIXEL" USING CLIENT-STATE WS-LOAM WS-LOAM-LENGTH WS-LOAM-BEFORE
      CALL "TEST-STEP" USING CLIENT-STATE
+*>   A pack's icon cell needs the UI atlas (LOCAL-PACK-ICON gives none without it): if this case ever fails, the atlas was not allocated and the pack list below loses its icon widgets.
+     MOVE "acceptance US18-2 precondition: the UI atlas exists when the pack list is scanned (a pack's icon cell needs it)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 1 TO TL-OBSERVED-N
+     IF UA-ADDR = NULL
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE ACT-PACKS TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
 
@@ -51,7 +60,7 @@
          & "Then both are selected, the later one on top, above the built-in pack" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "Resource Packs|Selected|beta.zip|Beta pack|Compatible|alpha||Alpha pack|Compatible|"
-         & "Built-in pack|Available|Enable|Disable|Move Up|Move Down|Done" TO TL-EXPECTED
+         & "Built-in pack|Available|Faithful Skin|Uses Faithful 32x textures ...|Compatible|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -1,0 +1,99 @@
+# Fixture: Set Entity Data, one entry for every one of the 44 serializers
+# Phase: play. Direction: clientbound (S->C). Packet id 0x65 (101).
+# Doc refs: 05b 0x65; 00 section 13.1 (wire structure), 13.2 (serializer ids 0 to 43), 13.3 (ResolvableProfile), 4.3 (GlobalPos), 4.5; 46 section 12 and worked example 7
+# Stated inputs:
+#   entity id 300; metadata index i carries serializer id i for i = 0 to 43 (index and serializer are equal), then the 0xFF end marker
+#   values are fixture inputs, one per serializer, stated in each line; registry ids 1..12 for the twelve variant serializers 21 to 32
+
+65                                               # packet id: VarInt 0x65
+ac 02                                            # Entity id: VarInt 300
+00 00                                            # Metadata[0] (BYTE): index UByte 0, serializer VarInt 0
+20                                                                       #   value: Byte 0x20
+01 01                                            # Metadata[1] (INT): index UByte 1, serializer VarInt 1
+ac 02                                                                    #   value: VarInt 300
+02 02                                            # Metadata[2] (LONG): index UByte 2, serializer VarInt 2
+80 e4 97 d0 12                                                           #   value: VarLong 5000000000
+03 03                                            # Metadata[3] (FLOAT): index UByte 3, serializer VarInt 3
+3f c0 00 00                                                              #   value: Float 1.5
+04 04                                            # Metadata[4] (STRING): index UByte 4, serializer VarInt 4
+04 6e 61 6d 65                                                           #   value: String "name"
+05 05                                            # Metadata[5] (COMPONENT): index UByte 5, serializer VarInt 5
+08 00 01 63                                                              #   value: TrustedTextComponent plain String "c"
+06 06                                            # Metadata[6] (OPTIONAL_COMPONENT): index UByte 6, serializer VarInt 6
+01 08 00 01 6f                                                           #   value: Optional TextComponent present, plain String "o"
+07 07                                            # Metadata[7] (ITEM_STACK): index UByte 7, serializer VarInt 7
+03 3f 00 00                                                              #   value: ItemStack 3 x oak_planks
+08 08                                            # Metadata[8] (BOOLEAN): index UByte 8, serializer VarInt 8
+01                                                                       #   value: Boolean true
+09 09                                            # Metadata[9] (ROTATIONS): index UByte 9, serializer VarInt 9
+3f 80 00 00 40 00 00 00 40 40 00 00                                      #   value: Rotations (1.0, 2.0, 3.0)
+0a 0a                                            # Metadata[10] (BLOCK_POS): index UByte 10, serializer VarInt 10
+ff ff ff c0 00 00 20 40                                                  #   value: Position (-1, 64, 2)
+0b 0b                                            # Metadata[11] (OPTIONAL_BLOCK_POS): index UByte 11, serializer VarInt 11
+01 00 00 01 40 00 00 70 06                                               #   value: Optional Position present (5, 6, 7)
+0c 0c                                            # Metadata[12] (DIRECTION): index UByte 12, serializer VarInt 12
+04                                                                       #   value: Direction VarInt 4 (west)
+0d 0d                                            # Metadata[13] (OPTIONAL_LIVING_ENTITY_REFERENCE): index UByte 13, serializer VarInt 13
+01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 b1                       #   value: Optional UUID present
+0e 0e                                            # Metadata[14] (BLOCK_STATE): index UByte 14, serializer VarInt 14
+58                                                                       #   value: block state VarInt 88 (bedrock)
+0f 0f                                            # Metadata[15] (OPTIONAL_BLOCK_STATE): index UByte 15, serializer VarInt 15
+00                                                                       #   value: optional block state VarInt 0 (absent)
+10 10                                            # Metadata[16] (PARTICLE): index UByte 16, serializer VarInt 16
+15 00 ff 88 00 3f 80 00 00                                               #   value: Particle dust (21): Int colour 0xff8800, Float scale 1.0
+11 11                                            # Metadata[17] (PARTICLES): index UByte 17, serializer VarInt 17
+01 37                                                                    #   value: Particles: count 1, heart (55), no option bytes
+12 12                                            # Metadata[18] (VILLAGER_DATA): index UByte 18, serializer VarInt 18
+02 09 03                                                                 #   value: VillagerData plains (2), librarian (9), level 3
+13 13                                            # Metadata[19] (OPTIONAL_UNSIGNED_INT): index UByte 19, serializer VarInt 19
+08                                                                       #   value: OptionalUnsignedInt VarInt 8 (value 7)
+14 14                                            # Metadata[20] (POSE): index UByte 20, serializer VarInt 20
+05                                                                       #   value: Pose VarInt 5 (crouching)
+15 15                                            # Metadata[21] (CAT_VARIANT): index UByte 21, serializer VarInt 21
+01                                                                       #   value: RegistryId VarInt 1
+16 16                                            # Metadata[22] (CAT_SOUND_VARIANT): index UByte 22, serializer VarInt 22
+02                                                                       #   value: RegistryId VarInt 2
+17 17                                            # Metadata[23] (COW_VARIANT): index UByte 23, serializer VarInt 23
+03                                                                       #   value: RegistryId VarInt 3
+18 18                                            # Metadata[24] (COW_SOUND_VARIANT): index UByte 24, serializer VarInt 24
+04                                                                       #   value: RegistryId VarInt 4
+19 19                                            # Metadata[25] (WOLF_VARIANT): index UByte 25, serializer VarInt 25
+05                                                                       #   value: RegistryId VarInt 5
+1a 1a                                            # Metadata[26] (WOLF_SOUND_VARIANT): index UByte 26, serializer VarInt 26
+06                                                                       #   value: RegistryId VarInt 6
+1b 1b                                            # Metadata[27] (FROG_VARIANT): index UByte 27, serializer VarInt 27
+07                                                                       #   value: RegistryId VarInt 7
+1c 1c                                            # Metadata[28] (PIG_VARIANT): index UByte 28, serializer VarInt 28
+08                                                                       #   value: RegistryId VarInt 8
+1d 1d                                            # Metadata[29] (PIG_SOUND_VARIANT): index UByte 29, serializer VarInt 29
+09                                                                       #   value: RegistryId VarInt 9
+1e 1e                                            # Metadata[30] (CHICKEN_VARIANT): index UByte 30, serializer VarInt 30
+0a                                                                       #   value: RegistryId VarInt 10
+1f 1f                                            # Metadata[31] (CHICKEN_SOUND_VARIANT): index UByte 31, serializer VarInt 31
+0b                                                                       #   value: RegistryId VarInt 11
+20 20                                            # Metadata[32] (ZOMBIE_NAUTILUS_VARIANT): index UByte 32, serializer VarInt 32
+0c                                                                       #   value: RegistryId VarInt 12
+21 21                                            # Metadata[33] (OPTIONAL_GLOBAL_POS): index UByte 33, serializer VarInt 33
+01 13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72 77 6f 72 6c 64 00 00 00  #   value: Optional GlobalPos present: minecraft:overworld (1, 2, 3)
+40 00 00 30 02                                                           #   (continued)
+22 22                                            # Metadata[34] (PAINTING_VARIANT): index UByte 34, serializer VarInt 34
+04                                                                       #   value: Holder<painting_variant> reference VarInt 4 (id 3 + 1)
+23 23                                            # Metadata[35] (SNIFFER_STATE): index UByte 35, serializer VarInt 35
+03                                                                       #   value: Sniffer state VarInt 3 (sniffing)
+24 24                                            # Metadata[36] (ARMADILLO_STATE): index UByte 36, serializer VarInt 36
+02                                                                       #   value: Armadillo state VarInt 2 (scared)
+25 25                                            # Metadata[37] (COPPER_GOLEM_STATE): index UByte 37, serializer VarInt 37
+01                                                                       #   value: Copper golem state VarInt 1 (getting_item)
+26 26                                            # Metadata[38] (WEATHERING_COPPER_STATE): index UByte 38, serializer VarInt 38
+03                                                                       #   value: Weathering state VarInt 3 (oxidized)
+27 27                                            # Metadata[39] (VECTOR3): index UByte 39, serializer VarInt 39
+3f 00 00 00 3f c0 00 00 c0 00 00 00                                      #   value: Vector3f (0.5, 1.5, -2.0)
+28 28                                            # Metadata[40] (QUATERNION): index UByte 40, serializer VarInt 40
+00 00 00 00 00 00 00 00 00 00 00 00 3f 80 00 00                          #   value: Quaternionf (0, 0, 0, 1)
+29 29                                            # Metadata[41] (RESOLVABLE_PROFILE): index UByte 41, serializer VarInt 41
+00 01 05 53 74 65 76 65 00 00 00 00 00 00                                #   value: ResolvableProfile partial: name "Steve", no id, empty properties, empty skin patch (4 absent options)
+2a 2a                                            # Metadata[42] (HUMANOID_ARM): index UByte 42, serializer VarInt 42
+01                                                                       #   value: HumanoidArm VarInt 1 (right)
+2b 2b                                            # Metadata[43] (DYE_COLOR): index UByte 43, serializer VarInt 43
+0b                                                                       #   value: DyeColor VarInt 11 (blue)
+ff                                               # Metadata end: UByte 0xFF

@@ -11,6 +11,7 @@
  78 CC-SMALL                VALUE 5.
  78 CC-BADDATA              VALUE 6.
  78 CC-NOTFOUND             VALUE 7.
+ 78 CC-FAILED               VALUE 8.
 
 *> Compression modes (§5).
  78 CC-ZLIB                 VALUE 0.
@@ -21,12 +22,14 @@
  78 CC-PIPE-OPAQUE          VALUE 0.
  78 CC-PIPE-TRANSLUCENT     VALUE 1.
  78 CC-PIPE-UI              VALUE 2.
+ 78 CC-PIPE-CRUMBLING       VALUE 3.
 
 *> Texture ids (§9).
  78 CC-TEX-BLOCKS           VALUE 0.   *> block and item atlas
  78 CC-TEX-ENTITIES         VALUE 1.   *> entity atlas
  78 CC-TEX-UI               VALUE 2.   *> font and UI atlas
  78 CC-TEX-ENVIRONMENT      VALUE 3.   *> environment atlas
+ 78 CC-TEX-PARTICLES        VALUE 4.   *> particle atlas
 
 *> Texture wrap modes of cc_vk_texture_wrap (§9).
  78 CC-WRAP-CLAMP           VALUE 0.   *> clamp-to-edge (the default)
@@ -49,7 +52,7 @@
 
 *> Event record sizes (§8, §9).
  78 CC-EVENT-SIZE           VALUE 24.
- 78 CC-VERTEX-SIZE          VALUE 28.
+ 78 CC-VERTEX-SIZE          VALUE 44.
 
 *> Mouse buttons (§8).
  78 CC-BUTTON-LEFT          VALUE 0.
@@ -84,6 +87,27 @@
  78 CC-KEY-ESCAPE           VALUE 256.
  78 CC-KEY-LEFT-SHIFT       VALUE 340.
  78 CC-KEY-LEFT-CONTROL     VALUE 341.
+*> Keys named by docs/protocol/13 section 5.1 (F3 combinations) and section 7.3 (default bindings). Doc 13
+*> 7.5 tabulates SDL-style scancodes (A = 4 ...); the shim reports GLFW codes, so these are GLFW values.
+ 78 CC-KEY-B                VALUE 66.
+ 78 CC-KEY-F                VALUE 70.
+ 78 CC-KEY-G                VALUE 71.
+ 78 CC-KEY-H                VALUE 72.
+ 78 CC-KEY-I                VALUE 73.
+ 78 CC-KEY-L                VALUE 76.
+ 78 CC-KEY-N                VALUE 78.
+ 78 CC-KEY-O                VALUE 79.
+ 78 CC-KEY-P                VALUE 80.
+ 78 CC-KEY-V                VALUE 86.
+ 78 CC-KEY-X                VALUE 88.
+ 78 CC-KEY-TAB              VALUE 258.
+ 78 CC-KEY-F1               VALUE 290.
+ 78 CC-KEY-F2               VALUE 291.
+ 78 CC-KEY-F3               VALUE 292.
+ 78 CC-KEY-F4               VALUE 293.
+ 78 CC-KEY-F5               VALUE 294.
+ 78 CC-KEY-F6               VALUE 295.
+ 78 CC-KEY-F11              VALUE 300.
 *> Text-entry keys (chat, screens): characters arrive as CC-EV-TEXT; these keys do not.
  78 CC-KEY-ENTER            VALUE 257.
  78 CC-KEY-BACKSPACE        VALUE 259.
@@ -98,7 +122,8 @@
     05 CC-EV-X              FLOAT-SHORT.
     05 CC-EV-Y              FLOAT-SHORT.
 
-*> Vertex (§9, research R4): 7 x float32 = 28 bytes.
+*> Vertex (§9): 11 x float32 = 44 bytes. Colour drawn = texel x (CC-VX-R, G, B) x max(CC-VX-BRIGHTNESS,
+*> CC-VX-SKY x daylight); an untinted vertex has tint 1 1 1, one that ignores the daylight has sky 0.
  01 CC-VERTEX.
     05 CC-VX-X              FLOAT-SHORT.
     05 CC-VX-Y              FLOAT-SHORT.
@@ -107,3 +132,41 @@
     05 CC-VX-V              FLOAT-SHORT.
     05 CC-VX-BRIGHTNESS     FLOAT-SHORT.
     05 CC-VX-ALPHA          FLOAT-SHORT.
+    05 CC-VX-SKY            FLOAT-SHORT.
+    05 CC-VX-R              FLOAT-SHORT.
+    05 CC-VX-G              FLOAT-SHORT.
+    05 CC-VX-B              FLOAT-SHORT.
+
+*> CALL shapes of the additions of contract/include/ccshim.h sections 9 to 12 (CALL STATIC; a COBOL
+*> program cannot receive a C double, so every f64 operand is BY REFERENCE and the calls return nothing).
+*> f64 items are COMP-2 (FLOAT-LONG); 32-bit integer results BINARY-LONG; 64-bit BINARY-DOUBLE.
+*>   01 A USAGE FLOAT-LONG.  01 B USAGE FLOAT-LONG.  01 R USAGE FLOAT-LONG.
+*>   01 I32 BINARY-LONG.  01 I64 BINARY-DOUBLE.  01 TXT PIC X(32) (z-string: ends with a NUL byte).
+*>   Two operands:   CALL STATIC "cc_f64_add" USING BY REFERENCE A B R
+*>                   (also sub, mul, div, fmod, min_j, max_j, copysign, pow, atan2_lib, atan2_mth)
+*>   One operand:    CALL STATIC "cc_f64_floor" USING BY REFERENCE A R
+*>                   (also ceil, sqrt, f32_round, signum, nextdown, next_up, abs_f32, abs_f64, log1p,
+*>                   to_radians, log, sin, cos, asin, acos, sin_tab, cos_tab, fast_inv_sqrt)
+*>   Text to double: CALL STATIC "cc_f64_from_text" USING BY REFERENCE TXT R
+*>   Double to int:  CALL STATIC "cc_f64_to_i32" USING BY REFERENCE A I32   (also round_f32)
+*>                   CALL STATIC "cc_f64_to_i64" USING BY REFERENCE A I64   (also round_f64, f64_bits)
+*>   Int to double:  CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE I32 R
+*>                   CALL STATIC "cc_f64_f64_from_bits" USING BY REFERENCE I64 R
+*>   Three operands: CALL STATIC "cc_f64_clamp_f32" USING BY REFERENCE V LO HI R   (also clamp_f64)
+*>                   CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE T A B R      (also lerp_f64)
+*>   Unsigned 64-bit wrap (section 13; items BINARY-DOUBLE UNSIGNED, count BINARY-LONG 1 to 63):
+*>                   CALL STATIC "cc_u64_add" USING BY REFERENCE A B R   (also mul)
+*>                   CALL STATIC "cc_u64_shl" USING BY REFERENCE A N R   (also shr, rotl)
+*>   Texture (BINARY-LONG arguments BY VALUE, pixel buffer BY REFERENCE, RETURNING BINARY-LONG):
+*>     CALL STATIC "cc_vk_texture_ex" USING BY VALUE TEX-ID W H BY REFERENCE RGBA BY VALUE MIP-LEVELS
+*>         RETURNING RC
+*>     CALL STATIC "cc_vk_texture_update" USING BY VALUE TEX-ID X Y W H BY REFERENCE RGBA RETURNING RC
+*>     CALL STATIC "cc_vk_texture_update_begin"  and  CALL STATIC "cc_vk_texture_update_end"   (updates between them wait for the GPU once)
+*>   Daylight:       CALL STATIC "cc_vk_daylight" USING BY REFERENCE factor (FLOAT-SHORT, 0 to 1)
+*>   Fog:            CALL STATIC "cc_vk_fog" USING BY REFERENCE fog (13 FLOAT-SHORT: r g b strength start end p00 p11 up-x up-y up-z render-distance-start render-distance-end; strength 0 = none)
+*>   Depth clear:    CALL STATIC "cc_vk_clear_depth"
+*>   Screenshot:     CALL STATIC "cc_vk_screenshot" USING BY REFERENCE PATH-Z RETURNING RC   (CC-AGAIN: one still waiting)
+*>                   CALL STATIC "cc_vk_screenshot_result" RETURNING RC   (CC-AGAIN waiting, 0 written, CC-FAILED)
+*>                   CALL STATIC "cc_png_write" USING BY REFERENCE PATH-Z BY VALUE W H BY REFERENCE RGBA RETURNING RC
+*>   Open a path:    CALL STATIC "cc_open_path" USING BY REFERENCE OPENER-Z PATH-Z RETURNING RC
+*>                   (both z-strings; 0 at once, CC-NOTFOUND when the opener cannot start)

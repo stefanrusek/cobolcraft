@@ -1,0 +1,1 @@
+{"parent":"minecraft:recipes/root","criteria":{"has_x":{"conditions":{"items":[{"items":"minecraft:stick"}]},"trigger":"minecraft:inventory_changed"}},"rewards":{"recipes":["minecraft:no_such_recipe"]}}

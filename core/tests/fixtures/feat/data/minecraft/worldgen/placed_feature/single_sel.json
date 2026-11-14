@@ -1,0 +1,7 @@
+{
+ "feature": {
+  "type": "minecraft:simple_random_selector",
+  "features": "minecraft:pf_poppy"
+ },
+ "placement": []
+}

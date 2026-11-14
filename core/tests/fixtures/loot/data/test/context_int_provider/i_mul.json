@@ -1,0 +1,8 @@
+{
+ "type": "minecraft:mul",
+ "inputs": [
+  2,
+  3,
+  4
+ ]
+}

@@ -127,38 +127,38 @@
      MOVE "test movement: a box whose east face touches a solid block's west face does not "
          & "collide; one 0.05 further east does" TO TL-CASE
      PERFORM START-ROW
-     MOVE 9.65 TO WS-X
+     MOVE 9.7 TO WS-X
      MOVE 100.0 TO WS-Y
      MOVE 8.5 TO WS-Z
      PERFORM ADD-HIT
-     MOVE 9.7 TO WS-X
+     MOVE 9.75 TO WS-X
      PERFORM ADD-HIT
      MOVE "0 1 " TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test movement: standing on the block (feet at its top face) does not collide; feet 0.1 "
-         & "lower, and a head 1.75 high reaching into it from below, do" TO TL-CASE
+         & "lower, and a head 1.8 high reaching into it from below, do" TO TL-CASE
      PERFORM START-ROW
      MOVE 10.5 TO WS-X
      MOVE 101.0 TO WS-Y
      PERFORM ADD-HIT
      MOVE 100.9 TO WS-Y
      PERFORM ADD-HIT
-     MOVE 98.3 TO WS-Y
-     PERFORM ADD-HIT
      MOVE 98.25 TO WS-Y
+     PERFORM ADD-HIT
+     MOVE 98.2 TO WS-Y
      PERFORM ADD-HIT
      MOVE "0 1 1 0 " TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-     MOVE "test movement: the box is 0.7 wide on z as well: touching the block's north face "
-         & "from z 7.65 does not collide, z 7.7 does" TO TL-CASE
+     MOVE "test movement: the box is 0.6 wide on z as well: touching the block's north face "
+         & "from z 7.7 does not collide, z 7.75 does" TO TL-CASE
      PERFORM START-ROW
      MOVE 100.0 TO WS-Y
      MOVE 10.5 TO WS-X
-     MOVE 7.65 TO WS-Z
-     PERFORM ADD-HIT
      MOVE 7.7 TO WS-Z
+     PERFORM ADD-HIT
+     MOVE 7.75 TO WS-Z
      PERFORM ADD-HIT
      MOVE "0 1 " TO TL-EXPECTED
      PERFORM ASSERT-ROW

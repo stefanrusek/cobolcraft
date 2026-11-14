@@ -1,0 +1,11 @@
+{
+ "type": "minecraft:add",
+ "inputs": [
+  1,
+  2,
+  {
+   "type": "minecraft:constant",
+   "value": 3
+  }
+ ]
+}

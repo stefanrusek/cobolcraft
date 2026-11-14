@@ -1,0 +1,58 @@
+# Fixture: Container Set Content, 46-slot inventory menu
+# Phase: play. Direction: clientbound (S->C). Packet id 0x12 (18).
+# Doc refs: 05a 0x12; 00 section 12.1; 13 section 3 (46 slots: 0 result, 1-4 crafting grid, 5-8 armour, 9-35 main, 36-44 hotbar, 45 off-hand)
+# Stated inputs:
+#   container 0, state id 3, 46 slots, all empty except slot 36 = 64 x stone, slot 40 = the damaged stone of the Container Set Slot fixture,
+#   slot 45 (off-hand) = 1 x cobblestone (item 62); carried item = 5 x oak_planks (item 63)
+
+12                                               # packet id: VarInt 0x12
+00                                               # Container id: VarInt 0
+03                                               # State id: VarInt 3
+2e                                               # Slots: VarInt count 46
+00                                               # slot 0: empty (Count 0)
+00                                               # slot 1: empty (Count 0)
+00                                               # slot 2: empty (Count 0)
+00                                               # slot 3: empty (Count 0)
+00                                               # slot 4: empty (Count 0)
+00                                               # slot 5: empty (Count 0)
+00                                               # slot 6: empty (Count 0)
+00                                               # slot 7: empty (Count 0)
+00                                               # slot 8: empty (Count 0)
+00                                               # slot 9: empty (Count 0)
+00                                               # slot 10: empty (Count 0)
+00                                               # slot 11: empty (Count 0)
+00                                               # slot 12: empty (Count 0)
+00                                               # slot 13: empty (Count 0)
+00                                               # slot 14: empty (Count 0)
+00                                               # slot 15: empty (Count 0)
+00                                               # slot 16: empty (Count 0)
+00                                               # slot 17: empty (Count 0)
+00                                               # slot 18: empty (Count 0)
+00                                               # slot 19: empty (Count 0)
+00                                               # slot 20: empty (Count 0)
+00                                               # slot 21: empty (Count 0)
+00                                               # slot 22: empty (Count 0)
+00                                               # slot 23: empty (Count 0)
+00                                               # slot 24: empty (Count 0)
+00                                               # slot 25: empty (Count 0)
+00                                               # slot 26: empty (Count 0)
+00                                               # slot 27: empty (Count 0)
+00                                               # slot 28: empty (Count 0)
+00                                               # slot 29: empty (Count 0)
+00                                               # slot 30: empty (Count 0)
+00                                               # slot 31: empty (Count 0)
+00                                               # slot 32: empty (Count 0)
+00                                               # slot 33: empty (Count 0)
+00                                               # slot 34: empty (Count 0)
+00                                               # slot 35: empty (Count 0)
+40 01 00 00                                      # slot 36: 64 x stone, empty patch
+00                                               # slot 37: empty (Count 0)
+00                                               # slot 38: empty (Count 0)
+00                                               # slot 39: empty (Count 0)
+01 01 02 01 03 05 06 08 00 02 48 69 01           # slot 40: stone with damage, custom_name, removed max_stack_size
+00                                               # slot 41: empty (Count 0)
+00                                               # slot 42: empty (Count 0)
+00                                               # slot 43: empty (Count 0)
+00                                               # slot 44: empty (Count 0)
+01 3e 00 00                                      # slot 45 (off-hand): 1 x cobblestone
+05 3f 00 00                                      # Carried item: 5 x oak_planks

@@ -1,8 +1,8 @@
-*> Acceptance test, US14-1 core half (spec US14 scenario 1; FR-016; standin-content §16.3;
-*> docs/protocol/09-cobolcraft-profile.md §3.3 Commands rows, §3.4 rule 5): the command tree a player
-*> is sent on joining holds only the commands they may use, and Command Suggestion is answered with
-*> online player names, dimension paths, mob type paths and item key paths for the word being typed.
-*> Alfred holds operator status (the world's operator list), Alice does not; extra dimensions are on.
+*> Acceptance test, US14-1 core half (spec US14 scenario 1; FR-016; docs/protocol/15 §13 and §14, 15a §6): the command tree a player is sent on
+*> joining holds only the commands they may use (the operator's tree is larger), and Command Suggestion is answered by the
+*> standard suggestions: a literal child is offered when it starts with the text typed, other stock types suggest nothing (online player
+*> names, dimension paths and item key paths are the commands' custom providers: BLOCKED), a player is not offered the commands above their
+*> level. Alfred holds operator status (the world's operator list), Alice does not.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US14-SUGGESTIONS.
  DATA DIVISION.
@@ -26,9 +26,12 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-TEXT                PIC X(4096).
  01 WS-PATH                PIC X(256).
+ 01 WS-EDIT-N              PIC Z(9)9.
+ 01 WS-ALICE-SIZE          BINARY-LONG.
+ 01 WS-ALFRED-SIZE         BINARY-LONG.
+
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
-     MOVE 1 TO CS-EXTRA-DIMENSIONS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE "Alfred" TO WS-NAME
@@ -40,119 +43,83 @@
      MOVE "Alice" TO WS-NAME
      MOVE 5 TO WS-NAME-LENGTH
      CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-ALICE
-     MOVE "acceptance US14-1 given a player without operator status when they join then the "
-         & "command tree they are sent holds only howto, roster and murmur" TO TL-CASE
      CALL "TEST-DRAIN-PACKET" USING WS-ALICE WS-PACKET-ID PB-BUFFER WS-FOUND
-     MOVE "contract/fixtures/wire/play-s2c-10-commands-everyone.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE PB-LENGTH TO WS-ALICE-SIZE
+     MOVE "acceptance US14-1 given a player without operator status when they join then they "
+         & "are sent a command tree" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE WS-FOUND TO WS-LENGTH
+     PERFORM CHECK-NUMBER
 
      MOVE "Alfred" TO WS-NAME
      MOVE 6 TO WS-NAME-LENGTH
      CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-ALFRED
-     MOVE "acceptance US14-1 given a player holding operator status when they join then the "
-         & "command tree they are sent holds every command" TO TL-CASE
      CALL "TEST-DRAIN-PACKET" USING WS-ALFRED WS-PACKET-ID PB-BUFFER WS-FOUND
-     MOVE "contract/fixtures/wire/play-s2c-10-commands-operator.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE PB-LENGTH TO WS-ALFRED-SIZE
+     MOVE "acceptance US14-1 given a player holding operator status when they join then the "
+         & "command tree they are sent is larger than the everyone tree" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE 0 TO WS-LENGTH
+     IF WS-FOUND = 1 AND WS-ALFRED-SIZE > WS-ALICE-SIZE AND WS-ALICE-SIZE > 20
+         MOVE 1 TO WS-LENGTH
+     END-IF
+     PERFORM CHECK-NUMBER
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ALICE WS-TEXT
 
-     MOVE "acceptance US14-1 given Alice and Alfred online when Alice types /murmur Al then the "
-         & "suggestions for Al (start 8, length 2) are the online player names Alice and Alfred"
-         TO TL-CASE
+     MOVE "acceptance US14-1 when an operator types /weather r then the literal rain is "
+         & "offered for the text typed (start 9, length 1)" TO TL-CASE
      MOVE 1 TO WS-TRANSACTION
-     MOVE "/murmur Al" TO WS-LINE
-     MOVE "1 8 2 [Alice,Alfred]" TO TL-EXPECTED
-     PERFORM SUGGEST-CHECK
+     MOVE "/weather r" TO WS-LINE
+     MOVE "1 9 1 [rain]" TO TL-EXPECTED
+     PERFORM SUGGEST-OPERATOR-TRIMMED
 
-     MOVE "acceptance US14-1 when a player types /murmur with an empty word then every online "
-         & "player name is offered" TO TL-CASE
+     MOVE "acceptance US14-1 when an operator types /weather with an empty word then every kind "
+         & "is offered" TO TL-CASE
      MOVE 2 TO WS-TRANSACTION
-     MOVE "/murmur " TO WS-LINE
-     MOVE 8 TO WS-LENGTH
-     MOVE "2 8 0 [Alice,Alfred]" TO TL-EXPECTED
-     CALL "TEST-SUGGEST" USING WS-ALICE WS-TRANSACTION WS-LINE WS-LENGTH
-     PERFORM SUGGEST-CHECK-ALICE
-
-     MOVE "acceptance US14-1 when an operator types /skies then the dimension names are offered"
-         TO TL-CASE
-     MOVE 3 TO WS-TRANSACTION
-     MOVE "/skies " TO WS-LINE
-     MOVE 7 TO WS-LENGTH
-     MOVE "3 7 0 [main,subroutine]" TO TL-EXPECTED
+     MOVE "/weather " TO WS-LINE
+     MOVE 9 TO WS-LENGTH
+     MOVE "2 9 0 [clear,rain,thunder]" TO TL-EXPECTED
      PERFORM SUGGEST-OPERATOR
-     MOVE "acceptance US14-1 a dimension name is offered when it starts with the typed text"
+
+     MOVE "acceptance US14-1 literals are matched without regard to case" TO TL-CASE
+     MOVE 3 TO WS-TRANSACTION
+     MOVE "/weather T" TO WS-LINE
+     MOVE "3 9 1 [thunder]" TO TL-EXPECTED
+     PERFORM SUGGEST-OPERATOR-TRIMMED
+
+     MOVE "acceptance US14-1 a typed word longer than every literal is offered nothing"
          TO TL-CASE
      MOVE 4 TO WS-TRANSACTION
-     MOVE "/skies su" TO WS-LINE
-     MOVE "4 7 2 [subroutine]" TO TL-EXPECTED
+     MOVE "/weather clears" TO WS-LINE
+     MOVE "4 0 0 []" TO TL-EXPECTED
      PERFORM SUGGEST-OPERATOR-TRIMMED
 
-     MOVE "acceptance US14-1 a typed word longer than every dimension name is offered nothing"
-         TO TL-CASE
-     MOVE 14 TO WS-TRANSACTION
-     MOVE "/skies subroutines" TO WS-LINE
-     MOVE "14 7 11 []" TO TL-EXPECTED
-     PERFORM SUGGEST-OPERATOR-TRIMMED
-
-     MOVE "acceptance US14-1 when an operator types /conjure then the mob types are offered"
-         TO TL-CASE
+     MOVE "acceptance US14-1 the requirements are not tested for suggestions (15a 6.1): a player "
+         & "without operator status is offered every command that starts with ga" TO TL-CASE
      MOVE 5 TO WS-TRANSACTION
-     MOVE "/conjure " TO WS-LINE
-     MOVE 9 TO WS-LENGTH
-     MOVE "5 9 0 [sodgrazer,abend]" TO TL-EXPECTED
-     PERFORM SUGGEST-OPERATOR
-
-     MOVE "acceptance US14-1 when an operator types /supply Alice then the item keys are offered "
-         & "(ids 1 to 17)" TO TL-CASE
-     MOVE 6 TO WS-TRANSACTION
-     MOVE "/supply Alice " TO WS-LINE
-     MOVE 14 TO WS-LENGTH
-     MOVE "6 14 0 [baseplate,greystone,loam,turf,grit,cardstack,lucite,glowtube,ledger_tile,"
-         & "pry_bar,trowel,grazer_flank,seared_flank,sod_cake,dump_shard,goto_pad,slag]"
-         TO TL-EXPECTED
-     PERFORM SUGGEST-OPERATOR
-     MOVE "acceptance US14-1 item keys are matched without regard to case" TO TL-CASE
-     MOVE 7 TO WS-TRANSACTION
-     MOVE "/supply Alice G" TO WS-LINE
-     MOVE "7 14 1 [greystone,grit,glowtube,grazer_flank,goto_pad]" TO TL-EXPECTED
-     PERFORM SUGGEST-OPERATOR-TRIMMED
-
-     MOVE "acceptance US14-1 when an operator types /sweep then mobs, items, the mob types and "
-         & "item keys starting with the typed text are offered" TO TL-CASE
-     MOVE 8 TO WS-TRANSACTION
-     MOVE "/sweep s" TO WS-LINE
-     MOVE "8 7 1 [sodgrazer,seared_flank,sod_cake,slag]" TO TL-EXPECTED
-     PERFORM SUGGEST-OPERATOR-TRIMMED
-     MOVE 9 TO WS-TRANSACTION
-     MOVE "/sweep " TO WS-LINE
-     MOVE 7 TO WS-LENGTH
-     MOVE "acceptance US14-1 /sweep with an empty word offers mobs and items first" TO TL-CASE
-     MOVE "9 7 0 [mobs,items,sodgrazer,abend,baseplate,greystone,loam,turf,grit,cardstack,lucite,"
-         & "glowtube,ledger_tile,pry_bar,trowel,grazer_flank,seared_flank,sod_cake,dump_shard,"
-         & "goto_pad,slag]" TO TL-EXPECTED
-     PERFORM SUGGEST-OPERATOR
-
-     MOVE "acceptance US14-1 a player without operator status is offered nothing for an operator "
-         & "command" TO TL-CASE
-     MOVE 10 TO WS-TRANSACTION
-     MOVE "/skies " TO WS-LINE
-     MOVE 7 TO WS-LENGTH
-     MOVE "10 7 0 []" TO TL-EXPECTED
+     MOVE "/ga" TO WS-LINE
+     MOVE 3 TO WS-LENGTH
+     MOVE "5 1 2 [gamemode,gamerule]" TO TL-EXPECTED
      CALL "TEST-SUGGEST" USING WS-ALICE WS-TRANSACTION WS-LINE WS-LENGTH
      PERFORM SUGGEST-CHECK-ALICE
 
-     MOVE "acceptance US14-1 a word at a literal or a name the player is completing is offered "
-         & "nothing by the server (the client completes literals itself)" TO TL-CASE
-     MOVE 11 TO WS-TRANSACTION
-     MOVE "/guestlist a" TO WS-LINE
-     MOVE "11 11 1 [] | 12 1 3 [] | 13 12 1 []" TO TL-EXPECTED
+     MOVE "acceptance US14-1 the root offers the commands the player may use: /li gives list"
+         TO TL-CASE
+     MOVE 6 TO WS-TRANSACTION
+     MOVE "/li" TO WS-LINE
+     MOVE 3 TO WS-LENGTH
+     MOVE "6 1 2 [list]" TO TL-EXPECTED
+     CALL "TEST-SUGGEST" USING WS-ALICE WS-TRANSACTION WS-LINE WS-LENGTH
+     PERFORM SUGGEST-CHECK-ALICE
+
+     MOVE "acceptance US14-1 a word that is a name the player is completing (a player argument) "
+         & "is offered the online names by the server, and an unknown command nothing" TO TL-CASE
+     MOVE 7 TO WS-TRANSACTION
+     MOVE "/msg Al" TO WS-LINE
+     MOVE "7 5 2 [Alfred,Alice] | 8 0 0 []" TO TL-EXPECTED
      COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-LINE TRAILING))
      CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
-     MOVE 12 TO WS-TRANSACTION
-     MOVE "/how" TO WS-LINE
-     MOVE 4 TO WS-LENGTH
-     CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
-     MOVE 13 TO WS-TRANSACTION
+     MOVE 8 TO WS-TRANSACTION
      MOVE "/frobnicate x" TO WS-LINE
      MOVE 13 TO WS-LENGTH
      CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
@@ -160,10 +127,12 @@
      PERFORM CHECK
      STOP RUN.
 
- SUGGEST-CHECK.
-     COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-LINE TRAILING))
-     CALL "TEST-SUGGEST" USING WS-ALICE WS-TRANSACTION WS-LINE WS-LENGTH
-     PERFORM SUGGEST-CHECK-ALICE.
+ CHECK-NUMBER.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-LENGTH TO WS-EDIT-N
+     MOVE FUNCTION TRIM(WS-EDIT-N) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  SUGGEST-CHECK-ALICE.
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ALICE WS-TEXT

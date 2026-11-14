@@ -2,13 +2,13 @@
 # (contracts/test-harness.md §2). Shared rules: tools/package.mk.
 #
 # Modules (contracts/shim-abi.md): cc_fatal.c (§2), cc_net.c (§3), cc_con.c (§4), cc_zlib.c (§5),
-# cc_tls.c (§6), cc_fs.c (§7), cc_win.c (§8), cc_vk.c (§9). cc_vk.c embeds the SPIR-V of shaders/*.vert|*.frag through
+# cc_tls.c (§6), cc_fs.c (§7), cc_open.c (§12), cc_f64.c (§10), cc_u64.c (§13), cc_win.c (§8), cc_vk.c (§9), cc_png.c (§14), cc_wk.c (§15). cc_vk.c embeds the SPIR-V of shaders/*.vert|*.frag through
 # the generated header $(GEN)/spirv.h (generated code, excluded from coverage).
 PKG      := shim
 LIBNAME  := libccshim.a
-SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_zlib.c src/cc_tls.c src/cc_win.c src/cc_vk.c
+SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_open.c src/cc_zlib.c src/cc_tls.c src/cc_f64.c src/cc_u64.c src/cc_win.c src/cc_vk.c src/cc_png.c src/cc_wk.c
 TESTS    := $(wildcard tests/acc_*.c tests/contract_*.c tests/test_*.c)
-SHADERS  := shaders/world.vert shaders/world.frag shaders/ui.vert shaders/ui.frag
+SHADERS  := shaders/world.vert shaders/world.frag shaders/ui.vert shaders/ui.frag shaders/crumble.frag
 
 # Library include directories in "-I <dir>" form (tools/package.mk passes them to the lint).
 SHIM_GEN   = $(BUILD)/shim/gen
@@ -19,7 +19,7 @@ CFLAGS_DIRS = $(patsubst -I%,%,$(shell $(PKG_CONFIG) --cflags-only-I openssl) $(
 INCLUDES  = -I $(CURDIR)/src $(addprefix -I ,$(CFLAGS_DIRS)) -I $(SHIM_GEN)
 DEPLIBS  :=
 LDLIBS    = $(shell $(PKG_CONFIG) --libs openssl) $(shell pkg-config --libs glfw3 vulkan zlib)
-LINT_FILES = $(SRC) $(TESTS) tests/tls_testsrv.h $(SHADERS)
+LINT_FILES = $(SRC) $(TESTS) tests/tls_testsrv.h tests/vk_readback.h tests/f64_vectors.h tests/gen_f64_vectors.py $(SHADERS)
 
 include ../tools/package.mk
 
@@ -46,3 +46,5 @@ $(OBJ)/cc_vk.o: $(SHIM_GEN)/spirv.h src/cc_internal.h
 $(OBJ)/cc_win.o $(OBJ)/cc_net.o $(OBJ)/cc_tls.o: src/cc_internal.h
 lint: $(SHIM_GEN)/spirv.h
 $(TOUT)/contract_shim_provider $(TOUT)/test_cc_tls: tests/tls_testsrv.h
+$(TOUT)/test_cc_vk_texture_ex $(TOUT)/test_cc_vk_texture_update: tests/vk_readback.h
+$(TOUT)/test_cc_f64_arith $(TOUT)/test_cc_f64_text $(TOUT)/test_cc_f64_libm: tests/f64_vectors.h tests/f64_vectors.txt

@@ -1,6 +1,6 @@
 *> Acceptance test, US15-2 server half: the stop sequence (contracts/operator-surface.md §3, §4;
 *> core-host-api.md §2; standin-content §16.2 row 29, §17). acc_us15_stop.stdin holds the §16 stop
-*> command (shutdown). The test starts the server in-process and brings a loopback player into play
+*> command (stop). The test starts the server in-process and brings a loopback player into play
 *> while it holds the console back (SV-CONSOLE-OPEN 0), then lets the console be read and forks: the
 *> child runs the loop (SV-RUN, stdout to stdout.txt) and must end the run itself; the parent is the
 *> player. Runs in build/server-test-us15-stop.
@@ -126,7 +126,7 @@
      MOVE "acceptance US15-2 when stop is typed then the console shows Stopping: saving world and "
          & "disconnecting players, then Stopped" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Shutting down | Stopping: saving world and disconnecting players | Alice left | Stopped"
+     MOVE "Stopping the server | Stopping: saving world and disconnecting players | Alice left | Stopped"
          TO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

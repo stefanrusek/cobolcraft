@@ -1,0 +1,210 @@
+*> Implementation tests for the lines the other US2-core tests leave unexecuted (T0361): a 19-digit seed text below
+*> the limit digit by digit (SEED-FROM-TEXT) and a level.dat whose Clocks compound holds a clock other than
+*> minecraft:overworld (LEVEL-DAT-READ skips it and reads the overworld clock after it).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-US2-COVER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY CONTENT.
+ COPY CBLOCKS.
+ COPY CITEMS.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-RANDOM              BINARY-LONG.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-FILE-PATH           PIC X(1100).
+ 01 WS-FILE-LENGTH         BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG VALUE 1.
+ 01 WS-DIR                 PIC X(1100) VALUE SPACES.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-TEXT-OUT            PIC X(160).
+ 01 WS-ROW                 PIC X(819).
+ 01 WS-BLOCK-NUMBER        BINARY-LONG VALUE 5.
+ 01 WS-FILL-STATE          BINARY-LONG.
+ 01 WS-FILL-START          BINARY-LONG.
+ 01 WS-FILL-LENGTH         BINARY-LONG.
+ 01 WS-AREA                PIC X(4).
+ 01 WS-CONN-KIND           BINARY-LONG.
+ 01 WS-CONN-ID             BINARY-LONG.
+ 01 WS-CLOSE-FLAG          BINARY-LONG VALUE 0.
+ 01 WS-LEN-CHECK           BINARY-LONG.
+ 01 WS-DRAIN-LENGTH        BINARY-LONG.
+ 01 WS-Z-LINE              PIC X(8) VALUE Z"help".
+ 01 WS-CLOSE-EDIT          PIC -(9)9.
+ 01 WS-CLOSE-EDIT2         PIC -(9)9.
+ 01 WS-CLOSE-EDIT3         PIC -(9)9.
+ 01 WS-CLOSE-EDIT4         PIC -(9)9.
+ 01 WS-CLOSE-EDIT5         PIC -(9)9.
+ 01 WS-CLOSE-EDIT6         PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     MOVE SPACES TO WS-TEXT
+     MOVE "1000000000000000000" TO WS-TEXT
+     CALL "SEED-FROM-TEXT" USING WS-TEXT WS-SEED WS-RANDOM
+     MOVE "test us2 cover a 19-digit seed text below the limit is a number" TO TL-CASE
+     MOVE 1000000000000000000 TO TL-EXPECTED-N
+     MOVE WS-SEED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "Clocks" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "other:clock" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:overworld" TO WN MOVE 19 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "total_ticks" TO WN MOVE 11 TO WL
+     MOVE 600 TO WS-LONG
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WN WL WS-LONG
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE SPACES TO WS-FILE-PATH
+     MOVE "build/core-test-world/level.dat" TO WS-FILE-PATH
+     MOVE 31 TO WS-FILE-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-FILE-PATH WS-FILE-LENGTH PB-BUFFER
+     MOVE 0 TO CW-TIME
+     CALL "LEVEL-DAT-READ"
+     MOVE "test us2 cover a Clocks entry of another clock is skipped, the overworld clock is read" TO TL-CASE
+     MOVE 600 TO TL-EXPECTED-N
+     MOVE CW-TIME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Block tables (T0326): properties of an unknown state, the namespace of the standard set, a light text above 15,
+*>   a fill of no bytes.
+     CALL "CONTENT-OPEN" USING WS-TYPE WS-DIR WS-STATUS
+     CALL "BLOCKS-OPEN"
+     MOVE 99999 TO WS-STATE
+     MOVE "x" TO WS-TEXT-OUT
+     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-TEXT-OUT
+     MOVE "T" TO TL-MODE
+     MOVE "test us2 cover the properties of an unknown state are empty" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT-OUT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:cobolcraft:greystone" TO WS-KEY
+     CALL "BLOCKS-ID-OF" USING WS-KEY WS-ID
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     MOVE "test us2 cover a standard set strips the optional minecraft: namespace of a key" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-ID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE SPACES TO CT-BLOCK-ROW
+     UNSTRING "5|cobolcraft:bright|Block||1|30|30|1.0|1.0|no|20|NONE|STONE|PUSH_PULL|HARP|" DELIMITED BY "|"
+         INTO CT-BR-ID CT-BR-KEY CT-BR-CLASS CT-BR-PROPS CT-BR-STATE-COUNT CT-BR-FIRST-STATE
+             CT-BR-DEFAULT-STATE CT-BR-HARDNESS CT-BR-BLAST CT-BR-TOOL-REQUIRED CT-BR-LIGHT
+             CT-BR-MAP-COLOUR CT-BR-SOUND-TYPE CT-BR-PUSH CT-BR-INSTRUMENT CT-BR-FLAGS
+     MOVE CT-BLOCK-ROW TO WS-ROW
+     CALL "BLOCKS-FILL" USING WS-BLOCK-NUMBER WS-ROW
+     MOVE "test us2 cover a light text above 15 is no light" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE CB-S-LIGHT(31) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A set of the standard type (forced on the open set): the player and item roles are minecraft:player (159) and
+*>   minecraft:item (72), the two cobolcraft mobs are -1, and there are no recipes.
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "ENTITIES-OPEN"
+     CALL "RECIPES-OPEN"
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     MOVE "test us2 cover a standard set has the player and item roles by minecraft: key, the mobs -1 and no recipes" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 159 + 72 - 2 + RP-COUNT * 1000
+     COMPUTE TL-OBSERVED-N = CR-OPERATOR + CR-LOOSE-ITEM + CR-SODGRAZER + CR-ABEND + RP-COUNT * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   No set open: no role is found, so all four are -1 (a world never reaches this; the rows are then not indexed).
+     MOVE 0 TO CT-OPEN
+     CALL "ENTITIES-OPEN"
+     MOVE 1 TO CT-OPEN
+     MOVE "N" TO TL-MODE
+     MOVE "test us2 cover with no set open the four roles are -1" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0 - 4
+     COMPUTE TL-OBSERVED-N = CR-OPERATOR + CR-LOOSE-ITEM + CR-SODGRAZER + CR-ABEND
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   ContentJar is written when set and read back (informational).
+     MOVE "0123abcd" TO CW-CONTENT-JAR
+     CALL "LEVEL-DAT-WRITE"
+     MOVE SPACES TO CW-CONTENT-JAR
+     CALL "LEVEL-DAT-READ"
+     MOVE "T" TO TL-MODE
+     MOVE "test us2 cover ContentJar is written to level.dat and read back" TO TL-CASE
+     MOVE "0123abcd" TO TL-EXPECTED
+     MOVE CW-CONTENT-JAR TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 2 TO WS-FILL-STATE
+     MOVE 1 TO WS-FILL-START
+     MOVE 0 TO WS-FILL-LENGTH
+     MOVE "abcd" TO WS-AREA
+     CALL "WORLDGEN-FILL" USING WS-FILL-STATE WS-FILL-START WS-FILL-LENGTH WS-AREA
+     MOVE "T" TO TL-MODE
+     MOVE "test us2 cover a fill of no bytes writes nothing" TO TL-CASE
+     MOVE "abcd" TO TL-EXPECTED
+     MOVE WS-AREA TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A world that was refused is not open: every host entry point answers without touching the world.
+     MOVE "N" TO CW-OPEN
+     MOVE 1 TO WS-CONN-KIND
+     MOVE 77 TO WS-CONN-ID
+     CALL "CORE-CONN-OPEN" USING WS-CONN-KIND WS-CONN-ID
+     MOVE WS-CONN-ID TO WS-CLOSE-EDIT
+     MOVE 5 TO CB-LENGTH
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 4 TO CB-CAPACITY
+     CALL "CORE-CONN-INPUT" USING WS-CONN-ID CORE-BUFFER
+     MOVE 5 TO CB-LENGTH
+     CALL "CORE-CONN-OUTPUT" USING WS-CONN-ID CORE-BUFFER WS-CLOSE-FLAG
+     MOVE 5 TO WS-LEN-CHECK
+     COMPUTE WS-LEN-CHECK = CB-LENGTH
+     CALL "CORE-CONN-CLOSED" USING WS-CONN-ID
+     CALL "CORE-TICK"
+     CALL "CORE-SAVE"
+     MOVE 9 TO CB-LENGTH
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     MOVE CB-LENGTH TO WS-DRAIN-LENGTH
+     MOVE 7 TO CST-PLAYERS-ONLINE
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     CALL "CORE-CONSOLE" USING WS-Z-LINE
+     CALL "CORE-STOP" USING WS-Z-LINE
+     MOVE "T" TO TL-MODE
+     MOVE "test us2 cover a world that is not open answers every host entry point with nothing" TO TL-CASE
+     MOVE "id 0 output 0 close 1 drain 0 status 2 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-LEN-CHECK TO WS-CLOSE-EDIT2
+     MOVE WS-CLOSE-FLAG TO WS-CLOSE-EDIT3
+     MOVE WS-DRAIN-LENGTH TO WS-CLOSE-EDIT4
+     MOVE CST-RUN-STATE TO WS-CLOSE-EDIT5
+     MOVE CST-PLAYERS-ONLINE TO WS-CLOSE-EDIT6
+     STRING "id " FUNCTION TRIM(WS-CLOSE-EDIT) " output " FUNCTION TRIM(WS-CLOSE-EDIT2) " close "
+         FUNCTION TRIM(WS-CLOSE-EDIT3) " drain " FUNCTION TRIM(WS-CLOSE-EDIT4) " status "
+         FUNCTION TRIM(WS-CLOSE-EDIT5) " " FUNCTION TRIM(WS-CLOSE-EDIT6) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-US2-COVER.
+
+ COPY CORETEST.

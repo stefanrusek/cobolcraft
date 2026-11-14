@@ -1,0 +1,9 @@
+# Fixture: Entity Event 60 (poof)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x22 (34).
+# Doc refs: 05a 0x22 (Int entity id, Byte event); 18 section on death (Entity Event 60)
+# Stated inputs:
+#   entity id 300 (Int, four bytes); event 60
+
+22                                               # packet id: VarInt 0x22
+00 00 01 2c                                      # Entity id: Int 300
+3c                                               # Event id: Byte 60 (poof)

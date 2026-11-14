@@ -1,5 +1,5 @@
 /* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §6 cc_tls, §7 cc_fs,
- * §8 cc_win, §9 cc_vk):
+ * §8 cc_win, §9 cc_vk, §10 cc_f64):
  * every function against the real libraries (loopback sockets, real zlib, OpenSSL against
  * tools/testsrv/testsrv.py over HTTPS with SSL_CERT_FILE at its test CA, a hidden GLFW window,
  * MoltenVK), asserting the return codes and outputs the contract states. cc_fatal (§2) is the
@@ -11,6 +11,7 @@
 
 #include "cc_internal.h"
 #include "ccshim.h"
+#include "f64_vectors.h"
 #include "testlib.h"
 #include "tls_testsrv.h"
 
@@ -428,9 +429,9 @@ static void window(void) {
 }
 
 /* One textured quad (two triangles) covering the clip-space square [-0.5, 0.5]. */
-static const float QUAD[6 * 7] = {
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1,
+static const float QUAD[6 * 11] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0, 1, 1, 1,
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1, 0, 1, 1, 1,
 };
 static const float IDENTITY[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
@@ -441,7 +442,7 @@ static void vulkan(void) {
     uint8_t rgba[4 * 4 * 4];
     memset(rgba, 0x80, sizeof rgba);
     char name[128];
-    for (int32_t id = CC_TEX_BLOCKS; id <= CC_TEX_ENVIRONMENT; id++) {
+    for (int32_t id = CC_TEX_BLOCKS; id <= CC_TEX_PARTICLES; id++) {
         snprintf(name, sizeof name, "contract shim cc_vk_texture id %d returns 0", (int)id);
         tl_int(name, 0, cc_vk_texture(id, 4, 4, rgba));
     }
@@ -450,14 +451,28 @@ static void vulkan(void) {
     tl_int("contract shim cc_vk_texture after repeat wrap returns 0", 0, cc_vk_texture(CC_TEX_ENVIRONMENT, 4, 4, rgba));
     tl_int("contract shim cc_vk_texture_wrap clamp returns 0", 0, cc_vk_texture_wrap(CC_TEX_ENVIRONMENT, CC_WRAP_CLAMP));
 
+    tl_int("contract shim cc_vk_texture_ex with 1 level returns 0", 0, cc_vk_texture_ex(CC_TEX_BLOCKS, 4, 4, rgba, 1));
+    tl_int("contract shim cc_vk_texture_ex with 3 levels returns 0", 0, cc_vk_texture_ex(CC_TEX_BLOCKS, 4, 4, rgba, 3));
+    tl_int("contract shim cc_vk_texture_ex with 3 levels on the repeat texture returns 0", 0, cc_vk_texture_ex(CC_TEX_ENVIRONMENT, 4, 4, rgba, 3));
+    tl_int("contract shim cc_vk_texture_update of a rectangle returns 0", 0, cc_vk_texture_update(CC_TEX_BLOCKS, 1, 2, 3, 2, rgba));
+    tl_int("contract shim cc_vk_texture_update of the whole texture returns 0", 0, cc_vk_texture_update(CC_TEX_BLOCKS, 0, 0, 4, 4, rgba));
     tl_int("contract shim cc_vk_mesh create returns 0", 0, cc_vk_mesh(1, QUAD, 6));
     tl_int("contract shim cc_vk_mesh replace returns 0", 0, cc_vk_mesh(1, QUAD, 3));
     tl_int("contract shim cc_vk_mesh free returns 0", 0, cc_vk_mesh(1, NULL, 0));
     tl_int("contract shim cc_vk_mesh highest slot returns 0", 0, cc_vk_mesh(CC_MESH_SLOT_MAX, QUAD, 6));
 
-    static const char *pipes[] = {"opaque", "translucent", "ui"};
+    {
+        const float half = 0.5f, full = 1.0f;
+        cc_vk_daylight(&half);
+        cc_vk_daylight(&full);
+        tl_int("contract shim cc_vk_daylight takes a pointer to the factor and returns", 1, 1);
+        const float no_fog[13] = {0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1e9f, 2e9f};
+        cc_vk_fog(no_fog);
+        tl_int("contract shim cc_vk_fog takes a pointer to 8 floats and returns", 1, 1);
+    }
+    static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling"};
     const float clear[4] = {0, 0, 0, 1};
-    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_UI; p++) {
+    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_CRUMBLING; p++) {
         rc = cc_vk_frame_begin(clear);
         snprintf(name, sizeof name, "contract shim cc_vk_frame_begin returns 0 (%s frame)", pipes[p]);
         tl_int(name, 0, rc);
@@ -470,7 +485,36 @@ static void vulkan(void) {
     tl_int("contract shim cc_vk_shutdown completes", 1, 1);
 }
 
+/* §12 cc_open_path: an opener that exists returns 0 at once, a missing one CC_NOTFOUND. */
+static void open_path(void) {
+    tl_int("contract shim cc_open_path with an existing opener returns 0", 0, cc_open_path("/usr/bin/true", "/tmp"));
+    tl_int("contract shim cc_open_path with a missing opener returns CC_NOTFOUND", CC_NOTFOUND,
+           cc_open_path("/nonexistent/opener", "/tmp"));
+}
+
+/* §14 cc_png_write / cc_vk_screenshot: the call shapes and outcomes of the contract (the file's content is test_cc_png.c). */
+static void screenshot(void) {
+    static const uint8_t rgba[4] = {1, 2, 3, 4};
+    tl_int("contract shim cc_png_write to an unwritable path returns CC_FAILED", CC_FAILED, cc_png_write("/nonexistent-dir/x.png", 1, 1, rgba));
+    tl_int("contract shim cc_vk_screenshot_result without a request returns 0", 0, cc_vk_screenshot_result());
+}
+
+/* §10 cc_f64: every function, operands and result by reference, against the IEEE vectors of
+ * f64_vectors.txt computed independently (Python struct and math); the call shapes of the contract. */
+static void f64(void) {
+    double a = 0.1, b = 0.2, r = 0;
+    cc_f64_add(&a, &b, &r);
+    tl_int("contract shim cc_f64_add 0.1 + 0.2 is 3FD3333333333334", 0x3FD3333333333334LL, (long long)f64_bits_of(r));
+    cc_f64_from_text("0.1", &a);
+    cc_f64_from_text("0.2", &b);
+    cc_f64_add(&a, &b, &r);
+    tl_int("contract shim cc_f64_from_text operands add to the IEEE sum", 0x3FD3333333333334LL, (long long)f64_bits_of(r));
+    f64_run_group(G_ARITH);
+    f64_run_group(G_LIBM);
+}
+
 int main(void) {
+    f64();
     net_listen_accept();
     net_connect_status();
     net_send_recv_close();
@@ -481,6 +525,8 @@ int main(void) {
     zlib_deflate();
     zlib_inflate();
     fs_list();
+    open_path();
+    screenshot();
     window();
     vulkan();
     cc_win_close();

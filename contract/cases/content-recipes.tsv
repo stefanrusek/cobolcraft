@@ -1,0 +1,19 @@
+# Contract cases of the content to core recipe seam (docs/protocol/27-recipes-and-unlocks.md, 05b Recipe Book
+# Add, 09-cobolcraft-profile.md §3.3 row 0x4B). Read by tools/gen/gen_contract.py; see README.md.
+#
+# copy-size rows are checked statically by `gen_contract.py --check`: the size of the 01 record in contract/copy,
+# summed from its level numbers, PIC and USAGE clauses and OCCURS counts, must equal the expected size and the
+# size the contract probe (tools/probe/probe_contract.cob) expects. PB-RECIPE-ENTRY grew from 125 to 1061 bytes
+# when the requirement alternatives of 05b (RecipeBookAddEntry crafting requirements as HolderSets, up to 9
+# ingredients of up to 8 items or a 64-character tag) were added (commit 7db9151); a record the core fills
+# (RECIPE-ENTRY-BUILD) and the proto writes (PB-PUT-RECIPE-BOOK-ADD) must change in one step with the table.
+# 1061 = 4 x (1 display id + 1 type + 1 width + 1 height + 1 ingredient count + 9 ingredients + 1 result + 1 station
+# + 1 duration + 1 experience + 1 group + 1 category) + 1 present flag + 4 count + 4 x 9 requirement items
+# + 9 x (4 count + 8 x 4 list + 4 tag length + 64 tag) + 4 flags.
+#
+# seam: content-recipes
+# paths: contract/cases/content-recipes.tsv contract/copy/PROTO.cpy tools/probe/probe_contract.cob core/src/recipe-unlock.cob core/src/recipe-packets.cob contract/fixtures/wire/play-s2c-4b-recipe-book-add-standard-replace-empty.hex docs/protocol/27-recipes-and-unlocks.md
+#
+# columns: see wire-chat.tsv; copy-size (copybook), build-core-recipe-book-empty
+recipe-entry-size	copy-size	PB-RECIPE-ENTRY	proto	core		copybook=PROTO	1061
+recipe-book-empty	build-core-recipe-book-empty	RECBOOK-BUILD	core	core	play-s2c-4b-recipe-book-add-standard-replace-empty		

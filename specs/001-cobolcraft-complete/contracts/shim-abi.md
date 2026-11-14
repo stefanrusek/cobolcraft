@@ -130,20 +130,36 @@ GLFW headers.
 ## 9. `cc_vk` — Vulkan submission
 
 Pipelines: `CC_PIPE_OPAQUE = 0` (depth test+write, no blend), `CC_PIPE_TRANSLUCENT = 1` (depth test, no
-write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend). Vertex: 7 x `float32` = 28 bytes
-(x, y, z, u, v, brightness, alpha) (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge
+write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend), `CC_PIPE_CRUMBLING = 3` (the crack overlay of 12 section 4.3: depth test less-or-equal with a bias toward the camera, no depth write; colour = 2 x source x destination (blend factors DST_COLOR and SRC_COLOR), alpha = source alpha; a fragment whose texel alpha times vertex alpha is under 0.1 is discarded). Vertex: 11 x `float32` = 44 bytes
+(x, y, z, u, v, brightness, alpha, sky, r, g, b), field offsets 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40. The drawn colour is
+`texel.rgb x (r, g, b) x max(brightness, sky x daylight)` and the drawn alpha `texel.a x alpha` (the UI pipeline ignores brightness,
+sky and daylight: colour `texel.rgb x (r, g, b)`). An untinted vertex carries `r = g = b = 1`; a vertex that does not follow the
+daylight carries `sky = 0`. A mesh baked once (a terrain section) puts the light the daylight does not scale in `brightness` and the
+sky-light term in `sky`, so a change of daylight needs no new mesh (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge
 unless `cc_vk_texture_wrap` sets repeat for the texture id (`CC_WRAP_CLAMP = 0`, `CC_WRAP_REPEAT = 1`).
 
 | Function | Behaviour |
 |---|---|
 | `int32_t cc_vk_init(void)` | Instance (portability enumeration), surface on the `cc_win` window, device (swapchain + portability subset), swapchain, depth buffer, pipelines from the build's SPIR-V. 0. |
-| `int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)` | Creates or replaces texture `tex_id` (0 = block/item atlas, 1 = entity atlas, 2 = font and UI atlas, 3 = environment atlas). 0. |
+| `int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)` | Creates or replaces texture `tex_id` (0 = block/item atlas, 1 = entity atlas, 2 = font and UI atlas, 3 = environment atlas, 4 = particle atlas). 0. |
 | `int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap)` | Sets the wrap mode (`CC_WRAP_CLAMP` or `CC_WRAP_REPEAT`, both axes) used by the next `cc_vk_texture` of `tex_id`; a texture already uploaded keeps its mode until replaced. Default clamp-to-edge, and `cc_vk_shutdown` resets every id to it. 0; an invalid id or mode is fatal. |
 | `int32_t cc_vk_mesh(int32_t slot, const float *verts, int32_t vertex_count)` | Creates, replaces or (with `vertex_count` = 0) frees vertex buffer `slot` (1 to 65535). 0. |
 | `int32_t cc_vk_frame_begin(const float clear_rgba[4])` | Acquires the next image (recreating the swapchain after a resize) and begins recording. 0, or `CC_AGAIN = 1` when the window is minimised (frame skipped). |
+| `void cc_vk_daylight(const float *daylight)` | Sets the daylight factor (0 to 1; 1 until set, and again after `cc_vk_init`) that the draws recorded afterwards use (push constant, with the matrix, read by the vertex shader). |
+| `void cc_vk_fog(const float *fog)` | Sets the fog of the draws recorded afterwards (12 §3.3; 8 floats: colour r, g, b, strength a, start, end, p00, p11). A fragment's colour becomes `lerp(colour, rgb, value x a)`, `value` 0 up to `start`, 1 from `end`, `(d - start) / (end - start)` between, `d` the spherical distance from the camera, recovered by the vertex shader from the clip coordinates with the projection's focal terms `p00` and `p11` (the matrix entries scaling x and y). Strength 0 is no fog (the default, and again after `cc_vk_init`). World and entity pipelines only. The push constant block holds the matrix, the daylight factor and these 8 floats (112 bytes, both stages). |
 | `void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16])` | Records a draw of the slot's triangles with the matrix as push constant (column-major). |
 | `void cc_vk_frame_end(void)` | Submits and presents (FIFO). |
 | `void cc_vk_shutdown(void)` | Waits idle and destroys everything. |
+
+## 15. `cc_wk` — worker processes (002 generation worker)
+
+Added by the 002 operator decision (docs/design/generation-worker.md): chunk generation runs outside the game loop. A
+thread cannot share the COBOL runtime, so the glue forks. `cc_wk_spawn` returns a slot id (1 to 8) in the parent, 0 in the
+child, -1 when no slot is free or the fork fails. The parent: `cc_wk_send` (write n bytes: n or -1), `cc_wk_recv` (read
+without blocking: bytes, 0 when nothing yet, -1 at end of file or unknown slot), `cc_wk_stop(slot, force)` (reap; force 1
+kills first; -1 unknown slot). The child: `cc_wk_child_read` (exactly n bytes; 0 at end of input; -1 error),
+`cc_wk_child_write` (all n bytes or -1), `cc_wk_child_exit` (`_exit` after dumping coverage counters when instrumented). A
+`cc_wk_cpus` returns the processors online (at least 1). A child closes the pipe ends of every other slot, so end of input reaches it when the parent ends. SIGPIPE is ignored.
 
 ## 10. Contract tests
 

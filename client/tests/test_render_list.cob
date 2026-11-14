@@ -10,7 +10,8 @@
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
  COPY CLCONST.
- COPY CLCELLS.
+ COPY CLTINT.
+ COPY CELLS.
  COPY PROTO.
  COPY TESTLIB.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
@@ -31,6 +32,14 @@
  01 WS-FAR                 FLOAT-LONG VALUE 512.
  01 WS-E                   PIC -9.9999.
  01 WS-E2                  PIC -9.9999.
+ 01 WS-E3                  PIC -9.9999.
+ 01 WS-N                   FLOAT-SHORT.
+ 01 WS-N2                  FLOAT-SHORT.
+ 01 WS-N3                  FLOAT-SHORT.
+ 01 WS-N4                  PIC 9.
+ 01 WS-NE                  PIC -(3)9.99.
+ 01 WS-NE2                 PIC -(3)9.99.
+ 01 WS-NE3                 PIC -(3)9.99.
  01 WS-PIPES               PIC X(64).
  01 WS-OK                  BINARY-LONG.
  01 WS-PS.
@@ -71,15 +80,27 @@
      CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
 *>   A second, farther lucite in chunk (2, 0), section 3.
      CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-TWO WS-ZERO WS-ROW
-     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
-     MOVE 12 TO RC-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
      MOVE 1 TO WR-DIRTY(WS-ROW, 4)
 *>   And a third at middle distance in chunk (-1, 0), loaded last.
      MOVE -1 TO WS-I
      CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-I WS-ZERO WS-ROW
-     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
-     MOVE 12 TO RC-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
      MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+*>   Two more, outside the view: chunk (-5, 0) lies behind the camera (it looks east), chunk (2, 5) far off to its right.
+     MOVE -5 TO WS-I
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-I WS-ZERO WS-ROW
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+     MOVE 5 TO WS-K
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-TWO WS-K WS-ROW
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+     MOVE 1000000000 TO MB-BUDGET-US
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "SKY-UPDATE" USING CLIENT-STATE
      CALL "SCREEN-BUILD" USING CLIENT-STATE
@@ -148,20 +169,34 @@
      MOVE "112 2" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "render list sections of chunks behind the camera or far outside its view are not drawn (3 translucent draws, "
+         & "not 5) though their meshes are uploaded" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE RL-UPLOAD-COUNT TO TL-OBSERVED-N
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
+         IF RL-D-PIPELINE(WS-I) = 1
+             ADD 1 TO WS-K
+         END-IF
+     END-PERFORM
+     MOVE WS-K TO TL-OBSERVED-N
+     MOVE 3 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "render list translucent sections are drawn back to front: chunk 2, then -1, then 0"
          TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 0 TO TL-OBSERVED-N
      PERFORM VARYING WS-I FROM 3 BY -1 UNTIL WS-I < 1
-         COMPUTE WS-ROW = (RL-D-SLOT(RL-DRAW-COUNT - WS-I) - MESH-SLOT-BASE) / 32 + 1
+         COMPUTE WS-ROW = (RL-D-SLOT(RL-DRAW-COUNT - WS-I) - MESH-SLOT-BASE) / 48 + 1
          COMPUTE TL-OBSERVED-N = TL-OBSERVED-N * 10 + WR-CX(WS-ROW) + 1
      END-PERFORM
      MOVE 301 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The first opaque draw: chunk (0, 0), its lowest section with geometry (section 0).
-     COMPUTE WS-ROW = (RL-D-SLOT(1) - MESH-SLOT-BASE) / 32 + 1
-     COMPUTE WS-SECTION-Y = FUNCTION MOD(RL-D-SLOT(1) - MESH-SLOT-BASE, 32) / 2 * 16
+     COMPUTE WS-ROW = (RL-D-SLOT(1) - MESH-SLOT-BASE) / 48 + 1
+     COMPUTE WS-SECTION-Y = FUNCTION MOD(RL-D-SLOT(1) - MESH-SLOT-BASE, 48) / 2 * 16
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          MOVE 0 TO WS-T(WS-I)
      END-PERFORM
@@ -261,7 +296,108 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The camera's eye in a fluid (12 section 3.3, fog colour): the clear colour is the water fog colour #050533 under water, the lava
+*>   fog colour #991900 in lava.
+     MOVE 1 TO PL-EYE-WATER
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list the eye under water clears to the water fog colour (#050533)" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     COMPUTE WS-E ROUNDED = 5 / 255
+     COMPUTE WS-E2 ROUNDED = 51 / 255
+     STRING WS-E " " WS-E " " WS-E2 DELIMITED BY SIZE INTO TL-EXPECTED
+     COMPUTE WS-E ROUNDED = RL-CLEAR(1)
+     COMPUTE WS-E2 ROUNDED = RL-CLEAR(2)
+     COMPUTE WS-E3 ROUNDED = RL-CLEAR(3)
+     STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FOG-TEXT
+     MOVE "render list the eye under water has fog: the water fog colour, strength 1, start -8, end 96, the projection's focal terms"
+         TO TL-CASE
+     MOVE "0.0196  0.0196  0.2000 1.00 -8.00 96.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The biome's attributes override it: the biome under the eye (here the unloaded plains) with fog colour #112244 and an end multiplier 0.85.
+     MOVE 0 TO TT-PLAINS
+     MOVE 4279312964 TO TB-FOG(1)
+     MOVE 0.85 TO TB-FOG-END(1)
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     PERFORM FOG-TEXT
+     MOVE "render list the eye under water in a biome with water_fog_color #112244 and end multiplier 0.85: that colour, end 81.60"
+         TO TL-CASE
+     MOVE "0.0666  0.1333  0.2666 1.00 -8.00 81.60 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO TB-FOG(1) TB-FOG-END(1)
+     MOVE 0 TO PL-EYE-WATER
+     MOVE 1 TO PL-EYE-LAVA
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list the eye in lava clears to the lava fog colour (#991900)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     COMPUTE WS-E ROUNDED = 153 / 255
+     COMPUTE WS-E2 ROUNDED = 25 / 255
+     MOVE 0 TO WS-E3
+     STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-EXPECTED
+     COMPUTE WS-E ROUNDED = RL-CLEAR(1)
+     COMPUTE WS-E2 ROUNDED = RL-CLEAR(2)
+     COMPUTE WS-E3 ROUNDED = RL-CLEAR(3)
+     STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FOG-TEXT
+     MOVE "render list the eye in lava has fog: the lava fog colour, strength 1, start 0.25, end 1" TO TL-CASE
+     MOVE "0.6000  0.0980  0.0000 1.00 0.25 1.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-EYE-LAVA
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list an eye in no fluid has no fog (strength 0)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE RL-FOG(4) TO WS-E
+     MOVE WS-E TO TL-OBSERVED
+     MOVE " 0.0000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The render-distance fog (12 section 3.3, cylindrical): a view distance of 12 chunks gives end 192 and start 192 - clamp(19.2, 4, 64) = 172.8, in the sky colour at
+*>   strength 1, with the environment fog out of reach (start and end 1e9 and 2e9); the world up direction in view space is the second column of the view matrix.
+     MOVE 12 TO PL-VIEW-DISTANCE
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list a view distance of 12 chunks: render-distance fog 172.8 to 192 at strength 1 in the sky colour, up = the view matrix's second column"
+         TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED TL-EXPECTED
+     MOVE RL-FOG(12) TO WS-N
+     MOVE RL-FOG(13) TO WS-N2
+     MOVE WS-N TO WS-NE
+     MOVE WS-N2 TO WS-NE2
+     MOVE 0 TO WS-N4
+     IF RL-FOG(4) = 1 AND RL-FOG(1) = RL-CLEAR(1) AND RL-FOG(2) = RL-CLEAR(2) AND RL-FOG(3) = RL-CLEAR(3)
+             AND RL-FOG(9) = RL-VIEW(5) AND RL-FOG(10) = RL-VIEW(6) AND RL-FOG(11) = RL-VIEW(7)
+         MOVE 1 TO WS-N4
+     END-IF
+     STRING FUNCTION TRIM(WS-NE) " " FUNCTION TRIM(WS-NE2) " " WS-N4 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "172.80 192.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-VIEW-DISTANCE
      STOP RUN.
+
+*> TL-OBSERVED: "r g b strength start end p00-and-p11-match" of the fog of the frame.
+ FOG-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE RL-FOG(1) TO WS-E
+     MOVE RL-FOG(2) TO WS-E2
+     MOVE RL-FOG(3) TO WS-E3
+     STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED
+     MOVE RL-FOG(4) TO WS-N
+     MOVE RL-FOG(5) TO WS-N2
+     MOVE RL-FOG(6) TO WS-N3
+     MOVE 0 TO WS-N4
+     IF RL-FOG(7) = RL-PROJ(1) AND RL-FOG(8) = RL-PROJ(6)
+         MOVE 1 TO WS-N4
+     END-IF
+     MOVE WS-N TO WS-NE
+     MOVE WS-N2 TO WS-NE2
+     MOVE WS-N3 TO WS-NE3
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-NE) " " FUNCTION TRIM(WS-NE2) " " FUNCTION TRIM(WS-NE3) " " WS-N4
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     EXIT PARAGRAPH.
  END PROGRAM TEST-RENDER-LIST.
 
  IDENTIFICATION DIVISION.

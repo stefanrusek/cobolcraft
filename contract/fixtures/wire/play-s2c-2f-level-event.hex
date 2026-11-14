@@ -1,0 +1,11 @@
+# Fixture: Level Event 2001 (block break effect)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x2f (47).
+# Doc refs: 05a 0x2F; 42 part 4 section 13.3 and 42 part 7 section 8 (event 2001: Int data is the block state id)
+# Stated inputs:
+#   event 2001; location (-3, 12, 9); data 88 (bedrock state id); global false
+
+2f                                               # packet id: VarInt 0x2f
+00 00 07 d1                                      # Event type: Int 2001
+ff ff ff 40 00 00 90 0c                          # Location: Position (-3, 12, 9)
+00 00 00 58                                      # Data: Int 88
+00                                               # Global: Boolean false

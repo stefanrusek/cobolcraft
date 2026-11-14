@@ -41,10 +41,13 @@
      MOVE "acceptance US18-5 Given packs with invalid metadata or an unreadable archive When the "
          & "pack screen opens Then each shows an error naming the pack and what is wrong" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Resource Packs|Selected|Built-in pack|Available|badmeta|badmeta cannot be used: pack."
-         & "mcmeta has no usable pack section|badtex|Bad texture pack|Compatible|broken.zip|broken"
-         & ".zip cannot be used: the pack cannot be read|nometa.zip|nometa.zip cannot be used: "
-         & "pack.mcmeta is missing|Enable|Disable|Move Up|Move Down|Done" TO TL-EXPECTED
+*>   A row has room for a cut problem; the whole text of each follows the buttons.
+     MOVE "Resource Packs|Selected|Built-in pack|Available|badmeta|badmeta cannot be used: pa..."
+         & "|badtex|Bad texture pack|Compatible|broken.zip|broken.zip cannot be used: ..."
+         & "|nometa.zip|nometa.zip cannot be used: ...|Faithful Skin|Uses Faithful 32x textures ..."
+         & "|Compatible|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder|badmeta cannot be used: "
+         & "pack.mcmeta has no usable pack section|broken.zip cannot be used: the pack cannot be read"
+         & "|nometa.zip cannot be used: pack.mcmeta is missing" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -88,12 +91,12 @@
      MOVE 21 TO WS-SPRITE-LENGTH
      CALL "TEST-PIXEL" USING CLIENT-STATE WS-SPRITE WS-SPRITE-LENGTH WS-PIXEL3
      MOVE "acceptance US18-5 Given an enabled pack with texture files the game cannot read When "
-         & "packs are loaded Then those textures are drawn with the missing-texture stripes"
+         & "packs are loaded Then those textures are the ones of the pack below (spec 002 edge case)"
          TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING WS-PIXEL DELIMITED BY SPACE " " DELIMITED BY SIZE WS-PIXEL2 DELIMITED BY SPACE " "
          DELIMITED BY SIZE WS-PIXEL3 DELIMITED BY SPACE INTO TL-OBSERVED
-     MOVE "242,140,40,255 242,140,40,255 242,140,40,255" TO TL-EXPECTED
+     MOVE "125,127,134,255 122,86,52,255 74,63,58,255" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE ACT-PACKS TO WS-ACTION
@@ -107,10 +110,12 @@
      INSPECT WS-TEXT TALLYING WS-POS FOR CHARACTERS BEFORE INITIAL "|Done|"
      MOVE FUNCTION MIN(WS-POS + 2, 1024) TO WS-POS
      MOVE WS-TEXT(WS-POS:) TO TL-OBSERVED
-     MOVE "Done|badtex cannot be used: assets/cobolcraft/lang/en_us.json cannot be read|badtex "
-         & "cannot be used: assets/cobolcraft/textures/block/greystone.png cannot be read|badtex "
-         & "cannot be used: assets/cobolcraft/textures/block/loam.png cannot be read|badtex cannot "
-         & "be used: assets/cobolcraft/textures/block/grit.png cannot be read" TO TL-EXPECTED
+     MOVE "Done|Open Pack Folder|badmeta cannot be used: pack.mcmeta has no usable pack section|broken.zip "
+         & "cannot be used: the pack cannot be read|nometa.zip cannot be used: pack.mcmeta is missing|badtex "
+         & "cannot be used: assets/cobolcraft/lang/en_us.json cannot be read|badtex cannot be used: "
+         & "assets/cobolcraft/textures/block/greystone.png|cannot be read|badtex cannot be used: "
+         & "assets/cobolcraft/textures/block/loam.png cannot|be read|badtex cannot be used: "
+         & "assets/cobolcraft/textures/block/grit.png cannot|be read" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-US18-INVALID.

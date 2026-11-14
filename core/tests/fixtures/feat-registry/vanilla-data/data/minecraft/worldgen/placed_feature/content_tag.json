@@ -1,0 +1,1 @@
+{"feature": "minecraft:flower", "placement": [{"type": "minecraft:block_predicate_filter", "predicate": {"type": "minecraft:matching_blocks", "blocks": "#minecraft:test_flowers"}}]}

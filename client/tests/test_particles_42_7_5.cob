@@ -1,0 +1,1307 @@
+*> Acceptance test of docs/protocol/42-particles-7-emitters-entities-events-commands.md section 5 (Mob effect particles): the effect colour table (40 effects), the default factory with the ambient alpha 38, the constant-particle overrides, the synchronised ambient flag and the client emission chance (1 in 4, 1 in 15, times 5 when ambient). Expected texts are computed independently by a script
+*> from the document's formulas; each case injects the draws in the documented order and compares the emission list (5 decimals), the sounds and the count of draws consumed.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-7-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLP6EM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-CLASS               PIC X(24).
+ 01 WS-INT                 PIC X(300).
+ 01 WS-DRT                 PIC X(8000).
+ 01 WS-EXP                 PIC X(8000).
+ 01 WS-OBS                 PIC X(12000).
+ 01 WS-OBS2                PIC X(12000).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-IN.
+    05 WS-IV               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-OUT.
+    05 WS-OV               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-LIST.
+    05 WS-NUM              FLOAT-LONG OCCURS 2100 TIMES.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-TEXT                PIC X(8000).
+ 01 WS-TOK                 PIC X(40).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-PTR2                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ED                  PIC -(5)9.99999.
+ 01 WS-EDC                 PIC -(10)9.
+ 01 WS-EDS                 PIC 9.99.
+ 01 WS-EDR                 PIC 9.99999.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+
+ 01 WS-EFFECT             PIC X(32).
+ 01 WS-PARTICLE           PIC X(24).
+ 01 WS-ARGB               BINARY-DOUBLE.
+ 01 WS-AMB                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "speed" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "speed effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "speed ambient 0 colour" TO WS-NAME
+     MOVE 4281592831 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "speed" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "speed effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "speed ambient 1 colour" TO WS-NAME
+     MOVE 640936959 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "slowness" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "slowness effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "slowness ambient 0 colour" TO WS-NAME
+     MOVE 4287344608 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "slowness" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "slowness effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "slowness ambient 1 colour" TO WS-NAME
+     MOVE 646688736 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "haste" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "haste effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "haste ambient 0 colour" TO WS-NAME
+     MOVE 4292460611 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "haste" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "haste effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "haste ambient 1 colour" TO WS-NAME
+     MOVE 651804739 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "mining_fatigue" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "mining_fatigue effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "mining_fatigue ambient 0 colour" TO WS-NAME
+     MOVE 4283056663 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "mining_fatigue" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "mining_fatigue effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "mining_fatigue ambient 1 colour" TO WS-NAME
+     MOVE 642400791 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "strength" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "strength effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "strength ambient 0 colour" TO WS-NAME
+     MOVE 4294952704 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "strength" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "strength effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "strength ambient 1 colour" TO WS-NAME
+     MOVE 654296832 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "instant_health" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "instant_health effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "instant_health ambient 0 colour" TO WS-NAME
+     MOVE 4294452259 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "instant_health" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "instant_health effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "instant_health ambient 1 colour" TO WS-NAME
+     MOVE 653796387 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "instant_damage" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "instant_damage effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "instant_damage ambient 0 colour" TO WS-NAME
+     MOVE 4289291626 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "instant_damage" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "instant_damage effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "instant_damage ambient 1 colour" TO WS-NAME
+     MOVE 648635754 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "jump_boost" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "jump_boost effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "jump_boost ambient 0 colour" TO WS-NAME
+     MOVE 4294836100 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "jump_boost" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "jump_boost effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "jump_boost ambient 1 colour" TO WS-NAME
+     MOVE 654180228 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "nausea" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "nausea effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "nausea ambient 0 colour" TO WS-NAME
+     MOVE 4283768138 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "nausea" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "nausea effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "nausea ambient 1 colour" TO WS-NAME
+     MOVE 643112266 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "regeneration" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "regeneration effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "regeneration ambient 0 colour" TO WS-NAME
+     MOVE 4291648683 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "regeneration" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "regeneration effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "regeneration ambient 1 colour" TO WS-NAME
+     MOVE 650992811 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "resistance" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "resistance effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "resistance ambient 0 colour" TO WS-NAME
+     MOVE 4287710960 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "resistance" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "resistance effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "resistance ambient 1 colour" TO WS-NAME
+     MOVE 647055088 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "fire_resistance" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "fire_resistance effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "fire_resistance ambient 0 colour" TO WS-NAME
+     MOVE 4294940928 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "fire_resistance" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "fire_resistance effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "fire_resistance ambient 1 colour" TO WS-NAME
+     MOVE 654285056 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "water_breathing" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "water_breathing effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "water_breathing ambient 0 colour" TO WS-NAME
+     MOVE 4288207552 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "water_breathing" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "water_breathing effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "water_breathing ambient 1 colour" TO WS-NAME
+     MOVE 647551680 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "invisibility" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "invisibility effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "invisibility ambient 0 colour" TO WS-NAME
+     MOVE 4294375158 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "invisibility" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "invisibility effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "invisibility ambient 1 colour" TO WS-NAME
+     MOVE 653719286 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "blindness" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "blindness effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "blindness ambient 0 colour" TO WS-NAME
+     MOVE 4280229667 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "blindness" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "blindness effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "blindness ambient 1 colour" TO WS-NAME
+     MOVE 639573795 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "night_vision" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "night_vision effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "night_vision ambient 0 colour" TO WS-NAME
+     MOVE 4290969446 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "night_vision" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "night_vision effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "night_vision ambient 1 colour" TO WS-NAME
+     MOVE 650313574 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "hunger" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "hunger effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "hunger ambient 0 colour" TO WS-NAME
+     MOVE 4283987539 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "hunger" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "hunger effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "hunger ambient 1 colour" TO WS-NAME
+     MOVE 643331667 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "weakness" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "weakness effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "weakness ambient 0 colour" TO WS-NAME
+     MOVE 4282928456 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "weakness" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "weakness effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "weakness ambient 1 colour" TO WS-NAME
+     MOVE 642272584 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "poison" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "poison effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "poison ambient 0 colour" TO WS-NAME
+     MOVE 4287079267 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "poison" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "poison effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "poison ambient 1 colour" TO WS-NAME
+     MOVE 646423395 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "wither" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "wither effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "wither ambient 0 colour" TO WS-NAME
+     MOVE 4285751638 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "wither" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "wither effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "wither ambient 1 colour" TO WS-NAME
+     MOVE 645095766 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "health_boost" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "health_boost effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "health_boost ambient 0 colour" TO WS-NAME
+     MOVE 4294475043 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "health_boost" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "health_boost effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "health_boost ambient 1 colour" TO WS-NAME
+     MOVE 653819171 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "absorption" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "absorption effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "absorption ambient 0 colour" TO WS-NAME
+     MOVE 4280636069 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "absorption" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "absorption effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "absorption ambient 1 colour" TO WS-NAME
+     MOVE 639980197 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "saturation" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "saturation effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "saturation ambient 0 colour" TO WS-NAME
+     MOVE 4294452259 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "saturation" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "saturation effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "saturation ambient 1 colour" TO WS-NAME
+     MOVE 653796387 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "glowing" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "glowing effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "glowing ambient 0 colour" TO WS-NAME
+     MOVE 4287930465 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "glowing" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "glowing effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "glowing ambient 1 colour" TO WS-NAME
+     MOVE 647274593 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "levitation" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "levitation effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "levitation ambient 0 colour" TO WS-NAME
+     MOVE 4291756031 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "levitation" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "levitation effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "levitation ambient 1 colour" TO WS-NAME
+     MOVE 651100159 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "luck" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "luck effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "luck ambient 0 colour" TO WS-NAME
+     MOVE 4284072198 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "luck" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "luck effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "luck ambient 1 colour" TO WS-NAME
+     MOVE 643416326 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "unluck" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "unluck effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "unluck ambient 0 colour" TO WS-NAME
+     MOVE 4290815053 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "unluck" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "unluck effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "unluck ambient 1 colour" TO WS-NAME
+     MOVE 650159181 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "slow_falling" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "slow_falling effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "slow_falling ambient 0 colour" TO WS-NAME
+     MOVE 4294168505 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "slow_falling" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "slow_falling effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "slow_falling ambient 1 colour" TO WS-NAME
+     MOVE 653512633 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "conduit_power" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "conduit_power effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "conduit_power ambient 0 colour" TO WS-NAME
+     MOVE 4280140497 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "conduit_power" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "conduit_power effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "conduit_power ambient 1 colour" TO WS-NAME
+     MOVE 639484625 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "dolphins_grace" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "dolphins_grace effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "dolphins_grace ambient 0 colour" TO WS-NAME
+     MOVE 4287144894 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "dolphins_grace" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "dolphins_grace effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "dolphins_grace ambient 1 colour" TO WS-NAME
+     MOVE 646489022 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "bad_omen" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "bad_omen effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "bad_omen ambient 0 colour" TO WS-NAME
+     MOVE 4278935864 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "bad_omen" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "bad_omen effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "bad_omen ambient 1 colour" TO WS-NAME
+     MOVE 638279992 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "hero_of_the_village" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "hero_of_the_village effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "hero_of_the_village ambient 0 colour" TO WS-NAME
+     MOVE 4282711876 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "hero_of_the_village" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "hero_of_the_village effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "hero_of_the_village ambient 1 colour" TO WS-NAME
+     MOVE 642056004 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "darkness" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "darkness effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "darkness ambient 0 colour" TO WS-NAME
+     MOVE 4280887073 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "darkness" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "darkness effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "darkness ambient 1 colour" TO WS-NAME
+     MOVE 640231201 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "trial_omen" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "trial_omen effect ambient 0 particle" TO WS-NAME
+     MOVE "trial_omen" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "trial_omen ambient 0 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "trial_omen" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "trial_omen effect ambient 1 particle" TO WS-NAME
+     MOVE "trial_omen" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "trial_omen ambient 1 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "raid_omen" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "raid_omen effect ambient 0 particle" TO WS-NAME
+     MOVE "raid_omen" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "raid_omen ambient 0 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "raid_omen" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "raid_omen effect ambient 1 particle" TO WS-NAME
+     MOVE "raid_omen" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "raid_omen ambient 1 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "wind_charged" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "wind_charged effect ambient 0 particle" TO WS-NAME
+     MOVE "small_gust" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "wind_charged ambient 0 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "wind_charged" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "wind_charged effect ambient 1 particle" TO WS-NAME
+     MOVE "small_gust" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "wind_charged ambient 1 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "weaving" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "weaving effect ambient 0 particle" TO WS-NAME
+     MOVE "item_cobweb" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "weaving ambient 0 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "weaving" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "weaving effect ambient 1 particle" TO WS-NAME
+     MOVE "item_cobweb" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "weaving ambient 1 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "oozing" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "oozing effect ambient 0 particle" TO WS-NAME
+     MOVE "item_slime" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "oozing ambient 0 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "oozing" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "oozing effect ambient 1 particle" TO WS-NAME
+     MOVE "item_slime" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "oozing ambient 1 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "infested" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "infested effect ambient 0 particle" TO WS-NAME
+     MOVE "infested" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "infested ambient 0 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "infested" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "infested effect ambient 1 particle" TO WS-NAME
+     MOVE "infested" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "infested ambient 1 colour" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "breath_of_the_nautilus" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "breath_of_the_nautilus effect ambient 0 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "breath_of_the_nautilus ambient 0 colour" TO WS-NAME
+     MOVE 4278255598 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "breath_of_the_nautilus" TO WS-EFFECT
+     MOVE 1 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "breath_of_the_nautilus effect ambient 1 particle" TO WS-NAME
+     MOVE "entity_effect" TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "breath_of_the_nautilus ambient 1 colour" TO WS-NAME
+     MOVE 637599726 TO TL-EXPECTED-N
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     PERFORM CHECK-NUMBER
+     MOVE "nosuch" TO WS-EFFECT
+     MOVE 0 TO WS-AMB
+     CALL "P7-EFFECT-PARTICLE" USING WS-EFFECT WS-AMB WS-PARTICLE WS-ARGB
+     MOVE "an unknown effect has no particle" TO WS-NAME
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-PARTICLE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 0.0 TO WS-IV(1)
+     MOVE 0.0 TO WS-IV(2)
+     CALL "P7-EFFECT-AMBIENT" USING WS-IN WS-OUT
+     MOVE "ambient flag visible 0 ambient 0 (empty set is true) [1]" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1.0 TO WS-IV(1)
+     MOVE 1.0 TO WS-IV(2)
+     CALL "P7-EFFECT-AMBIENT" USING WS-IN WS-OUT
+     MOVE "ambient flag visible 1 ambient 1 (empty set is true) [1]" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2.0 TO WS-IV(1)
+     MOVE 1.0 TO WS-IV(2)
+     CALL "P7-EFFECT-AMBIENT" USING WS-IN WS-OUT
+     MOVE "ambient flag visible 2 ambient 1 (empty set is true) [1]" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2.0 TO WS-IV(1)
+     MOVE 2.0 TO WS-IV(2)
+     CALL "P7-EFFECT-AMBIENT" USING WS-IN WS-OUT
+     MOVE "ambient flag visible 2 ambient 2 (empty set is true) [1]" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3.0 TO WS-IV(1)
+     MOVE 1.0 TO WS-IV(2)
+     CALL "P7-EFFECT-AMBIENT" USING WS-IN WS-OUT
+     MOVE "ambient flag visible 3 ambient 1 (empty set is true) [1]" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.0 TO WS-IV(1)
+     MOVE 1.0 TO WS-IV(2)
+     CALL "P7-EFFECT-AMBIENT" USING WS-IN WS-OUT
+     MOVE "ambient flag visible 0 ambient 1 (empty set is true) [1]" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "emission chance invisible 0 ambient 0 first draw 0.0000 (1 in 4)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.0 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=2"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 0 first draw 0.2490 (1 in 4)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.249 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=2"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 0 first draw 0.2510 (1 in 4)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.251 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 0 first draw 0.9900 (1 in 4)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.99 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 0 first draw 0.0000 (1 in 15)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.0 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=2"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 0 first draw 0.0657 (1 in 15)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.065666667 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=2"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 0 first draw 0.0677 (1 in 15)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.067666667 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 0 first draw 0.9900 (1 in 15)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 0.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.99 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 1 first draw 0.0000 (1 in 20)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 1.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.0 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=2"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 1 first draw 0.0490 (1 in 20)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 1.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.049 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=2"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 1 first draw 0.0510 (1 in 20)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 1.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.051 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 0 ambient 1 first draw 0.9900 (1 in 20)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "0.0 1.0 2.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.99 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 1 first draw 0.0000 (1 in 75)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 1.0 1.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.0 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=1"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 1 first draw 0.0123 (1 in 75)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 1.0 1.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.012333333 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE "effect 1.82000 64.72000 3.18000 1.00000 1.00000 1.00000 st=1"
+         & " (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 1 first draw 0.0143 (1 in 75)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 1.0 1.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.014333333 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "emission chance invisible 1 ambient 1 first draw 0.9900 (1 in 75)" TO WS-NAME
+     MOVE "effect_tick" TO WS-CLASS
+     MOVE "1.0 1.0 1.0 2.0 64.0 3.0 0.6 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.99 0.6 0.2 0.4 0.8" TO WS-DRT
+     MOVE SPACES TO WS-EXP
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+ STOP RUN.
+
+ RUN-CASE.
+     MOVE WS-INT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0 TO WS-IV(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO WS-IV(WS-I)
+     END-PERFORM
+     MOVE WS-DRT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+         MOVE 0.5 TO EM-DRAW(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO EM-DRAW(WS-I)
+     END-PERFORM
+     MOVE 0 TO EM-COUNT EM-CUR EM-SOUND-COUNT
+     CALL "P7-BASE" USING WS-CLASS WS-IN P6-EMITS
+     PERFORM RENDER
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-OBS)) TO WS-LEN
+     IF WS-LEN > 1000
+         MOVE SPACES TO WS-OBS2
+         MOVE WS-OBS(1:480) TO WS-OBS2(1:480)
+         MOVE "..." TO WS-OBS2(481:3)
+         COMPUTE WS-START = WS-LEN - 479
+         MOVE WS-OBS(WS-START:480) TO WS-OBS2(484:480)
+         MOVE WS-OBS2 TO WS-OBS
+     END-IF
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§5 Mob effect particles: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED
+     MOVE WS-OBS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§5 Mob effect particles: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§5 Mob effect particles: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     IF FUNCTION ABS(WS-O - WS-E) <= 0.00002
+         MOVE WS-E TO WS-O
+     END-IF
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§5 Mob effect particles: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ PARSE-LIST.
+     MOVE 0 TO WS-COUNT
+     MOVE 1 TO WS-PTR
+     PERFORM UNTIL WS-PTR > 8000 OR WS-TEXT(WS-PTR:) = SPACES
+         MOVE SPACES TO WS-TOK
+         UNSTRING WS-TEXT DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-PTR
+         IF WS-TOK NOT = SPACES
+             ADD 1 TO WS-COUNT
+             COMPUTE WS-NUM(WS-COUNT) = FUNCTION NUMVAL(WS-TOK)
+         END-IF
+     END-PERFORM.
+
+ RENDER.
+     MOVE SPACES TO WS-OBS
+     MOVE 1 TO WS-PTR2
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-COUNT
+         IF WS-I > 1
+             STRING " | " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         STRING FUNCTION TRIM(EM-NAME(WS-I)) " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         MOVE EM-X(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-Y(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-Z(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VX(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VY(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VZ(WS-I) TO WS-V
+         PERFORM ADD-LAST-NUMBER
+         IF EM-COLOR(WS-I) NOT = 0
+             MOVE EM-COLOR(WS-I) TO WS-EDC
+             COMPUTE WS-EDS ROUNDED = EM-SCALE(WS-I)
+             STRING " c=" FUNCTION TRIM(WS-EDC) " s=" WS-EDS DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-COLOR(WS-I) = 0 AND EM-SCALE(WS-I) NOT = 0
+             COMPUTE WS-EDR ROUNDED = EM-SCALE(WS-I)
+             STRING " r=" WS-EDR DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-STATE(WS-I) NOT = 0
+             MOVE EM-STATE(WS-I) TO WS-EDC
+             STRING " st=" FUNCTION TRIM(WS-EDC) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-SOUND-COUNT
+         STRING " # " FUNCTION TRIM(EM-SOUND(WS-I)) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+     END-PERFORM
+     MOVE EM-CUR TO WS-EDC
+     STRING " (" FUNCTION TRIM(WS-EDC) ")" DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ADD-NUMBER.
+     PERFORM ADD-LAST-NUMBER
+     STRING " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ADD-LAST-NUMBER.
+     COMPUTE WS-ED ROUNDED = WS-V
+     STRING FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+ END PROGRAM TEST-PARTICLES-42-7-5.

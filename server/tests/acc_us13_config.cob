@@ -25,15 +25,16 @@
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
  01 WS-CAPTURED            PIC X(4096).
  01 WS-STATUS              PIC XX.
- 01 WS-EXPECTED            PIC X(1707).
- 01 WS-SETTINGS            PIC X(1707).
+ 01 WS-EXPECTED            PIC X(3829).
+ 01 WS-SETTINGS            PIC X(3829).
  01 WS-SUMMARY             PIC X(1024).
  01 WS-PAIRS               PIC X(1024).
  01 WS-AT                  BINARY-LONG.
  01 WS-LINE-NO             BINARY-LONG.
  01 WS-UNCOMMENTED         BINARY-LONG.
  01 WS-PREVIOUS            PIC X.
- 01 WS-SHOW                PIC X(64) VALUE Z"guestlist show".
+ 01 WS-SHOW                PIC X(64) VALUE Z"whitelist on".
+ 01 WS-HIDE                PIC X(64) VALUE Z"whitelist off".
  01 WS-STATE               PIC X(8).
  01 WS-COUNT               PIC Z(7)9.
  01 WS-OBSERVED            PIC X(256).
@@ -110,7 +111,7 @@
      MOVE "port=25565 | default-game-mode=creative | description=A CobolCraft server | view-dis"
          & "tance=8 | player-combat=true | hostile-mobs=true | weather-changes=true | extra-dimen"
          & "sions=true | allow-list=false | pack-url= | pack-sha1= | pack-id= | pack-required=false"
-         & " | pack-prompt= lines 28 uncommented 0" TO TL-EXPECTED
+         & " | pack-prompt= | generation-workers=auto | starter-kit=true lines 32 uncommented 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-LINE-NO TO WS-COUNT
      STRING FUNCTION TRIM(WS-PAIRS) " lines " FUNCTION TRIM(WS-COUNT) DELIMITED BY SIZE
@@ -167,7 +168,7 @@
      CALL "SV-SHUTDOWN"
 
 *>   allow-list seeds the enforcement flag of a newly created world only (A2): observed with the
-*>   console command guestlist show (standin-content §16, "Guest list enforcement on|off; ...").
+*>   console command whitelist on (already turned on: it was on; now turned on: it was off, and whitelist off puts it back).
      MOVE SPACES TO WS-OBSERVED
      CALL "SVT-HOME"
      MOVE "build/server-test-config-allow-on" TO WS-SCRATCH
@@ -220,13 +221,15 @@
      CALL "SV-ITERATE"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      MOVE 0 TO WS-ON WS-OFF
-     INSPECT WS-CAPTURED TALLYING WS-ON FOR ALL "Guest list enforcement on;"
-         WS-OFF FOR ALL "Guest list enforcement off;"
+     INSPECT WS-CAPTURED TALLYING WS-ON FOR ALL "Whitelist is already turned on"
+         WS-OFF FOR ALL "Whitelist is now turned on"
      EVALUATE TRUE
          WHEN WS-ON = 1 AND WS-OFF = 0
              MOVE "on" TO WS-STATE
          WHEN WS-ON = 0 AND WS-OFF = 1
              MOVE "off" TO WS-STATE
+             CALL "CORE-CONSOLE" USING WS-HIDE
+             CALL "SV-ITERATE"
          WHEN OTHER
              MOVE "unknown" TO WS-STATE
      END-EVALUATE.
@@ -234,7 +237,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SUMMARIZE.
-*> USING expected settings, observed settings (PIC X(1707) each), summary out: "port <SV-PORT>
+*> USING expected settings, observed settings (PIC X(3829) each), summary out: "port <SV-PORT>
 *> bound <SV-BOUND-PORT> same" when the records are equal, else the observed fields that differ.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -242,7 +245,7 @@
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
  LINKAGE SECTION.
- 01 L-EXPECTED             PIC X(1707).
+ 01 L-EXPECTED             PIC X(3829).
  COPY COREAPI.
  01 L-SUMMARY              PIC X(1024).
  PROCEDURE DIVISION USING L-EXPECTED CORE-SETTINGS L-SUMMARY.

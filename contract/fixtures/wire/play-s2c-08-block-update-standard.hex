@@ -1,0 +1,9 @@
+# Fixture: Block Update, 16-bit state id
+# Phase: play. Direction: clientbound (S->C). Packet id 0x08 (8).
+# Doc refs: 05a 0x08; 00 section 4.1; 24 part 1 (state ids)
+# Stated inputs:
+#   location (100, -64, -100); new state 88 (bedrock); second fixture value 35722 is used by the section update
+
+08                                               # packet id: VarInt 0x08
+00 00 19 3f ff f9 cf c0                          # Location: Position (100, -64, -100)
+58                                               # Block state: VarInt 88 (bedrock)

@@ -1,0 +1,225 @@
+*> The state of a known player beyond item ids and counts (data-model section 6; docs/protocol/45-entity-nbt-3-player-and-player-data.md
+*> section 2.3, 3.5 and 4; core/copy/KNSTATE.cpy): the data component patches of the 36 inventory slots, the armor and off-hand
+*> slots, the saturation and the recipe book. A player row keeps patches as handles of the pool of CSTACK.cpy; a known-player row
+*> keeps copies (KX-PATCH) because the pool frees what no player in the world holds.
+*>
+*> Entry points:
+*>   KX-STORE USING player row, known row        the player row's slots, equipment, saturation and recipe book
+*>   KX-FETCH USING player row, known row        the reverse (the handles are interned again), not the recipe book
+*>   KX-BOOK-FETCH USING player row              the stored recipe book of the player row's known row, into RECBOOK.cpy
+*>   KX-ROW-FREE USING known row                 releases the patch copies of the row and empties it
+*>   KX-PATCH-KEEP USING handle, patch number out   a copy of the pool entry (0 when it has none or KX-PATCH is full)
+*>   KX-PATCH-TAKE USING patch number, handle out   the copy interned in the pool (0 when it has none)
+*>   KX-PATCH-FREE USING patch number
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-PATCH-KEEP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CSTACK.
+ COPY KNSTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-KP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-KP.
+     MOVE 0 TO L-KP
+     IF L-HANDLE >= 1 AND L-HANDLE <= 512
+         IF SP-LIVE(L-HANDLE) = 1
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KX-MAX-PATCHES OR L-KP > 0
+                 IF KP-LIVE(WS-I) = 0
+                     MOVE SP-ENTRY(L-HANDLE) TO KX-PATCH(WS-I)
+                     MOVE 1 TO KP-LIVE(WS-I)
+                     MOVE WS-I TO L-KP
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM KX-PATCH-KEEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-PATCH-TAKE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY KNSTATE.
+ 01 WS-TEMP.
+    05 WT-ENTRY.
+       COPY CSTACKE REPLACING LEADING ==SP-== BY ==WT-==.
+ LINKAGE SECTION.
+ 01 L-KP                   BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KP L-HANDLE.
+     MOVE 0 TO L-HANDLE
+     IF L-KP >= 1 AND L-KP <= KX-MAX-PATCHES
+         IF KP-LIVE(L-KP) = 1
+             MOVE KX-PATCH(L-KP) TO WT-ENTRY
+             CALL "SP-INTERN-TEMP" USING WS-TEMP L-HANDLE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM KX-PATCH-TAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-PATCH-FREE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY KNSTATE.
+ LINKAGE SECTION.
+ 01 L-KP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KP.
+     IF L-KP >= 1 AND L-KP <= KX-MAX-PATCHES
+         MOVE 0 TO KP-LIVE(L-KP)
+     END-IF
+     GOBACK.
+ END PROGRAM KX-PATCH-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-ROW-FREE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY KNSTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KNOWN.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         CALL "KX-PATCH-FREE" USING KX-SLOT-KP(L-KNOWN, WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         CALL "KX-PATCH-FREE" USING KX-EQUIP-KP(L-KNOWN, WS-I)
+     END-PERFORM
+     INITIALIZE KX-ROW(L-KNOWN)
+     GOBACK.
+ END PROGRAM KX-ROW-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-STORE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY RECBOOK.
+ COPY KNSTATE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KNOWN.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         CALL "KX-PATCH-FREE" USING KX-SLOT-KP(L-KNOWN, WS-I)
+         MOVE 0 TO WS-KP
+         IF PL-SLOT-COUNT(L-ROW, WS-I) > 0
+             CALL "KX-PATCH-KEEP" USING PL-SLOT-VAR(L-ROW, WS-I) WS-KP
+         END-IF
+         MOVE WS-KP TO KX-SLOT-KP(L-KNOWN, WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         CALL "KX-PATCH-FREE" USING KX-EQUIP-KP(L-KNOWN, WS-I)
+         MOVE 0 TO WS-KP
+         IF MN-EQUIP-COUNT(L-ROW, WS-I) > 0
+             CALL "KX-PATCH-KEEP" USING MN-EQUIP-VAR(L-ROW, WS-I) WS-KP
+         END-IF
+         MOVE WS-KP TO KX-EQUIP-KP(L-KNOWN, WS-I)
+         MOVE MN-EQUIP-ITEM(L-ROW, WS-I) TO KX-EQUIP-ITEM(L-KNOWN, WS-I)
+         MOVE MN-EQUIP-COUNT(L-ROW, WS-I) TO KX-EQUIP-COUNT(L-KNOWN, WS-I)
+     END-PERFORM
+     MOVE PL-SATURATION(L-ROW) TO KX-SATURATION(L-KNOWN)
+     MOVE PL-XP-LEVEL(L-ROW) TO KX-XP-LEVEL(L-KNOWN)
+     MOVE PL-XP-POINTS(L-ROW) TO KX-XP-POINTS(L-KNOWN)
+     MOVE PL-XP-TOTAL(L-ROW) TO KX-XP-TOTAL(L-KNOWN)
+     IF RB-SENT(L-ROW) = 1
+         MOVE 1 TO KX-BOOK-SET(L-KNOWN)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE RB-OPEN(L-ROW, WS-I) TO KX-BOOK-OPEN(L-KNOWN, WS-I)
+             MOVE RB-FILTER(L-ROW, WS-I) TO KX-BOOK-FILTER(L-KNOWN, WS-I)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4096
+             MOVE 0 TO KX-FLAG(L-KNOWN, WS-I)
+             IF RB-KNOWN(L-ROW, WS-I) = 1
+                 MOVE 1 TO KX-FLAG(L-KNOWN, WS-I)
+                 IF RB-HIGHLIGHT(L-ROW, WS-I) = 1
+                     MOVE 2 TO KX-FLAG(L-KNOWN, WS-I)
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     MOVE 1 TO KX-SET(L-KNOWN)
+     GOBACK.
+ END PROGRAM KX-STORE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-FETCH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY KNSTATE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KNOWN.
+     IF KX-SET(L-KNOWN) = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+             MOVE 0 TO PL-SLOT-VAR(L-ROW, WS-I)
+             IF PL-SLOT-COUNT(L-ROW, WS-I) > 0
+                 CALL "KX-PATCH-TAKE" USING KX-SLOT-KP(L-KNOWN, WS-I) WS-HANDLE
+                 MOVE WS-HANDLE TO PL-SLOT-VAR(L-ROW, WS-I)
+             END-IF
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+             MOVE KX-EQUIP-ITEM(L-KNOWN, WS-I) TO MN-EQUIP-ITEM(L-ROW, WS-I)
+             MOVE KX-EQUIP-COUNT(L-KNOWN, WS-I) TO MN-EQUIP-COUNT(L-ROW, WS-I)
+             MOVE 0 TO MN-EQUIP-VAR(L-ROW, WS-I)
+             IF KX-EQUIP-COUNT(L-KNOWN, WS-I) > 0
+                 CALL "KX-PATCH-TAKE" USING KX-EQUIP-KP(L-KNOWN, WS-I) WS-HANDLE
+                 MOVE WS-HANDLE TO MN-EQUIP-VAR(L-ROW, WS-I)
+             END-IF
+         END-PERFORM
+         MOVE KX-SATURATION(L-KNOWN) TO PL-SATURATION(L-ROW)
+         MOVE KX-XP-LEVEL(L-KNOWN) TO PL-XP-LEVEL(L-ROW)
+         MOVE KX-XP-POINTS(L-KNOWN) TO PL-XP-POINTS(L-ROW)
+         MOVE KX-XP-TOTAL(L-KNOWN) TO PL-XP-TOTAL(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM KX-FETCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. KX-BOOK-FETCH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTRECIPE.
+ COPY RECBOOK.
+ COPY KNSTATE.
+ 01 WS-KNOWN               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 0 TO WS-KNOWN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT OR WS-KNOWN > 0
+         IF KN-UUID(WS-I) = PL-UUID(L-ROW)
+             MOVE WS-I TO WS-KNOWN
+         END-IF
+     END-PERFORM
+     IF WS-KNOWN > 0 AND KX-BOOK-SET(WS-KNOWN) = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE KX-BOOK-OPEN(WS-KNOWN, WS-I) TO RB-OPEN(L-ROW, WS-I)
+             MOVE KX-BOOK-FILTER(WS-KNOWN, WS-I) TO RB-FILTER(L-ROW, WS-I)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RC-COUNT
+             IF KX-FLAG(WS-KNOWN, WS-I) > 0 AND RR-SPECIAL(WS-I) = 0
+                 MOVE 1 TO RB-KNOWN(L-ROW, WS-I) RB-PENDING(L-ROW, WS-I)
+                 MOVE 0 TO RB-HIGHLIGHT(L-ROW, WS-I)
+                 IF KX-FLAG(WS-KNOWN, WS-I) = 2
+                     MOVE 1 TO RB-HIGHLIGHT(L-ROW, WS-I)
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM KX-BOOK-FETCH.

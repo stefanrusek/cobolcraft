@@ -14,7 +14,10 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 # else in them (fixture generators, helper copybooks) is kept, since package builds use it.
 TEST_DIRS = {
     os.path.join("shim", "tests"),
+    os.path.join("formats", "tests"),
     os.path.join("proto", "tests"),
+    os.path.join("content", "tests"),
+    os.path.join("extract", "tests"),
     os.path.join("core", "tests"),
     os.path.join("server", "tests"),
     os.path.join("client", "tests"),
@@ -37,6 +40,8 @@ def make_copy():
                 skipped.append(name)
             elif relative in TEST_DIRS and name.startswith(TEST_PREFIXES):
                 skipped.append(name)
+            elif relative == "contract" and name == "cases":
+                skipped.append(name)  # generated contract tests would add programs to the counts
         return skipped
 
     shutil.copytree(REPO, copy, ignore=ignore)

@@ -7,3 +7,5 @@ client/tests/fixtures/textures/
 client/tests/fixtures/packs/
 
 /tmp/
+generated/
+/scratchpad/

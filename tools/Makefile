@@ -6,7 +6,9 @@
 tests:
 	python3 -m unittest discover -s tests -p 'test_*.py'
 	python3 -m unittest discover -s tests -p 'acc_us1_*.py'
+	python3 -m unittest discover -s tests -p 'acc_f2us1_*.py'
+	python3 -m unittest discover -s tests -p 'acc_f2us2_*.py'
 
 lint:
-	python3 lint.py -I testlib $(wildcard *.py tests/*.py testsrv/*.py) testlib/testassert.cob testlib/testlib.h \
+	python3 lint.py -I testlib $(wildcard *.py gen/*.py tests/*.py testsrv/*.py) testlib/testassert.cob testlib/testinput.cob testlib/testlib.h \
 	    probe/probe_contract.c probe/probe_contract.cob

@@ -35,24 +35,34 @@ class LineParsing(unittest.TestCase):
 
 class PackageSelection(unittest.TestCase):
     def test_all_packages_by_default(self):
-        self.assertEqual(runtests.select_packages([]), ["shim", "proto", "core", "server", "client"])
+        self.assertEqual(runtests.PACKAGES, ["shim", "formats", "proto", "content", "extract", "core", "server", "client"])
+        self.assertEqual(runtests.DEPENDENCIES["formats"], ["shim"])
+        self.assertEqual(runtests.DEPENDENCIES["content"], ["shim", "proto", "formats"])
+        self.assertEqual(runtests.DEPENDENCIES["extract"], ["shim", "proto", "formats", "content"])
+        self.assertEqual(runtests.select_packages([]), ["shim", "formats", "proto", "content", "extract", "core", "server", "client"])
 
     def test_selection_keeps_dependency_order(self):
         self.assertEqual(runtests.select_packages(["client", "proto"]), ["proto", "client"])
 
     def test_build_order_includes_dependencies(self):
-        self.assertEqual(runtests.build_order(["core"]), ["shim", "proto", "core"])
+        self.assertEqual(runtests.build_order(["core"]), ["shim", "formats", "proto", "content", "core"])
+        self.assertEqual(runtests.build_order(["extract"]), ["shim", "formats", "proto", "content", "extract"])
         self.assertEqual(runtests.build_order(["shim"]), ["shim"])
         self.assertEqual(
-            runtests.build_order(["server", "client"]), ["shim", "proto", "core", "server", "client"]
+            runtests.build_order(["server", "client"]), ["shim", "formats", "proto", "content", "core", "server", "client"]
         )
+
+    def test_packages_build_the_libraries_their_makefile_links(self):
+        # a fresh gate must build content before core, server and client (DEPS_* of the root Makefile)
+        for package in ("core", "server", "client"):
+            self.assertIn("content", runtests.build_order([package]))
 
     def test_convergence_is_selected_only_by_name_and_comes_last(self):
         self.assertNotIn("convergence", runtests.select_packages([]))
         self.assertEqual(runtests.select_packages(["convergence", "core"]), ["core", "convergence"])
 
     def test_convergence_builds_every_package(self):
-        self.assertEqual(runtests.build_order(["convergence"]), ["shim", "proto", "core", "server", "client"])
+        self.assertEqual(runtests.build_order(["convergence"]), ["shim", "formats", "proto", "content", "extract", "core", "server", "client"])
 
     def test_convergence_directory_and_programs(self):
         repo = tempfile.mkdtemp()

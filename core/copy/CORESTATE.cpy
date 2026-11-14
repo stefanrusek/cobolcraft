@@ -6,12 +6,11 @@
 
  78 CORE-MAX-CONNS          VALUE 64.
  78 CORE-MAX-PLAYERS        VALUE 64.
- 78 CORE-MAX-DIMS           VALUE 2.
+ 78 CORE-MAX-DIMS           VALUE 3.
  78 CORE-MAX-CHUNKS         VALUE 4096.
  78 CORE-PB-SIZE            VALUE 21.     *> LENGTH OF PB-BUFFER
- 78 CORE-SETTINGS-SIZE      VALUE 1707.   *> LENGTH OF CORE-SETTINGS
- 78 CORE-CHUNK-CELLS        VALUE 65536.  *> 16 x 256 x 16 cells, index y * 256 + z * 16 + x
- 78 CORE-CHUNK-BYTES        VALUE 196608. *> states, sky light, block light: one byte per cell each
+ 78 CORE-CHUNK-CELLS        VALUE 65536.  *> cells of a 256-high chunk (16 x 256 x 16); CELLS.cpy holds up to CE-STATE-CELLS
+ 78 CORE-CHUNK-BYTES        VALUE 304640. *> CE-CHUNK-BYTES (contract/copy/CELLS.cpy)
  78 CORE-MAX-ENTITIES       VALUE 1024.
 
 *> Connection phases (data-model §12; 01 §7.1).
@@ -44,25 +43,38 @@
 *> World (data-model §1).
  01 CORE-WORLD EXTERNAL.
     05 CW-OPEN               PIC X.              *> "Y" once CORE-WORLD-OPEN has run
-    05 CW-SETTINGS           PIC X(1707).        *> the CORE-SETTINGS bytes of CORE-WORLD-OPEN
+    05 CW-SETTINGS           PIC X(3829).        *> the CORE-SETTINGS bytes of CORE-WORLD-OPEN
     05 CW-FOLDER             PIC X(1024).
     05 CW-FOLDER-LENGTH      BINARY-LONG.
     05 CW-NAME               PIC X(64).
     05 CW-GAME-MODE          PIC 9.              *> level.dat GameMode (07 §9.2): new players, host kinds 1-2
-    05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 29999 (standin §4.8)
+    05 CW-WORLD-TYPE         PIC X(10).          *> level.dat WorldType: standard, cobolcraft or debug (world-types 2.1)
+    05 CW-SEED               BINARY-DOUBLE.      *> level.dat Seed
+    05 CW-CONTENT-JAR        PIC X(64).          *> level.dat ContentJar (informational, WT-6); spaces when absent
+    05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 23999 (RULES.cpy RULE-DAY-LENGTH; 33 §3)
     05 CW-TICKS              BINARY-DOUBLE.      *> ticks run since the world was opened
+    05 CW-LAYOUT             PIC 9.              *> 1 when level.dat came in the 26.3 layout (Data compound): saved back in it (07 §10)
+    05 CW-GAME-TIME          BINARY-DOUBLE.      *> `Time` of a 26.3 level.dat when read; saved as this + CW-TICKS
+    05 CW-CLOCK-BASE         BINARY-DOUBLE.      *> whole days of the overworld clock's total_ticks when read (CW-TIME is the rest)
     05 CW-SPAWN-X            FLOAT-LONG.
     05 CW-SPAWN-Y            FLOAT-LONG.
     05 CW-SPAWN-Z            FLOAT-LONG.
     05 CW-SPAWN-YAW          FLOAT-SHORT.
     05 CW-DIM-COUNT          BINARY-LONG.        *> enabled dimensions, in Login order
-    05 CW-DIM                BINARY-LONG OCCURS 2 TIMES.   *> row of the DIMENSIONS.cpy table
-*>  Weather per dimension (standin §14.3; data-model §9; core/src/weather.cob), indexed by the
-*>  DIMENSIONS.cpy row: the kind (WEATHER.cpy WK-*; 0 for a dimension without weather) and the
-*>  remaining ticks (WEATHER-UNTIL-CHANGED, -1, = no countdown).
-    05 CW-WEATHER OCCURS 2 TIMES.
-       10 CW-WEATHER-KIND    BINARY-LONG.
-       10 CW-WEATHER-LEFT    BINARY-LONG.
+    05 CW-DIM                BINARY-LONG OCCURS 3 TIMES.   *> row of the DIMENSIONS.cpy table
+*>  Weather (docs/protocol/33 section 4; core/src/weather.cob): one WeatherData for the whole server (the times in
+*>  ticks and the two flags) and, per DIMENSIONS.cpy row, the levels 0 to 1 and the levels of the tick before.
+    05 CW-WEATHER-DATA.
+       10 CW-CLEAR-TIME      BINARY-LONG.
+       10 CW-RAIN-TIME       BINARY-LONG.
+       10 CW-THUNDER-TIME    BINARY-LONG.
+       10 CW-RAINING         PIC 9.
+       10 CW-THUNDERING      PIC 9.
+    05 CW-WEATHER-LEVELS OCCURS 3 TIMES.
+       10 CW-RAIN-LEVEL         FLOAT-SHORT.
+       10 CW-RAIN-LEVEL-OLD     FLOAT-SHORT.
+       10 CW-THUNDER-LEVEL      FLOAT-SHORT.
+       10 CW-THUNDER-LEVEL-OLD  FLOAT-SHORT.
     05 CW-RUN-STATE          PIC 9.              *> CST-RUN-STATE
     05 CW-NEXT-ENTITY-ID     BINARY-LONG.
     05 CW-NEXT-ENTER         BINARY-LONG.        *> entering order of the next player (PL-ENTERED)
@@ -111,11 +123,14 @@
        10 PL-FLYING          PIC 9.
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
+       10 PL-AIR             BINARY-LONG.        *> air supply in ticks (18 section 2.5 item 4: 300 at most, drowning at -20; core/src/breath.cob)
 *>     Hunger (standin §11; core/src/hunger.cob): exhaustion (§11.2, not saved), the sprinting flag of
 *>     Player Command, the food item being eaten (0 = not eating) with its hotbar slot and the CW-TICKS
 *>     of the Use Item that started it (§11.6), and the consecutive ticks at food 0 (§10.3).
        10 PL-EXHAUSTION      FLOAT-LONG.
+       10 PL-SATURATION      FLOAT-LONG.         *> 17 section 4.9: 0 to the food level, 5.0 for a new player
        10 PL-SPRINTING       PIC 9.
+       10 PL-SNEAKING        PIC 9.              *> 1 while Player Input (05c 0x2B) holds the shift flag 0x20
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
        10 PL-EATING-START    BINARY-DOUBLE.
@@ -126,6 +141,10 @@
           15 PL-SLOT OCCURS 36 TIMES.            *> inventory slot n is PL-SLOT(n + 1)
              20 PL-SLOT-ITEM BINARY-LONG.
              20 PL-SLOT-COUNT BINARY-LONG.       *> 0 = empty
+*>     The data component patch handle of each slot (core/copy/CSTACK.cpy, core/src/stack-patch.cob; 0 = none), kept
+*>     outside PL-INVENTORY so the recipe book's inventory snapshot stays the items and counts.
+       10 PL-SLOT-VARS.
+          15 PL-SLOT-VAR BINARY-LONG OCCURS 36 TIMES.
 *>     Recipe book (standin §13; core/src/crafting.cob): 1 once the join has sent Recipe Book Add,
 *>     and the inventory that book was computed from; a different inventory re-sends it.
        10 PL-BOOK-SENT       PIC 9.
@@ -140,34 +159,52 @@
 *>     The item on the cursor of the inventory screen (Container Click; core/src/inventory.cob).
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.        *> 0 = nothing carried
+       10 PL-CARRIED-VAR     BINARY-LONG.        *> its patch handle (0 = none)
 *>     A Container Click drag (QUICK_CRAFT, 05c 0x12): its type (button / 4) and the slots added.
        10 PL-DRAG-ACTIVE     PIC 9.
        10 PL-DRAG-TYPE       BINARY-LONG.
        10 PL-DRAG-COUNT      BINARY-LONG.
        10 PL-DRAG-SLOT       BINARY-LONG OCCURS 36 TIMES.
-*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/blocks.cob).
+*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/breaking.cob).
        10 PL-BREAKING        PIC 9.
        10 PL-BREAK-X         BINARY-LONG.
        10 PL-BREAK-Y         BINARY-LONG.
        10 PL-BREAK-Z         BINARY-LONG.
        10 PL-BREAK-START     BINARY-DOUBLE.      *> CW-TICKS of START_DESTROY_BLOCK
-       10 PL-BREAK-TICKS     BINARY-LONG.        *> ticks the break takes
+       10 PL-BREAK-RATE      FLOAT-SHORT.        *> progress per tick on the ground (13 section 2.1), fixed at the start
+       10 PL-BREAK-PROGRESS  FLOAT-LONG.         *> accumulated progress: each tick adds the rate, divided by 5 while airborne
+       10 PL-BREAK-ITEM      BINARY-LONG.        *> the held item at the start (0 = empty hand)
+       10 PL-BREAK-STATE     BINARY-LONG.        *> the target's block state at the start
+       10 PL-BREAK-DELAYED   PIC 9.              *> 1 after a STOP that came early (13 section 2.4)
        10 PL-BREAK-STAGE     BINARY-LONG.        *> last Block Destruction stage sent, -1 none
 *>     Health (standin §10; core/src/health.cob). PL-DEATH-CAUSE is the RULES.cpy CAUSE-* of the
 *>     death while the player is dead (0 while alive); PL-KILLER-* name the attacker of a player kill.
-       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> ticks left in which damage is ignored (§10.2)
+       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> invulnerableTime (17 section 4.7): 20 after an accepted hit
+       10 PL-LAST-HURT       BINARY-LONG.        *> lastHurt: the damage of the last accepted hit
        10 PL-RECOVER-TICKS   BINARY-LONG.        *> consecutive ticks of the recovery condition (§10.5)
        10 PL-DEATH-CAUSE     BINARY-LONG.
        10 PL-KILLER-NAME     PIC X(16).
        10 PL-KILLER-LENGTH   BINARY-LONG.
+       10 PL-KILLER-ITEM     PIC X(64).          *> the custom name of the attacker's held item at the last hit (the .item death message)
+       10 PL-KILLER-ITEM-LENGTH BINARY-LONG.
+       10 PL-CREDIT-NAME     PIC X(16).          *> kill credit (17 section 4.13.2): the player or mob that last hurt this player
+       10 PL-CREDIT-LENGTH   BINARY-LONG.
+       10 PL-CREDIT-TICK     BINARY-DOUBLE.      *> CW-TICKS of that hit: valid for 100 ticks
+       10 PL-FALL-DISTANCE   BINARY-LONG.        *> the last fall damage's distance in thousandths of a block (the fall death message)
 *>     Travel (standin §15.5; core/src/dimensions.cob): 1 once the player has travelled this
 *>     session, and the CW-TICKS of that travel (a use within TRAVEL-COOLDOWN ticks is ignored).
        10 PL-TRAVELLED       PIC 9.
        10 PL-TRAVEL-TICK     BINARY-DOUBLE.
+*>     --- 002-lane-mobs2: experience (core/src/xp.cob; 17 section 4.10) ---
+       10 PL-XP-LEVEL        BINARY-LONG.        *> experience level
+       10 PL-XP-POINTS       BINARY-LONG.        *> points into the current level
+       10 PL-XP-TOTAL        BINARY-LONG.        *> total experience points
+       10 PL-XP-DELAY        BINARY-LONG.        *> takeXpDelay: ticks until the next orb pickup
+*>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
-*> CORE-CHUNK-BYTES bytes: block states (cells 1 to 65536), sky light (65537 to 131072) and block
-*> light (131073 to 196608), cell index y * 256 + z * 16 + x (+ 1). CK-INDEX is a hash index into
+*> CORE-CHUNK-BYTES bytes laid out as contract/copy/CELLS.cpy (2-byte states, 4-bit light, biomes). The
+*> cell index is (y - min y) * 256 + z * 16 + x (+ 1). CK-INDEX is a hash index into
 *> the rows: bucket (hash of dim, x, z) holds the first row number, CK-NEXT chains rows; a row with
 *> CK-USED 0 is in no chain. CK-COUNT is the highest row number ever used. CK-SOURCES(s + 1) counts
 *> the light-emitting cells of block section s (world.cob keeps it; light.cob scans only those
@@ -184,7 +221,8 @@
        10 CK-ADDR            USAGE POINTER.
        10 CK-CHANGED         PIC 9.              *> set by a block change (persist on save)
        10 CK-LIT             PIC 9.              *> light computed
-       10 CK-SOURCES         BINARY-LONG OCCURS 16 TIMES.
+       10 CK-FOREIGN         PIC 9.              *> 1: its palette holds a key of another world type (WT-23): void, never saved
+       10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
 *> entity in the world that other players can see: players once their join is sent (EN-PLAYER is
@@ -225,6 +263,7 @@
 *>     player row and its entity id (0 = none). EN-COOLDOWN: attack cooldown. None of it is saved.
        10 EN-HEALTH          BINARY-LONG.
        10 EN-HURT            BINARY-LONG.
+       10 EN-LAST-HURT       BINARY-LONG.
        10 EN-WANDER-X        FLOAT-LONG.
        10 EN-WANDER-Z        FLOAT-LONG.
        10 EN-FLEE            BINARY-LONG.
@@ -235,6 +274,25 @@
        10 EN-TARGET          BINARY-LONG.
        10 EN-TARGET-ID       BINARY-LONG.
        10 EN-COOLDOWN        BINARY-LONG.
+       10 EN-BURN            BINARY-LONG.        *> ticks left on fire (a daylight-burning standard mob: 160, 1 damage every 20)
+       10 EN-WAY-X           FLOAT-LONG.         *> the next path waypoint (cell centre) of a walking standard mob (core/src/stdmobs.cob STDMOB-HEAD)
+       10 EN-WAY-Z           FLOAT-LONG.
+       10 EN-DEST-X          BINARY-LONG.        *> the cell a stroll is walking to (EN-COOLDOWN ticks left)
+       10 EN-DEST-Z          BINARY-LONG.
+       10 EN-PATH-TICKS      BINARY-LONG.        *> ticks until the path is searched again
+       10 EN-KILLER          BINARY-LONG.        *> player row that last hit a mob (0 none): the killed_by_player loot condition (core/src/stdmobs.cob)
+*>     --- 002-lane-mobs2: creeper (core/src/stdmobs.cob STDMOB-SWELL) ---
+       10 EN-SWELL           BINARY-LONG.        *> the swell counter (20 section 6.1), 0 to the fuse
+       10 EN-SWELL-DIR       BINARY-LONG.        *> the last swell direction sent to the viewers (0 = none yet, the default -1)
+       10 EN-SHOOT-TIME      BINARY-LONG.        *> a bow mob's attackTime: ticks until it draws the bow again (20 section 5; EN-SWELL is its seeTime)
+       10 EN-DRAW            BINARY-LONG.        *> 0 = bow not drawn, else 1 + the ticks the bow has been drawn
+*>     --- 002-lane-mobs3: bow goal strafing (20 section 5) ---
+       10 EN-STRAFE-TIME     BINARY-LONG.        *> strafingTime (-1 = not strafing)
+       10 EN-STRAFE-CW       BINARY-LONG.        *> strafingClockwise 0 or 1
+       10 EN-STRAFE-BACK     BINARY-LONG.        *> strafingBackwards 0 or 1
+       10 EN-STRAFE-X        FLOAT-LONG.         *> the strafe walk of this tick
+       10 EN-STRAFE-Z        FLOAT-LONG.
+*>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
@@ -287,11 +345,24 @@
  78 ACCESS-OPERATORS        VALUE 1.
  78 ACCESS-BANS             VALUE 2.
  78 ACCESS-ALLOW            VALUE 3.
+ 78 ACCESS-IPBANS           VALUE 4.   *> IPv4 addresses (the name field holds the dotted text, the UUID is empty)
  01 CORE-ACCESS EXTERNAL.
     05 AC-ENFORCED           PIC 9.
-    05 AC-LIST OCCURS 3 TIMES.
+    05 AC-LIST OCCURS 4 TIMES.
        10 AC-COUNT           BINARY-LONG.
        10 AC-ENTRY OCCURS 256 TIMES.
           15 AC-NAME         PIC X(16).
           15 AC-NAME-LENGTH  BINARY-LONG.
           15 AC-UUID         PIC X(16).
+*>        The rest of an entry (07 §9.2): AC-LEVEL the permission level of an operator (1 to 4, 4 for a new one; 0 in the other lists);
+*>        of a ban the creation time as text, the source (the text name of whoever banned), the expiry text (forever) and the reason
+*>        (length 0 = none).
+          15 AC-LEVEL        BINARY-LONG.
+          15 AC-CREATED      PIC X(32).
+          15 AC-CREATED-LENGTH BINARY-LONG.
+          15 AC-SOURCE       PIC X(32).
+          15 AC-SOURCE-LENGTH BINARY-LONG.
+          15 AC-EXPIRES      PIC X(32).
+          15 AC-EXPIRES-LENGTH BINARY-LONG.
+          15 AC-REASON       PIC X(128).
+          15 AC-REASON-LENGTH BINARY-LONG.

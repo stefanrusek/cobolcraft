@@ -12,6 +12,7 @@ Objects: `<build>/<package>/obj` and, when the Convergence tests built them,
 `<build>/convergence/obj/<package>` (the instrumented program entry files src/main.cob).
 
 Production sources: shim/src/*.c, proto/src/*.cob, core/src/*.cob, core/copy/*.cpy,
+formats/src/*.cob, formats/copy/*.cpy, content/src/*.cob, content/copy/*.cpy (not copy/gen/), extract/src/*.cob,
 server/src/*.cob, client/src/**/*.cob. Everything else (tests, tools, specs, contract, generated C,
 system headers) is ignored.
 """
@@ -21,11 +22,15 @@ import subprocess
 import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PACKAGES = ["shim", "proto", "core", "server", "client"]
+PACKAGES = ["shim", "formats", "proto", "content", "extract", "core", "server", "client"]
 # (directory, extension, whether subdirectories count) of every package's production sources.
 PRODUCTION = {
     "shim": [("shim/src", ".c", False)],
+    "formats": [("formats/src", ".cob", False), ("formats/copy", ".cpy", False)],
     "proto": [("proto/src", ".cob", False)],
+    # content/copy/gen/ (generated registry copybooks, constitution 4.2) is a subdirectory and not recursive.
+    "content": [("content/src", ".cob", False), ("content/copy", ".cpy", False)],
+    "extract": [("extract/src", ".cob", False)],
     "core": [("core/src", ".cob", False), ("core/copy", ".cpy", False)],
     "server": [("server/src", ".cob", False)],
     "client": [("client/src", ".cob", True)],

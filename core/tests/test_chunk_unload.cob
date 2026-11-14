@@ -13,8 +13,7 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY DIMENSIONS.
- COPY BLOCKS.
- COPY PROTO.
+  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
  01 WS-LENGTH-5            BINARY-LONG VALUE 5.
@@ -49,7 +48,7 @@
 
 *>   Alice is in chunk (0, 0); view distance 2. A block of chunk (1, 1) changes.
      MOVE 20 TO WS-X MOVE 70 TO WS-Y MOVE 20 TO WS-Z
-     MOVE ST-LEDGER-TILE TO WS-STATE
+     MOVE 15 TO WS-STATE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE "test chunk unload when Alice moves 20 chunks away, the chunks of her old view are "
          & "released: changed chunk (1, 1) written to r.0.0.mca first, unchanged chunk (-1, -1) "

@@ -1,0 +1,909 @@
+*> Acceptance test of docs/protocol/42-particles-3-fluid-drip-water.md section 3 (the drip family):
+*> the base class, hang, fall and land providers with their constructor draws, their
+*> tick, size and light formulas, and the worked examples E1 to E12 that apply. The case lines are written
+*> by a script that applies the document's numbers; the expected values are the document's.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-3-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLPCL.
+ COPY CLPCLX.
+ COPY CLP3X.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-VX2                 FLOAT-LONG.
+ 01 WS-VY2                 FLOAT-LONG.
+ 01 WS-VZ2                 FLOAT-LONG.
+ 01 WS-DRAWS.
+    05 WS-D                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EDRAWS.
+    05 WS-E                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-D36S.
+    05 WS-D36              FLOAT-LONG OCCURS 36 TIMES.
+ 01 WS-NOISES.
+    05 WS-NOISE            FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-VAL                 FLOAT-LONG.
+ 01 WS-CHK                 FLOAT-LONG.
+ 01 WS-VAL2                FLOAT-LONG.
+ 01 WS-VAL3                FLOAT-LONG VALUE 0.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-R1                  FLOAT-LONG.
+ 01 WS-R2                  FLOAT-LONG.
+ 01 WS-POWER               FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PYD                 FLOAT-LONG.
+ 01 WS-SCALE               BINARY-DOUBLE.
+ 01 WS-ZERO-N              BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-LIFE                BINARY-LONG.
+ 01 WS-LIFEC               BINARY-LONG.
+ 01 WS-AGE                 BINARY-LONG.
+ 01 WS-ERR                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-FIRED               BINARY-LONG.
+ 01 WS-A1                  BINARY-LONG.
+ 01 WS-B1                  BINARY-LONG.
+ 01 WS-C1                  BINARY-LONG.
+ 01 WS-D1                  BINARY-LONG.
+ 01 WS-SHAPE-NAME          PIC X(12).
+ 01 WS-SPAWN               BINARY-LONG.
+ 01 WS-SOUND               BINARY-LONG.
+ 01 WS-VOL                 FLOAT-LONG.
+ PROCEDURE DIVISION.
+     MOVE 0 TO PK-COUNT
+     MOVE 0 TO PX-HAS-FADE
+*>   3.3 hang providers
+     MOVE 10 TO WS-X
+     MOVE 20 TO WS-Y
+     MOVE 30 TO WS-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0.5 TO WS-D(WS-I)
+         MOVE 0.5 TO WS-E(WS-I)
+     END-PERFORM
+     MOVE 0 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "3.3 dripping_lava: hang ticks (lifetime) 40" TO WS-NAME
+     MOVE 40 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_lava: follow-up particle id 17" TO WS-NAME
+     MOVE 17 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_lava: fluid 2 and glowing 0 (fluid * 10 + glowing)" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_lava: gravity (1e-7)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 10000000 TO WS-SCALE
+     MOVE 12000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_lava: box 0.01 and velocity 0 (thousandths of the width)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW + PC-XD + PC-YD + PC-ZD
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_lava: quadSize 0.15 (the 5-argument constructor, thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "3.3 dripping_water: hang ticks (lifetime) 40" TO WS-NAME
+     MOVE 40 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_water: follow-up particle id 20" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_water: fluid 1 and glowing 0 (fluid * 10 + glowing)" TO WS-NAME
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_water: gravity (1e-7)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 10000000 TO WS-SCALE
+     MOVE 12000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_water: box 0.01 and velocity 0 (thousandths of the width)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW + PC-XD + PC-YD + PC-ZD
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_water: quadSize 0.15 (the 5-argument constructor, thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_water: colour R 0.2 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 200 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_water: colour G 0.3 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_water: colour B 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 2 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "3.3 dripping_honey: hang ticks (lifetime) 100" TO WS-NAME
+     MOVE 100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_honey: follow-up particle id 90" TO WS-NAME
+     MOVE 90 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_honey: fluid 0 and glowing 0 (fluid * 10 + glowing)" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_honey: gravity (1e-7)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 10000000 TO WS-SCALE
+     MOVE 120 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_honey: box 0.01 and velocity 0 (thousandths of the width)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW + PC-XD + PC-YD + PC-ZD
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_honey: quadSize 0.15 (the 5-argument constructor, thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_honey: colour R 0.622 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 622 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_honey: colour G 0.508 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 508 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_honey: colour B 0.082 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 82 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 3 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "3.3 dripping_obsidian_tear: hang ticks (lifetime) 100" TO WS-NAME
+     MOVE 100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_obsidian_tear: follow-up particle id 99" TO WS-NAME
+     MOVE 99 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_obsidian_tear: fluid 0 and glowing 1 (fluid * 10 + glowing)" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_obsidian_tear: gravity (1e-7)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 10000000 TO WS-SCALE
+     MOVE 120 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_obsidian_tear: box 0.01 and velocity 0 (thousandths of the width)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW + PC-XD + PC-YD + PC-ZD
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_obsidian_tear: quadSize 0.15 (the 5-argument constructor, thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_obsidian_tear: colour R 0.51171875 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 512 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_obsidian_tear: colour G 0.03125 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 31 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_obsidian_tear: colour B 0.890625 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 891 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 4 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "3.3 dripping_dripstone_lava: hang ticks (lifetime) 40" TO WS-NAME
+     MOVE 40 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_dripstone_lava: follow-up particle id 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_dripstone_lava: fluid 2 and glowing 0 (fluid * 10 + glowing)" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_dripstone_lava: gravity (1e-7)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 10000000 TO WS-SCALE
+     MOVE 12000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_lava: box 0.01 and velocity 0 (thousandths of the width)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW + PC-XD + PC-YD + PC-ZD
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_lava: quadSize 0.15 (the 5-argument constructor, thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 5 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "3.3 dripping_dripstone_water: hang ticks (lifetime) 40" TO WS-NAME
+     MOVE 40 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_dripstone_water: follow-up particle id 108" TO WS-NAME
+     MOVE 108 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_dripstone_water: fluid 1 and glowing 0 (fluid * 10 + glowing)" TO WS-NAME
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.3 dripping_dripstone_water: gravity (1e-7)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 10000000 TO WS-SCALE
+     MOVE 12000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_water: box 0.01 and velocity 0 (thousandths of the width)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW + PC-XD + PC-YD + PC-ZD
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_water: quadSize 0.15 (the 5-argument constructor, thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_water: colour R 0.2 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 200 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_water: colour G 0.3 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.3 dripping_dripstone_water: colour B 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0 TO WS-KIND
+     MOVE 0 TO PK-COUNT
+     MOVE 0 TO WS-ZERO-N
+     MOVE 20 TO WS-Y
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-SPAWN
+     MOVE "3.2 cooling lava tick 1: green 16 / 16 = 1.0" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.2 cooling lava tick 1: blue 4 / 8 = 0.5" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.2 hang tick 1: lifetime 39" TO WS-NAME
+     MOVE 39 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     PERFORM 19 TIMES
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-SPAWN
+     END-PERFORM
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-SPAWN
+     MOVE "3.8 cooling lava tick 21: green 16 / 36 = 0.4444 (1e-4)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 10000 TO WS-SCALE
+     MOVE 4444 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.8 cooling lava tick 21: blue 4 / 28 = 0.1429" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 10000 TO WS-SCALE
+     MOVE 1429 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     PERFORM 18 TIMES
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-SPAWN
+     END-PERFORM
+     MOVE "3.2 hang: still alive after tick 39, no spawn yet" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED * 100 + WS-SPAWN
+     PERFORM ASSERT-NUMBER
+     MOVE "3.2 hang: the drop sank about 0.0477 blocks over 39 ticks (hundredths)" TO WS-NAME
+     COMPUTE WS-CHK = 20 - PC-Y
+     MOVE 100 TO WS-SCALE
+     MOVE 5 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-SPAWN
+     MOVE "3.8 cooling lava tick 40: green 16 / 55 = 0.2909" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 10000 TO WS-SCALE
+     MOVE 2909 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.8 cooling lava tick 40: blue 4 / 47 = 0.0851" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 10000 TO WS-SCALE
+     MOVE 851 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.2 hang tick 40: removed and falling_lava (17) spawned" TO WS-NAME
+     MOVE 117 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED * 100 + WS-SPAWN
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-KIND
+     MOVE 20 TO WS-Y
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     MOVE 1 TO WS-ONE
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-SPAWN
+     MOVE "3.1 step 7: a water drop inside the water body is removed" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     MOVE 2 TO WS-KIND
+     CALL "P3-HANG-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS
+     CALL "P3-HANG-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-SPAWN
+     MOVE "3.1 step 7: honey (empty fluid) is never removed by the fluid test" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     MOVE 10.4 TO WS-VAL
+     MOVE 10 TO WS-N
+     MOVE 0.5 TO WS-VAL2
+     CALL "P3-FLUID-INSIDE" USING WS-VAL WS-N WS-VAL2 WS-OUT
+     MOVE "3.1 step 7: y 10.4 below blockY + height 10.5 is inside" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 10.6 TO WS-VAL
+     CALL "P3-FLUID-INSIDE" USING WS-VAL WS-N WS-VAL2 WS-OUT
+     MOVE "3.1 step 7: y 10.6 is above the surface" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+*>   3.4 to 3.7 fall providers
+     MOVE 11 TO WS-Y
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0.5 TO WS-D(WS-I)
+         MOVE 0.5 TO WS-E(WS-I)
+     END-PERFORM
+     MOVE 0.5 TO WS-VAL3
+     MOVE 0 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_lava: lifetime 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_lava: landing particle id 18, fluid 2, glowing 0" TO WS-NAME
+     MOVE 1820 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_lava: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_lava: colour R 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_lava: colour G 0.2857143 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 286 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_lava: colour B 0.083333336 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 83 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_water: lifetime 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_water: landing particle id 80, fluid 1, glowing 0" TO WS-NAME
+     MOVE 8010 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_water: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_water: colour R 0.2 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 200 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_water: colour G 0.3 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_water: colour B 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 2 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_honey: lifetime 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_honey: landing particle id 91, fluid 0, glowing 0" TO WS-NAME
+     MOVE 9100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_honey: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_honey: colour R 0.582 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 582 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_honey: colour G 0.448 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 448 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_honey: colour B 0.082 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 82 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 3 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_obsidian_tear: lifetime 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_obsidian_tear: landing particle id 100, fluid 0, glowing 1" TO WS-NAME
+     MOVE 10001 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_obsidian_tear: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_obsidian_tear: colour R 0.51171875 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 512 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_obsidian_tear: colour G 0.03125 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 31 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_obsidian_tear: colour B 0.890625 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 891 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 4 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_nectar: lifetime 26" TO WS-NAME
+     MOVE 26 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_nectar: landing particle id 0, fluid 0, glowing 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_nectar: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 7 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_nectar: colour R 0.92 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 920 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_nectar: colour G 0.782 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 782 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_nectar: colour B 0.72 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 720 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 5 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_spore_blossom: lifetime 128" TO WS-NAME
+     MOVE 128 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_spore_blossom: landing particle id 0, fluid 0, glowing 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_spore_blossom: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 5 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_spore_blossom: colour R 0.32 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 320 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_spore_blossom: colour G 0.5 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_spore_blossom: colour B 0.22 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 220 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 6 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_dripstone_lava: lifetime 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_dripstone_lava: landing particle id 18, fluid 2, glowing 0" TO WS-NAME
+     MOVE 1820 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_dripstone_lava: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_dripstone_lava: colour R 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_dripstone_lava: colour G 0.2857143 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 286 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_dripstone_lava: colour B 0.083333336 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 83 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 7 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.4 falling_dripstone_water: lifetime 106" TO WS-NAME
+     MOVE 106 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_dripstone_water: landing particle id 80, fluid 1, glowing 0" TO WS-NAME
+     MOVE 8010 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-NEXT * 100 + X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 falling_dripstone_water: gravity (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_dripstone_water: colour R 0.2 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 200 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_dripstone_water: colour G 0.3 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 falling_dripstone_water: colour B 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1 TO PK-COUNT
+     MOVE 5 TO PK-MIN(1, 1)
+     MOVE 9 TO PK-MIN(1, 2)
+     MOVE 25 TO PK-MIN(1, 3)
+     MOVE 15 TO PK-MAX(1, 1)
+     MOVE 10 TO PK-MAX(1, 2)
+     MOVE 35 TO PK-MAX(1, 3)
+     MOVE 0 TO WS-ZERO-N
+     MOVE 0.5 TO WS-VAL2
+     MOVE 1 TO WS-KIND
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.8 falling drop tick 1: cumulative drop (1e-6)" TO WS-NAME
+     COMPUTE WS-CHK = 11 - PC-Y
+     MOVE 1000000 TO WS-SCALE
+     MOVE 60000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.8 falling drop tick 2: cumulative drop (1e-6)" TO WS-NAME
+     COMPUTE WS-CHK = 11 - PC-Y
+     MOVE 1000000 TO WS-SCALE
+     MOVE 178800 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.8 falling drop tick 3: cumulative drop (1e-6)" TO WS-NAME
+     COMPUTE WS-CHK = 11 - PC-Y
+     MOVE 1000000 TO WS-SCALE
+     MOVE 355224 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.8 falling drop tick 4: cumulative drop (1e-6)" TO WS-NAME
+     COMPUTE WS-CHK = 11 - PC-Y
+     MOVE 1000000 TO WS-SCALE
+     MOVE 588120 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.8 falling drop tick 5: cumulative drop (1e-6)" TO WS-NAME
+     COMPUTE WS-CHK = 11 - PC-Y
+     MOVE 1000000 TO WS-SCALE
+     MOVE 876357 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.8 tick 6: the move is clipped to the floor at y 10 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 10000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.4 tick 6: the drop lands, is removed and splash (80) spawned" TO WS-NAME
+     MOVE 1080 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED * 1000 + WS-SPAWN
+     PERFORM ASSERT-NUMBER
+     MOVE "3.4 water landing plays no sound" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-SOUND
+     PERFORM ASSERT-NUMBER
+     MOVE 2 TO WS-KIND
+     MOVE 10.0 TO WS-Y
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE 1 TO PC-ON-GROUND
+     MOVE 0 TO PC-YD
+     MOVE 10.0001 TO PC-Y
+     MOVE 10.0001 TO PC-BB-MIN(2)
+     MOVE 10.0101 TO PC-BB-MAX(2)
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.5/3.7 landing sound of honey BEEHIVE_DRIP" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-SOUND
+     PERFORM ASSERT-NUMBER
+     MOVE 6 TO WS-KIND
+     MOVE 10.0 TO WS-Y
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE 1 TO PC-ON-GROUND
+     MOVE 0 TO PC-YD
+     MOVE 10.0001 TO PC-Y
+     MOVE 10.0001 TO PC-BB-MIN(2)
+     MOVE 10.0101 TO PC-BB-MAX(2)
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.5/3.7 landing sound of dripstone lava POINTED_DRIPSTONE_DRIP_LAVA" TO WS-NAME
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-SOUND
+     PERFORM ASSERT-NUMBER
+     MOVE 7 TO WS-KIND
+     MOVE 10.0 TO WS-Y
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE 1 TO PC-ON-GROUND
+     MOVE 0 TO PC-YD
+     MOVE 10.0001 TO PC-Y
+     MOVE 10.0001 TO PC-BB-MIN(2)
+     MOVE 10.0101 TO PC-BB-MAX(2)
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.5/3.7 landing sound of dripstone water POINTED_DRIPSTONE_DRIP_WATER" TO WS-NAME
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-SOUND
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing volume = randomBetween(0.5, 0.3, 1.0) = 0.65 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = WS-VOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 650 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 4 TO WS-KIND
+     MOVE 10.0 TO WS-Y
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE 1 TO PC-ON-GROUND
+     MOVE 10.0001 TO PC-Y
+     MOVE 10.0001 TO PC-BB-MIN(2)
+     MOVE 10.0101 TO PC-BB-MAX(2)
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.6 nectar touching the ground: removed with no landing particle and no sound" TO WS-NAME
+     MOVE 100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED * 100 + WS-SPAWN * 10 + WS-SOUND
+     PERFORM ASSERT-NUMBER
+*>   3.5 land providers
+     MOVE 0 TO PK-COUNT
+     MOVE 20 TO WS-Y
+     MOVE 0 TO WS-KIND
+     CALL "P3-LAND-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.5 landing_lava: lifetime 26" TO WS-NAME
+     MOVE 26 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing_lava: fluid 2 glowing 0" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing_lava: gravity stays 0.06" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_lava: colour R 1.0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_lava: colour G 0.2857143 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 286 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_lava: colour B 0.083333336 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 83 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1 TO WS-KIND
+     CALL "P3-LAND-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.5 landing_honey: lifetime 213" TO WS-NAME
+     MOVE 213 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing_honey: fluid 0 glowing 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing_honey: gravity stays 0.06" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_honey: colour R 0.522 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 522 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_honey: colour G 0.408 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 408 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_honey: colour B 0.082 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 82 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 2 TO WS-KIND
+     CALL "P3-LAND-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE "3.5 landing_obsidian_tear: lifetime 46" TO WS-NAME
+     MOVE 46 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing_obsidian_tear: fluid 0 glowing 1" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = X3-FLUID * 10 + X3-GLOWING
+     PERFORM ASSERT-NUMBER
+     MOVE "3.5 landing_obsidian_tear: gravity stays 0.06" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_obsidian_tear: colour R 0.51171875 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 512 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_obsidian_tear: colour G 0.03125 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 31 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "3.5 landing_obsidian_tear: colour B 0.890625 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 891 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 2 TO PC-LIFETIME
+     CALL "P3-LAND-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N
+     MOVE "3.5 land tick 1: alive, lifetime 1" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED * 10 + PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     CALL "P3-LAND-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N
+     MOVE "3.5 land tick 2: lifetime 0 removes it" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+*>   coverage of the remaining removal paths
+     MOVE 1 TO WS-KIND
+     MOVE 20 TO WS-Y
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE 1 TO PC-LIFETIME
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.1 fall: lifetime 0 removes it with no landing particle" TO WS-NAME
+     MOVE 100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED * 100 + WS-SPAWN
+     PERFORM ASSERT-NUMBER
+     CALL "P3-FALL-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     MOVE 1 TO WS-ONE
+     CALL "P3-FALL-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-VAL2 WS-SPAWN WS-SOUND WS-VOL
+     MOVE "3.1 step 7: a falling water drop inside the water body is removed" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-KIND
+     CALL "P3-LAND-NEW" USING PCL P3X WS-KIND WS-X WS-Y WS-Z WS-DRAWS WS-VAL3
+     CALL "P3-LAND-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE
+     MOVE "3.5 step 7: landing lava inside the lava body is removed" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-3§3 The drip family: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-SCALED.
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(WS-CHK * WS-SCALE + 0.5)
+     PERFORM ASSERT-NUMBER.
+
+ ASSERT-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-3§3 The drip family: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-3-3.

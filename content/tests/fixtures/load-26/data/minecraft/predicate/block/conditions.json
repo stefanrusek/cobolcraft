@@ -1,0 +1,14 @@
+{"type": "minecraft:any_of", "terms": [
+  {"type": "minecraft:inverted", "term": {"type": "minecraft:random_chance", "chance": {"type": "minecraft:uniform", "min": 0.1, "max": 0.2}}},
+  {"type": "minecraft:table_bonus", "enchantment": "minecraft:fortune", "chances": [0.1, 0.2]},
+  {"type": "minecraft:match_block", "blocks": "minecraft:stone", "state": {"half": "upper"}},
+  {"type": "minecraft:damage_source_properties", "predicate": {}},
+  {"type": "minecraft:entity_properties", "entity": "this", "predicate": {}},
+  {"type": "minecraft:entity_scores", "entity": "this", "scores": {"a": 1}},
+  {"type": "minecraft:location_check", "predicate": {}, "offsetY": 1},
+  {"type": "minecraft:weather_check", "thundering": false},
+  {"type": "minecraft:time_check", "value": {"min": 1, "max": 5}, "period": 24000},
+  {"type": "minecraft:int_value_check", "value": 3, "range": 3},
+  {"type": "minecraft:float_value_check", "value": "minecraft:cooking/speed_default", "range": {"min": 0.5}},
+  {"type": "minecraft:enchantment_active_check", "active": true},
+  {"type": "minecraft:environment_attribute_check", "attribute": "minecraft:visual/sky_color", "value": 1}]}

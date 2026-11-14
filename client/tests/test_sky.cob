@@ -1,7 +1,7 @@
 *> Implementation test of client/src/sky.cob (SKY-UPDATE; standin-content §4.8, §15.3): the daylight
-*> factor u (thousandths) and the clear colour as functions of the time of day over the 30,000-tick
-*> day: day 1000 and #8FB8E6, dusk falling 4/5 per tick from 15000, night 200 and #0E1222 from
-*> 16000, dawn rising from 29000; each channel N + trunc((D - N) (u - 200) / 800); a dimension
+*> factor u (thousandths) and the clear colour as functions of the time of day over the 24,000-tick
+*> day (12 section 3.2, the sky_color track: day 1000 and #8FB8E6 from tick 133 to 11867, falling linearly to night 200 and #0E1222 at 13670,
+*> night to 22330, rising linearly back to day at 24133; u = 200 + trunc(800 x ticks / 1803)); each channel N + trunc((D - N) (u - 200) / 800); a dimension
 *> without sky light draws the fixed sky #100C12.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-SKY.
@@ -11,17 +11,16 @@
  COPY TESTLIB.
  01 WS-TIMES.
     05 FILLER PIC 9(5) VALUE 0.
-    05 FILLER PIC 9(5) VALUE 14999.
-    05 FILLER PIC 9(5) VALUE 15000.
-    05 FILLER PIC 9(5) VALUE 15500.
-    05 FILLER PIC 9(5) VALUE 15999.
-    05 FILLER PIC 9(5) VALUE 16000.
-    05 FILLER PIC 9(5) VALUE 28999.
-    05 FILLER PIC 9(5) VALUE 29000.
-    05 FILLER PIC 9(5) VALUE 29500.
-    05 FILLER PIC 9(5) VALUE 29999.
+    05 FILLER PIC 9(5) VALUE 132.
+    05 FILLER PIC 9(5) VALUE 133.
+    05 FILLER PIC 9(5) VALUE 11867.
+    05 FILLER PIC 9(5) VALUE 12768.
+    05 FILLER PIC 9(5) VALUE 13670.
+    05 FILLER PIC 9(5) VALUE 22330.
+    05 FILLER PIC 9(5) VALUE 23000.
+    05 FILLER PIC 9(5) VALUE 23999.
  01 WS-TIME-TABLE REDEFINES WS-TIMES.
-    05 WS-TIME             PIC 9(5) OCCURS 10 TIMES.
+    05 WS-TIME             PIC 9(5) OCCURS 9 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-EDIT                PIC Z(3)9.
  01 WS-R                   BINARY-LONG.
@@ -32,12 +31,11 @@
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE 1 TO PL-HAS-SKY
-     MOVE "sky daylight u at times 0, 14999, 15000, 15500, 15999, 16000, 28999, 29000, 29500, "
-         & "29999" TO TL-CASE
+     MOVE "sky daylight u at times 0, 132, 133, 11867, 12768, 13670, 22330, 23000, 23999" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "1000 1000 1000 600 201 200 200 200 600 999" TO TL-EXPECTED
+     MOVE "940 999 1000 1000 600 200 200 497 940" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
          MOVE WS-TIME(WS-I) TO PL-TIME
          CALL "SKY-UPDATE" USING CLIENT-STATE
          MOVE SK-U TO WS-EDIT
@@ -50,13 +48,13 @@
      MOVE "sky colour by day #8FB8E6, by night #0E1222, at u = 600 halfway (#4E6584)" TO TL-CASE
      MOVE "8FB8E6 0E1222 4E6584" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     MOVE 0 TO PL-TIME
+     MOVE 6000 TO PL-TIME
      CALL "SKY-UPDATE" USING CLIENT-STATE
      PERFORM SHOW-COLOUR
-     MOVE 20000 TO PL-TIME
+     MOVE 18000 TO PL-TIME
      CALL "SKY-UPDATE" USING CLIENT-STATE
      PERFORM SHOW-COLOUR
-     MOVE 15500 TO PL-TIME
+     MOVE 12768 TO PL-TIME
      CALL "SKY-UPDATE" USING CLIENT-STATE
      PERFORM SHOW-COLOUR
      MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED

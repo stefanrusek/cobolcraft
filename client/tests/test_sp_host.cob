@@ -75,6 +75,31 @@
          " online " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "sp host a hosted world generates its standard chunks in the generation workers (docs/design/generation-worker.md)"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "GEN-WORKERS-GET" USING WS-NUMBER
+     MOVE WS-NUMBER TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     IF TL-OBSERVED-N > 0 AND TL-OBSERVED-N < 5
+         MOVE 1 TO TL-OBSERVED-N
+     ELSE
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+
+     MOVE SP-SETTINGS TO CORE-SETTINGS
+     MOVE "sp host the settings handed to the core carry the 002 fields: the world type (a new "
+         & "world is a cobolcraft one unless the create screen chose), the game directory, no seed text"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "cobolcraft build/client-test-sp-host []" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(CS-WORLD-TYPE) " " FUNCTION TRIM(CS-GAME-DIR) " [" FUNCTION TRIM(CS-SEED-TEXT)
+         "]" DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE "build/client-test-sp-host/saves/First/access.dat" TO WS-PATH
      MOVE 48 TO WS-PATH-LENGTH
@@ -91,7 +116,8 @@
          FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Tick cadence: 50 frames 20 ms apart are 1000 ms, 20 ticks; one frame 200 ms later catches up 4.
+*>   Tick cadence: 50 frames 20 ms apart are 1000 ms, 20 ticks; one frame 200 ms later owes 4 and runs
+*>   3 (CL-MAX-PUMP-TICKS; the fourth is spread to the next frame).
      MOVE SP-TICKS TO WS-TICKS
      PERFORM 50 TIMES
          CALL "TEST-STEP" USING CLIENT-STATE
@@ -100,10 +126,10 @@
      MOVE SP-TICKS TO WS-TICKS
      MOVE 200 TO WS-MS
      CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-ZERO WS-MS
-     MOVE "sp host one CORE-TICK per elapsed 50 ms: 20 in 1000 ms of 20 ms frames, 4 in one frame "
-         & "200 ms later" TO TL-CASE
+     MOVE "sp host one CORE-TICK per elapsed 50 ms: 20 in 1000 ms of 20 ms frames, 3 (the cap) in one "
+         & "frame 200 ms later" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 2004 TO TL-EXPECTED-N
+     MOVE 2003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-T1 * 100 + SP-TICKS - WS-TICKS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -159,7 +185,7 @@
      MOVE "sp host the pause menu of a hosted world offers Save and Leave the World in place of "
          & "Disconnect" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Game Menu|Back to the World|Open to Others|Save and Leave the World" TO TL-EXPECTED
+     MOVE "Game Menu|Back to the World|Options|Open to Others|Save and Leave the World" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CBL_DELETE_FILE" USING WS-LEVEL
@@ -196,8 +222,8 @@
      MOVE 0 TO CH-COUNT
      MOVE CC-KEY-SLASH TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
-     MOVE "shutdown" TO WS-TYPED
-     MOVE 8 TO WS-TYPED-LENGTH
+     MOVE "stop" TO WS-TYPED
+     MOVE 4 TO WS-TYPED-LENGTH
      CALL "TEST-TYPE" USING CLIENT-STATE WS-TYPED WS-TYPED-LENGTH
      MOVE CC-KEY-ENTER TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
@@ -205,7 +231,7 @@
          CALL "TEST-STEP" USING CLIENT-STATE
      END-PERFORM
      CALL "CORE-STATUS-GET" USING CORE-STATUS
-     MOVE "sp host the host's /shutdown command (operator status as host) quits the world: saved "
+     MOVE "sp host the host's /stop command (operator status as host) quits the world: saved "
          & "(run state 2), title screen" TO TL-CASE
      MOVE "joined 1 active 0 run 2 screen 1" TO TL-EXPECTED
      MOVE WS-JOINED TO WS-E1
@@ -216,9 +242,10 @@
      STRING "joined " FUNCTION TRIM(WS-E1) " active " FUNCTION TRIM(WS-E2) " run "
          FUNCTION TRIM(WS-E3) " screen " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "sp host the shutdown confirmation (sent before stopping, standin-content §16 row 29) "
+     MOVE "sp host the stop confirmation (sent before stopping) "
          & "reaches the host's chat before the world is quit" TO TL-CASE
-     MOVE "Shutting down" TO TL-EXPECTED
+*>   The client language table has no standard command keys yet (BLOCKED, CLLANG.cpy), so the chat shows the key.
+     MOVE "commands.stop.stopping" TO TL-EXPECTED
      MOVE "none" TO TL-OBSERVED
      IF CH-COUNT > 0
          MOVE CH-TEXT(CH-COUNT) TO TL-OBSERVED

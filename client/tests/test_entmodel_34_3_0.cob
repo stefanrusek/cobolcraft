@@ -1,0 +1,575 @@
+*> Acceptance test of docs/protocol/34-entity-models-3-villagers-illagers-golems-misc.md section 0 (Engine pieces these models rely on): the eight scaled layers,
+*> the entity-space height of a model y, the plane cuboids, triangleWave, AnimationState timing, the model render types and the illusioner body visibility, with the worked
+*> example of 0.2 (copper golem walk) through the engine of 34-1 section 5. Expected values were worked by an independent script.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-3-0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-IN.
+    05 WS-IV                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-OUT.
+    05 WS-OV                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-FIELD              PIC X(28).
+ 01 WS-MODEL              PIC X(28).
+ 01 WS-LAYER              PIC X(24).
+ 01 WS-I                  BINARY-LONG.
+ 01 WS-COUNT              BINARY-LONG.
+ 01 WS-TYPE               PIC X(24).
+ 01 WS-FLAG               BINARY-LONG.
+ 01 WS-WALK-POS           FLOAT-LONG.
+ 01 WS-WALK-SPEED         FLOAT-LONG.
+ 01 WS-TF                 FLOAT-LONG.
+ 01 WS-SF                 FLOAT-LONG.
+ 01 WS-MS                 BINARY-LONG.
+ 01 WS-SCALE              FLOAT-LONG.
+ 01 WS-CH                 BINARY-LONG.
+ 01 WS-T                  FLOAT-LONG.
+ 01 WS-W.
+    05 WS-WV              FLOAT-LONG OCCURS 3 TIMES.
+ COPY CLEM5.
+ PROCEDURE DIVISION.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 292
+         CALL "EM4-FIELD-ROW" USING WS-I WS-FIELD WS-MODEL WS-LAYER
+         CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+         ADD WS-FLAG TO WS-COUNT
+     END-PERFORM
+     MOVE "item 7: exactly eight registry layers carry the 0.9375 root" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-COUNT TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VILLAGER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of VILLAGER" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VILLAGER_NO_HAT" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of VILLAGER_NO_HAT" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "WANDERING_TRADER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of WANDERING_TRADER" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of PILLAGER" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VINDICATOR" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of VINDICATOR" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of EVOKER" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ILLUSIONER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of ILLUSIONER" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "WITCH" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of WITCH" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VILLAGER_BABY" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of VILLAGER_BABY" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VILLAGER_BABY_NO_HAT" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of VILLAGER_BABY_NO_HAT" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ZOMBIE_VILLAGER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of ZOMBIE_VILLAGER" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ZOMBIE_VILLAGER_BABY" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of ZOMBIE_VILLAGER_BABY" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ZOMBIE_VILLAGER_NO_HAT" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of ZOMBIE_VILLAGER_NO_HAT" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "RAVAGER" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of RAVAGER" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "IRON_GOLEM" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of IRON_GOLEM" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ALLAY" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of ALLAY" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "NOSUCH" TO WS-FIELD
+     CALL "EM3-SCALED-LAYER" USING WS-FIELD WS-FLAG
+     MOVE "item 7: scaled flag of NOSUCH" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FLAG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 24 TO WS-IV(2)
+     CALL "EM3-ENTITY-Y" USING WS-IN WS-OUT
+     MOVE "item 8: height of model y 24 scaled 0" TO WS-NAME
+     MOVE 0.001 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 24 TO WS-IV(2)
+     CALL "EM3-ENTITY-Y" USING WS-IN WS-OUT
+     MOVE "item 8: height of model y 24 scaled 1" TO WS-NAME
+     MOVE 0.0009375 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE -10 TO WS-IV(2)
+     CALL "EM3-ENTITY-Y" USING WS-IN WS-OUT
+     MOVE "item 8: height of model y -10 scaled 1" TO WS-NAME
+     MOVE 1.993125 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 8 TO WS-IV(2)
+     CALL "EM3-ENTITY-Y" USING WS-IN WS-OUT
+     MOVE "item 8: height of model y 8 scaled 0" TO WS-NAME
+     MOVE 1.001 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE -16 TO WS-IV(2)
+     CALL "EM3-ENTITY-Y" USING WS-IN WS-OUT
+     MOVE "item 8: height of model y -16 scaled 0" TO WS-NAME
+     MOVE 2.501 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     CALL "EM3-ENTITY-Y" USING WS-IN WS-OUT
+     MOVE "item 8: height of model y 0 scaled 1" TO WS-NAME
+     MOVE 1.4071875 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 8 TO WS-IV(1)
+     MOVE 10 TO WS-IV(2)
+     MOVE 8 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 8 x 10 x 8 cuboid" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 8 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 0 x 5 x 8 cuboid" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 9 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 5 x 0 x 9 cuboid" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 9 TO WS-IV(1)
+     MOVE 14 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 9 x 14 x 0 cuboid" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 3 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 0 x 0 x 3 cuboid" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 0 x 0 x 0 cuboid" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-PLANE-FACES" USING WS-IN WS-OUT
+     MOVE "item 4: faces of non-zero area of a 1 x 1 x 1 cuboid" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(0, 13)" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3.25 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(3.25, 13)" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 6.5 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(6.5, 13)" TO WS-NAME
+     MOVE -1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 9.75 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(9.75, 13)" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 13 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(13, 13)" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 35 TO WS-IV(1)
+     MOVE 70 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(35, 70)" TO WS-NAME
+     MOVE -1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 70 TO WS-IV(1)
+     MOVE 70 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(70, 70)" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-IV(1)
+     MOVE 10 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(10, 10)" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 10 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(5, 10)" TO WS-NAME
+     MOVE -1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 7.5 TO WS-IV(1)
+     MOVE 10 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(7.5, 10)" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2.5 TO WS-IV(1)
+     MOVE 10 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(2.5, 10)" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 20 TO WS-IV(1)
+     MOVE 70 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(20, 70)" TO WS-NAME
+     MOVE -0.142857143 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 6 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(6, 13)" TO WS-NAME
+     MOVE -0.846153846 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 12.5 TO WS-IV(1)
+     MOVE 13 TO WS-IV(2)
+     CALL "EM3-TRIANGLE" USING WS-IN WS-OUT
+     MOVE "triangleWave(12.5, 13)" TO WS-NAME
+     MOVE 0.846153846 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 time in ms age 10 start 4 speed 1 [1]" TO WS-NAME
+     MOVE 300 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 time in ms age 10 start 4 speed 1 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10.5 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 time in ms age 10.5 start 4 speed 1 [1]" TO WS-NAME
+     MOVE 325 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 time in ms age 10.5 start 4 speed 1 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10.5 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 0.5 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 time in ms age 10.5 start 4 speed 0.5 [1]" TO WS-NAME
+     MOVE 162 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 time in ms age 10.5 start 4 speed 0.5 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3.99 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 time in ms age 3.99 start 4 speed 1 [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 time in ms age 3.99 start 4 speed 1 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 100 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 time in ms age 100 start 0 speed 2 [1]" TO WS-NAME
+     MOVE 10000 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 time in ms age 100 start 0 speed 2 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 7.25 TO WS-IV(1)
+     MOVE 2 TO WS-IV(2)
+     MOVE 1.5 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 time in ms age 7.25 start 2 speed 1.5 [1]" TO WS-NAME
+     MOVE 393 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 time in ms age 7.25 start 2 speed 1.5 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-IV(1)
+     MOVE -2147483648 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-TIME" USING WS-IN WS-OUT
+     MOVE "0.2 a stopped state (startTick = Integer.MIN_VALUE) applies nothing [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 a stopped state (startTick = Integer.MIN_VALUE) applies nothing [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-FF" USING WS-IN WS-OUT
+     MOVE "0.2 fastForward start 10 ticks 5 speed 1" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-IV(1)
+     MOVE 2.7 TO WS-IV(2)
+     MOVE 1.5 TO WS-IV(3)
+     CALL "EM3-STATE-FF" USING WS-IN WS-OUT
+     MOVE "0.2 fastForward start 10 ticks 2.7 speed 1.5" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-IV(1)
+     MOVE -3 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-FF" USING WS-IN WS-OUT
+     MOVE "0.2 fastForward start 10 ticks -3 speed 1" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -2147483648 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-STATE-FF" USING WS-IN WS-OUT
+     MOVE "0.2 fastForward start -2147483648 ticks 5 speed 1" TO WS-NAME
+     MOVE -2147483648 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VEX" TO WS-FIELD
+     CALL "EM3-RENDER-MODEL-TYPE" USING WS-FIELD WS-TYPE
+     MOVE "0.3 item 3: model render type of VEX" TO WS-NAME
+     MOVE "entityTranslucent" TO TL-EXPECTED
+     MOVE WS-TYPE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "ALLAY" TO WS-FIELD
+     CALL "EM3-RENDER-MODEL-TYPE" USING WS-FIELD WS-TYPE
+     MOVE "0.3 item 3: model render type of ALLAY" TO WS-NAME
+     MOVE "entityTranslucent" TO TL-EXPECTED
+     MOVE WS-TYPE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "COPPER_GOLEM_STANDING_STATUE" TO WS-FIELD
+     CALL "EM3-RENDER-MODEL-TYPE" USING WS-FIELD WS-TYPE
+     MOVE "0.3 item 3: model render type of COPPER_GOLEM_STANDING_STATUE" TO WS-NAME
+     MOVE "entityCutout" TO TL-EXPECTED
+     MOVE WS-TYPE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "VILLAGER" TO WS-FIELD
+     CALL "EM3-RENDER-MODEL-TYPE" USING WS-FIELD WS-TYPE
+     MOVE "0.3 item 3: model render type of VILLAGER" TO WS-NAME
+     MOVE "entityCutout" TO TL-EXPECTED
+     MOVE WS-TYPE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "ILLUSIONER" TO WS-FIELD
+     CALL "EM3-RENDER-MODEL-TYPE" USING WS-FIELD WS-TYPE
+     MOVE "0.3 item 3: model render type of ILLUSIONER" TO WS-NAME
+     MOVE "entityCutout" TO TL-EXPECTED
+     MOVE WS-TYPE TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     CALL "EM3-BODY-VISIBLE" USING WS-IN WS-OUT
+     MOVE "0.3 item 7: isBodyVisible invisible 0 illusioner 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     CALL "EM3-BODY-VISIBLE" USING WS-IN WS-OUT
+     MOVE "0.3 item 7: isBodyVisible invisible 1 illusioner 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EM3-BODY-VISIBLE" USING WS-IN WS-OUT
+     MOVE "0.3 item 7: isBodyVisible invisible 1 illusioner 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EM3-BODY-VISIBLE" USING WS-IN WS-OUT
+     MOVE "0.3 item 7: isBodyVisible invisible 0 illusioner 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1.0 TO WS-WALK-POS
+     MOVE 0.2 TO WS-WALK-SPEED
+     MOVE 2 TO WS-TF
+     MOVE 2.5 TO WS-SF
+     CALL "EM5-WALK-TIME" USING WS-WALK-POS WS-WALK-SPEED WS-TF WS-SF WS-MS WS-SCALE
+     MOVE "0.2 worked example: ms = (long)(1.0 * 50 * 2) = 100" TO WS-NAME
+     MOVE 100 TO WS-E
+     MOVE WS-MS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "0.2 worked example: k = min(0.2 * 2.5, 1) = 0.5" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SCALE TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO AD-CHANNELS
+     MOVE 0.8333 TO AD-LENGTH
+     MOVE 1 TO AD-LOOP
+     MOVE "right_arm" TO AC-BONE(1)
+     MOVE 2 TO AC-TARGET(1)
+     MOVE 3 TO AC-KEYS(1)
+     MOVE 0 TO AK-TS(1, 1)
+     MOVE 1.221730476 TO AK-POST(1, 1, 1)
+     MOVE 1.221730476 TO AK-PRE(1, 1, 1)
+     MOVE 0 TO AK-POST(1, 1, 2) AK-POST(1, 1, 3) AK-PRE(1, 1, 2) AK-PRE(1, 1, 3)
+     MOVE 2 TO AK-INTERP(1, 1)
+     MOVE 0.4167 TO AK-TS(1, 2)
+     MOVE -1.396263402 TO AK-POST(1, 2, 1)
+     MOVE -1.396263402 TO AK-PRE(1, 2, 1)
+     MOVE 0 TO AK-POST(1, 2, 2) AK-POST(1, 2, 3) AK-PRE(1, 2, 2) AK-PRE(1, 2, 3)
+     MOVE 2 TO AK-INTERP(1, 2)
+     MOVE 0.8333 TO AK-TS(1, 3)
+     MOVE 1.221730476 TO AK-POST(1, 3, 1)
+     MOVE 1.221730476 TO AK-PRE(1, 3, 1)
+     MOVE 0 TO AK-POST(1, 3, 2) AK-POST(1, 3, 3) AK-PRE(1, 3, 2) AK-PRE(1, 3, 3)
+     MOVE 2 TO AK-INTERP(1, 3)
+     MOVE 0.1 TO WS-T
+     MOVE 1 TO WS-CH
+     MOVE 0.5 TO WS-SCALE
+     CALL "EM5-EVAL-CHANNEL" USING EM5-DEF WS-CH WS-T WS-SCALE WS-W
+     MOVE "0.2 worked example: right arm xRot added = about 18.915 degrees = 0.3301 rad" TO WS-NAME
+     MOVE 0.330162695 TO WS-E
+     MOVE WS-WV(1) TO WS-O
+     PERFORM CHECK-NUM
+     STOP RUN.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-3§0 Engine pieces these models rely on: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-3§0 Engine pieces these models rely on: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-3-0.

@@ -1,0 +1,1 @@
+{"feature":"minecraft:oak","placement":[{"type":"minecraft:block_predicate_filter","predicate":{"type":"minecraft:has_sturdy_face","direction":"down","offset":[0,1,0]}}]}

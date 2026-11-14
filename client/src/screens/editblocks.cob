@@ -1,0 +1,691 @@
+*> The block editor screens of docs/protocol/40-menus-9-block-editor-screens.md: the permission rule (CAN-USE-GM, 2.2), the packets of section 8 (SEND-*) and the command block screen (4, CMDBLOCK-*).
+*> The structure, jigsaw and test block screens are not drawn; their packets can be sent from EB-ST-* and EB-JG-* (CLSTATE). The command block screen opens with its controls enabled at once (the
+*> Block Entity Data refresh of 4.3 is not decoded), the previous output is always "-" and the command box has no cursor.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CAN-USE-GM.
+*> USING CLIENT-STATE, ok out (1/0): 2.2 canUseGameMasterBlocks: infinite materials (creative, PL-MODE 1) and the permission level 2 or above (Entity Event 24 + level).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-OK.
+     MOVE 0 TO L-OK
+     IF PL-MODE = 1 AND PL-PERM >= 2
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM CAN-USE-GM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-SET-COMMAND-BLOCK.
+*> USING CLIENT-STATE, x, y, z, command (PIC X(1100)), length, mode (0 sequence, 1 auto, 2 redstone), flags: Set Command Block (05c 0x37).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 55.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX128              BINARY-LONG VALUE 128.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-COMMAND              PIC X(1100).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-COMMAND L-LENGTH L-MODE L-FLAGS.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-COMMAND L-LENGTH WS-MAX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-MODE
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-FLAGS
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-SET-COMMAND-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-SET-COMMAND-MINECART.
+*> USING CLIENT-STATE, entity id, command (PIC X(1100)), length, track output (1/0): Set Command Minecart (05c 0x38).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 56.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX128              BINARY-LONG VALUE 128.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-COMMAND              PIC X(1100).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-TRACK                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ENTITY L-COMMAND L-LENGTH L-TRACK.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-COMMAND L-LENGTH WS-MAX
+     CALL "PB-PUT-BOOL" USING PB-BUFFER L-TRACK
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-SET-COMMAND-MINECART.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-JIGSAW-GENERATE.
+*> USING CLIENT-STATE, x, y, z, levels, keep jigsaws (1/0): Jigsaw Generate (05c 0x1B).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 27.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX128              BINARY-LONG VALUE 128.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-LEVELS              BINARY-LONG.
+ 01 L-KEEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-LEVELS L-KEEP.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-LEVELS
+     CALL "PB-PUT-BOOL" USING PB-BUFFER L-KEEP
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-JIGSAW-GENERATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-SET-TEST-BLOCK.
+*> USING CLIENT-STATE, x, y, z, mode (0 to 3), message (PIC X(1100)), length: Set Test Block (05c 0x3D).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 61.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX128              BINARY-LONG VALUE 128.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-MESSAGE              PIC X(1100).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-MODE L-MESSAGE L-LENGTH.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-MODE
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-MESSAGE L-LENGTH WS-MAX
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-SET-TEST-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-SET-JIGSAW-BLOCK.
+*> USING CLIENT-STATE, x, y, z: Set Jigsaw Block (05c 0x3B) from EB-JG-*: name, target, pool, final state (EB-JG-TEXT 1 to 4), the joint (0 rollable, 1 aligned) and the priorities.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 59.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX128              BINARY-LONG VALUE 128.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-JOINT              PIC X(8).
+ 01 WS-JOINT-LEN          BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 4
+         CALL "PB-PUT-STRING" USING PB-BUFFER EB-JG-TEXT(WS-V) EB-JG-LEN(WS-V) WS-MAX
+     END-PERFORM
+     IF EB-JG-JOINT = 1
+         MOVE "aligned" TO WS-JOINT
+         MOVE 7 TO WS-JOINT-LEN
+     ELSE
+         MOVE "rollable" TO WS-JOINT
+         MOVE 8 TO WS-JOINT-LEN
+     END-IF
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-JOINT WS-JOINT-LEN WS-MAX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EB-JG-SELECTION
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EB-JG-PLACEMENT
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-SET-JIGSAW-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-SET-STRUCTURE-BLOCK.
+*> USING CLIENT-STATE, x, y, z: Set Structure Block (05c 0x3C) from EB-ST-*: update type, mode, name, offsets and sizes (one byte each, the low 8 bits: the server clamps them to -48 to 48 and 0 to 48), mirror, rotation, metadata (128), integrity (0 to 1), seed and flags.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 60.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX128              BINARY-LONG VALUE 128.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-N                  BINARY-LONG.
+ 01 WS-FLOAT              FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EB-ST-UPDATE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EB-ST-MODE
+     CALL "PB-PUT-STRING" USING PB-BUFFER EB-ST-NAME EB-ST-NAME-LEN WS-MAX
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
+         MOVE EB-ST-OFFSET(WS-V) TO WS-N
+         CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     END-PERFORM
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
+         MOVE EB-ST-SIZE(WS-V) TO WS-N
+         CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EB-ST-MIRROR
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EB-ST-ROTATION
+     CALL "PB-PUT-STRING" USING PB-BUFFER EB-ST-META EB-ST-META-LEN WS-MAX128
+     COMPUTE WS-FLOAT = FUNCTION MAX(0, FUNCTION MIN(1, EB-ST-INTEGRITY))
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLOAT
+     CALL "PB-PUT-VARLONG" USING PB-BUFFER EB-ST-SEED
+     CALL "PB-PUT-BYTE" USING PB-BUFFER EB-ST-FLAGS
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-SET-STRUCTURE-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDBLOCK-USE-CHECK.
+*> USING CLIENT-STATE, x, y, z, block state id of the block used: 2.1 CommandBlock.useWithoutItem: with the permission (CAN-USE-GM) and a command block, chain command block or repeating command block
+*> (the block of the state, from the open content set) the command block screen opens on that position, mode REDSTONE, no flags, an empty command.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROW                 PIC X(819).
+ 01 WS-VIEW REDEFINES WS-ROW.
+    05 FILLER              PIC X(4).
+    05 WS-KEY              PIC X(35).
+    05 FILLER              PIC X(780).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-CMDBLOCK.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-STATE.
+     CALL "CAN-USE-GM" USING CLIENT-STATE WS-OK
+     IF WS-OK = 1
+         CALL "CONTENT-BLOCK-OF-STATE" USING L-STATE WS-BLOCK WS-INDEX WS-ROW WS-STATUS
+         IF WS-STATUS = 0 AND (WS-KEY = "command_block" OR WS-KEY = "chain_command_block"
+                 OR WS-KEY = "repeating_command_block" OR WS-KEY = "minecraft:command_block"
+                 OR WS-KEY = "minecraft:chain_command_block" OR WS-KEY = "minecraft:repeating_command_block")
+             MOVE L-X TO EB-X
+             MOVE L-Y TO EB-Y
+             MOVE L-Z TO EB-Z
+             MOVE 2 TO EB-MODE
+             MOVE 0 TO EB-MC
+             MOVE 0 TO EB-COND EB-AUTO EB-TRACK EB-CMD-LEN
+             MOVE SPACES TO EB-CMD
+             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CMDBLOCK-USE-CHECK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDBLOCK-BUILD.
+*> USING CLIENT-STATE, GUI width, GUI height: 4.1 and 4.2 with cx = W / 2: the label advMode.setCommand centred at y 20, the command box (cx - 150, 50, 300 x 20) with its label at (cx - 149, 40), the previous
+*> output box (cx - 150, 135, 276 x 20) holding "-" with its label at y 125, the track cycle (cx + 130, 135, 20 x 20) reading O or X, the mode, type and trigger cycles at y 165 (x cx - 154, cx - 50,
+*> cx + 54; 100 x 20), Done (cx - 154, H / 4 + 132) and Cancel (cx + 4), 150 x 20.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-OUT                 PIC X(512).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-OUT-256             PIC X(256).
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG VALUE 0.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-SWATCH              BINARY-LONG.
+ 01 WS-NOTEXT              PIC X(512).
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-GW                   BINARY-LONG.
+ 01 L-GH                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+     GO TO MAIN-FLOW.
+
+*> A lang key label at (WS-X, WS-Y).
+ KEY-LABEL.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+     CALL "BOOK-LABEL" USING CLIENT-STATE WS-OUT WS-OUT-LENGTH WS-X WS-Y
+     .
+
+*> A cycle button of the lang key WS-KEY at (WS-X, 165), 100 x 20, with the action WS-ACTION.
+ CYCLE.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+     MOVE 165 TO WS-Y
+     MOVE 100 TO WS-W
+     MOVE 20 TO WS-H
+     CALL "BOOK-BUTTON" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-STATE
+     .
+
+ MAIN-FLOW.
+     COMPUTE WS-CX = L-GW / 2
+     MOVE SPACES TO WS-NOTEXT
+     MOVE "advMode.setCommand" TO WS-KEY
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+     MOVE WS-OUT(1:256) TO WS-OUT-256
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-OUT-256 WS-OUT-LENGTH WS-WIDTH
+     COMPUTE WS-X = WS-CX - WS-WIDTH / 2
+     MOVE 20 TO WS-Y
+     CALL "BOOK-LABEL" USING CLIENT-STATE WS-OUT WS-OUT-LENGTH WS-X WS-Y
+     MOVE "advMode.command" TO WS-KEY
+     COMPUTE WS-X = WS-CX - 149
+     MOVE 40 TO WS-Y
+     PERFORM KEY-LABEL
+     MOVE WK-OVERLAY TO WS-KIND
+     MOVE ACT-NONE TO WS-ACTION
+     MOVE SW-FIELD TO WS-SWATCH
+     COMPUTE WS-X = WS-CX - 150
+     MOVE 50 TO WS-Y
+     MOVE 300 TO WS-W
+     MOVE 20 TO WS-H
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-NOTEXT WS-ZERO WS-STATE
+     IF EB-CMD-LEN > 0
+         MOVE SPACES TO WS-TEXT
+         MOVE EB-CMD(1:EB-CMD-LEN) TO WS-TEXT
+         COMPUTE WS-X = WS-CX - 146
+         MOVE 56 TO WS-Y
+         MOVE FUNCTION MIN(EB-CMD-LEN, 256) TO WS-LEN
+         CALL "BOOK-LABEL" USING CLIENT-STATE WS-TEXT WS-LEN WS-X WS-Y
+     END-IF
+     MOVE "advMode.previousOutput" TO WS-KEY
+     COMPUTE WS-X = WS-CX - 149
+     COMPUTE WS-Y = 125 + 15 * EB-MC
+     PERFORM KEY-LABEL
+     COMPUTE WS-X = WS-CX - 150
+     COMPUTE WS-Y = 135 + 15 * EB-MC
+     MOVE 276 TO WS-W
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-NOTEXT WS-ZERO WS-STATE
+     MOVE "-" TO WS-TEXT
+     MOVE 1 TO WS-LEN
+     COMPUTE WS-X = WS-CX - 146
+     COMPUTE WS-Y = 141 + 15 * EB-MC
+     CALL "BOOK-LABEL" USING CLIENT-STATE WS-TEXT WS-LEN WS-X WS-Y
+     MOVE "O" TO WS-TEXT
+     IF EB-TRACK = 0
+         MOVE "X" TO WS-TEXT
+     END-IF
+     MOVE 1 TO WS-LEN
+     MOVE WK-BUTTON TO WS-KIND
+     MOVE ACT-CMD-TRACK TO WS-ACTION
+     COMPUTE WS-X = WS-CX + 130
+     COMPUTE WS-Y = 135 + 15 * EB-MC
+     MOVE 20 TO WS-W
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LEN WS-STATE
+     IF EB-MC = 0
+         EVALUATE EB-MODE
+             WHEN 0
+                 MOVE "advMode.mode.sequence" TO WS-KEY
+             WHEN 1
+                 MOVE "advMode.mode.auto" TO WS-KEY
+             WHEN OTHER
+                 MOVE "advMode.mode.redstone" TO WS-KEY
+         END-EVALUATE
+         MOVE ACT-CMD-MODE TO WS-ACTION
+         COMPUTE WS-X = WS-CX - 154
+         PERFORM CYCLE
+         IF EB-COND = 1
+             MOVE "advMode.mode.conditional" TO WS-KEY
+         ELSE
+             MOVE "advMode.mode.unconditional" TO WS-KEY
+         END-IF
+         MOVE ACT-CMD-TYPE TO WS-ACTION
+         COMPUTE WS-X = WS-CX - 50
+         PERFORM CYCLE
+         IF EB-AUTO = 1
+             MOVE "advMode.mode.autoexec.bat" TO WS-KEY
+         ELSE
+             MOVE "advMode.mode.redstoneTriggered" TO WS-KEY
+         END-IF
+         MOVE ACT-CMD-TRIGGER TO WS-ACTION
+         COMPUTE WS-X = WS-CX + 54
+         PERFORM CYCLE
+     END-IF
+     MOVE "gui.done" TO WS-KEY
+     MOVE 8 TO WS-KEY-LENGTH
+     COMPUTE WS-X = WS-CX - 154
+     COMPUTE WS-Y = L-GH / 4 + 132
+     MOVE 150 TO WS-W
+     MOVE 20 TO WS-H
+     CALL "BOOK-BUTTON" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH ACT-CMD-DONE WS-ARG WS-X WS-Y WS-W WS-H WS-STATE
+     MOVE "gui.cancel" TO WS-KEY
+     MOVE 10 TO WS-KEY-LENGTH
+     COMPUTE WS-X = WS-CX + 4
+     CALL "BOOK-BUTTON" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH ACT-CLOSE-MENU WS-ARG WS-X WS-Y WS-W WS-H WS-STATE
+     GOBACK.
+ END PROGRAM CMDBLOCK-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDBLOCK-SEND.
+*> USING CLIENT-STATE: onDone (4.1, 4.2): Set Command Block with the position, the command, the mode and the flags (track 1, conditional 2, automatic 4); the world screen.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-TEXT                PIC X(1100).
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     COMPUTE WS-FLAGS = EB-TRACK + 2 * EB-COND + 4 * EB-AUTO
+     MOVE SPACES TO WS-TEXT
+     IF EB-CMD-LEN > 0
+         MOVE EB-CMD(1:EB-CMD-LEN) TO WS-TEXT
+     END-IF
+     IF EB-MC = 1
+         CALL "SEND-SET-COMMAND-MINECART" USING CLIENT-STATE EB-MC-ENTITY WS-TEXT EB-CMD-LEN EB-TRACK
+     ELSE
+         CALL "SEND-SET-COMMAND-BLOCK" USING CLIENT-STATE EB-X EB-Y EB-Z WS-TEXT EB-CMD-LEN EB-MODE WS-FLAGS
+     END-IF
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+     GOBACK.
+ END PROGRAM CMDBLOCK-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDBLOCK-ACTION.
+*> USING CLIENT-STATE, action: the mode cycle (SEQUENCE, AUTO, REDSTONE, back to SEQUENCE), the type and trigger cycles and the track output flip, Done.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ACTION.
+     EVALUATE L-ACTION
+         WHEN ACT-CMD-MODE
+             COMPUTE EB-MODE = FUNCTION MOD(EB-MODE + 1, 3)
+         WHEN ACT-CMD-TYPE
+             COMPUTE EB-COND = 1 - EB-COND
+         WHEN ACT-CMD-TRIGGER
+             COMPUTE EB-AUTO = 1 - EB-AUTO
+         WHEN ACT-CMD-TRACK
+             COMPUTE EB-TRACK = 1 - EB-TRACK
+         WHEN ACT-CMD-DONE
+             CALL "CMDBLOCK-SEND" USING CLIENT-STATE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CMDBLOCK-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDBLOCK-INPUT.
+*> USING CLIENT-STATE: typed characters (from 32, not 127, not the section sign; at most 1024) and Backspace edit the command; Enter (GLFW 257, 335) is onDone; Escape closes with no packet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CCSHIM.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LINE                PIC X(64).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IN-TEXT-COUNT
+         IF IN-TEXT(WS-I) >= 32 AND IN-TEXT(WS-I) < 127 AND EB-CMD-LEN < 1024
+             ADD 1 TO EB-CMD-LEN
+             MOVE FUNCTION CHAR(IN-TEXT(WS-I) + 1) TO EB-CMD(EB-CMD-LEN:1)
+         END-IF
+     END-PERFORM
+     IF IN-KEY-PRESSED(CC-KEY-BACKSPACE + 1) = 1 AND EB-CMD-LEN > 0
+         MOVE EB-CMD-LEN TO WS-LEN
+         CALL "TEXT-DROP-LAST" USING EB-CMD WS-LEN
+         MOVE WS-LEN TO EB-CMD-LEN
+     END-IF
+     IF IN-KEY-PRESSED(257 + 1) = 1 OR IN-KEY-PRESSED(335 + 1) = 1
+         CALL "CMDBLOCK-SEND" USING CLIENT-STATE
+     ELSE
+         IF IN-KEY-PRESSED(CC-KEY-ESCAPE + 1) = 1
+             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CMDBLOCK-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SEND-TEST-INSTANCE-ACTION.
+*> USING CLIENT-STATE, x, y, z, action (0 INIT, 1 QUERY, 2 SET, 3 RESET, 4 SAVE, 5 EXPORT, 6 RUN), test id text (PIC X(256), the full namespace:path or empty for absent), length, size x, y, z, rotation,
+*> ignore entities (1/0): Test Instance Block Action (05c 0x41): position, action, optional test, size, rotation, ignore entities, status 0, no error message (40-9 7A.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ID                  BINARY-LONG VALUE 65.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-TEXT                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SY                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-ROT                  BINARY-LONG.
+ 01 L-IGNORE               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-ACTION L-TEXT L-LENGTH L-SX L-SY L-SZ L-ROT L-IGNORE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     IF L-LENGTH > 0
+         MOVE 1 TO WS-FLAG
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAG
+         CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     ELSE
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SZ
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ROT
+     CALL "PB-PUT-BOOL" USING PB-BUFFER L-IGNORE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM SEND-TEST-INSTANCE-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MINECART-USE-CHECK.
+*> USING CLIENT-STATE, entity id: 2.1 MinecartCommandBlock.interact: with the permission (CAN-USE-GM) and the entity a command_block_minecart (type id 29 of the entity table in 21 section 2) the command screen
+*> opens for the minecart: no mode, type or trigger cycles, previous output at y 150, Set Command Minecart on Done. The command text starts empty (the client keeps no entity data).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-CMDBLOCK.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ENTITY.
+     CALL "CAN-USE-GM" USING CLIENT-STATE WS-OK
+     IF WS-OK = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) = L-ENTITY AND EN-TYPE(WS-I) = 29
+                 MOVE 1 TO EB-MC
+                 MOVE L-ENTITY TO EB-MC-ENTITY
+                 MOVE 0 TO EB-COND EB-AUTO EB-TRACK EB-CMD-LEN
+                 MOVE 2 TO EB-MODE
+                 MOVE SPACES TO EB-CMD
+                 CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM MINECART-USE-CHECK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-ENTITY-DATA.
+*> USING CLIENT-STATE, PB-BUFFER (after the id): Block Entity Data (05a 0x06: position, block entity type VarInt, network NBT). While the command block screen is open for that position the box and the track flag
+*> follow its Command and TrackOutput (40-9 4.3); any other packet is read and dropped (the client keeps no block entity copy).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ETYPE               BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 0.
+ 01 WN                     PIC X(64).
+ 01 WN-CAP                 BINARY-LONG VALUE 64.
+ 01 WL                     BINARY-LONG.
+ 01 WS-STR                PIC X(1100).
+ 01 WS-STR-CAP            BINARY-LONG VALUE 1100.
+ 01 WS-STR-LEN         BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-APPLY               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-TYPE
+     MOVE 0 TO WS-APPLY
+     IF PB-ERROR = 0 AND SM-SCREEN = SCR-CMDBLOCK AND EB-MC = 0 AND WS-X = EB-X AND WS-Y = EB-Y AND WS-Z = EB-Z
+         MOVE 1 TO WS-APPLY
+     END-IF
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     IF PB-ERROR = 0 AND WS-TYPE = 10
+         MOVE 1 TO WS-ETYPE
+         PERFORM UNTIL WS-ETYPE = 0 OR PB-ERROR = 1
+             MOVE SPACES TO WN
+             CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-ETYPE WN WN-CAP WL
+             EVALUATE TRUE
+                 WHEN WS-ETYPE = 0
+                     CONTINUE
+                 WHEN WN = "Command" AND WS-ETYPE = 8
+                     MOVE SPACES TO WS-STR
+                     CALL "NBT-READ-STRING" USING PB-BUFFER WS-STR WS-STR-CAP WS-STR-LEN
+                     IF WS-APPLY = 1 AND PB-ERROR = 0
+                         MOVE SPACES TO EB-CMD
+                         MOVE FUNCTION MIN(WS-STR-LEN, 1024) TO EB-CMD-LEN
+                         IF EB-CMD-LEN > 0
+                             MOVE WS-STR(1:EB-CMD-LEN) TO EB-CMD
+                         END-IF
+                     END-IF
+                 WHEN WN = "TrackOutput" AND WS-ETYPE = 1
+                     CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
+                     IF WS-APPLY = 1
+                         MOVE FUNCTION ABS(WS-BYTE) TO EB-TRACK
+                     END-IF
+                 WHEN OTHER
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ETYPE
+             END-EVALUATE
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM BLOCK-ENTITY-DATA.

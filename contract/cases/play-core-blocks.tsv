@@ -1,0 +1,25 @@
+# Contract cases of the play to core hooks for block changes (docs/protocol/29-block-updates-and-placement.md
+# §7 "How clients learn about block changes", 09-cobolcraft-profile.md §3.2 rows 0x04, 0x08, 0x29, 0x42, 0x31).
+# Read by tools/gen/gen_contract.py; see README.md. The player is Alice (creative, joined in memory), the
+# world is the test world; the texts are the packets the player is sent, as CORETEST.cpy TEST-DRAIN-BLOCKS
+# writes them: Light Update 49(chunk x,chunk z), Block Update 8(x,y,z=state), Block Changed Ack 4(sequence).
+#
+# Packet order, from doc 29 §7: a chunk holder's broadcast sends the Light Update first (§7.2 step 1) and the
+# Block Update after it (step 2); the Block Changed Ack is sent last (§7.3: at the start of the connection's
+# next tick, after the broadcasts of the tick); a rejected action re-sends the authoritative Block Update
+# directly, and the ack still follows it (§7.3).
+# State ids and the baseplate (state 1, never broken) are standin-content §1.1; greystone is state 2, void 0.
+# A row id starting with `!` marks a documented behaviour the code does not have yet (README.md): such a row
+# passes while the code differs and fails when it matches, so that mark is then removed.
+#
+# seam: play-core-blocks
+# paths: contract/cases/play-core-blocks.tsv core/src/blocks.cob core/src/breaking.cob core/src/light.cob core/src/play.cob core/src/world.cob client/src/sp-host.cob docs/protocol/29-block-updates-and-placement.md
+#
+# columns: see wire-chat.tsv; ops core-use-on (item, x, y, z, face, seq), core-action (action, x, y, z, face, seq,
+# optional setblock), core-block-change (x, y, z, state); optional observe=last keeps only the last packet
+place-light-before-update	core-use-on	BLOCK-USE-ON	core	core		item=2;x=10;y=99;z=10;face=1;seq=1	49(0,0) 8(10,100,10=2) 4(1)
+place-ack-last	core-use-on	BLOCK-USE-ON	core	core		item=2;x=14;y=99;z=14;face=1;seq=2;observe=last	4(2)
+!change-light-before-update	core-block-change	BLOCK-CHANGE	core	core		x=12;y=100;z=12;state=2	49(0,0) 8(12,100,12=2)
+!break-light-before-update	core-action	BLOCK-ACTION	core	core		action=0;x=20;y=100;z=20;face=1;seq=3;setblock=2	49(1,1) 8(20,100,20=0) 4(3)
+break-ack-last	core-action	BLOCK-ACTION	core	core		action=0;x=21;y=100;z=21;face=1;seq=4;setblock=2;observe=last	4(4)
+refused-update-then-ack	core-action	BLOCK-ACTION	core	core		action=0;x=20;y=0;z=20;face=1;seq=5	8(20,0,20=1) 4(5)

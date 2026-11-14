@@ -1,0 +1,1 @@
+{"attributes": {"minecraft:gameplay/natural_mob_spawns": {"modifier": "overlay", "argument": {"spawns_by_category": {"creature": [{"type": "minecraft:cow", "weight": "1", "count": 2}]}}}}}

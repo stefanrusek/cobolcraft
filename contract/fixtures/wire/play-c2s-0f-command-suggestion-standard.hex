@@ -1,0 +1,9 @@
+# Fixture: Command Suggestion request
+# Phase: play. Direction: serverbound (C->S). Packet id 0x0f (15).
+# Doc refs: 05c 0x0F
+# Stated inputs:
+#   transaction id 300 (two-byte VarInt); text "/gamemode c"
+
+0f                                               # packet id: VarInt 0x0f
+ac 02                                            # Transaction id: VarInt 300
+0b 2f 67 61 6d 65 6d 6f 64 65 20 63              # Text: String "/gamemode c"

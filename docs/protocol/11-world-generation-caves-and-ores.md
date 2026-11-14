@@ -890,6 +890,97 @@ Facts an implementation or test can check against this document without the jar:
 14. Drops: fortune `ore_drops` multiplies by `max(0, nextInt(L+2) - 1) + 1`; redstone drops 4 to 5 plus `nextInt(L + 1)`; lapis 4 to 9; copper 2 to 5; XP ranges of §9.3; pickaxe tiers of §9.1.
 15. Tuff is replaced by the stone-variant ore at y >= 0 and by the deepslate variant at y <= 8, the stone variant winning in [0, 8].
 
+## 12. Seed text to world seed
+
+This section closes the question "does vanilla use a 32-bit string hash for the world-seed field, and how exactly does a typed text become the 64-bit seed" that
+`docs/design/world-types.md` Open question 11 (Decision WT-19) left open. Artifact: `minecraft-26.3-client.jar` (SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, recomputed this round, the artifact of [README.md](README.md)); method: static
+reading with `javap`, no execution. Read in `WorldOptions.parseSeed`; callers read: `WorldCreationUiState.setSeed` (Create World screen, the text of the seed `EditBox`) and
+`DedicatedServerProperties` (key `level-seed`, default empty). Facts about the JDK methods the rule calls (`String.trim`, `Long.parseLong`, `Character.digit`, `String.hashCode`)
+were read from the local JDK 21 class files, not from the jar (the jar does not contain the JDK; a different JDK release is assumed to behave the same, inferred).
+
+### 12.1 The rule
+
+Input: one text `T` (a sequence of UTF-16 code units; the text is never decoded further). Output: either "no seed" or a signed 64-bit integer.
+
+1. **Trim.** Remove from both ends every code unit with value 0x20 or lower (space, tab, line feed, other C0 controls; not U+00A0, not any code unit above 0x20). Read in `String.trim` (Latin-1 and UTF-16 variants both compare `<= 32`). Inner characters are untouched.
+2. **Empty.** If the trimmed text has length 0 (including a text of only spaces), the result is "no seed": the caller draws a random seed (§12.3).
+3. **Number.** Otherwise try to read the trimmed text as a base-10 signed 64-bit integer (`Long.parseLong`, radix 10):
+   * an optional first character `-` or `+` (a sign alone, length 1, fails);
+   * then one or more digits, where a digit is any single UTF-16 unit that `Character.digit(c, 10)` accepts. The set, enumerated from the local JDK 21 `Character` data by a script (370 units, 37 runs of ten consecutive code points, each run's first unit is 0 and its value is the offset from the run start): 0030-0039, 0660-0669, 06F0-06F9, 07C0-07C9, 0966-096F, 09E6-09EF, 0A66-0A6F, 0AE6-0AEF, 0B66-0B6F, 0BE6-0BEF, 0C66-0C6F, 0CE6-0CEF, 0D66-0D6F, 0DE6-0DEF, 0E50-0E59, 0ED0-0ED9, 0F20-0F29, 1040-1049, 1090-1099, 17E0-17E9, 1810-1819, 1946-194F, 19D0-19D9, 1A80-1A89, 1A90-1A99, 1B50-1B59, 1BB0-1BB9, 1C40-1C49, 1C50-1C59, A620-A629, A8D0-A8D9, A900-A909, A9D0-A9D9, A9F0-A9F9, AA50-AA59, ABF0-ABF9, FF10-FF19 (this equals the BMP characters of Unicode category Nd in that JDK's Unicode version; a newer Unicode version could add runs, inferred). A supplementary-plane digit is a surrogate pair, whose units are not digits, so it fails (is hashed);
+   * leading zeros are allowed and ignored in value; `-0` is 0; `+5` is 5;
+   * any other character (inner space, `.`, `_`, `x`, U+2212 minus, a second sign) fails;
+   * the value must fit in -2^63 .. 2^63-1 (both bounds are accepted, one beyond either fails); a failure by overflow is the same as any other failure.
+   If it parses, the seed is that value. No range reduction, no hash.
+4. **Hash.** If the parse fails, the seed is the 32-bit Java string hash of the **trimmed** text, sign-extended to 64 bits (`(long) text.hashCode()`, so it lies in -2^31 .. 2^31-1): `h = 0`; for each UTF-16 code unit `c` in order, `h = 31*h + c` in 32-bit two's-complement wrap-around; the final `h` is read as signed and widened.
+   A text that differs only by outer whitespace therefore gives the same seed as its trimmed form (` hello ` equals `hello`).
+
+This rule supersedes the earlier adopted default WT-19 in world-types.md (WT-19 now points here). Differences from that earlier text: the artifact **trims** (WT-19 did not), accepts a leading `+` (WT-19 hashed it), accepts non-ASCII Unicode decimal digits (WT-19 said "decimal digits"), and a blank text (spaces only) is "no seed" (WT-19 would hash it). The hash and the overflow-to-hash behaviour agree with WT-19.
+
+### 12.2 Input limits and characters (the field, not the rule)
+
+| Item | Value (read) |
+|---|---|
+| Seed field maximum length (Create World screen) | 32 UTF-16 code units: the `EditBox` default; the seed field sets no other (no `setMaxLength` in `CreateWorldScreen$WorldTab`). `setValue` (used for the initial value) cuts a longer text to its first 32 units with no surrogate check, so it could leave a lone high surrogate at unit 32; typing or pasting (`insertText`) truncates to the room left and, when the last kept unit is a high surrogate, drops it too, so a pair is never split (all read). `parseSeed` itself has no length limit. The CobolCraft setting `CS-SEED-TEXT` is 64 characters; a text of 33 to 64 characters is hashed over all its units exactly as in §12.1 (the dedicated-server key is not length-limited either). |
+| Characters the field accepts when typed or pasted | `StringUtil.filterText` drops code units below 0x20, 0x7F and 0xA7 (the section sign); everything else, including all non-ASCII text and surrogates, is kept. A dropped character is removed before the text reaches the rule, so it changes the seed. |
+| Hint shown when empty | "Leave blank for a random seed" (`selectWorld.seedInfo`); label "Seed for the world generator" (`selectWorld.enterSeed`); both strings read from `assets/minecraft/lang/en_us.json` in the jar |
+| Dedicated server | key `level-seed`, default empty. The file is read with a strict UTF-8 decoder (`Settings.loadFromFile`, a decoder object) into a `java.util.Properties`, and the value is fetched with `Properties.get` (`Settings.getStringRaw`, read); the string is then given to the rule of §12.1 as the **decoded property value**, not the raw line. The `.properties` syntax therefore applies first (JDK behaviour, recalled, not verified in the jar, Open question 12): lines starting with `#` or `!` are comments; the first unescaped `=` or `:` (or whitespace) ends the key; whitespace after the separator is dropped from the start of the value and trailing whitespace is kept (§12.1 step 1 then trims it anyway); backslash escapes are decoded, including `\uXXXX` (so `level-seed=é` gives the one unit 233, hash 233) and `\\` gives one backslash. A text is decoded to code points and then to UTF-16 units; supplementary characters (above U+FFFF) are two units, high surrogate first. A missing key, or an empty value, is the empty text (random seed). |
+| UI display afterwards | when the screen is re-created from a world that has a seed, the field shows the seed as a signed decimal (`Long.toString`); an empty field when none. |
+
+### 12.3 Random seed when empty (as far as the artifact shows)
+
+When §12.1 gives "no seed", the seed is `RandomSource.create().nextLong()` (`WorldOptions.randomSeed`): one 64-bit value from a freshly created random source. The caller applies this at world creation (`WorldOptions.withSeed` with the empty result; the server properties path applies `orElse(randomSeed())`). Any uniform 64-bit value is valid; the artifact's source of entropy inside `RandomSource.create()` was not traced, so the algorithm is unspecified (Open question 12). The chosen value is then stored as the world's `Seed`; a later load uses the stored number, never the text.
+
+### 12.4 Worked examples (computed)
+
+Each seed was computed by hand from §12.1, then checked with a small script (a re-implementation of the rule) and with a second program that called the real JDK `trim`, `parseLong` and `hashCode`; the two agreed on all rows. "Units" are the UTF-16 code units hashed. Horner steps are shown for the short ones; for long texts the 32-bit unsigned residue is given and the signed value is that minus 2^32 when it is at least 2^31.
+
+| # | Input text (between the quotes) | Path | Seed (signed 64-bit) |
+|---|---|---|---|
+| 1 | `""` | trimmed empty | no seed, random (§12.3) |
+| 2 | `"   "` (three spaces) | trimmed empty | no seed, random |
+| 3 | `"12345"` | number | 12345 |
+| 4 | `"-42"` | number | -42 |
+| 5 | `"  42  "` | trim, number | 42 |
+| 6 | `"+5"` | plus sign accepted | 5 |
+| 7 | `"007"` | leading zeros | 7 |
+| 8 | `"-0"` | | 0 |
+| 9 | `"9223372036854775807"` | number, upper bound | 9223372036854775807 |
+| 10 | `"-9223372036854775808"` | number, lower bound | -9223372036854775808 |
+| 11 | `"9223372036854775808"` | too long by one, hash | -1773151197 |
+| 12 | `"-9223372036854775809"` | too long by one, hash | 1304595159 |
+| 13 | `"12345678901234567890"` | too long, hash | -1902336138 |
+| 14 | `"-"` | lone sign, hash; one unit 45 | 45 |
+| 15 | `"hello"` | hash | 99162322 |
+| 16 | `"  hello  "` | trim, then hash of `hello` | 99162322 |
+| 17 | `"a b"` | inner space, hash | 94307 |
+| 18 | `"1.5"` | hash | 48568 |
+| 19 | `"0x10"` | hash | 1546855 |
+| 20 | `"-+5"` | hash | 44631 |
+| 21 | `"++5"` | hash | 42709 |
+| 22 | U+2212 followed by `5` (a real minus sign) | not `-`, hash | 270435 |
+| 23 | U+0663 U+0664 (Arabic-Indic 3 and 4) | Unicode digits accepted | 34 |
+| 24 | U+00E9 (`é`) | hash, one unit 233 | 233 |
+| 25 | U+1F600 (one code point) | two units D83D DE00, hash | 1772899 |
+| 26 | tab, `7`, line feed | trim removes both controls, number | 7 |
+| 27 | `"Hello World"` | hash, residue 3432422020 | -862545276 |
+| 28 | `"The quick brown fox"` | hash, residue 2555631267 | -1739336029 |
+| 29 | `"North Carolina"` | hash, residue 3951444614 | -343522682 |
+
+Hand derivations (units in decimal; all mod 2^32, no wrap needed for these):
+* Row 14: `-` is 45; `h = 45`.
+* Row 15: `h`: 104 -> 104*31+101 = 3325 -> 3325*31+108 = 103183 -> 103183*31+108 = 3198781 -> 3198781*31+111 = 99162322.
+* Row 17: 97*961 + 32*31 + 98 = 93217 + 992 + 98 = 94307.
+* Row 18: 49*961 + 46*31 + 53 = 47089 + 1426 + 53 = 48568.
+* Row 19: `0x10` is 48, 120, 49, 48: 48*29791 + 120*961 + 49*31 + 48 = 1429968 + 115320 + 1519 + 48 = 1546855.
+* Row 20: 45*961 + 43*31 + 53 = 43245 + 1333 + 53 = 44631. Row 21: 43*961 + 43*31 + 53 = 41323 + 1333 + 53 = 42709.
+* Row 22: 8722*31 + 53 = 270382 + 53 = 270435.
+* Row 25: 55357*31 + 56832 = 1716067 + 56832 = 1772899.
+* Row 11: the text exceeds 2^63-1 by one so the parse fails; its 19 units hash to residue 2521816099 (at least 2^31), so the seed is 2521816099 - 4294967296 = -1773151197. Row 13 likewise: residue 2392631158 gives -1902336138.
+* Row 23 and row 26: no hash; the digit characters and the trim rule alone decide.
+* Rows 27 to 29: Horner over the units gives the stated residues, wrapping at 2^32 after each step (script-checked; a hand run is long and adds nothing to the rule).
+
+Test notes: rows 5, 16 and 26 show that trimming happens before both the number test and the hash; rows 6 and 8 show that sign handling is the JDK's (`+5` is a number, so a seed typed as `+5` equals one typed as `5`); rows 11 to 13 show that an out-of-range number is not clamped but hashed; rows 22 to 25 show that non-ASCII text is hashed over UTF-16 units, with a supplementary character counting as two.
+
 ## Open questions
 
 1. **Aquifers.** Resolved by reference: the full aquifer is specified in 10 §9.1-9.5; §5.6 only fixes how the carver uses it (density 0.0) and the lava level.
@@ -905,5 +996,6 @@ Facts an implementation or test can check against this document without the jar:
 8. **Experience and drop gating.** That a wrong-tool break gives neither drops nor experience, and that experience is dropped only on a player break, is inferred from the break
    path (`hasCorrectToolForDrops`, `playerDestroy`), not traced to the experience call.
 9. **Property copies.** That the deepslate ore variants inherit `requiresCorrectToolForDrops` from the stone variants through the property copy was inferred; the tier tags apply to the block either way.
-10. **Trig table.** The sine table fill (`sin(i / 10430.378350470453)` cast to float) was read from the table size and scale constants and the fill loop's divisor; tabulated values were not compared.
+10. **Trig table.** The sine table fill (`sin(i / 10430.378350470453)` cast to float) was read from the table size and scale constants and the fill loop's divisor; tabulated values were compared in 10 §16.3 (table check value).
 11. **Silverfish blocks.** `infested_stone` and `infested_deepslate` behaviour (silverfish spawning) is not specified.
+12. **Seed text to seed (closed, with a residual).** The rule is specified in §12 (trim, `Long.parseLong`, else 32-bit string hash sign-extended); this closes the vanilla-equality question of world-types.md Open question 11 and supersedes its Decision WT-19 where they differ (§12.1). Residual: the `java.util.Properties` file syntax applied to `level-seed` before the rule (comments, separators, escapes, whitespace; §12.2) is JDK behaviour recalled, not verified; the entropy source behind `RandomSource.create()` for the empty-text random seed was not traced (§12.3); the JDK method behaviours (`trim`, `parseLong`, `Character.digit`, `hashCode`) were read from local JDK 21 class files, not from the jar; the set of accepted Unicode decimal digits is enumerated in §12.1 from JDK 21 data (a different JDK's Unicode version might differ, inferred).

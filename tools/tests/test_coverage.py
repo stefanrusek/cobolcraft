@@ -81,6 +81,13 @@ class ProductionSet(unittest.TestCase):
         ]:
             self.assertFalse(coverage.is_production(path, all_packages), path)
 
+    def test_new_packages_and_generated_registry_copybooks(self):
+        packages = ["formats", "content", "extract"]
+        for path in ["formats/src/nbt.cob", "content/src/blocks.cob", "content/copy/CONTENTSTATE.cpy", "extract/src/main.cob"]:
+            self.assertTrue(coverage.is_production(path, packages), path)
+        for path in ["content/copy/gen/BLOCKS.cpy", "content/copy/gen/sub/ITEMS.cpy", "content/tests/test_x.cob"]:
+            self.assertFalse(coverage.is_production(path, packages), path)
+
     def test_only_selected_packages(self):
         self.assertFalse(coverage.is_production("shim/src/cc_net.c", ["core"]))
 

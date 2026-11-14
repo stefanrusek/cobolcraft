@@ -1,0 +1,1553 @@
+*> Entity models part 1 (docs/protocol/34-entity-models-1-shared-model-and-framework.md): the shared model library. Records are in client/copy/CLEM1.cpy.
+*> Entry points for the integrator (inputs; floats are FLOAT-LONG):
+*>   EM1-CUBE EM1-CUBE-IN EM1-CUBE-OUT: bakes a cuboid into its faces (1.3): EF-COUNT faces in creation order, corners in model pixels, texture
+*>     coordinates already divided by the (scaled) texture size.
+*>   EM1-ADDBOX builder form args(14 floats) EM1-CUBE-IN: the CubeListBuilder forms of 1.4 (form 1 plain, 2 deformation (args 7-9), 3 mirror override
+*>     (arg 12), 4 deformation and texture scale (args 7-11), 5 face set (arg 12), 6 integer form with an explicit offset (args 13, 14: also sets the
+*>     builder offset)); args 1-6 are x y z w h d. The builder is BU-U BU-V (floats) BU-MIRROR (binary-long).
+*>   EM1-POSE-OP op EM1-POSE args(3 floats) out(9 floats): 1 translated(dx dy dz), 2 scaled(s), 3 scaled(sx sy sz), 4 withScale(s) (1.5).
+*>   EM1-POINT EM1-POSE point(3 floats, pixels) out(3 floats, blocks): scale, rotate (Z-Y-X), translate, divided by 16 (1.5).
+*>   EM1-HEIGHT y(pixels) scale out: height above the feet in blocks of a model point (1.1). EM1-RADIANS degrees out.
+*>   EM2-MESH-INIT mesh; EM2-ADD-CHILD mesh parent name(X(24)) cubes pose(9 floats) out-index (2.1 replace rule); EM2-CLEAR-CHILD mesh parent name ok;
+*>     EM2-CLEAR-ALL mesh; EM2-RETAIN mesh mode(1 retainPartsAndChildren, 2 retainExactParts) set("a|b|c" part names); EM2-IN-SET name set found.
+*>   EM2-BABY-PARAMS variant(1 and 3 given values, 2 head-part-only defaults) scaleHead y z EM2-BABY; EM2-BABY-MESH mesh EM2-BABY head-set (2.3);
+*>     EM2-SCALING mesh s (2.2); EM2-SCALE-FACTOR layer(X(32): model name, armor sets with _armor) out (the table of 2.2, 1 when none);
+*>     EM2-DEFORM kind(X(24)) out(3 floats) (2.4); EM2-ARMOR-ID set-name slot(1 head, 2 chest, 3 legs, 4 feet) id(X(40)) (2.5).
+*>   Section 3 (every IN is a table of 16 floats, OUT 10 floats, both FLOAT-LONG; arm tables are rx ry rz lx ly lz):
+*>     EM3-QUAD-MESH leg-height mirror-left mirror-right deformation(3 floats) mode(0 body mesh, 1 legs only) EM3-PARTS (3.4);
+*>     EM3-QUAD-ANIM IN(pitch yaw walk-pos walk-speed) OUT(head x, head y, right hind, left hind, right front, left front xRot);
+*>     EM3-BOB IN(zRot xRot age sign) OUT(zRot xRot); EM3-ZOMBIE-ARMS IN(baby main-hand-empty aggressive swing right-pose left-pose, arms 7-12) OUT(arms);
+*>     EM3-SWING-DOWN IN(attackTime age main-arm 1 right 2 left) OUT(arms); EM3-ARM-POSE name ordinal(-1 unknown); EM3-SPEAR-POSE swing-by-hand-is-stab
+*>     tag-spears... (3.6); EM3-HUMANOID-CONST name value (3.7); EM3-EASE IN(kind 1 inQuad 2 outCubic 3 outQuart 4 inOutSine 5 inOutExpo 6 outBack
+*>     7 outCirc 8 inCirc 9 inOutBack 10 inOutElastic, x); EM3-PROGRESS IN(v a b); EM3-USE-PARAMS IN(delay dismount knockback damage t) OUT(raise
+*>     raiseStart raiseMiddle raiseEnd sway lower raiseBack swayIntensity swayScaleSlow swayScaleFast); EM3-HIT-FEEDBACK IN(t); EM3-ATTACK-HAND
+*>     IN(swing body-yRot right-x right-y left-x left-y arm) OUT(right-x right-y left-x left-y); EM3-ATTACK-ITEM IN(swing forward-movement)
+*>     OUT(active angle-deg-about-minus-X translate-y); EM3-HAND-USE, EM3-USE-ITEM, EM3-FIRST-PERSON-USE, EM3-FIRST-PERSON-ATTACK: the numbers of the
+*>     rows of 3.8 (see the programs).
+*>   EM1-DRAWS visible has-cuboids has-children out: whether a part is walked (1.5). EM1-PART-NAME name(X(24)) known, EM1-PART-NAME-COUNT n (1.6).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-CUBE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+*> Per direction: corner letters of the four vertices, then the indexes (U, V) of the min and max of the rectangle: minU minV maxU maxV.
+ 01 WS-DIRS.
+    05 FILLER PIC X(8) VALUE "FEAB1021".
+    05 FILLER PIC X(8) VALUE "CDHG2130".
+    05 FILLER PIC X(8) VALUE "AEHD0112".
+    05 FILLER PIC X(8) VALUE "BADC1122".
+    05 FILLER PIC X(8) VALUE "FBCG2142".
+    05 FILLER PIC X(8) VALUE "EFGH4152".
+ 01 WS-DIRS-R REDEFINES WS-DIRS.
+    05 WS-DIR OCCURS 6 TIMES.
+       10 WS-CORNERS       PIC X(4).
+       10 WS-INDEX         PIC 9 OCCURS 4 TIMES.
+ 01 WS-NORMALS.
+    05 FILLER PIC X(6) VALUE "0-1000".
+    05 FILLER PIC X(6) VALUE "010000".
+    05 FILLER PIC X(6) VALUE "-10000".
+ 01 WS-CX                  FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-CY                  FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-CZ                  FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-US                  FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-VS                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-X1                  FLOAT-LONG.
+ 01 WS-Y0                  FLOAT-LONG.
+ 01 WS-Y1                  FLOAT-LONG.
+ 01 WS-Z0                  FLOAT-LONG.
+ 01 WS-Z1                  FLOAT-LONG.
+ 01 WS-TW                  FLOAT-LONG.
+ 01 WS-TH                  FLOAT-LONG.
+ 01 WS-BU                  FLOAT-LONG.
+ 01 WS-BV                  FLOAT-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-SRC                 BINARY-LONG.
+ 01 WS-MASK                BINARY-LONG.
+ 01 WS-BIT                 BINARY-LONG.
+ 01 WS-RU0                 FLOAT-LONG.
+ 01 WS-RV0                 FLOAT-LONG.
+ 01 WS-RU1                 FLOAT-LONG.
+ 01 WS-RV1                 FLOAT-LONG.
+ 01 WS-TX                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-TY                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-TZ                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-TTU                 FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-TTV                 FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-LETTER              PIC X.
+ LINKAGE SECTION.
+ COPY CLEM1.
+ PROCEDURE DIVISION USING EM1-CUBE-IN EM1-CUBE-OUT.
+     COMPUTE WS-BU = FUNCTION INTEGER-PART(EC-U)
+     COMPUTE WS-BV = FUNCTION INTEGER-PART(EC-V)
+     COMPUTE WS-TW = EC-TEXW * EC-SU
+     COMPUTE WS-TH = EC-TEXH * EC-SV
+     COMPUTE WS-X0 = EC-OX - EC-GX
+     COMPUTE WS-Y0 = EC-OY - EC-GY
+     COMPUTE WS-Z0 = EC-OZ - EC-GZ
+     COMPUTE WS-X1 = EC-OX + EC-W + EC-GX
+     COMPUTE WS-Y1 = EC-OY + EC-H + EC-GY
+     COMPUTE WS-Z1 = EC-OZ + EC-D + EC-GZ
+     IF EC-MIRROR NOT = 0
+         MOVE WS-X0 TO WS-RU0
+         MOVE WS-X1 TO WS-X0
+         MOVE WS-RU0 TO WS-X1
+     END-IF
+*>   corners A..H = 1..8
+     MOVE WS-X0 TO WS-CX(1) WS-CX(4) WS-CX(5) WS-CX(8)
+     MOVE WS-X1 TO WS-CX(2) WS-CX(3) WS-CX(6) WS-CX(7)
+     MOVE WS-Y0 TO WS-CY(1) WS-CY(2) WS-CY(5) WS-CY(6)
+     MOVE WS-Y1 TO WS-CY(3) WS-CY(4) WS-CY(7) WS-CY(8)
+     MOVE WS-Z0 TO WS-CZ(1) WS-CZ(2) WS-CZ(3) WS-CZ(4)
+     MOVE WS-Z1 TO WS-CZ(5) WS-CZ(6) WS-CZ(7) WS-CZ(8)
+     MOVE WS-BU TO WS-US(1)
+     COMPUTE WS-US(2) = WS-BU + EC-D
+     COMPUTE WS-US(3) = WS-BU + EC-D + EC-W
+     COMPUTE WS-US(4) = WS-BU + EC-D + 2 * EC-W
+     COMPUTE WS-US(5) = WS-BU + 2 * EC-D + EC-W
+     COMPUTE WS-US(6) = WS-BU + 2 * EC-D + 2 * EC-W
+     MOVE WS-BV TO WS-VS(1)
+     COMPUTE WS-VS(2) = WS-BV + EC-D
+     COMPUTE WS-VS(3) = WS-BV + EC-D + EC-H
+     MOVE 0 TO WS-N
+     MOVE 1 TO WS-BIT
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+         COMPUTE WS-MASK = FUNCTION MOD(EC-FACES / WS-BIT, 2)
+         IF WS-MASK = 1
+             ADD 1 TO WS-N
+             MOVE WS-D TO EF-DIR(WS-N)
+             COMPUTE WS-K = WS-INDEX(WS-D, 1) + 1
+             MOVE WS-US(WS-K) TO WS-RU0
+             COMPUTE WS-K = WS-INDEX(WS-D, 2) + 1
+             MOVE WS-VS(WS-K) TO WS-RV0
+             COMPUTE WS-K = WS-INDEX(WS-D, 3) + 1
+             MOVE WS-US(WS-K) TO WS-RU1
+             COMPUTE WS-K = WS-INDEX(WS-D, 4) + 1
+             MOVE WS-VS(WS-K) TO WS-RV1
+             MOVE WS-RU0 TO EF-MINU(WS-N)
+             MOVE WS-RV0 TO EF-MINV(WS-N)
+             MOVE WS-RU1 TO EF-MAXU(WS-N)
+             MOVE WS-RV1 TO EF-MAXV(WS-N)
+             MOVE 0 TO EF-NX(WS-N) EF-NY(WS-N) EF-NZ(WS-N)
+             EVALUATE WS-D
+                 WHEN 1 MOVE -1 TO EF-NY(WS-N)
+                 WHEN 2 MOVE 1 TO EF-NY(WS-N)
+                 WHEN 3 MOVE -1 TO EF-NX(WS-N)
+                 WHEN 4 MOVE -1 TO EF-NZ(WS-N)
+                 WHEN 5 MOVE 1 TO EF-NX(WS-N)
+                 WHEN OTHER MOVE 1 TO EF-NZ(WS-N)
+             END-EVALUATE
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 MOVE WS-CORNERS(WS-D)(WS-K:1) TO WS-LETTER
+                 COMPUTE WS-C = FUNCTION ORD(WS-LETTER) - FUNCTION ORD("A") + 1
+                 MOVE WS-CX(WS-C) TO WS-TX(WS-K)
+                 MOVE WS-CY(WS-C) TO WS-TY(WS-K)
+                 MOVE WS-CZ(WS-C) TO WS-TZ(WS-K)
+             END-PERFORM
+             COMPUTE WS-TTU(1) = WS-RU1 / WS-TW
+             COMPUTE WS-TTV(1) = WS-RV0 / WS-TH
+             COMPUTE WS-TTU(2) = WS-RU0 / WS-TW
+             COMPUTE WS-TTV(2) = WS-RV0 / WS-TH
+             COMPUTE WS-TTU(3) = WS-RU0 / WS-TW
+             COMPUTE WS-TTV(3) = WS-RV1 / WS-TH
+             COMPUTE WS-TTU(4) = WS-RU1 / WS-TW
+             COMPUTE WS-TTV(4) = WS-RV1 / WS-TH
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 MOVE WS-K TO WS-SRC
+                 IF EC-MIRROR NOT = 0
+                     COMPUTE WS-SRC = 5 - WS-K
+                 END-IF
+                 MOVE WS-TX(WS-K) TO EF-X(WS-N, WS-SRC)
+                 MOVE WS-TY(WS-K) TO EF-Y(WS-N, WS-SRC)
+                 MOVE WS-TZ(WS-K) TO EF-Z(WS-N, WS-SRC)
+                 MOVE WS-TTU(WS-K) TO EF-TU(WS-N, WS-K)
+                 MOVE WS-TTV(WS-K) TO EF-TV(WS-N, WS-K)
+             END-PERFORM
+             IF EC-MIRROR NOT = 0
+                 IF WS-D = 3
+                     MOVE 1 TO EF-NX(WS-N)
+                 END-IF
+                 IF WS-D = 5
+                     MOVE -1 TO EF-NX(WS-N)
+                 END-IF
+             END-IF
+         END-IF
+         COMPUTE WS-BIT = WS-BIT * 2
+     END-PERFORM
+     MOVE WS-N TO EF-COUNT
+     GOBACK.
+ END PROGRAM EM1-CUBE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-ADDBOX.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BUILDER.
+    05 L-BU                FLOAT-LONG.
+    05 L-BV                FLOAT-LONG.
+    05 L-BM                BINARY-LONG.
+ 01 L-FORM                 BINARY-LONG.
+ 01 L-ARGS.
+    05 L-A                 FLOAT-LONG OCCURS 14 TIMES.
+ COPY CLEM1.
+ PROCEDURE DIVISION USING L-BUILDER L-FORM L-ARGS EM1-CUBE-IN.
+     MOVE L-A(1) TO EC-OX
+     MOVE L-A(2) TO EC-OY
+     MOVE L-A(3) TO EC-OZ
+     MOVE L-A(4) TO EC-W
+     MOVE L-A(5) TO EC-H
+     MOVE L-A(6) TO EC-D
+     MOVE 0 TO EC-GX EC-GY EC-GZ
+     MOVE 1 TO EC-SU EC-SV
+     MOVE 63 TO EC-FACES
+     MOVE L-BM TO EC-MIRROR
+     EVALUATE L-FORM
+         WHEN 2
+             MOVE L-A(7) TO EC-GX
+             MOVE L-A(8) TO EC-GY
+             MOVE L-A(9) TO EC-GZ
+         WHEN 3
+             MOVE L-A(12) TO EC-MIRROR
+         WHEN 4
+             MOVE L-A(7) TO EC-GX
+             MOVE L-A(8) TO EC-GY
+             MOVE L-A(9) TO EC-GZ
+             MOVE L-A(10) TO EC-SU
+             MOVE L-A(11) TO EC-SV
+         WHEN 5
+             MOVE L-A(12) TO EC-FACES
+         WHEN 6
+             MOVE L-A(13) TO L-BU
+             MOVE L-A(14) TO L-BV
+     END-EVALUATE
+     MOVE L-BU TO EC-U
+     MOVE L-BV TO EC-V
+     GOBACK.
+ END PROGRAM EM1-ADDBOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-POSE-OP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-OP                   BINARY-LONG.
+ 01 L-POSE.
+    05 L-P                 FLOAT-LONG OCCURS 9 TIMES.
+ 01 L-ARGS.
+    05 L-A                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING L-OP L-POSE L-ARGS L-OUT.
+     MOVE L-POSE TO L-OUT
+     EVALUATE L-OP
+         WHEN 1
+             COMPUTE L-O(1) = L-P(1) + L-A(1)
+             COMPUTE L-O(2) = L-P(2) + L-A(2)
+             COMPUTE L-O(3) = L-P(3) + L-A(3)
+         WHEN 2
+             IF L-A(1) NOT = 1
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                     COMPUTE L-O(WS-I) = L-P(WS-I) * L-A(1)
+                     COMPUTE L-O(WS-I + 6) = L-P(WS-I + 6) * L-A(1)
+                 END-PERFORM
+             END-IF
+         WHEN 3
+             COMPUTE L-O(1) = L-P(1) * L-A(1)
+             COMPUTE L-O(2) = L-P(2) * L-A(2)
+             COMPUTE L-O(3) = L-P(3) * L-A(3)
+             COMPUTE L-O(7) = L-P(7) * L-A(1)
+             COMPUTE L-O(8) = L-P(8) * L-A(2)
+             COMPUTE L-O(9) = L-P(9) * L-A(3)
+         WHEN OTHER
+             MOVE L-A(1) TO L-O(7) L-O(8) L-O(9)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM1-POSE-OP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-POINT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-CA                  FLOAT-LONG.
+ 01 WS-SA                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-POSE.
+    05 L-P                 FLOAT-LONG OCCURS 9 TIMES.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING L-POSE L-IN L-OUT.
+     COMPUTE WS-X = L-I(1) * L-P(7)
+     COMPUTE WS-Y = L-I(2) * L-P(8)
+     COMPUTE WS-Z = L-I(3) * L-P(9)
+*>   rotate about X, then Y, then Z (rotationZYX acts X first on a vector)
+     COMPUTE WS-CA = FUNCTION COS(L-P(4))
+     COMPUTE WS-SA = FUNCTION SIN(L-P(4))
+     COMPUTE WS-T = WS-Y * WS-CA - WS-Z * WS-SA
+     COMPUTE WS-Z = WS-Y * WS-SA + WS-Z * WS-CA
+     MOVE WS-T TO WS-Y
+     COMPUTE WS-CA = FUNCTION COS(L-P(5))
+     COMPUTE WS-SA = FUNCTION SIN(L-P(5))
+     COMPUTE WS-T = WS-X * WS-CA + WS-Z * WS-SA
+     COMPUTE WS-Z = WS-Z * WS-CA - WS-X * WS-SA
+     MOVE WS-T TO WS-X
+     COMPUTE WS-CA = FUNCTION COS(L-P(6))
+     COMPUTE WS-SA = FUNCTION SIN(L-P(6))
+     COMPUTE WS-T = WS-X * WS-CA - WS-Y * WS-SA
+     COMPUTE WS-Y = WS-X * WS-SA + WS-Y * WS-CA
+     MOVE WS-T TO WS-X
+     COMPUTE L-O(1) = (WS-X + L-P(1)) / 16
+     COMPUTE L-O(2) = (WS-Y + L-P(2)) / 16
+     COMPUTE L-O(3) = (WS-Z + L-P(3)) / 16
+     GOBACK.
+ END PROGRAM EM1-POINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-HEIGHT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-SCALE                FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-Y L-SCALE L-OUT.
+     COMPUTE L-OUT = (1.501 - L-Y / 16) * L-SCALE
+     GOBACK.
+ END PROGRAM EM1-HEIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-RADIANS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DEG                  FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DEG L-OUT.
+     COMPUTE L-OUT = L-DEG * 0.017453292
+     GOBACK.
+ END PROGRAM EM1-RADIANS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-DRAWS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VISIBLE              BINARY-LONG.
+ 01 L-CUBOIDS              BINARY-LONG.
+ 01 L-CHILDREN             BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-VISIBLE L-CUBOIDS L-CHILDREN L-OUT.
+     MOVE 1 TO L-OUT
+     IF L-VISIBLE = 0
+         MOVE 0 TO L-OUT
+     END-IF
+     IF L-CUBOIDS = 0 AND L-CHILDREN = 0
+         MOVE 0 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM EM1-DRAWS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-PART-NAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER PIC X(24) VALUE "head".
+    05 FILLER PIC X(24) VALUE "hat".
+    05 FILLER PIC X(24) VALUE "body".
+    05 FILLER PIC X(24) VALUE "upper_body".
+    05 FILLER PIC X(24) VALUE "inner_body".
+    05 FILLER PIC X(24) VALUE "waist".
+    05 FILLER PIC X(24) VALUE "jacket".
+    05 FILLER PIC X(24) VALUE "neck".
+    05 FILLER PIC X(24) VALUE "mane".
+    05 FILLER PIC X(24) VALUE "jaw".
+    05 FILLER PIC X(24) VALUE "nose".
+    05 FILLER PIC X(24) VALUE "beak".
+    05 FILLER PIC X(24) VALUE "mouth".
+    05 FILLER PIC X(24) VALUE "upper_mouth".
+    05 FILLER PIC X(24) VALUE "inner_mouth".
+    05 FILLER PIC X(24) VALUE "lower_mouth".
+    05 FILLER PIC X(24) VALUE "tail".
+    05 FILLER PIC X(24) VALUE "tongue".
+    05 FILLER PIC X(24) VALUE "tongue_r1".
+    05 FILLER PIC X(24) VALUE "cube".
+    05 FILLER PIC X(24) VALUE "shell".
+    05 FILLER PIC X(24) VALUE "harness".
+    05 FILLER PIC X(24) VALUE "goggles".
+    05 FILLER PIC X(24) VALUE "hat_rim".
+    05 FILLER PIC X(24) VALUE "root".
+    05 FILLER PIC X(24) VALUE "bone".
+    05 FILLER PIC X(24) VALUE "bottom".
+    05 FILLER PIC X(24) VALUE "feet".
+    05 FILLER PIC X(24) VALUE "eyes".
+    05 FILLER PIC X(24) VALUE "rods".
+    05 FILLER PIC X(24) VALUE "mushrooms".
+    05 FILLER PIC X(24) VALUE "arms".
+    05 FILLER PIC X(24) VALUE "croaking_body".
+    05 FILLER PIC X(24) VALUE "left_arm".
+    05 FILLER PIC X(24) VALUE "right_arm".
+    05 FILLER PIC X(24) VALUE "left_leg".
+    05 FILLER PIC X(24) VALUE "right_leg".
+    05 FILLER PIC X(24) VALUE "left_hind_leg".
+    05 FILLER PIC X(24) VALUE "right_hind_leg".
+    05 FILLER PIC X(24) VALUE "left_mid_leg".
+    05 FILLER PIC X(24) VALUE "right_mid_leg".
+    05 FILLER PIC X(24) VALUE "left_front_leg".
+    05 FILLER PIC X(24) VALUE "right_front_leg".
+    05 FILLER PIC X(24) VALUE "left_hind_foot".
+    05 FILLER PIC X(24) VALUE "right_hind_foot".
+    05 FILLER PIC X(24) VALUE "left_front_foot".
+    05 FILLER PIC X(24) VALUE "right_front_foot".
+    05 FILLER PIC X(24) VALUE "left_hind_leg_tip".
+    05 FILLER PIC X(24) VALUE "right_hind_leg_tip".
+    05 FILLER PIC X(24) VALUE "left_front_leg_tip".
+    05 FILLER PIC X(24) VALUE "right_front_leg_tip".
+    05 FILLER PIC X(24) VALUE "left_hand".
+    05 FILLER PIC X(24) VALUE "right_hand".
+    05 FILLER PIC X(24) VALUE "left_foot".
+    05 FILLER PIC X(24) VALUE "right_foot".
+    05 FILLER PIC X(24) VALUE "left_ear".
+    05 FILLER PIC X(24) VALUE "right_ear".
+    05 FILLER PIC X(24) VALUE "left_horn".
+    05 FILLER PIC X(24) VALUE "right_horn".
+    05 FILLER PIC X(24) VALUE "left_eye".
+    05 FILLER PIC X(24) VALUE "right_eye".
+    05 FILLER PIC X(24) VALUE "left_lid".
+    05 FILLER PIC X(24) VALUE "right_lid".
+    05 FILLER PIC X(24) VALUE "left_tendril".
+    05 FILLER PIC X(24) VALUE "right_tendril".
+    05 FILLER PIC X(24) VALUE "left_wing".
+    05 FILLER PIC X(24) VALUE "right_wing".
+    05 FILLER PIC X(24) VALUE "left_wing_base".
+    05 FILLER PIC X(24) VALUE "right_wing_base".
+    05 FILLER PIC X(24) VALUE "left_wing_tip".
+    05 FILLER PIC X(24) VALUE "right_wing_tip".
+    05 FILLER PIC X(24) VALUE "left_fin".
+    05 FILLER PIC X(24) VALUE "right_fin".
+    05 FILLER PIC X(24) VALUE "top_fin".
+    05 FILLER PIC X(24) VALUE "bottom_fin".
+    05 FILLER PIC X(24) VALUE "tail_fin".
+    05 FILLER PIC X(24) VALUE "back_fin".
+    05 FILLER PIC X(24) VALUE "left_blue_fin".
+    05 FILLER PIC X(24) VALUE "right_blue_fin".
+    05 FILLER PIC X(24) VALUE "left_paddle".
+    05 FILLER PIC X(24) VALUE "right_paddle".
+    05 FILLER PIC X(24) VALUE "top_gills".
+    05 FILLER PIC X(24) VALUE "left_gills".
+    05 FILLER PIC X(24) VALUE "right_gills".
+    05 FILLER PIC X(24) VALUE "left_chest".
+    05 FILLER PIC X(24) VALUE "right_chest".
+    05 FILLER PIC X(24) VALUE "left_ribcage".
+    05 FILLER PIC X(24) VALUE "right_ribcage".
+    05 FILLER PIC X(24) VALUE "wind_body".
+    05 FILLER PIC X(24) VALUE "wind_top".
+    05 FILLER PIC X(24) VALUE "wind_mid".
+    05 FILLER PIC X(24) VALUE "wind_bottom".
+    05 FILLER PIC X(24) VALUE "chest_bottom".
+    05 FILLER PIC X(24) VALUE "chest_lid".
+    05 FILLER PIC X(24) VALUE "chest_lock".
+    05 FILLER PIC X(24) VALUE "yellow_coral".
+    05 FILLER PIC X(24) VALUE "yellow_coral_first".
+    05 FILLER PIC X(24) VALUE "yellow_coral_second".
+    05 FILLER PIC X(24) VALUE "pink_coral".
+    05 FILLER PIC X(24) VALUE "pink_coral_second".
+    05 FILLER PIC X(24) VALUE "blue_coral".
+    05 FILLER PIC X(24) VALUE "blue_first".
+    05 FILLER PIC X(24) VALUE "blue_second".
+    05 FILLER PIC X(24) VALUE "red_coral".
+    05 FILLER PIC X(24) VALUE "red_coral_first".
+    05 FILLER PIC X(24) VALUE "red_coral_second".
+ 01 WS-NAMES-R REDEFINES WS-NAMES.
+    05 WS-NAME PIC X(24) OCCURS 106 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(24).
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-KNOWN.
+     MOVE 0 TO L-KNOWN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 106
+         IF WS-NAME(WS-I) = L-NAME
+             MOVE 1 TO L-KNOWN
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM1-PART-NAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM1-PART-NAME-COUNT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT.
+     MOVE 106 TO L-COUNT
+     GOBACK.
+ END PROGRAM EM1-PART-NAME-COUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-MESH-INIT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ PROCEDURE DIVISION USING EM2-MESH.
+     MOVE 1 TO MH-COUNT
+     MOVE "root" TO MH-NAME(1)
+     MOVE 0 TO MH-PARENT(1) MH-CUBES(1)
+     MOVE 0 TO MH-X(1) MH-Y(1) MH-Z(1) MH-XROT(1) MH-YROT(1) MH-ZROT(1)
+     MOVE 1 TO MH-XSCALE(1) MH-YSCALE(1) MH-ZSCALE(1)
+     GOBACK.
+ END PROGRAM EM2-MESH-INIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-ADD-CHILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-PARENT               BINARY-LONG.
+ 01 L-NAME                 PIC X(24).
+ 01 L-CUBES                BINARY-LONG.
+ 01 L-POSE                 PIC X(72).
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING EM2-MESH L-PARENT L-NAME L-CUBES L-POSE L-OUT.
+     MOVE 0 TO L-OUT
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         IF MH-PARENT(WS-I) = L-PARENT AND MH-NAME(WS-I) = L-NAME
+             MOVE WS-I TO L-OUT
+         END-IF
+     END-PERFORM
+     IF L-OUT = 0
+         ADD 1 TO MH-COUNT
+         MOVE MH-COUNT TO L-OUT
+         MOVE L-NAME TO MH-NAME(L-OUT)
+         MOVE L-PARENT TO MH-PARENT(L-OUT)
+     END-IF
+     MOVE L-CUBES TO MH-CUBES(L-OUT)
+     MOVE L-POSE TO MH-POSE(L-OUT)
+     GOBACK.
+ END PROGRAM EM2-ADD-CHILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-CLEAR-CHILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-PARENT               BINARY-LONG.
+ 01 L-NAME                 PIC X(24).
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING EM2-MESH L-PARENT L-NAME L-OK.
+     MOVE 0 TO L-OK
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         IF MH-PARENT(WS-I) = L-PARENT AND MH-NAME(WS-I) = L-NAME
+             MOVE 0 TO MH-CUBES(WS-I)
+             MOVE 1 TO L-OK
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-CLEAR-CHILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-CLEAR-ALL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ PROCEDURE DIVISION USING EM2-MESH.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MH-COUNT
+         MOVE 0 TO MH-CUBES(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-CLEAR-ALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-IN-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(26).
+ 01 WS-HAY                 PIC X(122).
+ 01 WS-N                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(24).
+ 01 L-SET                  PIC X(120).
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-SET L-FOUND.
+     MOVE SPACES TO WS-KEY WS-HAY
+     STRING "|" FUNCTION TRIM(L-NAME) "|" DELIMITED BY SIZE INTO WS-KEY
+     STRING "|" FUNCTION TRIM(L-SET) "|" DELIMITED BY SIZE INTO WS-HAY
+     MOVE 0 TO WS-N
+     INSPECT WS-HAY TALLYING WS-N FOR ALL FUNCTION TRIM(WS-KEY)
+     MOVE 0 TO L-FOUND
+     IF WS-N > 0
+         MOVE 1 TO L-FOUND
+     END-IF
+     GOBACK.
+ END PROGRAM EM2-IN-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-RETAIN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-SET                  PIC X(120).
+ PROCEDURE DIVISION USING EM2-MESH L-MODE L-SET.
+*>   state: 0 outside any named part, 1 inside a named part (2 = the named part itself, 3 a descendant of one)
+     MOVE 0 TO WS-STATE(1)
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         MOVE MH-PARENT(WS-I) TO WS-P
+         MOVE 0 TO WS-STATE(WS-I)
+         IF WS-STATE(WS-P) = 0
+             CALL "EM2-IN-SET" USING MH-NAME(WS-I) L-SET WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE 2 TO WS-STATE(WS-I)
+             ELSE
+                 MOVE 0 TO MH-CUBES(WS-I)
+             END-IF
+         ELSE
+             MOVE 3 TO WS-STATE(WS-I)
+             IF L-MODE = 2
+                 MOVE 0 TO MH-CUBES(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-RETAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-BABY-PARAMS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VARIANT              BINARY-LONG.
+ 01 L-SCALE-HEAD           BINARY-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ COPY CLEM2.
+ PROCEDURE DIVISION USING L-VARIANT L-SCALE-HEAD L-Y L-Z EM2-BABY.
+     MOVE 2 TO BB-HEAD-SCALE BB-BODY-SCALE
+     MOVE 24 TO BB-BODY-Y
+     IF L-VARIANT = 2
+         MOVE 0 TO BB-SCALE-HEAD
+         MOVE 5 TO BB-Y-HEAD
+         MOVE 2 TO BB-Z-HEAD
+     ELSE
+         MOVE L-SCALE-HEAD TO BB-SCALE-HEAD
+         MOVE L-Y TO BB-Y-HEAD
+         MOVE L-Z TO BB-Z-HEAD
+     END-IF
+     GOBACK.
+ END PROGRAM EM2-BABY-PARAMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-BABY-MESH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-SET                  PIC X(120).
+ PROCEDURE DIVISION USING EM2-MESH EM2-BABY L-SET.
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         IF MH-PARENT(WS-I) = 1
+             CALL "EM2-IN-SET" USING MH-NAME(WS-I) L-SET WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE BB-Y-HEAD TO WS-DY
+                 MOVE BB-Z-HEAD TO WS-DZ
+                 MOVE 1 TO WS-F
+                 IF BB-SCALE-HEAD NOT = 0
+                     COMPUTE WS-F = 1.5 / BB-HEAD-SCALE
+                 END-IF
+             ELSE
+                 MOVE BB-BODY-Y TO WS-DY
+                 MOVE 0 TO WS-DZ
+                 COMPUTE WS-F = 1 / BB-BODY-SCALE
+             END-IF
+             COMPUTE MH-Y(WS-I) = (MH-Y(WS-I) + WS-DY) * WS-F
+             COMPUTE MH-Z(WS-I) = (MH-Z(WS-I) + WS-DZ) * WS-F
+             COMPUTE MH-X(WS-I) = MH-X(WS-I) * WS-F
+             COMPUTE MH-XSCALE(WS-I) = MH-XSCALE(WS-I) * WS-F
+             COMPUTE MH-YSCALE(WS-I) = MH-YSCALE(WS-I) * WS-F
+             COMPUTE MH-ZSCALE(WS-I) = MH-ZSCALE(WS-I) * WS-F
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-BABY-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-SCALING.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-S                    FLOAT-LONG.
+ PROCEDURE DIVISION USING EM2-MESH L-S.
+     IF L-S NOT = 1
+         COMPUTE MH-X(1) = MH-X(1) * L-S
+         COMPUTE MH-Y(1) = MH-Y(1) * L-S + 24.016 * (1 - L-S)
+         COMPUTE MH-Z(1) = MH-Z(1) * L-S
+         COMPUTE MH-XSCALE(1) = MH-XSCALE(1) * L-S
+         COMPUTE MH-YSCALE(1) = MH-YSCALE(1) * L-S
+         COMPUTE MH-ZSCALE(1) = MH-ZSCALE(1) * L-S
+     END-IF
+     GOBACK.
+ END PROGRAM EM2-SCALING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-SCALE-FACTOR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TABLE.
+    05 FILLER PIC X(40) VALUE "evoker                  0.9375".
+    05 FILLER PIC X(40) VALUE "illusioner              0.9375".
+    05 FILLER PIC X(40) VALUE "pillager                0.9375".
+    05 FILLER PIC X(40) VALUE "vindicator              0.9375".
+    05 FILLER PIC X(40) VALUE "villager                0.9375".
+    05 FILLER PIC X(40) VALUE "wandering_trader        0.9375".
+    05 FILLER PIC X(40) VALUE "villager_no_hat         0.9375".
+    05 FILLER PIC X(40) VALUE "witch                   0.9375".
+    05 FILLER PIC X(40) VALUE "cave_spider             0.7".
+    05 FILLER PIC X(40) VALUE "giant                   6".
+    05 FILLER PIC X(40) VALUE "giant_armor             6".
+    05 FILLER PIC X(40) VALUE "horse                   1.1".
+    05 FILLER PIC X(40) VALUE "horse_armor             1.1".
+    05 FILLER PIC X(40) VALUE "horse_saddle            1.1".
+    05 FILLER PIC X(40) VALUE "husk                    1.0625".
+    05 FILLER PIC X(40) VALUE "husk_armor              1.0625".
+    05 FILLER PIC X(40) VALUE "wither_skeleton         1.2".
+    05 FILLER PIC X(40) VALUE "wither_skeleton_armor   1.2".
+ 01 WS-TABLE-R REDEFINES WS-TABLE.
+    05 WS-ROW OCCURS 18 TIMES.
+       10 WS-ROW-NAME      PIC X(24).
+       10 WS-ROW-VALUE     PIC X(16).
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LAYER                PIC X(32).
+ 01 L-S                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-LAYER L-S.
+     MOVE 1 TO L-S
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+         IF WS-ROW-NAME(WS-I) = L-LAYER(1:24)
+             COMPUTE L-S = FUNCTION NUMVAL(WS-ROW-VALUE(WS-I))
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-SCALE-FACTOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-DEFORM.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 PIC X(24).
+ 01 L-OUT.
+    05 L-G                 FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING L-KIND L-OUT.
+     MOVE 0 TO L-G(1) L-G(2) L-G(3)
+     EVALUATE L-KIND
+         WHEN "fish_pattern"
+             MOVE 0.008 TO L-G(1) L-G(2) L-G(3)
+         WHEN "outer_armor"
+             MOVE 1 TO L-G(1) L-G(2) L-G(3)
+         WHEN "inner_armor"
+             MOVE 0.5 TO L-G(1) L-G(2) L-G(3)
+         WHEN "baby_outer_armor"
+             MOVE -0.1 TO L-G(1)
+             MOVE 0.5 TO L-G(2)
+             MOVE 0.3 TO L-G(3)
+         WHEN "baby_inner_armor"
+             MOVE -0.1 TO L-G(1)
+             MOVE 0.3 TO L-G(2) L-G(3)
+         WHEN "baby_piglin_inner"
+             MOVE 0.7 TO L-G(1) L-G(2) L-G(3)
+         WHEN "baby_piglin_outer"
+             MOVE 0.7 TO L-G(1) L-G(2) L-G(3)
+         WHEN "piglin_inner"
+             MOVE 0.5 TO L-G(1) L-G(2) L-G(3)
+         WHEN "piglin_outer"
+             MOVE 1.02 TO L-G(1) L-G(2) L-G(3)
+         WHEN "baby_piglin_arm_offset"
+             MOVE 0.5 TO L-G(1)
+             MOVE -0.5 TO L-G(2)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM2-DEFORM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-ARMOR-ID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LAYER               PIC X(12).
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(24).
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ID                   PIC X(40).
+ PROCEDURE DIVISION USING L-NAME L-SLOT L-ID.
+     EVALUATE L-SLOT
+         WHEN 1 MOVE "helmet" TO WS-LAYER
+         WHEN 2 MOVE "chestplate" TO WS-LAYER
+         WHEN 3 MOVE "leggings" TO WS-LAYER
+         WHEN OTHER MOVE "boots" TO WS-LAYER
+     END-EVALUATE
+     MOVE SPACES TO L-ID
+     STRING "minecraft:" FUNCTION TRIM(L-NAME) "#" FUNCTION TRIM(WS-LAYER) DELIMITED BY SIZE INTO L-ID
+     GOBACK.
+ END PROGRAM EM2-ARMOR-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-QUAD-MESH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SIDE                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-LEGS-NAMES.
+    05 FILLER PIC X(24) VALUE "right_hind_leg".
+    05 FILLER PIC X(24) VALUE "left_hind_leg".
+    05 FILLER PIC X(24) VALUE "right_front_leg".
+    05 FILLER PIC X(24) VALUE "left_front_leg".
+ 01 WS-LEGS-R REDEFINES WS-LEGS-NAMES.
+    05 WS-LEG-NAME         PIC X(24) OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ 01 L-LEG                  FLOAT-LONG.
+ 01 L-MIRROR-LEFT          BINARY-LONG.
+ 01 L-MIRROR-RIGHT         BINARY-LONG.
+ 01 L-DEF.
+    05 L-G                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-MODE                 BINARY-LONG.
+ COPY CLEM3.
+ PROCEDURE DIVISION USING L-LEG L-MIRROR-LEFT L-MIRROR-RIGHT L-DEF L-MODE EM3-PARTS.
+     MOVE 0 TO QP-COUNT
+     MOVE 1 TO WS-FIRST
+     IF L-MODE = 0
+         MOVE 6 TO QP-COUNT
+         MOVE "head" TO QP-NAME(1)
+         MOVE 0 TO QP-PX(1) QP-XROT(1) QP-U(1) QP-V(1)
+         COMPUTE QP-PY(1) = 18 - L-LEG
+         MOVE -6 TO QP-PZ(1)
+         MOVE -4 TO QP-OX(1) QP-OY(1)
+         MOVE -8 TO QP-OZ(1)
+         MOVE 8 TO QP-W(1) QP-H(1) QP-D(1)
+         MOVE 0 TO QP-MIRROR(1)
+         MOVE "body" TO QP-NAME(2)
+         MOVE 0 TO QP-PX(2) QP-MIRROR(2)
+         COMPUTE QP-PY(2) = 17 - L-LEG
+         MOVE 2 TO QP-PZ(2)
+         MOVE 1.5707964 TO QP-XROT(2)
+         MOVE 28 TO QP-U(2)
+         MOVE 8 TO QP-V(2)
+         MOVE -5 TO QP-OX(2)
+         MOVE -10 TO QP-OY(2)
+         MOVE -7 TO QP-OZ(2)
+         MOVE 10 TO QP-W(2)
+         MOVE 16 TO QP-H(2)
+         MOVE 8 TO QP-D(2)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+             MOVE L-G(1) TO QP-GX(WS-I)
+             MOVE L-G(2) TO QP-GY(WS-I)
+             MOVE L-G(3) TO QP-GZ(WS-I)
+         END-PERFORM
+         MOVE 3 TO WS-FIRST
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         COMPUTE WS-ROW = WS-FIRST + WS-I - 1
+         IF L-MODE NOT = 0
+             MOVE WS-I TO QP-COUNT
+         END-IF
+         MOVE WS-LEG-NAME(WS-I) TO QP-NAME(WS-ROW)
+         COMPUTE QP-PY(WS-ROW) = 24 - L-LEG
+         MOVE 0 TO QP-XROT(WS-ROW) QP-U(WS-ROW)
+         MOVE 16 TO QP-V(WS-ROW)
+         MOVE -2 TO QP-OX(WS-ROW) QP-OZ(WS-ROW)
+         MOVE 0 TO QP-OY(WS-ROW)
+         MOVE 4 TO QP-W(WS-ROW) QP-D(WS-ROW)
+         MOVE L-LEG TO QP-H(WS-ROW)
+         MOVE L-G(1) TO QP-GX(WS-ROW)
+         MOVE L-G(2) TO QP-GY(WS-ROW)
+         MOVE L-G(3) TO QP-GZ(WS-ROW)
+         MOVE 3 TO QP-PX(WS-ROW)
+         MOVE L-MIRROR-LEFT TO QP-MIRROR(WS-ROW)
+         COMPUTE WS-SIDE = FUNCTION MOD(WS-I, 2)
+         IF WS-SIDE = 1
+             MOVE -3 TO QP-PX(WS-ROW)
+             MOVE L-MIRROR-RIGHT TO QP-MIRROR(WS-ROW)
+         END-IF
+         MOVE 7 TO QP-PZ(WS-ROW)
+         IF WS-I > 2
+             MOVE -5 TO QP-PZ(WS-ROW)
+         END-IF
+     END-PERFORM
+     IF L-MODE = 0
+         MOVE 6 TO QP-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-QUAD-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-QUAD-ANIM.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = L-I(1) * 3.141592653589793 / 180
+     COMPUTE L-O(2) = L-I(2) * 3.141592653589793 / 180
+     COMPUTE L-O(3) = FUNCTION COS(0.6662 * L-I(3)) * 1.4 * L-I(4)
+     COMPUTE L-O(4) = FUNCTION COS(0.6662 * L-I(3) + 3.141592653589793) * 1.4 * L-I(4)
+     MOVE L-O(4) TO L-O(5)
+     MOVE L-O(3) TO L-O(6)
+     GOBACK.
+ END PROGRAM EM3-QUAD-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-BOB.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = L-I(1) + L-I(4) * (FUNCTION COS(0.09 * L-I(3)) * 0.05 + 0.05)
+     COMPUTE L-O(2) = L-I(2) + L-I(4) * FUNCTION SIN(0.067 * L-I(3)) * 0.05
+     GOBACK.
+ END PROGRAM EM3-BOB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ZOMBIE-ARMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-BASE                FLOAT-LONG.
+ 01 WS-S1                  FLOAT-LONG.
+ 01 WS-S2                  FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-SIGN                FLOAT-LONG.
+ 01 WS-RP                  BINARY-LONG.
+ 01 WS-LP                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE L-I(7) TO L-O(1)
+     MOVE L-I(8) TO L-O(2)
+     MOVE L-I(9) TO L-O(3)
+     MOVE L-I(10) TO L-O(4)
+     MOVE L-I(11) TO L-O(5)
+     MOVE L-I(12) TO L-O(6)
+     COMPUTE WS-RP = L-I(5)
+     COMPUTE WS-LP = L-I(6)
+     IF WS-RP = 10 OR WS-LP = 10
+         GOBACK
+     END-IF
+     MOVE 1 TO WS-R
+     IF L-I(1) NOT = 0 AND L-I(2) = 0
+         MOVE 0 TO WS-R
+     END-IF
+     MOVE 0 TO WS-BASE
+     MOVE -1 TO WS-SIGN
+     IF WS-R = 1
+         MOVE 1 TO WS-SIGN
+         COMPUTE WS-BASE = -3.141592653589793 / 2.25
+         IF L-I(3) NOT = 0
+             COMPUTE WS-BASE = -3.141592653589793 / 1.5
+         END-IF
+     END-IF
+     COMPUTE WS-S1 = WS-SIGN * FUNCTION SIN(L-I(4) * 3.141592653589793)
+     COMPUTE WS-S2 = FUNCTION SIN((1 - (1 - L-I(4)) * (1 - L-I(4))) * 3.141592653589793)
+     COMPUTE WS-X = WS-BASE + WS-S1 * 1.2 - WS-S2 * 0.4
+     COMPUTE WS-Y = 0.1 - WS-S1 * 0.6
+     IF WS-RP NOT = 4
+         MOVE WS-X TO L-O(1)
+         COMPUTE L-O(2) = WS-Y * -1 * WS-SIGN
+         MOVE 0 TO L-O(3)
+     END-IF
+     IF WS-LP NOT = 4
+         MOVE WS-X TO L-O(4)
+         COMPUTE L-O(5) = WS-Y * WS-SIGN
+         MOVE 0 TO L-O(6)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-ZOMBIE-ARMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SWING-DOWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S1                  FLOAT-LONG.
+ 01 WS-S2                  FLOAT-LONG.
+ 01 WS-MAIN                FLOAT-LONG.
+ 01 WS-OTHER               FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-S1 = FUNCTION SIN(L-I(1) * 3.141592653589793)
+     COMPUTE WS-S2 = FUNCTION SIN((1 - (1 - L-I(1)) * (1 - L-I(1))) * 3.141592653589793)
+     COMPUTE WS-MAIN = -1.8849558 + FUNCTION COS(0.09 * L-I(2)) * 0.15
+     COMPUTE WS-MAIN = WS-MAIN + WS-S1 * 2.2 - WS-S2 * 0.4
+     COMPUTE WS-OTHER = FUNCTION COS(0.19 * L-I(2)) * 0.5
+     COMPUTE WS-OTHER = WS-OTHER + WS-S1 * 1.2 - WS-S2 * 0.4
+     MOVE WS-MAIN TO L-O(1)
+     MOVE WS-OTHER TO L-O(4)
+     IF L-I(3) = 2
+         MOVE WS-OTHER TO L-O(1)
+         MOVE WS-MAIN TO L-O(4)
+     END-IF
+     MOVE 0.15707964 TO L-O(2)
+     MOVE -0.15707964 TO L-O(5)
+     MOVE 0 TO L-O(3) L-O(6)
+*>   bobArms(right, left, age): the right arm with sign +1, the left with sign -1
+     COMPUTE WS-BZ = FUNCTION COS(0.09 * L-I(2)) * 0.05 + 0.05
+     COMPUTE WS-BX = FUNCTION SIN(0.067 * L-I(2)) * 0.05
+     COMPUTE L-O(3) = L-O(3) + WS-BZ
+     COMPUTE L-O(1) = L-O(1) + WS-BX
+     COMPUTE L-O(6) = L-O(6) - WS-BZ
+     COMPUTE L-O(4) = L-O(4) - WS-BX
+     GOBACK.
+ END PROGRAM EM3-SWING-DOWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ARM-POSE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER PIC X(16) VALUE "EMPTY".
+    05 FILLER PIC X(16) VALUE "ITEM".
+    05 FILLER PIC X(16) VALUE "BLOCK".
+    05 FILLER PIC X(16) VALUE "BOW_AND_ARROW".
+    05 FILLER PIC X(16) VALUE "THROW_TRIDENT".
+    05 FILLER PIC X(16) VALUE "CROSSBOW_CHARGE".
+    05 FILLER PIC X(16) VALUE "CROSSBOW_HOLD".
+    05 FILLER PIC X(16) VALUE "SPYGLASS".
+    05 FILLER PIC X(16) VALUE "TOOT_HORN".
+    05 FILLER PIC X(16) VALUE "BRUSH".
+    05 FILLER PIC X(16) VALUE "SPEAR".
+ 01 WS-NAMES-R REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(16) OCCURS 11 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(24).
+ 01 L-ORD                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-ORD.
+     MOVE -1 TO L-ORD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         IF WS-NAME(WS-I) = L-NAME
+             COMPUTE L-ORD = WS-I - 1
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM3-ARM-POSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SPEAR-POSE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SWING-HAND           BINARY-LONG.
+ 01 L-STAB                 BINARY-LONG.
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-POSE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SWING-HAND L-STAB L-TAG L-POSE.
+     MOVE 0 TO L-POSE
+     IF L-SWING-HAND NOT = 0 AND L-STAB NOT = 0
+         MOVE 10 TO L-POSE
+     END-IF
+     IF L-TAG NOT = 0
+         MOVE 10 TO L-POSE
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-SPEAR-POSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-HUMANOID-CONST.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(32).
+ 01 L-VALUE                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-NAME L-VALUE.
+     MOVE 0 TO L-VALUE
+     EVALUATE L-NAME
+         WHEN "BABY_TRANSFORMER_Y_HEAD" MOVE 16 TO L-VALUE
+         WHEN "OVERLAY_SCALE" MOVE 0.25 TO L-VALUE
+         WHEN "HAT_OVERLAY_SCALE" MOVE 0.5 TO L-VALUE
+         WHEN "LEGGINGS_OVERLAY_SCALE" MOVE -0.1 TO L-VALUE
+         WHEN "DUCK_WALK_ROTATION" MOVE 0.005 TO L-VALUE
+         WHEN "SPYGLASS_ARM_ROT_Y" MOVE 0.2617994 TO L-VALUE
+         WHEN "SPYGLASS_ARM_ROT_X" MOVE 1.9198622 TO L-VALUE
+         WHEN "SPYGLASS_ARM_CROUCH_ROT_X" MOVE 0.2617994 TO L-VALUE
+         WHEN "HIGHEST_SHIELD_BLOCKING_ANGLE" MOVE -1.3962634 TO L-VALUE
+         WHEN "LOWEST_SHIELD_BLOCKING_ANGLE" MOVE 0.43633232 TO L-VALUE
+         WHEN "HORIZONTAL_SHIELD_MOVEMENT_LIMIT" MOVE 0.5235988 TO L-VALUE
+         WHEN "TOOT_HORN_XROT_BASE" MOVE 1.4835298 TO L-VALUE
+         WHEN "TOOT_HORN_YROT_BASE" MOVE 0.5235988 TO L-VALUE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-HUMANOID-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-EASE-F.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-W                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 FLOAT-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-KIND L-X L-Y.
+     MOVE 0 TO L-Y
+     EVALUATE FUNCTION INTEGER-PART(L-KIND)
+         WHEN 1
+             COMPUTE L-Y = L-X * L-X
+         WHEN 2
+             COMPUTE L-Y = 1 - (1 - L-X) ** 3
+         WHEN 3
+             COMPUTE L-Y = 1 - (1 - L-X) ** 4
+         WHEN 4
+             COMPUTE L-Y = -(FUNCTION COS(3.141592653589793 * L-X) - 1) / 2
+         WHEN 5
+             EVALUATE TRUE
+                 WHEN L-X = 0
+                     MOVE 0 TO L-Y
+                 WHEN L-X = 1
+                     MOVE 1 TO L-Y
+                 WHEN L-X < 0.5
+                     COMPUTE L-Y = 2 ** (20 * L-X - 10) / 2
+                 WHEN OTHER
+                     COMPUTE L-Y = (2 - 2 ** (-20 * L-X + 10)) / 2
+             END-EVALUATE
+         WHEN 6
+             COMPUTE L-Y = 1 + 2.70158 * (L-X - 1) ** 3 + 1.70158 * (L-X - 1) ** 2
+         WHEN 7
+             COMPUTE L-Y = FUNCTION SQRT(1 - (L-X - 1) * (L-X - 1))
+         WHEN 8
+             COMPUTE L-Y = 1 - FUNCTION SQRT(1 - L-X * L-X)
+         WHEN 9
+             IF L-X < 0.5
+                 COMPUTE L-Y = 4 * L-X * L-X * (7.189819 * L-X - 2.5949094) / 2
+             ELSE
+                 COMPUTE WS-W = 2 * L-X - 2
+                 COMPUTE L-Y = (WS-W * WS-W * (3.5949094 * WS-W + 2.5949094) + 2) / 2
+             END-IF
+         WHEN 10
+             EVALUATE TRUE
+                 WHEN L-X = 0
+                     MOVE 0 TO L-Y
+                 WHEN L-X = 1
+                     MOVE 1 TO L-Y
+                 WHEN OTHER
+                     COMPUTE WS-S = FUNCTION SIN((20 * L-X - 11.125) * 1.3962634801864624)
+                     IF L-X < 0.5
+                         COMPUTE L-Y = -(2 ** (20 * L-X - 10)) * WS-S / 2
+                     ELSE
+                         COMPUTE L-Y = 2 ** (-20 * L-X + 10) * WS-S / 2 + 1
+                     END-IF
+             END-EVALUATE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-EASE-F.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-PROGRESS-F.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-V                    FLOAT-LONG.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-V L-A L-B L-Y.
+     COMPUTE L-Y = (L-V - L-A) / (L-B - L-A)
+     IF L-Y < 0
+         MOVE 0 TO L-Y
+     END-IF
+     IF L-Y > 1
+         MOVE 1 TO L-Y
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-PROGRESS-F.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-EASE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KIND                FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE L-I(1) TO WS-KIND
+     MOVE L-I(2) TO WS-X
+     CALL "EM3-EASE-F" USING WS-KIND WS-X WS-Y
+     MOVE WS-Y TO L-O(1)
+     GOBACK.
+ END PROGRAM EM3-EASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-PROGRESS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE L-I(1) TO WS-V
+     MOVE L-I(2) TO WS-A
+     MOVE L-I(3) TO WS-B
+     CALL "EM3-PROGRESS-F" USING WS-V WS-A WS-B WS-Y
+     MOVE WS-Y TO L-O(1)
+     GOBACK.
+ END PROGRAM EM3-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-USE-PARAMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K2                  FLOAT-LONG VALUE 10.
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-KNOCK               FLOAT-LONG.
+ 01 WS-DMG                 FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-T20                 FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG VALUE 0.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-P8                  FLOAT-LONG VALUE 0.8.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-EL                  FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-RAISE               FLOAT-LONG.
+ 01 WS-K3                  FLOAT-LONG VALUE 2.
+ 01 WS-K7                  FLOAT-LONG VALUE 7.
+ 01 WS-K8                  FLOAT-LONG VALUE 8.
+ 01 WS-S1                  FLOAT-LONG.
+ 01 WS-S2                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-E = L-I(1) + L-I(2)
+     COMPUTE WS-KNOCK = L-I(1) + L-I(3)
+     COMPUTE WS-DMG = L-I(1) + L-I(4)
+     MOVE L-I(5) TO WS-T
+     MOVE L-I(1) TO WS-D
+     CALL "EM3-PROGRESS-F" USING WS-T WS-Z WS-D WS-RAISE
+     MOVE WS-RAISE TO L-O(1)
+     CALL "EM3-PROGRESS-F" USING WS-RAISE WS-Z WS-HALF L-O(2)
+     CALL "EM3-PROGRESS-F" USING WS-RAISE WS-HALF WS-P8 L-O(3)
+     CALL "EM3-PROGRESS-F" USING WS-RAISE WS-P8 WS-ONE L-O(4)
+     COMPUTE WS-A = WS-E - 20
+     CALL "EM3-PROGRESS-F" USING L-I(5) WS-A WS-E L-O(5)
+*>   lower = outCubic(inOutElastic(progress(t - 20, knock - 40, knock)))
+     COMPUTE WS-T20 = L-I(5) - 20
+     COMPUTE WS-B = WS-KNOCK - 40
+     CALL "EM3-PROGRESS-F" USING WS-T20 WS-B WS-KNOCK WS-X
+     CALL "EM3-EASE-F" USING WS-K2 WS-X WS-EL
+     MOVE 2 TO WS-K3
+     CALL "EM3-EASE-F" USING WS-K3 WS-EL L-O(6)
+     COMPUTE WS-A = WS-DMG - 5
+     CALL "EM3-PROGRESS-F" USING L-I(5) WS-A WS-DMG L-O(7)
+*>   swayIntensity = 2 outCirc(sway) - 2 inCirc(raiseBack)
+     CALL "EM3-EASE-F" USING WS-K7 L-O(5) WS-S1
+     CALL "EM3-EASE-F" USING WS-K8 L-O(7) WS-S2
+     COMPUTE L-O(8) = 2 * WS-S1 - 2 * WS-S2
+     COMPUTE L-O(9) = FUNCTION SIN(19 * L-I(5) * 0.017453292) * L-O(8)
+     COMPUTE L-O(10) = FUNCTION SIN(30 * L-I(5) * 0.017453292) * L-O(8)
+     GOBACK.
+ END PROGRAM EM3-USE-PARAMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-HIT-FEEDBACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   FLOAT-LONG VALUE 1.
+ 01 WS-B                   FLOAT-LONG VALUE 3.
+ 01 WS-C                   FLOAT-LONG VALUE 10.
+ 01 WS-P1                  FLOAT-LONG.
+ 01 WS-P2                  FLOAT-LONG.
+ 01 WS-K3                  FLOAT-LONG VALUE 3.
+ 01 WS-K4                  FLOAT-LONG VALUE 4.
+ 01 WS-Q                   FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-A WS-B WS-P1
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-B WS-C WS-P2
+     CALL "EM3-EASE-F" USING WS-K3 WS-P1 WS-Q
+     CALL "EM3-EASE-F" USING WS-K4 WS-P2 WS-R
+     COMPUTE L-O(1) = 0.4 * (WS-Q - WS-R)
+     GOBACK.
+ END PROGRAM EM3-HIT-FEEDBACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ATTACK-HAND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-Z                   FLOAT-LONG VALUE 0.
+ 01 WS-P05                 FLOAT-LONG VALUE 0.05.
+ 01 WS-P2                  FLOAT-LONG VALUE 0.2.
+ 01 WS-P4                  FLOAT-LONG VALUE 0.4.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-K1                  FLOAT-LONG VALUE 1.
+ 01 WS-K4                  FLOAT-LONG VALUE 4.
+ 01 WS-K5                  FLOAT-LONG VALUE 5.
+ 01 WS-PC                  FLOAT-LONG.
+ 01 WS-PA                  FLOAT-LONG.
+ 01 WS-PB                  FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-DELTA               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-Z WS-P05 WS-PC
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-P05 WS-P2 WS-PA
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-P4 WS-ONE WS-PB
+     CALL "EM3-EASE-F" USING WS-K4 WS-PC WS-C
+     CALL "EM3-EASE-F" USING WS-K1 WS-PA WS-A
+     CALL "EM3-EASE-F" USING WS-K5 WS-PB WS-B
+     COMPUTE WS-DELTA = (90 * WS-C - 120 * WS-A + 30 * WS-B) * 0.017453292
+     COMPUTE L-O(1) = L-I(3)
+     COMPUTE L-O(2) = L-I(4) - L-I(2)
+     COMPUTE L-O(3) = L-I(5) - L-I(2)
+     COMPUTE L-O(4) = L-I(6) - L-I(2)
+     IF L-I(7) = 1
+         COMPUTE L-O(1) = L-O(1) + WS-DELTA
+     ELSE
+         COMPUTE L-O(3) = L-O(3) + WS-DELTA
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-ATTACK-HAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ATTACK-ITEM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-P05                 FLOAT-LONG VALUE 0.05.
+ 01 WS-P2                  FLOAT-LONG VALUE 0.2.
+ 01 WS-P4                  FLOAT-LONG VALUE 0.4.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-K1                  FLOAT-LONG VALUE 1.
+ 01 WS-K5                  FLOAT-LONG VALUE 5.
+ 01 WS-PA                  FLOAT-LONG.
+ 01 WS-PB                  FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1) L-O(2) L-O(3)
+     IF L-I(1) > 0
+         CALL "EM3-PROGRESS-F" USING L-I(1) WS-P05 WS-P2 WS-PA
+         CALL "EM3-PROGRESS-F" USING L-I(1) WS-P4 WS-ONE WS-PB
+         CALL "EM3-EASE-F" USING WS-K1 WS-PA WS-A
+         CALL "EM3-EASE-F" USING WS-K5 WS-PB WS-B
+         MOVE 1 TO L-O(1)
+         COMPUTE L-O(2) = 70 * (WS-A - WS-B)
+         COMPUTE L-O(3) = L-I(2) * (WS-A - WS-B)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-ATTACK-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-HAND-USE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+*>   IN(sign head-yRot head-xRot swim-or-fall-flying using-matching-kinetic-hand, raiseStart raiseMiddle raiseEnd lower raiseBack scaleFast scaleSlow
+*>   intensity sway) OUT(yRot xRot zRot)
+     COMPUTE WS-Y = -0.1 * L-I(1) + L-I(2)
+     COMPUTE WS-X = -3.141592653589793 / 2 + L-I(3) + 0.8
+     IF L-I(4) NOT = 0
+         COMPUTE WS-X = WS-X - 0.9599311
+     END-IF
+     COMPUTE WS-V = 57.295776 * WS-Y
+     IF WS-V < -60
+         MOVE -60 TO WS-V
+     END-IF
+     IF WS-V > 60
+         MOVE 60 TO WS-V
+     END-IF
+     COMPUTE L-O(1) = 0.017453292 * WS-V
+     COMPUTE WS-V = 57.295776 * WS-X
+     IF WS-V < -120
+         MOVE -120 TO WS-V
+     END-IF
+     IF WS-V > 30
+         MOVE 30 TO WS-V
+     END-IF
+     COMPUTE L-O(2) = 0.017453292 * WS-V
+     MOVE 0 TO L-O(3)
+     IF L-I(5) NOT = 0
+         COMPUTE L-O(1) = L-O(1) - L-I(1) * L-I(11) * 0.017453292 * L-I(13)
+         COMPUTE L-O(3) = L-O(3) - L-I(1) * L-I(12) * 0.017453292 * L-I(13) * 0.5
+         COMPUTE L-O(2) = L-O(2) + 0.017453292 * (-40 * L-I(6) + 30 * L-I(7) - 20 * L-I(8) + 20 * L-I(9) + 10 * L-I(10)
+             + 0.6 * L-I(12) * L-I(13))
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-HAND-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-USE-ITEM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-P05                 FLOAT-LONG VALUE 0.05.
+ 01 WS-P2                  FLOAT-LONG VALUE 0.2.
+ 01 WS-P4                  FLOAT-LONG VALUE 0.4.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-K1                  FLOAT-LONG VALUE 1.
+ 01 WS-K5                  FLOAT-LONG VALUE 5.
+ 01 WS-K6                  FLOAT-LONG VALUE 6.
+ 01 WS-PA                  FLOAT-LONG.
+ 01 WS-PB                  FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-OB                  FLOAT-LONG.
+ 01 WS-INV                 FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+*>   IN(forward-movement swing hit-feedback sign raise raiseBack sway) OUT(translate x y z, angle about -X, angle about +Y)
+     CALL "EM3-PROGRESS-F" USING L-I(2) WS-P05 WS-P2 WS-PA
+     CALL "EM3-PROGRESS-F" USING L-I(2) WS-P4 WS-ONE WS-PB
+     CALL "EM3-EASE-F" USING WS-K1 WS-PA WS-A
+     CALL "EM3-EASE-F" USING WS-K5 WS-PB WS-B
+     COMPUTE WS-INV = 1 - L-I(5)
+     CALL "EM3-EASE-F" USING WS-K6 WS-INV WS-OB
+     COMPUTE WS-G = 1 - WS-OB
+     MOVE 0 TO L-O(1)
+     COMPUTE L-O(2) = -0.4 * L-I(3)
+     COMPUTE L-O(3) = -L-I(1) * (WS-G - L-I(6)) + L-I(3)
+     COMPUTE L-O(4) = 70 * (L-I(5) - L-I(6)) - 40 * (WS-A - WS-B)
+     COMPUTE L-O(5) = L-I(4) * 90 * (L-I(5) - L-I(7) + 3 * WS-B + WS-A)
+     GOBACK.
+ END PROGRAM EM3-USE-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-FIRST-PERSON-USE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-P5                  FLOAT-LONG VALUE 0.5.
+ 01 WS-P55                 FLOAT-LONG VALUE 0.55.
+ 01 WS-K9                  FLOAT-LONG VALUE 9.
+ 01 WS-PR                  FLOAT-LONG.
+ 01 WS-IB                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+*>   IN(sign hit-feedback raise raiseStart raiseEnd raiseMiddle sway lower raiseBack scaleFast scaleSlow) OUT(translate x y z, angle about +X,
+*>   angle about -Y, final translate y)
+     CALL "EM3-PROGRESS-F" USING L-I(3) WS-P5 WS-P55 WS-PR
+     CALL "EM3-EASE-F" USING WS-K9 L-I(3) WS-IB
+     COMPUTE L-O(1) = L-I(1) * (0.15 * L-I(3) - 0.05 * L-I(5) - 0.1 * L-I(7) + 0.005 * L-I(11))
+     COMPUTE L-O(2) = -0.075 * L-I(3) + 0.075 * L-I(6) + 0.01 * L-I(10)
+     COMPUTE L-O(3) = 0.05 * L-I(4) - 0.05 * L-I(5) + 0.005 * L-I(11)
+     COMPUTE L-O(4) = -65 * WS-IB - 35 * L-I(8) + 100 * L-I(9) - 0.5 * L-I(10)
+     COMPUTE L-O(5) = L-I(1) * (-90 * WS-PR + 90 * L-I(7) + 2 * L-I(11))
+     COMPUTE L-O(6) = -L-I(2)
+     GOBACK.
+ END PROGRAM EM3-FIRST-PERSON-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-FIRST-PERSON-ATTACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-Z                   FLOAT-LONG VALUE 0.
+ 01 WS-P05                 FLOAT-LONG VALUE 0.05.
+ 01 WS-P2                  FLOAT-LONG VALUE 0.2.
+ 01 WS-P4                  FLOAT-LONG VALUE 0.4.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-K4                  FLOAT-LONG VALUE 4.
+ 01 WS-K5                  FLOAT-LONG VALUE 5.
+ 01 WS-K6                  FLOAT-LONG VALUE 6.
+ 01 WS-PA                  FLOAT-LONG.
+ 01 WS-PB                  FLOAT-LONG.
+ 01 WS-PC                  FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 10 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-Z WS-P05 WS-PA
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-P05 WS-P2 WS-PB
+     CALL "EM3-PROGRESS-F" USING L-I(1) WS-P4 WS-ONE WS-PC
+     CALL "EM3-EASE-F" USING WS-K4 WS-PA WS-A
+     CALL "EM3-EASE-F" USING WS-K6 WS-PB WS-B
+     CALL "EM3-EASE-F" USING WS-K5 WS-PC WS-C
+     COMPUTE L-O(1) = 0.1 * L-I(2) * (WS-A - WS-B)
+     COMPUTE L-O(2) = -0.075 * (WS-A - WS-C)
+     COMPUTE L-O(3) = 0.65 * (WS-A - WS-B)
+     COMPUTE L-O(4) = -70 * (WS-A - WS-C)
+     COMPUTE L-O(5) = -0.25 * (WS-C - WS-B)
+     GOBACK.
+ END PROGRAM EM3-FIRST-PERSON-ATTACK.

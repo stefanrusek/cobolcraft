@@ -29,7 +29,7 @@
      MOVE "acceptance US4-4 given creative when a block is broken then it breaks at once on "
          & "the start of the break (void) and no item appears (no Add Entity)" TO TL-CASE
      PERFORM START-AND-LIST
-     MOVE "8(20,100,20=0) 49(1,1) 4(1) state 0" TO TL-EXPECTED
+     MOVE "49(1,1) 8(20,100,20=0) 4(1) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4 edge given creative when the baseplate is broken then nothing happens "

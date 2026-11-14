@@ -1,0 +1,12 @@
+{
+ "feature": {
+  "type": "minecraft:simple_block",
+  "to_place": {
+   "Name": "minecraft:poppy",
+   "Properties": {
+    "x": "1"
+   }
+  }
+ },
+ "placement": []
+}

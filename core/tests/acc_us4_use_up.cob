@@ -58,7 +58,7 @@
              MOVE 1 TO WS-FOUND
          END-IF
      END-PERFORM
-     MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot.hex" TO WS-PATH
+     MOVE "core/tests/fixtures/play-s2c-14-container-set-slot-hotbar-36.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-PATH TESTLIB-ASSERT
 
      MOVE 1 TO CS-DEFAULT-MODE
@@ -75,7 +75,7 @@
      MOVE "acceptance US4 edge given creative when a block is placed then the stack is unchanged "
          & "(64) and no Container Set Slot is sent" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "8(12,100,10=2) 49(0,0) 4(2) 64" TO TL-EXPECTED
+     MOVE "49(0,0) 8(12,100,10=2) 4(2) 64" TO TL-EXPECTED
      MOVE PL-SLOT-COUNT(WS-ROW, 1) TO WS-EDIT
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE

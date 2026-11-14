@@ -35,7 +35,7 @@
  01 WS-TICKS               BINARY-DOUBLE.
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
- 01 WS-SHUTDOWN            PIC X(16) VALUE Z"shutdown".
+ 01 WS-SHUTDOWN            PIC X(16) VALUE Z"stop".
  01 WS-STATE-BEFORE        BINARY-LONG.
  01 WS-LEVEL-DAT           PIC X(32) VALUE "world/level.dat".
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
@@ -44,9 +44,9 @@
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
      MOVE "N" TO TL-MODE
-     MOVE "contract server coreapi consumer record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 "
+     MOVE "contract server coreapi consumer record lengths CORE-SETTINGS 3829 CORE-BUFFER 16 "
          & "CORE-STATUS 5 (core-host-api §1)" TO TL-CASE
-     MOVE 1707016005 TO TL-EXPECTED-N
+     MOVE 3829016005 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = LENGTH OF CORE-SETTINGS * 1000000 + LENGTH OF CORE-BUFFER * 1000
          + LENGTH OF CORE-STATUS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -219,7 +219,7 @@
          & "CORE-STOP (run state 2, level.dat saved) between the Stopping and Stopped lines"
          TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "run 1 then 2 saved | Shutting down | Stopping: saving world and disconnecting players | "
+     MOVE "run 1 then 2 saved | Stopping the server | Stopping: saving world and disconnecting players | "
          & "Stopped" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-STATE-BEFORE TO WS-EDIT

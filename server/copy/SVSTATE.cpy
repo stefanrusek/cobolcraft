@@ -18,7 +18,7 @@
     05 SV-LISTENER         BINARY-LONG.   *> cc_net handle, 0 = not listening
     05 SV-BOUND-PORT       BINARY-LONG.   *> the port actually listened on
     05 SV-PORT             BINARY-LONG.   *> the configured port (operator-surface §2)
-    05 SV-SETTINGS         PIC X(1707).   *> the CORE-SETTINGS the world was opened with
+    05 SV-SETTINGS         PIC X(3829).   *> the CORE-SETTINGS the world was opened with
     05 SV-NEXT-TICK        BINARY-DOUBLE. *> clock (SV-NOW-MS) at which the next tick is due
     05 SV-TICKS            BINARY-DOUBLE. *> CORE-TICK calls made since SV-START
     05 SV-CONSOLE-OPEN     BINARY-LONG.   *> 1 while console input is read (0 after its end)

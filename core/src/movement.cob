@@ -19,15 +19,16 @@
 *> floor(D) >= 5 the player takes 2 x (floor(D) - 4) fall damage (HEALTH-DAMAGE, cause fall; a
 *> creative player takes none) after the move has been applied and sent.
 *>
-*> Exhaustion (standin §11.2; HUNGER-EXHAUST, core/src/hunger.cob, counts it only for an alive
-*> survival player): an accepted move with a position adds 0.02 per block of horizontal distance
-*> from the last accepted position (sqrt(dx^2 + dz^2)), 0.12 while the sprinting flag is set, and
-*> nothing while flying; a move with on-ground false after one with on-ground true and a higher feet
-*> y is a jump and adds 0.3.
+*> Exhaustion (17 section 4.9; HUNGER-EXHAUST, core/src/hunger.cob, counts it only for an alive
+*> survival player): an accepted move with a position adds 0.1 per block of horizontal distance
+*> from the last accepted position (sqrt(dx^2 + dz^2)) while the sprinting flag is set (walking adds
+*> nothing) and nothing while flying; a move with on-ground false after one with on-ground true and a
+*> higher feet y is a jump and adds 0.05, or 0.2 while sprinting.
 *>
 *> Sprinting (MOVE-SPRINT, Player Command 0x2A): action 1 START_SPRINTING sets the player's
-*> sprinting flag, action 2 STOP_SPRINTING clears it, other actions leave it (data-model §6). Death
-*> and respawn clear it (core/src/health.cob).
+*> sprinting flag, action 2 STOP_SPRINTING clears it, other actions leave it (data-model §6). A
+*> survival player with food of 6 or less cannot start sprinting (17 section 4.9). Death and respawn
+*> clear it (core/src/health.cob).
 *>
 *> Entry points:
 *>   MOVE-PLAYER USING connection id, packet id (30 to 33), PLAY-SERVERBOUND
@@ -41,8 +42,11 @@
 *> that position overlaps a solid block, else 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY ENTITYTYPES.
- COPY BLOCKS.
+ COPY CITEMS.
+ COPY CTBSHAPE.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ 01 WS-BLK                 BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -56,6 +60,9 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -64,8 +71,8 @@
  01 L-HIT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT.
      MOVE 0 TO L-HIT
-     COMPUTE WS-HALF = ET-WIDTH-MILLI(ET-OPERATOR + 1) / 2000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(ET-OPERATOR + 1) / 1000
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
 *>   First cell: floor(low edge + e); last cell: ceil(high edge - e) - 1. The tolerance e (1e-7
 *>   block) keeps a face that touches a cell face from counting as an overlap when the edge is not
 *>   exactly representable (x + 0.35).
@@ -75,12 +82,28 @@
      COMPUTE WS-Y1 = - FUNCTION INTEGER(WS-EPSILON - (L-Y + WS-HEIGHT)) - 1
      COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - WS-HALF + WS-EPSILON)
      COMPUTE WS-Z1 = - FUNCTION INTEGER(WS-EPSILON - (L-Z + WS-HALF)) - 1
+     COMPUTE WS-B(1) = L-X - WS-HALF
+     MOVE L-Y TO WS-B(2)
+     COMPUTE WS-B(3) = L-Z - WS-HALF
+     COMPUTE WS-B(4) = L-X + WS-HALF
+     COMPUTE WS-B(5) = L-Y + WS-HEIGHT
+     COMPUTE WS-B(6) = L-Z + WS-HALF
      PERFORM VARYING WS-BY FROM WS-Y0 BY 1 UNTIL WS-BY > WS-Y1 OR L-HIT = 1
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1 OR L-HIT = 1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1 OR L-HIT = 1
                  CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
-                 IF SB-SOLID(WS-STATE + 1) = 1
-                     MOVE 1 TO L-HIT
+*>               The cobolcraft stand-in set has no shapes: its states are full cubes (shape 1) or empty by CB-SOLID, as before the shapes.
+                 IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+                     MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+                     MOVE CB-SOLID(WS-BLK + 1) TO WS-SHAPE
+                     IF WS-SHAPE = 1
+                         CALL "BSH-ENSURE-CUBE"
+                     END-IF
+                 ELSE
+                     CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+                 END-IF
+                 IF WS-SHAPE NOT = 0
+                     CALL "BSH-OVERLAPS" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-BOX L-HIT
                  END-IF
              END-PERFORM
          END-PERFORM
@@ -103,7 +126,8 @@
  01 WS-HIT                 BINARY-LONG.
  01 WS-MOVED               PIC 9.
  01 WS-ON-GROUND           BINARY-LONG.
- 01 WS-FALL                BINARY-LONG.
+ 01 WS-FALL                FLOAT-LONG.
+ 01 WS-WET                 BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
@@ -114,6 +138,8 @@
  01 WS-OLD-ON-GROUND       PIC 9.
  01 WS-EXHAUST             FLOAT-LONG.
  01 WS-RATE                BINARY-LONG.
+ 01 WS-SUPPORTED           BINARY-LONG.
+ 01 WS-CLIMBING            BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -126,6 +152,19 @@
      MOVE 0 TO WS-MOVED
      IF L-PACKET-ID = 30 OR L-PACKET-ID = 31
          CALL "MOVE-COLLIDES" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-HIT
+*>       A rise that claims the ground (on-ground 1) without support or a climbable block is refused
+*>       like a collision (move-check.cob): the endless climb of a client that claims the ground in
+*>       the air.
+         IF WS-HIT = 0 AND FUNCTION MOD(PSB-FLAGS, 2) = 1 AND PL-MODE(WS-ROW) = 0
+                 AND PL-FLYING(WS-ROW) = 0 AND PSB-Y > PL-Y(WS-ROW) + 0.00001
+             CALL "MOVE-SUPPORTED" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-SUPPORTED
+             IF WS-SUPPORTED = 0
+                 CALL "MOVE-CLIMBING" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-CLIMBING
+                 IF WS-CLIMBING = 0
+                     MOVE 1 TO WS-HIT
+                 END-IF
+             END-IF
+         END-IF
          IF WS-HIT = 1
              IF WS-READY = 0
                  CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
@@ -153,9 +192,22 @@
      END-IF
      MOVE PL-ON-GROUND(WS-ROW) TO WS-OLD-ON-GROUND
      MOVE FUNCTION MOD(PSB-FLAGS, 2) TO PL-ON-GROUND(WS-ROW)
+*>   The claim counts as ground only with support below the feet (move-check.cob).
+     IF PL-ON-GROUND(WS-ROW) = 1 AND PL-MODE(WS-ROW) = 0
+         CALL "MOVE-SUPPORTED" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
+             WS-SUPPORTED
+         IF WS-SUPPORTED = 0
+             MOVE 0 TO PL-ON-GROUND(WS-ROW)
+         END-IF
+     END-IF
+*>   A player whose box touches water has no fall (29a 8.3 step 2: resetFallDistance).
+     CALL "FLUID-TOUCHES-WATER" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-WET
+     IF WS-WET = 1
+         MOVE PL-Y(WS-ROW) TO PL-FALL-START(WS-ROW)
+     END-IF
      MOVE 0 TO WS-FALL
      IF PL-ON-GROUND(WS-ROW) = 1
-         COMPUTE WS-FALL = FUNCTION INTEGER(PL-FALL-START(WS-ROW) - PL-Y(WS-ROW))
+         COMPUTE WS-FALL = PL-FALL-START(WS-ROW) - PL-Y(WS-ROW)
      END-IF
      IF PL-ON-GROUND(WS-ROW) = 1 OR PL-FLYING(WS-ROW) = 1 OR PL-MODE(WS-ROW) = 1
              OR PL-Y(WS-ROW) > PL-FALL-START(WS-ROW)
@@ -169,24 +221,29 @@
          CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
              PL-YAW(WS-ROW) PL-PITCH(WS-ROW) WS-ON-GROUND
      END-IF
-*>   Exhaustion of walking or running, and of a jump (§11.2).
+*>   Exhaustion of sprinting (0.1 per metre; walking costs nothing) and of a jump (17 section 4.9).
      IF WS-MOVED = 1 AND PL-FLYING(WS-ROW) = 0
-         MOVE RULE-EXHAUST-WALK-MILLI TO WS-RATE
          IF PL-SPRINTING(WS-ROW) = 1
-             MOVE RULE-EXHAUST-SPRINT-MILLI TO WS-RATE
+             COMPUTE WS-EXHAUST = FUNCTION SQRT((PL-X(WS-ROW) - WS-OLD-X) ** 2
+                 + (PL-Z(WS-ROW) - WS-OLD-Z) ** 2) * RULE-EXHAUST-SPRINT-MILLI / 1000
+             CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          END-IF
-         COMPUTE WS-EXHAUST = FUNCTION SQRT((PL-X(WS-ROW) - WS-OLD-X) ** 2
-             + (PL-Z(WS-ROW) - WS-OLD-Z) ** 2) * WS-RATE / 1000
-         CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          IF WS-OLD-ON-GROUND = 1 AND PL-ON-GROUND(WS-ROW) = 0 AND PL-Y(WS-ROW) > WS-OLD-Y
-             COMPUTE WS-EXHAUST = RULE-EXHAUST-JUMP-MILLI / 1000
+             MOVE RULE-EXHAUST-JUMP-MILLI TO WS-RATE
+             IF PL-SPRINTING(WS-ROW) = 1
+                 MOVE RULE-EXHAUST-SPRINT-JUMP-MILLI TO WS-RATE
+             END-IF
+             COMPUTE WS-EXHAUST = WS-RATE / 1000
              CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          END-IF
      END-IF
-     IF WS-FALL > RULE-SAFE-FALL
-         COMPUTE WS-AMOUNT = RULE-FALL-FACTOR * (WS-FALL - RULE-SAFE-FALL)
+*>   Fall damage (17 section 4.11): floor(distance + 1e-6 - 3).
+     COMPUTE WS-AMOUNT = FUNCTION INTEGER(WS-FALL + 0.000001 - RULE-SAFE-FALL)
+     IF WS-AMOUNT > 0
          MOVE CAUSE-FALL TO WS-CAUSE
+         COMPUTE PL-FALL-DISTANCE(WS-ROW) = WS-FALL * 1000
          CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
+         CALL "PARTICLE-LANDING" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-AMOUNT
      END-IF
      GOBACK.
  END PROGRAM MOVE-PLAYER.
@@ -225,15 +282,18 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-SPRINT.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 1 sets the
-*> sprinting flag, action 2 clears it, any other action is ignored.
+*> sprinting flag (not for a survival player whose food is 6 or less), action 2 clears it, any
+*> other action is ignored.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY RULES.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
-     IF PSB-ACTION = 1
+     IF PSB-ACTION = 1 AND (PL-MODE(CN-PLAYER(L-ID)) = 1
+             OR PL-FOOD(CN-PLAYER(L-ID)) > RULE-SPRINT-FOOD)
          MOVE 1 TO PL-SPRINTING(CN-PLAYER(L-ID))
      END-IF
      IF PSB-ACTION = 2

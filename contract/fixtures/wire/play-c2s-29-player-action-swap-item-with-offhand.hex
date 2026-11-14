@@ -1,0 +1,11 @@
+# Fixture: Player Action 7 SWAP_ITEM_WITH_OFFHAND
+# Phase: play. Direction: serverbound (C->S). Packet id 0x29 (41).
+# Doc refs: 05c 0x29; 00 section 4.1; 13 section 2.3 (sequence ids), section 4 (swap)
+# Stated inputs:
+#   action 7 SWAP_ITEM_WITH_OFFHAND; location (0, 0, 0); face 0; sequence 0 (block-free action: location (0, 0, 0), face 0, sequence 0)
+
+29                                               # packet id: VarInt 0x29
+07                                               # Action: VarInt 7 SWAP_ITEM_WITH_OFFHAND
+00 00 00 00 00 00 00 00                          # Location: Position (0, 0, 0)
+00                                               # Face: UByte 0
+00                                               # Sequence: VarInt 0

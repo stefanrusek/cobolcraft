@@ -1,0 +1,8 @@
+# Fixture: Set Cursor Item
+# Phase: play. Direction: clientbound (S->C). Packet id 0x62 (98).
+# Doc refs: 05b 0x62; 00 section 12.1
+# Stated inputs:
+#   cursor holds 16 x oak_planks (item 63), empty patch
+
+62                                               # packet id: VarInt 0x62
+10 3f 00 00                                      # Contents: ItemStack 16 x oak_planks

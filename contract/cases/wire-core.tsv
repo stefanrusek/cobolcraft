@@ -1,0 +1,13 @@
+# Contract cases of the core to proto packets (docs/protocol/09-cobolcraft-profile.md §3.2 and §3.3; the
+# packet layouts are 05a and 05b). Each row builds one clientbound packet from the inputs its fixture states
+# (the fixture header lists them with their doc references) and compares the bytes with the fixture.
+# Read by tools/gen/gen_contract.py; see README.md.
+#
+# seam: wire-core
+# paths: contract/cases/wire-core.tsv contract/fixtures/wire/play-s2c-6a-set-health.hex contract/fixtures/wire/play-s2c-87-update-mob-effect.hex contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex core/src/health.cob core/src/effects.cob core/src/chunks-stream.cob proto/src
+#
+# columns: see wire-chat.tsv. build-core-set-health (health, food, saturation), build-proto-mob-effect (packet id,
+# entity, effect, amplifier, duration, flags), build-core-chunk (dim, cx, cz)
+set-health	build-core-set-health	SET-HEALTH-BUILD	core	core	play-s2c-6a-set-health	health=20.0;food=20;saturation=5.0	
+mob-effect	build-proto-mob-effect	PB-PUT-UPDATE-MOB-EFFECT	core	core	play-s2c-87-update-mob-effect	packet=135;entity=300;effect=2;amplifier=1;duration=600;flags=7	
+level-chunk-spawn	build-core-chunk	CHUNK-PACKET-BUILD	core	core	play-s2c-2e-level-chunk-with-light-spawn	dim=1;cx=0;cz=0	

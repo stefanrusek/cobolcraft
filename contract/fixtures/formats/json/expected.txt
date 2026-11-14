@@ -1,0 +1,24 @@
+# file reason (reason: FM-JS-* of contract/copy/FORMATS.cpy; accept-* files give FM-JS-OK)
+accept-object.json FM-JS-OK
+accept-empty-containers.json FM-JS-OK
+accept-whitespace.json FM-JS-OK
+accept-numbers.json FM-JS-OK
+accept-escapes.json FM-JS-OK
+accept-utf8.json FM-JS-OK
+accept-scalar.json FM-JS-OK
+accept-nested.json FM-JS-OK
+accept-same-name-in-two-objects.json FM-JS-OK
+reject-comment-line.json FM-JS-COMMENT
+reject-comment-block.json FM-JS-COMMENT
+reject-trailing-comma-object.json FM-JS-TRAILING-COMMA
+reject-trailing-comma-array.json FM-JS-TRAILING-COMMA
+reject-duplicate-key.json FM-JS-DUPLICATE-KEY
+reject-trailing-data.json FM-JS-TRAILING-DATA
+reject-unquoted-name.json FM-JS-UNQUOTED-NAME
+reject-single-quotes.json FM-JS-SYNTAX
+reject-unterminated-string.json FM-JS-SYNTAX
+reject-empty.json FM-JS-SYNTAX
+reject-leading-zero.json FM-JS-NUMBER
+reject-nan.json FM-JS-NUMBER
+reject-bad-escape.json FM-JS-ESCAPE
+reject-control-character.json FM-JS-ESCAPE

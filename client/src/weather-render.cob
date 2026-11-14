@@ -2,7 +2,8 @@
 *> §10.11): ENVIRONMENT-ATLAS-BUILD loads the environment atlas (texture 3): the images
 *> textures/environment/drizzle.png and hailstorm.png, each from the top-most pack that has it, or
 *> the missing-texture stripes at its stand-in size (16 x 16) when no pack has it, side by side in
-*> that order from the left. The atlas is as tall as the least common multiple of the two heights,
+*> that order from the left. The atlas is as tall as the least common multiple of the two heights
+*> (at most 4096 rows; past that both images are stretched to the taller one's height),
 *> each image repeated down its columns, and is sampled with repeat wrapping (cc_vk_texture_wrap,
 *> shim-abi §9), so a v running over several images wraps seamlessly (08 §10.11).
 *> WEATHER-MESH builds the frame's weather mesh, eye-relative, in drizzle and in a hailstorm (clear
@@ -33,6 +34,12 @@
     05 WS-SOURCE OCCURS 2 TIMES.
        10 WS-S-LENGTH        PIC 99.
        10 WS-S-PATH          PIC X(62).
+ 01 WS-SKIN-PATHS.
+    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/environment/rain.png".
+    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/environment/snow.png".
+ 01 WS-SKIN-TABLE REDEFINES WS-SKIN-PATHS.
+    05 WS-SKIN-PATH        PIC X(64) OCCURS 2 TIMES.
+ 01 WS-SKIN                BINARY-LONG.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-IMAGES.
@@ -50,16 +57,35 @@
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
  01 WS-REST                BINARY-LONG.
+ 01 WS-OLD-HEIGHTS.
+    05 WS-OLD-H            BINARY-LONG OCCURS 2 TIMES.
  01 B-ATLAS                PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO XA-W XA-H
+     MOVE 0 TO XA-W XA-H WS-SKIN
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PK-COUNT
+         IF PK-LEVEL(WS-K) = 2
+             MOVE 1 TO WS-SKIN
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
-         MOVE WS-S-PATH(WS-K) TO WS-PATH
-         MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
-         CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K) WS-CAPACITY
-             WS-W WS-H WS-FOUND
+         MOVE 0 TO WS-FOUND
+*>       With the skin on (level 2 of the stack), drizzle is the pack's rain and hailstorm its snow
+*>       (faithful-pack-mapping 6.2); a pack that has neither leaves the built-in images.
+         IF WS-SKIN = 1
+             MOVE SPACES TO WS-PATH
+             MOVE WS-SKIN-PATH(WS-K) TO WS-PATH
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
+             CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K)
+                 WS-CAPACITY WS-W WS-H WS-FOUND
+         END-IF
+         IF WS-FOUND = 0
+             MOVE WS-S-PATH(WS-K) TO WS-PATH
+             MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
+             CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K)
+                 WS-CAPACITY WS-W WS-H WS-FOUND
+         END-IF
          IF WS-FOUND = 0
              MOVE 16 TO WS-W WS-H
              CALL "MISSING-TEXTURE" USING WS-W WS-H WS-IMAGE(WS-K)
@@ -79,6 +105,15 @@
      END-PERFORM
      DIVIDE XA-IM-H(1) BY WS-A GIVING XA-H
      MULTIPLY XA-IM-H(2) BY XA-H
+     MOVE XA-IM-H(1) TO WS-OLD-H(1)
+     MOVE XA-IM-H(2) TO WS-OLD-H(2)
+*>   Heights with no small common multiple (co-prime heights, CC-0003) would make the atlas huge: past
+*>   4096 rows both images are stretched to the taller one's height (nearest neighbour) and the atlas
+*>   is that tall.
+     IF XA-H > 4096
+         MOVE FUNCTION MAX(XA-IM-H(1), XA-IM-H(2)) TO XA-H
+         MOVE XA-H TO XA-IM-H(1) XA-IM-H(2)
+     END-IF
      IF XA-ADDR NOT = NULL
          FREE XA-ADDR
      END-IF
@@ -91,7 +126,11 @@
          COMPUTE WS-ROW-BYTES = XA-IM-W(WS-K) * 4
          PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= XA-H
              COMPUTE WS-TO = (WS-R * XA-W + XA-IM-X(WS-K)) * 4 + 1
-             COMPUTE WS-FROM = FUNCTION MOD(WS-R, XA-IM-H(WS-K)) * WS-ROW-BYTES + 1
+             IF WS-OLD-H(WS-K) = XA-IM-H(WS-K)
+                 COMPUTE WS-FROM = FUNCTION MOD(WS-R, XA-IM-H(WS-K)) * WS-ROW-BYTES + 1
+             ELSE
+                 COMPUTE WS-FROM = (WS-R * WS-OLD-H(WS-K) / XA-H) * WS-ROW-BYTES + 1
+             END-IF
              MOVE WS-IMAGE(WS-K)(WS-FROM:WS-ROW-BYTES) TO B-ATLAS(WS-TO:WS-ROW-BYTES)
          END-PERFORM
      END-PERFORM
@@ -105,7 +144,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
- COPY CLCELLS.
+ COPY CELLS.
  01 WS-K                   BINARY-LONG.
  01 WS-SPEED               BINARY-LONG.
  01 WS-STEP                BINARY-LONG.
@@ -169,7 +208,7 @@
          COMPUTE WS-CX = FUNCTION INTEGER(L-EYE(1))
          COMPUTE WS-CY = FUNCTION INTEGER(L-EYE(2))
          COMPUTE WS-CZ = FUNCTION INTEGER(L-EYE(3))
-         COMPUTE WS-LAYERS = FUNCTION MIN(PL-HEIGHT, 256)
+         COMPUTE WS-LAYERS = FUNCTION MIN(PL-HEIGHT, CL-MAX-SECTIONS * 16)
          MOVE 0 TO WS-ROW
          COMPUTE WS-LAST-X = WS-CX + 1000
          COMPUTE WS-X-FROM = WS-CX - 8
@@ -188,14 +227,14 @@
                  END-IF
                  MOVE 255 TO WS-BIOME
                  IF WS-ROW > 0
-                     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
+                     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
                      COMPUTE WS-LX = WS-X - WS-CHUNK-X * 16
                      COMPUTE WS-LZ = WS-Z - WS-CHUNK-Z * 16
                      COMPUTE WS-COLUMN = WS-LZ * 16 + WS-LX + 1
 *>                   The highest non-void block (-1 when the column is all void).
                      PERFORM VARYING WS-LY FROM WS-LAYERS BY -1 UNTIL WS-LY < 1
                          COMPUTE WS-CELL = (WS-LY - 1) * 256 + WS-COLUMN
-                         IF RC-STATE(WS-CELL) NOT = 0
+                         IF CE-STATE(WS-CELL) NOT = 0
                              EXIT PERFORM
                          END-IF
                      END-PERFORM
@@ -206,7 +245,7 @@
                      DIVIDE WS-LX BY 4 GIVING WS-BX
                      DIVIDE WS-LZ BY 4 GIVING WS-BZ
                      COMPUTE WS-CELL = WS-BY * 16 + WS-BZ * 4 + WS-BX + 1
-                     MOVE RC-BIOME(WS-CELL) TO WS-BIOME
+                     MOVE CE-BIOME(WS-CELL) TO WS-BIOME
                  END-IF
                  COMPUTE WS-Y0 = FUNCTION MAX(WS-LY + 1 + PL-MIN-Y, WS-CY - 8)
                  COMPUTE WS-Y1 = WS-CY + 16
@@ -246,6 +285,9 @@
                                  MOVE WS-C-U(WS-N) TO RL-WX-U(RL-WX-COUNT)
                                  MOVE WS-C-V(WS-N) TO RL-WX-V(RL-WX-COUNT)
                                  MOVE 1 TO RL-WX-B(RL-WX-COUNT) RL-WX-A(RL-WX-COUNT)
+                                 MOVE 0 TO RL-WX-SKY(RL-WX-COUNT)
+                                 MOVE 1 TO RL-WX-R(RL-WX-COUNT) RL-WX-G(RL-WX-COUNT)
+                                     RL-WX-BLUE(RL-WX-COUNT)
                              END-PERFORM
                          END-PERFORM
                      END-IF

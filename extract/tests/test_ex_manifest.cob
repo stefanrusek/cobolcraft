@@ -1,0 +1,266 @@
+*> Implementation test for EX-WRITE-MANIFEST (22 §6.4), EX-WRITE-INDEX and EX-INDEX-ADD (22 §6.5), EX-WRITE-MCMETA
+*> (22 §6.2) and EX-WRITE-MARKER (22 §7.5; T0303): the byte format of manifest.txt and index.txt, the exact
+*> text and CRC-32 of the two generated pack.mcmeta files, the sentinel .cobolcraft-generated, and the write failure
+*> (CCX-050).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EX-MANIFEST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY EXSTATE.
+ COPY FORMATS.
+ 01 WS-NAME                PIC X(64).
+ 01 WS-ROOT                PIC X(1100).
+ 01 WS-COMMAND             PIC X(1100).
+ 01 WS-SHELL               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-ROW-NUMBER          BINARY-LONG VALUE 1.
+ 01 WS-ROW-STATUS          BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-OFFSET              BINARY-DOUBLE VALUE 0.
+ 01 WS-READ-STATUS         BINARY-LONG.
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-LF                  PIC X VALUE X"0A".
+ 01 WS-CRC                 BINARY-LONG UNSIGNED.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-LINE-POINTER        BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "manifest" TO WS-NAME
+     CALL "EXT-SCRATCH" USING WS-NAME WS-ROOT
+     MOVE SPACES TO WS-COMMAND
+     STRING "rm -rf " FUNCTION TRIM(WS-ROOT) " && mkdir -p " FUNCTION TRIM(WS-ROOT) DELIMITED BY SIZE INTO WS-COMMAND
+     CALL "EXT-SHELL" USING WS-COMMAND WS-SHELL
+     CALL "CONTENT-ACCEPTED-JAR" USING WS-ROW-NUMBER EXC-ROW WS-ROW-STATUS
+     MOVE 11605 TO EXR-RESOURCE
+     MOVE 9779 TO EXR-DATA
+     MOVE 106 TO EXR-FEATURE
+     MOVE 21490 TO EXR-TOTAL
+
+*>   manifest.txt (6.4), the example of the document.
+     MOVE WS-ROOT TO WS-PATH
+     MOVE -1 TO WS-STATUS
+     CALL "EX-WRITE-MANIFEST" USING WS-PATH WS-STATUS
+     MOVE "manifest: written with status 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE SPACES TO WS-EXPECTED
+     MOVE 1 TO WS-LINE-POINTER
+     STRING "format=1" WS-LF "tool=cobolcraft-extract 1" WS-LF "jar-version=26.3" WS-LF
+         "jar-sha256=4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d" WS-LF
+         "jar-size=41483720" WS-LF "world-version=5023" WS-LF "protocol-version=777" WS-LF
+         "resource-format=97.1" WS-LF "data-format=121.0" WS-LF "files-resource=11605" WS-LF
+         "files-data=9779" WS-LF "files-feature=106" WS-LF "files-total=21490" WS-LF
+         DELIMITED BY SIZE INTO WS-EXPECTED POINTER WS-LINE-POINTER
+     PERFORM FILE-TEXT-MANIFEST
+     MOVE "manifest: the text of 22 §6.4 byte for byte" TO TL-CASE
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT(1:1024) TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE "manifest: length 298 bytes, nothing after the last LF" TO TL-CASE
+     MOVE 298 TO TL-EXPECTED-N
+     MOVE WS-LENGTH TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+
+*>   The marker is an empty file.
+     MOVE WS-ROOT TO WS-PATH
+     CALL "EX-WRITE-MARKER" USING WS-PATH WS-STATUS
+     MOVE "marker: written with status 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/.cobolcraft-generated" DELIMITED BY SIZE INTO WS-PATH
+     CALL "FILE-EXISTS" USING WS-PATH WS-STATUS
+     MOVE "marker: .cobolcraft-generated exists" TO TL-CASE
+     MOVE FM-OK TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 5 TO WS-LENGTH
+     CALL "FILE-READ-AT" USING WS-PATH WS-OFFSET WS-TEXT WS-LENGTH WS-READ-STATUS
+     MOVE "marker: it is empty" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-LENGTH TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+
+*>   The two generated pack.mcmeta (6.2): text, size and CRC-32 of the document, and their index lines.
+     MOVE WS-ROOT TO WS-PATH
+     CALL "EX-INDEX-RESET"
+     CALL "EX-WRITE-MCMETA" USING WS-PATH WS-STATUS
+     MOVE "mcmeta: written with status 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/vanilla-resources/pack.mcmeta" DELIMITED BY SIZE INTO WS-PATH
+     PERFORM READ-WHOLE
+     MOVE "mcmeta: resource pack text is the 129 bytes of 22 §6.2" TO TL-CASE
+     MOVE SPACES TO WS-EXPECTED
+     MOVE 1 TO WS-LINE-POINTER
+     STRING "{" WS-LF '  "pack": {' WS-LF '    "description": "The default look and feel of Minecraft",' WS-LF
+         '    "min_format": [97, 1],' WS-LF '    "max_format": 97' WS-LF "  }" WS-LF "}" WS-LF
+         DELIMITED BY SIZE INTO WS-EXPECTED POINTER WS-LINE-POINTER
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT(1:1024) TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 129 TO TL-EXPECTED-N
+     MOVE WS-LENGTH TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-CRC
+     CALL "CRC32" USING WS-TEXT WS-LENGTH WS-CRC
+     MOVE "mcmeta: resource pack CRC-32 c6f2b630" TO TL-CASE
+     MOVE 3337795120 TO TL-EXPECTED-N
+     MOVE WS-CRC TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/vanilla-data/pack.mcmeta" DELIMITED BY SIZE INTO WS-PATH
+     PERFORM READ-WHOLE
+     MOVE "mcmeta: data pack text is the 123 bytes of 22 §6.2" TO TL-CASE
+     MOVE SPACES TO WS-EXPECTED
+     MOVE 1 TO WS-LINE-POINTER
+     STRING "{" WS-LF '  "pack": {' WS-LF '    "description": "The default data for Minecraft",' WS-LF
+         '    "min_format": [121, 0],' WS-LF '    "max_format": 121' WS-LF "  }" WS-LF "}" WS-LF
+         DELIMITED BY SIZE INTO WS-EXPECTED POINTER WS-LINE-POINTER
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT(1:1024) TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 123 TO TL-EXPECTED-N
+     MOVE WS-LENGTH TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-CRC
+     CALL "CRC32" USING WS-TEXT WS-LENGTH WS-CRC
+     MOVE "mcmeta: data pack CRC-32 14f8038e" TO TL-CASE
+     MOVE 351798158 TO TL-EXPECTED-N
+     MOVE WS-CRC TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+
+*>   index.txt (6.5): the two mcmeta lines, then more lines as the walk adds them.
+     MOVE 1 TO WS-CRC
+     MOVE 3 TO WS-SIZE
+     MOVE SPACES TO WS-PATH
+     MOVE "vanilla-data/data/minecraft/recipe/stick.json" TO WS-PATH
+     MOVE 2864434397 TO WS-CRC
+     MOVE 42 TO WS-SIZE
+     CALL "EX-INDEX-ADD" USING WS-CRC WS-SIZE WS-PATH WS-STATUS
+     MOVE "index: add gives status 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE WS-ROOT TO WS-PATH
+     CALL "EX-WRITE-INDEX" USING WS-PATH WS-STATUS
+     MOVE "index: written with status 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/index.txt" DELIMITED BY SIZE INTO WS-PATH
+     PERFORM READ-WHOLE
+     MOVE "index: one line per file, crc size path, LF" TO TL-CASE
+     MOVE SPACES TO WS-EXPECTED
+     MOVE 1 TO WS-LINE-POINTER
+     STRING "c6f2b630 129 vanilla-resources/pack.mcmeta" WS-LF "14f8038e 123 vanilla-data/pack.mcmeta" WS-LF
+         "aabbccdd 42 vanilla-data/data/minecraft/recipe/stick.json" WS-LF
+         DELIMITED BY SIZE INTO WS-EXPECTED POINTER WS-LINE-POINTER
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT(1:1024) TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE "index: the buffer is released after the write" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EXI-LINES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+
+*>   An index with no line is an empty file.
+     MOVE WS-ROOT TO WS-PATH
+     CALL "EX-WRITE-INDEX" USING WS-PATH WS-STATUS
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/index.txt" DELIMITED BY SIZE INTO WS-PATH
+     PERFORM READ-WHOLE
+     MOVE "index: no line gives an empty index.txt" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-LENGTH TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+
+*>   An index that does not fit is CCX-045 (A6).
+     MOVE "a/b" TO WS-PATH
+     MOVE 1 TO WS-CRC
+     MOVE 1 TO WS-SIZE
+     CALL "EX-INDEX-ADD" USING WS-CRC WS-SIZE WS-PATH WS-STATUS
+     COMPUTE EXI-LENGTH = EXI-CAPACITY - 5
+     CALL "EX-INDEX-ADD" USING WS-CRC WS-SIZE WS-PATH WS-STATUS
+     MOVE "index: a line that does not fit gives CCX-045" TO TL-CASE
+     MOVE 45 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE "index: CCX-045 names the buffer size" TO TL-CASE
+     MOVE "CCX-045 version.json or the file counts do not match the table for this jar: the index is larger than 16777216 bytes."
+         TO TL-EXPECTED
+     MOVE EXR-LINE TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     CALL "EX-INDEX-RESET"
+
+*>   Write failures: a directory that is not there is CCX-050, exit 5.
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/no/such/dir" DELIMITED BY SIZE INTO WS-PATH
+     CALL "EX-WRITE-MANIFEST" USING WS-PATH WS-STATUS
+     MOVE "manifest: an absent directory gives CCX-050" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE "manifest: CCX-050 text and exit 5" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "CCX-050 Cannot write " FUNCTION TRIM(WS-ROOT) "/no/such/dir/manifest.txt: cannot be created or written."
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE EXR-LINE TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE EXR-EXIT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     CALL "EX-WRITE-INDEX" USING WS-PATH WS-STATUS
+     MOVE "index: an absent directory gives CCX-050" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     CALL "EX-WRITE-MARKER" USING WS-PATH WS-STATUS
+     MOVE "marker: a directory that is not there yet is made (mkdir -p)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+*>   A file where the directory should be: neither the packs nor the marker can be written.
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/index.txt" DELIMITED BY SIZE INTO WS-PATH
+     CALL "EX-WRITE-MARKER" USING WS-PATH WS-STATUS
+     MOVE "marker: a file where the directory belongs gives CCX-050" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     CALL "EX-WRITE-MCMETA" USING WS-PATH WS-STATUS
+     MOVE "mcmeta: a file where the directory belongs gives CCX-050" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     CALL "EX-INDEX-RESET"
+     STOP RUN.
+
+ FILE-TEXT-MANIFEST.
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-ROOT) "/manifest.txt" DELIMITED BY SIZE INTO WS-PATH
+     PERFORM READ-WHOLE.
+
+ READ-WHOLE.
+     MOVE SPACES TO WS-TEXT
+     MOVE 4096 TO WS-LENGTH
+     CALL "FILE-READ-AT" USING WS-PATH WS-OFFSET WS-TEXT WS-LENGTH WS-READ-STATUS.
+
+ ASSERT-NUMBER.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-TEXT.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-EX-MANIFEST.
+
+ COPY EXTEST.

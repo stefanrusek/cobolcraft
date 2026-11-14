@@ -3,7 +3,7 @@
 *> settings of a hosted world (the server defaults of operator-surface §2, the allow-list off);
 *> SP-OPEN opens a world folder under saves/ with CORE-WORLD-OPEN (host kind 1, the Player's name
 *> as host name, the chosen game mode and name for a new world, which is saved at once so the world
-*> list shows it) and joins it (NET-OPEN-MEMORY); SP-PUMP, once per frame while hosting, runs one
+*> list shows it; the generation workers (half the processors, 1 to 4) serve the standard chunks) and joins it (NET-OPEN-MEMORY); SP-PUMP, once per frame while hosting, runs one
 *> CORE-TICK per elapsed 50 ms (none while the pause menu is open and the world is not opened to
 *> others, US16-4), prints the core's console lines on the terminal and ends hosting when the core
 *> was told to stop (the shutdown command: the host quitting, after receiving what the core sent
@@ -27,10 +27,14 @@
 *> USING CLIENT-STATE: SP-SETTINGS for a hosted world: survival, the operator-surface §2 defaults
 *> (description, view distance 8, combat, hostile mobs, weather changes and extra dimensions on),
 *> no allow-list (a new single-player world seeds AllowListEnforced 0, 07 §9.2), no server pack,
-*> host kind 1 (SP-OPEN adds the host name, game mode and world name).
+*> host kind 1 (SP-OPEN adds the host name, game mode and world name, and the game directory), the
+*> world type cobolcraft (the create-world screen sets CS-WORLD-TYPE and CS-SEED-TEXT for a new
+*> world: core-host-delta §2; SP-CREATE-TYPE starts as cobolcraft, so a world opened without the
+*> screen is a cobolcraft one) and no seed text.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY COREAPI.
+ COPY CONTENT.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -41,6 +45,8 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED
      MOVE 1 TO CS-HOST-KIND
+     MOVE "cobolcraft" TO CS-WORLD-TYPE
+     MOVE CT-TYPE-COBOLCRAFT TO SP-CREATE-TYPE
      MOVE CORE-SETTINGS TO SP-SETTINGS
      GOBACK.
  END PROGRAM SP-DEFAULTS.
@@ -54,6 +60,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY COREAPI.
+ COPY CONTENT.
  01 WS-PATH                PIC X(1200).
  01 WS-CREATED             BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
@@ -74,15 +81,44 @@
      MOVE L-MODE TO CS-DEFAULT-MODE
      MOVE SPACES TO CS-NEW-WORLD-NAME
      MOVE L-NAME(1:L-NAME-LENGTH) TO CS-NEW-WORLD-NAME
+     MOVE SPACES TO CS-GAME-DIR
+     MOVE CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) TO CS-GAME-DIR
+     MOVE SPACES TO CS-GENERATED-DIR CS-SEED-TEXT
+     MOVE CL-GENERATED-DIR(1:CL-GENERATED-DIR-LENGTH) TO CS-GENERATED-DIR
+     EVALUATE SP-CREATE-TYPE
+         WHEN CT-TYPE-STANDARD
+             MOVE "standard" TO CS-WORLD-TYPE
+         WHEN CT-TYPE-DEBUG
+             MOVE "debug" TO CS-WORLD-TYPE
+         WHEN OTHER
+             MOVE "cobolcraft" TO CS-WORLD-TYPE
+     END-EVALUATE
      MOVE CORE-SETTINGS TO SP-SETTINGS
+*>   a hosted world makes its standard chunks in generation worker processes, so the frame loop never waits for one (docs/design/generation-worker.md)
+     CALL "GEN-WORKERS-AUTO"
      MOVE LOW-VALUES TO WS-PATH
      STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/saves/" L-FOLDER(1:L-FOLDER-LENGTH)
          DELIMITED BY SIZE INTO WS-PATH
      CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
+*>   A refused world (core-host-delta section 2: the flag is minus a CORE-WO status) is not hosted: the create
+*>   screen shows the refusal (builtin-ui-art 7.2) and nothing opens.
+     IF WS-CREATED < 0
+*>       1: the packs are not ok (the Minecraft content text); 2: any other refusal of the core (no world type, no level.dat).
+         MOVE 2 TO SP-CREATE-REFUSED
+         IF WS-CREATED = -1
+             MOVE 1 TO SP-CREATE-REFUSED
+         END-IF
+         GOBACK
+     END-IF
      IF WS-CREATED = 1
          CALL "CORE-SAVE"
      END-IF
      MOVE 1 TO SP-ACTIVE
+     MOVE 0 TO SM-LOAD-SHOWN SM-LOAD-SMOOTH SM-LOAD-TICK-MS SM-LOAD-GRID-MS PL-WAIT PL-CLOSE-DELAY
+*>   a newly created local world waits 500 ms after the level is ready before Player Loaded (docs/protocol/50 section 7.3)
+     IF WS-CREATED = 1
+         MOVE 500 TO PL-CLOSE-DELAY
+     END-IF
      MOVE 0 TO SP-TICKS SP-PAUSED
      COMPUTE SP-NEXT-TICK = CL-NOW-MS + CL-TICK-MS
      MOVE SPACES TO SM-CONNECT-ADDR
@@ -96,7 +132,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SP-PUMP.
-*> USING CLIENT-STATE (hosting): the frame's core ticks (one per elapsed 50 ms of CL-NOW-MS; while
+*> USING CLIENT-STATE (hosting): the frame's core ticks (one per elapsed 50 ms of CL-NOW-MS, at most
+*> CL-MAX-PUMP-TICKS a frame, a debt over CL-PUMP-DEBT-MS dropped; while
 *> paused the tick clock is held, so resuming does not catch up), the console lines, and the end
 *> of hosting: run state 1 (the shutdown command) quits the world; a game connection that has
 *> ended (a Disconnect, or lost) stops the core, leaving the screen the disconnect chose. The
@@ -107,6 +144,7 @@
  COPY CLCONST.
  COPY COREAPI.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-RAN                 BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -125,11 +163,18 @@
              END-IF
          END-PERFORM
      END-IF
-     PERFORM UNTIL CL-NOW-MS < SP-NEXT-TICK
+*>   At most CL-MAX-PUMP-TICKS ticks a frame; the ticks still owed after them are run in the next
+*>   frames, unless they are more than CL-PUMP-DEBT-MS (a long tick or a stalled frame): those are dropped.
+     MOVE 0 TO WS-RAN
+     PERFORM UNTIL CL-NOW-MS < SP-NEXT-TICK OR WS-RAN >= CL-MAX-PUMP-TICKS
          CALL "CORE-TICK"
          ADD 1 TO SP-TICKS
+         ADD 1 TO WS-RAN
          ADD CL-TICK-MS TO SP-NEXT-TICK
      END-PERFORM
+     IF CL-NOW-MS - SP-NEXT-TICK > CL-PUMP-DEBT-MS
+         COMPUTE SP-NEXT-TICK = CL-NOW-MS + CL-TICK-MS
+     END-IF
      CALL "GUESTS-FLUSH" USING CLIENT-STATE
      CALL "SP-CONSOLE"
      CALL "CORE-STATUS-GET" USING CORE-STATUS

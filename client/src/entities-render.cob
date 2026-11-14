@@ -7,7 +7,8 @@
 *> ENTITIES-MESH builds the frame's entity mesh, eye-relative like the sections: every operator,
 *> sodgrazer and abend of the replica as the boxes of its model (model pixels, 1/16 block; +y up,
 *> +z the look direction, +x the entity's left), turned about +y by -yaw and moved to the entity
-*> position; a box that no longer fits the entity vertex capacity is left out. ENTITY-BOX draws
+*> position; a box that no longer fits the entity vertex capacity is left out. A row of a standard-set world (EN-VANILLA 1) is
+*> never a stand-in: its model of CL-MODELS is drawn by ENTITY-MODEL-EMIT (entities-models.cob). ENTITY-BOX draws
 *> one box: six faces, each seen from outside with the corners and texel orientation of standin
 *> §3.1 (front +z, back -z, left +x, right -x, top +y, bottom -y; row 0 the top or -z edge), its
 *> rectangle in the part's strip at x = 0, w, 2w, 2w + d, 2w + 2d, 3w + 2d, mapped by fractions of
@@ -26,9 +27,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-ATLAS-BUILD.
-*> USING CLIENT-STATE: fills EA-* and marks texture 1 for upload.
+*> USING CLIENT-STATE: fills EA-* and marks texture 1 for upload. The images are the three stand-ins, then the
+*> image of each entity model slot (EA-MT, entities-models.cob; its pack path from CL-MODELS, assets/minecraft/
+*> + CL-MD-PATH; a model without a path, or whose image no pack has, shows the missing-texture stripes at the
+*> row's CL-MD-TEXW x CL-MD-TEXH), each stacked below the one before it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLMODELS.
 *> Per image: entity type, path length, stand-in width and height, path.
  01 WS-SOURCE-DATA.
     05 FILLER PIC X(64) VALUE "04606628assets/cobolcraft/textures/entity/operator.png".
@@ -43,9 +48,17 @@
        10 WS-S-PATH          PIC X(56).
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
  01 WS-IMAGES.
     05 WS-IMAGE            PIC X(1048576) OCCURS 3 TIMES.
- 01 WS-CAPACITY            BINARY-LONG VALUE 1048576.
+ 01 WS-MODEL-IMAGES.
+    05 WS-MIMAGE           PIC X(262144) OCCURS 16 TIMES.
+ 01 WS-CAPACITY            BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-MD                  BINARY-LONG.
+ 01 WS-DW                  BINARY-LONG.
+ 01 WS-DH                  BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
@@ -56,26 +69,67 @@
  01 WS-FROM                BINARY-LONG.
  01 WS-TO                  BINARY-LONG.
  01 WS-ROW-BYTES           BINARY-LONG.
+ 01 WS-RECT.
+    05 WS-RC OCCURS 19 TIMES.
+       10 WS-RC-Y          BINARY-LONG.
+       10 WS-RC-W          BINARY-LONG.
+       10 WS-RC-H          BINARY-LONG.
+ 01 B-IMG                  PIC X(1048576) BASED.
  01 B-ATLAS                PIC X(4194304) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO EA-W EA-H
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
-         MOVE WS-S-PATH(WS-K) TO WS-PATH
-         MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
-         CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K) WS-CAPACITY
-             WS-W WS-H WS-FOUND
-         IF WS-FOUND = 0
-             MOVE WS-S-W(WS-K) TO WS-W
-             MOVE WS-S-H(WS-K) TO WS-H
-             CALL "MISSING-TEXTURE" USING WS-W WS-H WS-IMAGE(WS-K)
+     COMPUTE WS-N = 3 + EA-MT-COUNT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
+         MOVE SPACES TO WS-PATH
+         MOVE 0 TO WS-PATH-LENGTH
+         IF WS-K <= 3
+             MOVE WS-S-PATH(WS-K) TO WS-PATH
+             MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
+             MOVE WS-S-W(WS-K) TO WS-DW
+             MOVE WS-S-H(WS-K) TO WS-DH
+             MOVE 1048576 TO WS-CAPACITY
+             SET ADDRESS OF B-IMG TO ADDRESS OF WS-IMAGE(WS-K)
+         ELSE
+             COMPUTE WS-M = WS-K - 3
+             MOVE EA-MT-MODEL(WS-M) TO WS-MD
+             MOVE CL-MD-TEXW(WS-MD) TO WS-DW
+             MOVE CL-MD-TEXH(WS-MD) TO WS-DH
+             MOVE 262144 TO WS-CAPACITY
+             SET ADDRESS OF B-IMG TO ADDRESS OF WS-MIMAGE(WS-M)
+             IF CL-MD-PATH(WS-MD) NOT = SPACES
+                 MOVE 1 TO WS-PTR
+                 STRING "assets/minecraft/" DELIMITED BY SIZE CL-MD-PATH(WS-MD) DELIMITED BY SPACE
+                     INTO WS-PATH WITH POINTER WS-PTR
+                 COMPUTE WS-PATH-LENGTH = WS-PTR - 1
+             END-IF
          END-IF
-         COMPUTE WS-T = WS-S-TYPE(WS-K) + 1
-         MOVE 0 TO EA-IM-X(WS-T)
-         MOVE EA-H TO EA-IM-Y(WS-T)
-         MOVE WS-W TO EA-IM-W(WS-T)
-         MOVE WS-H TO EA-IM-H(WS-T)
+         MOVE 0 TO WS-FOUND
+         IF WS-PATH-LENGTH > 0
+             CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH B-IMG WS-CAPACITY
+                 WS-W WS-H WS-FOUND
+         END-IF
+         IF WS-FOUND = 0
+             MOVE WS-DW TO WS-W
+             MOVE WS-DH TO WS-H
+             CALL "MISSING-TEXTURE" USING WS-W WS-H B-IMG
+         END-IF
+         MOVE EA-H TO WS-RC-Y(WS-K)
+         MOVE WS-W TO WS-RC-W(WS-K)
+         MOVE WS-H TO WS-RC-H(WS-K)
+         IF WS-K <= 3
+             COMPUTE WS-T = WS-S-TYPE(WS-K) + 1
+             MOVE 0 TO EA-IM-X(WS-T)
+             MOVE EA-H TO EA-IM-Y(WS-T)
+             MOVE WS-W TO EA-IM-W(WS-T)
+             MOVE WS-H TO EA-IM-H(WS-T)
+         ELSE
+             MOVE 0 TO EA-MT-X(WS-M)
+             MOVE EA-H TO EA-MT-Y(WS-M)
+             MOVE WS-W TO EA-MT-W(WS-M)
+             MOVE WS-H TO EA-MT-H(WS-M)
+         END-IF
          ADD WS-H TO EA-H
          MOVE FUNCTION MAX(EA-W, WS-W) TO EA-W
      END-PERFORM
@@ -87,13 +141,18 @@
      SET ADDRESS OF B-ATLAS TO EA-ADDR
      MOVE LOW-VALUES TO B-ATLAS(1:WS-BYTES)
 *>   Each image row r goes to atlas row (its top + r), from column 0.
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
-         COMPUTE WS-T = WS-S-TYPE(WS-K) + 1
-         COMPUTE WS-ROW-BYTES = EA-IM-W(WS-T) * 4
-         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= EA-IM-H(WS-T)
-             COMPUTE WS-TO = (EA-IM-Y(WS-T) + WS-R) * EA-W * 4 + 1
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
+         IF WS-K <= 3
+             SET ADDRESS OF B-IMG TO ADDRESS OF WS-IMAGE(WS-K)
+         ELSE
+             COMPUTE WS-M = WS-K - 3
+             SET ADDRESS OF B-IMG TO ADDRESS OF WS-MIMAGE(WS-M)
+         END-IF
+         COMPUTE WS-ROW-BYTES = WS-RC-W(WS-K) * 4
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= WS-RC-H(WS-K)
+             COMPUTE WS-TO = (WS-RC-Y(WS-K) + WS-R) * EA-W * 4 + 1
              COMPUTE WS-FROM = WS-R * WS-ROW-BYTES + 1
-             MOVE WS-IMAGE(WS-K)(WS-FROM:WS-ROW-BYTES) TO B-ATLAS(WS-TO:WS-ROW-BYTES)
+             MOVE B-IMG(WS-FROM:WS-ROW-BYTES) TO B-ATLAS(WS-TO:WS-ROW-BYTES)
          END-PERFORM
      END-PERFORM
      MOVE 1 TO AT-UPLOAD(2)
@@ -106,6 +165,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLMODELS.
 *> The model boxes (08 §10.11; standin-content §3.2, §12.6): entity type, from x y z and to x y z
 *> in model pixels, the top row of its part's strip, the stand-in texture width and height.
  01 WS-BOX-DATA.
@@ -128,6 +188,8 @@
  01 WS-B                   BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-T                   BINARY-LONG.
+ 01 WS-SAVED               PIC X(1024).
+ 01 WS-SAVED-MODEL         BINARY-LONG.
  01 WS-BOX.
     05 WS-CORNER           FLOAT-LONG OCCURS 6 TIMES.
 *> The part's strip (top-left texel), the stand-in texture size and the image's atlas rectangle.
@@ -147,9 +209,28 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
      MOVE 0 TO RL-EN-COUNT
      MOVE 0 TO WS-STRIP-X
+*>   Every model the replica shows has its image in the atlas before any vertex takes a texture coordinate from it.
+     CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+             EVALUATE TRUE
+                 WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
+                     CALL "ENTITY-ARROW-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0
+                     CALL "ENTITY-ORB-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN OTHER
+                     CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             END-EVALUATE
+*>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
+             MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
+             IF CL-MD-EXTRA(WS-SAVED-MODEL) > 0
+                 MOVE CL-MD-EXTRA(WS-SAVED-MODEL) TO EN-MODEL(WS-R)
+                 CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
+             END-IF
+         END-IF
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
-             IF EN-USED(WS-R) = 1 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
+             IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
                      AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
                  PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
                      MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)
@@ -166,6 +247,28 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   The local player's own model in the third-person modes (12 §7.3): the operator's boxes at the player's position and yaw, on the first free row.
+     IF CL-CAMERA > 0 AND EN-COUNT < CL-MAX-ENTITIES AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
+         COMPUTE WS-R = EN-COUNT + 1
+         MOVE EN-ENTITY(WS-R) TO WS-SAVED
+         MOVE PL-X TO EN-X(WS-R)
+         MOVE PL-Y TO EN-Y(WS-R)
+         MOVE PL-Z TO EN-Z(WS-R)
+         MOVE PL-YAW TO EN-YAW(WS-R)
+         MOVE 1 TO WS-B
+         PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
+             MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)
+         END-PERFORM
+         MOVE WS-MB-STRIP(WS-B) TO WS-STRIP-Y
+         MOVE WS-MB-TEX-W(WS-B) TO WS-TEX-W
+         MOVE WS-MB-TEX-H(WS-B) TO WS-TEX-H
+         MOVE EA-IM-X(1) TO WS-RECT-X
+         MOVE EA-IM-Y(1) TO WS-RECT-Y
+         MOVE EA-IM-W(1) TO WS-RECT-W
+         MOVE EA-IM-H(1) TO WS-RECT-H
+         CALL "ENTITY-BOX" USING CLIENT-STATE WS-R L-EYE-TABLE WS-BOX WS-SKIN
+         MOVE WS-SAVED TO EN-ENTITY(WS-R)
+     END-IF
      GOBACK.
  END PROGRAM ENTITIES-MESH.
 
@@ -319,6 +422,8 @@
              MOVE WS-CV(WS-N) TO RL-EN-V(RL-EN-COUNT)
              MOVE WS-BRIGHT TO RL-EN-B(RL-EN-COUNT)
              MOVE 1 TO RL-EN-A(RL-EN-COUNT)
+             MOVE 0 TO RL-EN-SKY(RL-EN-COUNT)
+             MOVE 1 TO RL-EN-R(RL-EN-COUNT) RL-EN-G(RL-EN-COUNT) RL-EN-BLUE(RL-EN-COUNT)
          END-PERFORM
      END-PERFORM
      GOBACK.
@@ -369,10 +474,8 @@
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-TYPE(WS-R) = ET-LOOSE-ITEM AND EN-STACK-COUNT(WS-R) > 0
                  AND RL-GI-COUNT + 6 <= CL-MAX-GI-VERTICES
-             MOVE 1 TO WS-SPRITE
-             IF EN-STACK-ITEM(WS-R) >= 0 AND EN-STACK-ITEM(WS-R) < CL-ITEM-COUNT
-                 MOVE IT-SPRITE(EN-STACK-ITEM(WS-R) + 1) TO WS-SPRITE
-             END-IF
+             CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-SPRITE
+             MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
              COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-R))
              COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-R))
              COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-R))
@@ -409,6 +512,8 @@
                  MOVE WS-C-V(WS-N) TO RL-GI-V(RL-GI-COUNT)
                  MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
                  MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                 MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
              END-PERFORM
          END-IF
      END-PERFORM

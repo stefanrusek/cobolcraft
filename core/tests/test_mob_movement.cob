@@ -20,7 +20,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY COREAPI.
- COPY ENTITYTYPES.
+ COPY ETIDS.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
@@ -195,7 +195,7 @@
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "damage 1 type 28 source 4 | hurt 1 | health 27 food 24" TO TL-EXPECTED
+     MOVE "damage 1 type 28 source 4 | hurt 1 | health 17 food 20" TO TL-EXPECTED
      PERFORM CHECK-TEXT
      STOP RUN.
 

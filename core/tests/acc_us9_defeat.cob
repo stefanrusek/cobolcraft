@@ -6,7 +6,7 @@
 *> further damage is ignored. A damaged sodgrazer flees for 40 ticks at 0.1 blocks per tick
 *> directly away from the attacker, facing that way. A mob whose health reaches 0 is removed
 *> (Remove Entities) and its yield lies on the ground at its position as one ground item (sodgrazer:
-*> 2 grazer_flank, item 12; abend: 1 dump_shard, item 15) with no motion.
+*> 2 grazer_flank, item 12; abend: 1 dump_shard, item 15) with the random motion of Entity.spawnAtLocation (41 section 2: Set Entity Motion follows Add Entity and Set Entity Data).
 *> Alice (entity 1, survival, holding the pry_bar of her starting items in slot 8) stands at (4.5,
 *> 54, 8.5) on the flat ground of column x = 4 (§5.2: top 53); the mob (entity 2) stands 2 blocks
 *> south of her at (4.5, 54, 10.5): the nearest point of its box is 1.7 blocks from her eye point.
@@ -18,7 +18,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY COREAPI.
- COPY ENTITYTYPES.
+ COPY ETIDS.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
@@ -84,7 +84,7 @@
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
      CALL "TEST-ATTACK" USING WS-ALICE WS-MOB-ID
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "25 43 78(2) 1(3,1@4.50,54.00,11.70) 101(3=12x2)" TO TL-EXPECTED
+     MOVE "48 25 43 78(2) 1(3,1@4.50,54.00,11.70) 101(3=12x2) 103(3)" TO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US9-4 the defeated sodgrazer is gone from the world" TO TL-CASE
      CALL "TEST-FIND-ENTITY" USING WS-MOB-ID WS-ROW
@@ -101,7 +101,7 @@
      MOVE 1 TO EN-HEALTH(WS-ROW)
      CALL "TEST-ATTACK" USING WS-ALICE WS-MOB-ID
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "25 43 78(2) 1(3,1@4.50,54.00,10.50) 101(3=15x1)" TO TL-EXPECTED
+     MOVE "48 25 43 78(2) 1(3,1@4.50,54.00,10.50) 101(3=15x1) 103(3)" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-5 given player combat is disabled when Alice attacks a sodgrazer then "

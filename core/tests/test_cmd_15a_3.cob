@@ -1,0 +1,400 @@
+*> Acceptance test of the command dispatcher's parse of docs/protocol/15a-brigadier-command-library.md
+*> §3 Parsing and its §9.1 worked examples (the 31 inputs with the game's message keys: the key and
+*> the arguments are what the player's client formats). The tree is that of 15a §9: root literals foo
+*> (n integer 1..10, bar), say (msg greedy), tp (x, y integers), name (s string), d (v double),
+*> f (v float 0..1), b (flag bool), run (redirect to the root), each (fork to the root).
+*> A case line ends with "$" (so trailing spaces count); the result reads "ok <command id>
+*> <nodes> <values>" or "err <key>|<args>@<cursor>"; nodes are name[start,end], a redirect's child
+*> context follows a " / ".
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CMD-15A-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY BRIGADIER.
+ COPY BRTRAIL REPLACING LEADING ==BT-== BY ==RS-==.
+ 01 WS-CASES.
+    05 FILLER PIC X(48) VALUE "foo$".
+    05 FILLER PIC X(96) VALUE "ok 1 foo[0,3]".
+    05 FILLER PIC X(48) VALUE "foo 5$".
+    05 FILLER PIC X(96) VALUE "ok 2 foo[0,3] n[4,5] n=5".
+    05 FILLER PIC X(48) VALUE "foo bar$".
+    05 FILLER PIC X(96) VALUE "ok 3 foo[0,3] bar[4,7]".
+    05 FILLER PIC X(48) VALUE "foo 11$".
+    05 FILLER PIC X(96) VALUE "err argument.integer.big|10|11@4".
+    05 FILLER PIC X(48) VALUE "foo 0$".
+    05 FILLER PIC X(96) VALUE "err argument.integer.low|1|0@4".
+    05 FILLER PIC X(48) VALUE "foo abc$".
+    05 FILLER PIC X(96) VALUE "err parsing.int.expected@4".
+    05 FILLER PIC X(48) VALUE "foo +5$".
+    05 FILLER PIC X(96) VALUE "err parsing.int.expected@4".
+    05 FILLER PIC X(48) VALUE "foo 1.5$".
+    05 FILLER PIC X(96) VALUE "err parsing.int.invalid|1.5@4".
+    05 FILLER PIC X(48) VALUE "foo 2147483648$".
+    05 FILLER PIC X(96) VALUE "err parsing.int.invalid|2147483648@4".
+    05 FILLER PIC X(48) VALUE "foo 5x$".
+    05 FILLER PIC X(96) VALUE "err command.expected.separator@5".
+    05 FILLER PIC X(48) VALUE "foo  5$".
+    05 FILLER PIC X(96) VALUE "err parsing.int.expected@4".
+    05 FILLER PIC X(48) VALUE "foo 5 $".
+    05 FILLER PIC X(96) VALUE "err command.unknown.argument@5".
+    05 FILLER PIC X(48) VALUE "foo 5 6$".
+    05 FILLER PIC X(96) VALUE "err command.unknown.argument@6".
+    05 FILLER PIC X(48) VALUE "tp$".
+    05 FILLER PIC X(96) VALUE "err command.unknown.command@2".
+    05 FILLER PIC X(48) VALUE "bogus$".
+    05 FILLER PIC X(96) VALUE "err command.unknown.command@0".
+    05 FILLER PIC X(48) VALUE "FOO$".
+    05 FILLER PIC X(96) VALUE "err command.unknown.command@0".
+    05 FILLER PIC X(48) VALUE "tp 1 -2$".
+    05 FILLER PIC X(96) VALUE "ok 5 tp[0,2] x[3,4] y[5,7] x=1 y=-2".
+    05 FILLER PIC X(48) VALUE 'name "a b"$'.
+    05 FILLER PIC X(96) VALUE "ok 6 name[0,4] s[5,10]".
+    05 FILLER PIC X(48) VALUE 'name "a\"b\\c"$'.
+    05 FILLER PIC X(96) VALUE "ok 6 name[0,4] s[5,14]".
+    05 FILLER PIC X(48) VALUE 'name ''a"b''$'.
+    05 FILLER PIC X(96) VALUE "ok 6 name[0,4] s[5,10]".
+    05 FILLER PIC X(48) VALUE 'name "a\''b"$'.
+    05 FILLER PIC X(96) VALUE "err parsing.quote.escape|'@8".
+    05 FILLER PIC X(48) VALUE 'name "a\nb"$'.
+    05 FILLER PIC X(96) VALUE "err parsing.quote.escape|n@8".
+    05 FILLER PIC X(48) VALUE 'name "abc$'.
+    05 FILLER PIC X(96) VALUE "err parsing.quote.expected.end@9".
+    05 FILLER PIC X(48) VALUE "name a,b$".
+    05 FILLER PIC X(96) VALUE "err command.expected.separator@6".
+    05 FILLER PIC X(48) VALUE "name $".
+    05 FILLER PIC X(96) VALUE "err command.unknown.argument@4".
+    05 FILLER PIC X(48) VALUE "d .5$".
+    05 FILLER PIC X(96) VALUE "ok 7 d[0,1] v[2,4] v=0.5".
+    05 FILLER PIC X(48) VALUE "d 1.5.2$".
+    05 FILLER PIC X(96) VALUE "err parsing.double.invalid|1.5.2@2".
+    05 FILLER PIC X(48) VALUE "d 1e5$".
+    05 FILLER PIC X(96) VALUE "err command.expected.separator@3".
+    05 FILLER PIC X(48) VALUE "d -$".
+    05 FILLER PIC X(96) VALUE "err parsing.double.invalid|-@2".
+    05 FILLER PIC X(48) VALUE "f 2$".
+    05 FILLER PIC X(96) VALUE "err argument.float.big|1.0|2.0@2".
+    05 FILLER PIC X(48) VALUE "b yes$".
+    05 FILLER PIC X(96) VALUE "err parsing.bool.invalid|yes@2".
+    05 FILLER PIC X(48) VALUE 'b "true"$'.
+    05 FILLER PIC X(96) VALUE "ok 9 b[0,1] flag[2,8] flag=1".
+    05 FILLER PIC X(48) VALUE 'b ""$'.
+    05 FILLER PIC X(96) VALUE "err parsing.bool.expected@4".
+    05 FILLER PIC X(48) VALUE "say hi  there $".
+    05 FILLER PIC X(96) VALUE "ok 4 say[0,3] msg[4,14]".
+    05 FILLER PIC X(48) VALUE "run foo 5$".
+    05 FILLER PIC X(96) VALUE "ok 2 run[0,3] / foo[4,7] n[8,9] n=5".
+    05 FILLER PIC X(48) VALUE "run$".
+    05 FILLER PIC X(96) VALUE "err command.unknown.command@3".
+    05 FILLER PIC X(48) VALUE "run $".
+    05 FILLER PIC X(96) VALUE "err command.unknown.command@4".
+    05 FILLER PIC X(48) VALUE "each foo 5$".
+    05 FILLER PIC X(96) VALUE "ok 2 each[0,4] / foo[5,8] n[9,10] n=5".
+    05 FILLER PIC X(48) VALUE "amb1 5 y$".
+    05 FILLER PIC X(96) VALUE "ok 12 amb1[0,4] w[5,6] z[7,8]".
+    05 FILLER PIC X(48) VALUE "amb2 5 y$".
+    05 FILLER PIC X(96) VALUE "err command.unknown.argument@7".
+    05 FILLER PIC X(48) VALUE "amb3 7$".
+    05 FILLER PIC X(96) VALUE "ok 15 amb3[0,4] a[5,6] a=7".
+ 01 WS-TABLE REDEFINES WS-CASES.
+    05 WS-CASE              OCCURS 41 TIMES.
+       10 WS-CASE-LINE       PIC X(48).
+       10 WS-CASE-EXPECTED   PIC X(96).
+ 01 WS-LINE                PIC X(1024).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG VALUE 4.
+ 01 WS-VERDICT             BINARY-LONG.
+ 01 WS-COMMAND             BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-CTX                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-NUMBER              PIC X(32).
+ 01 WS-NUMBER-LENGTH       BINARY-LONG.
+ 01 WS-KIND-INT            BINARY-LONG VALUE 3.
+ 01 WS-KIND-DOUBLE         BINARY-LONG VALUE 2.
+ 01 WS-ROOT-ID             BINARY-LONG VALUE 1.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-CHILD               BINARY-LONG.
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-FOO                 BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-EACH                BINARY-LONG.
+ 01 WS-TP                  BINARY-LONG.
+ 01 WS-AMB                 BINARY-LONG.
+ 01 WS-SAVED-NODE          BINARY-LONG.
+ 01 WS-EXPECTED            PIC X(1024).
+ PROCEDURE DIVISION.
+     PERFORM BUILD-TREE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 41
+         MOVE WS-CASE-LINE(WS-I) TO WS-LINE
+         MOVE WS-CASE-EXPECTED(WS-I) TO WS-EXPECTED
+         PERFORM CHECK
+     END-PERFORM
+     PERFORM CHECK-LEVELS
+     PERFORM CHECK-MERGE
+     GOBACK.
+
+ ADD-NODE.
+*> parent in WS-NODE, WS-KIND, WS-NAME (trimmed), WS-TYPE: the child id in WS-CHILD.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-NAME)) TO WS-NAME-LENGTH
+     CALL "BR-ADD-NODE" USING WS-NODE WS-KIND WS-NAME WS-NAME-LENGTH WS-TYPE WS-CHILD WS-CREATED.
+
+ LITERAL-NODE.
+     MOVE BR-LITERAL TO WS-KIND
+     MOVE 0 TO WS-TYPE
+     PERFORM ADD-NODE.
+
+ ARGUMENT-NODE.
+     MOVE BR-ARGUMENT TO WS-KIND
+     PERFORM ADD-NODE.
+
+ BUILD-TREE.
+     CALL "BR-TREE-RESET"
+     MOVE 1 TO WS-NODE
+     MOVE "foo" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-FOO
+     MOVE 1 TO BR-N-COMMAND(WS-FOO)
+     MOVE WS-FOO TO WS-NODE
+     MOVE "n" TO WS-NAME
+     MOVE BR-P-INTEGER TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 2 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO BR-N-HAS-MAX(WS-CHILD)
+     MOVE 1 TO BR-N-HAS-MIN(WS-CHILD)
+     MOVE 1 TO BR-N-IMIN(WS-CHILD)
+     MOVE 10 TO BR-N-IMAX(WS-CHILD)
+     MOVE "bar" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE 3 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "say" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "msg" TO WS-NAME
+     MOVE BR-P-STRING TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 4 TO BR-N-COMMAND(WS-CHILD)
+     MOVE BR-S-GREEDY TO BR-N-STRING-KIND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "tp" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-TP
+     MOVE WS-TP TO WS-NODE
+     MOVE "x" TO WS-NAME
+     MOVE BR-P-INTEGER TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "y" TO WS-NAME
+     PERFORM ARGUMENT-NODE
+     MOVE 5 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "name" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "s" TO WS-NAME
+     MOVE BR-P-STRING TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 6 TO BR-N-COMMAND(WS-CHILD)
+     MOVE BR-S-PHRASE TO BR-N-STRING-KIND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "d" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "v" TO WS-NAME
+     MOVE BR-P-DOUBLE TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 7 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "f" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "v" TO WS-NAME
+     MOVE BR-P-FLOAT TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 8 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO BR-N-HAS-MIN(WS-CHILD)
+     MOVE 1 TO BR-N-HAS-MAX(WS-CHILD)
+     MOVE 0 TO BR-N-DMIN(WS-CHILD)
+     MOVE 1 TO BR-N-DMAX(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "b" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "flag" TO WS-NAME
+     MOVE BR-P-BOOL TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 9 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "run" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-RUN
+     MOVE 1 TO BR-N-REDIRECT(WS-RUN)
+     MOVE "each" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-EACH
+     MOVE 1 TO BR-N-REDIRECT(WS-EACH)
+     MOVE 1 TO BR-N-FORK(WS-EACH)
+     MOVE 1 TO WS-NODE
+     MOVE "amb1" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-AMB
+     MOVE WS-AMB TO WS-NODE
+     MOVE "n" TO WS-NAME
+     MOVE BR-P-INTEGER TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "x" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE 11 TO BR-N-COMMAND(WS-CHILD)
+     MOVE WS-AMB TO WS-NODE
+     MOVE "w" TO WS-NAME
+     MOVE BR-P-STRING TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 12 TO BR-N-COMMAND(WS-CHILD)
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "z" TO WS-NAME
+     PERFORM ARGUMENT-NODE
+     MOVE 12 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "amb2" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-AMB
+     MOVE WS-AMB TO WS-NODE
+     MOVE "n" TO WS-NAME
+     MOVE BR-P-INTEGER TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "m" TO WS-NAME
+     PERFORM ARGUMENT-NODE
+     MOVE 13 TO BR-N-COMMAND(WS-CHILD)
+     MOVE WS-AMB TO WS-NODE
+     MOVE "w" TO WS-NAME
+     MOVE BR-P-STRING TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 14 TO BR-N-COMMAND(WS-CHILD)
+     MOVE 1 TO WS-NODE
+     MOVE "amb3" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE WS-CHILD TO WS-NODE
+     MOVE "a" TO WS-NAME
+     MOVE BR-P-INTEGER TO WS-TYPE
+     PERFORM ARGUMENT-NODE
+     MOVE 15 TO BR-N-COMMAND(WS-CHILD)
+     MOVE "b" TO WS-NAME
+     MOVE BR-P-STRING TO WS-TYPE
+     MOVE WS-NODE TO WS-SAVED-NODE
+     PERFORM ARGUMENT-NODE
+     MOVE 16 TO BR-N-COMMAND(WS-CHILD).
+
+*> A node whose requirement the source fails is skipped (15a §3.1 step 1; 15 §3.3): the level 2
+*> literal "give" is unknown to a level 0 source and parses for a level 2 one.
+ CHECK-LEVELS.
+     MOVE 1 TO WS-NODE
+     MOVE "give" TO WS-NAME
+     PERFORM LITERAL-NODE
+     MOVE 2 TO BR-N-LEVEL(WS-CHILD)
+     MOVE 10 TO BR-N-COMMAND(WS-CHILD)
+     MOVE "give$" TO WS-LINE
+     MOVE 0 TO WS-LEVEL
+     MOVE "err command.unknown.command@0" TO WS-EXPECTED
+     PERFORM CHECK
+     MOVE 2 TO WS-LEVEL
+     MOVE "give$" TO WS-LINE
+     MOVE "ok 10 give[0,4]" TO WS-EXPECTED
+     PERFORM CHECK
+     MOVE 4 TO WS-LEVEL.
+
+*> 15a §2.3: a node added under a name that exists keeps the old node; literals and arguments share
+*> one name space.
+ CHECK-MERGE.
+     MOVE 1 TO WS-NODE
+     MOVE "foo" TO WS-NAME
+     PERFORM ARGUMENT-NODE
+     MOVE "acceptance US13 15a§3 Parsing merge: a same-name child is the old literal node, not created"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-CHILD = WS-FOO AND WS-CREATED = 0 AND BR-N-KIND(WS-FOO) = BR-LITERAL
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK.
+     MOVE 0 TO WS-LENGTH
+     INSPECT WS-LINE TALLYING WS-LENGTH FOR CHARACTERS BEFORE INITIAL "$"
+     MOVE SPACE TO WS-LINE(WS-LENGTH + 1:1)
+     CALL "BR-PARSE" USING WS-LEVEL WS-LINE WS-LENGTH RS-TRAIL
+     CALL "BR-VERDICT" USING RS-TRAIL WS-VERDICT WS-COMMAND
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-POS
+     IF WS-VERDICT = 0
+         PERFORM DESCRIBE-OK
+     ELSE
+         PERFORM DESCRIBE-ERROR
+     END-IF
+     MOVE SPACES TO TL-CASE
+     MOVE WS-LEVEL TO WS-EDIT
+     STRING "acceptance US13 15a§3 Parsing [" WS-LINE(1:WS-LENGTH) "] level " FUNCTION TRIM(WS-EDIT)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ DESCRIBE-ERROR.
+     STRING "err " FUNCTION TRIM(BR-E-KEY) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > BR-E-ARG-COUNT
+         STRING "|" BR-E-ARG(WS-E)(1:BR-E-ARG-LENGTH(WS-E)) DELIMITED BY SIZE
+             INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     MOVE BR-E-CURSOR TO WS-EDIT
+     STRING "@" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS.
+
+ DESCRIBE-OK.
+     MOVE WS-COMMAND TO WS-EDIT
+     STRING "ok " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     MOVE 1 TO WS-CTX
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > RS-COUNT
+         IF RS-CTX(WS-E) > WS-CTX
+             STRING " /" DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+             MOVE RS-CTX(WS-E) TO WS-CTX
+         END-IF
+         STRING " " FUNCTION TRIM(BR-N-NAME(RS-NODE(WS-E))) DELIMITED BY SIZE
+             INTO WS-TEXT WITH POINTER WS-POS
+         MOVE RS-START(WS-E) TO WS-EDIT
+         STRING "[" FUNCTION TRIM(WS-EDIT) "," DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+         MOVE RS-END(WS-E) TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) "]" DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > RS-COUNT
+         IF BR-N-KIND(RS-NODE(WS-E)) = BR-ARGUMENT
+             PERFORM DESCRIBE-VALUE
+         END-IF
+     END-PERFORM.
+
+ DESCRIBE-VALUE.
+     EVALUATE BR-N-TYPE(RS-NODE(WS-E))
+         WHEN BR-P-INTEGER
+             MOVE RS-IVAL(WS-E) TO WS-EDIT
+             STRING " " FUNCTION TRIM(BR-N-NAME(RS-NODE(WS-E))) "=" FUNCTION TRIM(WS-EDIT)
+                 DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+         WHEN BR-P-BOOL
+             MOVE RS-IVAL(WS-E) TO WS-EDIT
+             STRING " " FUNCTION TRIM(BR-N-NAME(RS-NODE(WS-E))) "=" FUNCTION TRIM(WS-EDIT)
+                 DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+         WHEN BR-P-DOUBLE
+             CALL "BR-NUMBER-TEXT" USING WS-KIND-DOUBLE RS-IVAL(WS-E) RS-DVAL(WS-E)
+                 RS-INF(WS-E) WS-NUMBER WS-NUMBER-LENGTH
+             STRING " " FUNCTION TRIM(BR-N-NAME(RS-NODE(WS-E))) "=" WS-NUMBER(1:WS-NUMBER-LENGTH)
+                 DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-EVALUATE.
+ END PROGRAM TEST-CMD-15A-3.

@@ -54,7 +54,7 @@ int main(void) {
     tl_int("contract ccshim cc_event offset x", 16, (long long)offsetof(cc_event, x));
     tl_int("contract ccshim cc_event offset y", 20, (long long)offsetof(cc_event, y));
     tl_int("contract ccshim float is 4 bytes", 4, (long long)sizeof(float));
-    tl_int("contract ccshim cc_vertex size", 28, (long long)sizeof(cc_vertex));
+    tl_int("contract ccshim cc_vertex size", 44, (long long)sizeof(cc_vertex));
     tl_int("contract ccshim cc_vertex offset alpha", 24, (long long)offsetof(cc_vertex, alpha));
 
     {
@@ -70,12 +70,14 @@ int main(void) {
     tl_int("contract ccshim CC_SMALL", 5, CC_SMALL);
     tl_int("contract ccshim CC_BADDATA", 6, CC_BADDATA);
     tl_int("contract ccshim CC_NOTFOUND", 7, CC_NOTFOUND);
+    tl_int("contract ccshim CC_FAILED", 8, CC_FAILED);
     tl_int("contract ccshim CC_ZLIB", 0, CC_ZLIB);
     tl_int("contract ccshim CC_GZIP", 1, CC_GZIP);
     tl_int("contract ccshim CC_RAW", 2, CC_RAW);
     tl_int("contract ccshim CC_PIPE_OPAQUE", 0, CC_PIPE_OPAQUE);
     tl_int("contract ccshim CC_PIPE_TRANSLUCENT", 1, CC_PIPE_TRANSLUCENT);
     tl_int("contract ccshim CC_PIPE_UI", 2, CC_PIPE_UI);
+    tl_int("contract ccshim CC_PIPE_CRUMBLING", 3, CC_PIPE_CRUMBLING);
     tl_int("contract ccshim CC_TEX_BLOCKS", 0, CC_TEX_BLOCKS);
     tl_int("contract ccshim CC_TEX_ENTITIES", 1, CC_TEX_ENTITIES);
     tl_int("contract ccshim CC_TEX_UI", 2, CC_TEX_UI);

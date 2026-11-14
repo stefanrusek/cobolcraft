@@ -130,7 +130,7 @@ same size as a 16x one (14 §6.3). Sprites without a `.mcmeta` are stretched.
 
 | Kind | In the pack | Consequence |
 |---|---|---|
-| Colormaps (`colormap/grass`, `foliage`, `dry_foliage`) | **none** | Standard world type: the generated pack supplies them (22 §6) and Faithful's grey templates are tinted from them. Cobolcraft world type: not read (the skin leaves turf out, section 8.2). |
+| Colormaps (`colormap/grass`, `foliage`, `dry_foliage`) | **none** | Standard world type: the generated pack supplies them (22 §6) and Faithful's grey templates are tinted from them. The per-biome temperature, downfall, water, grass, foliage and dry foliage colours of the 67 shipped biomes, with the colormap lookups already computed, are in 43 §5.1; the block and item tint source assignments are in 43 §2 and §7. Cobolcraft world type: not read (the skin leaves turf out, section 8.2). |
 | Palettes (`palettes/trim/*`, `trim_base`) | none | Needed only for trims; the generated pack supplies them; the cobolcraft world type has no armour. |
 | Sun | `environment/celestial/sun.png`, 64 x 64 | Provided. |
 | Moon | 8 phase files, 64 x 64 each, `environment/celestial/moon/` | Provided (all eight phase names of 14 §8.1). |
@@ -156,7 +156,7 @@ world type uses none of this section.
 Texture ids the skin's block models name for every block of the cobolcraft world type (SC §1.1) and the pack file
 each resolves to. The "Pack file" column is the path inside the pack (every file is 32 x 32 and present). "Built-in
 art" is the recipe (SC §1.4.2) of the `cobolcraft:` texture that is used where the skin does not point at a
-`minecraft:` texture. The skin needs the target texture from the generated pack or from Faithful (Open question 11).
+`minecraft:` texture. The skin needs the target texture from the generated pack or from Faithful (9.7).
 
 | Stand-in block (face) | Skin target side | Sprite id | Pack file | In pack | Built-in art recipe (SC §1.4.2) |
 |---|---|---|---|---|---|
@@ -175,10 +175,15 @@ art" is the recipe (SC §1.4.2) of the `cobolcraft:` texture that is used where 
 | `ledger_tile` (all) | `cobolcraft:` (no equivalent: a plain blue grid tile) | `cobolcraft:block/ledger_tile` | none, use built-in | no | `ledger_tile` |
 | `goto_pad` (all) | `cobolcraft:` (no equivalent: the travel block) | `cobolcraft:block/goto_pad` | none, use built-in | no | `goto_pad` |
 | `slag` (all) | `minecraft:` (inferred: the surface fill of the extra dimension, closest to a nether-style stone) | `minecraft:block/netherrack` | `.../block/netherrack.png` | yes | `slag` |
+| `crafting_bench`, top | `minecraft:` (the bench is the crafting block role, WT-22; the closest equivalent is the crafting table (inferred)) | `minecraft:block/crafting_table_top` | `.../block/crafting_table_top.png` | yes | `crafting_bench_top` (CORE-33) |
+| `crafting_bench`, sides | `minecraft:` (equivalent chosen as for top (inferred)) | `minecraft:block/crafting_table_side` | `.../block/crafting_table_side.png` | yes | `crafting_bench_side` (CORE-33) |
+| `crafting_bench`, bottom | `cobolcraft:` (as the built-in model: the bench is made of `ledger_tile`) | `cobolcraft:block/ledger_tile` | none, use built-in | no | `ledger_tile` |
 | `void` | not drawn | none | none | n/a | none |
 
-Counts: 7 blocks (baseplate, greystone, loam, grit, lucite, glowtube, slag) are pointed at `minecraft:` by the skin,
-using 8 sprite ids (bedrock, stone, dirt, sand, glass, lamp on, lamp, netherrack); the pack has all 8. 4 blocks
+Note: the bench's bottom face is a fifth use of `cobolcraft:` art by the skin (after `turf`, the three `cardstack` ids and the `ledger_tile` and `goto_pad` blocks): it names `cobolcraft:block/ledger_tile`, and no new sprite id.
+
+Counts: 8 blocks (baseplate, greystone, loam, grit, lucite, glowtube, slag, crafting_bench) are pointed at `minecraft:` by the skin,
+using 10 sprite ids (bedrock, stone, dirt, sand, glass, lamp on, lamp, netherrack, crafting table top, crafting table side); the pack has all 10 (the crafting table's front texture is not used: the bench has one side texture). 4 blocks
 (turf, cardstack, ledger_tile, goto_pad) stay `cobolcraft:`, using 7 sprite ids (`turf_top`, `turf_side`, the three
 `cardstack` ids, `ledger_tile`, `goto_pad`); the pack has none of them, by design.
 
@@ -208,12 +213,20 @@ its `layer0`, so a block item picks up the pack's block texture through section 
 | `sod_cake` (food 2) | `minecraft:` (inferred) | `minecraft:item/cake` | `.../item/cake.png` | yes | |
 | `dump_shard` (crafting material, purple) | `minecraft:` (inferred) | `minecraft:item/amethyst_shard` | `.../item/amethyst_shard.png` | yes | |
 | `nothing` | not drawn | none | none | n/a | |
+| `crafting_bench` (block item, FR-027, WT-12) | `minecraft:` (equivalent as the block top (inferred)) | `minecraft:block/crafting_table_top` | `.../block/crafting_table_top.png` | yes | The `layer0` of `cobolcraft:item/crafting_bench` is the block's top sprite, as for `turf` (CORE-33); without the skin it is `cobolcraft:block/crafting_bench_top`. |
 
-All 6 `minecraft:` item textures are present in the pack, all 32 x 32.
+All 6 `minecraft:` item textures (and the bench's block sprite, section 3) are present in the pack, all 32 x 32.
 
-A ground item (`cobolcraft:loose_item`) has no texture of its own (08 §10.11). A crafting bench item and block
-(CC-0001) are not in SC yet; if added, the closest vanilla equivalent is `block/crafting_table_top`, `..._side`
-and `..._front` (all present), to be decided with that content.
+A ground item (`cobolcraft:loose_item`) has no texture of its own (08 §10.11). The crafting bench block and item are
+now in the content (cobolcraft-standard-core.md §5.1, §5.2) and their built-in art is recorded in CORE-33 of §5.10 there
+(textures `crafting_bench_top`, `crafting_bench_side`, and the `ledger_tile` bottom).
+
+**Coverage (FR-012, US5-2).** Every cobolcraft block (13 keys: `void` is not drawn, the other 12 are in the table of
+section 3), every cobolcraft item (19 keys: `nothing` is not drawn, the other 18 are in the table above) and every
+cobolcraft mob (`operator`, `sodgrazer`, `abend`, and `loose_item`, which shows its item icon) has a texture path in this
+document (blocks section 3, items this section, mobs section 5.1). **No cobolcraft block, item or mob is unmapped.** A
+future cobolcraft entry with no row here shows the missing-texture look (standin §1.4.2, 'missing texture') and is
+never given an invented texture.
 
 ---
 
@@ -418,13 +431,13 @@ and the pack has no colormap. The design:
 
 ### 9.1 Fallback chain
 
-The pack stack is design README C7 and 22 §8.1; the skin pack is added at level 2 (Open question 11). For every asset
+The pack stack is design README C7 and 22 §8.1; the skin pack is added at level 2 (9.7). For every asset
 id the client asks for, resolution goes down the stack (08 §3.1) and stops at the first hit. Bottom to top:
 
 | Level | Pack | Present when |
 |---|---|---|
 | 1 | Built-in `cobolcraft` pack | always (required, fixed) |
-| 2 | Faithful skin pack (built-in, optional) | the cobolcraft world type and the player enabled it; default off (adopted default position) |
+| 2 | Faithful skin pack (built-in, optional, id `cobolcraft_faithful_skin`, 9.7) | the cobolcraft world type and the player enabled it; default off |
 | 3 | Generated `vanilla` pack | the generated-pack check is `ok` (22 §8.2) |
 | 4 | User packs in the user's order, including Faithful | enabled by the player, never automatically |
 | 5 | Server-pushed packs (08 §9.6) | the server sent them |
@@ -439,7 +452,7 @@ PNG with no `.mcmeta` is used with stretch scaling and no animation even if a lo
 
 An asset that **no** pack supplies (for example an id a later revision adds before its recipe exists) is shown as
 stripes and logged once with the id. This is also what the skin shows for a `minecraft:` target when neither the
-generated pack nor a user pack has it (Open question 11).
+generated pack nor a user pack has it (9.7).
 
 **Texture-size differences need no handling in the chain** (14 §3.5, §5.2, §6.3): a 32 x 32 user sprite and a 16 x 16
 built-in sprite share an atlas; an entity or environment image is sampled by fractions; a GUI sheet or sprite is addressed
@@ -474,13 +487,13 @@ built-in pack supplies:
 | Atlas definitions | `minecraft:` ([engine name] paths) | `blocks`, `items` as 08 §10.2, plus `gui` (`directory` `gui/sprites`, prefix empty) and `celestials` for the sky. |
 | Language | `cobolcraft:` | `lang/en_us.json` as 08 §10.8 |
 | Font definition | `cobolcraft:` | `font/default.json` (6.3) |
-| Procedural textures | `cobolcraft:` | the 15 block images, 6 item images, 3 entity strips and 2 weather images of 08 §10.3 |
+| Procedural textures | `cobolcraft:` | the 15 block images of 08 §10.3 and the 2 bench images (`crafting_bench_top`, `crafting_bench_side`, section 3), 6 item images, 3 entity strips and 2 weather images of 08 §10.3 |
 | Procedural textures | `minecraft:` | 10 break stages, 1 font image, the GUI set of 6.4, the sun, eight moon phases and clouds (6.1, recipes open) |
 
 The **skin pack** (optional, off by default) supplies only block and item **model** files under `cobolcraft:` that
 override the built-in ones with the `minecraft:` texture ids of sections 3 and 4, and, if the weather skin is on,
 the weather binding of 6.2. It ships no texture. The `turf` models are not overridden. Its pack id, title and the
-toggle are Open question 11.
+toggle are in 9.7.
 
 ### 9.4 Built-in file count
 
@@ -488,7 +501,7 @@ toggle are Open question 11.
 |---|---|
 | `pack.mcmeta` | 1 |
 | Atlas definitions | 4 (`blocks`, `items`, `gui`, `celestials`) |
-| Block PNG (`cobolcraft:`) | 15 |
+| Block PNG (`cobolcraft:`) | 17 (the 15 of 08 §10.3 plus `crafting_bench_top` and `crafting_bench_side`) |
 | Break stages (`minecraft:`) | 10 |
 | Item PNG | 6 |
 | Entity PNG (strips) | 3 |
@@ -520,9 +533,9 @@ counts the files the client asks for from a user pack.
 | GUI sprites and sheets (6.4) | 58 | 54 | `hud/crosshair`, `container/slot_highlight_back`, `container/slot_highlight_front`, `widget/scroller_background` |
 | Entries with no vanilla equivalent | 7 block textures | | `cobolcraft:` built-in art (section 3): `turf` x 2, `cardstack` x 3, `ledger_tile`, `goto_pad` |
 
-The files our client asks for from the pack: 8 block + 10 break stages + 6 item + 0 entity + 11 environment (2 weather,
-9 sky) + 1 font + 54 GUI = **90** (the whole used set is 95 ids, of which the pack lacks the 4 GUI sprites and the clouds image). Of the pack's 3931 PNG files, 90 are used (the 2 weather files only with
-the weather skin). The other **3841** are unused. The standard world type uses far more of the pack, and its coverage
+The files our client asks for from the pack: 10 block + 10 break stages + 6 item + 0 entity + 11 environment (2 weather,
+9 sky) + 1 font + 54 GUI = **92** (the whole used set is 97 ids, of which the pack lacks the 4 GUI sprites and the clouds image). Of the pack's 3931 PNG files, 92 are used (the 2 weather files only with
+the weather skin). The other **3839** are unused. The standard world type uses far more of the pack, and its coverage
 is the tool's report.
 
 ### 9.6 Pack files the cobolcraft world type does not use
@@ -531,7 +544,7 @@ By category (PNG files under `assets/minecraft/textures/`), for the skin of sect
 
 | Category | In pack | Used (sections 3, 4, 6, 8.1) | Unused |
 |---|---|---|---|
-| `block` | 1297 | 18 (8 + 10 stages) | 1279 (including the 10 `destroy_oit_stage_*`) |
+| `block` | 1297 | 20 (10 + 10 stages) | 1277 (including the 10 `destroy_oit_stage_*`) |
 | `item` | 832 | 6 | 826 (including `item/custom/redstone_torch`) |
 | `entity` | 763 | 0 | 763 (every mob, the 18 player skins, the 85 equipment files, all layer files) |
 | `gui` | 543 | 54 | 489 |
@@ -543,7 +556,7 @@ By category (PNG files under `assets/minecraft/textures/`), for the skin of sect
 | `map` | 42 | 0 | 42 |
 | `mob_effect` | 40 | 0 | 40 |
 | `misc` | 7 | 0 | 7 |
-| **Total** | **3931** | **90** | **3841** |
+| **Total** | **3931** | **92** | **3839** |
 
 The GUI used count is 54 present files: 3 sheets and 51 sprites. The unused list is the complement of the used list;
 a client's coverage command reproduces it. The standard world type uses most of these files.
@@ -556,6 +569,72 @@ The pack's 30 PNG files with no counterpart in the 26.3 jar are all unused: `ent
 12 `entity/signs/<wood>` and 12 `entity/signs/hanging/<wood>` files (the jar has sign textures only under
 `gui/signs/` and `gui/hanging_signs/`, so these look like an older sign location kept by the pack (inferred)), `gui/demo_background`, `gui/sprites/hud/locator_bar_player`, `item/custom/redstone_torch`,
 `item/light` and `misc/enchanted_item_glint`.
+
+### 9.7 The skin pack: id, title, level and toggle (closes Open question 11)
+
+Read from the 26.3 client jar (SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, the artifact of 13 §8) by static reading, and from
+`pack.mcmeta` of `Faithful 32x - 26.3.zip`. The artifact has no notion of a world type, so the world-type rules below are
+CobolCraft design; the identification, ordering and listing rules are read.
+
+**What the artifact does (read).**
+
+| Fact | Value | Where |
+|---|---|---|
+| Id of a pack bundled in the jar (`resourcepacks` directory of the pack source) | the entry's file name with a trailing `.zip` removed; no prefix | `BuiltInPackSource.pathToId` |
+| Id of a folder pack | `file/<entry name>` (13 §8) | `FolderRepositorySource` |
+| Fixed built-in ids | `vanilla` (the base pack), `programmer_art`, `high_contrast` | `ClientPackSource` |
+| Title of a bundled pack | literal id, unless the id is `programmer_art` or `high_contrast`, which have language keys (`resourcePack.programmer_art.name` "Programmer Art", `resourcePack.high_contrast.name` "High Contrast"); the base pack is "Default" (`resourcePack.vanilla.name`), description "The default look and feel of Minecraft" | `ClientPackSource.getPackTitle` |
+| Source label of built-in packs | "built-in" (`pack.source.builtin`); the list shows `title (built-in)` via `pack.nameAndSource` "%s (%s)" in grey | `PackSource` |
+| Selection config (required, default position, fixed) of the base pack | required = true, BOTTOM, fixed = false | `ClientPackSource.VANILLA_SELECTION_CONFIG` |
+| Selection config of every other bundled pack | required = false, TOP, fixed = false | `ClientPackSource.BUILT_IN_SELECTION_CONFIG` |
+| Description of a pack | the `description` text of its `pack.mcmeta`; for a built-in pack with no file, a fixed in-code value | `Pack.readPackMetadata` |
+| Compatibility | the `pack.mcmeta` format range is checked against the client's resource format, 26.3 = major 97 minor 1 (`version.json`); the Faithful range `min_format` 84, `max_format` 97 therefore includes it | `PackCompatibility.forVersion` |
+| Available set | a map sorted by id string (so the Available list is in id order) | `PackRepository.discoverAvailable` |
+| Selected list | lowest priority first; `setSelected` keeps the stored order and then inserts every **required** pack that is missing at its default position | `PackRepository.rebuildSelected` |
+| Default position rule (`Pack$Position.insert`) | BOTTOM: insert at the lowest index after any packs that are both fixed and default-BOTTOM; TOP: insert at the highest index before any packs that are both fixed and default-TOP | `Pack$Position.insert` |
+| Moving | up/down swaps with the neighbour unless the neighbour is fixed (`canMoveUp`, `canMoveDown`); the arrows and the click overlay are hidden only for a pack that is both fixed and required | `PackSelectionModel$EntryBase`, `TransferableSelectionList$PackEntry.showHoverOverlay` |
+| Icon | the pack's `pack.png`, else `textures/misc/unknown_pack.png` (13 §8) | |
+| `pack.mcmeta` of Faithful | one `pack` object: `description` "The go-to 32x resource pack.", `min_format` 84, `max_format` 97; files at the zip root: `LICENSE.txt`, `pack.mcmeta`, `pack.png`, `assets/` | the zip |
+
+**Adopted values for CobolCraft (design, an operator may overrule).**
+
+| Item | Value |
+|---|---|
+| Pack id | `cobolcraft_faithful_skin` (no prefix, lower case, like the artifact's built-in ids; it cannot collide with `file/...`) |
+| Title | "Faithful Skin" (a literal, as for a bundled pack with no language key); the list shows `Faithful Skin (built-in)` |
+| Description (one line) | "Uses Faithful 32x textures for CobolCraft blocks and items. Needs the generated vanilla pack or a Faithful pack." |
+| Icon | none shipped; the list shows `textures/misc/unknown_pack.png`. In the jar this file exists only in the vanilla assets; a CobolCraft client gets it from the generated pack, from Faithful (which has a 128 x 128 `unknown_pack`, 2.1) if selected, or else from the built-in pack, which does not yet supply it (Open question 15). |
+| Title, description and icon of the base pack `cobolcraft` | not read (the artifact has no such pack); adopted: title "CobolCraft", description "The built-in CobolCraft look", icon as the skin's (design, inferred) |
+| Selection config | required = false, default position BOTTOM, fixed = false |
+| Base pack `cobolcraft` | required = true, default position BOTTOM, **fixed = true**, so that BOTTOM inserts of other packs land above it |
+| Generated `vanilla` pack | required = true when present, BOTTOM, fixed = false, as the artifact's base pack |
+| Default state | not selected |
+| Level when enabled | level 2: the BOTTOM rule puts it directly above `cobolcraft`, so below a generated `vanilla` pack and below every user pack and server pack (9.1). The player may move it with the arrows like any non-fixed pack; the rule then follows the stored order. |
+| Stored form | the id is one of the `resourcePacks` entries (lowest priority first, 13 §8); example with the skin on and a generated pack: `resourcePacks:["cobolcraft","cobolcraft_faithful_skin","vanilla"]`; skin off: `resourcePacks:["cobolcraft","vanilla"]` |
+| Pack format | built-in pack, always compatible; its range is the client's current resource format |
+
+Worked example (enabling the skin, nothing else selected but the required packs): Selected, lowest first, is
+`[cobolcraft, vanilla]` (cobolcraft is fixed at index 0, so `vanilla` sits at 1). The BOTTOM rule skips the fixed pack at
+index 0 and inserts at index 1, giving `[cobolcraft, cobolcraft_faithful_skin, vanilla]`. With the Faithful zip already enabled on
+top, `[cobolcraft, vanilla, file/Faithful 32x - 26.3.zip]` becomes `[cobolcraft, cobolcraft_faithful_skin, vanilla, file/Faithful 32x - 26.3.zip]`.
+
+**Where the toggle is.** The skin is an entry of the ordinary resource pack screen (13 §8), not a separate option: it appears
+in Available (click or arrow moves it to Selected) when off and in Selected when on, with the standard up/down arrows.
+Design rules (inferred from the artifact's mechanics, not read as such). The jar bundles no optional pack instance (the ids `programmer_art` and `high_contrast` appear only as constants), so the TOP default of bundled packs is read from code with no instance to check it against; the skin's BOTTOM is a deliberate deviation from it. The skin can never go below the fixed `cobolcraft` pack (the arrows stop at a fixed neighbour), whereas a generated `vanilla` pack, not being fixed, can be swapped past it.
+1. The repository always knows the skin pack (it is always in the available set), so its id is never dropped from
+   `resourcePacks` by the "doesn't seem to exist anymore" rule. Mechanism for rule 2: in the hidden mode the screen's
+   Available and Selected lists exclude the skin id; the commit rebuilds the selection from the shown lists, so if the skin
+   was selected when the screen opened, the commit re-inserts it at the index it had in the stored order (and a hidden
+   unselected skin stays unselected). The stored choice is therefore unchanged.
+2. The screen lists the skin only while the world being created or opened is of the cobolcraft type (the screen
+   opened from the world-creation dialog, or from the options of a cobolcraft world). From the title screen's options with
+   no world, and in a standard-type world, the skin entry is hidden and the choice already stored is kept unchanged.
+3. The skin has an effect only in a cobolcraft-type world; in a standard-type world the pack stack ignores it.
+4. The search box and the other behaviours of 13 §8 apply to it unchanged.
+
+**A skin target nobody supplies.** Unchanged from 9.1: the missing-texture stripes stand in, and the id is logged once.
+The pack's own description (above) tells the player what it needs. The alternative (hide the skin while the generated pack
+is absent and no Faithful pack is selected) is not adopted.
 
 ---
 
@@ -580,7 +659,7 @@ formulas of SC §1.4.1). D1 to D13 are facts about the pack and hold for both wo
 | D12 | Break stage dark-pixel counts, stages 0 to 9 | 20, 42, 64, 87, 110, 135, 160, 187, 211, 231 |
 | D13 | Namespaces in the pack | `minecraft`, `forge`, `neoforge`, `modmenu`, `fabric` (5); with the built-in pack, 6 |
 | D14 | (8.2, reference only) Grey turf top picks times the built-in tint `#73D054` (each channel = grey x tint channel / 255, rounded half up) | `#AFAFAF` gives (79, 143, 58) = SC `#4F8F3A`; `#989898` gives (69, 124, 50) vs SC `#447D32` (68, 125, 50), off by 1 in red and green; `#CCCCCC` gives (92, 166, 67) vs SC `#5CA044` (92, 160, 68), green off by 6 |
-| D15 | Built-in file count (9.4) | 15 block PNG, 10 break stages, 6 item, 3 entity, 2 environment, 1 font, 4 atlas definitions; no colormap |
+| D15 | Built-in file count (9.4) | 17 block PNG, 10 break stages, 6 item, 3 entity, 2 environment, 1 font, 4 atlas definitions; no colormap |
 
 ---
 
@@ -596,7 +675,7 @@ the design README's default (decision 10); the operator may overrule it.
 3. **Registry and wire-id implication.** Decided: the cobolcraft keys stay `cobolcraft:`; the standard world type
    uses `minecraft:` keys (design README, Own world type).
 4. **Per-biome grass tint.** Lapsed with question 2 for the cobolcraft world type; the standard world type uses the
-   colormap rule (14 §9).
+   colormap rule (14 §9, 43 §3 and §5.1).
 5. **Equivalent choices marked "(inferred)"**: bedrock for baseplate, sand for grit, netherrack for slag, iron pickaxe
    and shovel for the tools, cake for the sod cake, amethyst shard for the dump shard, snow for the hailstorm
    (and, only if entities join the skin, steve, cow and slime). Skin choices only; kept as written, the operator may
@@ -613,7 +692,7 @@ the design README's default (decision 10); the operator may overrule it.
 
 New gaps:
 
-11. **Skin pack placement and toggle.** The stack of 22 §8.1 and design README C7 has two required built-in packs and
+11. **Skin pack placement and toggle.** Closed, adopted default, specified in 9.7 (id `cobolcraft_faithful_skin`, title "Faithful Skin", level 2, off by default, an entry of the resource pack screen shown only for a cobolcraft-type world). Original question: the stack of 22 §8.1 and design README C7 has two required built-in packs and
     no optional third. Adopted default: the skin is an optional built-in pack at level 2 (above `cobolcraft`, below
     `vanilla`), off by default, shown only in the cobolcraft world type. Needs: its pack id and title, how the pack
     screen of 13 §8 lists it, and what a skin whose `minecraft:` targets nobody supplies shows (stripes today;
@@ -624,3 +703,4 @@ New gaps:
     kinds `drizzle` and `hailstorm` select a texture, built-in or skin, is not specified (6.2).
 14. **GUI id list.** The list of 6.4 stops at the HUD, inventory, crafting and options screens; the ids of the GAP-19
     menus (furnace, chest and so on) and their Faithful coverage are not enumerated.
+15. **Built-in `unknown_pack` icon.** The built-in pack does not supply `minecraft:textures/misc/unknown_pack.png`; with no generated pack and no Faithful pack the skin and `cobolcraft` entries would show stripes as icons. Needs a recipe or an accepted stripe icon.

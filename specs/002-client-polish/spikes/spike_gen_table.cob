@@ -1,0 +1,9 @@
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPIKE-GEN-TABLE.
+*> spike (throwaway): a program that includes a generated registry-sized copybook.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENTABLE.
+ PROCEDURE DIVISION.
+     DISPLAY "loaded " LENGTH OF BLOCK-DATA " " LENGTH OF STATE-DATA
+     STOP RUN.

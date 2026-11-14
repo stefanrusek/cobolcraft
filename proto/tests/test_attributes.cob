@@ -1,0 +1,390 @@
+*> Implementation test of the attribute packets of proto/src/attributes.cob: Update Attributes (05b
+*> 0x86) and Update Mob Effect (0x87). A writer that cannot encode a value appends nothing and sets
+*> PB-ERROR; a failed read leaves PB-POS where it was and yields zeros. Expected bytes are written
+*> out by hand from the field tables of the documents.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ATTRIBUTES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PBATTR.
+ COPY TESTLIB.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-FLT                 PIC -(5)9.99.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-EFFECT              BINARY-LONG.
+ 01 WS-AMPLIFIER           BINARY-LONG.
+ 01 WS-DURATION            BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+*>   ---- Update Attributes: put ----
+     PERFORM BASE-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES put of one snapshot with two modifiers" TO TL-CASE
+     STRING "01" "01" "03" "3ff8000000000000" "02"
+         "03" "613a62" "c000000000000000" "00"
+         "03" "783a79" "3fe0000000000000" "01" DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     INITIALIZE PB-ATTRIBUTES
+     MOVE "test attributes UPDATE-ATTRIBUTES put of entity 0 and no snapshot" TO TL-CASE
+     MOVE "0000" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE -1 TO PB-AT-ENTITY
+     MOVE "test attributes UPDATE-ATTRIBUTES put of a negative entity id sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE -1 TO PB-AT-COUNT
+     MOVE "test attributes UPDATE-ATTRIBUTES put of count -1 sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE 129 TO PB-AT-COUNT
+     MOVE "test attributes UPDATE-ATTRIBUTES put of 129 snapshots sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE -1 TO PB-AT-ATTRIBUTE(1)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of a negative attribute id sets PB-ERROR"
+         TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE 9 TO PB-AT-MOD-COUNT(1)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of 9 modifiers sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE -1 TO PB-AT-MOD-COUNT(1)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of modifier count -1 sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE 0 TO PB-AT-MOD-ID-LENGTH(1, 2)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of an empty modifier id sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE 65 TO PB-AT-MOD-ID-LENGTH(1, 2)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of a 65-byte modifier id sets PB-ERROR"
+         TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE "A:b" TO PB-AT-MOD-ID(1, 2)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of an invalid identifier sets PB-ERROR"
+         TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE 3 TO PB-AT-MOD-OPERATION(1, 1)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of operation 3 sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+     PERFORM BASE-ATTRS
+     MOVE -1 TO PB-AT-MOD-OPERATION(1, 1)
+     MOVE "test attributes UPDATE-ATTRIBUTES put of operation -1 sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+*>   a later snapshot that fails leaves nothing behind either
+     PERFORM BASE-ATTRS
+     MOVE 2 TO PB-AT-COUNT
+     MOVE 4 TO PB-AT-ATTRIBUTE(2)
+     MOVE 9 TO PB-AT-MOD-COUNT(2)
+     MOVE "test attributes UPDATE-ATTRIBUTES put with a bad second snapshot appends nothing"
+         TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM PUT-ATTRS
+*>   the wire maximum: 128 snapshots, 1 + 2 + 128 * 10 bytes
+     INITIALIZE PB-ATTRIBUTES
+     MOVE 128 TO PB-AT-COUNT
+     CALL "PB-PUT-UPDATE-ATTRIBUTES" USING PB-BUFFER PB-ATTRIBUTES
+     MOVE PB-LENGTH TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     MOVE 1283 TO TL-EXPECTED-N
+     MOVE "test attributes UPDATE-ATTRIBUTES put of 128 snapshots is 1283 bytes" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PB-POS
+     MOVE 77 TO PB-AT-ENTITY
+     CALL "PB-GET-UPDATE-ATTRIBUTES" USING PB-BUFFER PB-ATTRIBUTES
+     PERFORM START-OBS
+     MOVE PB-AT-ENTITY TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE PB-AT-COUNT TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE "test attributes UPDATE-ATTRIBUTES get reads back 128 snapshots" TO TL-CASE
+     MOVE "0 128 ok" TO TL-EXPECTED
+     PERFORM END-GET
+*>   ---- Update Attributes: get ----
+     STRING "01" "01" "03" "3ff8000000000000" "02"
+         "03" "613a62" "c000000000000000" "00"
+         "03" "783a79" "3fe0000000000000" "01" DELIMITED BY SIZE INTO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get reads a snapshot with two modifiers" TO TL-CASE
+     MOVE "1 1 3 1.50 2 a:b -2.00 0 x:y 0.50 1 ok" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "00 00" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get reads an empty packet" TO TL-CASE
+     MOVE "0 0 ok" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 03 3f f8 00 00 00 00 00 00 02 03 61 3a 62 c0 00 00 00 00 00 00 00 00 03 78 3a 79"
+         TO WS-HEX
+     MOVE " 3f e0 00 00 00 00 00 00" TO WS-HEX(87:)
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get without the last operation fails with zeros"
+         TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 81 01" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of 129 snapshots fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "ff ff ff ff 0f 00" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of a negative entity id fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 ff ff ff ff 0f 00 00 00 00 00 00 00 00 00" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of a negative attribute id fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 03 3f f8 00 00 00 00 00 00 09" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of 9 modifiers fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 03 3f f8 00 00 00 00 00 00 01 03 41 3a 62 00 00 00 00 00 00 00 00 00" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of an invalid identifier fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 03 3f f8 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of an empty identifier fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 03 3f f8 00 00 00 00 00 00 01 03 61 3a 62 00 00 00 00 00 00 00 00 03" TO WS-HEX
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of operation 3 fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 01 03 3f f8 00 00 00 00 00 00 01 41" TO WS-HEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 65
+         MOVE " 61" TO WS-HEX(39 + (WS-I - 1) * 3:3)
+     END-PERFORM
+     PERFORM GET-ATTRS
+     MOVE "test attributes UPDATE-ATTRIBUTES get of a 65-byte identifier fails" TO TL-CASE
+     MOVE "0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+*>   ---- Update Mob Effect ----
+     MOVE 1 TO WS-ENTITY
+     MOVE 5 TO WS-EFFECT
+     MOVE 0 TO WS-AMPLIFIER
+     MOVE -1 TO WS-DURATION
+     MOVE 15 TO WS-FLAGS
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put with infinite duration and flags 15" TO TL-CASE
+     MOVE "010500ffffffff0f0f" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE 300 TO WS-ENTITY
+     MOVE 2 TO WS-EFFECT
+     MOVE 1 TO WS-AMPLIFIER
+     MOVE 600 TO WS-DURATION
+     MOVE 7 TO WS-FLAGS
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put of haste 300 amplifier 1 for 600 ticks" TO TL-CASE
+     MOVE "ac020201d80407" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE 255 TO WS-FLAGS
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put accepts flags 255" TO TL-CASE
+     MOVE "ac020201d804ff" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE 256 TO WS-FLAGS
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put of flags 256 sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE -1 TO WS-FLAGS
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put of flags -1 sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE 7 TO WS-FLAGS
+     MOVE -1 TO WS-ENTITY
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put of a negative entity id sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE 300 TO WS-ENTITY
+     MOVE -1 TO WS-EFFECT
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put of a negative effect id sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE 2 TO WS-EFFECT
+     MOVE -1 TO WS-AMPLIFIER
+     PERFORM PUT-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT put of a negative amplifier sets PB-ERROR" TO TL-CASE
+     MOVE "ERROR" TO TL-EXPECTED
+     PERFORM CHECK-PUT
+     MOVE "ac 02 02 01 d8 04 07" TO WS-HEX
+     PERFORM GET-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT get reads haste for 600 ticks" TO TL-CASE
+     MOVE "300 2 1 600 7 ok" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 05 00 ff ff ff ff 0f 0f" TO WS-HEX
+     PERFORM GET-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT get reads the infinite duration -1" TO TL-CASE
+     MOVE "1 5 0 -1 15 ok" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "ac 02 02 01 d8 04" TO WS-HEX
+     PERFORM GET-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT get without the flags fails with zeros" TO TL-CASE
+     MOVE "0 0 0 0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "ff ff ff ff 0f 02 01 d8 04 07" TO WS-HEX
+     PERFORM GET-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT get of a negative entity id fails" TO TL-CASE
+     MOVE "0 0 0 0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 ff ff ff ff 0f 01 d8 04 07" TO WS-HEX
+     PERFORM GET-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT get of a negative effect id fails" TO TL-CASE
+     MOVE "0 0 0 0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     MOVE "01 02 ff ff ff ff 0f d8 04 07" TO WS-HEX
+     PERFORM GET-EFFECT
+     MOVE "test attributes UPDATE-MOB-EFFECT get of a negative amplifier fails" TO TL-CASE
+     MOVE "0 0 0 0 0 e1 p0" TO TL-EXPECTED
+     PERFORM END-GET
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+
+*> One snapshot (attribute 3, base 1.5) with the modifiers a:b -2.0 add and x:y 0.5 multiply base.
+ BASE-ATTRS.
+     INITIALIZE PB-ATTRIBUTES
+     MOVE 1 TO PB-AT-ENTITY
+     MOVE 1 TO PB-AT-COUNT
+     MOVE 3 TO PB-AT-ATTRIBUTE(1)
+     MOVE 1.5 TO PB-AT-BASE(1)
+     MOVE 2 TO PB-AT-MOD-COUNT(1)
+     MOVE 3 TO PB-AT-MOD-ID-LENGTH(1, 1)
+     MOVE "a:b" TO PB-AT-MOD-ID(1, 1)
+     MOVE -2 TO PB-AT-MOD-AMOUNT(1, 1)
+     MOVE 0 TO PB-AT-MOD-OPERATION(1, 1)
+     MOVE 3 TO PB-AT-MOD-ID-LENGTH(1, 2)
+     MOVE "x:y" TO PB-AT-MOD-ID(1, 2)
+     MOVE 0.5 TO PB-AT-MOD-AMOUNT(1, 2)
+     MOVE 1 TO PB-AT-MOD-OPERATION(1, 2).
+
+ PUT-ATTRS.
+     CALL "PB-PUT-UPDATE-ATTRIBUTES" USING PB-BUFFER PB-ATTRIBUTES
+     PERFORM CHECK-PUT.
+
+ PUT-EFFECT.
+     CALL "PB-PUT-UPDATE-MOB-EFFECT" USING PB-BUFFER WS-ENTITY WS-EFFECT WS-AMPLIFIER
+         WS-DURATION WS-FLAGS.
+
+*> Reads WS-HEX as an Update Attributes body and shows the record.
+ GET-ATTRS.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     MOVE 99 TO PB-AT-ENTITY
+     CALL "PB-GET-UPDATE-ATTRIBUTES" USING PB-BUFFER PB-ATTRIBUTES
+     PERFORM START-OBS
+     MOVE PB-AT-ENTITY TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE PB-AT-COUNT TO WS-EDIT
+     PERFORM ADD-NUM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-AT-COUNT
+         MOVE PB-AT-ATTRIBUTE(WS-I) TO WS-EDIT
+         PERFORM ADD-NUM
+         COMPUTE WS-FLT ROUNDED = PB-AT-BASE(WS-I)
+         PERFORM ADD-FLT
+         MOVE PB-AT-MOD-COUNT(WS-I) TO WS-EDIT
+         PERFORM ADD-NUM
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-AT-MOD-COUNT(WS-I)
+             STRING " " PB-AT-MOD-ID(WS-I, WS-J)(1:PB-AT-MOD-ID-LENGTH(WS-I, WS-J))
+                 DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             COMPUTE WS-FLT ROUNDED = PB-AT-MOD-AMOUNT(WS-I, WS-J)
+             PERFORM ADD-FLT
+             MOVE PB-AT-MOD-OPERATION(WS-I, WS-J) TO WS-EDIT
+             PERFORM ADD-NUM
+         END-PERFORM
+     END-PERFORM.
+
+*> Reads WS-HEX as an Update Mob Effect body and shows the fields.
+ GET-EFFECT.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     MOVE 99 TO WS-ENTITY WS-EFFECT WS-AMPLIFIER WS-DURATION WS-FLAGS
+     CALL "PB-GET-UPDATE-MOB-EFFECT" USING PB-BUFFER WS-ENTITY WS-EFFECT WS-AMPLIFIER
+         WS-DURATION WS-FLAGS
+     PERFORM START-OBS
+     MOVE WS-ENTITY TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE WS-EFFECT TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE WS-AMPLIFIER TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE WS-DURATION TO WS-EDIT
+     PERFORM ADD-NUM
+     MOVE WS-FLAGS TO WS-EDIT
+     PERFORM ADD-NUM.
+
+*> Asserts the buffer of a writer: TL-EXPECTED is its hex, or "ERROR" when the write must fail,
+*> which leaves nothing behind. The buffer is reset for the next case.
+ CHECK-PUT.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-BUFFER-HEX" USING PB-BUFFER TL-OBSERVED
+     IF PB-ERROR = 1
+         IF PB-LENGTH = 0
+             MOVE "ERROR" TO TL-OBSERVED
+         ELSE
+             MOVE "ERROR-APPENDED" TO TL-OBSERVED
+         END-IF
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED.
+
+ START-OBS.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+
+ ADD-FLT.
+     STRING " " FUNCTION TRIM(WS-FLT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+
+*> Ends a read check: the observed fields, then " ok" or " e<error> p<position>" (ok means no
+*> error and every byte read). The caller sets TL-EXPECTED after the fields and before this.
+ END-GET.
+     IF PB-ERROR = 0 AND PB-POS = PB-LENGTH
+         STRING " ok" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     ELSE
+         MOVE PB-ERROR TO WS-EDIT
+         STRING " e" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         MOVE PB-POS TO WS-EDIT
+         STRING " p" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED.
+ END PROGRAM TEST-ATTRIBUTES.
+ COPY PROTOTEST.

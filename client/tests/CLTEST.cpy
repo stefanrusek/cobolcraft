@@ -86,6 +86,18 @@
 *>     a System Chat (0x7C) of that plain string text, overlay false.
 *>   TEST-SET-HEALTH USING CLIENT-STATE, connection, health (FLOAT-SHORT), food: hands
 *>     PROTO-PACKET a Set Health (0x6A) with saturation 0.
+*>   TEST-FEED-STARTING-ITEMS USING CLIENT-STATE, connection: hands PROTO-PACKET a Container Set Content (0x12) of container 0
+*>     in the 46-slot menu order (13 section 3.5), state id 1, with the starting inventory of the 001 fixture: hotbar 0 to 7 the items
+*>     2 to 9 x 64, hotbar 8 the pry bar (item 10) x 1, main slot 9 (menu 9) the trowel (item 11) x 1; no cursor stack.
+*>   TEST-FEED-BENCH-ITEMS USING CLIENT-STATE, connection, container id, state id: hands PROTO-PACKET a Container Set Content (0x12)
+*>     of the crafting bench menu (13 section 3.5; the fixture play-s2c-12-container-set-content-crafting-bench.hex for any container
+*>     id): the result 1 x cobblestone (item 62), grid slots 1 and 5 1 x oak planks (item 63), hotbar 0 (slot 37) 64 x stone (item 1).
+*>   TEST-FEED-CLOSE USING CLIENT-STATE, connection, container id: hands PROTO-PACKET a Container Close (0x11) of that container.
+*>   TEST-FEED-SET-SLOT USING CLIENT-STATE, connection, container id, state id, slot, count, item: hands PROTO-PACKET a Container
+*>     Set Slot (0x14) with that stack (no components).
+*>   TEST-FEED-DAMAGED-SLOT USING CLIENT-STATE, connection, container id, state id, slot, item, damage, max damage: hands PROTO-PACKET a
+*>     Container Set Slot (0x14) of 1 of that item with the components damage (3) and max_damage (2).
+*>   TEST-FEED-PLAYER-SLOT USING CLIENT-STATE, connection, player index, count, item: hands PROTO-PACKET a Set Player Inventory (0x6E).
 *>   TEST-FIGURE-FACE USING CLIENT-STATE, spec (PIC X(40): label, then the eye-relative face
 *>     centre x y z), text (appended): " <label> <u>/<v> <brightness>" of the entity-mesh quad
 *>     with that centre (u and v of its top-left corner), or " <label> none".
@@ -618,7 +630,78 @@
  END PROGRAM TEST-SERVE-BYTES.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TEST-MESH-FACE.
+ PROGRAM-ID. TEST-VERTEX-TINTS.
+*> USING CLIENT-STATE, layer (PIC XX: UI, IC, UT, HL, BO, GI, HD hand, WX, EN), ok out (BINARY-LONG): 1
+*> when the layer has vertices and every one has tint (1, 1, 1) and sky 0 (an untinted vertex that does
+*> not follow the daylight, shim-abi section 9), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 B-LAYER BASED.
+    05 B-VERTEX OCCURS 24576 TIMES.
+       10 B-X              FLOAT-SHORT.
+       10 B-Y              FLOAT-SHORT.
+       10 B-Z              FLOAT-SHORT.
+       10 B-U              FLOAT-SHORT.
+       10 B-V              FLOAT-SHORT.
+       10 B-B              FLOAT-SHORT.
+       10 B-A              FLOAT-SHORT.
+       10 B-SKY            FLOAT-SHORT.
+       10 B-R              FLOAT-SHORT.
+       10 B-G              FLOAT-SHORT.
+       10 B-BLUE           FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-LAYER                PIC XX.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-LAYER L-OK.
+     MOVE 0 TO L-OK WS-COUNT
+     EVALUATE L-LAYER
+         WHEN "UI"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-UI-VERTEX(1)
+             MOVE RL-UI-COUNT TO WS-COUNT
+         WHEN "IC"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-IC-VERTEX(1)
+             MOVE RL-IC-COUNT TO WS-COUNT
+         WHEN "UT"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-UT-VERTEX(1)
+             MOVE RL-UT-COUNT TO WS-COUNT
+         WHEN "HL"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-HL-VERTEX(1)
+             MOVE RL-HL-COUNT TO WS-COUNT
+         WHEN "BO"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-BO-VERTEX(1)
+             MOVE RL-BO-COUNT TO WS-COUNT
+         WHEN "GI"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-GI-VERTEX(1)
+             MOVE RL-GI-COUNT TO WS-COUNT
+         WHEN "HD"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-HAND-VERTEX(1)
+             MOVE RL-HAND-COUNT TO WS-COUNT
+         WHEN "WX"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-WX-VERTEX(1)
+             MOVE RL-WX-COUNT TO WS-COUNT
+         WHEN "EN"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-EN-VERTEX(1)
+             MOVE RL-EN-COUNT TO WS-COUNT
+     END-EVALUATE
+     IF WS-COUNT > 0
+         MOVE 1 TO L-OK
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             IF B-R(WS-I) NOT = 1 OR B-G(WS-I) NOT = 1 OR B-BLUE(WS-I) NOT = 1 OR B-SKY(WS-I) NOT = 0
+                 MOVE 0 TO L-OK
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-VERTEX-TINTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MESH-VERTEX.
+*> USING mesh address (POINTER), vertex count, centre x, y, z (FLOAT-SHORT, section-local), found out,
+*> brightness out, u out, v out, sky out, red out, green out, blue out (FLOAT-SHORT): the raw fields of the
+*> first vertex of the quad (6 vertices) whose centre is that (the vertex of 11 floats: shim-abi section 9).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-Q                   BINARY-LONG.
@@ -633,6 +716,10 @@
        10 B-V              FLOAT-SHORT.
        10 B-B              FLOAT-SHORT.
        10 B-ALPHA          FLOAT-SHORT.
+       10 B-SKY            FLOAT-SHORT.
+       10 B-R              FLOAT-SHORT.
+       10 B-G              FLOAT-SHORT.
+       10 B-BLUE           FLOAT-SHORT.
  LINKAGE SECTION.
  01 L-ADDR                 USAGE POINTER.
  01 L-COUNT                BINARY-LONG.
@@ -643,8 +730,13 @@
  01 L-BRIGHTNESS           FLOAT-SHORT.
  01 L-U                    FLOAT-SHORT.
  01 L-V                    FLOAT-SHORT.
- PROCEDURE DIVISION USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V.
-     MOVE 0 TO L-FOUND L-BRIGHTNESS L-U L-V
+ 01 L-SKY                  FLOAT-SHORT.
+ 01 L-R                    FLOAT-SHORT.
+ 01 L-G                    FLOAT-SHORT.
+ 01 L-BLUE                 FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V L-SKY L-R L-G
+         L-BLUE.
+     MOVE 0 TO L-FOUND L-BRIGHTNESS L-U L-V L-SKY L-R L-G L-BLUE
      IF L-COUNT > 0
          SET ADDRESS OF B-VERTICES TO L-ADDR
      END-IF
@@ -658,8 +750,40 @@
              MOVE B-B(WS-A) TO L-BRIGHTNESS
              MOVE B-U(WS-A) TO L-U
              MOVE B-V(WS-A) TO L-V
+             MOVE B-SKY(WS-A) TO L-SKY
+             MOVE B-R(WS-A) TO L-R
+             MOVE B-G(WS-A) TO L-G
+             MOVE B-BLUE(WS-A) TO L-BLUE
          END-IF
      END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-MESH-VERTEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MESH-FACE.
+*> As TEST-MESH-VERTEX, but only brightness out: the drawn brightness at full daylight, max(brightness, sky).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SKY                 FLOAT-SHORT.
+ 01 WS-R                   FLOAT-SHORT.
+ 01 WS-G                   FLOAT-SHORT.
+ 01 WS-BLUE                FLOAT-SHORT.
+ LINKAGE SECTION.
+ 01 L-ADDR                 USAGE POINTER.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-X                    FLOAT-SHORT.
+ 01 L-Y                    FLOAT-SHORT.
+ 01 L-Z                    FLOAT-SHORT.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-BRIGHTNESS           FLOAT-SHORT.
+ 01 L-U                    FLOAT-SHORT.
+ 01 L-V                    FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V.
+     CALL "TEST-MESH-VERTEX" USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V WS-SKY
+         WS-R WS-G WS-BLUE
+     IF WS-SKY > L-BRIGHTNESS
+         MOVE WS-SKY TO L-BRIGHTNESS
+     END-IF
      GOBACK.
  END PROGRAM TEST-MESH-FACE.
 
@@ -775,8 +899,8 @@
      MOVE 1 TO PL-HAS-SKY PL-LOADED PL-POSITIONED IN-CAPTURED PL-ON-GROUND PL-SENT-FLAGS
      MOVE 3 TO RG-BIOMES
      MOVE 6000 TO PL-TIME
-     MOVE 30 TO PL-HEALTH
-     MOVE 24 TO PL-FOOD
+     MOVE 20 TO PL-HEALTH
+     MOVE 20 TO PL-FOOD
      PERFORM VARYING WS-X FROM -16 BY 1 UNTIL WS-X > 31
          PERFORM VARYING WS-Z FROM -16 BY 1 UNTIL WS-Z > 31
              PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 9
@@ -794,12 +918,16 @@
  PROGRAM-ID. TEST-SET-BLOCK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CLCELLS.
+ COPY CELLS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 0.
+ 01 WS-LEVEL               BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -812,16 +940,17 @@
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
      IF WS-ROW = 0
          CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
-         SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 65536
-             MOVE 15 TO RC-SKY(WS-I)
-         END-PERFORM
+         SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+         MOVE ALL X"FF" TO CE-SKYS
      END-IF
-     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
-     COMPUTE WS-CELL = (L-Y - PL-MIN-Y) * 256 + (L-Z - WS-CZ * 16) * 16 + (L-X - WS-CX * 16) + 1
-     MOVE L-STATE TO RC-STATE(WS-CELL)
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     COMPUTE WS-LY = L-Y - PL-MIN-Y
+     COMPUTE WS-LX = L-X - WS-CX * 16
+     COMPUTE WS-LZ = L-Z - WS-CZ * 16
+     COMPUTE WS-CELL = WS-LY * 256 + WS-LZ * 16 + WS-LX + 1
+     MOVE L-STATE TO CE-STATE(WS-CELL)
      IF L-STATE NOT = 0
-         MOVE 0 TO RC-SKY(WS-CELL)
+         CALL "LIGHT-SET" USING WR-ADDR(WS-ROW) WS-KIND WS-LY WS-LX WS-LZ WS-LEVEL
      END-IF
      CALL "WORLD-DIRTY" USING CLIENT-STATE WS-CX WS-CZ
      GOBACK.
@@ -929,21 +1058,44 @@
  PROGRAM-ID. TEST-SCREEN-TEXTS.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  01 WS-I                   BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOWN               BINARY-LONG.
+ 01 WS-EDIT                PIC Z(9)9.
+ 01 WS-EDIT2               PIC Z(9)9.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-TEXT                 PIC X(1024).
  PROCEDURE DIVISION USING CLIENT-STATE L-TEXT.
      MOVE SPACES TO L-TEXT
      MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-SHOWN
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF WS-I > 1
-             STRING "|" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
-         END-IF
-         IF SM-W-LENGTH(WS-I) > 0
-             STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) DELIMITED BY SIZE
-                 INTO L-TEXT WITH POINTER WS-PTR
+         IF SM-W-KIND(WS-I) = WK-SPRITE OR (SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-H(WS-I) = 5)
+*>           (the experience bar's overlays of height 5 are no screen text, like the sprites: test_hud_xp reads them)
+             CONTINUE
+         ELSE
+             ADD 1 TO WS-SHOWN
+             IF WS-SHOWN > 1
+                 STRING "|" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+             END-IF
+*>           A meter reads as its old label: "Health <value>/<maximum>" or "Food <value>/<maximum>" (half icons).
+             IF SM-W-KIND(WS-I) = WK-METER
+                 MOVE SM-W-STATE(WS-I) TO WS-EDIT
+                 MOVE SM-W-ACTION(WS-I) TO WS-EDIT2
+                 IF SM-W-ARG(WS-I) = 1
+                     STRING "Health " FUNCTION TRIM(WS-EDIT) "/" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+                         INTO L-TEXT WITH POINTER WS-PTR
+                 ELSE
+                     STRING "Food " FUNCTION TRIM(WS-EDIT) "/" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+                         INTO L-TEXT WITH POINTER WS-PTR
+                 END-IF
+             END-IF
+             IF SM-W-LENGTH(WS-I) > 0
+                 STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) DELIMITED BY SIZE
+                     INTO L-TEXT WITH POINTER WS-PTR
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
@@ -1325,6 +1477,250 @@
  END PROGRAM TEST-SET-HEALTH.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-STARTING-ITEMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 2048.
+ 01 WS-PACKET              BINARY-LONG VALUE 18.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SLOTS               BINARY-LONG VALUE 46.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SLOTS
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 45
+         MOVE 0 TO WS-COUNT WS-ITEM
+         IF WS-I >= 36 AND WS-I <= 43
+             MOVE 64 TO WS-COUNT
+             COMPUTE WS-ITEM = WS-I - 34
+         END-IF
+         IF WS-I = 44
+             MOVE 1 TO WS-COUNT
+             MOVE 10 TO WS-ITEM
+         END-IF
+         IF WS-I = 9
+             MOVE 1 TO WS-COUNT
+             MOVE 11 TO WS-ITEM
+         END-IF
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+         IF WS-COUNT > 0
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ITEM
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         END-IF
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-STARTING-ITEMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-BENCH-ITEMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 2048.
+ 01 WS-PACKET              BINARY-LONG VALUE 18.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-SLOTS               BINARY-LONG VALUE 46.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-CONTAINER            BINARY-LONG.
+ 01 L-STATE-ID             BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-CONTAINER L-STATE-ID.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SLOTS
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 45
+         MOVE 0 TO WS-COUNT WS-ITEM
+         IF WS-I = 0
+             MOVE 1 TO WS-COUNT
+             MOVE 62 TO WS-ITEM
+         END-IF
+         IF WS-I = 1 OR WS-I = 5
+             MOVE 1 TO WS-COUNT
+             MOVE 63 TO WS-ITEM
+         END-IF
+         IF WS-I = 37
+             MOVE 64 TO WS-COUNT
+             MOVE 1 TO WS-ITEM
+         END-IF
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+         IF WS-COUNT > 0
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ITEM
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         END-IF
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-BENCH-ITEMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-CLOSE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG VALUE 17.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-CONTAINER            BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-CONTAINER.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-CLOSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-SET-SLOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET              BINARY-LONG VALUE 20.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-CONTAINER            BINARY-LONG.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-CONTAINER L-STATE-ID L-SLOT L-COUNT L-ITEM.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+     IF L-COUNT > 0
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     END-IF
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-SET-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-DAMAGED-SLOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET              BINARY-LONG VALUE 20.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-CONTAINER            BINARY-LONG.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-CONTAINER L-STATE-ID L-SLOT L-ITEM L-DAMAGE L-MAX.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TWO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-THREE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-DAMAGE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TWO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-MAX
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-DAMAGED-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-PLAYER-SLOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET              BINARY-LONG VALUE 110.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-SLOT L-COUNT L-ITEM.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+     IF L-COUNT > 0
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     END-IF
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-PLAYER-SLOT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-FIGURE-FACE.
 *> USING CLIENT-STATE, spec (PIC X(40): label, then the eye-relative face centre x y z), text
 *> (appended): " <label> <u>/<v> <brightness>" of the entity quad with that centre, or
@@ -1444,7 +1840,7 @@
 *> biome of the 4 x 4 x 4 cell holding that block.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CLCELLS.
+ COPY CELLS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -1462,12 +1858,12 @@
      COMPUTE WS-CX = FUNCTION INTEGER(L-X / 16)
      COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
-     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
      COMPUTE WS-LX = (L-X - WS-CX * 16) / 4
      COMPUTE WS-LZ = (L-Z - WS-CZ * 16) / 4
      COMPUTE WS-LY = (L-Y - PL-MIN-Y) / 4
      COMPUTE WS-I = WS-LY * 16 + WS-LZ * 4 + WS-LX + 1
-     MOVE L-BIOME TO RC-BIOME(WS-I)
+     MOVE L-BIOME TO CE-BIOME(WS-I)
      GOBACK.
  END PROGRAM TEST-SET-BIOME.
 
@@ -1491,6 +1887,8 @@
      MOVE L-DIR TO CL-GAME-DIR
      MOVE L-LENGTH TO CL-GAME-DIR-LENGTH
      CALL "CL-START" USING CLIENT-STATE
+*>   The tests that start a hosted world do not look at the packs banner of the title screen.
+     MOVE 0 TO CL-PACKS-STATUS
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE 2 TO CS-VIEW-DISTANCE
      MOVE 0 TO CS-HOSTILE-MOBS
@@ -1745,3 +2143,51 @@
      MOVE 0 TO RETURN-CODE
      GOBACK.
  END PROGRAM TEST-CAPTURE-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LEVEL-PARTICLE.
+*> USING CLIENT-STATE, connection, particle type (registry id of a type without options), x, y, z
+*> (FLOAT-LONG), the three distances and the three max speeds (FLOAT-SHORT, one table of six), count,
+*> randomisation, override limiter, always show: hands PROTO-PACKET a Level Particles (0x30).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-PACKET              BINARY-LONG VALUE 48.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-SPREAD-TABLE.
+    05 L-SPREAD            FLOAT-SHORT OCCURS 6 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ 01 L-OVERRIDE             BINARY-LONG.
+ 01 L-ALWAYS               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-TYPE L-X L-Y L-Z L-SPREAD-TABLE L-COUNT L-RANDOM
+         L-OVERRIDE L-ALWAYS.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-OVERRIDE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-ALWAYS
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-SPREAD(WS-I)
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RANDOM
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-LEVEL-PARTICLE.

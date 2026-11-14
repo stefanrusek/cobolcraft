@@ -1,0 +1,9 @@
+# Fixture: Recipe Book Add, empty list with replace
+# Phase: play. Direction: clientbound (S->C). Packet id 0x4b (75).
+# Doc refs: 05b 0x4B; 27 (sendInitialRecipeBook for a player with no known recipes)
+# Stated inputs:
+#   no entries; Replace true (the client clears its list)
+
+4b                                               # packet id: VarInt 0x4b
+00                                               # Entries: VarInt count 0
+01                                               # Replace: Boolean true

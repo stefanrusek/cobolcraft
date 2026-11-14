@@ -78,8 +78,8 @@
 *>   TEST-PLACE-RECIPE USING connection id, recipe display id: feeds Place Recipe (05c 0x27:
 *>     container 0, the display id, use max items false).
 *>   TEST-DRAIN-CRAFT USING connection id, text out (PIC X(4096)): drains the connection and lists
-*>     its crafting packets separated by " | ": Recipe Book Add "book <entries> craftable <display
-*>     ids with crafting requirements, space-separated> replace <0|1>" and Container Set Slot
+*>     its crafting packets separated by " | ": Recipe Book Settings "settings", Recipe Book Add "book
+*>     <entries> ids <display ids, space-separated> replace <0|1>" and Container Set Slot
 *>     "slot <s>=<item>x<count>"; other packets are left out.
 *>   TEST-DRAIN-WEATHER USING connection id, text out (PIC X(4096)): drains the connection and lists
 *>     its weather Game Events (events 1, 2, 7 and 8) separated by " | " as "<event> <value>" (one
@@ -217,6 +217,9 @@
  COPY PROTO REPLACING LEADING ==PB-== BY ==FR-==.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-THRESHOLD           BINARY-LONG.
+*> TFO-NO-FLUSH 1 (set by a test that asserts the timing of the broadcast) keeps TEST-FEED-BUFFER and TEST-TICKS from running the broadcast part of a tick.
+ 01 TEST-FEED-OPTIONS EXTERNAL.
+    05 TFO-NO-FLUSH           BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -230,6 +233,11 @@
      SET CB-ADDR TO FR-ADDR
      MOVE FR-LENGTH TO CB-CAPACITY CB-LENGTH
      CALL "CORE-CONN-INPUT" USING L-ID CORE-BUFFER
+*>   The block changes and acknowledgements the packet queued are sent by the next tick (29 section 7); a test drains right after feeding, so it
+*>   runs that part of the tick now (WORLDSIM-FLUSH) instead of a whole tick.
+     IF TFO-NO-FLUSH = 0
+         CALL "WORLDSIM-FLUSH"
+     END-IF
      CALL "PB-FREE" USING FR-BUFFER
      GOBACK.
  END PROGRAM TEST-FEED-BUFFER.
@@ -649,12 +657,18 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
+ 01 TEST-FEED-OPTIONS EXTERNAL.
+    05 TFO-NO-FLUSH           BINARY-LONG.
  LINKAGE SECTION.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-COUNT.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
          CALL "CORE-TICK"
      END-PERFORM
+*>   What the last tick changed is broadcast by the next tick (29 section 7.2); a test drains right after, so that part runs now.
+     IF TFO-NO-FLUSH = 0
+         CALL "WORLDSIM-FLUSH"
+     END-IF
      GOBACK.
  END PROGRAM TEST-TICKS.
 
@@ -736,14 +750,22 @@
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-SHORT" USING PK-BUFFER WS-B
-                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     CALL "PB-GET-ITEM-STACK" USING PK-BUFFER PK-ITEMSTACK-X
                      MOVE WS-A TO WS-E1
                      MOVE WS-B TO WS-E2
-                     MOVE PK-IS-ITEM TO WS-E3
-                     MOVE PK-IS-COUNT TO WS-E4
+                     MOVE PK-ISX-ITEM TO WS-E3
+                     MOVE PK-ISX-COUNT TO WS-E4
                      STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) "="
-                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) ")" DELIMITED BY SIZE
+                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
+*>                   A stack with a component patch shows its counts: "{a<added>r<removed>}".
+                     IF PK-ISX-ADDED-COUNT > 0 OR PK-ISX-REMOVED-COUNT > 0
+                         MOVE PK-ISX-ADDED-COUNT TO WS-E1
+                         MOVE PK-ISX-REMOVED-COUNT TO WS-E2
+                         STRING "{a" FUNCTION TRIM(WS-E1) "r" FUNCTION TRIM(WS-E2) "}" DELIMITED BY SIZE
+                             INTO L-TEXT POINTER WS-PTR
+                     END-IF
+                     STRING ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  WHEN 49
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
@@ -774,6 +796,21 @@
      CALL "WORLD-GET-BLOCK" USING WS-DIM L-X L-Y L-Z L-STATE
      GOBACK.
  END PROGRAM TEST-BLOCK-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STANDARD-TABLES.
+*> No parameters: after a world opened as any set, the item, entity and block tables of the core are rebuilt from the standard
+*> content set (the generated rows), the way a standard world opens them (the tool and combat tests of US14).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ PROCEDURE DIVISION.
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     CALL "BLOCKS-OPEN"
+     CALL "CORE-TABLES-OPEN"
+     GOBACK.
+ END PROGRAM TEST-STANDARD-TABLES.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-HELD.
@@ -1473,21 +1510,21 @@
                      PERFORM SEPARATE-ENTRY
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
                      MOVE WS-COUNT TO WS-E1
-                     STRING "book " FUNCTION TRIM(WS-E1) " craftable" DELIMITED BY SIZE
+                     STRING "book " FUNCTION TRIM(WS-E1) " ids" DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
                      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
-                         CALL "PB-GET-RECIPE-DISPLAY" USING PK-BUFFER PK-RECIPE-DISPLAY
-                         CALL "PB-GET-BYTE" USING PK-BUFFER WS-A
-                         IF PK-RD-REQ-PRESENT = 1
-                             MOVE PK-RD-DISPLAY-ID TO WS-E1
-                             STRING " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
-                                 INTO L-TEXT POINTER WS-PTR
-                         END-IF
+                         CALL "PB-GET-RECIPE-ENTRY" USING PK-BUFFER PK-RECIPE-ENTRY PK-SLOT-DISPLAY-TABLE
+                         MOVE PK-RE-DISPLAY-ID TO WS-E1
+                         STRING " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
+                             INTO L-TEXT POINTER WS-PTR
                      END-PERFORM
                      CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
                      MOVE WS-A TO WS-E1
                      STRING " replace " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
+                 WHEN 77
+                     PERFORM SEPARATE-ENTRY
+                     STRING "settings" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  WHEN 20
                      PERFORM SEPARATE-ENTRY
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
@@ -1776,13 +1813,16 @@
      STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
      COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-YAW
      STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
-     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 2
-         MOVE CW-WEATHER-KIND(WS-D) TO WS-EDIT
-         STRING " | weather " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
-             WITH POINTER WS-PTR
-         MOVE CW-WEATHER-LEFT(WS-D) TO WS-EDIT
-         STRING " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
-     END-PERFORM
+     MOVE CW-CLEAR-TIME TO WS-EDIT
+     STRING " | weather clear " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE CW-RAIN-TIME TO WS-EDIT
+     STRING " rain " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE CW-THUNDER-TIME TO WS-EDIT
+     STRING " thunder " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE CW-RAINING TO WS-EDIT
+     STRING " raining " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE CW-THUNDERING TO WS-EDIT
+     STRING " thundering " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
      MOVE AC-ENFORCED TO WS-EDIT
      STRING " | enforced " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
          WITH POINTER WS-PTR
@@ -2120,3 +2160,132 @@
      CALL "TEST-FEED" USING L-ID WS-PATH
      GOBACK.
  END PROGRAM TEST-PACK-RESPONSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DROP-MOVES.
+*> USING text (PIC X(1024), in and out): the description of TEST-DRAIN-ENTITIES / TEST-DRAIN-BLOCKS without the Teleport Entity
+*> packets (the tokens "128", "128(<id>)" and "128(<id>)x<n>"), for tests whose subject is not the motion of a ground item
+*> (an item's creep after a break is not what a break, a pickup or a throw test asserts: 41 section 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OUT                 PIC X(1024).
+ 01 WS-TOKEN               PIC X(120).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(1024).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-POS WS-PTR
+     MOVE 0 TO WS-DONE
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(L-TEXT))
+     IF WS-LEN = 0
+         GOBACK
+     END-IF
+     PERFORM UNTIL WS-DONE = 1
+         MOVE SPACES TO WS-TOKEN
+         UNSTRING L-TEXT(1:WS-LEN) DELIMITED BY ALL SPACE INTO WS-TOKEN POINTER WS-POS
+         IF WS-POS > WS-LEN
+             MOVE 1 TO WS-DONE
+         END-IF
+         IF WS-TOKEN NOT = SPACES AND WS-TOKEN NOT = "128" AND WS-TOKEN(1:4) NOT = "128("
+             IF WS-PTR > 1
+                 STRING " " DELIMITED BY SIZE INTO WS-OUT POINTER WS-PTR
+             END-IF
+             STRING FUNCTION TRIM(WS-TOKEN) DELIMITED BY SIZE INTO WS-OUT POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE WS-OUT TO L-TEXT
+     GOBACK.
+ END PROGRAM TEST-DROP-MOVES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-PARTICLES.
+*> USING connection id, text out (PIC X(4096)): the Level Particles packets (0x30) the connection was sent,
+*> `|`-separated, each as `type <t> [state <s>] flags <override><always> pos <x> <y> <z> spread <dx> <dy> <dz>
+*> speed <sx> <sy> <sz> count <n> random <r>` (reals to two places); every other packet is skipped. Only the
+*> particle types without options and the block type (1, one VarInt state) are decoded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-RANDOM              BINARY-LONG.
+ 01 WS-FA                  PIC 9.
+ 01 WS-FB                  PIC 9.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-D                   FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-R                   PIC -(5)9.99.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 48
+             IF WS-PTR > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-TYPE
+             MOVE WS-TYPE TO WS-E1
+             STRING "type " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             IF WS-TYPE = 1
+                 CALL "PB-GET-VARINT" USING PK-BUFFER WS-STATE
+                 MOVE WS-STATE TO WS-E1
+                 STRING " state " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+             CALL "PB-GET-BOOL" USING PK-BUFFER WS-B
+             MOVE WS-A TO WS-FA
+             MOVE WS-B TO WS-FB
+             STRING " flags " WS-FA WS-FB DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             STRING " pos" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-D(WS-I)
+                 COMPUTE WS-R ROUNDED = WS-D(WS-I)
+                 STRING " " FUNCTION TRIM(WS-R) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-PERFORM
+             STRING " spread" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 CALL "PB-GET-FLOAT" USING PK-BUFFER WS-FLOAT
+                 COMPUTE WS-R ROUNDED = WS-FLOAT
+                 STRING " " FUNCTION TRIM(WS-R) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-PERFORM
+             STRING " speed" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 CALL "PB-GET-FLOAT" USING PK-BUFFER WS-FLOAT
+                 COMPUTE WS-R ROUNDED = WS-FLOAT
+                 STRING " " FUNCTION TRIM(WS-R) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-PERFORM
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-RANDOM
+             MOVE WS-COUNT TO WS-E1
+             STRING " count " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             MOVE WS-RANDOM TO WS-E1
+             STRING " random " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-PARTICLES.

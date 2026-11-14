@@ -53,73 +53,63 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHUNK-PACKET-BUILD.
 *> USING dim, chunk x, chunk z (BINARY-LONG), PB-BUFFER: appends Level Chunk With Light (0x2E) for
-*> that chunk, generated and lit on first access (WORLD-CHUNK). Heightmaps WORLD_SURFACE (1),
-*> MOTION_BLOCKING (4) and MOTION_BLOCKING_NO_LEAVES (5), identical (CHUNK-HEIGHTMAP). One section per 16 block layers through
-*> CHUNK-SECTION-ENCODE (fluid count 0; biomes of WORLDGEN-DIM-BIOMES, the same for every cell Y). No
-*> block entities. Light (LIGHT-ENCODE) for every light section index 0 to section count + 1: an
-*> all-zero layer is empty, every other layer an array; the section below the world has no sky or
-*> block light, the section above it sky light 15 and no block light (standin §5.2). A dimension
-*> without sky light (DIM-LIGHT-BLOCK-ONLY, §15.3) sets no sky light bit in any mask.
+*> that chunk, generated and lit on first access (WORLD-CHUNK), through PB-PUT-CHUNK-24 (06 §2 to §7):
+*> as many sections as the dimension has (height / 16), the block states and biomes of the cell layout
+*> (CELLS.cpy), the global palette bits of the dimension row, no block entities and no fluid counts.
+*> Heightmaps WORLD_SURFACE (1), MOTION_BLOCKING (4) and MOTION_BLOCKING_NO_LEAVES (5), identical:
+*> the topmost non-void layer + 1 of each column (WORLD-COLUMN-TOPS), in ceillog2(height + 1) bits.
+*> Light for every light section index 0 to section count + 1: an all-zero array is empty, every other
+*> one an array; a dimension without sky light (DIM-LIGHT-BLOCK-ONLY, §15.3) sets no sky light bit.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY BLOCKS.
- COPY CHUNKMEM.
- COPY PROTO REPLACING LEADING ==PB-== BY ==SB-==.
- 01 WS-SB-READY            PIC 9 VALUE 0.
- 01 WS-SB-CAPACITY         BINARY-LONG VALUE 16384.
+ COPY CELLS.
+ COPY CBLOCKS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG VALUE 46.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-BLOCK-BITS          BINARY-LONG VALUE 5.
- 01 WS-BIOME-BITS          BINARY-LONG VALUE 2.
- 01 WS-TOPS.
-    05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-SECTIONS            BINARY-LONG.
+ 01 WS-LIGHTS              BINARY-LONG.
  01 WS-BITS                BINARY-LONG.
  01 WS-RANGE               BINARY-LONG.
- 01 WS-PER-LONG            BINARY-LONG.
- 01 WS-LONGS               BINARY-LONG.
+ 01 WS-MASK                BINARY-LONG VALUE 50.
+ 01 WS-BLOCK-BITS          BINARY-LONG.
+ 01 WS-BIOME-BITS          BINARY-LONG.
+ 01 WS-BE-COUNT            BINARY-LONG VALUE 0.
+ 01 WS-BE-MAX              BINARY-LONG VALUE 64.
+ 01 WS-BE-DATA-MAX         BINARY-LONG VALUE 65536.
  01 WS-I                   BINARY-LONG.
- 01 WS-K                   BINARY-LONG.
- 01 WS-SLOT                BINARY-LONG.
- 01 WS-TYPE                BINARY-LONG.
- 01 WS-MULS.
-    05 WS-MUL              BINARY-DOUBLE UNSIGNED OCCURS 64 TIMES.
- 01 WS-HEIGHTMAP.
-    05 WS-HM               BINARY-DOUBLE UNSIGNED OCCURS 256 TIMES.
- 01 WS-SECTIONS            BINARY-LONG.
  01 WS-S                   BINARY-LONG.
- 01 WS-BASE                BINARY-LONG.
+ 01 WS-CELLS               BINARY-LONG.
+ 01 WS-WATER-FIRST         BINARY-LONG.
+ 01 WS-WATER-END           BINARY-LONG.
+ 01 WS-LAVA-FIRST          BINARY-LONG.
+ 01 WS-LAVA-END            BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
  01 WS-NON-EMPTY           BINARY-LONG.
+ 01 WS-TOPS.
+    05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-HM-VALUES.
+    05 WS-HM               BINARY-LONG OCCURS 1536 TIMES.
+ 01 WS-COUNTS.
+    05 WS-COUNT-ENTRY      BINARY-LONG OCCURS 48 TIMES.
  01 WS-STATES.
-    05 WS-STATE            BINARY-LONG OCCURS 4096 TIMES.
- 01 WS-BIOME-COLUMNS.
-    05 WS-BIOME-COLUMN     BINARY-LONG OCCURS 16 TIMES.
+    05 WS-STATE            BINARY-LONG OCCURS 98304 TIMES.
  01 WS-BIOMES.
-    05 WS-BIOME            BINARY-LONG OCCURS 64 TIMES.
- 01 WS-LIGHTS              BINARY-LONG.
+    05 WS-BIOME            BINARY-LONG OCCURS 1536 TIMES.
+ 01 WS-BE-HEADS.
+    05 WS-BE-HEAD          BINARY-LONG OCCURS 320 TIMES.
+ 01 WS-BE-DATA             PIC X(65536).
  01 WS-SKY-STATES.
-    05 WS-SKY-STATE        BINARY-LONG OCCURS 256 TIMES.
+    05 WS-SKY-STATE        BINARY-LONG OCCURS 26 TIMES.
  01 WS-BLOCK-STATES.
-    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 256 TIMES.
+    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 26 TIMES.
  01 WS-SKY-ARRAYS.
-    05 WS-SKY-ARRAY        OCCURS 18 TIMES.
-       10 WS-SKY-BYTE      BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
- 01 WS-SKY-ARRAYS-X REDEFINES WS-SKY-ARRAYS.
-    05 WS-SKY-ARRAY-X      PIC X(2048) OCCURS 18 TIMES.
+    05 WS-SKY-ARRAY-X      PIC X(2048) OCCURS 26 TIMES.
  01 WS-BLOCK-ARRAYS.
-    05 WS-BLOCK-ARRAY      OCCURS 18 TIMES.
-       10 WS-BLOCK-BYTE    BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
- 01 WS-CELL                BINARY-LONG.
- 01 WS-UNIFORM             BINARY-LONG.
- 01 WS-START               BINARY-LONG.
- 01 WS-CACHE.
-    05 WS-CACHE-ENTRY OCCURS 18 TIMES.
-       10 WS-CACHE-LENGTH  BINARY-LONG.
-       10 WS-CACHE-BYTES   PIC X(64).
- 01 B-BYTES                PIC X BASED.
- 01 B-SECTIONS             PIC X(1048576) BASED.
+    05 WS-BLOCK-ARRAY-X    PIC X(2048) OCCURS 26 TIMES.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
@@ -127,114 +117,82 @@
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ PB-BUFFER.
      CALL "WORLD-CHUNK" USING L-DIM L-CX L-CZ WS-ROW
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW)
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
-     CALL "PB-PUT-INT" USING PB-BUFFER L-CX
-     CALL "PB-PUT-INT" USING PB-BUFFER L-CZ
-     CALL "CHUNK-HEIGHTMAP" USING WS-ROW WS-LONGS WS-HEIGHTMAP
-     MOVE 3 TO WS-TYPE
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE
-     PERFORM VARYING WS-TYPE FROM 1 BY 1 UNTIL WS-TYPE > 5
-         IF WS-TYPE = 1 OR WS-TYPE >= 4
-             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE
-             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-LONGS
-             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-LONGS
-                 CALL "PB-PUT-LONG" USING PB-BUFFER WS-HM(WS-K)
-             END-PERFORM
-         END-IF
-     END-PERFORM
-*>   Section buffer (06 §3, §4), built apart to learn its length.
-     IF WS-SB-READY = 0
-         CALL "PB-INIT" USING SB-BUFFER WS-SB-CAPACITY
-         MOVE 1 TO WS-SB-READY
-     END-IF
-     CALL "PB-RESET" USING SB-BUFFER
-     CALL "WORLDGEN-DIM-BIOMES" USING L-DIM L-CX L-CZ WS-BIOME-COLUMNS
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 63
-         MOVE WS-BIOME-COLUMN(FUNCTION MOD(WS-I, 16) + 1) TO WS-BIOME(WS-I + 1)
-     END-PERFORM
+     MOVE L-CX TO WS-X
+     MOVE L-CZ TO WS-Z
      COMPUTE WS-SECTIONS = DM-HEIGHT(L-DIM) / 16
-     INITIALIZE WS-CACHE
-     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
-         COMPUTE WS-BASE = WS-S * 4096
-*>       A section of one state (the region equals itself shifted by one cell) is encoded once per
-*>       chunk and state; the next ones with that state repeat its bytes.
-         IF CM-STATES(WS-BASE + 1:4095) = CM-STATES(WS-BASE + 2:4095)
-             MOVE CM-STATE(WS-BASE + 1) TO WS-UNIFORM
-             IF WS-CACHE-LENGTH(WS-UNIFORM + 1) > 0
-                 CALL "PB-APPEND-BYTES" USING SB-BUFFER WS-CACHE-BYTES(WS-UNIFORM + 1)
-                     WS-CACHE-LENGTH(WS-UNIFORM + 1)
-             ELSE
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4096
-                     MOVE WS-UNIFORM TO WS-STATE(WS-I)
-                 END-PERFORM
-                 MOVE 4096 TO WS-NON-EMPTY
-                 IF WS-UNIFORM = ST-VOID
-                     MOVE 0 TO WS-NON-EMPTY
-                 END-IF
-                 MOVE SB-LENGTH TO WS-START
-                 CALL "CHUNK-SECTION-ENCODE" USING SB-BUFFER WS-NON-EMPTY WS-ZERO WS-STATES
-                     WS-BIOMES WS-BLOCK-BITS WS-BIOME-BITS
-                 SET ADDRESS OF B-SECTIONS TO SB-ADDR
-                 COMPUTE WS-CACHE-LENGTH(WS-UNIFORM + 1) = SB-LENGTH - WS-START
-                 MOVE B-SECTIONS(WS-START + 1:WS-CACHE-LENGTH(WS-UNIFORM + 1))
-                     TO WS-CACHE-BYTES(WS-UNIFORM + 1)
-             END-IF
-         ELSE
-             MOVE 0 TO WS-NON-EMPTY
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4096
-                 MOVE CM-STATE(WS-BASE + WS-I) TO WS-STATE(WS-I)
-                 IF WS-STATE(WS-I) NOT = ST-VOID
-                     ADD 1 TO WS-NON-EMPTY
-                 END-IF
-             END-PERFORM
-             CALL "CHUNK-SECTION-ENCODE" USING SB-BUFFER WS-NON-EMPTY WS-ZERO WS-STATES WS-BIOMES
-                 WS-BLOCK-BITS WS-BIOME-BITS
+     COMPUTE WS-LIGHTS = WS-SECTIONS + 2
+     MOVE DM-BLOCK-BITS(L-DIM) TO WS-BLOCK-BITS
+     MOVE DM-BIOME-BITS(L-DIM) TO WS-BIOME-BITS
+*>   Heightmaps: ceillog2(height + 1) bits, three types with the same values.
+     MOVE 0 TO WS-BITS
+     MOVE 1 TO WS-RANGE
+     PERFORM UNTIL WS-RANGE >= DM-HEIGHT(L-DIM) + 1
+         ADD 1 TO WS-BITS
+         COMPUTE WS-RANGE = WS-RANGE * 2
+     END-PERFORM
+     CALL "WORLD-COLUMN-TOPS" USING WS-ROW WS-TOPS
+     INITIALIZE WS-HM-VALUES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+         COMPUTE WS-HM(256 + WS-I) = WS-TOP(WS-I) + 1
+         COMPUTE WS-HM(1024 + WS-I) = WS-TOP(WS-I) + 1
+         COMPUTE WS-HM(1280 + WS-I) = WS-TOP(WS-I) + 1
+     END-PERFORM
+*>   States, biomes and the non-empty count of each section.
+     COMPUTE WS-CELLS = WS-SECTIONS * 4096
+     INITIALIZE WS-COUNTS
+     MOVE 0 TO WS-WATER-FIRST WS-WATER-END WS-LAVA-FIRST WS-LAVA-END
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
+         IF CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I)) = "minecraft:water" OR CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I)) = "water"
+             MOVE CB-FIRST-STATE(WS-I) TO WS-WATER-FIRST
+             COMPUTE WS-WATER-END = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I)
+         END-IF
+         IF CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I)) = "minecraft:lava" OR CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I)) = "lava"
+             MOVE CB-FIRST-STATE(WS-I) TO WS-LAVA-FIRST
+             COMPUTE WS-LAVA-END = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I)
          END-IF
      END-PERFORM
-     CALL "PB-PUT-VARINT" USING PB-BUFFER SB-LENGTH
-     SET ADDRESS OF B-BYTES TO SB-ADDR
-     CALL "PB-APPEND-BYTES" USING PB-BUFFER B-BYTES SB-LENGTH
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-*>   Light (06 §7; 09 §3.4 rule 2): index 1 is the section below the world, the last one above it.
-     COMPUTE WS-LIGHTS = WS-SECTIONS + 2
-     MOVE 1 TO WS-SKY-STATE(1) WS-BLOCK-STATE(1) WS-BLOCK-STATE(WS-LIGHTS)
-     MOVE 2 TO WS-SKY-STATE(WS-LIGHTS)
-     MOVE ALL X"FF" TO WS-SKY-ARRAY-X(WS-LIGHTS)
-     IF DM-LIGHT-POLICY(L-DIM) = DIM-LIGHT-BLOCK-ONLY
-         MOVE 0 TO WS-SKY-STATE(1) WS-SKY-STATE(WS-LIGHTS)
-     END-IF
-     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
-         COMPUTE WS-BASE = WS-S * 4096
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
+         MOVE CE-STATE(WS-I) TO WS-STATE(WS-I)
+         IF WS-STATE(WS-I) NOT = 0
+             COMPUTE WS-S = (WS-I - 1) / 4096
+             ADD 1 TO WS-COUNT-ENTRY(WS-S * 2 + 1)
+*>           the fluid count: every state of water and of lava (waterlogged states are not counted)
+             IF (WS-STATE(WS-I) >= WS-WATER-FIRST AND WS-STATE(WS-I) < WS-WATER-END)
+                 OR (WS-STATE(WS-I) >= WS-LAVA-FIRST AND WS-STATE(WS-I) < WS-LAVA-END)
+                 ADD 1 TO WS-COUNT-ENTRY(WS-S * 2 + 2)
+             END-IF
+         END-IF
+     END-PERFORM
+     COMPUTE WS-CELLS = WS-SECTIONS * 64
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
+         MOVE CE-BIOME(WS-I) TO WS-BIOME(WS-I)
+     END-PERFORM
+*>   Light: the arrays go to the wire unchanged (06 §7.1).
+     INITIALIZE WS-SKY-STATES WS-BLOCK-STATES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIGHTS
+         COMPUTE WS-BYTE = (WS-I - 1) * 2048 + 1
          EVALUATE TRUE
              WHEN DM-LIGHT-POLICY(L-DIM) = DIM-LIGHT-BLOCK-ONLY
-                 MOVE 0 TO WS-SKY-STATE(WS-S + 2)
-             WHEN CM-SKYS(WS-BASE + 1:4096) = LOW-VALUES
-                 MOVE 1 TO WS-SKY-STATE(WS-S + 2)
-             WHEN CM-SKYS(WS-BASE + 1:4096) = ALL X"0F"
-                 MOVE 2 TO WS-SKY-STATE(WS-S + 2)
-                 MOVE ALL X"FF" TO WS-SKY-ARRAY-X(WS-S + 2)
+                 MOVE 0 TO WS-SKY-STATE(WS-I)
+             WHEN CE-SKYS(WS-BYTE:2048) = LOW-VALUES
+                 MOVE 1 TO WS-SKY-STATE(WS-I)
              WHEN OTHER
-                 MOVE 2 TO WS-SKY-STATE(WS-S + 2)
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
-                     COMPUTE WS-CELL = WS-BASE + WS-I * 2 - 1
-                     COMPUTE WS-SKY-BYTE(WS-S + 2, WS-I)
-                         = CM-SKY(WS-CELL) + CM-SKY(WS-CELL + 1) * 16
-                 END-PERFORM
+                 MOVE 2 TO WS-SKY-STATE(WS-I)
+                 MOVE CE-SKYS(WS-BYTE:2048) TO WS-SKY-ARRAY-X(WS-I)
          END-EVALUATE
-         IF CM-BLOCKS(WS-BASE + 1:4096) = LOW-VALUES
-             MOVE 1 TO WS-BLOCK-STATE(WS-S + 2)
+         IF CE-BLOCK-LIGHTS(WS-BYTE:2048) = LOW-VALUES
+             MOVE 1 TO WS-BLOCK-STATE(WS-I)
          ELSE
-             MOVE 2 TO WS-BLOCK-STATE(WS-S + 2)
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
-                 COMPUTE WS-CELL = WS-BASE + WS-I * 2 - 1
-                 COMPUTE WS-BLOCK-BYTE(WS-S + 2, WS-I)
-                     = CM-BLOCK(WS-CELL) + CM-BLOCK(WS-CELL + 1) * 16
-             END-PERFORM
+             MOVE 2 TO WS-BLOCK-STATE(WS-I)
+             MOVE CE-BLOCK-LIGHTS(WS-BYTE:2048) TO WS-BLOCK-ARRAY-X(WS-I)
          END-IF
      END-PERFORM
-     CALL "LIGHT-ENCODE" USING PB-BUFFER WS-LIGHTS WS-SKY-STATES WS-SKY-ARRAYS WS-BLOCK-STATES
-         WS-BLOCK-ARRAYS
+     CALL "BE-CHUNK-PACKET" USING L-DIM L-CX L-CZ WS-BE-COUNT WS-BE-HEADS WS-BE-DATA
+     CALL "PB-PUT-CHUNK-24" USING PB-BUFFER WS-X WS-Z WS-SECTIONS WS-BITS WS-MASK WS-HM-VALUES
+         WS-COUNTS WS-STATES WS-BIOMES WS-BLOCK-BITS WS-BIOME-BITS WS-BE-COUNT WS-BE-HEADS
+         WS-BE-DATA WS-SKY-STATES WS-SKY-ARRAYS WS-BLOCK-STATES WS-BLOCK-ARRAYS
      GOBACK.
  END PROGRAM CHUNK-PACKET-BUILD.
 
@@ -311,6 +269,7 @@
  01 WS-DZ                  BINARY-LONG.
  01 WS-STEP                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-FEED                BINARY-LONG.
  COPY PROTO.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -330,6 +289,14 @@
      CALL "PB-RESET" USING PB-BUFFER
      CALL "CHUNK-CACHE-CENTER-BUILD" USING WS-CX WS-CZ PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "CHUNK-FEED-ON" USING WS-DIM WS-FEED
+     IF WS-FEED = 1
+*>       the dimension's chunks come from the generation queue: the feed sends them as they are done (core/src/chunk-feed.cob)
+         CALL "CHUNK-FEED-RESET" USING WS-PLAYER WS-CX WS-CZ
+         MOVE WS-CX TO PL-CENTER-X(WS-PLAYER)
+         MOVE WS-CZ TO PL-CENTER-Z(WS-PLAYER)
+         GOBACK
+     END-IF
      CALL "PB-RESET" USING PB-BUFFER
      CALL "CHUNK-BATCH-START-BUILD" USING PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
@@ -406,6 +373,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-LOW-X               BINARY-LONG.
  01 WS-LOW-Z               BINARY-LONG.
+ 01 WS-FEED                BINARY-LONG.
  COPY PROTO.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -440,6 +408,16 @@
              END-IF
          END-PERFORM
      END-PERFORM
+     CALL "CHUNK-FEED-ON" USING WS-DIM WS-FEED
+     IF WS-FEED = 1
+*>       the new chunks come from the generation queue through the feed (the forgets above are sent now)
+         CALL "CHUNK-FEED-MOVE" USING WS-PLAYER WS-CX WS-CZ
+         MOVE WS-CX TO PL-CENTER-X(WS-PLAYER)
+         MOVE WS-CZ TO PL-CENTER-Z(WS-PLAYER)
+         CALL "ENTITY-VIEWER-REFRESH" USING WS-PLAYER
+         CALL "CHUNKS-UNLOAD"
+         GOBACK
+     END-IF
      CALL "PB-RESET" USING PB-BUFFER
      CALL "CHUNK-BATCH-START-BUILD" USING PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER

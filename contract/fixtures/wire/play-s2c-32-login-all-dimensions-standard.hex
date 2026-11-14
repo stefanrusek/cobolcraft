@@ -1,0 +1,39 @@
+# Fixture: Login, standard world with three dimensions
+# Phase: play. Direction: clientbound (S->C). Packet id 0x32 (50).
+# Doc refs: 05a 0x32 and CommonPlayerSpawnInfo; 39 (the three dimensions); 37 section 2.1; 09 section 1
+# Stated inputs:
+#   entity id 1; hardcore false; dimensions [minecraft:overworld, minecraft:the_nether, minecraft:the_end]; max players 20; view and simulation distance 10;
+#   reduced debug false; show death screen true; limited crafting false (the standard 46-slot menu); spawn info of minecraft:overworld: dimension type 0,
+#   hashed seed 0x1122334455667788, creative, previous game mode survival, last death location (10, 64, -10) in the overworld, portal cooldown 0, sea level 63;
+#   online mode false; enforces secure chat false
+
+32                                               # packet id: VarInt 0x32
+00 00 00 01                                      # Entity id: Int 1
+00                                               # Hardcore: Boolean false
+03                                               # Dimension names: VarInt count 3
+13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72 77  # Dimension name: Identifier minecraft:overworld
+6f 72 6c 64                                      #   (continued)
+14 6d 69 6e 65 63 72 61 66 74 3a 74 68 65 5f 6e  # Dimension name: Identifier minecraft:the_nether
+65 74 68 65 72                                   #   (continued)
+11 6d 69 6e 65 63 72 61 66 74 3a 74 68 65 5f 65  # Dimension name: Identifier minecraft:the_end
+6e 64                                            #   (continued)
+14                                               # Max players: VarInt 20
+0a                                               # View distance: VarInt 10
+0a                                               # Simulation distance: VarInt 10
+00                                               # Reduced debug info: Boolean false
+01                                               # Show death screen: Boolean true
+00                                               # Limited crafting: Boolean false
+00                                               # Spawn info.Dimension type: VarInt 0 (registry id in config-s2c-07-registry-data-dimension-type-standard)
+13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72 77  # Spawn info.Dimension: Identifier
+6f 72 6c 64                                      #   (continued)
+11 22 33 44 55 66 77 88                          # Spawn info.Hashed seed: Long 0x1122334455667788
+01                                               # Spawn info.Game mode: VarInt 1 (creative)
+01                                               # Spawn info.Previous game mode: OptionalVarInt 1 (survival)
+00                                               # Spawn info.Is debug: Boolean false
+00                                               # Spawn info.Is flat: Boolean false
+01 13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72  # Spawn info.Last death location: present, minecraft:overworld (10, 64, -10)
+77 6f 72 6c 64 00 00 02 bf ff ff 60 40           #   (continued)
+00                                               # Spawn info.Portal cooldown: VarInt 0
+3f                                               # Spawn info.Sea level: VarInt 63
+00                                               # Online mode: Boolean false
+00                                               # Enforces secure chat: Boolean false

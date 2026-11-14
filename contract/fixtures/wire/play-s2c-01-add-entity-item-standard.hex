@@ -1,0 +1,18 @@
+# Fixture: Spawn Entity, a dropped item with movement
+# Phase: play. Direction: clientbound (S->C). Packet id 0x01 (1).
+# Doc refs: 05a 0x01; 00 sections 4.4 (Angle), 4.6 (LpVec3); 46 section 11 (entity type ids)
+# Stated inputs:
+#   entity id 301; type 72 (item); position (0.5, 70.0, 0.5); movement (0.1, 0.2, -0.1) as a 6-byte LpVec3 (scale 1); yaw -45, pitch 10; data 0
+
+01                                               # packet id: VarInt 0x01
+ad 02                                            # Entity id: VarInt 301
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 b1  # Entity UUID
+48                                               # Entity type: VarInt 72
+3f e0 00 00 00 00 00 00                          # X: Double 0.5
+40 51 80 00 00 00 00 00                          # Y: Double 70.0
+3f e0 00 00 00 00 00 00                          # Z: Double 0.5
+29 33 73 33 33 32                                # Movement: LpVec3 (0.1, 0.2, -0.1)
+07                                               # Pitch: Angle 10.0 degrees
+e0                                               # Yaw: Angle -45.0 degrees
+e0                                               # Head yaw: Angle -45.0 degrees
+00                                               # Data: VarInt 0

@@ -1,8 +1,8 @@
 *> Implementation test of core/src/registries.cob and core/src/config-phase.cob (T409): the Registry
-*> Data builders for every registry of core/copy/REGISTRY.cpy (standin §4.2: 18 packets, 52 entries,
+*> Data builders for the 32 registries of core/copy/SYNCREG.cpy, entries from the content set (core 2: 20 packets, 82 entries,
 *> no packet for an empty registry) and the configuration sequence on a memory connection (03
 *> "Configuration sequence", 09 §3.1): CONFIG-START sends brand, Update Enabled Features and Select
-*> Known Packs; the client's Select Known Packs gets the 18 Registry Data packets, Update Tags and
+*> Known Packs; the client's Select Known Packs gets the 20 Registry Data packets, Update Tags and
 *> Finish Configuration; the client's Finish Configuration moves the connection to play. Also the
 *> serverbound packets the phase accepts or refuses (01 §5, 09 §4).
  IDENTIFICATION DIVISION.
@@ -12,7 +12,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY COREAPI.
- COPY REGISTRY.
+ COPY SYNCREG.
  COPY CONFIGPKT.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==ST-==.
@@ -47,9 +47,11 @@
  01 WS-PTR                 BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.
 *> Registry Data fixtures in sending order (standin §4.2, 09 §3.1).
+*> Registry Data in sending order (09 section 3.1): the fixture name, or "-" and the name when no fixture holds the
+*> cobolcraft entries of that registry (chat_type, dimension_type, damage_type, world_clock: checked in content).
  01 WS-REGISTRY-ROWS.
     05 FILLER PIC X(32) VALUE "worldgen-biome".
-    05 FILLER PIC X(32) VALUE "chat-type".
+    05 FILLER PIC X(32) VALUE "-chat-type".
     05 FILLER PIC X(32) VALUE "wolf-variant".
     05 FILLER PIC X(32) VALUE "wolf-sound-variant".
     05 FILLER PIC X(32) VALUE "pig-variant".
@@ -63,11 +65,28 @@
     05 FILLER PIC X(32) VALUE "chicken-variant".
     05 FILLER PIC X(32) VALUE "zombie-nautilus-variant".
     05 FILLER PIC X(32) VALUE "painting-variant".
-    05 FILLER PIC X(32) VALUE "dimension-type".
-    05 FILLER PIC X(32) VALUE "damage-type".
-    05 FILLER PIC X(32) VALUE "world-clock".
+    05 FILLER PIC X(32) VALUE "-dimension-type".
+    05 FILLER PIC X(32) VALUE "-damage-type".
+    05 FILLER PIC X(32) VALUE "enchantment".
+    05 FILLER PIC X(32) VALUE "-world-clock".
+    05 FILLER PIC X(32) VALUE "timeline".
  01 WS-REGISTRY-TABLE REDEFINES WS-REGISTRY-ROWS.
-    05 WS-REGISTRY-NAME    PIC X(32) OCCURS 18 TIMES.
+    05 WS-REGISTRY-NAME    PIC X(32) OCCURS 20 TIMES.
+ 01 WS-EMPTY-LIST.
+    05 FILLER PIC 99 VALUE 02.
+    05 FILLER PIC 99 VALUE 03.
+    05 FILLER PIC 99 VALUE 17.
+    05 FILLER PIC 99 VALUE 20.
+    05 FILLER PIC 99 VALUE 22.
+    05 FILLER PIC 99 VALUE 23.
+    05 FILLER PIC 99 VALUE 24.
+    05 FILLER PIC 99 VALUE 25.
+    05 FILLER PIC 99 VALUE 26.
+    05 FILLER PIC 99 VALUE 29.
+    05 FILLER PIC 99 VALUE 30.
+    05 FILLER PIC 99 VALUE 31.
+ 01 WS-EMPTY-TABLE REDEFINES WS-EMPTY-LIST.
+    05 WS-EMPTY-NUMBER     PIC 99 OCCURS 12 TIMES.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
@@ -76,7 +95,7 @@
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
 
 *>   ---- Registry Data builders --------------------------------------------------------------
-     MOVE "test registries 18 Registry Data packets with 52 entries over the 32 registries"
+     MOVE "test registries 20 Registry Data packets with 82 entries over the 32 registries"
          TO TL-CASE
      MOVE 0 TO WS-COUNT WS-ENTRIES
      PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N >= REG-COUNT
@@ -90,24 +109,22 @@
              ADD WS-VALUE TO WS-ENTRIES
          END-IF
      END-PERFORM
-     MOVE "18 52" TO TL-EXPECTED
+     MOVE "20 82" TO TL-EXPECTED
      PERFORM START-ROW
      MOVE WS-COUNT TO WS-N PERFORM ADD-NUM
      MOVE WS-ENTRIES TO WS-N PERFORM ADD-NUM
      PERFORM ASSERT-ROW
 
-     MOVE "test registries no packet for the 14 empty registries" TO TL-CASE
+     MOVE "test registries no packet for the 12 empty registries" TO TL-CASE
      PERFORM START-ROW
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > REG-COUNT
-         IF RG-KIND(WS-I) = RGK-EMPTY
-             CALL "PB-RESET" USING PB-BUFFER
-             COMPUTE WS-N = WS-I - 1
-             CALL "REGISTRY-PACKET-BUILD" USING WS-N PB-BUFFER
-             PERFORM ADD-NUM
-             MOVE PB-LENGTH TO WS-N PERFORM ADD-NUM
-         END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         CALL "PB-RESET" USING PB-BUFFER
+         MOVE WS-EMPTY-NUMBER(WS-I) TO WS-N
+         CALL "REGISTRY-PACKET-BUILD" USING WS-N PB-BUFFER
+         PERFORM ADD-NUM
+         MOVE PB-LENGTH TO WS-N PERFORM ADD-NUM
      END-PERFORM
-     MOVE "2 0 3 0 17 0 20 0 21 0 22 0 23 0 24 0 25 0 26 0 28 0 29 0 30 0 31 0" TO TL-EXPECTED
+     MOVE "2 0 3 0 17 0 20 0 22 0 23 0 24 0 25 0 26 0 29 0 30 0 31 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test registries no packet for a registry number outside 0 to 31" TO TL-CASE
@@ -163,17 +180,24 @@
      MOVE "12 0 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-     MOVE "test registries Select Known Packs gets 18 Registry Data, Update Tags, Finish"
+     MOVE "test registries Select Known Packs gets 20 Registry Data, Update Tags, Finish"
          TO TL-CASE
      MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
      CALL "TEST-FEED" USING WS-ID WS-PATH
      PERFORM DRAIN
      MOVE 0 TO WS-BAD
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
-         MOVE SPACES TO WS-PATH
-         STRING "contract/fixtures/wire/config-s2c-07-registry-data-" DELIMITED BY SIZE
-             FUNCTION TRIM(WS-REGISTRY-NAME(WS-I)) ".hex" DELIMITED BY SIZE INTO WS-PATH
-         PERFORM CHECK-NEXT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         IF WS-REGISTRY-NAME(WS-I)(1:1) = "-"
+             CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+             IF WS-PACKET-ID NOT = 7
+                 ADD 1 TO WS-BAD
+             END-IF
+         ELSE
+             MOVE SPACES TO WS-PATH
+             STRING "contract/fixtures/wire/config-s2c-07-registry-data-" DELIMITED BY SIZE
+                 FUNCTION TRIM(WS-REGISTRY-NAME(WS-I)) ".hex" DELIMITED BY SIZE INTO WS-PATH
+             PERFORM CHECK-NEXT
+         END-IF
      END-PERFORM
      MOVE "contract/fixtures/wire/config-s2c-0e-update-tags.hex" TO WS-PATH
      PERFORM CHECK-NEXT

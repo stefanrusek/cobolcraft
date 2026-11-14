@@ -1,0 +1,30 @@
+# Fixture: Recipe Book Add, all five recipe display types and slot display types
+# Phase: play. Direction: clientbound (S->C). Packet id 0x4b (75).
+# Doc refs: 05b 0x4B, RecipeDisplayEntry, RecipeDisplay, SlotDisplay; 46 section 9 (ids; recipe book categories 0 crafting_building_blocks, 4 furnace_food, 10 stonecutter, 11 smithing); 27 (flags)
+# Stated inputs:
+#   Replace false. Item ids are fixture inputs from 25 part 1: stone 1, cobblestone 62, oak_planks 63, bedrock 87
+#   entry 0 id 0 shapeless: ingredients [tag minecraft:planks, item 62], result item_stack 4 x stone, station empty, no group, category 0, flags 3 (notify, highlight), craftable [[62],[63]]
+#   entry 1 id 300 shaped 2x2: four item 63, result item_stack 1 x stone, station item 63; group 5 (OptionalVarInt 6); category 0; requirements absent; flags 2
+#   entry 2 id 301 furnace: ingredient item 62, fuel any_fuel, result item 1, station empty, duration 200, experience 0.1; category 4; flags 0
+#   entry 3 id 302 stonecutter: input composite [item 62, item 63], result item_stack 2 x stone, station empty; category 10
+#   entry 4 id 303 smithing: template item 87, base with_remainder(item 62, item 63), addition dyed(item 1, item 62), result item 1, station empty; category 11
+
+4b                                               # packet id: VarInt 0x4b
+05                                               # Entries: VarInt count 5
+00 00 02 06 00 10 6d 69 6e 65 63 72 61 66 74 3a  # entry 0: RecipeDisplayEntry, shapeless: tag + item, requirements present
+70 6c 61 6e 6b 73 04 3e 05 01 04 00 00 00 00 00  #   (continued)
+01 02 02 3e 02 3f                                #   (continued)
+03                                               # entry 0 flags: Byte 3
+ac 02 01 02 02 04 04 3f 04 3f 04 3f 04 3f 05 01  # entry 1: RecipeDisplayEntry, shaped 2x2, group 5, requirements absent
+01 00 00 04 3f 06 00 00                          #   (continued)
+02                                               # entry 1 flags: Byte 2
+ad 02 02 04 3e 01 04 01 00 c8 01 3d cc cc cd 00  # entry 2: RecipeDisplayEntry, furnace with any_fuel
+04 00                                            #   (continued)
+00                                               # entry 2 flags: Byte 0
+ae 02 03 0a 02 04 3e 04 3f 05 01 02 00 00 00 00  # entry 3: RecipeDisplayEntry, stonecutter with composite input
+0a 00                                            #   (continued)
+00                                               # entry 3 flags: Byte 0
+af 02 04 04 57 09 04 3e 04 3f 07 04 01 04 3e 04  # entry 4: RecipeDisplayEntry, smithing with with_remainder and dyed
+01 00 00 0b 00                                   #   (continued)
+00                                               # entry 4 flags: Byte 0
+00                                               # Replace: Boolean false

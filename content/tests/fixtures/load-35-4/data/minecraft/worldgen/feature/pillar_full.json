@@ -1,0 +1,1 @@
+{"type":"minecraft:single_block_pillar","block":{"id":"minecraft:basalt"},"direction":"up","can_replace":{"type":"minecraft:true"},"chance_to_continue":0.5,"cap_feature":"minecraft:cap"}

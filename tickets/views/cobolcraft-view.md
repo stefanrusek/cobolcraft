@@ -17,7 +17,6 @@ Nothing needs attention.
 
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
-| [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  |  |
 | [CC-0002](../CC-0002-chunk-meshing-performance.md) | Chunk mesh building fast enough to play | feature | stefanrusek |  |  |
 | [CC-0003](../CC-0003-weather-atlas-size.md) | Weather atlas stays small with any pack image sizes | bug | stefanrusek |  |  |
 | [CC-0004](../CC-0004-shutdown-disconnect-delivery.md) | Players reliably see why the server shut down | bug | stefanrusek |  |  |
@@ -25,6 +24,14 @@ Nothing needs attention.
 | [CC-0006](../CC-0006-creative-cursor-throws.md) | A creative player's carried stack can be thrown out of the inventory window | bug | stefanrusek |  |  |
 | [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
 
+### implementing
+
+| ID | Title | Type | Owner | Blocked | PR |
+|---|---|---|---|---|---|
+| [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+
 ## Recently Closed
 
-Nothing closed yet.
+| ID | Title | Resolution |
+|---|---|---|
+| [CC-0008](../CC-0008-gravity-blocks-fall.md) | Gravity blocks fall when the block beneath them is broken | done |

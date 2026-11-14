@@ -1,6 +1,6 @@
 ---
 name: clean-room
-description: Extend CobolCraft's reference docs (docs/protocol/, docs/design/) with behaviour read from a shipped artifact such as the vanilla client jar, through a clean-room process. A reader agent studies the artifact and writes prose and tables only, a separate reviewer checks the result for contamination and completeness, and implementers then work from the docs alone (constitution Principle II). Use when a spec, ticket or implement phase needs behaviour that docs/protocol/ does not yet describe ("spec it from the jar", "clean-room round", "extend the docs", world generation, gameplay mechanics, rendering details).
+description: Extend CobolCraft's reference docs (docs/protocol/, docs/design/) with behaviour read from a shipped artifact such as the vanilla client jar, through a clean-room process. A reader agent studies the artifact and writes prose, tables and data schemas only, a separate reviewer checks the result for contamination and completeness, and implementers then work from the docs alone (constitution Principle II). Use when a spec, ticket or implement phase needs behaviour that docs/protocol/ does not yet describe ("spec it from the jar", "clean-room round", "extend the docs", world generation, gameplay mechanics, rendering details).
 ---
 
 # Clean-room doc extension
@@ -83,6 +83,11 @@ These match how 00 to 08 were written:
 - **Form:** prose, tables and formulas only. No source code, no decompiled code, and no pseudocode that mirrors the
   artifact's control flow line by line. Describe behaviour, data layouts, constants, formulas and algorithms in
   their own terms (inputs, outputs, steps, invariants).
+- **Data schemas are not code.** The structure of a data format is an interface, not an implementation, and may be
+  written in any clear notation: JSON Schema documents, schema-style tables (member name, value kind, required or
+  optional, allowed values, nested forms), grammars, and byte-layout diagrams. Short example snippets of a data file
+  (a few lines each) are fine too. What stays barred is the artifact's code, decompiled code and control-flow
+  pseudocode, and bulk copies of its data files: an example illustrates a rule, it never replaces stating the rule.
 - **Names:** artifact class, method and field names may be cited as references in backticks, as 02 and 07 do, to
   say where something was read. They are never presented as the design.
 - **Uncertainty:** every value is either read directly or marked "(inferred)". Untraced behaviour goes in the

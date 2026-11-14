@@ -1,0 +1,22 @@
+# Fixture: Player Chat (unsigned), chat type minecraft:chat
+# Phase: play. Direction: clientbound (S->C). Packet id 0x42 (66).
+# Doc refs: 05a 0x42, SignedMessageBodyPacked, FilterMask, ChatTypeBound; 09 section 1 (unsigned chat); chat_type registry order of config-s2c-07-registry-data-chat-type-standard (chat = 0)
+# Stated inputs:
+#   global index 5; sender UUID 00000000-0000-0000-0000-0000000000a1 (Alice); per-sender index 2; no signature; content "hello",
+#   timestamp 1700000000000 ms, salt 0, last seen none; unsigned content absent; filter mask PASS_THROUGH;
+#   chat type minecraft:chat (id 0, Holder VarInt 1); sender name plain String "Alice"; no target
+
+42                                               # packet id: VarInt 0x42
+05                                               # Global index: VarInt 5
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 a1  # Sender: UUID
+02                                               # Index: VarInt 2
+00                                               # Signature: Optional absent
+05 68 65 6c 6c 6f                                # Body.Content: String "hello"
+00 00 01 8b cf e5 68 00                          # Body.Timestamp: Long 1700000000000
+00 00 00 00 00 00 00 00                          # Body.Salt: Long 0
+00                                               # Body.Last seen: Prefixed Array count 0
+00                                               # Unsigned content: Optional absent
+00                                               # Filter mask: VarInt 0 PASS_THROUGH
+01                                               # Chat type: Holder reference VarInt 1 (registry id 0 + 1)
+08 00 05 41 6c 69 63 65                          # Sender name: TextComponent plain String "Alice"
+00                                               # Target name: Optional absent

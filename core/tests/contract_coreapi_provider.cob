@@ -43,9 +43,9 @@
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
-     MOVE "contract coreapi provider record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 CORE-STATUS 5"
+     MOVE "contract coreapi provider record lengths CORE-SETTINGS 3829 CORE-BUFFER 16 CORE-STATUS 5"
          TO TL-CASE
-     MOVE 1707016005 TO TL-EXPECTED-N
+     MOVE 3829016005 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = LENGTH OF CORE-SETTINGS * 1000000 + LENGTH OF CORE-BUFFER * 1000
          + LENGTH OF CORE-STATUS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -223,11 +223,11 @@
      PERFORM APPEND-EDIT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   CORE-TICK: one tick advances the tick count and the time of day (wrapping at 30000).
-     MOVE 29999 TO CW-TIME
+*>   CORE-TICK: one tick advances the tick count and the time of day (wrapping at 24000).
+     MOVE 23999 TO CW-TIME
      MOVE 7 TO CW-TICKS
      CALL "CORE-TICK"
-     MOVE "contract coreapi provider CORE-TICK runs one tick (time of day wraps 29999 to 0)" TO TL-CASE
+     MOVE "contract coreapi provider CORE-TICK runs one tick (time of day wraps 23999 to 0)" TO TL-CASE
      MOVE "8 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE CW-TICKS TO WS-EDIT
@@ -273,20 +273,20 @@
 
 *>   CORE-CONSOLE (US15): a z-string command line, run with operator permission; its reply is a
 *>   console line.
-     MOVE Z"clock 1000" TO WS-CONSOLE-LINE
+     MOVE Z"time set 1000" TO WS-CONSOLE-LINE
      CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
      PERFORM DRAIN-LINES
      MOVE "contract coreapi provider CORE-CONSOLE runs an operator command line and its reply is "
          & "drained as a console line" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "1000|The clock now reads 1000" TO TL-EXPECTED
+     MOVE "1000|Set cobolcraft:daylight to 1000 tick(s)" TO TL-EXPECTED
      MOVE CW-TIME TO WS-EDIT
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-EDIT) "|" WS-LINES DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   CORE-STATUS-GET run states: 0 running, 1 after the stop command, 2 after CORE-STOP.
-     MOVE Z"shutdown" TO WS-CONSOLE-LINE
+     MOVE Z"stop" TO WS-CONSOLE-LINE
      CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
      PERFORM DRAIN-LINES
      CALL "CORE-STATUS-GET" USING CORE-STATUS
@@ -349,6 +349,30 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "PB-FREE" USING PB-BUFFER
      CALL "PB-FREE" USING PK-BUFFER
+
+*>   The settings and outcomes of feature 002 (core-host-delta.md sections 1 to 3): the re-derived size, the status words,
+*>   a new world records WorldType and Seed from CS-WORLD-TYPE and CS-SEED-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE "contract coreapi provider CORE-SETTINGS is CORE-SETTINGS-SIZE (3829) bytes and CORE-WO words are 0 to 3"
+         TO TL-CASE
+     MOVE LENGTH OF CORE-SETTINGS TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " CORE-WO-OK CORE-WO-PACKS-NOT-OK CORE-WO-NO-LEVEL-DAT CORE-WO-NO-WORLDTYPE
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "3829 0123" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "cobolcraft" TO CS-WORLD-TYPE
+     MOVE "  42 " TO CS-SEED-TEXT
+     CALL "SYSTEM" USING WS-RM-OLD
+     CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN of a new world records the type and the seed of the seed text"
+         TO TL-CASE
+     MOVE CW-SEED TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(CW-WORLD-TYPE) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "cobolcraft 42" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> WS-LINES: the console lines drained now, separated by "|".

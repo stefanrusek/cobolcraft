@@ -1,0 +1,10 @@
+# Fixture: Player Abilities (spectator)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x41 (65).
+# Doc refs: 05a 0x41 (Byte flags, Float flying speed, Float walking speed); 09 Open question 13 (byte 0x07 until a read round settles it)
+# Stated inputs:
+#   flags 0x07 (0x01 invulnerable | 0x02 flying | 0x04 can fly); flying speed 0.05; walking speed 0.1
+
+41                                               # packet id: VarInt 0x41
+07                                               # Flags: Byte 0x07 (invulnerable | flying | can fly)
+3d 4c cc cd                                      # Flying speed: Float 0.05
+3d cc cc cd                                      # Walking speed: Float 0.1

@@ -1,44 +1,30 @@
-*> Ground items: cobolcraft:loose_item (US5; standin-content §1.3, §3, §9; data-model §5;
-*> docs/protocol/09-cobolcraft-profile.md §3.3 ground-item rows, §3.4 rules 6 and 7).
+*> Ground items: cobolcraft:loose_item (US5; docs/protocol/41-item-entity-physics.md; docs/protocol/09-cobolcraft-profile.md
+*> §3.3 ground-item rows, §3.4 rules 6 and 7). The physics, the spawn paths, merging, fire and the statistics are in
+*> itemphys-41.cob; this file holds the tracker-facing part.
 *>
 *> A ground item is a row of the entity tracker (CORE-ENTITIES, entity type 1) holding one item
 *> stack (EN-ITEM, EN-ITEM-COUNT), its position (EN-X to EN-Z), motion (EN-VX to EN-VZ), pickup delay
-*> (EN-DELAY), age (EN-AGE) and resting flag (EN-ON-GROUND). Its entity UUID has the most
-*> significant 64 bits 0 and the least significant 64 bits = the entity id (09 §3.3).
+*> (EN-DELAY), age (EN-AGE) and resting flag (EN-ON-GROUND); the rest of its state is the record of CITEMPHYS.cpy. Its entity
+*> UUID has the most significant 64 bits 0 and the least significant 64 bits = the entity id (09 §3.3).
 *>
-*> Sources (§9.1): a survival block break (GI-BLOCK-YIELD: one item of the block's item, §1.3, at
-*> (x + 0.5, y + 0.25, z + 0.5), motion 0, pickup delay 6) and a throw (GI-THROW: Player Action 5
-*> DROP_ITEM one item, 4 DROP_ALL_ITEMS the whole stack, from the held hotbar slot, any game mode;
-*> an empty slot throws nothing; at the feet + (0, 1.3, 0) with the §9.1 thrown motion and pickup
-*> delay 30; the held slot is echoed with Container Set Slot; GI-THROW-STACK, shared with the
-*> inventory-screen throws of INV-CLICK and INV-CLOSE). A new item enters the tracker: every
-*> player who sees it gets Add Entity (movement = its motion) and Set Entity Data with its stack, then
-*> Set Entity Motion when its motion is not (0, 0, 0) (09 §3.4 rule 6).
+*> Sources (41 section 2): a survival block break (GI-BLOCK-YIELD: popResource, delay 10), a throw (GI-THROW: Player Action 5
+*> DROP_ITEM one item, 4 DROP_ALL_ITEMS the whole stack, from the held hotbar slot, any game mode; an empty slot throws nothing; at
+*> the eyes - 0.3 with the directional motion of 41 section 2.3 and pickup delay 40; the held slot is echoed with Container Set
+*> Slot; GI-THROW-STACK-X is shared with the inventory-screen throws of INV-CLICK and INV-CLOSE). A new item enters the tracker:
+*> every player who sees it gets Add Entity (movement = its motion) and Set Entity Data with its stack, then Set Entity Motion
+*> when its motion is not (0, 0, 0) (09 §3.4 rule 6).
 *>
-*> Per tick (GROUND-ITEMS-TICK, the last step of CORE-TICK, §9.5): every ground item whose chunk is
-*> loaded, in ascending entity id order, runs the §9.2 steps:
-*>   1. a pickup delay above 0 decreases by 1;
-*>   2. the age increases by 1 when a player of the same dimension (joined, any mode or state) has
-*>      feet within 32.0 blocks (3D distance); at 4800 the item despawns (Remove Entities);
-*>   3. movement: the item box (x +- 0.15, y to y + 0.3, z +- 0.15) is pushed up out of solid cells;
-*>      a resting item with a solid cell below stays put, otherwise it falls: gravity, then moves
-*>      along Y, X and Z, each blocked by solid cells (a cell of an unloaded chunk is solid; touching
-*>      faces within 1e-7 block do not overlap), landing on a downward Y block, then drag 0.97 (motion
-*>      0 at rest). After a tick in which the position changed, the viewers get Teleport Entity
-*>      (position, current motion, angles 0, on-ground = resting) and visibility follows;
-*>   4. pickup (§9.3): alive players of the dimension whose box expanded by 0.75 in x and z and 0.25
-*>      in y overlaps or touches the item box, while the pickup delay is 0, in the order they
-*>      entered the world (PL-ENTERED): each takes what fits (INV-ADD) and the next is tried only if
-*>      items remain. For each taker the viewers get Take Item Entity and the taker Container Set
-*>      Slot of the slots that changed (state id raised once); an emptied item is removed (Remove
-*>      Entities), a reduced one is sent Set Entity Data with the rest.
-*> Ground items never merge (§9.2, RULES.cpy RULE-GI-MERGES 0): identical items lying side by side
-*> stay separate entities.
+*> Per tick (GROUND-ITEMS-TICK, the last step of CORE-TICK): every ground item whose chunk is loaded, in ascending entity id
+*> order, runs GI-STEP: the players' touch (41 section 4), then the item's own tick (section 3: delay, forces, move, friction,
+*> merge, age, fluids, lifetime 6000). After a tick in which the position moved by at least the wire resolution the viewers get
+*> Teleport Entity (position, current motion, angles, on-ground = resting) and visibility follows. A pickup moves the stack into
+*> the inventory (IP-INV-ADD): when add returns true the viewers get Take Item Entity, the taker Container Set Slot of the
+*> slots that changed (state id raised once) and the entity is removed (Remove Entities); a partial transfer in survival leaves
+*> the rest on the entity (Set Entity Data with it) and sends no Take Item Entity.
 *>
 *> Entry points:
 *>   GI-BLOCK-YIELD USING dim, x, y, z, block id (BINARY-LONG)     yield of a survival break
 *>   GI-THROW USING connection id, PLAY-SERVERBOUND               Player Action 4 or 5
-*>   GI-THROW-STACK USING player row, item, count (BINARY-LONG)   a stack thrown by the player
 *>   GI-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), item, count, pickup delay, row out
 *>     (BINARY-LONG)                                              a new ground item
 *>   GROUND-ITEMS-TICK                                            the per-tick rules (CORE-TICK)
@@ -139,11 +125,12 @@
 *> chunk is not loaded or its block is solid (BLOCKS.cpy SB-SOLID; void outside the height range).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY BLOCKS.
+ COPY CBLOCKS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -157,7 +144,8 @@
      MOVE 1 TO L-SOLID
      IF WS-ROW > 0
          CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
-         MOVE SB-SOLID(WS-STATE + 1) TO L-SOLID
+         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+         MOVE CB-SOLID(WS-BLK + 1) TO L-SOLID
      END-IF
      GOBACK.
  END PROGRAM GI-SOLID-CELL.
@@ -171,7 +159,7 @@
 *> (GI-MOVE) and mobs (core/src/mobs.cob) move with it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY ENTITYTYPES.
+ COPY CITEMS.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -221,15 +209,10 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-SPAWN.
 *> USING dimension row (BINARY-LONG), x, y, z, vx, vy, vz (FLOAT-LONG), item, count, pickup delay,
-*> row out (BINARY-LONG): a new falling ground item of age 0 enters the tracker; its viewers get Add
-*> Entity and Set Entity Data, then Set Entity Motion when the motion is not (0, 0, 0).
+*> row out (BINARY-LONG): GI-SPAWN-X of a stack without a patch (core/src/itemphys-41.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY ENTITYTYPES.
- COPY PROTO.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-ROW                 BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -243,48 +226,21 @@
  01 L-DELAY                BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-ITEM L-COUNT L-DELAY L-ROW.
-     CALL "ENTITY-ALLOC" USING WS-ROW
-     CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
-     MOVE ET-LOOSE-ITEM TO EN-TYPE(WS-ROW)
-     CALL "ENTITY-SET-UUID" USING WS-ROW
-     MOVE L-DIM TO EN-DIM(WS-ROW)
-     MOVE L-X TO EN-X(WS-ROW)
-     MOVE L-Y TO EN-Y(WS-ROW)
-     MOVE L-Z TO EN-Z(WS-ROW)
-     MOVE L-VX TO EN-VX(WS-ROW)
-     MOVE L-VY TO EN-VY(WS-ROW)
-     MOVE L-VZ TO EN-VZ(WS-ROW)
-     MOVE L-ITEM TO EN-ITEM(WS-ROW)
-     MOVE L-COUNT TO EN-ITEM-COUNT(WS-ROW)
-     MOVE L-DELAY TO EN-DELAY(WS-ROW)
-     CALL "ENTITY-TRACK" USING WS-ROW
-     IF L-VX NOT = 0 OR L-VY NOT = 0 OR L-VZ NOT = 0
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         CALL "SET-ENTITY-MOTION-BUILD" USING EN-ID(WS-ROW) L-VX L-VY L-VZ PB-BUFFER
-         CALL "GI-VIEWERS-SEND" USING WS-ROW PB-BUFFER
-         CALL "PB-FREE" USING PB-BUFFER
-     END-IF
-     MOVE WS-ROW TO L-ROW
+     CALL "GI-SPAWN-X" USING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-ITEM L-COUNT L-DELAY L-ROW WS-NONE
      GOBACK.
  END PROGRAM GI-SPAWN.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-BLOCK-YIELD.
 *> USING dimension row, x, y, z (block position), block id (BINARY-LONG) of a block just broken in
-*> survival: one item of the block's yield (RULES.cpy RULE-YIELD-ITEM, standin §1.3) at (x + 0.5,
-*> y + 0.25, z + 0.5), motion 0, pickup delay 6. Only breakable blocks reach here (BLOCK-ACTION
+*> survival: one item of the block's yield (RULES.cpy RULE-YIELD-ITEM, standin §1.3) through
+*> Block.popResource (41 section 2.1: GI-POP-RESOURCE). Only breakable blocks reach here (BLOCK-ACTION
 *> refuses void and the baseplate), and every breakable block has a yield.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY RULES.
- 01 WS-X                   FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-Z                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG VALUE 0.
- 01 WS-VY                  FLOAT-LONG VALUE 0.
- 01 WS-VZ                  FLOAT-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
- 01 WS-DELAY               BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -293,12 +249,7 @@
  01 L-Z                    BINARY-LONG.
  01 L-BLOCK                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-BLOCK.
-     MOVE RULE-GI-BREAK-DELAY TO WS-DELAY
-     COMPUTE WS-X = L-X + RULE-GI-BREAK-DXZ-MILLI / 1000
-     COMPUTE WS-Y = L-Y + RULE-GI-BREAK-DY-MILLI / 1000
-     COMPUTE WS-Z = L-Z + RULE-GI-BREAK-DXZ-MILLI / 1000
-     CALL "GI-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ RULE-YIELD-ITEM(L-BLOCK + 1)
-         WS-ONE WS-DELAY WS-ROW
+     CALL "GI-POP-RESOURCE" USING L-DIM L-X L-Y L-Z RULE-YIELD-ITEM(L-BLOCK + 1) WS-ONE WS-NONE WS-ROW
      GOBACK.
  END PROGRAM GI-BLOCK-YIELD.
 
@@ -313,6 +264,7 @@
  01 WS-SLOT                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -327,122 +279,142 @@
          MOVE 1 TO WS-COUNT
      END-IF
      MOVE PL-SLOT-ITEM(WS-ROW, WS-SLOT + 1) TO WS-ITEM
+     MOVE PL-SLOT-VAR(WS-ROW, WS-SLOT + 1) TO WS-VAR
      CALL "INV-REMOVE" USING WS-ROW WS-SLOT WS-COUNT
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "INV-SLOT-SEND" USING L-ID WS-SLOT
-     CALL "GI-THROW-STACK" USING WS-ROW WS-ITEM WS-COUNT
+     CALL "GI-THROW-STACK-X" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
      GOBACK.
  END PROGRAM GI-THROW.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GI-THROW-STACK.
-*> USING player row, item, count (BINARY-LONG): a ground item of that stack thrown by the player
-*> (standin §9.1 Throw: at the feet + (0, 1.3, 0), the thrown motion, pickup delay 30). The
-*> caller has already taken the stack from the inventory or the cursor.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY RULES.
- 01 WS-DELAY               BINARY-LONG.
- 01 WS-NEW                 BINARY-LONG.
- 01 WS-YAW                 FLOAT-LONG.
- 01 WS-PITCH               FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG.
- 01 WS-VY                  FLOAT-LONG.
- 01 WS-VZ                  FLOAT-LONG.
- LINKAGE SECTION.
- 01 L-ROW                  BINARY-LONG.
- 01 L-ITEM                 BINARY-LONG.
- 01 L-COUNT                BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT.
-     COMPUTE WS-YAW = PL-YAW(L-ROW) * FUNCTION PI / 180
-     COMPUTE WS-PITCH = PL-PITCH(L-ROW) * FUNCTION PI / 180
-     COMPUTE WS-VX = - FUNCTION SIN(WS-YAW) * FUNCTION COS(WS-PITCH)
-         * RULE-GI-THROW-SPEED-MILLI / 1000
-     COMPUTE WS-VY = - FUNCTION SIN(WS-PITCH) * RULE-GI-THROW-SPEED-MILLI / 1000
-         + RULE-GI-THROW-LIFT-MILLI / 1000
-     COMPUTE WS-VZ = FUNCTION COS(WS-YAW) * FUNCTION COS(WS-PITCH)
-         * RULE-GI-THROW-SPEED-MILLI / 1000
-     COMPUTE WS-Y = PL-Y(L-ROW) + RULE-GI-THROW-DY-MILLI / 1000
-     MOVE RULE-GI-THROW-DELAY TO WS-DELAY
-     CALL "GI-SPAWN" USING PL-DIM(L-ROW) PL-X(L-ROW) WS-Y PL-Z(L-ROW) WS-VX WS-VY WS-VZ
-         L-ITEM L-COUNT WS-DELAY WS-NEW
-     GOBACK.
- END PROGRAM GI-THROW-STACK.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-IN-REACH.
-*> USING player row, tracker row (BINARY-LONG), in out (BINARY-LONG 1 or 0): 1 when the player may
-*> pick the item up now: alive, in the item's dimension, and the item box overlaps or touches the
-*> player's box (standin §3) expanded by 0.75 in x and z and by 0.25 in y (§9.3; 1e-7 tolerance).
+*> USING player row, tracker row (BINARY-LONG), in out (BINARY-LONG 1 or 0): 1 when the player may touch the item now (41 section
+*> 4.1): alive, in the item's dimension, and the item box meets the player's box inflated by 1.0 horizontally and 0.5 vertically
+*> (strict comparisons: boxes that only share a face do not intersect).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
- COPY RULES.
+ COPY CITEMS.
  01 WS-REACH-XZ            FLOAT-LONG.
- 01 WS-REACH-Y             FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
- 01 WS-HALF                FLOAT-LONG.
  01 WS-ITEM-HEIGHT         FLOAT-LONG.
- 01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  01 L-IN                   BINARY-LONG.
  PROCEDURE DIVISION USING L-PLAYER L-ROW L-IN.
      MOVE 0 TO L-IN
-     COMPUTE WS-REACH-XZ = ET-WIDTH-MILLI(ET-OPERATOR + 1) / 2000
-         + RULE-GI-REACH-XZ-MILLI / 1000 + ET-WIDTH-MILLI(ET-LOOSE-ITEM + 1) / 2000
-     COMPUTE WS-REACH-Y = RULE-GI-REACH-Y-MILLI / 1000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(ET-OPERATOR + 1) / 1000
-     COMPUTE WS-ITEM-HEIGHT = ET-HEIGHT-MILLI(ET-LOOSE-ITEM + 1) / 1000
+     COMPUTE WS-REACH-XZ = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000 + 1 + ET-WIDTH-MILLI(CR-LOOSE-ITEM + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
+     COMPUTE WS-ITEM-HEIGHT = ET-HEIGHT-MILLI(CR-LOOSE-ITEM + 1) / 1000
      IF PL-USED(L-PLAYER) = 1 AND PL-ENTITY-ROW(L-PLAYER) > 0 AND PL-STATE(L-PLAYER) = PS-ALIVE
              AND PL-DIM(L-PLAYER) = EN-DIM(L-ROW)
-             AND FUNCTION ABS(EN-X(L-ROW) - PL-X(L-PLAYER)) <= WS-REACH-XZ + WS-EPSILON
-             AND FUNCTION ABS(EN-Z(L-ROW) - PL-Z(L-PLAYER)) <= WS-REACH-XZ + WS-EPSILON
-             AND EN-Y(L-ROW) + WS-ITEM-HEIGHT >= PL-Y(L-PLAYER) - WS-REACH-Y - WS-EPSILON
-             AND EN-Y(L-ROW) <= PL-Y(L-PLAYER) + WS-HEIGHT + WS-REACH-Y + WS-EPSILON
+             AND FUNCTION ABS(EN-X(L-ROW) - PL-X(L-PLAYER)) < WS-REACH-XZ
+             AND FUNCTION ABS(EN-Z(L-ROW) - PL-Z(L-PLAYER)) < WS-REACH-XZ
+             AND EN-Y(L-ROW) + WS-ITEM-HEIGHT > PL-Y(L-PLAYER) - 0.5
+             AND EN-Y(L-ROW) < PL-Y(L-PLAYER) + WS-HEIGHT + 0.5
          MOVE 1 TO L-IN
      END-IF
      GOBACK.
  END PROGRAM GI-IN-REACH.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GI-PICKUP.
-*> USING tracker row (BINARY-LONG) of a ground item whose pickup delay is 0: the pickup rules above.
+ PROGRAM-ID. GI-TOUCH.
+*> USING player row, tracker row of a ground item: ItemEntity.playerTouch of that player (41 section 4.2): the stack goes into the
+*> inventory (IP-INV-ADD); when add returned true the viewers get Take Item Entity, the entity is removed and item_picked_up is
+*> awarded; a partial transfer leaves the rest on the entity (its viewers get Set Entity Data). The taker gets Container Set Slot
+*> of the slots that changed (state id raised once).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CITEMPHYS.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-BEFORE-COUNT        BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-CHANGED             PIC 9.
+ 01 WS-BEFORE.
+    05 WS-BEFORE-SLOT OCCURS 36 TIMES.
+       10 WS-BEFORE-ITEM   BINARY-LONG.
+       10 WS-BEFORE-N      BINARY-LONG.
+       10 WS-BEFORE-VAR    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         MOVE PL-SLOT-ITEM(L-PLAYER, WS-S) TO WS-BEFORE-ITEM(WS-S)
+         MOVE PL-SLOT-COUNT(L-PLAYER, WS-S) TO WS-BEFORE-N(WS-S)
+         MOVE PL-SLOT-VAR(L-PLAYER, WS-S) TO WS-BEFORE-VAR(WS-S)
+     END-PERFORM
+     MOVE EN-ITEM-COUNT(L-ROW) TO WS-BEFORE-COUNT
+     MOVE WS-BEFORE-COUNT TO WS-LEFT
+     CALL "IP-INV-ADD" USING L-PLAYER EN-ITEM(L-ROW) WS-LEFT IP-I-VAR(L-ROW) WS-RESULT
+     IF WS-RESULT = 1
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "TAKE-ITEM-ENTITY-BUILD" USING EN-ID(L-ROW) PL-ENTITY-ID(L-PLAYER) WS-BEFORE-COUNT PB-BUFFER
+         CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     MOVE 0 TO WS-CHANGED
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF PL-SLOT-ITEM(L-PLAYER, WS-S) NOT = WS-BEFORE-ITEM(WS-S) OR PL-SLOT-COUNT(L-PLAYER, WS-S)
+                 NOT = WS-BEFORE-N(WS-S) OR PL-SLOT-VAR(L-PLAYER, WS-S) NOT = WS-BEFORE-VAR(WS-S)
+             IF WS-CHANGED = 0
+                 COMPUTE PL-STATE-ID(L-PLAYER) = FUNCTION MOD(PL-STATE-ID(L-PLAYER) + 1, 32768)
+                 MOVE 1 TO WS-CHANGED
+             END-IF
+             COMPUTE WS-SLOT = WS-S - 1
+             CALL "INV-SLOT-SEND" USING PL-CONN(L-PLAYER) WS-SLOT
+         END-IF
+     END-PERFORM
+     EVALUATE TRUE
+         WHEN WS-RESULT = 1
+             CALL "IP-STAT-ADD" USING L-PLAYER IP-STAT-PICKED EN-ITEM(L-ROW) WS-BEFORE-COUNT
+             MOVE 0 TO EN-ITEM-COUNT(L-ROW)
+             CALL "ENTITY-REMOVE" USING L-ROW
+         WHEN WS-LEFT < WS-BEFORE-COUNT
+             MOVE WS-LEFT TO EN-ITEM-COUNT(L-ROW)
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(L-ROW) EN-ITEM(L-ROW) EN-ITEM-COUNT(L-ROW) PB-BUFFER
+             CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GI-TOUCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GI-PICKUP.
+*> USING tracker row (BINARY-LONG) of a ground item whose pickup delay is 0: ItemEntity.playerTouch (41 section 4.2) for the
+*> players in reach, in the order they entered the world (PL-ENTERED), while the entity lasts: a player who is not the owner
+*> (when there is one) skips it; IP-INV-ADD moves the stack into the inventory (the patch handle with it). When add returns true
+*> the viewers get Take Item Entity (collected id, collector id, the full count) before the slot updates, the entity is removed and item_picked_up is
+*> awarded; a partial transfer (survival) sends no Take Item Entity, awards nothing and leaves the rest on the entity (its viewers
+*> get Set Entity Data). The taker gets Container Set Slot for the slots that changed (state id raised once).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMPHYS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-IN                  BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-SLOT                BINARY-LONG.
  01 WS-SHIFT               PIC 9.
- 01 WS-LEFT                BINARY-LONG.
- 01 WS-TAKEN               BINARY-LONG.
- 01 WS-ANY                 PIC 9.
  01 WS-CANDIDATES.
     05 WS-CANDIDATE        BINARY-LONG OCCURS 64 TIMES.
- 01 WS-BEFORE.
-    05 WS-BEFORE-SLOT OCCURS 36 TIMES.
-       10 WS-BEFORE-ITEM   BINARY-LONG.
-       10 WS-BEFORE-COUNT  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     IF WS-READY = 0
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         MOVE 1 TO WS-READY
-     END-IF
+     CALL "IP-ENSURE" USING L-ROW
      MOVE L-ROW TO WS-ROW
 *>   The players in reach, in entering order (insertion by PL-ENTERED).
      MOVE 0 TO WS-N
@@ -466,208 +438,140 @@
              MOVE WS-PLAYER TO WS-CANDIDATE(WS-I)
          END-IF
      END-PERFORM
-     MOVE 0 TO WS-ANY
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR EN-ITEM-COUNT(WS-ROW) = 0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR EN-USED(WS-ROW) = 0
          MOVE WS-CANDIDATE(WS-I) TO WS-PLAYER
-         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
-             MOVE PL-SLOT(WS-PLAYER, WS-S) TO WS-BEFORE-SLOT(WS-S)
-         END-PERFORM
-         CALL "INV-ADD" USING WS-PLAYER EN-ITEM(WS-ROW) EN-ITEM-COUNT(WS-ROW) WS-LEFT
-         COMPUTE WS-TAKEN = EN-ITEM-COUNT(WS-ROW) - WS-LEFT
-         IF WS-TAKEN > 0
-             MOVE 1 TO WS-ANY
-             MOVE WS-LEFT TO EN-ITEM-COUNT(WS-ROW)
-             CALL "PB-RESET" USING PB-BUFFER
-             CALL "TAKE-ITEM-ENTITY-BUILD" USING EN-ID(WS-ROW) PL-ENTITY-ID(WS-PLAYER) WS-TAKEN
-                 PB-BUFFER
-             CALL "GI-VIEWERS-SEND" USING WS-ROW PB-BUFFER
-             COMPUTE PL-STATE-ID(WS-PLAYER) = FUNCTION MOD(PL-STATE-ID(WS-PLAYER) + 1, 32768)
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
-                 IF PL-SLOT(WS-PLAYER, WS-S) NOT = WS-BEFORE-SLOT(WS-S)
-                     COMPUTE WS-SLOT = WS-S - 1
-                     CALL "INV-SLOT-SEND" USING PL-CONN(WS-PLAYER) WS-SLOT
-                 END-IF
-             END-PERFORM
+         IF IP-I-HAS-OWNER(WS-ROW) = 0 OR IP-I-OWNER(WS-ROW) = PL-UUID(WS-PLAYER)
+             CALL "GI-TOUCH" USING WS-PLAYER WS-ROW
          END-IF
      END-PERFORM
-     EVALUATE TRUE
-         WHEN EN-ITEM-COUNT(WS-ROW) = 0
-             CALL "ENTITY-REMOVE" USING WS-ROW
-         WHEN WS-ANY = 1
-             CALL "PB-RESET" USING PB-BUFFER
-             CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(WS-ROW) EN-ITEM(WS-ROW)
-                 EN-ITEM-COUNT(WS-ROW) PB-BUFFER
-             CALL "GI-VIEWERS-SEND" USING WS-ROW PB-BUFFER
-     END-EVALUATE
+     GOBACK.
      GOBACK.
  END PROGRAM GI-PICKUP.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GI-MOVE.
-*> USING tracker row (BINARY-LONG) of a ground item: §9.2 step 3 (movement) as described above.
+ PROGRAM-ID. GI-SEND-MOVE.
+*> USING tracker row, x, y, z (FLOAT-LONG, the position after the tick): the row takes the position; when it differs from the
+*> position the viewers last were told by at least the wire resolution (1/4096 block on an axis, 05a VecDelta: a creeping item
+*> whose motion rounds to nothing sends nothing) they get Teleport Entity (position, current motion, the entity's angles,
+*> on-ground) and visibility follows (ENTITY-TRACK).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
- COPY RULES.
+ COPY CITEMPHYS.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 128.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-X                   FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-Z                   FLOAT-LONG.
- 01 WS-NEW                 FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG.
- 01 WS-VY                  FLOAT-LONG.
- 01 WS-VZ                  FLOAT-LONG.
- 01 WS-RESTING             BINARY-LONG.
- 01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
- 01 WS-BX                  BINARY-LONG.
- 01 WS-BY                  BINARY-LONG.
- 01 WS-BZ                  BINARY-LONG.
- 01 WS-SOLID               BINARY-LONG.
- 01 WS-YAW                 FLOAT-SHORT VALUE 0.
- 01 WS-PITCH               FLOAT-SHORT VALUE 0.
- 01 WS-TYPE                BINARY-LONG VALUE ET-LOOSE-ITEM.
+ 01 WS-STEP                FLOAT-LONG VALUE 0.000122.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
-     IF WS-READY = 0
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         MOVE 1 TO WS-READY
-     END-IF
-     MOVE L-ROW TO WS-ROW
-     MOVE EN-DIM(WS-ROW) TO WS-DIM
-     MOVE EN-X(WS-ROW) TO WS-X
-     MOVE EN-Y(WS-ROW) TO WS-Y
-     MOVE EN-Z(WS-ROW) TO WS-Z
-     MOVE EN-VX(WS-ROW) TO WS-VX
-     MOVE EN-VY(WS-ROW) TO WS-VY
-     MOVE EN-VZ(WS-ROW) TO WS-VZ
-     MOVE EN-ON-GROUND(WS-ROW) TO WS-RESTING
-*>   3.1 Out of a block placed into the box.
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP
-     IF WS-HIT = 1
-         COMPUTE WS-Y = WS-TOP + 1
-     END-IF
-*>   3.2 A resting item falls again when the cell below is not solid.
-     IF WS-RESTING = 1
-         COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
-         COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
-         COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
-         CALL "GI-SOLID-CELL" USING WS-DIM WS-BX WS-BY WS-BZ WS-SOLID
-         IF WS-SOLID = 0
-             MOVE 0 TO WS-RESTING
-             MOVE 0 TO WS-VX WS-VY WS-VZ
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z.
+     MOVE L-X TO EN-X(L-ROW)
+     MOVE L-Y TO EN-Y(L-ROW)
+     MOVE L-Z TO EN-Z(L-ROW)
+     IF FUNCTION ABS(L-X - IP-I-SENT-X(L-ROW)) >= WS-STEP OR FUNCTION ABS(L-Y - IP-I-SENT-Y(L-ROW)) >= WS-STEP
+             OR FUNCTION ABS(L-Z - IP-I-SENT-Z(L-ROW)) >= WS-STEP
+         IF WS-READY = 0
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             MOVE 1 TO WS-READY
          END-IF
-     END-IF
-*>   3.3 to 3.5 Gravity, the moves along Y, X and Z, drag.
-     IF WS-RESTING = 0
-         COMPUTE WS-VY = WS-VY - RULE-GI-GRAVITY-MILLI / 1000
-         COMPUTE WS-NEW = WS-Y + WS-VY
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
-         EVALUATE TRUE
-             WHEN WS-HIT = 0
-                 MOVE WS-NEW TO WS-Y
-             WHEN WS-VY < 0
-                 COMPUTE WS-Y = WS-TOP + 1
-                 MOVE 1 TO WS-RESTING
-             WHEN OTHER
-                 MOVE 0 TO WS-VY
-         END-EVALUATE
-         COMPUTE WS-NEW = WS-X + WS-VX
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
-         IF WS-HIT = 0
-             MOVE WS-NEW TO WS-X
-         ELSE
-             MOVE 0 TO WS-VX
-         END-IF
-         COMPUTE WS-NEW = WS-Z + WS-VZ
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
-         IF WS-HIT = 0
-             MOVE WS-NEW TO WS-Z
-         ELSE
-             MOVE 0 TO WS-VZ
-         END-IF
-         IF WS-RESTING = 1
-             MOVE 0 TO WS-VX WS-VY WS-VZ
-         ELSE
-             COMPUTE WS-VX = WS-VX * RULE-GI-DRAG-MILLI / 1000
-             COMPUTE WS-VY = WS-VY * RULE-GI-DRAG-MILLI / 1000
-             COMPUTE WS-VZ = WS-VZ * RULE-GI-DRAG-MILLI / 1000
-         END-IF
-     END-IF
-     MOVE WS-VX TO EN-VX(WS-ROW)
-     MOVE WS-VY TO EN-VY(WS-ROW)
-     MOVE WS-VZ TO EN-VZ(WS-ROW)
-     MOVE WS-RESTING TO EN-ON-GROUND(WS-ROW)
-     IF WS-X NOT = EN-X(WS-ROW) OR WS-Y NOT = EN-Y(WS-ROW) OR WS-Z NOT = EN-Z(WS-ROW)
          CALL "PB-RESET" USING PB-BUFFER
-         CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(WS-ROW) WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ
-             WS-YAW WS-PITCH WS-RESTING PB-BUFFER
-         CALL "GI-VIEWERS-SEND" USING WS-ROW PB-BUFFER
-         MOVE WS-X TO EN-X(WS-ROW)
-         MOVE WS-Y TO EN-Y(WS-ROW)
-         MOVE WS-Z TO EN-Z(WS-ROW)
-         CALL "ENTITY-TRACK" USING WS-ROW
+         CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(L-ROW) L-X L-Y L-Z EN-VX(L-ROW) EN-VY(L-ROW) EN-VZ(L-ROW)
+             EN-YAW(L-ROW) EN-PITCH(L-ROW) EN-ON-GROUND(L-ROW) PB-BUFFER
+         CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
+         MOVE L-X TO IP-I-SENT-X(L-ROW)
+         MOVE L-Y TO IP-I-SENT-Y(L-ROW)
+         MOVE L-Z TO IP-I-SENT-Z(L-ROW)
+         CALL "ENTITY-TRACK" USING L-ROW
      END-IF
      GOBACK.
- END PROGRAM GI-MOVE.
+ END PROGRAM GI-SEND-MOVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-STEP.
-*> USING tracker row (BINARY-LONG) of a ground item: the §9.2 steps for one tick, when its chunk is
-*> loaded.
+*> USING tracker row (BINARY-LONG) of a ground item: when its chunk is loaded, the pickup attempt of the players (41 section 4) and
+*> then ItemEntity.tick (41 section 3, steps 1 to 12).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY RULES.
- 01 WS-ROW                 BINARY-LONG.
+ COPY CITEMPHYS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
- 01 WS-PLAYER              BINARY-LONG.
- 01 WS-NEAR                PIC 9.
- 01 WS-LIMIT               FLOAT-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ALIVE               BINARY-LONG.
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-PERIOD              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     MOVE L-ROW TO WS-ROW
-     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
-     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW) / 16)
-     CALL "WORLD-FIND" USING EN-DIM(WS-ROW) WS-CX WS-CZ WS-CHUNK
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW) / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW) / 16)
+     CALL "WORLD-FIND" USING EN-DIM(L-ROW) WS-CX WS-CZ WS-CHUNK
      IF WS-CHUNK = 0
          GOBACK
      END-IF
-*>   1. Pickup delay.
-     IF EN-DELAY(WS-ROW) > 0
-         SUBTRACT 1 FROM EN-DELAY(WS-ROW)
-     END-IF
-*>   2. Age and despawn.
-     COMPUTE WS-LIMIT = (RULE-GI-NEAR-MILLI / 1000) ** 2
-     MOVE 0 TO WS-NEAR
-     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         IF PL-USED(WS-PLAYER) = 1 AND PL-ENTITY-ROW(WS-PLAYER) > 0
-                 AND PL-DIM(WS-PLAYER) = EN-DIM(WS-ROW)
-                 AND (PL-X(WS-PLAYER) - EN-X(WS-ROW)) ** 2 + (PL-Y(WS-PLAYER) - EN-Y(WS-ROW)) ** 2
-                     + (PL-Z(WS-PLAYER) - EN-Z(WS-ROW)) ** 2 <= WS-LIMIT
-             MOVE 1 TO WS-NEAR
+     CALL "IP-ENSURE" USING L-ROW
+     MOVE EN-ID(L-ROW) TO WS-ID
+*>   A player's touch comes first in the tick (the players tick before the item, 4.1 and validation case 8).
+     IF EN-DELAY(L-ROW) = 0 AND EN-ITEM-COUNT(L-ROW) > 0
+         CALL "GI-PICKUP" USING L-ROW
+         IF EN-USED(L-ROW) = 0 OR EN-ID(L-ROW) NOT = WS-ID
+             GOBACK
          END-IF
-     END-PERFORM
-     IF WS-NEAR = 1
-         ADD 1 TO EN-AGE(WS-ROW)
      END-IF
-     IF EN-AGE(WS-ROW) >= RULE-GI-DESPAWN-AGE
-         CALL "ENTITY-REMOVE" USING WS-ROW
+*>   1. An empty stack is discarded.
+     IF EN-ITEM-COUNT(L-ROW) = 0
+         CALL "ENTITY-REMOVE" USING L-ROW
          GOBACK
      END-IF
-*>   3. Movement; 4. pickup.
-     CALL "GI-MOVE" USING WS-ROW
-     IF EN-DELAY(WS-ROW) = 0
-         CALL "GI-PICKUP" USING WS-ROW
+*>   2. The base tick: the tick count and the fire rules.
+     ADD 1 TO IP-I-TICKS(L-ROW)
+     CALL "IP-FIRE-TICK" USING L-ROW WS-ALIVE
+     IF WS-ALIVE = 0
+         GOBACK
+     END-IF
+*>   3. The pickup delay.
+     IF EN-DELAY(L-ROW) > 0 AND EN-DELAY(L-ROW) NOT = IP-NEVER-PICKUP
+         SUBTRACT 1 FROM EN-DELAY(L-ROW)
+     END-IF
+*>   4 to 8. Forces, the move, friction; the viewers are told the new position.
+     CALL "IP-ITEM-MOVE" USING L-ROW WS-CHANGED WS-X WS-Y WS-Z
+     CALL "GI-SEND-MOVE" USING L-ROW WS-X WS-Y WS-Z
+*>   9. Merging: every 2 ticks after a change of block cell, else every 40.
+     MOVE 40 TO WS-PERIOD
+     IF WS-CHANGED = 1
+         MOVE 2 TO WS-PERIOD
+     END-IF
+     IF FUNCTION MOD(IP-I-TICKS(L-ROW), WS-PERIOD) = 0
+         CALL "IP-MERGEABLE" USING L-ROW WS-OK
+         IF WS-OK = 1
+             CALL "IP-MERGE" USING L-ROW
+         END-IF
+         IF EN-USED(L-ROW) = 0 OR EN-ID(L-ROW) NOT = WS-ID
+             GOBACK
+         END-IF
+     END-IF
+*>   10. The age.
+     IF EN-AGE(L-ROW) NOT = IP-INFINITE-LIFETIME
+         ADD 1 TO EN-AGE(L-ROW)
+     END-IF
+*>   11. The fluids: heights, the water flag, the lava hurt.
+     CALL "IP-FLUID-SCAN" USING L-ROW
+     CALL "IP-LAVA-EFFECTS" USING L-ROW WS-ALIVE
+     IF WS-ALIVE = 0
+         GOBACK
+     END-IF
+*>   12. The lifetime.
+     IF EN-AGE(L-ROW) >= IP-LIFETIME
+         CALL "ENTITY-REMOVE" USING L-ROW
+         GOBACK
      END-IF
      GOBACK.
  END PROGRAM GI-STEP.
@@ -679,7 +583,9 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
+ COPY CITEMS.
+ COPY CITEMPHYS.
+ 01 WS-PLAYER              BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -688,9 +594,15 @@
  01 WS-ORDERS.
     05 WS-ORDER            BINARY-LONG OCCURS 1024 TIMES.
  PROCEDURE DIVISION.
+*>   The creative drop throttles of the players fall by 1 per tick (41 section 2.3.1).
+     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
+         IF IP-P-THROTTLE(WS-PLAYER) > 0
+             SUBTRACT 1 FROM IP-P-THROTTLE(WS-PLAYER)
+         END-IF
+     END-PERFORM
      MOVE 0 TO WS-N
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
-         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) = ET-LOOSE-ITEM
+         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I
              MOVE 1 TO WS-SHIFT

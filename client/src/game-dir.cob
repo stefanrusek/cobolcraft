@@ -2,9 +2,8 @@
 *> resourcepacks/, saves/ and downloads/ directories; SERVERS-LOAD and SERVERS-SAVE read and write
 *> servers.dat (gzip NBT: List "Servers" of {Name, Address, PackPolicy}) through proto NBT-FILE-READ
 *> and NBT-FILE-WRITE. Single-player worlds (US16): WORLD-FOLDER-NAME names a new world's folder,
-*> WORLDS-LIST reads the world list from saves/, WORLD-DELETE deletes a world folder. Packs (US18-2):
-*> OPTIONS-LOAD and OPTIONS-SAVE read and write options.dat (gzip NBT: List "EnabledPacks" of
-*> String, top first). A data file that cannot be read, or written, is fatal (research R14):
+*> WORLDS-LIST reads the world list from saves/, WORLD-DELETE deletes a world folder. The options
+*> (options.txt, OPTIONS-LOAD and OPTIONS-SAVE) are in options.cob. A data file that cannot be read, or written, is fatal (research R14):
 *> "FATAL client data: <path>: cannot be read" / "... cannot be written".
 
  IDENTIFICATION DIVISION.
@@ -296,7 +295,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDS-LIST.
 *> USING CLIENT-STATE: the world list from the directories of saves/ (cc_fs_list, byte order; at
-*> most CL-MAX-WORLDS): each folder's level.dat gives LevelName and GameMode (07 §9.2); a folder
+*> most CL-MAX-WORLDS): each folder's level.dat gives LevelName, GameMode (07 §9.2) and WorldType
+*> (world-types.md §2.1; a world with none is a cobolcraft world, rule 2); a folder
 *> whose level.dat cannot be read shows its folder name, survival.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -346,6 +346,7 @@
              MOVE WL-FOLDER(WL-COUNT) TO WL-NAME(WL-COUNT)
              MOVE FUNCTION MIN(WL-FOLDER-LENGTH(WL-COUNT), 64) TO WL-NAME-LENGTH(WL-COUNT)
              MOVE 0 TO WL-MODE(WL-COUNT)
+             MOVE "cobolcraft" TO WL-TYPE(WL-COUNT)
              MOVE SPACES TO WS-PATH
              STRING WS-DIRZ(1:CL-GAME-DIR-LENGTH + 6) "/" WS-ENTRY(2:WS-LENGTH - 1) "/level.dat"
                  DELIMITED BY SIZE INTO WS-PATH
@@ -362,11 +363,24 @@
                  EVALUATE TRUE
                      WHEN WS-TYPE = 0
                          CONTINUE
+*>                   A real 26.3 world (33 section 10): one compound Data holds LevelName and GameType; read
+*>                   as if in the root (its end tag ends the loop). It is a standard world, as the core decides.
+                     WHEN WN = "Data" AND WS-TYPE = 10
+                         MOVE SPACES TO WL-TYPE(WL-COUNT)
+                         MOVE "standard" TO WL-TYPE(WL-COUNT)
+                     WHEN WN = "GameType" AND WS-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                         MOVE WS-INT TO WL-MODE(WL-COUNT)
                      WHEN WN = "LevelName" AND WS-TYPE = 8
                          CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAP
                              WS-TEXT-LENGTH
                          MOVE WS-TEXT(1:64) TO WL-NAME(WL-COUNT)
                          MOVE FUNCTION MIN(WS-TEXT-LENGTH, 64) TO WL-NAME-LENGTH(WL-COUNT)
+                     WHEN WN = "WorldType" AND WS-TYPE = 8
+                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAP
+                             WS-TEXT-LENGTH
+                         MOVE SPACES TO WL-TYPE(WL-COUNT)
+                         MOVE WS-TEXT(1:16) TO WL-TYPE(WL-COUNT)
                      WHEN WN = "GameMode" AND WS-TYPE = 3
                          CALL "PB-GET-INT" USING PB-BUFFER WS-INT
                          MOVE WS-INT TO WL-MODE(WL-COUNT)
@@ -461,110 +475,3 @@
      MOVE 0 TO RETURN-CODE
      GOBACK.
  END PROGRAM WORLD-DELETE.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. OPTIONS-LOAD.
-*> USING CLIENT-STATE: the enabled pack ids (OP-ENABLED, top first) from options.dat (none when the
-*> file does not exist; at most CL-MAX-LOCAL-PACKS; other tags are skipped). Unreadable: fatal.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY PROTO.
- COPY CLCONST.
- 01 WS-FILE                PIC X(32) VALUE "options.dat".
- 01 WS-PROBLEM             PIC X(32) VALUE "cannot be read".
- 01 WS-PATH                PIC X(1100).
- 01 WS-LENGTH              BINARY-LONG.
- 01 WS-INFO                PIC X(16).
- 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
- 01 WS-OUTCOME             BINARY-LONG.
- 01 WS-FILE-FRAMING        BINARY-LONG VALUE 1.
- 01 WS-TYPE                BINARY-LONG.
- 01 WS-ETYPE               BINARY-LONG.
- 01 WS-COUNT               BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WN                     PIC X(64).
- 01 WN-CAP                 BINARY-LONG VALUE 64.
- 01 WL                     BINARY-LONG.
- 01 WS-TEXT                PIC X(80).
- 01 WS-TEXT-CAP            BINARY-LONG VALUE 80.
- 01 WS-TEXT-LENGTH         BINARY-LONG.
- LINKAGE SECTION.
- COPY CLSTATE.
- PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO OP-COUNT
-     CALL "GAME-DATA-PATH" USING CLIENT-STATE WS-FILE WS-PATH WS-LENGTH
-     CALL "CBL_CHECK_FILE_EXIST" USING WS-PATH WS-INFO
-     IF RETURN-CODE NOT = 0
-         MOVE 0 TO RETURN-CODE
-         GOBACK
-     END-IF
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "NBT-FILE-READ" USING WS-PATH WS-LENGTH PB-BUFFER WS-OUTCOME
-     CALL "GAME-DATA-CHECK" USING WS-OUTCOME WS-PATH WS-LENGTH WS-PROBLEM
-     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FILE-FRAMING WS-TYPE
-     MOVE 1 TO WS-TYPE
-     PERFORM UNTIL WS-TYPE = 0
-         MOVE SPACES TO WN
-         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WN-CAP WL
-         EVALUATE TRUE
-             WHEN WS-TYPE = 0
-                 CONTINUE
-             WHEN WN = "EnabledPacks" AND WS-TYPE = 9
-                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ETYPE WS-COUNT
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
-                     IF WS-ETYPE = 8 AND OP-COUNT < CL-MAX-LOCAL-PACKS
-                         MOVE SPACES TO WS-TEXT
-                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAP
-                             WS-TEXT-LENGTH
-                         ADD 1 TO OP-COUNT
-                         MOVE WS-TEXT TO OP-ID(OP-COUNT)
-                         MOVE WS-TEXT-LENGTH TO OP-ID-LENGTH(OP-COUNT)
-                     ELSE
-                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ETYPE
-                     END-IF
-                 END-PERFORM
-             WHEN OTHER
-                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
-         END-EVALUATE
-     END-PERFORM
-     CALL "PB-FREE" USING PB-BUFFER
-     GOBACK.
- END PROGRAM OPTIONS-LOAD.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. OPTIONS-SAVE.
-*> USING CLIENT-STATE: writes options.dat from the enabled pack ids. A failed write is fatal.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY PROTO.
- 01 WS-FILE                PIC X(32) VALUE "options.dat".
- 01 WS-PROBLEM             PIC X(32) VALUE "cannot be written".
- 01 WS-PATH                PIC X(1100).
- 01 WS-LENGTH              BINARY-LONG.
- 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
- 01 WS-OUTCOME             BINARY-LONG.
- 01 WS-STRING              BINARY-LONG VALUE 8.
- 01 WS-ELEMENT             BINARY-LONG VALUE -1.
- 01 WS-I                   BINARY-LONG.
- 01 WN                     PIC X(16).
- 01 WL                     BINARY-LONG.
- LINKAGE SECTION.
- COPY CLSTATE.
- PROCEDURE DIVISION USING CLIENT-STATE.
-     CALL "GAME-DATA-PATH" USING CLIENT-STATE WS-FILE WS-PATH WS-LENGTH
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     MOVE SPACES TO WN
-     MOVE 0 TO WL
-     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-     MOVE "EnabledPacks" TO WN
-     MOVE 12 TO WL
-     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-STRING OP-COUNT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > OP-COUNT
-         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT OP-ID(WS-I) OP-ID-LENGTH(WS-I)
-     END-PERFORM
-     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-     CALL "NBT-FILE-WRITE" USING WS-PATH WS-LENGTH PB-BUFFER WS-OUTCOME
-     CALL "GAME-DATA-CHECK" USING WS-OUTCOME WS-PATH WS-LENGTH WS-PROBLEM
-     CALL "PB-FREE" USING PB-BUFFER
-     GOBACK.
- END PROGRAM OPTIONS-SAVE.

@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0001
 type: feature
-status: draft
+status: implementing
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,9 @@ relations:
   depends_on: []
   relates_to: [CC-0002, CC-0007]
   supersedes: []
-implementation: []
+implementation:
+  branch: 002-client-polish
+  pr: 2
 ---
 
 # CC-0001: Client polish: visuals, controls and missing gameplay

@@ -1,0 +1,46 @@
+# Reject archives for the extraction tool (22 sections 4.2, 7.3, 7.4, 12 T9). One line per file: <file> <code>.
+# Made by tools/make_fixtures.py; every archive is tiny and hand-made, none is or contains a real jar.
+# c-*: the archive as a whole, C1 to C4 of 22 section 4.2 and the zip checks (CCX-020, 021, 030, 031).
+# t-*: one entry is bad; the code is the one the entry reader of 7.3 step 7 raises (CCX-040 to 044). A tool that
+#      identifies the jar first (C4) reaches these only for an identified jar, so they are the tests of
+#      ZIP-READ-RANGE and EX-WALK on an archive opened directly.
+# ok-*: a baseline that reads cleanly (code "ok").
+# C5 (CCX-045) and the size-known/digest-known rows cannot be built without the real jar and are tested with it.
+# ok-small.zip: two entries (deflated a.txt = 'hello world', stored b.txt): reads cleanly; the good baseline
+ok-small.zip ok
+# c-too-short.bin: 10 bytes: too short for an end record (22 byte minimum)
+c-too-short.bin CCX-020
+# c-not-a-zip.bin: text: no end record
+c-not-a-zip.bin CCX-020
+# c-no-end-record.zip: a valid archive whose end record signature is damaged: no end record
+c-no-end-record.zip CCX-020
+# c-central-mismatch.zip: end record counts 3 entries and a 999-byte central directory: does not match
+c-central-mismatch.zip CCX-020
+# c-bad-central-record.zip: the central record signature is wrong: bad central record at entry 0
+c-bad-central-record.zip CCX-020
+# c-zip64.zip: central sizes 0xFFFFFFFF with a zip64 extra field: zip64
+c-zip64.zip CCX-021
+# c-several-disks.zip: end record disk number 1: several disks
+c-several-disks.zip CCX-021
+# c-encrypted.zip: entry a.txt has general purpose flag bit 0: encrypted entry
+c-encrypted.zip CCX-021
+# c-method-99.zip: entry a.txt uses compression method 99
+c-method-99.zip CCX-021
+# c-no-version-json.zip: no version.json: the id is unknown
+c-no-version-json.zip CCX-030
+# c-wrong-id.zip: version.json says id 99.9, not in the table
+c-wrong-id.zip CCX-030
+# c-right-id-wrong-digest.zip: version.json says 26.3 but size and digest differ from the row
+c-right-id-wrong-digest.zip CCX-031
+# t-bad-crc.zip: stored a.txt whose recorded CRC-32 is 0xdeadbeef
+t-bad-crc.zip CCX-040
+# t-bad-deflate.zip: a.txt method 8 with data that is not deflate: bad deflate data
+t-bad-deflate.zip CCX-041
+# t-size-mismatch.zip: a.txt inflates to 11 bytes but the record says 20: size 11 instead of 20
+t-size-mismatch.zip CCX-041
+# t-local-mismatch.zip: the local header names b.txt, the central record a.txt
+t-local-mismatch.zip CCX-042
+# t-bad-path.zip: entry name with a .. segment cannot become a pack path
+t-bad-path.zip CCX-043
+# t-duplicate-path.zip: two entries map to the same output path
+t-duplicate-path.zip CCX-044

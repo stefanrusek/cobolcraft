@@ -23,6 +23,11 @@
  01 WS-SOLID               BINARY-LONG.
  01 WS-PEAK                FLOAT-LONG.
  01 WS-EDIT                PIC -(4)9.9(4).
+ 01 WS-ABILITIES           BINARY-LONG.
+ 01 WS-JUMPS               BINARY-LONG.
+ 01 WS-WAS-GROUND          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-OK                  PIC 9.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
 *>   The pause menu: W held does not walk; lifted 0.5 above the floor the Player still falls.
@@ -97,6 +102,43 @@
      MOVE "physics solid cells: an unloaded chunk 1, below the world 0, above it 0, greystone 1"
          TO TL-CASE
      MOVE "1001" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Held Space on the ground in survival (edge case): the jump repeats on landing and the Player
+*>   never rises above one jump height (1.25) over the floor.
+     MOVE 0 TO WS-X WS-Z
+     MOVE 12 TO WS-Y
+     MOVE 0 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-ABILITIES
+     MOVE 0 TO PL-ABILITIES PL-FLYING
+     MOVE 10 TO PL-Y
+     MOVE 0 TO PL-VY
+     MOVE 1 TO PL-ON-GROUND
+     MOVE 0 TO WS-PEAK WS-JUMPS
+     MOVE 1 TO WS-WAS-GROUND
+     MOVE CC-KEY-SPACE TO WS-KEY
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-DOWN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+         IF PL-Y - 10 > WS-PEAK
+             COMPUTE WS-PEAK = PL-Y - 10
+         END-IF
+         IF PL-ON-GROUND = 0 AND WS-WAS-GROUND = 1
+             ADD 1 TO WS-JUMPS
+         END-IF
+         MOVE PL-ON-GROUND TO WS-WAS-GROUND
+         CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     END-PERFORM
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-UP
+     MOVE "physics held Space on the ground in survival repeats the jump (at least 3 jumps in 3 s) and "
+         & "never rises above one jump height" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 0 TO WS-OK
+     IF WS-JUMPS >= 3 AND WS-PEAK <= 1.26 AND WS-PEAK > 1.0
+         MOVE 1 TO WS-OK
+     END-IF
+     STRING "ok " WS-OK PL-FLYING DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "ok 10" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-PHYSICS.

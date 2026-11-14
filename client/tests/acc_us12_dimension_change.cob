@@ -5,7 +5,7 @@
 *> cobolcraft:subroutine (type cobolcraft:sunless: y 0 to 127, no sky light) arrives, and the server's
 *> first chunk of the new dimension, (0, 0) again, follows in the same read, before the next frame. The
 *> next frame draws none of the old dimension's section meshes and frees every mesh slot of the row
-*> (an upload with no vertices for each of its 32 slots), although the new chunk took the same row.
+*> (an upload with no vertices for each of its 48 slots), although the new chunk took the same row.
 *> Once the new chunk is meshed, only sections below y 128 are drawn, the sky is the fixed #100C12
 *> (16, 12, 18), and the HUD still shows the 12 greystone, health 17 and food 9 in survival.
 *> The Subroutine chunk is built here with the proto encoders: baseplate at y 0, greystone 1 to 28, slag
@@ -61,6 +61,7 @@
      MOVE 0 TO PL-YAW PL-PITCH
      MOVE 6000 TO PL-TIME
      CALL "SKY-UPDATE" USING CLIENT-STATE
+     MOVE 1000000000 TO MB-BUDGET-US
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
      PERFORM COUNT-DRAWS
@@ -79,17 +80,18 @@
      PERFORM COUNT-DRAWS
      MOVE "acceptance US12-1 client half: given the spawn chunk drawn when Respawn into "
          & "cobolcraft:subroutine and its chunk (0, 0) arrive before a frame then that frame "
-         & "draws no old mesh and frees the row's 32 slots" TO TL-CASE
+         & "draws no old mesh and frees the row's 48 slots" TO TL-CASE
      PERFORM DRAWS-TEXT
      MOVE WS-FREES TO WS-E4
      STRING FUNCTION TRIM(TL-OBSERVED) " frees " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE
          INTO TL-OBSERVED
-     MOVE "draws 0 top 0 frees 32" TO TL-EXPECTED
+     MOVE "draws 0 top 0 frees 48" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 8.5 TO PL-X PL-Z
      MOVE 32 TO PL-Y
      CALL "SKY-UPDATE" USING CLIENT-STATE
+     MOVE 1000000000 TO MB-BUDGET-US
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
      PERFORM COUNT-DRAWS
@@ -113,7 +115,7 @@
      STRING FUNCTION TRIM(TL-OBSERVED) " mode " FUNCTION TRIM(WS-E3) " hud "
          FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "draws 2 top 2 y 0/128 sky-light 0 sky 16 12 18 mode 0 hud "
-         & "+|12|||||||||Health 17/30|Food 9/24" TO TL-EXPECTED
+         & "|Loading terrain...|12|||||||||Health 17/20|Food 9/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
@@ -124,7 +126,7 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
          IF RL-D-SLOT(WS-I) >= MESH-SLOT-BASE AND RL-D-SLOT(WS-I) < MESH-SLOT-ENTITIES
              ADD 1 TO WS-DRAWS
-             COMPUTE WS-S = FUNCTION MOD(RL-D-SLOT(WS-I) - MESH-SLOT-BASE, 32)
+             COMPUTE WS-S = FUNCTION MOD(RL-D-SLOT(WS-I) - MESH-SLOT-BASE, 48)
              DIVIDE WS-S BY 2 GIVING WS-S
              ADD 1 TO WS-S
              IF WS-S > WS-TOP
@@ -133,7 +135,7 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-UPLOAD-COUNT
-         IF RL-U-SLOT(WS-I) >= MESH-SLOT-BASE AND RL-U-SLOT(WS-I) < MESH-SLOT-BASE + 32
+         IF RL-U-SLOT(WS-I) >= MESH-SLOT-BASE AND RL-U-SLOT(WS-I) < MESH-SLOT-BASE + 48
                  AND RL-U-COUNT(WS-I) = 0
              ADD 1 TO WS-FREES
          END-IF

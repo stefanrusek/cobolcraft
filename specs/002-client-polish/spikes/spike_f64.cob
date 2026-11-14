@@ -1,0 +1,33 @@
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPIKE-F64.
+*> spike (throwaway): IEEE double add and multiply through the by-reference glue of spike_f64.c; checks 0.1 + 0.2 (operands loaded from their exact bit patterns)
+*> and 0.1 * 3 (both 0.30000000000000004 in IEEE double) and measures 2,000,000 multiply-adds (2 calls each).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-A                   FLOAT-LONG VALUE 1.0000001.
+ 01 WS-B                   FLOAT-LONG VALUE 0.9999999.
+ 01 WS-C                   FLOAT-LONG VALUE 0.
+ 01 WS-P                   FLOAT-LONG.
+ 01 WS-X-BITS              BINARY-DOUBLE UNSIGNED VALUE 4591870180066957722.
+ 01 WS-X REDEFINES WS-X-BITS FLOAT-LONG.
+ 01 WS-Y-BITS              BINARY-DOUBLE UNSIGNED VALUE 4596373779694328218.
+ 01 WS-Y REDEFINES WS-Y-BITS FLOAT-LONG.
+ 01 WS-X3-BITS             BINARY-DOUBLE UNSIGNED VALUE 4613937818241073152.
+ 01 WS-X3 REDEFINES WS-X3-BITS FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-T0                  PIC 9(8).
+ 01 WS-T1                  PIC 9(8).
+ PROCEDURE DIVISION.
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-X WS-Y WS-R
+     DISPLAY "0.1+0.2 = " WS-R " hex " FUNCTION HEX-OF(WS-R)
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-X WS-X3 WS-R
+     DISPLAY "0.1*3   = " WS-R " hex " FUNCTION HEX-OF(WS-R)
+     ACCEPT WS-T0 FROM TIME
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 2000000
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-A WS-B WS-P
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-P WS-C WS-C
+     END-PERFORM
+     ACCEPT WS-T1 FROM TIME
+     DISPLAY "2,000,000 multiply-adds  HHMMSScc " WS-T0 " -> " WS-T1
+     STOP RUN.
