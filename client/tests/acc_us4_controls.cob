@@ -170,7 +170,7 @@
      MOVE "acceptance US4-3 client half given the player is airborne when greystone is broken by hand then stop destroy "
          & "is not sent after 2.4 s and follows once 11.25 s have passed" TO TL-CASE
      PERFORM STEPS-TEXT
-     MOVE "29000000000000000009010b | - | 29030000000000000009010c | -" TO TL-EXPECTED
+     MOVE "29000000000000000009010c | - | 29030000000000000009010d | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
