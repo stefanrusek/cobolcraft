@@ -287,6 +287,15 @@
                      MOVE 1 TO L-RESULT
                  END-IF
              END-IF
+*>       has_sturdy_face: the block at the offset is a full block (opaque; air, water and lava never are)
+         WHEN 4
+             CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+             CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+             IF LS-BLOCK > 0
+                 IF CB-OPAQUE(LS-BLOCK) = 1
+                     MOVE 1 TO L-RESULT
+                 END-IF
+             END-IF
          WHEN 8
              IF LS-Y >= FL-MIN-Y AND LS-Y <= FL-MIN-Y + FL-HEIGHT - 1
                  MOVE 1 TO L-RESULT
@@ -310,6 +319,36 @@
              CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
              CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
              CALL "FR-POOL-HAS" USING PR-POOL(L-PRED) PR-N(L-PRED) LS-BLOCK L-RESULT
+*>           sugar cane (24 part 3 7.10.2): sugar cane below, or a block of supports_sugar_cane with water or a block of supports_sugar_cane_adjacently beside it
+             IF PR-A(L-PRED) = 2
+                 MOVE 0 TO L-RESULT
+                 IF LS-BLOCK = PR-E(L-PRED)
+                     MOVE 1 TO L-RESULT
+                 ELSE
+                     CALL "FR-POOL-HAS" USING PR-POOL(L-PRED) PR-N(L-PRED) LS-BLOCK LS-K
+                     PERFORM VARYING LS-DX FROM 0 BY 1 UNTIL LS-DX > 3 OR LS-K = 0 OR L-RESULT = 1
+                         MOVE LS-X TO LS-V
+                         MOVE LS-Z TO LS-R
+                         EVALUATE LS-DX
+                             WHEN 0
+                                 ADD 1 TO LS-V
+                             WHEN 1
+                                 SUBTRACT 1 FROM LS-V
+                             WHEN 2
+                                 ADD 1 TO LS-R
+                             WHEN OTHER
+                                 SUBTRACT 1 FROM LS-R
+                         END-EVALUATE
+                         CALL "FL-GET-STATE" USING LS-V LS-Y LS-R LS-STATE
+                         CALL "FL-CLASS" USING LS-STATE LS-CLASS
+                         CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+                         CALL "FR-POOL-HAS" USING PR-C(L-PRED) PR-D(L-PRED) LS-BLOCK LS-DZ
+                         IF LS-CLASS = 2 OR LS-DZ = 1
+                             MOVE 1 TO L-RESULT
+                         END-IF
+                     END-PERFORM
+                 END-IF
+             END-IF
          WHEN 11
              CALL "FR-PRED-TEST" USING PR-CHILD(L-PRED) L-X L-Y L-Z LS-R
              COMPUTE L-RESULT = 1 - LS-R
@@ -353,6 +392,8 @@
  01 WS-DRAW                BINARY-LONG.
  01 WS-RUN                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-P4.
+    05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-PV                   BINARY-LONG.
@@ -388,6 +429,17 @@
                  CALL "WGR-NEXT-INT-BOUND" USING L-STATE PV-N(L-PV) WS-DRAW
                  MOVE FD-POOL(PV-POOL(L-PV) + WS-DRAW) TO WS-BLOCK
                  MOVE CB-DEFAULT-STATE(WS-BLOCK) TO L-STATE-OUT
+                 MOVE 1 TO L-OK
+             END-IF
+*>       randomized_int: one sample of the values picks the state resolved when the data was compiled
+         WHEN 4
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 MOVE PV-IP-V(L-PV, WS-I) TO WS-Q(WS-I)
+             END-PERFORM
+             CALL "FR-INT-SAMPLE" USING L-STATE WS-P4 WS-DRAW
+             COMPUTE WS-RUN = WS-DRAW - PV-LO(L-PV)
+             IF WS-RUN >= 0 AND WS-RUN < PV-N(L-PV)
+                 MOVE FD-POOL(PV-POOL(L-PV) + WS-RUN) TO L-STATE-OUT
                  MOVE 1 TO L-OK
              END-IF
      END-EVALUATE
@@ -959,6 +1011,10 @@
      MOVE 0 TO L-RESULT
      CALL "FD-ENSURE-FT" USING L-FT
      EVALUATE FT-TYPE(L-FT)
+         WHEN 2
+             CALL "FR-BLOCK-COLUMN" USING L-STATE FT-A(L-FT) L-X L-Y L-Z L-RESULT
+         WHEN 54
+             CALL "FR-VINES" USING L-X L-Y L-Z L-RESULT
          WHEN 30
              MOVE 1 TO L-RESULT
          WHEN 36

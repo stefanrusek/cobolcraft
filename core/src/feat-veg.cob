@@ -7,6 +7,7 @@
 *>   FV-DOUBLE-KEY USING block key (PIC X(80), with namespace), flag out: 1 for a double plant (two halves, property half).
 *>   FR-SURV-OPEN: builds FEAT-SURV for the block table epoch (once per epoch).
 *>   FR-CAN-SURVIVE USING state, x, y, z, ok out: the survival rule of the block of the state at the cell (the block below is read from the level).
+*>   FR-SIMPLE-BLOCK USING state, x, y, z, result out: the placement of simple_block after the provider's state.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-GATE.
@@ -47,8 +48,18 @@
     05 FILLER PIC X(32) VALUE "minecraft:patch_waterlily".
     05 FILLER PIC 99 VALUE 19.
     05 FILLER PIC X(32) VALUE "minecraft:seagrass_".
+    05 FILLER PIC 99 VALUE 26.
+    05 FILLER PIC X(32) VALUE "minecraft:patch_sugar_cane".
+    05 FILLER PIC 99 VALUE 15.
+    05 FILLER PIC X(32) VALUE "minecraft:kelp_".
+    05 FILLER PIC 99 VALUE 20.
+    05 FILLER PIC X(32) VALUE "minecraft:sea_pickle".
+    05 FILLER PIC 99 VALUE 21.
+    05 FILLER PIC X(32) VALUE "minecraft:patch_berry".
+    05 FILLER PIC 99 VALUE 15.
+    05 FILLER PIC X(32) VALUE "minecraft:vines".
  01 WS-FAMILY-TABLE REDEFINES WS-FAMILIES.
-    05 WS-FAMILY OCCURS 16 TIMES.
+    05 WS-FAMILY OCCURS 21 TIMES.
        10 WS-FAMILY-LENGTH    PIC 99.
        10 WS-FAMILY-PREFIX    PIC X(32).
  01 WS-I                   BINARY-LONG.
@@ -60,7 +71,7 @@
      MOVE 1 TO L-FLAG
      IF FI-GATE = 1
          MOVE 0 TO L-FLAG
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16 OR L-FLAG = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21 OR L-FLAG = 1
              MOVE WS-FAMILY-LENGTH(WS-I) TO WS-N
              IF L-KEY(1:WS-N) = WS-FAMILY-PREFIX(WS-I)(1:WS-N)
                  MOVE 1 TO L-FLAG
@@ -138,10 +149,18 @@
     05 WS-BIT              BINARY-LONG OCCURS 5 TIMES.
  01 WS-HAS                 BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
+ 01 WS-VINE                BINARY-LONG.
+ 01 WS-FACE                PIC X(40).
+ 01 WS-TRUE                PIC X(40) VALUE "true".
+ 01 WS-FOUND               BINARY-LONG.
  PROCEDURE DIVISION.
      IF FS-EPOCH = CB-EPOCH + 1
          GOBACK
      END-IF
+     MOVE 0 TO WS-VINE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         MOVE 0 TO FS-VINE(WS-I)
+     END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
          MOVE 0 TO FS-RULE(WS-I) FS-UPPER(WS-I) FS-SUP(WS-I)
          CALL "KEY-NAMESPACED" USING CB-KEY(WS-I) WS-FULL
@@ -150,6 +169,7 @@
              WHEN "minecraft:fern"
              WHEN "minecraft:bush"
              WHEN "minecraft:red_shrub"
+             WHEN "minecraft:sweet_berry_bush"
              WHEN "minecraft:tall_grass"
              WHEN "minecraft:large_fern"
                  MOVE 1 TO FS-RULE(WS-I)
@@ -162,9 +182,14 @@
                  MOVE 3 TO FS-RULE(WS-I)
              WHEN "minecraft:lily_pad"
                  MOVE 4 TO FS-RULE(WS-I)
+             WHEN "minecraft:vine"
+                 MOVE WS-I TO WS-VINE
              WHEN "minecraft:seagrass"
-             WHEN "minecraft:tall_seagrass"
                  MOVE 5 TO FS-RULE(WS-I)
+             WHEN "minecraft:sea_pickle"
+                 MOVE 6 TO FS-RULE(WS-I)
+             WHEN "minecraft:tall_seagrass"
+                 MOVE 7 TO FS-RULE(WS-I)
          END-EVALUATE
      END-PERFORM
 *>   the tags: flowers stand on supports_vegetation; the other tags are bits of the block below
@@ -203,6 +228,27 @@
              END-IF
          END-IF
      END-PERFORM
+*>   the vine states: the default vine (every face false) with the face of each direction true
+     IF WS-VINE > 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+             EVALUATE WS-I
+                 WHEN 1
+                     MOVE "up" TO WS-FACE
+                 WHEN 2
+                     MOVE "north" TO WS-FACE
+                 WHEN 3
+                     MOVE "south" TO WS-FACE
+                 WHEN 4
+                     MOVE "west" TO WS-FACE
+                 WHEN OTHER
+                     MOVE "east" TO WS-FACE
+             END-EVALUATE
+             CALL "FD-STATE-SET" USING CB-DEFAULT-STATE(WS-VINE) WS-FACE WS-TRUE WS-STATE WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE WS-STATE TO FS-VINE(WS-I)
+             END-IF
+         END-PERFORM
+     END-IF
      COMPUTE FS-EPOCH = CB-EPOCH + 1
      GOBACK.
  END PROGRAM FR-SURV-OPEN.
@@ -273,12 +319,27 @@
              IF WS-CLASS = 2 AND WS-HAS NOT = 2 AND WS-HAS NOT = 3
                  MOVE 1 TO L-OK
              END-IF
-*>       seagrass: a full block below that cannot-support-seagrass does not list
+*>       seagrass: a full block below that cannot-support-seagrass does not list; tall seagrass (7) also needs water in its own cell
          WHEN 5
+         WHEN 7
              COMPUTE WS-Q = WS-SUP / 16
              COMPUTE WS-HAS = FUNCTION MOD(WS-Q, 2)
              IF WS-BELOW > 0 AND (WS-CLASS = 0 OR WS-CLASS = 4) AND WS-HAS = 0
                  IF CB-OPAQUE(WS-BELOW) = 1
+                     MOVE 1 TO L-OK
+                 END-IF
+             END-IF
+             IF FS-RULE(WS-BLOCK) = 7 AND L-OK = 1
+                 CALL "FL-GET-STATE" USING L-X L-Y L-Z WS-BSTATE
+                 CALL "FL-CLASS" USING WS-BSTATE WS-CLASS
+                 IF WS-CLASS NOT = 2
+                     MOVE 0 TO L-OK
+                 END-IF
+             END-IF
+*>       a sea pickle: the collision shape of the block below has a face upward (a solid block)
+         WHEN 6
+             IF WS-BELOW > 0 AND (WS-CLASS = 0 OR WS-CLASS = 4)
+                 IF CB-SOLID(WS-BELOW) = 1
                      MOVE 1 TO L-OK
                  END-IF
              END-IF
@@ -327,7 +388,7 @@
              COMPUTE WS-YA = L-Y + 1
              CALL "FL-GET-STATE" USING L-X WS-YA L-Z WS-ABOVE
              CALL "FL-CLASS" USING WS-ABOVE WS-CLASS
-             IF WS-CLASS = 1 OR (WS-CLASS = 2 AND FS-RULE(WS-BLOCK) = 5)
+             IF WS-CLASS = 1 OR (WS-CLASS = 2 AND FS-RULE(WS-BLOCK) = 7)
                  CALL "FL-SET-STATE" USING L-X L-Y L-Z L-STATE WS-FLAGS WS-OK
                  CALL "FL-SET-STATE" USING L-X WS-YA L-Z FS-UPPER(WS-BLOCK) WS-FLAGS WS-OK
                  MOVE 1 TO L-RESULT
@@ -339,3 +400,62 @@
      MOVE 1 TO L-RESULT
      GOBACK.
  END PROGRAM FR-SIMPLE-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FR-VINES.
+*> USING x, y, z, result out: the vines feature (35-4 section 7.1, no draws): the origin must be air; for the directions UP, NORTH, SOUTH, WEST, EAST the first with a neighbour a vine can
+*> attach to (a block with a collision face toward the vine, approximated by a solid block: leaves and logs included) gets the vine with only that face (flags 2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY FEATSURV.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 2.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-RESULT.
+     MOVE 0 TO L-RESULT
+     CALL "FR-SURV-OPEN"
+     CALL "FL-GET-STATE" USING L-X L-Y L-Z WS-STATE
+     CALL "FL-CLASS" USING WS-STATE WS-CLASS
+     IF WS-CLASS NOT = 1
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 5 OR L-RESULT = 1
+         MOVE L-X TO WS-X
+         MOVE L-Y TO WS-Y
+         MOVE L-Z TO WS-Z
+         EVALUATE WS-D
+             WHEN 1
+                 ADD 1 TO WS-Y
+             WHEN 2
+                 SUBTRACT 1 FROM WS-Z
+             WHEN 3
+                 ADD 1 TO WS-Z
+             WHEN 4
+                 SUBTRACT 1 FROM WS-X
+             WHEN OTHER
+                 ADD 1 TO WS-X
+         END-EVALUATE
+         CALL "FL-GET-STATE" USING WS-X WS-Y WS-Z WS-STATE
+         CALL "FL-CLASS" USING WS-STATE WS-CLASS
+         CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
+         IF WS-BLOCK > 0 AND (WS-CLASS = 0 OR WS-CLASS = 4) AND FS-VINE(WS-D) > 0
+             IF CB-SOLID(WS-BLOCK) = 1
+                 CALL "FL-SET-STATE" USING L-X L-Y L-Z FS-VINE(WS-D) WS-FLAGS WS-OK
+                 MOVE 1 TO L-RESULT
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FR-VINES.

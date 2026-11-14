@@ -60,9 +60,27 @@
      MOVE "minecraft:red_mushroom_normal" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: the mushroom patches are admitted" TO TL-CASE
      PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:patch_berry_common" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: the sweet berry patches are admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
      MOVE "minecraft:seagrass_deep" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: seagrass is admitted" TO TL-CASE
      PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:patch_sugar_cane_swamp" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: the sugar cane patches are admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:kelp_warm" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: kelp is admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:sea_pickle" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: the sea pickle patch is admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:vines" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: the vines feature is admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:classic_vines_cave_feature" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: the cave vines stay off" TO TL-CASE
+     PERFORM CHECK-GATE-ZERO
      MOVE "minecraft:glow_lichen" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: an unsupported family (glow lichen) stays off" TO TL-CASE
      PERFORM CHECK-GATE-ZERO
@@ -146,6 +164,17 @@
      PERFORM WANT-STATE-PAIRS
      MOVE "acceptance US12 35-4§4 `simple_block`: the provider state carries its properties (sweet_berry_bush age 3)" TO TL-CASE
      PERFORM EXPECT-STATE
+     MOVE 28 TO WS-X
+     MOVE 38 TO WS-Z
+     MOVE "stone" TO WS-KEY
+     PERFORM PUT-BELOW
+     MOVE "minecraft:berry" TO WS-PFKEY
+     PERFORM PLACE
+     MOVE 0 TO WS-WANT
+     MOVE "acceptance US12 29b§8 sweet berry bush: the block below must be in supports_vegetation (stone refuses it)" TO TL-CASE
+     PERFORM EXPECT-STATE
+     MOVE 22 TO WS-X
+     MOVE 40 TO WS-Z
      MOVE "minecraft:badprop" TO WS-PFKEY
      CALL "FD-GET-PF" USING WS-PFKEY WS-PF
      CALL "FD-ENSURE-PF" USING WS-PF
@@ -342,6 +371,83 @@
      MOVE "water" TO WS-KEY
      PERFORM WANT-STATE
      MOVE "acceptance US12 35-4§4 `simple_block`: tall seagrass under stone is refused (the water stays)" TO TL-CASE
+     PERFORM EXPECT-STATE
+*>   vines (35-4 section 7.1): the first of up, north, south, west, east with a block to attach to
+     MOVE 18 TO WS-X
+     MOVE 45 TO WS-Z
+     MOVE "air" TO WS-KEY
+     PERFORM PUT-BELOW
+     MOVE "stone" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     COMPUTE WS-Z = WS-Z - 1
+     PERFORM PUT-CELL
+     COMPUTE WS-Z = WS-Z + 1
+     MOVE "minecraft:vines" TO WS-PFKEY
+     PERFORM PLACE
+     MOVE "vine" TO WS-KEY
+     MOVE "east=false,north=true,south=false,up=false,west=false" TO WS-PAIRS
+     PERFORM WANT-STATE-PAIRS
+     MOVE "acceptance US12 35-4§7.1 `vines`: a block to the north gives a vine with only the north face" TO TL-CASE
+     PERFORM EXPECT-STATE
+     MOVE 20 TO WS-X
+     MOVE "air" TO WS-KEY
+     PERFORM PUT-BELOW
+     MOVE "stone" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     COMPUTE WS-Y = WS-Y + 1
+     PERFORM PUT-CELL
+     COMPUTE WS-Y = WS-Y - 1
+     COMPUTE WS-X = WS-X + 1
+     PERFORM PUT-CELL
+     COMPUTE WS-X = WS-X - 1
+     PERFORM PLACE
+     MOVE "vine" TO WS-KEY
+     MOVE "east=false,north=false,south=false,up=true,west=false" TO WS-PAIRS
+     PERFORM WANT-STATE-PAIRS
+     MOVE "acceptance US12 35-4§7.1 `vines`: with blocks above and to the east the first direction (up) wins" TO TL-CASE
+     PERFORM EXPECT-STATE
+     MOVE 28 TO WS-X
+     MOVE "air" TO WS-KEY
+     PERFORM PUT-BELOW
+     PERFORM PLACE
+     MOVE "acceptance US12 35-4§7.1 `vines`: nothing to attach to returns false and writes nothing" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-RESULT * 1000
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 24 TO WS-X
+     MOVE "stone" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     PERFORM PUT-CELL
+     COMPUTE WS-X = WS-X + 1
+     PERFORM PUT-CELL
+     COMPUTE WS-X = WS-X - 1
+     PERFORM PLACE
+     PERFORM READ-STATE
+     MOVE "acceptance US12 35-4§7.1 `vines`: an origin that is not air returns false and keeps its block" TO TL-CASE
+     MOVE WS-STATE TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   a state outside the table has no rule
+     MOVE 999999 TO WS-STATE
+     CALL "FR-CAN-SURVIVE" USING WS-STATE WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US12 24§7.2 plants: a state that no block owns has no survival rule (survives)" TO TL-CASE
+     MOVE WS-OK TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   tall seagrass needs water in its own cell: a lower half in air is refused although water lies above
+     MOVE 29 TO WS-X
+     MOVE 42 TO WS-Z
+     MOVE "sand" TO WS-KEY
+     PERFORM PUT-BELOW
+     MOVE "water" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     COMPUTE WS-Y = WS-Y + 1
+     PERFORM PUT-CELL
+     COMPUTE WS-Y = WS-Y - 1
+     MOVE "minecraft:tsgrass" TO WS-PFKEY
+     PERFORM PLACE
+     MOVE 0 TO WS-WANT
+     MOVE "acceptance US12 35-5§13.1 tall seagrass: the lower half needs full water at its own cell: air there refuses it" TO TL-CASE
      PERFORM EXPECT-STATE
      FREE WS-PTR
      GOBACK.

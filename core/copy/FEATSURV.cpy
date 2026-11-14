@@ -4,6 +4,8 @@
 *> 2 supports_dry_vegetation, 4 overrides_mushroom_light_requirement, 8 supports_lily_pad, 16 cannot_support_seagrass: the tags of the block below.
  01 FEAT-SURV EXTERNAL.
     05 FS-EPOCH             BINARY-LONG.
+*>  FS-VINE: the vine state with only the face of direction 1 up, 2 north, 3 south, 4 west, 5 east (0 when the block table has no vine)
+    05 FS-VINE              BINARY-LONG OCCURS 5 TIMES.
     05 FS-BLOCK OCCURS 1400 TIMES.
        10 FS-RULE           BINARY-LONG.
        10 FS-UPPER          BINARY-LONG.

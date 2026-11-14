@@ -53,3 +53,11 @@
  01 FK-NOISE-LEVEL    PIC X(40) VALUE "noise_level".
  01 FK-BELOW-NOISE    PIC X(40) VALUE "below_noise".
  01 FK-ABOVE-NOISE    PIC X(40) VALUE "above_noise".
+ 01 FK-DIR            PIC X(40) VALUE "direction".
+ 01 FK-ALLOWED-PLACE  PIC X(40) VALUE "allowed_placement".
+ 01 FK-PRIORITIZE     PIC X(40) VALUE "prioritize_tip".
+ 01 FK-LAYERS         PIC X(40) VALUE "layers".
+ 01 FK-PROVIDER       PIC X(40) VALUE "provider".
+ 01 FK-SOURCE         PIC X(40) VALUE "source".
+ 01 FK-PROPERTY       PIC X(40) VALUE "property".
+ 01 FK-VALUES         PIC X(40) VALUE "values".

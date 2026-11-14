@@ -1,0 +1,12 @@
+{
+ "feature": {
+  "type": "minecraft:no_op"
+ },
+ "placement": [
+  {
+   "type": "minecraft:noise_threshold_count",
+   "below_noise": 1,
+   "above_noise": 2
+  }
+ ]
+}
