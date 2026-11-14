@@ -953,6 +953,14 @@
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
      END-IF
+*>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
+     IF SM-KEY(WS-M) = "endermite"
+         ADD 1 TO EN-WAKE(WS-ROW)
+         IF EN-WAKE(WS-ROW) >= 2400
+             CALL "ENTITY-REMOVE" USING WS-ROW
+             GOBACK
+         END-IF
+     END-IF
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
      END-IF
@@ -974,6 +982,10 @@
      END-IF
      IF SM-KEY(WS-M) = "phantom"
          CALL "STDMOB-PHANTOM-TICK" USING WS-ROW WS-M
+         GOBACK
+     END-IF
+     IF SM-RANGED(WS-M) = 4
+         CALL "GHAST-TICK" USING WS-ROW WS-M
          GOBACK
      END-IF
      IF EN-RIDER(WS-ROW) > 0
@@ -1018,6 +1030,16 @@
      END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
+     END-IF
+     IF SM-RANGED(WS-M) = 5
+         CALL "BLAZE-ATTACK" USING WS-ROW WS-M
+         CALL "BLAZE-HEIGHT" USING WS-ROW
+     END-IF
+     IF SM-RANGED(WS-M) = 6
+         CALL "SHULKER-ATTACK" USING WS-ROW WS-M
+     END-IF
+     IF SM-KEY(WS-M) = "snow_golem"
+         CALL "SNOW-GOLEM-TICK" USING WS-ROW WS-M
      END-IF
      MOVE 0 TO WS-AVOID
      IF SM-FUSE(WS-M) > 0 AND WS-STOP = 0

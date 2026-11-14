@@ -333,7 +333,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-VARIANT-BUILD.
 *> USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the row's variant (EN-VARIANT): a baby zombie, zombie villager or husk is index 16
-*> BOOLEAN true (4.1); a powered creeper index 17 BOOLEAN true and an ignited one index 18 BOOLEAN true (6.1); a slime of a size above 0 index 18 INT size (10). Nothing is written for any
+*> BOOLEAN true (4.1); a ghast (charging) index 16 BOOLEAN and a blaze (charged) index 16 BYTE of EN-VARIANT, 0 or 1, a shulker its raw peek 0 to 100 as index 17 BYTE; a powered creeper index 17 BOOLEAN true and an ignited one index 18 BOOLEAN true (6.1); a slime of a size above 0 index 18 INT size (10). Nothing is written for any
 *> other row or a variant of 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -353,8 +353,23 @@
      MOVE 0 TO WS-INDEX
      MOVE 0 TO WS-VALUE WS-EXTRA
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-     IF WS-M > 0 AND EN-VARIANT(L-ROW) > 0
+     IF WS-M > 0 AND (EN-VARIANT(L-ROW) > 0 OR SM-RANGED(WS-M) >= 4)
          EVALUATE SM-KEY(WS-M)
+             WHEN "ghast"
+*>               The charging flag (21 section 5.1): index 16 BOOLEAN, sent for either value.
+                 MOVE 16 TO WS-INDEX
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+                 MOVE EN-VARIANT(L-ROW) TO WS-VALUE
+             WHEN "shulker"
+*>               The peek amount (21 section 6.2): index 17 BYTE, raw 0 to 100, sent for every value.
+                 MOVE 17 TO WS-INDEX
+                 MOVE MD-MDS-BYTE TO WS-SERIALIZER
+                 MOVE EN-VARIANT(L-ROW) TO WS-VALUE
+             WHEN "blaze"
+*>               The flags byte (21 section 5.2): index 16 BYTE, bit 0 charged.
+                 MOVE 16 TO WS-INDEX
+                 MOVE MD-MDS-BYTE TO WS-SERIALIZER
+                 MOVE EN-VARIANT(L-ROW) TO WS-VALUE
              WHEN "zombie"
              WHEN "zombie_villager"
              WHEN "husk"
