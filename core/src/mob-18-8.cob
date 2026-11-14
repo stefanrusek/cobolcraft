@@ -347,6 +347,9 @@
              IF SM-KEY(WS-M) = "turtle" AND (EN-TURTLE-EGG(L-ROW) = 1 OR EN-TURTLE-LAY(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "goat" AND EN-WOOL(L-ROW) > 0
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "armadillo" AND EN-ARMA(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
              END-IF
@@ -463,6 +466,13 @@
  01 WS-SALT-P              BINARY-LONG VALUE 43.
  01 WS-BOUND-P             BINARY-LONG VALUE 5.
  01 WS-SALT-S              BINARY-LONG VALUE 53.
+ 01 WS-SALT-GS             BINARY-LONG VALUE 54.
+ 01 WS-SALT-GH             BINARY-LONG VALUE 55.
+ 01 WS-SALT-GC             BINARY-LONG VALUE 56.
+ 01 WS-BOUND-GS            BINARY-LONG VALUE 50.
+ 01 WS-BOUND-GH            BINARY-LONG VALUE 10.
+ 01 WS-BOUND-GC            BINARY-LONG VALUE 2.
+ 01 WS-DRAW-G              BINARY-LONG.
  01 WS-BOUND-S             BINARY-LONG VALUE 6000.
  01 WS-DRAW                BINARY-LONG.
  LINKAGE SECTION.
@@ -479,6 +489,17 @@
              COMPUTE EN-EGG(L-ROW) = 6000 + WS-DRAW
          WHEN "parrot"
              CALL "XP-RANDOM" USING WS-SALT-P WS-BOUND-P EN-WOOL(L-ROW)
+         WHEN "goat"
+*>           Screaming with chance 2 percent; an adult loses one horn, left or right 50/50, with chance 10 percent (19 section 10). EN-WOOL: 1 screaming, 2 no left horn, 4 no right horn.
+             CALL "XP-RANDOM" USING WS-SALT-GS WS-BOUND-GS WS-DRAW-G
+             IF WS-DRAW-G = 0
+                 MOVE 1 TO EN-WOOL(L-ROW)
+             END-IF
+             CALL "XP-RANDOM" USING WS-SALT-GH WS-BOUND-GH WS-DRAW-G
+             IF WS-DRAW-G = 0
+                 CALL "XP-RANDOM" USING WS-SALT-GC WS-BOUND-GC WS-DRAW-G
+                 COMPUTE EN-WOOL(L-ROW) = EN-WOOL(L-ROW) + 2 + 2 * WS-DRAW-G
+             END-IF
          WHEN "armadillo"
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
@@ -579,6 +600,9 @@
  01 WS-BOUND-2             BINARY-LONG VALUE 2.
  01 WS-BOUND-1024          BINARY-LONG VALUE 1024.
  01 WS-BOUND-7             BINARY-LONG VALUE 7.
+ 01 WS-SALT-GK             BINARY-LONG VALUE 57.
+ 01 WS-BOUND-GK            BINARY-LONG VALUE 50.
+ 01 WS-DRAW-K              BINARY-LONG.
  01 WS-POINTS              BINARY-LONG.
  01 WS-COLOR-A             BINARY-LONG.
  01 WS-COLOR-B             BINARY-LONG.
@@ -618,6 +642,19 @@
              COMPUTE WS-COLOR-B = FUNCTION MOD(EN-WOOL(L-B), 16)
              CALL "M19-SHEEP-MIX" USING WS-COLOR-A WS-COLOR-B WS-COIN WS-CHILD-COLOR
              MOVE WS-CHILD-COLOR TO EN-WOOL(WS-BABY)
+         WHEN "goat"
+*>           The kid has both horns; it screams when the parent chosen by the coin screams or by the 2 percent roll (19 section 10).
+             CALL "XP-RANDOM" USING WS-SALT-GK WS-BOUND-GK WS-DRAW-K
+             MOVE 0 TO EN-WOOL(WS-BABY)
+             IF FUNCTION MOD(WS-COLOR-A, 2) = 1 AND WS-COIN = 0
+                 MOVE 1 TO EN-WOOL(WS-BABY)
+             END-IF
+             IF FUNCTION MOD(WS-COLOR-B, 2) = 1 AND WS-COIN = 1
+                 MOVE 1 TO EN-WOOL(WS-BABY)
+             END-IF
+             IF WS-DRAW-K = 0
+                 MOVE 1 TO EN-WOOL(WS-BABY)
+             END-IF
          WHEN "mooshroom"
              CALL "M19-MOOSHROOM-BREED" USING WS-COLOR-A WS-COLOR-B WS-DRAW WS-COIN WS-CHILD-COLOR
              MOVE WS-CHILD-COLOR TO EN-WOOL(WS-BABY)
@@ -1333,7 +1370,7 @@
      EVALUATE TRUE
          WHEN WS-KEY = "sheep" AND WS-HELD = "shears"
              CALL "MOB-SHEAR-USE" USING WS-ROW WS-ENTITY
-         WHEN (WS-KEY = "cow" OR "mooshroom") AND WS-HELD = "bucket"
+         WHEN (WS-KEY = "cow" OR "mooshroom" OR "goat") AND WS-HELD = "bucket"
              CALL "MOB-MILK-USE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN WS-KEY = "mooshroom" AND (WS-HELD = "shears" OR "bowl")
              CALL "MOB-MOOSHROOM-USE" USING WS-ROW WS-ENTITY WS-HELD

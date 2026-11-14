@@ -285,6 +285,26 @@
              MOVE 1 TO CD-MX-INT
              CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
      END-EVALUATE
+     IF WS-KEY = "goat"
+*>       Goat: screaming (18), has left horn (19) and has right horn (20), all BOOLEAN with the defaults false, true, true (19 section 10); EN-WOOL 1 screaming, 2 no left horn, 4 no right horn.
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE WS-SERIALIZER-BOOLEAN TO CD-MX-SERIALIZER
+         IF FUNCTION MOD(EN-WOOL(L-ROW), 2) = 1
+             MOVE 18 TO CD-MX-INDEX
+             MOVE 1 TO CD-MX-INT
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
+         IF FUNCTION MOD(FUNCTION INTEGER(EN-WOOL(L-ROW) / 2), 2) = 1
+             MOVE 19 TO CD-MX-INDEX
+             MOVE 0 TO CD-MX-INT
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
+         IF FUNCTION INTEGER(EN-WOOL(L-ROW) / 4) = 1
+             MOVE 20 TO CD-MX-INDEX
+             MOVE 0 TO CD-MX-INT
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
+     END-IF
      IF WS-KEY = "armadillo"
 *>       Armadillo: the state (18, ARMADILLO_STATE, a VarInt of the id enum 36; 19 section 13).
          INITIALIZE CD-METADATA-ENTRY-X
