@@ -99,6 +99,8 @@
  01 WS-HIT                 BINARY-LONG.
  01 WS-BELOW               FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
+ 01 WS-LOOK-Y              FLOAT-LONG.
+ 01 WS-K                   FLOAT-LONG.
  01 WS-ABOVE               BINARY-LONG.
  01 WS-ZERO                FLOAT-LONG VALUE 0.
  01 WS-ZERO2               FLOAT-LONG VALUE 0.
@@ -118,6 +120,16 @@
      MOVE PL-JUMP TO WS-JUMP
      MOVE 0 TO PL-JUMP
      CALL "PHYS-FLUID" USING CLIENT-STATE
+*>   The swimming flag (53 section 4): kept while sprinting in water, set when sprinting with the eyes under water; never while flying.
+     IF PL-SWIMMING = 1
+         IF PL-SPRINTING = 0 OR PL-IN-WATER = 0 OR PL-FLYING = 1
+             MOVE 0 TO PL-SWIMMING
+         END-IF
+     ELSE
+         IF PL-SPRINTING = 1 AND PL-IN-WATER = 1 AND PL-EYE-WATER = 1 AND PL-FLYING = 0
+             MOVE 1 TO PL-SWIMMING
+         END-IF
+     END-IF
      IF SM-SCREEN = SCR-WORLD
          MOVE KB-CODE(KB-JUMP) TO WS-KJ
          MOVE KB-CODE(KB-FORWARD) TO WS-KF
@@ -218,6 +230,18 @@
          COMPUTE PL-VY = FUNCTION MAX(-0.15, PL-VY)
          IF WS-SNEAK = 1
              COMPUTE PL-VY = FUNCTION MAX(0, PL-VY)
+         END-IF
+     END-IF
+*>   Swimming steers the vertical speed toward the look direction (53 section 9.1): k 0.085 looking down past -0.2, else 0.06; skipped looking
+*>   up without Space when the point 0.9 above the feet is out of the water.
+     IF PL-SWIMMING = 1
+         COMPUTE WS-LOOK-Y = 0 - FUNCTION SIN(PL-PITCH * FUNCTION PI / 180)
+         MOVE 0.06 TO WS-K
+         IF WS-LOOK-Y < -0.2
+             MOVE 0.085 TO WS-K
+         END-IF
+         IF NOT (WS-LOOK-Y > 0 AND WS-JUMP = 0 AND PL-WATER-H < 0.9)
+             COMPUTE PL-VY = PL-VY + (WS-LOOK-Y - PL-VY) * WS-K
          END-IF
      END-IF
      MOVE PL-VY TO WS-DY
@@ -747,6 +771,9 @@
          MOVE 0 TO WS-DESIRED
          IF L-SHIFT = 1 AND PL-FLYING = 0
              MOVE 5 TO WS-DESIRED
+         END-IF
+         IF PL-SWIMMING = 1
+             MOVE 3 TO WS-DESIRED
          END-IF
          EVALUATE TRUE
              WHEN PL-MODE = 3

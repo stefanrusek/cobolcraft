@@ -61,13 +61,30 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-TRACKER             BINARY-LONG.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-EYE                 BINARY-LONG.
  01 WS-VIEWER              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   The swimming flag (53 section 4): kept while sprinting in water, set when sprinting with the eye in water; never while flying.
+     CALL "FLUID-TOUCHES-WATER" USING PL-DIM(L-ROW) PL-X(L-ROW) PL-Y(L-ROW) PL-Z(L-ROW) WS-WET
+     CALL "BREATH-EYE-IN-WATER" USING L-ROW WS-EYE
+     IF PL-SWIMMING(L-ROW) = 1
+         IF PL-SPRINTING(L-ROW) = 0 OR WS-WET = 0 OR PL-FLYING(L-ROW) = 1
+             MOVE 0 TO PL-SWIMMING(L-ROW)
+         END-IF
+     ELSE
+         IF PL-SPRINTING(L-ROW) = 1 AND WS-WET = 1 AND WS-EYE = 1 AND PL-FLYING(L-ROW) = 0
+             MOVE 1 TO PL-SWIMMING(L-ROW)
+         END-IF
+     END-IF
      CALL "MOVE-COLLIDES-POSE" USING PL-DIM(L-ROW) WS-SWIM PL-X(L-ROW) PL-Y(L-ROW) PL-Z(L-ROW) WS-HIT
      IF WS-HIT = 0
          MOVE WS-STAND TO WS-DESIRED
+         IF PL-SWIMMING(L-ROW) = 1
+             MOVE WS-SWIM TO WS-DESIRED
+         END-IF
          IF PL-SNEAKING(L-ROW) = 1 AND PL-FLYING(L-ROW) = 0
              MOVE WS-CROUCH TO WS-DESIRED
          END-IF
@@ -89,6 +106,9 @@
      END-IF
      IF PL-SPRINTING(L-ROW) = 1
          ADD 8 TO PL-POSE-FLAGS(L-ROW)
+     END-IF
+     IF PL-SWIMMING(L-ROW) = 1
+         ADD 16 TO PL-POSE-FLAGS(L-ROW)
      END-IF
      COMPUTE WS-STATE = 1 + PL-POSE(L-ROW) * 256 + PL-POSE-FLAGS(L-ROW)
      MOVE PL-POSE-SENT(L-ROW) TO WS-OLD

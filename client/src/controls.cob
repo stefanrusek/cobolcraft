@@ -594,9 +594,14 @@
      IF PL-EYE-WATER = 0 AND (PL-SNEAK-FLAG = 1 OR PL-POSE = 5 OR IN-KEY-DOWN(WS-K4 + 1) = 1)
          MOVE 0 TO WS-CAN
      END-IF
+*>   In shallow water (in it, the head out) a player on foot cannot sprint (13 section 1.5); a swimmer keeps its sprint while in water.
+     IF PL-IN-WATER = 1 AND PL-EYE-WATER = 0 AND PL-SWIMMING = 0 AND PL-FLYING = 0
+         MOVE 0 TO WS-CAN
+     END-IF
      MOVE PL-SPRINTING TO WS-WANT
      IF WS-WANT = 1
-         IF WS-FWD = 0 OR WS-CAN = 0 OR PL-COLLIDED = 1 OR (PL-SPRINT-KEY = 1 AND WS-KEY-DOWN = 0)
+         IF WS-FWD = 0 OR WS-CAN = 0 OR (PL-COLLIDED = 1 AND PL-SWIMMING = 0)
+                 OR (PL-SPRINT-KEY = 1 AND WS-KEY-DOWN = 0) OR (PL-SWIMMING = 1 AND PL-IN-WATER = 0)
              MOVE 0 TO WS-WANT
          END-IF
      ELSE
