@@ -331,7 +331,7 @@
                      MOVE 1 TO L-NEEDED
                  END-IF
              END-IF
-             IF (SM-KEY(WS-M) = "wolf" OR "parrot") AND EN-TAMED(L-ROW) = 1
+             IF (SM-KEY(WS-M) = "wolf" OR "parrot" OR "cat" OR "ocelot") AND EN-TAMED(L-ROW) = 1
                  MOVE 1 TO L-NEEDED
              END-IF
              IF SM-KEY(WS-M) = "parrot" AND EN-WOOL(L-ROW) > 0
@@ -379,7 +379,7 @@
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     IF (WS-KEY = "wolf" OR "parrot") AND EN-TAMED(L-ROW) = 1
+     IF (WS-KEY = "wolf" OR "parrot" OR "cat") AND EN-TAMED(L-ROW) = 1
          CALL "M188-TAME-FLAGS" USING WS-TAME-ONE EN-SIT(L-ROW) WS-FLAGS
          INITIALIZE MD-METADATA-ENTRY-X
          MOVE 18 TO MD-MX-INDEX
@@ -400,6 +400,7 @@
          MOVE EN-WOOL(L-ROW) TO MD-MX-INT
          CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
      END-IF
+     CALL "MOB-CARE-DATA" USING L-ROW PB-BUFFER
      MOVE MD-MD-END TO MD-MD-INDEX
      CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      GOBACK.
@@ -993,7 +994,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-WOLF-USE.
 *> USING player row, entity row (a wolf): the main hand on a wolf (19 section 6.1). An untamed wolf with a bone: the bone is used and nextInt(3) = 0 tames it (the player is the owner,
-*> 40 health, the sit order, Entity Event 7) else Entity Event 6. A tame wolf of this player: the sit order toggles (M188-SIT-TOGGLE); the wolf's food, dye and armour are open items.
+*> 40 health, the sit order, Entity Event 7) else Entity Event 6. A tame wolf of this player: the sit order toggles (M188-SIT-TOGGLE); the owner's dye and food are MOB-CARE-USE (mob-19-5.cob); armour is an open item.
 *> The wolf's entity data goes to the viewers after a change.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -1007,6 +1008,8 @@
  01 WS-EVENT               BINARY-LONG.
  01 WS-OWNER               BINARY-LONG.
  01 WS-CONSUMED            BINARY-LONG VALUE 0.
+ 01 WS-WOLF-MAX            BINARY-LONG VALUE 40.
+ 01 WS-WOLF-MULT           BINARY-LONG VALUE 2.
  01 WS-NEW                 BINARY-LONG.
  01 WS-KEY48               PIC X(48).
  LINKAGE SECTION.
@@ -1038,6 +1041,7 @@
              END-IF
          END-IF
      ELSE
+         CALL "MOB-CARE-USE" USING L-ROW L-ENTITY WS-WOLF-MAX WS-WOLF-MULT WS-CONSUMED
          MOVE 0 TO WS-OWNER
          IF EN-OWNER-UUID(L-ENTITY) = PL-UUID(L-ROW)
              MOVE 1 TO WS-OWNER
@@ -1262,6 +1266,8 @@
              CALL "MOB-WOLF-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "parrot"
              CALL "MOB-PARROT-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "cat" OR "ocelot"
+             CALL "MOB-CAT-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "iron_golem" AND WS-HELD = "iron_ingot"
              CALL "MOB-GOLEM-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "creeper"
