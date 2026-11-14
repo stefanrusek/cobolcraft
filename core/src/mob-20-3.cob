@@ -519,6 +519,15 @@
          WHEN "spider"
          WHEN "cave_spider"
              CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "phantom"
+*>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).
+             COMPUTE EN-PH-AX(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))
+             COMPUTE EN-PH-AY(L-ROW) = FUNCTION INTEGER(EN-Y(L-ROW)) + 5
+             COMPUTE EN-PH-AZ(L-ROW) = FUNCTION INTEGER(EN-Z(L-ROW))
+             MOVE 1 TO EN-PH-SET(L-ROW)
+             MOVE 0.1 TO EN-PH-SPEED(L-ROW)
+             MOVE 1 TO EN-PH-CW(L-ROW)
+             MOVE 20 TO EN-PH-SCAN(L-ROW)
      END-EVALUATE
      CALL "STDMOB-VARIANT-SEND" USING L-ROW
      CALL "STDMOB-EQUIP-SEND" USING L-ROW

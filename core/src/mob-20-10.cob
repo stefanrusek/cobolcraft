@@ -186,7 +186,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-ATTACK-DAMAGE.
-*> USING tracker row, table row, damage out: SM-ATTACK, except a slime: its size, and 0 at size 1 (it cannot deal damage, 10), plus 3 with Strength (EN-FX-STRENGTH, 7.1).
+*> USING tracker row, table row, damage out: SM-ATTACK, except a slime: its size, and 0 at size 1 (it cannot deal damage, 10), plus the size of a phantom (6 + size, 12), plus 3 with Strength (EN-FX-STRENGTH, 7.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -202,6 +202,9 @@
          IF EN-VARIANT(L-ROW) > 1
              MOVE EN-VARIANT(L-ROW) TO L-DAMAGE
          END-IF
+     END-IF
+     IF SM-KEY(L-M) = "phantom"
+         ADD EN-VARIANT(L-ROW) TO L-DAMAGE
      END-IF
      IF EN-FX-STRENGTH(L-ROW) NOT = 0
          ADD 3 TO L-DAMAGE

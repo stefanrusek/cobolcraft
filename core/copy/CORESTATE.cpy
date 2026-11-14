@@ -200,6 +200,8 @@
        10 PL-XP-POINTS       BINARY-LONG.        *> points into the current level
        10 PL-XP-TOTAL        BINARY-LONG.        *> total experience points
        10 PL-XP-DELAY        BINARY-LONG.        *> takeXpDelay: ticks until the next orb pickup
+*>     --- 002-lane-mobsfull-h11: the time_since_rest statistic (core/src/mob-20-12.cob; 44-5 section 10C item 2); not saved ---
+       10 PL-REST            BINARY-LONG.        *> ticks since the last death or bed entry, not counting sleep
 *>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
