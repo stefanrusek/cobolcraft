@@ -768,9 +768,8 @@
                          CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE WS-GT WS-K09375 WS-N WS-SECOND
                      END-IF
                  END-IF
+*>               (the bottom alpha is 0 only at y <= -8, below the column, so the first value 2.5 is never the result here)
                  EVALUATE TRUE
-                     WHEN WS-GB = 0
-                         MOVE WS-K25 TO WS-S
                      WHEN WS-GB = 1
                          MOVE WS-SECOND TO WS-S
                      WHEN OTHER
