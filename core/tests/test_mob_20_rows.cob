@@ -92,8 +92,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "witch" TO WS-KEY48
      CALL "MS6-SPECIES" USING WS-KEY48 WS-INDEX
-     MOVE "acceptance US15 20§19.3 witch has no spawn logic yet" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "acceptance US15 20§19.3 witch spawns by the monster rule (row 35)" TO TL-CASE
+     MOVE 35 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

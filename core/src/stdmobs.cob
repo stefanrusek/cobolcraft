@@ -894,6 +894,8 @@
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-LEAP-ROLL           BINARY-LONG.
+ 01 WS-LEAPT               BINARY-LONG.
  01 WS-PET-HX              FLOAT-LONG.
  01 WS-PET-HZ              FLOAT-LONG.
  LINKAGE SECTION.
@@ -924,6 +926,7 @@
      IF WS-CHUNK = 0
          GOBACK
      END-IF
+     CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
      END-IF
@@ -964,18 +967,23 @@
              GOBACK
          END-IF
      END-IF
-     IF SM-RANGED(WS-M) > 0
+     IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
          CALL "STDMOB-SHOOT" USING WS-ROW WS-M WS-STOP
+     END-IF
+     IF SM-RANGED(WS-M) = 3
+         CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
      END-IF
      EVALUATE TRUE
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.
              MOVE EN-TARGET(WS-ROW) TO WS-P
-             COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
-             COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
-             CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             IF WS-P > 0
+                 COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
+                 COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
+                 CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             END-IF
 *>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
-             IF SM-RANGED(WS-M) > 0
+             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF
@@ -985,6 +993,12 @@
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(WS-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
              CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             MOVE EN-ID(WS-ROW) TO WS-ARG(1)
+             MOVE CW-TIME TO WS-ARG(2)
+             MOVE 19 TO WS-ARG(3)
+             CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+             COMPUTE WS-LEAP-ROLL = FUNCTION MOD(WS-R, 5)
+             CALL "STDMOB-LEAP" USING WS-ROW WS-M WS-LEAP-ROLL WS-LEAPT
              COMPUTE WS-REACH = SM-REACH-MILLI / 1000
              IF FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH
                  COMPUTE WS-GX = FUNCTION INTEGER(PL-X(WS-P))

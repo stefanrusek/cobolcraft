@@ -321,6 +321,30 @@
        10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1), 4 bow (skeleton family, 5)
        10 EN-HEAD-WEAR       BINARY-LONG.        *> durability damage of the helmet worn (EN-EQUIP head slot); -1 = broken, the head is empty (20 section 3.5)
        10 EN-WAKE            BINARY-LONG.        *> silverfish: wake-up-friends timer, 20 after a hit by an attacker, counting down to the scan (20 section 9.1)
+*>     --- 002-lane-mobsfull-h11: mob effects, creeper ignition, phantom flight (core/src/mob-20-6.cob, 20-7, 20-11, 20-12) ---
+*>     Effects of a mob (ticks left, -1 = no expiry, 0 = none): the spider's Hard spawn effect (20 section 7.1) and the witch's potions (20 section 11).
+       10 EN-FX-SPEED          BINARY-LONG.        *> Speed: the walk speed x 1.2
+       10 EN-FX-STRENGTH       BINARY-LONG.        *> Strength: +3 attack damage
+       10 EN-FX-REGEN          BINARY-LONG.        *> Regeneration: 1 health every 50 ticks
+       10 EN-FX-INVIS          BINARY-LONG.        *> Invisibility (the entity flags sent to the viewers do not show it: open)
+       10 EN-FX-FIRE           BINARY-LONG.        *> Fire Resistance (witch)
+       10 EN-FX-WATER          BINARY-LONG.        *> Water Breathing (witch)
+       10 EN-IGNITED           BINARY-LONG.        *> creeper: 1 when set off by flint and steel or a fire charge (20 section 6.1)
+       10 EN-PH-PHASE          BINARY-LONG.        *> phantom: 0 CIRCLE, 1 SWOOP (20 section 12)
+       10 EN-PH-TIMER          BINARY-LONG.        *> phantom: ticks until the next sweep
+       10 EN-PH-SCAN           BINARY-LONG.        *> phantom: the target scan counter
+       10 EN-PH-CW             BINARY-LONG.        *> phantom: clockwise sign, +1 or -1
+       10 EN-PH-SET            BINARY-LONG.        *> phantom: 1 once the anchor is set
+       10 EN-PH-AX             FLOAT-LONG.         *> phantom: anchor block (lower corner)
+       10 EN-PH-AY             FLOAT-LONG.
+       10 EN-PH-AZ             FLOAT-LONG.
+       10 EN-PH-TX             FLOAT-LONG.         *> phantom: move target point
+       10 EN-PH-TY             FLOAT-LONG.
+       10 EN-PH-TZ             FLOAT-LONG.
+       10 EN-PH-ANGLE          FLOAT-LONG.         *> phantom: circle angle in radians
+       10 EN-PH-DIST           FLOAT-LONG.         *> phantom: circle distance
+       10 EN-PH-HEIGHT         FLOAT-LONG.         *> phantom: circle height
+       10 EN-PH-SPEED          FLOAT-LONG.         *> phantom: the move control speed (starts 0.1)
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
