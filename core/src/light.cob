@@ -767,9 +767,24 @@
  01 WS-V                   BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-ODD                 PIC 9.
+ 01 WS-READY               PIC 9 VALUE 0.
+*> The byte with its low nibble cleared (odd cells hold the high nibble) and with its high nibble cleared, by byte value + 1.
+ 01 WS-CLEAR-LOW-TABLE.
+    05 WS-CLEAR-LOW        BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-CLEAR-HIGH-TABLE.
+    05 WS-CLEAR-HIGH       BINARY-LONG OCCURS 256 TIMES.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     IF WS-READY = 0
+         PERFORM VARYING WS-V FROM 0 BY 1 UNTIL WS-V > 255
+             COMPUTE WS-HI = WS-V / 16
+             COMPUTE WS-CLEAR-LOW(WS-V + 1) = WS-HI * 16
+             COMPUTE WS-CLEAR-HIGH(WS-V + 1) = FUNCTION MOD(WS-V, 16)
+         END-PERFORM
+         MOVE 1 TO WS-READY
+     END-IF
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      MOVE LOW-VALUES TO CE-SKYS
      IF DM-LIGHT-POLICY(CK-DIM(L-ROW)) = DIM-LIGHT-BLOCK-ONLY
@@ -792,17 +807,22 @@
      COMPUTE WS-LENGTH = (DM-HEIGHT(CK-DIM(L-ROW)) / 16 + 1) * 2048 + 1
      MOVE ALL X"FF" TO CE-SKYS(WS-LENGTH:2048)
      COMPUTE WS-LOW = WS-MIN + 1
+*>   Every cell of a column has the parity of the column (a layer is 256 cells): its byte steps by 128 a layer, and a table clears the nibble.
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
+         COMPUTE WS-N = WS-LOW * 256 + WS-C
+         COMPUTE WS-B = 2048 + (WS-N - 1) / 2 + 1
+         MOVE 0 TO WS-ODD
+         IF FUNCTION MOD(WS-C, 2) = 1
+             MOVE 1 TO WS-ODD
+         END-IF
          PERFORM VARYING WS-Y FROM WS-LOW BY 1 UNTIL WS-Y > WS-TOP(WS-C)
-             COMPUTE WS-N = WS-Y * 256 + WS-C
-             COMPUTE WS-B = 2048 + (WS-N - 1) / 2 + 1
              MOVE CE-SKY(WS-B) TO WS-V
-             IF FUNCTION MOD(WS-N, 2) = 1
-                 COMPUTE WS-HI = WS-V / 16
-                 COMPUTE CE-SKY(WS-B) = WS-HI * 16
+             IF WS-ODD = 1
+                 MOVE WS-CLEAR-LOW(WS-V + 1) TO CE-SKY(WS-B)
              ELSE
-                 COMPUTE CE-SKY(WS-B) = FUNCTION MOD(WS-V, 16)
+                 MOVE WS-CLEAR-HIGH(WS-V + 1) TO CE-SKY(WS-B)
              END-IF
+             ADD 128 TO WS-B
          END-PERFORM
      END-PERFORM
      GOBACK.
