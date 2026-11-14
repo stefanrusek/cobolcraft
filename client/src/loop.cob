@@ -243,6 +243,7 @@
              MOVE PL-Y TO WS-PY
              MOVE PL-Z TO WS-PZ
              CALL "PHYS-TICK" USING CLIENT-STATE
+             CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
              COMPUTE CL-SPEED = FUNCTION SQRT((PL-X - WS-PX) ** 2 + (PL-Y - WS-PY) ** 2 + (PL-Z - WS-PZ) ** 2)
              CALL "CLP-MOVE-SEND" USING CLIENT-STATE WS-CONN
          END-IF

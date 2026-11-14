@@ -165,11 +165,13 @@
  01 WS-SR-OUT.
     05 WS-SRO              FLOAT-LONG OCCURS 64 TIMES.
  01 WS-OPS.
-    05 WS-OP OCCURS 4 TIMES.
+    05 WS-OP OCCURS 8 TIMES.
        10 WS-OP-SIN        FLOAT-LONG.
        10 WS-OP-COS        FLOAT-LONG.
  01 WS-NOPS                BINARY-LONG.
  01 WS-OB                  BINARY-LONG.
+ 01 WS-OD                  BINARY-LONG.
+ 01 WS-Q-SWIM              BINARY-LONG.
 *> Per part: visibility and the sines and cosines of its current rotation about x, y, z.
  01 WS-PARTS.
     05 WS-PT OCCURS 40 TIMES.
@@ -252,7 +254,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 512 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 15 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 16 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-CORNER OCCURS 40 TIMES.
@@ -274,7 +276,7 @@
           15 WS-BK-G          FLOAT-SHORT VALUE 1.
           15 WS-BK-BLUE       FLOAT-SHORT VALUE 1.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 15 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 16 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -347,6 +349,7 @@
      MOVE EA-MT-W(WS-SLOT) TO WS-KN(13)
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
+     MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
 *>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
 *>   between its models within a frame; the first entry whose key is the key, else the one of the same model or the free one, is the one used.
      MOVE 0 TO WS-HIT
@@ -404,6 +407,7 @@
              IF EN-POSE(WS-ROW) = 5
                  MOVE 1 TO WS-ST(10)
              END-IF
+             MOVE EN-SWIM(WS-ROW) TO WS-ST(11)
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
          WHEN OTHER
              CONTINUE
@@ -413,6 +417,46 @@
      MOVE EN-YAW(WS-ROW) TO WS-SRI(3)
      CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
      MOVE WS-SRO(1) TO WS-NOPS
+*>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
+*>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
+     IF CL-MD-ANIM(WS-K) = "H" AND EN-SWIM(WS-ROW) > 0
+         PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 2
+             COMPUTE WS-OB = WS-J * 4 - 2
+             COMPUTE WS-OD = WS-OB + 8
+             MOVE WS-SRO(WS-OB) TO WS-SRO(WS-OD)
+             MOVE WS-SRO(WS-OB + 1) TO WS-SRO(WS-OD + 1)
+             MOVE WS-SRO(WS-OB + 2) TO WS-SRO(WS-OD + 2)
+             MOVE WS-SRO(WS-OB + 3) TO WS-SRO(WS-OD + 3)
+         END-PERFORM
+         DIVIDE EN-FLAGS(WS-ROW) BY 16 GIVING WS-Q-SWIM
+         MOVE -90 TO WS-T
+         IF FUNCTION MOD(WS-Q-SWIM, 2) = 1
+             COMPUTE WS-T = -90 - EN-PITCH(WS-ROW)
+         END-IF
+         MOVE 5 TO WS-SRO(6)
+         COMPUTE WS-SRO(7) = EN-SWIM(WS-ROW) * WS-T
+         MOVE 0 TO WS-SRO(8) WS-SRO(9)
+         MOVE 1 TO WS-SRO(10)
+         MOVE 0 TO WS-SRO(11)
+         MOVE -1 TO WS-SRO(12)
+         MOVE 0.3 TO WS-SRO(13)
+         ADD 2 TO WS-NOPS
+     END-IF
+*>   A crouching player is drawn 0.125 lower, outermost (53 section 14.1).
+     IF CL-MD-ANIM(WS-K) = "H" AND EN-POSE(WS-ROW) = 5
+         PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 1
+             COMPUTE WS-OB = WS-J * 4 - 2
+             COMPUTE WS-OD = WS-OB + 4
+             MOVE WS-SRO(WS-OB) TO WS-SRO(WS-OD)
+             MOVE WS-SRO(WS-OB + 1) TO WS-SRO(WS-OD + 1)
+             MOVE WS-SRO(WS-OB + 2) TO WS-SRO(WS-OD + 2)
+             MOVE WS-SRO(WS-OB + 3) TO WS-SRO(WS-OD + 3)
+         END-PERFORM
+         MOVE 1 TO WS-SRO(2)
+         MOVE 0 TO WS-SRO(3) WS-SRO(5)
+         MOVE -0.125 TO WS-SRO(4)
+         ADD 1 TO WS-NOPS
+     END-IF
      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NOPS
          COMPUTE WS-OB = WS-J * 4 - 2
          COMPUTE WS-T = WS-SRO(WS-OB + 1) * FUNCTION PI / 180
@@ -501,6 +545,11 @@
                                  COMPUTE WS-X = WS-X * WS-SRO(WS-OB + 1)
                                  COMPUTE WS-Y = WS-Y * WS-SRO(WS-OB + 2)
                                  COMPUTE WS-Z = WS-Z * WS-SRO(WS-OB + 3)
+                             WHEN 5
+*>                               rotation about X by the listed degrees (right-handed)
+                                 COMPUTE WS-T = WS-Y * WS-OP-COS(WS-J) - WS-Z * WS-OP-SIN(WS-J)
+                                 COMPUTE WS-Z = WS-Y * WS-OP-SIN(WS-J) + WS-Z * WS-OP-COS(WS-J)
+                                 MOVE WS-T TO WS-Y
                              WHEN OTHER
 *>                               rotation about Y by the listed degrees
                                  COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) + WS-Z * WS-OP-SIN(WS-J)
@@ -867,3 +916,25 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITY-ARROW-EMIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITIES-SWIM-TICK.
+*> USING CLIENT-STATE: one client tick of the swim amount of every replica row (docs/protocol/53 section 12.2): up by 0.09 to 1 while the pose is
+*> swimming (3), else down by 0.09 to 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1
+             IF EN-POSE(WS-R) = 3
+                 COMPUTE EN-SWIM(WS-R) = FUNCTION MIN(1, EN-SWIM(WS-R) + 0.09)
+             ELSE
+                 COMPUTE EN-SWIM(WS-R) = FUNCTION MAX(0, EN-SWIM(WS-R) - 0.09)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITIES-SWIM-TICK.

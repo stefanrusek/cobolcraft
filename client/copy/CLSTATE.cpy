@@ -509,6 +509,7 @@
        10 PL-POSE            BINARY-LONG.    *> the Pose enum id (docs/protocol/53 section 1): 0 standing, 3 swimming (also crawling), 5 crouching
        10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
+       10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
        10 PL-SWIMMING        PIC 9.          *> the swimming flag (53 section 4): sprinting in water, entered with the eyes under water
        10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
        10 PL-FOV-MOD         FLOAT-LONG.     *> the camera's field of view modifier (53 section 8: 1, 1.15 while sprinting; 0 = not set)
@@ -661,6 +662,7 @@
 *>        the Pose id (entry 6: 0 standing, 3 swimming, 5 crouching).
           15 EN-FLAGS        BINARY-LONG.
           15 EN-POSE         BINARY-LONG.
+          15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

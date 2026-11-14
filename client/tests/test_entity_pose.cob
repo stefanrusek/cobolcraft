@@ -83,6 +83,48 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Swimming (pose 3, flags 0x18): the swim amount rises 0.09 a tick to 1 in 12 ticks (53 section 12), the body turns to lie flat about the pivot
+*>   (13: rotation -90 about X, translation (0, -1, 0.3)): the top of the model is then under 1 block above the feet (head top 0.3 + 0.234 x 0.9375
+*>   at most), against 1.8 standing; crawling (pose 3, flag clear) is the same.
+     MOVE 24 TO WS-FLAGS
+     MOVE 3 TO WS-POSE
+     CALL "EPO-DATA" USING CLIENT-STATE WS-ID WS-FLAGS WS-POSE
+     PERFORM 5 TIMES
+         CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     MOVE "entity pose five ticks of swimming give a swim amount of 0.45" TO TL-CASE
+     MOVE 450 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-SWIM(1) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM 7 TIMES
+         CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     MOVE "entity pose twelve ticks of swimming give a swim amount of 1" TO TL-CASE
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-SWIM(1) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 1 TO WS-FIRST
+     MOVE RL-EN-COUNT TO WS-LAST
+     CALL "EPO-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
+     MOVE "entity pose a swimming player lies flat: the model's top is under 1 block above its feet" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-R(4) < 1000
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-FLAGS
+     MOVE 0 TO WS-POSE
+     CALL "EPO-DATA" USING CLIENT-STATE WS-ID WS-FLAGS WS-POSE
+     PERFORM 13 TIMES
+         CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     MOVE "entity pose a standing player's swim amount falls back to 0 in 12 ticks" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-SWIM(1) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-POSE.
 

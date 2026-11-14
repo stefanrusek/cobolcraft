@@ -797,6 +797,12 @@
      IF PL-POSE = 3 AND PL-IN-WATER = 0
          MOVE 1 TO PL-SNEAK-FLAG
      END-IF
+*>   The own model's swim amount (53 section 12.2).
+     IF PL-POSE = 3
+         COMPUTE PL-SWIM-AMOUNT = FUNCTION MIN(1, PL-SWIM-AMOUNT + 0.09)
+     ELSE
+         COMPUTE PL-SWIM-AMOUNT = FUNCTION MAX(0, PL-SWIM-AMOUNT - 0.09)
+     END-IF
 *>   The camera eye: half the gap to the pose's eye height each tick; the first tick takes it.
      EVALUATE PL-POSE
          WHEN 5
