@@ -11,7 +11,7 @@
 *>     the base height of its column (36-4 6.3); STRUCT-TPL-AFTER (struct-tpl-gen.cob) is called at the end of the post-processing, with the result of placeInWorld (the igloo's snow block and the
 *>     restore of the saved position)
 *>   STRUCT-DATA-MARKER USING row, metadata (PIC X(96)), x, y, z: handleDataMarker of the piece's kind (SP-T-KIND): 0 none; 1 igloo (36-4 6.3: "chest" turns the marker to air and gives the
-*>     chest below the table chests/igloo_chest); 2 shipwreck (36-6 4.3: map_chest, treasure_chest and supply_chest give the chest below its table)
+*>     chest below the table chests/igloo_chest); 2 shipwreck (36-6 4.3: map_chest, treasure_chest and supply_chest give the chest below its table); 3 ocean ruin (36-6 3.5, STRUCT-RUIN-MARKER)
 *>   Note: 36-2 5 and 6.2 hand the placement the start's pivot as the anchor; 36-6 2.3 writes the template position twice. This code follows 36-2 (the anchor only matters to position tests).
 
  IDENTIFICATION DIVISION.
@@ -110,6 +110,10 @@
          MOVE SP-T-Y(L-ROW) TO SP-F1(L-ROW)
          COMPUTE SP-T-Y(L-ROW) = SP-T-Y(L-ROW) + WS-H - 90 - 1
      END-IF
+*>   an ocean ruin piece (kind 3) takes the adapted height of 36-6 3.5
+     IF SP-T-KIND(L-ROW) = 3
+         CALL "STRUCT-RUIN-PRE" USING L-ROW
+     END-IF
      GOBACK.
  END PROGRAM STRUCT-TPL-PRE.
 
@@ -165,6 +169,8 @@
                  CALL "FL-SET-STATE" USING L-X L-Y L-Z WS-AIR WS-FLAGS WS-OK
                  MOVE "minecraft:chests/igloo_chest" TO WS-LOOT
              END-IF
+         WHEN 3
+             CALL "STRUCT-RUIN-MARKER" USING L-ROW L-META L-X L-Y L-Z
          WHEN 2
              EVALUATE L-META
                  WHEN "map_chest"

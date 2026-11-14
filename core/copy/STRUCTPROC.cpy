@@ -11,7 +11,7 @@
 *>   10 blackstone_replace
 *>   11 block_age           SPP-F mossiness (float32); the pool holds the tags stairs, slabs, walls: SPP-POOL the first entry, SPP-A, SPP-B, SPP-C their sizes
 *> jigsaw_replacement (6) and lava_submerged_block (7) are not compiled: the list that holds one is unsupported (the template cache keeps no block entity tag and the block tables carry no collision shapes).
-*> A rule (SPR): the tests SPR-IN, SPR-LOC, SPR-POS (SP-TEST rows; 0 for always true), the output state SPR-STATE, the block entity modifier SPR-MOD (0 passthrough, 1 clear, 2 append_static, 3 append_loot).
+*> A rule (SPR): the tests SPR-IN, SPR-LOC, SPR-POS (SP-TEST rows; 0 for always true), the output state SPR-STATE, the block entity modifier SPR-MOD (0 passthrough, 1 clear, 2 append_static, 3 append_loot), SPR-LOOT the loot table key of an append_loot.
 *> A test (SPT): SPT-TYPE 1 always_true, 2 block_match (SPT-A the block number), 3 blockstate_match (SPT-A the state), 4 tag_match (SPT-POOL, SPT-N), 5 random_block_match (SPT-A block, SPT-F
 *> probability float32), 6 random_blockstate_match (SPT-A state, SPT-F), 7 height_match (SPT-B min, SPT-C max), 8 all_of, 9 any_of, 10 not (children from SPT-CHILD along SPT-NEXT); position tests: 21 always_true,
 *> 22 linear_pos, 23 axis_aligned_linear_pos (SPT-F min_chance, SPT-F2 max_chance float32, SPT-B min_dist, SPT-C max_dist, SPT-D the axis 0 x, 1 y, 2 z).
@@ -48,6 +48,7 @@
        10 SPR-POS           BINARY-LONG.
        10 SPR-STATE         BINARY-LONG.
        10 SPR-MOD           BINARY-LONG.
+       10 SPR-LOOT          PIC X(48).
     05 SP-TEST OCCURS 4096 TIMES.
        10 SPT-TYPE          BINARY-LONG.
        10 SPT-A             BINARY-LONG.

@@ -334,9 +334,17 @@
              MOVE SPR-STATE(WS-R) TO CU-STATE
              IF SPR-MOD(WS-R) > 0
                  MOVE 1 TO CU-NBT
+                 MOVE 0 TO CU-LOOT
              END-IF
+*>           append_loot (8.5): the tag keeps the table and the signed first nextLong of the rule's source as LootTableSeed
              IF SPR-MOD(WS-R) = 3
                  CALL "JRAND-NEXT-LONG" USING WS-RNG WS-LONG
+                 MOVE WS-R TO CU-LOOT
+                 IF WS-LONG >= 9223372036854775808
+                     COMPUTE CU-SEED = WS-LONG - 18446744073709551616
+                 ELSE
+                     MOVE WS-LONG TO CU-SEED
+                 END-IF
              END-IF
              MOVE 1 TO WS-DONE
          END-IF
@@ -758,6 +766,8 @@
          MOVE PW-Z(WS-R) TO CU-Z
          MOVE PW-STATE(WS-R) TO CU-STATE
          MOVE PW-NBT(WS-R) TO CU-NBT
+         MOVE PW-LOOT(WS-R) TO CU-LOOT
+         MOVE PW-SEED(WS-R) TO CU-SEED
          MOVE PW-LX(WS-R) TO PP-LX
          MOVE PW-LY(WS-R) TO PP-LY
          MOVE PW-LZ(WS-R) TO PP-LZ
@@ -766,13 +776,15 @@
          MOVE L-AZ TO PP-AZ
          CALL "STRUCT-PROC-BLOCK" USING SPP-A(L-PROC) STRUCT-PPOS STRUCT-CUR WS-KEEP STRUCT-SETTINGS
          IF WS-KEEP = 1 AND (CU-X NOT = PW-X(WS-R) OR CU-Y NOT = PW-Y(WS-R) OR CU-Z NOT = PW-Z(WS-R)
-             OR CU-STATE NOT = PW-STATE(WS-R) OR CU-NBT NOT = PW-NBT(WS-R))
+             OR CU-STATE NOT = PW-STATE(WS-R) OR CU-NBT NOT = PW-NBT(WS-R) OR CU-LOOT NOT = PW-LOOT(WS-R))
              ADD 1 TO WS-APPLIED
              MOVE CU-X TO PW-X(WS-R)
              MOVE CU-Y TO PW-Y(WS-R)
              MOVE CU-Z TO PW-Z(WS-R)
              MOVE CU-STATE TO PW-STATE(WS-R)
              MOVE CU-NBT TO PW-NBT(WS-R)
+             MOVE CU-LOOT TO PW-LOOT(WS-R)
+             MOVE CU-SEED TO PW-SEED(WS-R)
          END-IF
      END-PERFORM
      GOBACK.
@@ -848,6 +860,7 @@
              MOVE WS-AZ TO CU-Z
              MOVE TB-STATE(WS-BASE + WS-I) TO CU-STATE
              MOVE TB-NBT(WS-BASE + WS-I) TO CU-NBT
+             MOVE 0 TO CU-LOOT CU-SEED
              MOVE 1 TO WS-KEEP
              PERFORM VARYING WS-P FROM WS-FIRST BY 1 UNTIL WS-P > WS-LAST OR WS-KEEP = 0
                  CALL "STRUCT-PROC-BLOCK" USING WS-P STRUCT-PPOS STRUCT-CUR WS-KEEP STRUCT-SETTINGS
@@ -863,6 +876,8 @@
                  MOVE WS-Y TO PW-LY(PW-COUNT)
                  MOVE WS-Z TO PW-LZ(PW-COUNT)
                  MOVE CU-NBT TO PW-NBT(PW-COUNT)
+                 MOVE CU-LOOT TO PW-LOOT(PW-COUNT)
+                 MOVE CU-SEED TO PW-SEED(PW-COUNT)
              END-IF
          END-IF
      END-PERFORM

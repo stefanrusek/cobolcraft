@@ -27,6 +27,8 @@
        10 PW-LY             BINARY-SHORT.
        10 PW-LZ             BINARY-SHORT.
        10 PW-NBT            BINARY-LONG.
+       10 PW-LOOT           BINARY-LONG.
+       10 PW-SEED           BINARY-DOUBLE.
     05 PW-PLACED            BINARY-LONG OCCURS 65536 TIMES.
     05 PW-PEND              BINARY-LONG OCCURS 65536 TIMES.
     05 PW-G-PLACED          BINARY-CHAR UNSIGNED OCCURS 98304 TIMES.

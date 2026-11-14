@@ -521,6 +521,8 @@
  01 WS-JUNGLE-TEMPLE       PIC X(80) VALUE "minecraft:jungle_pyramid".
  01 WS-SHIPWRECK           PIC X(80) VALUE "minecraft:shipwreck".
  01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
+ 01 WS-RUIN-WARM           PIC X(80) VALUE "minecraft:ocean_ruin_warm".
+ 01 WS-RUIN-COLD           PIC X(80) VALUE "minecraft:ocean_ruin_cold".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -545,6 +547,9 @@
          CALL "STRUCT-GATE-ON" USING WS-IGLOO
          CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK
          CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK-BEACHED
+*>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
+         CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
+         CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
 *>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut, the jungle temple, the desert pyramid and the buried treasure
          CALL "STRUCT-GATE-ON" USING WS-SWAMP-HUT
          CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE

@@ -252,11 +252,16 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTPLACE.
+ COPY STRUCTPROC.
  COPY FEATLEVEL.
  01 WS-I                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-GLOOT               PIC X(48).
+ 01 WS-GSEED               BINARY-DOUBLE.
+ 01 WS-NOTHING             PIC X(32) VALUE SPACES.
  01 WS-INSIDE              BINARY-LONG.
  01 WS-OLD-STATE           BINARY-LONG.
  01 WS-OLD-FLUID           BINARY-LONG.
@@ -308,8 +313,15 @@
                  MOVE WS-STATE TO PW-STATE(WS-I)
                  COMPUTE WS-CELL = (WS-Y - FL-MIN-Y) * 256 + (WS-Z - FL-CZ * 16) * 16 + (WS-X - FL-CX * 16) + 1
                  MOVE 1 TO PW-G-PLACED(WS-CELL)
-                 IF PW-NBT(WS-I) > 0
-                     CALL "STRUCT-PLACE-BE" USING WS-X WS-Y WS-Z WS-STATE PW-NBT(WS-I)
+                 IF PW-LOOT(WS-I) > 0
+*>                   a tag made by an append_loot rule (the archaeology blocks): a brushable block with the table and the seed of the rule's source
+                     MOVE SPR-LOOT(PW-LOOT(WS-I)) TO WS-GLOOT
+                     MOVE PW-SEED(WS-I) TO WS-GSEED
+                     CALL "GBE-ADD" USING WS-X WS-Y WS-Z WS-ONE WS-GLOOT WS-GSEED WS-NOTHING
+                 ELSE
+                     IF PW-NBT(WS-I) > 0
+                         CALL "STRUCT-PLACE-BE" USING WS-X WS-Y WS-Z WS-STATE PW-NBT(WS-I)
+                     END-IF
                  END-IF
                  IF PS-LIQUID = 0
                      CALL "STRUCT-FLUID-OF" USING WS-STATE WS-FLUID WS-SOURCE

@@ -1,5 +1,5 @@
 *> Real-data probe of the template structures through the generation job (skipped as a pass without the generated packs; docs/design/world-types.md structures part 5): on the generated
-*> vanilla-data (CC_GENERATED_DIR, read only) each of the igloo, the shipwreck and the beached shipwreck is switched on alone (STRUCT-GATE-ON), the first chunk of a 300 x 300 chunk
+*> vanilla-data (CC_GENERATED_DIR, read only) each of the igloo, the shipwreck, the beached shipwreck and the ocean ruins (warm, cold, cold with a cluster: a warm cluster is too rare in the area) are switched on alone (STRUCT-GATE-ON), the first chunk of a 300 x 300 chunk
 *> area whose start is that structure is found by STRUCT-CHUNK-STARTS (the biome rules of the data apply), and that chunk and the next one to the south are generated whole by the atomic path
 *> (GEN-JOB-RUN-ALL) with the structure off and on, and by a worker process (the queue): the structure changes the chunk, the worker's chunk equals the atomic chunk byte for byte, and
 *> the time of the chunk with and without the structure is printed as the cost evidence. A structure with no start in the area is reported and fails its case.
@@ -32,6 +32,7 @@
  01 WS-J                   BINARY-LONG.
  01 WS-JD                  PIC S9 SIGN LEADING SEPARATE.
  01 WS-NEED-MANY           PIC 9 VALUE 0.
+ 01 WS-MIN-PIECES           BINARY-LONG VALUE 2.
  01 WS-FX                  BINARY-LONG.
  01 WS-FY                  BINARY-LONG.
  01 WS-FZ                  BINARY-LONG.
@@ -94,6 +95,15 @@
      PERFORM ONE-STRUCTURE
      MOVE "minecraft:shipwreck_beached" TO WS-KEY
      PERFORM ONE-STRUCTURE
+*>   the ocean ruins (36-6 section 3): the first warm and cold starts, and the first cold start with a cluster (more than three pieces; a cold ruin always has three, the model test covers the warm clusters)
+     MOVE "minecraft:ocean_ruin_warm" TO WS-KEY
+     PERFORM ONE-STRUCTURE
+     MOVE "minecraft:ocean_ruin_cold" TO WS-KEY
+     PERFORM ONE-STRUCTURE
+     MOVE 1 TO WS-NEED-MANY
+     MOVE 4 TO WS-MIN-PIECES
+     PERFORM ONE-STRUCTURE
+     MOVE 0 TO WS-NEED-MANY
      STOP RUN.
 
  ONE-STRUCTURE.
@@ -117,7 +127,7 @@
                      MOVE 1 TO WS-FOUND
                      IF WS-NEED-MANY = 1
                          CALL "STRUCT-FIND-POINT" USING WS-STRUCT-ROW CW-SEED WS-SX WS-SZ WS-FX WS-FY WS-FZ WS-FV
-                         IF SP-COUNT < 2
+                         IF SP-COUNT < WS-MIN-PIECES
                              MOVE 0 TO WS-FOUND
                          END-IF
                      END-IF

@@ -1,4 +1,4 @@
-*> findGenerationPoint of the template structures (docs/protocol/36-structures-4 section 6 igloo, 36-structures-6 section 4 shipwreck) and the hooks of their pieces: the start
+*> findGenerationPoint of the template structures (docs/protocol/36-structures-4 section 6 igloo, 36-structures-6 section 4 shipwreck and section 3 ocean ruins, whose pieces are in struct-ruin.cob) and the hooks of their pieces: the start
 *> random (the Java LCG seeded by setLargeFeatureSeed, SP-RNG), the stub position on top of the chunk centre (the base height of STRUCT-BASE-HEIGHT, 36-4 2.2 item 2: the stub y is
 *> the first occupied height, y of the top block) and the template pieces of the structure (STRUCT-TPL-PIECE-ADD, kinds 1 igloo and 2 shipwreck). The biome check of 36-4 2.2 item 1 is
 *> STRUCT-VALID-AT at the stub (the "could exist on top of the chunk centre" test before it holds whenever the check at the stub passes, so it is not made on its own).
@@ -49,6 +49,8 @@
              MOVE 0 TO WS-HEIGHTMAP
          WHEN "shipwreck"
              COMPUTE WS-HEIGHTMAP = 1 - SDT-VARIANT(L-STRUCT)
+         WHEN "ocean_ruin"
+             MOVE 1 TO WS-HEIGHTMAP
          WHEN OTHER
              MOVE 0 TO L-DONE
              GOBACK
@@ -66,11 +68,18 @@
      COMPUTE WS-Z0 = L-CZ * 16
      MOVE 4 TO WS-BOUND
      CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-BOUND WS-ROT
-     IF WS-NAME = "igloo"
-         CALL "STRUCT-IGLOO-PIECES" USING WS-X0 WS-Z0 WS-ROT
-     ELSE
-         CALL "STRUCT-SHIPWRECK-PIECE" USING L-STRUCT WS-HEIGHTMAP WS-X0 WS-Z0 WS-ROT L-VALID
-     END-IF
+     EVALUATE WS-NAME
+         WHEN "igloo"
+             CALL "STRUCT-IGLOO-PIECES" USING WS-X0 WS-Z0 WS-ROT
+         WHEN "ocean_ruin"
+*>           36-6 3.2: the piece generator (struct-ruin.cob); a start whose templates are absent has no piece and is invalid
+             CALL "STRUCT-RUIN-PIECES" USING L-STRUCT WS-X0 WS-Z0 WS-ROT
+             IF SP-COUNT = 0
+                 MOVE 0 TO L-VALID
+             END-IF
+         WHEN OTHER
+             CALL "STRUCT-SHIPWRECK-PIECE" USING L-STRUCT WS-HEIGHTMAP WS-X0 WS-Z0 WS-ROT L-VALID
+     END-EVALUATE
      GOBACK.
  END PROGRAM STRUCT-TPL-FIND-POINT.
 

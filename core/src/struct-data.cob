@@ -321,6 +321,13 @@
  01 WS-VARLEN              BINARY-LONG.
  01 WS-KEY-BEACHED         PIC X(40) VALUE "is_beached".
  01 WS-BEACHED             BINARY-LONG.
+ 01 WS-KEY-TEMP            PIC X(40) VALUE "biome_temp".
+ 01 WS-KEY-LARGE           PIC X(40) VALUE "large_probability".
+ 01 WS-KEY-CLUSTER         PIC X(40) VALUE "cluster_probability".
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-DBL                 FLOAT-LONG.
+ 01 WS-F32                 FLOAT-SHORT.
+ 01 WS-DBL-OK              BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(80).
  01 L-INDEX                BINARY-LONG.
@@ -355,6 +362,24 @@
          IF JN-TYPE(WS-BEACHED) = JT-TRUE
              MOVE 1 TO SDT-VARIANT(L-INDEX)
          END-IF
+     END-IF
+*>   the ocean ruin's biome_temp (36-6 section 3.1: warm is variant 1) and its two float probabilities (as float32, the compared value of the generator)
+     CALL "FD-J-STRING" USING JSON-DOC WS-KEY-TEMP FC-N1 WS-VARTEXT WS-VARLEN
+     IF WS-VARTEXT(1:4) = "warm"
+         MOVE 1 TO SDT-VARIANT(L-INDEX)
+     END-IF
+     MOVE 0 TO SDT-LARGE(L-INDEX) SDT-CLUSTER(L-INDEX)
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-LARGE WS-NODE
+     CALL "FD-J-DOUBLE" USING JSON-DOC WS-NODE WS-DBL WS-DBL-OK
+     IF WS-DBL-OK = 1
+         MOVE WS-DBL TO WS-F32
+         MOVE WS-F32 TO SDT-LARGE(L-INDEX)
+     END-IF
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-CLUSTER WS-NODE
+     CALL "FD-J-DOUBLE" USING JSON-DOC WS-NODE WS-DBL WS-DBL-OK
+     IF WS-DBL-OK = 1
+         MOVE WS-DBL TO WS-F32
+         MOVE WS-F32 TO SDT-CLUSTER(L-INDEX)
      END-IF
      COMPUTE WS-FIRST = SD-BIOME-COUNT + 1
      CALL "STRUCT-HOLDER-BIOMES" USING JSON-DOC WS-BIOMES WS-FIRST

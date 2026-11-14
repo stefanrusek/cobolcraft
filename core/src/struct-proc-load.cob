@@ -377,6 +377,7 @@
  01 K-OUTPUT               PIC X(40) VALUE "output_state".
  01 K-MODIFIER             PIC X(40) VALUE "block_entity_modifier".
  01 K-TYPE                 PIC X(40) VALUE "type".
+ 01 K-LOOT                 PIC X(40) VALUE "loot_table".
  01 WS-I                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
@@ -437,6 +438,9 @@
                      MOVE 2 TO SPR-MOD(WS-ROW)
                  WHEN "minecraft:append_loot"
                      MOVE 3 TO SPR-MOD(WS-ROW)
+                     CALL "FD-J-STRING" USING JSON-DOC K-LOOT WS-N WS-TEXT WS-LEN
+                     CALL "FD-KEY" USING WS-TEXT WS-KEY
+                     MOVE WS-KEY TO SPR-LOOT(WS-ROW)
              END-EVALUATE
          END-IF
      END-PERFORM
@@ -645,7 +649,7 @@
      MOVE L-KEY TO SPL-KEY(WS-ROW)
      MOVE 2 TO SPL-STATUS(WS-ROW)
      MOVE 0 TO SPL-FIRST(WS-ROW) SPL-N(WS-ROW)
-*>   a code-defined list of a structure (BlockIgnoreProcessor.STRUCTURE_BLOCK of the igloo, STRUCTURE_AND_AIR of the shipwreck: 36-4 6.2, 36-6 4.3) has no file: its JSON is built in
+*>   a code-defined list of a structure (BlockIgnoreProcessor.STRUCTURE_BLOCK of the igloo, STRUCTURE_AND_AIR of the shipwreck: 36-4 6.2, 36-6 4.3; the ruins' lists: struct-ruin.cob) has no file: its JSON is built in
      EVALUATE L-KEY
          WHEN "cobolcraft:inline/ignore_structure_block"
              MOVE SPACES TO WS-TEXT
@@ -656,7 +660,11 @@
              MOVE '{"processors":[{"processor_type":"minecraft:block_ignore","blocks":["minecraft:air","minecraft:structure_block"]}]}' TO WS-TEXT
              MOVE 0 TO WS-STATUS
          WHEN OTHER
-             CALL "FD-FETCH" USING WS-REGISTRY L-KEY WS-TEXT WS-LEN WS-STATUS
+*>           the lists of the ocean ruins (36-6 2.4, 3.5) are code-defined too
+             CALL "STRUCT-RUIN-LIST-JSON" USING L-KEY WS-TEXT WS-STATUS
+             IF WS-STATUS NOT = 0
+                 CALL "FD-FETCH" USING WS-REGISTRY L-KEY WS-TEXT WS-LEN WS-STATUS
+             END-IF
      END-EVALUATE
      IF WS-STATUS NOT = 0
          GOBACK
