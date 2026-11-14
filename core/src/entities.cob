@@ -77,13 +77,13 @@
  PROGRAM-ID. ENTITY-ADD-BUILD.
 *> USING tracker row, PB-BUFFER: Add Entity 0x01 (05a; 09 §3.2, §3.3): entity id, UUID, type,
 *> position, movement as LpVec3 (a ground item's current motion EN-VX to EN-VZ; (0, 0, 0) for
-*> players and mobs, 09 §3.3 Mobs rows), pitch, yaw and head yaw (= yaw) as Angles, data 0.
+*> players and mobs, 09 §3.3 Mobs rows), pitch, yaw and head yaw (= yaw) as Angles, data 0 (a falling block: its block state id, 05a 0x01).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
  01 WS-PACKET-ID           BINARY-LONG VALUE 1.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-DATA                BINARY-LONG.
  01 WS-VX                  FLOAT-LONG.
  01 WS-VY                  FLOAT-LONG.
  01 WS-VZ                  FLOAT-LONG.
@@ -108,7 +108,11 @@
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-PITCH(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO WS-DATA
+     IF EN-FB-STATE(L-ROW) > 0
+         MOVE EN-FB-STATE(L-ROW) TO WS-DATA
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-DATA
      GOBACK.
  END PROGRAM ENTITY-ADD-BUILD.
 
@@ -338,6 +342,7 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-SEES                BINARY-LONG.
  01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-TNT-TYPE            BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-BABY                BINARY-LONG.
  01 WS-WOOL                BINARY-LONG.
@@ -356,6 +361,7 @@
      MOVE 0 TO WS-NEW
      CALL "ENTITY-SEES" USING L-PLAYER L-ROW WS-SEES
      CALL "XP-ORB-TYPE" USING WS-ORB-TYPE
+     CALL "TNT-TYPE" USING WS-TNT-TYPE
      CALL "PB-RESET" USING PB-BUFFER
      IF WS-SEES = 1 AND VW-SEEN(L-PLAYER)(L-ROW:1) NOT = "1"
          CALL "ENTITY-ADD-BUILD" USING L-ROW PB-BUFFER
@@ -376,6 +382,11 @@
              CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
              CALL "PB-RESET" USING PB-BUFFER
              CALL "SET-ENTITY-DATA-ORB-BUILD" USING EN-ID(L-ROW) EN-ITEM(L-ROW) PB-BUFFER
+         END-IF
+         IF WS-TNT-TYPE > 0 AND EN-TYPE(L-ROW) = WS-TNT-TYPE
+             CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "SET-ENTITY-DATA-FUSE-BUILD" USING EN-ID(L-ROW) EN-SWELL(L-ROW) PB-BUFFER
          END-IF
          CALL "MOB-DATA-VALUES" USING L-ROW WS-BABY WS-WOOL WS-NEEDED
          IF WS-NEEDED = 1

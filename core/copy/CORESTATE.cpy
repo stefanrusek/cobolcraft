@@ -414,6 +414,10 @@
        10 EN-ALLAY-DANCE      BINARY-LONG.        *> allay: 1 while dancing (metadata 16)
        10 EN-ALLAY-T          BINARY-LONG.        *> allay: ticks since the last regeneration
        10 EN-STRENGTH         BINARY-LONG.        *> llama: strength 1 to 5 (metadata 20); the variant 0 to 3 is EN-WOOL (metadata 21)
+*>     --- 002-lane-mobsfull-h24: falling block entity (core/src/mob-21-8.cob; 21 section 8.4, 29b part 1 section 4) ---
+       10 EN-FB-STATE         BINARY-LONG.        *> falling block: the block state id it carries (0 = not a falling block); the Add Entity Data
+       10 EN-FB-TIME          BINARY-LONG.        *> falling block: ticks lived
+       10 EN-FB-CANCEL        BINARY-LONG.        *> falling block: cancelDrop, 1 = it never places itself
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
