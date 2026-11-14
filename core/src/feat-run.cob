@@ -27,7 +27,7 @@
  END PROGRAM FR-NEXT-INT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FR-INT-SAMPLE.
+ PROGRAM-ID. FR-INT-SAMPLE IS RECURSIVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -37,6 +37,9 @@
  01 WS-RANGE               BINARY-LONG.
  01 WS-SLOPE               BINARY-LONG.
  01 WS-SIDE                BINARY-LONG.
+ LOCAL-STORAGE SECTION.
+ 01 LS-SOURCE.
+    05 LS-Q                BINARY-LONG OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-P.
@@ -80,6 +83,19 @@
              COMPUTE WS-BOUND = WS-B + 1
              CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
              COMPUTE L-VALUE = L-V(2) + WS-A
+*>       clamped: the source (four integers in the pool from L-V(4)) is sampled with its own draws, then clamped to L-V(2) .. L-V(3)
+         WHEN 7
+             PERFORM VARYING WS-RANGE FROM 1 BY 1 UNTIL WS-RANGE > 4
+                 COMPUTE WS-BOUND = L-V(4) + WS-RANGE - 1
+                 MOVE FD-POOL(WS-BOUND) TO LS-Q(WS-RANGE)
+             END-PERFORM
+             CALL "FR-INT-SAMPLE" USING L-STATE LS-SOURCE L-VALUE
+             IF L-VALUE < L-V(2)
+                 MOVE L-V(2) TO L-VALUE
+             END-IF
+             IF L-VALUE > L-V(3)
+                 MOVE L-V(3) TO L-VALUE
+             END-IF
          WHEN OTHER
              IF L-V(4) = 0 AND L-V(3) = 0 - L-V(2)
                  COMPUTE WS-BOUND = L-V(3) + 1
@@ -296,6 +312,13 @@
                      MOVE 1 TO L-RESULT
                  END-IF
              END-IF
+*>       replaceable: the builder flag of the block at the offset (a cell outside the level reads as air, which is replaceable)
+         WHEN 6
+             CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+             CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+             IF LS-BLOCK > 0
+                 MOVE CB-REPLACEABLE(LS-BLOCK) TO L-RESULT
+             END-IF
          WHEN 8
              IF LS-Y >= FL-MIN-Y AND LS-Y <= FL-MIN-Y + FL-HEIGHT - 1
                  MOVE 1 TO L-RESULT
@@ -347,6 +370,44 @@
                              MOVE 1 TO L-RESULT
                          END-IF
                      END-PERFORM
+                 END-IF
+             END-IF
+*>           cactus (29b part 4 section 4.1): the block below is a cactus or in supports_cactus, no horizontal neighbour is solid or lava, the cell above holds no liquid
+             IF PR-A(L-PRED) = 3
+                 IF PR-E(L-PRED) > 0 AND LS-BLOCK = PR-E(L-PRED)
+                     MOVE 1 TO L-RESULT
+                 END-IF
+                 COMPUTE LS-Y = LS-Y + 1
+                 PERFORM VARYING LS-DX FROM 0 BY 1 UNTIL LS-DX > 3 OR L-RESULT = 0
+                     MOVE LS-X TO LS-V
+                     MOVE LS-Z TO LS-R
+                     EVALUATE LS-DX
+                         WHEN 0
+                             ADD 1 TO LS-V
+                         WHEN 1
+                             SUBTRACT 1 FROM LS-V
+                         WHEN 2
+                             ADD 1 TO LS-R
+                         WHEN OTHER
+                             SUBTRACT 1 FROM LS-R
+                     END-EVALUATE
+                     CALL "FL-GET-STATE" USING LS-V LS-Y LS-R LS-STATE
+                     CALL "FL-CLASS" USING LS-STATE LS-CLASS
+                     CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+                     IF LS-CLASS = 3
+                         MOVE 0 TO L-RESULT
+                     END-IF
+                     IF LS-BLOCK > 0 AND (LS-CLASS = 0 OR LS-CLASS = 4)
+                         IF CB-SOLID(LS-BLOCK) = 1
+                             MOVE 0 TO L-RESULT
+                         END-IF
+                     END-IF
+                 END-PERFORM
+                 COMPUTE LS-Y = LS-Y + 1
+                 CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+                 CALL "FL-CLASS" USING LS-STATE LS-CLASS
+                 IF LS-CLASS = 2 OR LS-CLASS = 3
+                     MOVE 0 TO L-RESULT
                  END-IF
              END-IF
          WHEN 11
@@ -460,6 +521,12 @@
                  MOVE FD-POOL(PV-POOL(L-PV) + WS-RUN) TO L-STATE-OUT
                  MOVE 1 TO L-OK
              END-IF
+*>       the noise providers (feat-prov-noise.cob)
+         WHEN 6
+         WHEN 7
+         WHEN 8
+             CALL "FR-PROV-NOISE" USING L-STATE L-PV L-X L-Y L-Z L-STATE-OUT
+             MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
  END PROGRAM FR-PROV-STATE.

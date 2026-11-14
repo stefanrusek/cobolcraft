@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:weighted",
+  "entries": [
+    {
+      "data": "minecraft:poppy",
+      "weight": 1
+    },
+    {
+      "data": {
+        "id": "minecraft:dandelion"
+      },
+      "weight": 3
+    }
+  ]
+}
