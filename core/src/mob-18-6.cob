@@ -822,6 +822,10 @@
          CALL "STDMOB-SLIME-RULE" USING L-STATE L-DIM L-X L-Y L-Z L-REASON L-OK
          GOBACK
      END-IF
+     IF SM-KIND(L-ROW) >= 2
+         CALL "MS6-WATER-RULE" USING L-DIM L-ROW L-X L-Y L-Z L-OK
+         GOBACK
+     END-IF
      CALL "STDMOB-LIGHTS" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK
      COMPUTE WS-BELOW = L-Y - 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-BELOW L-Z WS-KIND
@@ -866,6 +870,7 @@
 *> placement (6.9) and the type's spawn rule (6.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY STDMOBS.
  01 WS-PLACE               BINARY-LONG VALUE 1.
  01 WS-OK                  BINARY-LONG.
  LINKAGE SECTION.
@@ -879,6 +884,10 @@
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-DIM L-ROW L-X L-Y L-Z L-REASON L-OK.
      MOVE 0 TO L-OK
+     MOVE 1 TO WS-PLACE
+     IF SM-KIND(L-ROW) >= 2
+         MOVE 2 TO WS-PLACE
+     END-IF
      CALL "MS6-PLACEMENT-OK" USING WS-PLACE L-DIM L-X L-Y L-Z WS-OK
      IF WS-OK = 1
          CALL "MS6-RULE-AT" USING L-STATE L-DIM L-ROW L-X L-Y L-Z L-REASON L-OK
@@ -1646,8 +1655,7 @@
 *> spawn_monsters with the hostile-mobs setting, the 400-tick friendly cycle, the global cap), and each candidate chunk (6.2: a loaded chunk within 8
 *> chunks of a player, once even when two players share it) gets one MS6-SPAWN-CHUNK per eligible category (the local cap holds). To bound the work of
 *> a tick the candidate chunks are dealt out over 20 ticks (a chunk is tried when its index mod 20 = Time mod 20), and the friendly cycle covers
-*> the ticks with Time mod 400 below 20, so each chunk still gets one attempt per cycle of the vanilla tick, 20 ticks apart. Only the creature and monster
-*> categories are tried (the species with logic are land animals and land monsters).
+*> the ticks with Time mod 400 below 20, so each chunk still gets one attempt per cycle of the vanilla tick, 20 ticks apart. The creature and monster categories and the water ones (5, 6, 7) are tried; ambient and axolotls have no species yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1787,8 +1795,8 @@
                                      MOVE WS-LP(WS-Q) TO WS-CP(WS-NC)
                                  END-IF
                              END-PERFORM
-                             PERFORM VARYING WS-CAT FROM 1 BY 1 UNTIL WS-CAT > 2
-                                 IF WS-FLAG(WS-CAT) = 1
+                             PERFORM VARYING WS-CAT FROM 1 BY 1 UNTIL WS-CAT > 7
+                                 IF WS-FLAG(WS-CAT) = 1 AND WS-CAT NOT = 3 AND WS-CAT NOT = 4
                                      CALL "MS6-LOCAL-CAP" USING WS-CAT WS-NC WS-CLOSE WS-OK
                                      IF WS-OK = 1
                                          CALL "MS6-SPAWN-CHUNK" USING WS-STATE WS-DIM WS-CAT WS-CX WS-CZ WS-SPAWNED
