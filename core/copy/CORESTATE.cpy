@@ -292,6 +292,24 @@
        10 EN-STRAFE-BACK     BINARY-LONG.        *> strafingBackwards 0 or 1
        10 EN-STRAFE-X        FLOAT-LONG.         *> the strafe walk of this tick
        10 EN-STRAFE-Z        FLOAT-LONG.
+*>     --- 002-lane-mobsfull-h5: per-entity variant (core/src/mob-20-3.cob) ---
+       10 EN-VARIANT         BINARY-LONG.        *> zombie family: 1 = baby; creeper: 1 = powered; slime: its size (0 = not set, read as 1); the metadata sync is STDMOB-VARIANT-BUILD
+       10 EN-EQUIP           BINARY-LONG.        *> armour of a zombie or skeleton: 10 x (tier + 1) + number of slots worn (head, chest, legs, feet in that order); 0 none (20 section 3.6)
+       10 EN-REINF           BINARY-LONG.        *> zombie reinforcement chance in ten-thousandths (20 section 4.1)
+       10 EN-ENDER-TICKS     BINARY-LONG.        *> enderman: ticks since its target changed (the 600-tick daylight rule, 20 section 8.1)
+*>     --- 002-lane-mobsfull-h6: breeding, ageing, wool, eggs (core/src/mob-18-8.cob; 18 section 8.1, 19 sections 2.2 to 2.5) ---
+*>     A baby has EN-VARIANT 1 (the same flag as the zombie family) and a negative EN-MOBAGE; an adult in breeding cooldown has a positive one.
+       10 EN-MOBAGE          BINARY-LONG.        *> AgeableMob age in ticks: -24000 a new baby, 0 adult, 6000 after breeding (counts toward 0)
+       10 EN-LOVE            BINARY-LONG.        *> inLove: ticks left in love mode (600 after feeding)
+       10 EN-LOVE-CAUSE      BINARY-LONG.        *> player row that fed it (0 none)
+       10 EN-LOVE-TIME       BINARY-LONG.        *> BreedGoal loveTime: ticks spent walking to the partner
+       10 EN-LOVE-PARTNER    BINARY-LONG.        *> tracker row of the partner being walked to (0 none)
+       10 EN-FORCED          BINARY-LONG.        *> forcedAgeTimer: ticks left of the age-up effect after feeding a baby
+       10 EN-LOCKED          BINARY-LONG.        *> age locked (golden dandelion): 1 keeps the age from counting
+       10 EN-TAMED           BINARY-LONG.        *> horse family: 1 when tamed (love mode needs it)
+       10 EN-WOOL            BINARY-LONG.        *> sheep: the metadata byte (colour 0 to 15, +16 sheared); mooshroom: type 0 red 1 brown; pig, cow, chicken: variant
+       10 EN-EGG             BINARY-LONG.        *> chicken: eggTime, ticks to the next egg
+       10 EN-EAT             BINARY-LONG.        *> sheep: the EatBlock timer, 0 or the ticks left of the 40
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while

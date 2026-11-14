@@ -243,6 +243,8 @@
              CALL "CHAT-MESSAGE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 1
              CALL "HEALTH-ATTACK" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 26
+             CALL "MOB-INTERACT" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 12
              CALL "HEALTH-RESPAWN" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 42
@@ -291,7 +293,7 @@
 *> Chat 0x09 (String of at most 256 code units, Long timestamp, Long salt, Optional MessageSignature
 *> of 256 raw bytes, LastSeenMessagesUpdate: VarInt offset, FixedBitSet(20), Byte checksum); the
 *> signature and the last seen messages are not checked (09 §1: secure chat is not enforced).
-*> Attack 0x01 (VarInt entity id); Client Command 0x0C (VarInt action); Player Command 0x2A (VarInt
+*> Attack 0x01 (VarInt entity id); Interact 0x1A (VarInt entity id, VarInt hand, LpVec3 point, Boolean sneaking); Client Command 0x0C (VarInt action); Player Command 0x2A (VarInt
 *> entity id, VarInt action, VarInt data); Use Item 0x43 (VarInt hand, VarInt sequence, two Floats);
 *> Place Recipe 0x27 (VarInt container id, VarInt recipe display id, Boolean use max items).
 *> Outcome 1 when a read fails or bytes are left over.
@@ -410,6 +412,11 @@
              CALL "SP-INTERN" USING WK-ITEMSTACK-X PSB-STACK-VAR
          WHEN 1
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
+         WHEN 26
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-HAND
+             CALL "PB-GET-LPVEC3" USING PB-BUFFER PSB-X PSB-Y PSB-Z
+             CALL "PB-GET-BOOL" USING PB-BUFFER PSB-INSIDE
          WHEN 12
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-ACTION
          WHEN 42

@@ -1,0 +1,1155 @@
+*> Love mode, feeding, ageing and breeding of the animals (docs/protocol/18-mob-framework.md section 8.1; 19 sections 2 and 3.4; lane 002-lane-mobsfull-h6),
+*> and the interactions of the farm animals of document 19 section 2 (shearing, milking, bowls, eggs, grass eating) wired to the live game.
+*>
+*> Pure rules (species keys are PIC X(24) without "minecraft:", item keys the same):
+*>   M188-FOOD USING species, item, found, seconds, love, tame        the food table: found 1 when the species accepts it; seconds the fixed age-up of a baby (0 = the 10 percent rule);
+*>                                                                    love 1 when it can start love; tame 1 when love needs a tamed adult (horse family, llama, camel)
+*>   M188-BREEDS USING species, ok                                    1 when the species can fall in love
+*>   M188-FEED USING age, in love, found, fixed seconds, can fall in love, action out, seconds out    8.1 Animal.mobInteract: action 1 love, 2 age up, 0 nothing
+*>   M188-AGE-UP USING age (changed), seconds, forced timer (changed)  8.1 ageUp: the age moves toward 0 by seconds x 20 and the forced-age effect lasts 40 ticks
+*>   M188-TICK USING age, in love, locked, forced, grown out          8.1 AgeableMob.aiStep and Animal.aiStep for one tick
+*>   M188-CAN-MATE USING species a, species b, love a, love b, ok     8.1 canMate
+*>   M188-OFFSPRING USING species a, species b, key out               8.1 getBreedOffspring
+*>   M188-COLOR-KEY USING colour (0 to 15), key out                   the wool item of a dye colour
+*> Live programs:
+*>   MOB-SPECIES-KEY USING row, key out                               the species key of a standard mob row (spaces for any other row)
+*>   MOB-DATA-VALUES USING row, baby out, wool out, needed out        the metadata an animal sends: slot 16 the baby flag, slot 18 the sheep wool byte
+*>   MOB-DATA-BUILD USING row, PB-BUFFER                              that Set Entity Data (0x65)
+*>   MOB-DATA-SEND USING row                                          the same to the viewers of the row
+*>   MOB-BORN USING row                                               the initial state of a new mob: a sheep's colour, a chicken's egg timer
+*>   MOB-PARTNER USING row, partner out                               the nearest suitable partner of an animal in love within 8 blocks (0 none)
+*>   MOB-BREED USING row a, row b                                     spawnChildFromBreeding and finalizeSpawnChildFromBreeding
+*>   MOB-LIFE-TICK USING row, hx out, hz out, walk out                the age, love, egg, wool and breeding of one animal for one tick; walk 1 when it walks to its partner
+*>   MOB-SHEEP-EAT-START USING row, draw (0 to the bound - 1)         the EatBlock goal starts on draw 0 when the block at the feet or the one below can be eaten
+*>   MOB-SHEEP-EAT-TICK USING row                                     the eating timer: at 4 the block is eaten
+*>   MOB-INTERACT USING connection id, PLAY-SERVERBOUND               Interact 0x1A on an animal
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-FOOD.
+*> USING species, item, found, seconds, love, tame: 8.1 and 19 section 2 (pig_food carrot potato beetroot; cow_food, sheep_food and goat_food wheat; chicken_food the six seeds;
+*> rabbit_food; fox_food; panda_food) and 3.4 (the horse family through M19-HORSE-FOOD, llama, camel cactus with its 10 s).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOODS.
+    05 FILLER PIC X(48) VALUE "pig                     carrot                  ".
+    05 FILLER PIC X(48) VALUE "pig                     potato                  ".
+    05 FILLER PIC X(48) VALUE "pig                     beetroot                ".
+    05 FILLER PIC X(48) VALUE "cow                     wheat                   ".
+    05 FILLER PIC X(48) VALUE "mooshroom               wheat                   ".
+    05 FILLER PIC X(48) VALUE "sheep                   wheat                   ".
+    05 FILLER PIC X(48) VALUE "goat                    wheat                   ".
+    05 FILLER PIC X(48) VALUE "chicken                 wheat_seeds             ".
+    05 FILLER PIC X(48) VALUE "chicken                 melon_seeds             ".
+    05 FILLER PIC X(48) VALUE "chicken                 pumpkin_seeds           ".
+    05 FILLER PIC X(48) VALUE "chicken                 beetroot_seeds          ".
+    05 FILLER PIC X(48) VALUE "chicken                 torchflower_seeds       ".
+    05 FILLER PIC X(48) VALUE "chicken                 pitcher_pod             ".
+    05 FILLER PIC X(48) VALUE "rabbit                  carrot                  ".
+    05 FILLER PIC X(48) VALUE "rabbit                  golden_carrot           ".
+    05 FILLER PIC X(48) VALUE "rabbit                  dandelion               ".
+    05 FILLER PIC X(48) VALUE "fox                     sweet_berries           ".
+    05 FILLER PIC X(48) VALUE "fox                     glow_berries            ".
+    05 FILLER PIC X(48) VALUE "panda                   bamboo                  ".
+ 01 WS-FOOD-TABLE REDEFINES WS-FOODS.
+    05 WS-FOOD               OCCURS 19 TIMES.
+       10 WS-F-SPECIES       PIC X(24).
+       10 WS-F-ITEM          PIC X(24).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-HORSE               BINARY-LONG.
+ 01 WS-HEAL                BINARY-LONG.
+ 01 WS-TEMPER              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SPECIES              PIC X(24).
+ 01 L-ITEM                 PIC X(24).
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-SECONDS              BINARY-LONG.
+ 01 L-LOVE                 BINARY-LONG.
+ 01 L-TAME                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SPECIES L-ITEM L-FOUND L-SECONDS L-LOVE L-TAME.
+     MOVE 0 TO L-FOUND L-SECONDS L-LOVE L-TAME WS-HORSE WS-KIND
+     EVALUATE TRUE
+         WHEN L-SPECIES = "horse" OR "donkey" OR "mule"
+             MOVE 1 TO WS-HORSE
+         WHEN L-SPECIES = "llama"
+             MOVE 1 TO WS-HORSE
+             MOVE 1 TO WS-KIND
+         WHEN L-SPECIES = "camel"
+             MOVE 1 TO WS-HORSE
+             MOVE 2 TO WS-KIND
+     END-EVALUATE
+     IF WS-HORSE = 1
+         CALL "M19-HORSE-FOOD" USING WS-KIND L-ITEM L-FOUND WS-HEAL L-SECONDS WS-TEMPER L-LOVE
+         MOVE 1 TO L-TAME
+         IF L-FOUND = 1 AND WS-KIND = 2
+             MOVE 10 TO L-SECONDS
+         END-IF
+     ELSE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 19
+             IF WS-F-SPECIES(WS-I) = L-SPECIES AND WS-F-ITEM(WS-I) = L-ITEM
+                 MOVE 1 TO L-FOUND L-LOVE
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM M188-FOOD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-BREEDS.
+*> USING species, ok: 1 for the animals that have a food and can mate (a mule cannot: its canMate is the abstract false; 19 section 3.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-SPECIES              PIC X(24).
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SPECIES L-OK.
+     MOVE 0 TO L-OK
+     EVALUATE L-SPECIES
+         WHEN "pig" WHEN "cow" WHEN "mooshroom" WHEN "sheep" WHEN "chicken" WHEN "horse" WHEN "donkey" WHEN "llama"
+         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda"
+             MOVE 1 TO L-OK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM M188-BREEDS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-FEED.
+*> USING age, in love, found, fixed seconds, can fall in love, action out, seconds out: Animal.mobInteract with a food item (8.1). The love branch comes first: age 0, not in
+*> love and able to fall in love (action 1). Otherwise a baby (negative age) is aged up (action 2) by the fixed seconds of the food, or by (remaining ticks / 20) x 0.1
+*> seconds, truncated. Anything else does nothing (action 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WHOLE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-LOVE                 BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-FIXED                BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-SECONDS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-LOVE L-FOUND L-FIXED L-CAN L-ACTION L-SECONDS.
+     MOVE 0 TO L-ACTION L-SECONDS
+     IF L-FOUND = 1
+         EVALUATE TRUE
+             WHEN L-AGE = 0 AND L-LOVE <= 0 AND L-CAN = 1
+                 MOVE 1 TO L-ACTION
+             WHEN L-AGE < 0
+                 MOVE 2 TO L-ACTION
+                 MOVE L-FIXED TO L-SECONDS
+                 IF L-FIXED = 0
+                     COMPUTE WS-WHOLE = - L-AGE
+                     DIVIDE WS-WHOLE BY 20 GIVING WS-WHOLE
+                     COMPUTE L-SECONDS = WS-WHOLE * 0.1
+                 END-IF
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM M188-FEED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-AGE-UP.
+*> USING age (changed), seconds, forced (changed): ageUp (8.1): a baby's age moves toward 0 by seconds x 20 and stops at 0; the forced-age effect (happy villager particles
+*> every 4 ticks) lasts 40 ticks. An adult is not changed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-SECONDS              BINARY-LONG.
+ 01 L-FORCED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-SECONDS L-FORCED.
+     IF L-AGE < 0
+         COMPUTE L-AGE = FUNCTION MIN(L-AGE + L-SECONDS * 20, 0)
+         MOVE 40 TO L-FORCED
+     END-IF
+     GOBACK.
+ END PROGRAM M188-AGE-UP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-TICK.
+*> USING age, in love, locked, forced, grown out: one tick of AgeableMob.aiStep (a baby's age counts up and the mob grows up at 0 (grown 1); a positive age is the breeding
+*> cooldown and counts down unless the age is locked) and Animal.aiStep (a mob whose age is not 0 is not in love; love counts down), and the forced-age timer.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-LOVE                 BINARY-LONG.
+ 01 L-LOCKED               BINARY-LONG.
+ 01 L-FORCED               BINARY-LONG.
+ 01 L-GROWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-LOVE L-LOCKED L-FORCED L-GROWN.
+     MOVE 0 TO L-GROWN
+     EVALUATE TRUE
+         WHEN L-AGE < 0
+             ADD 1 TO L-AGE
+             IF L-AGE = 0
+                 MOVE 1 TO L-GROWN
+             END-IF
+         WHEN L-AGE > 0 AND L-LOCKED = 0
+             SUBTRACT 1 FROM L-AGE
+     END-EVALUATE
+     IF L-AGE NOT = 0
+         MOVE 0 TO L-LOVE
+     END-IF
+     IF L-LOVE > 0
+         SUBTRACT 1 FROM L-LOVE
+     END-IF
+     IF L-FORCED > 0
+         SUBTRACT 1 FROM L-FORCED
+     END-IF
+     GOBACK.
+ END PROGRAM M188-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-CAN-MATE.
+*> USING species a, species b, love a, love b, ok: canMate (8.1): both in love and of the same class; a horse and a donkey are partners of each other (19 section 3.5); a species
+*> that cannot breed (a mule) never mates.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BREEDS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    PIC X(24).
+ 01 L-B                    PIC X(24).
+ 01 L-LOVE-A               BINARY-LONG.
+ 01 L-LOVE-B               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-LOVE-A L-LOVE-B L-OK.
+     MOVE 0 TO L-OK
+     IF L-LOVE-A > 0 AND L-LOVE-B > 0
+         CALL "M188-BREEDS" USING L-A WS-BREEDS
+         EVALUATE TRUE
+             WHEN L-A = L-B
+                 MOVE WS-BREEDS TO L-OK
+             WHEN L-A = "horse" AND L-B = "donkey"
+                 MOVE 1 TO L-OK
+             WHEN L-A = "donkey" AND L-B = "horse"
+                 MOVE 1 TO L-OK
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM M188-CAN-MATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-OFFSPRING.
+*> USING species a, species b, key out: getBreedOffspring (8.1, 19 section 3.5): a horse and a donkey have a mule; every other pair has the species of the first parent.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-A                    PIC X(24).
+ 01 L-B                    PIC X(24).
+ 01 L-KEY                  PIC X(24).
+ PROCEDURE DIVISION USING L-A L-B L-KEY.
+     MOVE L-A TO L-KEY
+     IF (L-A = "horse" AND L-B = "donkey") OR (L-A = "donkey" AND L-B = "horse")
+         MOVE "mule" TO L-KEY
+     END-IF
+     GOBACK.
+ END PROGRAM M188-OFFSPRING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-COLOR-KEY.
+*> USING colour (the dye id 0 to 15), key out: the wool item of that colour (white_wool ... black_wool), spaces for an id outside 0 to 15.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER PIC X(11) VALUE "white      ".
+    05 FILLER PIC X(11) VALUE "orange     ".
+    05 FILLER PIC X(11) VALUE "magenta    ".
+    05 FILLER PIC X(11) VALUE "light_blue ".
+    05 FILLER PIC X(11) VALUE "yellow     ".
+    05 FILLER PIC X(11) VALUE "lime       ".
+    05 FILLER PIC X(11) VALUE "pink       ".
+    05 FILLER PIC X(11) VALUE "gray       ".
+    05 FILLER PIC X(11) VALUE "light_gray ".
+    05 FILLER PIC X(11) VALUE "cyan       ".
+    05 FILLER PIC X(11) VALUE "purple     ".
+    05 FILLER PIC X(11) VALUE "blue       ".
+    05 FILLER PIC X(11) VALUE "brown      ".
+    05 FILLER PIC X(11) VALUE "green      ".
+    05 FILLER PIC X(11) VALUE "red        ".
+    05 FILLER PIC X(11) VALUE "black      ".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME               PIC X(11) OCCURS 16 TIMES.
+ LINKAGE SECTION.
+ 01 L-COLOR                BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ PROCEDURE DIVISION USING L-COLOR L-KEY.
+     MOVE SPACES TO L-KEY
+     IF L-COLOR >= 0 AND L-COLOR <= 15
+         STRING WS-NAME(L-COLOR + 1) DELIMITED BY SPACE "_wool" DELIMITED BY SIZE INTO L-KEY
+     END-IF
+     GOBACK.
+ END PROGRAM M188-COLOR-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-SPECIES-KEY.
+*> USING row, key out (PIC X(24)): the SM-KEY of a standard mob row, spaces for any other row.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ PROCEDURE DIVISION USING L-ROW L-KEY.
+     MOVE SPACES TO L-KEY
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M > 0
+         MOVE SM-KEY(WS-M) TO L-KEY
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-SPECIES-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-DATA-VALUES.
+*> USING row, baby out, wool out, needed out: what an animal row sends as entity data (9.3, 19 section 1.3): metadata 16 is the baby flag of an ageable mob (EN-VARIANT 1) and
+*> metadata 18 the byte of a sheep (colour, +16 sheared). The zombie family's baby flag is sent by STDMOB-VARIANT-BUILD, so only passive rows count here. needed is 1 when
+*> either value differs from the default (not baby, byte 0); wool is -1 for a row that is no sheep.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-WOOL                 BINARY-LONG.
+ 01 L-NEEDED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-BABY L-WOOL L-NEEDED.
+     MOVE 0 TO L-BABY L-NEEDED
+     MOVE -1 TO L-WOOL
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M > 0
+         IF SM-KIND(WS-M) = 0
+             IF EN-VARIANT(L-ROW) = 1
+                 MOVE 1 TO L-BABY L-NEEDED
+             END-IF
+             IF SM-KEY(WS-M) = "sheep"
+                 MOVE EN-WOOL(L-ROW) TO L-WOOL
+                 IF L-WOOL > 0
+                     MOVE 1 TO L-NEEDED
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-DATA-VALUES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-DATA-BUILD.
+*> USING row, PB-BUFFER: Set Entity Data (0x65) with the entries of MOB-DATA-VALUES that differ from the default: index 16 BOOLEAN (baby), index 18 BYTE (sheep wool).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-WOOL                BINARY-LONG.
+ 01 WS-NEEDED              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     CALL "MOB-DATA-VALUES" USING L-ROW WS-BABY WS-WOOL WS-NEEDED
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE 16 TO MD-MD-INDEX
+     MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+     MOVE WS-BABY TO MD-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     IF WS-WOOL >= 0
+         MOVE 18 TO MD-MD-INDEX
+         MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
+         MOVE WS-WOOL TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     MOVE MD-MD-END TO MD-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     GOBACK.
+ END PROGRAM MOB-DATA-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-DATA-SEND.
+*> USING row: MOB-DATA-BUILD to every player whose client has the row.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "MOB-DATA-BUILD" USING L-ROW PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM MOB-DATA-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-BORN.
+*> USING row: the first state of a new mob (19 sections 2.4 and 2.5): a sheep gets its spawn colour (M19-SHEEP-COLOR, temperate configuration; the biome configuration is an open
+*> item), a chicken its egg timer 6000 + nextInt(6000).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-CONFIG              BINARY-LONG VALUE 0.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-SALT-W              BINARY-LONG VALUE 21.
+ 01 WS-SALT-C              BINARY-LONG VALUE 22.
+ 01 WS-SALT-E              BINARY-LONG VALUE 23.
+ 01 WS-BOUND-W             BINARY-LONG VALUE 100.
+ 01 WS-BOUND-C             BINARY-LONG VALUE 500.
+ 01 WS-BOUND-E             BINARY-LONG VALUE 6000.
+ 01 WS-DRAW                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     EVALUATE WS-KEY
+         WHEN "sheep"
+             CALL "XP-RANDOM" USING WS-SALT-W WS-BOUND-W WS-W
+             CALL "XP-RANDOM" USING WS-SALT-C WS-BOUND-C WS-C
+             CALL "M19-SHEEP-COLOR" USING WS-CONFIG WS-W WS-C EN-WOOL(L-ROW)
+         WHEN "chicken"
+             CALL "XP-RANDOM" USING WS-SALT-E WS-BOUND-E WS-DRAW
+             COMPUTE EN-EGG(L-ROW) = 6000 + WS-DRAW
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM MOB-BORN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-PARTNER.
+*> USING row, partner out: BreedGoal.findNearestPartner (8.1): the nearest other animal of its dimension that is alive, not panicking, tamed when the species needs it, and that the animal
+*> can mate with, within 8 blocks (squared distance 64); 0 when there is none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-OTHER               PIC X(24).
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-BEST                FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-HORSE               BINARY-LONG.
+ 01 WS-LOVE-A              BINARY-LONG.
+ 01 WS-LOVE-B              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PARTNER              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PARTNER.
+     MOVE 0 TO L-PARTNER
+     MOVE 64 TO WS-BEST
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF WS-E NOT = L-ROW AND EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-HEALTH(WS-E) > 0
+                 AND EN-FLEE(WS-E) = 0 AND EN-PLAYER(WS-E) = 0
+             CALL "MOB-SPECIES-KEY" USING WS-E WS-OTHER
+             MOVE EN-LOVE(L-ROW) TO WS-LOVE-A
+             MOVE EN-LOVE(WS-E) TO WS-LOVE-B
+             CALL "M188-CAN-MATE" USING WS-KEY WS-OTHER WS-LOVE-A WS-LOVE-B WS-OK
+             MOVE 0 TO WS-HORSE
+             IF WS-KEY = "horse" OR "donkey" OR "llama" OR "camel"
+                 COMPUTE WS-HORSE = 1 - EN-TAMED(L-ROW) * EN-TAMED(WS-E)
+             END-IF
+             IF WS-OK = 1 AND WS-HORSE = 0
+                 COMPUTE WS-DX = EN-X(WS-E) - EN-X(L-ROW)
+                 COMPUTE WS-DY = EN-Y(WS-E) - EN-Y(L-ROW)
+                 COMPUTE WS-DZ = EN-Z(WS-E) - EN-Z(L-ROW)
+                 COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+                 IF WS-D2 <= WS-BEST
+                     MOVE WS-D2 TO WS-BEST
+                     MOVE WS-E TO L-PARTNER
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MOB-PARTNER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-BREED.
+*> USING row a, row b: Animal.spawnChildFromBreeding and finalizeSpawnChildFromBreeding (8.1): the baby of M188-OFFSPRING at the first parent's position with yaw 0, age -24000 and the
+*> baby flag; both parents get age 6000 (the 5-minute cooldown), lose love and partner; Entity Event 18 (hearts) goes to the viewers of the first parent; one experience orb
+*> of 1 + nextInt(7) points appears at it. The baby of two sheep has M19-SHEEP-MIX's colour, of two mooshrooms M19-MOOSHROOM-BREED's type, otherwise the colour or variant
+*> of a parent by a coin. The animals_bred statistic and the mob_drops game rule are not modelled yet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 18.
+ 01 WS-KEY-A               PIC X(24).
+ 01 WS-KEY-B               PIC X(24).
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-FULL                PIC X(112).
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-COIN                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-SALT-COIN           BINARY-LONG VALUE 24.
+ 01 WS-SALT-DRAW           BINARY-LONG VALUE 25.
+ 01 WS-SALT-XP             BINARY-LONG VALUE 26.
+ 01 WS-BOUND-2             BINARY-LONG VALUE 2.
+ 01 WS-BOUND-1024          BINARY-LONG VALUE 1024.
+ 01 WS-BOUND-7             BINARY-LONG VALUE 7.
+ 01 WS-POINTS              BINARY-LONG.
+ 01 WS-COLOR-A             BINARY-LONG.
+ 01 WS-COLOR-B             BINARY-LONG.
+ 01 WS-CHILD-COLOR         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    BINARY-LONG.
+ 01 L-B                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-A L-B.
+     CALL "MOB-SPECIES-KEY" USING L-A WS-KEY-A
+     CALL "MOB-SPECIES-KEY" USING L-B WS-KEY-B
+     CALL "M188-OFFSPRING" USING WS-KEY-A WS-KEY-B WS-KEY
+     MOVE SPACES TO WS-FULL
+     STRING "minecraft:" DELIMITED BY SIZE WS-KEY DELIMITED BY SPACE INTO WS-FULL
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-FULL WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE EN-DIM(L-A) TO WS-DIM
+     MOVE EN-X(L-A) TO WS-X
+     MOVE EN-Y(L-A) TO WS-Y
+     MOVE EN-Z(L-A) TO WS-Z
+     MOVE EN-ID(L-A) TO WS-ID
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-BABY
+     MOVE -24000 TO EN-MOBAGE(WS-BABY)
+     MOVE 1 TO EN-VARIANT(WS-BABY)
+     CALL "XP-RANDOM" USING WS-SALT-COIN WS-BOUND-2 WS-COIN
+     CALL "XP-RANDOM" USING WS-SALT-DRAW WS-BOUND-1024 WS-DRAW
+     MOVE EN-WOOL(L-A) TO WS-COLOR-A
+     MOVE EN-WOOL(L-B) TO WS-COLOR-B
+     EVALUATE WS-KEY
+         WHEN "sheep"
+             COMPUTE WS-COLOR-A = FUNCTION MOD(EN-WOOL(L-A), 16)
+             COMPUTE WS-COLOR-B = FUNCTION MOD(EN-WOOL(L-B), 16)
+             CALL "M19-SHEEP-MIX" USING WS-COLOR-A WS-COLOR-B WS-COIN WS-CHILD-COLOR
+             MOVE WS-CHILD-COLOR TO EN-WOOL(WS-BABY)
+         WHEN "mooshroom"
+             CALL "M19-MOOSHROOM-BREED" USING WS-COLOR-A WS-COLOR-B WS-DRAW WS-COIN WS-CHILD-COLOR
+             MOVE WS-CHILD-COLOR TO EN-WOOL(WS-BABY)
+         WHEN OTHER
+             IF WS-COIN = 0
+                 MOVE WS-COLOR-A TO EN-WOOL(WS-BABY)
+             ELSE
+                 MOVE WS-COLOR-B TO EN-WOOL(WS-BABY)
+             END-IF
+     END-EVALUATE
+     CALL "MOB-DATA-SEND" USING WS-BABY
+     MOVE 6000 TO EN-MOBAGE(L-A) EN-MOBAGE(L-B)
+     MOVE 0 TO EN-LOVE(L-A) EN-LOVE(L-B) EN-LOVE-PARTNER(L-A) EN-LOVE-PARTNER(L-B) EN-LOVE-TIME(L-A) EN-LOVE-TIME(L-B)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "ENTITY-EVENT-BUILD" USING WS-ID WS-EVENT PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-A PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "XP-RANDOM" USING WS-SALT-XP WS-BOUND-7 WS-POINTS
+     ADD 1 TO WS-POINTS
+     CALL "XP-AWARD" USING WS-DIM WS-X WS-Y WS-Z WS-POINTS
+     GOBACK.
+ END PROGRAM MOB-BREED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-SHEEP-EAT-START.
+*> USING row, draw: the EatBlock goal of a sheep (19 section 2.4): it starts when the draw is 0 (the caller draws below M19-SHEEP-EAT-BOUND: 1000 for an adult, 50 for a baby) and the block at the
+*> feet is edible_for_sheep (short grass, short dry grass, tall dry grass, fern) or the block below is a grass block: the timer is 40 ticks and Entity Event 10 goes to the viewers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 10.
+ 01 WS-KEY-FEET            PIC X(48).
+ 01 WS-KEY-BELOW           PIC X(48).
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ COPY CBLOCKS.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DRAW.
+     IF L-DRAW = 0
+         COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
+         COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW))
+         COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
+         COMPUTE WS-BELOW = WS-BY - 1
+         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
+         COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         MOVE CB-KEY(WS-BLOCK) TO WS-KEY-FEET
+         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BELOW WS-BZ WS-STATE
+         COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         MOVE CB-KEY(WS-BLOCK) TO WS-KEY-BELOW
+         IF WS-KEY-FEET = "short_grass" OR "short_dry_grass" OR "tall_dry_grass" OR "fern" OR WS-KEY-BELOW = "grass_block"
+             MOVE 40 TO EN-EAT(L-ROW)
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+             CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-SHEEP-EAT-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-SHEEP-EAT-TICK.
+*> USING row: one tick of the eating timer (19 section 2.4). At 4 the sheep eats (M19-SHEEP-EAT-STEP with the mob-griefing rule taken as true: it is not modelled yet): a plant at
+*> the feet is destroyed, or the grass block below becomes dirt; then it has eaten (M19-SHEEP-ATE: the wool regrows, a baby ages up 60 ticks).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ 01 WS-KEY-FEET            PIC X(48).
+ 01 WS-KEY-BELOW           PIC X(48).
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-EDIBLE              BINARY-LONG.
+ 01 WS-GRASS               BINARY-LONG.
+ 01 WS-GRIEFING            BINARY-LONG VALUE 1.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-DIRT-KEY            PIC X(112) VALUE "minecraft:dirt".
+ 01 WS-DIRT-BLOCK          BINARY-LONG.
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-EAT(L-ROW) > 0
+         SUBTRACT 1 FROM EN-EAT(L-ROW)
+         IF EN-EAT(L-ROW) = 4
+             COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
+             COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW))
+             COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
+             COMPUTE WS-BELOW = WS-BY - 1
+             CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
+             COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+             MOVE CB-KEY(WS-BLOCK) TO WS-KEY-FEET
+             CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BELOW WS-BZ WS-STATE
+             COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+             MOVE CB-KEY(WS-BLOCK) TO WS-KEY-BELOW
+             MOVE 0 TO WS-EDIBLE WS-GRASS
+             IF WS-KEY-FEET = "short_grass" OR "short_dry_grass" OR "tall_dry_grass" OR "fern"
+                 MOVE 1 TO WS-EDIBLE
+             END-IF
+             IF WS-KEY-BELOW = "grass_block"
+                 MOVE 1 TO WS-GRASS
+             END-IF
+             CALL "M19-SHEEP-EAT-STEP" USING WS-EDIBLE WS-GRASS WS-GRIEFING WS-ACTION
+             EVALUATE WS-ACTION
+                 WHEN 1
+                     CALL "WORLD-SET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-AIR
+                 WHEN 2
+                     CALL "CONTENT-BLOCK-BY-KEY" USING WS-DIRT-KEY WS-DIRT-BLOCK WS-BLOCK-ROW WS-STATUS
+                     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+                     COMPUTE WS-DIRT = FUNCTION NUMVAL(WS-STATE-TEXT)
+                     CALL "WORLD-SET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BELOW WS-BZ WS-DIRT
+             END-EVALUATE
+             MOVE EN-VARIANT(L-ROW) TO WS-BABY
+             CALL "M19-SHEEP-ATE" USING EN-WOOL(L-ROW) WS-BABY EN-MOBAGE(L-ROW)
+             CALL "MOB-DATA-SEND" USING L-ROW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-SHEEP-EAT-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-LIFE-TICK.
+*> USING row, hx out, hz out, walk out: one tick of the life of a passive mob (8.1): its age and love (M188-TICK), the baby that grows up (the baby flag goes to the viewers),
+*> a chicken's egg timer (19 section 2.5), a sheep's eating, and the BreedGoal: an animal in love picks its nearest partner (MOB-PARTNER), walks to it at its walking speed
+*> for the ticks of loveTime and, with loveTime at 60 and the partner within 3 blocks, breeds (MOB-BREED). A panicking animal does not walk to a partner. walk is 1 when hx and
+*> hz are the walk of this tick.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-OTHER               PIC X(24).
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-GROWN               BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-LAID                BINARY-LONG.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-SALT-EGG            BINARY-LONG VALUE 27.
+ 01 WS-SALT-EAT            BINARY-LONG VALUE 28.
+ 01 WS-BOUND-EGG           BINARY-LONG VALUE 6000.
+ 01 WS-VARIANT             BINARY-LONG.
+ 01 WS-EGG-KEY             PIC X(24).
+ 01 WS-EGG-FULL            PIC X(112).
+ 01 WS-EGG-ITEM            BINARY-LONG.
+ 01 WS-EGG-ROW             PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-OFFSET              FLOAT-LONG VALUE 0.
+ 01 WS-PATCH               BINARY-LONG VALUE 0.
+ 01 WS-ITEM-ENTITY         BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
+ 01 WS-LOVE-A              BINARY-LONG.
+ 01 WS-LOVE-B              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-HX                   FLOAT-LONG.
+ 01 L-HZ                   FLOAT-LONG.
+ 01 L-WALK                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
+     MOVE 0 TO L-HX L-HZ L-WALK
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     CALL "M188-TICK" USING EN-MOBAGE(L-ROW) EN-LOVE(L-ROW) EN-LOCKED(L-ROW) EN-FORCED(L-ROW) WS-GROWN
+     IF WS-GROWN = 1
+         MOVE 0 TO EN-VARIANT(L-ROW)
+         CALL "MOB-DATA-SEND" USING L-ROW
+     END-IF
+     IF WS-KEY = "chicken" AND EN-MOBAGE(L-ROW) >= 0 AND EN-VARIANT(L-ROW) = 0
+         CALL "XP-RANDOM" USING WS-SALT-EGG WS-BOUND-EGG WS-DRAW
+         CALL "M19-CHICKEN-EGG-TICK" USING EN-EGG(L-ROW) WS-DRAW WS-LAID
+         IF WS-LAID = 1
+             MOVE EN-WOOL(L-ROW) TO WS-VARIANT
+             CALL "M19-CHICKEN-EGG-ITEM" USING WS-VARIANT WS-EGG-KEY
+             MOVE SPACES TO WS-EGG-FULL
+             STRING "minecraft:" DELIMITED BY SIZE WS-EGG-KEY DELIMITED BY SPACE INTO WS-EGG-FULL
+             CALL "CONTENT-ITEM-BY-KEY" USING WS-EGG-FULL WS-EGG-ITEM WS-EGG-ROW WS-STATUS
+             CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WS-EGG-ITEM WS-ONE
+                 WS-PATCH WS-ITEM-ENTITY
+         END-IF
+     END-IF
+     IF WS-KEY = "sheep"
+         IF EN-EAT(L-ROW) = 0
+             MOVE EN-VARIANT(L-ROW) TO WS-BABY
+             CALL "M19-SHEEP-EAT-BOUND" USING WS-BABY WS-BOUND
+             CALL "XP-RANDOM" USING WS-SALT-EAT WS-BOUND WS-DRAW
+             CALL "MOB-SHEEP-EAT-START" USING L-ROW WS-DRAW
+         END-IF
+         CALL "MOB-SHEEP-EAT-TICK" USING L-ROW
+     END-IF
+     IF EN-LOVE(L-ROW) = 0 OR EN-FLEE(L-ROW) > 0
+         MOVE 0 TO EN-LOVE-PARTNER(L-ROW) EN-LOVE-TIME(L-ROW)
+     ELSE
+         IF EN-LOVE-PARTNER(L-ROW) = 0
+             CALL "MOB-PARTNER" USING L-ROW WS-P
+             MOVE WS-P TO EN-LOVE-PARTNER(L-ROW)
+             MOVE 0 TO EN-LOVE-TIME(L-ROW)
+         END-IF
+         MOVE EN-LOVE-PARTNER(L-ROW) TO WS-P
+         IF WS-P > 0
+             CALL "MOB-SPECIES-KEY" USING WS-P WS-OTHER
+             MOVE 0 TO WS-OK
+             IF EN-USED(WS-P) = 1 AND EN-HEALTH(WS-P) > 0 AND EN-FLEE(WS-P) = 0
+                 MOVE EN-LOVE(L-ROW) TO WS-LOVE-A
+                 MOVE EN-LOVE(WS-P) TO WS-LOVE-B
+                 CALL "M188-CAN-MATE" USING WS-KEY WS-OTHER WS-LOVE-A WS-LOVE-B WS-OK
+             END-IF
+             IF WS-OK = 0
+                 MOVE 0 TO EN-LOVE-PARTNER(L-ROW) EN-LOVE-TIME(L-ROW)
+             ELSE
+                 ADD 1 TO EN-LOVE-TIME(L-ROW)
+                 COMPUTE WS-DX = EN-X(WS-P) - EN-X(L-ROW)
+                 COMPUTE WS-DZ = EN-Z(WS-P) - EN-Z(L-ROW)
+                 COMPUTE WS-D2 = WS-DX * WS-DX + WS-DZ * WS-DZ
+                 IF EN-LOVE-TIME(L-ROW) >= 60 AND WS-D2 < 9
+                     CALL "MOB-BREED" USING L-ROW WS-P
+                 ELSE
+                     COMPUTE WS-H = FUNCTION SQRT(WS-D2)
+                     COMPUTE WS-SPEED = SM-WALK-MILLI(WS-M) / 1000
+                     IF WS-H > 0.1
+                         COMPUTE L-HX = WS-SPEED * WS-DX / WS-H
+                         COMPUTE L-HZ = WS-SPEED * WS-DZ / WS-H
+                         MOVE 1 TO L-WALK
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-LIFE-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-ITEM-ID.
+*> USING key (PIC X(24), no "minecraft:"), id out: the item id of the key of the open content set (0 when there is none).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FULL                PIC X(112).
+ 01 WS-ROW                 PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-ID.
+     MOVE SPACES TO WS-FULL
+     STRING "minecraft:" DELIMITED BY SIZE L-KEY DELIMITED BY SPACE INTO WS-FULL
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-FULL L-ID WS-ROW WS-STATUS
+     GOBACK.
+ END PROGRAM MOB-ITEM-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-TAKE.
+*> USING player row: the held stack loses one item, except in creative mode (usePlayerItem); the slot goes to the client.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF PL-MODE(L-ROW) NOT = 1
+         CALL "INV-REMOVE" USING L-ROW PL-HELD(L-ROW) WS-ONE
+         CALL "INV-SLOT-SEND" USING PL-CONN(L-ROW) PL-HELD(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-TAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-SWAP.
+*> USING player row, item: a survival player's held item becomes that item (ItemUtils.createFilledResult): a stack of one is replaced in its slot, otherwise one is taken and the new
+*> item is added to the inventory, what does not fit lands on the ground at the player. A creative player keeps the stack and gets nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-OFFSET              FLOAT-LONG VALUE 0.
+ 01 WS-PATCH               BINARY-LONG VALUE 0.
+ 01 WS-DROPPED             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ITEM.
+     IF PL-MODE(L-ROW) NOT = 1
+         IF PL-SLOT-COUNT(L-ROW, PL-HELD(L-ROW) + 1) = 1
+             MOVE L-ITEM TO PL-SLOT-ITEM(L-ROW, PL-HELD(L-ROW) + 1)
+             MOVE 0 TO PL-SLOT-VAR(L-ROW, PL-HELD(L-ROW) + 1)
+             CALL "INV-SLOT-SEND" USING PL-CONN(L-ROW) PL-HELD(L-ROW)
+         ELSE
+             CALL "MOB-TAKE" USING L-ROW
+             CALL "INV-ADD" USING L-ROW L-ITEM WS-ONE WS-LEFT
+             PERFORM VARYING WS-SLOT FROM 0 BY 1 UNTIL WS-SLOT > 35
+                 CALL "INV-SLOT-SEND" USING PL-CONN(L-ROW) WS-SLOT
+             END-PERFORM
+             IF WS-LEFT > 0
+                 CALL "IP-AT-LOCATION" USING PL-DIM(L-ROW) PL-X(L-ROW) PL-Y(L-ROW) PL-Z(L-ROW) WS-OFFSET L-ITEM WS-LEFT
+                     WS-PATCH WS-DROPPED
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-SWAP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-DROP-ITEMS.
+*> USING entity row, item key (PIC X(24)), count: count single items of that key at the entity, one block up (Entity.spawnAtLocation with the offset 1.0 of a shearing drop).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-OFFSET              FLOAT-LONG VALUE 1.
+ 01 WS-PATCH               BINARY-LONG VALUE 0.
+ 01 WS-DROPPED             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KEY L-COUNT.
+     CALL "MOB-ITEM-ID" USING L-KEY WS-ITEM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WS-ITEM WS-ONE WS-PATCH
+             WS-DROPPED
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MOB-DROP-ITEMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-FEED-USE.
+*> USING player row, entity row: the player feeds the animal the held item (Animal.mobInteract, 8.1): M188-FOOD and M188-FEED decide. Love: one item is used, the animal is in love
+*> for 600 ticks with the player as its cause and Entity Event 18 goes to the viewers. A baby: one item is used and it ages up, the forced-age timer runs and, when it reaches age 0, it
+*> is no longer a baby. The horse family, llamas and camels fall in love only when tamed. The healing and temper of horse food are open items.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 18.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-KEY48               PIC X(48).
+ 01 WS-ITEM                PIC X(24).
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FIXED               BINARY-LONG.
+ 01 WS-LOVE                BINARY-LONG.
+ 01 WS-TAME                BINARY-LONG.
+ 01 WS-BREEDS              BINARY-LONG.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-SECONDS             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY.
+     CALL "MOB-SPECIES-KEY" USING L-ENTITY WS-KEY
+     CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(L-ROW, PL-HELD(L-ROW) + 1) WS-KEY48
+     MOVE WS-KEY48 TO WS-ITEM
+     CALL "M188-FOOD" USING WS-KEY WS-ITEM WS-FOUND WS-FIXED WS-LOVE WS-TAME
+     CALL "M188-BREEDS" USING WS-KEY WS-BREEDS
+     MOVE WS-LOVE TO WS-CAN
+     IF WS-BREEDS = 0
+         MOVE 0 TO WS-CAN
+     END-IF
+     IF WS-TAME = 1 AND EN-TAMED(L-ENTITY) = 0
+         MOVE 0 TO WS-CAN
+     END-IF
+     CALL "M188-FEED" USING EN-MOBAGE(L-ENTITY) EN-LOVE(L-ENTITY) WS-FOUND WS-FIXED WS-CAN WS-ACTION WS-SECONDS
+     EVALUATE WS-ACTION
+         WHEN 1
+             CALL "MOB-TAKE" USING L-ROW
+             MOVE 600 TO EN-LOVE(L-ENTITY)
+             MOVE L-ROW TO EN-LOVE-CAUSE(L-ENTITY)
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ENTITY) WS-EVENT PB-BUFFER
+             CALL "HEALTH-VIEWERS-SEND" USING L-ENTITY PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+         WHEN 2
+             CALL "MOB-TAKE" USING L-ROW
+             CALL "M188-AGE-UP" USING EN-MOBAGE(L-ENTITY) WS-SECONDS EN-FORCED(L-ENTITY)
+             IF EN-MOBAGE(L-ENTITY) = 0
+                 MOVE 0 TO EN-VARIANT(L-ENTITY)
+                 CALL "MOB-DATA-SEND" USING L-ENTITY
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM MOB-FEED-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-SHEAR-USE.
+*> USING player row, entity row (a sheep): shears on a sheep that is not sheared and not a baby (19 section 2.4): 1 + nextInt(3) single wool items of its colour drop, the sheared
+*> flag is set and goes to the viewers, the shears lose 1 durability.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SALT                BINARY-LONG VALUE 29.
+ 01 WS-BOUND               BINARY-LONG VALUE 3.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-COST                BINARY-LONG VALUE 1.
+ 01 WS-BROKE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY.
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+     MOVE EN-VARIANT(L-ENTITY) TO WS-BABY
+     CALL "M19-SHEEP-SHEAR" USING EN-WOOL(L-ENTITY) WS-BABY WS-DRAW WS-COUNT
+     IF WS-COUNT > 0
+         COMPUTE WS-COLOR = FUNCTION MOD(EN-WOOL(L-ENTITY), 16)
+         CALL "M188-COLOR-KEY" USING WS-COLOR WS-KEY
+         CALL "MOB-DROP-ITEMS" USING L-ENTITY WS-KEY WS-COUNT
+         CALL "MOB-DATA-SEND" USING L-ENTITY
+         CALL "TOOL-HURT-STACK" USING PL-CONN(L-ROW) PL-HELD(L-ROW) WS-COST WS-BROKE
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-SHEAR-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-MILK-USE.
+*> USING player row, entity row (a cow or mooshroom), held key: an empty bucket on an adult gives a milk bucket (19 section 2.2, M19-COW-MILK).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ADULT               BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-ITEM                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-HELD                 PIC X(24).
+ PROCEDURE DIVISION USING L-ROW L-ENTITY L-HELD.
+     MOVE 0 TO WS-ADULT
+     IF EN-VARIANT(L-ENTITY) = 0 AND EN-MOBAGE(L-ENTITY) >= 0
+         MOVE 1 TO WS-ADULT
+     END-IF
+     CALL "M19-COW-MILK" USING L-HELD WS-ADULT WS-KEY
+     IF WS-KEY NOT = SPACES
+         CALL "MOB-ITEM-ID" USING WS-KEY WS-ITEM
+         CALL "MOB-SWAP" USING L-ROW WS-ITEM
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-MILK-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-MOOSHROOM-USE.
+*> USING player row, entity row (a mooshroom), held key: an adult sheared (19 section 2.3): five mushrooms of its type drop and it becomes a cow of the same position, age and
+*> health; a bowl on an adult gives mushroom stew (no stored stew effects are modelled).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-STORED              BINARY-LONG VALUE 0.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-FULL                PIC X(112).
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-COW                 BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-COST                BINARY-LONG VALUE 1.
+ 01 WS-BROKE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-HELD                 PIC X(24).
+ PROCEDURE DIVISION USING L-ROW L-ENTITY L-HELD.
+     IF EN-VARIANT(L-ENTITY) = 0 AND EN-MOBAGE(L-ENTITY) >= 0
+         IF L-HELD = "shears"
+             CALL "M19-MOOSHROOM-SHEAR" USING EN-WOOL(L-ENTITY) WS-KEY WS-COUNT
+             CALL "MOB-DROP-ITEMS" USING L-ENTITY WS-KEY WS-COUNT
+             MOVE SPACES TO WS-FULL
+             MOVE "minecraft:cow" TO WS-FULL
+             CALL "CONTENT-ENTITY-BY-KEY" USING WS-FULL WS-TYPE WS-ENTITY-ROW WS-STATUS
+             MOVE EN-DIM(L-ENTITY) TO WS-DIM
+             MOVE EN-X(L-ENTITY) TO WS-X
+             MOVE EN-Y(L-ENTITY) TO WS-Y
+             MOVE EN-Z(L-ENTITY) TO WS-Z
+             MOVE EN-YAW(L-ENTITY) TO WS-YAW
+             CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-COW
+             MOVE EN-HEALTH(L-ENTITY) TO EN-HEALTH(WS-COW)
+             MOVE EN-MOBAGE(L-ENTITY) TO EN-MOBAGE(WS-COW)
+             CALL "ENTITY-REMOVE" USING L-ENTITY
+             CALL "TOOL-HURT-STACK" USING PL-CONN(L-ROW) PL-HELD(L-ROW) WS-COST WS-BROKE
+         ELSE
+             CALL "M19-MOOSHROOM-BOWL" USING WS-STORED WS-KEY
+             CALL "MOB-ITEM-ID" USING WS-KEY WS-ITEM
+             CALL "MOB-SWAP" USING L-ROW WS-ITEM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-MOOSHROOM-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-INTERACT.
+*> USING connection id, PLAY-SERVERBOUND (a decoded Interact 0x1A): the main hand of an alive player on a standard passive mob of its dimension that is alive and whose box is
+*> within the attack reach: shears on a sheep (MOB-SHEAR-USE), an empty bucket on a cow or mooshroom (MOB-MILK-USE), shears or a bowl on a mooshroom (MOB-MOOSHROOM-USE),
+*> otherwise the held item as animal food (MOB-FEED-USE). Anything else, and the off hand, is not handled yet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY STDMOBS.
+ COPY RULES.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EY                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-REACH               FLOAT-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-KEY48               PIC X(48).
+ 01 WS-HELD                PIC X(24).
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     MOVE 0 TO WS-ENTITY
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-ENTITY > 0
+         IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = PSB-TARGET
+             MOVE WS-E TO WS-ENTITY
+         END-IF
+     END-PERFORM
+     IF WS-ENTITY = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE OR PSB-HAND NOT = 0
+         GOBACK
+     END-IF
+     IF EN-PLAYER(WS-ENTITY) > 0 OR EN-DIM(WS-ENTITY) NOT = PL-DIM(WS-ROW) OR EN-HEALTH(WS-ENTITY) = 0
+         GOBACK
+     END-IF
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-ENTITY) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     IF SM-KIND(WS-M) = 1
+         GOBACK
+     END-IF
+     COMPUTE WS-TYPE = EN-TYPE(WS-ENTITY) + 1
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-TYPE) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(WS-TYPE) / 1000
+     MOVE PL-X(WS-ROW) TO WS-EX
+     COMPUTE WS-EY = PL-Y(WS-ROW) + RULE-ATTACK-EYE-MILLI / 1000
+     MOVE PL-Z(WS-ROW) TO WS-EZ
+     MOVE EN-X(WS-ENTITY) TO WS-TX
+     MOVE EN-Y(WS-ENTITY) TO WS-TY
+     MOVE EN-Z(WS-ENTITY) TO WS-TZ
+     COMPUTE WS-DX = WS-EX - FUNCTION MAX(WS-TX - WS-HALF, FUNCTION MIN(WS-EX, WS-TX + WS-HALF))
+     COMPUTE WS-DY = WS-EY - FUNCTION MAX(WS-TY, FUNCTION MIN(WS-EY, WS-TY + WS-HEIGHT))
+     COMPUTE WS-DZ = WS-EZ - FUNCTION MAX(WS-TZ - WS-HALF, FUNCTION MIN(WS-EZ, WS-TZ + WS-HALF))
+     COMPUTE WS-REACH = RULE-ATTACK-REACH-MILLI / 1000
+     IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ > WS-REACH * WS-REACH
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-KEY48
+     IF PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) > 0
+         CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1) WS-KEY48
+     END-IF
+     MOVE WS-KEY48 TO WS-HELD
+     MOVE SM-KEY(WS-M) TO WS-KEY
+     EVALUATE TRUE
+         WHEN WS-KEY = "sheep" AND WS-HELD = "shears"
+             CALL "MOB-SHEAR-USE" USING WS-ROW WS-ENTITY
+         WHEN (WS-KEY = "cow" OR "mooshroom") AND WS-HELD = "bucket"
+             CALL "MOB-MILK-USE" USING WS-ROW WS-ENTITY WS-HELD
+         WHEN WS-KEY = "mooshroom" AND (WS-HELD = "shears" OR "bowl")
+             CALL "MOB-MOOSHROOM-USE" USING WS-ROW WS-ENTITY WS-HELD
+         WHEN OTHER
+             CALL "MOB-FEED-USE" USING WS-ROW WS-ENTITY
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM MOB-INTERACT.

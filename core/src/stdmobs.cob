@@ -842,6 +842,9 @@
  01 WS-GZ                  BINARY-LONG.
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
+ 01 WS-LIFE-WALK           BINARY-LONG.
+ 01 WS-LIFE-HX             FLOAT-LONG.
+ 01 WS-LIFE-HZ             FLOAT-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -890,7 +893,10 @@
              MOVE 1 TO WS-CHASE
          END-IF
      END-IF
-     MOVE 0 TO WS-STOP
+     MOVE 0 TO WS-STOP WS-LIFE-WALK
+     IF SM-KIND(WS-M) = 0
+         CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
+     END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
          IF WS-STOP = 2
@@ -949,6 +955,12 @@
              COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
              COMPUTE WS-HX = - FUNCTION SIN(WS-RADIANS) * WS-SPEED
              COMPUTE WS-HZ = FUNCTION COS(WS-RADIANS) * WS-SPEED
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN WS-LIFE-WALK = 1
+*>           An animal in love walks to its partner (MOB-LIFE-TICK, 18 section 8.1 BreedGoal).
+             MOVE WS-LIFE-HX TO WS-HX
+             MOVE WS-LIFE-HZ TO WS-HZ
+             CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN OTHER
              IF EN-COOLDOWN(WS-ROW) = 0
