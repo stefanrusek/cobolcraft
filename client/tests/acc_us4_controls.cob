@@ -146,6 +146,31 @@
      MOVE "- | 4200000000000000000901" & "3f0000003f8000003f000000" & "000009 | "
          & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000a | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Airborne (13 section 2.1 step 7: not on the ground divides the speed by 5, as the server does every tick): the hand on greystone,
+*>   2.25 s on the ground, takes 11.25 s in the air (swimming, falling); stop destroy before that is rejected by the server, so
+*>   the client must not send it early.
+     MOVE 2 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE 1 TO PL-FLYING
+     MOVE 0 TO PL-ON-GROUND
+     MOVE 12 TO PL-Y
+     MOVE 0 TO PL-SLOT-COUNT(1)
+     MOVE 20 TO WS-MS
+     CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
+     MOVE 2400 TO WS-MS
+     CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
+     MOVE 9000 TO WS-MS
+     CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
+     MOVE "-" TO WS-STEP-TEXT(4)
+     MOVE "acceptance US4-3 client half given the player is airborne when greystone is broken by hand then stop destroy "
+         & "is not sent after 2.4 s and follows once 11.25 s have passed" TO TL-CASE
+     PERFORM STEPS-TEXT
+     MOVE "29000000000000000009010b | - | 29030000000000000009010c | -" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  STEPS-TEXT.

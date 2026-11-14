@@ -17,7 +17,7 @@
 *> 4 west, 5 east) in its default state, a cardstack with the axis of the face (up/down y,
 *> north/south z, west/east x; punched false); otherwise a glowtube toggles lit, and anything else
 *> does nothing. A placement is refused, with Block Update of the target's real state to the player
-*> when the target is in the height range, when the target is not void, lies outside the dimension's
+*> when the target is in the height range, when the target is neither void nor replaceable (tag minecraft:replaceable), lies outside the dimension's
 *> height range or would overlap a player's or a mob's box (standin §3, the movement.cob rule:
 *> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
@@ -281,6 +281,10 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:replaceable".
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-REPLACEABLE         BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -310,7 +314,13 @@
      END-IF
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-OLD
      MOVE 1 TO WS-HIT
-     IF WS-OLD = 0
+*>   A target in the block tag minecraft:replaceable (water, lava, grass, snow; 29 section 9.5) is replaced like the void.
+     MOVE 0 TO WS-REPLACEABLE
+     IF WS-OLD > 0
+         MOVE CB-S-BLOCK(WS-OLD + 1) TO WS-BLOCK
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-REPLACEABLE
+     END-IF
+     IF WS-OLD = 0 OR WS-REPLACEABLE = 1
          CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
      END-IF
      IF WS-HIT = 1
