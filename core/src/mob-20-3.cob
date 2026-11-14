@@ -75,3 +75,324 @@
      COMPUTE L-B = WS-V + L-AMBIENT * (1000 - WS-V) / 1000
      GOBACK.
  END PROGRAM STDMOB-BRIGHTNESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-EQUIP-ROLL.
+*> USING xoro state, difficulty id, special multiplier (thousandths), tier out (-1 none, else 0 leather to 5 diamond), slots out (0 to 4) (3.6 steps 1 and 2):
+*> with probability 0.15 x special: tier nextInt(3), then 3 attempts that each add 1 with probability 0.1087; slots are filled head, chest, legs, feet,
+*> and before every slot but the first a draw below the stop chance (0.1 on Hard, 0.25 otherwise) ends the list. The floats are nextDouble draws.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-P                   FLOAT-LONG.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-DIFFICULTY           BINARY-LONG.
+ 01 L-SPECIAL              BINARY-LONG.
+ 01 L-TIER                 BINARY-LONG.
+ 01 L-SLOTS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-DIFFICULTY L-SPECIAL L-TIER L-SLOTS.
+     MOVE -1 TO L-TIER
+     MOVE 0 TO L-SLOTS
+     CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+     COMPUTE WS-P = 0.15 * L-SPECIAL / 1000
+     IF WS-D >= WS-P
+         GOBACK
+     END-IF
+     CALL "XORO-NEXT-INT" USING L-STATE WS-THREE L-TIER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+         IF WS-D < 0.1087
+             ADD 1 TO L-TIER
+         END-IF
+     END-PERFORM
+     MOVE 0.25 TO WS-P
+     IF L-DIFFICULTY = 3
+         MOVE 0.1 TO WS-P
+     END-IF
+     MOVE 1 TO L-SLOTS
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL L-SLOTS >= 4 OR WS-DONE = 1
+         CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+         IF WS-D < WS-P
+             MOVE 1 TO WS-DONE
+         ELSE
+             ADD 1 TO L-SLOTS
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STDMOB-EQUIP-ROLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-EQUIP-KEY.
+*> USING tier (0 leather, 1 copper, 2 golden, 3 chainmail, 4 iron, 5 diamond), slot (1 head, 2 chest, 3 legs, 4 feet), key out (PIC X(40)): the item key of
+*> that armour piece (3.6 step 3); spaces for a tier above 5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TIER-NAME           PIC X(10).
+ 01 WS-SLOT-NAME           PIC X(10).
+ LINKAGE SECTION.
+ 01 L-TIER                 BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-KEY                  PIC X(40).
+ PROCEDURE DIVISION USING L-TIER L-SLOT L-KEY.
+     MOVE SPACES TO L-KEY WS-TIER-NAME WS-SLOT-NAME
+     EVALUATE L-TIER
+         WHEN 0 MOVE "leather" TO WS-TIER-NAME
+         WHEN 1 MOVE "copper" TO WS-TIER-NAME
+         WHEN 2 MOVE "golden" TO WS-TIER-NAME
+         WHEN 3 MOVE "chainmail" TO WS-TIER-NAME
+         WHEN 4 MOVE "iron" TO WS-TIER-NAME
+         WHEN 5 MOVE "diamond" TO WS-TIER-NAME
+         WHEN OTHER GOBACK
+     END-EVALUATE
+     EVALUATE L-SLOT
+         WHEN 1 MOVE "helmet" TO WS-SLOT-NAME
+         WHEN 2 MOVE "chestplate" TO WS-SLOT-NAME
+         WHEN 3 MOVE "leggings" TO WS-SLOT-NAME
+         WHEN OTHER MOVE "boots" TO WS-SLOT-NAME
+     END-EVALUATE
+     STRING "minecraft:" DELIMITED BY SIZE WS-TIER-NAME DELIMITED BY SPACE "_" DELIMITED BY SIZE
+         WS-SLOT-NAME DELIMITED BY SPACE INTO L-KEY
+     GOBACK.
+ END PROGRAM STDMOB-EQUIP-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-EQUIP-SEND.
+*> USING tracker row: Set Equipment (0x68) of the armour in EN-EQUIP (10 x (tier + 1) + slots worn) to the viewers: slot ordinals head 5, chest 4, legs 3,
+*> feet 2, bit 0x80 on every pair but the last. Nothing for EN-EQUIP 0 or an item the set does not know.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 104.
+ 01 WS-TIER                BINARY-LONG.
+ 01 WS-SLOTS               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ORDINAL             BINARY-LONG.
+ 01 WS-KEY40               PIC X(40).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-EQUIP(L-ROW) = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
+     COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
+         CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
+         MOVE SPACES TO WS-KEY
+         MOVE WS-KEY40 TO WS-KEY
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+         COMPUTE WS-ORDINAL = 6 - WS-I
+         IF WS-I < WS-SLOTS
+             ADD 128 TO WS-ORDINAL
+         END-IF
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ORDINAL
+         INITIALIZE PB-ITEMSTACK-X
+         MOVE 1 TO PB-ISX-COUNT
+         MOVE WS-ITEM TO PB-ISX-ITEM
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     END-PERFORM
+     IF WS-STATUS = CT-OK
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STDMOB-EQUIP-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-VARIANT-BUILD.
+*> USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the row's variant (EN-VARIANT): a baby zombie, zombie villager or husk is index 16
+*> BOOLEAN true (4.1); a powered creeper index 17 BOOLEAN true (6.1); a slime of a size above 0 index 18 INT size (10). Nothing is written for any
+*> other row or a variant of 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SERIALIZER          BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     MOVE 0 TO WS-INDEX
+     MOVE 0 TO WS-VALUE
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M > 0 AND EN-VARIANT(L-ROW) > 0
+         EVALUATE SM-KEY(WS-M)
+             WHEN "zombie"
+             WHEN "zombie_villager"
+             WHEN "husk"
+                 MOVE 16 TO WS-INDEX
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+                 MOVE 1 TO WS-VALUE
+             WHEN "creeper"
+                 MOVE 17 TO WS-INDEX
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+                 MOVE 1 TO WS-VALUE
+             WHEN "slime"
+                 MOVE 18 TO WS-INDEX
+                 MOVE MD-MDS-INT TO WS-SERIALIZER
+                 MOVE EN-VARIANT(L-ROW) TO WS-VALUE
+         END-EVALUATE
+     END-IF
+     IF WS-INDEX > 0
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE WS-INDEX TO MD-MD-INDEX
+         MOVE WS-SERIALIZER TO MD-MD-SERIALIZER
+         MOVE WS-VALUE TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         MOVE MD-MD-END TO MD-MD-INDEX
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-VARIANT-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-VARIANT-SEND.
+*> USING tracker row: STDMOB-VARIANT-BUILD to the viewers of the row (nothing when the row has no variant packet).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-VARIANT-BUILD" USING L-ROW PB-BUFFER
+     IF PB-LENGTH > 0
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STDMOB-VARIANT-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-XP-POINTS.
+*> USING base reward, baby (BINARY-LONG, 1 baby), points out: the experience reward of a mob (3.6): a baby zombie multiplies it by 2.5, truncated.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-POINTS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-BASE L-BABY L-POINTS.
+     MOVE L-BASE TO L-POINTS
+     IF L-BABY = 1
+         COMPUTE L-POINTS = L-BASE * 5 / 2
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-XP-POINTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FINALIZE.
+*> USING xoro state, tracker row: finalizeSpawn of a freshly spawned standard mob (4.1, 3.6). A zombie, zombie villager or husk is a baby with probability
+*> 0.05 (EN-VARIANT 1), rolls its armour (STDMOB-EQUIP-ROLL with the special multiplier of the effective difficulty; EN-EQUIP), gets the reinforcement
+*> chance nextDouble x 0.1 (EN-REINF, ten-thousandths) and with probability 0.05 x special is a leader: +0.5 + nextDouble x 0.25 chance and the maximum
+*> health times (1 + nextDouble x 3 + 1), the health full. A slime takes its size (STDMOB-SLIME-INIT). The viewers get the variant and equipment packets.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-INHABITED           BINARY-DOUBLE VALUE 0.
+ 01 WS-MOON                BINARY-LONG VALUE 0.
+ 01 WS-EFF                 BINARY-LONG.
+ 01 WS-SPECIAL             BINARY-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-P                   FLOAT-LONG.
+ 01 WS-TIER                BINARY-LONG.
+ 01 WS-SLOTS               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-ROW.
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY CW-TIME WS-INHABITED WS-MOON WS-EFF
+     CALL "STDMOB-SPECIAL" USING WS-EFF WS-SPECIAL
+     EVALUATE SM-KEY(WS-M)
+         WHEN "zombie"
+         WHEN "zombie_villager"
+         WHEN "husk"
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             IF WS-D < 0.05
+                 MOVE 1 TO EN-VARIANT(L-ROW)
+             END-IF
+             CALL "STDMOB-EQUIP-ROLL" USING L-STATE BW-DIFFICULTY WS-SPECIAL WS-TIER WS-SLOTS
+             IF WS-SLOTS > 0
+                 COMPUTE EN-EQUIP(L-ROW) = 10 * (WS-TIER + 1) + WS-SLOTS
+             END-IF
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             COMPUTE EN-REINF(L-ROW) = WS-D * 1000
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             COMPUTE WS-P = 0.05 * WS-SPECIAL / 1000
+             IF WS-D < WS-P
+                 CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+                 COMPUTE EN-REINF(L-ROW) = EN-REINF(L-ROW) + 5000 + WS-D * 2500
+                 CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+                 COMPUTE EN-HEALTH(L-ROW) = SM-HEALTH(WS-M) * (2 + WS-D * 3)
+             END-IF
+         WHEN "slime"
+             CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
+     END-EVALUATE
+     CALL "STDMOB-VARIANT-SEND" USING L-ROW
+     CALL "STDMOB-EQUIP-SEND" USING L-ROW
+     GOBACK.
+ END PROGRAM STDMOB-FINALIZE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-XP-VARIANT.
+*> USING dim, x, y, z (FLOAT-LONG), type, killer player row, variant (EN-VARIANT): the experience of a defeated mob that has a variant: a baby zombie, zombie
+*> villager or husk gives the reward times 2.5 (3.6); any other variant (a powered creeper) gives the plain reward (STDMOB-XP).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-POINTS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-KILLER               BINARY-LONG.
+ 01 L-VARIANT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER L-VARIANT.
+     CALL "STDMOB-INDEX" USING L-TYPE WS-M
+     MOVE 0 TO WS-BABY
+     IF L-VARIANT = 1 AND (SM-KEY(WS-M) = "zombie" OR SM-KEY(WS-M) = "zombie_villager" OR SM-KEY(WS-M) = "husk")
+         MOVE 1 TO WS-BABY
+     END-IF
+     IF WS-BABY = 1
+         IF L-KILLER > 0
+             CALL "STDMOB-XP-POINTS" USING SM-XP(WS-M) WS-BABY WS-POINTS
+             CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
+         END-IF
+     ELSE
+         CALL "STDMOB-XP" USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-XP-VARIANT.

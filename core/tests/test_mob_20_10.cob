@@ -1,0 +1,381 @@
+*> Implementation test (002-lane-mobsfull-h5; docs/protocol/20 sections 10 and 20.2): the slime row, size roll, stats, moon chance, spawn size, split on death,
+*> damage (a size 1 slime deals none), experience, drops and the metadata packet (index 18).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-20-10.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRWORLD.
+ COPY PROTO.
+ COPY STDMOBS.
+ COPY XORO.
+ COPY CBLOCKS.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-SPECIAL             BINARY-LONG.
+ 01 WS-N1                  BINARY-LONG.
+ 01 WS-N2                  BINARY-LONG.
+ 01 WS-N4                  BINARY-LONG.
+ 01 WS-HEALTH              BINARY-LONG.
+ 01 WS-SPEED               BINARY-LONG.
+ 01 WS-ATTACK              BINARY-LONG.
+ 01 WS-XP                  BINARY-LONG.
+ 01 WS-TIME                BINARY-DOUBLE.
+ 01 WS-CHANCE              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-MINC                BINARY-LONG.
+ 01 WS-MAXC                BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-CASE                PIC X(100).
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-ZY                  BINARY-LONG VALUE 0.
+ 01 WS-RZ                  BINARY-LONG VALUE 0.
+ 01 WS-ZZ                  BINARY-LONG VALUE 0.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-CH                  BINARY-LONG.
+ 01 WS-CHUNK               BINARY-LONG.
+ 01 WS-SWAMP               BINARY-LONG.
+ 01 WS-FLOOR-Y             BINARY-LONG VALUE 55.
+ 01 WS-FSIZE               BINARY-LONG VALUE 5.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-VIEW BASED.
+    05 WS-BYTE             PIC X OCCURS 64 TIMES.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE "minecraft:slime" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "STDMOB-INDEX" USING WS-TYPE WS-M
+     MOVE "acceptance US15 20§10 Slime: the slime is row 26" TO WS-CASE
+     MOVE 26 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-M
+     MOVE "acceptance US15 20§10 Slime: natural spawn rule 6" TO WS-CASE
+     MOVE 6 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP SM-SPAWN(WS-M)
+*>   Stats of the sizes: health size squared, speed 0.2 + 0.1 size, attack and xp the size.
+     MOVE 4 TO WS-SIZE
+     CALL "STDMOB-SLIME-STATS" USING WS-SIZE WS-HEALTH WS-SPEED WS-ATTACK WS-XP
+     MOVE "acceptance US15 20§20.2 Slime splitting: size 4 has 16 health" TO WS-CASE
+     MOVE 16 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-HEALTH
+     MOVE "acceptance US15 20§20.2 Slime splitting: size 4 has speed 0.6" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-SPEED
+     MOVE "acceptance US15 20§20.2 Slime splitting: size 4 has attack 4 and xp 4" TO WS-CASE
+     MOVE 8 TO WS-EXP
+     COMPUTE WS-OBS = WS-ATTACK + WS-XP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 2 TO WS-SIZE
+     CALL "STDMOB-SLIME-STATS" USING WS-SIZE WS-HEALTH WS-SPEED WS-ATTACK WS-XP
+     MOVE "acceptance US15 20§20.2 Slime splitting: size 2 has 4 health and speed 0.4" TO WS-CASE
+     MOVE 404 TO WS-EXP
+     COMPUTE WS-OBS = WS-HEALTH * 100 + WS-SPEED / 100
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   Moon chance by day of the 192000 cycle.
+     MOVE 0 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: the full moon day gives 0.5" TO WS-CASE
+     MOVE 500 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 100000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 4 (new moon) gives 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 30000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 1 gives 0.375" TO WS-CASE
+     MOVE 375 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 60000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 2 gives 0.25" TO WS-CASE
+     MOVE 250 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 80000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 3 gives 0.125" TO WS-CASE
+     MOVE 125 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 120000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 5 gives 0.125" TO WS-CASE
+     MOVE 125 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 150000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 6 gives 0.25" TO WS-CASE
+     MOVE 250 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+     MOVE 180000 TO WS-TIME
+     CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
+     MOVE "acceptance US15 20§10 Slime: day 7 gives 0.375" TO WS-CASE
+     MOVE 375 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-CHANCE
+*>   Spawn size: special 0 gives 1, 2, 4 each in a third; special 1 favours 4.
+     MOVE 0 TO WS-N1 WS-N2 WS-N4
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 600
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         MOVE 0 TO WS-SPECIAL
+         CALL "STDMOB-SLIME-SIZE" USING XR-STATE WS-SPECIAL WS-SIZE
+         EVALUATE WS-SIZE
+             WHEN 1 ADD 1 TO WS-N1
+             WHEN 2 ADD 1 TO WS-N2
+             WHEN 4 ADD 1 TO WS-N4
+         END-EVALUATE
+     END-PERFORM
+     MOVE "acceptance US15 20§20.2 Slime splitting: special 0 gives sizes 1, 2, 4 in thirds" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-N1 + WS-N2 + WS-N4 = 600 AND WS-N1 > 150 AND WS-N2 > 150 AND WS-N4 > 150
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1 WS-N2 WS-N4
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 600
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         MOVE 1000 TO WS-SPECIAL
+         CALL "STDMOB-SLIME-SIZE" USING XR-STATE WS-SPECIAL WS-SIZE
+         EVALUATE WS-SIZE
+             WHEN 1 ADD 1 TO WS-N1
+             WHEN 2 ADD 1 TO WS-N2
+             WHEN 4 ADD 1 TO WS-N4
+         END-EVALUATE
+     END-PERFORM
+     MOVE "acceptance US15 20§20.2 Slime splitting: special 1 gives 1/6, 1/3, 1/2" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-N1 > 60 AND WS-N1 < 150 AND WS-N2 > 150 AND WS-N2 < 250 AND WS-N4 > 250
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   A slime row finalized by STDMOB-FINALIZE has a size and health size squared; the packet is index 18 INT.
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-ROW
+         IF EN-HEALTH(WS-ROW) NOT = EN-VARIANT(WS-ROW) * EN-VARIANT(WS-ROW)
+             ADD 1 TO WS-BAD
+         END-IF
+         CALL "ENTITY-REMOVE" USING WS-ROW
+     END-PERFORM
+     MOVE "acceptance US15 20§10 Slime: a finalized slime has health size squared" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-BAD
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 4 TO EN-VARIANT(WS-ROW)
+     MOVE 16 TO EN-HEALTH(WS-ROW)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-VARIANT-BUILD" USING WS-ROW PB-BUFFER
+     SET ADDRESS OF WS-VIEW TO PB-ADDR
+     MOVE "acceptance US15 20§10 Slime: the size packet is 0x65, index 18, INT 1, size 4" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF PB-LENGTH > 5 AND WS-BYTE(1) = X"65"
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   Attack damage: size 1 deals none, size 4 deals 4.
+     MOVE 1 TO EN-VARIANT(WS-ROW)
+     CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-M WS-DAMAGE
+     MOVE "acceptance US15 20§10 Slime: a size 1 slime deals no contact damage" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-DAMAGE
+     MOVE 4 TO EN-VARIANT(WS-ROW)
+     CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-M WS-DAMAGE
+     MOVE "acceptance US15 20§10 Slime: a size 4 slime deals 4" TO WS-CASE
+     MOVE 4 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-DAMAGE
+*>   A zombie has its row damage.
+     MOVE 6 TO WS-I
+     CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-I WS-DAMAGE
+     MOVE "acceptance US15 20§10 Slime: another mob keeps its row damage" TO WS-CASE
+     MOVE SM-ATTACK(6) TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-DAMAGE
+*>   Split: a size 4 slime dying leaves 2 to 4 size 2 slimes of health 4 around it, none for size 1.
+     MOVE 0 TO WS-MINC
+     MOVE 9 TO WS-MAXC
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         MOVE WS-I TO CW-TIME
+         MOVE 0 TO WS-COUNT
+         CALL "STDMOB-SLIME-SPLIT" USING WS-ROW
+         PERFORM VARYING WS-N1 FROM 1 BY 1 UNTIL WS-N1 > EN-COUNT
+             IF EN-USED(WS-N1) = 1 AND EN-TYPE(WS-N1) = WS-TYPE AND WS-N1 NOT = WS-ROW
+                 ADD 1 TO WS-COUNT
+                 IF EN-VARIANT(WS-N1) NOT = 2 OR EN-HEALTH(WS-N1) NOT = 4
+                     ADD 1 TO WS-BAD
+                 END-IF
+                 CALL "ENTITY-REMOVE" USING WS-N1
+             END-IF
+         END-PERFORM
+         MOVE FUNCTION MAX(WS-MINC, WS-COUNT) TO WS-MINC
+         MOVE FUNCTION MIN(WS-MAXC, WS-COUNT) TO WS-MAXC
+     END-PERFORM
+     MOVE "acceptance US15 20§20.2 Slime splitting: 2 to 4 children, size 2, health 4" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-MINC <= 4 AND WS-MAXC >= 2 AND WS-BAD = 0
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO EN-VARIANT(WS-ROW)
+     MOVE 0 TO WS-COUNT
+     CALL "STDMOB-SLIME-SPLIT" USING WS-ROW
+     PERFORM VARYING WS-N1 FROM 1 BY 1 UNTIL WS-N1 > EN-COUNT
+         IF EN-USED(WS-N1) = 1 AND EN-TYPE(WS-N1) = WS-TYPE AND WS-N1 NOT = WS-ROW
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§20.2 Slime splitting: a size 1 slime leaves nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-COUNT
+*>   Death through STDMOB-DIE: a size 2 slime killed by the player splits and the parent stays dying.
+     MOVE 2 TO EN-VARIANT(WS-ROW)
+     MOVE WS-PLAYER TO EN-KILLER(WS-ROW)
+     CALL "STDMOB-DIE" USING WS-ROW
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-N1 FROM 1 BY 1 UNTIL WS-N1 > EN-COUNT
+         IF EN-USED(WS-N1) = 1 AND EN-TYPE(WS-N1) = WS-TYPE AND WS-N1 NOT = WS-ROW
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§10 Slime: the death of a size 2 slime leaves 2 to 4 children" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-COUNT >= 2 AND WS-COUNT <= 4
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   A size 1 slime killed by the player drops through the loot table path and gives 1 experience.
+     MOVE 1 TO EN-VARIANT(WS-ROW)
+     MOVE WS-PLAYER TO EN-KILLER(WS-ROW)
+     CALL "STDMOB-SLIME-DIE" USING WS-ROW WS-PLAYER
+*>   The spawn rule: Peaceful fails; a spawner needs only the floor; natural spawning in plains fails (no surface biome).
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     MOVE 0 TO BW-DIFFICULTY
+     MOVE 0 TO WS-N1
+     CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-ZY WS-ZZ WS-RZ WS-OK
+     MOVE "acceptance US15 20§10 Slime: Peaceful refuses" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE 2 TO WS-N2
+     CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-ZY WS-ZZ WS-N2 WS-OK
+     MOVE "acceptance US15 20§10 Slime: a spawner over no floor refuses" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
+     MOVE 0 TO WS-N2
+     CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-ZY WS-ZZ WS-N2 WS-OK
+     MOVE "acceptance US15 20§10 Slime: natural spawn outside a swamp refuses" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
+*>   Surface branch in a swamp: the biome of the chunk is swamp, a stone floor at y 55 (dark under the old rock), feet at 56.
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-FX = FUNCTION INTEGER(WS-X) + 10
+     COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) + 10
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FLOOR-Y WS-FKIND
+     COMPUTE WS-CH = FUNCTION INTEGER(WS-FX / 16)
+     COMPUTE WS-N2 = FUNCTION INTEGER(WS-FZ / 16)
+     CALL "WORLD-FIND" USING WS-DIM WS-CH WS-N2 WS-CHUNK
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-CHUNK)
+     MOVE 0 TO WS-SWAMP
+     MOVE "minecraft:swamp" TO CBI-KEY(1)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1024
+         MOVE WS-SWAMP TO CE-BIOME(WS-I)
+     END-PERFORM
+     COMPUTE WS-FY = WS-FLOOR-Y + 1
+     COMPUTE WS-N1 = WS-FX + 1
+     COMPUTE WS-N2 = WS-FZ + 1
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE 2 TO WS-OK
+     CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-FY WS-N2 WS-ZZ WS-OK
+     MOVE 0 TO WS-OK
+     MOVE 2 TO WS-N4
+     CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-FY WS-N2 WS-N4 WS-OK
+     MOVE "acceptance US15 20§10 Slime: a spawner on a floor spawns" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OK
+     MOVE 18000 TO CW-TIME
+     MOVE 0 TO WS-HITS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         MOVE 0 TO WS-N4
+         CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-FY WS-N2 WS-N4 WS-OK
+         ADD WS-OK TO WS-HITS
+     END-PERFORM
+     MOVE "acceptance US15 20§10 Slime: a swamp cave at the full moon spawns some of the tries" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-HITS >= 1 AND WS-HITS < 60
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 114000 TO CW-TIME
+     MOVE 0 TO WS-HITS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         MOVE 0 TO WS-N4
+         CALL "STDMOB-SLIME-RULE" USING XR-STATE WS-DIM WS-N1 WS-FY WS-N2 WS-N4 WS-OK
+         ADD WS-OK TO WS-HITS
+     END-PERFORM
+     MOVE "acceptance US15 20§10 Slime: the new moon never spawns on the surface rule" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-HITS
+     CALL "ENTITY-REMOVE" USING WS-ROW
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-MOB-20-10.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(100).
+ 01 L-EXPECTED             BINARY-LONG.
+ 01 L-OBSERVED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CHK.
+ COPY CORETEST.
+ COPY MOBSPTEST.
