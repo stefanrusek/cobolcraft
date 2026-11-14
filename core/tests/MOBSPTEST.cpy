@@ -1,0 +1,97 @@
+*> Helpers of the natural spawning tests (core/src/mob-18-6.cob; COPY after the test program, touch the test after changing it).
+*>   MS-TEST-OPEN USING player row out: a standard-tables world (view distance 2, hostile mobs on) with one player in survival, difficulty normal.
+*>   MS-TEST-FLOOR USING dim, x0, z0, size, y, kind (1 stone, 2 grass_block): a size x size floor of that block with y as its top block and
+*>     three layers of air above it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS-TEST-OPEN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY BRWORLD.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 1 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO L-PLAYER
+     MOVE 0 TO PL-MODE(L-PLAYER)
+     GOBACK.
+ END PROGRAM MS-TEST-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS-TEST-FLOOR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X0                   BINARY-LONG.
+ 01 L-Z0                   BINARY-LONG.
+ 01 L-SIZE                 BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X0 L-Z0 L-SIZE L-Y L-KIND.
+     MOVE SPACES TO WS-KEY
+     IF L-KIND = 1
+         MOVE "minecraft:stone" TO WS-KEY
+     ELSE
+         MOVE "minecraft:grass_block" TO WS-KEY
+     END-IF
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-TOP = L-Y + 3
+     PERFORM VARYING WS-X FROM L-X0 BY 1 UNTIL WS-X >= L-X0 + L-SIZE
+         PERFORM VARYING WS-Z FROM L-Z0 BY 1 UNTIL WS-Z >= L-Z0 + L-SIZE
+             CALL "WORLD-SET-BLOCK" USING L-DIM WS-X L-Y WS-Z WS-STATE
+             COMPUTE WS-Y = L-Y + 1
+             PERFORM VARYING WS-Y FROM WS-Y BY 1 UNTIL WS-Y > WS-TOP
+                 CALL "WORLD-SET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MS-TEST-FLOOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS-TEST-STATE.
+*> USING key (PIC X(112)), state out (BINARY-LONG): the default block state id of the block of that key.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(112).
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-STATE.
+     CALL "CONTENT-BLOCK-BY-KEY" USING L-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE L-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     GOBACK.
+ END PROGRAM MS-TEST-STATE.
