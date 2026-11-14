@@ -73,12 +73,12 @@
      PERFORM CLICK
      MOVE "1209010002000001" TO TL-EXPECTED
      PERFORM CHECK
-     MOVE "acceptance US12 40-1§5.5 a right click on a slot with an empty cursor is PICKUP button 1" TO TL-CASE
+     MOVE "acceptance US12 40-1§5.5 a right click on a slot with an empty cursor is PICKUP button 1, the larger half predicted" TO TL-CASE
      PERFORM FRESH
      MOVE 402 TO WS-ARG
      MOVE CC-BUTTON-RIGHT TO WS-BUTTON
      PERFORM CLICK
-     MOVE "1209010001010000" TO TL-EXPECTED
+     MOVE "1209010001010001" TO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US12 40-1§5.5 shift and a left click is QUICK_MOVE (type 1), button 0, nothing predicted" TO TL-CASE
      PERFORM FRESH
@@ -211,14 +211,14 @@
      PERFORM CLICK-OUTSIDE
      MOVE "120901fc19000400" TO TL-EXPECTED
      PERFORM CHECK
-     MOVE "acceptance US12 40-1§5.5 a right click that carries a stack on a slot is PICKUP button 1, nothing predicted" TO TL-CASE
+     MOVE "acceptance US12 40-1§5.5 a right click that carries a stack on a slot is PICKUP button 1, one item put down and predicted" TO TL-CASE
      PERFORM FRESH
      MOVE 10 TO PL-CARRIED-COUNT
      MOVE 2 TO PL-CARRIED-ITEM
      MOVE CC-BUTTON-RIGHT TO WS-BUTTON
      MOVE 403 TO WS-ARG
      PERFORM CLICK
-     MOVE "1209010002010000" TO TL-EXPECTED
+     MOVE "1209010002010001" TO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US12 40-1§5.5 another button released during a drag ends the drag and the later release of the drag's button is swallowed: nothing is sent" TO TL-CASE
      PERFORM FRESH
@@ -412,7 +412,8 @@
      PERFORM SLOT-POS
      INITIALIZE WS-EVENTS
      MOVE CC-EV-CURSOR TO WS-KIND(1)
-     MOVE WS-PX TO WS-X(1)
+*>   The pointer moves (3 window pixels off the slot's centre), as vanilla's mouseDragged needs motion to add a slot.
+     COMPUTE WS-X(1) = WS-PX + 3
      MOVE WS-PY TO WS-Y(1)
      MOVE 1 TO WS-N
      PERFORM FRAME

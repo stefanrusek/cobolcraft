@@ -285,10 +285,13 @@
        10 CX-DRAG-BUTTON     BINARY-LONG.
        10 CX-DRAG-N          BINARY-LONG.
        10 CX-DRAG-SLOT       BINARY-LONG OCCURS 64 TIMES.
+       10 CX-DRAG-ARG        BINARY-LONG OCCURS 64 TIMES.
        10 CX-SKIP-RELEASE    BINARY-LONG.
        10 CX-PREV-SLOT       BINARY-LONG.
        10 CX-PREV-MS         BINARY-DOUBLE.
        10 CX-DOUBLE          BINARY-LONG.
+       10 CX-LAST-X          BINARY-LONG.
+       10 CX-LAST-Y          BINARY-LONG.
 *>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
 *>     last sent (itemName; AN-SENT-NULL 1 = none yet).
 *>     The mount inventory (40-6): the entity id, its kind (1 horse family, 2 nautilus), whether the saddle and body slots are shown and the body icon (1 horse armor, 2 llama, 3 nautilus).
