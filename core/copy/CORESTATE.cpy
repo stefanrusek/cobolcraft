@@ -374,6 +374,8 @@
 *>     --- 002-lane-mobsfull-h15: surroundings and memory of a standard mob (core/src/mob-18-2.cob; 18 sections 2.5, 2.8) ---
        10 EN-AIR-LOST        BINARY-LONG.        *> air supply lost: the air is 300 less this (0 = full); 320 = air -20, drowning damage and back to 300
        10 EN-KILLER-AGE      BINARY-LONG.        *> ticks left of lastHurtByPlayerMemoryTime (100 after a hit by a player); at 0 EN-KILLER is cleared (0 = not counting)
+*>     --- 002-lane-mobsfull-h18: pet care (core/src/mob-19-5.cob; 19 sections 5 and 6) ---
+       10 EN-COLLAR          BINARY-LONG.        *> collar colour of a tame wolf or cat: the dye id + 1 (0 = never dyed, the default red 14)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
