@@ -953,6 +953,14 @@
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
      END-IF
+*>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
+     IF SM-KEY(WS-M) = "endermite"
+         ADD 1 TO EN-WAKE(WS-ROW)
+         IF EN-WAKE(WS-ROW) >= 2400
+             CALL "ENTITY-REMOVE" USING WS-ROW
+             GOBACK
+         END-IF
+     END-IF
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
      END-IF

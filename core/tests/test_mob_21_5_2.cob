@@ -341,6 +341,16 @@
      MOVE WS-Y TO PL-Y(WS-PLAYER)
      CALL "ENTITY-REMOVE" USING WS-ROW
 
+*>   Through MOB-STEP: the blaze takes the player as target and starts its attack (attackTime 60) and its height counter.
+     COMPUTE WS-GX = WS-X - 8
+     MOVE WS-Y TO WS-GY
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-GX WS-GY WS-GZ WS-YAW WS-ROW
+     CALL "MOB-STEP" USING WS-ROW
+     MOVE "acceptance US15 21§5.2 blaze: MOB-STEP starts the attack cycle" TO WS-CASE
+     MOVE 60 TO WS-EXP
+     MOVE EN-SHOOT-TIME(WS-ROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ROW
 *>   The snowball hurts a blaze for 3 and a cow for 0 (17 section 3.15).
      COMPUTE WS-GX = WS-X - 8
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-GX WS-GY WS-GZ WS-YAW WS-ROW

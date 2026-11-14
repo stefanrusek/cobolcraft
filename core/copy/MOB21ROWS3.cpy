@@ -48,3 +48,19 @@
        10 FILLER BINARY-LONG VALUE 6.  *> ranged (the shulker's attack goal and bullet, SHULKER-ATTACK; it does not walk, the attach face and the teleport are open)
        10 FILLER BINARY-LONG VALUE 0.  *> spawn rule
        10 FILLER BINARY-LONG VALUE 0.  *> hit effect
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "endermite".
+       10 FILLER BINARY-LONG VALUE 8.  *> max health
+       10 FILLER BINARY-LONG VALUE 138.  *> speed x 1000 (squared / 0.454) (speed 0.25; 20 section 8.2)
+       10 FILLER BINARY-LONG VALUE 0.  *> panic speed
+       10 FILLER BINARY-LONG VALUE 1.  *> kind (1 monster)
+       10 FILLER BINARY-LONG VALUE 2.  *> attack damage
+       10 FILLER BINARY-LONG VALUE 16.  *> follow range
+       10 FILLER BINARY-LONG VALUE 0.  *> burns in daylight
+       10 FILLER BINARY-LONG VALUE 0.  *> neutral kind
+       10 FILLER BINARY-LONG VALUE 3.  *> experience
+       10 FILLER BINARY-LONG VALUE 0.  *> fuse
+       10 FILLER BINARY-LONG VALUE 0.  *> blast
+       10 FILLER BINARY-LONG VALUE 0.  *> ranged
+       10 FILLER BINARY-LONG VALUE 0.  *> spawn rule (0: it appears only through an ender pearl or a spawner, 20 section 8.2; the lifetime of 2400 ticks counts in EN-WAKE)
+       10 FILLER BINARY-LONG VALUE 0.  *> hit effect
