@@ -27,13 +27,13 @@
      MOVE WS-STATUS TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-1§1 What a structure is in this version, and what is data: nine set files, eight accepted" TO TL-CASE
+     MOVE "acceptance US12 36-1§1 What a structure is in this version, and what is data: fourteen set files, eight accepted" TO TL-CASE
      MOVE SD-SET-COUNT TO TL-OBSERVED-N
      MOVE 8 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-1§1 What a structure is in this version, and what is data: the element the schema rejects (spacing not above separation) is counted" TO TL-CASE
+     MOVE "acceptance US12 36-1§1 What a structure is in this version, and what is data: six elements the schema rejects (JSON, placement, spacing, weight, structure) are counted" TO TL-CASE
      MOVE SD-BAD TO TL-OBSERVED-N
-     MOVE 1 TO TL-EXPECTED-N
+     MOVE 6 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 36-1§1 What a structure is in this version, and what is data: four structures are read, each once although several sets list them" TO TL-CASE
      MOVE SD-ST-COUNT TO TL-OBSERVED-N

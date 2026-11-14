@@ -214,7 +214,8 @@
      MOVE 1 TO WS-SET
      MOVE 0 TO WS-COUNT
      PERFORM VARYING WS-CX FROM 0 BY 1 UNTIL WS-CX > 9
-         CALL "STRUCT-FREQ-OK" USING WS-SET WS-SEED WS-CX WS-CX WS-FLAG
+         MOVE WS-CX TO WS-CZ
+         CALL "STRUCT-FREQ-OK" USING WS-SET WS-SEED WS-CX WS-CZ WS-FLAG
          ADD WS-FLAG TO WS-COUNT
      END-PERFORM
      MOVE "acceptance US12 36-1§4 Placement engines: frequency 1.0 skips the reducer (all pass)" TO TL-CASE
@@ -256,15 +257,15 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-CX
      MOVE 0 TO WS-CZ
-     MOVE 18 TO WS-R
+     MOVE 14 TO WS-R
      CALL "STRUCT-IN-RANGE" USING WS-SET WS-SEED WS-CX WS-CZ WS-R WS-FLAG
-     MOVE "acceptance US12 36-1§4 Placement engines: from (0,0) radius 18 reaches no alpha chunk (19 is one too far)" TO TL-CASE
+     MOVE "acceptance US12 36-1§4 Placement engines: from (0,0) radius 14 reaches no alpha chunk (the nearest, (11,-15), is 15 away)" TO TL-CASE
      MOVE WS-FLAG TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 19 TO WS-R
+     MOVE 15 TO WS-R
      CALL "STRUCT-IN-RANGE" USING WS-SET WS-SEED WS-CX WS-CZ WS-R WS-FLAG
-     MOVE "acceptance US12 36-1§4 Placement engines: radius 19 does" TO TL-CASE
+     MOVE "acceptance US12 36-1§4 Placement engines: radius 15 does" TO TL-CASE
      MOVE WS-FLAG TO TL-OBSERVED-N
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

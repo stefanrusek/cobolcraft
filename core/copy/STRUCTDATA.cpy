@@ -13,6 +13,7 @@
  78 SD-MAX-STARTS        VALUE 64.
  01 STRUCT-DATA EXTERNAL.
 *>  SD-BAD: elements the schema rejected (left out); SD-POSS-DONE 1 once SS-POSSIBLE was built for the loaded sets; SD-STARTS-SEEN: starts the generation hook made
+    05 SD-DIR               PIC X(1100).
     05 SD-BAD               BINARY-LONG.
     05 SD-SET-COUNT         BINARY-LONG.
     05 SD-EN-COUNT          BINARY-LONG.

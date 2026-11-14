@@ -45,7 +45,7 @@
      MOVE "acceptance US12 36-1§3 Element schemas: the structures of alpha_set in file order with their weights (2 1 1)" TO TL-CASE
      COMPUTE TL-OBSERVED-N = SE-STRUCT(SS-EN-FIRST(1)) * 100000 + SE-WEIGHT(SS-EN-FIRST(1)) * 10000 + SE-STRUCT(SS-EN-FIRST(1) + 1) * 1000
          + SE-WEIGHT(SS-EN-FIRST(1) + 1) * 100 + SE-STRUCT(SS-EN-FIRST(1) + 2) * 10 + SE-WEIGHT(SS-EN-FIRST(1) + 2)
-     MOVE 121311 TO TL-EXPECTED-N
+     MOVE 122131 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 36-1§3 Element schemas: alpha_set has 3 entries" TO TL-CASE
      MOVE SS-EN-COUNT(1) TO TL-OBSERVED-N
