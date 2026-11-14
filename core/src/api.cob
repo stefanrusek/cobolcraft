@@ -526,6 +526,8 @@
          CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
 *>       the feature lists of the biomes; the stage runs the placed features of the supported families (FR-GATE)
          CALL "BIOMES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+*>       the structure sets and structures (36-1; none is gated on yet, so the generation hook does nothing)
+         CALL "STRUCT-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF
