@@ -6,8 +6,8 @@
 *> difficulty scaling of 20 section 3.1. SM-FOLLOW: the follow range in blocks. SM-BURNS 1: burns in daylight (20 section 3.5). SM-XP: the experience a player's kill gives (18 section 7.5; 20 section 3.1: Monster 5; 0 = an animal, 1 + nextInt(3)). SM-NEUTRAL 1: takes a target only where the light is below 13 (the spider, 20 section 7.1). The loot of a mob is its
 *> table minecraft:entities/<key> (18 section 7.6; STDMOB-DROPS).
  78 SM-BASE-COUNT            VALUE 15.
- 78 SM-COUNT                 VALUE 27.
-*> Rows SM-BASE-COUNT + 1 to 25 are the land species of document 19 (MOB19ROWS.cpy); rows 26 and 27, slime and enderman, are MOB20ROWS.cpy.
+ 78 SM-COUNT                 VALUE 28.
+*> Rows SM-BASE-COUNT + 1 to 25 are the land species of document 19 (MOB19ROWS.cpy); rows 26 and 27, slime and enderman, are MOB20ROWS.cpy; row 28 on are the neutral species (MOB19NEUTRAL.cpy).
 *> The first SM-NATURAL rows spawn on grass in the natural cycle (18 section 6.8 animal rule); rows SM-HOSTILE-FIRST to SM-COUNT are monsters.
  78 SM-NATURAL               VALUE 4.
  78 SM-HOSTILE-FIRST         VALUE 6.
@@ -255,6 +255,7 @@
        10 FILLER BINARY-LONG VALUE 2.
  COPY MOB19ROWS.
  COPY MOB20ROWS.
+ COPY MOB19NEUTRAL.
  01 STD-MOB-TABLE REDEFINES STD-MOB-DATA.
     05 SM-ENTRY OCCURS SM-COUNT TIMES.
        10 SM-KEY                PIC X(24).

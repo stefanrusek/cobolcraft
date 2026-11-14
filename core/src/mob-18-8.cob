@@ -304,7 +304,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-DATA-VALUES.
 *> USING row, baby out, wool out, needed out: what an animal row sends as entity data (9.3, 19 section 1.3): metadata 16 is the baby flag of an ageable mob (EN-VARIANT 1) and
-*> metadata 18 the byte of a sheep (colour, +16 sheared). The zombie family's baby flag is sent by STDMOB-VARIANT-BUILD, so only passive rows count here. needed is 1 when
+*> metadata 18 the byte of a sheep (colour, +16 sheared); a tame wolf also sends 18 (tamable flags) and 19 (owner), MOB-DATA-BUILD. The zombie family's baby flag is sent by STDMOB-VARIANT-BUILD, so only passive rows count here. needed is 1 when
 *> either value differs from the default (not baby, byte 0); wool is -1 for a row that is no sheep.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -331,6 +331,9 @@
                      MOVE 1 TO L-NEEDED
                  END-IF
              END-IF
+             IF SM-KEY(WS-M) = "wolf" AND EN-TAMED(L-ROW) = 1
+                 MOVE 1 TO L-NEEDED
+             END-IF
          END-IF
      END-IF
      GOBACK.
@@ -339,10 +342,16 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-DATA-BUILD.
 *> USING row, PB-BUFFER: Set Entity Data (0x65) with the entries of MOB-DATA-VALUES that differ from the default: index 16 BOOLEAN (baby), index 18 BYTE (sheep wool).
+*> A tame wolf sends index 18 BYTE (M188-TAME-FLAGS: tame and sitting) and index 19 OPTIONAL_LIVING_ENTITY_REFERENCE (the owner's UUID), 18 section 8.2.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-TAME-ONE            BINARY-LONG VALUE 1.
+ 01 WS-SERIALIZER-BYTE     BINARY-LONG VALUE 0.
+ 01 WS-SERIALIZER-OWNER    BINARY-LONG VALUE 13.
  01 WS-PACKET-ID           BINARY-LONG VALUE 101.
  01 WS-BABY                BINARY-LONG.
  01 WS-WOOL                BINARY-LONG.
@@ -364,6 +373,21 @@
          MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
          MOVE WS-WOOL TO MD-MD-INT
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     IF WS-KEY = "wolf" AND EN-TAMED(L-ROW) = 1
+         CALL "M188-TAME-FLAGS" USING WS-TAME-ONE EN-SIT(L-ROW) WS-FLAGS
+         INITIALIZE MD-METADATA-ENTRY-X
+         MOVE 18 TO MD-MX-INDEX
+         MOVE WS-SERIALIZER-BYTE TO MD-MX-SERIALIZER
+         MOVE WS-FLAGS TO MD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+         INITIALIZE MD-METADATA-ENTRY-X
+         MOVE 19 TO MD-MX-INDEX
+         MOVE WS-SERIALIZER-OWNER TO MD-MX-SERIALIZER
+         MOVE 1 TO MD-MX-PRESENT
+         MOVE EN-OWNER-UUID(L-ROW) TO MD-MX-UUID
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
      END-IF
      MOVE MD-MD-END TO MD-MD-INDEX
      CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
@@ -952,6 +976,67 @@
  END PROGRAM MOB-FEED-USE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-WOLF-USE.
+*> USING player row, entity row (a wolf): the main hand on a wolf (19 section 6.1). An untamed wolf with a bone: the bone is used and nextInt(3) = 0 tames it (the player is the owner,
+*> 40 health, the sit order, Entity Event 7) else Entity Event 6. A tame wolf of this player: the sit order toggles (M188-SIT-TOGGLE); the wolf's food, dye and armour are open items.
+*> The wolf's entity data goes to the viewers after a change.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-SALT                BINARY-LONG VALUE 31.
+ 01 WS-BOUND               BINARY-LONG VALUE 3.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-OWNER               BINARY-LONG.
+ 01 WS-CONSUMED            BINARY-LONG VALUE 0.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-KEY48               PIC X(48).
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY.
+     MOVE SPACES TO WS-KEY48
+     IF PL-SLOT-COUNT(L-ROW, PL-HELD(L-ROW) + 1) > 0
+         CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(L-ROW, PL-HELD(L-ROW) + 1) WS-KEY48
+     END-IF
+     IF EN-TAMED(L-ENTITY) = 0
+         IF WS-KEY48 = "bone"
+             CALL "MOB-TAKE" USING L-ROW
+             CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+             CALL "M188-TAME-TRY" USING WS-DRAW WS-OK
+             MOVE 6 TO WS-EVENT
+             IF WS-OK = 1
+                 MOVE 7 TO WS-EVENT
+                 MOVE 1 TO EN-TAMED(L-ENTITY) EN-SIT(L-ENTITY)
+                 MOVE PL-UUID(L-ROW) TO EN-OWNER-UUID(L-ENTITY)
+                 MOVE 40 TO EN-HEALTH(L-ENTITY)
+             END-IF
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ENTITY) WS-EVENT PB-BUFFER
+             CALL "HEALTH-VIEWERS-SEND" USING L-ENTITY PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+             IF WS-OK = 1
+                 CALL "MOB-DATA-SEND" USING L-ENTITY
+             END-IF
+         END-IF
+     ELSE
+         MOVE 0 TO WS-OWNER
+         IF EN-OWNER-UUID(L-ENTITY) = PL-UUID(L-ROW)
+             MOVE 1 TO WS-OWNER
+         END-IF
+         CALL "M188-SIT-TOGGLE" USING EN-SIT(L-ENTITY) WS-CONSUMED WS-OWNER WS-NEW
+         IF WS-NEW NOT = EN-SIT(L-ENTITY)
+             MOVE WS-NEW TO EN-SIT(L-ENTITY)
+             CALL "MOB-DATA-SEND" USING L-ENTITY
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-WOLF-USE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-SHEAR-USE.
 *> USING player row, entity row (a sheep): shears on a sheep that is not sheared and not a baby (19 section 2.4): 1 + nextInt(3) single wool items of its colour drop, the sheared
 *> flag is set and goes to the viewers, the shears lose 1 durability.
@@ -1068,7 +1153,7 @@
  PROGRAM-ID. MOB-INTERACT.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Interact 0x1A): the main hand of an alive player on a standard passive mob of its dimension that is alive and whose box is
 *> within the attack reach: shears on a sheep (MOB-SHEAR-USE), an empty bucket on a cow or mooshroom (MOB-MILK-USE), shears or a bowl on a mooshroom (MOB-MOOSHROOM-USE),
-*> otherwise the held item as animal food (MOB-FEED-USE). Anything else, and the off hand, is not handled yet.
+*> otherwise the held item as animal food (MOB-FEED-USE). A wolf: MOB-WOLF-USE. Anything else, and the off hand, is not handled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1148,8 +1233,102 @@
              CALL "MOB-MILK-USE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN WS-KEY = "mooshroom" AND (WS-HELD = "shears" OR "bowl")
              CALL "MOB-MOOSHROOM-USE" USING WS-ROW WS-ENTITY WS-HELD
+         WHEN WS-KEY = "wolf"
+             CALL "MOB-WOLF-USE" USING WS-ROW WS-ENTITY
          WHEN OTHER
              CALL "MOB-FEED-USE" USING WS-ROW WS-ENTITY
      END-EVALUATE
      GOBACK.
  END PROGRAM MOB-INTERACT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-TAME-FLAGS.
+*> USING tame, sit, flags out: metadata slot 18 of a TamableAnimal (8.2): bit 4 is tame, bit 1 the sitting pose.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-TAME                 BINARY-LONG.
+ 01 L-SIT                  BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAME L-SIT L-FLAGS.
+     COMPUTE L-FLAGS = L-TAME * 4 + L-SIT
+     GOBACK.
+ END PROGRAM M188-TAME-FLAGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-TAME-TRY.
+*> USING draw (nextInt(3), 0 to 2), ok out: the taming roll of a wolf (19 section 6.1): nextInt(3) = 0 tames.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-OK.
+     MOVE 0 TO L-OK
+     IF L-DRAW = 0
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM M188-TAME-TRY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-OWNER-FAR.
+*> USING squared distance to the owner, far out: shouldTryTeleportToOwner, 1 at 144 (12 blocks) or more (8.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-FAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-D2 L-FAR.
+     MOVE 0 TO L-FAR
+     IF L-D2 >= 144
+         MOVE 1 TO L-FAR
+     END-IF
+     GOBACK.
+ END PROGRAM M188-OWNER-FAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-FOLLOW.
+*> USING squared distance to the owner, moving (1 while it walks to the owner), action out: FollowOwnerGoal(1.0, 10.0, 2.0) with the teleport of 12 blocks (8.2):
+*> 2 teleport at 144 or more, 1 walk (start farther than 10 blocks, or keep walking beyond 2 blocks), 3 stop (a walking pet within 2 blocks), 0 nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FAR                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-MOVING               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-D2 L-MOVING L-ACTION.
+     CALL "M188-OWNER-FAR" USING L-D2 WS-FAR
+     EVALUATE TRUE
+         WHEN WS-FAR = 1
+             MOVE 2 TO L-ACTION
+         WHEN L-MOVING = 0 AND L-D2 > 100
+             MOVE 1 TO L-ACTION
+         WHEN L-MOVING = 1 AND L-D2 > 4
+             MOVE 1 TO L-ACTION
+         WHEN L-MOVING = 1
+             MOVE 3 TO L-ACTION
+         WHEN OTHER
+             MOVE 0 TO L-ACTION
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM M188-FOLLOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-SIT-TOGGLE.
+*> USING sit, consumed, owner, new sit out: when the base interaction consumed nothing and the player is the owner, the sit order toggles (19 section 6.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-SIT                  BINARY-LONG.
+ 01 L-CONSUMED             BINARY-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIT L-CONSUMED L-OWNER L-NEW.
+     MOVE L-SIT TO L-NEW
+     IF L-CONSUMED = 0 AND L-OWNER = 1
+         COMPUTE L-NEW = 1 - L-SIT
+     END-IF
+     GOBACK.
+ END PROGRAM M188-SIT-TOGGLE.

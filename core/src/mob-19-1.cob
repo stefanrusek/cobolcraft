@@ -92,7 +92,7 @@
 *> USING class, key (PIC X(48), with or without "minecraft:"), ok out: 1 when the block below a spawn is allowed for the floor class (1.4):
 *> 1 animals_spawnable_on (grass_block); 2 rabbits (grass_block, snow, snow_block, sand); 3 foxes (grass_block, snow, snow_block, podzol,
 *> coarse_dirt); 4 goats (grass_block, stone, snow, snow_block, packed_ice, gravel); 5 camels (the tag sand); 6 armadillos (grass_block,
-*> the badlands terracotta, red_sand, coarse_dirt).
+*> the badlands terracotta, red_sand, coarse_dirt); 7 wolves (grass_block, snow, snow_block, coarse_dirt, podzol).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-FLOORS.
@@ -125,8 +125,13 @@
     05 FILLER PIC X(25) VALUE "6light_gray_terracotta".
     05 FILLER PIC X(25) VALUE "6red_sand".
     05 FILLER PIC X(25) VALUE "6coarse_dirt".
+    05 FILLER PIC X(25) VALUE "7grass_block".
+    05 FILLER PIC X(25) VALUE "7snow".
+    05 FILLER PIC X(25) VALUE "7snow_block".
+    05 FILLER PIC X(25) VALUE "7coarse_dirt".
+    05 FILLER PIC X(25) VALUE "7podzol".
  01 WS-FLOOR-TABLE REDEFINES WS-FLOORS.
-    05 WS-ROW                 OCCURS 29 TIMES.
+    05 WS-ROW                 OCCURS 34 TIMES.
        10 WS-ROW-CLASS        PIC X.
        10 WS-ROW-KEY          PIC X(24).
  01 WS-I                   BINARY-LONG.
@@ -145,7 +150,7 @@
          MOVE L-KEY(1:24) TO WS-NAME
      END-IF
      MOVE FUNCTION CHAR(L-CLASS + 49) TO WS-WANT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 29
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 34
          IF WS-ROW-CLASS(WS-I) = WS-WANT AND WS-ROW-KEY(WS-I) = WS-NAME
              MOVE 1 TO L-OK
          END-IF
@@ -173,6 +178,8 @@
              MOVE 5 TO L-CLASS
          WHEN "armadillo"
              MOVE 6 TO L-CLASS
+         WHEN "wolf"
+             MOVE 7 TO L-CLASS
          WHEN OTHER
              MOVE 1 TO L-CLASS
      END-EVALUATE
