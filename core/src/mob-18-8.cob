@@ -1153,3 +1153,95 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM MOB-INTERACT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-TAME-FLAGS.
+*> USING tame, sit, flags out: metadata slot 18 of a TamableAnimal (8.2): bit 4 is tame, bit 1 the sitting pose.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-TAME                 BINARY-LONG.
+ 01 L-SIT                  BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAME L-SIT L-FLAGS.
+     COMPUTE L-FLAGS = L-TAME * 4 + L-SIT
+     GOBACK.
+ END PROGRAM M188-TAME-FLAGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-TAME-TRY.
+*> USING draw (nextInt(3), 0 to 2), ok out: the taming roll of a wolf (19 section 6.1): nextInt(3) = 0 tames.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-OK.
+     MOVE 0 TO L-OK
+     IF L-DRAW = 0
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM M188-TAME-TRY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-OWNER-FAR.
+*> USING squared distance to the owner, far out: shouldTryTeleportToOwner, 1 at 144 (12 blocks) or more (8.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-FAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-D2 L-FAR.
+     MOVE 0 TO L-FAR
+     IF L-D2 >= 144
+         MOVE 1 TO L-FAR
+     END-IF
+     GOBACK.
+ END PROGRAM M188-OWNER-FAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-FOLLOW.
+*> USING squared distance to the owner, moving (1 while it walks to the owner), action out: FollowOwnerGoal(1.0, 10.0, 2.0) with the teleport of 12 blocks (8.2):
+*> 2 teleport at 144 or more, 1 walk (start farther than 10 blocks, or keep walking beyond 2 blocks), 3 stop (a walking pet within 2 blocks), 0 nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FAR                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-MOVING               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-D2 L-MOVING L-ACTION.
+     CALL "M188-OWNER-FAR" USING L-D2 WS-FAR
+     EVALUATE TRUE
+         WHEN WS-FAR = 1
+             MOVE 2 TO L-ACTION
+         WHEN L-MOVING = 0 AND L-D2 > 100
+             MOVE 1 TO L-ACTION
+         WHEN L-MOVING = 1 AND L-D2 > 4
+             MOVE 1 TO L-ACTION
+         WHEN L-MOVING = 1
+             MOVE 3 TO L-ACTION
+         WHEN OTHER
+             MOVE 0 TO L-ACTION
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM M188-FOLLOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M188-SIT-TOGGLE.
+*> USING sit, consumed, owner, new sit out: when the base interaction consumed nothing and the player is the owner, the sit order toggles (19 section 6.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-SIT                  BINARY-LONG.
+ 01 L-CONSUMED             BINARY-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIT L-CONSUMED L-OWNER L-NEW.
+     MOVE L-SIT TO L-NEW
+     IF L-CONSUMED = 0 AND L-OWNER = 1
+         COMPUTE L-NEW = 1 - L-SIT
+     END-IF
+     GOBACK.
+ END PROGRAM M188-SIT-TOGGLE.
