@@ -23,3 +23,12 @@
     05 FL-B-BEDROCK         BINARY-LONG.
     05 FL-S-AIR             BINARY-LONG.
     05 FL-S-VOID-AIR        BINARY-LONG.
+*> The overflow (GENOVER.cpy): a write outside the column of the chunk, inside the build height, is refused as before and also recorded here, in order, at most 1024
+*> (FL-OV-LOST counts the rest); FL-OPEN empties the list, the stage hands it to the job after its step (OV-KEEP).
+    05 FL-OV-COUNT          BINARY-LONG.
+    05 FL-OV-LOST           BINARY-LONG.
+    05 FL-OV-ENTRY OCCURS 1024 TIMES.
+       10 FL-OV-X           BINARY-LONG.
+       10 FL-OV-Y           BINARY-LONG.
+       10 FL-OV-Z           BINARY-LONG.
+       10 FL-OV-STATE       BINARY-LONG.

@@ -5,7 +5,7 @@
 *>   FL-OPEN USING chunk address (POINTER), chunk x, chunk z, min y, height, sea level (BINARY-LONG)
 *>   FL-CLOSE
 *>   FL-GET-STATE USING x, y, z (block coordinates), state out (BINARY-LONG): air (FL-S-AIR) outside the chunk's column, void_air outside the build height
-*>   FL-SET-STATE USING x, y, z, state, flags, ok out: 1 written (or a y outside the build height, discarded silently as in 4.1 item 3), 0 outside the chunk's column
+*>   FL-SET-STATE USING x, y, z, state, flags, ok out: 1 written (or a y outside the build height, discarded silently as in 4.1 item 3), 0 outside the chunk's column (counted, and recorded in the overflow list FL-OV-* when y is inside the build height: GENOVER.cpy)
 *>   FL-CLASS USING state, class out: 1 air (air, cave air, void air), 2 water, 3 lava, 4 bedrock, 0 any other block
 *>   FL-HEIGHT-OF USING heightmap ordinal (0 to 5, section 4.2), x, z, height out: the first free y over the highest qualifying block, min y for none
 *>   FL-BIOME-AT USING x, y, z, biome key out (PIC X(40))
@@ -33,7 +33,7 @@
      MOVE L-MIN-Y TO FL-MIN-Y
      MOVE L-HEIGHT TO FL-HEIGHT
      MOVE L-SEA TO FL-SEA
-     MOVE 0 TO FL-DISCARDED FL-WRITES
+     MOVE 0 TO FL-DISCARDED FL-WRITES FL-OV-COUNT FL-OV-LOST
      IF FL-EPOCH NOT = CB-EPOCH + 1
          MOVE 0 TO FL-B-AIR FL-B-CAVE-AIR FL-B-VOID-AIR FL-B-WATER FL-B-LAVA FL-B-BEDROCK FL-S-AIR FL-S-VOID-AIR
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
@@ -177,6 +177,17 @@
          END-IF
      ELSE
          ADD 1 TO FL-DISCARDED
+         IF L-Y >= FL-MIN-Y AND L-Y <= FL-MIN-Y + FL-HEIGHT - 1
+             IF FL-OV-COUNT < 1024
+                 ADD 1 TO FL-OV-COUNT
+                 MOVE L-X TO FL-OV-X(FL-OV-COUNT)
+                 MOVE L-Y TO FL-OV-Y(FL-OV-COUNT)
+                 MOVE L-Z TO FL-OV-Z(FL-OV-COUNT)
+                 MOVE L-STATE TO FL-OV-STATE(FL-OV-COUNT)
+             ELSE
+                 ADD 1 TO FL-OV-LOST
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM FL-SET-STATE.

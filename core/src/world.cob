@@ -58,6 +58,7 @@
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY CELLS.
+ COPY GENOVER.
  01 WS-HASH                BINARY-DOUBLE.
  01 WS-BYTES               BINARY-LONG VALUE 304640.
  01 WS-MARKER-Y            BINARY-LONG.
@@ -101,6 +102,7 @@
      ALLOCATE WS-BYTES CHARACTERS INITIALIZED RETURNING CK-ADDR(L-ROW)
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      MOVE DM-KEY-LENGTH(L-DIM) TO WS-KEY-LENGTH
+     MOVE 0 TO GO-COUNT GO-LOST
      CALL "PERSIST-CHUNK-LOAD" USING L-ROW WS-FOUND
      IF WS-FOUND = 2
          MOVE L-CX TO WS-EDIT-X
@@ -122,6 +124,9 @@
          CALL "WORLD-FILL-BIOMES" USING L-ROW
      END-IF
      CALL "BR-COUNT-ROW" USING L-ROW
+*>   the overflow of the neighbours waiting for this chunk is written into it, and what this chunk's features wrote outside it goes to theirs (gen-overflow.cob)
+     CALL "OV-TAKE" USING L-ROW
+     CALL "OV-ROUTE" USING L-DIM
      GOBACK.
  END PROGRAM WORLD-CHUNK-LOAD.
 

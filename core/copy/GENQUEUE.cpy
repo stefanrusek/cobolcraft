@@ -30,10 +30,10 @@
 *> automatic one (GEN-WORKERS-AUTO); GW-ACTIVE is 1 while the pool serves the standard chunks (set by each tick: the terrain data are loaded and the world
 *> is not of the debug type), and then the in-tick steps leave those chunks alone. A worker is a slot of the shim (GW-SLOT, 0 = not
 *> started), idle (GW-BUSY 0), with the request in flight (1: GW-DIM, GW-CX, GW-CZ, GW-GOT bytes of the answer received so far) and
-*> the answer buffer GW-ADDR (marker-y, then the chunk). GQ-READY is the worker whose finished answer the chunk installer takes (0 = none).
+*> the answer buffer GW-ADDR (marker-y, the chunk, then the overflow GO-DATA of GENOVER.cpy: 8 + 16 * 1024 bytes). GQ-READY is the worker whose finished answer the chunk installer takes (0 = none).
  78 GW-MAX                 VALUE 8.
  78 GW-POOL-MAX            VALUE 4.
- 78 GW-ANSWER-BYTES        VALUE 304644.
+ 78 GW-ANSWER-BYTES        VALUE 321036.
  01 GEN-WORKERS EXTERNAL.
     05 GQ-WORKERS           BINARY-LONG.
     05 GW-ACTIVE            BINARY-LONG.
