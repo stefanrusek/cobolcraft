@@ -310,6 +310,9 @@
        10 EN-WOOL            BINARY-LONG.        *> sheep: the metadata byte (colour 0 to 15, +16 sheared); mooshroom: type 0 red 1 brown; pig, cow, chicken: variant
        10 EN-EGG             BINARY-LONG.        *> chicken: eggTime, ticks to the next egg
        10 EN-EAT             BINARY-LONG.        *> sheep: the EatBlock timer, 0 or the ticks left of the 40
+*>     --- 002-lane-mobsfull-h7: taming (core/src/mob-18-8.cob 18 section 8.2; wolf, 19 section 6.1). EN-TAMED is the tame flag. ---
+       10 EN-OWNER-UUID      PIC X(16).          *> the owner's UUID of a tame pet (spaces: none)
+       10 EN-SIT             BINARY-LONG.        *> orderedToSit: 1 while the pet is ordered to sit
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
