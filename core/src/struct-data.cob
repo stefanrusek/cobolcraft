@@ -319,6 +319,8 @@
  01 WS-KEY-MST             PIC X(40) VALUE "mineshaft_type".
  01 WS-VARTEXT             PIC X(120).
  01 WS-VARLEN              BINARY-LONG.
+ 01 WS-KEY-BEACHED         PIC X(40) VALUE "is_beached".
+ 01 WS-BEACHED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(80).
  01 L-INDEX                BINARY-LONG.
@@ -346,6 +348,13 @@
      MOVE 0 TO SDT-VARIANT(L-INDEX)
      IF WS-VARTEXT(1:4) = "mesa"
          MOVE 1 TO SDT-VARIANT(L-INDEX)
+     END-IF
+*>   the shipwreck's is_beached (36-6 section 4.2) is variant 1 too
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-BEACHED WS-BEACHED
+     IF WS-BEACHED > 0
+         IF JN-TYPE(WS-BEACHED) = JT-TRUE
+             MOVE 1 TO SDT-VARIANT(L-INDEX)
+         END-IF
      END-IF
      COMPUTE WS-FIRST = SD-BIOME-COUNT + 1
      CALL "STRUCT-HOLDER-BIOMES" USING JSON-DOC WS-BIOMES WS-FIRST

@@ -645,9 +645,24 @@
      MOVE L-KEY TO SPL-KEY(WS-ROW)
      MOVE 2 TO SPL-STATUS(WS-ROW)
      MOVE 0 TO SPL-FIRST(WS-ROW) SPL-N(WS-ROW)
-     CALL "FD-FETCH" USING WS-REGISTRY L-KEY WS-TEXT WS-LEN WS-STATUS
+*>   a code-defined list of a structure (BlockIgnoreProcessor.STRUCTURE_BLOCK of the igloo, STRUCTURE_AND_AIR of the shipwreck: 36-4 6.2, 36-6 4.3) has no file: its JSON is built in
+     EVALUATE L-KEY
+         WHEN "cobolcraft:inline/ignore_structure_block"
+             MOVE SPACES TO WS-TEXT
+             MOVE '{"processors":[{"processor_type":"minecraft:block_ignore","blocks":["minecraft:structure_block"]}]}' TO WS-TEXT
+             MOVE 0 TO WS-STATUS
+         WHEN "cobolcraft:inline/ignore_structure_and_air"
+             MOVE SPACES TO WS-TEXT
+             MOVE '{"processors":[{"processor_type":"minecraft:block_ignore","blocks":["minecraft:air","minecraft:structure_block"]}]}' TO WS-TEXT
+             MOVE 0 TO WS-STATUS
+         WHEN OTHER
+             CALL "FD-FETCH" USING WS-REGISTRY L-KEY WS-TEXT WS-LEN WS-STATUS
+     END-EVALUATE
      IF WS-STATUS NOT = 0
          GOBACK
+     END-IF
+     IF L-KEY(1:17) = "cobolcraft:inline"
+         COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT TRAILING))
      END-IF
      CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LEN
      IF JD-ERROR NOT = 0 OR JD-COUNT = 0

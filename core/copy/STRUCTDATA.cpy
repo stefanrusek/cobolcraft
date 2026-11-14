@@ -24,7 +24,7 @@
     05 SD-STARTS-SEEN       BINARY-LONG.
     05 SD-GATE-COUNT        BINARY-LONG.
     05 SD-START-COUNT       BINARY-LONG.
-*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa)
+*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa) or the shipwreck's is_beached (1 beached)
     05 SD-BLOCK-FIRST       BINARY-LONG.
     05 SD-BLOCK-COUNT       BINARY-LONG.
 *>  SS-KIND 0 concentric_rings, 1 dimension_origin, 2 random_spread (the placement registry ids); SS-SPREAD 0 linear 1 triangular; SS-METHOD the frequency reduction

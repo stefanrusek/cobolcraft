@@ -513,6 +513,9 @@
  01 WS-GEN-STATUS          BINARY-LONG.
  01 WS-GEN-DIR             PIC X(1100).
  01 WS-MINESHAFT           PIC X(80) VALUE "minecraft:mineshaft".
+ 01 WS-IGLOO               PIC X(80) VALUE "minecraft:igloo".
+ 01 WS-SHIPWRECK           PIC X(80) VALUE "minecraft:shipwreck".
+ 01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -532,6 +535,10 @@
 *>       the structures that are on: the mineshaft (36-5 section 2; the mesa type stays refused, it needs the base height of 37-2 section 6.5)
          CALL "STRUCT-GATE-RESET"
          CALL "STRUCT-GATE-ON" USING WS-MINESHAFT
+*>       the template structures that were tested on the real data (struct-tpl-gen.cob): the igloo and the two shipwrecks
+         CALL "STRUCT-GATE-ON" USING WS-IGLOO
+         CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK
+         CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK-BEACHED
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF

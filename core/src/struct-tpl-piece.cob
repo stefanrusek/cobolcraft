@@ -7,7 +7,9 @@
 *>     with the box of getBoundingBox (6.1); row 0 when the template is not loaded or the builder is full
 *>   STRUCT-TPL-POST USING row: postProcess (6.2): the settings of the piece restricted to the write box, the box recomputed, placeInWorld with the start's pivot as the anchor and flags 2,
 *>     the data markers (structure blocks in DATA mode: STRUCT-DATA-MARKER), then the jigsaw markers replaced by their final_state text (STRUCT-BLOCK-TEXT; an error is air)
-*>   STRUCT-TPL-PRE USING row, ok out: the hook before the placement (a structure that adjusts the piece's height does it here); 0 ends the post-processing of the call. No kind has one yet.
+*>   STRUCT-TPL-PRE USING row: the hook before the placement (a structure that adjusts the piece's height does it here). Kind 1 (igloo) moves the piece to
+*>     the base height of its column (36-4 6.3); STRUCT-TPL-AFTER (struct-tpl-gen.cob) is called at the end of the post-processing, with the result of placeInWorld (the igloo's snow block and the
+*>     restore of the saved position)
 *>   STRUCT-DATA-MARKER USING row, metadata (PIC X(96)), x, y, z: handleDataMarker of the piece's kind (SP-T-KIND): 0 none; 1 igloo (36-4 6.3: "chest" turns the marker to air and gives the
 *>     chest below the table chests/igloo_chest); 2 shipwreck (36-6 4.3: map_chest, treasure_chest and supply_chest give the chest below its table)
 *>   Note: 36-2 5 and 6.2 hand the placement the start's pivot as the anchor; 36-6 2.3 writes the template position twice. This code follows 36-2 (the anchor only matters to position tests).
@@ -71,11 +73,43 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-TPL-PRE.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTPIECE.
+ 01 WS-OFX                 BINARY-LONG.
+ 01 WS-OFZ                 BINARY-LONG.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-H                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
- 01 L-OK                   BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-OK.
-     MOVE 1 TO L-OK
+ PROCEDURE DIVISION USING L-ROW.
+     IF SP-T-KIND(L-ROW) = 1
+*>       igloo (36-4 6.3 steps 1 to 3): the reference point of the piece's template, the base height of its column, the position moved to h - 1 (saved in SP-F1 for STRUCT-TPL-AFTER)
+         EVALUATE SP-T-AUX(L-ROW)
+             WHEN 2
+                 MOVE 2 TO WS-OFX
+                 MOVE 4 TO WS-OFZ
+             WHEN 3
+                 MOVE 0 TO WS-OFX
+                 MOVE 0 TO WS-OFZ
+                 SUBTRACT 2 FROM WS-OFZ
+             WHEN OTHER
+                 MOVE 0 TO WS-OFX
+                 MOVE 0 TO WS-OFZ
+         END-EVALUATE
+         COMPUTE WS-RX = 3 - WS-OFX
+         COMPUTE WS-RZ = 0 - WS-OFZ
+         CALL "STRUCT-TX-POS" USING WS-RX WS-ZERO WS-RZ SP-T-MIR(L-ROW) SP-T-ROT(L-ROW) SP-T-PIV-X(L-ROW) SP-T-PIV-Z(L-ROW) WS-OX WS-OY WS-OZ
+         COMPUTE WS-OX = SP-T-X(L-ROW) + WS-OX
+         COMPUTE WS-OZ = SP-T-Z(L-ROW) + WS-OZ
+         CALL "STRUCT-BASE-HEIGHT" USING WS-OX WS-OZ WS-ZERO WS-H
+         MOVE SP-T-Y(L-ROW) TO SP-F1(L-ROW)
+         COMPUTE SP-T-Y(L-ROW) = SP-T-Y(L-ROW) + WS-H - 90 - 1
+     END-IF
      GOBACK.
  END PROGRAM STRUCT-TPL-PRE.
 
@@ -178,10 +212,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE SP-T-ROW(L-ROW) TO WS-ROW
-     CALL "STRUCT-TPL-PRE" USING L-ROW WS-OK
-     IF WS-OK = 0
-         GOBACK
-     END-IF
+     CALL "STRUCT-TPL-PRE" USING L-ROW
      INITIALIZE STRUCT-SETTINGS
      MOVE SP-T-MIR(L-ROW) TO PS-MIRROR
      MOVE SP-T-ROT(L-ROW) TO PS-ROTATION
@@ -209,6 +240,7 @@
      CALL "STRUCT-PLACE" USING WS-ROW SP-T-X(L-ROW) SP-T-Y(L-ROW) SP-T-Z(L-ROW) SP-PIV-X SP-PIV-Y SP-PIV-Z
          STRUCT-SETTINGS WS-FLAGS WS-RESULT
      IF WS-RESULT = 0
+         CALL "STRUCT-TPL-AFTER" USING L-ROW WS-RESULT
          GOBACK
      END-IF
 *>   Data markers (6.2 step 4), in template block order.
@@ -244,5 +276,6 @@
              END-IF
          END-IF
      END-PERFORM
+     CALL "STRUCT-TPL-AFTER" USING L-ROW WS-RESULT
      GOBACK.
  END PROGRAM STRUCT-TPL-POST.

@@ -453,8 +453,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-FIND-POINT.
 *> USING structure row, seed (BINARY-DOUBLE), chunk x, chunk z, stub x out, stub y out, stub z out, valid out: findGenerationPoint of the structure's type (36-1 5.3). The mineshaft builds
-*> its pieces (MS-FIND-POINT, sea level 63 and min y -64 of the overworld) and leaves them in the builder; any other type has no generator yet: the stub is the chunk's middle column
-*> at y 0, valid, with no piece.
+*> its pieces (MS-FIND-POINT, sea level 63 and min y -64 of the overworld) and leaves them in the builder; the igloo and the shipwreck build template pieces (STRUCT-TPL-FIND-POINT);
+*> any other type has no generator yet: the stub is the chunk's middle column at y 0, valid, with no piece.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
@@ -463,6 +463,7 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-SEA                 BINARY-LONG VALUE 63.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
+ 01 WS-DONE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-STRUCT               BINARY-LONG.
  01 L-SEED                 BINARY-DOUBLE.
@@ -477,10 +478,13 @@
      IF SDT-TYPE(L-STRUCT) = WS-ID
          CALL "MS-FIND-POINT" USING L-SEED L-CX L-CZ SDT-VARIANT(L-STRUCT) WS-SEA WS-MIN-Y L-X L-Y L-Z L-VALID
      ELSE
-         COMPUTE L-X = L-CX * 16 + 8
-         MOVE 0 TO L-Y
-         COMPUTE L-Z = L-CZ * 16 + 8
-         MOVE 1 TO L-VALID
+         CALL "STRUCT-TPL-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID WS-DONE
+         IF WS-DONE = 0
+             COMPUTE L-X = L-CX * 16 + 8
+             MOVE 0 TO L-Y
+             COMPUTE L-Z = L-CZ * 16 + 8
+             MOVE 1 TO L-VALID
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STRUCT-FIND-POINT.
