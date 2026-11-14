@@ -1302,42 +1302,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SPAWN-TICK.
-*> No parameters: in a standard world, for each enabled dimension and each alive player in it in player-row order: on ticks with Time mod SM-SPAWN-TICKS
-*> = 0 one attempt at animals (the friendly cycle, mode 1), and on ticks with Time mod SM-HOSTILE-TICKS = 0 one attempt at monsters (mode 2) while the
-*> difficulty is not Peaceful and the hostile-mobs setting is on (STDMOB-SPAWN-TRY).
+*> No parameters: the natural spawning of a standard world is MS6-CYCLE (core/src/mob-18-6.cob, 18 section 6): biome spawn tables, caps, light and
+*> placement rules, packs. The per-column programs above (STDMOB-SPAWN-TRY, STDMOB-SPAWN-PACK and the rules) stay as the earlier slice's rule.
  DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY CONTENT.
- COPY STDMOBS.
- COPY BRWORLD.
- 01 WS-D                   BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-PLAYER              BINARY-LONG.
- 01 WS-MODE                BINARY-LONG.
- LINKAGE SECTION.
- COPY COREAPI.
  PROCEDURE DIVISION.
-     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
-     IF CT-OPEN = 0 OR CT-SET-TYPE NOT = CT-TYPE-STANDARD
-         GOBACK
-     END-IF
-     CALL "BR-WORLD-READY"
-     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > CW-DIM-COUNT
-         MOVE CW-DIM(WS-D) TO WS-DIM
-         PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-             IF PL-USED(WS-PLAYER) = 1 AND PL-STATE(WS-PLAYER) = PS-ALIVE AND PL-DIM(WS-PLAYER) = WS-DIM
-                 IF FUNCTION MOD(CW-TIME, SM-SPAWN-TICKS) = 0
-                     MOVE 1 TO WS-MODE
-                     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-MODE
-                 END-IF
-                 IF FUNCTION MOD(CW-TIME, SM-HOSTILE-TICKS) = 0 AND BW-DIFFICULTY > 0 AND CS-HOSTILE-MOBS = 1
-                     MOVE 2 TO WS-MODE
-                     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-MODE
-                 END-IF
-             END-IF
-         END-PERFORM
-     END-PERFORM
+     CALL "MS6-CYCLE"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 

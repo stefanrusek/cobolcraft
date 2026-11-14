@@ -36,6 +36,7 @@
  01 WS-YAW               FLOAT-SHORT VALUE 0.
  01 WS-ZOMBIE-FAR        BINARY-LONG.
  01 WS-ZOMBIE-NEAR       BINARY-LONG.
+ 01 WS-ROW               BINARY-LONG.
  01 WS-PIG-FAR           BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE 1 TO WS-CAT
@@ -276,6 +277,22 @@
      COMPUTE WS-O = EN-USED(WS-ZOMBIE-NEAR)
      PERFORM CHECK-N
 
+     MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-ROW
+     CALL "MS6-DESPAWN-TICK" USING WS-ROW
+     MOVE "acceptance US15 18§6.11 Persistence and despawn: a row that is not a standard mob (the player) is left alone" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE EN-USED(WS-ROW) TO WS-O
+     PERFORM CHECK-N
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 5 TO EN-HURT(WS-ROW)
+     CALL "MS6-DESPAWN-TICK" USING WS-ROW
+     MOVE "acceptance US15 18§6.11 Persistence and despawn: a hurt zombie standing at the player stays" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE EN-USED(WS-ROW) TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
  CHECK-N.
      MOVE "N" TO TL-MODE

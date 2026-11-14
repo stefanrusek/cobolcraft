@@ -143,6 +143,13 @@
      COMPUTE WS-O = WS-OK
      PERFORM CHECK-N
 
+     MOVE 64 TO WS-N
+     MOVE "skeleton" TO WS-MOB
+     CALL "MS6-COST-ADD" USING WS-SSV WS-MOB WS-POINTS WS-N WS-CX WS-CY WS-CZ
+     MOVE "acceptance US15 18§6.7 Spawn costs: at most 64 points are kept" TO WS-CASE
+     MOVE 64 TO WS-E
+     MOVE WS-N TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
  CHECK-N.
      MOVE "N" TO TL-MODE
