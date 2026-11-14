@@ -268,7 +268,57 @@
                              COMPUTE WS-FBV(5) = WS-FBV(5) + WS-HALF-H
                              COMPUTE WS-FBV(3) = WS-FBV(3) - WS-HALF-W
                              COMPUTE WS-FBV(6) = WS-FBV(6) + WS-HALF-W
-                             PERFORM SUBTRACT-BOX
+                             MOVE WS-FREE-COUNT TO WS-FREE-OLD
+                             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-FREE-OLD
+                                 MOVE 1 TO WS-OVER
+                                 PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
+                                     COMPUTE WS-LO = FUNCTION MAX(WS-FV(WS-S, WS-V), WS-FBV(WS-V))
+                                     COMPUTE WS-HI = FUNCTION MIN(WS-FV(WS-S, WS-V + 3), WS-FBV(WS-V + 3))
+                                     IF WS-HI <= WS-LO
+                                         MOVE 0 TO WS-OVER
+                                     END-IF
+                                 END-PERFORM
+                                 IF WS-OVER = 1 AND WS-FALIVE(WS-S) = 1
+                                     MOVE 0 TO WS-FALIVE(WS-S)
+                                     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 6
+                                         MOVE WS-FV(WS-S, WS-V) TO WS-PV(WS-V)
+                                     END-PERFORM
+                                     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
+                                         IF WS-PV(WS-V) < WS-FBV(WS-V) AND WS-FREE-COUNT < 1024
+                                             ADD 1 TO WS-FREE-COUNT
+                                             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                                                 MOVE WS-PV(WS-K) TO WS-FV(WS-FREE-COUNT, WS-K)
+                                             END-PERFORM
+                                             MOVE WS-FBV(WS-V) TO WS-FV(WS-FREE-COUNT, WS-V + 3)
+                                             MOVE 1 TO WS-FALIVE(WS-FREE-COUNT)
+                                         END-IF
+                                         IF WS-PV(WS-V) < WS-FBV(WS-V)
+                                             MOVE WS-FBV(WS-V) TO WS-PV(WS-V)
+                                         END-IF
+                                         IF WS-PV(WS-V + 3) > WS-FBV(WS-V + 3) AND WS-FREE-COUNT < 1024
+                                             ADD 1 TO WS-FREE-COUNT
+                                             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                                                 MOVE WS-PV(WS-K) TO WS-FV(WS-FREE-COUNT, WS-K)
+                                             END-PERFORM
+                                             MOVE WS-FBV(WS-V + 3) TO WS-FV(WS-FREE-COUNT, WS-V)
+                                             MOVE 1 TO WS-FALIVE(WS-FREE-COUNT)
+                                         END-IF
+                                         IF WS-PV(WS-V + 3) > WS-FBV(WS-V + 3)
+                                             MOVE WS-FBV(WS-V + 3) TO WS-PV(WS-V + 3)
+                                         END-IF
+                                     END-PERFORM
+                                 END-IF
+                             END-PERFORM
+                             MOVE 0 TO WS-J
+                             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-FREE-COUNT
+                                 IF WS-FALIVE(WS-S) = 1
+                                     ADD 1 TO WS-J
+                                     IF WS-J NOT = WS-S
+                                         MOVE WS-FR(WS-S) TO WS-FR(WS-J)
+                                     END-IF
+                                 END-IF
+                             END-PERFORM
+                             MOVE WS-J TO WS-FREE-COUNT
                          END-PERFORM
                      END-IF
                  END-IF
@@ -315,69 +365,6 @@
          MOVE WS-FOUND-Z TO L-Z
      END-IF
      GOBACK.
-
-*> Subtracts the box WS-FB from every live box of the free list: a box that overlaps it with positive volume is replaced by up to six pieces.
- SUBTRACT-BOX.
-     MOVE WS-FREE-COUNT TO WS-FREE-OLD
-     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-FREE-OLD
-         MOVE 1 TO WS-OVER
-         PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
-             COMPUTE WS-LO = FUNCTION MAX(WS-FV(WS-S, WS-V), WS-FBV(WS-V))
-             COMPUTE WS-HI = FUNCTION MIN(WS-FV(WS-S, WS-V + 3), WS-FBV(WS-V + 3))
-             IF WS-HI <= WS-LO
-                 MOVE 0 TO WS-OVER
-             END-IF
-         END-PERFORM
-         IF WS-OVER = 1 AND WS-FALIVE(WS-S) = 1
-             MOVE 0 TO WS-FALIVE(WS-S)
-             PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 6
-                 MOVE WS-FV(WS-S, WS-V) TO WS-PV(WS-V)
-             END-PERFORM
-             PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
-                 IF WS-PV(WS-V) < WS-FBV(WS-V)
-                     PERFORM ADD-LOW-PIECE
-                     MOVE WS-FBV(WS-V) TO WS-PV(WS-V)
-                 END-IF
-                 IF WS-PV(WS-V + 3) > WS-FBV(WS-V + 3)
-                     PERFORM ADD-HIGH-PIECE
-                     MOVE WS-FBV(WS-V + 3) TO WS-PV(WS-V + 3)
-                 END-IF
-             END-PERFORM
-         END-IF
-     END-PERFORM
-*>   compact: keep the live boxes
-     MOVE 0 TO WS-J
-     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-FREE-COUNT
-         IF WS-FALIVE(WS-S) = 1
-             ADD 1 TO WS-J
-             IF WS-J NOT = WS-S
-                 MOVE WS-FR(WS-S) TO WS-FR(WS-J)
-             END-IF
-         END-IF
-     END-PERFORM
-     MOVE WS-J TO WS-FREE-COUNT.
-
-*> The part of WS-PV below WS-FBV on axis WS-V, appended live.
- ADD-LOW-PIECE.
-     IF WS-FREE-COUNT < 1024
-         ADD 1 TO WS-FREE-COUNT
-         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
-             MOVE WS-PV(WS-K) TO WS-FV(WS-FREE-COUNT, WS-K)
-         END-PERFORM
-         MOVE WS-FBV(WS-V) TO WS-FV(WS-FREE-COUNT, WS-V + 3)
-         MOVE 1 TO WS-FALIVE(WS-FREE-COUNT)
-     END-IF.
-
-*> The part of WS-PV above WS-FBV on axis WS-V, appended live.
- ADD-HIGH-PIECE.
-     IF WS-FREE-COUNT < 1024
-         ADD 1 TO WS-FREE-COUNT
-         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
-             MOVE WS-PV(WS-K) TO WS-FV(WS-FREE-COUNT, WS-K)
-         END-PERFORM
-         MOVE WS-FBV(WS-V + 3) TO WS-FV(WS-FREE-COUNT, WS-V)
-         MOVE 1 TO WS-FALIVE(WS-FREE-COUNT)
-     END-IF.
  END PROGRAM PORTAL-FREE-POS.
 
  IDENTIFICATION DIVISION.
@@ -461,7 +448,31 @@
          MOVE WS-C(2) TO WS-N(2)
          MOVE WS-C(3) TO WS-N(3)
          MOVE WS-T(WS-AX(WS-LEG)) TO WS-N(WS-AX(WS-LEG))
-         PERFORM SCAN-LEG
+         COMPUTE WS-F = FUNCTION MIN(WS-C(1), WS-N(1)) - 0.3 + WS-EPS
+         COMPUTE WS-MIN-X = FUNCTION INTEGER(WS-F)
+         COMPUTE WS-F = FUNCTION MAX(WS-C(1), WS-N(1)) + 0.3 - WS-EPS
+         COMPUTE WS-MAX-X = FUNCTION INTEGER(WS-F)
+         COMPUTE WS-F = FUNCTION MIN(WS-C(2), WS-N(2)) + WS-EPS
+         COMPUTE WS-MIN-Y = FUNCTION INTEGER(WS-F)
+         COMPUTE WS-F = FUNCTION MAX(WS-C(2), WS-N(2)) + 1.8 - WS-EPS
+         COMPUTE WS-MAX-Y = FUNCTION INTEGER(WS-F)
+         COMPUTE WS-F = FUNCTION MIN(WS-C(3), WS-N(3)) - 0.3 + WS-EPS
+         COMPUTE WS-MIN-Z = FUNCTION INTEGER(WS-F)
+         COMPUTE WS-F = FUNCTION MAX(WS-C(3), WS-N(3)) + 0.3 - WS-EPS
+         COMPUTE WS-MAX-Z = FUNCTION INTEGER(WS-F)
+         PERFORM VARYING WS-X FROM WS-MIN-X BY 1 UNTIL WS-X > WS-MAX-X
+             PERFORM VARYING WS-Y FROM WS-MIN-Y BY 1 UNTIL WS-Y > WS-MAX-Y
+                 PERFORM VARYING WS-Z FROM WS-MIN-Z BY 1 UNTIL WS-Z > WS-MAX-Z
+                     CALL "PORTAL-CELL-KIND" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-KIND
+                     IF WS-KIND = 2 AND L-FOUND = 0
+                         MOVE 1 TO L-FOUND
+                         MOVE WS-X TO L-X
+                         MOVE WS-Y TO L-Y
+                         MOVE WS-Z TO L-Z
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
          MOVE WS-N(1) TO WS-C(1)
          MOVE WS-N(2) TO WS-C(2)
          MOVE WS-N(3) TO WS-C(3)
@@ -472,32 +483,4 @@
      MOVE WS-T(2) TO WS-O-Y(L-ROW)
      MOVE WS-T(3) TO WS-O-Z(L-ROW)
      GOBACK.
-
-*> The cells the box (0.6 x 1.8, shrunk by 1e-5) touches along the straight leg WS-C to WS-N: the first portal block is the answer.
- SCAN-LEG.
-     COMPUTE WS-F = FUNCTION MIN(WS-C(1), WS-N(1)) - 0.3 + WS-EPS
-     COMPUTE WS-MIN-X = FUNCTION INTEGER(WS-F)
-     COMPUTE WS-F = FUNCTION MAX(WS-C(1), WS-N(1)) + 0.3 - WS-EPS
-     COMPUTE WS-MAX-X = FUNCTION INTEGER(WS-F)
-     COMPUTE WS-F = FUNCTION MIN(WS-C(2), WS-N(2)) + WS-EPS
-     COMPUTE WS-MIN-Y = FUNCTION INTEGER(WS-F)
-     COMPUTE WS-F = FUNCTION MAX(WS-C(2), WS-N(2)) + 1.8 - WS-EPS
-     COMPUTE WS-MAX-Y = FUNCTION INTEGER(WS-F)
-     COMPUTE WS-F = FUNCTION MIN(WS-C(3), WS-N(3)) - 0.3 + WS-EPS
-     COMPUTE WS-MIN-Z = FUNCTION INTEGER(WS-F)
-     COMPUTE WS-F = FUNCTION MAX(WS-C(3), WS-N(3)) + 0.3 - WS-EPS
-     COMPUTE WS-MAX-Z = FUNCTION INTEGER(WS-F)
-     PERFORM VARYING WS-X FROM WS-MIN-X BY 1 UNTIL WS-X > WS-MAX-X
-         PERFORM VARYING WS-Y FROM WS-MIN-Y BY 1 UNTIL WS-Y > WS-MAX-Y
-             PERFORM VARYING WS-Z FROM WS-MIN-Z BY 1 UNTIL WS-Z > WS-MAX-Z
-                 CALL "PORTAL-CELL-KIND" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-KIND
-                 IF WS-KIND = 2 AND L-FOUND = 0
-                     MOVE 1 TO L-FOUND
-                     MOVE WS-X TO L-X
-                     MOVE WS-Y TO L-Y
-                     MOVE WS-Z TO L-Z
-                 END-IF
-             END-PERFORM
-         END-PERFORM
-     END-PERFORM.
  END PROGRAM PORTAL-SWEEP.

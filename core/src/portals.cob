@@ -290,31 +290,28 @@
      IF PL-STATE(L-ROW) = PS-ALIVE AND PL-MODE(L-ROW) NOT = 3
          CALL "PORTAL-SWEEP" USING L-ROW WS-FOUND WS-X WS-Y WS-Z
          IF WS-FOUND = 1
-             PERFORM SET-INSIDE
-         END-IF
-     END-IF
-     GOBACK.
-
-*> setAsInsidePortal for the portal block at (WS-X, WS-Y, WS-Z).
- SET-INSIDE.
-     IF PQ-PL-COOLDOWN(L-ROW) > 0
-         MOVE PQ-PLAYER-COOLDOWN TO PQ-PL-COOLDOWN(L-ROW)
-     ELSE
-         IF PQ-PL-PROCESS(L-ROW) = 0
-             MOVE 1 TO PQ-PL-PROCESS(L-ROW) PQ-PL-FLAG(L-ROW)
-             MOVE 0 TO PQ-PL-TIME(L-ROW)
-             MOVE WS-X TO PQ-PL-EX(L-ROW)
-             MOVE WS-Y TO PQ-PL-EY(L-ROW)
-             MOVE WS-Z TO PQ-PL-EZ(L-ROW)
+*>       setAsInsidePortal for the portal block at (WS-X, WS-Y, WS-Z)
+         IF PQ-PL-COOLDOWN(L-ROW) > 0
+             MOVE PQ-PLAYER-COOLDOWN TO PQ-PL-COOLDOWN(L-ROW)
          ELSE
-             IF PQ-PL-FLAG(L-ROW) NOT = 1
+             IF PQ-PL-PROCESS(L-ROW) = 0
+                 MOVE 1 TO PQ-PL-PROCESS(L-ROW) PQ-PL-FLAG(L-ROW)
+                 MOVE 0 TO PQ-PL-TIME(L-ROW)
                  MOVE WS-X TO PQ-PL-EX(L-ROW)
                  MOVE WS-Y TO PQ-PL-EY(L-ROW)
                  MOVE WS-Z TO PQ-PL-EZ(L-ROW)
-                 MOVE 1 TO PQ-PL-FLAG(L-ROW)
+             ELSE
+                 IF PQ-PL-FLAG(L-ROW) NOT = 1
+                     MOVE WS-X TO PQ-PL-EX(L-ROW)
+                     MOVE WS-Y TO PQ-PL-EY(L-ROW)
+                     MOVE WS-Z TO PQ-PL-EZ(L-ROW)
+                     MOVE 1 TO PQ-PL-FLAG(L-ROW)
+                 END-IF
              END-IF
          END-IF
-     END-IF.
+         END-IF
+     END-IF
+     GOBACK.
  END PROGRAM PORTAL-PLAYER-TICK.
 
  IDENTIFICATION DIVISION.
