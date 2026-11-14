@@ -764,10 +764,10 @@
  PROGRAM-ID. STDMOB-SWELL.
 *> USING tracker row, table row of a mob with a fuse (SM-FUSE above 0: the creeper, 20 section 6.1), stop out (BINARY-LONG): the swell goal. The swell
 *> direction is 1 while the swell is above 0 and the target is within 7 blocks (distance squared 49), or from 0 while the target is within 3 blocks
-*> (distance squared 9); otherwise -1. The swell moves by the direction (not below 0). A change of direction goes to the viewers (Set Entity Data,
+*> (distance squared 9) and the mob sees the target (MOB-SEES from its eyes, feet + 1.445); an ignited mob (EN-IGNITED) always swells; otherwise -1. The swell moves by the direction (not below 0). A change of direction goes to the viewers (Set Entity Data,
 *> entry 16). At the fuse the mob explodes at its position with its blast power (EXPLODE-RUN, source this mob, destroying blocks) and the row is removed
 *> without loot or experience. stop out: 0 nothing, 1 the mob stands still (it is swelling), 2 it exploded and the row is gone. The line of sight is
-*> not tested yet (open).
+*> is tested from the creeper's eyes.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -784,6 +784,11 @@
  01 WS-POWER               FLOAT-LONG.
  01 WS-DESTROY             BINARY-LONG VALUE 1.
  01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
+ 01 WS-EYE-X               FLOAT-LONG.
+ 01 WS-EYE-Y               FLOAT-LONG.
+ 01 WS-EYE-Z               FLOAT-LONG.
+ 01 WS-TARGET-Y            FLOAT-LONG.
+ 01 WS-SEES                BINARY-LONG.
  01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
@@ -803,9 +808,17 @@
          COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
          COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
          COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
-         IF (EN-SWELL(L-ROW) > 0 AND WS-D2 <= 49) OR (EN-SWELL(L-ROW) = 0 AND WS-D2 < 9)
+         COMPUTE WS-EYE-X = EN-X(L-ROW)
+         COMPUTE WS-EYE-Y = EN-Y(L-ROW) + 1.445
+         COMPUTE WS-EYE-Z = EN-Z(L-ROW)
+         COMPUTE WS-TARGET-Y = PL-Y(WS-P) + 1.62
+         CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-EYE-X WS-EYE-Y WS-EYE-Z PL-X(WS-P) WS-TARGET-Y PL-Z(WS-P) WS-SEES
+         IF WS-SEES = 1 AND ((EN-SWELL(L-ROW) > 0 AND WS-D2 <= 49) OR (EN-SWELL(L-ROW) = 0 AND WS-D2 < 9))
              MOVE 1 TO WS-DIR
          END-IF
+     END-IF
+     IF EN-IGNITED(L-ROW) = 1
+         MOVE 1 TO WS-DIR
      END-IF
      ADD WS-DIR TO EN-SWELL(L-ROW)
      IF EN-SWELL(L-ROW) < 0
@@ -895,6 +908,10 @@
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
+ 01 WS-AVOID               BINARY-LONG.
+ 01 WS-AHX                 FLOAT-LONG.
+ 01 WS-AHZ                 FLOAT-LONG.
+ 01 WS-FALL-Y              FLOAT-LONG.
  01 WS-LEAPT               BINARY-LONG.
  01 WS-PET-HX              FLOAT-LONG.
  01 WS-PET-HZ              FLOAT-LONG.
@@ -973,6 +990,10 @@
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
      END-IF
+     MOVE 0 TO WS-AVOID
+     IF SM-FUSE(WS-M) > 0 AND WS-STOP = 0
+         CALL "STDMOB-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
+     END-IF
      EVALUATE TRUE
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.
@@ -987,6 +1008,14 @@
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF
+         WHEN WS-AVOID = 1
+*>           A creeper flees a cat or ocelot (AvoidEntityGoal, priority 3 before the melee goal).
+             MOVE WS-AHX TO WS-HX
+             MOVE WS-AHZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-CHASE = 1
              MOVE EN-TARGET(WS-ROW) TO WS-P
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
@@ -1090,7 +1119,18 @@
          COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.91
          COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.91
      END-IF
+     MOVE EN-Y(WS-ROW) TO WS-FALL-Y
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+*>   A creeper that lands adds to its swell by the distance it fell (20 section 6.1).
+     IF SM-FUSE(WS-M) > 0
+         IF EN-Y(WS-ROW) < WS-FALL-Y
+             COMPUTE EN-FALL(WS-ROW) = EN-FALL(WS-ROW) + WS-FALL-Y - EN-Y(WS-ROW)
+         END-IF
+         IF EN-ON-GROUND(WS-ROW) = 1 AND EN-FALL(WS-ROW) > 0
+             CALL "STDMOB-CREEPER-FALL" USING WS-ROW EN-FALL(WS-ROW)
+             MOVE 0 TO EN-FALL(WS-ROW)
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM STDMOB-STEP.
 

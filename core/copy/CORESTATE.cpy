@@ -329,6 +329,7 @@
        10 EN-FX-INVIS          BINARY-LONG.        *> Invisibility (the entity flags sent to the viewers do not show it: open)
        10 EN-FX-FIRE           BINARY-LONG.        *> Fire Resistance (witch)
        10 EN-FX-WATER          BINARY-LONG.        *> Water Breathing (witch)
+       10 EN-FALL              FLOAT-LONG.         *> creeper: the distance fallen in the air so far (20 section 6.1)
        10 EN-IGNITED           BINARY-LONG.        *> creeper: 1 when set off by flint and steel or a fire charge (20 section 6.1)
        10 EN-PH-PHASE          BINARY-LONG.        *> phantom: 0 CIRCLE, 1 SWOOP (20 section 12)
        10 EN-PH-TIMER          BINARY-LONG.        *> phantom: ticks until the next sweep
