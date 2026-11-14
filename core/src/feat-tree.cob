@@ -3,7 +3,7 @@
 *> fancy, dark oak, giant, mega jungle, forking and upwards branching (mangrove, with its mangrove root placer: feat-tree-root.cob); the foliage placers blob, spruce, pine, acacia, fancy, jungle, mega pine and dark oak; the two and three layers feature sizes. Anything else
 *> (another placer or root placer, an unknown decorator) marks the feature unsupported (FD-BAD). min_clipped_height is supported (2.2 step 6).
 *> Deviations (the lane's notes, docs/design/world-types.md "Trees"): the tree is built in the grid of TREEWORK.cpy and written through the level, whose write window is one chunk: the trunk
-*> stands in the chunk of its origin and the leaves that fall in a neighbouring chunk are cut off (a neighbour's terrain is not known here, so a tree cannot be completed from the other side);
+*> stands in the chunk of its origin and the blocks that fall in a neighbouring chunk go to the overflow list and are written into that chunk when it exists (gen-overflow.cob; a neighbour's terrain is not known here);
 *> the decorators trunk_vine, leave_vine and cocoa are placed after the tree (feat-tree-deco.cob), the others of the data are accepted and ignored (the beehive, the podzol ground, the leaf litter,
 *> the shelf mushrooms, the moss, the creaking heart and the propagules of the mangrove: their draws are not made); the leaf distances of section 2.4 are the breadth first distances from this tree's logs through its own leaves (the hash set order of the layers
 *> is not reproduced, Open question 1 there) and neighbouring blocks outside the tree do not lower them; the shape update at the edge (2.5) only schedules leaf ticks and is not run; leaves
@@ -650,7 +650,7 @@
      IF TW-OUT = 1
          GOBACK
      END-IF
-*>   the level writes one chunk: the trunk stands in it (the origin is in the chunk) and the leaves outside are discarded by FL-SET-STATE
+*>   the level writes one chunk: the trunk stands in it (the origin is in the chunk) and the leaves outside are refused by FL-SET-STATE and kept in the overflow list (gen-overflow.cob)
      CALL "FR-TREE-COMMIT" USING WS-ROW
      IF TR-NDEC(WS-ROW) > 0
          MOVE 1 TO WS-A

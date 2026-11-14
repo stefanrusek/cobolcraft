@@ -36,11 +36,17 @@
  01 WS-DIM3                BINARY-LONG VALUE 3.
  01 WS-CHUNK               PIC X(304640).
  01 WS-MARKER              BINARY-LONG.
- 01 WS-ANSWER-PTR          USAGE POINTER.
- 01 WS-ANS                 PIC X(321036) BASED.
- 01 WS-ANS-MARKER          BINARY-LONG BASED.
  01 WS-TAKEN               BINARY-LONG.
- 01 WS-OV-N                BINARY-LONG BASED.
+ 01 WS-VIEW                BASED.
+    05 V-MARKER            BINARY-LONG.
+    05 V-CHUNK             PIC X(304640).
+    05 V-COUNT             BINARY-LONG.
+    05 V-LOST              BINARY-LONG.
+    05 V-ENTRY OCCURS 1024 TIMES.
+       10 V-X              BINARY-LONG.
+       10 V-Y              BINARY-LONG.
+       10 V-Z              BINARY-LONG.
+       10 V-STATE          BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
@@ -210,11 +216,25 @@
      MOVE 1 TO GO-Z(4)
      MOVE 5 TO GO-STATE(4)
      MOVE 6 TO GO-LOST
+     MOVE 5 TO CB-S-LIGHT(5)
      CALL "OV-ROUTE" USING WS-DIM
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW-B)
      MOVE "test gen overflow a loaded neighbour takes an entry into air and marks the chunk changed" TO TL-CASE
      COMPUTE TL-OBSERVED-N = CE-STATE(WS-CELL + 1) * 10 + CK-CHANGED(WS-ROW-B)
      MOVE 41 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen overflow a light source written into a chunk counts in its section" TO TL-CASE
+     MOVE CK-SOURCES(WS-ROW-B, 5) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 18 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 3 TO WS-Z
+     MOVE 5 TO WS-STATE
+     CALL "OV-APPLY-ROW" USING WS-ROW-B WS-X WS-Y WS-Z WS-STATE WS-RESULT
+     MOVE "test gen overflow a light source replaced by leaves is no longer counted" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-RESULT * 10 + CK-SOURCES(WS-ROW-B, 5)
+     MOVE 10 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test gen overflow an entry over terrain is not written" TO TL-CASE
      MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
@@ -310,6 +330,33 @@
      COMPUTE TL-OBSERVED-N = GP-COUNT + GP-LOST + GO-COUNT
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the worker's answer carries the overflow after the chunk: GEN-STANDARD-TAKE publishes it
+     ALLOCATE GW-ANSWER-BYTES CHARACTERS INITIALIZED RETURNING GW-ADDR(1)
+     SET ADDRESS OF WS-VIEW TO GW-ADDR(1)
+     MOVE 2 TO V-COUNT
+     MOVE 123 TO V-X(1)
+     MOVE 9 TO V-STATE(2)
+     MOVE 1 TO GQ-READY
+     MOVE 3 TO GW-DIM(1)
+     MOVE 5 TO GW-CX(1)
+     MOVE 6 TO GW-CZ(1)
+     MOVE 5 TO WS-CX
+     MOVE 7 TO WS-CZ
+     CALL "GEN-STANDARD-TAKE" USING WS-DIM3 WS-CX WS-CZ WS-CHUNK WS-MARKER WS-TAKEN
+     MOVE "test gen overflow an answer for another chunk is not taken and gives no overflow" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-TAKEN * 10 + GO-COUNT
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO WS-CZ
+     CALL "GEN-STANDARD-TAKE" USING WS-DIM3 WS-CX WS-CZ WS-CHUNK WS-MARKER WS-TAKEN
+     MOVE "test gen overflow the answer of the chunk gives its overflow after the chunk" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-TAKEN * 1000000 + GO-COUNT * 100000 + GO-X(1) * 100 + GO-STATE(2)
+     COMPUTE TL-EXPECTED-N = 1 * 1000000 + 2 * 100000 + 123 * 100 + 9
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO GQ-READY
+     FREE GW-ADDR(1)
+     SET GW-ADDR(1) TO NULL
 
      STOP RUN.
  END PROGRAM TEST-GEN-OVERFLOW.

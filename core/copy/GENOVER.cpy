@@ -22,6 +22,8 @@
     05 GP-FLUSH            BINARY-LONG.
     05 GP-ENTRY OCCURS 8192 TIMES.
        10 GP-DIM           BINARY-LONG.
+       10 GP-CX            BINARY-LONG.
+       10 GP-CZ            BINARY-LONG.
        10 GP-X             BINARY-LONG.
        10 GP-Y             BINARY-LONG.
        10 GP-Z             BINARY-LONG.

@@ -1,7 +1,7 @@
 *> The feature stage of the chunk generation (docs/protocol/35-worldgen-features-1 section 6; core/src/gen-job.cob stage GJ-STAGE-FEATURES): step GJ-SUB (0 to 10) is the
 *> decoration step of that number for the chunk being generated: the placed features of the biomes present in the chunk, in the order of the feature index of the step, each
 *> seeded with decorationSeed + index + 10000 * step (5.1) and placed at the chunk's origin (16 cx, min y, 16 cz) through the level of feat-level.cob.
-*> Deviations (the lane's notes): only the origins of this chunk are decorated and only blocks inside it are written (the 3 x 3 window of 4.1 is the chunk); the feature index
+*> Deviations (the lane's notes): only the origins of this chunk are decorated and only blocks inside it are written, the others are kept as overflow for the neighbour chunk (gen-overflow.cob; the 3 x 3 window of 4.1 is the chunk); the feature index
 *> of a placed feature in a step is its position in the list of the step over the loaded biomes in table order, without repeats (the global sort of 11 section 6.2 is not tabulated:
 *> open question 14 of 35-1). A world without loaded biomes with feature lists runs no feature.
 *>
