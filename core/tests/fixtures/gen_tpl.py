@@ -137,3 +137,30 @@ write("test", "marker", int_list("size", [3, 2, 1]), lst("entities", 10, []),
 write("test", "markerstone", int_list("size", [1, 2, 1]), lst("entities", 10, []),
       lst("blocks", 10, [block([0, 0, 0], 0), blk([0, 1, 0], 1, sb("treasure_chest"))]),
       lst("palette", 10, [v("stone"), v("structure_block", [("mode", "data")])]))
+
+# Jigsaw records and the replacement processor of core/tests/test_struct_jigsaw_pre.cob (36-2 sections 1.5, 3.4, 3.5, 9.6; 36-3 4).
+def jig(extra=()):
+    return comp("nbt", string("id", "minecraft:jigsaw"), *extra)
+def jv(o): return v("jigsaw", [("orientation", o)])
+write("test", "jigs", int_list("size", [4, 1, 3]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          blk([0, 0, 0], 0, jig([string("name", "minecraft:a"), string("pool", "minecraft:p1"), string("target", "minecraft:b"),
+                                 integer("placement_priority", 2), integer("selection_priority", 5)])),
+          blk([3, 0, 0], 1, jig()),
+          blk([1, 0, 2], 2, jig([string("joint", "rollable")])),
+          block([2, 0, 1], 3),
+          block([0, 0, 2], 4),
+      ]),
+      lst("palette", 10, [jv("north_up"), jv("up_east"), jv("west_up"), v("stone"), jv("down_south")]))
+write("test", "jigrep", int_list("size", [8, 1, 1]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          blk([0, 0, 0], 0, jig([string("final_state", "minecraft:stone")])),
+          blk([1, 0, 0], 0, jig([string("final_state", "minecraft:structure_void")])),
+          blk([2, 0, 0], 0, jig([string("final_state", "minecraft:oak_stairs[facing=east]")])),
+          blk([3, 0, 0], 0, jig()),
+          block([4, 0, 0], 0),
+          block([5, 0, 0], 1),
+          blk([6, 0, 0], 0, jig([string("final_state", "minecraft:chest{Items:[]}")])),
+          blk([7, 0, 0], 0, jig([string("final_state", "minecraft:no_such_block")])),
+      ]),
+      lst("palette", 10, [jv("up_north"), v("stone")]))

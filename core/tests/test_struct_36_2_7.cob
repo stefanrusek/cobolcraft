@@ -90,7 +90,7 @@
  01 WS-NONZERO             BINARY-LONG.
  01 WS-AT-TEXT             PIC X(300).
  01 WS-POS2                BINARY-LONG.
- 01 WS-BAD-NAMES           PIC X(900) VALUE "bad_jigsaw bad_lava bad_type bad_notype bad_nolocation bad_testtype bad_posrule bad_posrange bad_block bad_output bad_state "
+ 01 WS-BAD-NAMES           PIC X(900) VALUE "bad_lava bad_type bad_notype bad_nolocation bad_testtype bad_posrule bad_posrange bad_block bad_output bad_state "
      & "bad_noprob bad_rules bad_nolimit bad_limit bad_nodelegate bad_heightmap bad_integrity bad_rottable bad_protected bad_ignore bad_ignore2 "
      & "bad_ignore3 bad_height2 bad_norules bad_protected2 bad_age bad_alloftests bad_height bad_blockstatematch bad_probability bad_tag bad_list bad_json bad_rootnum "
      & "missing".

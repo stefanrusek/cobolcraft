@@ -78,7 +78,6 @@ write("stairmatch", lst(rule(r(pt("blockstate_match", block_state={"Name": M + "
                                {"Name": M + "spruce_stairs", "Properties": {"facing": "east"}}))))
 write("twice", lst({"processor_type": M + "block_ignore", "blocks": [M + "oak_log"]}, rule(r(bm("stone"), T, M + "cobblestone"))))
 # lists that do not compile
-write("bad_jigsaw", lst({"processor_type": M + "jigsaw_replacement"}))
 write("bad_lava", lst({"processor_type": M + "lava_submerged_block"}))
 write("bad_type", lst({"processor_type": M + "no_such_processor"}))
 write("bad_notype", lst({"foo": 1}))

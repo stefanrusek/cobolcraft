@@ -514,6 +514,8 @@
              MOVE 9 TO LS-TYPE
          WHEN "minecraft:blackstone_replace"
              MOVE 10 TO LS-TYPE
+         WHEN "minecraft:jigsaw_replacement"
+             MOVE 6 TO LS-TYPE
          WHEN "minecraft:block_age"
              MOVE 11 TO LS-TYPE
      END-EVALUATE
@@ -654,6 +656,10 @@
          WHEN "cobolcraft:inline/ignore_structure_block"
              MOVE SPACES TO WS-TEXT
              MOVE '{"processors":[{"processor_type":"minecraft:block_ignore","blocks":["minecraft:structure_block"]}]}' TO WS-TEXT
+             MOVE 0 TO WS-STATUS
+         WHEN "cobolcraft:inline/jigsaw_replacement"
+             MOVE SPACES TO WS-TEXT
+             MOVE '{"processors":[{"processor_type":"minecraft:jigsaw_replacement"}]}' TO WS-TEXT
              MOVE 0 TO WS-STATUS
          WHEN "cobolcraft:inline/ignore_structure_and_air"
              MOVE SPACES TO WS-TEXT
