@@ -854,6 +854,14 @@
          CALL "MS6-DARK-ENOUGH" USING WS-SKY WS-BLOCK WS-DRAW WS-ZERO WS-LOCAL WS-LEVEL WS-DARK
      END-IF
      MOVE 0 TO WS-OPEN-SKY
+     IF SM-SPAWN(L-ROW) = 10
+*>       The any-light monster rule (21 section 3.2): no light test, the base and the not-Peaceful tests of predicate 4.
+         MOVE 4 TO WS-PRED
+     END-IF
+     IF SM-SPAWN(L-ROW) = 11
+*>       Piglin and hoglin (21 section 3.2): only the floor test of predicate 1, on Peaceful too.
+         MOVE 1 TO WS-PRED
+     END-IF
      IF SM-SPAWN(L-ROW) = 5
          MOVE 5 TO WS-PRED
          IF WS-SKY = 15

@@ -158,12 +158,15 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-POINTS              BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-LOOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-KILLER               BINARY-LONG.
@@ -173,7 +176,15 @@
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
      MOVE EN-TYPE(L-ROW) TO WS-TYPE
-     IF EN-VARIANT(L-ROW) <= 1
+     CALL "STDMOB-INDEX" USING WS-TYPE WS-M
+     MOVE 0 TO WS-LOOT
+     IF SM-KEY(WS-M) = "slime" AND EN-VARIANT(L-ROW) <= 1
+         MOVE 1 TO WS-LOOT
+     END-IF
+     IF SM-KEY(WS-M) = "magma_cube" AND EN-VARIANT(L-ROW) >= 2
+         MOVE 1 TO WS-LOOT
+     END-IF
+     IF WS-LOOT = 1
          CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE L-KILLER
      END-IF
      IF L-KILLER > 0
@@ -191,6 +202,10 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ 01 WS-HASH-COUNT          BINARY-LONG VALUE 3.
+ 01 WS-ARGS.
+    05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
+ 01 WS-R                   BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -202,6 +217,18 @@
          IF EN-VARIANT(L-ROW) > 1
              MOVE EN-VARIANT(L-ROW) TO L-DAMAGE
          END-IF
+     END-IF
+*>   A hoglin or zoglin adult hits for A / 2 + nextInt(A) (21 section 5.6; A = 6: 3 to 8), the draw from the hash of the entity id and the time.
+     IF SM-KEY(L-M) = "hoglin" OR SM-KEY(L-M) = "zoglin"
+         MOVE EN-ID(L-ROW) TO WS-ARG(1)
+         MOVE CW-TIME TO WS-ARG(2)
+         MOVE 47 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-HASH-COUNT WS-ARGS WS-R
+         COMPUTE L-DAMAGE = SM-ATTACK(L-M) / 2 + FUNCTION MOD(WS-R, SM-ATTACK(L-M))
+     END-IF
+*>   A magma cube hits for its size + 2 at every size (21 section 5.3: getAttackDamage + 2; it can always deal damage).
+     IF SM-KEY(L-M) = "magma_cube"
+         COMPUTE L-DAMAGE = FUNCTION MAX(EN-VARIANT(L-ROW), 1) + 2
      END-IF
      IF SM-KEY(L-M) = "phantom"
          ADD EN-VARIANT(L-ROW) TO L-DAMAGE

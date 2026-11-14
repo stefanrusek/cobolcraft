@@ -366,6 +366,7 @@
                  MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
                  MOVE 1 TO WS-VALUE
              WHEN "slime"
+             WHEN "magma_cube"
                  MOVE 18 TO WS-INDEX
                  MOVE MD-MDS-INT TO WS-SERIALIZER
                  MOVE EN-VARIANT(L-ROW) TO WS-VALUE
@@ -525,6 +526,7 @@
              END-IF
              MOVE 4 TO EN-HAND(L-ROW)
          WHEN "slime"
+         WHEN "magma_cube"
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
          WHEN "salmon"
          WHEN "tropical_fish"

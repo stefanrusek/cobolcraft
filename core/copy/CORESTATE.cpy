@@ -362,6 +362,9 @@
        10 EN-PH-HEIGHT         FLOAT-LONG.         *> phantom: circle height
        10 EN-PH-SPEED          FLOAT-LONG.         *> phantom: the move control speed (starts 0.1)
 *>     --- end 002-lane-mobs2 ---
+*>     --- 002-lane-mobsfull-h12: Nether and End mobs (core/src/mob-21-5.cob) ---
+       10 EN-ANGER           BINARY-LONG.        *> zombified piglin, piglin: ticks of anger left (0 calm); the target is EN-TARGET
+       10 EN-ALERT           BINARY-LONG.        *> ticks until an angry zombified piglin alerts the others again (alertOthers, 4 to 6 s)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
