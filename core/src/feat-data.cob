@@ -1900,6 +1900,17 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 53
+         WHEN 56
+*>           a vegetation patch, waterlogged or not (feat-patch.cob): unsupported when a block, provider or number is missing or unknown; its vegetation feature may be unsupported
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-VPATCH-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW) FT-TYPE(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 16
 *>           a fallen tree (feat-tree-fallen.cob): unsupported when it cannot be placed whole, as a tree
              MOVE FD-BAD TO LS-SAVED-BAD

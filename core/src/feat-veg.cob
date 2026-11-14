@@ -15,7 +15,7 @@
  WORKING-STORAGE SECTION.
  COPY FEATINDEX.
 *> the number of families of the table below: a new family adds a row here and raises this number
- 78 FG-COUNT               VALUE 31.
+ 78 FG-COUNT               VALUE 33.
 *> prefix length and prefix, one family each
  01 WS-FAMILIES.
     05 FILLER PIC 99 VALUE 16.
@@ -80,6 +80,10 @@
     05 FILLER PIC X(32) VALUE "minecraft:patch_cactus".
     05 FILLER PIC 99 VALUE 22.
     05 FILLER PIC X(32) VALUE "minecraft:monster_room".
+    05 FILLER PIC 99 VALUE 21.
+    05 FILLER PIC X(32) VALUE "minecraft:lush_caves_".
+    05 FILLER PIC 99 VALUE 25.
+    05 FILLER PIC X(32) VALUE "minecraft:pale_moss_patch".
  01 WS-FAMILY-TABLE REDEFINES WS-FAMILIES.
     05 WS-FAMILY OCCURS FG-COUNT TIMES.
        10 WS-FAMILY-LENGTH    PIC 99.

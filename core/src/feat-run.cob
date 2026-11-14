@@ -1147,6 +1147,9 @@
              CALL "FR-SPRING" USING L-FT L-X L-Y L-Z L-RESULT
          WHEN 27
              CALL "FR-ROOM" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 53
+         WHEN 56
+             CALL "FR-VPATCH" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1000
              CALL "FR-BAMBOO" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57
