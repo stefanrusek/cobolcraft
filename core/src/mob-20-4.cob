@@ -51,7 +51,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SPEED.
 *> USING tracker row, table row, speed out (FLOAT-LONG blocks per tick): the walk speed of a standard mob (SM-WALK-MILLI) with the speed modifier of a baby
-*> zombie, zombie villager or husk (4.1 step 3: +0.5 multiplied-base on the movement speed, so the squared speed that SM-WALK-MILLI is made of is 2.25 times).
+*> zombie, zombie villager or husk (4.1 step 3: +0.5 multiplied-base on the movement speed, so the squared speed that SM-WALK-MILLI is made of is 2.25 times); a mob with Speed (EN-FX-SPEED) walks 1.2 times as fast; a witch that is drinking does not walk (the drinking modifier -0.25 takes its speed to 0, 11).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -64,6 +64,12 @@
      COMPUTE L-SPEED = SM-WALK-MILLI(L-M) / 1000
      IF EN-VARIANT(L-ROW) = 1 AND (SM-KEY(L-M) = "zombie" OR SM-KEY(L-M) = "zombie_villager" OR SM-KEY(L-M) = "husk")
          COMPUTE L-SPEED = L-SPEED * 2.25
+     END-IF
+     IF EN-FX-SPEED(L-ROW) NOT = 0
+         COMPUTE L-SPEED = L-SPEED * 1.2
+     END-IF
+     IF SM-KEY(L-M) = "witch" AND EN-DRAW(L-ROW) > 0
+         MOVE 0 TO L-SPEED
      END-IF
      GOBACK.
  END PROGRAM STDMOB-SPEED.

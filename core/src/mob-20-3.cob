@@ -333,7 +333,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-VARIANT-BUILD.
 *> USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the row's variant (EN-VARIANT): a baby zombie, zombie villager or husk is index 16
-*> BOOLEAN true (4.1); a powered creeper index 17 BOOLEAN true (6.1); a slime of a size above 0 index 18 INT size (10). Nothing is written for any
+*> BOOLEAN true (4.1); a powered creeper index 17 BOOLEAN true and an ignited one index 18 BOOLEAN true (6.1); a slime of a size above 0 index 18 INT size (10). Nothing is written for any
 *> other row or a variant of 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -345,12 +345,13 @@
  01 WS-INDEX               BINARY-LONG.
  01 WS-SERIALIZER          BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
+ 01 WS-EXTRA               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
      MOVE 0 TO WS-INDEX
-     MOVE 0 TO WS-VALUE
+     MOVE 0 TO WS-VALUE WS-EXTRA
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      IF WS-M > 0 AND EN-VARIANT(L-ROW) > 0
          EVALUATE SM-KEY(WS-M)
@@ -380,6 +381,16 @@
                  MOVE EN-VARIANT(L-ROW) TO WS-VALUE
          END-EVALUATE
      END-IF
+*>   An ignited creeper (metadata 18 BOOLEAN true, 6.1) follows the powered entry, or is the only one.
+     IF WS-M > 0 AND SM-KEY(WS-M) = "creeper" AND EN-IGNITED(L-ROW) = 1
+         IF WS-INDEX = 0
+             MOVE 18 TO WS-INDEX
+             MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+             MOVE 1 TO WS-VALUE
+         ELSE
+             MOVE 1 TO WS-EXTRA
+         END-IF
+     END-IF
      IF WS-INDEX > 0
          CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
          CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
@@ -388,6 +399,12 @@
          MOVE WS-SERIALIZER TO MD-MD-SERIALIZER
          MOVE WS-VALUE TO MD-MD-INT
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         IF WS-EXTRA = 1
+             MOVE 18 TO MD-MD-INDEX
+             MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+             MOVE 1 TO MD-MD-INT
+             CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         END-IF
          MOVE MD-MD-END TO MD-MD-INDEX
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
@@ -512,6 +529,18 @@
          WHEN "salmon"
          WHEN "tropical_fish"
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M
+         WHEN "spider"
+         WHEN "cave_spider"
+             CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "phantom"
+*>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).
+             COMPUTE EN-PH-AX(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))
+             COMPUTE EN-PH-AY(L-ROW) = FUNCTION INTEGER(EN-Y(L-ROW)) + 5
+             COMPUTE EN-PH-AZ(L-ROW) = FUNCTION INTEGER(EN-Z(L-ROW))
+             MOVE 1 TO EN-PH-SET(L-ROW)
+             MOVE 0.1 TO EN-PH-SPEED(L-ROW)
+             MOVE 1 TO EN-PH-CW(L-ROW)
+             MOVE 20 TO EN-PH-SCAN(L-ROW)
      END-EVALUATE
      CALL "STDMOB-VARIANT-SEND" USING L-ROW
      CALL "STDMOB-EQUIP-SEND" USING L-ROW

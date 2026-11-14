@@ -329,6 +329,7 @@
        10 WS-POS-Y         BINARY-LONG.
        10 WS-POS-Z         BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-SKULL               BINARY-LONG VALUE 0.
  01 WS-REACH               FLOAT-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
@@ -435,7 +436,8 @@
              END-IF
          END-IF
      END-PERFORM
-*>   Standard mobs that are alive.
+*>   Standard mobs that are alive. A powered creeper's kill gives one head per blast (STDMOB-CHARGED-HEAD).
+     MOVE 0 TO WS-SKULL
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = L-DIM AND EN-HEALTH(WS-E) > 0 AND WS-E NOT = L-SOURCE
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-M
@@ -459,6 +461,9 @@
                      COMPUTE WS-POINTS = FUNCTION INTEGER(WS-DAMAGE)
                      MOVE 0 TO EN-HURT(WS-E)
                      CALL "HEALTH-MOB-DAMAGE" USING WS-E WS-POINTS WS-CAUSE WS-NONE
+                     IF EN-HEALTH(WS-E) = 0 AND L-SOURCE > 0
+                         CALL "STDMOB-CHARGED-HEAD" USING L-SOURCE WS-E WS-SKULL
+                     END-IF
 *>                   The push: s x the direction from the centre to the mob's eyes (0.85 of its height), carried by STDMOB-STEP.
                      IF EN-HEALTH(WS-E) > 0
                          COMPUTE WS-DY = EN-Y(WS-E) + WS-HEIGHT * 0.85 - L-Y
