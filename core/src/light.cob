@@ -12,16 +12,311 @@
 *> packets (09 §3.4 rule 3; LIGHT-UPDATE-BUILD).
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. LIGHT-CHUNK.
-*> USING row (BINARY-LONG): computes the sky and block light of that cached chunk and sets CK-LIT.
+ PROGRAM-ID. LIGHT-FRESH.
+*> USING row (BINARY-LONG) of a loaded chunk: its block light, from its own light sources and from the light that the lit chunks of its 3 x 3
+*> neighbourhood hold along its borders, and the light it gives to those chunks (a light only ever adds paths, so a lit chunk takes it
+*> by a raise): one relaxation from the highest level down over the 48 x 48 cells around it, where a cell is raised at most once after
+*> the seeds. The work is that of the cells whose light changes, not of every source times its reach (a chunk inside a lava lake cost
+*> seconds that way). A neighbour that is not loaded or not lit is left out (it takes this chunk's light when it is lit: the same
+*> program). Does not set CK-LIT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CBLOCKS.
+ COPY CELLS REPLACING LEADING ==CE-== BY ==CX-==.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-SECTIONS            BINARY-LONG.
+ 01 WS-ROWS.
+    05 WS-R3               BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-DIRS.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+ 01 WS-DIR-TABLE REDEFINES WS-DIRS.
+    05 WS-DIR OCCURS 6 TIMES.
+       10 WS-DIR-X         BINARY-LONG.
+       10 WS-DIR-Y         BINARY-LONG.
+       10 WS-DIR-Z         BINARY-LONG.
+ 01 WS-HEADS.
+    05 WS-HEAD             BINARY-LONG OCCURS 15 TIMES.
+*> Every cell is raised at most once by the relaxation, plus at most two seeds each: 884736 cells of the square and the 98304 + 24576 seeds.
+ 01 WS-ENTRIES.
+    05 WS-E OCCURS 1100000 TIMES.
+       10 WS-E-POS         BINARY-LONG.
+       10 WS-E-NEXT        BINARY-LONG.
+ 01 WS-EN                  BINARY-LONG.
+ 01 WS-EP                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-REST                BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-NIB                 BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-QX                  BINARY-LONG.
+ 01 WS-QZ                  BINARY-LONG.
+ 01 WS-XI                  BINARY-LONG.
+ 01 WS-ZI                  BINARY-LONG.
+ 01 WS-NROW                BINARY-LONG.
+ 01 WS-CROW                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE CK-DIM(L-ROW) TO WS-DIM
+     COMPUTE WS-TOP = DM-HEIGHT(WS-DIM) - 1
+     COMPUTE WS-SECTIONS = DM-HEIGHT(WS-DIM) / 16
+     MOVE L-ROW TO WS-CROW
+     SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-CROW)
+     MOVE LOW-VALUES TO CX-BLOCK-LIGHTS
+*>   The 3 x 3 chunks (entry (dz + 1) * 3 + dx + 2): this one and the loaded ones that are lit.
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-DZ FROM -1 BY 1 UNTIL WS-DZ > 1
+         PERFORM VARYING WS-DX FROM -1 BY 1 UNTIL WS-DX > 1
+             ADD 1 TO WS-K
+             COMPUTE WS-CX = CK-X(WS-CROW) + WS-DX
+             COMPUTE WS-CZ = CK-Z(WS-CROW) + WS-DZ
+             CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+             IF WS-ROW > 0 AND CK-LIT(WS-ROW) = 0 AND WS-K NOT = 5
+                 MOVE 0 TO WS-ROW
+             END-IF
+             MOVE WS-ROW TO WS-R3(WS-K)
+         END-PERFORM
+     END-PERFORM
+     INITIALIZE WS-HEADS
+     MOVE 0 TO WS-EN
+*>   Seeds, the light sources of this chunk (only sections whose CK-SOURCES count is above 0 are scanned).
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SECTIONS
+         IF CK-SOURCES(WS-CROW, WS-S) > 0
+             COMPUTE WS-LAST = WS-S * 4096
+             COMPUTE WS-FIRST = WS-LAST - 4095
+             PERFORM VARYING WS-CELL FROM WS-FIRST BY 1 UNTIL WS-CELL > WS-LAST
+                 MOVE CB-S-LIGHT(CX-STATE(WS-CELL) + 1) TO WS-LEVEL
+                 IF WS-LEVEL > 0
+                     COMPUTE WS-Y = (WS-CELL - 1) / 256
+                     COMPUTE WS-REST = WS-CELL - 1 - WS-Y * 256
+                     COMPUTE WS-Z = WS-REST / 16
+                     COMPUTE WS-X = WS-REST - WS-Z * 16
+                     COMPUTE WS-B = 2048 + (WS-CELL - 1) / 2 + 1
+                     MOVE CX-BLOCK-LIGHT(WS-B) TO WS-V
+                     IF FUNCTION MOD(WS-CELL, 2) = 1
+                         COMPUTE WS-HI = WS-V / 16
+                         COMPUTE CX-BLOCK-LIGHT(WS-B) = WS-HI * 16 + WS-LEVEL
+                     ELSE
+                         COMPUTE CX-BLOCK-LIGHT(WS-B) = FUNCTION MOD(WS-V, 16) + WS-LEVEL * 16
+                     END-IF
+                     COMPUTE WS-POS = (WS-Y * 48 + WS-Z + 16) * 48 + WS-X + 16
+                     ADD 1 TO WS-EN
+                     MOVE WS-POS TO WS-E-POS(WS-EN)
+                     MOVE WS-HEAD(WS-LEVEL) TO WS-E-NEXT(WS-EN)
+                     MOVE WS-EN TO WS-HEAD(WS-LEVEL)
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+*>   Seeds, the light along the borders of the lit neighbours less one (face 1: west, 2: east, 3: north, 4: south).
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 4
+         EVALUATE WS-F
+             WHEN 1 MOVE 4 TO WS-K
+             WHEN 2 MOVE 6 TO WS-K
+             WHEN 3 MOVE 2 TO WS-K
+             WHEN OTHER MOVE 8 TO WS-K
+         END-EVALUATE
+         MOVE WS-R3(WS-K) TO WS-NROW
+         IF WS-NROW > 0
+             PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+                 EVALUATE WS-F
+                     WHEN 1 MOVE 0 TO WS-X MOVE WS-I TO WS-Z MOVE 15 TO WS-NX MOVE WS-I TO WS-NZ
+                     WHEN 2 MOVE 15 TO WS-X MOVE WS-I TO WS-Z MOVE 0 TO WS-NX MOVE WS-I TO WS-NZ
+                     WHEN 3 MOVE WS-I TO WS-X MOVE 0 TO WS-Z MOVE WS-I TO WS-NX MOVE 15 TO WS-NZ
+                     WHEN OTHER MOVE WS-I TO WS-X MOVE 15 TO WS-Z MOVE WS-I TO WS-NX MOVE 0 TO WS-NZ
+                 END-EVALUATE
+                 PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > WS-TOP
+*>                   The light of the neighbour's cell.
+                     SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-NROW)
+                     COMPUTE WS-CELL = WS-Y * 256 + WS-NZ * 16 + WS-NX + 1
+                     COMPUTE WS-B = 2048 + (WS-CELL - 1) / 2 + 1
+                     MOVE CX-BLOCK-LIGHT(WS-B) TO WS-V
+                     IF FUNCTION MOD(WS-CELL, 2) = 1
+                         COMPUTE WS-NIB = FUNCTION MOD(WS-V, 16) - 1
+                     ELSE
+                         COMPUTE WS-NIB = WS-V / 16 - 1
+                     END-IF
+*>                   Taken by this chunk's cell when it is clear and holds less.
+                     SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-CROW)
+                     COMPUTE WS-CELL = WS-Y * 256 + WS-Z * 16 + WS-X + 1
+                     MOVE CB-OPAQUE(CB-S-BLOCK(CX-STATE(WS-CELL) + 1) + 1) TO WS-BLK
+                     COMPUTE WS-B = 2048 + (WS-CELL - 1) / 2 + 1
+                     MOVE CX-BLOCK-LIGHT(WS-B) TO WS-V
+                     IF FUNCTION MOD(WS-CELL, 2) = 1
+                         COMPUTE WS-HI = FUNCTION MOD(WS-V, 16)
+                     ELSE
+                         COMPUTE WS-HI = WS-V / 16
+                     END-IF
+                     IF WS-BLK = 0 AND WS-NIB > WS-HI
+                         IF FUNCTION MOD(WS-CELL, 2) = 1
+                             COMPUTE WS-HI = WS-V / 16
+                             COMPUTE CX-BLOCK-LIGHT(WS-B) = WS-HI * 16 + WS-NIB
+                         ELSE
+                             COMPUTE CX-BLOCK-LIGHT(WS-B) = FUNCTION MOD(WS-V, 16) + WS-NIB * 16
+                         END-IF
+                         COMPUTE WS-LX = WS-X + 16
+                         COMPUTE WS-LZ = WS-Z + 16
+                         COMPUTE WS-POS = (WS-Y * 48 + WS-LZ) * 48 + WS-LX
+                         ADD 1 TO WS-EN
+                         MOVE WS-POS TO WS-E-POS(WS-EN)
+                         MOVE WS-HEAD(WS-NIB) TO WS-E-NEXT(WS-EN)
+                         MOVE WS-EN TO WS-HEAD(WS-NIB)
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-IF
+     END-PERFORM
+*>   From the highest level down: a clear cell of a lit chunk that holds less takes the level less one.
+     PERFORM VARYING WS-L FROM 15 BY -1 UNTIL WS-L < 2
+         COMPUTE WS-L1 = WS-L - 1
+         MOVE WS-HEAD(WS-L) TO WS-EP
+         PERFORM UNTIL WS-EP = 0
+             MOVE WS-E-POS(WS-EP) TO WS-POS
+             COMPUTE WS-Y = WS-POS / 2304
+             COMPUTE WS-REST = WS-POS - WS-Y * 2304
+             COMPUTE WS-LZ = WS-REST / 48
+             COMPUTE WS-LX = WS-REST - WS-LZ * 48
+*>           The cell as it stands (a stale entry holds a higher level now, and was handled with it).
+             COMPUTE WS-QX = WS-LX / 16
+             COMPUTE WS-QZ = WS-LZ / 16
+             COMPUTE WS-ROW = WS-R3(WS-QZ * 3 + WS-QX + 1)
+             SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-ROW)
+             COMPUTE WS-XI = WS-LX - WS-QX * 16
+             COMPUTE WS-ZI = WS-LZ - WS-QZ * 16
+             COMPUTE WS-CELL = WS-Y * 256 + WS-ZI * 16 + WS-XI + 1
+             COMPUTE WS-B = 2048 + (WS-CELL - 1) / 2 + 1
+             MOVE CX-BLOCK-LIGHT(WS-B) TO WS-V
+             IF FUNCTION MOD(WS-CELL, 2) = 1
+                 COMPUTE WS-NIB = FUNCTION MOD(WS-V, 16)
+             ELSE
+                 COMPUTE WS-NIB = WS-V / 16
+             END-IF
+             IF WS-NIB = WS-L
+                 PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+                     COMPUTE WS-NX = WS-LX + WS-DIR-X(WS-D)
+                     COMPUTE WS-NY = WS-Y + WS-DIR-Y(WS-D)
+                     COMPUTE WS-NZ = WS-LZ + WS-DIR-Z(WS-D)
+                     IF WS-NY >= 0 AND WS-NY <= WS-TOP AND WS-NX >= 0 AND WS-NX <= 47 AND WS-NZ >= 0 AND WS-NZ <= 47
+                         COMPUTE WS-QX = WS-NX / 16
+                         COMPUTE WS-QZ = WS-NZ / 16
+                         COMPUTE WS-NROW = WS-R3(WS-QZ * 3 + WS-QX + 1)
+                         IF WS-NROW > 0
+                             SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-NROW)
+                             COMPUTE WS-XI = WS-NX - WS-QX * 16
+                             COMPUTE WS-ZI = WS-NZ - WS-QZ * 16
+                             COMPUTE WS-CELL = WS-NY * 256 + WS-ZI * 16 + WS-XI + 1
+                             MOVE CB-OPAQUE(CB-S-BLOCK(CX-STATE(WS-CELL) + 1) + 1) TO WS-BLK
+                             IF WS-BLK = 0
+                                 COMPUTE WS-B = 2048 + (WS-CELL - 1) / 2 + 1
+                                 MOVE CX-BLOCK-LIGHT(WS-B) TO WS-V
+                                 IF FUNCTION MOD(WS-CELL, 2) = 1
+                                     COMPUTE WS-NIB = FUNCTION MOD(WS-V, 16)
+                                 ELSE
+                                     COMPUTE WS-NIB = WS-V / 16
+                                 END-IF
+                                 IF WS-NIB < WS-L1
+                                     IF FUNCTION MOD(WS-CELL, 2) = 1
+                                         COMPUTE WS-HI = WS-V / 16
+                                         COMPUTE CX-BLOCK-LIGHT(WS-B) = WS-HI * 16 + WS-L1
+                                     ELSE
+                                         COMPUTE CX-BLOCK-LIGHT(WS-B) = FUNCTION MOD(WS-V, 16) + WS-L1 * 16
+                                     END-IF
+                                     COMPUTE WS-POS = (WS-NY * 48 + WS-NZ) * 48 + WS-NX
+                                     ADD 1 TO WS-EN
+                                     MOVE WS-POS TO WS-E-POS(WS-EN)
+                                     MOVE WS-HEAD(WS-L1) TO WS-E-NEXT(WS-EN)
+                                     MOVE WS-EN TO WS-HEAD(WS-L1)
+                                 END-IF
+                             END-IF
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-IF
+             MOVE WS-E-NEXT(WS-EP) TO WS-EP
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM LIGHT-FRESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-CHUNK.
+*> USING row (BINARY-LONG): computes the sky and block light of that cached chunk and sets CK-LIT. A neighbour in the 3 x 3 that is loaded and
+*> not lit is lit first (a dimension generated inline has its neighbours loaded here, WORLD-CHUNK-PEEK; a sliced one never does), then this
+*> chunk takes the light along the borders of the lit ones and gives its own (LIGHT-FRESH).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "LIGHT-SKY" USING L-ROW
-     CALL "LIGHT-BLOCK" USING L-ROW
+     MOVE CK-DIM(L-ROW) TO WS-DIM
+     PERFORM VARYING WS-DZ FROM -1 BY 1 UNTIL WS-DZ > 1
+         PERFORM VARYING WS-DX FROM -1 BY 1 UNTIL WS-DX > 1
+             COMPUTE WS-CX = CK-X(L-ROW) + WS-DX
+             COMPUTE WS-CZ = CK-Z(L-ROW) + WS-DZ
+             CALL "WORLD-CHUNK-PEEK" USING WS-DIM WS-CX WS-CZ WS-ROW
+             IF WS-ROW > 0 AND WS-ROW NOT = L-ROW AND CK-LIT(WS-ROW) = 0
+                 CALL "LIGHT-SKY" USING WS-ROW
+                 CALL "LIGHT-FRESH" USING WS-ROW
+                 MOVE 1 TO CK-LIT(WS-ROW)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "LIGHT-FRESH" USING L-ROW
      MOVE 1 TO CK-LIT(L-ROW)
      GOBACK.
  END PROGRAM LIGHT-CHUNK.
