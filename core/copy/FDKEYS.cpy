@@ -77,3 +77,4 @@
  01 FK-IF-TRUE        PIC X(40) VALUE "if_true".
  01 FK-THEN           PIC X(40) VALUE "then".
  01 FK-FALLBACK       PIC X(40) VALUE "fallback".
+ 01 FK-DISK-TARGET    PIC X(40) VALUE "target".

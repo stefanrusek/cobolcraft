@@ -382,16 +382,20 @@
  END PROGRAM FR-PRED-TEST.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FR-PROV-STATE.
+ PROGRAM-ID. FR-PROV-STATE IS RECURSIVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  COPY CBLOCKS.
+ LOCAL-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
  01 WS-TOTAL               BINARY-LONG.
  01 WS-DRAW                BINARY-LONG.
  01 WS-RUN                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-PR                  BINARY-LONG.
+ 01 WS-PV                  BINARY-LONG.
+ 01 WS-TEST                BINARY-LONG.
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  LINKAGE SECTION.
@@ -430,6 +434,20 @@
                  MOVE FD-POOL(PV-POOL(L-PV) + WS-DRAW) TO WS-BLOCK
                  MOVE CB-DEFAULT-STATE(WS-BLOCK) TO L-STATE-OUT
                  MOVE 1 TO L-OK
+             END-IF
+*>       rule_based: the first rule whose predicate holds at the position and whose provider gives a state wins, else the fallback provider (a null state when there is none)
+         WHEN 5
+             PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= PV-N(L-PV) OR L-OK = 1
+                 MOVE FD-POOL(PV-POOL(L-PV) + WS-I * 2) TO WS-PR
+                 MOVE FD-POOL(PV-POOL(L-PV) + WS-I * 2 + 1) TO WS-PV
+                 CALL "FR-PRED-TEST" USING WS-PR L-X L-Y L-Z WS-TEST
+                 IF WS-TEST = 1
+                     CALL "FR-PROV-STATE" USING L-STATE WS-PV L-X L-Y L-Z L-STATE-OUT L-OK
+                 END-IF
+             END-PERFORM
+             IF L-OK = 0 AND PV-A(L-PV) > 0
+                 MOVE PV-A(L-PV) TO WS-PV
+                 CALL "FR-PROV-STATE" USING L-STATE WS-PV L-X L-Y L-Z L-STATE-OUT L-OK
              END-IF
 *>       randomized_int: one sample of the values picks the state resolved when the data was compiled
          WHEN 4
@@ -1052,6 +1070,8 @@
              CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 16
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 10
+             CALL "FR-DISK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 19
              CALL "FR-FREEZE" USING L-FT L-X L-Z L-RESULT
          WHEN 25
