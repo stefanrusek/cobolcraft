@@ -318,6 +318,11 @@
      IF WS-CAN = 0
          GOBACK
      END-IF
+*>   A container with a loot table is filled at its first open (26 section 11.6: both halves of a double chest).
+     CALL "BE-LOOT-FILL" USING WS-FIRST WS-ROW
+     IF WS-SECOND > 0
+         CALL "BE-LOOT-FILL" USING WS-SECOND WS-ROW
+     END-IF
      IF MN-WINDOW(WS-ROW) > 0
          CALL "MENU-CLOSE" USING L-ID
      END-IF

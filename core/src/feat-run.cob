@@ -1145,6 +1145,8 @@
              CALL "FR-LAKE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 48
              CALL "FR-SPRING" USING L-FT L-X L-Y L-Z L-RESULT
+         WHEN 27
+             CALL "FR-ROOM" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1000
              CALL "FR-BAMBOO" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57

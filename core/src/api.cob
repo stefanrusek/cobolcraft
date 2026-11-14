@@ -512,6 +512,7 @@
  COPY FEATINDEX.
  01 WS-GEN-STATUS          BINARY-LONG.
  01 WS-GEN-DIR             PIC X(1100).
+ 01 WS-MINESHAFT           PIC X(80) VALUE "minecraft:mineshaft".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -526,8 +527,11 @@
          CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
 *>       the feature lists of the biomes; the stage runs the placed features of the supported families (FR-GATE)
          CALL "BIOMES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
-*>       the structure sets and structures (36-1; none is gated on yet, so the generation hook does nothing)
+*>       the structure sets and structures (36-1)
          CALL "STRUCT-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+*>       the structures that are on: the mineshaft (36-5 section 2; the mesa type stays refused, it needs the base height of 37-2 section 6.5)
+         CALL "STRUCT-GATE-RESET"
+         CALL "STRUCT-GATE-ON" USING WS-MINESHAFT
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF

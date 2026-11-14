@@ -1880,6 +1880,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 27
+*>           a monster room (feat-room.cob): unsupported when a block it writes is unknown
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-ROOM-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 48
 *>           a spring (feat-spring.cob): unsupported when its state or a valid block is unknown
              MOVE FD-BAD TO LS-SAVED-BAD
