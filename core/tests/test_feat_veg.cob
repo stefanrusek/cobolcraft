@@ -63,6 +63,18 @@
      MOVE "minecraft:patch_berry_common" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: the sweet berry patches are admitted" TO TL-CASE
      PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:wildflowers_meadow" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: wildflowers are admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:cave_vines" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: cave vines are admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:spore_blossom" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: spore blossoms are admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:patch_cactus_desert" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: cactus patches are admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
      MOVE "minecraft:seagrass_deep" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: seagrass is admitted" TO TL-CASE
      PERFORM CHECK-GATE-ONE

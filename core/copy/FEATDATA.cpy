@@ -84,6 +84,16 @@
        10 PV-LO             BINARY-LONG.
        10 PV-IP.
           15 PV-IP-V        BINARY-LONG OCCURS 4 TIMES.
+*>      noise providers (core/src/feat-prov-noise.cob): PV-TYPE 6 noise, 7 dual_noise, 8 noise_threshold; PV-H1 the noise handle, PV-F1 its scale; the states PV-POOL, PV-N (the low states of a
+*>      threshold provider); dual_noise PV-H2 the slow noise, PV-F2 its scale, PV-B and PV-C the variety; noise_threshold PV-F2 the threshold, PV-F3 high_chance, PV-A the default state,
+*>      PV-B and PV-C the high states
+       10 PV-B              BINARY-LONG.
+       10 PV-C              BINARY-LONG.
+       10 PV-H1             BINARY-LONG.
+       10 PV-H2             BINARY-LONG.
+       10 PV-F1             FLOAT-LONG.
+       10 PV-F2             FLOAT-LONG.
+       10 PV-F3             FLOAT-LONG.
 *>  tree features (type 51; core/src/feat-tree.cob FD-TREE-NODE and FR-TREE, docs/protocol/35-worldgen-features-3 sections 2 to 5): FT-A of the feature is the row. The trunk is the
 *>  straight placer (base height and the two random heights); the foliage placer TR-FKIND 1 blob, 2 spruce, 3 pine, each int provider four integers like FR-INT-SAMPLE (TR-FH the
 *>  height, TR-RAD the radius, TR-OFF the offset, TR-TH the spruce trunk_height); the size TR-SZ-LIMIT, TR-SZ-LOWER, TR-SZ-UPPER (two layers); the states are default states (the log's

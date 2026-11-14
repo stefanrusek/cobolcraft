@@ -118,6 +118,23 @@
  END PROGRAM FD-J-STRING.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-J-STRING-OF.
+*> USING doc, string node, text out (PIC X(120)): the text of a string node (spaces when the node is not one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CAP                 BINARY-LONG VALUE 120.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(120).
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-TEXT.
+     MOVE SPACES TO L-TEXT
+     CALL "JSON-STRING" USING JSON-DOC L-NODE L-TEXT WS-CAP WS-LEN
+     GOBACK.
+ END PROGRAM FD-J-STRING-OF.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-J-MEMBER.
 *> USING doc, object node, member key (PIC X(40)), node out (0 when absent).
  DATA DIVISION.
@@ -207,9 +224,10 @@
  END PROGRAM FD-J-ANCHOR.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FD-J-IP.
+ PROGRAM-ID. FD-J-IP IS RECURSIVE.
 *> USING doc, node, provider out (BINARY-LONG x 4: type, a, b, c), ok out. Types: 1 constant (a), 2 uniform (a to b), 3 biased_to_bottom (a to b), 4 very_biased_to_bottom
-*> (a to b), 5 trapezoid (min a, max b, plateau c), 6 weighted_list of constants (a the first pool entry of the pairs value and weight, b the pair count, c the total weight).
+*> (a to b), 5 trapezoid (min a, max b, plateau c), 6 weighted_list of constants (a the first pool entry of the pairs value and weight, b the pair count, c the total weight), 7 clamped (a the
+*> minimum, b the maximum, c the first pool entry of the four integers of the source provider).
 *> A bare number is a constant.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -226,6 +244,10 @@
  01 WS-IDX                 BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
  01 WS-V                   BINARY-LONG.
+ LOCAL-STORAGE SECTION.
+ 01 LS-INNER.
+    05 LS-I                BINARY-LONG OCCURS 4 TIMES.
+ 01 LS-K                   BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -300,6 +322,26 @@
                      ADD 1 TO L-V(3)
                  END-PERFORM
              END-IF
+         WHEN "minecraft:clamped"
+         WHEN "clamped"
+*>           clamp(source.sample(r), min_inclusive, max_inclusive): the source's four integers go to the pool (35-1 section 5; 23 section 7.1)
+             MOVE 7 TO L-V(1)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-MIN-INC WS-N
+             CALL "FD-J-INT" USING JSON-DOC WS-N L-V(2) L-OK
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-MAX-INC WS-N
+             CALL "FD-J-INT" USING JSON-DOC WS-N L-V(3) WS-OK
+             IF WS-OK = 0 OR L-V(3) < L-V(2)
+                 MOVE 0 TO L-OK
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-SOURCE WS-N
+             CALL "FD-J-IP" USING JSON-DOC WS-N LS-INNER WS-OK
+             IF WS-OK = 0
+                 MOVE 0 TO L-OK
+             END-IF
+             COMPUTE L-V(4) = FD-POOL-COUNT + 1
+             PERFORM VARYING LS-K FROM 1 BY 1 UNTIL LS-K > 4
+                 CALL "FD-POOL-ADD" USING LS-I(LS-K) WS-IDX
+             END-PERFORM
          WHEN "minecraft:trapezoid"
          WHEN "trapezoid"
              MOVE 5 TO L-V(1)
@@ -663,10 +705,23 @@
                      MOVE 1 TO LS-N
                  END-IF
              END-IF
+*>           cactus (29b part 4 section 4.1): PR-A 3, the pool the blocks of supports_cactus, PR-E the block of the cactus
+             IF LS-N = 0 AND LS-LEN > 6
+                 IF LS-TEXT(LS-LEN - 5:6) = "cactus"
+                     MOVE 3 TO PR-A(LS-ROW)
+                     MOVE 1 TO LS-N
+                 END-IF
+             END-IF
              IF LS-N = 0
                  MOVE 1 TO FD-BAD
              END-IF
              COMPUTE PR-POOL(LS-ROW) = FD-POOL-COUNT + 1
+             IF PR-A(LS-ROW) = 3
+                 MOVE "minecraft:supports_cactus" TO LS-TAG
+                 CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
+                 MOVE "minecraft:cactus" TO LS-NAME
+                 CALL "FD-BLOCK-INDEX" USING LS-NAME PR-E(LS-ROW)
+             END-IF
              IF PR-A(LS-ROW) = 2
                  MOVE "minecraft:supports_sugar_cane" TO LS-TAG
                  CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
@@ -675,7 +730,8 @@
                  CALL "FD-TAG-BLOCKS" USING LS-TAG PR-D(LS-ROW)
                  MOVE "minecraft:sugar_cane" TO LS-NAME
                  CALL "FD-BLOCK-INDEX" USING LS-NAME PR-E(LS-ROW)
-             ELSE
+             END-IF
+             IF PR-A(LS-ROW) = 1 OR PR-A(LS-ROW) = 0
                  MOVE 1 TO PR-A(LS-ROW)
                  MOVE "minecraft:supports_vegetation" TO LS-TAG
                  CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
@@ -748,9 +804,14 @@
      IF L-NODE = 0
          GOBACK
      END-IF
-     CALL "FD-J-STRING" USING JSON-DOC FK-NAME L-NODE WS-TEXT WS-LEN
-     IF WS-LEN = 0
-         CALL "FD-J-STRING" USING JSON-DOC FK-ID L-NODE WS-TEXT WS-LEN
+     IF JN-TYPE(L-NODE) = JT-STRING
+         CALL "FD-J-STRING-OF" USING JSON-DOC L-NODE WS-TEXT
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO WS-LEN
+     ELSE
+         CALL "FD-J-STRING" USING JSON-DOC FK-NAME L-NODE WS-TEXT WS-LEN
+         IF WS-LEN = 0
+             CALL "FD-J-STRING" USING JSON-DOC FK-ID L-NODE WS-TEXT WS-LEN
+         END-IF
      END-IF
      IF WS-LEN > 0
          MOVE 1 TO L-OK
@@ -877,6 +938,7 @@
  01 WS-W                   BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-IDX                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
  01 WS-RULES.
     05 WS-RULE OCCURS 16 TIMES.
        10 WS-RULE-PR       BINARY-LONG.
@@ -889,6 +951,13 @@
      MOVE 0 TO L-INDEX
      IF L-NODE = 0 OR FD-PV-COUNT >= FD-MAX-PV
          MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+*>   a string names an element of worldgen/block_state_provider (35-2 section 4.1)
+     IF JN-TYPE(L-NODE) = JT-STRING
+         CALL "FD-J-STRING-OF" USING JSON-DOC L-NODE WS-TEXT
+         CALL "FD-KEY" USING WS-TEXT WS-KEY
+         CALL "FD-PROV-NAMED" USING WS-KEY L-INDEX
          GOBACK
      END-IF
      ADD 1 TO FD-PV-COUNT
@@ -966,6 +1035,18 @@
                  IF WS-E > 0
                      CALL "FD-PROV-NODE" USING JSON-DOC WS-E PV-A(WS-ROW)
                  END-IF
+             WHEN "minecraft:noise"
+             WHEN "noise"
+                 MOVE 6 TO WS-D
+                 CALL "FD-PROV-NOISE" USING JSON-DOC L-NODE WS-ROW WS-D
+             WHEN "minecraft:dual_noise"
+             WHEN "dual_noise"
+                 MOVE 7 TO WS-D
+                 CALL "FD-PROV-NOISE" USING JSON-DOC L-NODE WS-ROW WS-D
+             WHEN "minecraft:noise_threshold"
+             WHEN "noise_threshold"
+                 MOVE 8 TO WS-D
+                 CALL "FD-PROV-NOISE" USING JSON-DOC L-NODE WS-ROW WS-D
              WHEN "minecraft:random_block"
              WHEN "random_block"
                  MOVE 3 TO PV-TYPE(WS-ROW)
@@ -1738,8 +1819,16 @@
                  END-PERFORM
              END-IF
          WHEN 42
+*>           a provider the compiler cannot place whole (a named one that is absent, a noise provider with an unsupported field) makes the feature unsupported (type -1)
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-TO-PLACE LS-E
              CALL "FD-PROV-NODE" USING JSON-DOC LS-E FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 51
 *>           a tree the compiler cannot place whole is an unsupported feature (type -1), never a half understood one; FD-BAD stays set for the caller
              MOVE FD-BAD TO LS-SAVED-BAD
@@ -1899,7 +1988,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-FETCH.
-*> USING registry (PIC X(16): "placed_feature" or "feature"), key (PIC X(80), with namespace), text area (PIC X(65536)), length out, status out (0 read, 1 absent).
+*> USING registry (PIC X(32): "placed_feature", "feature" or "block_state_provider"), key (PIC X(80), with namespace), text area (PIC X(65536)), length out, status out (0 read, 1 absent).
 *> The open content set's registry worldgen/<registry> first; else the folder of FD-SET-DIR: <dir>/data/<namespace>/worldgen/<registry>/<path>.json.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -1922,7 +2011,7 @@
  01 WS-COLON               BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  LINKAGE SECTION.
- 01 L-REGISTRY             PIC X(16).
+ 01 L-REGISTRY             PIC X(32).
  01 L-KEY                  PIC X(80).
  01 L-TEXT                 PIC X(65536).
  01 L-LENGTH               BINARY-LONG.
@@ -1973,7 +2062,7 @@
  01 WS-TEXT                PIC X(65536).
  01 WS-LEN                 BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KIND                PIC X(16) VALUE "placed_feature".
+ 01 WS-KIND                PIC X(32) VALUE "placed_feature".
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
@@ -2002,7 +2091,7 @@
  01 WS-TEXT                PIC X(65536).
  01 WS-LEN                 BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KIND                PIC X(16) VALUE "feature".
+ 01 WS-KIND                PIC X(32) VALUE "feature".
  01 WS-INDEX               BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
