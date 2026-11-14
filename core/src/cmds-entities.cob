@@ -280,7 +280,7 @@
 *> is its namespace); another type is entity.not_summonable [key]; a monster in Peaceful difficulty
 *> or with hostile mobs off is commands.summon.failed.peaceful; a position outside the spawnable bounds is
 *> commands.summon.invalidPosition; NBT other than {} is cobolcraft.entity.nbt_unsupported (BLOCKED); commands.summon.success
-*> [entity key] is broadcast; the result is 1.
+*> [entity key] is broadcast; the result is 1. A summoned table mob is finalized like a spawned one (STDMOB-FINALIZE: variant, armour, weapon, size).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -307,6 +307,8 @@
  01 WS-MOB                 BINARY-LONG.
  01 WS-STD                 BINARY-LONG.
  01 WS-STD-HOSTILE         BINARY-LONG.
+ 01 WS-FSEED               BINARY-DOUBLE UNSIGNED.
+ COPY XORO.
  01 WS-BARE                PIC X(48).
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -431,6 +433,11 @@
              MOVE MB-ENTITY-TYPE(WS-MOB) TO WS-TYPE
          END-IF
          CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+         IF WS-STD > 0
+             COMPUTE WS-FSEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
+             CALL "XORO-SEED" USING WS-FSEED XR-STATE
+             CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW
+         END-IF
          MOVE "commands.summon.success" TO WS-KEY
          CALL "BX-KEY" USING PB-TEXT WS-KEY
          CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
