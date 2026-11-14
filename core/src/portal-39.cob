@@ -721,3 +721,686 @@
      MOVE L-AXIS TO PR-AXIS
      GOBACK.
  END PROGRAM PORTAL-LARGEST-RECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-BORDER.
+*> USING dimension row, minimum x, maximum x, minimum z, maximum z out (FLOAT-LONG): the extent of that level's world border (33 section 7.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WSIM2.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MIN-X                FLOAT-LONG.
+ 01 L-MAX-X                FLOAT-LONG.
+ 01 L-MIN-Z                FLOAT-LONG.
+ 01 L-MAX-Z                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-MIN-X L-MAX-X L-MIN-Z L-MAX-Z.
+     CALL "WORLDSIM-ENSURE2"
+     CALL "WB-EXTENT" USING W2-B-CX(L-DIM) W2-B-SIZE(L-DIM) W2-B-ABSOLUTE(L-DIM) L-MIN-X L-MAX-X
+     CALL "WB-EXTENT" USING W2-B-CZ(L-DIM) W2-B-SIZE(L-DIM) W2-B-ABSOLUTE(L-DIM) L-MIN-Z L-MAX-Z
+     GOBACK.
+ END PROGRAM PORTAL-BORDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-IN-BORDER.
+*> USING dimension row, block x, block z, inside out (BINARY-LONG): the block position test of the world border (the minimum edge inclusive,
+*> the maximum exclusive; 33 section 7.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MIN-X               FLOAT-LONG.
+ 01 WS-MAX-X               FLOAT-LONG.
+ 01 WS-MIN-Z               FLOAT-LONG.
+ 01 WS-MAX-Z               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-INSIDE.
+     CALL "PORTAL-BORDER" USING L-DIM WS-MIN-X WS-MAX-X WS-MIN-Z WS-MAX-Z
+     MOVE 0 TO L-INSIDE
+     IF L-X >= WS-MIN-X AND L-X < WS-MAX-X AND L-Z >= WS-MIN-Z AND L-Z < WS-MAX-Z
+         MOVE 1 TO L-INSIDE
+     END-IF
+     GOBACK.
+ END PROGRAM PORTAL-IN-BORDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-SCALE.
+*> USING source dimension row, destination dimension row, scale out (FLOAT-LONG): DimensionType.getTeleportationScale (39 section 4.1): the
+*> source's coordinate_scale over the destination's (the nether 8.0, every other dimension 1.0; 37-1 section 2.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-FROM                FLOAT-LONG.
+ 01 WS-TO                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-FROM                 BINARY-LONG.
+ 01 L-TO                   BINARY-LONG.
+ 01 L-SCALE                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-FROM L-TO L-SCALE.
+     MOVE 1.0 TO WS-FROM WS-TO
+     IF DM-KEY(L-FROM) = "minecraft:the_nether"
+         MOVE 8.0 TO WS-FROM
+     END-IF
+     IF DM-KEY(L-TO) = "minecraft:the_nether"
+         MOVE 8.0 TO WS-TO
+     END-IF
+     COMPUTE L-SCALE = WS-FROM / WS-TO
+     GOBACK.
+ END PROGRAM PORTAL-SCALE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-ORIGIN.
+*> USING source dimension row, destination dimension row, entity x, y, z (FLOAT-LONG), origin x, y, z out (BINARY-LONG): 39 section 4.1 step 3:
+*> the entity position with x and z scaled, clamped into the destination border (the maximum edge less 9.999999747378752E-6), and the block
+*> containing it; y is not scaled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SCALE               FLOAT-LONG.
+ 01 WS-MIN-X               FLOAT-LONG.
+ 01 WS-MAX-X               FLOAT-LONG.
+ 01 WS-MIN-Z               FLOAT-LONG.
+ 01 WS-MAX-Z               FLOAT-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
+ 01 WS-EPS                 FLOAT-LONG VALUE 0.000009999999747378752.
+ 01 WS-MARGIN              FLOAT-LONG VALUE 0.
+ 01 WS-WITHIN              BINARY-LONG.
+ 01 WS-DISTANCE            FLOAT-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-FROM                 BINARY-LONG.
+ 01 L-TO                   BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-FROM L-TO L-X L-Y L-Z L-OX L-OY L-OZ.
+     CALL "PORTAL-SCALE" USING L-FROM L-TO WS-SCALE
+     CALL "PORTAL-BORDER" USING L-TO WS-MIN-X WS-MAX-X WS-MIN-Z WS-MAX-Z
+     COMPUTE WS-SX = L-X * WS-SCALE
+     COMPUTE WS-SZ = L-Z * WS-SCALE
+     CALL "WB-GEOMETRY" USING WS-SX WS-SZ WS-MARGIN WS-MIN-X WS-MAX-X WS-MIN-Z WS-MAX-Z WS-WITHIN WS-DISTANCE WS-CX WS-CZ
+     COMPUTE L-OX = FUNCTION INTEGER(WS-CX)
+     COMPUTE L-OY = FUNCTION INTEGER(L-Y)
+     COMPUTE L-OZ = FUNCTION INTEGER(WS-CZ)
+     GOBACK.
+ END PROGRAM PORTAL-ORIGIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-FIND-EXISTING.
+*> USING destination dimension row, origin x, y, z, destination is the nether (BINARY-LONG), found out, x, y, z out: PortalForcer
+*> .findClosestPortalPosition (39 section 5.1): the portal points of interest within 16 (nether destination) or 128 blocks in x and z of the
+*> origin, inside the destination border and still portal blocks, the nearest by 3D squared distance, the lower y on a tie.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PORTAL.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-D                   BINARY-DOUBLE.
+ 01 WS-BEST                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ 01 L-NETHER               BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-OX L-OY L-OZ L-NETHER L-FOUND L-X L-Y L-Z.
+     MOVE 0 TO L-FOUND
+     MOVE PQ-RADIUS-OVERWORLD TO WS-R
+     IF L-NETHER = 1
+         MOVE PQ-RADIUS-NETHER TO WS-R
+     END-IF
+     MOVE 0 TO WS-BEST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PQ-POI-COUNT
+         COMPUTE WS-DX = PQ-P-X(WS-I) - L-OX
+         COMPUTE WS-DZ = PQ-P-Z(WS-I) - L-OZ
+         IF PQ-P-DIM(WS-I) = L-DIM AND FUNCTION ABS(WS-DX) <= WS-R AND FUNCTION ABS(WS-DZ) <= WS-R
+             CALL "PORTAL-IN-BORDER" USING L-DIM PQ-P-X(WS-I) PQ-P-Z(WS-I) WS-INSIDE
+             MOVE 0 TO WS-KIND
+             IF WS-INSIDE = 1
+                 CALL "PORTAL-CELL-KIND" USING L-DIM PQ-P-X(WS-I) PQ-P-Y(WS-I) PQ-P-Z(WS-I) WS-KIND
+             END-IF
+             IF WS-KIND = 2
+                 COMPUTE WS-DY = PQ-P-Y(WS-I) - L-OY
+                 COMPUTE WS-D = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+                 IF L-FOUND = 0 OR WS-D < WS-BEST OR (WS-D = WS-BEST AND PQ-P-Y(WS-I) < L-Y)
+                     MOVE 1 TO L-FOUND
+                     MOVE WS-D TO WS-BEST
+                     MOVE PQ-P-X(WS-I) TO L-X
+                     MOVE PQ-P-Y(WS-I) TO L-Y
+                     MOVE PQ-P-Z(WS-I) TO L-Z
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-FIND-EXISTING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-REPLACEABLE.
+*> USING dimension row, x, y, z, replaceable out (BINARY-LONG): the cell can be replaced by a portal frame: air, fire or a block without
+*> collision that is no fluid and no portal (an approximation of canBeReplaced with an empty fluid state: the core has no replaceable flag).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY PORTAL.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FLAG.
+     MOVE 0 TO L-FLAG
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     CALL "PORTAL-STATE-KIND" USING WS-STATE WS-KIND
+     MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
+     IF WS-KIND = 3
+         MOVE 1 TO L-FLAG
+         GOBACK
+     END-IF
+     IF WS-KIND = 0 AND CB-SOLID(WS-BLOCK + 1) = 0 AND WS-BLOCK NOT = PI-WATER AND WS-BLOCK NOT = PI-LAVA
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM PORTAL-REPLACEABLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-HOST.
+*> USING dimension row, x, y, z of a candidate, shift k (BINARY-LONG), dir x, dir z, cw x, cw z, ok out: host(k) of 39 section 5.2: the frame slab
+*> shifted by k along the clockwise direction can be built: for i from -1 to 2 along dir the cell below (j = -1) is solid and the four above
+*> (j 0 to 3) are replaceable.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-K                    BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-CWX                  BINARY-LONG.
+ 01 L-CWZ                  BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-K L-DX L-DZ L-CWX L-CWZ L-OK.
+     MOVE 1 TO L-OK
+     PERFORM VARYING WS-I FROM -1 BY 1 UNTIL WS-I > 2
+         COMPUTE WS-X = L-X + L-K * L-CWX + WS-I * L-DX
+         COMPUTE WS-Z = L-Z + L-K * L-CWZ + WS-I * L-DZ
+         PERFORM VARYING WS-J FROM -1 BY 1 UNTIL WS-J > 3
+             COMPUTE WS-Y = L-Y + WS-J
+             IF WS-J = -1
+                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-STATE
+                 IF CB-SOLID(CB-S-BLOCK(WS-STATE + 1) + 1) NOT = 1
+                     MOVE 0 TO L-OK
+                 END-IF
+             ELSE
+                 CALL "PORTAL-REPLACEABLE" USING L-DIM WS-X WS-Y WS-Z WS-FLAG
+                 IF WS-FLAG = 0
+                     MOVE 0 TO L-OK
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-HOST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-TOP.
+*> USING dimension row, top out: min(maxY, minY + logical_height - 1) (39 section 5.2; the nether's logical height is 128, every other
+*> dimension's is its height).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-LOGICAL             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-TOP.
+     MOVE DM-HEIGHT(L-DIM) TO WS-LOGICAL
+     IF DM-KEY(L-DIM) = "minecraft:the_nether"
+         MOVE 128 TO WS-LOGICAL
+     END-IF
+     COMPUTE L-TOP = DM-MIN-Y(L-DIM) + WS-LOGICAL - 1
+     IF L-TOP > DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1
+         COMPUTE L-TOP = DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1
+     END-IF
+     GOBACK.
+ END PROGRAM PORTAL-TOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-SURFACE.
+*> USING dimension row, x, z, height out: the first y above the highest block that blocks motion (a solid block or a fluid): the
+*> MOTION_BLOCKING height of 06, found by scanning down from the top of the dimension.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY DIMENSIONS.
+ COPY PORTAL.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-HEIGHT.
+     MOVE DM-MIN-Y(L-DIM) TO L-HEIGHT
+     COMPUTE WS-Y = DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1
+     PERFORM UNTIL WS-Y < DM-MIN-Y(L-DIM)
+         CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-STATE
+         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
+         IF CB-SOLID(WS-BLOCK + 1) = 1 OR WS-BLOCK = PI-WATER OR WS-BLOCK = PI-LAVA
+             COMPUTE L-HEIGHT = WS-Y + 1
+             GOBACK
+         END-IF
+         SUBTRACT 1 FROM WS-Y
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-SURFACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-CREATE.
+*> USING destination dimension row, origin x, y, z, axis (0 X, 1 Z), PORTAL-RECT out, ok out (BINARY-LONG): PortalForcer.createPortal
+*> (39 section 5.2). Phase A scans the 1089 columns of the square spiral of radius 16 round the origin (east first, then south) for the
+*> replaceable runs that can host the frame, keeping the nearest candidate that also hosts the slabs in front and behind (full) or else the
+*> nearest that hosts its own (fallback); phase B builds an obsidian platform when there is none; phase C builds the 4 x 5 obsidian frame
+*> and the 2 x 3 portal interior (flags 18). The rectangle is the interior; ok 0 when nothing could be made.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ COPY CBLOCKS.
+ COPY PORTAL.
+ 01 WS-SPIRAL.
+    05 WS-SPX              BINARY-LONG OCCURS 1089 TIMES.
+    05 WS-SPZ              BINARY-LONG OCCURS 1089 TIMES.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-CWX                 BINARY-LONG.
+ 01 WS-CWZ                 BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-MIN-Y               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-LEG                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-YB                  BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-INSIDE2             BINARY-LONG.
+ 01 WS-NEXT-X              BINARY-LONG.
+ 01 WS-HOST                BINARY-LONG.
+ 01 WS-HOST-M              BINARY-LONG.
+ 01 WS-HOST-P              BINARY-LONG.
+ 01 WS-K0                  BINARY-LONG VALUE 0.
+ 01 WS-KM                  BINARY-LONG VALUE -1.
+ 01 WS-KP                  BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-DOUBLE.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-FULL-D              BINARY-DOUBLE.
+ 01 WS-FULL-X              BINARY-LONG.
+ 01 WS-FULL-Y              BINARY-LONG.
+ 01 WS-FULL-Z              BINARY-LONG.
+ 01 WS-FALL                BINARY-LONG.
+ 01 WS-FALL-D              BINARY-DOUBLE.
+ 01 WS-FALL-X              BINARY-LONG.
+ 01 WS-FALL-Y              BINARY-LONG.
+ 01 WS-FALL-Z              BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ 01 WS-CHOSEN              BINARY-LONG.
+ 01 WS-LOWER               BINARY-LONG.
+ 01 WS-UPPER               BINARY-LONG.
+ 01 WS-MIN-BX              FLOAT-LONG.
+ 01 WS-MAX-BX              FLOAT-LONG.
+ 01 WS-MIN-BZ              FLOAT-LONG.
+ 01 WS-MAX-BZ              FLOAT-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-MARGIN              FLOAT-LONG VALUE 0.
+ 01 WS-WITHIN              BINARY-LONG.
+ 01 WS-DISTANCE            FLOAT-LONG.
+ 01 WS-CLX                 FLOAT-LONG.
+ 01 WS-CLZ                 FLOAT-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-OBSIDIAN            BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 18.
+ 01 WS-BUDGET              BINARY-LONG VALUE 512.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ 01 L-AXIS                 BINARY-LONG.
+ COPY PORTALRECT.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-OX L-OY L-OZ L-AXIS PORTAL-RECT L-OK.
+     CALL "PORTAL-IDS-ENSURE"
+     MOVE 0 TO L-OK
+     MOVE 1 TO WS-DX
+     MOVE 0 TO WS-DZ
+     MOVE 0 TO WS-CWX
+     MOVE 1 TO WS-CWZ
+     IF L-AXIS = 1
+         MOVE 0 TO WS-DX
+         MOVE 1 TO WS-DZ
+         MOVE -1 TO WS-CWX
+         MOVE 0 TO WS-CWZ
+     END-IF
+     CALL "PORTAL-TOP" USING L-DIM WS-TOP
+     MOVE DM-MIN-Y(L-DIM) TO WS-MIN-Y
+*>   The square spiral of 1089 offsets: (0, 0), then legs east 1, south 1, west 2, north 2, east 3, ...
+     MOVE 1 TO WS-N
+     MOVE 0 TO WS-SPX(1) WS-SPZ(1) WS-SX WS-SZ
+     PERFORM VARYING WS-LEG FROM 1 BY 1 UNTIL WS-N >= 1089
+         COMPUTE WS-LEN = (WS-LEG + 1) / 2
+         COMPUTE WS-DIR = FUNCTION MOD(WS-LEG - 1, 4)
+         PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > WS-LEN OR WS-N >= 1089
+             EVALUATE WS-DIR
+                 WHEN 0
+                     ADD 1 TO WS-SX
+                 WHEN 1
+                     ADD 1 TO WS-SZ
+                 WHEN 2
+                     SUBTRACT 1 FROM WS-SX
+                 WHEN OTHER
+                     SUBTRACT 1 FROM WS-SZ
+             END-EVALUATE
+             ADD 1 TO WS-N
+             MOVE WS-SX TO WS-SPX(WS-N)
+             MOVE WS-SZ TO WS-SPZ(WS-N)
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO WS-FULL WS-FALL
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1089
+         COMPUTE WS-X = L-OX + WS-SPX(WS-I)
+         COMPUTE WS-Z = L-OZ + WS-SPZ(WS-I)
+         COMPUTE WS-NEXT-X = WS-X + WS-DX
+         CALL "PORTAL-IN-BORDER" USING L-DIM WS-X WS-Z WS-INSIDE
+         COMPUTE WS-A = WS-Z + WS-DZ
+         CALL "PORTAL-IN-BORDER" USING L-DIM WS-NEXT-X WS-A WS-INSIDE2
+         IF WS-INSIDE = 1 AND WS-INSIDE2 = 1
+             CALL "PORTAL-SURFACE" USING L-DIM WS-X WS-Z WS-HEIGHT
+             MOVE WS-HEIGHT TO WS-START
+             IF WS-START > WS-TOP
+                 MOVE WS-TOP TO WS-START
+             END-IF
+             MOVE WS-START TO WS-Y
+             PERFORM UNTIL WS-Y < WS-MIN-Y
+                 CALL "PORTAL-REPLACEABLE" USING L-DIM WS-X WS-Y WS-Z WS-FLAG
+                 IF WS-FLAG = 0
+                     SUBTRACT 1 FROM WS-Y
+                 ELSE
+                     MOVE WS-Y TO WS-YB
+                     MOVE 1 TO WS-FLAG
+                     PERFORM UNTIL WS-FLAG = 0
+                         IF WS-YB <= WS-MIN-Y
+                             MOVE 0 TO WS-FLAG
+                         ELSE
+                             COMPUTE WS-B = WS-YB - 1
+                             CALL "PORTAL-REPLACEABLE" USING L-DIM WS-X WS-B WS-Z WS-FLAG
+                             IF WS-FLAG = 1
+                                 MOVE WS-B TO WS-YB
+                             END-IF
+                         END-IF
+                     END-PERFORM
+                     COMPUTE WS-C = WS-Y - WS-YB
+                     IF WS-YB + 4 <= WS-TOP AND (WS-C = 0 OR WS-C >= 3)
+                         CALL "PORTAL-HOST" USING L-DIM WS-X WS-YB WS-Z WS-K0 WS-DX WS-DZ WS-CWX WS-CWZ WS-HOST
+                         IF WS-HOST = 1
+                             COMPUTE WS-DY = WS-YB - L-OY
+                             COMPUTE WS-D = WS-SPX(WS-I) * WS-SPX(WS-I) + WS-DY * WS-DY + WS-SPZ(WS-I) * WS-SPZ(WS-I)
+                             CALL "PORTAL-HOST" USING L-DIM WS-X WS-YB WS-Z WS-KM WS-DX WS-DZ WS-CWX WS-CWZ WS-HOST-M
+                             CALL "PORTAL-HOST" USING L-DIM WS-X WS-YB WS-Z WS-KP WS-DX WS-DZ WS-CWX WS-CWZ WS-HOST-P
+                             IF WS-HOST-M = 1 AND WS-HOST-P = 1
+                                 IF WS-FULL = 0 OR WS-D < WS-FULL-D
+                                     MOVE 1 TO WS-FULL
+                                     MOVE WS-D TO WS-FULL-D
+                                     MOVE WS-X TO WS-FULL-X
+                                     MOVE WS-YB TO WS-FULL-Y
+                                     MOVE WS-Z TO WS-FULL-Z
+                                 END-IF
+                             END-IF
+                             IF WS-FULL = 0 AND (WS-FALL = 0 OR WS-D < WS-FALL-D)
+                                 MOVE 1 TO WS-FALL
+                                 MOVE WS-D TO WS-FALL-D
+                                 MOVE WS-X TO WS-FALL-X
+                                 MOVE WS-YB TO WS-FALL-Y
+                                 MOVE WS-Z TO WS-FALL-Z
+                             END-IF
+                         END-IF
+                     END-IF
+                     COMPUTE WS-Y = WS-YB - 1
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-CHOSEN
+     IF WS-FULL = 1
+         MOVE 1 TO WS-CHOSEN
+         MOVE WS-FULL-X TO WS-PX
+         MOVE WS-FULL-Y TO WS-PY
+         MOVE WS-FULL-Z TO WS-PZ
+     ELSE
+         IF WS-FALL = 1
+             MOVE 1 TO WS-CHOSEN
+             MOVE WS-FALL-X TO WS-PX
+             MOVE WS-FALL-Y TO WS-PY
+             MOVE WS-FALL-Z TO WS-PZ
+         END-IF
+     END-IF
+*>   Phase B: no position at all, a platform of obsidian at the origin's height clamped to the creation range.
+     IF WS-CHOSEN = 0
+         COMPUTE WS-LOWER = WS-MIN-Y + 1
+         IF WS-LOWER < 70
+             MOVE 70 TO WS-LOWER
+         END-IF
+         COMPUTE WS-UPPER = WS-TOP - 9
+         IF WS-UPPER < WS-LOWER
+             GOBACK
+         END-IF
+         MOVE L-OY TO WS-PY
+         IF WS-PY < WS-LOWER
+             MOVE WS-LOWER TO WS-PY
+         END-IF
+         IF WS-PY > WS-UPPER
+             MOVE WS-UPPER TO WS-PY
+         END-IF
+         COMPUTE WS-FX = L-OX - WS-DX
+         COMPUTE WS-FZ = L-OZ - WS-DZ
+         CALL "PORTAL-BORDER" USING L-DIM WS-MIN-BX WS-MAX-BX WS-MIN-BZ WS-MAX-BZ
+         CALL "WB-GEOMETRY" USING WS-FX WS-FZ WS-MARGIN WS-MIN-BX WS-MAX-BX WS-MIN-BZ WS-MAX-BZ WS-WITHIN WS-DISTANCE
+             WS-CLX WS-CLZ
+         COMPUTE WS-PX = FUNCTION INTEGER(WS-CLX)
+         COMPUTE WS-PZ = FUNCTION INTEGER(WS-CLZ)
+         MOVE PI-OBSIDIAN TO WS-A
+         MOVE CB-DEFAULT-STATE(WS-A + 1) TO WS-OBSIDIAN
+         PERFORM VARYING WS-A FROM -1 BY 1 UNTIL WS-A > 1
+             PERFORM VARYING WS-B FROM 0 BY 1 UNTIL WS-B > 1
+                 PERFORM VARYING WS-J FROM -1 BY 1 UNTIL WS-J > 2
+                     COMPUTE WS-X = WS-PX + WS-A * WS-CWX + WS-B * WS-DX
+                     COMPUTE WS-Y = WS-PY + WS-J
+                     COMPUTE WS-Z = WS-PZ + WS-A * WS-CWZ + WS-B * WS-DZ
+                     IF WS-J = -1
+                         CALL "BLOCK-CHANGE" USING L-DIM WS-X WS-Y WS-Z WS-OBSIDIAN
+                     ELSE
+                         CALL "BLOCK-CHANGE" USING L-DIM WS-X WS-Y WS-Z WS-AIR
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-IF
+*>   Phase C: the frame (14 cells) and the interior.
+     MOVE PI-OBSIDIAN TO WS-A
+     MOVE CB-DEFAULT-STATE(WS-A + 1) TO WS-OBSIDIAN
+     PERFORM VARYING WS-A FROM -1 BY 1 UNTIL WS-A > 2
+         PERFORM VARYING WS-J FROM -1 BY 1 UNTIL WS-J > 3
+             IF WS-A = -1 OR WS-A = 2 OR WS-J = -1 OR WS-J = 3
+                 COMPUTE WS-X = WS-PX + WS-A * WS-DX
+                 COMPUTE WS-Y = WS-PY + WS-J
+                 COMPUTE WS-Z = WS-PZ + WS-A * WS-DZ
+                 CALL "BLOCK-CHANGE" USING L-DIM WS-X WS-Y WS-Z WS-OBSIDIAN
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE PI-PORTAL-X TO WS-STATE
+     IF L-AXIS = 1
+         MOVE PI-PORTAL-Z TO WS-STATE
+     END-IF
+     PERFORM VARYING WS-A FROM 0 BY 1 UNTIL WS-A > 1
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-X = WS-PX + WS-A * WS-DX
+             COMPUTE WS-Y = WS-PY + WS-J
+             COMPUTE WS-Z = WS-PZ + WS-A * WS-DZ
+             CALL "LEVEL-SET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-STATE WS-FLAGS WS-BUDGET WS-RESULT
+         END-PERFORM
+     END-PERFORM
+     MOVE WS-PX TO PR-X
+     MOVE WS-PY TO PR-Y
+     MOVE WS-PZ TO PR-Z
+     MOVE 2 TO PR-W
+     MOVE 3 TO PR-H
+     MOVE L-AXIS TO PR-AXIS
+     MOVE 1 TO L-OK
+     GOBACK.
+ END PROGRAM PORTAL-CREATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-RELATIVE.
+*> USING PORTAL-RECT of the entry portal, entity x, y, z (FLOAT-LONG), entity width, height (FLOAT-LONG), rx, ry, rz out (FLOAT-LONG):
+*> PortalShape.getRelativePosition (39 section 4.4): rx the position along the axis between the rectangle's ends (0.5 when the entity fills
+*> the width), ry the position along the height (0 when it fills it), rz the offset from the portal plane, unclamped.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SLACK-W             FLOAT-LONG.
+ 01 WS-SLACK-H             FLOAT-LONG.
+ 01 WS-ALONG               FLOAT-LONG.
+ 01 WS-MIN-ALONG           FLOAT-LONG.
+ 01 WS-OTHER               FLOAT-LONG.
+ 01 WS-MIN-OTHER           FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY PORTALRECT.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-EW                   FLOAT-LONG.
+ 01 L-EH                   FLOAT-LONG.
+ 01 L-RX                   FLOAT-LONG.
+ 01 L-RY                   FLOAT-LONG.
+ 01 L-RZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING PORTAL-RECT L-X L-Y L-Z L-EW L-EH L-RX L-RY L-RZ.
+     IF PR-AXIS = 0
+         MOVE L-X TO WS-ALONG
+         MOVE PR-X TO WS-MIN-ALONG
+         MOVE L-Z TO WS-OTHER
+         MOVE PR-Z TO WS-MIN-OTHER
+     ELSE
+         MOVE L-Z TO WS-ALONG
+         MOVE PR-Z TO WS-MIN-ALONG
+         MOVE L-X TO WS-OTHER
+         MOVE PR-X TO WS-MIN-OTHER
+     END-IF
+     COMPUTE WS-SLACK-W = PR-W - L-EW
+     COMPUTE WS-SLACK-H = PR-H - L-EH
+     MOVE 0.5 TO L-RX
+     IF WS-SLACK-W > 0
+         COMPUTE L-RX = (WS-ALONG - (WS-MIN-ALONG + L-EW / 2)) / WS-SLACK-W
+         IF L-RX < 0
+             MOVE 0 TO L-RX
+         END-IF
+         IF L-RX > 1
+             MOVE 1 TO L-RX
+         END-IF
+     END-IF
+     MOVE 0 TO L-RY
+     IF WS-SLACK-H > 0
+         COMPUTE L-RY = (L-Y - PR-Y) / WS-SLACK-H
+         IF L-RY < 0
+             MOVE 0 TO L-RY
+         END-IF
+         IF L-RY > 1
+             MOVE 1 TO L-RY
+         END-IF
+     END-IF
+     COMPUTE L-RZ = WS-OTHER - (WS-MIN-OTHER + 0.5)
+     GOBACK.
+ END PROGRAM PORTAL-RELATIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-EXIT-POS.
+*> USING PORTAL-RECT of the exit portal, rx, ry, rz, entity width, height (FLOAT-LONG), x, y, z out (FLOAT-LONG): the exit position of 39 section
+*> 4.4: px = ew / 2 + (W - ew) rx, py = (H - eh) ry, pz = 0.5 + rz; along the axis X the position is (minX + px, minY + py, minZ + pz), along Z
+*> (minX + pz, minY + py, minZ + px).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY PORTALRECT.
+ 01 L-RX                   FLOAT-LONG.
+ 01 L-RY                   FLOAT-LONG.
+ 01 L-RZ                   FLOAT-LONG.
+ 01 L-EW                   FLOAT-LONG.
+ 01 L-EH                   FLOAT-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING PORTAL-RECT L-RX L-RY L-RZ L-EW L-EH L-X L-Y L-Z.
+     COMPUTE WS-PX = L-EW / 2 + (PR-W - L-EW) * L-RX
+     COMPUTE WS-PY = (PR-H - L-EH) * L-RY
+     COMPUTE WS-PZ = 0.5 + L-RZ
+     COMPUTE L-Y = PR-Y + WS-PY
+     IF PR-AXIS = 0
+         COMPUTE L-X = PR-X + WS-PX
+         COMPUTE L-Z = PR-Z + WS-PZ
+     ELSE
+         COMPUTE L-X = PR-X + WS-PZ
+         COMPUTE L-Z = PR-Z + WS-PX
+     END-IF
+     GOBACK.
+ END PROGRAM PORTAL-EXIT-POS.
