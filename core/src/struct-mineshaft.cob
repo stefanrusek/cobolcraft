@@ -1,11 +1,11 @@
 *> The mineshaft, part 1: the start and the recursive assembly of its pieces (docs/protocol/36-structures-5-mineshaft-stronghold.md sections 2.1 to 2.4, 2.5 to 2.6, 2.11 and 2.12 for the boxes
 *> and children; the blocks are in struct-ms-place.cob). Pieces go into the builder of struct-pieces.cob (STRUCTPIECE.cpy), the random is the Java LCG SP-RNG seeded as the generation context
 *> of 36-1 5.1 (setLargeFeatureSeed). Piece types are the registry ids of 36-1 2.4: 0 mscorridor, 1 mscrossing, 2 msroom, 3 msstairs. Directions are data values: 0 south, 1 west, 2 north, 3 east.
-*> Deviation: the builder holds 1024 pieces (SP-MAX); a piece that does not fit is a failed attempt (counted in SP-LOST); the mesa type (2.3, the base height of the terrain at the centre of the
-*> structure, 37-2 section 6.5) is not built because the column query of the terrain density does not exist in the core: a mesa start is refused.
+*> Deviation: the builder holds 1024 pieces (SP-MAX); a piece that does not fit is a failed attempt (counted in SP-LOST); the mesa type (2.3) takes the base height of the terrain at the centre of the
+*> union box from STRUCT-BASE-HEIGHT (37-2 section 6.5, WORLD_SURFACE_WG), so a mesa start needs the noise content loaded.
 *>
 *> Entry points:
-*>   MS-FIND-POINT USING seed (BINARY-DOUBLE), chunk x, chunk z, mineshaft type (0 normal, 1 mesa), sea level, min y, stub x out, stub y out, stub z out, valid out (0 for the mesa type):
+*>   MS-FIND-POINT USING seed (BINARY-DOUBLE), chunk x, chunk z, mineshaft type (0 normal, 1 mesa), sea level, min y, stub x out, stub y out, stub z out, valid out:
 *>     findGenerationPoint (2.3): one nextDouble discarded, the root room at (16 cx + 2, 50, 16 cz + 2), its children, the vertical placement below the sea; the pieces are left in the builder
 *>   MS-GEN-ADD USING parent row, x, y, z, direction, depth, row out (RECURSIVE): generateAndAddPiece (2.4)
 *>   MS-CHILDREN USING row (RECURSIVE): addChildren of the piece in the row
@@ -590,6 +590,14 @@
  01 WS-DEPTH               BINARY-LONG VALUE 0.
  01 WS-OFFSET              BINARY-LONG VALUE 10.
  01 WS-DY                  BINARY-LONG.
+ 01 WS-UNION.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==U-==.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-SURFACE             BINARY-LONG VALUE 0.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-TARGET              BINARY-LONG.
  LINKAGE SECTION.
  01 L-SEED                 BINARY-DOUBLE.
  01 L-CX                   BINARY-LONG.
@@ -604,9 +612,6 @@
  PROCEDURE DIVISION USING L-SEED L-CX L-CZ L-MST L-SEA L-MIN-Y L-X L-Y L-Z L-VALID.
      MOVE 0 TO L-VALID
      MOVE 0 TO L-X L-Y L-Z
-     IF L-MST NOT = 0
-         GOBACK
-     END-IF
      CALL "SPB-RESET"
      COMPUTE WS-USEED = FUNCTION MOD(L-SEED + WS-M64, WS-M64)
      CALL "JRAND-LARGE-FEATURE-SEED" USING SP-RNG WS-USEED L-CX L-CZ
@@ -623,7 +628,22 @@
      CALL "SPB-BOX-NEW" USING WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-BOX
      CALL "SPB-ADD" USING WS-TYPE WS-NONE WS-DEPTH L-MST WS-BOX WS-ROW
      CALL "MS-CHILDREN" USING WS-ROW
-     CALL "SPB-MOVE-BELOW-SEA" USING L-SEA L-MIN-Y WS-OFFSET WS-DY
+     IF L-MST = 0
+         CALL "SPB-MOVE-BELOW-SEA" USING L-SEA L-MIN-Y WS-OFFSET WS-DY
+     ELSE
+*>       mesa (2.3): the centre of the union box goes to the sea level, or above it by nextInt(h - sea + 1) when the surface height h at the centre is above the sea level
+         CALL "SPB-UNION-ALL" USING WS-UNION
+         CALL "SPB-BOX-CENTER" USING WS-UNION WS-CX WS-CY WS-CZ
+         CALL "STRUCT-BASE-HEIGHT" USING WS-CX WS-CZ WS-SURFACE WS-H
+         MOVE L-SEA TO WS-TARGET
+         IF WS-H > L-SEA
+             COMPUTE WS-BOUND = WS-H - L-SEA + 1
+             CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-BOUND WS-DRAW
+             ADD WS-DRAW TO WS-TARGET
+         END-IF
+         COMPUTE WS-DY = WS-TARGET - WS-CY
+         CALL "SPB-OFFSET" USING WS-DY
+     END-IF
      COMPUTE L-X = L-CX * 16 + 8
      COMPUTE L-Y = 50 + WS-DY
      COMPUTE L-Z = L-CZ * 16

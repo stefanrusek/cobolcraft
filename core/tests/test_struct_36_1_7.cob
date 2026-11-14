@@ -1,6 +1,6 @@
 *> Acceptance test of docs/protocol/36-structures-1 sections 7 and 8 (chunk integration and placing pieces) with the mineshaft as the structure: a chunk is decorated with the starts of the chunks
 *> within 8 of it (the vanilla model: the start of chunk (13,7) of seed 0 is rebuilt from the seed by every chunk it reaches and each chunk writes only its own cells), only at the structure's
-*> decoration step (underground_structures, 3), only for structures that are on, never for a start more than 8 chunks away, the same blocks every time, and a start of the mesa type makes nothing.
+*> decoration step (underground_structures, 3), only for structures that are on, never for a start more than 8 chunks away, the same blocks every time, and the mesa type has no start in this fixture's biome.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-36-1-7.
  DATA DIVISION.
@@ -83,11 +83,11 @@
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   the mesa structure alone: its start is refused (no base height), so nothing is placed
+*>   the mesa structure alone: this fixture's biome is not one the mesa set accepts, so nothing is placed
      MOVE "minecraft:mineshaft_mesa" TO WS-GKEY
      CALL "STRUCT-GATE-ON" USING WS-GKEY
      PERFORM RUN-CHUNK
-     MOVE "acceptance US12 36-5§2.3 Placing pieces: only the mesa mineshaft on: no start, no block" TO TL-CASE
+     MOVE "acceptance US12 36-5§2.3 Placing pieces: only the mesa mineshaft on: no start here, no block" TO TL-CASE
      MOVE WS-AIRS TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

@@ -2,7 +2,7 @@
 *> vanilla-data (CC_GENERATED_DIR, read only) the standard world has the mineshaft gated on by WORLD-GEN-DATA-OPEN. The starts of a 24 x 24 chunk area of the world seed
 *> are counted (STRUCT-CHUNK-STARTS: the biome rules of the data apply); the chunk of the first start (its stub chunk) is generated whole by the atomic path and by a worker
 *> process and the two are equal byte for byte, and the cost of a chunk with the mineshaft decoration is measured against the same chunk with the structure off. The counts and
-*> the times are printed as evidence (the mesa type stays refused: no base height).
+*> the times are printed as evidence (the mesa type is on since STRUCT-BASE-HEIGHT, test_struct_new_real).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-MS-REAL.
  DATA DIVISION.
@@ -81,8 +81,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:mineshaft_mesa" TO WS-KEY
      CALL "STRUCT-GATE" USING WS-KEY WS-ON
-     MOVE "test struct ms real the mesa mineshaft stays off (no base height)" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "test struct ms real a standard world has the mesa mineshaft gated on (the base height query exists; its real run is test_struct_new_real)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
      MOVE WS-ON TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

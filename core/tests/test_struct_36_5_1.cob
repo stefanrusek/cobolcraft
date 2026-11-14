@@ -1,7 +1,7 @@
 *> Acceptance test of docs/protocol/36-structures-5 sections 2.3 to 2.6, 2.11 and 2.12 (the mineshaft start and the recursive assembly of its pieces): the root room of the worked example
 *> 4.2 (seed 0, chunk (1,0): (18,50,2)-(29,57,14) before the vertical shift), and eight starts compared with an independent script that follows the document (piece count, vertical
 *> shift, the greatest depth and a hash of every piece's type, orientation, depth, box and fields, then the room's entrance boxes); limits of 5 (depth at most 9, no piece more than 80
-*> blocks from its parent's minimum corner), the stub position and the refusal of the mesa type.
+*> blocks from its parent's minimum corner), the stub position (the mesa type is in test_struct_ms_mesa).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-36-5-1.
  DATA DIVISION.
@@ -139,13 +139,7 @@
      MOVE WS-LOST-KEEP TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   the mesa type is refused (the base height of the terrain is not available)
-     MOVE 1 TO WS-MST
-     CALL "MS-FIND-POINT" USING WS-SEED WS-CX WS-CZ WS-MST WS-SEA WS-MIN-Y WS-X WS-Y WS-Z WS-VALID
-     MOVE "acceptance US12 36-5§2.3 Mineshaft: the mesa type makes no start (its vertical placement needs the terrain's base height)" TO TL-CASE
-     MOVE WS-VALID TO TL-OBSERVED-N
-     MOVE 0 TO TL-EXPECTED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the mesa type needs the terrain's base height: test_struct_ms_mesa
 *>   the corridor candidate box in the four directions (2.6, 4.6): anchor (100,40,200), two sections (10 long)
      MOVE 100 TO WS-CX
      MOVE 40 TO WS-Y
