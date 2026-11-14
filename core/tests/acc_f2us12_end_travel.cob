@@ -137,6 +137,15 @@
      MOVE 16 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = PL-HEALTH(WS-ROW)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The void hurts a creative player too (bypasses_invulnerability): the same 4 health.
+     MOVE 20 TO PL-HEALTH(WS-ROW)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-ROW)
+     MOVE 1 TO PL-MODE(WS-ROW)
+     CALL "TEST-TICKS" USING WS-ONE
+     MOVE "acceptance US12-3 end travel: below y -64 a creative player lost 4 health in a tick too" TO TL-CASE
+     MOVE 16 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PL-HEALTH(WS-ROW)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 20 TO PL-HEALTH(WS-ROW)
      MOVE 1 TO PL-MODE(WS-ROW)
 

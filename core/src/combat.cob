@@ -357,7 +357,11 @@
  PROCEDURE DIVISION USING L-ROW L-AMOUNT L-CAUSE L-SOURCE L-ATTACKER L-RESULT.
      MOVE 0 TO L-RESULT
      MOVE L-ROW TO WS-ROW
-     IF PL-MODE(WS-ROW) NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE
+     IF PL-STATE(WS-ROW) NOT = PS-ALIVE
+         GOBACK
+     END-IF
+*>   Creative players are hurt by the void too (bypasses_invulnerability, 17 section 4.12); every other mode but survival is not hurt.
+     IF PL-MODE(WS-ROW) NOT = 0 AND NOT (PL-MODE(WS-ROW) = 1 AND L-CAUSE = CAUSE-VOID)
          GOBACK
      END-IF
      CALL "COMBAT-TS-CHECK" USING WS-ROW

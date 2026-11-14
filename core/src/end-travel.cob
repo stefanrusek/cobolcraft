@@ -3,9 +3,9 @@
 *> credits and the way out (a player who has not seen the credits gets Game Event 4 once and stays; PERFORM_RESPAWN then sends her to her respawn point or the world spawn;
 *> afterwards the portal sends her there at once), the eye of ender used on an end_portal_frame (one eye used up, Level Event 1503, and with the ring complete nine
 *> end_portal blocks and the global Level Event 1038) and falling out of the world in the End (4 damage a tick below y -64). The pure rules are in portal-39b.cob and
-*> end-38d.cob. Not done (open items): end gateways (no block entity for them in the core: no exit position), mobs and items do not use end portals (players only), the
-*> chunk ticket, wonGame and seenCredits are not saved with the player, the Respawn after the credits keeps the data kinds of every dimension switch (DIM-SWITCH), the death
-*> message of the void is the command damage (no fell_out_of_world cause in RULES.cpy), the items of blocks replaced by the portal fill are not dropped.
+*> end-38d.cob. Not done (open items): end gateways are in end-gateway.cob, mobs and items do not use end portals (players only), the
+*> chunk ticket, wonGame is not saved (seenCredits is, player-data.cob), the Respawn after the credits keeps the data kinds of every dimension switch (DIM-SWITCH), the death
+*> void damage is CAUSE-VOID (out_of_world), the items of blocks replaced by the portal fill are not dropped.
 *>
 *> Entry points:
 *>   END-TRAVEL-TICK                    no parameters: END-PLAYER-TICK for every player in play (CORE-TICK, after PORTAL-TICK)
@@ -339,7 +339,7 @@
          COMPUTE WS-Y = FUNCTION INTEGER(PL-Y(L-ROW))
          CALL "END-BELOW-WORLD" USING WS-Y WS-LIVING WS-RESULT
          IF WS-RESULT = 2
-             CALL "HEALTH-DAMAGE" USING L-ROW WS-DAMAGE CAUSE-COMMAND WS-NONE WS-NO-ATTACKER
+             CALL "HEALTH-DAMAGE" USING L-ROW WS-DAMAGE CAUSE-VOID WS-NONE WS-NO-ATTACKER
          END-IF
      END-IF
      IF ET-S-PORTAL < 0 OR PL-MODE(L-ROW) = 3
