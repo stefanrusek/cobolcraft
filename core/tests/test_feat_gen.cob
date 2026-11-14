@@ -197,8 +197,8 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   a world of the standard type runs only the tree features of its biomes (FI-ONLY, set by WORLD-GEN-DATA-OPEN): the flowers of the fixture lists are not placed
-     MOVE 1 TO FI-ONLY
+*>   a world of the standard type runs only the tree features of its biomes (FI-GATE, set by WORLD-GEN-DATA-OPEN): the flowers of the fixture lists are not placed
+     MOVE 1 TO FI-GATE
      CALL "GEN-QUEUE-RESET"
      INITIALIZE GEN-STAGES
      CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-REF3 WS-REF-Y
@@ -209,7 +209,7 @@
              ADD 1 TO WS-FLOWERS
          END-IF
      END-PERFORM
-     MOVE 0 TO FI-ONLY
+     MOVE 0 TO FI-GATE
      MOVE "acceptance feature generation: with only the tree features wanted a chunk of the flower lists has no flower" TO TL-CASE
      MOVE WS-FLOWERS TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N

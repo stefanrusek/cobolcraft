@@ -16,7 +16,7 @@
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  PROCEDURE DIVISION.
-     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT
+     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT FD-BC-COUNT
      ADD 1 TO FD-GEN
      GOBACK.
  END PROGRAM FD-RESET.
@@ -153,6 +153,26 @@
      END-IF
      GOBACK.
  END PROGRAM FD-J-INT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-J-DOUBLE.
+*> USING doc, node, value out (FLOAT-LONG, 0 when absent), ok out (1 when the node is a number).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-VALUE                FLOAT-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-VALUE L-OK.
+     MOVE 0 TO L-OK L-VALUE
+     IF L-NODE > 0
+         IF JN-TYPE(L-NODE) = JT-NUMBER
+             MOVE JN-NUM(L-NODE) TO L-VALUE
+             MOVE 1 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM FD-J-DOUBLE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-J-ANCHOR.
@@ -587,6 +607,20 @@
          WHEN 2
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-FLUIDS LS-E
              CALL "FD-J-BLOCKS" USING JSON-DOC LS-E FC-N2 PR-POOL(LS-ROW) PR-N(LS-ROW)
+         WHEN 4
+*>           has_sturdy_face: a Direction name; the face test is "a full block" (opaque) whichever the side
+             CALL "FD-J-STRING" USING JSON-DOC FK-DIR L-NODE LS-TEXT LS-LEN
+             EVALUATE FUNCTION TRIM(LS-TEXT)
+                 WHEN "down"
+                 WHEN "up"
+                 WHEN "north"
+                 WHEN "south"
+                 WHEN "west"
+                 WHEN "east"
+                     CONTINUE
+                 WHEN OTHER
+                     MOVE 1 TO FD-BAD
+             END-EVALUATE
          WHEN 5
          WHEN 8
          WHEN 12
@@ -609,7 +643,7 @@
                  END-PERFORM
              END-IF
          WHEN 7
-*>           would_survive of a sapling: the state is a plain id string; the pool holds the blocks of the tag supports_vegetation (a sapling stands on them)
+*>           would_survive of a sapling or of sugar cane: the state is a plain id string; PR-A 1 the pool holds the blocks of the tag supports_vegetation (a sapling stands on them)
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-STATE LS-E
              MOVE SPACES TO LS-TEXT
              IF LS-E > 0
@@ -621,12 +655,30 @@
                      MOVE 1 TO LS-N
                  END-IF
              END-IF
+*>           sugar cane (24 part 3 7.10.2): PR-A 2, the pool the blocks of supports_sugar_cane, PR-C and PR-D the pool of supports_sugar_cane_adjacently, PR-E the block of the cane
+             IF LS-N = 0 AND LS-LEN > 10
+                 IF LS-TEXT(LS-LEN - 9:10) = "sugar_cane"
+                     MOVE 2 TO PR-A(LS-ROW)
+                     MOVE 1 TO LS-N
+                 END-IF
+             END-IF
              IF LS-N = 0
                  MOVE 1 TO FD-BAD
              END-IF
              COMPUTE PR-POOL(LS-ROW) = FD-POOL-COUNT + 1
-             MOVE "minecraft:supports_vegetation" TO LS-TAG
-             CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
+             IF PR-A(LS-ROW) = 2
+                 MOVE "minecraft:supports_sugar_cane" TO LS-TAG
+                 CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
+                 COMPUTE PR-C(LS-ROW) = FD-POOL-COUNT + 1
+                 MOVE "minecraft:supports_sugar_cane_adjacently" TO LS-TAG
+                 CALL "FD-TAG-BLOCKS" USING LS-TAG PR-D(LS-ROW)
+                 MOVE "minecraft:sugar_cane" TO LS-NAME
+                 CALL "FD-BLOCK-INDEX" USING LS-NAME PR-E(LS-ROW)
+             ELSE
+                 MOVE 1 TO PR-A(LS-ROW)
+                 MOVE "minecraft:supports_vegetation" TO LS-TAG
+                 CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
+             END-IF
          WHEN 11
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PREDICATE LS-E
              CALL "FD-PRED-NODE" USING JSON-DOC LS-E PR-CHILD(LS-ROW)
@@ -667,8 +719,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-J-STATE.
-*> USING doc, node, state out (BINARY-LONG), ok out: a block state object {"Name": id} or {"id": id}; the default state of the block. A non-empty properties object is
-*> not supported (ok 0).
+*> USING doc, node, state out (BINARY-LONG), ok out: a block state object {"Name": id} or {"id": id}, with an optional properties object (names and string values): the state
+*> of the block that has those values and the default for every other property (BLOCKS-STATE-OF over the default state's property list). A property the block does not have,
+*> or properties while no content set gives the block its property lists, is not supported (ok 0); so is a double plant whose upper half the block table does not know.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FDKEYS.
@@ -676,7 +729,14 @@
  01 WS-LEN                 BINARY-LONG.
  01 WS-KEY                 PIC X(80).
  01 WS-KEY48               PIC X(48).
+ 01 WS-KEY112              PIC X(112).
  01 WS-N                   BINARY-LONG.
+ 01 WS-PROPS               BINARY-LONG.
+ 01 WS-DEFAULT             BINARY-LONG.
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-DOUBLE              BINARY-LONG.
+ 01 WS-UPPER               BINARY-LONG.
+ 01 WS-HALF                PIC X(160) VALUE "half=upper".
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -693,18 +753,6 @@
      END-IF
      IF WS-LEN > 0
          MOVE 1 TO L-OK
-         CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PROPERTIES WS-N
-         IF WS-N > 0
-             IF JN-COUNT(WS-N) > 0
-                 MOVE 0 TO L-OK
-             END-IF
-         END-IF
-         CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PROPERTIES-UC WS-N
-         IF WS-N > 0
-             IF JN-COUNT(WS-N) > 0
-                 MOVE 0 TO L-OK
-             END-IF
-         END-IF
          CALL "FD-KEY" USING WS-TEXT WS-KEY
          MOVE WS-KEY TO WS-KEY48
          CALL "GEN-BLOCK-STATE" USING WS-KEY48 L-STATE
@@ -712,20 +760,100 @@
          IF WS-N = 0
              MOVE 0 TO L-OK
          END-IF
-*>       the double plants place two halves (a property of the state): not supported
-         EVALUATE FUNCTION TRIM(WS-KEY)
-             WHEN "minecraft:tall_grass"
-             WHEN "minecraft:large_fern"
-             WHEN "minecraft:sunflower"
-             WHEN "minecraft:lilac"
-             WHEN "minecraft:rose_bush"
-             WHEN "minecraft:peony"
-             WHEN "minecraft:tall_seagrass"
+         MOVE WS-KEY TO WS-KEY112
+         MOVE L-STATE TO WS-DEFAULT
+*>       the properties object: both spellings of its name; absent or empty means the default state
+         CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PROPERTIES WS-PROPS
+         IF WS-PROPS = 0
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PROPERTIES-UC WS-PROPS
+         END-IF
+         IF WS-PROPS > 0 AND WS-N > 0
+             IF JN-COUNT(WS-PROPS) > 0
+                 CALL "FD-J-PROPS" USING JSON-DOC WS-PROPS WS-KEY112 WS-DEFAULT L-STATE L-OK
+             END-IF
+         END-IF
+*>       the double plants place two halves: the upper half must be a state of the table
+         CALL "FV-DOUBLE-KEY" USING WS-KEY WS-DOUBLE
+         IF WS-DOUBLE = 1 AND L-OK = 1
+             MOVE SPACES TO WS-PAIRS
+             MOVE WS-HALF TO WS-PAIRS
+             CALL "BLOCKS-STATE-OF" USING WS-KEY112 WS-PAIRS WS-UPPER
+             IF WS-UPPER = WS-DEFAULT OR WS-UPPER = 0
                  MOVE 0 TO L-OK
-         END-EVALUATE
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM FD-J-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-J-PROPS.
+*> USING doc, properties object node, block key (PIC X(112)), default state, state out, ok out: the state of the block whose property list is the default state's with the
+*> values of the object put over it; ok 0 (state unchanged) when the block has no property list in the content set or the object names a property the block does not have.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FDKEYS.
+ 01 WS-DEF                 PIC X(160).
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-PAIR                PIC X(48).
+ 01 WS-PAIR-LEN            BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-NAME-LEN            BINARY-LONG.
+ 01 WS-VALUE               PIC X(40).
+ 01 WS-VALUE-LEN           BINARY-LONG.
+ 01 WS-CAP                 BINARY-LONG VALUE 40.
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-PAIR-COUNT          BINARY-LONG.
+ 01 WS-MATCHED             BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-PROPS                BINARY-LONG.
+ 01 L-KEY                  PIC X(112).
+ 01 L-DEFAULT              BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-PROPS L-KEY L-DEFAULT L-STATE L-OK.
+     MOVE SPACES TO WS-DEF
+     CALL "BLOCKS-STATE-PROPS" USING L-DEFAULT WS-DEF
+     IF WS-DEF = SPACES
+         MOVE 0 TO L-OK
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-PAIRS
+     MOVE 1 TO WS-POINTER WS-OUT
+     MOVE 0 TO WS-MATCHED WS-PAIR-COUNT
+     PERFORM UNTIL WS-POINTER > 160 OR WS-DEF(WS-POINTER:1) = SPACE
+         MOVE SPACES TO WS-PAIR
+         MOVE 0 TO WS-PAIR-LEN
+         UNSTRING WS-DEF DELIMITED BY "," OR SPACE INTO WS-PAIR COUNT IN WS-PAIR-LEN
+             WITH POINTER WS-POINTER
+         MOVE 0 TO WS-NAME-LEN
+         INSPECT WS-PAIR TALLYING WS-NAME-LEN FOR CHARACTERS BEFORE INITIAL "="
+         MOVE SPACES TO WS-NAME WS-VALUE
+         MOVE WS-PAIR(1:WS-NAME-LEN) TO WS-NAME
+         COMPUTE WS-VALUE-LEN = WS-PAIR-LEN - WS-NAME-LEN - 1
+         MOVE WS-PAIR(WS-NAME-LEN + 2:WS-VALUE-LEN) TO WS-VALUE
+         CALL "FD-J-MEMBER" USING JSON-DOC L-PROPS WS-NAME WS-M
+         IF WS-M > 0
+             MOVE SPACES TO WS-VALUE
+             CALL "JSON-STRING" USING JSON-DOC WS-M WS-VALUE WS-CAP WS-VALUE-LEN
+             ADD 1 TO WS-MATCHED
+         END-IF
+         IF WS-PAIR-COUNT > 0
+             STRING "," DELIMITED BY SIZE INTO WS-PAIRS WITH POINTER WS-OUT
+         END-IF
+         STRING FUNCTION TRIM(WS-NAME) "=" FUNCTION TRIM(WS-VALUE) DELIMITED BY SIZE INTO WS-PAIRS WITH POINTER WS-OUT
+         ADD 1 TO WS-PAIR-COUNT
+     END-PERFORM
+     IF WS-MATCHED NOT = JN-COUNT(L-PROPS)
+         MOVE 0 TO L-OK
+     ELSE
+         CALL "BLOCKS-STATE-OF" USING L-KEY WS-PAIRS L-STATE
+     END-IF
+     GOBACK.
+ END PROGRAM FD-J-PROPS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-PROV-NODE.
@@ -801,6 +929,9 @@
                          ADD 1 TO PV-N(WS-ROW)
                      END-PERFORM
                  END-IF
+             WHEN "minecraft:randomized_int"
+             WHEN "randomized_int"
+                 CALL "FD-PROV-RANDOMIZED" USING JSON-DOC L-NODE WS-ROW
              WHEN "minecraft:random_block"
              WHEN "random_block"
                  MOVE 3 TO PV-TYPE(WS-ROW)
@@ -813,6 +944,240 @@
      MOVE WS-ROW TO L-INDEX
      GOBACK.
  END PROGRAM FD-PROV-NODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-PROV-RANDOMIZED.
+*> USING doc, provider object node, provider row (PV-TYPE set here): randomized_int (35-2 section 4.3; 35-5 13.2, 13.3). The source is a block state, the values a constant or uniform int provider.
+*> The state of every value is resolved now (the property put over the source state, FD-STATE-SET) and kept in the pool from PV-LO on; at run time one sample picks the state. A source
+*> state without the property is the provider of that state alone (type 1: unchanged, no sample drawn).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FDKEYS.
+ COPY FEATDATA.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-SOURCE              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-TEXT                PIC X(120).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-VALUE               PIC X(40).
+ 01 WS-NUM                 PIC -(9)9.
+ 01 WS-P4.
+    05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-LO                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-ROW.
+     MOVE 4 TO PV-TYPE(L-ROW)
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-SOURCE WS-E
+     CALL "FD-J-STATE" USING JSON-DOC WS-E WS-SOURCE WS-OK
+     IF WS-OK = 0
+         MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-NAME
+     CALL "FD-J-STRING" USING JSON-DOC FK-PROPERTY L-NODE WS-TEXT WS-LEN
+     MOVE WS-TEXT TO WS-NAME
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-VALUES WS-E
+     CALL "FD-J-IP" USING JSON-DOC WS-E WS-P4 WS-OK
+     IF WS-OK = 0 OR (WS-Q(1) NOT = 1 AND WS-Q(1) NOT = 2)
+         MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+     MOVE WS-Q(2) TO WS-LO
+     MOVE WS-Q(2) TO WS-HI
+     IF WS-Q(1) = 2
+         MOVE WS-Q(3) TO WS-HI
+     END-IF
+     IF WS-HI < WS-LO OR WS-HI - WS-LO > 31
+         MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+     MOVE WS-LO TO WS-V
+     MOVE SPACES TO WS-VALUE
+     MOVE WS-V TO WS-NUM
+     MOVE FUNCTION TRIM(WS-NUM) TO WS-VALUE
+     CALL "FD-STATE-SET" USING WS-SOURCE WS-NAME WS-VALUE WS-STATE WS-FOUND
+     IF WS-FOUND = 0
+         MOVE 1 TO PV-TYPE(L-ROW)
+         MOVE WS-SOURCE TO PV-A(L-ROW)
+         GOBACK
+     END-IF
+     MOVE WS-LO TO PV-LO(L-ROW)
+     MOVE 0 TO PV-N(L-ROW)
+     PERFORM VARYING WS-V FROM WS-LO BY 1 UNTIL WS-V > WS-HI
+         MOVE SPACES TO WS-VALUE
+         MOVE WS-V TO WS-NUM
+         MOVE FUNCTION TRIM(WS-NUM) TO WS-VALUE
+         CALL "FD-STATE-SET" USING WS-SOURCE WS-NAME WS-VALUE WS-STATE WS-FOUND
+         IF WS-FOUND = 0
+             MOVE 1 TO FD-BAD
+         END-IF
+         CALL "FD-POOL-ADD" USING WS-STATE WS-IDX
+         ADD 1 TO PV-N(L-ROW)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE WS-Q(WS-I) TO PV-IP-V(L-ROW, WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FD-PROV-RANDOMIZED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-STATE-SET.
+*> USING state, property name (PIC X(40)), value (PIC X(40)), state out, found out: the state of the block of the state whose property list is the state's with the value put over
+*> that property; found 0 (state out the state) when the block has no such property, or no property list is known (no content set), or no state has the value.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-DEF                 PIC X(160).
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-PAIR                PIC X(48).
+ 01 WS-PAIR-LEN            BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-NAME-LEN            BINARY-LONG.
+ 01 WS-VALUE               PIC X(40).
+ 01 WS-VALUE-LEN           BINARY-LONG.
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-NAME                 PIC X(40).
+ 01 L-VALUE                PIC X(40).
+ 01 L-OUT                  BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-NAME L-VALUE L-OUT L-FOUND.
+     MOVE L-STATE TO L-OUT
+     MOVE 0 TO L-FOUND
+     MOVE SPACES TO WS-DEF
+     CALL "BLOCKS-STATE-PROPS" USING L-STATE WS-DEF
+     CALL "FL-BLOCK-OF" USING L-STATE WS-BLOCK
+     IF WS-DEF = SPACES OR WS-BLOCK = 0
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-KEY
+     MOVE CB-KEY(WS-BLOCK) TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     MOVE 1 TO WS-POINTER WS-OUT
+     MOVE 0 TO WS-COUNT
+     PERFORM UNTIL WS-POINTER > 160 OR WS-DEF(WS-POINTER:1) = SPACE
+         MOVE SPACES TO WS-PAIR
+         MOVE 0 TO WS-PAIR-LEN
+         UNSTRING WS-DEF DELIMITED BY "," OR SPACE INTO WS-PAIR COUNT IN WS-PAIR-LEN
+             WITH POINTER WS-POINTER
+         MOVE 0 TO WS-NAME-LEN
+         INSPECT WS-PAIR TALLYING WS-NAME-LEN FOR CHARACTERS BEFORE INITIAL "="
+         MOVE SPACES TO WS-NAME WS-VALUE
+         MOVE WS-PAIR(1:WS-NAME-LEN) TO WS-NAME
+         COMPUTE WS-VALUE-LEN = WS-PAIR-LEN - WS-NAME-LEN - 1
+         MOVE WS-PAIR(WS-NAME-LEN + 2:WS-VALUE-LEN) TO WS-VALUE
+         IF WS-NAME = L-NAME
+             MOVE L-VALUE TO WS-VALUE
+             MOVE 1 TO L-FOUND
+         END-IF
+         IF WS-COUNT > 0
+             STRING "," DELIMITED BY SIZE INTO WS-PAIRS WITH POINTER WS-OUT
+         END-IF
+         STRING FUNCTION TRIM(WS-NAME) "=" FUNCTION TRIM(WS-VALUE) DELIMITED BY SIZE INTO WS-PAIRS WITH POINTER WS-OUT
+         ADD 1 TO WS-COUNT
+     END-PERFORM
+     IF L-FOUND = 1
+         CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS L-OUT
+         MOVE SPACES TO WS-DEF
+         CALL "BLOCKS-STATE-PROPS" USING L-OUT WS-DEF
+         IF WS-DEF NOT = WS-PAIRS
+             MOVE L-STATE TO L-OUT
+             MOVE 0 TO L-FOUND
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM FD-STATE-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-BC-NODE.
+*> USING doc, feature node, row out: block_column (35-4 section 5): direction up or down, allowed_placement, prioritize_tip (default false) and at most four layers (height int
+*> provider, state provider). Anything else sets FD-BAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FDKEYS.
+ COPY FEATDATA.
+ 01 WS-TEXT                PIC X(120).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-P4.
+    05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-ROW.
+     MOVE 0 TO L-ROW
+     IF FD-BC-COUNT >= 128
+         MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+     ADD 1 TO FD-BC-COUNT
+     MOVE FD-BC-COUNT TO WS-ROW L-ROW
+     INITIALIZE FD-BC(WS-ROW)
+     CALL "FD-J-STRING" USING JSON-DOC FK-DIR L-NODE WS-TEXT WS-LEN
+     EVALUATE FUNCTION TRIM(WS-TEXT)
+         WHEN "up"
+             MOVE 1 TO BC-DIR(WS-ROW)
+         WHEN "down"
+             MOVE -1 TO BC-DIR(WS-ROW)
+         WHEN OTHER
+             MOVE 1 TO FD-BAD
+     END-EVALUATE
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-ALLOWED-PLACE WS-E
+     CALL "FD-PRED-NODE" USING JSON-DOC WS-E BC-PR(WS-ROW)
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-PRIORITIZE WS-E
+     IF WS-E > 0
+         IF JN-TYPE(WS-E) = JT-TRUE
+             MOVE 1 TO BC-TIP(WS-ROW)
+         END-IF
+     END-IF
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-LAYERS WS-E
+     IF WS-E = 0
+         MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+     IF JN-COUNT(WS-E) > 4
+         MOVE 1 TO FD-BAD
+         GOBACK
+     END-IF
+     MOVE JN-COUNT(WS-E) TO BC-N(WS-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BC-N(WS-ROW)
+         COMPUTE WS-J = WS-I - 1
+         CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-J WS-N
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-N FK-HEIGHT WS-D
+         CALL "FD-J-IP" USING JSON-DOC WS-D WS-P4 WS-OK
+         IF WS-OK = 0
+             MOVE 1 TO FD-BAD
+         END-IF
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
+             MOVE WS-Q(WS-J) TO BC-H(WS-ROW, WS-I, WS-J)
+         END-PERFORM
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-N FK-PROVIDER WS-D
+         CALL "FD-PROV-NODE" USING JSON-DOC WS-D BC-PV(WS-ROW, WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FD-BC-NODE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-J-HP.
@@ -985,6 +1350,35 @@
              END-IF
          WHEN 5
              CONTINUE
+         WHEN 7
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-RATIO WS-E
+             CALL "FD-J-INT" USING JSON-DOC WS-E MD-A(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-FACTOR WS-E
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-E MD-F(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-NOISE-OFFSET WS-E
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-E MD-F2(WS-ROW) WS-OK
+         WHEN 8
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-NOISE-LEVEL WS-E
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-E MD-F(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-BELOW-NOISE WS-E
+             CALL "FD-J-INT" USING JSON-DOC WS-E MD-A(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-ABOVE-NOISE WS-E
+             CALL "FD-J-INT" USING JSON-DOC WS-E MD-B(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
          WHEN 6
          WHEN 9
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-COUNT WS-E
@@ -1246,7 +1640,10 @@
      MOVE LS-N TO FT-TYPE(LS-ROW)
      MOVE 0 TO LS-NC
      EVALUATE LS-N
+         WHEN 2
+             CALL "FD-BC-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
          WHEN 30
+         WHEN 54
              CONTINUE
          WHEN 36
 *>           random_selector: features (feature, chance) then default

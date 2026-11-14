@@ -22,6 +22,7 @@
     05 FD-PV-COUNT          BINARY-LONG.
     05 FD-BAD               BINARY-LONG.
     05 FD-TR-COUNT          BINARY-LONG.
+    05 FD-BC-COUNT          BINARY-LONG.
 *>  placed features: PF-STATUS 0 stub (not compiled), 1 compiled, 2 unsupported; the modifiers PF-MD-FIRST on for PF-MD-COUNT; the feature index PF-FT
     05 FD-PF OCCURS 1024 TIMES.
        10 PF-KEY            PIC X(80).
@@ -29,7 +30,7 @@
        10 PF-MD-FIRST       BINARY-LONG.
        10 PF-MD-COUNT       BINARY-LONG.
        10 PF-FT             BINARY-LONG.
-*>  modifiers: MD-KIND, MD-A to MD-D, MD-PR (predicate, second predicate MD-PR2), MD-P twelve provider integers, MD-F a float
+*>  modifiers: MD-KIND, MD-A to MD-D, MD-PR (predicate, second predicate MD-PR2), MD-P twelve provider integers, MD-F and MD-F2 floats
     05 FD-MD OCCURS 8192 TIMES.
        10 MD-KIND           BINARY-LONG.
        10 MD-A              BINARY-LONG.
@@ -40,6 +41,7 @@
        10 MD-PR2            BINARY-LONG.
        10 MD-P              BINARY-LONG OCCURS 12 TIMES.
        10 MD-F              FLOAT-LONG.
+       10 MD-F2             FLOAT-LONG.
 *>  features: FT-TYPE the id of worldgen/feature_type (-1 unsupported); FT-A, FT-B, FT-C parameters (children from CH-ROW FT-A for FT-B rows, FT-C the default placed feature)
     05 FD-FT OCCURS 2048 TIMES.
        10 FT-KEY            PIC X(80).
@@ -71,12 +73,15 @@
        10 PR-CHILD          BINARY-LONG.
        10 PR-NEXT           BINARY-LONG.
     05 FD-POOL              BINARY-LONG OCCURS 65536 TIMES.
-*>  providers: PV-TYPE 1 simple (PV-A the state), 2 weighted (PV-POOL, PV-N pairs state and weight in the pool), 3 random_block (PV-POOL, PV-N block indices); 0 unsupported
+*>  providers: PV-TYPE 1 simple (PV-A the state), 2 weighted (PV-POOL, PV-N pairs state and weight in the pool), 3 random_block (PV-POOL, PV-N block indices), 4 randomized_int (PV-POOL, PV-N the states of the values PV-LO on, PV-IP the int provider of the values); 0 unsupported
     05 FD-PV OCCURS 2048 TIMES.
        10 PV-TYPE           BINARY-LONG.
        10 PV-A              BINARY-LONG.
        10 PV-POOL           BINARY-LONG.
        10 PV-N              BINARY-LONG.
+       10 PV-LO             BINARY-LONG.
+       10 PV-IP.
+          15 PV-IP-V        BINARY-LONG OCCURS 4 TIMES.
 *>  tree features (type 51; core/src/feat-tree.cob FD-TREE-NODE and FR-TREE, docs/protocol/35-worldgen-features-3 sections 2 to 5): FT-A of the feature is the row. The trunk is the
 *>  straight placer (base height and the two random heights); the foliage placer TR-FKIND 1 blob, 2 spruce, 3 pine, each int provider four integers like FR-INT-SAMPLE (TR-FH the
 *>  height, TR-RAD the radius, TR-OFF the offset, TR-TH the spruce trunk_height); the size TR-SZ-LIMIT, TR-SZ-LOWER, TR-SZ-UPPER (two layers); the states are default states (the log's
@@ -116,3 +121,13 @@
        10 TR-SZ-MID         BINARY-LONG.
        10 TR-LVS-START      BINARY-LONG.
        10 TR-LVS-N          BINARY-LONG.
+*>  block columns (type 2; core/src/feat-column.cob FR-BLOCK-COLUMN, docs/protocol/35-worldgen-features-4 section 5): FT-A of the feature is the row. BC-DIR 1 up or -1 down, BC-TIP prioritize_tip, BC-PR the
+*>  allowed_placement predicate, BC-N layers (at most 4), each with the four integers of its height int provider and the provider index.
+    05 FD-BC OCCURS 128 TIMES.
+       10 BC-DIR            BINARY-LONG.
+       10 BC-TIP            BINARY-LONG.
+       10 BC-PR             BINARY-LONG.
+       10 BC-N              BINARY-LONG.
+       10 BC-LAYER OCCURS 4 TIMES.
+          15 BC-H           BINARY-LONG OCCURS 4 TIMES.
+          15 BC-PV          BINARY-LONG.

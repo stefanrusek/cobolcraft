@@ -1,0 +1,11 @@
+{
+ "feature": {
+  "type": "minecraft:block_column",
+  "allowed_placement": {
+   "type": "minecraft:matching_block_tag",
+   "tag": "minecraft:air"
+  },
+  "direction": "up"
+ },
+ "placement": []
+}

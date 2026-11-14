@@ -1,0 +1,11 @@
+{
+ "feature": {
+  "type": "minecraft:no_op"
+ },
+ "placement": [
+  {
+   "type": "minecraft:noise_based_count",
+   "noise_to_count_ratio": 10
+  }
+ ]
+}

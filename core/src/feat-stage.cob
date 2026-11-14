@@ -87,6 +87,7 @@
  01 WS-TOP                 BINARY-LONG.
  01 WS-INDEX0              BINARY-LONG.
  01 WS-HAVE                BINARY-LONG.
+ 01 WS-GATE                BINARY-LONG.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
  01 WS-HEIGHT              BINARY-LONG VALUE 384.
  01 WS-SEA                 BINARY-LONG VALUE 63.
@@ -140,7 +141,8 @@
                          MOVE WGN-TEXT-1(WS-NODE)(1:80) TO WS-KEY
                          PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > FI-COUNT(WS-K)
                              IF FI-KEY(WS-K, WS-J) = WS-KEY
-                                 IF FI-ONLY NOT = 1 OR WS-KEY(1:16) = "minecraft:trees_"
+                                 CALL "FR-GATE" USING WS-KEY WS-GATE
+                                 IF WS-GATE = 1
                                      MOVE 1 TO WS-WANT-FLAG(WS-J)
                                      MOVE 1 TO WS-HAVE
                                  END-IF
