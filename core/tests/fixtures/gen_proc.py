@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the processor list fixtures of core/tests/test_struct_36_2_6.cob into core/tests/fixtures/proc/data/test/worldgen/processor_list
+"""Writes the processor list fixtures of core/tests/test_struct_36_2_7.cob into core/tests/fixtures/proc/data/test/worldgen/processor_list
 (the JSON forms of docs/protocol/36-structures-2 sections 7 to 9, written by hand from the schema)."""
 import json, os
 

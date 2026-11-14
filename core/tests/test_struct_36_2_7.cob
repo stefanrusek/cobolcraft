@@ -3,7 +3,7 @@
 *> (worked examples 11.4 and 11.6), block_rot, protected_blocks, capped (example 11.9), gravity, block_ignore, blackstone_replace (11.7), block_age (11.8), nop, the pipeline of 7.4
 *> inside STRUCT-PLACE (state transform timing, originals, the box and `capped`), the int providers, and the capacity limits of the tables.
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TEST-STRUCT-36-2-6.
+ PROGRAM-ID. TEST-STRUCT-36-2-7.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
