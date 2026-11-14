@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | The player's movement poses (standing, crouching/sneaking, swimming and its on-land form crawling, sprinting as a state): the Pose enum and its wire form, dimensions and eye heights, the per-tick pose choice, the swimming flag, the sneak edge clamp, sneak and crawl speed, camera eye-height smoothing, the sprint field-of-view effect, swim movement, and what the server does with these states. Elytra (fall flying) and the spin attack are out of scope and appear only where a table needs them. |
+| Covers | The player's movement poses (standing, crouching/sneaking, swimming and its on-land form crawling, sprinting as a state): the Pose enum and its wire form, dimensions and eye heights, the per-tick pose choice, the swimming flag, the sneak edge clamp, sneak and crawl speed, camera eye-height smoothing, the sprint field-of-view effect, swim movement, and what the server does with these states. Elytra (fall flying) and the spin attack are out of scope and appear only where a table needs them. Second round (§12 to §16): the third-person look of swimming, crawling and crouching (swim amount, avatar body transform, crouch render offset and name tag), the first-person hand and view bobbing. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `Pose`, `Entity`, `EntityDimensions`, `LivingEntity`, `Avatar`, `Player`, `ServerPlayer`, `ServerGamePacketListenerImpl`, `LocalPlayer`, `AbstractClientPlayer`, `Camera`, `KeyboardInput`, `ByteBufCodecs`, `ServerEntity`, `ScaffoldingBlock`, `CollisionGetter`. |
 | Extends | 13 §1 (movement, sprint), 12 §7 (model pose offsets), 18 §1.3, §1.4 and §4.3 (attributes, metadata, flags, visibility), 17 §4.9 (exhaustion), 46 §12.2 (Pose ids). It repeats nothing those documents say except as a cross-check; where this document disagrees with 13, it says so (§3.3, §6.1 and §9.3 corrections). |
@@ -170,7 +170,7 @@ CROUCHING. Release the shift key under a 1.0 ceiling: SWIMMING pose, box 0.6 hig
 `Entity.isVisuallyCrawling()` is "the pose is SWIMMING and the entity is **not** in water" (`isInWater` false). So in a
 1-high tunnel on land the player is visually crawling; the same pose in water (swimming through a 1-high water channel
 without sprint) is visually swimming but not crawling. The model offsets for crouching are in 12 §7.5; the swimming and
-crawling model poses are Open question 5 of 12 and remain open here (§12 Open question 6).
+crawling model poses are §12 to §13.
 
 **The client's own "crouching" flag differs from the pose.** `LocalPlayer.isCrouching()` returns a private flag
 recomputed at the start of `LocalPlayer.aiStep` from the key state of the *previous* tick (it is read before
@@ -508,7 +508,7 @@ or of the pose (slot 6) makes the slot dirty; the next `sendChanges` of the play
 Data (0x65) with only the dirty slots to the trackers **and to the player itself** (`sendToTrackingPlayersAndSelf`). The
 client assigns the values with no special case for the local player (`handleSetEntityData`), so the server's pose and flags
 overwrite the local copy; the local tick recomputes them at its end (Open question 9). A viewer sees: pose CROUCHING with
-the model offsets of 12 §7.5; pose SWIMMING with the model rotated to prone (12 §7, Open question 6 here); the name tag is
+the model offsets of 12 §7.5; pose SWIMMING with the model rotated to prone (§13); the name tag is
 hidden for a sneaking entity farther than 32 blocks (distance squared at least 1024, `Entity` discrete rule in 34-1 §7.2, including the worked example V15 there); mobs' detection uses `getVisibilityPercent` (18 §4.3: crouching x 0.8, invisibility,
 armour cover, ...); the locator-bar range is 0 while crouching (§5.6).
 
@@ -566,16 +566,249 @@ Walking or crouching 100 m: 0.0.
 | Server packets, validation, exhaustion | §10 |
 | Ladder, scaffolding, bounce | §5.6 |
 
-## 12. Open questions
+## 12. Swim amount: the state that drives the prone look (question 1 of the second round)
+
+Second reading round, same artifact (header). Classes read: `LivingEntity`, `Entity`, `HumanoidMobRenderer`, `AvatarRenderer`,
+`LivingEntityRenderer`, `EntityRenderer`, `EntityRenderDispatcher`, `Avatar`, `Player`, `LocalPlayer`, `AbstractClientPlayer`,
+`ClientAvatarState`, `Camera`, `GameRenderer`, `FirstPersonHandsAndItems`, `FirstPersonHandsAndItemsRenderer`,
+`ParrotOnShoulderLayer`, `HumanoidModel`. The model-part half (head tilt, arm and leg swing for a swim amount above 0) is 34-2 §4.5;
+this chapter gives the amount itself and the body transform. Both apply to every `LivingEntity` that is drawn with a humanoid
+render state (players, remote players, zombies, skeletons, piglins and so on); only the body transform of §13 is avatar-specific
+(34-2 §2.2 gives the drowned's own variant).
+
+### 12.1 The condition: `isVisuallySwimming`
+
+Not `isSwimming` (the shared flag of §4). The counted condition is `LivingEntity.isVisuallySwimming()`:
+
+| Case | Result |
+|---|---|
+| pose is SWIMMING (swimming in water **and** crawling on land, §3.3) | true |
+| pose is FALL_FLYING and the fall-flying flag (shared flag bit 7) is **clear** | true (as read; an odd combination, listed in Open question 12) |
+| pose FALL_FLYING with the flag set (a normal elytra flight) | false |
+| any other pose | false |
+
+So the swim flag itself plays no role: a player in a 1-high water channel without sprint (pose SWIMMING, flag clear, §4) and
+a crawler on land both count, and a sprint-swimmer whose pose has not yet changed (the flag is set at the start of the tick,
+the pose at its end) does not count until the pose arrives.
+
+### 12.2 Per-tick rule (`LivingEntity.updateSwimAmount`)
+
+Runs once per tick, on the client and the server, for every living entity, from `LivingEntity.tick` right after
+`Entity.tick` and the item-use update. For a player, `Player.tick` calls it before `updatePlayerPose` (§3.1), so the amount
+reacts to the pose **one tick after** the pose changed. Fields: `swimAmountO` (previous) and `swimAmount` (current), both start at 0.
+
+1. `swimAmountO` = `swimAmount`.
+2. If `isVisuallySwimming`: `swimAmount` = min(1, `swimAmount` + 0.09). Otherwise `swimAmount` = max(0, `swimAmount` - 0.09).
+
+Constants: step 0.09 per tick (float), clamp 0 to 1. There is no easing and no dependence on water, speed or pitch. A full
+rise or fall takes **12 ticks** (11 steps of 0.09 reach 0.99, the 12th is clamped to 1). Sequence of `swimAmount` after tick n
+of a rise from 0 (float values, rounded): 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 0.81, 0.90, 0.99, 1.0, then 1.0.
+A fall from 1 gives 0.91, 0.82, 0.73, 0.64, 0.55, 0.46, 0.37, 0.28, 0.19, 0.10, 0.01, 0.0.
+A partial rise reverses at once (no memory): after 5 rise ticks (0.45) and then a non-swimming tick the amount is 0.36.
+
+On land the amount behaves the same: a crawling player (pose SWIMMING, flag clear) reaches 1.0 in 12 ticks, and an entity with
+the pose SWIMMING for only a moment (a one-tick pose flicker) reaches 0.09.
+
+### 12.3 Value at the partial tick
+
+The humanoid render state's `swimAmount` is `getSwimAmount(partialTick)` = lerp(partialTick, `swimAmountO`, `swimAmount`) with
+the ordinary linear lerp. The render state's `isVisuallySwimming` is the entity's `isVisuallySwimming()` at extraction time
+(current tick, not interpolated), and the render state's `isInWater` is `LivingEntity.isInWater()` (the entity's in-water state, which is the fluid state of its
+box, not the "eyes under water" test), also not interpolated. The render state's pitch is the entity pitch lerped at the partial tick
+(`getXRot(partial)`, a plain lerp with no wrap), negated for an upside-down entity (the "Dinnerbone" and "Grumm" names, 34-2 §2.2).
+
+The remote player's `swimAmount` comes from the same tick rule, driven by the pose it receives in the entity metadata (§10.2);
+nothing is received for the amount itself.
+
+---
+
+## 13. The body transform of a swimming or crawling avatar (question 2)
+
+`AvatarRenderer.setupRotations(state, stack, bodyRot, scale)`. It replaces the generic step 3 of 34-2 §2.2 for avatars (the
+rest of the pipeline, 34-2 §2.1 steps 0 to 6 and the 0.9375 scale of 12 §7.3, is unchanged). Position in the chain: after the
+translate to the entity position, the state scale and (inside this method) the generic `setupRotations`; before the scale by (-1, -1, 1),
+the 0.9375 scale and the -1.501 translate of 12 §7.3, so the numbers below are in the entity-frame units multiplied by the state `scale` only
+(they are **not** reduced by 0.9375).
+
+### 13.1 Branches
+
+Let s = the render state's `swimAmount` (12.3), p = the render state's pitch in degrees, `fallFlying` = state flag.
+
+| Order | Condition | What is done |
+|---|---|---|
+| 1 | state `isFallFlying` | elytra attitude (out of scope) |
+| 2 | s > 0 (no fall flying) | the generic `setupRotations` (34-2 §2.2, which includes rotating Y by 180 - bodyRot, so the **body yaw** is used, with the shake term and the death, sleeping and upside-down handling of that method); then the **swim rotation and translation** below |
+| 3 | otherwise | the generic `setupRotations` only |
+
+So at s = 0 (a standing, walking, crouching entity, or one whose amount has fully decayed) there is no extra rotation and no
+extra translation.
+
+### 13.2 Swim rotation and translation (branch 2)
+
+1. Target angle T: if the state's `isInWater` is true, T = -90 - p degrees; otherwise (on land, including crawling) T = **-90** degrees, independent of the pitch.
+2. Rotate about the **X axis** by a = lerp(s, 0, T) = s x T degrees (`Axis.XP`, right-handed: with a negative angle the model's head moves toward the entity's facing direction and the face turns down).
+3. If the state's `isVisuallySwimming` is true (the pose test of 12.1, not the amount): translate by (0, **-1**, **+0.3**).
+
+Axis order: Y rotation of the generic step (yaw) first in the chain, then the X rotation, then the translation, in the order of
+the stack (each step multiplies on the right, 12 §7.3), so a model vertex is first moved by the translation of step 3, then rotated about X by a, then yawed.
+There is no Z rotation and no use of the head yaw; the head part follows through the model (34-2 §4.5 step 1: head x rotation
+is lerped toward -45 degrees by s, the head yaw and pitch of 12 §7.5 still apply on top).
+
+The translation (0, -1, 0.3) is expressed in the frame of the upright model, entity-frame units (y up, z toward the **back**
+of the model, since the model's front is -z): it lowers the upright model by 1 block and pushes it 0.3 backwards **before** the rotation. Seen from outside,
+the rotation pivot is therefore not the feet: it is the point of the upright model that is 1.0 above the model's foot line
+and 0.3 in front of its centre line (a point near the upper chest; in model pixels about y_m = 6.9 on the chest side, from
+the foot line y_m = 24 of 12 §7.3 and the 0.9375 scale). After the rotation of a = -90 the 0.3 becomes a **lift** of the body axis to 0.3 above the entity position (the
+prone body lies on a plane 0.3 above the feet, so it does not sink into the floor), and the 1.0 becomes an offset along the entity's facing line:
+the head ends about 0.88 in front of the position, the soles about 1.0 behind.
+
+### 13.3 Effect on crawling on land, and the ramp
+
+- Crawling on land (pose SWIMMING, swimming flag clear, not in water): s rises to 1 in 12 ticks (12.2), `isInWater` is false, so T = -90 and the final angle is -90 s; the translation applies. It is the same transform as swimming at pitch 0 in water. Pitch does not tilt a crawler.
+- Swimming in water: T = -90 - p. Looking straight ahead (p = 0): -90; looking up 45 degrees (p = -45): -45; looking down 30 (p = 30): -120; looking straight down (p = 90): -180 (the body is upside down and head down relative to an upright model, which is the natural "diving" attitude); straight up (p = -90): 0 (the body is vertical again, head up, but still shifted by the translation).
+- Entry: the pose SWIMMING is set at the end of a tick (§3.1) and the amount starts rising on the next tick. Until s is above 0 nothing special is drawn (branch 3); from the first frame with s > 0 (any partial tick of the first rising tick, s between 0 and 0.09) the **translation applies in full** (the pose test, 13.2 step 3), while the rotation is only s x T. In those frames the upright model is therefore drawn 1.0 lower than the entity position and 0.3 back, and swings up to prone over 12 ticks (about 0.6 seconds). This is the artifact's behaviour as read, not an invention; it is visible, and an implementation that wants to match it must keep the translation binary on the pose.
+- Exit: the pose leaves SWIMMING; at once the translation stops (branch condition false) but the rotation stays at s x T for up to 12 more ticks (s falls by 0.09 per tick), now about the feet. The model therefore jumps by (0, +1, -0.3) in the upright frame at the moment of the exit and then straightens out over 12 ticks.
+- A player in water who stops visually swimming without leaving the water uses T = -90 - p during the ramp-down, so the model follows the pitch while it straightens.
+
+### 13.4 Worked examples (entity scale 1, yaw irrelevant, water, `isVisuallySwimming` true except where noted)
+
+Table of the X rotation a (degrees) for s and pitch p, in water (T = -90 - p) and on land (T = -90):
+
+| p (degrees) | T in water | a at s = 0 | a at s = 0.5 | a at s = 1 | on land: a at s = 0.5 | on land: a at s = 1 |
+|---|---|---|---|---|---|---|
+| 0 | -90 | none (branch 3, no translation either) | -45 | -90 | -45 | -90 |
+| -45 | -45 | none | -22.5 | -45 | -45 | -90 |
+| 30 | -120 | none | -60 | -120 | -45 | -90 |
+
+Pivot (the origin of the rotation, in the frame of the entity position with the translation applied first): for every cell with the
+translation on, the rotation origin is the point of the upright model at 1.0 above its foot line and 0.3 in front of its centre
+line (13.2). With the translation off (the ramp-down after the pose ended) the origin is the entity position (the foot line, centre).
+
+Resulting position of points on the model's centre line (z_m = 0), (height above the entity position, distance forward of the position; negative forward = behind), computed from the
+formula y' = cos a x (h - 1) - sin a x 0.3 and f' = -(sin a x (h - 1) + cos a x 0.3), with h the height above the foot line of the unscaled upright model:
+head top h = 1.876 (12 §7.3), the pivot line h = 1.0, the soles h = 0.001. Rows are the cases of the table with the translation on (inferred from the read translation and rotation; each value is a computed
+result of those two steps, rounded to 3 decimals):
+
+| a (degrees) | head top (up, forward) | h = 1.0 line (up, forward) | soles (up, forward) | Comment |
+|---|---|---|---|---|
+| about 0 (the first frame with s > 0 of an entry) | 0.876, -0.300 | 0.000, -0.300 | -0.999, -0.300 | whole model 1 below the feet and 0.3 behind |
+| -22.5 (p = -45, s = 0.5) | 0.924, 0.058 | 0.115, -0.277 | -0.808, -0.660 | |
+| -45 (p = -45, s = 1) | 0.831, 0.407 | 0.212, -0.212 | -0.494, -0.919 | looking up while swimming: head high, feet low |
+| -60 (p = 30, s = 0.5) | 0.698, 0.609 | 0.260, -0.150 | -0.240, -1.015 | |
+| -90 (p = 0, s = 1; or any crawl) | 0.300, 0.876 | 0.300, 0.000 | 0.300, -0.999 | flat, the whole centre line 0.3 above the feet |
+| -120 (p = 30, s = 1) | -0.178, 0.909 | 0.260, 0.150 | 0.759, -0.715 | looking down while swimming: head below the position |
+
+(The "forward" column is the direction the entity faces; the sign is such that the head moves forward as a goes from 0 to -90.)
+Thickness: the body's front-to-back extent (z_m from -0.117 to +0.117 for the torso, from -0.234 to +0.234 for the head, each already
+multiplied by 0.9375) is added to the "up" column at a = -90 with the sign +z_m (the front, z_m < 0, is the lower side).
+So a prone body spans 0.18 to 0.42 above the position and the head 0.07 to 0.53; the hitbox is 0.6 high (§2.1).
+
+---
+
+## 14. Crouching: extra renderer details beyond 12 §7.5 (question 3)
+
+### 14.1 Render offset of the whole entity
+
+`AvatarRenderer.getRenderOffset(state)`: the base value (the minecart passenger offset when the state has one, else zero, 34-1) plus,
+**when the render state's `isCrouching` is true**, (0, state.scale x -2 / 16, 0) = **(0, -0.125 x scale, 0)** blocks. `state.isCrouching` is the pose test (`isCrouching` = pose CROUCHING) for every avatar except the local player, whose value is
+the private flag of §3.3 (`LocalPlayer.isCrouching()`); so the local player's offset applies when that flag is set,
+not only when the pose is CROUCHING.
+
+The dispatcher (`EntityRenderDispatcher.submit`) adds this offset to the camera-relative position before calling the renderer, so it moves
+everything the renderer submits: the body model and its layers, the **name tag**, the fire animation. For an avatar the dispatcher then
+subtracts the offset again **before** the shadow, so the shadow stays on the ground at the entity position. (Other entities
+subtract it after the shadow.) The entity position, the hitbox and the camera are not moved by it. The model also takes the pose changes of 12 §7.5 (body tilt 0.5, arms, legs and head offsets in model
+pixels); the two are independent and add.
+
+### 14.2 Name tag when crouching
+
+- Position: the name tag attachment of the current pose's dimensions (no `NAME_TAG` entry is declared in the avatar dimension table, so the point is (0, bounding height x scale, 0), 34-1 §7.2 fallback, inferred from the missing entry): 1.8 standing, **1.5 crouching**, 0.6 swimming or crawling (scale 1). The tag's base is then 0.5 above that point (34-1 §7.2), plus the crouch render offset of 14.1. Tag base heights above the feet (scale 1): standing 2.3, crouching 1.5 + 0.5 - 0.125 = **1.875**, swimming or crawling 1.1.
+- The body rotation of §13 does not move the tag: the tag is submitted after the body's pose is popped, with the camera-facing billboard of 34-1 §7.2.
+- Avatar extra: when the state's `showExtraEars` is set (the ears easter egg), the tag is submitted with the extra y argument -10 (font units) instead of 0 (it is placed higher; the direction is inferred from the flipped text scale of 34-1 §7.2, +0.25 block); the score text uses the same argument.
+- Visibility: the rule is on **`isDiscrete`** (`Entity.isDiscrete` = the shared shift-key flag, bit 1, of §10.2; the local player's value is the key state), not on the pose: a sneaking entity farther than 32 blocks (d^2 >= 1024) has no name tag at all (`LivingEntityRenderer.shouldShowName`, with 34-1 §7.2 and its worked example V15). Within that range the tag is drawn **not see-through** (one normal depth-tested pass with the translucent colour and the background, so it is hidden behind blocks); a non-sneaking entity gets the two-pass see-through tag (34-1 §7.2). For an avatar `shouldShowName` additionally requires the avatar's always-show flag or (a custom name and the crosshair target).
+- A crawling or swimming entity that is not sneaking is not discrete: its tag is see-through and at the height above.
+
+### 14.3 Other crouch-only render details
+
+- The shoulder parrot layer (`ParrotOnShoulderLayer`): the parrot is translated by (+0.4 for the left shoulder, -0.4 for the right, **-1.3** when `isCrouching`, **-1.5** otherwise, 0) in the layer's frame (the model frame of 12 §7.3 after step 5, inferred from the layer being drawn in the body's stack). The two y values differ by 0.2; the sign convention of that frame (model y points down before the flip) was not worked out, so the direction of the shift is not stated (Open question 14).
+- The fishing line (`FishingHookRenderer`): where the line starts on a player, an extra y term of **-0.1875** is added when the player `isCrouching`, otherwise 0 (the remaining terms of the line anchor, which also use the scale, were not documented).
+- No other class under `renderer/entity`, `renderer/entity/layers` or `client/model` reads `isCrouching`, `isVisuallySwimming` or `swimAmount` except the humanoid model and the renderers named here and in 34 (a byte search of the class files for the three names, not a call-graph walk): the cape, elytra and armour layers use the model parts only.
+
+### 14.4 Third-person camera (F5) with these poses
+
+`Camera.alignWithEntity` has no test for the pose, the crouch flag or the swimming state: it uses the interpolated eye position of §7 (lerp of the smoothed eye height, 1.62 to 1.27 to 0.4 smoothed by 0.5 per tick) and the entity's view yaw and pitch (not the body yaw, not the swim rotation of §13), then the pull-back of 12 §7.2 (4 blocks, collision clipped). The consequences, which are all derived from that:
+
+- The camera never receives the crouch render offset: with the camera behind a crouching player the model is drawn 0.125 lower than the eye-height point it orbits.
+- While swimming or crawling the camera orbits a point 0.4 above the feet (target eye height), and the body of §13 lies 0.18 to 0.53 above the feet, so the model sits under the camera's focus point, 0.1 to 0.2 below it for the torso.
+- During the 12-tick ramp of the swim amount the camera eye height follows its own 0.5-per-tick approach (§7), not the swim amount; the two animations are independent (eye 1.62 to 0.4: gap 0.61 after one tick, 0.305 after two, and so on, against the 0.09 per tick of s).
+- First-person view in these poses: the eye height of §7 only; the local player's model is not drawn.
+
+---
+
+## 15. First-person hand, view bobbing and the poses (question 4)
+
+### 15.1 The hand
+
+`FirstPersonHandsAndItemsRenderer` and `FirstPersonHandsAndItems` (client state) contain **no read of the pose, the swimming or crawling state, the crouch flag, the sprint flag or the swim amount**: the arm, item, equip, swing and use transforms of 12 §6 are the same while standing, crouching, sprinting, swimming and crawling. The only
+inputs that depend on movement are the view bobbing (15.2) and the hand sway (15.3) below, which apply to all poses alike; in particular there is **no swim-stroke arm animation in first person**.
+(The hands are drawn only in first-person view with the HUD not hidden, not sleeping and not in spectator mode, `GameRenderer.renderItemInHand`.)
+
+### 15.2 View bobbing (`GameRenderer.bobView`, `ClientAvatarState`, `AbstractClientPlayer.updateBob`)
+
+12 §6.1 step 1 gives the transform; this chapter gives where w and b come from and corrects the range of b. It applies only when the camera entity is a player (a client player or a remote player being spectated) and the option View Bobbing is on. In `renderLevel` the bob (and the hurt tilt) is applied to the **world** projection with no camera-type test (read: none in that method), so it also shakes the world in third person (inferred from the absence of a test); in the hand pass it applies to the hand.
+
+**w, the walk distance.** The client keeps `walkDist` (float, starts 0) and `walkDistO` per avatar (`ClientAvatarState`). For the local player, every `LocalPlayer.move` adds **0.6 x the horizontal distance actually moved** (sqrt(dx^2 + dz^2) of the position change after collision, in blocks) to `walkDist`: any move mode, any pose; there is no sprint, crouch or swim factor. `walkDistO` takes the old value at the start of `AbstractClientPlayer.tick`. The value passed to `bobView` is w = -(`walkDist` + (`walkDist` - `walkDistO`) x partial) (the delta is extrapolated by the partial tick, then **negated**; the sign only flips the sway direction).
+(`RemotePlayer` was seen to call the bob update but no `addWalkedDistance` call was found for it: a spectated remote player's `walkDist` was not traced, Open question 13.)
+
+**b, the bob amount.** Each tick, at the start of `AbstractClientPlayer.aiStep` (before the movement of that tick), a target f is chosen: f = 0 when the player is **not on the ground, or is dead or dying, or `isSwimming()` (the flag) is true**; otherwise f = min(0.1, the horizontal length of the player's delta movement at that moment, i.e. the velocity left by the previous tick, after friction). Then `bobO` = `bob` and `bob` += (f - `bob`) x **0.4**. While riding, `rideTick` resets it: `bobO` = `bob`, `bob` = 0. The value used is b = lerp(partial, `bobO`, `bob`).
+So **b is between 0 and 0.1** (12 §6.1's "0..1" is a loose bound; the real maximum is 0.1), and:
+
+| State | Effect on b |
+|---|---|
+| walking or sprinting on the ground | target 0.1 (capped): walking leaves 0.546 x 0.216 = 0.118 after the drag (inferred from 13 §1.3 and §6.2), above the cap; sprinting leaves more, also capped |
+| crouching or crawling on the ground | target below the cap: the delta movement read at the start of the tick is the post-drag velocity v with v = 0.546 x (v + g), g = the per-tick gain of §6.2 (0.0294), so v = 0.546 x 0.0294 / 0.454 = 0.0354 and b settles at about **0.035** (inferred; assumes drag 0.546 and that the stored value is the post-drag one); with Swift Sneak III (g = 0.0735) about 0.088 (inferred) |
+| in the air, dead or dying | target 0, b decays by 40% of its value per tick |
+| swimming flag set (sprint-swimming) | target 0 |
+| crawling on land (pose SWIMMING, flag clear) | not excluded: the ground rule applies (the flag test is `isSwimming`, §4) |
+| wading, shift held | ordinary ground rule if on the ground |
+
+The amplitude of the sway is proportional to b, w advances with distance, so the bobbing frequency follows the speed in blocks; crouching bobs less and slower, crawling likewise; sprinting bobs at the same amplitude as walking but faster per second. No term in `bobView` reads the sprint or crouch state.
+
+Worked example (b = 0.1, walkDist 10, walkDistO 9.8, partial 0.5): w = -(10 + 0.2 x 0.5) = -10.1. sin(-10.1 pi) = -0.3090, cos(-10.1 pi) = 0.9511. Translate x = -0.3090 x 0.1 x 0.5 = -0.0155; y = -|0.9511 x 0.1| = -0.0951. Rotate Z = -0.3090 x 0.1 x 3 = -0.093 degrees. Rotate X = |cos(-10.1 pi - 0.2)| x 0.1 x 5 = 0.871 x 0.5 = 0.435 degrees.
+(The first rule of 12 §6.1 step 1, the order and the formulas, is unchanged.)
+
+### 15.3 Hand sway source (`LocalPlayer.aiStep`)
+
+12 §6.1 step 3 uses `xBob` and `yBob`: each tick (at the point where the player's own input is applied) `xBobO` = `xBob`, `yBobO` = `yBob`, `xBob` += (pitch - `xBob`) x **0.5**, `yBob` += (yaw - `yBob`) x 0.5, with the pitch and yaw being the entity's. Interpolated by lerp(partial, old, new) for the hand. No pose dependence.
+
+---
+
+## 16. Quick reference for the second round
+
+| Question | Answer in |
+|---|---|
+| swimAmount update rule, rate, condition, interpolation | §12 |
+| swim rotation and pivot, crawl on land, ramp | §13 |
+| crouch render offset, name tag when crouching, F5 camera | §14 |
+| first-person hand and view bobbing | §15 |
+
+## 17. Open questions
 
 1. **Fit test: entity part.** `noEntityCollision` was named but the definition of which entities block the fit test (boats, shulkers, other) was not traced; §5.2 and §2.4 inherit that gap.
 2. **Border part of `noCollision`.** That the world border counts as a blocking surface for the sneak probe is read from the method call `noBorderCollision`; its exact test (whether a box merely touching the border blocks) was not read.
 3. **Spectator pose.** Whether a spectator whose box does not fit the SWIMMING box keeps its previous pose forever (step 1 gate) was not checked against the spectator collision context.
 4. **DYING.** `LivingEntity.die` sets DYING after Entity Event 3; whether the next `updatePlayerPose` (which runs every tick in `Player.tick`) overwrites it for a dead player was not traced.
 5. **Block-side `isDescending` uses.** Which other blocks read the descending flag besides scaffolding was not scanned (powder snow, honey, bubble columns showed none in the classes listed).
-6. **Swimming and crawling model poses, and the swim-amount animation.** Not traced: `LivingEntity.updateSwimAmount` and the player model's swimming/crawling transforms (12 Open question 6/7 remain open).
+6. **Swimming and crawling model poses, and the swim-amount animation.** Answered in the second round: §12 (swim amount), §13 (body transform), §14 (crouch details), §15 (first-person and view bobbing); the model-part half is 34-2 §4.5. Residual gaps are items 12 to 17.
 7. **Other sneak consumers.** The list of §5.6 is the set found in the classes read (`Player`, `LivingEntity`, `Entity`, `LocalPlayer`, `ServerPlayer`, `ScaffoldingBlock`, `SlimeBlock`); other uses of `isShiftKeyDown`, `isDiscrete`, `isCrouching` across the jar were not enumerated.
 8. **Initial camera state.** `Camera.eyeHeight` and `fovModifier` have no initialiser in the constructor listing (so they start at 0), and no other write besides `tick`/`tickFov` was found; whether another class resets them on join (so the first-join ramp of §7 and §8.2 is not visible) was not searched.
 9. **Local pose versus server echo.** The server echoes the player's own pose and flags back to it (§10.2) and the client applies them without a filter; the client then recomputes at the end of its tick. The visible effect (one-tick pose flicker or none) was not traced.
 10. **`getFluidFallingAdjustedMovement` call arguments.** The effective gravity argument is the gravity effective at the start of the tick; its exact derivation for a swimming player was not traced beyond 0.08 (13 §1.2).
 11. **Recalled, not verified:** nothing in this document is taken from recall; all constants were read in this round. The only values that are derived rather than read are the steady-state speeds and the worked examples (marked "inferred" in §9.2 and computed from the read constants).
+12. **FALL_FLYING counted as visually swimming.** `LivingEntity.isVisuallySwimming` returns true when the pose is FALL_FLYING and the fall-flying flag is clear (§12.1). Which real state produces that combination (for example a remote avatar whose pose metadata arrives before the flags byte) and what it looks like was not traced.
+13. **Walk distance of a spectated remote player.** Only `LocalPlayer.move` was seen to add to `walkDist`; for a `RemotePlayer` used as the camera entity the source of `walkDist` (and so of the view bobbing phase) was not found (§15.2).
+14. **Parrot shoulder direction and the fishing-line anchor.** The sign convention of the parrot offset frame and the other terms of the fishing line anchor were not worked out (§14.3).
+15. **Body yaw target.** The body yaw (`yBodyRot`) that §13 uses follows the generic `LivingEntity.tick` rule (movement-direction following with a head-turn limit of 50 degrees, `tickHeadTurn`); a swimming-specific branch was not seen in `tickHeadTurn`, but the rule's full text was not documented here.
+16. **View bob in third person.** That bobbing also shakes the world in third-person views is inferred from the absence of a camera-type test in `GameRenderer.renderLevel` (§15.2); not confirmed from a second code path.
+17. **Name tag attachment default.** The tag heights in §14.2 assume the 34-1 §7.2 default (bounding height) because the avatar dimension table lists no `NAME_TAG` attachment; the builder that fills missing attachment points was not re-read.
+18. **Recalled, not verified (second round):** nothing is taken from recall; every constant (0.09, -90, -1.0, 0.3, 0.4, 0.1, 0.6, -2/16, -0.1875, 1024) was read from the artifact in this round. Values marked inferred are computed from read constants.
