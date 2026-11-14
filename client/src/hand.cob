@@ -333,11 +333,15 @@
  01 WS-Y0                  FLOAT-LONG.
  01 WS-Y1                  FLOAT-LONG.
  01 WS-CELL                FLOAT-LONG.
+ 01 WS-PREV-COUNT          BINARY-LONG.
+ 01 WS-STILL               BINARY-LONG.
  01 B-ATLAS                PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-HAND-COUNT
+     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME
+     MOVE CL-HAND-KEY-COUNT TO WS-PREV-COUNT
+     MOVE 0 TO CL-HAND-KEY-COUNT
      IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0
          CALL "HAND-EQUIP" USING CLIENT-STATE WS-E
      ELSE
@@ -351,6 +355,12 @@
      IF WS-SPRITE = 0
          GOBACK
      END-IF
+*>   The light at the eye (like an entity: the larger of the sky light by the daylight and the block light, of 15).
+     COMPUTE WS-EX = FUNCTION INTEGER(PL-X)
+     COMPUTE WS-EY = FUNCTION INTEGER(PL-Y + 1.62)
+     COMPUTE WS-EZ = FUNCTION INTEGER(PL-Z)
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
+     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-HBLOCK WS-HTOOL WS-HFOOD
 *>   A block item is the unit cube when its model has faces (a standard set) or it is a stand-in block; any other item is an extruded icon.
      MOVE 0 TO WS-STD
@@ -365,6 +375,24 @@
      CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
      IF WS-HAVE = 2
          GOBACK
+     END-IF
+*>   Nothing swings and nothing changed since the last frame (the item, its sprite, the equip height, the light): the mesh built then
+*>   is still in RL-HAND-VERTEX and in the GPU slot, so it is neither built nor uploaded again.
+     MOVE 1 TO WS-STILL
+     IF CL-SWING-AT > 0 AND CL-NOW-MS >= CL-SWING-AT AND CL-NOW-MS - CL-SWING-AT < CL-SWING-MS
+         MOVE 0 TO WS-STILL
+     END-IF
+     IF WS-STILL = 1 AND WS-PREV-COUNT > 0 AND CL-HAND-KEY-ITEM = WS-ITEM AND CL-HAND-KEY-SPRITE = WS-SPRITE
+             AND CL-HAND-KEY-E = WS-E AND CL-HAND-KEY-LIGHT = WS-LIGHT
+         MOVE WS-PREV-COUNT TO RL-HAND-COUNT CL-HAND-KEY-COUNT
+         MOVE 1 TO RL-HAND-SAME
+         GOBACK
+     END-IF
+     IF WS-STILL = 1
+         MOVE WS-ITEM TO CL-HAND-KEY-ITEM
+         MOVE WS-SPRITE TO CL-HAND-KEY-SPRITE
+         MOVE WS-E TO CL-HAND-KEY-E
+         MOVE WS-LIGHT TO CL-HAND-KEY-LIGHT
      END-IF
      IF WS-HAVE = 0
          IF WS-CUBE = 1
@@ -421,12 +449,6 @@
      CALL "HAND-M-SCALE" USING WS-M WS-AX WS-AY WS-AZ
      MOVE -0.5 TO WS-AX WS-AY WS-AZ
      CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
-*>   The light at the eye (like an entity: the larger of the sky light by the daylight and the block light, of 15).
-     COMPUTE WS-EX = FUNCTION INTEGER(PL-X)
-     COMPUTE WS-EY = FUNCTION INTEGER(PL-Y + 1.62)
-     COMPUTE WS-EZ = FUNCTION INTEGER(PL-Z)
-     CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
-     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
      MOVE 0 TO WS-LO(1) WS-LO(2) WS-LO(3)
      MOVE 1 TO WS-HI(1) WS-HI(2) WS-HI(3)
 *>   Normals of the corner table's faces.
@@ -462,6 +484,9 @@
              MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
              CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
          END-PERFORM
+         IF WS-STILL = 1
+             MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
+         END-IF
          GOBACK
      END-IF
 *>   An extruded icon: the whole icon on the front (z 8.5/16) and the back (z 7.5/16) ...
@@ -579,5 +604,8 @@
              END-IF
          END-PERFORM
      END-PERFORM
+     IF WS-STILL = 1
+         MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
+     END-IF
      GOBACK.
  END PROGRAM HAND-MESH.

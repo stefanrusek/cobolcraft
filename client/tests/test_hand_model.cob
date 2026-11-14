@@ -68,6 +68,18 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE RL-HAND-COUNT TO WS-N
+     MOVE "T6101 the first mesh of an item is built (not the one already uploaded)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HAND-SAME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T6101 the same item, height and light with no swing keeps the mesh already uploaded (same count, flag set)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-HAND-SAME = 1 AND RL-HAND-COUNT = WS-N
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Front and back centre: the generated display transform (rotation 0 -90 25, translation 1.13 3.2 1.13 sixteenths, scale 0.68) on the arm pose.
      MOVE 0 TO WS-SUM(1) WS-SUM(2) WS-SUM(3)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
@@ -259,6 +271,35 @@
      MOVE "T5300 a mesh of 2044 vertices takes no more quad" TO TL-CASE
      MOVE 2044 TO TL-EXPECTED-N
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A swing in progress builds the mesh again each frame; a changed light does too; so does the frame after the hand showed nothing.
+     MOVE 1000000 TO CL-NOW-MS
+     MOVE 10 TO PL-SLOT-ITEM(PL-HELD + 1)
+     MOVE 11 TO CL-HAND-ITEM
+     MOVE 1 TO CL-HAND-H CL-HAND-OH
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     MOVE 1000000 TO CL-SWING-AT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T6101 a swing in progress builds the mesh again (flag clear)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HAND-SAME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CL-SWING-AT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T6101 the frame after a swing has no mesh to reuse (flag clear)" TO TL-CASE
+     MOVE RL-HAND-SAME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T6101 a still hand reuses the mesh again after that (flag set)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE RL-HAND-SAME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CL-HAND-KEY-LIGHT TO WS-X
+     COMPUTE CL-HAND-KEY-LIGHT = CL-HAND-KEY-LIGHT + 0.5
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T6101 a different light builds the mesh again (flag clear)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HAND-SAME TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 11 TO CL-HAND-ITEM
      MOVE 1 TO CL-HAND-H CL-HAND-OH

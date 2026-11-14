@@ -20,6 +20,11 @@
     05 CL-HAND-ITEM          BINARY-LONG.     *> the stack the hand shows: item id + 1, 0 none (equip animation, hand.cob; 12 section 6.2)
     05 CL-HAND-H             FLOAT-LONG.      *> the equip height 0 to 1 and its value one client tick (50 ms) earlier
     05 CL-HAND-OH            FLOAT-LONG.
+    05 CL-HAND-KEY-ITEM      BINARY-LONG.     *> what the vertices in RL-HAND-VERTEX were built for (hand.cob reuses them while it is unchanged and no swing runs)
+    05 CL-HAND-KEY-SPRITE    BINARY-LONG.
+    05 CL-HAND-KEY-E         FLOAT-LONG.
+    05 CL-HAND-KEY-LIGHT     FLOAT-LONG.
+    05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
@@ -1145,6 +1150,8 @@
 *>     The hand (view space, texture 0; hand.cob).
        10 RL-HAND-COUNT      BINARY-LONG.
        10 RL-HAND-UPLOADED   BINARY-LONG.
+       10 RL-HAND-SAME       BINARY-LONG.    *> 1 when this frame's hand mesh is the one already uploaded (no upload needed)
+       10 RL-NO-UPLOAD       BINARY-LONG.    *> 1 while RENDER-MESH-ADD only draws a mesh (set around the hand's call)
        10 RL-HAND-VERTEX OCCURS 2048 TIMES.
           15 RL-HAND-X       FLOAT-SHORT.
           15 RL-HAND-Y       FLOAT-SHORT.
