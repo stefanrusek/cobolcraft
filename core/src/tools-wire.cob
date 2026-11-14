@@ -141,6 +141,12 @@
          CALL "TOOLUSE-FIRE" USING L-ID PLAY-SERVERBOUND WS-KEY L-DONE
          GOBACK
      END-IF
+     IF WS-LEN > 10
+         IF WS-KEY(WS-LEN - 9:10) = "_spawn_egg"
+             CALL "TOOLUSE-EGG" USING L-ID PLAY-SERVERBOUND WS-KEY L-DONE
+             GOBACK
+         END-IF
+     END-IF
      IF WS-KIND = SPACES
          GOBACK
      END-IF
