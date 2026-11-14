@@ -1,0 +1,1 @@
+{"placement":{"type":"minecraft:random_spread","spacing":24,"separation":6,"salt":777,"spread_type":"triangular","frequency":0.5,"exclusion_zone":{"other_set":"minecraft:alpha_set","chunk_count":8}},"structures":[{"structure":"minecraft:s_one","weight":1}]}

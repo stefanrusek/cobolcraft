@@ -907,3 +907,35 @@ Measured on 16 chunks of a standard world (seed 424242, view of the generated pa
 
 Not on, with the reason: `geode` (35-6 section 4: the shape noise of 4.2 is evaluated for the 33 x 33 x 33 box, about 36 thousand samples of a two layer Perlin stack for each geode, too slow in this core without a bounded-noise shortcut the document does not give), `speleothem` and `speleothem_cluster` and `large_dripstone` (35-6 sections 5 to 7), `multiface_growth` (glow lichen, section 35-4/6), `cave_vine` (a `block_column` whose providers are `cave_vines_body` and `cave_vines_head` of `worldgen/block_state_provider`: the compiler does not load named providers), `vegetation_patch` and `waterlogged_vegetation_patch` (35-4 section 9: the order of the ground set is the iteration order of a `HashSet<BlockPos>`, Open question 1 of that section, and the draws depend on it), corals (35-5 section 14), `sculk_patch` (35-6 section 8), `iceberg`, `blue_ice`, `underwater_magma`, `spike` (ice spikes), `block_blob` (forest rock), `netherrack_replace_blobs`, `block_pile`, the desert well and the bonus chest.
 
+
+## Structures in the standard type, part 1: data and placement (002 operator decision)
+
+Source: `docs/protocol/36-structures-1-model-placement-starts.md` sections 1 to 5. Code: `core/src/struct-data.cob` (the data compiler), `core/src/struct-36-1.cob` (registries, placement
+engines, starts, gate, hook), tables in `core/copy/STRUCTDATA.cpy` and `STRUCTENUM.cpy` (core-private; no contract copybook changed).
+
+What is read. `WORLD-GEN-DATA-OPEN` calls `STRUCT-LOAD` with the generated `<dir>/vanilla-data` folder: every file of `data/minecraft/worldgen/structure_set` in sorted (registry listing) order is a set
+(placement: `random_spread`, `concentric_rings`, `dimension_origin` with salt, spacing, separation, spread type, frequency, frequency reduction method, exclusion zone, locate offset, rings parameters,
+preferred biomes; the weighted structure list), and every structure a set names is read from `worldgen/structure` (type, step, terrain adaptation, biomes as an id, a list or a tag with nested tags read from
+`data/<ns>/tags/worldgen/biome`). Nothing is tabulated in code (36-1 section 1): ids, salts, spacings and weights are the files'. The content loaders (`content/src/load-36-*.cob`) only check the shapes and keep
+nothing, so core reads the folder itself (the pattern of `FD-SET-DIR` in the feature data compiler). `spawn_overrides` are read and left out (section 10 is a later sub-batch). An element the schema rejects (malformed
+JSON, an unknown placement type, spacing not above separation, a weight below 1, a structure that is missing or has an unknown type, step or adaptation) is left out and counted in `SD-BAD`; a set that names an
+`other_set` no set has runs without the exclusion zone.
+
+Engines (all with the seed as a signed 64-bit value and the Java LCG of `rng-java.cob`). `STRUCT-POTENTIAL` is 4.3 (a `spacing` cell, `limit = spacing - separation`, linear or triangular, floor cells for negative
+chunks); `STRUCT-FREQ-OK` the four reducers of 4.4 (single precision frequency; `legacy_type_1` takes the cell of 16 chunks, discards one `nextInt()` and tests `nextInt(trunc(1.0f / frequency)) == 0`); `STRUCT-IS-CHUNK`
+the conjunction of 4.2 with the exclusion zone of 4.5 (`STRUCT-IN-RANGE`, a square of side `2 * chunk_count + 1`, recursing into the other set's own rules); `STRUCT-RINGS-RAW` and `STRUCT-RING-SNAP` the ring positions of
+4.6 and the biome search of 4.6.1 (radius 28 quart cells, reservoir sampling with the forked source), cached per set and seed (`STRUCT-RING-HAS` builds on first use); `dimension_origin` is chunk (0, 0) and
+`STRUCT-LOCATE-POS` is 4.8. Every value is checked against an independent script that follows the document, and the tables of 12.1 and 12.3 are reproduced.
+
+Starts (5.2). `STRUCT-CHUNK-STARTS` walks the sets whose structures have a biome the source can make (`STRUCT-POSSIBLE-BUILD`, 4.1, from the climate points); a set that holds a start in the chunk tries its entries in the
+chooser's order (`STRUCT-ENTRY-ORDER`: `setLargeFeatureSeed`, `nextInt(total)`, walk subtracting weights until negative, remove the entry and its weight and repeat; a one-entry set makes no draw). An entry fails when
+its structure is not gated on or the biome at the stub position, in quart cells (`x >> 2`, `y >> 2`, `z >> 2`, floor), is not one of its biomes; the first that passes is the set's start. Different sets are independent.
+
+The gate. `SD-GATE` (`STRUCT-GATE`, `STRUCT-GATE-ON`, `STRUCT-GATE-RESET`) lists the structure ids that are on, like `FR-GATE` of the feature stage. It is empty by default, so no structure starts anything and the
+standard world generates exactly as before. `STRUCT-STAGE-HOOK` is called at the top of `GEN-STAGE-FEATURES`; with an empty gate it returns at once, otherwise at step 0 of a chunk it counts that chunk's starts
+(`SD-STARTS-SEEN`). Nothing is placed yet.
+
+Not yet (the remaining 36-1 sections and the siblings 36-2 to 36-10): the stub position is the chunk's middle column at y 0 until the per-structure generators give `findGenerationPoint`, so no pieces are built; an
+existing start of the chunk is not looked up (starts are not stored in chunk data); the dimension origin is (0, 0) (the noise generator's spawn target is Open question 1 of the document); a cycle of exclusion zones
+between two sets is not detected (4.5 says no data has one); a ring list holds at most 256 chunks and four ring sets are cached; the `StructureStart` record, references, `StructureCheck`, the piece base class and
+`BoundingBox`, placing pieces, the beardifier, spawn overrides and locate are sections 6 to 11 and are not built.

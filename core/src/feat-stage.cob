@@ -96,6 +96,8 @@
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
  PROCEDURE DIVISION USING L-JOB.
      ADD 1 TO GS-FEATURE
+*>   structure starts (36-1 section 5): a no-op while no structure is gated on (struct-36-1.cob)
+     CALL "STRUCT-STAGE-HOOK" USING L-JOB
      IF CV-READY NOT = 1 OR J-SUB > 10
          GOBACK
      END-IF
