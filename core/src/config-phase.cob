@@ -472,7 +472,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONFIG-RELEASE-HELD.
 *> No parameters: every connection whose end of configuration was held while the spawn was searched and its area made (step 4) is sent its Finish Configuration now
-*> (GEN-SPAWN-RING), its player placed at the spawn the search found (the world is new while the search runs, so a joining player has no position of its own).
+*> (GEN-SPAWN-RING), its player placed at the spawn the search found, unless the player is back from a place of its own (a known player with KN-PLACED whose
+*> dimension and position PLAYER-PLACE gave the row): that player keeps it (lane resume T5800; the spawn was put over every held player, so a saved world
+*> always opened at the world spawn on the surface).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -480,14 +482,25 @@
     05 CF-STEP               PIC 9 OCCURS 64 TIMES.
  01 WS-ID                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-OWN                 BINARY-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
          IF CN-USED(WS-ID) = 1 AND CN-CLOSE(WS-ID) = 0 AND CN-PHASE(WS-ID) = PH-CONFIG AND CF-STEP(WS-ID) = 4
              MOVE CN-PLAYER(WS-ID) TO WS-ROW
-             MOVE CW-SPAWN-X TO PL-X(WS-ROW)
-             MOVE CW-SPAWN-Y TO PL-Y(WS-ROW) PL-FALL-START(WS-ROW)
-             MOVE CW-SPAWN-Z TO PL-Z(WS-ROW)
-             MOVE CW-SPAWN-YAW TO PL-YAW(WS-ROW)
+             MOVE 0 TO WS-OWN
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+                 IF KN-UUID(WS-I) = PL-UUID(WS-ROW) AND KN-PLACED(WS-I) = 1 AND KN-DIM(WS-I) = PL-DIM(WS-ROW)
+                         AND KN-X(WS-I) = PL-X(WS-ROW) AND KN-Z(WS-I) = PL-Z(WS-ROW)
+                     MOVE 1 TO WS-OWN
+                 END-IF
+             END-PERFORM
+             IF WS-OWN = 0
+                 MOVE CW-SPAWN-X TO PL-X(WS-ROW)
+                 MOVE CW-SPAWN-Y TO PL-Y(WS-ROW) PL-FALL-START(WS-ROW)
+                 MOVE CW-SPAWN-Z TO PL-Z(WS-ROW)
+                 MOVE CW-SPAWN-YAW TO PL-YAW(WS-ROW)
+             END-IF
              CALL "CONFIG-FINISH-SEND" USING WS-ID
          END-IF
      END-PERFORM
