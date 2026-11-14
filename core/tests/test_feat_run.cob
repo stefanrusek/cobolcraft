@@ -78,6 +78,10 @@
      MOVE "minecraft:lava" TO CB-KEY(9)
      MOVE "minecraft:tall_grass" TO CB-KEY(10)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE 0 TO CB-REPLACEABLE(WS-I)
+     END-PERFORM
+     MOVE 1 TO CB-REPLACEABLE(1) CB-REPLACEABLE(3) CB-REPLACEABLE(10)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
          MOVE FUNCTION LENGTH(FUNCTION TRIM(CB-KEY(WS-I))) TO CB-KEY-LENGTH(WS-I)
      END-PERFORM
      ALLOCATE CE-CHUNK-BYTES CHARACTERS INITIALIZED RETURNING WS-PTR1
@@ -540,6 +544,42 @@
      MOVE "acceptance feature run: environment_scan down: the stone is four steps away, the last test fails" TO TL-CASE
      MOVE WS-RESULT TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the replaceable predicate (type 6, 35-2 section 3): the builder flag of the block at the cell, at an offset too
+     MOVE "repl_here" TO WS-NAME
+     MOVE 25 TO WS-X
+     MOVE 100 TO WS-Y
+     MOVE 40 TO WS-Z
+     MOVE 0 TO WS-STATE
+     CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-STATE WS-FLAGS WS-OK
+     PERFORM RUN-PF-AT
+     MOVE "acceptance feature run: replaceable is true on air" TO TL-CASE
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-STATE
+     CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-STATE WS-FLAGS WS-OK
+     PERFORM RUN-PF-AT
+     MOVE "acceptance feature run: replaceable is false on stone" TO TL-CASE
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "repl_below" TO WS-NAME
+     ADD 1 TO WS-Y
+     PERFORM RUN-PF-AT
+     MOVE "acceptance feature run: replaceable with an offset reads the cell below (stone: false)" TO TL-CASE
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-STATE
+     SUBTRACT 1 FROM WS-Y
+     CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-STATE WS-FLAGS WS-OK
+     ADD 1 TO WS-Y
+     PERFORM RUN-PF-AT
+     MOVE "acceptance feature run: replaceable with an offset reads the cell below (water: true)" TO TL-CASE
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   10 unsupported placed features place nothing

@@ -296,6 +296,13 @@
                      MOVE 1 TO L-RESULT
                  END-IF
              END-IF
+*>       replaceable: the builder flag of the block at the offset (a cell outside the level reads as air, which is replaceable)
+         WHEN 6
+             CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+             CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+             IF LS-BLOCK > 0
+                 MOVE CB-REPLACEABLE(LS-BLOCK) TO L-RESULT
+             END-IF
          WHEN 8
              IF LS-Y >= FL-MIN-Y AND LS-Y <= FL-MIN-Y + FL-HEIGHT - 1
                  MOVE 1 TO L-RESULT

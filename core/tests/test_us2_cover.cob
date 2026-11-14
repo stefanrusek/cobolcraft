@@ -122,6 +122,22 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE CB-S-LIGHT(31) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test us2 cover a row without the replaceable flag is not replaceable" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE WS-ID = WS-BLOCK-NUMBER + 1
+     MOVE CB-REPLACEABLE(WS-ID) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO CT-BLOCK-ROW
+     UNSTRING "5|cobolcraft:bright|Block||1|30|30|1.0|1.0|no|20|NONE|STONE|PUSH_PULL|HARP|replaceable noCollision" DELIMITED BY "|"
+         INTO CT-BR-ID CT-BR-KEY CT-BR-CLASS CT-BR-PROPS CT-BR-STATE-COUNT CT-BR-FIRST-STATE
+             CT-BR-DEFAULT-STATE CT-BR-HARDNESS CT-BR-BLAST CT-BR-TOOL-REQUIRED CT-BR-LIGHT
+             CT-BR-MAP-COLOUR CT-BR-SOUND-TYPE CT-BR-PUSH CT-BR-INSTRUMENT CT-BR-FLAGS
+     MOVE CT-BLOCK-ROW TO WS-ROW
+     CALL "BLOCKS-FILL" USING WS-BLOCK-NUMBER WS-ROW
+     MOVE "test us2 cover the replaceable flag of a row sets CB-REPLACEABLE" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE CB-REPLACEABLE(WS-ID) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A set of the standard type (forced on the open set): the player and item roles are minecraft:player (159) and
 *>   minecraft:item (72), the two cobolcraft mobs are -1, and there are no recipes.

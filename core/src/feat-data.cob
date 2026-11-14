@@ -539,7 +539,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-PRED-NODE IS RECURSIVE.
 *> USING doc, node, predicate index out (0 when the predicate is unsupported, which also sets FD-BAD): compiles a block predicate object (35-2 section 3).
-*> Supported: matching_blocks, matching_block_tag, matching_fluids, solid, inside_world_bounds, any_of, all_of, not, true, unobstructed, height_range, volume_match.
+*> Supported: matching_blocks, matching_block_tag, matching_fluids, solid, replaceable, inside_world_bounds, any_of, all_of, not, true, unobstructed, height_range, volume_match.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FDCONST.
@@ -622,6 +622,7 @@
                      MOVE 1 TO FD-BAD
              END-EVALUATE
          WHEN 5
+         WHEN 6
          WHEN 8
          WHEN 12
          WHEN 13
