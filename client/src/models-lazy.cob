@@ -233,6 +233,7 @@
      END-IF
      MOVE 1 TO WS-SPRITE
      MOVE 0 TO WS-FACES
+     MOVE 0 TO MR-FP-PRESENT WS-SPECIAL
      CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
          WS-KNOWN
      IF WS-KNOWN = 1
@@ -299,6 +300,17 @@
              END-IF
          END-IF
      END-IF
+     IF WS-SPECIAL = 1
+*>       A code-drawn model (a shield, a chest, a banner ...): the hand has no model of it to draw (state 2).
+         MOVE 2 TO IS-FP-STATE(L-ITEM + 1)
+     END-IF
+     IF MR-FP-PRESENT = 1 AND WS-SPECIAL = 0
+         MOVE 1 TO IS-FP-STATE(L-ITEM + 1)
+         PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 9
+             COMPUTE WS-SLOT = L-ITEM * 9 + WS-D
+             MOVE MR-FP(WS-D) TO IS-FP-VAL(WS-SLOT)
+         END-PERFORM
+     END-IF
      IF WS-FACES = 1
          MOVE 1 TO IS-FACE-DONE(L-ITEM + 1)
          PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
@@ -336,3 +348,37 @@
      END-IF
      GOBACK.
  END PROGRAM ITEM-FACE-SPRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-HAND-DISPLAY.
+*> USING CLIENT-STATE, item id, present out (1 when the item's model chain names display.firstperson_righthand; 2 for a code-drawn "special" model, which the hand does not draw), values out (9 FLOAT-LONG: rotation x y z in
+*> degrees, translation x y z in sixteenths, scale x y z). The standard set's models are read on the item's first use (ITEM-SPRITE-OF); a stand-in item
+*> and an item whose models name none have present 0 (the caller uses the defaults of 12 section 8.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ICON                BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-VALUES.
+    05 L-VALUE             FLOAT-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-PRESENT L-VALUES.
+     MOVE 0 TO L-PRESENT
+     IF L-ITEM >= 0 AND L-ITEM < 2048
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE L-ITEM WS-ICON
+         IF IS-FP-STATE(L-ITEM + 1) = 2
+             MOVE 2 TO L-PRESENT
+         END-IF
+         IF IS-FP-STATE(L-ITEM + 1) = 1
+             MOVE 1 TO L-PRESENT
+             PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 9
+                 COMPUTE WS-SLOT = L-ITEM * 9 + WS-D
+                 MOVE IS-FP-VAL(WS-SLOT) TO L-VALUE(WS-D)
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-HAND-DISPLAY.

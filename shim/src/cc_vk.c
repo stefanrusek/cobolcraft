@@ -424,7 +424,8 @@ static void create_layouts(void) {
     sampler.addressModeU = sampler.addressModeV = sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.repeat_sampler), "cc_vk_init: vkCreateSampler failed");
     /* The sampler of textures with mip levels (12 §2.4): linear filtering through the whole chain. */
-    sampler.magFilter = sampler.minFilter = VK_FILTER_LINEAR;
+    sampler.minFilter = VK_FILTER_LINEAR;
+    sampler.magFilter = VK_FILTER_NEAREST; /* a texel larger than a pixel stays crisp (12 section 2.4): the held item's extruded pixels */
     sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     sampler.maxLod = VK_LOD_CLAMP_NONE;
     check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.mip_repeat_sampler), "cc_vk_init: vkCreateSampler failed");

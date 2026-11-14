@@ -241,6 +241,7 @@
              MOVE 8 TO WS-NAME-LENGTH
              CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NAME-LENGTH WS-NODE
              CALL "MODEL-TEXTURES-PARSE" USING JSON-DOC WS-NODE MODEL-RESOLVED
+             CALL "DISPLAY-PARSE" USING JSON-DOC MODEL-RESOLVED
              MOVE "elements" TO WS-NAME
              CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NAME-LENGTH WS-NODE
              IF WS-NODE > 0 AND MR-ELEMENT-COUNT < 0
@@ -801,3 +802,65 @@
      END-IF
      GOBACK.
  END PROGRAM VARIANT-ROTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DISPLAY-PARSE.
+*> USING JSON-DOC (a model file), MODEL-RESOLVED: the model's display entry for firstperson_righthand (08 section 5.6) when the chain so far has none: rotation,
+*> translation and scale (defaults 0, 0, 1) into MR-FP, MR-FP-PRESENT 1. The nearest model of the chain that names the context wins.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(32) VALUE "display.firstperson_righthand".
+ 01 WS-PATH-LENGTH         BINARY-LONG VALUE 29.
+ 01 WS-KEYS.
+    05 FILLER PIC X(12) VALUE "rotation".
+    05 FILLER PIC X(12) VALUE "translation".
+    05 FILLER PIC X(12) VALUE "scale".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY              PIC X(12) OCCURS 3 TIMES.
+ 01 WS-KEY-LENGTHS.
+    05 FILLER PIC 99 VALUE 8.
+    05 FILLER PIC 99 VALUE 11.
+    05 FILLER PIC 99 VALUE 5.
+ 01 WS-LEN-TABLE REDEFINES WS-KEY-LENGTHS.
+    05 WS-KEY-LEN          PIC 99 OCCURS 3 TIMES.
+ 01 WS-NAME                PIC X(12).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-FIELD               BINARY-LONG.
+ 01 WS-NODE-OUT            BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ COPY CLMODEL.
+ PROCEDURE DIVISION USING JSON-DOC MODEL-RESOLVED.
+     IF MR-FP-PRESENT = 0
+         CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+         IF WS-NODE > 0
+             MOVE 1 TO MR-FP-PRESENT
+             PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > 3
+                 MOVE WS-KEY(WS-G) TO WS-NAME
+                 MOVE WS-KEY-LEN(WS-G) TO WS-NAME-LENGTH
+                 CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+                 PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                     COMPUTE WS-K = (WS-G - 1) * 3 + WS-A
+                     IF WS-G = 3
+                         MOVE 1 TO MR-FP(WS-K)
+                     ELSE
+                         MOVE 0 TO MR-FP(WS-K)
+                     END-IF
+                     IF WS-FIELD > 0
+                         COMPUTE WS-ELEMENT = WS-A - 1
+                         CALL "JSON-ELEMENT" USING JSON-DOC WS-FIELD WS-ELEMENT WS-NODE-OUT
+                         IF WS-NODE-OUT > 0
+                             MOVE JN-NUM(WS-NODE-OUT) TO MR-FP(WS-K)
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DISPLAY-PARSE.
