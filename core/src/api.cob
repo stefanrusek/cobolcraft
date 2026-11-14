@@ -516,6 +516,8 @@
  01 WS-MINESHAFT-MESA      PIC X(80) VALUE "minecraft:mineshaft_mesa".
  01 WS-IGLOO               PIC X(80) VALUE "minecraft:igloo".
  01 WS-SWAMP-HUT           PIC X(80) VALUE "minecraft:swamp_hut".
+ 01 WS-DESERT-PYRAMID      PIC X(80) VALUE "minecraft:desert_pyramid".
+ 01 WS-BURIED-TREASURE     PIC X(80) VALUE "minecraft:buried_treasure".
  01 WS-JUNGLE-TEMPLE       PIC X(80) VALUE "minecraft:jungle_pyramid".
  01 WS-SHIPWRECK           PIC X(80) VALUE "minecraft:shipwreck".
  01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
@@ -543,9 +545,11 @@
          CALL "STRUCT-GATE-ON" USING WS-IGLOO
          CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK
          CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK-BEACHED
-*>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut and the jungle temple
+*>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut, the jungle temple, the desert pyramid and the buried treasure
          CALL "STRUCT-GATE-ON" USING WS-SWAMP-HUT
          CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE
+         CALL "STRUCT-GATE-ON" USING WS-DESERT-PYRAMID
+         CALL "STRUCT-GATE-ON" USING WS-BURIED-TREASURE
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF

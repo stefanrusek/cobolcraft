@@ -49,6 +49,15 @@
  01 WS-HUT                 BINARY-LONG VALUE 1.
  01 WS-JUNGLE              BINARY-LONG VALUE 2.
  01 WS-OTHER               BINARY-LONG VALUE 3.
+ 01 WS-DESERT              BINARY-LONG VALUE 4.
+ 01 WS-FOUND-D             BINARY-LONG VALUE 0.
+ 01 WS-RNGCOPY             BINARY-DOUBLE UNSIGNED.
+ 01 WS-BOUND3              BINARY-LONG VALUE 3.
+ 01 WS-ADJ                 BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-TREASURE            BINARY-LONG VALUE 5.
+ 01 WS-KIND-FLOOR          BINARY-LONG VALUE 1.
  01 WS-ROW1                BINARY-LONG VALUE 1.
  01 WS-DIRS.
     05 WS-DIR-OF           BINARY-LONG OCCURS 8 TIMES.
@@ -138,10 +147,12 @@
      MOVE "minecraft:plains" TO WS-NAME
      CALL "CLIMATE-POINT-ADD" USING WS-NAME WS-MINS WS-MAXS WS-OFFSET
      CALL "GEN-DATA-READY" USING WS-STATUS
-     MOVE 3 TO SD-ST-COUNT
+     MOVE 5 TO SD-ST-COUNT
+     MOVE "minecraft:buried_treasure" TO SDT-KEY(5)
      MOVE "minecraft:swamp_hut" TO SDT-KEY(1)
      MOVE "minecraft:jungle_pyramid" TO SDT-KEY(2)
      MOVE "minecraft:igloo" TO SDT-KEY(3)
+     MOVE "minecraft:desert_pyramid" TO SDT-KEY(4)
 
 *>   the hut: every chunk is valid, the stub is the top block of the chunk centre, one piece of type 103
      PERFORM VARYING WS-CX FROM -4 BY 1 UNTIL WS-CX > 3
@@ -352,6 +363,89 @@
      MOVE WS-WANT TO TL-EXPECTED-N
      MOVE SP-Y0(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the desert pyramid: valid exactly when the lowest corner (21 x 21) is 63 or more; the first valid start of the area, its box 21 x 15 x 21 and its adjusted height through SCP-POST
+     MOVE 0 TO WS-BAD-VALID
+     PERFORM VARYING WS-CX FROM -11 BY 1 UNTIL WS-CX > -8
+         PERFORM VARYING WS-CZ FROM 0 BY 1 UNTIL WS-CZ > 5
+             CALL "STRUCT-SCATTER-FIND-POINT" USING WS-DESERT WS-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID WS-DONE
+             COMPUTE WS-X0 = WS-CX * 16
+             COMPUTE WS-Z0 = WS-CZ * 16
+             COMPUTE WS-X1 = WS-X0 + 21
+             COMPUTE WS-Z1 = WS-Z0 + 21
+             CALL "STRUCT-BASE-HEIGHT" USING WS-X0 WS-Z0 WS-KIND WS-H
+             COMPUTE WS-LOW = WS-H - 1
+             CALL "STRUCT-BASE-HEIGHT" USING WS-X0 WS-Z1 WS-KIND WS-H
+             IF WS-H - 1 < WS-LOW
+                 COMPUTE WS-LOW = WS-H - 1
+             END-IF
+             CALL "STRUCT-BASE-HEIGHT" USING WS-X1 WS-Z0 WS-KIND WS-H
+             IF WS-H - 1 < WS-LOW
+                 COMPUTE WS-LOW = WS-H - 1
+             END-IF
+             CALL "STRUCT-BASE-HEIGHT" USING WS-X1 WS-Z1 WS-KIND WS-H
+             IF WS-H - 1 < WS-LOW
+                 COMPUTE WS-LOW = WS-H - 1
+             END-IF
+             IF WS-LOW >= 63
+                 IF WS-VALID NOT = 1 OR SP-COUNT NOT = 1 OR SP-TYPE(1) NOT = 101 OR SP-Y1(1) - SP-Y0(1) NOT = 14
+                     ADD 1 TO WS-BAD-VALID
+                 END-IF
+                 IF WS-FOUND-D = 0
+                     MOVE 1 TO WS-FOUND-D
+                     MOVE WS-CX TO WS-DX
+                     MOVE WS-CZ TO WS-DZ
+                 END-IF
+             ELSE
+                 IF WS-VALID NOT = 0 OR SP-COUNT NOT = 0
+                     ADD 1 TO WS-BAD-VALID
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE "acceptance US12 36-4§3.1 Desert pyramid: valid exactly when the lowest 21 x 21 corner is 63 or more, one piece of type 101 of height 15" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD-VALID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 36-4§3.1 Desert pyramid: the fixture terrain has a valid start" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND-D TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     IF WS-FOUND-D = 1
+         MOVE WS-DX TO WS-CX
+         MOVE WS-DZ TO WS-CZ
+         CALL "STRUCT-SCATTER-FIND-POINT" USING WS-DESERT WS-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID WS-DONE
+         MOVE SP-RNG TO WS-RNGCOPY
+         CALL "JRAND-NEXT-INT-BOUND" USING WS-RNGCOPY WS-BOUND3 WS-ADJ
+         MOVE 0 TO WS-MODE
+         COMPUTE WS-ADJUST = 0 - WS-ADJ
+         PERFORM WANT-HEIGHT
+         CALL "FL-OPEN" USING WS-PTR WS-CX WS-CZ WS-MIN-Y WS-HEIGHT WS-SEA
+         CALL "MSP-OPEN"
+         CALL "SCP-POST" USING WS-ROW1
+         MOVE "acceptance US12 36-4§3.2 Desert pyramid: SCP-POST moves the box to the lowest ground height minus nextInt(3) of the start random" TO TL-CASE
+         MOVE WS-WANT TO TL-EXPECTED-N
+         MOVE SP-Y0(1) TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-IF
+
+*>   the buried treasure: no draw, the stub on top of the chunk centre by the ocean floor, the piece the block (16 cx + 9, 90, 16 cz + 9) without orientation; SCP-POST dispatches to it
+     MOVE -10 TO WS-CX
+     MOVE 2 TO WS-CZ
+     CALL "STRUCT-SCATTER-FIND-POINT" USING WS-TREASURE WS-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID WS-DONE
+     COMPUTE WS-X0 = WS-CX * 16 + 8
+     COMPUTE WS-Z0 = WS-CZ * 16 + 8
+     CALL "STRUCT-BASE-HEIGHT" USING WS-X0 WS-Z0 WS-KIND-FLOOR WS-H
+     MOVE "acceptance US12 36-4§7.1 Buried treasure: one piece of type 104, the block (9, 90, 9) of the chunk, no orientation, the stub by the ocean floor" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-VALID = 1 AND SP-COUNT = 1 AND SP-TYPE(1) = 104 AND SP-ORIENT(1) < 0 AND SP-X0(1) = WS-CX * 16 + 9 AND SP-X1(1) = SP-X0(1)
+         AND SP-Z0(1) = WS-CZ * 16 + 9 AND SP-Z1(1) = SP-Z0(1) AND SP-Y0(1) = 90 AND SP-Y1(1) = 90 AND WS-Y = WS-H - 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "FL-OPEN" USING WS-PTR WS-CX WS-CZ WS-MIN-Y WS-HEIGHT WS-SEA
+     CALL "MSP-OPEN"
+     CALL "SCP-POST" USING WS-ROW1
      STOP RUN.
 
  FRESH-START.

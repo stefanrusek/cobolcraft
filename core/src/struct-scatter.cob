@@ -572,6 +572,14 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     IF SP-TYPE(L-ROW) = 101
+         CALL "SCP-DESERT-POST" USING L-ROW
+         GOBACK
+     END-IF
+     IF SP-TYPE(L-ROW) = 104
+         CALL "SCP-TREASURE-POST" USING L-ROW
+         GOBACK
+     END-IF
      CALL "SCP-GROUND" USING L-ROW WS-AVERAGE WS-NO-OFFSET
      IF SP-TYPE(L-ROW) = 102
          CALL "SCP-JUNGLE-POST" USING L-ROW
@@ -598,6 +606,7 @@
  01 WS-D                   BINARY-LONG.
  01 WS-HEIGHT              BINARY-LONG.
  01 WS-KIND                BINARY-LONG VALUE 0.
+ 01 WS-STUB-KIND           BINARY-LONG VALUE 0.
  01 WS-LOW                 BINARY-LONG.
  01 WS-X0                  BINARY-LONG.
  01 WS-Z0                  BINARY-LONG.
@@ -611,6 +620,13 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-NONE                BINARY-LONG VALUE -1.
+ 01 WS-BX1                 BINARY-LONG.
+ 01 WS-BY1                 BINARY-LONG.
+ 01 WS-BZ1                 BINARY-LONG.
+ 01 WS-Y90                 BINARY-LONG VALUE 90.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
  01 WS-BOX.
     COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==B-==.
  01 WS-DIRS.
@@ -633,11 +649,19 @@
  PROCEDURE DIVISION USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID L-DONE.
      MOVE 1 TO L-DONE
      EVALUATE SDT-KEY(L-STRUCT)
+         WHEN "minecraft:desert_pyramid"
+             MOVE 101 TO WS-TYPE
+             MOVE 21 TO WS-W
+             MOVE 15 TO WS-H
+             MOVE 21 TO WS-D
          WHEN "minecraft:jungle_pyramid"
              MOVE 102 TO WS-TYPE
              MOVE 12 TO WS-W
              MOVE 10 TO WS-H
              MOVE 15 TO WS-D
+         WHEN "minecraft:buried_treasure"
+             MOVE 104 TO WS-TYPE
+             MOVE 1 TO WS-STUB-KIND
          WHEN "minecraft:swamp_hut"
              MOVE 103 TO WS-TYPE
              MOVE 7 TO WS-W
@@ -652,12 +676,23 @@
      CALL "JRAND-LARGE-FEATURE-SEED" USING SP-RNG WS-USEED L-CX L-CZ
      COMPUTE L-X = L-CX * 16 + 8
      COMPUTE L-Z = L-CZ * 16 + 8
-     CALL "STRUCT-BASE-HEIGHT" USING L-X L-Z WS-KIND WS-HEIGHT
+     CALL "STRUCT-BASE-HEIGHT" USING L-X L-Z WS-STUB-KIND WS-HEIGHT
      COMPUTE L-Y = WS-HEIGHT - 1
      MOVE 1 TO L-VALID
      COMPUTE WS-X0 = L-CX * 16
      COMPUTE WS-Z0 = L-CZ * 16
-     IF WS-TYPE = 102
+     IF WS-TYPE = 104
+*>       the treasure: no draw; the piece is the block (16 cx + 9, 90, 16 cz + 9), without orientation
+         COMPUTE WS-X1 = WS-X0 + 9
+         COMPUTE WS-Z1 = WS-Z0 + 9
+         MOVE WS-X1 TO WS-BX1
+         MOVE WS-Z1 TO WS-BZ1
+         MOVE WS-Y90 TO WS-BY1
+         CALL "SPB-BOX-NEW" USING WS-X1 WS-Y90 WS-Z1 WS-BX1 WS-BY1 WS-BZ1 WS-BOX
+         CALL "SPB-ADD" USING WS-TYPE WS-NONE WS-ZERO WS-ZERO2 WS-BOX WS-ROW
+         GOBACK
+     END-IF
+     IF WS-TYPE NOT = 103
 *>       getLowestY: the four corners, the offsets are the full width and depth
          MOVE 100000 TO WS-LOW
          PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
@@ -688,3 +723,121 @@
      CALL "SPB-ADD" USING WS-TYPE WS-DIR WS-ZERO WS-ZERO2 WS-BOX WS-ROW
      GOBACK.
  END PROGRAM STRUCT-SCATTER-FIND-POINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SCP-TREASURE-POST.
+*> USING row: BuriedTreasurePiece.postProcess (36-4 7.2; piece type 104, a one block box at (16 cx + 9, 90, 16 cz + 9), no orientation): h is the first free y of the ocean floor map of the chunk (the
+*> window's OCEAN_FLOOR_WG, 35-1 4.2: the piece lies in its own chunk, so the live map is read); from there down to min y the first cell whose block below is sandstone, stone, andesite, granite
+*> or diorite takes the chest (createChest, the facing by reorient), after its air or liquid neighbours were filled in the order down, up, north, south, west, east with the sand (or the cell's
+*> block when it is none) or, over a void below the neighbour (and not up), the support block; the scan ends there whether or not the chest was made.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTPIECE.
+ COPY CBLOCKS.
+ COPY FEATLEVEL.
+ 01 WS-ORDINAL             BINARY-LONG VALUE 2.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-BN                  BINARY-LONG.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-CLASS2              BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-STONES              BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-FILL                BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 2.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:sand".
+ 01 WS-PAIRS               PIC X(600) VALUE SPACES.
+ 01 WS-SAND                BINARY-LONG.
+ 01 WS-LOOT                PIC X(48) VALUE "minecraft:chests/buried_treasure".
+ 01 WS-WANT                PIC X(48) VALUE "chest".
+ 01 WS-NOSPEC              PIC X(60) VALUE SPACES.
+ 01 WS-PLACED              BINARY-LONG.
+ 01 WS-LOCAL-Y             BINARY-LONG.
+ 01 WS-DXS.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 1.
+ 01 WS-DX-TABLE REDEFINES WS-DXS.
+    05 WS-DX               BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-DYS.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+ 01 WS-DY-TABLE REDEFINES WS-DYS.
+    05 WS-DY               BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-DZS.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+ 01 WS-DZ-TABLE REDEFINES WS-DZS.
+    05 WS-DZ               BINARY-LONG OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "STRUCT-TPL-STATE" USING WS-KEY WS-PAIRS WS-SAND
+     MOVE SP-X0(L-ROW) TO WS-X
+     MOVE SP-Z0(L-ROW) TO WS-Z
+     CALL "FL-HEIGHT-OF" USING WS-ORDINAL WS-X WS-Z WS-Y
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL WS-Y <= FL-MIN-Y OR WS-DONE = 1
+         CALL "FL-GET-STATE" USING WS-X WS-Y WS-Z WS-CUR
+         COMPUTE WS-BY = WS-Y - 1
+         CALL "FL-GET-STATE" USING WS-X WS-BY WS-Z WS-BELOW
+         CALL "FL-BLOCK-OF" USING WS-BELOW WS-B
+         MOVE 0 TO WS-STONES
+         IF WS-B > 0
+             IF CB-KEY(WS-B) = "sandstone" OR "stone" OR "andesite" OR "granite" OR "diorite"
+                 MOVE 1 TO WS-STONES
+             END-IF
+         END-IF
+         IF WS-STONES = 1
+             CALL "FL-CLASS" USING WS-CUR WS-CLASS
+             MOVE WS-CUR TO WS-FILL
+             IF WS-CLASS = 1 OR WS-CLASS = 2 OR WS-CLASS = 3
+                 MOVE WS-SAND TO WS-FILL
+             END-IF
+             PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+                 COMPUTE WS-NX = WS-X + WS-DX(WS-D)
+                 COMPUTE WS-NY = WS-Y + WS-DY(WS-D)
+                 COMPUTE WS-NZ = WS-Z + WS-DZ(WS-D)
+                 CALL "FL-GET-STATE" USING WS-NX WS-NY WS-NZ WS-N
+                 CALL "FL-CLASS" USING WS-N WS-CLASS
+                 IF WS-CLASS = 1 OR WS-CLASS = 2 OR WS-CLASS = 3
+                     COMPUTE WS-BY = WS-NY - 1
+                     CALL "FL-GET-STATE" USING WS-NX WS-BY WS-NZ WS-BN
+                     CALL "FL-CLASS" USING WS-BN WS-CLASS2
+                     IF (WS-CLASS2 = 1 OR WS-CLASS2 = 2 OR WS-CLASS2 = 3) AND WS-D NOT = 2
+                         CALL "FL-SET-STATE" USING WS-NX WS-NY WS-NZ WS-BELOW WS-FLAGS WS-OK
+                     ELSE
+                         CALL "FL-SET-STATE" USING WS-NX WS-NY WS-NZ WS-FILL WS-FLAGS WS-OK
+                     END-IF
+                 END-IF
+             END-PERFORM
+             CALL "SCP-CONTAINER" USING L-ROW WS-X WS-Y WS-Z WS-NOSPEC WS-WANT WS-LOOT WS-PLACED
+             MOVE 1 TO WS-DONE
+         ELSE
+             SUBTRACT 1 FROM WS-Y
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SCP-TREASURE-POST.

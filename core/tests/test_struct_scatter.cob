@@ -14,6 +14,7 @@
  COPY CELLS.
  COPY FEATLEVEL.
  COPY STRUCTPIECE.
+ COPY STRUCTDESERT.
  COPY STRUCTBLK.
  COPY GENBE.
  COPY XORO REPLACING ==XR-STATE== BY ==WS-XR== LEADING ==XR-== BY ==WX-==.
@@ -92,6 +93,84 @@
  01 WS-OPS.
     05 FILLER              PIC X(100) VALUE "K 2 6 3 4 6 4 oak_log oak_log".
  01 WS-OPCOUNT             BINARY-LONG VALUE 1.
+ 01 WS-EXP-Xs.
+    05 FILLER              BINARY-LONG VALUE 6.
+    05 FILLER              BINARY-LONG VALUE 8.
+    05 FILLER              BINARY-LONG VALUE 8.
+    05 FILLER              BINARY-LONG VALUE 7.
+    05 FILLER              BINARY-LONG VALUE 7.
+    05 FILLER              BINARY-LONG VALUE 7.
+    05 FILLER              BINARY-LONG VALUE 10.
+    05 FILLER              BINARY-LONG VALUE 10.
+    05 FILLER              BINARY-LONG VALUE -8.
+    05 FILLER              BINARY-LONG VALUE -9.
+    05 FILLER              BINARY-LONG VALUE -7.
+    05 FILLER              BINARY-LONG VALUE -8.
+    05 FILLER              BINARY-LONG VALUE -10.
+    05 FILLER              BINARY-LONG VALUE -7.
+ 01 WS-EXP-X-T REDEFINES WS-EXP-Xs.
+    05 WS-EXP-X            BINARY-LONG OCCURS 14 TIMES.
+ 01 WS-EXP-Ys.
+    05 FILLER              BINARY-LONG VALUE 64.
+    05 FILLER              BINARY-LONG VALUE 63.
+    05 FILLER              BINARY-LONG VALUE 62.
+    05 FILLER              BINARY-LONG VALUE 63.
+    05 FILLER              BINARY-LONG VALUE 61.
+    05 FILLER              BINARY-LONG VALUE 63.
+    05 FILLER              BINARY-LONG VALUE 61.
+    05 FILLER              BINARY-LONG VALUE 63.
+    05 FILLER              BINARY-LONG VALUE 64.
+    05 FILLER              BINARY-LONG VALUE 63.
+    05 FILLER              BINARY-LONG VALUE 61.
+    05 FILLER              BINARY-LONG VALUE 61.
+    05 FILLER              BINARY-LONG VALUE 63.
+    05 FILLER              BINARY-LONG VALUE 61.
+ 01 WS-EXP-Y-T REDEFINES WS-EXP-Ys.
+    05 WS-EXP-Y            BINARY-LONG OCCURS 14 TIMES.
+ 01 WS-EXP-Zs.
+    05 FILLER              BINARY-LONG VALUE 6.
+    05 FILLER              BINARY-LONG VALUE 8.
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              BINARY-LONG VALUE 7.
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              BINARY-LONG VALUE 6.
+    05 FILLER              BINARY-LONG VALUE 5.
+    05 FILLER              BINARY-LONG VALUE 5.
+    05 FILLER              BINARY-LONG VALUE 5.
+    05 FILLER              BINARY-LONG VALUE 6.
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              BINARY-LONG VALUE 7.
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              BINARY-LONG VALUE 8.
+ 01 WS-EXP-Z-T REDEFINES WS-EXP-Zs.
+    05 WS-EXP-Z            BINARY-LONG OCCURS 14 TIMES.
+ 01 WS-EXP-SEEDs.
+    05 FILLER              BINARY-DOUBLE VALUE 1649267466304.
+    05 FILLER              BINARY-DOUBLE VALUE 2199023288383.
+    05 FILLER              BINARY-DOUBLE VALUE 2199023292478.
+    05 FILLER              BINARY-DOUBLE VALUE 1924145377343.
+    05 FILLER              BINARY-DOUBLE VALUE 1924145385533.
+    05 FILLER              BINARY-DOUBLE VALUE 1924145373247.
+    05 FILLER              BINARY-DOUBLE VALUE 2748779089981.
+    05 FILLER              BINARY-DOUBLE VALUE 2748779089983.
+    05 FILLER              BINARY-DOUBLE VALUE -2199023235008.
+    05 FILLER              BINARY-DOUBLE VALUE -2473901137857.
+    05 FILLER              BINARY-DOUBLE VALUE -1924145311683.
+    05 FILLER              BINARY-DOUBLE VALUE -2199023226819.
+    05 FILLER              BINARY-DOUBLE VALUE -2748779032513.
+    05 FILLER              BINARY-DOUBLE VALUE -1924145315779.
+ 01 WS-EXP-SEED-T REDEFINES WS-EXP-SEEDs.
+    05 WS-EXP-SEED            BINARY-DOUBLE OCCURS 14 TIMES.
+ 01 WS-START              BINARY-LONG.
+ 01 WS-LEN                BINARY-LONG.
+ 01 WS-OFFS               BINARY-LONG.
+ 01 WS-SAND               BINARY-LONG.
+ 01 WS-SUSP               BINARY-LONG.
+ 01 WS-NSAND              BINARY-LONG.
+ 01 WS-NSUSP              BINARY-LONG.
+ 01 WS-BAD                BINARY-LONG.
+ 01 WS-USEED              BINARY-DOUBLE UNSIGNED VALUE 12345.
+ 01 WS-K                  BINARY-LONG.
  01 WS-DIRD                PIC 9.
  01 WS-NEIGH-D             PIC 9.
  01 WS-NAME                PIC X(60).
@@ -383,8 +462,115 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   the K operation of a table (generateBox with skipAir) through SCP-RUN: the stone cell (3,70,11) takes the log, the air cell (2,70,11) stays; a P line with two positions
+*>   the buried treasure (36-4 7.2): the box is the block (9, 90, 9), no orientation. Scenario 1: stone up to y 61, water west of the target, a void under the east neighbour; scenario 2: a gravel
+*>   block on the stone; scenario 3: a window of air only.
+     PERFORM TREASURE-PIECE
      PERFORM OPEN-WINDOW
+     MOVE 10 TO WS-WX MOVE 61 TO WS-WY MOVE 9 TO WS-WZ
+     MOVE 0 TO WS-STATE
+     PERFORM SET-CELL
+     MOVE "minecraft:water" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     CALL "STRUCT-TPL-STATE" USING WS-KEY WS-PAIRS WS-STATE
+     MOVE 8 TO WS-WX MOVE 62 TO WS-WY MOVE 9 TO WS-WZ
+     PERFORM SET-CELL
+     CALL "SCP-TREASURE-POST" USING WS-ROW
+     MOVE "sand" TO WS-SPEC
+     PERFORM STATE-OF-SPEC
+     MOVE WS-STATE TO WS-SAND
+     MOVE 0 TO WS-BAD
+     MOVE 9 TO WS-WX MOVE 63 TO WS-WY MOVE 9 TO WS-WZ
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-SAND
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE 9 TO WS-WX MOVE 62 TO WS-WY MOVE 8 TO WS-WZ
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-SAND
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE 10 TO WS-WZ
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-SAND
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE 8 TO WS-WX MOVE 9 TO WS-WZ
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-SAND
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE 10 TO WS-WX
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-STONE
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE "acceptance US12 36-4§7.2 Buried treasure: the air and water neighbours are sand, up included, the one over a void is the support block" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:chest" TO WS-KEY
+     MOVE "facing=east" TO WS-PAIRS
+     CALL "STRUCT-TPL-STATE" USING WS-KEY WS-PAIRS WS-WANT
+     MOVE 9 TO WS-WX MOVE 62 TO WS-WY MOVE 9 TO WS-WZ
+     PERFORM CELL-AT
+     MOVE "acceptance US12 36-4§7.2 Buried treasure: the chest takes the first cell above stone, reoriented between four walls to east" TO TL-CASE
+     MOVE WS-WANT TO TL-EXPECTED-N
+     MOVE WS-CELL TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 36-4§7.2 Buried treasure: one chest request with the buried treasure table" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF GBL-COUNT = 1 AND GBL-LOOT(1) = "minecraft:chests/buried_treasure" AND GBL-X(1) = 9 AND GBL-Y(1) = 62 AND GBL-Z(1) = 9
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   scenario 2: gravel on the stone: the scan skips the cell above it (the block below is gravel), the fill is the gravel itself
+     PERFORM OPEN-WINDOW
+     MOVE "gravel" TO WS-SPEC
+     PERFORM STATE-OF-SPEC
+     MOVE WS-STATE TO WS-FILL
+     MOVE 9 TO WS-WX MOVE 62 TO WS-WY MOVE 9 TO WS-WZ
+     PERFORM SET-CELL
+     CALL "SCP-TREASURE-POST" USING WS-ROW
+     MOVE 0 TO WS-BAD
+     MOVE 8 TO WS-WX
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-FILL
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE 9 TO WS-WX MOVE 63 TO WS-WY
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-FILL
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE 62 TO WS-WY
+     PERFORM CELL-AT
+     IF WS-CELL NOT = WS-WANT
+         ADD 1 TO WS-BAD
+     END-IF
+     MOVE "acceptance US12 36-4§7.2 Buried treasure: over gravel the neighbours take the gravel and the chest replaces it" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   scenario 3: nothing but air: no stone below any cell, nothing is placed
+     PERFORM OPEN-WINDOW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 126 * 256
+         MOVE 0 TO CE-STATE(WS-I)
+     END-PERFORM
+     CALL "SCP-TREASURE-POST" USING WS-ROW
+     PERFORM COUNT-WINDOW
+     MOVE "acceptance US12 36-4§7.2 Buried treasure: a column with no stone writes nothing and asks for no chest" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-COUNT + GBL-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the K operation of a table (generateBox with skipAir) through SCP-RUN: the stone cell (3,70,11) takes the log, the air cell (2,70,11) stays; a P line with two positions
+     MOVE 102 TO WS-TYPE MOVE 12 TO WS-W MOVE 10 TO WS-H MOVE 15 TO WS-D MOVE 2 TO WS-DIR MOVE 0 TO WS-X0 WS-Z0
+     PERFORM MAKE-PIECE
+     PERFORM OPEN-WINDOW
+     MOVE "oak_log" TO WS-SPEC
+     PERFORM STATE-OF-SPEC
+     MOVE WS-STATE TO WS-FILL
      MOVE 3 TO WS-WX MOVE 70 TO WS-WY MOVE 11 TO WS-WZ
      MOVE WS-STONE TO WS-STATE
      PERFORM SET-CELL
@@ -472,7 +658,144 @@
          MOVE WS-STATE TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+*>   the desert pyramid, north oriented at x 0 = -8 (window chunk 0, positive x) and -24 (window chunk -1, negative x: the packed seeds of the brushable blocks are negative), start random of
+*>   chunk (0,0) of seed 12345; the expected values come from an independent model of the document (Java LCG, Mth.getSeed, the sorted set, Util.shuffle, pos.asLong)
+     PERFORM VARYING WS-OFFS FROM 1 BY 1 UNTIL WS-OFFS > 2
+         MOVE 101 TO WS-TYPE MOVE 21 TO WS-W MOVE 15 TO WS-H MOVE 21 TO WS-D MOVE 2 TO WS-DIR MOVE 0 TO WS-Z0
+         IF WS-OFFS = 1
+             MOVE -8 TO WS-X0
+             MOVE 0 TO WS-WCX
+             MOVE 1 TO WS-START
+             MOVE 8 TO WS-LEN
+             MOVE 99 TO WS-NSAND
+             MOVE 8 TO WS-NSUSP
+         ELSE
+             MOVE -24 TO WS-X0
+             MOVE -1 TO WS-WCX
+             MOVE 9 TO WS-START
+             MOVE 6 TO WS-LEN
+             MOVE 102 TO WS-NSAND
+             MOVE 6 TO WS-NSUSP
+         END-IF
+         MOVE WS-OFFS TO WS-DIRD
+         MOVE 0 TO WS-WCZ
+         PERFORM MAKE-PIECE
+         PERFORM OPEN-WINDOW
+         MOVE 12345 TO SP-SEED
+         CALL "JRAND-LARGE-FEATURE-SEED" USING SP-RNG WS-USEED WS-ZERO WS-ZERO2
+         CALL "SCP-RESET"
+         CALL "SCP-DESERT-BODY" USING WS-ROW
+         PERFORM COUNT-WINDOW
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.3 Desert pyramid: config " WS-DIRD " writes 1559 blocks into the window" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1559 TO TL-EXPECTED-N
+         MOVE WS-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.4 Desert pyramid: config " WS-DIRD " makes four chests of the desert pyramid table, flags set" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 4 TO TL-EXPECTED-N
+         MOVE 0 TO TL-OBSERVED-N
+         IF GBL-COUNT = 4 AND GBL-LOOT(1) = "minecraft:chests/desert_pyramid" AND GBL-LOOT(4) = "minecraft:chests/desert_pyramid"
+             AND SP-F1(WS-ROW) = 1 AND SP-F2(WS-ROW) = 1 AND SP-F3(WS-ROW) = 1 AND SP-F4(WS-ROW) = 1
+             MOVE 4 TO TL-OBSERVED-N
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         CALL "SCP-DESERT-AFTER"
+         COMPUTE WS-COUNT2 = 4 + WS-LEN
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.5 Desert pyramid: config " WS-DIRD " afterPlace asks for the roof's and 5 to 7 suspicious blocks" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-COUNT2 TO TL-EXPECTED-N
+         MOVE GBL-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>       the requests in the order of the model: the roof position, then the shuffled set's first n; position, loot table, seed pos.asLong()
+         MOVE 0 TO WS-BAD
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LEN
+             COMPUTE WS-K = WS-START + WS-I - 1
+             COMPUTE WS-DI = 4 + WS-I
+             IF GBL-X(WS-DI) NOT = WS-EXP-X(WS-K) OR GBL-Y(WS-DI) NOT = WS-EXP-Y(WS-K) OR GBL-Z(WS-DI) NOT = WS-EXP-Z(WS-K)
+                 OR GBL-SEED(WS-DI) NOT = WS-EXP-SEED(WS-K) OR GBL-LOOT(WS-DI) NOT = "minecraft:archaeology/desert_pyramid"
+                 ADD 1 TO WS-BAD
+             END-IF
+         END-PERFORM
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.5 Desert pyramid: config " WS-DIRD " the suspicious sand positions, tables and seeds equal the model" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 0 TO TL-EXPECTED-N
+         MOVE WS-BAD TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE "sand" TO WS-SPEC
+         PERFORM STATE-OF-SPEC
+         MOVE WS-STATE TO WS-SAND
+         MOVE "suspicious_sand" TO WS-SPEC
+         PERFORM STATE-OF-SPEC
+         MOVE WS-STATE TO WS-SUSP
+         MOVE 0 TO WS-COUNT WS-COUNT2
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 200 * 256
+             IF CE-STATE(WS-I) = WS-SAND
+                 ADD 1 TO WS-COUNT
+             END-IF
+             IF CE-STATE(WS-I) = WS-SUSP
+                 ADD 1 TO WS-COUNT2
+             END-IF
+         END-PERFORM
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.5 Desert pyramid: config " WS-DIRD " the window holds the model's sand and suspicious sand cells" DELIMITED BY SIZE INTO TL-CASE
+         COMPUTE TL-EXPECTED-N = WS-NSAND * 1000 + WS-NSUSP
+         COMPUTE TL-OBSERVED-N = WS-COUNT * 1000 + WS-COUNT2
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         PERFORM COUNT-WINDOW
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.5 Desert pyramid: config " WS-DIRD " afterPlace leaves 1559 blocks in the window" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1559 TO TL-EXPECTED-N
+         MOVE WS-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>       afterPlace with the lists emptied (no pyramid was post-processed in the pass) asks for nothing
+         MOVE GBL-COUNT TO WS-COUNT2
+         CALL "SCP-RESET"
+         CALL "SCP-DESERT-AFTER"
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§3.5 Desert pyramid: config " WS-DIRD " afterPlace after a reset asks for nothing" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-COUNT2 TO TL-EXPECTED-N
+         MOVE GBL-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   afterPlace over a list with duplicates (a set collapses them) shorter than n: five entries, three distinct, every one becomes suspicious sand, and the roof's
+     MOVE 0 TO WS-WCX
+     PERFORM OPEN-WINDOW
+     MOVE 12345 TO SP-SEED
+     MOVE 5 TO SCD-COUNT
+     MOVE 1 TO SCD-ROOF-SET
+     MOVE 0 TO SCD-ROOF-X MOVE 70 TO SCD-ROOF-Y MOVE 0 TO SCD-ROOF-Z
+     MOVE 1 TO SCD-CX(1) MOVE 70 TO SCD-CY(1) MOVE 1 TO SCD-CZ(1)
+     MOVE 2 TO SCD-CX(2) MOVE 70 TO SCD-CY(2) MOVE 1 TO SCD-CZ(2)
+     MOVE 1 TO SCD-CX(3) MOVE 70 TO SCD-CY(3) MOVE 1 TO SCD-CZ(3)
+     MOVE 2 TO SCD-CX(4) MOVE 70 TO SCD-CY(4) MOVE 1 TO SCD-CZ(4)
+     MOVE 3 TO SCD-CX(5) MOVE 70 TO SCD-CY(5) MOVE 1 TO SCD-CZ(5)
+     CALL "SCP-DESERT-AFTER"
+     MOVE "suspicious_sand" TO WS-SPEC
+     PERFORM STATE-OF-SPEC
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 200 * 256
+         IF CE-STATE(WS-I) = WS-STATE
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 36-4§3.5 Desert pyramid: a candidate set with duplicates collapses, a set below n is all suspicious (4 requests, 4 suspicious cells)" TO TL-CASE
+     MOVE 44 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = GBL-COUNT * 10 + WS-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+ TREASURE-PIECE.
+*>   the buried treasure piece in row 1: the block (9, 90, 9), no orientation
+     MOVE 9 TO WS-X0 WS-Z0
+     MOVE 90 TO WS-WY
+     MOVE 9 TO WS-X1 WS-Z1
+     MOVE 90 TO WS-LY2
+     CALL "SPB-RESET"
+     CALL "SPB-BOX-NEW" USING WS-X0 WS-WY WS-Z0 WS-X1 WS-LY2 WS-Z1 WS-BOX
+     MOVE 104 TO WS-TYPE
+     MOVE -1 TO WS-DIR
+     CALL "SPB-ADD" USING WS-TYPE WS-DIR WS-ZERO WS-ZERO2 WS-BOX WS-ROW.
 
  MAKE-PIECE.
 *>   a piece of the type and orientation WS-DIR at (WS-X0, 64, WS-Z0): row 1

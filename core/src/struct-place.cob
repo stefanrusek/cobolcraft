@@ -495,7 +495,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PLACE-START.
 *> StructureStart.placeInChunk (36-1 8): every piece of the builder whose box intersects the writable area (the chunk's box from min y + 1) is post-processed in list order; the pivot and
-*> afterPlace are not used by the pieces built so far.
+*> afterPlace is only the desert pyramid's (SCP-DESERT-AFTER, after the pieces).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTPIECE.
@@ -508,6 +508,7 @@
          CALL "SPB-BOX-CENTER" USING SP-BOX(1) SP-PIV-X WS-CY SP-PIV-Z
          MOVE SP-Y0(1) TO SP-PIV-Y
      END-IF
+     CALL "SCP-RESET"
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-COUNT
          CALL "SPB-BOX-INTERSECTS" USING SP-BOX(WS-I) SP-WBOX WS-FLAG
          IF WS-FLAG = 1
@@ -521,6 +522,7 @@
              END-EVALUATE
          END-IF
      END-PERFORM
+     CALL "SCP-DESERT-AFTER"
      GOBACK.
  END PROGRAM STRUCT-PLACE-START.
 

@@ -95,6 +95,10 @@
      PERFORM ONE-STRUCTURE
      MOVE "minecraft:jungle_pyramid" TO WS-KEY
      PERFORM ONE-STRUCTURE
+     MOVE "minecraft:desert_pyramid" TO WS-KEY
+     PERFORM ONE-STRUCTURE
+     MOVE "minecraft:buried_treasure" TO WS-KEY
+     PERFORM ONE-STRUCTURE
      STOP RUN.
 
  ONE-STRUCTURE.
