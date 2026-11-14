@@ -17,15 +17,23 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
  01 WS-R                   BINARY-DOUBLE.
  01 WS-SECONDS             BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-TICKS                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-TICKS.
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF SM-NEUTRAL(WS-M) = 4
+*>       The piglin's ANGER_DURATION (21 section 5.5.1).
+         MOVE 600 TO L-TICKS
+         GOBACK
+     END-IF
      MOVE EN-ID(L-ROW) TO WS-ARG(1)
      MOVE CW-TIME TO WS-ARG(2)
      MOVE 41 TO WS-ARG(3)
@@ -94,7 +102,7 @@
      IF WS-M = 0
          GOBACK
      END-IF
-     IF SM-NEUTRAL(WS-M) = 3
+     IF SM-NEUTRAL(WS-M) = 3 OR SM-NEUTRAL(WS-M) = 4
          CALL "NETHER-ANGER-TICKS" USING L-ROW WS-TICKS
          MOVE WS-TICKS TO EN-ANGER(L-ROW)
          MOVE L-ATTACKER TO EN-TARGET(L-ROW)
@@ -113,10 +121,34 @@
  01 WS-P                   BINARY-LONG.
  01 WS-D2                  FLOAT-LONG.
  01 WS-LIMIT               FLOAT-LONG.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-BEST-D2             FLOAT-LONG.
+ 01 WS-GOLD                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
+     IF SM-NEUTRAL(L-M) = 4 AND EN-ANGER(L-ROW) = 0
+*>       A calm piglin attacks the nearest player in range that wears no golden armor.
+         MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) WS-BEST
+         COMPUTE WS-LIMIT = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+             IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-MODE(WS-P) = 0 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+                 CALL "NETHER-GOLD-WORN" USING WS-P WS-GOLD
+                 COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
+                     + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+                 IF WS-GOLD = 0 AND WS-D2 <= WS-LIMIT AND (WS-BEST = 0 OR WS-D2 < WS-BEST-D2)
+                     MOVE WS-P TO WS-BEST
+                     MOVE WS-D2 TO WS-BEST-D2
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-BEST > 0
+             MOVE WS-BEST TO EN-TARGET(L-ROW)
+             MOVE PL-ENTITY-ID(WS-BEST) TO EN-TARGET-ID(L-ROW)
+         END-IF
+         GOBACK
+     END-IF
      IF EN-ANGER(L-ROW) > 0
          SUBTRACT 1 FROM EN-ANGER(L-ROW)
      END-IF
@@ -135,11 +167,38 @@
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-ALERT(L-ROW)
          GOBACK
      END-IF
-     IF EN-ALERT(L-ROW) > 0
-         SUBTRACT 1 FROM EN-ALERT(L-ROW)
-     END-IF
-     IF EN-ALERT(L-ROW) = 0
-         CALL "NETHER-ALERT" USING L-ROW WS-P
+     IF SM-NEUTRAL(L-M) = 3
+         IF EN-ALERT(L-ROW) > 0
+             SUBTRACT 1 FROM EN-ALERT(L-ROW)
+         END-IF
+         IF EN-ALERT(L-ROW) = 0
+             CALL "NETHER-ALERT" USING L-ROW WS-P
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM NETHER-AGGRO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NETHER-GOLD-WORN.
+*> USING player row, worn out (BINARY-LONG): 1 when any of the four armor slots holds a golden piece (tag piglin_safe_armor, 21 section 5.5.1), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ COPY CITEMS.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-WORN                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-WORN.
+     MOVE 0 TO L-WORN
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 4
+         MOVE MN-EQUIP-ITEM(L-PLAYER, WS-SLOT) TO WS-ITEM
+         IF MN-EQUIP-COUNT(L-PLAYER, WS-SLOT) > 0 AND WS-ITEM > 0 AND WS-ITEM < IT-COUNT
+             IF IT-KEY(WS-ITEM + 1)(1:7) = "golden_" OR IT-KEY(WS-ITEM + 1)(1:17) = "minecraft:golden_"
+                 MOVE 1 TO L-WORN
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM NETHER-GOLD-WORN.

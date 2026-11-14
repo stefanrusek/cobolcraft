@@ -202,6 +202,10 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ 01 WS-HASH-COUNT          BINARY-LONG VALUE 3.
+ 01 WS-ARGS.
+    05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
+ 01 WS-R                   BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -213,6 +217,14 @@
          IF EN-VARIANT(L-ROW) > 1
              MOVE EN-VARIANT(L-ROW) TO L-DAMAGE
          END-IF
+     END-IF
+*>   A hoglin or zoglin adult hits for A / 2 + nextInt(A) (21 section 5.6; A = 6: 3 to 8), the draw from the hash of the entity id and the time.
+     IF SM-KEY(L-M) = "hoglin" OR SM-KEY(L-M) = "zoglin"
+         MOVE EN-ID(L-ROW) TO WS-ARG(1)
+         MOVE CW-TIME TO WS-ARG(2)
+         MOVE 47 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-HASH-COUNT WS-ARGS WS-R
+         COMPUTE L-DAMAGE = SM-ATTACK(L-M) / 2 + FUNCTION MOD(WS-R, SM-ATTACK(L-M))
      END-IF
 *>   A magma cube hits for its size + 2 at every size (21 section 5.3: getAttackDamage + 2; it can always deal damage).
      IF SM-KEY(L-M) = "magma_cube"

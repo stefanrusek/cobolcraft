@@ -433,7 +433,7 @@
          CALL "STDMOB-ENDER-AIM" USING L-ROW L-M
          GOBACK
      END-IF
-     IF SM-NEUTRAL(L-M) = 3
+     IF SM-NEUTRAL(L-M) = 3 OR SM-NEUTRAL(L-M) = 4
          CALL "NETHER-AGGRO" USING L-ROW L-M
          GOBACK
      END-IF
