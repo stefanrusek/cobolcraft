@@ -1,7 +1,7 @@
 *> Dimension table (standin-content §5.1, §5.2, §15.1 to §15.5, dimension type §4.6, weather §14.2),
 *> transcribed. Tested by core/tests/test_content_tables.cob. Index by row number (DIM-MAIN = 1,
 *> DIM-SUBROUTINE = 2; the row number minus 1 is the §12.4 dimension index). The table has
-*> DIM-TABLE-ROWS (2) rows, one per dimension the game can enable (CORESTATE's CORE-MAX-DIMS), in
+*> DIM-TABLE-ROWS (5) rows, one per dimension the game can enable (CORESTATE's CORE-MAX-DIMS), in
 *> Login order.
 *> DM-GENERATOR: generator id, DIM-GEN-MAIN (1) = the §5.2 surface generator, DIM-GEN-SUBROUTINE (2)
 *>   = the §15.2 floor generator (GEN-SUB-* constants).
@@ -11,17 +11,22 @@
 *> DM-SKYLIGHT: dimension type has_skylight (§4.6). DM-WEATHER: 1 when the dimension has weather (§14.2).
 *> DM-BIOME: the biome of every cell (§15.1), -1 when the generator chooses (§5.2).
 *> DM-EXTRA: 1 when the dimension is enabled only while the extra-dimensions setting is on (§15.1).
-*> DM-EXTRA 2: a row of the standard world type only (never enabled for a cobolcraft world).
+*> DM-EXTRA 2: a row of the standard (and debug) world type only (never enabled for a cobolcraft world). DM-EXTRA 3: a row of the
+*>   standard world type only, enabled only while the extra-dimensions setting is on (minecraft:the_nether, minecraft:the_end).
 *> DM-BLOCK-BITS, DM-BIOME-BITS: the global palette bits of the chunk packet (06 §5.5; 5 and 2 for the cobolcraft
 *>   type, 16 and 7 for the standard type).
 *> DM-TRAVEL-TO: the row a goto_pad in this dimension leads to (§15.5 destination).
- 78 DIM-TABLE-ROWS            VALUE 3.
+ 78 DIM-TABLE-ROWS            VALUE 5.
  78 DIM-STANDARD-OVERWORLD    VALUE 3.
+ 78 DIM-STANDARD-NETHER       VALUE 4.
+ 78 DIM-STANDARD-END          VALUE 5.
  78 DIM-MAIN                  VALUE 1.
  78 DIM-SUBROUTINE            VALUE 2.
  78 DIM-GEN-MAIN              VALUE 1.
  78 DIM-GEN-SUBROUTINE        VALUE 2.
  78 DIM-GEN-STANDARD          VALUE 3.
+ 78 DIM-GEN-NETHER            VALUE 4.
+ 78 DIM-GEN-END               VALUE 5.
  78 DIM-LIGHT-STANDIN         VALUE 1.
  78 DIM-LIGHT-BLOCK-ONLY      VALUE 2.
 *> The §15.2 generator: floor height h = GEN-SUB-BASE + round(GEN-SUB-AMPLITUDE x sin(x /
@@ -33,6 +38,19 @@
  78 GEN-SUB-X-DIVISOR         VALUE 11.
  78 GEN-SUB-Z-DIVISOR         VALUE 13.
  78 GEN-SUB-MARKER-MOD        VALUE 3.
+*> The placeholder generators of the standard world's other dimensions (core/src/nether-gen-placeholder.cob; the generator lane replaces them
+*> through WORLDGEN-DIM-CHUNK). Nether (docs 37-1 section 6.9): bedrock at y 0, netherrack up to GEN-NETHER-HIGH on chunks of even
+*> cx + cz and up to GEN-NETHER-LOW on odd ones, lava above the floor up to GEN-NETHER-LAVA-TOP (sea level 32), a netherrack ceiling from
+*> GEN-NETHER-CEILING and bedrock at GEN-NETHER-ROOF. End (38 section 2): an end_stone island of block radius GEN-END-RADIUS between
+*> GEN-END-BOTTOM and GEN-END-TOP around (0, 0).
+ 78 GEN-NETHER-HIGH           VALUE 40.
+ 78 GEN-NETHER-LOW            VALUE 20.
+ 78 GEN-NETHER-LAVA-TOP       VALUE 31.
+ 78 GEN-NETHER-CEILING        VALUE 100.
+ 78 GEN-NETHER-ROOF           VALUE 127.
+ 78 GEN-END-RADIUS            VALUE 64.
+ 78 GEN-END-BOTTOM            VALUE 40.
+ 78 GEN-END-TOP               VALUE 63.
 *> Travel (§15.5): Use Item On a block of id TRAVEL-BLOCK (goto_pad) starts it; the arrival goto_pad
 *> placed when needed has state TRAVEL-PAD-STATE; a player who travelled within the last
 *> TRAVEL-COOLDOWN ticks is ignored; Respawn carries data to keep TRAVEL-KEEP (0x03).
@@ -102,8 +120,44 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 16.
        10 FILLER BINARY-LONG VALUE 7.
+    05 FILLER.                                  *> row 4: minecraft:the_nether (docs 37-1 section 2; 39 section 4)
+       10 FILLER PIC X(32) VALUE "minecraft:the_nether".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER PIC X(32) VALUE "minecraft:the_nether".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 0.           *> min y
+       10 FILLER BINARY-LONG VALUE 256.         *> height
+       10 FILLER BINARY-LONG VALUE 32.          *> sea level
+       10 FILLER BINARY-LONG VALUE 4.           *> generator (DIM-GEN-NETHER: placeholder until the nether generator lane)
+       10 FILLER BINARY-LONG VALUE 2.           *> light policy (DIM-LIGHT-BLOCK-ONLY: no skylight)
+       10 FILLER BINARY-LONG VALUE 0.           *> has skylight
+       10 FILLER BINARY-LONG VALUE 0.           *> no weather
+       10 FILLER BINARY-LONG VALUE -1.          *> biome: from the generator
+       10 FILLER BINARY-LONG VALUE 3.           *> standard world type with the extra-dimensions setting
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 7.
+    05 FILLER.                                  *> row 5: minecraft:the_end (docs 38 section 2)
+       10 FILLER PIC X(32) VALUE "minecraft:the_end".
+       10 FILLER BINARY-LONG VALUE 17.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER PIC X(32) VALUE "minecraft:the_end".
+       10 FILLER BINARY-LONG VALUE 17.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 256.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.           *> generator (DIM-GEN-END)
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE -1.
+       10 FILLER BINARY-LONG VALUE 3.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 7.
  01 DIMENSION-TABLE REDEFINES DIMENSION-DATA.
-    05 DM-ENTRY OCCURS 3 TIMES.
+    05 DM-ENTRY OCCURS 5 TIMES.
        10 DM-KEY                PIC X(32).
        10 DM-KEY-LENGTH         BINARY-LONG.
        10 DM-TYPE-ID            BINARY-LONG.

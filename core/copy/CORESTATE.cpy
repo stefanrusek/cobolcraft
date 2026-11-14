@@ -6,7 +6,7 @@
 
  78 CORE-MAX-CONNS          VALUE 64.
  78 CORE-MAX-PLAYERS        VALUE 64.
- 78 CORE-MAX-DIMS           VALUE 3.
+ 78 CORE-MAX-DIMS           VALUE 5.
  78 CORE-MAX-CHUNKS         VALUE 4096.
  78 CORE-PB-SIZE            VALUE 21.     *> LENGTH OF PB-BUFFER
  78 CORE-CHUNK-CELLS        VALUE 65536.  *> cells of a 256-high chunk (16 x 256 x 16); CELLS.cpy holds up to CE-STATE-CELLS
@@ -61,7 +61,7 @@
     05 CW-SPAWN-Z            FLOAT-LONG.
     05 CW-SPAWN-YAW          FLOAT-SHORT.
     05 CW-DIM-COUNT          BINARY-LONG.        *> enabled dimensions, in Login order
-    05 CW-DIM                BINARY-LONG OCCURS 3 TIMES.   *> row of the DIMENSIONS.cpy table
+    05 CW-DIM                BINARY-LONG OCCURS 5 TIMES.   *> row of the DIMENSIONS.cpy table
 *>  Weather (docs/protocol/33 section 4; core/src/weather.cob): one WeatherData for the whole server (the times in
 *>  ticks and the two flags) and, per DIMENSIONS.cpy row, the levels 0 to 1 and the levels of the tick before.
     05 CW-WEATHER-DATA.
@@ -70,7 +70,7 @@
        10 CW-THUNDER-TIME    BINARY-LONG.
        10 CW-RAINING         PIC 9.
        10 CW-THUNDERING      PIC 9.
-    05 CW-WEATHER-LEVELS OCCURS 3 TIMES.
+    05 CW-WEATHER-LEVELS OCCURS 5 TIMES.
        10 CW-RAIN-LEVEL         FLOAT-SHORT.
        10 CW-RAIN-LEVEL-OLD     FLOAT-SHORT.
        10 CW-THUNDER-LEVEL      FLOAT-SHORT.

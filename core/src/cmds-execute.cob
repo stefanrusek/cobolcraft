@@ -168,6 +168,8 @@
  01 WS-DIM                 BINARY-LONG.
  01 WS-DIM-KEY             PIC X(32).
  01 WS-DIM-LENGTH          BINARY-LONG.
+ 01 WS-ENABLED             BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-KEY                 PIC X(48).
  01 WS-A1                  PIC X(64).
@@ -323,10 +325,16 @@
              MOVE 0 TO WS-DIM
              MOVE BA-START(WS-INDEX) TO WS-START
              ADD 1 TO WS-START
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
                  MOVE DM-KEY(WS-I) TO WS-DIM-KEY
                  MOVE DM-KEY-LENGTH(WS-I) TO WS-DIM-LENGTH
-                 IF (WS-I = 1 OR CW-DIM-COUNT > 1) AND WS-DIM-LENGTH = WS-LENGTH
+                 MOVE 0 TO WS-ENABLED
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > CW-DIM-COUNT
+                     IF CW-DIM(WS-K) = WS-I
+                         MOVE 1 TO WS-ENABLED
+                     END-IF
+                 END-PERFORM
+                 IF WS-ENABLED = 1 AND WS-DIM-LENGTH = WS-LENGTH
                          AND WS-DIM-KEY(1:WS-LENGTH) = BR-R-LINE(WS-START:WS-LENGTH)
                      MOVE WS-I TO WS-DIM
                  END-IF

@@ -4,4 +4,4 @@
  01 WORLDSIM-STATE EXTERNAL.
     05 WSM-READY                 BINARY-LONG.
     05 WSM-SPEED                 BINARY-LONG.
-    05 WSM-RAND                  BINARY-LONG OCCURS 3 TIMES.
+    05 WSM-RAND                  BINARY-LONG OCCURS 5 TIMES.
