@@ -24,6 +24,9 @@
     05 SD-STARTS-SEEN       BINARY-LONG.
     05 SD-GATE-COUNT        BINARY-LONG.
     05 SD-START-COUNT       BINARY-LONG.
+*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), ST-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa)
+    05 SD-BLOCK-FIRST       BINARY-LONG.
+    05 SD-BLOCK-COUNT       BINARY-LONG.
 *>  SS-KIND 0 concentric_rings, 1 dimension_origin, 2 random_spread (the placement registry ids); SS-SPREAD 0 linear 1 triangular; SS-METHOD the frequency reduction
 *>  method id; SS-EX-SET the set index of the exclusion zone (0 none) and SS-EX-COUNT its chunk_count; SS-RING-ROW the row of SD-RING built for the set (0 none);
 *>  SS-POSSIBLE 1 when a structure of the set has a biome the source can make (4.1)
@@ -61,6 +64,7 @@
        10 ST-ADAPT          BINARY-LONG.
        10 ST-BIOME-FIRST    BINARY-LONG.
        10 ST-BIOME-COUNT    BINARY-LONG.
+       10 ST-VARIANT        BINARY-LONG.
     05 SD-BIOME             PIC X(40) OCCURS 8192 TIMES.
 *>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N chunks SR-X, SR-Z
     05 SD-RING OCCURS 4 TIMES.
