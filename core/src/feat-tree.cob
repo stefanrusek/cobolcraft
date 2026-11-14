@@ -185,6 +185,9 @@
          WHEN "minecraft:bending_trunk_placer"
              MOVE 9 TO TR-TKIND(WS-ROW)
              CALL "FD-TREE-BEND-NODE" USING JSON-DOC WS-E WS-ROW
+         WHEN "minecraft:poplar_trunk_placer"
+             MOVE 10 TO TR-TKIND(WS-ROW)
+             CALL "FD-TREE-POPLAR-NODE" USING JSON-DOC WS-E WS-ROW
          WHEN OTHER
              MOVE 1 TO FD-BAD
      END-EVALUATE
@@ -278,6 +281,9 @@
          WHEN "minecraft:cherry_foliage_placer"
              MOVE 11 TO TR-FKIND(WS-ROW)
              CALL "FD-TREE-CHERRYF-NODE" USING JSON-DOC WS-E WS-ROW
+         WHEN "minecraft:poplar_foliage_placer"
+             MOVE 12 TO TR-FKIND(WS-ROW)
+             CALL "FD-TREE-POPLARF-NODE" USING JSON-DOC WS-E WS-ROW
          WHEN OTHER
              MOVE 1 TO FD-BAD
      END-EVALUATE
@@ -474,7 +480,10 @@
              COMPUTE WS-STEP = 7 - TW-DIST(WS-CELL)
              COMPUTE WS-STATE = TR-LEAF-STATE(L-ROW) - WS-STEP * WS-STRIDE
          END-IF
-         CALL "FL-SET-STATE" USING TW-LEAF-X(WS-I) TW-LEAF-Y(WS-I) TW-LEAF-Z(WS-I) WS-STATE WS-FLAGS WS-OK
+*>       a leaf the crown replaced by a log (poplar, 5.5) is no leaf any more
+         IF TW-GRID(WS-CELL) = 2
+             CALL "FL-SET-STATE" USING TW-LEAF-X(WS-I) TW-LEAF-Y(WS-I) TW-LEAF-Z(WS-I) WS-STATE WS-FLAGS WS-OK
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM FR-TREE-COMMIT.

@@ -271,6 +271,8 @@
              CALL "FR-SPREAD" USING L-STATE L-ROW L-ATT L-FH L-LR
          WHEN 11
              CALL "FR-CHERRY-FOLIAGE" USING L-STATE L-ROW L-ATT L-FH L-LR WS-OFF
+         WHEN 12
+             CALL "FR-POPLAR-FOLIAGE" USING L-STATE L-ROW L-ATT L-FH L-LR WS-OFF
          WHEN OTHER
 *>           dark oak: rows (LR + 2, -1), (LR + 3, 0), (LR + 2, 1) and, on a coin toss, (LR, 2) for a double trunk; (LR + 2, -1) and (LR + 1, 0) for a single one
              COMPUTE WS-CY = WS-AY + WS-OFF
