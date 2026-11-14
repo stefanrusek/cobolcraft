@@ -556,6 +556,7 @@
        10 CT-BREAK-HELD      BINARY-LONG.    *> the held slot when the break began (a change aborts it)
        10 CT-BREAK-START     BINARY-DOUBLE.  *> clock of the start destroy
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
+       10 CT-BREAK-LAST      BINARY-DOUBLE.  *> clock of the last frame of the break (airborne time counts a fifth)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
        10 CT-DONE-X          BINARY-LONG.
        10 CT-DONE-MS         BINARY-DOUBLE.  *> clock of that stop destroy (the 5-tick cooldown, 13 section 2.2)

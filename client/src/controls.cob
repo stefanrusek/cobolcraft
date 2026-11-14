@@ -116,6 +116,14 @@
          CALL "CONTROLS-SEND-ATTACK" USING CLIENT-STATE
      END-IF
 *>   A survival break in progress: aborted, or finished once its time has passed.
+*>   Airborne (13 section 2.1 step 7): the server adds a fifth of the progress in a tick the player is not on the ground, so
+*>   the time of the frame counts a fifth: the start of the break moves forward by the other four fifths.
+     IF CT-BREAKING = 1
+         IF PL-ON-GROUND = 0 AND CL-NOW-MS > CT-BREAK-LAST
+             COMPUTE CT-BREAK-START = CT-BREAK-START + (CL-NOW-MS - CT-BREAK-LAST) * 4 / 5
+         END-IF
+         MOVE CL-NOW-MS TO CT-BREAK-LAST
+     END-IF
      MOVE 0 TO WS-SAME
      IF TG-HIT = 1 AND TG-X = CT-BREAK-X AND TG-Y = CT-BREAK-Y AND TG-Z = CT-BREAK-Z
          MOVE 1 TO WS-SAME
@@ -165,7 +173,7 @@
          CALL "CONTROLS-SEND-ACTION" USING CLIENT-STATE WS-ACTION
          IF PL-MODE NOT = 1
              MOVE 1 TO CT-BREAKING
-             MOVE CL-NOW-MS TO CT-BREAK-START
+             MOVE CL-NOW-MS TO CT-BREAK-START CT-BREAK-LAST
              CALL "CONTROLS-BREAK-TIME" USING CLIENT-STATE WS-STATE WS-ITEM CT-BREAK-MS
          END-IF
      END-IF
