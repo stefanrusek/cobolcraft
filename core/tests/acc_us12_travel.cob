@@ -65,7 +65,7 @@
      PERFORM PLACE-PAD
      PERFORM USE-PAD
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "84 65 107 18 106 99 115 39 96 12 46x25 11 73 4" TO TL-EXPECTED
+     MOVE "84 10 34 65 107 18 44 106 99 115 39 96 12 46x25 11 73 105 106 4" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12-1 then she is in cobolcraft:subroutine at (6.5, 36, 12.5) on a new "
@@ -93,7 +93,7 @@
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      PERFORM USE-PAD
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "respawn cobolcraft:main mode 0 keep 3 | health 20 food 15 | position 6.5 55.0 12.5"
+     MOVE "respawn cobolcraft:main mode 0 keep 3 | health 20 food 15 | position 6.5 55.0 12.5 | health 20 food 15"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -134,7 +134,7 @@
      PERFORM CHECK
 
      MOVE "acceptance US12-1 given creative Alice when she uses a goto_pad then she travels too (either "
-         & "game mode), and is sent no Set Health" TO TL-CASE
+         & "game mode), and is sent Set Health only as the refresh after Player Position" TO TL-CASE
      PERFORM OPEN-AND-JOIN
      MOVE 1 TO PL-MODE(WS-ROW)
      MOVE DIM-MAIN TO WS-DIM
@@ -142,7 +142,7 @@
      PERFORM PLACE-PAD
      PERFORM USE-PAD
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "respawn cobolcraft:subroutine mode 1 keep 3 | position 6.5 36.0 12.5" TO TL-EXPECTED
+     MOVE "respawn cobolcraft:subroutine mode 1 keep 3 | position 6.5 36.0 12.5 | health 20 food 20" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12-1 given a block at y 126 of the Subroutine column (20, -20) when Alice "

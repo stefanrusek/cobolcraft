@@ -47,12 +47,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NETHER-DIM-CHUNK.
-*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CELLS.cpy), marker-y out: the terrain of a Nether chunk, from NETHER-GEN-CHUNK when the
-*> tables are ready (NETHER-DIM-READY), else the placeholder.
+*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CELLS.cpy), marker-y out: the terrain of a Nether chunk, from NETHER-GEN-CHUNK and then
+*> the placed features of its biomes (NETHER-GEN-FEATURES, 37-nether-5) when the tables are ready (NETHER-DIM-READY), else the placeholder.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-READY               BINARY-LONG.
+ 01 WS-PLACED              BINARY-LONG.
  LINKAGE SECTION.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
@@ -62,6 +63,7 @@
      CALL "NETHER-DIM-READY" USING WS-READY
      IF WS-READY = 1
          CALL "NETHER-GEN-CHUNK" USING CW-SEED L-CX L-CZ L-CHUNK L-MARKER-Y
+         CALL "NETHER-GEN-FEATURES" USING CW-SEED L-CX L-CZ L-CHUNK WS-PLACED
      ELSE
          CALL "WORLDGEN-NETHER-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
      END-IF

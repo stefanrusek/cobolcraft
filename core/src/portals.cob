@@ -3,8 +3,7 @@
 *> transfer (PORTAL-TRAVEL: destination, origin with the x8 scaling and the border clamp, find or create the exit portal, relative position,
 *> yaw change, then DIM-SWITCH of dimensions.cob for the Respawn and the join sequence of the new dimension, and the portal sound).
 *> The rules themselves are in portal-39.cob. Not done (open items): mobs, items and vehicles do not use portals (players only), the
-*> collision-free placement of 6.8, velocity rotation (the core keeps no player velocity), the End portal and gateway (7), Change Difficulty and
-*> Initialize Border after the Respawn, the chunk ticket of 6.4.
+*> velocity rotation (the core keeps no player velocity; PORTAL-RESOLVE has the rule), the End portal and gateway (7), the chunk ticket of 6.4.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PORTAL-AXIS-OF.
@@ -93,6 +92,10 @@
  COPY PORTAL.
  COPY PORTALRECT.
  COPY PORTALRECT REPLACING ==PORTAL-RECT== BY ==ENTRY-RECT== LEADING ==PR-== BY ==ER-==.
+ COPY PORTALPMR REPLACING ==PORTAL-PMR== BY ==WS-BASE== LEADING ==PMR-== BY ==B-==.
+ COPY PORTALPMR REPLACING ==PORTAL-PMR== BY ==WS-CHANGE== LEADING ==PMR-== BY ==C-==.
+ COPY PORTALPMR REPLACING ==PORTAL-PMR== BY ==WS-AFTER== LEADING ==PMR-== BY ==A-==.
+ 01 WS-REL                 BINARY-LONG VALUE 504.
  01 WS-SRC                 BINARY-LONG.
  01 WS-DEST                BINARY-LONG.
  01 WS-NETHER              BINARY-LONG.
@@ -177,9 +180,18 @@
          CALL "PORTAL-RELATIVE" USING ENTRY-RECT PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-EW WS-EH WS-RX WS-RY WS-RZ
      END-IF
      CALL "PORTAL-EXIT-POS" USING PORTAL-RECT WS-RX WS-RY WS-RZ WS-EW WS-EH WS-X WS-Y WS-Z
+*>   39 section 6.3 and 4.4: the yaw gains yawChange (0 or 90), the pitch is kept, the velocity (the core keeps none) is zero; the relatives are
+*>   DELTA + ROTATION (bits 5 to 8 and 3, 4: 504). The position is then made collision-free (6.8).
+     INITIALIZE WS-BASE WS-CHANGE WS-AFTER
+     MOVE PL-YAW(WS-ROW) TO B-YAW
+     MOVE PL-PITCH(WS-ROW) TO B-PITCH
      IF WS-ENTRY-AXIS NOT = WS-AXIS
-         COMPUTE PL-YAW(WS-ROW) = PL-YAW(WS-ROW) + 90
+         MOVE 90 TO C-YAW
      END-IF
+     CALL "PORTAL-RESOLVE" USING WS-BASE WS-CHANGE WS-REL WS-AFTER
+     MOVE A-YAW TO PL-YAW(WS-ROW)
+     MOVE A-PITCH TO PL-PITCH(WS-ROW)
+     CALL "PORTAL-FREE-POS" USING WS-DEST WS-X WS-Y WS-Z WS-EW WS-EH
      CALL "DIM-SWITCH" USING WS-ROW WS-DEST WS-X WS-Y WS-Z
      CALL "PORTAL-SOUND" USING PL-CONN(WS-ROW)
      MOVE 1 TO L-DONE
@@ -192,7 +204,7 @@
 *> and the end of aiStep: handlePortal first (the cooldown counts down unless the player is changing dimension; a present process advances:
 *> inside this tick adds one to portalTime and the player travels when the old portalTime reached the transit time, not inside subtracts
 *> 4 and the process ends at 0; a transfer starts the cooldown of 10 ticks), then the inside-block sweep: a portal block touched by the
-*> player's box (0.6 x 1.8, shrunk by 1e-5; the current position only) sets the process (setAsInsidePortal: a running cooldown is
+*> player's box (0.6 x 1.8, shrunk by 1e-5; every cell of its path since the previous tick, PORTAL-SWEEP) sets the process (setAsInsidePortal: a running cooldown is
 *> refilled instead). Transit time: the rules players_nether_portal_default_delay (80) and _creative_delay (0, creative players).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -216,19 +228,10 @@
  01 WS-OLD                 BINARY-LONG.
  01 WS-RESULT              BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
- 01 WS-EPS                 FLOAT-LONG VALUE 0.00001.
- 01 WS-MIN-X               BINARY-LONG.
- 01 WS-MAX-X               BINARY-LONG.
- 01 WS-MIN-Y               BINARY-LONG.
- 01 WS-MAX-Y               BINARY-LONG.
- 01 WS-MIN-Z               BINARY-LONG.
- 01 WS-MAX-Z               BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
- 01 WS-KIND                BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
- 01 WS-F                   FLOAT-LONG.
  01 WS-CONN                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -283,55 +286,32 @@
              END-IF
          END-IF
      END-IF
-*>   The inside-block sweep (the cells the box touches now).
+*>   The inside-block sweep (2.2a): the cells the box touched along the path since the previous tick, legs y then x and z.
      IF PL-STATE(L-ROW) = PS-ALIVE AND PL-MODE(L-ROW) NOT = 3
-         COMPUTE WS-F = PL-X(L-ROW) - 0.3 + WS-EPS
-         COMPUTE WS-MIN-X = FUNCTION INTEGER(WS-F)
-         COMPUTE WS-F = PL-X(L-ROW) + 0.3 - WS-EPS
-         COMPUTE WS-MAX-X = FUNCTION INTEGER(WS-F)
-         COMPUTE WS-F = PL-Y(L-ROW) + WS-EPS
-         COMPUTE WS-MIN-Y = FUNCTION INTEGER(WS-F)
-         COMPUTE WS-F = PL-Y(L-ROW) + 1.8 - WS-EPS
-         COMPUTE WS-MAX-Y = FUNCTION INTEGER(WS-F)
-         COMPUTE WS-F = PL-Z(L-ROW) - 0.3 + WS-EPS
-         COMPUTE WS-MIN-Z = FUNCTION INTEGER(WS-F)
-         COMPUTE WS-F = PL-Z(L-ROW) + 0.3 - WS-EPS
-         COMPUTE WS-MAX-Z = FUNCTION INTEGER(WS-F)
-         MOVE 0 TO WS-FOUND
-         PERFORM VARYING WS-X FROM WS-MIN-X BY 1 UNTIL WS-X > WS-MAX-X
-             PERFORM VARYING WS-Y FROM WS-MIN-Y BY 1 UNTIL WS-Y > WS-MAX-Y
-                 PERFORM VARYING WS-Z FROM WS-MIN-Z BY 1 UNTIL WS-Z > WS-MAX-Z
-                     CALL "PORTAL-CELL-KIND" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-KIND
-                     IF WS-KIND = 2 AND WS-FOUND = 0
-                         MOVE 1 TO WS-FOUND
-                         PERFORM SET-INSIDE
-                     END-IF
-                 END-PERFORM
-             END-PERFORM
-         END-PERFORM
-     END-IF
-     GOBACK.
-
-*> setAsInsidePortal for the portal block at (WS-X, WS-Y, WS-Z).
- SET-INSIDE.
-     IF PQ-PL-COOLDOWN(L-ROW) > 0
-         MOVE PQ-PLAYER-COOLDOWN TO PQ-PL-COOLDOWN(L-ROW)
-     ELSE
-         IF PQ-PL-PROCESS(L-ROW) = 0
-             MOVE 1 TO PQ-PL-PROCESS(L-ROW) PQ-PL-FLAG(L-ROW)
-             MOVE 0 TO PQ-PL-TIME(L-ROW)
-             MOVE WS-X TO PQ-PL-EX(L-ROW)
-             MOVE WS-Y TO PQ-PL-EY(L-ROW)
-             MOVE WS-Z TO PQ-PL-EZ(L-ROW)
+         CALL "PORTAL-SWEEP" USING L-ROW WS-FOUND WS-X WS-Y WS-Z
+         IF WS-FOUND = 1
+*>       setAsInsidePortal for the portal block at (WS-X, WS-Y, WS-Z)
+         IF PQ-PL-COOLDOWN(L-ROW) > 0
+             MOVE PQ-PLAYER-COOLDOWN TO PQ-PL-COOLDOWN(L-ROW)
          ELSE
-             IF PQ-PL-FLAG(L-ROW) NOT = 1
+             IF PQ-PL-PROCESS(L-ROW) = 0
+                 MOVE 1 TO PQ-PL-PROCESS(L-ROW) PQ-PL-FLAG(L-ROW)
+                 MOVE 0 TO PQ-PL-TIME(L-ROW)
                  MOVE WS-X TO PQ-PL-EX(L-ROW)
                  MOVE WS-Y TO PQ-PL-EY(L-ROW)
                  MOVE WS-Z TO PQ-PL-EZ(L-ROW)
-                 MOVE 1 TO PQ-PL-FLAG(L-ROW)
+             ELSE
+                 IF PQ-PL-FLAG(L-ROW) NOT = 1
+                     MOVE WS-X TO PQ-PL-EX(L-ROW)
+                     MOVE WS-Y TO PQ-PL-EY(L-ROW)
+                     MOVE WS-Z TO PQ-PL-EZ(L-ROW)
+                     MOVE 1 TO PQ-PL-FLAG(L-ROW)
+                 END-IF
              END-IF
          END-IF
-     END-IF.
+         END-IF
+     END-IF
+     GOBACK.
  END PROGRAM PORTAL-PLAYER-TICK.
 
  IDENTIFICATION DIVISION.
