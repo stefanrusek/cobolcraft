@@ -378,8 +378,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BIOMES-OPEN.
-*> No parameters: fills CORE-BIOMES (CBLOCKS.cpy) from the biome registry of the open set: each entry's key and the
-*> has_precipitation member of its network NBT payload.
+*> No parameters: fills CORE-BIOMES (CBLOCKS.cpy) from the biome registry of the open set: each entry's key and the climate of its
+*> network NBT payload (BIOME-CLIMATE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -395,12 +395,6 @@
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-PAYLOAD             PIC X(4096).
  01 WS-LENGTH              BINARY-LONG.
- 01 WS-FRAMING             BINARY-LONG VALUE 0.
- 01 WS-TYPE                BINARY-LONG.
- 01 WS-NAME                PIC X(32).
- 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
- 01 WS-NAME-LENGTH         BINARY-LONG.
- 01 WS-BYTE                BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE 0 TO CBI-COUNT
      CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
@@ -411,26 +405,12 @@
          ADD 1 TO CBI-COUNT
          MOVE WS-KEY TO CBI-KEY(CBI-COUNT)
          MOVE WS-KEY-LENGTH TO CBI-KEY-LENGTH(CBI-COUNT)
-         MOVE 0 TO CBI-PRECIPITATION(CBI-COUNT)
+         MOVE 0 TO CBI-PRECIPITATION(CBI-COUNT) CBI-TEMPERATURE(CBI-COUNT) CBI-FROZEN(CBI-COUNT)
          CALL "PB-RESET" USING PB-BUFFER
          IF WS-LENGTH > 0
              CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
-             MOVE 0 TO PB-POS
-             CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
-             PERFORM UNTIL PB-ERROR = 1
-                 MOVE SPACES TO WS-NAME
-                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WS-NAME WS-NAME-CAPACITY
-                     WS-NAME-LENGTH
-                 IF WS-TYPE = 0
-                     EXIT PERFORM
-                 END-IF
-                 IF WS-NAME = "has_precipitation" AND WS-TYPE = 1
-                     CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
-                     MOVE WS-BYTE TO CBI-PRECIPITATION(CBI-COUNT)
-                 ELSE
-                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
-                 END-IF
-             END-PERFORM
+             CALL "BIOME-CLIMATE" USING PB-BUFFER CBI-PRECIPITATION(CBI-COUNT) CBI-TEMPERATURE(CBI-COUNT)
+                 CBI-FROZEN(CBI-COUNT)
          END-IF
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER

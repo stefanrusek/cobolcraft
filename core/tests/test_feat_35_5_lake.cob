@@ -19,7 +19,7 @@
  COPY XORO REPLACING ==XR-STATE== BY ==XR2-STATE== LEADING ==XR-== BY ==X2-==.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/water".
  01 WS-PTR                 USAGE POINTER.
- 01 WS-A                   PIC X(196608) BASED.
+ 01 WS-A                   PIC X(304640) BASED.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
@@ -121,7 +121,7 @@
      COMPUTE WS-ID(2) = WS-WANT - 1
      MOVE 2 TO WS-COUNT
      CALL "TAG-PUT" USING WS-REG WS-TAG WS-COUNT WS-IDS WS-STATUS
-     ALLOCATE 196608 CHARACTERS INITIALIZED RETURNING WS-PTR
+     ALLOCATE CE-CHUNK-BYTES CHARACTERS INITIALIZED RETURNING WS-PTR
      CALL "FD-SET-DIR" USING WS-DIR
      CALL "FD-RESET"
      MOVE "lava" TO WS-KEY
@@ -360,6 +360,57 @@
      MOVE WS-D2 TO WS-EXP
      PERFORM ASSERT-N
 
+*>   a water lake: step 8 turns a source of water of layer 4 into ice in a cold biome (a corner of the window is no mask or border cell)
+     MOVE 2 TO CBI-COUNT
+     MOVE 0 TO CBI-TEMPERATURE(1) CBI-FROZEN(1) CBI-FROZEN(2) CBI-PRECIPITATION(1) CBI-PRECIPITATION(2)
+     MOVE 0.8 TO CBI-TEMPERATURE(2)
+     MOVE "minecraft:lake_water" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     PERFORM NEW-WORLD
+     MOVE 16 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 32 TO WS-Z
+     MOVE "water" TO WS-KEY
+     PERFORM PUT-AT
+     MOVE 31 TO WS-X
+     MOVE "level=5" TO WS-PAIRS
+     PERFORM PUT-PAIRS
+     MOVE 24 TO WS-X
+     MOVE 40 TO WS-Z
+     CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-X WS-Y WS-Z WS-RESULT
+     MOVE "35-5§3.2: a water lake is placed" TO WS-CASE
+     MOVE WS-RESULT TO WS-OBS
+     MOVE 1 TO WS-EXP
+     PERFORM ASSERT-N
+     MOVE 16 TO WS-X
+     MOVE 32 TO WS-Z
+     MOVE "ice" TO WS-KEY
+     MOVE "35-5§3.2 step 8: a source of water at layer 4 in a cold biome freezes" TO WS-CASE
+     PERFORM ASSERT-BLOCK
+     MOVE 31 TO WS-X
+     MOVE "water" TO WS-KEY
+     MOVE "35-5§3.2 step 8: flowing water at layer 4 does not" TO WS-CASE
+     PERFORM ASSERT-BLOCK
+     PERFORM NEW-WORLD
+     MOVE 16 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 32 TO WS-Z
+     MOVE "water" TO WS-KEY
+     PERFORM PUT-AT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 1536
+         MOVE 1 TO CE-BIOME(WS-J)
+     END-PERFORM
+     MOVE 24 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 40 TO WS-Z
+     CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-X WS-Y WS-Z WS-RESULT
+     MOVE 16 TO WS-X
+     MOVE 32 TO WS-Z
+     MOVE "water" TO WS-KEY
+     MOVE "35-5§3.2 step 8: in a warm biome the source stays water" TO WS-CASE
+     PERFORM ASSERT-BLOCK
+     MOVE 24 TO WS-X
+     MOVE 40 TO WS-Z
      MOVE 1 TO FI-GATE
      MOVE "minecraft:lake_lava_surface" TO WS-FTKEY
      CALL "FR-GATE" USING WS-FTKEY WS-COUNT
@@ -519,6 +570,7 @@
      SET ADDRESS OF WS-A TO WS-PTR
      MOVE LOW-VALUES TO WS-A
      CALL "FL-OPEN" USING WS-PTR WS-CX WS-CZ WS-MIN WS-HEIGHT WS-SEA
+     SET ADDRESS OF CE-CHUNK TO WS-PTR
      MOVE 16 TO WS-X0
      MOVE 31 TO WS-X1
      MOVE 60 TO WS-Y0

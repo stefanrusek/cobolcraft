@@ -4,7 +4,8 @@
 *> The blobs use the doubles of the document in the decimal arithmetic of the compiler (deterministic, as the fancy trunk); the per-axis squares of an ellipsoid are computed once per
 *> axis, and the sums are added in the order nx, ny, nz. Deviations: the cave_air tick and the post-processing marks of steps 6 and 7 are not made (the generator has no tick queue and
 *> no post-processing list); a cell outside the chunk reads as air and its writes are discarded (the write window is the chunk), so a lake whose blobs reach the chunk border fails its
-*> validity pass; the freeze pass of step 8 is FR-FREEZE-AT of core/src/feat-freeze.cob (water lakes only).
+*> validity pass. The freeze pass of step 8 (water lakes only) is FR-LAKE-FREEZE: it tests the cells of layer 4 as the document says, and the temperature is FR-TEMPERATURE of
+*> core/src/feat-freeze.cob (WA-I(2) is the block index of ice, 0 when the block table has none: no freeze pass).
 *>
 *> Entry points: FD-LAKE-NODE USING doc, node, row out (FD-BAD set when the feature cannot be placed whole); FR-LAKE-MASK USING state, mask out (PIC X(2048): the digits 0 and 1, cell
 *> ((x * 16) + z) * 8 + y + 1: steps 2 and 3); FR-LAKE USING state, feature, x, y, z, result out.
@@ -18,6 +19,7 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-KEY48               PIC X(48) VALUE "minecraft:cave_air".
+ 01 WS-ICE                 PIC X(48) VALUE "minecraft:ice".
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -46,6 +48,7 @@
      IF WA-I(WS-ROW, 1) = 0
          MOVE 1 TO FD-BAD
      END-IF
+     CALL "FD-BLOCK-INDEX" USING WS-ICE WA-I(WS-ROW, 2)
      GOBACK.
  END PROGRAM FD-LAKE-NODE.
 
@@ -334,6 +337,65 @@
              END-PERFORM
          END-PERFORM
      END-IF
+*>   8. water freezes in the cold: the cells of layer 4
+     CALL "FL-BLOCK-OF" USING WS-FLUID WS-BLOCK
+     IF WS-BLOCK = FL-B-WATER AND WA-I(WS-ROW, 2) > 0
+         CALL "FR-LAKE-FREEZE" USING WS-ROW WS-OX WS-OY WS-OZ
+     END-IF
      MOVE 1 TO L-RESULT
      GOBACK.
  END PROGRAM FR-LAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FR-LAKE-FREEZE.
+*> USING feature row, origin x, y, z: step 8 of section 3.2: for x, z in 0 to 15, the cell at layer 4 becomes ice when it holds a source of water, the temperature there is under 0.15 and
+*> can_replace_with_air_or_fluid holds.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FEATDATA.
+ COPY FEATLEVEL.
+ COPY CBLOCKS.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-ICE                 BINARY-LONG.
+ 01 WS-BIOME               BINARY-LONG.
+ 01 WS-TEST                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 2.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-LIMIT               FLOAT-LONG VALUE 0.15.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-OX L-OY L-OZ.
+     MOVE FL-B-WATER TO WS-K
+     MOVE CB-DEFAULT-STATE(WS-K) TO WS-WATER
+     MOVE WA-I(L-ROW, 2) TO WS-K
+     MOVE CB-DEFAULT-STATE(WS-K) TO WS-ICE
+     COMPUTE WS-PY = L-OY + 4
+     PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 15
+         PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 15
+             COMPUTE WS-PX = L-OX + WS-X
+             COMPUTE WS-PZ = L-OZ + WS-Z
+             CALL "FL-GET-STATE" USING WS-PX WS-PY WS-PZ WS-STATE
+             IF WS-STATE = WS-WATER
+                 CALL "FL-BIOME-ID" USING WS-PX WS-PY WS-PZ WS-BIOME
+                 CALL "FR-TEMPERATURE" USING WS-BIOME WS-PX WS-PY WS-PZ FL-SEA WS-T
+                 MOVE WA-PR(L-ROW, 2) TO WS-K
+                 CALL "FR-PRED-TEST" USING WS-K WS-PX WS-PY WS-PZ WS-TEST
+                 IF WS-T < WS-LIMIT AND WS-TEST = 1
+                     CALL "FL-SET-STATE" USING WS-PX WS-PY WS-PZ WS-ICE WS-FLAGS WS-OK
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FR-LAKE-FREEZE.

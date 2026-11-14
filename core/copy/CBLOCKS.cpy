@@ -66,7 +66,7 @@
     05 CR-SLAG               BINARY-LONG.
 
 *> The biomes of the open set (registry minecraft:worldgen/biome), read by BLOCKS-OPEN from the entries' payloads: the key
-*> (with namespace) and has_precipitation of each biome id (index = id + 1).
+*> (with namespace), has_precipitation, the base temperature (a float widened to a double) and whether the temperature modifier is "frozen" of each biome id (index = id + 1).
  78 CBI-MAX                VALUE 128.
  01 CORE-BIOMES EXTERNAL.
     05 CBI-COUNT             BINARY-LONG.
@@ -74,3 +74,5 @@
        10 CBI-KEY            PIC X(48).
        10 CBI-KEY-LENGTH     BINARY-LONG.
        10 CBI-PRECIPITATION  BINARY-LONG.
+       10 CBI-TEMPERATURE    FLOAT-LONG.
+       10 CBI-FROZEN         BINARY-LONG.

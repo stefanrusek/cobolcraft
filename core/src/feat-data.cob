@@ -1727,6 +1727,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 19
+*>           the snow and ice top layer (feat-freeze.cob): unsupported when the block table has no ice or snow
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FREEZE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 25
 *>           a lake (feat-lake.cob): unsupported when a provider, a predicate or cave_air is unknown
              MOVE FD-BAD TO LS-SAVED-BAD
