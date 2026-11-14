@@ -90,6 +90,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
+ COPY PORTAL.
  COPY PORTALRECT.
  COPY PORTALRECT REPLACING ==PORTAL-RECT== BY ==ENTRY-RECT== LEADING ==PR-== BY ==ER-==.
  01 WS-SRC                 BINARY-LONG.
@@ -97,6 +98,7 @@
  01 WS-NETHER              BINARY-LONG.
  01 WS-RULE-NAME           PIC X(40).
  01 WS-RULE                BINARY-DOUBLE.
+ 01 WS-RADIUS              BINARY-LONG.
  01 WS-OX                  BINARY-LONG.
  01 WS-OY                  BINARY-LONG.
  01 WS-OZ                  BINARY-LONG.
@@ -146,6 +148,11 @@
          GOBACK
      END-IF
      CALL "PORTAL-ORIGIN" USING WS-SRC WS-DEST PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-OX WS-OY WS-OZ
+     MOVE PQ-RADIUS-OVERWORLD TO WS-RADIUS
+     IF WS-NETHER = 1
+         MOVE PQ-RADIUS-NETHER TO WS-RADIUS
+     END-IF
+     CALL "PORTAL-LOAD-SAVED" USING WS-DEST WS-OX WS-OZ WS-RADIUS
      CALL "PORTAL-FIND-EXISTING" USING WS-DEST WS-OX WS-OY WS-OZ WS-NETHER WS-FOUND WS-FX WS-FY WS-FZ
      CALL "PORTAL-AXIS-OF" USING WS-SRC L-EX L-EY L-EZ WS-ENTRY-AXIS
      IF WS-FOUND = 1
@@ -393,3 +400,59 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PORTAL-POI-SCAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-LOAD-SAVED.
+*> USING destination dimension row, origin x, z, search radius (BINARY-LONG): PortalForcer step 2 (39 section 5.1: the points of interest of the
+*> chunks within the radius are made loaded and valid): every chunk of the square |dx| <= radius, |dz| <= radius round the origin that is not
+*> in the cache but is in the dimension's region file is loaded (WORLD-CHUNK-LOAD records its portal blocks, PORTAL-POI-SCAN), so a portal saved
+*> before a restart is found. Chunks the file lacks are not generated.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-REGION              PIC X(8) VALUE "region".
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-LOW-X               BINARY-LONG.
+ 01 WS-HIGH-X              BINARY-LONG.
+ 01 WS-LOW-Z               BINARY-LONG.
+ 01 WS-HIGH-Z              BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ 01 L-RADIUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-OX L-OZ L-RADIUS.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     COMPUTE WS-T = L-OX - L-RADIUS
+     COMPUTE WS-LOW-X = FUNCTION INTEGER(WS-T / 16)
+     COMPUTE WS-T = L-OX + L-RADIUS
+     COMPUTE WS-HIGH-X = FUNCTION INTEGER(WS-T / 16)
+     COMPUTE WS-T = L-OZ - L-RADIUS
+     COMPUTE WS-LOW-Z = FUNCTION INTEGER(WS-T / 16)
+     COMPUTE WS-T = L-OZ + L-RADIUS
+     COMPUTE WS-HIGH-Z = FUNCTION INTEGER(WS-T / 16)
+     CALL "PERSIST-DIM-DIR" USING L-DIM WS-REGION WS-DIR WS-LENGTH
+     PERFORM VARYING WS-CZ FROM WS-LOW-Z BY 1 UNTIL WS-CZ > WS-HIGH-Z
+         PERFORM VARYING WS-CX FROM WS-LOW-X BY 1 UNTIL WS-CX > WS-HIGH-X
+             CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+             IF WS-ROW = 0
+                 CALL "REGION-READ" USING WS-DIR WS-LENGTH WS-CX WS-CZ PB-BUFFER WS-OUTCOME
+                 IF WS-OUTCOME = 0
+                     CALL "WORLD-CHUNK-LOAD" USING L-DIM WS-CX WS-CZ WS-ROW
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-LOAD-SAVED.

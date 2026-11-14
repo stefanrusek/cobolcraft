@@ -255,12 +255,13 @@
 *> USING dim, x, y, z, state (BINARY-LONG; world block position): sets the block state there. Outside
 *> the dimension's height range, or when the cell already holds that state, nothing happens.
 *> Otherwise the chunk is loaded and lit first, its changed flag is set, its per-section light source
-*> counts follow, and the light of the affected chunks is recomputed (LIGHT-BLOCK-CHANGED).
+*> counts follow, and the light of the affected chunks is recomputed (LIGHT-BLOCK-CHANGED; inside a LIGHT-BATCH-BEGIN / -END pair once at the end).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY CBLOCKS.
+ COPY LIGHTBATCH.
  COPY CELLS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -298,7 +299,11 @@
          ADD 1 TO CK-SOURCES(WS-ROW, WS-SECTION)
      END-IF
      CALL "BR-ADJUST" USING WS-ROW WS-SECTION WS-OLD L-STATE
-     CALL "LIGHT-BLOCK-CHANGED" USING WS-ROW
+     IF LB-DEPTH > 0
+         CALL "LIGHT-BATCH-NOTE" USING WS-ROW
+     ELSE
+         CALL "LIGHT-BLOCK-CHANGED" USING WS-ROW
+     END-IF
      CALL "BE-BLOCK-SET" USING L-DIM L-X L-Y L-Z WS-OLD L-STATE
      GOBACK.
  END PROGRAM WORLD-SET-BLOCK.

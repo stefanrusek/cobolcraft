@@ -303,7 +303,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PORTAL-CREATE-BLOCKS RECURSIVE.
 *> USING dimension row, PORTAL-SHAPE: NetherPortalBlock createPortalBlocks (39 section 3.3): every interior cell becomes nether_portal of the
-*> shape's axis with flags 18 (client update, no shape update).
+*> shape's axis with flags 18 (client update, no shape update); the light is recomputed once for the whole fill (LIGHT-BATCH-*).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PORTAL.
@@ -332,6 +332,7 @@
          MOVE 0 TO WS-RX
          MOVE 1 TO WS-RZ
      END-IF
+     CALL "LIGHT-BATCH-BEGIN"
      PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= PQ-H
          PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= PQ-W
              COMPUTE WS-X = PQ-BX + WS-RX * WS-I
@@ -340,6 +341,7 @@
              CALL "LEVEL-SET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-STATE WS-FLAGS WS-BUDGET WS-RESULT
          END-PERFORM
      END-PERFORM
+     CALL "LIGHT-BATCH-END"
      GOBACK.
  END PROGRAM PORTAL-CREATE-BLOCKS.
 
@@ -975,10 +977,11 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PORTAL-TOP.
 *> USING dimension row, top out: min(maxY, minY + logical_height - 1) (39 section 5.2; the nether's logical height is 128, every other
-*> dimension's is its height).
+*> dimension's is its height; PQ-LOGICAL-CAP of PORTAL.cpy caps it).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
+ COPY PORTAL.
  01 WS-LOGICAL             BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -987,6 +990,9 @@
      MOVE DM-HEIGHT(L-DIM) TO WS-LOGICAL
      IF DM-KEY(L-DIM) = "minecraft:the_nether"
          MOVE 128 TO WS-LOGICAL
+     END-IF
+     IF PQ-LOGICAL-CAP > 0 AND PQ-LOGICAL-CAP < WS-LOGICAL
+         MOVE PQ-LOGICAL-CAP TO WS-LOGICAL
      END-IF
      COMPUTE L-TOP = DM-MIN-Y(L-DIM) + WS-LOGICAL - 1
      IF L-TOP > DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1

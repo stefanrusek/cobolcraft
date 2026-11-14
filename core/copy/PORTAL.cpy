@@ -37,6 +37,10 @@
        10 PQ-PL-EY            BINARY-LONG.
        10 PQ-PL-EZ            BINARY-LONG.
        10 PQ-PL-CHANGING      BINARY-LONG.
+*> PORTAL-LIMITS: PQ-LOGICAL-CAP, when above 0, caps the logical height PORTAL-TOP uses (the logical_height field of a dimension type; every
+*> built-in dimension of the table has at least 128, so tests set it to emulate a datapack dimension type with a small one). 0 is no cap.
+ 01 PORTAL-LIMITS EXTERNAL.
+    05 PQ-LOGICAL-CAP         BINARY-LONG.
 *> Portal rule constants (39 section 1.1).
  78 PQ-MIN-WIDTH             VALUE 2.
  78 PQ-MAX-WIDTH             VALUE 21.
