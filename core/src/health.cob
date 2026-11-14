@@ -493,7 +493,11 @@
  01 L-CAUSE                BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CAUSE L-ID.
-     MOVE RULE-CAUSE-TYPE(L-CAUSE) TO L-ID
+     IF L-CAUSE > CAUSE-COUNT
+         MOVE 0 TO L-ID
+     ELSE
+         MOVE RULE-CAUSE-TYPE(L-CAUSE) TO L-ID
+     END-IF
      IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
          GOBACK
      END-IF
@@ -517,6 +521,16 @@
              MOVE "minecraft:explosion" TO WS-WANTED
          WHEN CAUSE-ARROW
              MOVE "minecraft:arrow" TO WS-WANTED
+         WHEN CAUSE-ON-FIRE
+             MOVE "minecraft:on_fire" TO WS-WANTED
+         WHEN CAUSE-LAVA
+             MOVE "minecraft:lava" TO WS-WANTED
+         WHEN CAUSE-IN-WALL
+             MOVE "minecraft:in_wall" TO WS-WANTED
+         WHEN CAUSE-CRAMMING
+             MOVE "minecraft:cramming" TO WS-WANTED
+         WHEN CAUSE-VOID
+             MOVE "minecraft:out_of_world" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE
@@ -607,6 +621,7 @@
      END-IF
      IF L-ATTACKER > 0
          MOVE L-ATTACKER TO EN-KILLER(WS-ROW)
+         MOVE 100 TO EN-KILLER-AGE(WS-ROW)
          CALL "NETHER-HURT" USING WS-ROW L-ATTACKER
      END-IF
      IF EN-HURT(WS-ROW) > RULE-HURT-FRESH

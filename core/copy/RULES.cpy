@@ -53,6 +53,13 @@
  *> CAUSE-ARROW (002-lane-mobs2): an arrow (damage type arrow, 44 section 7.3); armor applies.
  78 CAUSE-ARROW               VALUE 10.
  78 CAUSE-COUNT               VALUE 10.
+*> Causes of damage that only a mob takes (002-lane-mobsfull-h15, 18 sections 2.5, 3.3, 7.3): they have no RULE-CAUSE row (the table stays CAUSE-COUNT long);
+*> DAMAGE-TYPE-ID gives them the damage type on_fire, lava, in_wall, cramming, out_of_world (CAUSE-VOID, below the world) by key (generic, id 0, where the open set has none).
+ 78 CAUSE-ON-FIRE              VALUE 11.
+ 78 CAUSE-LAVA                 VALUE 12.
+ 78 CAUSE-IN-WALL              VALUE 13.
+ 78 CAUSE-CRAMMING             VALUE 14.
+ 78 CAUSE-VOID                 VALUE 15.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

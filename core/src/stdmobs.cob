@@ -225,7 +225,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DIE.
-*> USING tracker row of a standard mob whose health reached 0 (18 section 7.5): its loot lands on the ground now (STDMOB-DROPS), Entity Event 3
+*> USING tracker row of a standard mob whose health reached 0 (18 section 7.5): its loot and experience land now (STDMOB-DROPS; both only while the game rule mob_drops is true), Entity Event 3
 *> (death) goes to the viewers, and the row stays as a dying mob for 20 ticks: health 0, EN-COOLDOWN counts the ticks (deathTime), the
 *> panic and the stroll end. STDMOB-STEP finishes it (Entity Event 60, removal).
  DATA DIVISION.
@@ -243,6 +243,8 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-KILLED              BINARY-LONG.
  01 WS-M                   BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "mob_drops".
+ 01 WS-RULE                BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -259,11 +261,14 @@
      CALL "PB-FREE" USING PB-BUFFER
      MOVE EN-KILLER(L-ROW) TO WS-KILLED
      CALL "STDMOB-INDEX" USING WS-TYPE WS-M
+     CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
      IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube"
          CALL "STDMOB-SLIME-DIE" USING L-ROW WS-KILLED
      ELSE
-         CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
-         CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW)
+         IF WS-RULE = 1
+             CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
+             CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-DIE.
@@ -560,8 +565,7 @@
  PROGRAM-ID. STDMOB-BURN.
 *> USING tracker row, table row of a mob that burns in daylight (SM-BURNS 1, 20 section 3.5; STDMOB-STEP calls it for those rows only). While not burning, in the monsters_burn window of the day
 *> (SM-BURN-DAY-START to SM-BURN-DAY-END) and with raw light 13 or more at its eye cell (the sky is open there), a hash of the entity id and the time
-*> sets it on fire for SM-BURN-TICKS with the chance of the light (SM-BURN-CHANCE, per ten thousand). While burning EN-BURN counts down and every
-*> SM-BURN-STEP ticks the mob takes 1 point (HEALTH-MOB-DAMAGE, the generic cause). The chance is stopped when the mob is sheltered (STDMOB-SHELTERED: water, powder snow, no
+*> sets it on fire for SM-BURN-TICKS with the chance of the light (SM-BURN-CHANCE, per ten thousand). While it burns nothing new ignites; the fire tick (1 point every 20 ticks, on_fire) is M182-ENV-TICK's (core/src/mob-18-2.cob). The chance is stopped when the mob is sheltered (STDMOB-SHELTERED: water, powder snow, no
 *> visible sky, rain); a worn helmet takes durability damage nextInt(2) instead of igniting the mob and breaks at its maximum (EN-HEAD-WEAR).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -577,9 +581,6 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
- 01 WS-AMOUNT              BINARY-LONG VALUE 1.
- 01 WS-CAUSE               BINARY-LONG VALUE 6.
- 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-FEET                BINARY-LONG.
  01 WS-SHELTERED           BINARY-LONG.
  01 WS-TIER                BINARY-LONG.
@@ -588,11 +589,8 @@
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
+*>   While it burns the fire tick is M182-ENV-TICK's (18 section 2.5): nothing new ignites.
      IF EN-BURN(L-ROW) > 0
-         SUBTRACT 1 FROM EN-BURN(L-ROW)
-         IF FUNCTION MOD(EN-BURN(L-ROW), SM-BURN-STEP) = 0
-             CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-AMOUNT WS-CAUSE WS-NO-ATTACKER
-         END-IF
          GOBACK
      END-IF
      COMPUTE WS-T = FUNCTION MOD(CW-TIME, 24000)
@@ -954,8 +952,20 @@
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
      END-IF
+*>   The memory of the player who hit it lasts 100 ticks (18 section 2.8, lastHurtByPlayerMemoryTime).
+     IF EN-KILLER-AGE(WS-ROW) > 0
+         SUBTRACT 1 FROM EN-KILLER-AGE(WS-ROW)
+         IF EN-KILLER-AGE(WS-ROW) = 0
+             MOVE 0 TO EN-KILLER(WS-ROW)
+         END-IF
+     END-IF
      IF SM-KIND(WS-M) >= 2
          CALL "STDMOB-AQUATIC-STEP" USING WS-ROW WS-M
+         GOBACK
+     END-IF
+*>   Fire, lava, drowning, in-wall damage and cramming (18 section 2.5); a mob that dies of them is not stepped any further.
+     CALL "M182-ENV-TICK" USING WS-ROW
+     IF EN-HEALTH(WS-ROW) = 0
          GOBACK
      END-IF
      IF SM-KEY(WS-M) = "phantom"
@@ -1133,16 +1143,8 @@
      END-IF
      MOVE EN-Y(WS-ROW) TO WS-FALL-Y
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
-*>   A creeper that lands adds to its swell by the distance it fell (20 section 6.1).
-     IF SM-FUSE(WS-M) > 0
-         IF EN-Y(WS-ROW) < WS-FALL-Y
-             COMPUTE EN-FALL(WS-ROW) = EN-FALL(WS-ROW) + WS-FALL-Y - EN-Y(WS-ROW)
-         END-IF
-         IF EN-ON-GROUND(WS-ROW) = 1 AND EN-FALL(WS-ROW) > 0
-             CALL "STDMOB-CREEPER-FALL" USING WS-ROW EN-FALL(WS-ROW)
-             MOVE 0 TO EN-FALL(WS-ROW)
-         END-IF
-     END-IF
+*>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
+     CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.
  END PROGRAM STDMOB-STEP.
 

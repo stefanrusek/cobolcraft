@@ -365,6 +365,9 @@
 *>     --- 002-lane-mobsfull-h12: Nether and End mobs (core/src/mob-21-5.cob) ---
        10 EN-ANGER           BINARY-LONG.        *> zombified piglin, piglin: ticks of anger left (0 calm); the target is EN-TARGET
        10 EN-ALERT           BINARY-LONG.        *> ticks until an angry zombified piglin alerts the others again (alertOthers, 4 to 6 s)
+*>     --- 002-lane-mobsfull-h15: surroundings and memory of a standard mob (core/src/mob-18-2.cob; 18 sections 2.5, 2.8) ---
+       10 EN-AIR-LOST        BINARY-LONG.        *> air supply lost: the air is 300 less this (0 = full); 320 = air -20, drowning damage and back to 300
+       10 EN-KILLER-AGE      BINARY-LONG.        *> ticks left of lastHurtByPlayerMemoryTime (100 after a hit by a player); at 0 EN-KILLER is cleared (0 = not counting)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
