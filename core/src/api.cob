@@ -515,6 +515,8 @@
  01 WS-MINESHAFT           PIC X(80) VALUE "minecraft:mineshaft".
  01 WS-MINESHAFT-MESA      PIC X(80) VALUE "minecraft:mineshaft_mesa".
  01 WS-IGLOO               PIC X(80) VALUE "minecraft:igloo".
+ 01 WS-SWAMP-HUT           PIC X(80) VALUE "minecraft:swamp_hut".
+ 01 WS-JUNGLE-TEMPLE       PIC X(80) VALUE "minecraft:jungle_pyramid".
  01 WS-SHIPWRECK           PIC X(80) VALUE "minecraft:shipwreck".
  01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
  LINKAGE SECTION.
@@ -541,6 +543,9 @@
          CALL "STRUCT-GATE-ON" USING WS-IGLOO
          CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK
          CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK-BEACHED
+*>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut and the jungle temple
+         CALL "STRUCT-GATE-ON" USING WS-SWAMP-HUT
+         CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF

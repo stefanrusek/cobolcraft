@@ -453,7 +453,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-FIND-POINT.
 *> USING structure row, seed (BINARY-DOUBLE), chunk x, chunk z, stub x out, stub y out, stub z out, valid out: findGenerationPoint of the structure's type (36-1 5.3). The mineshaft builds
-*> its pieces (MS-FIND-POINT, sea level 63 and min y -64 of the overworld) and leaves them in the builder; the igloo and the shipwreck build template pieces (STRUCT-TPL-FIND-POINT);
+*> its pieces (MS-FIND-POINT, sea level 63 and min y -64 of the overworld) and leaves them in the builder; the igloo and the shipwreck build template pieces (STRUCT-TPL-FIND-POINT); the swamp hut, the jungle temple and the desert pyramid build scattered pieces (STRUCT-SCATTER-FIND-POINT);
 *> any other type has no generator yet: the stub is the chunk's middle column at y 0, valid, with no piece.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -479,6 +479,9 @@
          CALL "MS-FIND-POINT" USING L-SEED L-CX L-CZ SDT-VARIANT(L-STRUCT) WS-SEA WS-MIN-Y L-X L-Y L-Z L-VALID
      ELSE
          CALL "STRUCT-TPL-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID WS-DONE
+         IF WS-DONE = 0
+             CALL "STRUCT-SCATTER-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID WS-DONE
+         END-IF
          IF WS-DONE = 0
              COMPUTE L-X = L-CX * 16 + 8
              MOVE 0 TO L-Y
@@ -508,11 +511,14 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-COUNT
          CALL "SPB-BOX-INTERSECTS" USING SP-BOX(WS-I) SP-WBOX WS-FLAG
          IF WS-FLAG = 1
-             IF SP-TYPE(WS-I) = 100
-                 CALL "STRUCT-TPL-POST" USING WS-I
-             ELSE
-                 CALL "MS-POST" USING WS-I
-             END-IF
+             EVALUATE TRUE
+                 WHEN SP-TYPE(WS-I) = 100
+                     CALL "STRUCT-TPL-POST" USING WS-I
+                 WHEN SP-TYPE(WS-I) > 100
+                     CALL "SCP-POST" USING WS-I
+                 WHEN OTHER
+                     CALL "MS-POST" USING WS-I
+             END-EVALUATE
          END-IF
      END-PERFORM
      GOBACK.

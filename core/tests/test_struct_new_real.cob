@@ -91,6 +91,10 @@
      MOVE CW-DIM(1) TO WS-DIM
      MOVE "minecraft:mineshaft_mesa" TO WS-KEY
      PERFORM ONE-STRUCTURE
+     MOVE "minecraft:swamp_hut" TO WS-KEY
+     PERFORM ONE-STRUCTURE
+     MOVE "minecraft:jungle_pyramid" TO WS-KEY
+     PERFORM ONE-STRUCTURE
      STOP RUN.
 
  ONE-STRUCTURE.
