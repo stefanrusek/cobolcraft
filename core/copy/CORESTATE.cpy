@@ -382,6 +382,13 @@
        10 EN-BEE-ROLL        BINARY-LONG.        *> bee: 1 while angry with its target within 2 blocks (metadata 18 bit 2)
        10 EN-BEE-T           BINARY-LONG.        *> bee: ticks since the sting (timeSinceSting)
        10 EN-BEE-WET         BINARY-LONG.        *> bee: consecutive ticks in water
+*>     --- 002-lane-mobsfull-h20: turtle (core/src/mob-19-12.cob; 19 section 12) ---
+       10 EN-HOME-SET         BINARY-LONG.        *> turtle: 1 once its home is set (the block of its spawn)
+       10 EN-HOME-X           BINARY-LONG.        *> turtle: home block
+       10 EN-HOME-Y           BINARY-LONG.
+       10 EN-HOME-Z           BINARY-LONG.
+       10 EN-TURTLE-EGG       BINARY-LONG.        *> turtle: 1 while it carries an egg (hasEgg, metadata 18)
+       10 EN-TURTLE-LAY       BINARY-LONG.        *> turtle: layEggCounter, 0 = not laying (layingEgg, metadata 19, is counter > 0)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

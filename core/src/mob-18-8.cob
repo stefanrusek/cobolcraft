@@ -94,6 +94,9 @@
              CALL "M1916-BEE-FOOD" USING L-ITEM L-FOUND
              MOVE L-FOUND TO L-LOVE
          END-IF
+         IF L-SPECIES = "turtle" AND L-ITEM = "seagrass"
+             MOVE 1 TO L-FOUND L-LOVE
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM M188-FOOD.
@@ -110,7 +113,7 @@
      MOVE 0 TO L-OK
      EVALUATE L-SPECIES
          WHEN "pig" WHEN "cow" WHEN "mooshroom" WHEN "sheep" WHEN "chicken" WHEN "horse" WHEN "donkey" WHEN "llama"
-         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda" WHEN "bee"
+         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda" WHEN "bee" WHEN "turtle"
              MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
@@ -341,6 +344,9 @@
              IF SM-KEY(WS-M) = "parrot" AND EN-WOOL(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "turtle" AND (EN-TURTLE-EGG(L-ROW) = 1 OR EN-TURTLE-LAY(L-ROW) > 0)
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "bee"
 *>               The flags byte of a bee (19 section 16): 2 rolling, 4 stung, 8 nectar.
                  COMPUTE L-WOOL = 2 * EN-BEE-ROLL(L-ROW) + 4 * EN-BEE-STUNG(L-ROW) + 8 * EN-BEE-NECTAR(L-ROW)
@@ -468,6 +474,12 @@
              COMPUTE EN-EGG(L-ROW) = 6000 + WS-DRAW
          WHEN "parrot"
              CALL "XP-RANDOM" USING WS-SALT-P WS-BOUND-P EN-WOOL(L-ROW)
+         WHEN "turtle"
+*>           The home of a turtle is the block it spawned in (19 section 12).
+             MOVE 1 TO EN-HOME-SET(L-ROW)
+             COMPUTE EN-HOME-X(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))
+             COMPUTE EN-HOME-Y(L-ROW) = FUNCTION INTEGER(EN-Y(L-ROW))
+             COMPUTE EN-HOME-Z(L-ROW) = FUNCTION INTEGER(EN-Z(L-ROW))
      END-EVALUATE
      GOBACK.
  END PROGRAM MOB-BORN.
@@ -568,6 +580,13 @@
  PROCEDURE DIVISION USING L-A L-B.
      CALL "MOB-SPECIES-KEY" USING L-A WS-KEY-A
      CALL "MOB-SPECIES-KEY" USING L-B WS-KEY-B
+     IF WS-KEY-A = "turtle"
+*>       Two turtles make no baby: the first one gets the egg (19 section 12).
+         MOVE 1 TO EN-TURTLE-EGG(L-A)
+         CALL "MOB-DATA-SEND" USING L-A
+         CALL "MOB-BREED-DONE" USING L-A L-B
+         GOBACK
+     END-IF
      CALL "M188-OFFSPRING" USING WS-KEY-A WS-KEY-B WS-KEY
      MOVE SPACES TO WS-FULL
      STRING "minecraft:" DELIMITED BY SIZE WS-KEY DELIMITED BY SPACE INTO WS-FULL
@@ -601,17 +620,46 @@
              END-IF
      END-EVALUATE
      CALL "MOB-DATA-SEND" USING WS-BABY
+     CALL "MOB-BREED-DONE" USING L-A L-B
+     GOBACK.
+ END PROGRAM MOB-BREED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-BREED-DONE.
+*> USING row a, row b: the end of a breeding (8.1): both parents get age 6000 and lose love and partner, Entity Event 18 (hearts) goes to the viewers of the first parent and one
+*> experience orb of 1 + nextInt(7) points appears at it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 18.
+ 01 WS-SALT-XP             BINARY-LONG VALUE 26.
+ 01 WS-BOUND-7             BINARY-LONG VALUE 7.
+ 01 WS-POINTS              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    BINARY-LONG.
+ 01 L-B                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-A L-B.
+     MOVE EN-DIM(L-A) TO WS-DIM
+     MOVE EN-X(L-A) TO WS-X
+     MOVE EN-Y(L-A) TO WS-Y
+     MOVE EN-Z(L-A) TO WS-Z
      MOVE 6000 TO EN-MOBAGE(L-A) EN-MOBAGE(L-B)
      MOVE 0 TO EN-LOVE(L-A) EN-LOVE(L-B) EN-LOVE-PARTNER(L-A) EN-LOVE-PARTNER(L-B) EN-LOVE-TIME(L-A) EN-LOVE-TIME(L-B)
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "ENTITY-EVENT-BUILD" USING WS-ID WS-EVENT PB-BUFFER
+     CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-A) WS-EVENT PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING L-A PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
      CALL "XP-RANDOM" USING WS-SALT-XP WS-BOUND-7 WS-POINTS
      ADD 1 TO WS-POINTS
      CALL "XP-AWARD" USING WS-DIM WS-X WS-Y WS-Z WS-POINTS
      GOBACK.
- END PROGRAM MOB-BREED.
+ END PROGRAM MOB-BREED-DONE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-SHEEP-EAT-START.
@@ -781,6 +829,9 @@
      IF WS-GROWN = 1
          MOVE 0 TO EN-VARIANT(L-ROW)
          CALL "MOB-DATA-SEND" USING L-ROW
+         IF WS-KEY = "turtle"
+             CALL "TURTLE-GROWN" USING L-ROW
+         END-IF
      END-IF
      IF WS-KEY = "chicken" AND EN-MOBAGE(L-ROW) >= 0 AND EN-VARIANT(L-ROW) = 0
          CALL "XP-RANDOM" USING WS-SALT-EGG WS-BOUND-EGG WS-DRAW
@@ -979,6 +1030,10 @@
          MOVE 0 TO WS-CAN
      END-IF
      IF WS-TAME = 1 AND EN-TAMED(L-ENTITY) = 0
+         MOVE 0 TO WS-CAN
+     END-IF
+     IF WS-KEY = "turtle" AND EN-TURTLE-EGG(L-ENTITY) = 1
+*>       A turtle with an egg cannot fall in love (19 section 12).
          MOVE 0 TO WS-CAN
      END-IF
      CALL "M188-FEED" USING EN-MOBAGE(L-ENTITY) EN-LOVE(L-ENTITY) WS-FOUND WS-FIXED WS-CAN WS-ACTION WS-SECONDS
