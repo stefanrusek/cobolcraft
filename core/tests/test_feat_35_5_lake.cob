@@ -434,6 +434,18 @@
      MOVE WS-COUNT TO FD-WA-COUNT
      MOVE "35-5§3: a full feature table makes the lake unsupported" TO WS-CASE
      PERFORM ASSERT-N
+     MOVE CB-BLOCK-COUNT TO WS-COUNT
+     MOVE 1 TO CB-BLOCK-COUNT
+     MOVE "minecraft:lake_lava2" TO WS-FTKEY
+     MOVE 0 TO FD-BAD
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     MOVE 0 TO FT-TYPE(WS-FT)
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE FT-TYPE(WS-FT) TO WS-OBS
+     MOVE WS-COUNT TO CB-BLOCK-COUNT
+     MOVE "35-5§3: a block table without cave_air makes the lake unsupported" TO WS-CASE
+     MOVE -1 TO WS-EXP
+     PERFORM ASSERT-N
      STOP RUN.
 
  CHECK-BAD.
