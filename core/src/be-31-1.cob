@@ -312,6 +312,9 @@
          MOVE L-Z TO BE-Z(L-INDEX)
          MOVE L-TYPE TO BE-TYPE(L-INDEX)
          MOVE -1 TO BE-COOLDOWN(L-INDEX)
+         IF L-TYPE = 9
+             CALL "MS6-SPAWNER-NEW" USING BE-SP(L-INDEX)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM BE-CREATE.
@@ -473,6 +476,9 @@
          MOVE "last_interacted_slot" TO WN MOVE 20 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL BE-COOLDOWN(L-INDEX)
      END-IF
+     IF WS-TYPE = 9
+         CALL "BE-SPAWNER-SAVE" USING BE-SP(L-INDEX) BE-SP-ID(L-INDEX) PB-BUFFER
+     END-IF
      IF WS-TYPE = 19
          MOVE "OutputSignal" TO WN MOVE 12 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL BE-OUTPUT(L-INDEX)
@@ -584,6 +590,8 @@
                      AND (WN = "cooking_time_spent" OR WN = "cooking_total_time" OR WN = "lit_time_remaining"
                      OR WN = "lit_total_time" OR WN = "speed_multiplier" OR WN = "RecipesUsed")
                  CALL "FURN-LOAD-KEY" USING L-INDEX WN WS-TYPE PB-BUFFER
+             WHEN BE-TYPE(L-INDEX) = 9
+                 CALL "BE-SPAWNER-LOAD-KEY" USING BE-SP(L-INDEX) BE-SP-ID(L-INDEX) WN WS-TYPE PB-BUFFER
              WHEN BE-TYPE(L-INDEX) = 19 AND WN = "OutputSignal" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER BE-OUTPUT(L-INDEX)
              WHEN BE-TYPE(L-INDEX) = 38 AND WN = "last_interacted_slot" AND WS-TYPE = 3

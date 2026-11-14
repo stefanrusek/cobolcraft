@@ -14,6 +14,7 @@
 *>   MS6-LOCAL-LIGHT, MS6-DARK-ENOUGH, MS6-RULE-CHECK, MS6-RULE-AT, MS6-VALID-SPOT                                 6.8, 6.9
 *>   MS6-BLOCK-KIND, MS6-PLACEMENT-OK                                                                              6.9
 *>   MS6-CHUNK-GEN-BIOME USING state, dim, chunk x, z, biome, enabled, n out                                       6.10
+*>   MS6-CHUNK-GEN-TICK USING n out (the main-thread hook: fresh chunks get their spawns once)                   6.10
 *>   MS6-DESPAWN, MS6-DESPAWN-TICK                                                                                 6.11
 *>   MS6-SPAWNER-NEW, MS6-SPAWNER-ROLL, MS6-SPAWNER-STEP, MS6-SPAWNER-ATTEMPT, MS6-EGG-SPAWN                        6.12
 *>   MS6-SPAWN-CHUNK, MS6-CYCLE                                                                                    6.1 (the tick)
@@ -1194,6 +1195,56 @@
      END-PERFORM
      GOBACK.
  END PROGRAM MS6-CHUNK-GEN-BIOME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS6-CHUNK-GEN-TICK.
+*> USING n out (BINARY-LONG): the main-thread hook of the chunk-generation spawns (6.10). Chunk generation may run on worker threads, so a freshly generated chunk
+*> (CK-FRESH, set by WORLD-CHUNK-LOAD when it generates instead of reading a file) is given its spawns here, once, on the next spawn tick: in a standard world
+*> each such chunk gets one MS6-CHUNK-GEN-BIOME pass (the spawn_mobs rule, the biome at the chunk's centre column at sea level 64) and the mark is cleared.
+*> n is the number of mobs made. Other world types leave the marks alone.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY XORO REPLACING LEADING ==XR-== BY ==WS-==.
+ 01 WS-SEEDED              BINARY-LONG VALUE 0.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED VALUE 20260610.
+ 01 WS-NAME-MOBS           PIC X(40) VALUE "spawn_mobs".
+ 01 WS-V                   BINARY-DOUBLE.
+ 01 WS-ENABLED             BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG VALUE 64.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-BIOME               BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-N                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-N.
+     MOVE 0 TO L-N
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     IF CT-OPEN = 0 OR CT-SET-TYPE NOT = CT-TYPE-STANDARD
+         GOBACK
+     END-IF
+     IF WS-SEEDED = 0
+         CALL "XORO-SEED" USING WS-SEED WS-STATE
+         MOVE 1 TO WS-SEEDED
+     END-IF
+     CALL "BR-RULE-GET" USING WS-NAME-MOBS WS-V
+     MOVE WS-V TO WS-ENABLED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CK-COUNT
+         IF CK-USED(WS-I) = 1 AND CK-FRESH(WS-I) = 1
+             MOVE 0 TO CK-FRESH(WS-I)
+             COMPUTE WS-X = CK-X(WS-I) * 16 + 8
+             COMPUTE WS-Z = CK-Z(WS-I) * 16 + 8
+             CALL "MS6-BIOME-AT" USING CK-DIM(WS-I) WS-X WS-Y WS-Z WS-BIOME
+             CALL "MS6-CHUNK-GEN-BIOME" USING WS-STATE CK-DIM(WS-I) CK-X(WS-I) CK-Z(WS-I) WS-BIOME WS-ENABLED WS-M
+             ADD WS-M TO L-N
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MS6-CHUNK-GEN-TICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-DESPAWN.

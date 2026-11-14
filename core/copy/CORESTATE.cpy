@@ -225,6 +225,7 @@
        10 CK-LIT             PIC 9.              *> light computed
        10 CK-FOREIGN         PIC 9.              *> 1: its palette holds a key of another world type (WT-23): void, never saved
        10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
+       10 CK-FRESH           PIC 9.              *> generated (not read from a file) and not yet given its chunk-generation spawns (MS6-CHUNK-GEN-TICK)
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
 *> entity in the world that other players can see: players once their join is sent (EN-PLAYER is
