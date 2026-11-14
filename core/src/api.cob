@@ -524,9 +524,9 @@
          CALL "DENSITY-FUNCTIONS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "MATERIAL-RULES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
-*>       the feature lists of the biomes; the stage runs only their tree features (FI-ONLY)
+*>       the feature lists of the biomes; the stage runs the placed features of the supported families (FR-GATE)
          CALL "BIOMES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
-         MOVE 1 TO FI-ONLY
+         MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF
      GOBACK.

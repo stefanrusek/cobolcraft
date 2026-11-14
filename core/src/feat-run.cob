@@ -892,8 +892,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-PLACE-FT IS RECURSIVE.
-*> USING state, feature index, x, y, z, result out (1 or 0): the leaf and combinator features of 35-1 section 9 and simple_block (35-4 section 4, with canSurvive
-*> approximated by "a block that is not air lies below"). A feature type that is not compiled places nothing and returns false.
+*> USING state, feature index, x, y, z, result out (1 or 0): the leaf and combinator features of 35-1 section 9 and simple_block (35-4 section 4, FR-SIMPLE-BLOCK). A feature type that is not compiled places nothing and returns false.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -906,13 +905,9 @@
  01 LS-U                   FLOAT-LONG.
  01 LS-STATE               BINARY-LONG.
  01 LS-OK                  BINARY-LONG.
- 01 LS-YB                  BINARY-LONG.
- 01 LS-CLASS               BINARY-LONG.
  01 LS-TOTAL               BINARY-LONG.
  01 LS-DRAW                BINARY-LONG.
  01 LS-RUN                 BINARY-LONG.
- 01 LS-B                   BINARY-LONG.
- 01 LS-FLAGS               BINARY-LONG VALUE 2.
  01 LS-ZERO                BINARY-LONG VALUE 0.
  01 LS-CH                  BINARY-LONG.
  01 LS-PFX                BINARY-LONG.
@@ -989,13 +984,7 @@
          WHEN 42
              CALL "FR-PROV-STATE" USING L-STATE FT-A(L-FT) L-X L-Y L-Z LS-STATE LS-OK
              IF LS-OK = 1
-                 COMPUTE LS-YB = L-Y - 1
-                 CALL "FL-GET-STATE" USING L-X LS-YB L-Z LS-B
-                 CALL "FL-CLASS" USING LS-B LS-CLASS
-                 IF LS-CLASS NOT = 1 AND LS-YB >= FL-MIN-Y
-                     CALL "FL-SET-STATE" USING L-X L-Y L-Z LS-STATE LS-FLAGS LS-OK
-                     MOVE 1 TO L-RESULT
-                 END-IF
+                 CALL "FR-SIMPLE-BLOCK" USING LS-STATE L-X L-Y L-Z L-RESULT
              END-IF
      END-EVALUATE
      GOBACK.

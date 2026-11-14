@@ -847,12 +847,24 @@ bare `oak_log`; core/src/keys.cob), a key the set lacks leaves its slot empty. T
 empty inventory; operator-surface section 2) switches it. The cobolcraft type keeps the stand-in starting inventory of standin section 2; the
 standard type no longer receives it.
 
-## Trees in the standard type (002 operator decision)
+## Trees and vegetation in the standard type (002 operator decision)
 
-The standard generator places trees by the biome feature lists of the data pack (the step 9 vegetal decoration, docs/protocol/35-worldgen-features-3 and 35-4), through
-the feature stage of core/src/feat-stage.cob. The biome lists are loaded with the terrain data (WORLD-GEN-DATA-OPEN) and the stage runs only the placed features whose
-id starts with `minecraft:trees_` (`FI-ONLY`; the other vegetation, flowers, grass patches, mushrooms, stays off until it is reviewed). No clean-room round was needed:
-the docs above specify the tree feature, the straight trunk, the blob, spruce and pine foliage and the two layer size.
+The standard generator places trees and the ground decoration by the biome feature lists of the data pack (the step 9 vegetal decoration, docs/protocol/35-worldgen-features-3 and 35-4),
+through the feature stage of core/src/feat-stage.cob. The biome lists are loaded with the terrain data (WORLD-GEN-DATA-OPEN). The stage runs a placed feature only when its id is in
+a **family** of the gate table of core/src/feat-veg.cob (`FR-GATE`, switched by `FI-GATE`; a prefix of the id each), so a family is switched on one at a time and every other feature
+stays off. A placed feature of an admitted family that the data compiler cannot compile whole (status 2, `FD-BAD`) is skipped too.
+
+Families on now: trees (`trees_*`, `birch_tall`), flowers (`flower_*`, `forest_flowers`; the ones whose provider is a weighted list of plain flowers), grass patches (`patch_grass*`), tall grass
+and large ferns (`patch_tall_grass*`, `patch_large_fern`: double plants), bushes (`patch_bush`, `patch_dead_bush*`, `patch_dry_grass*`), mushroom patches (`brown_mushroom_*`, `red_mushroom_*`), pumpkins and melons
+(`patch_pumpkin`, `patch_melon`), lily pads (`patch_waterlily`) and seagrass (`seagrass_*`). Still off (listed with the reason in the vegetation notes of specs/002-client-polish/tasks.md phase 45): the
+noise based placement counts and providers (plains flowers, meadow, forest flower noise), block columns (sugar cane, kelp, cactus), sweet berry bushes, sea pickles, vines, corals, `freeze_top_layer`, huge mushrooms,
+vegetation patches, bamboo, glow lichen and the underground and Nether decoration.
+
+Plant rules (`simple_block`, 35-4 section 4; core/src/feat-veg.cob): a provider state may carry properties (`sweet_berry_bush[age=3]`, `tall_grass[half=lower]`; the default state with those values put over it, a
+property the block does not have makes the feature unsupported). Survival comes from 24 part 2 table 7.2: flowers, short grass, fern, bush: the block below in `supports_vegetation`; dead bush and dry grass:
+`supports_dry_vegetation`; mushrooms: `overrides_mushroom_light_requirement` or a full solid block below (the light at feature time is taken as 0, 35-5 open question 1, so a mushroom needs only the solid block); lily pad: water
+below and no fluid above; seagrass: a full block below that is not in `cannot_support_seagrass`; every other block (pumpkin, melon) needs only a block below. A double plant needs air above (water above for tall seagrass) and writes
+both halves (`half` lower and upper).
 
 Supported: the `tree` feature (type 51) with `straight_trunk_placer`, `blob_foliage_placer`, `spruce_foliage_placer`, `pine_foliage_placer`, `two_layers_feature_size`,
 the `soil_beneath_tree` provider and the `beehive` decorator (ignored). That is every plain oak, birch and spruce and pine of the data. Also compiled for this: the
