@@ -98,20 +98,20 @@
      CALL "TEST-TICKS" USING WS-TWO
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      MOVE 0 TO WS-HITS
-     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "84 65 107"
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "84 10 34 65 107"
      MOVE PL-DIM(WS-ROW) TO WS-A
      MOVE WS-HITS TO WS-B
      MOVE SPACES TO TL-OBSERVED
      STRING "dim " FUNCTION TRIM(WS-A) " Respawn, abilities, held slot in a row " FUNCTION TRIM(WS-B)
          DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "acceptance US12 39§8 A player changes dimension: after two ticks she is in the nether (row 4) and her packets hold "
-         & "Respawn (84), abilities (65), held slot (107) in that order" TO TL-CASE
+         & "Respawn (84), Change Difficulty (10), permission Entity Event (34), abilities (65), held slot (107) in that order" TO TL-CASE
      MOVE "dim 4 Respawn, abilities, held slot in a row 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 39§8 A player changes dimension: the Level Event 1032 (id 47) is the last packet after Player Position (73)" TO TL-CASE
+     MOVE "acceptance US12 39§8 A player changes dimension: the Level Event 1032 (id 47) is the last packet, after Player Position (73) and the Set Experience (105) and Set Health (106) refresh" TO TL-CASE
      MOVE 0 TO WS-HITS
-     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "73 47"
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "73 105 106 47"
      MOVE WS-HITS TO WS-A
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION TRIM(WS-A) TO TL-OBSERVED
