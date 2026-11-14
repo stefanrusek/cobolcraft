@@ -426,6 +426,8 @@
           15 EN-SNIF-EXP-X   BINARY-LONG.
           15 EN-SNIF-EXP-Y   BINARY-LONG.
           15 EN-SNIF-EXP-Z   BINARY-LONG.
+*>     --- 002-lane-mobsfull-h25: saved mob state (core/src/entity-mobdata.cob) ---
+       10 EN-LEASH-UUID      PIC X(16).          *> a mob loaded leashed: the UUID of the holder until that player is in the dimension (MOB-LEASH-RESTORE); spaces: none
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
