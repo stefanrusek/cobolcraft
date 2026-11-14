@@ -1013,6 +1013,9 @@
      IF SM-KEY(WS-M) = "turtle"
          CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
+     IF SM-KEY(WS-M) = "armadillo"
+         CALL "ARMADILLO-TICK" USING WS-ROW WS-PET-WALK
+     END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
          IF WS-STOP = 2

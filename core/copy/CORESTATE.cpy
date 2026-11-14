@@ -389,6 +389,12 @@
        10 EN-HOME-Z           BINARY-LONG.
        10 EN-TURTLE-EGG       BINARY-LONG.        *> turtle: 1 while it carries an egg (hasEgg, metadata 18)
        10 EN-TURTLE-LAY       BINARY-LONG.        *> turtle: layEggCounter, 0 = not laying (layingEgg, metadata 19, is counter > 0)
+*>     --- 002-lane-mobsfull-h20: armadillo (core/src/mob-19-13.cob; 19 section 13) ---
+       10 EN-ARMA            BINARY-LONG.        *> armadillo: state 0 idle, 1 rolling, 2 scared, 3 unrolling (metadata 18)
+       10 EN-ARMA-T          BINARY-LONG.        *> armadillo: ticks left of the rolling (10) or unrolling (30) state
+       10 EN-ARMA-SCAN       BINARY-LONG.        *> armadillo: ticks since the last danger scan (every 80)
+       10 EN-DANGER          BINARY-LONG.        *> armadillo: ticks left of danger_detected_recently (80)
+       10 EN-SCUTE           BINARY-LONG.        *> armadillo: scuteTime, ticks to the next scute
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

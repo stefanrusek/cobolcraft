@@ -285,6 +285,14 @@
              MOVE 1 TO CD-MX-INT
              CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
      END-EVALUATE
+     IF WS-KEY = "armadillo"
+*>       Armadillo: the state (18, ARMADILLO_STATE, a VarInt of the id enum 36; 19 section 13).
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE 18 TO CD-MX-INDEX
+         MOVE 36 TO CD-MX-SERIALIZER
+         MOVE EN-ARMA(L-ROW) TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+     END-IF
      IF WS-KEY = "turtle"
 *>       Turtle: has egg (18) and laying egg (19), both BOOLEAN (19 section 12).
          INITIALIZE CD-METADATA-ENTRY-X

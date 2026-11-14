@@ -347,6 +347,9 @@
              IF SM-KEY(WS-M) = "turtle" AND (EN-TURTLE-EGG(L-ROW) = 1 OR EN-TURTLE-LAY(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "armadillo" AND EN-ARMA(L-ROW) > 0
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "bee"
 *>               The flags byte of a bee (19 section 16): 2 rolling, 4 stung, 8 nectar.
                  COMPUTE L-WOOL = 2 * EN-BEE-ROLL(L-ROW) + 4 * EN-BEE-STUNG(L-ROW) + 8 * EN-BEE-NECTAR(L-ROW)
@@ -459,6 +462,8 @@
  01 WS-BOUND-E             BINARY-LONG VALUE 6000.
  01 WS-SALT-P              BINARY-LONG VALUE 43.
  01 WS-BOUND-P             BINARY-LONG VALUE 5.
+ 01 WS-SALT-S              BINARY-LONG VALUE 53.
+ 01 WS-BOUND-S             BINARY-LONG VALUE 6000.
  01 WS-DRAW                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -474,6 +479,10 @@
              COMPUTE EN-EGG(L-ROW) = 6000 + WS-DRAW
          WHEN "parrot"
              CALL "XP-RANDOM" USING WS-SALT-P WS-BOUND-P EN-WOOL(L-ROW)
+         WHEN "armadillo"
+*>           scuteTime: nextInt(6000) + 6000 (19 section 13).
+             CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
+             COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
          WHEN "turtle"
 *>           The home of a turtle is the block it spawned in (19 section 12).
              MOVE 1 TO EN-HOME-SET(L-ROW)
