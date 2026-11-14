@@ -7,6 +7,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CONTENT.
+ COPY BESTATE.
  COPY PLAYPKT.
  COPY PROTO.
  01 WS-PLAYER              BINARY-LONG.
@@ -38,6 +39,8 @@
  01 WS-FZ                  BINARY-LONG.
  01 WS-FY                  BINARY-LONG.
  01 WS-STONE-KIND          BINARY-LONG VALUE 1.
+ 01 WS-BE                 BINARY-LONG.
+ 01 WS-SPAWNER-STATE       BINARY-LONG.
  01 WS-HELD                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
@@ -178,6 +181,33 @@
      MOVE WS-DONE TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
      MOVE "acceptance US15 18§6.12 the egg of such a species stays in the stack" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE PL-SLOT-COUNT(WS-PLAYER, WS-HELD + 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   A cow egg on a mob spawner block sets its species and is used up; no cow appears.
+     MOVE "minecraft:spawner" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-SPAWNER-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-SPAWNER-STATE
+     MOVE "minecraft:cow_spawn_egg" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD + 1)
+     MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD + 1)
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     CALL "TOOLUSE-ON" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     CALL "BE-FIND" USING WS-DIM WS-BX WS-BY WS-BZ WS-BE
+     PERFORM FIND-COW
+     MOVE "acceptance US15 18§6.12 a spawn egg on a mob spawner sets its species (cow)" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-BE > 0 AND BE-SP-ID(WS-BE) = "cow"
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 18§6.12 a spawn egg on a mob spawner spawns no mob" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 18§6.12 the egg used on a spawner is used up" TO WS-CASE
      MOVE 1 TO WS-EXP
      MOVE PL-SLOT-COUNT(WS-PLAYER, WS-HELD + 1) TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS

@@ -246,7 +246,7 @@
 *> USING connection id, PLAY-SERVERBOUND (Use Item On), item key (PIC X(48): flint_and_steel or fire_charge), done out: 17 section 3.3. Fire
 *> goes into the air block beside the clicked face when the block below it is solid, a neighbour of it is flammable (TOOL-FLAMMABILITY) or it
 *> is a soul fire base (soul_sand, soul_soil: soul_fire). Flint and steel loses 1 durability, a fire charge is used up (neither in creative).
-*> Not done: lighting a candle or campfire (the lit property), sounds, and the clicked block being replaceable.
+*> A TNT block is not lit but primed (TNT-IGNITE, core/src/mob-21-8.cob). Not done: lighting a candle or campfire (the lit property), sounds, and the clicked block being replaceable.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -300,6 +300,20 @@
      MOVE 0 TO WS-HITS
      INSPECT WS-BLOCK-KEY TALLYING WS-HITS FOR ALL "candle" ALL "campfire"
      IF WS-HITS > 0
+         GOBACK
+     END-IF
+     IF WS-BLOCK-KEY = "tnt"
+         CALL "TNT-IGNITE" USING WS-DIM PSB-BX PSB-BY PSB-BZ
+         MOVE PL-HELD(WS-ROW) TO WS-HELD
+         IF PL-MODE(WS-ROW) NOT = 1 AND L-KEY = "flint_and_steel"
+             CALL "TOOL-HURT-STACK" USING L-ID WS-HELD WS-ONE WS-BROKE
+         END-IF
+         IF PL-MODE(WS-ROW) NOT = 1 AND L-KEY NOT = "flint_and_steel"
+             CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE
+             COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
+             CALL "INV-SLOT-SEND" USING L-ID WS-HELD
+         END-IF
+         MOVE 1 TO L-DONE
          GOBACK
      END-IF
      MOVE PSB-BX TO WS-TX

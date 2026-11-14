@@ -114,6 +114,7 @@
      END-IF
      IF WS-FOUND = 0
          CALL "WORLDGEN-DIM-CHUNK" USING L-DIM L-CX L-CZ CE-CHUNK WS-MARKER-Y
+         MOVE 1 TO CK-FRESH(L-ROW)
          IF WS-MARKER-Y >= 0
              ADD 1 TO CK-SOURCES(L-ROW, WS-MARKER-Y / 16 + 1)
          END-IF

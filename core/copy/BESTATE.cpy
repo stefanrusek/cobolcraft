@@ -44,6 +44,15 @@
           15 BE-SLOT-ITEM   BINARY-LONG.
           15 BE-SLOT-COUNT  BINARY-LONG.
           15 BE-SLOT-VAR    BINARY-LONG.
+       10 BE-SP.                                    *> mob spawner (31-7 section 3; core/src/be-spawner.cob): the seven values of MS6-SPAWNER-NEW in that order
+          15 BE-SP-DELAY     BINARY-LONG.
+          15 BE-SP-MIN       BINARY-LONG.
+          15 BE-SP-MAX       BINARY-LONG.
+          15 BE-SP-COUNT     BINARY-LONG.
+          15 BE-SP-NEARBY    BINARY-LONG.
+          15 BE-SP-PRANGE    BINARY-LONG.
+          15 BE-SP-SRANGE    BINARY-LONG.
+       10 BE-SP-ID           PIC X(24).              *> the species key without the namespace (SpawnData.entity.id), spaces when the spawn data has none
 *> The ender chest storage of each player (31-1 section 11, 45-3 section 5): one detached CORE-BE entity (dimension 0, type ender chest)
 *> per player UUID, created on the first open or when the player file is read, and kept while the world is open.
  78 ENDER-MAX             VALUE 64.

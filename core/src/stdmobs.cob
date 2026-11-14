@@ -1527,7 +1527,10 @@
 *> No parameters: the natural spawning of a standard world is MS6-CYCLE (core/src/mob-18-6.cob, 18 section 6): biome spawn tables, caps, light and
 *> placement rules, packs. The per-column programs above (STDMOB-SPAWN-TRY, STDMOB-SPAWN-PACK and the rules) stay as the earlier slice's rule.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GEN                 BINARY-LONG.
  PROCEDURE DIVISION.
+     CALL "MS6-CHUNK-GEN-TICK" USING WS-GEN
      CALL "MS6-CYCLE"
      CALL "STDMOB-REST-TICK"
      CALL "STDMOB-PHANTOM-SPAWNER"
