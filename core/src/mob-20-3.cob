@@ -228,7 +228,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HAND-KEY.
-*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-HAND                 BINARY-LONG.
@@ -239,6 +239,7 @@
          WHEN 1 MOVE "minecraft:iron_sword" TO L-KEY
          WHEN 2 MOVE "minecraft:iron_spear" TO L-KEY
          WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
+         WHEN 4 MOVE "minecraft:bow" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -486,6 +487,16 @@
                      WHEN OTHER MOVE 3 TO EN-HAND(L-ROW)
                  END-EVALUATE
              END-IF
+         WHEN "skeleton"
+         WHEN "stray"
+         WHEN "bogged"
+         WHEN "parched"
+*>           Armour as 3.6 and always a bow in the main hand (5, populateDefaultEquipmentSlots).
+             CALL "STDMOB-EQUIP-ROLL" USING L-STATE BW-DIFFICULTY WS-SPECIAL WS-TIER WS-SLOTS
+             IF WS-SLOTS > 0
+                 COMPUTE EN-EQUIP(L-ROW) = 10 * (WS-TIER + 1) + WS-SLOTS
+             END-IF
+             MOVE 4 TO EN-HAND(L-ROW)
          WHEN "slime"
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
      END-EVALUATE

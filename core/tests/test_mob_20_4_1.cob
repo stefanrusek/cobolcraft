@@ -221,7 +221,7 @@
              MOVE WS-I TO WS-NEW
          END-IF
      END-PERFORM
-     MOVE "acceptance US15 20§4.1 Zombie: the reinforcement targets the attacker, at least 7 blocks from a player" TO WS-CASE
+     MOVE "acceptance US15 20§4.1 Zombie: a reinforcement targets the attacker, 7+ blocks from a player" TO WS-CASE
      MOVE 1 TO WS-EXP
      MOVE 0 TO WS-OBS
      IF WS-NEW > 0
