@@ -12,6 +12,8 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY DIMENSIONS.
+ COPY WSIM.
+ COPY WSIM2.
  01 WS-DIR                 PIC X(1024).
  01 WS-ENV                 PIC X(1024).
  01 WS-FILE                PIC X(1100).
@@ -33,6 +35,9 @@
  01 WS-TEXT2               PIC X(4096).
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-E4                  PIC -(9)9.
+ 01 WS-E5                  PIC -(9)9.
  01 WS-F1                  PIC -(5)9.9.
  01 WS-F2                  PIC -(5)9.9.
  01 WS-F3                  PIC -(5)9.9.
@@ -99,6 +104,22 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "[" FUNCTION TRIM(WS-TEXT) "] level " FUNCTION TRIM(WS-F1) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "[] level 0.0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test nether player every dimension row has its world border (size 59999968) and random-tick seed, and the nether "
+         & "does not hurt Alice (she is inside the border)" TO TL-CASE
+     COMPUTE WS-E1 = W2-B-SIZE(DIM-STANDARD-NETHER)
+     COMPUTE WS-E2 = W2-B-SIZE(DIM-STANDARD-END)
+     COMPUTE WS-E3 = WSM-RAND(DIM-STANDARD-NETHER)
+     COMPUTE WS-E4 = WSM-RAND(DIM-STANDARD-END)
+     COMPUTE WS-E5 = PL-HEALTH(WS-ROW)
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     IF WS-E3 NOT = 0 AND WS-E4 NOT = 0
+         STRING FUNCTION TRIM(TL-OBSERVED) " seeded" DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     STRING FUNCTION TRIM(TL-OBSERVED) " hp " FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "59999968 59999968 seeded hp 20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "test nether player she disconnects and rejoins: dimension row 4 and her place are kept" TO TL-CASE

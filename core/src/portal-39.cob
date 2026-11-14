@@ -521,3 +521,203 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PORTAL-POI-REMOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-LIMIT.
+*> USING dimension row, x, y, z, step dx, dy, dz, maximum, reference state, count out (BINARY-LONG): BlockUtil limit (39 section 4.3): how many
+*> consecutive cells from (x, y, z) + step * 1, at most the maximum, hold exactly the reference state.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-REF                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-DX L-DY L-DZ L-MAX L-REF L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-MAX
+         COMPUTE WS-X = L-X + L-DX * WS-I
+         COMPUTE WS-Y = L-Y + L-DY * WS-I
+         COMPUTE WS-Z = L-Z + L-DZ * WS-I
+         CALL "WORLD-GET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-STATE
+         IF WS-STATE NOT = L-REF
+             GOBACK
+         END-IF
+         ADD 1 TO L-COUNT
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-LIMIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-LARGEST-RECT.
+*> USING dimension row, x, y, z, axis (0 X, 1 Z), PORTAL-RECT out: BlockUtil.getLargestRectangleAround (39 section 4.3) with axis1 the portal's
+*> axis (limit 21), axis2 Y (limit 21) and the predicate "exactly the state at (x, y, z)": one column per offset along the axis with the
+*> extents down and up from the row of (x, y, z) that never grow outward, then for each bottom row from the centre column's lowest row down to 0
+*> the largest rectangle under the column heights (a rectangle replaces the best only when strictly larger; a rectangle closes at the column past its
+*> right end and taller closes first, so the first of equal areas stays).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-AX                  BINARY-LONG.
+ 01 WS-AZ                  BINARY-LONG.
+ 01 WS-NAX                 BINARY-LONG.
+ 01 WS-NAZ                 BINARY-LONG.
+ 01 WS-REF                 BINARY-LONG.
+ 01 WS-NEG                 BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-C0                  BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-COLUMNS.
+    05 WS-DOWN             BINARY-LONG OCCURS 44 TIMES.
+    05 WS-UP               BINARY-LONG OCCURS 44 TIMES.
+    05 WS-HT               BINARY-LONG OCCURS 44 TIMES.
+    05 WS-S-START          BINARY-LONG OCCURS 46 TIMES.
+    05 WS-S-H              BINARY-LONG OCCURS 46 TIMES.
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-DOWN0               BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SP                  BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-MORE                BINARY-LONG.
+ 01 WS-AREA                BINARY-LONG.
+ 01 WS-RBEST               BINARY-LONG.
+ 01 WS-RLO                 BINARY-LONG.
+ 01 WS-RHI                 BINARY-LONG.
+ 01 WS-RH                  BINARY-LONG.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-BLO                 BINARY-LONG.
+ 01 WS-BW                  BINARY-LONG.
+ 01 WS-BH                  BINARY-LONG.
+ 01 WS-BV                  BINARY-LONG.
+ 01 WS-LIMIT-MAX           BINARY-LONG VALUE 21.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-MINUS               BINARY-LONG VALUE -1.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-AXIS                 BINARY-LONG.
+ COPY PORTALRECT.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-AXIS PORTAL-RECT.
+     MOVE 1 TO WS-AX
+     MOVE 0 TO WS-AZ
+     IF L-AXIS = 1
+         MOVE 0 TO WS-AX
+         MOVE 1 TO WS-AZ
+     END-IF
+     COMPUTE WS-NAX = 0 - WS-AX
+     COMPUTE WS-NAZ = 0 - WS-AZ
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-REF
+     CALL "PORTAL-LIMIT" USING L-DIM L-X L-Y L-Z WS-NAX WS-ZERO WS-NAZ WS-LIMIT-MAX WS-REF WS-NEG
+     CALL "PORTAL-LIMIT" USING L-DIM L-X L-Y L-Z WS-AX WS-ZERO WS-AZ WS-LIMIT-MAX WS-REF WS-POS
+     COMPUTE WS-N = WS-NEG + WS-POS + 1
+     MOVE WS-NEG TO WS-C0
+     COMPUTE WS-C = WS-C0 + 1
+     CALL "PORTAL-LIMIT" USING L-DIM L-X L-Y L-Z WS-ZERO WS-MINUS WS-ZERO WS-LIMIT-MAX WS-REF WS-DOWN(WS-C)
+     CALL "PORTAL-LIMIT" USING L-DIM L-X L-Y L-Z WS-ZERO WS-ONE WS-ZERO WS-LIMIT-MAX WS-REF WS-UP(WS-C)
+*>   Outward from the centre: first the negative side, then the positive one.
+     PERFORM VARYING WS-C FROM WS-C0 BY -1 UNTIL WS-C < 1
+         COMPUTE WS-OFFSET = WS-C - 1 - WS-C0
+         COMPUTE WS-CX = L-X + WS-AX * WS-OFFSET
+         COMPUTE WS-CZ = L-Z + WS-AZ * WS-OFFSET
+         MOVE WS-DOWN(WS-C + 1) TO WS-MAX
+         CALL "PORTAL-LIMIT" USING L-DIM WS-CX L-Y WS-CZ WS-ZERO WS-MINUS WS-ZERO WS-MAX WS-REF WS-DOWN(WS-C)
+         MOVE WS-UP(WS-C + 1) TO WS-MAX
+         CALL "PORTAL-LIMIT" USING L-DIM WS-CX L-Y WS-CZ WS-ZERO WS-ONE WS-ZERO WS-MAX WS-REF WS-UP(WS-C)
+     END-PERFORM
+     PERFORM VARYING WS-C FROM WS-C0 BY 1 UNTIL WS-C >= WS-N - 1
+         COMPUTE WS-OFFSET = WS-C + 1 - WS-C0
+         COMPUTE WS-CX = L-X + WS-AX * WS-OFFSET
+         COMPUTE WS-CZ = L-Z + WS-AZ * WS-OFFSET
+         MOVE WS-DOWN(WS-C + 1) TO WS-MAX
+         CALL "PORTAL-LIMIT" USING L-DIM WS-CX L-Y WS-CZ WS-ZERO WS-MINUS WS-ZERO WS-MAX WS-REF WS-DOWN(WS-C + 2)
+         MOVE WS-UP(WS-C + 1) TO WS-MAX
+         CALL "PORTAL-LIMIT" USING L-DIM WS-CX L-Y WS-CZ WS-ZERO WS-ONE WS-ZERO WS-MAX WS-REF WS-UP(WS-C + 2)
+     END-PERFORM
+     MOVE WS-DOWN(WS-C0 + 1) TO WS-DOWN0
+     MOVE 0 TO WS-BEST WS-BLO WS-BW WS-BH WS-BV
+     PERFORM VARYING WS-V FROM WS-DOWN0 BY -1 UNTIL WS-V < 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             MOVE 0 TO WS-HT(WS-I)
+             COMPUTE WS-AREA = WS-DOWN0 - WS-DOWN(WS-I)
+             COMPUTE WS-CUR = WS-DOWN0 + WS-UP(WS-I)
+             IF WS-AREA <= WS-V AND WS-V <= WS-CUR
+                 COMPUTE WS-HT(WS-I) = WS-CUR + 1 - WS-V
+             END-IF
+         END-PERFORM
+         MOVE 0 TO WS-SP WS-RBEST WS-RLO WS-RHI WS-RH
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > WS-N
+             MOVE 0 TO WS-CUR
+             IF WS-I < WS-N
+                 MOVE WS-HT(WS-I + 1) TO WS-CUR
+             END-IF
+             MOVE WS-I TO WS-START
+             MOVE 1 TO WS-MORE
+             PERFORM UNTIL WS-MORE = 0
+                 IF WS-SP = 0
+                     MOVE 0 TO WS-MORE
+                 ELSE
+                     IF WS-S-H(WS-SP) <= WS-CUR
+                         MOVE 0 TO WS-MORE
+                     ELSE
+                         COMPUTE WS-AREA = WS-S-H(WS-SP) * (WS-I - WS-S-START(WS-SP))
+                         IF WS-AREA > WS-RBEST
+                             MOVE WS-AREA TO WS-RBEST
+                             MOVE WS-S-START(WS-SP) TO WS-RLO
+                             COMPUTE WS-RHI = WS-I - 1
+                             MOVE WS-S-H(WS-SP) TO WS-RH
+                         END-IF
+                         MOVE WS-S-START(WS-SP) TO WS-START
+                         SUBTRACT 1 FROM WS-SP
+                     END-IF
+                 END-IF
+             END-PERFORM
+             IF WS-CUR > 0
+                 MOVE 1 TO WS-MORE
+                 IF WS-SP > 0
+                     IF WS-S-H(WS-SP) >= WS-CUR
+                         MOVE 0 TO WS-MORE
+                     END-IF
+                 END-IF
+                 IF WS-MORE = 1
+                     ADD 1 TO WS-SP
+                     MOVE WS-START TO WS-S-START(WS-SP)
+                     MOVE WS-CUR TO WS-S-H(WS-SP)
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-RBEST > WS-BEST
+             MOVE WS-RBEST TO WS-BEST
+             MOVE WS-RLO TO WS-BLO
+             COMPUTE WS-BW = WS-RHI - WS-RLO + 1
+             MOVE WS-RH TO WS-BH
+             MOVE WS-V TO WS-BV
+         END-IF
+     END-PERFORM
+     COMPUTE WS-OFFSET = WS-BLO - WS-C0
+     COMPUTE PR-X = L-X + WS-AX * WS-OFFSET
+     COMPUTE PR-Y = L-Y + WS-BV - WS-DOWN0
+     COMPUTE PR-Z = L-Z + WS-AZ * WS-OFFSET
+     MOVE WS-BW TO PR-W
+     MOVE WS-BH TO PR-H
+     MOVE L-AXIS TO PR-AXIS
+     GOBACK.
+ END PROGRAM PORTAL-LARGEST-RECT.
