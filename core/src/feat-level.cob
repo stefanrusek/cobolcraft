@@ -262,23 +262,22 @@
  END PROGRAM FL-HEIGHT-OF.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FL-BIOME-AT.
+ PROGRAM-ID. FL-BIOME-ID.
+*> USING x, y, z, biome id out: the id (0-based, the index into CORE-BIOMES minus one) of the biome cell at the position (a position outside the chunk's column or the build height takes the nearest cell).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATLEVEL.
- COPY CBLOCKS.
  COPY CELLS.
  01 WS-LX                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
  01 WS-LY                  BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
- 01 WS-ID                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- 01 L-BIOME                PIC X(40).
- PROCEDURE DIVISION USING L-X L-Y L-Z L-BIOME.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-ID.
      COMPUTE WS-LX = L-X - FL-CX * 16
      COMPUTE WS-LZ = L-Z - FL-CZ * 16
      IF WS-LX < 0
@@ -302,7 +301,23 @@
      END-IF
      SET ADDRESS OF CE-CHUNK TO FL-ADDR
      COMPUTE WS-INDEX = FUNCTION INTEGER(WS-LY / 16) * 64 + FUNCTION MOD(FUNCTION INTEGER(WS-LY / 4), 4) * 16 + FUNCTION INTEGER(WS-LZ / 4) * 4 + FUNCTION INTEGER(WS-LX / 4) + 1
-     MOVE CE-BIOME(WS-INDEX) TO WS-ID
+     MOVE CE-BIOME(WS-INDEX) TO L-ID
+     GOBACK.
+ END PROGRAM FL-BIOME-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-BIOME-AT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BIOME                PIC X(40).
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-BIOME.
+     CALL "FL-BIOME-ID" USING L-X L-Y L-Z WS-ID
      MOVE SPACES TO L-BIOME
      IF WS-ID < CBI-COUNT
          MOVE CBI-KEY(WS-ID + 1) TO L-BIOME

@@ -18,6 +18,12 @@
  01 WS-T                   BINARY-LONG.
  01 WS-PERM.
     05 WS-P                BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-SAVES.
+    05 WS-SAVE             PIC X(1024) OCCURS 5 TIMES.
+ 01 WS-SEED-NOW            BINARY-DOUBLE UNSIGNED.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-SLOT-D              PIC 9.
+ 01 WS-ONE-SLOT            BINARY-LONG VALUE 1.
  01 WS-JSEED               BINARY-DOUBLE UNSIGNED.
  01 WS-SEED-2345           BINARY-DOUBLE UNSIGNED VALUE 2345.
  01 WS-BITS                BINARY-LONG.
@@ -83,24 +89,9 @@
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
 *>   the permutation of the construction: three nextDouble draws (next(26), next(27) each), then for i = 0..255 j = nextInt(256 - i) and a swap of i and i + j
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
-         COMPUTE WS-P(WS-I) = WS-I - 1
-     END-PERFORM
      CALL "JRAND-SET-SEED" USING WS-JSEED WS-SEED-2345
-     PERFORM 3 TIMES
-         MOVE 26 TO WS-BITS
-         CALL "JRAND-NEXT" USING WS-JSEED WS-BITS WS-DUMMY
-         MOVE 27 TO WS-BITS
-         CALL "JRAND-NEXT" USING WS-JSEED WS-BITS WS-DUMMY
-     END-PERFORM
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 255
-         COMPUTE WS-BOUND = 256 - WS-I
-         CALL "JRAND-NEXT-INT-BOUND" USING WS-JSEED WS-BOUND WS-J
-         COMPUTE WS-K = WS-I + WS-J + 1
-         MOVE WS-P(WS-I + 1) TO WS-T
-         MOVE WS-P(WS-K) TO WS-P(WS-I + 1)
-         MOVE WS-T TO WS-P(WS-K)
-     END-PERFORM
+     PERFORM BUILD-PERM
+     MOVE WS-PERM TO WS-SAVE(1)
      MOVE 0 TO WS-BAD
      MOVE 0 TO WS-MAX
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 39
@@ -132,6 +123,47 @@
      MOVE 0 TO WS-X WS-Y
      CALL "F351-SIMPLEX" USING WS-X WS-Y WS-R
      COMPUTE TL-OBSERVED-N = WS-R * 1000000
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the other noises of Biome (F351-SIMPLEX-T): TEMPERATURE_NOISE of seed 1234 is slot 2; slots 3 to 5 are three noises built one after the other from one source of seed 3456
+     MOVE 1234 TO WS-SEED-NOW
+     CALL "JRAND-SET-SEED" USING WS-JSEED WS-SEED-NOW
+     PERFORM BUILD-PERM
+     MOVE WS-PERM TO WS-SAVE(2)
+     MOVE 3456 TO WS-SEED-NOW
+     CALL "JRAND-SET-SEED" USING WS-JSEED WS-SEED-NOW
+     PERFORM VARYING WS-SLOT FROM 3 BY 1 UNTIL WS-SLOT > 5
+         PERFORM BUILD-PERM
+         MOVE WS-PERM TO WS-SAVE(WS-SLOT)
+     END-PERFORM
+     PERFORM VARYING WS-SLOT FROM 2 BY 1 UNTIL WS-SLOT > 5
+         MOVE WS-SAVE(WS-SLOT) TO WS-PERM
+         MOVE 0 TO WS-BAD
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 19
+             COMPUTE WS-X = (WS-I * 41 - 300) / 17.0
+             COMPUTE WS-Y = (WS-I * 29 - 250) / 23.0 + WS-I / 5.0
+             PERFORM EVALUATE-SIMPLEX
+             CALL "F351-SIMPLEX-T" USING WS-SLOT WS-X WS-Y WS-R
+             COMPUTE WS-DIFF = FUNCTION ABS(WS-R - WS-EXPECT)
+             IF WS-DIFF > 0.000001
+                 ADD 1 TO WS-BAD
+             END-IF
+         END-PERFORM
+         MOVE SPACES TO TL-CASE
+         MOVE WS-SLOT TO WS-SLOT-D
+         STRING "10 Open question 8 fixed-seed noise: slot " WS-SLOT-D " equals the formula over its permutation (20 samples)" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-BAD TO TL-OBSERVED-N
+         MOVE 0 TO TL-EXPECTED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE 0.3 TO WS-X
+     MOVE 0.7 TO WS-Y
+     MOVE WS-SAVE(1) TO WS-PERM
+     CALL "F351-SIMPLEX-T" USING WS-ONE-SLOT WS-X WS-Y WS-R
+     CALL "F351-SIMPLEX" USING WS-X WS-Y WS-EXPECT
+     MOVE "10 Open question 8: slot 1 is the biome info noise F351-SIMPLEX" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = (WS-R - WS-EXPECT) * 1000000
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -223,6 +255,26 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      GOBACK.
 
+*> the permutation of one SimplexNoise built from the random source WS-JSEED (which goes on for the next noise) into WS-PERM
+ BUILD-PERM.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+         COMPUTE WS-P(WS-I) = WS-I - 1
+     END-PERFORM
+     PERFORM 3 TIMES
+         MOVE 26 TO WS-BITS
+         CALL "JRAND-NEXT" USING WS-JSEED WS-BITS WS-DUMMY
+         MOVE 27 TO WS-BITS
+         CALL "JRAND-NEXT" USING WS-JSEED WS-BITS WS-DUMMY
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 255
+         COMPUTE WS-BOUND = 256 - WS-I
+         CALL "JRAND-NEXT-INT-BOUND" USING WS-JSEED WS-BOUND WS-J
+         COMPUTE WS-K = WS-I + WS-J + 1
+         MOVE WS-P(WS-I + 1) TO WS-T
+         MOVE WS-P(WS-K) TO WS-P(WS-I + 1)
+         MOVE WS-T TO WS-P(WS-K)
+     END-PERFORM
+     .
 *> the formula of 10 section 3.5 in decimal arithmetic over WS-PERM: noise at (WS-X, WS-Y) in WS-EXPECT
  EVALUATE-SIMPLEX.
      COMPUTE WS-S = (WS-X + WS-Y) * WS-F2

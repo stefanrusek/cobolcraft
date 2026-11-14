@@ -16,7 +16,7 @@
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  PROCEDURE DIVISION.
-     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT FD-BC-COUNT
+     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT FD-BC-COUNT FD-WA-COUNT
      ADD 1 TO FD-GEN
      GOBACK.
  END PROGRAM FD-RESET.
@@ -856,13 +856,15 @@
  END PROGRAM FD-J-PROPS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FD-PROV-NODE.
-*> USING doc, node, provider index out (0 when unsupported, with FD-BAD): a block state provider: a state object (simple), or {"type": simple | weighted | random_block}.
+ PROGRAM-ID. FD-PROV-NODE IS RECURSIVE.
+*> USING doc, node, provider index out (0 when unsupported, with FD-BAD): a block state provider: a state object (simple), or {"type": simple | weighted | random_block | randomized_int
+*> | rule_based}. A rule_based provider (35-2 section 4, 35-5 section 5) is PV-TYPE 5: the pool holds PV-N pairs (predicate, provider index) in rule order, PV-A the fallback provider (0: none).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FDCONST.
  COPY FEATDATA.
  COPY FDKEYS.
+ LOCAL-STORAGE SECTION.
  01 WS-TEXT                PIC X(120).
  01 WS-LEN                 BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -874,6 +876,10 @@
  01 WS-W                   BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-IDX                 BINARY-LONG.
+ 01 WS-RULES.
+    05 WS-RULE OCCURS 16 TIMES.
+       10 WS-RULE-PR       BINARY-LONG.
+       10 WS-RULE-PV       BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -932,6 +938,33 @@
              WHEN "minecraft:randomized_int"
              WHEN "randomized_int"
                  CALL "FD-PROV-RANDOMIZED" USING JSON-DOC L-NODE WS-ROW
+             WHEN "minecraft:rule_based"
+             WHEN "rule_based"
+                 MOVE 5 TO PV-TYPE(WS-ROW)
+                 CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-RULES WS-E
+                 IF WS-E > 0
+                     IF JN-COUNT(WS-E) > 16
+                         MOVE 1 TO FD-BAD
+                     END-IF
+                     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E) OR WS-I >= 16
+                         CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-N
+                         CALL "FD-J-MEMBER" USING JSON-DOC WS-N FK-IF-TRUE WS-D
+                         ADD 1 TO PV-N(WS-ROW)
+                         CALL "FD-PRED-NODE" USING JSON-DOC WS-D WS-RULE-PR(PV-N(WS-ROW))
+                         CALL "FD-J-MEMBER" USING JSON-DOC WS-N FK-THEN WS-D
+                         CALL "FD-PROV-NODE" USING JSON-DOC WS-D WS-RULE-PV(PV-N(WS-ROW))
+                     END-PERFORM
+                 END-IF
+*>               the pairs go to the pool together (the providers of the rules put their own entries there first)
+                 COMPUTE PV-POOL(WS-ROW) = FD-POOL-COUNT + 1
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PV-N(WS-ROW)
+                     CALL "FD-POOL-ADD" USING WS-RULE-PR(WS-I) WS-IDX
+                     CALL "FD-POOL-ADD" USING WS-RULE-PV(WS-I) WS-IDX
+                 END-PERFORM
+                 CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-FALLBACK WS-E
+                 IF WS-E > 0
+                     CALL "FD-PROV-NODE" USING JSON-DOC WS-E PV-A(WS-ROW)
+                 END-IF
              WHEN "minecraft:random_block"
              WHEN "random_block"
                  MOVE 3 TO PV-TYPE(WS-ROW)
@@ -1722,6 +1755,46 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 10
+*>           a disk (feat-disk.cob): unsupported when a provider or the target is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-DISK-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 19
+*>           the snow and ice top layer (feat-freeze.cob): unsupported when the block table has no ice or snow
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FREEZE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 25
+*>           a lake (feat-lake.cob): unsupported when a provider, a predicate or cave_air is unknown
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-LAKE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 48
+*>           a spring (feat-spring.cob): unsupported when its state or a valid block is unknown
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-SPRING-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE
