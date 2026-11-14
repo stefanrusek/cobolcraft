@@ -764,12 +764,12 @@
      MOVE "chest" TO WS-KEY48
      MOVE 0 TO PS-MIRROR
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
-     MOVE "filterBlocks passes the nbt flag through (the key may lack the namespace)" TO WS-LABEL
+     MOVE "filterBlocks passes the nbt tag row through (the key may lack the namespace)" TO WS-LABEL
      MOVE SPACES TO TL-OBSERVED
      MOVE SF-COUNT TO WS-ED
      MOVE SF-NBT(1) TO WS-ED2
      STRING FUNCTION TRIM(WS-ED) " " FUNCTION TRIM(WS-ED2) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "1 1" TO TL-EXPECTED
+     MOVE "1 2" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      MOVE 1 TO PS-BOX-SET
      MOVE 100 TO PS-BOX(1)

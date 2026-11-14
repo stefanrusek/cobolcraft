@@ -97,3 +97,29 @@ write("test", "nothing", int_list("size", [1, 1, 1]), lst("entities", 10, []), l
 write("test", "cube3", int_list("size", [3, 3, 3]),
       lst("blocks", 10, [block([x, y, z], 0) for y in range(3) for x in range(3) for z in range(3)]), lst("palette", 10, [v("stone")]))
 write("test", "row5", int_list("size", [5, 1, 1]), lst("blocks", 10, [block([x, 0, 0], 0) for x in range(5)]), lst("palette", 10, [v("stone")]))
+
+# Block entity tags and jigsaw records of core/tests/test_struct_36_2_11.cob (36-2 sections 1.5, 5.3, 6.2, 9.6).
+def lng(n, v_): return tag(4, n, struct.pack(">q", v_))
+def blk(pos, st, nbt): return body_comp(int_list("pos", pos), integer("state", st), nbt)
+CHEST = [("facing", "north"), ("type", "single"), ("waterlogged", "false")]
+write("test", "bes", int_list("size", [6, 1, 1]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          blk([0, 0, 0], 0, comp("nbt", string("id", "minecraft:chest"), string("LootTable", "minecraft:chests/simple_dungeon"), lng("LootTableSeed", 7))),
+          blk([1, 0, 0], 0, comp("nbt", string("id", "minecraft:chest"))),
+          blk([2, 0, 0], 1, comp("nbt", string("id", "minecraft:mob_spawner"),
+                                 comp("SpawnData", comp("entity", string("id", "minecraft:cave_spider"))))),
+          blk([3, 0, 0], 2, comp("nbt", string("id", "minecraft:structure_block"), string("mode", "DATA"), string("metadata", "ChestEast"))),
+          blk([4, 0, 0], 2, comp("nbt", string("id", "minecraft:structure_block"), string("mode", "SAVE"))),
+          blk([5, 0, 0], 3, comp("nbt", string("id", "minecraft:sign"))),
+      ]),
+      lst("palette", 10, [v("chest", CHEST), v("spawner"), v("structure_block", [("mode", "data")]), v("oak_sign", [("rotation", "0"), ("waterlogged", "false")])]))
+write("test", "jig", int_list("size", [3, 1, 1]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          blk([0, 0, 0], 0, comp("nbt", string("id", "minecraft:jigsaw"), string("joint", "rollable"), string("name", "minecraft:bottom"),
+                                 string("pool", "minecraft:foo/bar"), string("target", "minecraft:top"),
+                                 integer("placement_priority", 3), integer("selection_priority", 4),
+                                 string("final_state", "minecraft:stone"))),
+          blk([1, 0, 0], 0, comp("nbt", string("id", "minecraft:jigsaw"))),
+          blk([2, 0, 0], 0, comp("nbt", string("id", "minecraft:jigsaw"), string("joint", "aligned"))),
+      ]),
+      lst("palette", 10, [v("jigsaw", [("orientation", "up_north")])]))

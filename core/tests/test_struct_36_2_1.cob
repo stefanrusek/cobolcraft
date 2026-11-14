@@ -67,14 +67,14 @@
      STRING FUNCTION TRIM(WS-A) " " FUNCTION TRIM(WS-B) " " FUNCTION TRIM(WS-C) " " FUNCTION TRIM(WS-A) " 0 " FUNCTION TRIM(WS-A)
          DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-PTR
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-2§1 The structure template: the block entity flag marks only the record with nbt" TO TL-CASE
+     MOVE "acceptance US12 36-2§1 The structure template: the nbt tag row (2: row 1 is the empty tag) marks only the record with nbt" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
          MOVE TB-NBT(TP-BASE(WS-ROW, 1) + WS-I) TO WS-A
          STRING FUNCTION TRIM(WS-A) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      END-PERFORM
-     MOVE "000001" TO TL-EXPECTED
+     MOVE "000002" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "multi" TO WS-ID

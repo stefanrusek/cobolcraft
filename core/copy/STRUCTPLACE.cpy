@@ -26,7 +26,7 @@
        10 PW-LX             BINARY-SHORT.
        10 PW-LY             BINARY-SHORT.
        10 PW-LZ             BINARY-SHORT.
-       10 PW-NBT            BINARY-CHAR UNSIGNED.
+       10 PW-NBT            BINARY-LONG.
     05 PW-PLACED            BINARY-LONG OCCURS 65536 TIMES.
     05 PW-PEND              BINARY-LONG OCCURS 65536 TIMES.
     05 PW-G-PLACED          BINARY-CHAR UNSIGNED OCCURS 98304 TIMES.
@@ -57,4 +57,4 @@
        10 SF-Y              BINARY-LONG.
        10 SF-Z              BINARY-LONG.
        10 SF-STATE          BINARY-LONG.
-       10 SF-NBT            BINARY-CHAR UNSIGNED.
+       10 SF-NBT            BINARY-LONG.

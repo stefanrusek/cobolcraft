@@ -8,13 +8,13 @@
 *>   STRUCT-PLACE USING row, origin x, y, z, anchor x, y, z, settings, flags, result out (1 when the placement ran, 0 for an early exit): 5.1 to 5.5
 *>   STRUCT-FLUID-OF USING state, fluid out (0 none, 2 water, 3 lava), source out (1 when the fluid state is a source): the fluid state of a block state
 *>   (STRUCT-PROCESS, processBlockInfos, is in struct-proc.cob)
-*>   STRUCT-PLACE-BE USING x, y, z, state: the block entity hook of 5.3 step 7 (a record with nbt was written). The generation level has no block entity storage
-*>     and the template cache keeps no tag, so this stub only counts its calls (STRUCT-BE-HOOK-STATE); the block entity channel replaces its body.
+*>   STRUCT-PLACE-BE USING x, y, z, state, tag: the block entity of 5.3 step 7 (a record with nbt was written): the loot seed draw and the request to the worldgen block entity channel
+*>     (gen-be.cob) for a container with a loot table or a spawner; see the program.
 *>   STRUCT-SHAPE-STATE USING x, y, z, direction (BinaryLong ordinal of 29 section 3: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east), neighbour state, state, state out: the
 *>     updateShape hook of 5.5 (29 section 3.2). The per-block rules are written for the live world (blockupd-29.cob) and are not wired to the generation level, so this
 *>     stub returns the state unchanged and records the call while SHT-ON is 1 (then it also maps SHT-FROM to SHT-TO, a test aid).
 *> Not here: the entities of 5.6 (the cache keeps no entity records and the generator has no entity channel; STRUCT-PLACE still counts a template of entities only as placed,
-*> 5.1 step 3), the barrier write of 5.3 step 4 (no block entity data stands in the window to discard), the loot seed draw of 5.3 step 7 (no tag), the fluid tick of
+*> 5.1 step 3), the barrier write of 5.3 step 4 (unobservable in the window), the fluid tick of
 *> placeLiquid and Level.updateNeighborsAt of 5.5 step 2a (no ticking or neighbour updates in the generation window).
 
  IDENTIFICATION DIVISION.
@@ -138,20 +138,47 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PLACE-BE.
+*> USING x, y, z, state, tag (BINARY-LONG, the row in STRUCT-TPL-BE): 5.3 step 7 for a record with an nbt tag that was written. A randomizable container (kind 1) takes one
+*> `nextLong` of the piece random (SP-XR of STRUCTPIECE.cpy, drawn for every container, with or without a loot table) as its LootTableSeed and, when it has a loot table, is requested
+*> from the worldgen block-entity channel (GBE-ADD, kind 1) with that table and seed; a spawner (kind 2) is requested with its entity id (kind 2). Every other block entity (a sign,
+*> a structure block, a jigsaw: the marker kinds are read by the piece, 6.2) is dropped: the chunk window and the channel carry containers and spawners only, and the items of a
+*> container are not kept. SBH-* count the calls (a test aid). The barrier write of step 4 is not made: in the generation window it only discards a block entity that the window cannot hold.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTPLACE.
+ COPY STRUCTTPL.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-LOOT                PIC X(48).
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-NOTHING             PIC X(32) VALUE SPACES.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
- PROCEDURE DIVISION USING L-X L-Y L-Z L-STATE.
+ 01 L-TAG                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-STATE L-TAG.
      ADD 1 TO SBH-CALLS
      MOVE L-X TO SBH-X
      MOVE L-Y TO SBH-Y
      MOVE L-Z TO SBH-Z
      MOVE L-STATE TO SBH-STATE
+     EVALUATE TN-KIND(L-TAG)
+         WHEN 1
+             CALL "MSP-RNG-LONG" USING WS-SEED
+             IF TN-LOOT(L-TAG) NOT = SPACES
+                 MOVE 1 TO WS-KIND
+                 MOVE TN-LOOT(L-TAG) TO WS-LOOT
+                 CALL "GBE-ADD" USING L-X L-Y L-Z WS-KIND WS-LOOT WS-SEED WS-NOTHING
+             END-IF
+         WHEN 2
+             MOVE 2 TO WS-KIND
+             MOVE 0 TO WS-SEED
+             MOVE SPACES TO WS-LOOT
+             MOVE TN-TEXT(L-TAG) TO WS-TEXT
+             CALL "GBE-ADD" USING L-X L-Y L-Z WS-KIND WS-LOOT WS-SEED WS-TEXT
+     END-EVALUATE
      GOBACK.
  END PROGRAM STRUCT-PLACE-BE.
 
@@ -281,8 +308,8 @@
                  MOVE WS-STATE TO PW-STATE(WS-I)
                  COMPUTE WS-CELL = (WS-Y - FL-MIN-Y) * 256 + (WS-Z - FL-CZ * 16) * 16 + (WS-X - FL-CX * 16) + 1
                  MOVE 1 TO PW-G-PLACED(WS-CELL)
-                 IF PW-NBT(WS-I) = 1
-                     CALL "STRUCT-PLACE-BE" USING WS-X WS-Y WS-Z WS-STATE
+                 IF PW-NBT(WS-I) > 0
+                     CALL "STRUCT-PLACE-BE" USING WS-X WS-Y WS-Z WS-STATE PW-NBT(WS-I)
                  END-IF
                  IF PS-LIQUID = 0
                      CALL "STRUCT-FLUID-OF" USING WS-STATE WS-FLUID WS-SOURCE
