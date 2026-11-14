@@ -1,7 +1,7 @@
 *> The work area of the tree feature (core/src/feat-tree.cob FR-TREE and the placers of feat-tree-trunk.cob and feat-tree-foliage.cob): the positions of the logs, leaves and soil block of the
 *> tree being built, held in a grid around its origin (grid cell = position - origin + TW-OX in x and z, y - origin y + TW-OY (17: roots reach 16 below); a position on the outermost layer of the grid is outside it, so
 *> every cell used has all six neighbours in the table; TW-GRID 0 empty, 1 log, 2 leaf) so that nothing is written to the level until the whole tree is known to fit the chunk.
-*> TW-LS the log indices in the order of the decorator context (sorted by y, stable), TW-SH their shuffled copy. TW-FC the branch list of the fancy trunk (attachment and the base height of its branch). TW-ATT is the list of foliage attachments the trunk placer returned (position, radius offset, double trunk flag). EXTERNAL.
+*> TW-LS the log indices in the order of the decorator context (sorted by y, stable), TW-SH their shuffled copy, TW-LFS the leaf indices sorted likewise. TW-FC the branch list of the fancy trunk (attachment and the base height of its branch). TW-ATT is the list of foliage attachments the trunk placer returned (position, radius offset, double trunk flag). EXTERNAL.
  78 TW-OX                 VALUE 10.
  78 TW-GX                 VALUE 21.
  78 TW-GY                 VALUE 56.
@@ -47,6 +47,7 @@
        10 TW-LOG-A           BINARY-LONG.
     05 TW-LS                BINARY-LONG OCCURS 2048 TIMES.
     05 TW-SH                BINARY-LONG OCCURS 2048 TIMES.
+    05 TW-LFS               BINARY-LONG OCCURS 24696 TIMES.
     05 TW-ATT OCCURS 256 TIMES.
        10 TW-ATT-X           BINARY-LONG.
        10 TW-ATT-Y           BINARY-LONG.

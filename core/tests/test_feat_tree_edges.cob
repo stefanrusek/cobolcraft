@@ -95,7 +95,7 @@
      CALL "FD-RESET"
 
 *>   features the tree compiler refuses
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21
          MOVE SPACES TO WS-KEY
          EVALUATE WS-I
              WHEN 1 MOVE "minecraft:bad_root" TO WS-KEY
@@ -118,6 +118,7 @@
              WHEN 18 MOVE "minecraft:bad_fallen_dirs" TO WS-KEY
              WHEN 19 MOVE "minecraft:bad_fallen_provider" TO WS-KEY
              WHEN 20 MOVE "minecraft:bad_fallen_log_kind" TO WS-KEY
+             WHEN 21 MOVE "minecraft:bad_deco_many" TO WS-KEY
          END-EVALUATE
          CALL "FD-GET-FT" USING WS-KEY WS-FT
          CALL "FD-ENSURE-FT" USING WS-FT

@@ -4,8 +4,8 @@
 *> (another placer or root placer, an unknown decorator) marks the feature unsupported (FD-BAD). min_clipped_height is supported (2.2 step 6).
 *> Deviations (the lane's notes, docs/design/world-types.md "Trees"): the tree is built in the grid of TREEWORK.cpy and written through the level, whose write window is one chunk: the trunk
 *> stands in the chunk of its origin and the leaves that fall in a neighbouring chunk are cut off (a neighbour's terrain is not known here, so a tree cannot be completed from the other side);
-*> every decorator of the data is ignored (the beehive, the vines, the cocoa pods, the podzol ground, the leaf litter, the shelf mushrooms, the moss and the creaking heart: no nest, no
-*> vines, no pods; their draws are not made); the leaf distances of section 2.4 are the breadth first distances from this tree's logs through its own leaves (the hash set order of the layers
+*> the decorators trunk_vine, leave_vine and cocoa are placed after the tree (feat-tree-deco.cob), the others of the data are accepted and ignored (the beehive, the podzol ground, the leaf litter,
+*> the shelf mushrooms, the moss, the creaking heart and the propagules of the mangrove: their draws are not made); the leaf distances of section 2.4 are the breadth first distances from this tree's logs through its own leaves (the hash set order of the layers
 *> is not reproduced, Open question 1 there) and neighbouring blocks outside the tree do not lower them; the shape update at the edge (2.5) only schedules leaf ticks and is not run; leaves
 *> are written not persistent and not waterlogged; states are the default states of the blocks, except the axis of the logs of the fancy trunk limbs; ignore_vines is not read (vines are
 *> not tested in the free height scan).
@@ -108,20 +108,6 @@
  01 WS-K-FOLIAGE-HEIGHT    PIC X(40) VALUE "foliage_height".
  01 WS-K-ATTEMPTS          PIC X(40) VALUE "leaf_placement_attempts".
  01 WS-TAG-LVS             PIC X(112) VALUE "minecraft:leaves".
- 01 WS-DECOS.
-    05 FILLER              PIC X(40) VALUE "minecraft:beehive".
-    05 FILLER              PIC X(40) VALUE "minecraft:trunk_vine".
-    05 FILLER              PIC X(40) VALUE "minecraft:leave_vine".
-    05 FILLER              PIC X(40) VALUE "minecraft:cocoa".
-    05 FILLER              PIC X(40) VALUE "minecraft:alter_ground".
-    05 FILLER              PIC X(40) VALUE "minecraft:place_on_ground".
-    05 FILLER              PIC X(40) VALUE "minecraft:shelf_mushroom".
-    05 FILLER              PIC X(40) VALUE "minecraft:attached_to_leaves".
-    05 FILLER              PIC X(40) VALUE "minecraft:attached_to_logs".
-    05 FILLER              PIC X(40) VALUE "minecraft:pale_moss".
-    05 FILLER              PIC X(40) VALUE "minecraft:creaking_heart".
- 01 WS-DECO-TABLE REDEFINES WS-DECOS.
-    05 WS-DECO             PIC X(40) OCCURS 11 TIMES.
  01 WS-J                   BINARY-LONG.
  01 WS-TALLY               BINARY-LONG.
  01 WS-HKEY                PIC X(40).
@@ -156,21 +142,16 @@
      IF WS-E > 0
          CALL "FD-TREE-ROOT-NODE" USING JSON-DOC WS-E WS-ROW
      END-IF
-*>   the decorators: every registered type is accepted and ignored, an unknown type is unsupported
+*>   the decorators (feat-tree-deco.cob): every registered type is accepted, the supported ones are compiled, an unknown type is unsupported
      CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-DECORATORS WS-E
      IF WS-E > 0
-         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
+         IF JN-COUNT(WS-E) > 10
+             MOVE 1 TO FD-BAD
+         END-IF
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E) OR WS-I >= 10
              CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-N
-             CALL "FD-J-STRING" USING JSON-DOC FK-TYPE WS-N WS-TEXT WS-LEN
-             MOVE 0 TO WS-TALLY
-             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 11
-                 IF WS-DECO(WS-J) = WS-TEXT
-                     MOVE 1 TO WS-TALLY
-                 END-IF
-             END-PERFORM
-             IF WS-TALLY = 0
-                 MOVE 1 TO FD-BAD
-             END-IF
+             ADD 1 TO TR-NDEC(WS-ROW)
+             CALL "FD-DECO-NODE" USING JSON-DOC WS-N WS-ROW TR-NDEC(WS-ROW)
          END-PERFORM
      END-IF
 *>   the soil under the trunk
@@ -662,6 +643,10 @@
      END-IF
 *>   the level writes one chunk: the trunk stands in it (the origin is in the chunk) and the leaves outside are discarded by FL-SET-STATE
      CALL "FR-TREE-COMMIT" USING WS-ROW
+     IF TR-NDEC(WS-ROW) > 0
+         MOVE 1 TO WS-A
+         CALL "FR-DECORATE" USING L-STATE WS-ROW WS-A TR-NDEC(WS-ROW)
+     END-IF
      MOVE 1 TO L-RESULT
      GOBACK.
  END PROGRAM FR-TREE.
