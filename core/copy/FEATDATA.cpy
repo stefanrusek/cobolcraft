@@ -10,6 +10,7 @@
  78 FD-MAX-PR            VALUE 4096.
  78 FD-MAX-POOL          VALUE 65536.
  78 FD-MAX-PV            VALUE 2048.
+ 78 FD-MAX-WA            VALUE 128.
  01 FEAT-DATA EXTERNAL.
     05 FD-DIR               PIC X(1100).
     05 FD-GEN               BINARY-LONG.
@@ -23,6 +24,7 @@
     05 FD-BAD               BINARY-LONG.
     05 FD-TR-COUNT          BINARY-LONG.
     05 FD-BC-COUNT          BINARY-LONG.
+    05 FD-WA-COUNT          BINARY-LONG.
 *>  placed features: PF-STATUS 0 stub (not compiled), 1 compiled, 2 unsupported; the modifiers PF-MD-FIRST on for PF-MD-COUNT; the feature index PF-FT
     05 FD-PF OCCURS 1024 TIMES.
        10 PF-KEY            PIC X(80).
@@ -188,3 +190,15 @@
        10 BC-LAYER OCCURS 4 TIMES.
           15 BC-H           BINARY-LONG OCCURS 4 TIMES.
           15 BC-PV          BINARY-LONG.
+*>  water, surface and underground features (types spring_feature 48, lake 25, disk 10, freeze_top_layer 19 and later families; core/src/feat-spring.cob and its siblings): FT-A of the feature is the
+*>  row. A row has twelve integers WA-I, four pools (WA-START and WA-N: a slice of FD-POOL each), four predicates WA-PR, four providers WA-PV, three int providers WA-IP (four integers each, like
+*>  FR-INT-SAMPLE) and four floats WA-F; each family says in its own header what the fields hold.
+    05 FD-WA OCCURS 128 TIMES.
+       10 WA-I              BINARY-LONG OCCURS 12 TIMES.
+       10 WA-START          BINARY-LONG OCCURS 4 TIMES.
+       10 WA-N              BINARY-LONG OCCURS 4 TIMES.
+       10 WA-PR             BINARY-LONG OCCURS 4 TIMES.
+       10 WA-PV             BINARY-LONG OCCURS 4 TIMES.
+       10 WA-IP OCCURS 3 TIMES.
+          15 WA-IPV         BINARY-LONG OCCURS 4 TIMES.
+       10 WA-F              FLOAT-LONG OCCURS 4 TIMES.

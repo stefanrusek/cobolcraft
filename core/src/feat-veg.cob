@@ -14,6 +14,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATINDEX.
+*> the number of families of the table below: a new family adds a row here and raises this number
+ 78 FG-COUNT               VALUE 22.
 *> prefix length and prefix, one family each
  01 WS-FAMILIES.
     05 FILLER PIC 99 VALUE 16.
@@ -58,8 +60,10 @@
     05 FILLER PIC X(32) VALUE "minecraft:patch_berry".
     05 FILLER PIC 99 VALUE 15.
     05 FILLER PIC X(32) VALUE "minecraft:vines".
+    05 FILLER PIC 99 VALUE 17.
+    05 FILLER PIC X(32) VALUE "minecraft:spring_".
  01 WS-FAMILY-TABLE REDEFINES WS-FAMILIES.
-    05 WS-FAMILY OCCURS 21 TIMES.
+    05 WS-FAMILY OCCURS FG-COUNT TIMES.
        10 WS-FAMILY-LENGTH    PIC 99.
        10 WS-FAMILY-PREFIX    PIC X(32).
  01 WS-I                   BINARY-LONG.
@@ -71,7 +75,7 @@
      MOVE 1 TO L-FLAG
      IF FI-GATE = 1
          MOVE 0 TO L-FLAG
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21 OR L-FLAG = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FG-COUNT OR L-FLAG = 1
              MOVE WS-FAMILY-LENGTH(WS-I) TO WS-N
              IF L-KEY(1:WS-N) = WS-FAMILY-PREFIX(WS-I)(1:WS-N)
                  MOVE 1 TO L-FLAG

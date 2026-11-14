@@ -61,3 +61,19 @@
  01 FK-SOURCE         PIC X(40) VALUE "source".
  01 FK-PROPERTY       PIC X(40) VALUE "property".
  01 FK-VALUES         PIC X(40) VALUE "values".
+ 01 FK-VALID-BLOCKS   PIC X(40) VALUE "valid_blocks".
+ 01 FK-REQUIRES-BELOW PIC X(40) VALUE "requires_block_below".
+ 01 FK-ROCK-COUNT     PIC X(40) VALUE "rock_count".
+ 01 FK-HOLE-COUNT     PIC X(40) VALUE "hole_count".
+ 01 FK-FLUID          PIC X(40) VALUE "fluid".
+ 01 FK-BARRIER        PIC X(40) VALUE "barrier".
+ 01 FK-CAN-PLACE      PIC X(40) VALUE "can_place_feature".
+ 01 FK-CAN-REPLACE-AF PIC X(40) VALUE "can_replace_with_air_or_fluid".
+ 01 FK-CAN-REPLACE-B  PIC X(40) VALUE "can_replace_with_barrier".
+ 01 FK-STATE-PROVIDER PIC X(40) VALUE "state_provider".
+ 01 FK-RADIUS         PIC X(40) VALUE "radius".
+ 01 FK-HALF-HEIGHT    PIC X(40) VALUE "half_height".
+ 01 FK-RULES          PIC X(40) VALUE "rules".
+ 01 FK-IF-TRUE        PIC X(40) VALUE "if_true".
+ 01 FK-THEN           PIC X(40) VALUE "then".
+ 01 FK-FALLBACK       PIC X(40) VALUE "fallback".

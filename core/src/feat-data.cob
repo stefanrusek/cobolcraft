@@ -16,7 +16,7 @@
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  PROCEDURE DIVISION.
-     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT FD-BC-COUNT
+     MOVE 0 TO FD-PF-COUNT FD-MD-COUNT FD-FT-COUNT FD-CH-COUNT FD-PR-COUNT FD-POOL-COUNT FD-PV-COUNT FD-BAD FD-TR-COUNT FD-BC-COUNT FD-WA-COUNT
      ADD 1 TO FD-GEN
      GOBACK.
  END PROGRAM FD-RESET.
@@ -1722,6 +1722,16 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 48
+*>           a spring (feat-spring.cob): unsupported when its state or a valid block is unknown
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-SPRING-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE
