@@ -131,6 +131,9 @@
        10 PL-SATURATION      FLOAT-LONG.         *> 17 section 4.9: 0 to the food level, 5.0 for a new player
        10 PL-SPRINTING       PIC 9.
        10 PL-SNEAKING        PIC 9.              *> 1 while Player Input (05c 0x2B) holds the shift flag 0x20
+       10 PL-POSE            BINARY-LONG.        *> the Pose enum id of the player (docs/protocol/53 section 1): 0 standing, 3 swimming or crawling, 5 crouching (core/src/poses.cob)
+       10 PL-POSE-FLAGS      BINARY-LONG.        *> the shared-flags byte of the player's entity (18 section 1.4): 0x02 shift key down, 0x08 sprinting, 0x10 swimming
+       10 PL-POSE-SENT       BINARY-LONG.        *> 0, or 1 + pose x 256 + flags as last sent in Set Entity Data
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
        10 PL-EATING-START    BINARY-DOUBLE.

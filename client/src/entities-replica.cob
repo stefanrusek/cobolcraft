@@ -226,6 +226,7 @@
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
+                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
                  IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
@@ -255,6 +256,13 @@
                  END-IF
 *>               The orb's value (entry 8) and the creeper's swell direction (entry 16), both INT: the swell counter is kept as it was when
 *>               the direction changes (CREEPER-SWELL), then runs from there.
+*>               The shared flags byte (entry 0) and the pose (entry 6) of a player (53 section 10).
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 0 AND MD-MD-SERIALIZER = PB-MDS-BYTE
+                     MOVE MD-MD-INT TO EN-FLAGS(WS-ROW)
+                 END-IF
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 6 AND MD-MD-SERIALIZER = PB-MDS-POSE
+                     MOVE MD-MD-INT TO EN-POSE(WS-ROW)
+                 END-IF
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
                      IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
                          MOVE MD-MD-INT TO EN-VALUE(WS-ROW)

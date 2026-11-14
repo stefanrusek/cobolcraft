@@ -231,6 +231,7 @@
 *>   Sprinting starts or stops before the tick that moves at its speed.
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-SPRINT" USING CLIENT-STATE
+         CALL "CONTROLS-SNEAK" USING CLIENT-STATE
      END-IF
 *>   A client tick every 50 ms in play: once loaded the player moves and the server hears of it,
 *>   then Client Tick End, and the day advances one tick.

@@ -37,9 +37,9 @@
 *>   MOVE-COLLIDES USING dim, x, y, z (FLOAT-LONG feet position), hit out (BINARY-LONG 1 or 0)
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MOVE-COLLIDES.
-*> USING dimension row, feet x, y, z (FLOAT-LONG), hit out (BINARY-LONG): 1 when the player box at
-*> that position overlaps a solid block, else 0.
+ PROGRAM-ID. MOVE-COLLIDES-BOX.
+*> USING dimension row, feet x, y, z, half width, height (FLOAT-LONG), hit out (BINARY-LONG): 1 when a box of that
+*> size at that position overlaps a solid block, else 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
@@ -68,11 +68,13 @@
  01 L-X                    FLOAT-LONG.
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
+ 01 L-HALF                 FLOAT-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HALF L-HEIGHT L-HIT.
      MOVE 0 TO L-HIT
-     COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
+     MOVE L-HALF TO WS-HALF
+     MOVE L-HEIGHT TO WS-HEIGHT
 *>   First cell: floor(low edge + e); last cell: ceil(high edge - e) - 1. The tolerance e (1e-7
 *>   block) keeps a face that touches a cell face from counting as an overlap when the edge is not
 *>   exactly representable (x + 0.35).
@@ -109,7 +111,74 @@
          END-PERFORM
      END-PERFORM
      GOBACK.
+ END PROGRAM MOVE-COLLIDES-BOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOVE-COLLIDES.
+*> USING dimension row, feet x, y, z (FLOAT-LONG), hit out (BINARY-LONG): 1 when the standing player box at
+*> that position overlaps a solid block, else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ COPY CONTENT.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT.
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
+     CALL "MOVE-COLLIDES-BOX" USING L-DIM L-X L-Y L-Z WS-HALF WS-HEIGHT L-HIT
+     GOBACK.
  END PROGRAM MOVE-COLLIDES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOVE-POSE-BOX.
+*> USING pose (Pose enum id), half width out, height out (FLOAT-LONG): the player's box in that pose (docs/protocol/53 section 2.1):
+*> the standing box of the player entity (width and height of cobolcraft:operator), 1.5 high crouching, 0.6 high swimming or crawling.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ COPY CONTENT.
+ LINKAGE SECTION.
+ 01 L-POSE                 BINARY-LONG.
+ 01 L-HALF                 FLOAT-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-POSE L-HALF L-HEIGHT.
+     COMPUTE L-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
+     COMPUTE L-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
+     EVALUATE L-POSE
+         WHEN 5
+             MOVE 1.5 TO L-HEIGHT
+         WHEN 3
+             MOVE 0.6 TO L-HEIGHT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM MOVE-POSE-BOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOVE-COLLIDES-POSE.
+*> USING dimension row, pose, feet x, y, z (FLOAT-LONG), hit out (BINARY-LONG): 1 when the box of the pose overlaps a solid block.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-POSE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-POSE L-X L-Y L-Z L-HIT.
+     CALL "MOVE-POSE-BOX" USING L-POSE WS-HALF WS-HEIGHT
+     CALL "MOVE-COLLIDES-BOX" USING L-DIM L-X L-Y L-Z WS-HALF WS-HEIGHT L-HIT
+     GOBACK.
+ END PROGRAM MOVE-COLLIDES-POSE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-PLAYER.
@@ -151,7 +220,7 @@
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      MOVE 0 TO WS-MOVED
      IF L-PACKET-ID = 30 OR L-PACKET-ID = 31
-         CALL "MOVE-COLLIDES" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-HIT
+         CALL "MOVE-COLLIDES-POSE" USING PL-DIM(WS-ROW) PL-POSE(WS-ROW) PSB-X PSB-Y PSB-Z WS-HIT
 *>       A rise that claims the ground (on-ground 1) without support or a climbable block is refused
 *>       like a collision (move-check.cob): the endless climb of a client that claims the ground in
 *>       the air.
@@ -228,6 +297,7 @@
              PL-YAW(WS-ROW) PL-PITCH(WS-ROW) WS-ON-GROUND
      END-IF
 *>   Exhaustion of sprinting (0.1 per metre; walking costs nothing) and of a jump (17 section 4.9).
+     CALL "POSE-UPDATE" USING WS-ROW
      IF WS-MOVED = 1 AND PL-FLYING(WS-ROW) = 0
          IF PL-SPRINTING(WS-ROW) = 1
              COMPUTE WS-EXHAUST = FUNCTION SQRT((PL-X(WS-ROW) - WS-OLD-X) ** 2
@@ -305,5 +375,6 @@
      IF PSB-ACTION = 2
          MOVE 0 TO PL-SPRINTING(CN-PLAYER(L-ID))
      END-IF
+     CALL "POSE-UPDATE" USING CN-PLAYER(L-ID)
      GOBACK.
  END PROGRAM MOVE-SPRINT.

@@ -505,6 +505,10 @@
        10 PL-SENT-YAW        FLOAT-SHORT.
        10 PL-SENT-PITCH      FLOAT-SHORT.
        10 PL-SENT-FLAGS      BINARY-LONG.
+       10 PL-POSE            BINARY-LONG.    *> the Pose enum id (docs/protocol/53 section 1): 0 standing, 3 swimming (also crawling), 5 crouching
+       10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
+       10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
+       10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
        10 RG-DIM-COUNT       BINARY-LONG.    *> dimension_type registry entries received
        10 RG-DIM OCCURS 8 TIMES.
           15 RG-DIM-NAME     PIC X(64).
@@ -647,6 +651,10 @@
           15 EN-SWELL-DIR    BINARY-LONG.
           15 EN-SWELL-BASE   BINARY-LONG.
           15 EN-SWELL-MS     BINARY-DOUBLE.
+*>        Set Entity Data of a player (docs/protocol/53 section 10): the shared flags byte (entry 0: 0x02 shift, 0x08 sprinting, 0x10 swimming) and
+*>        the Pose id (entry 6: 0 standing, 3 swimming, 5 crouching).
+          15 EN-FLAGS        BINARY-LONG.
+          15 EN-POSE         BINARY-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

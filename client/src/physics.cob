@@ -98,6 +98,12 @@
  01 WS-BX                  BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-BELOW               FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-ABOVE               BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO2               FLOAT-LONG VALUE 0.
+ 01 WS-REACH               FLOAT-LONG VALUE 0.6.
+ 01 WS-FALL                BINARY-LONG.
  01 WS-WAS-GROUND          BINARY-LONG.
  01 WS-SX                  FLOAT-LONG.
  01 WS-SY                  FLOAT-LONG.
@@ -153,6 +159,10 @@
          WHEN OTHER
              MOVE 0.2 TO WS-SPEED
      END-EVALUATE
+*>   Moving slowly (53 section 6.1: the crouching flag of the keys of the tick before) takes 0.3 of the speed.
+     IF PL-SNEAK-FLAG = 1
+         COMPUTE WS-SPEED = WS-SPEED * 0.3
+     END-IF
      MOVE 0 TO WS-HX WS-HZ
      COMPUTE WS-LENGTH = FUNCTION SQRT(WS-FORWARD ** 2 + WS-LEFT ** 2)
      IF WS-LENGTH > 0
@@ -205,6 +215,7 @@
              COMPUTE PL-VY = FUNCTION MAX(0, PL-VY)
          END-IF
      END-IF
+     MOVE PL-VY TO WS-DY
      MOVE 2 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS PL-VY WS-BLOCKED
      IF WS-BLOCKED = 1
@@ -228,6 +239,17 @@
      END-IF
      IF FUNCTION ABS(PL-KB-Z) < 0.003
          MOVE 0 TO PL-KB-Z
+     END-IF
+*>   Sneaking at an edge (53 section 5): not flying, not rising, above the ground (on it, or ground within 0.6 below).
+     IF WS-SNEAK = 1 AND PL-FLYING = 0 AND WS-DY <= 0
+         MOVE PL-ON-GROUND TO WS-ABOVE
+         IF WS-ABOVE = 0
+             CALL "PHYS-CAN-FALL" USING CLIENT-STATE WS-ZERO WS-ZERO2 WS-REACH WS-FALL
+             COMPUTE WS-ABOVE = 1 - WS-FALL
+         END-IF
+         IF WS-ABOVE = 1
+             CALL "PHYS-BACKOFF" USING CLIENT-STATE WS-HX WS-HZ
+         END-IF
      END-IF
      MOVE PL-X TO WS-SX
      MOVE PL-Y TO WS-SY
@@ -303,6 +325,7 @@
          MOVE 0 TO PL-FLYING
          CALL "CLP-SEND-ABILITIES" USING CLIENT-STATE WS-CONN
      END-IF
+     CALL "PHYS-POSE" USING CLIENT-STATE WS-SNEAK
      GOBACK.
  END PROGRAM PHYS-TICK.
 
@@ -324,6 +347,8 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-SHAPE               BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-AXIS                 BINARY-LONG.
@@ -332,12 +357,13 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-AXIS L-DISTANCE L-BLOCKED.
      MOVE 0 TO L-BLOCKED
      MOVE L-DISTANCE TO WS-DIST
-     COMPUTE WS-B(1) = PL-X - 0.35
+     CALL "PHYS-BOX" USING CLIENT-STATE WS-HALF WS-HEIGHT
+     COMPUTE WS-B(1) = PL-X - WS-HALF
      MOVE PL-Y TO WS-B(2)
-     COMPUTE WS-B(3) = PL-Z - 0.35
-     COMPUTE WS-B(4) = PL-X + 0.35
-     COMPUTE WS-B(5) = PL-Y + 1.75
-     COMPUTE WS-B(6) = PL-Z + 0.35
+     COMPUTE WS-B(3) = PL-Z - WS-HALF
+     COMPUTE WS-B(4) = PL-X + WS-HALF
+     COMPUTE WS-B(5) = PL-Y + WS-HEIGHT
+     COMPUTE WS-B(6) = PL-Z + WS-HALF
 *>   The cells the box covers, widened along the axis by the move (a superset: a cell it only touches clips nothing).
      PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
          MOVE WS-B(WS-A) TO WS-LOW
@@ -455,8 +481,52 @@
  END PROGRAM PHYS-STEP-UP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-BOX.
+*> USING CLIENT-STATE, half width out, height out (FLOAT-LONG): the box of the Player's pose (docs/protocol/53 sections 1 and 2.1):
+*> standing (0) the operator's box 0.7 x 1.75, crouching (5) 1.5 high, swimming or crawling (3) 0.6 x 0.6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-HALF                 FLOAT-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-HALF L-HEIGHT.
+     MOVE 0.35 TO L-HALF
+     EVALUATE PL-POSE
+         WHEN 5
+             MOVE 1.5 TO L-HEIGHT
+         WHEN 3
+             MOVE 0.3 TO L-HALF
+             MOVE 0.6 TO L-HEIGHT
+         WHEN OTHER
+             MOVE 1.75 TO L-HEIGHT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PHYS-BOX.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-COLLIDES.
-*> USING CLIENT-STATE, feet x, y, z (FLOAT-LONG), hit out (1 = the box overlaps a collision box of a cell).
+*> USING CLIENT-STATE, feet x, y, z (FLOAT-LONG), hit out (1 = the box of the Player's pose overlaps a collision box of a cell).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-HIT.
+     CALL "PHYS-BOX" USING CLIENT-STATE WS-HALF WS-HEIGHT
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE L-X L-Y L-Z WS-HALF WS-HEIGHT L-HIT
+     GOBACK.
+ END PROGRAM PHYS-COLLIDES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-COLLIDES-BOX.
+*> USING CLIENT-STATE, feet x, y, z, half width, height (FLOAT-LONG), hit out (1 = a box of that size at that position overlaps a
+*> collision box of a cell).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -477,20 +547,22 @@
  01 L-X                    FLOAT-LONG.
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
+ 01 L-HALF                 FLOAT-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-HIT.
-     COMPUTE WS-X0 = FUNCTION INTEGER(L-X - 0.35 + WS-EPSILON)
-     COMPUTE WS-X1 = FUNCTION INTEGER(L-X + 0.35 - WS-EPSILON)
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-HALF L-HEIGHT L-HIT.
+     COMPUTE WS-X0 = FUNCTION INTEGER(L-X - L-HALF + WS-EPSILON)
+     COMPUTE WS-X1 = FUNCTION INTEGER(L-X + L-HALF - WS-EPSILON)
      COMPUTE WS-Y0 = FUNCTION INTEGER(L-Y + WS-EPSILON)
-     COMPUTE WS-Y1 = FUNCTION INTEGER(L-Y + 1.75 - WS-EPSILON)
-     COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - 0.35 + WS-EPSILON)
-     COMPUTE WS-Z1 = FUNCTION INTEGER(L-Z + 0.35 - WS-EPSILON)
-     COMPUTE WS-B(1) = L-X - 0.35
+     COMPUTE WS-Y1 = FUNCTION INTEGER(L-Y + L-HEIGHT - WS-EPSILON)
+     COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - L-HALF + WS-EPSILON)
+     COMPUTE WS-Z1 = FUNCTION INTEGER(L-Z + L-HALF - WS-EPSILON)
+     COMPUTE WS-B(1) = L-X - L-HALF
      MOVE L-Y TO WS-B(2)
-     COMPUTE WS-B(3) = L-Z - 0.35
-     COMPUTE WS-B(4) = L-X + 0.35
-     COMPUTE WS-B(5) = L-Y + 1.75
-     COMPUTE WS-B(6) = L-Z + 0.35
+     COMPUTE WS-B(3) = L-Z - L-HALF
+     COMPUTE WS-B(4) = L-X + L-HALF
+     COMPUTE WS-B(5) = L-Y + L-HEIGHT
+     COMPUTE WS-B(6) = L-Z + L-HALF
      MOVE 0 TO L-HIT
      PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1 OR L-HIT = 1
          PERFORM VARYING WS-Z FROM WS-Z0 BY 1 UNTIL WS-Z > WS-Z1 OR L-HIT = 1
@@ -503,7 +575,177 @@
          END-PERFORM
      END-PERFORM
      GOBACK.
- END PROGRAM PHYS-COLLIDES.
+ END PROGRAM PHYS-COLLIDES-BOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-CAN-FALL.
+*> USING CLIENT-STATE, dx, dz (FLOAT-LONG: the offset of the Player's footprint), h (the depth), fall out (1 when the offset footprint could
+*> fall at least h: docs/protocol/53 section 5.2): the slab under the feet, h + 1e-7 thick, is free of collision boxes. The probe is the
+*> footprint of the pose shrunk by 1e-7 horizontally, from feet y - h - 1e-7 up to the feet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-PROBE-HALF          FLOAT-LONG.
+ 01 WS-PROBE-HEIGHT        FLOAT-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ 01 L-H                    FLOAT-LONG.
+ 01 L-FALL                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-DX L-DZ L-H L-FALL.
+     CALL "PHYS-BOX" USING CLIENT-STATE WS-HALF WS-HEIGHT
+     COMPUTE WS-PROBE-HALF = WS-HALF - 0.0000001
+     COMPUTE WS-PROBE-HEIGHT = L-H + 0.0000001
+     COMPUTE WS-PX = PL-X + L-DX
+     COMPUTE WS-PY = PL-Y - WS-PROBE-HEIGHT
+     COMPUTE WS-PZ = PL-Z + L-DZ
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE WS-PX WS-PY WS-PZ WS-PROBE-HALF WS-PROBE-HEIGHT WS-HIT
+     MOVE 1 TO L-FALL
+     IF WS-HIT = 1
+         MOVE 0 TO L-FALL
+     END-IF
+     GOBACK.
+ END PROGRAM PHYS-CAN-FALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-BACKOFF.
+*> USING CLIENT-STATE, dx, dz (FLOAT-LONG, in and out): the sneak edge clamp (docs/protocol/53 section 5.3), H = 0.6, steps of 0.05:
+*> x alone while the footprint shifted by x could fall at least H, then z alone, then both together.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-H                   FLOAT-LONG VALUE 0.6.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-FALL                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-DX L-DZ.
+     MOVE 1 TO WS-FALL
+     PERFORM UNTIL L-DX = 0 OR WS-FALL = 0
+         CALL "PHYS-CAN-FALL" USING CLIENT-STATE L-DX WS-ZERO WS-H WS-FALL
+         IF WS-FALL = 1
+             IF FUNCTION ABS(L-DX) <= 0.05
+                 MOVE 0 TO L-DX
+             ELSE
+                 COMPUTE L-DX = L-DX - FUNCTION SIGN(L-DX) * 0.05
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1 TO WS-FALL
+     PERFORM UNTIL L-DZ = 0 OR WS-FALL = 0
+         CALL "PHYS-CAN-FALL" USING CLIENT-STATE WS-ZERO L-DZ WS-H WS-FALL
+         IF WS-FALL = 1
+             IF FUNCTION ABS(L-DZ) <= 0.05
+                 MOVE 0 TO L-DZ
+             ELSE
+                 COMPUTE L-DZ = L-DZ - FUNCTION SIGN(L-DZ) * 0.05
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1 TO WS-FALL
+     PERFORM UNTIL L-DX = 0 OR L-DZ = 0 OR WS-FALL = 0
+         CALL "PHYS-CAN-FALL" USING CLIENT-STATE L-DX L-DZ WS-H WS-FALL
+         IF WS-FALL = 1
+             IF FUNCTION ABS(L-DX) <= 0.05
+                 MOVE 0 TO L-DX
+             ELSE
+                 COMPUTE L-DX = L-DX - FUNCTION SIGN(L-DX) * 0.05
+             END-IF
+             IF FUNCTION ABS(L-DZ) <= 0.05
+                 MOVE 0 TO L-DZ
+             ELSE
+                 COMPUTE L-DZ = L-DZ - FUNCTION SIGN(L-DZ) * 0.05
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PHYS-BACKOFF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-POSE.
+*> USING CLIENT-STATE, shift (1 when the sneak key is down): the end of the tick's pose choice (docs/protocol/53 section 3.2) and the
+*> crouching flag of the next tick (53 section 3.3), the camera eye height (53 section 7). The swimming box must fit or nothing changes;
+*> desired pose crouching with shift (not flying) else standing; a pose whose box does not fit becomes crouching, then swimming (3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DESIRED             BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-STAND-FITS          BINARY-LONG.
+ 01 WS-CROUCH-FITS         BINARY-LONG.
+ 01 WS-SWIM-FITS           BINARY-LONG.
+ 01 WS-TARGET              FLOAT-LONG.
+ 01 WS-HALF-S              FLOAT-LONG VALUE 0.35.
+ 01 WS-HEIGHT-STAND        FLOAT-LONG VALUE 1.75.
+ 01 WS-HEIGHT-CROUCH       FLOAT-LONG VALUE 1.5.
+ 01 WS-HALF-SWIM           FLOAT-LONG VALUE 0.3.
+ 01 WS-HEIGHT-SWIM         FLOAT-LONG VALUE 0.6.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-SHIFT                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-SHIFT.
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE PL-X PL-Y PL-Z WS-HALF-SWIM WS-HEIGHT-SWIM WS-HIT
+     MOVE 1 TO WS-SWIM-FITS
+     IF WS-HIT = 1
+         MOVE 0 TO WS-SWIM-FITS
+     END-IF
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE PL-X PL-Y PL-Z WS-HALF-S WS-HEIGHT-CROUCH WS-HIT
+     MOVE 1 TO WS-CROUCH-FITS
+     IF WS-HIT = 1
+         MOVE 0 TO WS-CROUCH-FITS
+     END-IF
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE PL-X PL-Y PL-Z WS-HALF-S WS-HEIGHT-STAND WS-HIT
+     MOVE 1 TO WS-STAND-FITS
+     IF WS-HIT = 1
+         MOVE 0 TO WS-STAND-FITS
+     END-IF
+     IF WS-SWIM-FITS = 1
+         MOVE 0 TO WS-DESIRED
+         IF L-SHIFT = 1 AND PL-FLYING = 0
+             MOVE 5 TO WS-DESIRED
+         END-IF
+         EVALUATE TRUE
+             WHEN PL-MODE = 3
+                 CONTINUE
+             WHEN WS-DESIRED = 0 AND WS-STAND-FITS = 0
+                 MOVE 5 TO WS-DESIRED
+                 IF WS-CROUCH-FITS = 0
+                     MOVE 3 TO WS-DESIRED
+                 END-IF
+             WHEN WS-DESIRED = 5 AND WS-CROUCH-FITS = 0
+                 MOVE 3 TO WS-DESIRED
+         END-EVALUATE
+         MOVE WS-DESIRED TO PL-POSE
+     END-IF
+*>   The crouching flag of the next tick: not flying, the crouching box fits and (shift, or the standing box does not fit).
+     MOVE 0 TO PL-SNEAK-FLAG
+     IF PL-FLYING = 0 AND WS-CROUCH-FITS = 1 AND (L-SHIFT = 1 OR WS-STAND-FITS = 0)
+         MOVE 1 TO PL-SNEAK-FLAG
+     END-IF
+*>   The camera eye: half the gap to the pose's eye height each tick; the first tick takes it.
+     EVALUATE PL-POSE
+         WHEN 5
+             MOVE 1.25 TO WS-TARGET
+         WHEN 3
+             MOVE 0.4 TO WS-TARGET
+         WHEN OTHER
+             MOVE 1.6 TO WS-TARGET
+     END-EVALUATE
+     IF PL-EYE = 0
+         MOVE WS-TARGET TO PL-EYE
+     ELSE
+         COMPUTE PL-EYE = PL-EYE + (WS-TARGET - PL-EYE) * 0.5
+     END-IF
+     GOBACK.
+ END PROGRAM PHYS-POSE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-CELL-SHAPE.

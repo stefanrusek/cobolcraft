@@ -284,6 +284,7 @@
              MOVE PL-YAW TO EN-HEAD-YAW(WS-R)
              MOVE PL-PITCH TO EN-PITCH(WS-R)
              MOVE 1 TO EN-ON-GROUND(WS-R)
+             MOVE PL-POSE TO EN-POSE(WS-R)
              MOVE SPACES TO EN-KEY(WS-R)
              MOVE "player" TO EN-KEY(WS-R)
              CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-R) EN-MODEL(WS-R)

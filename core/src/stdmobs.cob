@@ -340,7 +340,7 @@
 *> USING tracker row of a hostile standard mob, table row: its target (20 section 4.1: the nearest attackable player). A target is dropped when that
 *> player is gone, not alive, not in survival, in another dimension or beyond the follow range (SM-FOLLOW, 3D distance between positions). Without a
 *> target the mob takes the nearest alive survival player of its dimension within the follow range (ties: the earliest-entering player). Line of sight
-*> is not tested.
+*> is not tested. A crouching player (pose 5) is seen from 0.8 of the range (18 section 4.3 getVisibilityPercent; 53 section 10.3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -350,13 +350,18 @@
  01 WS-D2                  FLOAT-LONG.
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-LIMIT               FLOAT-LONG.
+ 01 WS-FULL                FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
-     COMPUTE WS-LIMIT = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
+     COMPUTE WS-FULL = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
      MOVE EN-TARGET(L-ROW) TO WS-P
      IF WS-P > 0
+         MOVE WS-FULL TO WS-LIMIT
+         IF PL-POSE(WS-P) = 5
+             COMPUTE WS-LIMIT = WS-FULL * 0.64
+         END-IF
          COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
              + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
          IF PL-USED(WS-P) NOT = 1 OR PL-ENTITY-ID(WS-P) NOT = EN-TARGET-ID(L-ROW)
@@ -374,6 +379,10 @@
                  AND PL-DIM(WS-P) = EN-DIM(L-ROW)
              COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
                  + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+             MOVE WS-FULL TO WS-LIMIT
+             IF PL-POSE(WS-P) = 5
+                 COMPUTE WS-LIMIT = WS-FULL * 0.64
+             END-IF
              IF WS-D2 <= WS-LIMIT AND (WS-BEST = 0 OR WS-D2 < WS-BEST-D2
                      OR (WS-D2 = WS-BEST-D2 AND PL-ENTERED(WS-P) < PL-ENTERED(WS-BEST)))
                  MOVE WS-P TO WS-BEST

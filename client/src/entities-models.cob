@@ -252,7 +252,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 512 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 14 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 15 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-CORNER OCCURS 40 TIMES.
@@ -274,7 +274,7 @@
           15 WS-BK-G          FLOAT-SHORT VALUE 1.
           15 WS-BK-BLUE       FLOAT-SHORT VALUE 1.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 14 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 15 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -346,6 +346,7 @@
      MOVE EA-MT-Y(WS-SLOT) TO WS-KN(12)
      MOVE EA-MT-W(WS-SLOT) TO WS-KN(13)
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
+     MOVE EN-POSE(WS-ROW) TO WS-KN(15)
 *>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
 *>   between its models within a frame; the first entry whose key is the key, else the one of the same model or the free one, is the one used.
      MOVE 0 TO WS-HIT
@@ -396,6 +397,13 @@
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
          WHEN "K"
              MOVE 2 TO WS-VARIANT
+             CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
+*>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
+         WHEN "H"
+             MOVE 0 TO WS-VARIANT
+             IF EN-POSE(WS-ROW) = 5
+                 MOVE 1 TO WS-ST(10)
+             END-IF
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
          WHEN OTHER
              CONTINUE
