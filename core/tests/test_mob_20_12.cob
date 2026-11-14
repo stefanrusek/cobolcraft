@@ -320,7 +320,6 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The circle goal's per-tick changes with chosen draws.
-     MOVE 0 TO PL-MODE(WS-PLAYER)
      MOVE 100 TO EN-PH-AX(WS-MOB)
      MOVE 100 TO EN-PH-AY(WS-MOB)
      MOVE 100 TO EN-PH-AZ(WS-MOB)
@@ -407,8 +406,94 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   Anchor and point selection of a phantom whose anchor is not set yet.
+     MOVE 0 TO EN-PH-SET(WS-MOB) EN-PH-AX(WS-MOB)
+     COMPUTE EN-X(WS-MOB) = 5.5
+     COMPUTE EN-Y(WS-MOB) = 100.2
+     COMPUTE EN-Z(WS-MOB) = 7.5
+     MOVE 1 TO EN-PH-CW(WS-MOB)
+     MOVE 0 TO EN-PH-DIST(WS-MOB) EN-PH-HEIGHT(WS-MOB) EN-PH-ANGLE(WS-MOB)
+     MOVE 9 TO WS-TX WS-TY WS-TZ
+     MOVE 0 TO WS-ROLL
+     CALL "STDMOB-PHANTOM-ANCHOR" USING WS-MOB WS-TX WS-TY WS-TZ WS-ROLL
+     MOVE "acceptance US15 20§12 Phantom: setting the anchor above a target does nothing while the anchor is unset" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-PH-AX(WS-MOB) + EN-PH-SET(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "STDMOB-PHANTOM-SELECT" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: selecting a point with no anchor makes the phantom's own block the anchor" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 5 * 10000 + 100 * 100 + 7
+     COMPUTE TL-OBSERVED-N = EN-PH-AX(WS-MOB) * 10000 + EN-PH-AY(WS-MOB) * 100 + EN-PH-AZ(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The heading in all four quadrants (yaw -90 means facing along +x: the turn is at most 4 degrees a tick).
+     MOVE 0 TO EN-X(WS-MOB) EN-Z(WS-MOB)
+     MOVE 200 TO EN-Y(WS-MOB) EN-PH-TY(WS-MOB)
+     MOVE 0 TO EN-PH-TX(WS-MOB)
+     MOVE 10 TO EN-PH-TZ(WS-MOB)
+     MOVE -90 TO EN-YAW(WS-MOB)
+     MOVE 1 TO EN-PH-SPEED(WS-MOB)
+     CALL "STDMOB-PHANTOM-MOVE" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: heading 90 (target due +z) turns yaw -90 to -86" TO TL-CASE
+     MOVE -86 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-YAW(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§12 Phantom: a turn of 4 degrees at speed 1.0 slows by 0.025 toward 0.2 (0.975)" TO TL-CASE
+     MOVE 975 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-PH-SPEED(WS-MOB) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -10 TO EN-PH-TZ(WS-MOB)
+     MOVE -90 TO EN-YAW(WS-MOB)
+     CALL "STDMOB-PHANTOM-MOVE" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: heading -90 (target due -z) turns yaw -90 to -94" TO TL-CASE
+     MOVE -94 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-YAW(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -10 TO EN-PH-TX(WS-MOB)
+     MOVE 10 TO EN-PH-TZ(WS-MOB)
+     MOVE -90 TO EN-YAW(WS-MOB)
+     CALL "STDMOB-PHANTOM-MOVE" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: heading 135 (target -x, +z) turns yaw -90 to -86" TO TL-CASE
+     MOVE -86 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-YAW(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -10 TO EN-PH-TZ(WS-MOB)
+     MOVE -90 TO EN-YAW(WS-MOB)
+     CALL "STDMOB-PHANTOM-MOVE" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: heading -135 (target -x, -z) turns yaw -90 to -94" TO TL-CASE
+     MOVE -94 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-YAW(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A target straight above (dx = dz = 0) has no horizontal part: the move control does nothing.
+     MOVE 0 TO EN-PH-TX(WS-MOB) EN-PH-TZ(WS-MOB)
+     MOVE 300 TO EN-PH-TY(WS-MOB)
+     MOVE -90 TO EN-YAW(WS-MOB)
+     CALL "STDMOB-PHANTOM-MOVE" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: no horizontal offset leaves the yaw alone" TO TL-CASE
+     MOVE -90 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-YAW(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   The standard-mob step runs the phantom's own tick, and the spawner's tick runs a round.
+     MOVE 0 TO EN-PH-DIST(WS-MOB) EN-TARGET(WS-MOB) EN-TARGET-ID(WS-MOB)
+     MOVE 1 TO EN-PH-SET(WS-MOB)
+     MOVE 5 TO EN-PH-SCAN(WS-MOB)
+     MOVE 50 TO EN-PH-AX(WS-MOB) EN-PH-AY(WS-MOB) EN-PH-AZ(WS-MOB)
+     COMPUTE EN-X(WS-MOB) = WS-PX + 20.5
+     COMPUTE EN-Y(WS-MOB) = WS-FY + 10
+     COMPUTE EN-Z(WS-MOB) = WS-PZ + 0.5
+     MOVE 1 TO PL-STATE(WS-PLAYER)
+     MOVE 3 TO PL-MODE(WS-PLAYER)
      CALL "STDMOB-STEP" USING WS-MOB
+     MOVE "acceptance US15 20§12 Phantom: the standard-mob step runs the phantom tick (circle values are drawn)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-PH-DIST(WS-MOB) >= 5 AND EN-PH-DIST(WS-MOB) <= 15
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-HEALTH(WS-MOB)
+     CALL "STDMOB-PHANTOM-TICK" USING WS-MOB WS-M
      CALL "STDMOB-PHANTOM-SPAWNER"
      CALL "STDMOB-PHANTOM-SPAWNER"
      STOP RUN.

@@ -229,6 +229,28 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-STOP TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A burning witch drinks Fire Resistance (second test, roll below 0.15).
+     MOVE 0 TO EN-DRAW(WS-MOB) EN-HAND(WS-MOB) EN-FX-FIRE(WS-MOB) EN-TARGET(WS-MOB) EN-TARGET-ID(WS-MOB)
+     MOVE 26 TO EN-HEALTH(WS-MOB)
+     MOVE 100 TO EN-BURN(WS-MOB)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3000 OR EN-DRAW(WS-MOB) > 0
+         CALL "STDMOB-WITCH-TICK" USING WS-MOB WS-M WS-STOP
+     END-PERFORM
+     MOVE "acceptance US15 20§11 Witch: a burning witch starts drinking Fire Resistance (32 ticks)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 6 * 100 + 32
+     COMPUTE TL-OBSERVED-N = EN-HAND(WS-MOB) * 100 + EN-DRAW(WS-MOB)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The standard-mob step runs the witch's tick: a witch drinking stands still.
+     MOVE 0 TO EN-BURN(WS-MOB)
+     COMPUTE EN-X(WS-MOB) = WS-X + 3
+     MOVE WS-Y TO EN-Y(WS-MOB)
+     MOVE WS-Z TO EN-Z(WS-MOB)
+     CALL "STDMOB-STEP" USING WS-MOB
+     MOVE "acceptance US15 20§11 Witch: the step runs the drinking (31 ticks left)" TO TL-CASE
+     MOVE 31 TO TL-EXPECTED-N
+     MOVE EN-DRAW(WS-MOB) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-MOB
      STOP RUN.
  END PROGRAM TEST-MOB-20-11.

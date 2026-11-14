@@ -304,51 +304,51 @@
          COMPUTE WS-DZ = WS-DZ * WS-F
          COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
          COMPUTE WS-D3 = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ + WS-DY * WS-DY)
+         IF WS-H > 0.00001
 *>       The heading of (dx, dz) in degrees, wrapped to -180 up to 180.
-         EVALUATE TRUE
-             WHEN WS-DX = 0 AND WS-DZ > 0
-                 MOVE 90 TO WS-HEADING
-             WHEN WS-DX = 0 AND WS-DZ < 0
-                 MOVE -90 TO WS-HEADING
-             WHEN WS-DX = 0
-                 MOVE 0 TO WS-HEADING
-             WHEN WS-DX > 0
-                 COMPUTE WS-HEADING = FUNCTION ATAN(WS-DZ / WS-DX) * WS-DEG
-             WHEN WS-DZ >= 0
-                 COMPUTE WS-HEADING = FUNCTION ATAN(WS-DZ / WS-DX) * WS-DEG + 180
-             WHEN OTHER
-                 COMPUTE WS-HEADING = FUNCTION ATAN(WS-DZ / WS-DX) * WS-DEG - 180
-         END-EVALUATE
-         MOVE EN-YAW(L-ROW) TO WS-OLD
-         COMPUTE WS-CUR = FUNCTION MOD(WS-OLD + 90 + 180, 360) - 180
-         COMPUTE WS-DIFF = FUNCTION MOD(WS-HEADING - WS-CUR + 180, 360) - 180
-         COMPUTE WS-STEP = FUNCTION MAX(-4, FUNCTION MIN(4, WS-DIFF))
-         COMPUTE WS-NEW = WS-CUR + WS-STEP - 90
-         MOVE WS-NEW TO EN-YAW(L-ROW)
-         IF FUNCTION ABS(WS-NEW - WS-OLD) < 3
-             COMPUTE WS-STEP = 0.005 * (1.8 / EN-PH-SPEED(L-ROW))
-             MOVE 1.8 TO WS-GOAL
-         ELSE
-             MOVE 0.025 TO WS-STEP
-             MOVE 0.2 TO WS-GOAL
+             EVALUATE TRUE
+                 WHEN WS-DX = 0 AND WS-DZ > 0
+                     MOVE 90 TO WS-HEADING
+                 WHEN WS-DX = 0 AND WS-DZ < 0
+                     MOVE -90 TO WS-HEADING
+                 WHEN WS-DX > 0
+                     COMPUTE WS-HEADING = FUNCTION ATAN(WS-DZ / WS-DX) * WS-DEG
+                 WHEN WS-DZ >= 0
+                     COMPUTE WS-HEADING = FUNCTION ATAN(WS-DZ / WS-DX) * WS-DEG + 180
+                 WHEN OTHER
+                     COMPUTE WS-HEADING = FUNCTION ATAN(WS-DZ / WS-DX) * WS-DEG - 180
+             END-EVALUATE
+             MOVE EN-YAW(L-ROW) TO WS-OLD
+             COMPUTE WS-CUR = FUNCTION MOD(WS-OLD + 90 + 180, 360) - 180
+             COMPUTE WS-DIFF = FUNCTION MOD(WS-HEADING - WS-CUR + 180, 360) - 180
+             COMPUTE WS-STEP = FUNCTION MAX(-4, FUNCTION MIN(4, WS-DIFF))
+             COMPUTE WS-NEW = WS-CUR + WS-STEP - 90
+             MOVE WS-NEW TO EN-YAW(L-ROW)
+             IF FUNCTION ABS(WS-NEW - WS-OLD) < 3
+                 COMPUTE WS-STEP = 0.005 * (1.8 / EN-PH-SPEED(L-ROW))
+                 MOVE 1.8 TO WS-GOAL
+             ELSE
+                 MOVE 0.025 TO WS-STEP
+                 MOVE 0.2 TO WS-GOAL
+             END-IF
+             EVALUATE TRUE
+                 WHEN EN-PH-SPEED(L-ROW) + WS-STEP < WS-GOAL AND EN-PH-SPEED(L-ROW) < WS-GOAL
+                     COMPUTE EN-PH-SPEED(L-ROW) = EN-PH-SPEED(L-ROW) + WS-STEP
+                 WHEN EN-PH-SPEED(L-ROW) - WS-STEP > WS-GOAL AND EN-PH-SPEED(L-ROW) > WS-GOAL
+                     COMPUTE EN-PH-SPEED(L-ROW) = EN-PH-SPEED(L-ROW) - WS-STEP
+                 WHEN OTHER
+                     MOVE WS-GOAL TO EN-PH-SPEED(L-ROW)
+             END-EVALUATE
+             COMPUTE WS-PITCH = FUNCTION ATAN(WS-DY / WS-H) * WS-DEG
+             MOVE WS-PITCH TO EN-PITCH(L-ROW)
+             COMPUTE WS-A = (WS-NEW + 90) * WS-RAD
+             COMPUTE WS-VX = EN-PH-SPEED(L-ROW) * FUNCTION COS(WS-A) * FUNCTION ABS(WS-DX / WS-D3)
+             COMPUTE WS-VZ = EN-PH-SPEED(L-ROW) * FUNCTION SIN(WS-A) * FUNCTION ABS(WS-DZ / WS-D3)
+             COMPUTE WS-VY = EN-PH-SPEED(L-ROW) * FUNCTION SIN(WS-PITCH * WS-RAD) * FUNCTION ABS(WS-DY / WS-D3)
+             COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + (WS-VX - EN-VX(L-ROW)) * 0.2
+             COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + (WS-VY - EN-VY(L-ROW)) * 0.2
+             COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + (WS-VZ - EN-VZ(L-ROW)) * 0.2
          END-IF
-         EVALUATE TRUE
-             WHEN EN-PH-SPEED(L-ROW) + WS-STEP < WS-GOAL AND EN-PH-SPEED(L-ROW) < WS-GOAL
-                 COMPUTE EN-PH-SPEED(L-ROW) = EN-PH-SPEED(L-ROW) + WS-STEP
-             WHEN EN-PH-SPEED(L-ROW) - WS-STEP > WS-GOAL AND EN-PH-SPEED(L-ROW) > WS-GOAL
-                 COMPUTE EN-PH-SPEED(L-ROW) = EN-PH-SPEED(L-ROW) - WS-STEP
-             WHEN OTHER
-                 MOVE WS-GOAL TO EN-PH-SPEED(L-ROW)
-         END-EVALUATE
-         COMPUTE WS-PITCH = FUNCTION ATAN(WS-DY / WS-H) * WS-DEG
-         MOVE WS-PITCH TO EN-PITCH(L-ROW)
-         COMPUTE WS-A = (WS-NEW + 90) * WS-RAD
-         COMPUTE WS-VX = EN-PH-SPEED(L-ROW) * FUNCTION COS(WS-A) * FUNCTION ABS(WS-DX / WS-D3)
-         COMPUTE WS-VZ = EN-PH-SPEED(L-ROW) * FUNCTION SIN(WS-A) * FUNCTION ABS(WS-DZ / WS-D3)
-         COMPUTE WS-VY = EN-PH-SPEED(L-ROW) * FUNCTION SIN(WS-PITCH * WS-RAD) * FUNCTION ABS(WS-DY / WS-D3)
-         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + (WS-VX - EN-VX(L-ROW)) * 0.2
-         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + (WS-VY - EN-VY(L-ROW)) * 0.2
-         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + (WS-VZ - EN-VZ(L-ROW)) * 0.2
      END-IF
      GOBACK.
  END PROGRAM STDMOB-PHANTOM-MOVE.
@@ -428,7 +428,11 @@
                  MOVE 0 TO EN-PH-PHASE(L-ROW)
                  MOVE 10 TO EN-PH-TIMER(L-ROW)
                  MOVE WS-BEST TO WS-P
-                 PERFORM SET-ANCHOR
+                 COMPUTE WS-TX = FUNCTION INTEGER(PL-X(WS-P))
+                 COMPUTE WS-TY = FUNCTION INTEGER(PL-Y(WS-P))
+                 COMPUTE WS-TZ = FUNCTION INTEGER(PL-Z(WS-P))
+                 CALL "XP-RANDOM" USING WS-SALT WS-B20 WS-ROLL
+                 CALL "STDMOB-PHANTOM-ANCHOR" USING L-ROW WS-TX WS-TY WS-TZ WS-ROLL
                  GOBACK
              END-IF
          END-IF
@@ -445,7 +449,11 @@
          SUBTRACT 1 FROM EN-PH-TIMER(L-ROW)
          IF EN-PH-TIMER(L-ROW) <= 0
              MOVE 1 TO EN-PH-PHASE(L-ROW)
-             PERFORM SET-ANCHOR
+             COMPUTE WS-TX = FUNCTION INTEGER(PL-X(WS-P))
+             COMPUTE WS-TY = FUNCTION INTEGER(PL-Y(WS-P))
+             COMPUTE WS-TZ = FUNCTION INTEGER(PL-Z(WS-P))
+             CALL "XP-RANDOM" USING WS-SALT WS-B20 WS-ROLL
+             CALL "STDMOB-PHANTOM-ANCHOR" USING L-ROW WS-TX WS-TY WS-TZ WS-ROLL
              CALL "XP-RANDOM" USING WS-SALT WS-B4 WS-ROLL
              COMPUTE EN-PH-TIMER(L-ROW) = (8 + WS-ROLL) * 20
          END-IF
@@ -479,10 +487,4 @@
      MOVE EN-PITCH(L-ROW) TO WS-PITCH
      CALL "ENTITY-MOVE" USING L-ROW WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-GROUND
      GOBACK.
- SET-ANCHOR.
-     COMPUTE WS-TX = FUNCTION INTEGER(PL-X(WS-P))
-     COMPUTE WS-TY = FUNCTION INTEGER(PL-Y(WS-P))
-     COMPUTE WS-TZ = FUNCTION INTEGER(PL-Z(WS-P))
-     CALL "XP-RANDOM" USING WS-SALT WS-B20 WS-ROLL
-     CALL "STDMOB-PHANTOM-ANCHOR" USING L-ROW WS-TX WS-TY WS-TZ WS-ROLL.
  END PROGRAM STDMOB-PHANTOM-TICK.
