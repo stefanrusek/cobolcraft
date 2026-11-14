@@ -203,6 +203,7 @@
  78 WX-HAILSTORM            VALUE 2.
 
 *> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
+ 78 ST-CMAX                VALUE 300.   *> face classes of the state tables (state-tables.cob; class 1 the whole face, 2 none, 300 the catch-all)
  78 DIR-NONE                VALUE 0.
  78 DIR-DOWN                VALUE 1.
  78 DIR-UP                  VALUE 2.

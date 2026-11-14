@@ -966,7 +966,17 @@
        10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
        10 ST-FLUID           PIC 9 OCCURS 65536 TIMES.        *> state id + 1: the fluid the cell holds (29a section 1.2): 0 none, 1 water, 2 lava (liquid blocks; always-wet blocks hold water)
        10 ST-LEVEL           PIC 99 OCCURS 65536 TIMES.       *> state id + 1: the liquid block's level 0 to 15 (0 source; 1 to 7 amount 8 - level; 8 and over falling)
-       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
+       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.       *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
+*>     Face-level occlusion (12: Block.shouldRenderFace compares the face shapes). ST-SHAPED(s + 1) = 1 for a state that occludes by its shape (the full
+*>     cube, a slab, a stair, a carpet, a trapdoor ...); ST-OWN(s * 6 + d) the class of the face of state s that a quad with the cull direction d
+*>     (DIR-DOWN to DIR-EAST) must have covered to be hidden (the whole face for a state that does not occlude), ST-NB(s * 6 + d) the class of the
+*>     part of its face toward the viewer (looking in direction d) that state s covers wholly (class 2, none, for a state that does not occlude);
+*>     ST-COVER((nb - 1) * ST-CMAX + own) = 1 when the face class nb hides the face class own. The face classes are the distinct 16 x 16 masks.
+       10 ST-SHAPED          PIC 9 OCCURS 65536 TIMES.
+       10 ST-LIKE            PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = no occluder with a full cube outline (glass, leaves, ice): its faces are hidden by the same block
+       10 ST-OWN             BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
+       10 ST-NB              BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
+       10 ST-COVER           PIC 9 OCCURS 90000 TIMES.
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.

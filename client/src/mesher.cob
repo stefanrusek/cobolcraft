@@ -2,8 +2,9 @@
 *> turns the cells of one 16-high section of a replica row into two vertex lists (44-byte vertices,
 *> shim-abi §9: x y z u v brightness alpha sky r g b; positions relative to the section's lowest
 *> corner): every baked quad of every block (BM-STATE) whose cull direction is not hidden by its
-*> neighbour. A neighbour hides a face when it is opaque, or when it is the same non-opaque block
-*> (lucite against lucite). The face's light is its direction's factor (up 1.0, north and south 0.8,
+*> neighbour. A neighbour hides a face when its face toward it covers the whole face of the quad's state
+*> (state-faces.cob: a full block covers every face, a bottom slab the lower half of a side only), or when it is the same block that fills the cube without occluding (ST-LIKE: lucite against lucite; a door, a trapdoor or a fence
+*> beside its like hides nothing). The face's light is its direction's factor (up 1.0, north and south 0.8,
 *> east and west 0.6, down 0.5) times the light of the cell it looks into: the vertex's brightness is
 *> factor x block light / 15, at least 0.1, and its sky term factor x sky light / 15; the shader draws
 *> max(brightness, sky x daylight), so a change of daylight needs no new mesh. The vertex tint is white,
@@ -217,6 +218,9 @@
  01 WS-C                   BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-CULL-D              BINARY-LONG.
+ 01 WS-NB-AT               BINARY-LONG.
+ 01 WS-OWN-AT              BINARY-LONG.
+ 01 WS-COVER-AT            BINARY-LONG.
  01 WS-NSTATE              BINARY-LONG.
  01 WS-NSKY                BINARY-LONG.
  01 WS-NBLOCK              BINARY-LONG.
@@ -386,11 +390,15 @@
                      IF WS-CULL-D > 0
                          CALL "MESH-CELL" USING CLIENT-STATE L-ROW WS-NEIGHBOURS WS-HEIGHT WS-X
                              WS-Y WS-Z WS-CULL-D WS-NSTATE WS-NSKY WS-NBLOCK
-                         IF ST-OPAQUE(WS-NSTATE + 1) = 1
+*>                       The neighbour's face toward us hides ours when its class covers ours (state-faces.cob): table reads.
+                         COMPUTE WS-NB-AT = WS-NSTATE * 6 + WS-CULL-D
+                         COMPUTE WS-OWN-AT = WS-STATE * 6 + WS-CULL-D
+                         COMPUTE WS-COVER-AT = (ST-NB(WS-NB-AT) - 1) * ST-CMAX + ST-OWN(WS-OWN-AT)
+                         IF ST-COVER(WS-COVER-AT) = 1
                              MOVE 1 TO WS-CULL
                          END-IF
                          IF ST-BLOCK(WS-NSTATE + 1) = ST-BLOCK(WS-ROW-STATE)
-                                 AND ST-OPAQUE(WS-ROW-STATE) = 0
+                                 AND ST-LIKE(WS-ROW-STATE) = 1
                              MOVE 1 TO WS-CULL
                          END-IF
                      END-IF
