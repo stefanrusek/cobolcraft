@@ -145,7 +145,7 @@ ATTR_COLUMNS = {
     "sound": ("sound", "sound (effective)"),
     "push": ("push", "push reaction"),
     "instrument": ("instrument",),
-    "flags": ("flags", "other flags", "other"),
+    "flags": ("flags", "other flags", "other", "other settings"),
     "default": ("default id", "default state", "default state id"),
 }
 
@@ -233,6 +233,9 @@ def assign_keys(blocks, idkey, weathering):
     return problems
 
 
+PROSE_FLAGS = {}
+
+
 def collect_block_attrs(docs, blocks):
     """Attributes per block id, first table to give a value wins. Returns (attrs, field-level fallback count)."""
     by_key = {b["key"]: b for b in blocks}
@@ -248,7 +251,12 @@ def collect_block_attrs(docs, blocks):
         for b in targets:
             slot = attrs[b["id"]]
             for k, v in values.items():
-                if v == "" or (k in ("map", "flags", "default", "props") and whole_field and b["count"] > 1):
+                if k == "flags" and whole_field and b["count"] > 1:
+                    # A field of several blocks (the 16 stained glass, the copper grates and statues): the flags of its row are
+                    # kept only where they say the block cannot occlude (24 part 1 section 5.2: noOcclusion and noCollision clear
+                    # canOcclude), so a member does not draw as a full cube that hides its neighbours' faces.
+                    v = " ".join(t for t in ("noOcclusion", "noCollision") if re.search(r"\b%s\b" % t, v))
+                if v == "" or (k in ("map", "default", "props") and whole_field and b["count"] > 1):
                     continue
                 slot.setdefault(k, v)
 
@@ -278,6 +286,19 @@ def collect_block_attrs(docs, blocks):
                     values["tool"] = "yes"
                 if values.get("flags", "") in ("-",):
                     values["flags"] = ""
+                if "other settings" in h and values.get("flags"):
+                    # Part 2 section 5 states the builder calls as prose ("no occlusion", "no collision, replaceable"): the flag
+                    # names of the registry for the three that decide occlusion and collision, nothing else of the prose.
+                    prose = values["flags"].lower()
+                    tokens = [f for t, f in (("no occlusion", "noOcclusion"), ("no collision", "noCollision"),
+                                             ("replaceable", "replaceable")) if t in prose]
+                    # "as seagrass plus offset XZ": the flags of the block named, read earlier in the table.
+                    named = re.search(r"\bas `?([a-z_0-9]+)", prose)
+                    if named and not tokens:
+                        tokens = PROSE_FLAGS.get(named.group(1), [])
+                    for k in re.findall(r"[a-z_][a-z_0-9]*", r[0]):
+                        PROSE_FLAGS[k] = tokens
+                    values["flags"] = " ".join(tokens)
                 if values.get("props", "") in ("-",):
                     values["props"] = ""
                 if "default" in values and not re.fullmatch(r"\d+", values["default"]):

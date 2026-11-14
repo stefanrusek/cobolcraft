@@ -53,6 +53,23 @@
  01 WS-EXTRA               BINARY-LONG.
  01 WS-CHECKED             BINARY-LONG.
  01 WS-NSOLID              BINARY-LONG.
+ 01 WS-GLASS               BINARY-LONG.
+ 01 WS-GRASS               BINARY-LONG.
+ 01 WS-NOT-OPAQUES.
+    05 FILLER PIC X(32) VALUE "white_stained_glass".
+    05 FILLER PIC X(32) VALUE "black_stained_glass".
+    05 FILLER PIC X(32) VALUE "spawner".
+    05 FILLER PIC X(32) VALUE "tall_seagrass".
+    05 FILLER PIC X(32) VALUE "short_dry_grass".
+    05 FILLER PIC X(32) VALUE "tall_dry_grass".
+    05 FILLER PIC X(32) VALUE "moving_piston".
+    05 FILLER PIC X(32) VALUE "copper_grate".
+    05 FILLER PIC X(32) VALUE "waxed_oxidized_copper_grate".
+    05 FILLER PIC X(32) VALUE "copper_golem_statue".
+    05 FILLER PIC X(32) VALUE "big_dripleaf".
+    05 FILLER PIC X(32) VALUE "glass".
+ 01 WS-NOT-OPAQUE-TABLE REDEFINES WS-NOT-OPAQUES.
+    05 WS-NOT-OPAQUE       PIC X(32) OCCURS 12 TIMES.
  01 WS-WY                  BINARY-LONG.
  01 WS-LABEL               PIC X(10).
  01 WS-K                   BINARY-LONG.
@@ -169,7 +186,78 @@
          CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-PICK(WS-K) WS-STATUS
      END-PERFORM
      PERFORM RUN-SCENARIO
+     PERFORM CHECK-OPACITY
+     PERFORM GLASS-CASE
      STOP RUN.
+
+*> Opacity from the block data (T5501; 24 part 1 section 5.2: a state occludes when canOcclude and its occlusion shape is the full
+*> cube; noOcclusion and noCollision clear canOcclude): blocks the registry rows of the generated table once left unflagged.
+ CHECK-OPACITY.
+     MOVE 0 TO WS-MISSING
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 12
+         MOVE SPACES TO WS-KEYSTR
+         MOVE WS-NOT-OPAQUE(WS-K) TO WS-KEYSTR
+         CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEYSTR WS-ID WS-BLOCK-ROW WS-STATUS
+         CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+         IF ST-OPAQUE(WS-STATE + 1) NOT = 0
+             ADD 1 TO WS-MISSING
+             DISPLAY "  opaque but not an occluder: " FUNCTION TRIM(WS-KEYSTR)
+         END-IF
+     END-PERFORM
+     MOVE "mesher exposure (standard) glass, spawner, seagrass, dry grass, copper grates and statues, moving piston do not occlude"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-MISSING TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Stone with a stained glass cell, a glass pair and a seagrass cell: the stone's face toward glass or seagrass is drawn.
+ GLASS-CASE.
+     CALL "WORLD-CLEAR" USING CLIENT-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         COMPUTE WS-CX = WS-I - 1
+         CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-ZERO WS-ROW(WS-I)
+         SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW(WS-I))
+         MOVE ALL X"FF" TO CE-SKYS
+         PERFORM VARYING WS-CELL FROM 1 BY 1 UNTIL WS-CELL > 12288
+             MOVE WS-PICK(1) TO CE-STATE(WS-CELL)
+         END-PERFORM
+     END-PERFORM
+     MOVE "white_stained_glass" TO WS-KEYSTR
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEYSTR WS-ID WS-BLOCK-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-GLASS WS-STATUS
+     MOVE "tall_seagrass" TO WS-KEYSTR
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEYSTR WS-ID WS-BLOCK-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-GRASS WS-STATUS
+     MOVE 5 TO WS-X
+     MOVE 5 TO WS-Z
+     COMPUTE WS-WY = 5 + PL-MIN-Y
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-WY WS-Z WS-GLASS
+     MOVE 6 TO WS-Z
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-WY WS-Z WS-GLASS
+     MOVE 9 TO WS-X
+     MOVE 5 TO WS-Z
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-WY WS-Z WS-GRASS
+     PERFORM MARK-ALL
+     PERFORM MESH-IDLE
+     MOVE "standard " TO WS-LABEL
+     PERFORM CHECK-PLANES
+*>   Planes (doubled coordinates, y 5 is cell row 5): the stone cell at x 6 beside the glass at x 5; the stone at x 8 beside the seagrass at x 9;
+*>   the face between the two glass cells (z 5 and 6) is not drawn by either.
+     COMPUTE WS-KEY = (11 * 33 + 11) * 65 + 12 + 1
+     MOVE WS-PLANE-COUNT(WS-KEY) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE "mesher exposure (standard) the stone face toward stained glass is drawn" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-KEY = (11 * 33 + 11) * 65 + 18 + 1
+     MOVE WS-PLANE-COUNT(WS-KEY) TO TL-OBSERVED-N
+     MOVE "mesher exposure (standard) the stone face toward seagrass is drawn" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-KEY = (11 * 33 + 12) * 65 + 11 + 1
+     MOVE WS-PLANE-COUNT(WS-KEY) TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE "mesher exposure (standard) the face between two stained glass cells is not drawn" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  RUN-SCENARIO.
      CALL "WORLD-CLEAR" USING CLIENT-STATE
