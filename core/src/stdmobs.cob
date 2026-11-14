@@ -917,6 +917,9 @@
      IF WS-CHUNK = 0
          GOBACK
      END-IF
+     IF SM-KEY(WS-M) = "silverfish"
+         CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
+     END-IF
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
      END-IF

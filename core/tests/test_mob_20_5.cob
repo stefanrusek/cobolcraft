@@ -100,6 +100,8 @@
          CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
 *>       Finalized: a bow in the main hand (hand 4).
          MOVE 0 TO WS-BOWS WS-ARMOURED
+         MOVE 3 TO BW-DIFFICULTY
+         MOVE 2000000 TO CW-TIME
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
              MOVE WS-I TO WS-SEED
              CALL "XORO-SEED" USING WS-SEED XR-STATE
@@ -113,6 +115,17 @@
              END-IF
              CALL "ENTITY-REMOVE" USING WS-ROW
          END-PERFORM
+         MOVE 2 TO BW-DIFFICULTY
+         MOVE 6000 TO CW-TIME
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance US15 20§5 Skeleton family: " DELIMITED BY SIZE WS-NAME(WS-K) DELIMITED BY SPACE
+             " sometimes wears armour" DELIMITED BY SIZE INTO WS-CASE
+         MOVE 1 TO WS-EXP
+         MOVE 0 TO WS-OBS
+         IF WS-ARMOURED > 0 AND WS-ARMOURED < 150
+             MOVE 1 TO WS-OBS
+         END-IF
+         CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
          MOVE SPACES TO WS-CASE
          STRING "acceptance US15 20§5 Skeleton family: every " DELIMITED BY SIZE WS-NAME(WS-K) DELIMITED BY SPACE
              " holds a bow" DELIMITED BY SIZE INTO WS-CASE
