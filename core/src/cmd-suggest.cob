@@ -19,6 +19,7 @@
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
  COPY CORESTATE.
+ COPY DIMENSIONS.
  COPY CONTENT.
  COPY BRTRAIL REPLACING LEADING ==BT-== BY ==SR-==.
  01 WS-CTX                 BINARY-LONG.
@@ -173,14 +174,12 @@
                      PERFORM OFFER-SUB
                  END-PERFORM
              WHEN BR-P-DIMENSION
-                 MOVE "cobolcraft:main" TO WS-CANDIDATE
-                 MOVE 15 TO WS-CANDIDATE-LENGTH
-                 PERFORM OFFER-RESOURCE
-                 IF CW-DIM-COUNT > 1
-                     MOVE "cobolcraft:subroutine" TO WS-CANDIDATE
-                     MOVE 21 TO WS-CANDIDATE-LENGTH
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > CW-DIM-COUNT
+                     MOVE SPACES TO WS-CANDIDATE
+                     MOVE DM-KEY(CW-DIM(WS-K)) TO WS-CANDIDATE
+                     MOVE DM-KEY-LENGTH(CW-DIM(WS-K)) TO WS-CANDIDATE-LENGTH
                      PERFORM OFFER-RESOURCE
-                 END-IF
+                 END-PERFORM
              WHEN BR-P-RESOURCE
                  IF BR-N-REG-LENGTH(WS-CHILD) > 0
                      PERFORM LIST-REGISTRY
