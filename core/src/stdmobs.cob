@@ -818,6 +818,7 @@
 *> - a hostile mob burns in daylight (STDMOB-BURN), keeps a target (STDMOB-TARGET), counts its attack timer down (EN-COOLDOWN), walks toward the
 *>   target at the walk speed until its box is within the melee reach, and with the timer at 0 and the target in reach hits it (HEALTH-MOB-HIT, the
 *>   attack damage of the row), the timer becoming SM-ATTACK-TICKS; with no target it strolls like the animals;
+*> - a tame wolf obeys PET-TICK first (mob-pets.cob): sitting it stays, otherwise it bites the mob that targets its owner or follows the owner;
 *> - a mob that was hit panics (EN-FLEE ticks left, away from the attacker at the panic speed);
 *> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time):
 *>   it picks a cell up to 10 blocks away on each axis (RandomStrollGoal: 10 horizontally; EN-DEST-X/-Z), and walks to it by STDMOB-HEAD for at most
@@ -860,6 +861,9 @@
  01 WS-LIFE-HX             FLOAT-LONG.
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-PET-HX              FLOAT-LONG.
+ 01 WS-PET-HZ              FLOAT-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -912,6 +916,10 @@
      IF SM-KIND(WS-M) = 0
          CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
      END-IF
+     MOVE 0 TO WS-PET-WALK
+     IF SM-KEY(WS-M) = "wolf" AND EN-TAMED(WS-ROW) = 1
+         CALL "PET-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
          IF WS-STOP = 2
@@ -958,6 +966,9 @@
                      CALL "STDMOB-HIT-EFFECT" USING WS-P WS-M
                  END-IF
              END-IF
+         WHEN WS-PET-WALK = 2
+*>           A tame wolf ordered to sit stays where it is (SitWhenOrderedToGoal, 18 section 8.2).
+             MOVE 0 TO EN-COOLDOWN(WS-ROW) EN-FLEE(WS-ROW)
          WHEN EN-FLEE(WS-ROW) > 0
              SUBTRACT 1 FROM EN-FLEE(WS-ROW)
              MOVE EN-FLEE-PLAYER(WS-ROW) TO WS-P
@@ -973,6 +984,14 @@
              COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
              COMPUTE WS-HX = - FUNCTION SIN(WS-RADIANS) * WS-SPEED
              COMPUTE WS-HZ = FUNCTION COS(WS-RADIANS) * WS-SPEED
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN WS-PET-WALK = 1
+*>           A tame wolf walks to its foe or its owner (PET-TICK).
+             MOVE WS-PET-HX TO WS-HX
+             MOVE WS-PET-HZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-LIFE-WALK = 1
 *>           An animal in love walks to its partner (MOB-LIFE-TICK, 18 section 8.1 BreedGoal).

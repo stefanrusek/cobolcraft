@@ -313,6 +313,10 @@
 *>     --- 002-lane-mobsfull-h7: taming (core/src/mob-18-8.cob 18 section 8.2; wolf, 19 section 6.1). EN-TAMED is the tame flag. ---
        10 EN-OWNER-UUID      PIC X(16).          *> the owner's UUID of a tame pet (spaces: none)
        10 EN-SIT             BINARY-LONG.        *> orderedToSit: 1 while the pet is ordered to sit
+       10 EN-PET-MOVING      BINARY-LONG.        *> 1 while a pet walks to its owner (FollowOwnerGoal, M188-FOLLOW)
+       10 EN-FOE             BINARY-LONG.        *> a pet's or golem's mob target: tracker row (0 none), its entity id in EN-FOE-ID
+       10 EN-FOE-ID          BINARY-LONG.
+       10 EN-PET-CD          BINARY-LONG.        *> ticks until the pet's next melee hit
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
