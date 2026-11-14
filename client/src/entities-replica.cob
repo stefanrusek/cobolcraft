@@ -90,6 +90,36 @@
  END PROGRAM ENTITY-NAME.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-ATTACK-BOX.
+*> USING CLIENT-STATE, entity row, registry key (PIC X(22)), size text ("0.6 x 1.95", PIC X(15)), category (PIC X(26)): the attack box of a
+*> standard entity row (21 section 2: width x height; the box is centred on the entity's x and z, from its y up). The left button attacks a
+*> living entity (category other than MISC), a player, and the MISC entities that can be hit: boats, minecarts, armor stands, end crystals.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WIDTH               PIC X(15).
+ 01 WS-HEIGHT              PIC X(15).
+ 01 WS-N                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KEY                  PIC X(22).
+ 01 L-SIZE                 PIC X(15).
+ 01 L-CATEGORY             PIC X(26).
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-KEY L-SIZE L-CATEGORY.
+     MOVE SPACES TO WS-WIDTH WS-HEIGHT
+     UNSTRING L-SIZE DELIMITED BY " x " INTO WS-WIDTH WS-HEIGHT
+     COMPUTE EN-BOX-HALF(L-ROW) = FUNCTION NUMVAL(WS-WIDTH) / 2
+     COMPUTE EN-BOX-HEIGHT(L-ROW) = FUNCTION NUMVAL(WS-HEIGHT)
+     MOVE 0 TO WS-N
+     INSPECT L-KEY TALLYING WS-N FOR ALL "boat" ALL "raft" ALL "minecart" ALL "armor_stand" ALL "end_crystal"
+     MOVE 0 TO EN-BOX-ATTACK(L-ROW)
+     IF L-CATEGORY NOT = "MISC" OR L-KEY = "player" OR WS-N > 0
+         MOVE 1 TO EN-BOX-ATTACK(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-ATTACK-BOX.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-PACKET.
 *> USING CLIENT-STATE, packet PB-BUFFER (PB-POS after the id), packet id (1, 54, 55, 57, 70, 71,
 *> 78, 85, 101, 103, 127 or 128).
@@ -101,7 +131,8 @@
  01 WS-ENTITY-VIEW REDEFINES WS-ENTITY-ROW.
     05 FILLER              PIC X(3).
     05 WS-ER-KEY           PIC X(22).
-    05 FILLER              PIC X(41).
+    05 WS-ER-SIZE          PIC X(15).
+    05 WS-ER-CATEGORY      PIC X(26).
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROWS                BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
@@ -193,6 +224,7 @@
                  MOVE 0 TO EN-STACK-COUNT(WS-ROW) EN-STACK-ITEM(WS-ROW)
 *>               A world of the standard set: EN-TYPE is the entity_type registry id, so keep its key and the model row
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
+                 MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
@@ -202,6 +234,7 @@
                      IF WS-STATUS = CT-OK
                          MOVE WS-ER-KEY TO EN-KEY(WS-ROW)
                          CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-ROW) EN-MODEL(WS-ROW)
+                         CALL "ENTITY-ATTACK-BOX" USING CLIENT-STATE WS-ROW WS-ER-KEY WS-ER-SIZE WS-ER-CATEGORY
                      END-IF
                  END-IF
              END-IF

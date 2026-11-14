@@ -52,6 +52,9 @@
  01 WS-FAR                 FLOAT-LONG.
  01 WS-BEST                FLOAT-LONG.
  01 WS-SHAPE               BINARY-LONG.
+ 01 WS-ATTACK              BINARY-LONG.
+ 01 WS-BOX-HALF            FLOAT-LONG.
+ 01 WS-BOX-HEIGHT          FLOAT-LONG.
  01 WS-HT                  FLOAT-LONG.
  01 WS-HAX                 BINARY-LONG.
  01 WS-RT                  FLOAT-LONG.
@@ -159,14 +162,26 @@
      COMPUTE WS-BEST = FUNCTION MIN(WS-BLOCK-T, CL-ATTACK-REACH)
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          COMPUTE WS-ET = EN-TYPE(WS-R) + 1
-         IF EN-USED(WS-R) = 1 AND WS-ET >= 1 AND WS-ET <= 30
-             IF CL-ET-ATTACK(WS-ET) = 1
-                 COMPUTE WS-LO(1) = EN-X(WS-R) - CL-ET-HALF(WS-ET)
-                 COMPUTE WS-HI(1) = EN-X(WS-R) + CL-ET-HALF(WS-ET)
+*>       The box of an entity of a standard world comes from its registry row (ENTITY-ATTACK-BOX), that of a stand-in type from CL-ENTITIES.
+         MOVE 0 TO WS-ATTACK
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1
+             MOVE EN-BOX-ATTACK(WS-R) TO WS-ATTACK
+             MOVE EN-BOX-HALF(WS-R) TO WS-BOX-HALF
+             MOVE EN-BOX-HEIGHT(WS-R) TO WS-BOX-HEIGHT
+         END-IF
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 0 AND WS-ET >= 1 AND WS-ET <= 30
+             MOVE CL-ET-ATTACK(WS-ET) TO WS-ATTACK
+             MOVE CL-ET-HALF(WS-ET) TO WS-BOX-HALF
+             MOVE CL-ET-HEIGHT(WS-ET) TO WS-BOX-HEIGHT
+         END-IF
+         IF EN-USED(WS-R) = 1
+             IF WS-ATTACK = 1
+                 COMPUTE WS-LO(1) = EN-X(WS-R) - WS-BOX-HALF
+                 COMPUTE WS-HI(1) = EN-X(WS-R) + WS-BOX-HALF
                  MOVE EN-Y(WS-R) TO WS-LO(2)
-                 COMPUTE WS-HI(2) = EN-Y(WS-R) + CL-ET-HEIGHT(WS-ET)
-                 COMPUTE WS-LO(3) = EN-Z(WS-R) - CL-ET-HALF(WS-ET)
-                 COMPUTE WS-HI(3) = EN-Z(WS-R) + CL-ET-HALF(WS-ET)
+                 COMPUTE WS-HI(2) = EN-Y(WS-R) + WS-BOX-HEIGHT
+                 COMPUTE WS-LO(3) = EN-Z(WS-R) - WS-BOX-HALF
+                 COMPUTE WS-HI(3) = EN-Z(WS-R) + WS-BOX-HALF
                  MOVE 0 TO WS-NEAR
                  MOVE WS-BEST TO WS-FAR
                  PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3

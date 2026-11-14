@@ -281,6 +281,11 @@
        10 MC-DISP OCCURS 21 TIMES.
           15 MC-DISP-ITEM    BINARY-LONG.
           15 MC-DISP-COUNT   BINARY-LONG.
+       10 SC-COUNT           BINARY-LONG.            *> the stonecutter list: the entries of the latest Update Recipes (core/src/menu-station.cob sends the ones of the input item)
+       10 SC-ENTRY OCCURS 32 TIMES.
+          15 SC-ITEM         BINARY-LONG.            *> the result item of the entry
+          15 SC-AMOUNT       BINARY-LONG.
+       10 SC-START           BINARY-LONG.            *> the index of the first visible entry (a multiple of 4)
        10 CX-DRAG-ON         BINARY-LONG.
        10 CX-DRAG-BUTTON     BINARY-LONG.
        10 CX-DRAG-N          BINARY-LONG.
@@ -436,6 +441,7 @@
        10 PL-HEIGHT          BINARY-LONG.
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
+       10 PL-DAY-TICKS       BINARY-DOUBLE.  *> the clock's total ticks, never wrapped (the debug overlay's day count)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
        10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
        10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
@@ -620,6 +626,11 @@
           15 EN-VANILLA      PIC 9.
           15 EN-KEY          PIC X(24).
           15 EN-MODEL        BINARY-LONG.
+*>        The attack box of an entity of the standard set (EN-VANILLA 1; 21 section 2): 1 when the left button attacks it (a living entity, a player,
+*>        a boat, a minecart, an armor stand, an end crystal; not an item, an orb or a projectile), the half width and the height in blocks.
+          15 EN-BOX-ATTACK    PIC 9.
+          15 EN-BOX-HALF      FLOAT-LONG.
+          15 EN-BOX-HEIGHT    FLOAT-LONG.
 *>        Set Entity Data of the models: the value of an experience_orb (entry 8), the swell direction of a creeper (entry 16: -1 idle, 1
 *>        fusing), the swell counter at the moment the direction last changed and that moment (CL-NOW-MS); the counter then runs 1 a tick.
           15 EN-VALUE        BINARY-LONG.
@@ -754,8 +765,11 @@
        10 PK-ERROR OCCURS 8 TIMES.
           15 PK-ERROR-TEXT   PIC X(256).
           15 PK-ERROR-LENGTH BINARY-LONG.
+       10 LG-FILES           BINARY-LONG.
+       10 LG-FAILED          BINARY-LONG.
+       10 LG-OVERFLOW        BINARY-LONG.
        10 LG-COUNT           BINARY-LONG.
-       10 LG-ENTRY OCCURS 640 TIMES.
+       10 LG-ENTRY OCCURS 12000 TIMES.
           15 LG-KEY          PIC X(80).
           15 LG-KEY-LENGTH   BINARY-LONG.
           15 LG-TEXT         PIC X(200).

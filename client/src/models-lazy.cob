@@ -84,6 +84,10 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-FACING              PIC X(8).
+ 01 WS-CTYPE               PIC X(8).
+ 01 WS-CNAME               PIC X(48).
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-STATE                BINARY-LONG.
@@ -121,6 +125,23 @@
          END-IF
      END-IF
      CALL "STATE-BAKE" USING CLIENT-STATE L-BM-ROW STATE-MODELS
+*>   The chest family has no elements in its block model: the closed entity model of 52 is baked instead (models-chest.cob).
+     MOVE 0 TO WS-HITS
+     INSPECT WS-NAME TALLYING WS-HITS FOR ALL "chest"
+     IF WS-HITS > 0 AND WS-STATUS = CT-OK
+         MOVE "south" TO WS-FACING
+         MOVE "single" TO WS-CTYPE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-P-COUNT
+             IF WS-P-NAME(WS-I) = "facing"
+                 MOVE WS-P-VALUE(WS-I) TO WS-FACING
+             END-IF
+             IF WS-P-NAME(WS-I) = "type"
+                 MOVE WS-P-VALUE(WS-I) TO WS-CTYPE
+             END-IF
+         END-PERFORM
+         MOVE WS-NAME TO WS-CNAME
+         CALL "CHEST-BAKE" USING CLIENT-STATE L-BM-ROW WS-CNAME WS-FACING WS-CTYPE
+     END-IF
      GOBACK.
  END PROGRAM LAZY-STATE-BAKE.
 
@@ -150,15 +171,30 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ *> The model of a definition (08 5.7): the first of these that holds a string. The first ten reach a "minecraft:model" (directly, or as
+*> the fallback, the false branch, the first composite member or the first entry of a select, condition, composite or range_dispatch, also through a select case);
+*> the last four reach the "base" of a code-drawn "minecraft:special" model, whose icon is its particle texture.
  01 WS-JPATHS.
-    05 FILLER              PIC X(24) VALUE "model.model".
-    05 FILLER              PIC X(24) VALUE "model.fallback.model".
-    05 FILLER              PIC X(24) VALUE "model.on_false.model".
-    05 FILLER              PIC X(24) VALUE "model.models".
+    05 FILLER              PIC X(48) VALUE "model.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.model".
+    05 FILLER              PIC X(48) VALUE "model.on_false.model".
+    05 FILLER              PIC X(48) VALUE "model.models[0].model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.on_false.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.fallback.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.on_false.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.cases[0].model.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.base".
+    05 FILLER              PIC X(48) VALUE "model.fallback.base".
+    05 FILLER              PIC X(48) VALUE "model.on_false.base".
+    05 FILLER              PIC X(48) VALUE "model.fallback.on_false.base".
  01 WS-JPATH-TABLE REDEFINES WS-JPATHS.
-    05 WS-JPATH            PIC X(24) OCCURS 4 TIMES.
+    05 WS-JPATH            PIC X(48) OCCURS 14 TIMES.
  01 WS-K                   BINARY-LONG.
- 01 WS-JP                  PIC X(32).
+ 01 WS-JP                  PIC X(48).
+ 01 WS-SPECIAL             BINARY-LONG.
+ 01 WS-PARTICLE            PIC X(80) VALUE "#particle".
  01 WS-JP-LENGTH           BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
  01 WS-ID                  PIC X(80).
@@ -211,12 +247,16 @@
              MOVE SPACES TO WS-ID
              MOVE 0 TO WS-ID-LENGTH
              IF JD-ERROR = 0
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3 OR WS-ID-LENGTH > 0
+                 MOVE 0 TO WS-SPECIAL
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 14 OR WS-ID-LENGTH > 0
                      MOVE SPACES TO WS-JP
                      MOVE WS-JPATH(WS-K) TO WS-JP
                      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-JP)) TO WS-JP-LENGTH
                      CALL "JSON-FIND" USING JSON-DOC WS-JP WS-JP-LENGTH WS-NODE
                      CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-ID WS-CAP WS-ID-LENGTH
+                     IF WS-K > 10
+                         MOVE 1 TO WS-SPECIAL
+                     END-IF
                  END-PERFORM
              END-IF
              IF WS-ID-LENGTH > 0
@@ -224,6 +264,9 @@
                      WS-GENERATED
                  IF WS-GENERATED = 1
                      CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-LAYER WS-SPRITE
+                 ELSE
+                 IF WS-SPECIAL = 1
+                     CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-PARTICLE WS-SPRITE
                  ELSE
                      CALL "MODEL-RESOLVE" USING CLIENT-STATE WS-ID WS-ID-LENGTH MODEL-RESOLVED
                      MOVE 0 TO WS-F
@@ -251,6 +294,7 @@
                              END-IF
                          END-PERFORM
                      END-IF
+                 END-IF
                  END-IF
              END-IF
          END-IF

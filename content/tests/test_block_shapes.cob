@@ -558,6 +558,359 @@
      MOVE WS-T TO TL-OBSERVED-N
      PERFORM ASSERT-RAY
 
+*>   Play2 defect 3: the workstation and container shapes of 51 section 3.5 (hopper, cauldron, composter, grindstone, bell, scaffolding, piston head,
+*>   wall skulls, joined chests, beds, lectern). The cauldron's four corner legs are four 4 x 4 pillars (the L-shaped 2-pixel notch is not kept).
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "play2 shape: hopper facing=north coll (collision)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,0,10000,8000,8000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "play2 shape: hopper facing=north out (outline)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,0,10000,8000,8000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "play2 shape: hopper facing=east coll (collision)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;8000,4000,6000,16000,8000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "play2 shape: hopper facing=east out (outline)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;8000,4000,6000,16000,8000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "play2 shape: hopper facing=south coll (collision)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,8000,10000,8000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "play2 shape: hopper facing=south out (outline)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,8000,10000,8000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "play2 shape: hopper facing=west coll (collision)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;0,4000,6000,8000,8000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "play2 shape: hopper facing=west out (outline)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;0,4000,6000,8000,8000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "play2 shape: hopper facing=down coll (collision)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,0,6000,10000,6000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "hopper" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "play2 shape: hopper facing=down out (outline)" TO WS-CASE
+     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,0,6000,10000,6000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cauldron" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "play2 shape: cauldron collision" TO WS-CASE
+     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cauldron" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "play2 shape: cauldron outline" TO WS-CASE
+     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "lava_cauldron" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "play2 shape: lava_cauldron collision" TO WS-CASE
+     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "lava_cauldron" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "play2 shape: lava_cauldron outline" TO WS-CASE
+     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "water_cauldron" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=2" TO WS-P1
+     MOVE "play2 shape: water_cauldron level=2 collision" TO WS-CASE
+     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "composter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=0" TO WS-P1
+     MOVE "play2 shape: composter level=0 collision is the level-0 bin" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;0,2000,0,16000,16000,2000;0,2000,1400" & "0,16000,16000,16000;0,2000,2000,2000,16000,14000;14000,2000," & "2000,16000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "composter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=0" TO WS-P1
+     MOVE "play2 shape: composter level=0 outline" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;0,2000,0,16000,16000,2000;0,2000,1400" & "0,16000,16000,16000;0,2000,2000,2000,16000,14000;14000,2000," & "2000,16000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "composter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=3" TO WS-P1
+     MOVE "play2 shape: composter level=3 collision is the level-0 bin" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;0,2000,0,16000,16000,2000;0,2000,1400" & "0,16000,16000,16000;0,2000,2000,2000,16000,14000;14000,2000," & "2000,16000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "composter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=3" TO WS-P1
+     MOVE "play2 shape: composter level=3 outline" TO WS-CASE
+     MOVE "0,0,0,16000,7000,16000;0,7000,0,16000,16000,2000;0,7000,1400" & "0,16000,16000,16000;0,7000,2000,2000,16000,14000;14000,7000," & "2000,16000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "composter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=8" TO WS-P1
+     MOVE "play2 shape: composter level=8 collision is the level-0 bin" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;0,2000,0,16000,16000,2000;0,2000,1400" & "0,16000,16000,16000;0,2000,2000,2000,16000,14000;14000,2000," & "2000,16000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "composter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "level=8" TO WS-P1
+     MOVE "play2 shape: composter level=8 outline" TO WS-CASE
+     MOVE "0,0,0,16000,15000,16000;0,15000,0,16000,16000,2000;0,15000,1" & "4000,16000,16000,16000;0,15000,2000,2000,16000,14000;14000,1" & "5000,2000,16000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "grindstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "face=wall" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: grindstone face=wall facing=north (collision)" TO WS-CASE
+     MOVE "2000,6000,7000,4000,10000,16000;2000,5000,3000,4000,11000,90" & "00;12000,6000,7000,14000,10000,16000;12000,5000,3000,14000,1" & "1000,9000;4000,2000,0,12000,14000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "grindstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "face=floor" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: grindstone face=floor facing=north (collision)" TO WS-CASE
+     MOVE "2000,0,6000,4000,9000,10000;2000,7000,5000,4000,13000,11000;" & "12000,0,6000,14000,9000,10000;12000,7000,5000,14000,13000,11" & "000;4000,4000,2000,12000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "grindstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "face=ceiling" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: grindstone face=ceiling facing=north (collision)" TO WS-CASE
+     MOVE "2000,7000,6000,4000,16000,10000;2000,3000,5000,4000,9000,110" & "00;12000,7000,6000,14000,16000,10000;12000,3000,5000,14000,9" & "000,11000;4000,0,2000,12000,12000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "grindstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "face=wall" TO WS-P1
+     MOVE "facing=east" TO WS-P2
+     MOVE "play2 shape: grindstone face=wall facing=east is turned east (outline)" TO WS-CASE
+     MOVE "0,6000,2000,9000,10000,4000;7000,5000,2000,13000,11000,4000;" & "0,6000,12000,9000,10000,14000;7000,5000,12000,13000,11000,14" & "000;4000,2000,4000,16000,14000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "bell" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "attachment=ceiling" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: bell ceiling (collision)" TO WS-CASE
+     MOVE "5000,6000,5000,11000,13000,11000;4000,4000,4000,12000,6000,1" & "2000;7000,13000,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "bell" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "attachment=floor" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: bell floor facing=north is the frame on the z axis (collision)" TO WS-CASE
+     MOVE "0,0,4000,16000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "bell" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "attachment=floor" TO WS-P1
+     MOVE "facing=east" TO WS-P2
+     MOVE "play2 shape: bell floor facing=east is the frame on the x axis (outline)" TO WS-CASE
+     MOVE "4000,0,0,12000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "bell" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "attachment=single_wall" TO WS-P1
+     MOVE "facing=south" TO WS-P2
+     MOVE "play2 shape: bell single_wall facing=south (collision)" TO WS-CASE
+     MOVE "5000,6000,5000,11000,13000,11000;4000,4000,4000,12000,6000,1" & "2000;7000,13000,3000,9000,15000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "bell" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "attachment=double_wall" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: bell double_wall facing=north (collision)" TO WS-CASE
+     MOVE "5000,6000,5000,11000,13000,11000;4000,4000,4000,12000,6000,1" & "2000;7000,13000,0,9000,15000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "bell" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "attachment=double_wall" TO WS-P1
+     MOVE "facing=east" TO WS-P2
+     MOVE "play2 shape: bell double_wall facing=east (outline)" TO WS-CASE
+     MOVE "5000,6000,5000,11000,13000,11000;4000,4000,4000,12000,6000,1" & "2000;0,13000,7000,16000,15000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "scaffolding" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=false" TO WS-P1
+     MOVE "play2 shape: scaffolding has no collision" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "scaffolding" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=false" TO WS-P1
+     MOVE "play2 shape: scaffolding bottom=false outline is the stable shape" TO WS-CASE
+     MOVE "0,14000,0,16000,16000,16000;0,0,0,2000,16000,2000;14000,0,0," & "16000,16000,2000;14000,0,14000,16000,16000,16000;0,0,14000,2" & "000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "scaffolding" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=true" TO WS-P1
+     MOVE "play2 shape: scaffolding bottom=true outline is the unstable shape" TO WS-CASE
+     MOVE "0,14000,0,16000,16000,16000;0,0,0,2000,16000,2000;14000,0,0," & "16000,16000,2000;14000,0,14000,16000,16000,16000;0,0,14000,2" & "000,16000,16000;0,0,0,16000,2000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "short=false" TO WS-P2
+     MOVE "play2 shape: piston_head facing=north (collision)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,4000;6000,6000,4000,10000,10000,20000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "short=false" TO WS-P2
+     MOVE "play2 shape: piston_head facing=south (collision)" TO WS-CASE
+     MOVE "0,0,12000,16000,16000,16000;6000,6000,-4000,10000,10000,1200" & "0" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "short=false" TO WS-P2
+     MOVE "play2 shape: piston_head facing=west (collision)" TO WS-CASE
+     MOVE "0,0,0,4000,16000,16000;4000,6000,6000,20000,10000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "short=false" TO WS-P2
+     MOVE "play2 shape: piston_head facing=east (collision)" TO WS-CASE
+     MOVE "12000,0,0,16000,16000,16000;-4000,6000,6000,12000,10000,1000" & "0" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "short=false" TO WS-P2
+     MOVE "play2 shape: piston_head facing=down (collision)" TO WS-CASE
+     MOVE "0,0,0,16000,4000,16000;6000,4000,6000,10000,20000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "short=false" TO WS-P2
+     MOVE "play2 shape: piston_head facing=up (collision)" TO WS-CASE
+     MOVE "0,12000,0,16000,16000,16000;6000,-4000,6000,10000,12000,1000" & "0" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "zombie_wall_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "play2 shape: zombie_wall_head facing=north (collision)" TO WS-CASE
+     MOVE "4000,4000,8000,12000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "zombie_wall_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "play2 shape: zombie_wall_head facing=east (collision)" TO WS-CASE
+     MOVE "0,4000,4000,8000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "zombie_wall_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "play2 shape: zombie_wall_head facing=south (collision)" TO WS-CASE
+     MOVE "4000,4000,0,12000,12000,8000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "zombie_wall_head" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "play2 shape: zombie_wall_head facing=west (collision)" TO WS-CASE
+     MOVE "8000,4000,4000,16000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chest" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "type=single" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: chest single (collision)" TO WS-CASE
+     MOVE "1000,0,1000,15000,14000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chest" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "type=left" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: chest left facing=north joins east (collision)" TO WS-CASE
+     MOVE "1000,0,1000,16000,14000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chest" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "type=right" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: chest right facing=north joins west (collision)" TO WS-CASE
+     MOVE "0,0,1000,15000,14000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chest" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "type=left" TO WS-P1
+     MOVE "facing=east" TO WS-P2
+     MOVE "play2 shape: chest left facing=east joins south (outline)" TO WS-CASE
+     MOVE "1000,0,1000,15000,14000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "chest" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "type=right" TO WS-P1
+     MOVE "facing=east" TO WS-P2
+     MOVE "play2 shape: chest right facing=east joins north (outline)" TO WS-CASE
+     MOVE "1000,0,0,15000,14000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "red_bed" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "part=head" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: bed head half facing=north: legs at the north end (collision)" TO WS-CASE
+     MOVE "0,3000,0,16000,9000,16000;0,0,0,3000,3000,3000;13000,0,0,160" & "00,3000,3000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "red_bed" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "part=foot" TO WS-P1
+     MOVE "facing=north" TO WS-P2
+     MOVE "play2 shape: bed foot half facing=north: legs at the south end (collision)" TO WS-CASE
+     MOVE "0,3000,0,16000,9000,16000;13000,0,13000,16000,3000,16000;0,0" & ",13000,3000,3000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "red_bed" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "part=foot" TO WS-P1
+     MOVE "facing=east" TO WS-P2
+     MOVE "play2 shape: bed foot half facing=east: legs at the west end (outline)" TO WS-CASE
+     MOVE "0,3000,0,16000,9000,16000;0,0,13000,3000,3000,16000;0,0,0,30" & "00,3000,3000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "lectern" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "play2 shape: lectern facing=north collision is the base and the stand" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;4000,2000,4000,12000,14000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "lectern" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "play2 shape: lectern facing=north outline adds the desk" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;4000,2000,4000,12000,14000,12000;0,10" & "000,1000,16000,14000,5333;0,12000,5333,16000,16000,9667;0,14" & "000,9667,16000,18000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "lectern" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "play2 shape: lectern facing=east outline has the desk turned east" TO WS-CASE
+     MOVE "0,0,0,16000,2000,16000;4000,2000,4000,12000,14000,12000;1066" & "7,10000,0,15000,14000,16000;6333,12000,0,10667,16000,16000;2" & "000,14000,0,6333,18000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+
 *>   The shape table is full: a new shape is the full cube.
      MOVE 2000 TO BSH-COUNT
      INITIALIZE BSC-SHAPE

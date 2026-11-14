@@ -106,8 +106,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-HANDLE              BINARY-LONG.
- 01 WS-CLASS-OK            BINARY-LONG.
- 01 WS-TIER                BINARY-LONG.
+ 01 WS-SPEED              BINARY-LONG.
  01 WS-CORRECT             BINARY-LONG.
  01 WS-BLOCK-ROW           BINARY-LONG.
  01 WS-NO-RADIUS           BINARY-LONG VALUE 0.
@@ -132,15 +131,10 @@
          MOVE PL-SLOT-COUNT(L-PLAYER, WS-HELD) TO WS-COUNT
          MOVE PL-SLOT-VAR(L-PLAYER, WS-HELD) TO WS-HANDLE
      END-IF
-*>   hasCorrectToolForDrops: any tool when the block does not require one, else a tool of the block's class whose tier
-*>   reaches the block's (the rule of BREAK-CORRECT).
+*>   hasCorrectToolForDrops: any tool when the block does not require one, else a tool that is correct for the block (the rule
+*>   of BREAK-TOOL-INPUTS: the class and tier of the cobolcraft tools, or the tool component's rules of the standard items).
      COMPUTE WS-BLOCK-ROW = L-BLOCK + 1
-     MOVE 0 TO WS-CLASS-OK WS-TIER
-     IF CB-CLASS(WS-BLOCK-ROW) NOT = CB-CLASS-NONE AND IT-TOOL-CLASS(WS-ITEM + 1) = CB-CLASS(WS-BLOCK-ROW)
-         MOVE 1 TO WS-CLASS-OK
-         MOVE IT-TOOL-TIER(WS-ITEM + 1) TO WS-TIER
-     END-IF
-     CALL "BREAK-CORRECT" USING CB-TOOL-REQ(WS-BLOCK-ROW) WS-CLASS-OK WS-TIER CB-NEED-TIER(WS-BLOCK-ROW) WS-CORRECT
+     CALL "BREAK-TOOL-INPUTS" USING WS-ITEM WS-BLOCK-ROW WS-SPEED WS-CORRECT
      CALL "BLOCK-DROPS-KEY" USING L-STATE WS-KEY
      CALL "LOOT-DOC-GET" USING WS-REGISTRY WS-KEY WS-SLOT
      EVALUATE TRUE

@@ -341,6 +341,7 @@
  01 WS-PLACED              BINARY-LONG.
  01 WS-TRAVEL              BINARY-LONG.
  01 WS-BENCH               BINARY-LONG.
+ 01 WS-STATION             BINARY-LONG.
  01 WS-BED                 BINARY-LONG.
  01 WS-BONE                BINARY-LONG.
  01 WS-BONE-USED           BINARY-LONG.
@@ -349,6 +350,7 @@
  01 WS-OPENED              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TOOL                BINARY-LONG.
+ 01 WS-SWITCH              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -374,19 +376,26 @@
      CALL "GB-HELD-BONEMEAL" USING WS-ITEM WS-BONE
      MOVE 0 TO WS-BONE-USED
      CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-STATION
      MOVE 0 TO WS-SHELF
 *>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
      IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
-         MOVE 0 TO WS-CONT
+         MOVE 0 TO WS-CONT WS-STATION
      ELSE
          CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
      END-IF
+*>   A lever, button, door, trapdoor or fence gate takes the click (core/src/use-switch.cob).
+     CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
      EVALUATE TRUE
          WHEN WS-TOOL = 1
+             CONTINUE
+         WHEN WS-SWITCH = 1
              CONTINUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
          WHEN WS-BENCH = 1
+             CONTINUE
+         WHEN WS-STATION > 0
              CONTINUE
          WHEN WS-BED = 1
              CONTINUE
@@ -410,6 +419,9 @@
      END-IF
      IF WS-BENCH = 1
          CALL "MENU-BENCH-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-STATION > 0
+         CALL "MENU-STATION-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-STATION
      END-IF
      IF WS-BED = 1 AND PSB-HAND = 0
          CALL "WORLDSIM-SLEEP-USE" USING L-ID PSB-BX PSB-BY PSB-BZ
