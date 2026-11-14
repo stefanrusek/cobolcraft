@@ -164,3 +164,59 @@ write("test", "jigrep", int_list("size", [8, 1, 1]), lst("entities", 10, []),
           blk([7, 0, 0], 0, jig([string("final_state", "minecraft:no_such_block")])),
       ]),
       lst("palette", 10, [jv("up_north"), v("stone")]))
+
+# The synthetic jigsaw structure of core/tests/test_struct_jigsaw_unit.cob (36-3 10.2): a hub with four jigsaws whose pools are absent, empty, fallback-empty and one that fits, and its leaf.
+write("test", "jhub", int_list("size", [3, 2, 3]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          block([1, 1, 1], 1),
+          blk([1, 0, 0], 0, jig([string("name", "test:a"), string("target", "test:b"), string("pool", "test:leaf"), string("final_state", "minecraft:stone")])),
+          blk([0, 0, 1], 2, jig([string("name", "test:a"), string("target", "test:b"), string("pool", "test:missing")])),
+          blk([2, 0, 1], 3, jig([string("name", "test:a"), string("target", "test:b"), string("pool", "test:zero")])),
+          blk([1, 0, 2], 4, jig([string("name", "test:a"), string("target", "test:b"), string("pool", "test:badfb")])),
+      ]),
+      lst("palette", 10, [jv("north_up"), v("stone"), jv("west_up"), jv("east_up"), jv("south_up")]))
+write("test", "jleaf", int_list("size", [3, 2, 3]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          block([1, 1, 1], 1),
+          blk([1, 0, 2], 0, jig([string("name", "test:b"), string("final_state", "minecraft:structure_void")])),
+      ]),
+      lst("palette", 10, [jv("south_up"), v("stone")]))
+
+write("test", "jhub2", int_list("size", [3, 2, 3]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          block([1, 1, 1], 1),
+          blk([1, 0, 0], 0, jig([string("name", "test:a"), string("target", "test:b"), string("pool", "test:leaf"), integer("placement_priority", 0)])),
+          blk([1, 0, 2], 2, jig([string("name", "test:a"), string("target", "test:b"), string("pool", "test:leaf"), integer("placement_priority", 3)])),
+      ]),
+      lst("palette", 10, [jv("north_up"), v("stone"), jv("south_up")]))
+
+import json
+pool_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jigpool", "data", "test", "worldgen", "template_pool")
+os.makedirs(pool_root, exist_ok=True)
+def pool(name, text):
+    with open(os.path.join(pool_root, name + ".json"), "w") as f: f.write(text if isinstance(text, str) else json.dumps(text, sort_keys=True))
+def leaf(proj="rigid", legacy=True):
+    return {"element_type": "minecraft:legacy_single_pool_element" if legacy else "minecraft:single_pool_element", "location": "test:jleaf", "processors": "minecraft:empty", "projection": proj}
+pool("start", {"elements": [{"element": {"element_type": "minecraft:legacy_single_pool_element", "location": "test:jhub", "processors": {"processors": []}, "projection": "rigid"}, "weight": 1}], "fallback": "minecraft:empty"})
+pool("start2", {"elements": [{"element": {"element_type": "minecraft:legacy_single_pool_element", "location": "test:jhub2", "processors": {"processors": []}, "projection": "rigid"}, "weight": 1}], "fallback": "minecraft:empty"})
+pool("leaf", {"elements": [{"element": leaf(), "weight": 1}], "fallback": "minecraft:empty"})
+pool("zero", {"elements": [], "fallback": "minecraft:empty"})
+pool("badfb", {"elements": [{"element": leaf(), "weight": 1}], "fallback": "test:zero"})
+pool("badjson", "not json {")
+pool("noelements", {"fallback": "minecraft:empty"})
+pool("onlyempty", {"elements": [{"element": {"element_type": "minecraft:empty_pool_element"}, "weight": 1}], "fallback": "minecraft:empty"})
+pool("listfail", {"elements": [{"element": {"element_type": "minecraft:list_pool_element", "projection": "rigid", "elements": [
+    {"element_type": "minecraft:legacy_single_pool_element", "location": "test:no_such_template", "processors": "minecraft:empty", "projection": "rigid"}, leaf()]}, "weight": 1}], "fallback": "minecraft:empty"})
+pool("listok", {"elements": [{"element": {"element_type": "minecraft:list_pool_element", "projection": "rigid", "elements": [leaf("rigid", False), {"element_type": "minecraft:empty_pool_element"}]}, "weight": 1}], "fallback": "minecraft:empty"})
+pool("fb2", {"elements": [{"element": leaf(), "weight": 1}], "fallback": "test:leaf"})
+pool("mixed", {"elements": [
+    {"element": {"element_type": "minecraft:no_such_element"}, "weight": 1},
+    {"element": {"element_type": "minecraft:list_pool_element", "projection": "terrain_matching", "elements": [leaf("rigid", False), {"element_type": "minecraft:empty_pool_element"}]}, "weight": 2},
+    {"element": {"element_type": "minecraft:feature_pool_element", "feature": "oak", "projection": "rigid"}, "weight": 1},
+    {"element": {"element_type": "minecraft:empty_pool_element"}, "weight": 3}], "fallback": "minecraft:empty"})
+
+proc_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jigpool", "data", "test", "worldgen", "processor_list")
+os.makedirs(proc_root, exist_ok=True)
+with open(os.path.join(proc_root, "swap.json"), "w") as f:
+    f.write(json.dumps({"processors": [{"processor_type": "minecraft:rule", "rules": [{"input_predicate": {"predicate_type": "minecraft:block_match", "block": "minecraft:stone"},
+        "location_predicate": {"predicate_type": "minecraft:always_true"}, "output_state": {"Name": "minecraft:cobblestone"}}]}]}, sort_keys=True))

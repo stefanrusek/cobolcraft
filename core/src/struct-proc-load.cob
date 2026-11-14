@@ -657,6 +657,10 @@
              MOVE SPACES TO WS-TEXT
              MOVE '{"processors":[{"processor_type":"minecraft:block_ignore","blocks":["minecraft:structure_block"]}]}' TO WS-TEXT
              MOVE 0 TO WS-STATUS
+         WHEN "cobolcraft:inline/gravity"
+             MOVE SPACES TO WS-TEXT
+             MOVE '{"processors":[{"processor_type":"minecraft:gravity","heightmap":"WORLD_SURFACE_WG","offset":-1}]}' TO WS-TEXT
+             MOVE 0 TO WS-STATUS
          WHEN "cobolcraft:inline/jigsaw_replacement"
              MOVE SPACES TO WS-TEXT
              MOVE '{"processors":[{"processor_type":"minecraft:jigsaw_replacement"}]}' TO WS-TEXT

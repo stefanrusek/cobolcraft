@@ -460,6 +460,8 @@
  COPY STRUCTDATA.
  01 WS-KIND                BINARY-LONG VALUE 1.
  01 WS-NAME                PIC X(40) VALUE "mineshaft".
+ 01 WS-JIGSAW-NAME         PIC X(40) VALUE "jigsaw".
+ 01 WS-JIGSAW-ID           BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-SEA                 BINARY-LONG VALUE 63.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
@@ -478,7 +480,15 @@
      IF SDT-TYPE(L-STRUCT) = WS-ID
          CALL "MS-FIND-POINT" USING L-SEED L-CX L-CZ SDT-VARIANT(L-STRUCT) WS-SEA WS-MIN-Y L-X L-Y L-Z L-VALID
      ELSE
-         CALL "STRUCT-TPL-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID WS-DONE
+         CALL "STRUCT-ENUM-ID" USING WS-KIND WS-JIGSAW-NAME WS-JIGSAW-ID
+         MOVE 0 TO WS-DONE
+         IF SDT-TYPE(L-STRUCT) = WS-JIGSAW-ID
+             MOVE 1 TO WS-DONE
+             CALL "JIG-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID
+         END-IF
+         IF WS-DONE = 0
+             CALL "STRUCT-TPL-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID WS-DONE
+         END-IF
          IF WS-DONE = 0
              CALL "STRUCT-SCATTER-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID WS-DONE
          END-IF
@@ -515,6 +525,8 @@
              EVALUATE TRUE
                  WHEN SP-TYPE(WS-I) = 100
                      CALL "STRUCT-TPL-POST" USING WS-I
+                 WHEN SP-TYPE(WS-I) = 60
+                     CALL "JIG-POST" USING WS-I
                  WHEN SP-TYPE(WS-I) > 100
                      CALL "SCP-POST" USING WS-I
                  WHEN OTHER

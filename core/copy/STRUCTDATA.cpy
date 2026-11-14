@@ -24,7 +24,9 @@
     05 SD-STARTS-SEEN       BINARY-LONG.
     05 SD-GATE-COUNT        BINARY-LONG.
     05 SD-START-COUNT       BINARY-LONG.
-*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa) or the shipwreck's is_beached (1 beached) or the ocean ruin's biome_temp (1 warm); SDT-LARGE and SDT-CLUSTER the ocean ruin's large_probability and cluster_probability (float32 values)
+*>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa) or the shipwreck's is_beached (1 beached) or the ocean ruin's biome_temp (1 warm)
+*>  SDT-LARGE and SDT-CLUSTER the ocean ruin's large_probability and cluster_probability (float32 values)
+*>  SDT-JIG-* the fields of a jigsaw structure (STRUCT-JIG-READ in struct-jig.cob, 36-3 3.1): the start pool, size, absolute start height, heightmap (-1 none, 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), expansion hack, horizontal and vertical distance, padding bottom and top, ignore_waterlogging, and ok (1 when the assembler can build it)
     05 SD-BLOCK-FIRST       BINARY-LONG.
     05 SD-BLOCK-COUNT       BINARY-LONG.
 *>  SS-KIND 0 concentric_rings, 1 dimension_origin, 2 random_spread (the placement registry ids); SS-SPREAD 0 linear 1 triangular; SS-METHOD the frequency reduction
@@ -67,6 +69,17 @@
        10 SDT-VARIANT        BINARY-LONG.
        10 SDT-LARGE          FLOAT-LONG.
        10 SDT-CLUSTER        FLOAT-LONG.
+       10 SDT-JIG-POOL       PIC X(80).
+       10 SDT-JIG-SIZE       BINARY-LONG.
+       10 SDT-JIG-Y          BINARY-LONG.
+       10 SDT-JIG-PROJ       BINARY-LONG.
+       10 SDT-JIG-HACK       BINARY-LONG.
+       10 SDT-JIG-HOR        BINARY-LONG.
+       10 SDT-JIG-VER        BINARY-LONG.
+       10 SDT-JIG-PADB       BINARY-LONG.
+       10 SDT-JIG-PADT       BINARY-LONG.
+       10 SDT-JIG-LIQ        BINARY-LONG.
+       10 SDT-JIG-OK         BINARY-LONG.
     05 SD-BIOME             PIC X(40) OCCURS 8192 TIMES.
 *>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N chunks SR-X, SR-Z
     05 SD-RING OCCURS 4 TIMES.

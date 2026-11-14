@@ -16,8 +16,8 @@
 *> A test (SPT): SPT-TYPE 1 always_true, 2 block_match (SPT-A the block number), 3 blockstate_match (SPT-A the state), 4 tag_match (SPT-POOL, SPT-N), 5 random_block_match (SPT-A block, SPT-F
 *> probability float32), 6 random_blockstate_match (SPT-A state, SPT-F), 7 height_match (SPT-B min, SPT-C max), 8 all_of, 9 any_of, 10 not (children from SPT-CHILD along SPT-NEXT); position tests: 21 always_true,
 *> 22 linear_pos, 23 axis_aligned_linear_pos (SPT-F min_chance, SPT-F2 max_chance float32, SPT-B min_dist, SPT-C max_dist, SPT-D the axis 0 x, 1 y, 2 z).
- 78 SP-MAX-LISTS         VALUE 64.
- 78 SP-MAX-PROCS         VALUE 1024.
+ 78 SP-MAX-LISTS         VALUE 256.
+ 78 SP-MAX-PROCS         VALUE 4096.
  78 SP-MAX-RULES         VALUE 2048.
  78 SP-MAX-TESTS         VALUE 4096.
  78 SP-MAX-POOL          VALUE 32768.
@@ -28,12 +28,12 @@
     05 SP-TEST-COUNT        BINARY-LONG.
     05 SP-POOL-COUNT        BINARY-LONG.
     05 SP-BAD               BINARY-LONG.
-    05 SP-LIST OCCURS 64 TIMES.
+    05 SP-LIST OCCURS 256 TIMES.
        10 SPL-KEY           PIC X(80).
        10 SPL-STATUS        BINARY-LONG.
        10 SPL-FIRST         BINARY-LONG.
        10 SPL-N             BINARY-LONG.
-    05 SP-PROC OCCURS 1024 TIMES.
+    05 SP-PROC OCCURS 4096 TIMES.
        10 SPP-TYPE          BINARY-LONG.
        10 SPP-A             BINARY-LONG.
        10 SPP-B             BINARY-LONG.

@@ -523,6 +523,12 @@
  01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
  01 WS-RUIN-WARM           PIC X(80) VALUE "minecraft:ocean_ruin_warm".
  01 WS-RUIN-COLD           PIC X(80) VALUE "minecraft:ocean_ruin_cold".
+ 01 WS-OUTPOST             PIC X(80) VALUE "minecraft:pillager_outpost".
+ 01 WS-VILLAGE-PLAINS      PIC X(80) VALUE "minecraft:village_plains".
+ 01 WS-VILLAGE-DESERT      PIC X(80) VALUE "minecraft:village_desert".
+ 01 WS-VILLAGE-SAVANNA     PIC X(80) VALUE "minecraft:village_savanna".
+ 01 WS-VILLAGE-SNOWY       PIC X(80) VALUE "minecraft:village_snowy".
+ 01 WS-VILLAGE-TAIGA       PIC X(80) VALUE "minecraft:village_taiga".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -550,6 +556,13 @@
 *>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
          CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
          CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
+*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier, no feature elements: docs/design/world-types.md structures part 8)
+         CALL "STRUCT-GATE-ON" USING WS-OUTPOST
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-PLAINS
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-DESERT
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SAVANNA
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SNOWY
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
 *>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut, the jungle temple, the desert pyramid and the buried treasure
          CALL "STRUCT-GATE-ON" USING WS-SWAMP-HUT
          CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE
