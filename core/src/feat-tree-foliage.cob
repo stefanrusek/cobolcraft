@@ -62,6 +62,13 @@
                      IF WS-AX = L-RADIUS AND WS-AZ = L-RADIUS AND L-RADIUS > 0
                          MOVE 1 TO WS-SKIP
                      END-IF
+                 WHEN 9
+                     IF WS-AX = L-RADIUS AND WS-AZ = L-RADIUS
+                         CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-TWO WS-DRAW
+                         IF WS-DRAW = 0
+                             MOVE 1 TO WS-SKIP
+                         END-IF
+                     END-IF
                  WHEN 4
                      IF L-DY = 0
                          IF (WS-AX > 1 OR WS-AZ > 1) AND WS-AX NOT = 0 AND WS-AZ NOT = 0
@@ -253,6 +260,19 @@
                  MOVE WS-RAD TO WS-PREV
                  ADD 1 TO WS-YY
              END-PERFORM
+         WHEN 9
+*>           bush: the blob rows without the halving: radius LR + rO - 1 - y, a corner skipped on a coin toss
+             COMPUTE WS-END = WS-OFF - L-FH
+             PERFORM VARYING WS-YY FROM WS-OFF BY -1 UNTIL WS-YY < WS-END
+                 COMPUTE WS-RAD = L-LR + WS-AR - 1 - WS-YY
+                 CALL "FR-TREE-ROW" USING L-STATE WS-AX WS-AY WS-AZ WS-RAD WS-YY WS-KIND WS-AD
+             END-PERFORM
+         WHEN 10
+             CALL "FR-SPREAD" USING L-STATE L-ROW L-ATT L-FH L-LR
+         WHEN 11
+             CALL "FR-CHERRY-FOLIAGE" USING L-STATE L-ROW L-ATT L-FH L-LR WS-OFF
+         WHEN 12
+             CALL "FR-POPLAR-FOLIAGE" USING L-STATE L-ROW L-ATT L-FH L-LR WS-OFF
          WHEN OTHER
 *>           dark oak: rows (LR + 2, -1), (LR + 3, 0), (LR + 2, 1) and, on a coin toss, (LR, 2) for a double trunk; (LR + 2, -1) and (LR + 1, 0) for a single one
              COMPUTE WS-CY = WS-AY + WS-OFF

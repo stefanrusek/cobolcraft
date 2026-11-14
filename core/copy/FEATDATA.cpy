@@ -121,6 +121,63 @@
        10 TR-SZ-MID         BINARY-LONG.
        10 TR-LVS-START      BINARY-LONG.
        10 TR-LVS-N          BINARY-LONG.
+*>     batch 4 (mangrove, 35-3 4.8 and 6): TR-TKIND 7 upwards branching (TR-EBS extra_branch_steps and TR-EBL extra_branch_length are int providers, TR-PROB the branch probability, the
+*>     pool TR-CGT the can_grow_through blocks), TR-MINCLIP the min_clipped_height (-1 absent); the root placer (TR-ROOT 1): TR-TOY the trunk_offset_y provider, the states TR-ROOT-STATE,
+*>     TR-ABOVE-STATE (TR-ABOVE-ON, TR-ABOVE-CHANCE) and TR-MUD-STATE, the pools TR-RCG (root can_grow_through) and TR-MUD (muddy_roots_in), TR-MAXW and TR-MAXL the root width and length
+*>     limits, TR-SKEW the random skew chance
+       10 TR-EBS.
+          15 TR-EBS-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-EBL.
+          15 TR-EBL-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-TOY.
+          15 TR-TOY-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-PROB           FLOAT-LONG.
+       10 TR-ABOVE-CHANCE   FLOAT-LONG.
+       10 TR-SKEW           FLOAT-LONG.
+       10 TR-CGT-START      BINARY-LONG.
+       10 TR-CGT-N          BINARY-LONG.
+       10 TR-MINCLIP        BINARY-LONG.
+       10 TR-ROOT           BINARY-LONG.
+       10 TR-ROOT-STATE     BINARY-LONG.
+       10 TR-ABOVE-ON       BINARY-LONG.
+       10 TR-ABOVE-STATE    BINARY-LONG.
+       10 TR-MUD-STATE      BINARY-LONG.
+       10 TR-RCG-START      BINARY-LONG.
+       10 TR-RCG-N          BINARY-LONG.
+       10 TR-MUD-START      BINARY-LONG.
+       10 TR-MUD-N          BINARY-LONG.
+       10 TR-MAXW           BINARY-LONG.
+       10 TR-MAXL           BINARY-LONG.
+*>     batch 5 (35-3 4.7 bending, 4.9 cherry, 5.2 bush, random spread and cherry foliage): TR-TKIND 8 cherry, 9 bending; TR-FKIND 9 bush, 10 random spread, 11 cherry. TR-MHL the min_height_for_leaves
+*>     and TR-BEND the bend_length provider of the bending trunk; the cherry trunk's providers TR-BC (branch_count), TR-BHL (branch_horizontal_length), TR-BSO (branch_start_offset_from_top, the uniform
+*>     range: a and b of the provider) and TR-BEO (branch_end_offset_from_top); TR-ATTEMPTS the leaf_placement_attempts of the random spread; TR-CF1 to TR-CF4 the cherry foliage chances
+*>     (wide_bottom_layer_hole_chance, corner_hole_chance, hanging_leaves_chance, hanging_leaves_extension_chance)
+       10 TR-MHL            BINARY-LONG.
+       10 TR-ATTEMPTS       BINARY-LONG.
+       10 TR-BEND.
+          15 TR-BEND-V      BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BC.
+          15 TR-BC-V        BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BHL.
+          15 TR-BHL-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BSO.
+          15 TR-BSO-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BEO.
+          15 TR-BEO-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-CF1            FLOAT-LONG.
+       10 TR-CF2            FLOAT-LONG.
+       10 TR-CF3            FLOAT-LONG.
+       10 TR-CF4            FLOAT-LONG.
+*>     batch 6 (decorators): TR-NDEC decorators in TR-DEC(1 ..), the stump decorators of a fallen tree TR-NSDEC from TR-DEC(6); TD-KIND 0 accepted and ignored, 1 attached_to_logs,
+*>     TD-PROB the probability, TD-PV the provider (PV row), TD-ND and TD-DIR the directions (ordinals DOWN 0 UP 1 NORTH 2 SOUTH 3 WEST 4 EAST 5)
+       10 TR-NDEC           BINARY-LONG.
+       10 TR-NSDEC          BINARY-LONG.
+       10 TR-DEC OCCURS 10 TIMES.
+          15 TD-KIND        BINARY-LONG.
+          15 TD-PROB        FLOAT-LONG.
+          15 TD-PV          BINARY-LONG.
+          15 TD-ND          BINARY-LONG.
+          15 TD-DIR         BINARY-LONG OCCURS 6 TIMES.
 *>  block columns (type 2; core/src/feat-column.cob FR-BLOCK-COLUMN, docs/protocol/35-worldgen-features-4 section 5): FT-A of the feature is the row. BC-DIR 1 up or -1 down, BC-TIP prioritize_tip, BC-PR the
 *>  allowed_placement predicate, BC-N layers (at most 4), each with the four integers of its height int provider and the provider index.
     05 FD-BC OCCURS 128 TIMES.
