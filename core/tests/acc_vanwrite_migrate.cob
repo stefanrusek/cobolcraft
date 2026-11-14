@@ -82,6 +82,21 @@
      MOVE "acceptance vanwrite the saved folder passes the read-back checker (tools/validate_world.py: Data, dimensions, regions)" TO TL-CASE
      MOVE "0" TO TL-EXPECTED
      PERFORM CHECK
+
+*>   A real file without the version_history list gives the list [5023] (07 section 10.2).
+     MOVE "rm -rf build/vanwrite-nohist && python3 -I core/tests/fixtures/gen_vanwrite.py build/vanwrite-nohist nohist" TO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     MOVE "build/vanwrite-nohist" TO CW-FOLDER
+     MOVE 21 TO CW-FOLDER-LENGTH
+     CALL "LEVEL-DAT-READ"
+     CALL "LEVEL-DAT-WRITE"
+     MOVE "build/vanwrite-nohist/level.dat" TO WS-FILE
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "Data.version_history" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanwrite a real file without version_history is saved with the list [5023]" TO TL-CASE
+     MOVE "[5023]" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
 
  ADD-GET.

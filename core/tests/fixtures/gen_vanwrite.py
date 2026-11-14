@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""usage: gen_vanwrite.py DIR. Writes into DIR the folder an old CobolCraft build left behind after it opened a real 26.3
+"""usage: gen_vanwrite.py DIR [nohist]. With nohist the real file has no version_history list. Writes into DIR the folder an old CobolCraft build left behind after it opened a real 26.3
 world: a flat level.dat (WorldType standard, no Data compound) and the real file as level.dat_old (Data with a key the core
 does not model). Synthetic values."""
 import gzip, os, struct, sys
@@ -25,7 +25,8 @@ files = {
     long_("Seed", 424242), integer("GameMode", 0), long_("Time", 500)),
  "level.dat_old": comp("", comp("Data",
     comp("Version", integer("Id", 5015), string("Name", "26.3 Snapshot 10"), string("Series", "main"), byte("Snapshot", 1)),
-    integer("DataVersion", 5015), integer("GameType", 0), intlist("version_history", [5015]),
+    integer("DataVersion", 5015), integer("GameType", 0),
+    *([] if len(sys.argv) > 2 else [intlist("version_history", [5015])]),
     byte("initialized", 1), byte("allowCommands", 1), byte("WasModded", 0), strings("ServerBrands", ["vanilla"]),
     comp("difficulty_settings", string("difficulty", "normal"), byte("hardcore", 0), byte("locked", 0)),
     comp("DataPacks", strings("Enabled", ["vanilla"]), strings("Disabled", ["trade_rebalance"])),
