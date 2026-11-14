@@ -35,14 +35,14 @@
        10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "bee".
-       10 FILLER BINARY-LONG VALUE 10.             *> bee: speed 0.3 x 1.0; it has no panic goal, so the panic speed is the walk speed (open: BeeAttack 1.4, flight); attack_damage 2
+       10 FILLER BINARY-LONG VALUE 10.             *> bee: speed 0.3 x 1.0, attack_damage 2; neutral (SM-NEUTRAL 5, 19 section 16): a hit angers it instead of making it flee, so the panic speed is 0 (open: BeeAttack 1.4, flight)
        10 FILLER BINARY-LONG VALUE 198.
-       10 FILLER BINARY-LONG VALUE 198.
+       10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 16.            *> follow_range (the Mob default, 18 section 3.1): the range of its anger and of the alert of other bees
        10 FILLER BINARY-LONG VALUE 0.
-       10 FILLER BINARY-LONG VALUE 0.
-       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.             *> neutral: anger by a hit of a player (BEE-TICK, NETHER-HURT)
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.

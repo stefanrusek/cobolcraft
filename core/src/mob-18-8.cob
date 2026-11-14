@@ -90,6 +90,10 @@
                  MOVE 1 TO L-FOUND L-LOVE
              END-IF
          END-PERFORM
+         IF L-SPECIES = "bee"
+             CALL "M1916-BEE-FOOD" USING L-ITEM L-FOUND
+             MOVE L-FOUND TO L-LOVE
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM M188-FOOD.
@@ -106,7 +110,7 @@
      MOVE 0 TO L-OK
      EVALUATE L-SPECIES
          WHEN "pig" WHEN "cow" WHEN "mooshroom" WHEN "sheep" WHEN "chicken" WHEN "horse" WHEN "donkey" WHEN "llama"
-         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda"
+         WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda" WHEN "bee"
              MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
@@ -336,6 +340,13 @@
              END-IF
              IF SM-KEY(WS-M) = "parrot" AND EN-WOOL(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
+             END-IF
+             IF SM-KEY(WS-M) = "bee"
+*>               The flags byte of a bee (19 section 16): 2 rolling, 4 stung, 8 nectar.
+                 COMPUTE L-WOOL = 2 * EN-BEE-ROLL(L-ROW) + 4 * EN-BEE-STUNG(L-ROW) + 8 * EN-BEE-NECTAR(L-ROW)
+                 IF L-WOOL > 0
+                     MOVE 1 TO L-NEEDED
+                 END-IF
              END-IF
          END-IF
      END-IF

@@ -376,6 +376,12 @@
        10 EN-KILLER-AGE      BINARY-LONG.        *> ticks left of lastHurtByPlayerMemoryTime (100 after a hit by a player); at 0 EN-KILLER is cleared (0 = not counting)
 *>     --- 002-lane-mobsfull-h18: pet care (core/src/mob-19-5.cob; 19 sections 5 and 6) ---
        10 EN-COLLAR          BINARY-LONG.        *> collar colour of a tame wolf or cat: the dye id + 1 (0 = never dyed, the default red 14)
+*>     --- 002-lane-mobsfull-h20: bee (core/src/mob-19-16.cob; 19 section 16) ---
+       10 EN-BEE-STUNG       BINARY-LONG.        *> bee: 1 once it has stung (metadata 18 bit 4)
+       10 EN-BEE-NECTAR      BINARY-LONG.        *> bee: 1 while it carries nectar (metadata 18 bit 8)
+       10 EN-BEE-ROLL        BINARY-LONG.        *> bee: 1 while angry with its target within 2 blocks (metadata 18 bit 2)
+       10 EN-BEE-T           BINARY-LONG.        *> bee: ticks since the sting (timeSinceSting)
+       10 EN-BEE-WET         BINARY-LONG.        *> bee: consecutive ticks in water
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
