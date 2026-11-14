@@ -500,13 +500,21 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-MODIFY.
 *> USING state, modifier index, top placed feature (0 none), x, y, z, count out, positions out (4096 x 3 BINARY-LONG): one placement modifier of the compiled
-*> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8), randomly_selected
+*> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8) are the biome info noise of feat-noise.cob; randomly_selected
 *> (16) and fixed_placement (17) are not compiled.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  COPY FEATLEVEL.
  01 WS-ONCE                BINARY-LONG.
+ 01 WS-REPEAT              BINARY-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-NX                  FLOAT-LONG.
+ 01 WS-NZ                  FLOAT-LONG.
+ 01 WS-NOISE               FLOAT-LONG.
+ 01 WS-RATIO               FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG VALUE 200.
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  01 WS-P6.
@@ -557,7 +565,7 @@
        10 L-OY             BINARY-LONG.
        10 L-OZ             BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-MD L-TOP L-X L-Y L-Z L-COUNT L-OUT.
-     MOVE 0 TO L-COUNT WS-ONCE
+     MOVE 0 TO L-COUNT WS-ONCE WS-REPEAT
      EVALUATE MD-KIND(L-MD)
          WHEN 0
              CALL "FR-PRED-TEST" USING MD-PR(L-MD) L-X L-Y L-Z WS-ONCE
@@ -594,15 +602,32 @@
                  MOVE MD-P(L-MD, WS-I) TO WS-Q(WS-I)
              END-PERFORM
              CALL "FR-INT-SAMPLE" USING L-STATE WS-P4 WS-N
-             IF WS-N > WS-CAP
-                 MOVE WS-CAP TO WS-N
+             MOVE 1 TO WS-REPEAT
+*>       noise_based_count (35-1 7.9): ceil((noise + offset) * ratio) repeats, the noise at (x / factor, z / factor); no draw
+         WHEN 7
+             MOVE L-X TO WS-FX
+             MOVE L-Z TO WS-FZ
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FX MD-F(L-MD) WS-NX
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FZ MD-F(L-MD) WS-NZ
+             CALL "F351-SIMPLEX" USING WS-NX WS-NZ WS-NOISE
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-NOISE MD-F2(L-MD) WS-T
+             MOVE MD-A(L-MD) TO WS-RATIO
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-T WS-RATIO WS-U
+             CALL STATIC "cc_f64_ceil" USING BY REFERENCE WS-U WS-T
+             CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-T WS-N
+             MOVE 1 TO WS-REPEAT
+*>       noise_threshold_count (35-1 7.10): below_noise when the noise at (x / 200, z / 200) is below noise_level, else above_noise; no draw
+         WHEN 8
+             MOVE L-X TO WS-FX
+             MOVE L-Z TO WS-FZ
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FX WS-SCALE WS-NX
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FZ WS-SCALE WS-NZ
+             CALL "F351-SIMPLEX" USING WS-NX WS-NZ WS-NOISE
+             MOVE MD-B(L-MD) TO WS-N
+             IF WS-NOISE < MD-F(L-MD)
+                 MOVE MD-A(L-MD) TO WS-N
              END-IF
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-                 ADD 1 TO L-COUNT
-                 MOVE L-X TO L-OX(L-COUNT)
-                 MOVE L-Y TO L-OY(L-COUNT)
-                 MOVE L-Z TO L-OZ(L-COUNT)
-             END-PERFORM
+             MOVE 1 TO WS-REPEAT
          WHEN 9
              MOVE 0 TO WS-LAYER WS-STOP
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
@@ -762,6 +787,18 @@
              COMPUTE L-OY(1) = L-Y + WS-DY
              COMPUTE L-OZ(1) = L-Z + WS-DZ
      END-EVALUATE
+*>   the repeating counts: N positions, at most WS-CAP
+     IF WS-REPEAT = 1
+         IF WS-N > WS-CAP
+             MOVE WS-CAP TO WS-N
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             ADD 1 TO L-COUNT
+             MOVE L-X TO L-OX(L-COUNT)
+             MOVE L-Y TO L-OY(L-COUNT)
+             MOVE L-Z TO L-OZ(L-COUNT)
+         END-PERFORM
+     END-IF
      IF WS-ONCE = 1
          ADD 1 TO L-COUNT
          MOVE L-X TO L-OX(L-COUNT)

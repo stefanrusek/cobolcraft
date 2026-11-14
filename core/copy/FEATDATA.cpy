@@ -29,7 +29,7 @@
        10 PF-MD-FIRST       BINARY-LONG.
        10 PF-MD-COUNT       BINARY-LONG.
        10 PF-FT             BINARY-LONG.
-*>  modifiers: MD-KIND, MD-A to MD-D, MD-PR (predicate, second predicate MD-PR2), MD-P twelve provider integers, MD-F a float
+*>  modifiers: MD-KIND, MD-A to MD-D, MD-PR (predicate, second predicate MD-PR2), MD-P twelve provider integers, MD-F and MD-F2 floats
     05 FD-MD OCCURS 8192 TIMES.
        10 MD-KIND           BINARY-LONG.
        10 MD-A              BINARY-LONG.
@@ -40,6 +40,7 @@
        10 MD-PR2            BINARY-LONG.
        10 MD-P              BINARY-LONG OCCURS 12 TIMES.
        10 MD-F              FLOAT-LONG.
+       10 MD-F2             FLOAT-LONG.
 *>  features: FT-TYPE the id of worldgen/feature_type (-1 unsupported); FT-A, FT-B, FT-C parameters (children from CH-ROW FT-A for FT-B rows, FT-C the default placed feature)
     05 FD-FT OCCURS 2048 TIMES.
        10 FT-KEY            PIC X(80).

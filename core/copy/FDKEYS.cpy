@@ -47,3 +47,9 @@
  01 FK-MIN-INC-X      PIC X(40) VALUE "min_inclusive".
  01 FK-PROPERTIES-UC  PIC X(40) VALUE "Properties".
  01 FK-DISTRIBUTION   PIC X(40) VALUE "distribution".
+ 01 FK-RATIO          PIC X(40) VALUE "noise_to_count_ratio".
+ 01 FK-FACTOR         PIC X(40) VALUE "noise_factor".
+ 01 FK-NOISE-OFFSET   PIC X(40) VALUE "noise_offset".
+ 01 FK-NOISE-LEVEL    PIC X(40) VALUE "noise_level".
+ 01 FK-BELOW-NOISE    PIC X(40) VALUE "below_noise".
+ 01 FK-ABOVE-NOISE    PIC X(40) VALUE "above_noise".

@@ -155,6 +155,26 @@
  END PROGRAM FD-J-INT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-J-DOUBLE.
+*> USING doc, node, value out (FLOAT-LONG, 0 when absent), ok out (1 when the node is a number).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-VALUE                FLOAT-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-VALUE L-OK.
+     MOVE 0 TO L-OK L-VALUE
+     IF L-NODE > 0
+         IF JN-TYPE(L-NODE) = JT-NUMBER
+             MOVE JN-NUM(L-NODE) TO L-VALUE
+             MOVE 1 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM FD-J-DOUBLE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-J-ANCHOR.
 *> USING doc, node, kind out (1 absolute, 2 above_bottom, 3 below_top, 4 relative_to_sea_level), value out, ok out: a vertical anchor object.
  DATA DIVISION.
@@ -1061,6 +1081,35 @@
              END-IF
          WHEN 5
              CONTINUE
+         WHEN 7
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-RATIO WS-E
+             CALL "FD-J-INT" USING JSON-DOC WS-E MD-A(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-FACTOR WS-E
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-E MD-F(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-NOISE-OFFSET WS-E
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-E MD-F2(WS-ROW) WS-OK
+         WHEN 8
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-NOISE-LEVEL WS-E
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-E MD-F(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-BELOW-NOISE WS-E
+             CALL "FD-J-INT" USING JSON-DOC WS-E MD-A(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-ABOVE-NOISE WS-E
+             CALL "FD-J-INT" USING JSON-DOC WS-E MD-B(WS-ROW) WS-OK
+             IF WS-OK = 0
+                 MOVE 1 TO FD-BAD
+             END-IF
          WHEN 6
          WHEN 9
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-COUNT WS-E
