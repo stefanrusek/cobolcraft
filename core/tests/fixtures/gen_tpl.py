@@ -96,3 +96,4 @@ write("test", "onlyent1", int_list("size", [1, 1, 1]), lst("entities", 10, [PIG]
 write("test", "nothing", int_list("size", [1, 1, 1]), lst("entities", 10, []), lst("blocks", 10, []), lst("palette", 10, [v("stone")]))
 write("test", "cube3", int_list("size", [3, 3, 3]),
       lst("blocks", 10, [block([x, y, z], 0) for y in range(3) for x in range(3) for z in range(3)]), lst("palette", 10, [v("stone")]))
+write("test", "row5", int_list("size", [5, 1, 1]), lst("blocks", 10, [block([x, 0, 0], 0) for x in range(5)]), lst("palette", 10, [v("stone")]))

@@ -1,0 +1,11 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:capped",
+   "limit": 2,
+   "delegate": {
+    "processor_type": "minecraft:nop"
+   }
+  }
+ ]
+}

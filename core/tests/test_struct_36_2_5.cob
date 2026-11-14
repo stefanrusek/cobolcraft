@@ -349,7 +349,7 @@
 
 *>   Rotation (state and position), mirror then rotation.
      PERFORM CLEAR-CHUNK
-     MOVE 1 TO ST-ROTATION
+     MOVE 1 TO PS-ROTATION
      PERFORM PLACE
      MOVE 4 TO WS-X
      MOVE 70 TO WS-Y
@@ -370,8 +370,8 @@
      MOVE "oak_log|axis=z" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      PERFORM CLEAR-CHUNK
-     MOVE 0 TO ST-ROTATION
-     MOVE 1 TO ST-MIRROR
+     MOVE 0 TO PS-ROTATION
+     MOVE 1 TO PS-MIRROR
      PERFORM PLACE
      MOVE 4 TO WS-X
      MOVE 3 TO WS-Z
@@ -386,8 +386,8 @@
      MOVE "oak_stairs|facing=east,half=bottom,shape=straight,waterlogged=false" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      PERFORM CLEAR-CHUNK
-     MOVE 3 TO ST-ROTATION
-     MOVE 2 TO ST-MIRROR
+     MOVE 3 TO PS-ROTATION
+     MOVE 2 TO PS-MIRROR
      PERFORM PLACE
      MOVE "mirror front_back then counterclockwise 90 (stairs east to west to south)" TO WS-LABEL
 *>   (x, z) -> (-x, z) -> (z, x): the stairs (1,0,0) go to (0,0,1) -> world (4,70,5).
@@ -400,13 +400,13 @@
 *>   The bounding box and the window.
      PERFORM CLEAR-CHUNK
      PERFORM FRESH-SETTINGS
-     MOVE 1 TO ST-BOX-SET
-     MOVE 4 TO ST-BOX(1)
-     MOVE 70 TO ST-BOX(2)
-     MOVE 4 TO ST-BOX(3)
-     MOVE 4 TO ST-BOX(4)
-     MOVE 71 TO ST-BOX(5)
-     MOVE 4 TO ST-BOX(6)
+     MOVE 1 TO PS-BOX-SET
+     MOVE 4 TO PS-BOX(1)
+     MOVE 70 TO PS-BOX(2)
+     MOVE 4 TO PS-BOX(3)
+     MOVE 4 TO PS-BOX(4)
+     MOVE 71 TO PS-BOX(5)
+     MOVE 4 TO PS-BOX(6)
      PERFORM PLACE
      MOVE 4 TO WS-X
      MOVE 70 TO WS-Y
@@ -474,7 +474,7 @@
      MOVE FUNCTION TRIM(WS-ED) TO TL-OBSERVED
      MOVE "1" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
-     MOVE 1 TO ST-IGNORE-ENTITIES
+     MOVE 1 TO PS-IGNORE-ENTITIES
      PERFORM PLACE
      MOVE "early exit: no blocks and the entities ignored" TO WS-LABEL
      MOVE WS-RESULT TO WS-ED
@@ -507,9 +507,9 @@
      MOVE "stone|" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      MOVE 12345 TO WS-SEED
-     CALL "JRAND-SET-SEED" USING ST-RANDOM WS-SEED
-     MOVE 1 TO ST-RANDOM-SET
-     MOVE ST-RANDOM TO WS-COPY-STATE
+     CALL "JRAND-SET-SEED" USING PS-RANDOM WS-SEED
+     MOVE 1 TO PS-RANDOM-SET
+     MOVE PS-RANDOM TO WS-COPY-STATE
      MOVE 2 TO WS-BOUND
      CALL "JRAND-NEXT-INT-BOUND" USING WS-COPY-STATE WS-BOUND WS-DRAW
      PERFORM PLACE
@@ -524,11 +524,11 @@
      MOVE "palette: the settings' random advanced by exactly that draw" TO WS-LABEL
      MOVE SPACES TO TL-OBSERVED
      MOVE "same" TO TL-EXPECTED
-     IF ST-RANDOM = WS-COPY-STATE
+     IF PS-RANDOM = WS-COPY-STATE
          MOVE "same" TO TL-OBSERVED
      END-IF
      PERFORM ASSERT-TEXT
-     MOVE 0 TO ST-RANDOM-SET
+     MOVE 0 TO PS-RANDOM-SET
      MOVE 4 TO WS-OX
      MOVE 70 TO WS-OY
      MOVE 4 TO WS-OZ
@@ -565,7 +565,7 @@
      MOVE 71 TO WS-Y
      PERFORM SET-STATE
      MOVE 70 TO WS-Y
-     MOVE 1 TO ST-LIQUID
+     MOVE 1 TO PS-LIQUID
      PERFORM PLACE
      PERFORM AT-TEXT
      MOVE "ignore_waterlogging: no fluid is read and the stairs stay dry" TO WS-LABEL
@@ -664,7 +664,7 @@
      MOVE "4,70,4" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      PERFORM CLEAR-CHUNK
-     MOVE 1 TO ST-KNOWN-SHAPE
+     MOVE 1 TO PS-KNOWN-SHAPE
      MOVE 0 TO SHT-COUNT
      PERFORM PLACE
      MOVE "known shape: no shape update at all" TO WS-LABEL
@@ -724,7 +724,7 @@
      MOVE "test:stairs" TO WS-ID
      PERFORM LOAD-TEMPLATE
      PERFORM FRESH-SETTINGS
-     MOVE 1 TO ST-ROTATION
+     MOVE 1 TO PS-ROTATION
      MOVE "minecraft:oak_stairs" TO WS-KEY48
      MOVE 1 TO WS-A
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
@@ -752,8 +752,8 @@
      MOVE "1,0,0" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      MOVE 1 TO WS-A
-     MOVE 0 TO ST-ROTATION
-     MOVE 1 TO ST-MIRROR
+     MOVE 0 TO PS-ROTATION
+     MOVE 1 TO PS-MIRROR
      MOVE "minecraft:oak_stairs" TO WS-KEY48
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
      MOVE SF-STATE(1) TO WS-STATE
@@ -762,7 +762,7 @@
      MOVE "oak_stairs|facing=east,half=bottom,shape=straight,waterlogged=false" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      MOVE "chest" TO WS-KEY48
-     MOVE 0 TO ST-MIRROR
+     MOVE 0 TO PS-MIRROR
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
      MOVE "filterBlocks passes the nbt flag through (the key may lack the namespace)" TO WS-LABEL
      MOVE SPACES TO TL-OBSERVED
@@ -771,20 +771,20 @@
      STRING FUNCTION TRIM(WS-ED) " " FUNCTION TRIM(WS-ED2) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "1 1" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
-     MOVE 1 TO ST-BOX-SET
-     MOVE 100 TO ST-BOX(1)
-     MOVE 100 TO ST-BOX(2)
-     MOVE 100 TO ST-BOX(3)
-     MOVE 110 TO ST-BOX(4)
-     MOVE 110 TO ST-BOX(5)
-     MOVE 110 TO ST-BOX(6)
+     MOVE 1 TO PS-BOX-SET
+     MOVE 100 TO PS-BOX(1)
+     MOVE 100 TO PS-BOX(2)
+     MOVE 100 TO PS-BOX(3)
+     MOVE 110 TO PS-BOX(4)
+     MOVE 110 TO PS-BOX(5)
+     MOVE 110 TO PS-BOX(6)
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
      MOVE "filterBlocks drops the records outside the settings' box" TO WS-LABEL
      MOVE SF-COUNT TO WS-ED
      MOVE FUNCTION TRIM(WS-ED) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
-     MOVE 0 TO ST-BOX-SET
+     MOVE 0 TO PS-BOX-SET
      MOVE "minecraft:no_such_block" TO WS-KEY48
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
      MOVE "filterBlocks of a block the content set does not have is empty" TO WS-LABEL
@@ -804,8 +804,8 @@
      MOVE "test:two" TO WS-ID
      PERFORM LOAD-TEMPLATE
      MOVE 12345 TO WS-SEED
-     CALL "JRAND-SET-SEED" USING ST-RANDOM WS-SEED
-     MOVE 1 TO ST-RANDOM-SET
+     CALL "JRAND-SET-SEED" USING PS-RANDOM WS-SEED
+     MOVE 1 TO PS-RANDOM-SET
      CALL "STRUCT-FILTER-BLOCKS" USING WS-ROW WS-OX WS-OY WS-OZ STRUCT-SETTINGS WS-KEY48 WS-A
      MOVE "filterBlocks with a shared random draws the palette like placeInWorld" TO WS-LABEL
      MOVE SF-COUNT TO WS-ED

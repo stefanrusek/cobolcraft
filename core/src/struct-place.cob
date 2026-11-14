@@ -7,6 +7,7 @@
 *>   STRUCT-FILTER-BLOCKS USING row, origin x, y, z, settings, block key (PIC X(48), with or without minecraft:), relative (BINARY-LONG): 3.5 filterBlocks into SF-REC (STRUCT-FILTER)
 *>   STRUCT-PLACE USING row, origin x, y, z, anchor x, y, z, settings, flags, result out (1 when the placement ran, 0 for an early exit): 5.1 to 5.5
 *>   STRUCT-FLUID-OF USING state, fluid out (0 none, 2 water, 3 lava), source out (1 when the fluid state is a source): the fluid state of a block state
+*>   (STRUCT-PROCESS, processBlockInfos, is in struct-proc.cob)
 *>   STRUCT-PLACE-BE USING x, y, z, state: the block entity hook of 5.3 step 7 (a record with nbt was written). The generation level has no block entity storage
 *>     and the template cache keeps no tag, so this stub only counts its calls (STRUCT-BE-HOOK-STATE); the block entity channel replaces its body.
 *>   STRUCT-SHAPE-STATE USING x, y, z, direction (BinaryLong ordinal of 29 section 3: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east), neighbour state, state, state out: the
@@ -76,8 +77,8 @@
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-X L-Y L-Z STRUCT-SETTINGS L-FLAG.
      MOVE 1 TO L-FLAG
-     IF ST-BOX-SET = 1
-         IF L-X < ST-BOX(1) OR L-Y < ST-BOX(2) OR L-Z < ST-BOX(3) OR L-X > ST-BOX(4) OR L-Y > ST-BOX(5) OR L-Z > ST-BOX(6)
+     IF PS-BOX-SET = 1
+         IF L-X < PS-BOX(1) OR L-Y < PS-BOX(2) OR L-Z < PS-BOX(3) OR L-X > PS-BOX(4) OR L-Y > PS-BOX(5) OR L-Z > PS-BOX(6)
              MOVE 0 TO L-FLAG
          END-IF
      END-IF
@@ -184,59 +185,6 @@
  END PROGRAM STRUCT-SHAPE-STATE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-PROCESS.
-*> USING row, palette (0-based), origin x, y, z, anchor x, y, z, settings: processBlockInfos (7.4) into PW-REC of the palette's records in absolute positions.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY STRUCTTPL.
- COPY STRUCTPLACE.
- 01 WS-I                   BINARY-LONG.
- 01 WS-BASE                BINARY-LONG.
- 01 WS-X                   BINARY-LONG.
- 01 WS-Y                   BINARY-LONG.
- 01 WS-Z                   BINARY-LONG.
- 01 WS-AX                  BINARY-LONG.
- 01 WS-AY                  BINARY-LONG.
- 01 WS-AZ                  BINARY-LONG.
- 01 WS-INSIDE              BINARY-LONG.
- LINKAGE SECTION.
- 01 L-ROW                  BINARY-LONG.
- 01 L-PALETTE              BINARY-LONG.
- 01 L-OX                   BINARY-LONG.
- 01 L-OY                   BINARY-LONG.
- 01 L-OZ                   BINARY-LONG.
- 01 L-AX                   BINARY-LONG.
- 01 L-AY                   BINARY-LONG.
- 01 L-AZ                   BINARY-LONG.
- COPY STRUCTSET.
- PROCEDURE DIVISION USING L-ROW L-PALETTE L-OX L-OY L-OZ L-AX L-AY L-AZ STRUCT-SETTINGS.
-     MOVE 0 TO PW-COUNT
-     COMPUTE WS-BASE = TP-BASE(L-ROW, L-PALETTE + 1)
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TP-BLOCKS(L-ROW)
-         MOVE TB-X(WS-BASE + WS-I) TO WS-X
-         MOVE TB-Y(WS-BASE + WS-I) TO WS-Y
-         MOVE TB-Z(WS-BASE + WS-I) TO WS-Z
-         CALL "STRUCT-TX-POS" USING WS-X WS-Y WS-Z ST-MIRROR ST-ROTATION ST-PIVOT-X ST-PIVOT-Z WS-AX WS-AY WS-AZ
-         ADD L-OX TO WS-AX
-         ADD L-OY TO WS-AY
-         ADD L-OZ TO WS-AZ
-         CALL "STRUCT-IN-BOX" USING WS-AX WS-AY WS-AZ STRUCT-SETTINGS WS-INSIDE
-         IF WS-INSIDE = 1
-             ADD 1 TO PW-COUNT
-             MOVE WS-AX TO PW-X(PW-COUNT)
-             MOVE WS-AY TO PW-Y(PW-COUNT)
-             MOVE WS-AZ TO PW-Z(PW-COUNT)
-             MOVE TB-STATE(WS-BASE + WS-I) TO PW-STATE(PW-COUNT) PW-TSTATE(PW-COUNT)
-             MOVE TB-X(WS-BASE + WS-I) TO PW-LX(PW-COUNT)
-             MOVE TB-Y(WS-BASE + WS-I) TO PW-LY(PW-COUNT)
-             MOVE TB-Z(WS-BASE + WS-I) TO PW-LZ(PW-COUNT)
-             MOVE TB-NBT(WS-BASE + WS-I) TO PW-NBT(PW-COUNT)
-         END-IF
-     END-PERFORM
-     GOBACK.
- END PROGRAM STRUCT-PROCESS.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-LIQUID-PLACE.
 *> USING x, y, z, fluid (2 water, 3 lava, 0 none), source (BINARY-LONG): LiquidBlockContainer.placeLiquid (5.3 step 8, 11.10): a block with a waterlogged
 *> property that is not waterlogged becomes waterlogged when the fluid is a water source (written with the default flags 3); nothing else changes.
@@ -309,12 +257,12 @@
          CALL "STRUCT-IN-BOX" USING WS-X WS-Y WS-Z STRUCT-SETTINGS WS-INSIDE
          IF WS-INSIDE = 1
              MOVE 0 TO WS-OLD-FLUID WS-OLD-SOURCE
-             IF ST-LIQUID = 0
+             IF PS-LIQUID = 0
                  CALL "FL-GET-STATE" USING WS-X WS-Y WS-Z WS-OLD-STATE
                  CALL "STRUCT-FLUID-OF" USING WS-OLD-STATE WS-OLD-FLUID WS-OLD-SOURCE
              END-IF
-             CALL "BLOCK-MIRROR-STATE" USING PW-STATE(WS-I) ST-MIRROR WS-TURNED
-             CALL "BLOCK-ROTATE-STATE" USING WS-TURNED ST-ROTATION WS-STATE
+             CALL "BLOCK-MIRROR-STATE" USING PW-STATE(WS-I) PS-MIRROR WS-TURNED
+             CALL "BLOCK-ROTATE-STATE" USING WS-TURNED PS-ROTATION WS-STATE
              CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-STATE L-FLAGS WS-OK
              IF WS-OK = 1
                  IF PW-PLACED-COUNT = 0
@@ -336,7 +284,7 @@
                  IF PW-NBT(WS-I) = 1
                      CALL "STRUCT-PLACE-BE" USING WS-X WS-Y WS-Z WS-STATE
                  END-IF
-                 IF ST-LIQUID = 0
+                 IF PS-LIQUID = 0
                      CALL "STRUCT-FLUID-OF" USING WS-STATE WS-FLUID WS-SOURCE
                      IF WS-SOURCE = 1
                          MOVE 1 TO PW-G-DONE(WS-CELL)
@@ -393,7 +341,7 @@
  LINKAGE SECTION.
  COPY STRUCTSET.
  PROCEDURE DIVISION USING STRUCT-SETTINGS.
-     IF ST-LIQUID NOT = 0 OR PW-PEND-COUNT = 0
+     IF PS-LIQUID NOT = 0 OR PW-PEND-COUNT = 0
          GOBACK
      END-IF
      MOVE 1 TO WS-CHANGED
@@ -610,7 +558,7 @@
  COPY STRUCTSET.
  01 L-FLAGS                BINARY-LONG.
  PROCEDURE DIVISION USING STRUCT-SETTINGS L-FLAGS.
-     IF PW-PLACED-COUNT > 0 AND ST-KNOWN-SHAPE = 0
+     IF PW-PLACED-COUNT > 0 AND PS-KNOWN-SHAPE = 0
          CALL "STRUCT-SHAPE-EDGE" USING L-FLAGS
 *>       (flags AND NOT 1) OR 16
          COMPUTE WS-FLAGS = L-FLAGS - FUNCTION MOD(L-FLAGS, 2)
@@ -671,12 +619,12 @@
      IF TP-STATUS(L-ROW) NOT = 1 OR TP-PALETTES(L-ROW) < 1
          GOBACK
      END-IF
-     IF ST-RANDOM-SET = 1
-         CALL "JRAND-NEXT-INT-BOUND" USING ST-RANDOM TP-PALETTES(L-ROW) WS-PALETTE
+     IF PS-RANDOM-SET = 1
+         CALL "JRAND-NEXT-INT-BOUND" USING PS-RANDOM TP-PALETTES(L-ROW) WS-PALETTE
      ELSE
          CALL "STRUCT-PALETTE-PICK" USING TP-PALETTES(L-ROW) L-OX L-OY L-OZ WS-PALETTE
      END-IF
-     IF TP-BLOCKS(L-ROW) = 0 AND (ST-IGNORE-ENTITIES = 1 OR TP-ENTITIES(L-ROW) = 0)
+     IF TP-BLOCKS(L-ROW) = 0 AND (PS-IGNORE-ENTITIES = 1 OR TP-ENTITIES(L-ROW) = 0)
          GOBACK
      END-IF
      IF TP-SX(L-ROW) < 1 OR TP-SY(L-ROW) < 1 OR TP-SZ(L-ROW) < 1
@@ -723,8 +671,8 @@
      IF TP-STATUS(L-ROW) NOT = 1 OR TP-PALETTES(L-ROW) < 1
          GOBACK
      END-IF
-     IF ST-RANDOM-SET = 1
-         CALL "JRAND-NEXT-INT-BOUND" USING ST-RANDOM TP-PALETTES(L-ROW) WS-PALETTE
+     IF PS-RANDOM-SET = 1
+         CALL "JRAND-NEXT-INT-BOUND" USING PS-RANDOM TP-PALETTES(L-ROW) WS-PALETTE
      ELSE
          CALL "STRUCT-PALETTE-PICK" USING TP-PALETTES(L-ROW) L-OX L-OY L-OZ WS-PALETTE
      END-IF
@@ -743,7 +691,7 @@
              MOVE WS-Y TO WS-AY
              MOVE WS-Z TO WS-AZ
              IF L-RELATIVE = 1
-                 CALL "STRUCT-TX-POS" USING WS-X WS-Y WS-Z ST-MIRROR ST-ROTATION ST-PIVOT-X ST-PIVOT-Z WS-AX WS-AY WS-AZ
+                 CALL "STRUCT-TX-POS" USING WS-X WS-Y WS-Z PS-MIRROR PS-ROTATION PS-PIVOT-X PS-PIVOT-Z WS-AX WS-AY WS-AZ
                  ADD L-OX TO WS-AX
                  ADD L-OY TO WS-AY
                  ADD L-OZ TO WS-AZ
@@ -755,7 +703,7 @@
                  MOVE WS-AY TO SF-Y(SF-COUNT)
                  MOVE WS-AZ TO SF-Z(SF-COUNT)
                  MOVE TB-STATE(WS-BASE + WS-I) TO WS-STATE
-                 CALL "BLOCK-ROTATE-STATE" USING WS-STATE ST-ROTATION SF-STATE(SF-COUNT)
+                 CALL "BLOCK-ROTATE-STATE" USING WS-STATE PS-ROTATION SF-STATE(SF-COUNT)
                  MOVE TB-NBT(WS-BASE + WS-I) TO SF-NBT(SF-COUNT)
              END-IF
          END-IF

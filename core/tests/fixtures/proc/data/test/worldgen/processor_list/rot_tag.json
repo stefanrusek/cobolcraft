@@ -1,0 +1,12 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:block_rot",
+   "integrity": 0.5,
+   "rottable_blocks": [
+    "#minecraft:wool",
+    "minecraft:stone"
+   ]
+  }
+ ]
+}
