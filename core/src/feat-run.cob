@@ -1052,6 +1052,8 @@
              CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 16
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 25
+             CALL "FR-LAKE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 48
              CALL "FR-SPRING" USING L-FT L-X L-Y L-Z L-RESULT
          WHEN 1000
