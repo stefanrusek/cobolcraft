@@ -1,0 +1,8 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:protected_blocks",
+   "value": "minecraft:no_such_block"
+  }
+ ]
+}
