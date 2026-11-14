@@ -404,6 +404,14 @@
        10 EN-GENE-MAIN        BINARY-LONG.        *> panda: main gene (0 normal, 1 lazy, 2 worried, 3 playful, 4 brown, 5 weak, 6 aggressive)
        10 EN-GENE-HIDDEN      BINARY-LONG.        *> panda: hidden gene
        10 EN-PANDA-SNEEZE     BINARY-LONG.        *> panda: sneeze counter (metadata 19), 0 = not sneezing
+       10 EN-FOX-HELD         BINARY-LONG.        *> fox: item id in the main hand (0 empty); dropped on death
+       10 EN-FOX-TRUST-A      PIC X(16).          *> fox: UUID of the first trusted player (spaces: none; metadata 20)
+       10 EN-FOX-TRUST-B      PIC X(16).          *> fox: UUID of the second trusted player (metadata 21)
+       10 EN-ALLAY-ITEM       BINARY-LONG.        *> allay: item id held in the main hand (0 empty)
+       10 EN-ALLAY-LIKED      PIC X(16).          *> allay: UUID of the liked player (spaces: none)
+       10 EN-ALLAY-DUP        BINARY-LONG.        *> allay: ticks of duplication cooldown left (metadata 17 canDuplicate is true at 0)
+       10 EN-ALLAY-DANCE      BINARY-LONG.        *> allay: 1 while dancing (metadata 16)
+       10 EN-ALLAY-T          BINARY-LONG.        *> allay: ticks since the last regeneration
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

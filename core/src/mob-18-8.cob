@@ -353,6 +353,12 @@
              IF SM-KEY(WS-M) = "armadillo" AND EN-ARMA(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "allay" AND (EN-ALLAY-DUP(L-ROW) > 0 OR EN-ALLAY-DANCE(L-ROW) = 1)
+                 MOVE 1 TO L-NEEDED
+             END-IF
+             IF SM-KEY(WS-M) = "fox" AND (EN-WOOL(L-ROW) > 0 OR EN-FOX-TRUST-A(L-ROW) NOT = SPACES OR EN-FOX-TRUST-B(L-ROW) NOT = SPACES)
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "panda" AND (EN-GENE-MAIN(L-ROW) > 0 OR EN-GENE-HIDDEN(L-ROW) > 0 OR EN-PANDA-SNEEZE(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
@@ -513,6 +519,8 @@
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
+         WHEN "fox"
+             CALL "FOX-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
          WHEN "turtle"
@@ -648,6 +656,8 @@
      MOVE EN-WOOL(L-A) TO WS-COLOR-A
      MOVE EN-WOOL(L-B) TO WS-COLOR-B
      EVALUATE WS-KEY
+         WHEN "fox"
+             CALL "FOX-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "panda"
              CALL "PANDA-BRED" USING L-A L-B WS-BABY
          WHEN "sheep"
@@ -1397,6 +1407,8 @@
              CALL "MOB-GOLEM-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "tadpole"
              CALL "MOB-TADPOLE-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "allay"
+             CALL "MOB-ALLAY-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "creeper"
              CALL "STDMOB-IGNITE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN OTHER

@@ -607,6 +607,7 @@
  01 WS-M                   BINARY-LONG.
  01 WS-DTYPE               BINARY-LONG.
  01 WS-DMG                 BINARY-LONG.
+ 01 WS-LIKED               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -620,6 +621,11 @@
          IF WS-M > 0
              GOBACK
          END-IF
+     END-IF
+*>   The liked player of an allay cannot hurt it (19 section 15).
+     CALL "ALLAY-LIKES" USING WS-ROW L-ATTACKER WS-LIKED
+     IF WS-LIKED = 1
+         GOBACK
      END-IF
      IF L-ATTACKER > 0
          MOVE L-ATTACKER TO EN-KILLER(WS-ROW)

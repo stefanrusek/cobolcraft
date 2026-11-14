@@ -305,6 +305,46 @@
              CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
          END-IF
      END-IF
+     IF WS-KEY = "allay"
+*>       Allay: dancing (16) and canDuplicate (17, true by default, sent when the cooldown runs), both BOOLEAN (19 section 15).
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE WS-SERIALIZER-BOOLEAN TO CD-MX-SERIALIZER
+         MOVE 16 TO CD-MX-INDEX
+         MOVE EN-ALLAY-DANCE(L-ROW) TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         MOVE 17 TO CD-MX-INDEX
+         MOVE 1 TO CD-MX-INT
+         IF EN-ALLAY-DUP(L-ROW) > 0
+             MOVE 0 TO CD-MX-INT
+         END-IF
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+     END-IF
+     IF WS-KEY = "fox"
+*>       Fox: the type (18, INT; 1 snow) and the trusted players (20 and 21, OPTIONAL_LIVING_ENTITY_REFERENCE; 19 section 7).
+         IF EN-WOOL(L-ROW) > 0
+             INITIALIZE CD-METADATA-ENTRY-X
+             MOVE WS-SERIALIZER-INT TO CD-MX-SERIALIZER
+             MOVE 18 TO CD-MX-INDEX
+             MOVE EN-WOOL(L-ROW) TO CD-MX-INT
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
+         IF EN-FOX-TRUST-A(L-ROW) NOT = SPACES
+             INITIALIZE CD-METADATA-ENTRY-X
+             MOVE 13 TO CD-MX-SERIALIZER
+             MOVE 20 TO CD-MX-INDEX
+             MOVE 1 TO CD-MX-PRESENT
+             MOVE EN-FOX-TRUST-A(L-ROW) TO CD-MX-UUID
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
+         IF EN-FOX-TRUST-B(L-ROW) NOT = SPACES
+             INITIALIZE CD-METADATA-ENTRY-X
+             MOVE 13 TO CD-MX-SERIALIZER
+             MOVE 21 TO CD-MX-INDEX
+             MOVE 1 TO CD-MX-PRESENT
+             MOVE EN-FOX-TRUST-B(L-ROW) TO CD-MX-UUID
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
+     END-IF
      IF WS-KEY = "panda"
 *>       Panda: the sneeze counter (19, INT), the genes (21 and 22, BYTE) and the flags byte (23; bit 2 = sneezing) (19 section 8).
          INITIALIZE CD-METADATA-ENTRY-X
