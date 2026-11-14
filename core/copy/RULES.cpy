@@ -60,6 +60,8 @@
  78 CAUSE-IN-WALL              VALUE 13.
  78 CAUSE-CRAMMING             VALUE 14.
  78 CAUSE-VOID                 VALUE 15.
+*> CAUSE-GENERIC (002-lane-mobsfull-h20): damage of the generic type that a mob takes from itself (the death of a stung bee, 19 section 16); no RULE-CAUSE row.
+ 78 CAUSE-GENERIC              VALUE 16.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

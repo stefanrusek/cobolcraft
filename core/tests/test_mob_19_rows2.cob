@@ -38,7 +38,7 @@
  01 WS-SPECIES.
     05 FILLER PIC X(33) VALUE "parrot                  057006138".
     05 FILLER PIC X(33) VALUE "turtle                  058030198".
-    05 FILLER PIC X(33) VALUE "bee                     059010198".
+    05 FILLER PIC X(33) VALUE "bee                     059010000".
     05 FILLER PIC X(33) VALUE "frog                    060010999".
     05 FILLER PIC X(33) VALUE "tadpole                 061006999".
     05 FILLER PIC X(33) VALUE "sniffer                 062014088".
