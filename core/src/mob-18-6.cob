@@ -354,7 +354,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-SPECIES.
 *> USING key (PIC X(48), the entity key without "minecraft:"), row out (BINARY-LONG): the row of core/copy/STDMOBS.cpy, 0 when the species has no
-*> logic (its spawn entries are skipped).
+*> logic or no natural spawn rule yet (SM-SPAWN 0; its spawn entries are skipped).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STDMOBS.
@@ -365,7 +365,7 @@
  PROCEDURE DIVISION USING L-KEY L-ROW.
      MOVE 0 TO L-ROW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-COUNT OR L-ROW > 0
-         IF SM-KEY(WS-I) = L-KEY
+         IF SM-KEY(WS-I) = L-KEY AND SM-SPAWN(WS-I) > 0
              MOVE WS-I TO L-ROW
          END-IF
      END-PERFORM
@@ -806,6 +806,7 @@
  01 WS-DRAW                BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-OPEN-SKY            BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-DIM                  BINARY-LONG.
@@ -839,7 +840,14 @@
          CALL "XORO-NEXT-INT" USING L-STATE WS-8 WS-LEVEL
          CALL "MS6-DARK-ENOUGH" USING WS-SKY WS-BLOCK WS-DRAW WS-ZERO WS-LOCAL WS-LEVEL WS-DARK
      END-IF
-     CALL "MS6-RULE-CHECK" USING WS-PRED L-REASON WS-PEACEFUL WS-DARK WS-BRIGHT WS-VALID WS-GRASS WS-ZERO L-OK
+     MOVE 0 TO WS-OPEN-SKY
+     IF SM-SPAWN(L-ROW) = 5
+         MOVE 5 TO WS-PRED
+         IF WS-SKY = 15
+             MOVE 1 TO WS-OPEN-SKY
+         END-IF
+     END-IF
+     CALL "MS6-RULE-CHECK" USING WS-PRED L-REASON WS-PEACEFUL WS-DARK WS-BRIGHT WS-VALID WS-GRASS WS-OPEN-SKY L-OK
      GOBACK.
  END PROGRAM MS6-RULE-AT.
 

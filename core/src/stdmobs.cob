@@ -24,7 +24,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 9 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS 15 TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -930,6 +930,9 @@
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
                  MOVE SM-ATTACK-TICKS TO EN-COOLDOWN(WS-ROW)
                  CALL "HEALTH-MOB-HIT" USING WS-P SM-ATTACK(WS-M) WS-ROW
+                 IF SM-HITFX(WS-M) > 0
+                     CALL "STDMOB-HIT-EFFECT" USING WS-P WS-M
+                 END-IF
              END-IF
          WHEN EN-FLEE(WS-ROW) > 0
              SUBTRACT 1 FROM EN-FLEE(WS-ROW)
