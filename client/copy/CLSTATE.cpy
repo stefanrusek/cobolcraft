@@ -984,6 +984,32 @@
        10 SK-R               FLOAT-SHORT.    *> clear colour
        10 SK-G               FLOAT-SHORT.
        10 SK-B               FLOAT-SHORT.
+*>  ---- dimension presentation (client/src/dimfx.cob; 39 section 9, 37-3 section 7, 38 section 11) ----
+    05 DX-STATE.
+       10 DX-PORTAL          FLOAT-LONG.     *> the portal overlay intensity 0 to 1 (rises 0.0125 a tick inside a nether portal, falls 0.05)
+       10 DX-PORTAL-OLD      FLOAT-LONG.     *> the previous tick's, for the partial-tick lerp
+       10 DX-SOUND           BINARY-LONG.    *> 1 on the tick PORTAL_TRIGGER starts (local, volume DX-SOUND-VOLUME, pitch DX-SOUND-PITCH)
+       10 DX-SOUND-VOLUME    FLOAT-LONG.
+       10 DX-SOUND-PITCH     FLOAT-LONG.
+       10 DX-FOG-SET         PIC 9.          *> 1 when the dimension sets its own atmospheric fog (the Nether, the End)
+       10 DX-FOG-R           FLOAT-LONG.     *> the fog colour, which is also the clear colour (12 section 3.3)
+       10 DX-FOG-G           FLOAT-LONG.
+       10 DX-FOG-B           FLOAT-LONG.
+       10 DX-FOG-START       FLOAT-LONG.     *> visual/fog_start_distance, -1 when the dimension sets none
+       10 DX-FOG-END         FLOAT-LONG.     *> visual/fog_end_distance, -1 when the dimension sets none
+       10 DX-SKYBOX          BINARY-LONG.    *> 0 overworld disc, 1 none (the Nether), 2 end (38 section 11)
+       10 DX-AMBIENT-R       FLOAT-LONG.     *> visual/ambient_light_color of the dimension (0 when none is set)
+       10 DX-AMBIENT-G       FLOAT-LONG.
+       10 DX-AMBIENT-B       FLOAT-LONG.
+       10 DX-CLOCK           BINARY-LONG.    *> ticks of the End's world clock (the client counts them since the last dimension switch)
+       10 DX-FLASH-WINDOW    BINARY-LONG.    *> the 600-tick window the flash parameters belong to (0 at the start: window 0 never flashes)
+       10 DX-FLASH-OFFSET    BINARY-LONG.
+       10 DX-FLASH-DURATION  BINARY-LONG.
+       10 DX-FLASH-XA        FLOAT-LONG.     *> the flash's x and y angles in degrees (a float each)
+       10 DX-FLASH-YA        FLOAT-LONG.
+       10 DX-FLASH           FLOAT-LONG.     *> the end flash intensity of this tick, and the previous one
+       10 DX-FLASH-OLD       FLOAT-LONG.
+       10 DX-FLASH-SOUND     BINARY-LONG.    *> 1 on the tick a flash starts (its sound plays 30 ticks later)
 *>  ---- mesh frame budget (client/src/mesher.cob MESH-DIRTY) ----
     05 MB-STATE.
        10 MB-BUDGET-US       BINARY-LONG.    *> microseconds of meshing per frame (CL-INIT: CL-MESH-BUDGET-US)

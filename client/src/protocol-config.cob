@@ -260,6 +260,7 @@
  01 WN3                    PIC X(64).
  01 WL3                    BINARY-LONG.
  01 WS-FOG                 BINARY-DOUBLE.
+ 01 WS-FOGC                BINARY-DOUBLE.
  01 WS-FOG-END             COMP-2.
  01 WN2                    PIC X(64).
  01 WL2                    BINARY-LONG.
@@ -324,7 +325,7 @@
                      MOVE 0.5 TO WS-TEMP WS-DOWN
                      MOVE 4282349284 TO WS-WATER
                      MOVE -1 TO WS-GRASS WS-FOLIAGE WS-DRY
-                     MOVE 0 TO WS-FOG WS-FOG-END
+                     MOVE 0 TO WS-FOG WS-FOG-END WS-FOGC
                      MOVE "none" TO WS-MOD
                      MOVE 1 TO WS-TYPE
                      PERFORM UNTIL WS-TYPE = 0
@@ -387,7 +388,7 @@
                                      END-EVALUATE
                                  END-PERFORM
                              WHEN WN = "attributes"
-*>                               The environment attributes: visual/water_fog_color (a "#RRGGBB" String or an Int) and the multiply
+*>                               The environment attributes: visual/fog_color (TB-FOGC), visual/water_fog_color (a "#RRGGBB" String or an Int) and the multiply
 *>                               argument (a Float) of visual/water_fog_end_distance (43 section 5); the others are skipped.
                                  MOVE 1 TO WS-TYPE2
                                  PERFORM UNTIL WS-TYPE2 = 0
@@ -396,7 +397,8 @@
                                      EVALUATE TRUE
                                          WHEN WS-TYPE2 = 0
                                              CONTINUE
-                                         WHEN WN2 = "minecraft:visual/water_fog_color" AND (WS-TYPE2 = 8 OR WS-TYPE2 = 3)
+                                         WHEN (WN2 = "minecraft:visual/water_fog_color" OR WN2 = "minecraft:visual/fog_color")
+                                                 AND (WS-TYPE2 = 8 OR WS-TYPE2 = 3)
                                              MOVE SPACES TO WS-TEXT
                                              IF WS-TYPE2 = 8
                                                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP
@@ -409,7 +411,10 @@
                                              END-IF
                                              CALL "TINT-COLOR-PARSE" USING WS-KIND WS-TEXT WS-TEXT-LENGTH
                                                  WS-COLOUR WS-OK
-                                             IF WS-OK = 1
+                                             IF WS-OK = 1 AND WN2 = "minecraft:visual/fog_color"
+                                                 MOVE WS-COLOUR TO WS-FOGC
+                                             END-IF
+                                             IF WS-OK = 1 AND WN2 = "minecraft:visual/water_fog_color"
                                                  MOVE WS-COLOUR TO WS-FOG
                                              END-IF
                                          WHEN WN2 = "minecraft:visual/water_fog_end_distance" AND WS-TYPE2 = 10
@@ -440,6 +445,7 @@
                      CALL "TINT-BIOME-SET" USING WS-BIOME-ID WS-TEMP WS-DOWN WS-WATER WS-GRASS
                          WS-FOLIAGE WS-DRY WS-MOD
                      CALL "TINT-BIOME-FOG" USING WS-BIOME-ID WS-FOG WS-FOG-END
+                     MOVE WS-FOGC TO TB-FOGC(WS-B)
                      IF WS-NAME = "minecraft:plains"
                          MOVE WS-BIOME-ID TO TT-PLAINS
                      END-IF

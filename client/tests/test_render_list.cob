@@ -375,6 +375,35 @@
      MOVE "172.80 192.00 1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO PL-VIEW-DISTANCE
+*>   The Nether's own fog (DIMFX-ENV) in no fluid: the clear colour is the fog colour #330808, the fog from 10 to 96; a dimension without one leaves the sky.
+     MOVE 0 TO PL-EYE-LAVA PL-EYE-WATER
+     MOVE 1 TO DX-FOG-SET
+     COMPUTE DX-FOG-R = 51 / 255
+     COMPUTE DX-FOG-G = 8 / 255
+     COMPUTE DX-FOG-B = 8 / 255
+     MOVE 10 TO DX-FOG-START
+     MOVE 96 TO DX-FOG-END
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     PERFORM FOG-TEXT
+     MOVE "render list the Nether's fog: the biome fog colour #330808, strength 1, start 10, end 96" TO TL-CASE
+     MOVE "0.2000  0.0313  0.0313 1.00 10.00 96.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-E ROUNDED = RL-CLEAR(1)
+     MOVE "render list the Nether clears to its fog colour (red 0.2000)" TO TL-CASE
+     MOVE WS-E TO TL-OBSERVED
+     MOVE " 0.2000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The End sets a colour but no distances: the render distance's remain.
+     MOVE -1 TO DX-FOG-START DX-FOG-END
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list a dimension fog colour without distances keeps the render distance fog (start 5 and end 6 stay off)" TO TL-CASE
+     MOVE RL-FOG(6) TO WS-N3
+     MOVE WS-N3 TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     MOVE 2000000000 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE 0 TO DX-FOG-SET
      STOP RUN.
 
 *> TL-OBSERVED: "r g b strength start end p00-and-p11-match" of the fog of the frame.
