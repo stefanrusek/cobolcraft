@@ -1,0 +1,59 @@
+*> Implementation test (T2428; docs/protocol/20 section 3.3): the light-dependent brightness B(l) = v + ambient (1 - v), v = f / (4 - 3 f), f = l / 15.
+*> Thousandths; B > 0.5 holds exactly for l >= 13 in the Overworld (ambient 0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-20-3-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-AMBIENT             BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO WS-AMBIENT
+     MOVE 0 TO WS-L
+     CALL "STDMOB-BRIGHTNESS" USING WS-L WS-AMBIENT WS-B
+     MOVE "acceptance US15 20§3.3 Brightness: light 0 is 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-B TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 12 TO WS-L
+     CALL "STDMOB-BRIGHTNESS" USING WS-L WS-AMBIENT WS-B
+     MOVE "acceptance US15 20§3.3 Brightness: light 12 is exactly 0.5" TO TL-CASE
+     MOVE 500 TO TL-EXPECTED-N
+     MOVE WS-B TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 13 TO WS-L
+     CALL "STDMOB-BRIGHTNESS" USING WS-L WS-AMBIENT WS-B
+     MOVE "acceptance US15 20§3.3 Brightness: light 13 is 0.619" TO TL-CASE
+     MOVE 619 TO TL-EXPECTED-N
+     MOVE WS-B TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 15 TO WS-L
+     CALL "STDMOB-BRIGHTNESS" USING WS-L WS-AMBIENT WS-B
+     MOVE "acceptance US15 20§3.3 Brightness: light 15 is 1" TO TL-CASE
+     MOVE 1000 TO TL-EXPECTED-N
+     MOVE WS-B TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+         MOVE WS-I TO WS-L
+         CALL "STDMOB-BRIGHTNESS" USING WS-L WS-AMBIENT WS-B
+         IF (WS-B > 500 AND WS-I < 13) OR (WS-B <= 500 AND WS-I >= 13)
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§3.3 Brightness: above 0.5 exactly for light 13 and more" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO WS-L
+     MOVE 500 TO WS-AMBIENT
+     CALL "STDMOB-BRIGHTNESS" USING WS-L WS-AMBIENT WS-B
+     MOVE "acceptance US15 20§3.3 Brightness: ambient light lerps (light 4, ambient 0.5 is 0.541)" TO TL-CASE
+     MOVE 541 TO TL-EXPECTED-N
+     MOVE WS-B TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MOB-20-3-3.
