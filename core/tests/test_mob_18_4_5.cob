@@ -1,0 +1,312 @@
+*> Implementation test (002-lane-mobsfull-h2, T2222; docs/protocol/18 section 4.5 Brain system): memories with expiry, activity choice and behaviour start and tick of the brain.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-18-4-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY MOBBRAIN.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-D                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-I                 BINARY-LONG.
+ 01 WS-J                 BINARY-LONG.
+ 01 WS-K                 BINARY-LONG.
+ 01 WS-L                 BINARY-LONG.
+ 01 WS-M                 BINARY-LONG.
+ 01 WS-N                 BINARY-LONG.
+ 01 WS-O                 BINARY-LONG.
+ 01 WS-P                 BINARY-LONG.
+ 01 WS-O1                BINARY-LONG.
+ 01 WS-O2                BINARY-LONG.
+ 01 WS-O3                BINARY-LONG.
+ 01 WS-O4                BINARY-LONG.
+ 01 WS-O5                BINARY-LONG.
+ 01 WS-O6                BINARY-LONG.
+ 01 WS-O7                BINARY-LONG.
+ 01 WS-O8                BINARY-LONG.
+ 01 WS-F1                FLOAT-LONG.
+ 01 WS-F2                FLOAT-LONG.
+ 01 WS-F3                FLOAT-LONG.
+ 01 WS-F4                FLOAT-LONG.
+ 01 WS-F5                FLOAT-LONG.
+ 01 WS-F6                FLOAT-LONG.
+ 01 WS-F7                FLOAT-LONG.
+ 01 WS-F8                FLOAT-LONG.
+ 01 WS-G1                FLOAT-LONG.
+ 01 WS-G2                FLOAT-LONG.
+ 01 WS-G3                FLOAT-LONG.
+ 01 WS-G4                FLOAT-LONG.
+ 01 WS-T                 PIC X(64).
+ 01 WS-U                 PIC X(64).
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO BR-PRESENT(1)
+     MOVE "acceptance US15 18§4.5 Brain system a fresh memory is absent" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-PRESENT(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-A
+     MOVE 42 TO WS-B
+     MOVE -1 TO WS-C
+     CALL "BRAIN-SET" USING BR-STATE WS-A WS-B WS-C
+     MOVE "acceptance US15 18§4.5 Brain system setMemory stores the value" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 42 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-VALUE(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system setMemory marks it present" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-PRESENT(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system a memory without expiry keeps ttl -1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE -1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-TTL(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-A
+     MOVE 7 TO WS-B
+     MOVE 3 TO WS-C
+     CALL "BRAIN-SET" USING BR-STATE WS-A WS-B WS-C
+     MOVE "acceptance US15 18§4.5 Brain system setMemoryWithExpiry stores the ttl" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-TTL(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "BRAIN-TICK" USING BR-STATE
+     MOVE "acceptance US15 18§4.5 Brain system a brain tick decrements the ttl" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-TTL(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system a brain tick leaves a memory without expiry" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-PRESENT(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "BRAIN-TICK" USING BR-STATE
+     MOVE "acceptance US15 18§4.5 Brain system the memory is still present at ttl 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-PRESENT(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "BRAIN-TICK" USING BR-STATE
+     MOVE "acceptance US15 18§4.5 Brain system the memory is erased when the ttl reaches 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-PRESENT(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system an erased memory has no value" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-VALUE(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-A
+     CALL "BRAIN-ERASE" USING BR-STATE WS-A
+     MOVE "acceptance US15 18§4.5 Brain system eraseMemory clears a memory" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BR-PRESENT(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO BR-ACT-COUNT
+     MOVE 5 TO BR-ACT-REQ(1, 1)
+     MOVE 0 TO BR-ACT-REQ(1, 2)
+     MOVE 0 TO BR-ACT-REQ(1, 3)
+     MOVE 6 TO BR-ACT-REQ(2, 1)
+     MOVE 7 TO BR-ACT-REQ(2, 2)
+     MOVE 0 TO BR-ACT-REQ(2, 3)
+     MOVE 1 TO BR-PRESENT(6)
+     MOVE 1 TO BR-PRESENT(7)
+     CALL "BRAIN-FIRST-ACTIVITY" USING BR-STATE WS-O1
+     MOVE "acceptance US15 18§4.5 Brain system setActiveActivityToFirstValid picks the first activity whose memories are present" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system an activity needing an absent memory is skipped" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO BR-PRESENT(5)
+     CALL "BRAIN-FIRST-ACTIVITY" USING BR-STATE WS-O1
+     MOVE "acceptance US15 18§4.5 Brain system the first activity wins when both are valid" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BR-PRESENT(5)
+     MOVE 0 TO BR-PRESENT(7)
+     CALL "BRAIN-FIRST-ACTIVITY" USING BR-STATE WS-O1
+     MOVE "acceptance US15 18§4.5 Brain system no valid activity gives 0 (the default activity)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BHV-STATUS
+     MOVE 0 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TRY-START" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tryStart runs a stopped behaviour whose memories and extra conditions hold" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system tryStart sets the status RUNNING" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-STATUS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BHV-STATUS
+     MOVE 0 TO BHV-END-TIME
+     MOVE 10 TO BHV-MIN
+     MOVE 20 TO BHV-MAX
+     MOVE 4 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TRY-START" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tryStart sets end time = time + min + roll" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 114 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-END-TIME
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BHV-STATUS
+     MOVE 0 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 0 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TRY-START" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tryStart does not start when a required memory is missing" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system tryStart leaves the status STOPPED then" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-STATUS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BHV-STATUS
+     MOVE 0 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 0 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TRY-START" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tryStart does not start when the extra start conditions fail" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO BHV-STATUS
+     MOVE 0 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TRY-START" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tryStart does not restart a running behaviour" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO BHV-STATUS
+     MOVE 150 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 150 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TICK" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tickOrStop ticks while canStillUse and not timed out" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO BHV-STATUS
+     MOVE 150 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 151 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TICK" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tickOrStop stops once the game time is greater than the end time" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§4.5 Brain system a stopped behaviour has status 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-STATUS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO BHV-STATUS
+     MOVE 500 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 0 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TICK" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tickOrStop stops when canStillUse is false (the default)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BHV-STATUS
+     MOVE 0 TO BHV-END-TIME
+     MOVE 60 TO BHV-MIN
+     MOVE 60 TO BHV-MAX
+     MOVE 0 TO BHV-ROLL
+     MOVE 100 TO BHV-TIME
+     MOVE 1 TO BHV-MEMORY-OK
+     MOVE 1 TO BHV-EXTRA-OK
+     MOVE 1 TO BHV-CAN-STILL-USE
+     MOVE 0 TO BHV-ACTION
+     CALL "BEHAVIOR-TICK" USING BHV-RECORD
+     MOVE "acceptance US15 18§4.5 Brain system tickOrStop ignores a stopped behaviour" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = BHV-ACTION
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MOB-18-4-5.
