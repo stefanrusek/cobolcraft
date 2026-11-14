@@ -143,9 +143,8 @@
      PERFORM FLUSH-RUN
      CALL "PB-FREE" USING ST-BUFFER
 
-     MOVE "acceptance US12 39§8 A player changes dimension: the packets come in the order Respawn, Change Difficulty, permission Entity Event, "
-         & "Abilities, Held Slot, Container Content, Initialize Border, spawn position, Set Time, weather and Game Event 13, the 25 chunks, "
-         & "batch finished, Player Position, Set Experience, Set Health, portal sound" TO TL-CASE
+     MOVE "acceptance US12 39§8 A player changes dimension: the packets come in order: Respawn, Difficulty, Event, Abilities, Slot, "
+         & "Container Content, Initialize Border, spawn, Set Time, weather, the 25 chunks, Player Position, XP, Health, sound" TO TL-CASE
      MOVE "84 10 34 65 107 18 44 99 115 39 96 12 46x25 11 73 105 106 47" TO TL-EXPECTED
      MOVE WS-ORDER TO TL-OBSERVED
      PERFORM CHECK
