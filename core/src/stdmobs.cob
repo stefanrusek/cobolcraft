@@ -1052,6 +1052,9 @@
      IF SM-KEY(WS-M) = "allay"
          CALL "ALLAY-TICK" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "sniffer"
+         CALL "SNIFFER-TICK" USING WS-ROW
+     END-IF
      IF SM-KEY(WS-M) = "fox"
          CALL "FOX-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF

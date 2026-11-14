@@ -359,6 +359,9 @@
              IF SM-KEY(WS-M) = "armadillo" AND EN-ARMA(L-ROW) > 0
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "sniffer" AND EN-SNIF(L-ROW) > 0
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "llama" AND (EN-STRENGTH(L-ROW) > 0 OR EN-WOOL(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
