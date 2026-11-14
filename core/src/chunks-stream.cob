@@ -89,6 +89,8 @@
  01 WS-LAVA-END            BINARY-LONG.
  01 WS-BYTE                BINARY-LONG.
  01 WS-NON-EMPTY           BINARY-LONG.
+ 01 WS-FLUIDS              BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  01 WS-TOPS.
     05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
  01 WS-HM-VALUES.
@@ -153,17 +155,24 @@
              COMPUTE WS-LAVA-END = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I)
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
-         MOVE CE-STATE(WS-I) TO WS-STATE(WS-I)
-         IF WS-STATE(WS-I) NOT = 0
-             COMPUTE WS-S = (WS-I - 1) / 4096
-             ADD 1 TO WS-COUNT-ENTRY(WS-S * 2 + 1)
-*>           the fluid count: every state of water and of lava (waterlogged states are not counted)
-             IF (WS-STATE(WS-I) >= WS-WATER-FIRST AND WS-STATE(WS-I) < WS-WATER-END)
-                 OR (WS-STATE(WS-I) >= WS-LAVA-FIRST AND WS-STATE(WS-I) < WS-LAVA-END)
-                 ADD 1 TO WS-COUNT-ENTRY(WS-S * 2 + 2)
+*>   Section by section with the cell index counted up (a division per cell cost 8 ms a chunk of rock).
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
+         MOVE 0 TO WS-NON-EMPTY WS-FLUIDS
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4096
+             ADD 1 TO WS-I
+             MOVE CE-STATE(WS-I) TO WS-STATE(WS-I)
+             IF WS-STATE(WS-I) NOT = 0
+                 ADD 1 TO WS-NON-EMPTY
+*>               the fluid count: every state of water and of lava (waterlogged states are not counted)
+                 IF (WS-STATE(WS-I) >= WS-WATER-FIRST AND WS-STATE(WS-I) < WS-WATER-END)
+                     OR (WS-STATE(WS-I) >= WS-LAVA-FIRST AND WS-STATE(WS-I) < WS-LAVA-END)
+                     ADD 1 TO WS-FLUIDS
+                 END-IF
              END-IF
-         END-IF
+         END-PERFORM
+         MOVE WS-NON-EMPTY TO WS-COUNT-ENTRY(WS-S * 2 + 1)
+         MOVE WS-FLUIDS TO WS-COUNT-ENTRY(WS-S * 2 + 2)
      END-PERFORM
      COMPUTE WS-CELLS = WS-SECTIONS * 64
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
