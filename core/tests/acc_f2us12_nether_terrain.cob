@@ -75,6 +75,8 @@
          STOP RUN
      END-IF
      MOVE 0 TO ND-PLACEHOLDER
+*>   a fixed level seed: the Nether chunk (terrain and features) is then the same on every run
+     MOVE 12345 TO CW-SEED
      CALL "GEN-BLOCK-STATE" USING WS-KEY-BEDROCK WS-BEDROCK
      CALL "GEN-BLOCK-STATE" USING WS-KEY-LAVA WS-LAVA
      CALL "GEN-BLOCK-STATE" USING WS-KEY-NETHERRACK WS-NETHERRACK

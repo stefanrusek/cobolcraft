@@ -151,7 +151,7 @@
  PROGRAM-ID. DIM-BORDER-SEND.
 *> USING player row, destination dimension row (BINARY-LONG): Initialize Border 0x2C of the destination level's world border (39 section 8.1 step 15; the
 *> fields of 05a: centre, old size, new size, lerp time in ms, absolute maximum size, warning blocks 5, warning time 300 (33 section 7.1 defaults)).
-*> A moving border sends its current size, its target and the remaining ticks as milliseconds.
+*> A moving border sends its current size, its target and the remaining ticks (W2-B-PROGRESS counts down) as milliseconds.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -174,7 +174,7 @@
      MOVE 0 TO WS-LERP
      IF W2-B-MOVING(L-DEST) = 1
          MOVE W2-B-TO(L-DEST) TO WS-NEW
-         COMPUTE WS-LERP = (W2-B-DURATION(L-DEST) - W2-B-PROGRESS(L-DEST)) * 50
+         COMPUTE WS-LERP = W2-B-PROGRESS(L-DEST) * 50
      END-IF
      MOVE W2-B-ABSOLUTE(L-DEST) TO WS-ABSOLUTE
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
