@@ -618,6 +618,7 @@
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
+             20 WR-URGENT    PIC 9.          *> 1 = dirty because a block changed (WORLD-BLOCK-SET): meshed ahead of the credit (T5500)
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.

@@ -475,12 +475,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-CELL-DIRTY.
-*> USING CLIENT-STATE, x, y, z (block coordinates): the section holding the cell is to be meshed.
+*> USING CLIENT-STATE, x, y, z (block coordinates): the section holding the cell is to be meshed, and at once (T5500: the
+*> faces a changed block exposes must not wait for the credit of the frames, or the player looks through the hole it made):
+*> WR-URGENT, which MESH-DIRTY serves ahead of the credit.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-S                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -491,6 +495,10 @@
      COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
      COMPUTE WS-S = FUNCTION INTEGER((L-Y - PL-MIN-Y) / 16) + 1
      CALL "WORLD-SECTION-DIRTY" USING CLIENT-STATE WS-CX WS-CZ WS-S
+     CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
+     IF WS-ROW > 0 AND WS-S >= 1 AND WS-S <= CL-MAX-SECTIONS
+         MOVE 1 TO WR-URGENT(WS-ROW, WS-S)
+     END-IF
      GOBACK.
  END PROGRAM WORLD-CELL-DIRTY.
 

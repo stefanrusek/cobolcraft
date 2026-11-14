@@ -55,12 +55,36 @@
     05 WS-C-ROW            BINARY-LONG OCCURS 64 TIMES.
     05 WS-C-SEC            BINARY-LONG OCCURS 64 TIMES.
  01 WS-T0                  BINARY-DOUBLE.
+ 01 WS-U0                  BINARY-DOUBLE.
  01 WS-T1                  BINARY-DOUBLE.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-BUDGET               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-BUDGET.
      MOVE 0 TO MB-MESHED
+*>   The sections a block change touched (WR-URGENT) come first, whatever the credit: the faces the change exposes are drawn this frame (a
+*>   dense section takes 100 ms, and the credit it overspends keeps the frames after it from meshing: for seconds the player would look
+*>   through the hole). At most CL-MESH-URGENT a frame; what they cost is taken off the credit, so the background work pays for it.
+     MOVE 0 TO WS-N
+     CALL "MESH-CLOCK" USING CLIENT-STATE WS-U0
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT OR WS-N >= CL-MESH-URGENT
+         IF WR-USED(WS-R) = 1
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS OR WS-N >= CL-MESH-URGENT
+                 IF WR-DIRTY(WS-R, WS-S) = 1 AND WR-URGENT(WS-R, WS-S) = 1
+                     CALL "MESH-SECTION" USING CLIENT-STATE WS-R WS-S
+                     ADD 1 TO WS-N
+                     ADD 1 TO MB-MESHED
+                     IF MB-FAKE = 1
+                         ADD MB-FAKE-STEP TO MB-FAKE-NOW
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     IF WS-N > 0 AND MB-CREDIT-ON = 1
+         CALL "MESH-CLOCK" USING CLIENT-STATE WS-T1
+         COMPUTE MB-CREDIT = MB-CREDIT - (WS-T1 - WS-U0)
+     END-IF
 *>   With the credit on (the running client), a frame whose meshing ran long (one section of a dense chunk can take 100 ms) is paid back by
 *>   frames that mesh nothing: the average is CL-MESH-CREDIT-US a frame, and the frame rate holds while the world loads.
      IF MB-CREDIT-ON = 1
@@ -535,6 +559,7 @@
      SET ADDRESS OF B-MESH TO WR-TR-ADDR(L-ROW, L-S)
      MOVE WS-TRANSLUCENT(1:WS-BYTES) TO B-MESH(1:WS-BYTES)
      MOVE 0 TO WR-DIRTY(L-ROW, L-S)
+     MOVE 0 TO WR-URGENT(L-ROW, L-S)
      MOVE 1 TO WR-UPLOAD(L-ROW, L-S)
      GOBACK.
 
