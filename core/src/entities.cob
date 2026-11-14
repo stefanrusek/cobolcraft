@@ -298,7 +298,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-SEES.
-*> USING player row, tracker row, sees out (BINARY-LONG 1 or 0): the visibility rule above.
+*> USING player row, tracker row, sees out (BINARY-LONG 1 or 0): the visibility rule above, and the entity must lie within its tracking range (18 section 9.1: M189-IN-RANGE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -319,7 +319,7 @@
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW) / 16)
      IF FUNCTION ABS(WS-CX - PL-CENTER-X(L-PLAYER)) <= CS-VIEW-DISTANCE
              AND FUNCTION ABS(WS-CZ - PL-CENTER-Z(L-PLAYER)) <= CS-VIEW-DISTANCE
-         MOVE 1 TO L-SEES
+         CALL "M189-IN-RANGE" USING L-PLAYER L-ROW L-SEES
      END-IF
      GOBACK.
  END PROGRAM ENTITY-SEES.

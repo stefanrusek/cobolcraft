@@ -75,7 +75,8 @@
      MOVE 1 TO EN-ON-GROUND(WS-ROW)
 
      MOVE "test entities: a player sees an entity iff same dimension and its chunk is within view "
-         & "distance 2 of the player's center, and never its own entity" TO TL-CASE
+         & "distance 2 of the player's center and within min(range, view distance x 16) = 32 blocks horizontally "
+         & "(18 section 9.1), and never its own entity" TO TL-CASE
      PERFORM START-ROW
      PERFORM ADD-SEES
      MOVE 47.9 TO EN-X(WS-ROW)
@@ -98,7 +99,7 @@
      CALL "ENTITY-SEES" USING WS-AROW PL-ENTITY-ROW(WS-AROW) WS-SEES
      MOVE WS-SEES TO WS-NUM
      PERFORM ADD-NUM
-     MOVE "1 1 0 1 0 1 0 0 0" TO TL-EXPECTED
+     MOVE "1 0 0 0 0 0 0 0 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test entities: tracking an entity in view sends Add Entity to both players' clients"
