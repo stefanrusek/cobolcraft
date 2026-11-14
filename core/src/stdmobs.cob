@@ -24,7 +24,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 9 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS SM-COUNT TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
