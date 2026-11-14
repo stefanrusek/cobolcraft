@@ -63,6 +63,21 @@
  END PROGRAM CHEST-TEXTURE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHEST-CHRISTMAS.
+*> USING month and day (MMDD), flag out: 1 on 24, 25 and 26 December (the christmas chest texture days), else 0.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MMDD                 PIC 9(4).
+ 01 L-XMAS                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-MMDD L-XMAS.
+     MOVE 0 TO L-XMAS
+     IF L-MMDD >= 1224 AND L-MMDD <= 1226
+         MOVE 1 TO L-XMAS
+     END-IF
+     GOBACK.
+ END PROGRAM CHEST-CHRISTMAS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CHEST-BAKE.
 *> USING CLIENT-STATE, BM-STATE row, block name (PIC X(48)), facing (PIC X(8)), type (PIC X(8)): bakes the closed chest of the state
 *> into the row. The cuboid table is 52 3.5 in block pixels (the part pivots added to the origins, nine rows: single, right half,
@@ -272,15 +287,6 @@
  01 WS-VU                  FLOAT-LONG OCCURS 4 TIMES.
  01 WS-VV                  FLOAT-LONG OCCURS 4 TIMES.
  01 WS-J                   BINARY-LONG.
- 01 WS-DOT                 FLOAT-LONG.
- 01 WS-AX                  FLOAT-LONG.
- 01 WS-AY                  FLOAT-LONG.
- 01 WS-AZ                  FLOAT-LONG.
- 01 WS-BX                  FLOAT-LONG.
- 01 WS-BY                  FLOAT-LONG.
- 01 WS-BZ                  FLOAT-LONG.
- 01 WS-NORMAL              FLOAT-LONG.
- 01 WS-ORDER               BINARY-LONG OCCURS 4 TIMES.
  01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -292,10 +298,7 @@
      MOVE 0 TO BM-QUAD-COUNT(L-S)
      MOVE FUNCTION CURRENT-DATE TO WS-DATE
      MOVE WS-DATE(5:4) TO WS-MMDD
-     MOVE 0 TO WS-XMAS
-     IF WS-MMDD >= 1224 AND WS-MMDD <= 1226
-         MOVE 1 TO WS-XMAS
-     END-IF
+     CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
      CALL "CHEST-TEXTURE" USING L-NAME L-TYPE WS-XMAS WS-ID WS-ID-LENGTH
      CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-SPRITE
      IF WS-SPRITE = 0
@@ -357,46 +360,18 @@
                  COMPUTE WS-VV(2) = WS-V(WS-F-MINV(WS-K) + 1) * 16 / 64
                  COMPUTE WS-VV(3) = WS-V(WS-F-MAXV(WS-K) + 1) * 16 / 64
                  COMPUTE WS-VV(4) = WS-V(WS-F-MAXV(WS-K) + 1) * 16 / 64
-*>               The winding of the mesher (ELEMENT-BAKE): the cross product of the first two edges points into the block.
-                 COMPUTE WS-AX = WS-VX(2) - WS-VX(1)
-                 COMPUTE WS-AY = WS-VY(2) - WS-VY(1)
-                 COMPUTE WS-AZ = WS-VZ(2) - WS-VZ(1)
-                 COMPUTE WS-BX = WS-VX(3) - WS-VX(1)
-                 COMPUTE WS-BY = WS-VY(3) - WS-VY(1)
-                 COMPUTE WS-BZ = WS-VZ(3) - WS-VZ(1)
-                 EVALUATE WS-F-DIR(WS-K)
-                     WHEN DIR-DOWN
-                         COMPUTE WS-DOT = 0 - (WS-AZ * WS-BX - WS-AX * WS-BZ)
-                     WHEN DIR-UP
-                         COMPUTE WS-DOT = WS-AZ * WS-BX - WS-AX * WS-BZ
-                     WHEN DIR-NORTH
-                         COMPUTE WS-DOT = 0 - (WS-AX * WS-BY - WS-AY * WS-BX)
-                     WHEN DIR-SOUTH
-                         COMPUTE WS-DOT = WS-AX * WS-BY - WS-AY * WS-BX
-                     WHEN DIR-WEST
-                         COMPUTE WS-DOT = 0 - (WS-AY * WS-BZ - WS-AZ * WS-BY)
-                     WHEN DIR-EAST
-                         COMPUTE WS-DOT = WS-AY * WS-BZ - WS-AZ * WS-BY
-                 END-EVALUATE
-                 MOVE 1 TO WS-ORDER(1)
-                 MOVE 2 TO WS-ORDER(2)
-                 MOVE 3 TO WS-ORDER(3)
-                 MOVE 4 TO WS-ORDER(4)
-                 IF WS-DOT > 0
-                     MOVE 4 TO WS-ORDER(2)
-                     MOVE 2 TO WS-ORDER(4)
-                 END-IF
+*>               The corner order of the face table already winds like the mesher (ELEMENT-BAKE): the cross product of the
+*>               first two edges points into the block, so the quad takes the corners as they are.
                  MOVE DIR-NONE TO QD-CULL
                  MOVE WS-F-DIR(WS-K) TO QD-SHADE
                  MOVE WS-SPRITE TO QD-SPRITE
                  MOVE -1 TO QD-TINT
                  PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
-                     MOVE WS-ORDER(WS-J) TO WS-C
-                     COMPUTE QD-X(WS-J) = WS-VX(WS-C) / 16
-                     COMPUTE QD-Y(WS-J) = WS-VY(WS-C) / 16
-                     COMPUTE QD-Z(WS-J) = WS-VZ(WS-C) / 16
-                     MOVE WS-VU(WS-C) TO QD-U(WS-J)
-                     MOVE WS-VV(WS-C) TO QD-V(WS-J)
+                     COMPUTE QD-X(WS-J) = WS-VX(WS-J) / 16
+                     COMPUTE QD-Y(WS-J) = WS-VY(WS-J) / 16
+                     COMPUTE QD-Z(WS-J) = WS-VZ(WS-J) / 16
+                     MOVE WS-VU(WS-J) TO QD-U(WS-J)
+                     MOVE WS-VV(WS-J) TO QD-V(WS-J)
                  END-PERFORM
                  CALL "VARIANT-ROTATE" USING QUAD WS-NO-ROT WS-Y-ROT WS-NO-ROT-Z
                  ADD 1 TO BM-QUAD-COUNT(L-S)

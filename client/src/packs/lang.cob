@@ -13,10 +13,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
- COPY JSONDOC.
  01 WS-PACK                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
- 01 WS-K                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-SLASH               BINARY-LONG.
  01 WS-PATH                PIC X(256).
@@ -24,12 +22,6 @@
  01 WS-TEXT                PIC X(1048576).
  01 WS-CAPACITY            BINARY-LONG VALUE 1048576.
  01 WS-LENGTH              BINARY-LONG.
- 01 WS-NODE                BINARY-LONG.
- 01 WS-KEY                 PIC X(80).
- 01 WS-KEY-CAP             BINARY-LONG VALUE 80.
- 01 WS-KEY-LENGTH          BINARY-LONG.
- 01 WS-ENTRY               BINARY-LONG.
- 01 WS-TEXT-CAP            BINARY-LONG VALUE 200.
  01 WS-SLICE-ENTRIES       BINARY-LONG VALUE 1000.
  01 WS-POS                 BINARY-LONG.
  01 WS-START               BINARY-LONG.
@@ -60,7 +52,44 @@
                      WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
                  IF WS-FOUND = 1
                      ADD 1 TO LG-FILES
-                     PERFORM LANG-SLICES
+*>                   Walks WS-TEXT(1:WS-LENGTH): the first "{" starts the first slice; outside strings the nesting
+*>                   depth follows the braces and brackets, and at depth 1 every comma is the end of a member.
+                     MOVE 0 TO WS-START WS-DEPTH WS-MEMBERS WS-IN-STRING WS-DONE
+                     PERFORM VARYING WS-POS FROM 1 BY 1 UNTIL WS-POS > WS-LENGTH OR WS-DONE = 1
+                         MOVE WS-TEXT(WS-POS:1) TO WS-CHAR
+                         EVALUATE TRUE
+                             WHEN WS-IN-STRING = 1 AND WS-CHAR = X"5C"
+                                 ADD 1 TO WS-POS
+                             WHEN WS-CHAR = '"'
+                                 COMPUTE WS-IN-STRING = 1 - WS-IN-STRING
+                             WHEN WS-IN-STRING = 1
+                                 CONTINUE
+                             WHEN WS-CHAR = "{" OR WS-CHAR = "["
+                                 IF WS-START = 0
+                                     MOVE WS-POS TO WS-START
+                                 END-IF
+                                 ADD 1 TO WS-DEPTH
+                             WHEN WS-CHAR = "}" OR WS-CHAR = "]"
+                                 SUBTRACT 1 FROM WS-DEPTH
+                                 IF WS-DEPTH = 0
+                                     MOVE 1 TO WS-DONE
+                                     COMPUTE WS-SLICE-LENGTH = WS-POS - WS-START + 1
+                                     CALL "LANG-MERGE" USING CLIENT-STATE WS-TEXT(WS-START:WS-SLICE-LENGTH)
+                                         WS-SLICE-LENGTH
+                                 END-IF
+                             WHEN WS-CHAR = "," AND WS-DEPTH = 1
+                                 ADD 1 TO WS-MEMBERS
+                                 IF WS-MEMBERS >= WS-SLICE-ENTRIES
+                                     MOVE "}" TO WS-TEXT(WS-POS:1)
+                                     COMPUTE WS-SLICE-LENGTH = WS-POS - WS-START + 1
+                                     CALL "LANG-MERGE" USING CLIENT-STATE WS-TEXT(WS-START:WS-SLICE-LENGTH)
+                                         WS-SLICE-LENGTH
+                                     MOVE "{" TO WS-TEXT(WS-POS:1)
+                                     MOVE WS-POS TO WS-START
+                                     MOVE 0 TO WS-MEMBERS
+                                 END-IF
+                         END-EVALUATE
+                     END-PERFORM
                  ELSE
                      ADD 1 TO LG-FAILED
                  END-IF
@@ -71,47 +100,28 @@
      CALL "LANG-REPORT" USING CLIENT-STATE WS-LINE WS-LINE-LENGTH
      DISPLAY WS-LINE(1:WS-LINE-LENGTH)
      GOBACK.
+ END PROGRAM LANG-LOAD.
 
-*> Walks WS-TEXT(1:WS-LENGTH): the first "{" starts the first slice; outside strings the nesting depth
-*> follows the braces and brackets, and at depth 1 every comma is the end of a member.
- LANG-SLICES.
-     MOVE 0 TO WS-START WS-DEPTH WS-MEMBERS WS-IN-STRING WS-DONE
-     PERFORM VARYING WS-POS FROM 1 BY 1 UNTIL WS-POS > WS-LENGTH OR WS-DONE = 1
-         MOVE WS-TEXT(WS-POS:1) TO WS-CHAR
-         EVALUATE TRUE
-             WHEN WS-IN-STRING = 1 AND WS-CHAR = X"5C"
-                 ADD 1 TO WS-POS
-             WHEN WS-CHAR = '"'
-                 COMPUTE WS-IN-STRING = 1 - WS-IN-STRING
-             WHEN WS-IN-STRING = 1
-                 CONTINUE
-             WHEN WS-CHAR = "{" OR WS-CHAR = "["
-                 IF WS-START = 0
-                     MOVE WS-POS TO WS-START
-                 END-IF
-                 ADD 1 TO WS-DEPTH
-             WHEN WS-CHAR = "}" OR WS-CHAR = "]"
-                 SUBTRACT 1 FROM WS-DEPTH
-                 IF WS-DEPTH = 0
-                     MOVE 1 TO WS-DONE
-                     PERFORM LANG-SLICE-LOAD
-                 END-IF
-             WHEN WS-CHAR = "," AND WS-DEPTH = 1
-                 ADD 1 TO WS-MEMBERS
-                 IF WS-MEMBERS >= WS-SLICE-ENTRIES
-                     MOVE "}" TO WS-TEXT(WS-POS:1)
-                     PERFORM LANG-SLICE-LOAD
-                     MOVE "{" TO WS-TEXT(WS-POS:1)
-                     MOVE WS-POS TO WS-START
-                     MOVE 0 TO WS-MEMBERS
-                 END-IF
-         END-EVALUATE
-     END-PERFORM.
-
-*> Parses WS-TEXT(WS-START:WS-POS - WS-START + 1) and merges its members.
- LANG-SLICE-LOAD.
-     COMPUTE WS-SLICE-LENGTH = WS-POS - WS-START + 1
-     CALL "JSON-PARSE" USING JSON-DOC WS-TEXT(WS-START:WS-SLICE-LENGTH) WS-SLICE-LENGTH
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LANG-MERGE.
+*> USING CLIENT-STATE, text, length: parses the slice (a JSON object) and merges its members into LG-ENTRY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY JSONDOC.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-CAP             BINARY-LONG VALUE 80.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-TEXT-CAP            BINARY-LONG VALUE 200.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X.
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH.
+     CALL "JSON-PARSE" USING JSON-DOC L-TEXT L-LENGTH
      MOVE 0 TO WS-NODE
      IF JD-COUNT > 0
          IF JN-TYPE(1) = JT-OBJECT
@@ -142,8 +152,9 @@
                  LG-TEXT-LENGTH(WS-ENTRY)
          END-IF
          MOVE JN-NEXT(WS-NODE) TO WS-NODE
-     END-PERFORM.
- END PROGRAM LANG-LOAD.
+     END-PERFORM
+     GOBACK.
+ END PROGRAM LANG-MERGE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LANG-REPORT.

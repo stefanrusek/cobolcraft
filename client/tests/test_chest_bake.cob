@@ -24,6 +24,8 @@
  01 WS-E                   PIC -99.999.
  01 WS-LIST                PIC X(200).
  01 WS-PTR                 BINARY-LONG.
+ 01 WS-MMDD                PIC 9(4).
+ 01 WS-XMAS                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
 
@@ -147,6 +149,46 @@
          STRING WS-E " " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-PTR
      END-PERFORM
      MOVE WS-LIST(1:WS-PTR - 2) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Facing north (a half turn) and east (three quarter turns): the south face (quad 6) becomes the north and the east face.
+     MOVE "north" TO WS-FACING
+     CALL "CHEST-BAKE" USING CLIENT-STATE WS-ONE WS-NAME WS-FACING WS-TYPE
+     MOVE "chest bake facing north turns the south face to the north face" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE DIR-NORTH TO TL-EXPECTED-N
+     MOVE BM-SHADE(1, 6) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "east" TO WS-FACING
+     CALL "CHEST-BAKE" USING CLIENT-STATE WS-ONE WS-NAME WS-FACING WS-TYPE
+     MOVE "chest bake facing east turns the south face to the east face" TO TL-CASE
+     MOVE DIR-EAST TO TL-EXPECTED-N
+     MOVE BM-SHADE(1, 6) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The Christmas days: 24 to 26 December only.
+     MOVE "chest christmas on 23 December" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE 1223 TO WS-MMDD
+     CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
+     MOVE WS-XMAS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "chest christmas on 24 December" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 1224 TO WS-MMDD
+     CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
+     MOVE WS-XMAS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "chest christmas on 26 December" TO TL-CASE
+     MOVE 1226 TO WS-MMDD
+     CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
+     MOVE WS-XMAS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "chest christmas on 27 December" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE 1227 TO WS-MMDD
+     CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
+     MOVE WS-XMAS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "right" TO WS-TYPE MOVE "south" TO WS-FACING

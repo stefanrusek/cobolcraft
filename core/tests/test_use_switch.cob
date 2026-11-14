@@ -76,6 +76,8 @@
      MOVE "oak_button" TO WS-KEY
      PERFORM PUT-BLOCK
      PERFORM USE-IT
+*>   A second click on a pressed button changes nothing and does not move the release time.
+     PERFORM USE-IT
      MOVE 25 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE "test use switch: an oak button is still pressed after 25 ticks" TO TL-CASE
