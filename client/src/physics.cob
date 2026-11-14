@@ -793,6 +793,10 @@
      IF PL-FLYING = 0 AND WS-CROUCH-FITS = 1 AND (L-SHIFT = 1 OR WS-STAND-FITS = 0)
          MOVE 1 TO PL-SNEAK-FLAG
      END-IF
+*>   Moving slowly is also visual crawling: the swimming pose out of the water (53 section 3.3).
+     IF PL-POSE = 3 AND PL-IN-WATER = 0
+         MOVE 1 TO PL-SNEAK-FLAG
+     END-IF
 *>   The camera eye: half the gap to the pose's eye height each tick; the first tick takes it.
      EVALUATE PL-POSE
          WHEN 5
