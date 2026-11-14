@@ -854,9 +854,8 @@
              COMPUTE WS-CX = CK-X(L-ROW) + WS-DX
              COMPUTE WS-CZ = CK-Z(L-ROW) + WS-DZ
              CALL "WORLD-CHUNK-PEEK" USING WS-DIM WS-CX WS-CZ WS-ROW
-             IF WS-ROW = 0
-                 EXIT PERFORM CYCLE
-             END-IF
+*>           A neighbour that is not loaded (row 0: a time-sliced dimension never generates it here) has no sources to add.
+             IF WS-ROW NOT = 0
              SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-ROW)
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SECTIONS
                  IF CK-SOURCES(WS-ROW, WS-S) > 0
@@ -891,6 +890,7 @@
                      END-PERFORM
                  END-IF
              END-PERFORM
+             END-IF
          END-PERFORM
      END-PERFORM
      GOBACK.
