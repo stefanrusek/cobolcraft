@@ -74,3 +74,25 @@ write("minecraft", "bigpal", int_list("size", [1, 1, 1]), lst("blocks", 10, []),
 write("minecraft", "notnbt", raw=b"\x01\x02\x03 not an nbt tree")
 write("minecraft", "empty", int_list("size", [1, 1, 1]))
 write("minecraft", "manyblocks", int_list("size", [1, 1, 1]), lst("blocks", 10, [block([0, 0, 0], 0)] * 65537), lst("palette", 10, [state(G)]))
+
+# Vanilla-id templates of core/tests/test_struct_36_2_5.cob (the standard content set): placement, rotation, mirror, block entities, waterlogging, shape faces.
+def v(name_, props=None): return state("minecraft:" + name_, props)
+STAIRS = [("facing", "east"), ("half", "bottom"), ("shape", "straight"), ("waterlogged", "false")]
+PIG = body_comp(lst("pos", 6, [struct.pack(">d", 0.5)] * 3), comp("nbt", string("id", "minecraft:pig")))
+write("test", "stairs", int_list("size", [2, 2, 2]), lst("entities", 10, []),
+      lst("blocks", 10, [block([0, 0, 0], 0), block([1, 0, 0], 1), block([0, 0, 1], 2, True), block([1, 0, 1], 4), block([0, 1, 0], 3)]),
+      lst("palette", 10, [v("stone"), v("oak_stairs", STAIRS),
+                          v("chest", [("facing", "north"), ("type", "single"), ("waterlogged", "false")]), v("air"),
+                          v("oak_log", [("axis", "x")])]))
+write("test", "wet", int_list("size", [1, 1, 1]), lst("blocks", 10, [block([0, 0, 0], 0)]), lst("palette", 10, [v("oak_stairs", STAIRS)]))
+write("test", "pool", int_list("size", [2, 1, 1]), lst("blocks", 10, [block([0, 0, 0], 0), block([1, 0, 0], 1)]),
+      lst("palette", 10, [v("water", [("level", "0")]), v("oak_stairs", STAIRS)]))
+write("test", "two", int_list("size", [1, 1, 1]), lst("blocks", 10, [block([0, 0, 0], 0)]),
+      lst("palettes", 9, [bytes([10]) + struct.pack(">i", 1) + v("stone"), bytes([10]) + struct.pack(">i", 1) + v("cobblestone")]))
+write("test", "cube", int_list("size", [2, 2, 2]),
+      lst("blocks", 10, [block([x, y, z], 0) for y in range(2) for x in range(2) for z in range(2)]), lst("palette", 10, [v("stone")]))
+write("test", "onlyent", int_list("size", [0, 1, 1]), lst("entities", 10, [PIG]), lst("blocks", 10, []), lst("palette", 10, [v("stone")]))
+write("test", "onlyent1", int_list("size", [1, 1, 1]), lst("entities", 10, [PIG]), lst("blocks", 10, []), lst("palette", 10, [v("stone")]))
+write("test", "nothing", int_list("size", [1, 1, 1]), lst("entities", 10, []), lst("blocks", 10, []), lst("palette", 10, [v("stone")]))
+write("test", "cube3", int_list("size", [3, 3, 3]),
+      lst("blocks", 10, [block([x, y, z], 0) for y in range(3) for x in range(3) for z in range(3)]), lst("palette", 10, [v("stone")]))

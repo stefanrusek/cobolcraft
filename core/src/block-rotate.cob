@@ -146,40 +146,69 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-ROT-VALUE.
-*> USING mode (1 digit to text, 2 text to digit; BINARY-LONG), spec (PIC X(280): the "a/b/c" list between the brackets of a property of the list kind), digit
-*> (BINARY-LONG), text (PIC X(32)). Mode 2 gives digit -1 for a text the property does not have. Only list properties (facing, axis, shape, hinge, orientation)
-*> are read by text; the sixteen steps and the sides work on the digit.
+*> USING mode (1 digit to text, 2 text to digit; BINARY-LONG), kind (PIC X: L list "a/b/c", R range "lo..hi", B boolean), spec (PIC X(280): the text between the
+*> brackets of the property list), low (the first value of a range), digit (BINARY-LONG), text (PIC X(32)). Mode 2 gives digit -1 for a text the property does not
+*> have. The rotate and mirror rules read list properties by text and the rest by digit; BLOCK-STATE-PROP reads and writes any kind by text.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-POINTER             BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-ITEM                PIC X(40).
+ 01 WS-NUMBER              PIC -(8)9.
  LINKAGE SECTION.
  01 L-MODE                 BINARY-LONG.
+ 01 L-KIND                 PIC X.
  01 L-SPEC                 PIC X(280).
+ 01 L-LOW                  BINARY-LONG.
  01 L-DIGIT                BINARY-LONG.
  01 L-TEXT                 PIC X(32).
- PROCEDURE DIVISION USING L-MODE L-SPEC L-DIGIT L-TEXT.
-     MOVE 1 TO WS-POINTER
+ PROCEDURE DIVISION USING L-MODE L-KIND L-SPEC L-LOW L-DIGIT L-TEXT.
      IF L-MODE = 1
-         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > L-DIGIT
-             MOVE SPACES TO WS-ITEM
-             UNSTRING L-SPEC DELIMITED BY "/" OR SPACE INTO WS-ITEM WITH POINTER WS-POINTER
-         END-PERFORM
          MOVE SPACES TO L-TEXT
-         MOVE WS-ITEM TO L-TEXT
+         EVALUATE L-KIND
+             WHEN "B"
+                 IF L-DIGIT = 0
+                     MOVE "true" TO L-TEXT
+                 ELSE
+                     MOVE "false" TO L-TEXT
+                 END-IF
+             WHEN "R"
+                 COMPUTE WS-I = L-LOW + L-DIGIT
+                 MOVE WS-I TO WS-NUMBER
+                 MOVE FUNCTION TRIM(WS-NUMBER) TO L-TEXT
+             WHEN OTHER
+                 MOVE 1 TO WS-POINTER
+                 PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > L-DIGIT
+                     MOVE SPACES TO WS-ITEM
+                     UNSTRING L-SPEC DELIMITED BY "/" OR SPACE INTO WS-ITEM WITH POINTER WS-POINTER
+                 END-PERFORM
+                 MOVE WS-ITEM TO L-TEXT
+         END-EVALUATE
          GOBACK
      END-IF
      MOVE -1 TO L-DIGIT
-     MOVE 0 TO WS-I
-     PERFORM UNTIL WS-POINTER > 280 OR L-DIGIT >= 0
-         MOVE SPACES TO WS-ITEM
-         UNSTRING L-SPEC DELIMITED BY "/" OR SPACE INTO WS-ITEM WITH POINTER WS-POINTER
-         IF WS-ITEM = L-TEXT
-             MOVE WS-I TO L-DIGIT
-         END-IF
-         ADD 1 TO WS-I
-     END-PERFORM
+     EVALUATE L-KIND
+         WHEN "B"
+             IF L-TEXT = "true"
+                 MOVE 0 TO L-DIGIT
+             END-IF
+             IF L-TEXT = "false"
+                 MOVE 1 TO L-DIGIT
+             END-IF
+         WHEN "R"
+             COMPUTE L-DIGIT = FUNCTION NUMVAL(L-TEXT) - L-LOW
+         WHEN OTHER
+             MOVE 1 TO WS-POINTER
+             MOVE 0 TO WS-I
+             PERFORM UNTIL WS-POINTER > 280 OR L-DIGIT >= 0
+                 MOVE SPACES TO WS-ITEM
+                 UNSTRING L-SPEC DELIMITED BY "/" OR SPACE INTO WS-ITEM WITH POINTER WS-POINTER
+                 IF WS-ITEM = L-TEXT
+                     MOVE WS-I TO L-DIGIT
+                 END-IF
+                 ADD 1 TO WS-I
+             END-PERFORM
+     END-EVALUATE
      GOBACK.
  END PROGRAM BLOCK-ROT-VALUE.
 
@@ -385,12 +414,12 @@
  GET-TEXT.
      PERFORM GET-DIGIT
      MOVE 1 TO WS-MODE
-     CALL "BLOCK-ROT-VALUE" USING WS-MODE LY-SPEC(WS-SLOT) WS-DIGIT WS-TEXT.
+     CALL "BLOCK-ROT-VALUE" USING WS-MODE LY-KIND(WS-SLOT) LY-SPEC(WS-SLOT) LY-LOW(WS-SLOT) WS-DIGIT WS-TEXT.
 
 *> Set property WS-SLOT to the text WS-TEXT (when the property has that value).
  PUT-TEXT.
      MOVE 2 TO WS-MODE
-     CALL "BLOCK-ROT-VALUE" USING WS-MODE LY-SPEC(WS-SLOT) WS-VALUE WS-TEXT
+     CALL "BLOCK-ROT-VALUE" USING WS-MODE LY-KIND(WS-SLOT) LY-SPEC(WS-SLOT) LY-LOW(WS-SLOT) WS-VALUE WS-TEXT
      IF WS-VALUE >= 0
          PERFORM PUT-DIGIT
      END-IF.
