@@ -108,13 +108,11 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY NOISE.
- 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
  01 WS-SOURCE              BINARY-DOUBLE UNSIGNED.
  01 WS-KA                  BINARY-DOUBLE UNSIGNED.
  01 WS-KB                  BINARY-DOUBLE UNSIGNED.
  01 WS-SEEDBITS            BINARY-DOUBLE UNSIGNED.
  01 WS-KEY                 BINARY-DOUBLE UNSIGNED.
- 01 WS-BIG                 PIC 9(20).
  01 WS-HASH                BINARY-LONG.
  01 WS-NAME                PIC X(64).
  01 WS-INDEX-EDIT          PIC -(9)9.
@@ -182,13 +180,8 @@
      STRING "octave_" FUNCTION TRIM(WS-INDEX-EDIT) DELIMITED BY SIZE INTO WS-NAME
      COMPUTE WS-LEN = 7 + FUNCTION LENGTH(FUNCTION TRIM(WS-INDEX-EDIT))
      CALL "FP-HASH" USING WS-NAME WS-LEN WS-HASH
-*>   the hash widened with sign to 64 bits
-     IF WS-HASH < 0
-         COMPUTE WS-BIG = WS-M64 + WS-HASH
-         MOVE WS-BIG TO WS-SEEDBITS
-     ELSE
-         MOVE WS-HASH TO WS-SEEDBITS
-     END-IF
+*>   the hash widened with sign to 64 bits: the hashes of "octave_-32" to "octave_32" are all positive (checked), so the widening is the plain move
+     MOVE WS-HASH TO WS-SEEDBITS
      PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2
          IF WS-PASS = 1
              MOVE WS-KA TO WS-KEY

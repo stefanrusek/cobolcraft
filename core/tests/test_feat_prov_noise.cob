@@ -132,6 +132,15 @@
      MOVE 440898197 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE SPACES TO WS-TEXT
+     MOVE "polygenelubricants" TO WS-TEXT
+     MOVE 18 TO WS-LEN
+     CALL "FP-HASH" USING WS-TEXT WS-LEN WS-HASH
+     MOVE "acceptance 35-2§5.2 hash(polygenelubricants) is the smallest int (the 32 bit wrap goes negative)" TO TL-CASE
+     MOVE WS-HASH TO TL-OBSERVED-N
+     MOVE -2147483648 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Example 7: the noise of flower_flower_forest: one octave, two layers of amplitude 5/6
      MOVE 0 TO WS-OCT
      MOVE 0.955388882960065 TO WS-AMP
@@ -431,6 +440,16 @@
      MOVE "acceptance 35-2§5.6 below the threshold: low_states[nextInt(4)], one draw" TO TL-CASE
      MOVE WS-STATE TO TL-OBSERVED-N
      MOVE WS-INDEX TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   high_chance 0: the float is drawn and the default state is the answer
+     CALL "FD-RESET"
+     MOVE "minecraft:threshold_default" TO WS-KEY
+     CALL "FD-PROV-NAMED" USING WS-KEY WS-PV
+     CALL "WGR-SET-SEED" USING XR-STATE WS-SEED-X
+     CALL "FR-PROV-STATE" USING XR-STATE WS-PV WS-X WS-Y WS-Z WS-STATE WS-OK
+     MOVE "acceptance 35-2§5.6 high_chance 0 above the threshold: the default state (dandelion), one float draw" TO TL-CASE
+     MOVE WS-STATE TO TL-OBSERVED-N
+     MOVE 102 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   high_chance 1: always the high branch, two draws (the float, then the int)
      CALL "FD-RESET"

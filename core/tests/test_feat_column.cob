@@ -50,6 +50,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-STATE-PLANT         BINARY-LONG.
+ 01 WS-CACTUS-STATE         BINARY-LONG.
  01 WS-N-AGE               PIC 99.
  01 WS-PN                  PIC 9.
  PROCEDURE DIVISION.
@@ -71,6 +72,16 @@
      MOVE "frosted_ice" TO WS-KEY
      CALL "BLOCKS-ID-OF" USING WS-KEY WS-ID(1)
      CALL "TAG-PUT" USING WS-REG WS-TAG WS-COUNT WS-IDS WS-STATUS
+*>   the std set has no cactus: one block row is appended to the open table for the would_survive test (below it the cactus itself passes)
+     ADD 1 TO CB-BLOCK-COUNT
+     MOVE "minecraft:cactus" TO CB-KEY(CB-BLOCK-COUNT)
+     MOVE 16 TO CB-KEY-LENGTH(CB-BLOCK-COUNT)
+     ADD 1 TO CB-STATE-COUNT
+     MOVE CB-STATE-COUNT TO WS-CACTUS-STATE
+     SUBTRACT 1 FROM WS-CACTUS-STATE
+     MOVE WS-CACTUS-STATE TO CB-DEFAULT-STATE(CB-BLOCK-COUNT) CB-FIRST-STATE(CB-BLOCK-COUNT)
+     MOVE 1 TO CB-STATES(CB-BLOCK-COUNT) CB-SOLID(CB-BLOCK-COUNT)
+     COMPUTE CB-S-BLOCK(CB-STATE-COUNT) = CB-BLOCK-COUNT - 1
      MOVE "minecraft:supports_cactus" TO WS-TAG
      MOVE 1 TO WS-COUNT
      MOVE "sand" TO WS-KEY
@@ -389,8 +400,8 @@
 *>   cactus (29b part 4 section 4.1): sand below with open sides passes, stone below, a solid neighbour and water above fail
      MOVE "minecraft:cactus_pred" TO WS-PFKEY
      MOVE 46 TO WS-Z
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
-         COMPUTE WS-X = 16 + WS-I * 3
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         COMPUTE WS-X = 16 + WS-I * 2
          MOVE "sand" TO WS-KEY
          IF WS-I = 2
              MOVE "stone" TO WS-KEY
@@ -403,6 +414,19 @@
              ADD 1 TO WS-X
              PERFORM PUT-CELL-AT
              SUBTRACT 1 FROM WS-X
+         END-IF
+         IF WS-I = 5
+             MOVE "lava" TO WS-KEY
+             MOVE SPACES TO WS-PAIRS
+             MOVE WS-Y TO WS-YY
+             ADD 1 TO WS-Z
+             PERFORM PUT-CELL-AT
+             SUBTRACT 1 FROM WS-Z
+         END-IF
+         IF WS-I = 6
+             COMPUTE WS-YY = WS-Y - 1
+             MOVE WS-CACTUS-STATE TO WS-STATE
+             CALL "FL-SET-STATE" USING WS-X WS-YY WS-Z WS-STATE WS-FLAGS WS-OK
          END-IF
          IF WS-I = 4
              MOVE "water" TO WS-KEY
@@ -427,9 +451,15 @@
              WHEN 3
                  MOVE "acceptance US12 29b-4§4.1 cactus: a solid horizontal neighbour fails would_survive" TO TL-CASE
                  MOVE 0 TO TL-EXPECTED-N
-             WHEN OTHER
+             WHEN 4
                  MOVE "acceptance US12 29b-4§4.1 cactus: a liquid above fails would_survive" TO TL-CASE
                  MOVE 0 TO TL-EXPECTED-N
+             WHEN 5
+                 MOVE "acceptance US12 29b-4§4.1 cactus: lava beside fails would_survive" TO TL-CASE
+                 MOVE 0 TO TL-EXPECTED-N
+             WHEN OTHER
+                 MOVE "acceptance US12 29b-4§4.1 cactus: a cactus below passes would_survive" TO TL-CASE
+                 MOVE WS-WANT TO TL-EXPECTED-N
          END-EVALUATE
          MOVE WS-STATE TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
