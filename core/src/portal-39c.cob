@@ -335,12 +335,10 @@
          IF WS-PX > WS-FV(WS-I, 4)
              MOVE WS-FV(WS-I, 4) TO WS-PX
          END-IF
+*>       the free boxes lie inside the probe, which starts at the centre's height, so the centre is never above one: only its floor can clamp
          MOVE WS-CY TO WS-PY
          IF WS-PY < WS-FV(WS-I, 2)
              MOVE WS-FV(WS-I, 2) TO WS-PY
-         END-IF
-         IF WS-PY > WS-FV(WS-I, 5)
-             MOVE WS-FV(WS-I, 5) TO WS-PY
          END-IF
          MOVE WS-CZ TO WS-PZ
          IF WS-PZ < WS-FV(WS-I, 3)
