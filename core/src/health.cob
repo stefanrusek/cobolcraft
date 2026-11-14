@@ -608,6 +608,7 @@
  01 WS-DTYPE               BINARY-LONG.
  01 WS-DMG                 BINARY-LONG.
  01 WS-LIKED               BINARY-LONG.
+ 01 WS-ABSORBED            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -627,12 +628,18 @@
      IF WS-LIKED = 1
          GOBACK
      END-IF
+     CALL "WOLF-HURT" USING WS-ROW
      IF L-ATTACKER > 0
          MOVE L-ATTACKER TO EN-KILLER(WS-ROW)
          MOVE 100 TO EN-KILLER-AGE(WS-ROW)
          CALL "NETHER-HURT" USING WS-ROW L-ATTACKER
          CALL "ARMADILLO-HURT" USING WS-ROW L-ATTACKER
          CALL "PANDA-HURT" USING WS-ROW L-ATTACKER
+     END-IF
+*>   Wolf armour absorbs the hit instead of the wolf (19 section 6.1).
+     CALL "WOLF-ARMOR-ABSORB" USING WS-ROW WS-DMG WS-ABSORBED
+     IF WS-ABSORBED = 1
+         GOBACK
      END-IF
 *>   A scared armadillo takes (amount - 1) / 2 (19 section 13).
      CALL "ARMADILLO-REDUCE" USING WS-ROW WS-DMG

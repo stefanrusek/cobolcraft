@@ -413,6 +413,9 @@
        10 EN-ALLAY-DANCE      BINARY-LONG.        *> allay: 1 while dancing (metadata 16)
        10 EN-ALLAY-T          BINARY-LONG.        *> allay: ticks since the last regeneration
        10 EN-STRENGTH         BINARY-LONG.        *> llama: strength 1 to 5 (metadata 20); the variant 0 to 3 is EN-WOOL (metadata 21)
+*>     --- 002-lane-mobsfull-h23: wolf armour (core/src/mob-19-6.cob; 19 section 6.1) ---
+       10 EN-WOLF-ARM         BINARY-LONG.        *> wolf: item id of the armour in the body slot (0 none)
+       10 EN-WOLF-ARM-DMG     BINARY-LONG.        *> wolf: durability damage of that armour
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

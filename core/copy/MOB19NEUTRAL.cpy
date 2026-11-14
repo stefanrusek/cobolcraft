@@ -9,7 +9,7 @@
        10 FILLER BINARY-LONG VALUE 4.              *> attack_damage 4
        10 FILLER BINARY-LONG VALUE 16.
        10 FILLER BINARY-LONG VALUE 0.
-       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 6.              *> neutral 6: a wild wolf is angered by a hit of a player (WOLF-HURT, NETHER-HURT)
        10 FILLER BINARY-LONG VALUE 0.              *> experience: 1 + nextInt(3) like an animal
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
