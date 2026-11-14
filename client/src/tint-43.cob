@@ -1745,3 +1745,64 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM TINT-ITEM-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TINT-MAPS-LOAD.
+*> USING CLIENT-STATE (the pack stack built): section 3.1, the colormaps. textures/colormap/grass.png, foliage.png
+*> and dry_foliage.png are read from the top-most pack that has them (PACK-IMAGE, RGBA) into TT-MAP-GRASS, -FOLIAGE and
+*> -DRY as ARGB, row-major with a stride of 256 (pixel y x 256 + x at index + 1). A map no pack has, or one that is not
+*> 256 x 256, stays as it was (colour 0 before any pack: the mesher leaves such a tint white). Without them every grass
+*> and foliage tint of a biome without its own colour was black.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLTINT.
+ 01 WS-PATHS.
+    05 FILLER PIC X(50) VALUE "assets/minecraft/textures/colormap/grass.png".
+    05 FILLER PIC X(50) VALUE "assets/minecraft/textures/colormap/foliage.png".
+    05 FILLER PIC X(50) VALUE "assets/minecraft/textures/colormap/dry_foliage.png".
+ 01 WS-PATH-TABLE REDEFINES WS-PATHS.
+    05 WS-PATH-ENTRY       PIC X(50) OCCURS 3 TIMES.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-MAP                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 262144.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-COLOUR              BINARY-DOUBLE.
+ 01 WS-IMAGE.
+    05 WS-PIXEL            PIC X OCCURS 262144 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-MAP FROM 1 BY 1 UNTIL WS-MAP > 3
+         MOVE SPACES TO WS-PATH
+         MOVE WS-PATH-ENTRY(WS-MAP) TO WS-PATH
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
+         CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE WS-CAPACITY
+             WS-W WS-H WS-FOUND
+         IF WS-FOUND = 1 AND WS-W = 256 AND WS-H = 256
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 65536
+                 COMPUTE WS-P = (WS-I - 1) * 4
+                 COMPUTE WS-R = FUNCTION ORD(WS-PIXEL(WS-P + 1)) - 1
+                 COMPUTE WS-G = FUNCTION ORD(WS-PIXEL(WS-P + 2)) - 1
+                 COMPUTE WS-B = FUNCTION ORD(WS-PIXEL(WS-P + 3)) - 1
+                 COMPUTE WS-COLOUR = (4278190080 + WS-R * 65536) + (WS-G * 256 + WS-B)
+                 EVALUATE WS-MAP
+                     WHEN 1
+                         MOVE WS-COLOUR TO TT-MAP-GRASS(WS-I)
+                     WHEN 2
+                         MOVE WS-COLOUR TO TT-MAP-FOLIAGE(WS-I)
+                     WHEN OTHER
+                         MOVE WS-COLOUR TO TT-MAP-DRY(WS-I)
+                 END-EVALUATE
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TINT-MAPS-LOAD.
