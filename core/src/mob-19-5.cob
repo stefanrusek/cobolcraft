@@ -305,6 +305,22 @@
              CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
          END-IF
      END-IF
+     IF WS-KEY = "tadpole" AND EN-LOCKED(L-ROW) = 1
+*>       Tadpole: age locked (17, BOOLEAN; 16 from bucket is false; 19 section 11.2).
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE 17 TO CD-MX-INDEX
+         MOVE WS-SERIALIZER-BOOLEAN TO CD-MX-SERIALIZER
+         MOVE 1 TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+     END-IF
+     IF WS-KEY = "frog" AND EN-TONGUE(L-ROW) > 0
+*>       Frog: the tongue target (19, OPTIONAL_UNSIGNED_INT: the entity id + 1; 19 section 11.1).
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE 19 TO CD-MX-INDEX
+         MOVE 19 TO CD-MX-SERIALIZER
+         COMPUTE CD-MX-INT = EN-TONGUE-ID(L-ROW) + 1
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+     END-IF
      IF WS-KEY = "armadillo"
 *>       Armadillo: the state (18, ARMADILLO_STATE, a VarInt of the id enum 36; 19 section 13).
          INITIALIZE CD-METADATA-ENTRY-X

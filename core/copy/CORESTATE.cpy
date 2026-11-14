@@ -395,6 +395,12 @@
        10 EN-ARMA-SCAN       BINARY-LONG.        *> armadillo: ticks since the last danger scan (every 80)
        10 EN-DANGER          BINARY-LONG.        *> armadillo: ticks left of danger_detected_recently (80)
        10 EN-SCUTE           BINARY-LONG.        *> armadillo: scuteTime, ticks to the next scute
+*>     --- 002-lane-mobsfull-h21: tadpole, frog, panda, fox, allay, sniffer, llama, camel (core/src/mob-19-7.cob to mob-19-15.cob) ---
+       10 EN-TAD-AGE          BINARY-LONG.        *> tadpole: age in ticks (24000 = frog); locked with EN-LOCKED
+       10 EN-TONGUE           BINARY-LONG.        *> frog: tongue state 0 none, 1 moving to the target, 2 catch animation, 3 eat animation
+       10 EN-TONGUE-T         BINARY-LONG.        *> frog: animation timer of the tongue
+       10 EN-TONGUE-ROW       BINARY-LONG.        *> frog: tracker row of the tongue target and its entity id in EN-TONGUE-ID
+       10 EN-TONGUE-ID        BINARY-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

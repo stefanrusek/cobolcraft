@@ -918,6 +918,7 @@
  01 WS-PET-HX              FLOAT-LONG.
  01 WS-PET-HZ              FLOAT-LONG.
  01 WS-RIDE-DONE           BINARY-LONG.
+ 01 WS-TAD-GONE            BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -969,6 +970,12 @@
          SUBTRACT 1 FROM EN-KILLER-AGE(WS-ROW)
          IF EN-KILLER-AGE(WS-ROW) = 0
              MOVE 0 TO EN-KILLER(WS-ROW)
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "tadpole"
+         CALL "TADPOLE-TICK" USING WS-ROW WS-TAD-GONE
+         IF WS-TAD-GONE = 1
+             GOBACK
          END-IF
      END-IF
      IF SM-KIND(WS-M) >= 2
@@ -1027,6 +1034,9 @@
      END-IF
      IF SM-KEY(WS-M) = "armadillo"
          CALL "ARMADILLO-TICK" USING WS-ROW WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "frog"
+         CALL "FROG-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP

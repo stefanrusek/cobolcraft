@@ -362,6 +362,12 @@
              END-IF
          END-IF
      END-IF
+*>   The tadpole is a water animal (kind 2): its lock is sent too (19 section 11.2).
+     IF WS-M > 0
+         IF (SM-KEY(WS-M) = "tadpole" AND EN-LOCKED(L-ROW) = 1) OR (SM-KEY(WS-M) = "frog" AND EN-TONGUE(L-ROW) > 0)
+             MOVE 1 TO L-NEEDED
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM MOB-DATA-VALUES.
 
@@ -1382,6 +1388,8 @@
              CALL "MOB-CAT-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "iron_golem" AND WS-HELD = "iron_ingot"
              CALL "MOB-GOLEM-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "tadpole"
+             CALL "MOB-TADPOLE-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "creeper"
              CALL "STDMOB-IGNITE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN OTHER
