@@ -1,0 +1,134 @@
+*> Benchmark and cost test (lane resume, T5820; docs/protocol/18 sections 5 and 6): 70 hostile standard mobs (zombies, skeletons, spiders; a creeper explodes and would change the count) stand 8 to 40 blocks from a
+*> survival player at night in a standard world with 9 x 9 chunks loaded; MOBS-TICK and CORE-TICK run for 100 ticks. The mean cost of a tick is shown
+*> (DISPLAY "BENCH ...", milliseconds) and must stay below a generous bound, so that a per mob cost that grows with the mob count is noticed.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STDMOB-BENCH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY PROTO.
+ COPY BRWORLD.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-TYPES.
+    05 WS-TYPE             BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-NAMES.
+    05 FILLER PIC X(24) VALUE "minecraft:zombie".
+    05 FILLER PIC X(24) VALUE "minecraft:zombie".
+    05 FILLER PIC X(24) VALUE "minecraft:skeleton".
+    05 FILLER PIC X(24) VALUE "minecraft:spider".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-KEY-NAME         PIC X(24) OCCURS 4 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-CROW                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-MX                  FLOAT-LONG.
+ 01 WS-MZ                  FLOAT-LONG.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-DISTANCE            FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-MOB                 BINARY-LONG.
+ 01 WS-NIGHT               BINARY-DOUBLE VALUE 18000.
+ 01 WS-DATE                PIC X(21).
+ 01 WS-T0                  BINARY-DOUBLE.
+ 01 WS-T1                  BINARY-DOUBLE.
+ 01 WS-HUNDREDTHS          BINARY-DOUBLE.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-MS                 FLOAT-LONG.
+ 01 WS-MS-TEXT             PIC -(5)9.99.
+ 01 WS-TICKS               BINARY-LONG VALUE 200.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-PASS                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 1000000 TO PL-HEALTH(WS-PLAYER)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE SPACES TO WS-KEY
+         MOVE WS-KEY-NAME(WS-I) TO WS-KEY
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE(WS-I) WS-ENTITY-ROW WS-STATUS
+     END-PERFORM
+     PERFORM VARYING WS-CX FROM -4 BY 1 UNTIL WS-CX > 4
+         PERFORM VARYING WS-CZ FROM -4 BY 1 UNTIL WS-CZ > 4
+             CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CROW
+         END-PERFORM
+     END-PERFORM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE WS-NIGHT TO CW-TIME
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 69
+         COMPUTE WS-ANGLE = WS-I * 2.399963
+         COMPUTE WS-DISTANCE = 8 + FUNCTION MOD(WS-I * 7, 33)
+         COMPUTE WS-MX = WS-X + WS-DISTANCE * FUNCTION COS(WS-ANGLE)
+         COMPUTE WS-MZ = WS-Z + WS-DISTANCE * FUNCTION SIN(WS-ANGLE)
+         COMPUTE WS-PASS = FUNCTION MOD(WS-I, 3) + 1
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE(WS-PASS) WS-MX WS-Y WS-MZ WS-YAW WS-MOB
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+         CALL "MOBS-TICK"
+     END-PERFORM
+     PERFORM NOW
+     MOVE WS-HUNDREDTHS TO WS-T0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TICKS
+         CALL "MOBS-TICK"
+     END-PERFORM
+     PERFORM NOW
+     COMPUTE WS-MS = (WS-HUNDREDTHS - WS-T0) * 10 / WS-TICKS
+     MOVE WS-MS TO WS-MS-TEXT
+     DISPLAY "BENCH mobs-tick ms per tick (70 mobs): " WS-MS-TEXT
+     COMPUTE WS-COUNT = WS-MS
+     MOVE "test stdmob bench: MOBS-TICK with 70 hostile mobs costs less than 40 ms a tick" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-COUNT < 40
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM NOW
+     MOVE WS-HUNDREDTHS TO WS-T0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TICKS
+         CALL "TEST-TICKS" USING WS-ONE
+     END-PERFORM
+     PERFORM NOW
+     COMPUTE WS-MS = (WS-HUNDREDTHS - WS-T0) * 10 / WS-TICKS
+     MOVE WS-MS TO WS-MS-TEXT
+     DISPLAY "BENCH core-tick ms per tick (70 mobs): " WS-MS-TEXT
+*>   The duration of the autosave (WORLD-SAVE: changed chunks, entities, players, level.dat) with these 70 mobs in the world.
+     PERFORM NOW
+     MOVE WS-HUNDREDTHS TO WS-T0
+     CALL "CORE-SAVE"
+     PERFORM NOW
+     COMPUTE WS-MS = (WS-HUNDREDTHS - WS-T0) * 10
+     MOVE WS-MS TO WS-MS-TEXT
+     DISPLAY "BENCH world-save ms (70 mobs, 81 chunks loaded): " WS-MS-TEXT
+     STOP RUN.
+ NOW.
+     MOVE FUNCTION CURRENT-DATE TO WS-DATE
+     COMPUTE WS-HUNDREDTHS = FUNCTION NUMVAL(WS-DATE(9:2)) * 360000 + FUNCTION NUMVAL(WS-DATE(11:2)) * 6000
+         + FUNCTION NUMVAL(WS-DATE(13:2)) * 100 + FUNCTION NUMVAL(WS-DATE(15:2)).
+ END PROGRAM TEST-STDMOB-BENCH.
+ COPY CORETEST.
