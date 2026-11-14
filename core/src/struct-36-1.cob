@@ -833,6 +833,7 @@
  01 WS-Z                   BINARY-LONG.
  01 WS-VALID               BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-ANY                 BINARY-LONG.
  01 WS-KEY                 PIC X(80).
  LINKAGE SECTION.
  01 L-SEED                 BINARY-DOUBLE.
@@ -841,11 +842,17 @@
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-SEED L-CX L-CZ L-COUNT.
      MOVE 0 TO SD-START-COUNT
-     COMPUTE WS-X = L-CX * 16 + 8
-     MOVE 0 TO WS-Y
-     COMPUTE WS-Z = L-CZ * 16 + 8
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
-         IF SS-POSSIBLE(WS-S) = 1
+         MOVE 0 TO WS-ANY
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(WS-S)
+             MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-K) TO WS-ST
+             MOVE ST-KEY(WS-ST) TO WS-KEY
+             CALL "STRUCT-GATE" USING WS-KEY WS-ON
+             IF WS-ON = 1
+                 MOVE 1 TO WS-ANY
+             END-IF
+         END-PERFORM
+         IF SS-POSSIBLE(WS-S) = 1 AND WS-ANY = 1
              CALL "STRUCT-IS-CHUNK" USING WS-S L-SEED L-CX L-CZ WS-FLAG
              IF WS-FLAG = 1
                  CALL "STRUCT-ENTRY-ORDER" USING WS-S L-SEED L-CX L-CZ WS-ORDER WS-N
@@ -856,7 +863,10 @@
                      CALL "STRUCT-GATE" USING WS-KEY WS-ON
                      MOVE 0 TO WS-VALID
                      IF WS-ON = 1
-                         CALL "STRUCT-VALID-AT" USING WS-ST WS-X WS-Y WS-Z WS-VALID
+                         CALL "STRUCT-FIND-POINT" USING WS-ST L-SEED L-CX L-CZ WS-X WS-Y WS-Z WS-VALID
+                         IF WS-VALID = 1
+                             CALL "STRUCT-VALID-AT" USING WS-ST WS-X WS-Y WS-Z WS-VALID
+                         END-IF
                      END-IF
                      IF WS-VALID = 1
                          ADD 1 TO SD-START-COUNT
@@ -894,14 +904,14 @@
      IF SD-GATE-COUNT = 0
          GOBACK
      END-IF
-     IF J-SUB NOT = 0
-         GOBACK
-     END-IF
      IF SD-POSS-DONE = 0
          CALL "STRUCT-POSSIBLE-BUILD"
      END-IF
-     COMPUTE WS-SEED = FUNCTION MOD(CV-SEED + WS-M63, WS-M64) - WS-M63
-     CALL "STRUCT-CHUNK-STARTS" USING WS-SEED J-CX J-CZ WS-COUNT
-     ADD WS-COUNT TO SD-STARTS-SEEN
+     IF J-SUB = 0
+         COMPUTE WS-SEED = FUNCTION MOD(CV-SEED + WS-M63, WS-M64) - WS-M63
+         CALL "STRUCT-CHUNK-STARTS" USING WS-SEED J-CX J-CZ WS-COUNT
+         ADD WS-COUNT TO SD-STARTS-SEEN
+     END-IF
+     CALL "STRUCT-DECORATE" USING L-JOB
      GOBACK.
  END PROGRAM STRUCT-STAGE-HOOK.
