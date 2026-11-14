@@ -86,14 +86,14 @@
      MOVE "acceptance US12 36-5§2.7 Mineshaft helpers: the flags table marks sand as falling (1), seagrass replaceable (2) and a concrete powder falling" TO TL-CASE
      CALL "FL-BLOCK-OF" USING WS-SAND WS-I
      CALL "FL-BLOCK-OF" USING WS-SEAGRASS WS-J
-     COMPUTE TL-OBSERVED-N = SB-FLAGS(WS-I) * 10 + SB-FLAGS(WS-J)
+     COMPUTE TL-OBSERVED-N = SBK-FLAGS(WS-I) * 10 + SBK-FLAGS(WS-J)
      MOVE 12 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:red_concrete_powder" TO WS-KEY
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-S
      CALL "FL-BLOCK-OF" USING WS-S WS-I
      MOVE "acceptance US12 36-5§2.7 Mineshaft helpers: red concrete powder falls too" TO TL-CASE
-     MOVE SB-FLAGS(WS-I) TO TL-OBSERVED-N
+     MOVE SBK-FLAGS(WS-I) TO TL-OBSERVED-N
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -114,11 +114,11 @@
          PERFORM SET-CELL
      END-PERFORM
      MOVE 40 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE 36 TO WS-Y
-     MOVE SB-LOG-S(1) TO WS-WANT
+     MOVE SBK-LOG-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: the example of the document: a plank at y 40 with air down to y 36 and stone below gets wood from y 36" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 39 TO WS-Y
@@ -139,20 +139,20 @@
      MOVE WS-LAVA TO WS-S
      PERFORM SET-CELL
      MOVE 40 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      PERFORM VARYING WS-Y FROM 41 BY 1 UNTIL WS-Y > 45
          MOVE 0 TO WS-S
          PERFORM SET-CELL
      END-PERFORM
      MOVE 40 TO WS-Y
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE 41 TO WS-Y
-     MOVE SB-FENCE-P(1) TO WS-WANT
+     MOVE SBK-FENCE-P(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: lava stops the downward look; looking up, a stone ceiling at y 46 gets a fence at y 41 and chain below it" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 42 TO WS-Y
-     MOVE SB-S-CHAIN TO WS-WANT
+     MOVE SBK-S-CHAIN TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: chain from y 42" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 45 TO WS-Y
@@ -169,7 +169,7 @@
      MOVE WS-LAVA TO WS-S
      PERFORM SET-CELL
      MOVE 40 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      PERFORM VARYING WS-Y FROM 37 BY 1 UNTIL WS-Y > 39
          MOVE WS-LAVA TO WS-S
@@ -183,7 +183,7 @@
      MOVE WS-SAND TO WS-S
      PERFORM SET-CELL
      MOVE 40 TO WS-Y
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE 41 TO WS-Y
      MOVE 0 TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: a sand ceiling is a falling block: no fence, no chain" TO TL-CASE
@@ -192,13 +192,13 @@
      MOVE 11 TO WS-X
      MOVE 11 TO WS-Z
      MOVE 40 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      MOVE 39 TO WS-Y
      MOVE WS-LAVA TO WS-S
      PERFORM SET-CELL
      MOVE 40 TO WS-Y
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE 41 TO WS-Y
      MOVE WS-STONE TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: stone directly above the post (one cell up) is not overwritten by a fence" TO TL-CASE
@@ -207,14 +207,14 @@
      MOVE 13 TO WS-X
      MOVE 13 TO WS-Z
      MOVE -60 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      PERFORM VARYING WS-Y FROM -63 BY 1 UNTIL WS-Y > -61
          MOVE 0 TO WS-S
          PERFORM SET-CELL
      END-PERFORM
      MOVE -60 TO WS-Y
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE -61 TO WS-Y
      MOVE 0 TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: the look down stops at min y + 2: nothing is built toward the bottom layers" TO TL-CASE
@@ -222,12 +222,12 @@
      MOVE 3 TO WS-X
      MOVE 3 TO WS-Z
      MOVE 315 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      MOVE 2 TO WS-DEP
      MOVE 380 TO A-Y1
      CALL "SPB-BOX-NEW" USING A-X0 A-Y0 A-Z0 A-X1 A-Y1 A-Z1 WS-BOX
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE 316 TO WS-Y
      MOVE 0 TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: the look up stops before the top of the level: nothing at y 316 (air)" TO TL-CASE
@@ -235,7 +235,7 @@
      MOVE 20 TO WS-X
      MOVE 40 TO WS-Y
      MOVE 5 TO WS-Z
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: a post outside the write box does nothing (no overflow recorded)" TO TL-CASE
      MOVE FL-OV-COUNT TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
@@ -262,14 +262,14 @@
      MOVE "acceptance US12 36-5§2.8 Mineshaft cobweb: a draw not below the chance places nothing" TO TL-CASE
      PERFORM CHECK-CELL
      CALL "MSP-COBWEB" USING WS-ROW WS-ONE WS-X WS-Y WS-Z
-     MOVE SB-S-COBWEB TO WS-WANT
+     MOVE SBK-S-COBWEB TO WS-WANT
      MOVE "acceptance US12 36-5§2.8 Mineshaft cobweb: with chance 1 and six full neighbours the cobweb is placed" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 0 TO WS-X
      MOVE 0 TO WS-S
      PERFORM SET-CELL
      CALL "MSP-COBWEB" USING WS-ROW WS-ONE WS-X WS-Y WS-Z
-     MOVE SB-S-COBWEB TO WS-WANT
+     MOVE SBK-S-COBWEB TO WS-WANT
      MOVE "acceptance US12 36-5§2.8 Mineshaft cobweb: at the west edge of the chunk the outside neighbour does not count, five full ones remain" TO TL-CASE
      PERFORM CHECK-CELL
      PERFORM VARYING WS-X FROM 8 BY 1 UNTIL WS-X > 12
@@ -325,7 +325,7 @@
      PERFORM CELL-STATE
      MOVE "acceptance US12 36-5§2.10 Mineshaft chest minecart: a free cell with ground gets a rail (north_south or east_west)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
-     IF WS-S = SB-S-RAIL(1) OR WS-S = SB-S-RAIL(2)
+     IF WS-S = SBK-S-RAIL(1) OR WS-S = SBK-S-RAIL(2)
          MOVE 1 TO TL-EXPECTED-N
      END-IF
      MOVE 1 TO TL-OBSERVED-N
@@ -412,14 +412,14 @@
          SUBTRACT 2 FROM WS-X
      END-PERFORM
      MOVE 40 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      ADD 2 TO WS-X
      PERFORM SET-CELL
      SUBTRACT 2 FROM WS-X
      CALL "MSP-DOUBLE" USING WS-ROW WS-X WS-Y WS-Z
      MOVE 38 TO WS-Y
-     MOVE SB-LOG-S(1) TO WS-WANT
+     MOVE SBK-LOG-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft double support: the post at x gets a pillar" TO TL-CASE
      PERFORM CHECK-CELL
      ADD 2 TO WS-X
@@ -431,10 +431,10 @@
      MOVE 6 TO WS-X
      MOVE 6 TO WS-Z
      MOVE 20 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      CALL "MSP-PLACE" USING WS-ROW WS-X WS-Y WS-Z WS-STONE
-     MOVE SB-PLANKS-S(1) TO WS-WANT
+     MOVE SBK-PLANKS-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.9 Mineshaft: an oak piece does not overwrite oak planks" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 1 TO SP-MST(WS-ROW)
@@ -457,18 +457,18 @@
      MOVE 9 TO WS-X1
      MOVE 25 TO WS-Y1
      MOVE 8 TO WS-Z1
-     CALL "MSP-BOX" USING WS-ROW WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SB-PLANKS-S(1) SB-S-CAVE-AIR WS-SKIP
+     CALL "MSP-BOX" USING WS-ROW WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SBK-PLANKS-S(1) SBK-S-CAVE-AIR WS-SKIP
      MOVE 0 TO WS-WANT
      MOVE "acceptance US12 36-5§6.5 Mineshaft: generateBox with skipAir leaves an air cell" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 9 TO WS-X
-     MOVE SB-PLANKS-S(1) TO WS-WANT
+     MOVE SBK-PLANKS-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§6.5 Mineshaft: and fills the rock cell next to it" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 1 TO WS-SKIP
      MOVE 8 TO WS-X
      MOVE 0 TO WS-I
-     CALL "MSP-MAYBE-BOX" USING WS-ROW WS-ONE WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SB-S-COBWEB BY CONTENT SB-S-COBWEB WS-SKIP BY REFERENCE WS-SKIP
+     CALL "MSP-MAYBE-BOX" USING WS-ROW WS-ONE WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SBK-S-COBWEB BY CONTENT SBK-S-COBWEB WS-SKIP BY REFERENCE WS-SKIP
      MOVE 0 TO WS-WANT
      MOVE "acceptance US12 36-5§6.5 Mineshaft: generateMaybeBox with skipAir leaves the air cell too (the cell above the surface is not interior, none placed in air)" TO TL-CASE
      PERFORM CHECK-CELL
@@ -478,7 +478,7 @@
      MOVE 10 TO WS-X1
      MOVE 28 TO WS-Y1
      MOVE 10 TO WS-Z1
-     CALL "MSP-SPHERE" USING WS-ROW WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SB-S-CAVE-AIR WS-SKIP
+     CALL "MSP-SPHERE" USING WS-ROW WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SBK-S-CAVE-AIR WS-SKIP
      MOVE 8 TO WS-X
      MOVE 25 TO WS-Y
      MOVE 8 TO WS-Z
@@ -590,7 +590,7 @@
      MOVE 4 TO WS-X
      MOVE 59 TO WS-Y
      MOVE 3 TO WS-Z
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.5 Mineshaft room: an entrance box (y 56 to 60) is opened from maxY - 2 up: (4,59,3) is air" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 56 TO WS-Y
@@ -622,7 +622,7 @@
          MOVE 50 TO WS-Y
          PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 14
              PERFORM CELL-STATE
-             IF WS-S = SB-S-RAIL(2)
+             IF WS-S = SBK-S-RAIL(2)
                  ADD 1 TO WS-HITS
              END-IF
          END-PERFORM
@@ -652,7 +652,7 @@
      MOVE WS-LAVA TO WS-S
      PERFORM SET-CELL
      MOVE 40 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-S
+     MOVE SBK-PLANKS-S(1) TO WS-S
      PERFORM SET-CELL
      MOVE 41 TO WS-Y
      MOVE WS-SEAGRASS TO WS-S
@@ -662,9 +662,9 @@
          PERFORM SET-CELL
      END-PERFORM
      MOVE 40 TO WS-Y
-     CALL "MSP-PILLAR" USING WS-ROW SB-LOG-S(1) WS-X WS-Y WS-Z
+     CALL "MSP-PILLAR" USING WS-ROW SBK-LOG-S(1) WS-X WS-Y WS-Z
      MOVE 44 TO WS-Y
-     MOVE SB-S-CHAIN TO WS-WANT
+     MOVE SBK-S-CHAIN TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft pillar: seagrass above the post is replaceable by structures, so the look up goes on and hangs the chain to y 44" TO TL-CASE
      PERFORM CHECK-CELL
 
@@ -679,14 +679,14 @@
      MOVE 47 TO WS-Y1
      MOVE 9 TO WS-Z1
      MOVE 0 TO WS-SKIP
-     CALL "MSP-MAYBE-BOX" USING WS-ROW WS-CHANCE WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SB-S-COBWEB SB-S-CAVE-AIR WS-SKIP BY CONTENT WS-SKIP
+     CALL "MSP-MAYBE-BOX" USING WS-ROW WS-CHANCE WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SBK-S-COBWEB SBK-S-CAVE-AIR WS-SKIP BY CONTENT WS-SKIP
      MOVE 0 TO WS-HITS
      MOVE 0 TO WS-J
      PERFORM VARYING WS-X FROM 3 BY 1 UNTIL WS-X > 8
          PERFORM VARYING WS-Y FROM 41 BY 1 UNTIL WS-Y > 46
              PERFORM VARYING WS-Z FROM 3 BY 1 UNTIL WS-Z > 8
                  PERFORM CELL-STATE
-                 IF WS-S = SB-S-CAVE-AIR
+                 IF WS-S = SBK-S-CAVE-AIR
                      ADD 1 TO WS-HITS
                  END-IF
                  IF WS-S = WS-STONE
@@ -726,7 +726,7 @@
          MOVE 50 TO WS-Y
          MOVE 1 TO WS-Z
          PERFORM CELL-STATE
-         IF WS-S = SB-S-RAIL(1) OR WS-S = SB-S-RAIL(2)
+         IF WS-S = SBK-S-RAIL(1) OR WS-S = SBK-S-RAIL(2)
              ADD 1 TO WS-HITS
          END-IF
      END-PERFORM
@@ -749,7 +749,7 @@
      MOVE 4 TO WS-Z1
      MOVE 0 TO WS-SKIP
      MOVE 1 TO WS-INT
-     CALL "MSP-MAYBE-BOX" USING WS-ROW WS-ONE WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SB-S-COBWEB BY CONTENT SB-S-COBWEB WS-SKIP BY REFERENCE WS-INT
+     CALL "MSP-MAYBE-BOX" USING WS-ROW WS-ONE WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 SBK-S-COBWEB BY CONTENT SBK-S-COBWEB WS-SKIP BY REFERENCE WS-INT
      MOVE 3 TO WS-X
      MOVE 75 TO WS-Y
      MOVE 3 TO WS-Z

@@ -68,7 +68,7 @@
 
 *>   the data: the structures' types, the mesa variant and the blocking biome tag
      MOVE "acceptance US12 36-5§1 Mineshaft: the two structures of the set are loaded, the second is the mesa variant (mineshaft_type)" TO TL-CASE
-     COMPUTE TL-OBSERVED-N = SD-ST-COUNT * 10 + ST-VARIANT(1) + ST-VARIANT(2) * 100
+     COMPUTE TL-OBSERVED-N = SD-ST-COUNT * 10 + SDT-VARIANT(1) + SDT-VARIANT(2) * 100
      MOVE 120 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 36-5§2.9 Mineshaft: the blocking biome tag of the fixture holds deep_dark and desert" TO TL-CASE
@@ -95,7 +95,7 @@
      PERFORM CELL-STATE
      MOVE "acceptance US12 36-5§2.5 Mineshaft room: the cell in the middle of the first three layers is cave air" TO TL-CASE
      MOVE WS-S TO TL-OBSERVED-N
-     MOVE SB-S-CAVE-AIR TO TL-EXPECTED-N
+     MOVE SBK-S-CAVE-AIR TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 50 TO WS-Y
      PERFORM CELL-STATE
@@ -107,7 +107,7 @@
      PERFORM CELL-STATE
      MOVE "acceptance US12 36-5§2.5 Mineshaft room: the dome is air above the middle (y 55)" TO TL-CASE
      MOVE WS-S TO TL-OBSERVED-N
-     MOVE SB-S-CAVE-AIR TO TL-EXPECTED-N
+     MOVE SBK-S-CAVE-AIR TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-X
      MOVE 2 TO WS-Z
@@ -133,7 +133,7 @@
      MOVE 4 TO WS-X
      MOVE 51 TO WS-Y
      MOVE 4 TO WS-Z
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.11 Mineshaft crossing: the centre is air" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 2 TO WS-X
@@ -143,7 +143,7 @@
      PERFORM CHECK-CELL
      MOVE 3 TO WS-X
      MOVE 3 TO WS-Z
-     MOVE SB-PLANKS-S(1) TO WS-WANT
+     MOVE SBK-PLANKS-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.11 Mineshaft crossing: the inner corner is a planks pillar (a block above the top)" TO TL-CASE
      PERFORM CHECK-CELL
 *>   the floor under it: stone is a full cube, so planks only where there is air below (carve (4,49,4))
@@ -155,7 +155,7 @@
      MOVE 0 TO CE-STATE(WS-I)
      PERFORM ADD-PIECE
      CALL "MS-POST" USING WS-ROW
-     MOVE SB-PLANKS-S(1) TO WS-WANT
+     MOVE SBK-PLANKS-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.11 Mineshaft crossing: the floor layer minY - 1 gets planks where the block is not a full cube" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 4 TO WS-Z
@@ -173,15 +173,15 @@
      MOVE 4 TO WS-X
      MOVE 4 TO WS-Z
      MOVE 52 TO WS-Y
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.11 Mineshaft crossing two floored: the lower floor is air" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 53 TO WS-Y
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.11 Mineshaft crossing two floored: the inner layer at minY + 3 is air too" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 54 TO WS-Y
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.11 Mineshaft crossing two floored: the upper floor is air" TO TL-CASE
      PERFORM CHECK-CELL
 
@@ -200,21 +200,21 @@
      MOVE 5 TO WS-X
      MOVE 51 TO WS-Y
      MOVE 7 TO WS-Z
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.12 Mineshaft stairs: the entry box (local 0,5,0 to 2,7,1) is air: local (1,6,0) is world (5,51,8)" TO TL-CASE
      MOVE 8 TO WS-Z
      PERFORM CHECK-CELL
      MOVE 5 TO WS-X
      MOVE 46 TO WS-Y
      MOVE 1 TO WS-Z
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.12 Mineshaft stairs: the bottom box (local 0,0,7 to 2,2,8) is air: local (1,1,8) is world (5,46,0)" TO TL-CASE
      MOVE 0 TO WS-Z
      PERFORM CHECK-CELL
      MOVE 5 TO WS-X
      MOVE 50 TO WS-Y
      MOVE 8 TO WS-Z
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.12 Mineshaft stairs: the diagonal at step 0 spans local y 4 to 7 at z 2 (world z 6): (5,49,6)" TO TL-CASE
      MOVE 6 TO WS-Z
      MOVE 49 TO WS-Y
@@ -242,26 +242,26 @@
      MOVE 5 TO WS-X
      MOVE 51 TO WS-Y
      MOVE 9 TO WS-Z
-     MOVE SB-S-CAVE-AIR TO WS-WANT
+     MOVE SBK-S-CAVE-AIR TO WS-WANT
      MOVE "acceptance US12 36-5§2.6 Mineshaft corridor: the shaft (here local y 1) is air" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 4 TO WS-X
      MOVE 50 TO WS-Y
      MOVE 12 TO WS-Z
-     MOVE SB-FENCE-S(1, 2) TO WS-WANT
+     MOVE SBK-FENCE-S(1, 2) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: a fence post with the west connection stands at local (0,0,2) of the first section" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 6 TO WS-X
-     MOVE SB-FENCE-S(1, 4) TO WS-WANT
+     MOVE SBK-FENCE-S(1, 4) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: and one with the east connection on the other wall" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 4 TO WS-X
      MOVE 51 TO WS-Y
-     MOVE SB-FENCE-S(1, 2) TO WS-WANT
+     MOVE SBK-FENCE-S(1, 2) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: the post is two high (local y 0 and 1)" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 52 TO WS-Y
-     MOVE SB-PLANKS-S(1) TO WS-WANT
+     MOVE SBK-PLANKS-S(1) TO WS-WANT
      MOVE "acceptance US12 36-5§2.7 Mineshaft corridor: a plank sits on the post (local y 2): beam or single plank" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 5 TO WS-X
@@ -288,7 +288,7 @@
      MOVE 4 TO WS-X
      MOVE 50 TO WS-Y
      MOVE 2 TO WS-Z
-     MOVE SB-FENCE-S(1, 2) TO WS-WANT
+     MOVE SBK-FENCE-S(1, 2) TO WS-WANT
      MOVE "acceptance US12 36-5§6.4 Mineshaft corridor south: local z grows south (world z = minZ + 2) and the west wall keeps its west connection (mirror left-right swaps north and south only)" TO TL-CASE
      PERFORM CHECK-CELL
      PERFORM STONE-WORLD
@@ -303,7 +303,7 @@
      MOVE 12 TO WS-X
      MOVE 4 TO WS-Z
      MOVE 50 TO WS-Y
-     MOVE SB-FENCE-S(1, 3) TO WS-WANT
+     MOVE SBK-FENCE-S(1, 3) TO WS-WANT
      MOVE "acceptance US12 36-5§6.4 Mineshaft corridor west: world x = maxX - 2, local x 0 is the north wall and its west connection turns to north" TO TL-CASE
      PERFORM CHECK-CELL
      PERFORM STONE-WORLD
@@ -311,7 +311,7 @@
      PERFORM ADD-PIECE
      CALL "MS-POST" USING WS-ROW
      MOVE 2 TO WS-X
-     MOVE SB-FENCE-S(1, 3) TO WS-WANT
+     MOVE SBK-FENCE-S(1, 3) TO WS-WANT
      MOVE "acceptance US12 36-5§6.4 Mineshaft corridor east: world x = minX + 2, north wall, connection north" TO TL-CASE
      PERFORM CHECK-CELL
 
@@ -334,13 +334,13 @@
      MOVE GBL-X(1) TO WS-X
      MOVE GBL-Y(1) TO WS-Y
      MOVE GBL-Z(1) TO WS-Z
-     MOVE SB-S-SPAWNER TO WS-WANT
+     MOVE SBK-S-SPAWNER TO WS-WANT
      MOVE "acceptance US12 36-5§2.6 Mineshaft spider corridor: the requested cell holds the spawner block" TO TL-CASE
      PERFORM CHECK-CELL
      MOVE 4 TO WS-X
      MOVE 50 TO WS-Y
      MOVE 12 TO WS-Z
-     MOVE SB-FENCE-S(2, 2) TO WS-WANT
+     MOVE SBK-FENCE-S(2, 2) TO WS-WANT
      MOVE "acceptance US12 36-5§2.1 Mineshaft mesa corridor: the posts are dark oak fences" TO TL-CASE
      PERFORM CHECK-CELL
      PERFORM COUNT-WEBS
@@ -383,7 +383,7 @@
      MOVE 50 TO WS-Y
      PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 14
          PERFORM CELL-STATE
-         IF WS-S = SB-S-RAIL(1) OR WS-S = SB-S-RAIL(2)
+         IF WS-S = SBK-S-RAIL(1) OR WS-S = SBK-S-RAIL(2)
              ADD 1 TO WS-COUNT
          END-IF
      END-PERFORM.
@@ -393,7 +393,7 @@
          PERFORM VARYING WS-Y FROM 50 BY 1 UNTIL WS-Y > 51
              PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 14
                  PERFORM CELL-STATE
-                 IF WS-S = SB-S-COBWEB
+                 IF WS-S = SBK-S-COBWEB
                      ADD 1 TO WS-COUNT
                  END-IF
              END-PERFORM

@@ -643,8 +643,8 @@
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-STRUCT L-BIOME L-FLAG.
      MOVE 0 TO L-FLAG
-     PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= ST-BIOME-COUNT(L-STRUCT)
-         IF SD-BIOME(ST-BIOME-FIRST(L-STRUCT) + WS-J) = L-BIOME
+     PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= SDT-BIOME-COUNT(L-STRUCT)
+         IF SD-BIOME(SDT-BIOME-FIRST(L-STRUCT) + WS-J) = L-BIOME
              MOVE 1 TO L-FLAG
          END-IF
      END-PERFORM
@@ -693,9 +693,9 @@
          MOVE 0 TO SS-POSSIBLE(WS-S)
          PERFORM VARYING WS-E FROM 0 BY 1 UNTIL WS-E >= SS-EN-COUNT(WS-S)
              MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-E) TO WS-ST
-             PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= ST-BIOME-COUNT(WS-ST)
+             PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= SDT-BIOME-COUNT(WS-ST)
                  PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CL-COUNT
-                     IF CL-BIOME(WS-P) = SD-BIOME(ST-BIOME-FIRST(WS-ST) + WS-J)
+                     IF CL-BIOME(WS-P) = SD-BIOME(SDT-BIOME-FIRST(WS-ST) + WS-J)
                          MOVE 1 TO SS-POSSIBLE(WS-S)
                      END-IF
                  END-PERFORM
@@ -846,7 +846,7 @@
          MOVE 0 TO WS-ANY
          PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(WS-S)
              MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-K) TO WS-ST
-             MOVE ST-KEY(WS-ST) TO WS-KEY
+             MOVE SDT-KEY(WS-ST) TO WS-KEY
              CALL "STRUCT-GATE" USING WS-KEY WS-ON
              IF WS-ON = 1
                  MOVE 1 TO WS-ANY
@@ -859,7 +859,7 @@
                  MOVE 0 TO WS-DONE
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N OR WS-DONE = 1
                      MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-ORDER-ENTRY(WS-K) - 1) TO WS-ST
-                     MOVE ST-KEY(WS-ST) TO WS-KEY
+                     MOVE SDT-KEY(WS-ST) TO WS-KEY
                      CALL "STRUCT-GATE" USING WS-KEY WS-ON
                      MOVE 0 TO WS-VALID
                      IF WS-ON = 1
