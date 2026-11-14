@@ -67,3 +67,15 @@
           15 GJ-OV-Y        BINARY-LONG.
           15 GJ-OV-Z        BINARY-LONG.
           15 GJ-OV-STATE    BINARY-LONG.
+*>  the block-entity requests of the structures placed in the chunk (GENBE.cpy, gen-be.cob): at most 64, GJ-BE-LOST counts the rest
+    05 GJ-BE.
+       10 GJ-BE-COUNT       BINARY-LONG.
+       10 GJ-BE-LOST        BINARY-LONG.
+       10 GJ-BE-ENTRY OCCURS 64 TIMES.
+          15 GJ-BE-X        BINARY-LONG.
+          15 GJ-BE-Y        BINARY-LONG.
+          15 GJ-BE-Z        BINARY-LONG.
+          15 GJ-BE-KIND     BINARY-LONG.
+          15 GJ-BE-SEED     BINARY-DOUBLE.
+          15 GJ-BE-LOOT     PIC X(48).
+          15 GJ-BE-TEXT     PIC X(32).

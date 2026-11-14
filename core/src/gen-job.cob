@@ -154,7 +154,7 @@
      MOVE 0 TO J-SUB
      MOVE 0 TO J-STEPS
      MOVE 0 TO J-G-COUNT
-     MOVE 0 TO J-AQ-READY J-OV-COUNT J-OV-LOST
+     MOVE 0 TO J-AQ-READY J-OV-COUNT J-OV-LOST J-BE-COUNT J-BE-LOST
      MOVE LOW-VALUES TO J-CV
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
          MOVE -65 TO J-HM-SURFACE(WS-I)
@@ -225,10 +225,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-JOB-INSTALL.
-*> USING job, chunk memory, marker-y out: copies the finished chunk out and publishes the job's overflow in GEN-OVERFLOW (gen-overflow.cob).
+*> USING job, chunk memory, marker-y out: copies the finished chunk out and publishes the job's overflow in GEN-OVERFLOW (gen-overflow.cob) and its block-entity requests in GEN-BE (gen-be.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY GENOVER.
+ COPY GENBE.
  01 WS-SRC                 PIC X(304640) BASED.
  01 WS-DST                 PIC X(304640) BASED.
  LINKAGE SECTION.
@@ -241,6 +242,7 @@
      SET ADDRESS OF WS-DST TO ADDRESS OF L-CHUNK
      MOVE WS-SRC TO WS-DST
      MOVE J-OV TO GO-DATA
+     MOVE J-BE TO GB-DATA
      MOVE -1 TO L-MARKER-Y
      GOBACK.
  END PROGRAM GEN-JOB-INSTALL.

@@ -59,6 +59,7 @@
  COPY DIMENSIONS.
  COPY CELLS.
  COPY GENOVER.
+ COPY GENBE.
  01 WS-HASH                BINARY-DOUBLE.
  01 WS-BYTES               BINARY-LONG VALUE 304640.
  01 WS-MARKER-Y            BINARY-LONG.
@@ -102,7 +103,7 @@
      ALLOCATE WS-BYTES CHARACTERS INITIALIZED RETURNING CK-ADDR(L-ROW)
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      MOVE DM-KEY-LENGTH(L-DIM) TO WS-KEY-LENGTH
-     MOVE 0 TO GO-COUNT GO-LOST
+     MOVE 0 TO GO-COUNT GO-LOST GB-COUNT GB-LOST
      CALL "PERSIST-CHUNK-LOAD" USING L-ROW WS-FOUND
      IF WS-FOUND = 2
          MOVE L-CX TO WS-EDIT-X
@@ -127,6 +128,8 @@
 *>   the overflow of the neighbours waiting for this chunk is written into it, and what this chunk's features wrote outside it goes to theirs (gen-overflow.cob)
      CALL "OV-TAKE" USING L-ROW
      CALL "OV-ROUTE" USING L-DIM
+*>   the block entities the structures of this chunk asked for (gen-be.cob)
+     CALL "GBE-APPLY" USING L-DIM L-ROW
      GOBACK.
  END PROGRAM WORLD-CHUNK-LOAD.
 
