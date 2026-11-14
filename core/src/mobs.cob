@@ -592,7 +592,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-PHYSICS.
 *> USING tracker row (BINARY-LONG) of a mob, hx, hz (FLOAT-LONG), yaw (FLOAT-SHORT): §12.2 for one
-*> tick. vy <- (vy - 0.05) x 0.96; the move along Y by vy is blocked when the mob's box
+*> tick (a standard mob: the move by the velocity it has comes first, then vy <- (vy - 0.08) x 0.98, 18 section 3.2). vy <- (vy - 0.05) x 0.96; the move along Y by vy is blocked when the mob's box
 *> (ENTITY-BOX-HITS) would overlap a solid cell: y then rests on top of the highest overlapped cell,
 *> vy 0, on the ground (vy is never positive: mobs do not jump, so a blocked move is downward);
 *> otherwise y moves and the mob is not on the ground. Then the moves along X by hx and along Z by
@@ -619,6 +619,7 @@
  01 WS-WET                 BINARY-LONG.
  01 WS-DEEP                BINARY-LONG.
  01 WS-DEEP-Y              FLOAT-LONG.
+ 01 WS-LEGACY              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -648,7 +649,14 @@
          COMPUTE L-HX = L-HX / 2
          COMPUTE L-HZ = L-HZ / 2
      ELSE
-         COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+*>       A cobolcraft-set mob keeps the stand-in rule (standin 12.2: gravity, drag, then the move). A standard mob moves by the velocity it has and then
+*>       gravity 0.08 and the vertical drag 0.98 are applied (18 section 3.2 travelInAir), below after the move.
+         CALL "MOB-INDEX" USING WS-TYPE WS-LEGACY
+         IF WS-LEGACY > 0
+             COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+         ELSE
+             MOVE EN-VY(WS-ROW) TO WS-VY
+         END-IF
      END-IF
      COMPUTE WS-NEW = WS-Y + WS-VY
      CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
@@ -688,6 +696,9 @@
      END-IF
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-Z
+     END-IF
+     IF WS-WET = 0 AND WS-LEGACY = 0
+         COMPUTE WS-VY = (WS-VY - 0.08) * 0.98
      END-IF
      MOVE WS-VY TO EN-VY(WS-ROW)
      IF WS-X NOT = EN-X(WS-ROW) OR WS-Y NOT = EN-Y(WS-ROW) OR WS-Z NOT = EN-Z(WS-ROW)
