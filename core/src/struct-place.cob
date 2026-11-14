@@ -494,11 +494,21 @@
  COPY STRUCTPIECE.
  01 WS-I                   BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
  PROCEDURE DIVISION.
+*>   The pivot (36-1 8): the centre x, the min y and the centre z of the first piece's box.
+     IF SP-COUNT > 0
+         CALL "SPB-BOX-CENTER" USING SP-BOX(1) SP-PIV-X WS-CY SP-PIV-Z
+         MOVE SP-Y0(1) TO SP-PIV-Y
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-COUNT
          CALL "SPB-BOX-INTERSECTS" USING SP-BOX(WS-I) SP-WBOX WS-FLAG
          IF WS-FLAG = 1
-             CALL "MS-POST" USING WS-I
+             IF SP-TYPE(WS-I) = 100
+                 CALL "STRUCT-TPL-POST" USING WS-I
+             ELSE
+                 CALL "MS-POST" USING WS-I
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
@@ -567,6 +577,7 @@
          GOBACK
      END-IF
      COMPUTE WS-SEED = FUNCTION MOD(CV-SEED + WS-M63, WS-M64) - WS-M63
+     MOVE WS-SEED TO SP-SEED
      CALL "FL-OPEN" USING J-ADDR J-CX J-CZ WS-MIN-Y WS-HEIGHT WS-SEA
      CALL "MSP-OPEN"
      COMPUTE WS-BX = J-CX * 16

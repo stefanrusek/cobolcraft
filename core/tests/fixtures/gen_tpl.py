@@ -123,3 +123,17 @@ write("test", "jig", int_list("size", [3, 1, 1]), lst("entities", 10, []),
           blk([2, 0, 0], 0, comp("nbt", string("id", "minecraft:jigsaw"), string("joint", "aligned"))),
       ]),
       lst("palette", 10, [v("jigsaw", [("orientation", "up_north")])]))
+
+# Template pieces of core/tests/test_struct_36_2_6.cob (36-2 section 6.2): data markers above chests, jigsaw markers.
+def sb(meta): return comp("nbt", string("id", "minecraft:structure_block"), string("mode", "DATA"), string("metadata", meta))
+CHESTNBT = comp("nbt", string("id", "minecraft:chest"))
+write("test", "marker", int_list("size", [3, 2, 1]), lst("entities", 10, []),
+      lst("blocks", 10, [
+          blk([0, 0, 0], 0, CHESTNBT), blk([1, 0, 0], 0, CHESTNBT), blk([2, 0, 0], 3, comp("nbt", string("id", "minecraft:jigsaw"), string("final_state", "minecraft:stone"))),
+          blk([0, 1, 0], 1, sb("treasure_chest")), blk([1, 1, 0], 1, sb("chest")),
+          blk([2, 1, 0], 3, comp("nbt", string("id", "minecraft:jigsaw"), string("final_state", "minecraft:no_such_block"))),
+      ]),
+      lst("palette", 10, [v("chest", CHEST), v("structure_block", [("mode", "data")]), v("stone"), v("jigsaw", [("orientation", "up_north")])]))
+write("test", "markerstone", int_list("size", [1, 2, 1]), lst("entities", 10, []),
+      lst("blocks", 10, [block([0, 0, 0], 0), blk([0, 1, 0], 1, sb("treasure_chest"))]),
+      lst("palette", 10, [v("stone"), v("structure_block", [("mode", "data")])]))
