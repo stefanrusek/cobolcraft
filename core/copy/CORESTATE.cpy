@@ -414,6 +414,18 @@
        10 EN-ALLAY-DANCE      BINARY-LONG.        *> allay: 1 while dancing (metadata 16)
        10 EN-ALLAY-T          BINARY-LONG.        *> allay: ticks since the last regeneration
        10 EN-STRENGTH         BINARY-LONG.        *> llama: strength 1 to 5 (metadata 20); the variant 0 to 3 is EN-WOOL (metadata 21)
+*>     --- 002-lane-mobsfull-h23: wolf armour (core/src/mob-19-6.cob; 19 section 6.1) ---
+       10 EN-WOLF-ARM         BINARY-LONG.        *> wolf: item id of the armour in the body slot (0 none)
+       10 EN-WOLF-ARM-DMG     BINARY-LONG.        *> wolf: durability damage of that armour
+*>     --- 002-lane-mobsfull-h23: sniffer (core/src/mob-19-14.cob; 19 section 14) ---
+       10 EN-SNIF            BINARY-LONG.        *> sniffer: state 0 idling, 1 feeling happy, 2 scenting, 3 sniffing, 4 searching, 5 digging, 6 rising (metadata 18)
+       10 EN-SNIF-T          BINARY-LONG.        *> sniffer: ticks left of a timed state (1 to 3)
+       10 EN-SNIF-SEED       BINARY-LONG.        *> sniffer: tick at which the seed drops while digging (metadata 19)
+       10 EN-SNIF-EXP-N      BINARY-LONG.        *> sniffer: number of explored positions (at most 20, newest first)
+       10 EN-SNIF-EXP OCCURS 20 TIMES.
+          15 EN-SNIF-EXP-X   BINARY-LONG.
+          15 EN-SNIF-EXP-Y   BINARY-LONG.
+          15 EN-SNIF-EXP-Z   BINARY-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

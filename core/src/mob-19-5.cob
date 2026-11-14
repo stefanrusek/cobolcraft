@@ -401,6 +401,18 @@
          MOVE EN-ARMA(L-ROW) TO CD-MX-INT
          CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
      END-IF
+     IF WS-KEY = "sniffer"
+*>       Sniffer: the state (18, SNIFFER_STATE, a VarInt of the id enum 35) and the tick the seed drops (19, INT; 19 section 14).
+         INITIALIZE CD-METADATA-ENTRY-X
+         MOVE 18 TO CD-MX-INDEX
+         MOVE 35 TO CD-MX-SERIALIZER
+         MOVE EN-SNIF(L-ROW) TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         MOVE 19 TO CD-MX-INDEX
+         MOVE WS-SERIALIZER-INT TO CD-MX-SERIALIZER
+         MOVE EN-SNIF-SEED(L-ROW) TO CD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+     END-IF
      IF WS-KEY = "turtle"
 *>       Turtle: has egg (18) and laying egg (19), both BOOLEAN (19 section 12).
          INITIALIZE CD-METADATA-ENTRY-X

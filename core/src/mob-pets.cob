@@ -44,6 +44,7 @@
  01 WS-D2                  FLOAT-LONG.
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-BEST                BINARY-LONG.
+ 01 WS-BEST-AGE            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-OWNER                BINARY-LONG.
@@ -60,6 +61,20 @@
              END-IF
          END-IF
      END-PERFORM
+*>   OwnerHurtTargetGoal: else the mob the owner hit last (EN-KILLER of the mob, 100 ticks), not a creeper, not a tame wolf of the owner.
+     IF WS-BEST = 0
+         MOVE 0 TO WS-BEST-AGE
+         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+             IF WS-N NOT = L-ROW AND EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
+                     AND EN-KILLER(WS-N) = L-OWNER AND EN-KILLER-AGE(WS-N) > WS-BEST-AGE
+                 CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-M
+                 IF WS-M > 0 AND SM-KEY(WS-M) NOT = "creeper" AND NOT (EN-TAMED(WS-N) = 1 AND EN-OWNER-UUID(WS-N) = EN-OWNER-UUID(L-ROW))
+                     MOVE WS-N TO WS-BEST
+                     MOVE EN-KILLER-AGE(WS-N) TO WS-BEST-AGE
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
      IF WS-BEST > 0
          MOVE WS-BEST TO EN-FOE(L-ROW)
          MOVE EN-ID(WS-BEST) TO EN-FOE-ID(L-ROW)
