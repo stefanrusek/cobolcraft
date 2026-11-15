@@ -261,15 +261,10 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PORTAL-COLD.
 *> USING x, y, z (the stub), flag out: Biome.coldEnoughToSnow(pos, sea level 63) of the biome at the stub (33 section 4.5): the base temperature of the biome adjusted above sea level + 17
-*> by (y - 80) * 0.05 / 40, below 0.15. Deviations: the noise term N of 33 4.5 and the frozen modifier of the frozen biomes are not made (N is 0, the base temperature stands); the test
-*> aid JIG-TEST-SURFACE (any value but 0) makes no biome lookup (not cold).
+*> by (y - 80) * 0.05 / 40, below 0.15. Deviations: the noise term N of 33 4.5 and the frozen modifier of the frozen biomes are not made (N is 0, the base temperature stands); the biome
+*> comes from STRUCT-PORTAL-BIOME (struct-portal-biome.cob, a program of its own).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY STRUCTJIG.
- 01 WS-QX                  BINARY-LONG.
- 01 WS-QY                  BINARY-LONG.
- 01 WS-QZ                  BINARY-LONG.
- 01 WS-INDEX               BINARY-LONG.
  01 WS-BIOME               PIC X(40).
  01 WS-T                   FLOAT-LONG.
  01 WS-OK                  BINARY-LONG.
@@ -280,13 +275,7 @@
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-X L-Y L-Z L-FLAG.
      MOVE 0 TO L-FLAG
-     IF JIG-TEST-SURFACE NOT = 0
-         GOBACK
-     END-IF
-     CALL "STRUCT-QUART" USING L-X WS-QX
-     CALL "STRUCT-QUART" USING L-Y WS-QY
-     CALL "STRUCT-QUART" USING L-Z WS-QZ
-     CALL "CLIMATE-BIOME-AT" USING WS-QX WS-QY WS-QZ WS-INDEX WS-BIOME
+     CALL "STRUCT-PORTAL-BIOME" USING L-X L-Y L-Z WS-BIOME
      CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
      IF WS-OK = 1
          IF L-Y > 80

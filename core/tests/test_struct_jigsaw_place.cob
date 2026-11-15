@@ -15,6 +15,7 @@
  COPY STRUCTTPL.
  COPY STRUCTPROC.
  COPY STRUCTJIG.
+ COPY JIGTEST.
  COPY FEATDATA.
  COPY FEATLEVEL.
  01 WS-GEN-DIR             PIC X(1100).
@@ -229,7 +230,7 @@
      CALL "GEN-BLOCK-STATE" USING WS-KEY WS-DIAMOND
 *>   the synthetic hub of chunk (4, 4): the hub's jigsaws that ask nothing leave the terrain (diamond) where their final_state is air, the one with stone becomes stone
      MOVE "jigsaw" TO WS-NAME
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE 2 TO SD-ST-COUNT
      CALL "STRUCT-ENUM-ID" USING WS-ONE WS-NAME WS-TYPE
      MOVE WS-TYPE TO SDT-TYPE(1)
@@ -415,7 +416,9 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
  END PROGRAM TEST-STRUCT-JIGSAW-PLACE.
+
+ COPY JIGSEAM.
 
  COPY CORETEST.

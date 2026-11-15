@@ -1,7 +1,7 @@
 *> Acceptance test of the jigsaw assembly (docs/protocol/36-structures-3 sections 3 to 13 and 17, 36-structures-9 sections 5 and 6) over the generated vanilla-data (CC_GENERATED_DIR, read only;
 *> skipped as a pass without it): the jigsaw fields of the structure data, the template pools and their elements, and the pieces and junctions that STRUCT-FIND-POINT builds for the pillager
 *> outpost and the villages, against core/tests/fixtures/gen_jigsaw.py (an independent model of the assembler over the same JSON and NBT: world seed 12345, the synthetic surface of
-*> JIG-TEST-SURFACE), the remembered starts, and the emptying of the tables.
+*> TJ-SURFACE), the remembered starts, and the emptying of the tables.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-JIGSAW.
  DATA DIVISION.
@@ -13,6 +13,7 @@
  COPY STRUCTPIECE.
  COPY STRUCTTPL.
  COPY STRUCTJIG.
+ COPY JIGTEST.
  01 WS-DIR                 PIC X(1024).
  01 WS-ENV                 PIC X(1024).
  01 WS-FILE                PIC X(1100).
@@ -1119,12 +1120,12 @@
 
 *> 9 to 12: the model's pieces and junctions
  ASSEMBLY-CASES.
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE 1 TO WS-R
      PERFORM UNTIL WS-R > 892
          PERFORM ONE-CASE
      END-PERFORM
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
 
 *> WS-R the H row of a case: it is built and compared, and WS-R is left after the case's rows
  ONE-CASE.
@@ -1206,14 +1207,14 @@
 
 *> a start that was built is remembered: asked again with the real terrain (which would give other heights) it is the same; and the tables are emptied when they are getting full
  MEMO-CASES.
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE 5 TO WS-CX
      MOVE 7 TO WS-CZ
      CALL "STRUCT-FIND-POINT" USING WS-PLAINS CW-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID
      MOVE WS-Y TO WS-SAVE-Y
      MOVE SP-COUNT TO WS-SAVE-N
      MOVE SP-T-Y(WS-SAVE-N) TO WS-SAVE-X
-     MOVE 0 TO JIG-TEST-SURFACE
+     MOVE 0 TO TJ-SURFACE
      MOVE 99999 TO SP-T-X(1)
      CALL "STRUCT-FIND-POINT" USING WS-PLAINS CW-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID
      MOVE "test struct jigsaw given a start built before when it is asked again then the same pieces and stub come back from the memory" TO TL-CASE
@@ -1223,13 +1224,13 @@
      END-IF
      PERFORM CHECK
 *>   the cache is full: a start of another chunk empties the tables first and still gives its pieces
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE 101 TO TP-COUNT
      MOVE -4 TO WS-CX
      MOVE 9 TO WS-CZ
      MOVE JIG-GEN TO WS-SAVE-N
      CALL "STRUCT-FIND-POINT" USING WS-PLAINS CW-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID
-     MOVE 0 TO JIG-TEST-SURFACE
+     MOVE 0 TO TJ-SURFACE
      MOVE "test struct jigsaw given a full template cache when a new start is built then the tables are emptied and the start is built" TO TL-CASE
      MOVE 0 TO WS-FLAG
      IF JIG-GEN > WS-SAVE-N AND TP-COUNT < 100 AND SP-COUNT > 1
@@ -1261,5 +1262,7 @@
      END-IF
      PERFORM CHECK.
  END PROGRAM TEST-STRUCT-JIGSAW.
+
+ COPY JIGSEAM.
 
  COPY CORETEST.

@@ -14,34 +14,10 @@
 *> costs nothing); the dimension is the overworld (min y -64, max y 319); the surface of a column is the base height (STRUCT-BASE-HEIGHT kind 0, the noise terrain, no beardifier).
 *>
 *> Entry points:
-*>   JIG-SURFACE USING x, z, kind (0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), height out: getFirstFreeHeight (the synthetic surface of JIG-TEST-SURFACE when set)
+*>   JIG-SURFACE USING x, z, kind (0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), height out: getFirstFreeHeight (jig-surface.cob, a program of its own: a test links its own)
 *>   STRUCT-JIG-READ USING JSON-DOC, structure row: the jigsaw fields of the structure file into SDT-JIG-*
 *>   JIG-FIND-POINT USING structure row, seed (BINARY-DOUBLE), chunk x, chunk z, stub x out, stub y out, stub z out, valid out: the stub of 9.6 and the pieces in the builder (SPB-RESET first);
-*>     valid 0 when there is no structure (size 0, an empty start element, a stub whose biome is not the structure's; JIG-TEST-SURFACE 1, the test aid of STRUCTJIG.cpy, skips the biome)
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. JIG-SURFACE.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY STRUCTJIG.
- LINKAGE SECTION.
- 01 L-X                    BINARY-LONG.
- 01 L-Z                    BINARY-LONG.
- 01 L-KIND                 BINARY-LONG.
- 01 L-H                    BINARY-LONG.
- PROCEDURE DIVISION USING L-X L-Z L-KIND L-H.
-     EVALUATE JIG-TEST-SURFACE
-         WHEN 1
-             COMPUTE L-H = 68 + FUNCTION MOD(FUNCTION INTEGER(L-X / 4) + FUNCTION INTEGER(L-Z / 4), 5)
-         WHEN 2
-             MOVE -40 TO L-H
-         WHEN 3
-             MOVE 200 TO L-H
-         WHEN OTHER
-             CALL "STRUCT-BASE-HEIGHT" USING L-X L-Z L-KIND L-H
-     END-EVALUATE
-     GOBACK.
- END PROGRAM JIG-SURFACE.
+*>     valid 0 when there is no structure (size 0, an empty start element, a stub whose biome is not the structure's: JIG-BIOME-OK, jig-biome-ok.cob, a program of its own)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. JIG-ASSEMBLE.
@@ -657,10 +633,7 @@
      IF SDT-JIG-SIZE(L-STRUCT) <= 0
          GOBACK
      END-IF
-     MOVE 1 TO WS-FLAG
-     IF JIG-TEST-SURFACE NOT = 1
-         CALL "STRUCT-VALID-AT" USING L-STRUCT L-X L-Y L-Z WS-FLAG
-     END-IF
+     CALL "JIG-BIOME-OK" USING L-STRUCT L-X L-Y L-Z WS-FLAG
      IF WS-FLAG = 0
          GOBACK
      END-IF

@@ -1,6 +1,6 @@
 *> Acceptance test of the ruined portal (docs/protocol/36-structures-4 section 8; core/src/struct-portal.cob): the setups of the structure files (8.1), the start (8.2 and 8.3: the
 *> setup draw, the air pocket, the template, the rotation and mirror, the box, the suitable height of every placement) against core/tests/fixtures/gen_portal.py (an independent
-*> Java LCG model, world seed 12345, the synthetic surface of JIG-TEST-SURFACE), the piece's processor lists (8.4) and the piece through the chunk window: the write box rule, the
+*> Java LCG model, world seed 12345, the synthetic surface of TJ-SURFACE), the piece's processor lists (8.4) and the piece through the chunk window: the write box rule, the
 *> spread of netherrack (8.5), the drip columns, the vines and the leaves (8.6). Runs over the standard content set of the generated packs (skipped as a pass without them).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-PORTAL.
@@ -15,6 +15,7 @@
  COPY STRUCTPROC.
  COPY STRUCTPORTAL.
  COPY STRUCTJIG.
+ COPY JIGTEST.
  COPY JSONDOC.
  COPY FEATDATA.
  COPY CBLOCKS.
@@ -303,7 +304,7 @@
      PERFORM CHECK
      MOVE 200 TO WS-Y
      CALL "STRUCT-PORTAL-COLD" USING WS-X WS-Y WS-Z WS-COLD
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE 70 TO WS-Y
      CALL "STRUCT-PORTAL-COLD" USING WS-X WS-Y WS-Z WS-COLD
      MOVE "test struct portal given the test aid when the cold test is made then it is not cold" TO TL-CASE
@@ -312,13 +313,13 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
 
 *> 8.2 and 8.3: the starts of the model
  START-CASES.
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 24
-         MOVE ST-MODE(WS-K) TO JIG-TEST-SURFACE
+         MOVE ST-MODE(WS-K) TO TJ-SURFACE
          MOVE SPACES TO WS-KEY
          STRING "minecraft:" FUNCTION TRIM(ST-NAME(WS-K)) DELIMITED BY SIZE INTO WS-KEY
          PERFORM FIND-STRUCT
@@ -356,7 +357,7 @@
          END-IF
          PERFORM CHECK
      END-PERFORM
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
 *> the processor lists of 8.4 for every flag, the files without setups, the starts that cannot be made, a fractional air pocket and the nether air pocket
  EDGE-CASES.
      MOVE "cobolcraft:inline/portal/0010/2" TO WS-KEY
@@ -405,7 +406,7 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE "minecraft:igloo" TO WS-KEY
      PERFORM FIND-STRUCT
      MOVE 3 TO WS-CX
@@ -497,13 +498,13 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
 
 *> the piece through the window of its own chunk (stone up to y 70) and of the next one: the write box rule, the spread, the drips, the leaves and the vines of 8.4 to 8.6
  WINDOW-CASES.
      MOVE "minecraft:stone" TO WS-NAME
      CALL "GEN-BLOCK-STATE" USING WS-NAME WS-STONE
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
 *>   the jungle portal (on land surface, overgrown, vines) of chunk (4, -2)
      MOVE "minecraft:ruined_portal_jungle" TO WS-KEY
      MOVE 4 TO WS-CX
@@ -595,7 +596,7 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
 
 *> the window of chunk (WS-WCX, WS-WCZ) filled with stone up to y 70, the start of structure WS-KEY at chunk (WS-CX, WS-CZ) placed through it with the decoration random of seed 777,
 *> and WS-COUNTS the netherrack, magma, obsidian, leaves and vine blocks of the window afterwards
@@ -649,5 +650,7 @@
          END-PERFORM
      END-PERFORM.
  END PROGRAM TEST-STRUCT-PORTAL.
+
+ COPY JIGSEAM.
 
  COPY CORETEST.

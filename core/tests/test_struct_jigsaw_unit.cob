@@ -13,6 +13,7 @@
  COPY STRUCTPIECE.
  COPY STRUCTTPL.
  COPY STRUCTJIG.
+ COPY JIGTEST.
  COPY FEATDATA.
  COPY JSONDOC.
  01 WS-GEN-DIR             PIC X(1100).
@@ -510,7 +511,7 @@
 
 *> 10.2: the hub of four jigsaws against the model: the leaf is attached through the one that fits, the others ask a pool that is absent, empty, or has an empty fallback
  ASSEMBLY-CASES.
-     MOVE 1 TO JIG-TEST-SURFACE
+     MOVE 1 TO TJ-SURFACE
      MOVE "test:start" TO SDT-JIG-POOL(1)
      MOVE 3 TO SDT-JIG-SIZE(1)
      MOVE 70 TO SDT-JIG-Y(1)
@@ -587,7 +588,7 @@
      PERFORM NO-START
      MOVE "test struct jigsaw unit given a start pool whose element is the empty one when the start is built then there is no structure" TO TL-CASE
      PERFORM CHECK-NONE
-     MOVE 0 TO JIG-TEST-SURFACE.
+     MOVE 0 TO TJ-SURFACE.
 
  NO-START.
      ADD 1 TO WS-CX
@@ -668,5 +669,7 @@
      END-IF
      PERFORM CHECK.
  END PROGRAM TEST-STRUCT-JIGSAW-UNIT.
+
+ COPY JIGSEAM.
 
  COPY CORETEST.
