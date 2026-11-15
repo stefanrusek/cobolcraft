@@ -73,6 +73,7 @@
  01 WS-U                   FLOAT-LONG.
  01 WS-U2                  FLOAT-LONG.
  01 WS-LIMIT-F             FLOAT-LONG.
+ 01 WS-NAME-NUM            PIC 999.
  01 WS-DRAW                BINARY-LONG.
  01 WS-DRAW2               BINARY-LONG.
  01 WS-DRAW3               BINARY-LONG.
@@ -90,7 +91,7 @@
  01 WS-NONZERO             BINARY-LONG.
  01 WS-AT-TEXT             PIC X(300).
  01 WS-POS2                BINARY-LONG.
- 01 WS-BAD-NAMES           PIC X(900) VALUE "bad_lava bad_type bad_notype bad_nolocation bad_testtype bad_posrule bad_posrange bad_block bad_output bad_state "
+ 01 WS-BAD-NAMES           PIC X(900) VALUE "bad_type bad_notype bad_nolocation bad_testtype bad_posrule bad_posrange bad_block bad_output bad_state "
      & "bad_noprob bad_rules bad_nolimit bad_limit bad_nodelegate bad_heightmap bad_integrity bad_rottable bad_protected bad_ignore bad_ignore2 "
      & "bad_ignore3 bad_height2 bad_norules bad_protected2 bad_age bad_alloftests bad_height bad_blockstatematch bad_probability bad_tag bad_list bad_json bad_rootnum "
      & "missing".
@@ -1045,20 +1046,17 @@
      CALL "STRUCT-PROC-RESET"
      MOVE 0 TO WS-LOADED
      MOVE 0 TO WS-I
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 69
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 269
          MOVE SPACES TO WS-LNAME
          MOVE WS-I TO WS-ED
-         IF WS-I < 10
-             STRING "big0" FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-LNAME
-         ELSE
-             STRING "big" FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-LNAME
-         END-IF
+         MOVE WS-I TO WS-NAME-NUM
+         STRING "big" WS-NAME-NUM DELIMITED BY SIZE INTO WS-LNAME
          PERFORM LOAD-LIST
          IF WS-LIDX > 0
              ADD 1 TO WS-LOADED
          END-IF
      END-PERFORM
-     MOVE "big00" TO WS-LNAME
+     MOVE "big000" TO WS-LNAME
      PERFORM LOAD-LIST
      MOVE SPL-FIRST(WS-LIDX) TO WS-PROC
      COMPUTE WS-A = 32768 / SPP-N(WS-PROC)
@@ -1068,21 +1066,27 @@
      MOVE WS-A TO WS-ED
      MOVE FUNCTION TRIM(WS-ED) TO TL-EXPECTED
      PERFORM ASSERT-TEXT
-     MOVE "the list table holds 64 lists: further lists are not even tried" TO WS-LABEL
+     MOVE "the list table holds 256 lists: further lists are not even tried" TO WS-LABEL
      MOVE SP-LIST-COUNT TO WS-ED
      MOVE FUNCTION TRIM(WS-ED) TO TL-OBSERVED
-     MOVE "64" TO TL-EXPECTED
+     MOVE "256" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
      CALL "STRUCT-PROC-RESET"
-     MOVE "toomany" TO WS-LNAME
+     MOVE "nops1300a" TO WS-LNAME
+     PERFORM LOAD-LIST
+     MOVE "nops1300b" TO WS-LNAME
+     PERFORM LOAD-LIST
+     MOVE "nops1300c" TO WS-LNAME
+     PERFORM LOAD-LIST
+     MOVE "nops1300d" TO WS-LNAME
      PERFORM LOAD-LIST
      MOVE WS-LIDX TO WS-A
-     MOVE "nops1023" TO WS-LNAME
+     MOVE "nops195" TO WS-LNAME
      PERFORM LOAD-LIST
      MOVE WS-LIDX TO WS-B
      MOVE "capped_full" TO WS-LNAME
      PERFORM LOAD-LIST
-     MOVE "the processor table holds 1024 rows: 1025 processors do not fit, 1023 do, and then a capped list has no row for its delegate" TO WS-LABEL
+     MOVE "the processor table holds 4096 rows: a fourth list of 1300 after three does not fit, 195 more do, then a capped list has no row for its delegate" TO WS-LABEL
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-A TO WS-ED
      MOVE WS-LIDX TO WS-ED2

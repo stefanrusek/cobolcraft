@@ -1,8 +1,7 @@
 *> The structure processor lists (docs/protocol/36-structures-2 sections 7 to 9): the JSON of worldgen/processor_list elements, read from the open content set's registry or from
 *> the folder of FD-SET-DIR (FD-FETCH), compiled into the tables of STRUCT-PROC (STRUCTPROC.cpy) on first use and cached by key. A list is `{"processors": [...]}` or a bare array
 *> (7.2). A list is unsupported (index 0, cached) when its text is not JSON, a processor or rule test type is unknown, a required field is missing or invalid, a block is unknown, a
-*> position test has min_dist >= max_dist (the constructor throws, 8.4.1), a capped limit is not one of the five int providers of STRUCTPROC.cpy, or it holds a jigsaw_replacement or a
-*> lava_submerged_block (not built, see STRUCTPROC.cpy). A tag the content set does not have is the empty set; an unknown position test falls back to always_true and an unknown block
+*> position test has min_dist >= max_dist (the constructor throws, 8.4.1), a capped limit is not one of the five int providers of STRUCTPROC.cpy, or an element it needs is missing. A tag the content set does not have is the empty set; an unknown position test falls back to always_true and an unknown block
 *> entity modifier to passthrough (the lenient fields of 8.2).
 *>
 *> Entry points:
@@ -516,6 +515,8 @@
              MOVE 10 TO LS-TYPE
          WHEN "minecraft:jigsaw_replacement"
              MOVE 6 TO LS-TYPE
+         WHEN "minecraft:lava_submerged_block"
+             MOVE 7 TO LS-TYPE
          WHEN "minecraft:block_age"
              MOVE 11 TO LS-TYPE
      END-EVALUATE
@@ -657,6 +658,10 @@
              MOVE SPACES TO WS-TEXT
              MOVE '{"processors":[{"processor_type":"minecraft:block_ignore","blocks":["minecraft:structure_block"]}]}' TO WS-TEXT
              MOVE 0 TO WS-STATUS
+         WHEN "cobolcraft:inline/features_cannot_replace"
+             MOVE SPACES TO WS-TEXT
+             MOVE '{"processors":[{"processor_type":"minecraft:protected_blocks","value":"#minecraft:features_cannot_replace"}]}' TO WS-TEXT
+             MOVE 0 TO WS-STATUS
          WHEN "cobolcraft:inline/gravity"
              MOVE SPACES TO WS-TEXT
              MOVE '{"processors":[{"processor_type":"minecraft:gravity","heightmap":"WORLD_SURFACE_WG","offset":-1}]}' TO WS-TEXT
@@ -672,6 +677,9 @@
          WHEN OTHER
 *>           the lists of the ocean ruins (36-6 2.4, 3.5) are code-defined too
              CALL "STRUCT-RUIN-LIST-JSON" USING L-KEY WS-TEXT WS-STATUS
+             IF WS-STATUS NOT = 0
+                 CALL "STRUCT-PORTAL-LIST-JSON" USING L-KEY WS-TEXT WS-STATUS
+             END-IF
              IF WS-STATUS NOT = 0
                  CALL "FD-FETCH" USING WS-REGISTRY L-KEY WS-TEXT WS-LEN WS-STATUS
              END-IF

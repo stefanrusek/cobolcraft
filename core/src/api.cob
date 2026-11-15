@@ -529,6 +529,12 @@
  01 WS-VILLAGE-SAVANNA     PIC X(80) VALUE "minecraft:village_savanna".
  01 WS-VILLAGE-SNOWY       PIC X(80) VALUE "minecraft:village_snowy".
  01 WS-VILLAGE-TAIGA       PIC X(80) VALUE "minecraft:village_taiga".
+ 01 WS-PORTAL              PIC X(80) VALUE "minecraft:ruined_portal".
+ 01 WS-PORTAL-DESERT       PIC X(80) VALUE "minecraft:ruined_portal_desert".
+ 01 WS-PORTAL-JUNGLE       PIC X(80) VALUE "minecraft:ruined_portal_jungle".
+ 01 WS-PORTAL-SWAMP        PIC X(80) VALUE "minecraft:ruined_portal_swamp".
+ 01 WS-PORTAL-MOUNTAIN     PIC X(80) VALUE "minecraft:ruined_portal_mountain".
+ 01 WS-PORTAL-OCEAN        PIC X(80) VALUE "minecraft:ruined_portal_ocean".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -563,6 +569,13 @@
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SAVANNA
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SNOWY
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
+*>       the ruined portals of the overworld (struct-portal.cob; the nether one needs the Nether pipeline and stays off)
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-DESERT
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-JUNGLE
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-SWAMP
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-MOUNTAIN
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-OCEAN
 *>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut, the jungle temple, the desert pyramid and the buried treasure
          CALL "STRUCT-GATE-ON" USING WS-SWAMP-HUT
          CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE

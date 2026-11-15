@@ -21,6 +21,7 @@ class Lcg:
             bits = self.next(31); v = bits % bound
             if bits - v + (bound - 1) < (1 << 31): return v
     def next_long(self): return s64((self.next(32) << 32) + self.next(32))
+    def next_float(self): return self.next(24) / 16777216.0
     def shuffle(self, lst):
         for i in range(len(lst), 1, -1):
             j = self.next_int(i); lst[i - 1], lst[j] = lst[j], lst[i - 1]

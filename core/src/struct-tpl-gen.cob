@@ -376,6 +376,10 @@
  01 L-ROW                  BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-RESULT.
+     IF SP-T-KIND(L-ROW) = 4
+*>       36-4 8.4 steps 4 to 6: the spread, the drip columns, the vines and the leaves (and the write box back)
+         CALL "STRUCT-PORTAL-AFTER" USING L-ROW
+     END-IF
      IF SP-T-KIND(L-ROW) = 1
 *>       36-4 6.3 step 5: the top piece puts snow where the block under its door cell is neither air nor a ladder
          IF L-RESULT = 1 AND SP-T-AUX(L-ROW) = 1

@@ -80,6 +80,8 @@
        10 SDT-JIG-PADT       BINARY-LONG.
        10 SDT-JIG-LIQ        BINARY-LONG.
        10 SDT-JIG-OK         BINARY-LONG.
+       10 SDT-RP-FIRST       BINARY-LONG.
+       10 SDT-RP-N           BINARY-LONG.
     05 SD-BIOME             PIC X(40) OCCURS 8192 TIMES.
 *>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N chunks SR-X, SR-Z
     05 SD-RING OCCURS 4 TIMES.

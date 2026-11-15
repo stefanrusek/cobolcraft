@@ -220,3 +220,11 @@ os.makedirs(proc_root, exist_ok=True)
 with open(os.path.join(proc_root, "swap.json"), "w") as f:
     f.write(json.dumps({"processors": [{"processor_type": "minecraft:rule", "rules": [{"input_predicate": {"predicate_type": "minecraft:block_match", "block": "minecraft:stone"},
         "location_predicate": {"predicate_type": "minecraft:always_true"}, "output_state": {"Name": "minecraft:cobblestone"}}]}]}, sort_keys=True))
+
+with open(os.path.join(proc_root, "lava.json"), "w") as f:
+    f.write(json.dumps({"processors": [{"processor_type": "minecraft:lava_submerged_block"}]}, sort_keys=True))
+
+biome_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jigpool", "data", "minecraft", "worldgen", "biome")
+os.makedirs(biome_root, exist_ok=True)
+for name, text in (("t_badjson", "not json {"), ("t_notemp", json.dumps({"downfall": 0.5})), ("t_warm", json.dumps({"temperature": 0.8})), ("t_frozen", json.dumps({"temperature": 0.0}))):
+    with open(os.path.join(biome_root, name + ".json"), "w") as f: f.write(text)

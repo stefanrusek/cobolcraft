@@ -196,6 +196,7 @@
  COPY STRUCTPLACE.
  COPY STRUCTSET.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-GO                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
@@ -219,6 +220,13 @@
  PROCEDURE DIVISION USING L-ROW.
      MOVE SP-T-ROW(L-ROW) TO WS-ROW
      CALL "STRUCT-TPL-PRE" USING L-ROW
+*>   a ruined portal (kind 4) is placed only by the pass whose write box holds its centre, with the write box enlarged to the portal (36-4 8.4 steps 1 and 2)
+     IF SP-T-KIND(L-ROW) = 4
+         CALL "STRUCT-PORTAL-BEGIN" USING L-ROW WS-GO
+         IF WS-GO = 0
+             GOBACK
+         END-IF
+     END-IF
      INITIALIZE STRUCT-SETTINGS
      MOVE SP-T-MIR(L-ROW) TO PS-MIRROR
      MOVE SP-T-ROT(L-ROW) TO PS-ROTATION

@@ -7,11 +7,11 @@
 *>   4 capped               SPP-A the delegate row, SPP-B to SPP-E the int provider (type 1 constant a, 2 uniform a..b, 3 biased_to_bottom a..b, 4 very_biased_to_bottom a..b, 5 trapezoid min a max b plateau c)
 *>   5 gravity              SPP-A heightmap ordinal of FL-HEIGHT-OF (0 WORLD_SURFACE_WG, 1 WORLD_SURFACE, 2 OCEAN_FLOOR_WG, 3 OCEAN_FLOOR, 4 MOTION_BLOCKING, 5 MOTION_BLOCKING_NO_LEAVES), SPP-B offset
 *>   6 jigsaw_replacement  (no parameters; STRUCT-PROC-JIGSAW in struct-jigsaw.cob)
+*>   7 lava_submerged_block (no parameters; STRUCT-PROC-LAVA in struct-portal.cob)
 *>   8 nop
 *>   9 block_ignore         SPP-POOL, SPP-N the blocks
 *>   10 blackstone_replace
 *>   11 block_age           SPP-F mossiness (float32); the pool holds the tags stairs, slabs, walls: SPP-POOL the first entry, SPP-A, SPP-B, SPP-C their sizes
-*> lava_submerged_block (7) is not compiled: the list that holds one is unsupported (the block tables carry no collision shapes).
 *> A rule (SPR): the tests SPR-IN, SPR-LOC, SPR-POS (SP-TEST rows; 0 for always true), the output state SPR-STATE, the block entity modifier SPR-MOD (0 passthrough, 1 clear, 2 append_static, 3 append_loot), SPR-LOOT the loot table key of an append_loot.
 *> A test (SPT): SPT-TYPE 1 always_true, 2 block_match (SPT-A the block number), 3 blockstate_match (SPT-A the state), 4 tag_match (SPT-POOL, SPT-N), 5 random_block_match (SPT-A block, SPT-F
 *> probability float32), 6 random_blockstate_match (SPT-A state, SPT-F), 7 height_match (SPT-B min, SPT-C max), 8 all_of, 9 any_of, 10 not (children from SPT-CHILD along SPT-NEXT); position tests: 21 always_true,

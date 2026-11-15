@@ -78,7 +78,6 @@ write("stairmatch", lst(rule(r(pt("blockstate_match", block_state={"Name": M + "
                                {"Name": M + "spruce_stairs", "Properties": {"facing": "east"}}))))
 write("twice", lst({"processor_type": M + "block_ignore", "blocks": [M + "oak_log"]}, rule(r(bm("stone"), T, M + "cobblestone"))))
 # lists that do not compile
-write("bad_lava", lst({"processor_type": M + "lava_submerged_block"}))
 write("bad_type", lst({"processor_type": M + "no_such_processor"}))
 write("bad_notype", lst({"foo": 1}))
 write("bad_nolocation", lst(rule({"input_predicate": T, "output_state": M + "air"})))
@@ -113,10 +112,11 @@ write("bad_json", None, raw="{ this is not json")
 write("bad_rootnum", None, raw="5")
 
 # capacity: the pool (59 lists of the 552 blocks of a big tag fill it), the processor rows, the rule rows, the test rows
-for i in range(70):
-    write("big%02d" % i, lst({"processor_type": M + "protected_blocks", "value": "#minecraft:mineable/pickaxe"}))
-write("toomany", lst(*[{"processor_type": M + "nop"}] * 1025))
-write("nops1023", lst(*[{"processor_type": M + "nop"}] * 1023))
+for i in range(270):
+    write("big%03d" % i, lst({"processor_type": M + "protected_blocks", "value": "#minecraft:mineable/pickaxe"}))
+for n in ("nops1300a", "nops1300b", "nops1300c", "nops1300d"):
+    write(n, lst(*[{"processor_type": M + "nop"}] * 1300))
+write("nops195", lst(*[{"processor_type": M + "nop"}] * 195))
 write("capped_full", lst({"processor_type": M + "capped", "limit": 2, "delegate": {"processor_type": M + "nop"}}))
 cheap = {"input_predicate": {"predicate_type": M + "always_true"}, "location_predicate": {"predicate_type": M + "always_true"}, "output_state": M + "air"}
 for i in range(5):
