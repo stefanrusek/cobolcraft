@@ -35,6 +35,11 @@ the server computes.
 - Given a face that cannot support the block (for example the underside for a torch), when the player clicks it, then
   nothing is placed.
 
+### As a Player, I want to break a torch by hitting it
+
+- Given a torch, wall torch or redstone torch in the world, when the player hits it in survival (and in creative), then
+  it breaks, drops as an item (survival) and is removed, the same as any other block.
+
 ### As a Player, I want directional blocks to take their orientation from my placement
 
 - Given a log or pillar block, when the player places it, then its axis follows the clicked face (up and down gives Y,
@@ -66,6 +71,7 @@ the server computes.
 - FR-003: Placement is rejected when the can-survive check fails for the computed state.
 - FR-004: The client predicts the placed state with the same rules, so the server's confirmation does not change what
   the player sees.
+- FR-005: A torch, wall torch and redstone torch can be targeted and broken by hitting them, in survival and creative.
 
 ## Notes
 
@@ -73,5 +79,11 @@ the server computes.
 > Operator observation from the try3 build: torches do not attach to walls; breaking the wall does not pop torches or
 > buttons; logs always face up; stairs always face one direction; buttons face one direction; slabs only place on the
 > lower half.
+
+> [!NOTE]
+> Operator observation from a later try build: "I couldn't break torches" - hitting a torch did not break it. Cause not
+> yet investigated (candidates: the torch has no hit shape or selection box so the ray never targets it, the break
+> progress or dig path rejects the torch, or the torch state is placed as a block the client cannot target). Reproduce
+> on the current build before fixing; an acceptance test must dig a torch and a wall torch and see the block removed.
 
 The operator said these are out of scope for the current run (CC-0001) and to add them to the next SDD run.
