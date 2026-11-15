@@ -66,7 +66,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-QUEUE-PICK-MODE.
-*> USING mode (BINARY-LONG), index out (BINARY-LONG): mode 0 considers every entry, mode 1 only the chunks of the standard pipeline (the generation
+*> USING mode (BINARY-LONG), index out (BINARY-LONG): mode 0 considers every entry, mode 1 only the chunks of the standard pipeline and of the Nether (the generation
 *> workers' share), mode 2 only the others (the in-tick path while the workers serve the standard ones). The queue entry nearest to a player (squared distance in chunks to the nearest alive player
 *> of its dimension; with no such player every chunk is equally far and the oldest goes first); 0 for an empty queue.
  DATA DIVISION.
@@ -94,7 +94,7 @@
      MOVE 999999999999 TO WS-BEST-D
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GQ-COUNT
          MOVE 0 TO WS-STANDARD
-         IF DM-GENERATOR(GQ-DIM(WS-I)) = DIM-GEN-STANDARD
+         IF DM-GENERATOR(GQ-DIM(WS-I)) = DIM-GEN-STANDARD OR DM-GENERATOR(GQ-DIM(WS-I)) = DIM-GEN-NETHER
              MOVE 1 TO WS-STANDARD
          END-IF
          MOVE 999999999999 TO WS-D

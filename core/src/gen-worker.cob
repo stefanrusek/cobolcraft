@@ -26,10 +26,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-WORKER-HANDLE.
-*> USING outcome out (BINARY-LONG): the worker side of one request: reads it, makes the chunk by the atomic reference (GEN-JOB-RUN-ALL) and
+*> USING outcome out (BINARY-LONG): the worker side of one request: reads it, makes the chunk by the atomic reference (GEN-JOB-RUN-ALL; the Nether's by WORLDGEN-DIM-CHUNK) and
 *> writes the answer; 1 when answered, 0 at end of input or when the answer cannot be written.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
  78 WS-REQUEST-BYTES       VALUE 12.
  01 WS-REQUEST.
     05 WS-DIM              BINARY-LONG.
@@ -48,7 +49,13 @@
      IF WS-RC NOT = WS-REQUEST-BYTES
          GOBACK
      END-IF
-     CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
+     IF DM-GENERATOR(WS-DIM) = DIM-GEN-NETHER
+*>       the Nether's chunk is the dimension's own generator's (T6300), made over empty memory as WORLD-CHUNK-LOAD gives it
+         MOVE LOW-VALUES TO WS-CHUNK
+         CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
+     ELSE
+         CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
+     END-IF
      CALL STATIC "cc_wk_child_write" USING BY REFERENCE WS-ANSWER BY VALUE WS-LENGTH RETURNING WS-RC
      IF WS-RC = WS-LENGTH
          MOVE 1 TO L-OUTCOME
@@ -419,3 +426,22 @@
      MOVE GQ-LOAD-WORKERS TO L-SIZE
      GOBACK.
  END PROGRAM GEN-WORKERS-LOADING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-WORKER-NETHER.
+*> USING dimension row, flag out (BINARY-LONG): 1 when the workers make that dimension's chunks and it is the Nether: a pool is configured and active (GW-ACTIVE)
+*> and the generator is the Nether's (T6300). 0 otherwise.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
+ COPY DIMENSIONS.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF GQ-WORKERS > 0 AND GW-ACTIVE = 1 AND DM-GENERATOR(L-DIM) = DIM-GEN-NETHER
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM GEN-WORKER-NETHER.
