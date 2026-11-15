@@ -1911,6 +1911,26 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 40
+*>           a sculk patch (feat-sculk.cob): unsupported when a block or tag of the spreader or a number is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-SCULK-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 28
+*>           multiface growth, glow lichen and sculk veins (feat-multi.cob): unsupported when the block has no face properties or the set is unknown
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-MULTI-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 16
 *>           a fallen tree (feat-tree-fallen.cob): unsupported when it cannot be placed whole, as a tree
              MOVE FD-BAD TO LS-SAVED-BAD
