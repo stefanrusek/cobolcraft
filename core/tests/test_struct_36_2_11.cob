@@ -303,7 +303,7 @@
      MOVE FUNCTION TRIM(WS-ED) TO TL-OBSERVED
      MOVE "1" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 13
          EVALUATE WS-I
              WHEN 1
                  MOVE "minecraft:no_such_block" TO WS-TEXT
@@ -335,9 +335,15 @@
              WHEN 10
                  MOVE "stone{a:1}{b:2}" TO WS-TEXT
                  MOVE "nbt followed by more text" TO WS-LABEL
-             WHEN OTHER
+             WHEN 11
                  MOVE "[facing=south]" TO WS-TEXT
                  MOVE "properties with no id" TO WS-LABEL
+             WHEN 12
+                 MOVE " stone" TO WS-TEXT
+                 MOVE "an id that starts with a space" TO WS-LABEL
+             WHEN OTHER
+                 MOVE "oak_stairs[facing=]" TO WS-TEXT
+                 MOVE "a property with an empty value" TO WS-LABEL
          END-EVALUATE
          PERFORM DO-PARSE
          MOVE SPACES TO TL-OBSERVED
