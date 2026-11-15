@@ -226,7 +226,18 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Wandering: a pig on the player's cell moves within 400 ticks and stays near.
+*>   Wandering: a pig on the player's cell moves within 400 ticks and stays near. The world is generated from a random seed in the blocks of the open
+*>   set, which the standard tables read as other blocks, so a stone block of the standard set is put under the pig: it stands (a pig that fell through
+*>   the ground stayed where it landed, in one run of three).
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-INDEX WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STONE-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
      CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE "test stdmob slice: a pig wanders in 400 ticks" TO TL-CASE
