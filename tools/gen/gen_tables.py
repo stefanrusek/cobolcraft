@@ -714,7 +714,8 @@ def property_rows(docs):
 
 
 def build_blocks(docs):
-    parts = doc_files(docs, "24-")
+    # parts 1 to 8 carry the registry tables; part 9 (BlockState.rotate and mirror) is prose about the transforms
+    parts = [p for p in doc_files(docs, "24-") if re.search(r"block-registry-[1-8]-", os.path.basename(p))]
     if len(parts) != 8:
         raise Problem("expected 8 block registry documents, found %d" % len(parts))
     appendix = read_appendix(parts[7])
