@@ -194,6 +194,7 @@
                  MOVE "Health" TO WN MOVE 6 TO WL
                  MOVE EN-HEALTH(WS-ROW) TO WS-FLOAT
                  CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+                 CALL "MOB-NBT-WRITE" USING WS-ROW PB-BUFFER
              END-IF
              CALL "EXTRA-APPEND" USING WS-KIND-ZERO WS-ROW PB-BUFFER WS-START
              CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
@@ -310,6 +311,8 @@
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
  01 WS-HEALTH              FLOAT-SHORT.
+ 01 WS-HANDLED             BINARY-LONG.
+ COPY ENMOBDATA.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
@@ -319,6 +322,8 @@
      MOVE PB-POS TO WS-START
      MOVE 0 TO WS-ITEM WS-ITEM-COUNT WS-AGE WS-DELAY WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ
      MOVE 0 TO WS-YAW WS-PITCH WS-HEALTH
+     INITIALIZE MQ-DATA
+     MOVE -1 TO MQ-VARIANT-INT MQ-EGG MQ-SIZE
      PERFORM UNTIL PB-ERROR = 1
          MOVE SPACES TO WN
          CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAPACITY WL
@@ -354,6 +359,7 @@
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-HEALTH
              WHEN WN = "Age" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER WS-AGE
+                 MOVE WS-AGE TO MQ-AGE
              WHEN WN = "Item" AND WS-TYPE = 10
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
@@ -381,7 +387,10 @@
                      END-EVALUATE
                  END-PERFORM
              WHEN OTHER
-                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 CALL "MOB-NBT-KEY" USING PB-BUFFER WS-TYPE WN MQ-DATA WS-HANDLED
+                 IF WS-HANDLED = 0
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 END-IF
          END-EVALUATE
      END-PERFORM
      MOVE PB-POS TO WS-END
@@ -399,6 +408,7 @@
              COMPUTE EN-HEALTH(WS-ROW) ROUNDED = WS-HEALTH
              MOVE WS-PITCH TO EN-PITCH(WS-ROW)
              MOVE WS-VY TO EN-VY(WS-ROW)
+             CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
      END-EVALUATE
 *>   The keys of the file's compound that the core does not model are kept for the next save of a 26.3 world (07 section 10.7).
      IF WS-ROW > 0

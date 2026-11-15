@@ -439,6 +439,9 @@
        10 EN-BT-STATUS        BINARY-LONG.        *> boat: the last status, 0 in water, 1 under water, 2 under flowing water, 3 on land, 4 in air, 5 none yet
        10 EN-BT-LASTYD        FLOAT-LONG.         *> boat: the vertical speed of the last move (lastYd)
        10 EN-BT-WLEVEL        FLOAT-LONG.         *> boat: waterLevel of the last status
+*>     --- 002-lane-mobsfull-h25: saved mob state (core/src/entity-mobdata.cob) ---
+       10 EN-LEASH-UUID      PIC X(16).          *> a mob loaded leashed: the UUID of the holder until that player is in the dimension (MOB-LEASH-RESTORE); spaces: none
+       10 EN-RIDER2          BINARY-LONG.        *> a camel: the player row of its second rider, the rear seat (0 none; EN-RIDER is the first)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

@@ -7,7 +7,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-RIDE-SEAT.
-*> USING key (PIC X(24)), seat out (FLOAT-LONG): the seat of 18 section 1.1.1 (horse 1.44375, donkey 1.1125, mule 1.2125, pig 0.86875) less the player's attachment 0.6; 0 for any other key.
+*> USING key (PIC X(24)), seat out (FLOAT-LONG): the seat of 18 section 1.1.1 (horse 1.44375, donkey 1.1125, mule 1.2125, pig 0.86875, camel 2.0 = height 2.375 less 0.375, 44-8 section 12.8) less the player's attachment 0.6; 0 for any other key.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-SEATS.
@@ -19,8 +19,10 @@
     05 FILLER              FLOAT-LONG VALUE 1.2125.
     05 FILLER              PIC X(24) VALUE "pig".
     05 FILLER              FLOAT-LONG VALUE 0.86875.
+    05 FILLER              PIC X(24) VALUE "camel".
+    05 FILLER              FLOAT-LONG VALUE 2.0.
  01 WS-TABLE REDEFINES WS-SEATS.
-    05 WS-SEAT OCCURS 4 TIMES.
+    05 WS-SEAT OCCURS 5 TIMES.
        10 WS-SEAT-KEY      PIC X(24).
        10 WS-SEAT-Y        FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
@@ -29,7 +31,7 @@
  01 L-SEAT                 FLOAT-LONG.
  PROCEDURE DIVISION USING L-KEY L-SEAT.
      MOVE 0 TO L-SEAT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
          IF WS-SEAT-KEY(WS-I) = L-KEY
              COMPUTE L-SEAT = WS-SEAT-Y(WS-I) - 0.6
          END-IF
@@ -39,13 +41,17 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-RIDE-SYNC.
-*> USING mob row: the rider (EN-RIDER) is put at the mob's seat and its entity moved for the other viewers.
+*> USING mob row: each rider (EN-RIDER, and EN-RIDER2 of a camel) is put at the mob's seat and its entity moved for the other viewers. A camel's seat is (0, y, z) rotated by
+*> -yaw (44-8 section 12.8): z 0.5 for the front seat, -0.7 for the rear seat when there are two riders.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-KEY                 PIC X(24).
  01 WS-SEAT                FLOAT-LONG.
  01 WS-RIDER               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-RADIANS             FLOAT-LONG.
  01 WS-GROUND              BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -54,20 +60,35 @@
          CALL "BOAT-SYNC" USING L-ROW
          GOBACK
      END-IF
-     MOVE EN-RIDER(L-ROW) TO WS-RIDER
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      CALL "MOB-RIDE-SEAT" USING WS-KEY WS-SEAT
-     MOVE EN-X(L-ROW) TO PL-X(WS-RIDER)
-     COMPUTE PL-Y(WS-RIDER) = EN-Y(L-ROW) + WS-SEAT
-     MOVE EN-Z(L-ROW) TO PL-Z(WS-RIDER)
-     CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-RIDER) PL-X(WS-RIDER) PL-Y(WS-RIDER) PL-Z(WS-RIDER)
-         PL-YAW(WS-RIDER) PL-PITCH(WS-RIDER) WS-GROUND
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 2
+         MOVE EN-RIDER(L-ROW) TO WS-RIDER
+         IF WS-SLOT = 2
+             MOVE EN-RIDER2(L-ROW) TO WS-RIDER
+         END-IF
+         IF WS-RIDER > 0
+             MOVE 0 TO WS-Z
+             IF WS-KEY = "camel"
+                 MOVE 0.5 TO WS-Z
+                 IF WS-SLOT = 2
+                     MOVE -0.7 TO WS-Z
+                 END-IF
+             END-IF
+             COMPUTE WS-RADIANS = EN-YAW(L-ROW) * FUNCTION PI / 180
+             COMPUTE PL-X(WS-RIDER) = EN-X(L-ROW) - WS-Z * FUNCTION SIN(WS-RADIANS)
+             COMPUTE PL-Y(WS-RIDER) = EN-Y(L-ROW) + WS-SEAT
+             COMPUTE PL-Z(WS-RIDER) = EN-Z(L-ROW) + WS-Z * FUNCTION COS(WS-RADIANS)
+             CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-RIDER) PL-X(WS-RIDER) PL-Y(WS-RIDER) PL-Z(WS-RIDER)
+                 PL-YAW(WS-RIDER) PL-PITCH(WS-RIDER) WS-GROUND
+         END-IF
+     END-PERFORM
      GOBACK.
  END PROGRAM MOB-RIDE-SYNC.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-RIDE-SEND.
-*> USING mob row: Set Passengers (0x6D) of the mob to its viewers: the rider's entity id, or none.
+*> USING mob row: Set Passengers (0x6D) of the mob to its viewers: the entity ids of the riders (the first, then the second of a camel), or none.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -82,12 +103,18 @@
      IF EN-RIDER(L-ROW) > 0
          MOVE 1 TO WS-COUNT
      END-IF
+     IF EN-RIDER2(L-ROW) > 0
+         MOVE 2 TO WS-COUNT
+     END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
-     IF WS-COUNT = 1
+     IF WS-COUNT > 0
          CALL "PB-PUT-VARINT" USING PB-BUFFER PL-ENTITY-ID(EN-RIDER(L-ROW))
+     END-IF
+     IF WS-COUNT = 2
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PL-ENTITY-ID(EN-RIDER2(L-ROW))
      END-IF
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
@@ -96,7 +123,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-RIDE-STOP.
-*> USING mob row (EN-RIDER > 0): the rider dismounts, in place, and the viewers get Set Passengers.
+*> USING mob row (EN-RIDER > 0): the first rider dismounts, in place (a camel's second rider takes the front seat), and the viewers get Set Passengers.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -105,29 +132,54 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE EN-RIDER(L-ROW) TO WS-RIDER
-     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(WS-RIDER)) EN-RIDER(L-ROW)
+     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(WS-RIDER))
+     MOVE EN-RIDER2(L-ROW) TO EN-RIDER(L-ROW)
+     MOVE 0 TO EN-RIDER2(L-ROW)
      CALL "MOB-RIDE-SEND" USING L-ROW
      GOBACK.
  END PROGRAM MOB-RIDE-STOP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-RIDE-LEAVE2.
+*> USING mob row (EN-RIDER2 > 0): the second rider of a camel dismounts, in place; the first stays and the viewers get Set Passengers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(EN-RIDER2(L-ROW))) EN-RIDER2(L-ROW)
+     CALL "MOB-RIDE-SEND" USING L-ROW
+     GOBACK.
+ END PROGRAM MOB-RIDE-LEAVE2.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-RIDE-START.
 *> USING player row, mob row, started out: the player mounts a rideable mob (19 section 3.5 step 4; section 2.1): it is an adult with no rider, the player is not sneaking and rides
-*> nothing, and a pig needs its saddle. The rider is put on the seat and the viewers get Set Passengers.
+*> nothing, and a pig needs its saddle; a camel with one rider takes a second (19 section 3.8: fewer than 2 passengers). The rider is put on the seat and the viewers get Set Passengers.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-KEY                 PIC X(24).
+ 01 WS-TAKEN               BINARY-LONG.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  01 L-STARTED              BINARY-LONG.
  PROCEDURE DIVISION USING L-PLAYER L-ROW L-STARTED.
-     MOVE 0 TO L-STARTED
+     MOVE 0 TO L-STARTED WS-TAKEN
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     IF EN-RIDER(L-ROW) = 0 AND PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0
-             AND EN-MOBAGE(L-ROW) >= 0 AND (EN-SADDLE(L-ROW) = 1 OR WS-KEY NOT = "pig")
-         MOVE L-PLAYER TO EN-RIDER(L-ROW)
+     IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0 AND EN-MOBAGE(L-ROW) >= 0
+         EVALUATE TRUE
+             WHEN EN-RIDER(L-ROW) = 0 AND (EN-SADDLE(L-ROW) = 1 OR WS-KEY NOT = "pig")
+                 MOVE L-PLAYER TO EN-RIDER(L-ROW)
+                 MOVE 1 TO WS-TAKEN
+             WHEN EN-RIDER(L-ROW) > 0 AND EN-RIDER2(L-ROW) = 0 AND WS-KEY = "camel"
+                 MOVE L-PLAYER TO EN-RIDER2(L-ROW)
+                 MOVE 1 TO WS-TAKEN
+         END-EVALUATE
+     END-IF
+     IF WS-TAKEN = 1
          MOVE L-ROW TO EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER))
          CALL "MOB-RIDE-SYNC" USING L-ROW
          CALL "MOB-RIDE-SEND" USING L-ROW
@@ -232,7 +284,7 @@
      MOVE EN-SADDLE(L-ROW) TO L-DONE
      CALL "MOB-RIDE-SYNC" USING L-ROW
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     IF EN-TAMED(L-ROW) = 0 AND WS-KEY NOT = "pig"
+     IF EN-TAMED(L-ROW) = 0 AND WS-KEY NOT = "pig" AND WS-KEY NOT = "camel"
          MOVE EN-ID(L-ROW) TO WS-ARG(1)
          MOVE CW-TIME TO WS-ARG(2)
          MOVE 41 TO WS-ARG(3)
@@ -275,7 +327,11 @@
      MOVE EN-VEHICLE(PL-ENTITY-ROW(WS-ROW)) TO WS-VEHICLE
      COMPUTE WS-SHIFT = PSB-FLAGS / 32
      IF WS-VEHICLE > 0 AND FUNCTION MOD(WS-SHIFT, 2) = 1
-         CALL "MOB-RIDE-STOP" USING WS-VEHICLE
+         IF EN-RIDER2(WS-VEHICLE) = WS-ROW
+             CALL "MOB-RIDE-LEAVE2" USING WS-VEHICLE
+         ELSE
+             CALL "MOB-RIDE-STOP" USING WS-VEHICLE
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM MOB-RIDE-INPUT.
