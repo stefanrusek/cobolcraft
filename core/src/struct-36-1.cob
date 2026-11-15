@@ -890,13 +890,12 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-CHUNK-STARTS.
 *> USING seed (BINARY-DOUBLE), chunk x, chunk z, count out: the starts of the chunk (STRUCT-CHUNK-STARTS-RAW), answered from the start list cache when the chunk was asked for under the same seed,
-*> content and noise generation, structure data epoch (SD-EPOCH: data, gate and possible sets) and test aid of the jigsaw surface. The starts of a chunk are a pure function of those, so a
+*> content and noise generation and structure data epoch (SD-EPOCH: data, gate and possible sets). The starts of a chunk are a pure function of those, so a
 *> cached answer is the answer the engine would make (docs/design/world-types.md structures part 8); a chunk of more than SD-CACHE-STARTS starts is never kept. The rows SC-* of the answer are
 *> left in SD-START as the engine leaves them.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
- COPY STRUCTJIG.
  COPY CTWORLDGEN.
  COPY NOISE.
  01 WS-GEN                 BINARY-LONG.
@@ -916,7 +915,7 @@
      COMPUTE WS-SZ = FUNCTION MOD(L-CZ, 64)
      COMPUTE WS-SLOT = WS-SX * 64 + WS-SZ + 1
      IF SK-USED(WS-SLOT) = 1 AND SK-CX(WS-SLOT) = L-CX AND SK-CZ(WS-SLOT) = L-CZ AND SK-SEED(WS-SLOT) = L-SEED
-        AND SK-GEN(WS-SLOT) = WS-GEN AND SK-EPOCH(WS-SLOT) = SD-EPOCH AND SK-AID(WS-SLOT) = JIG-TEST-SURFACE
+        AND SK-GEN(WS-SLOT) = WS-GEN AND SK-EPOCH(WS-SLOT) = SD-EPOCH
          MOVE SK-N(WS-SLOT) TO SD-START-COUNT L-COUNT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SK-N(WS-SLOT)
              MOVE SK-SET(WS-SLOT, WS-I) TO SC-SET(WS-I)
@@ -937,7 +936,6 @@
          MOVE L-CZ TO SK-CZ(WS-SLOT)
          MOVE WS-GEN TO SK-GEN(WS-SLOT)
          MOVE SD-EPOCH TO SK-EPOCH(WS-SLOT)
-         MOVE JIG-TEST-SURFACE TO SK-AID(WS-SLOT)
          MOVE L-COUNT TO SK-N(WS-SLOT)
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
              MOVE SC-SET(WS-I) TO SK-SET(WS-SLOT, WS-I)

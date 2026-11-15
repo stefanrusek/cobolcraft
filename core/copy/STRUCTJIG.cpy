@@ -79,11 +79,10 @@
        10 JX-TOP            BINARY-LONG.
        10 JX-JOINT          BINARY-LONG.
        10 JX-TAG            BINARY-LONG.
-*> STRUCT-JIG-STATE: JIG-GEN counts the JIG-RESETs (what a remembered start holds are rows of the pool tables); JIG-TEST-SURFACE 2 makes every first free height -40 and 3 makes it 200 (ruined portal tests); 1 skips the biome test of the stub and makes the first free height of a column the synthetic 68 + ((floor(x / 4) + floor(z / 4)) mod 5) (a test aid: core/tests/fixtures/gen_jigsaw.py uses
-*> the same function), 0 the noise terrain's. JJ: the junctions of the start being built (JJ-OWNER the piece row): JJ-X, JJ-Y (source ground y), JJ-Z, JJ-DELTA, JJ-PROJ (the destination projection).
+*> STRUCT-JIG-STATE: JIG-GEN counts the JIG-RESETs (what a remembered start holds are rows of the pool tables).
+*> JJ: the junctions of the start being built (JJ-OWNER the piece row): JJ-X, JJ-Y (source ground y), JJ-Z, JJ-DELTA, JJ-PROJ (the destination projection).
  78 JJ-MAX                VALUE 4096.
  01 STRUCT-JIG-STATE EXTERNAL.
-    05 JIG-TEST-SURFACE     BINARY-LONG.
     05 JIG-GEN              BINARY-LONG.
     05 JJ-COUNT             BINARY-LONG.
     05 JJ-REC OCCURS 4096 TIMES.

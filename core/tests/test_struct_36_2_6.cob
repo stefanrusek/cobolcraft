@@ -128,6 +128,20 @@
      MOVE FUNCTION TRIM(WS-ED) TO TL-OBSERVED
      PERFORM ASSERT-TEXT
 
+*>   a full builder makes no piece either, and counts the lost one
+     MOVE "test:marker" TO WS-ID
+     CALL "STRUCT-TPL-LOAD" USING WS-TPL-DIR WS-ID WS-X
+     CALL "SPB-RESET"
+     MOVE SP-MAX TO SP-COUNT
+     CALL "STRUCT-TPL-PIECE-ADD" USING WS-KIND WS-X WS-OX WS-OY WS-OZ WS-ROT WS-ZERO WS-Q1 WS-Q2 WS-Q3 WS-Q4 WS-Q5 WS-Q6 WS-PIECE
+     MOVE "a full builder makes no piece and counts the lost one" TO WS-LABEL
+     MOVE WS-PIECE TO WS-ED
+     MOVE SP-LOST TO WS-ED2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-ED) " " FUNCTION TRIM(WS-ED2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 1" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+
 *>   Kind 0 at (4, 70, 4): the chests draw a seed each, the markers do nothing; the jigsaws turn into their final_state.
      MOVE "test:marker" TO WS-ID
      CALL "STRUCT-TPL-LOAD" USING WS-TPL-DIR WS-ID WS-ROW

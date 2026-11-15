@@ -2,7 +2,7 @@
 """Independent model of the jigsaw assembly (docs/protocol/36-structures-3 sections 4 to 14, 36-9) for core/tests/test_struct_jigsaw.cob (prints the expected pieces the test embeds).
 A Java LCG (10 section 2.6), setLargeFeatureSeed (36-4 2.1), the template pools and structure files of the generated vanilla-data (JSON), the templates (gzip NBT: size and jigsaw
 blocks only) and the assembler of 36-3 (start piece, free volumes as a limit box minus a list of removed boxes, the queue, candidates, rotations, the expansion hack, junctions).
-The terrain is synthetic: the first free height of a column is SURFACE(x, z) (the test sets the same function in the core through JIG-TEST-SURFACE).
+The terrain is synthetic: the first free height of a column is SURFACE(x, z) (the test sets the same function in the core through TJ-SURFACE).
 usage: gen_jigsaw.py GENERATED_DIR STRUCTURE SEED CX CZ"""
 import gzip, json, os, struct, sys
 

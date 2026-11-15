@@ -115,7 +115,6 @@
        10 SK-CZ             BINARY-LONG.
        10 SK-GEN            BINARY-LONG.
        10 SK-EPOCH          BINARY-LONG.
-       10 SK-AID            BINARY-LONG.
        10 SK-N              BINARY-LONG.
        10 SK-REC OCCURS 8 TIMES.
           15 SK-SET         BINARY-LONG.

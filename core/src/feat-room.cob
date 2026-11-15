@@ -55,7 +55,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ROOM-PROBE.
-*> USING x, y, z, kind, answer out: kind 1 solid (CB-SOLID of the block at the cell), 2 empty (air of any kind), 3 solid render (CB-OPAQUE), 4 the block index.
+*> USING x, y, z, kind, answer out: kind 1 solid (CB-SOLID of the block at the cell), 2 empty (air of any kind), 4 the block index.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
@@ -80,8 +80,6 @@
              IF WS-CLASS = 1
                  MOVE 1 TO L-ANSWER
              END-IF
-         WHEN 3
-             MOVE CB-OPAQUE(WS-BLOCK) TO L-ANSWER
          WHEN OTHER
              MOVE WS-BLOCK TO L-ANSWER
      END-EVALUATE
@@ -117,45 +115,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ROOM-REORIENT.
-*> USING row, x, y, z, state out: StructurePiece.reorient of the default chest (9.1): directions 0 north, 1 east, 2 south, 3 west.
+*> USING row, x, y, z, state out: StructurePiece.reorient of the default chest (9.1): the facing is REORIENT-DIR's (0 north, 1 east, 2 south, 3 west), the state the row's chest with it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
- 01 WS-D                   BINARY-LONG.
- 01 WS-CAND                BINARY-LONG.
- 01 WS-STOP                BINARY-LONG.
- 01 WS-DEFAULT             BINARY-LONG.
  01 WS-DIR                 BINARY-LONG.
- 01 WS-PX                  BINARY-LONG.
- 01 WS-PZ                  BINARY-LONG.
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-RENDER              BINARY-LONG.
- 01 WS-KIND-RENDER         BINARY-LONG VALUE 3.
- 01 WS-KIND-BLOCK          BINARY-LONG VALUE 4.
  01 WS-BLOCK-ID            BINARY-LONG.
  01 WS-TYPE                BINARY-LONG VALUE 0.
  01 WS-DRY                 BINARY-LONG VALUE 0.
- 01 WS-DXS.
-    05 FILLER              BINARY-LONG VALUE 0.
-    05 FILLER              BINARY-LONG VALUE 1.
-    05 FILLER              BINARY-LONG VALUE 0.
-    05 FILLER              BINARY-LONG VALUE -1.
- 01 WS-DX-TABLE REDEFINES WS-DXS.
-    05 WS-DX               BINARY-LONG OCCURS 4 TIMES.
- 01 WS-DZS.
-    05 FILLER              BINARY-LONG VALUE -1.
-    05 FILLER              BINARY-LONG VALUE 0.
-    05 FILLER              BINARY-LONG VALUE 1.
-    05 FILLER              BINARY-LONG VALUE 0.
- 01 WS-DZ-TABLE REDEFINES WS-DZS.
-    05 WS-DZ               BINARY-LONG OCCURS 4 TIMES.
-*> the turns of step 3: opposite, clockwise, opposite
- 01 WS-TURNS.
-    05 FILLER              BINARY-LONG VALUE 2.
-    05 FILLER              BINARY-LONG VALUE 1.
-    05 FILLER              BINARY-LONG VALUE 2.
- 01 WS-TURN-TABLE REDEFINES WS-TURNS.
-    05 WS-TURN             BINARY-LONG OCCURS 3 TIMES.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -164,43 +131,7 @@
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-STATE.
      COMPUTE WS-BLOCK-ID = WA-I(L-ROW, 4) - 1
-*>   1. the neighbours in order: a chest keeps the default state; two solid-render ones cancel each other
-     MOVE -1 TO WS-CAND
-     MOVE 0 TO WS-STOP WS-DEFAULT
-     PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 3 OR WS-STOP = 1 OR WS-DEFAULT = 1
-         COMPUTE WS-PX = L-X + WS-DX(WS-D + 1)
-         COMPUTE WS-PZ = L-Z + WS-DZ(WS-D + 1)
-         CALL "ROOM-PROBE" USING WS-PX L-Y WS-PZ WS-KIND-BLOCK WS-BLOCK
-         IF WS-BLOCK = WA-I(L-ROW, 4)
-             MOVE 1 TO WS-DEFAULT
-         ELSE
-             CALL "ROOM-PROBE" USING WS-PX L-Y WS-PZ WS-KIND-RENDER WS-RENDER
-             IF WS-RENDER = 1 AND WS-CAND < 0
-                 MOVE WS-D TO WS-CAND
-             ELSE
-                 IF WS-RENDER = 1
-                     MOVE -1 TO WS-CAND
-                     MOVE 1 TO WS-STOP
-                 END-IF
-             END-IF
-         END-IF
-     END-PERFORM
-     MOVE 0 TO WS-DIR
-     IF WS-DEFAULT = 0
-         IF WS-CAND >= 0
-             COMPUTE WS-DIR = FUNCTION MOD(WS-CAND + 2, 4)
-         ELSE
-*>           3. the facing of the default (north): away from a solid block in front, then clockwise, then back
-             PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 3
-                 COMPUTE WS-PX = L-X + WS-DX(WS-DIR + 1)
-                 COMPUTE WS-PZ = L-Z + WS-DZ(WS-DIR + 1)
-                 CALL "ROOM-PROBE" USING WS-PX L-Y WS-PZ WS-KIND-RENDER WS-RENDER
-                 IF WS-RENDER = 1
-                     COMPUTE WS-DIR = FUNCTION MOD(WS-DIR + WS-TURN(WS-D), 4)
-                 END-IF
-             END-PERFORM
-         END-IF
-     END-IF
+     CALL "REORIENT-DIR" USING L-X L-Y L-Z WS-DIR
      CALL "BE-STATE-MAKE" USING WS-BLOCK-ID WS-DIR WS-TYPE WS-DRY L-STATE
      GOBACK.
  END PROGRAM ROOM-REORIENT.
