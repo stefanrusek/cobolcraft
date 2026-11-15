@@ -17,7 +17,7 @@
 *> 4 west, 5 east) in its default state, a cardstack with the axis of the face (up/down y,
 *> north/south z, west/east x; punched false); otherwise a glowtube toggles lit, and anything else
 *> does nothing. A placement is refused, with Block Update of the target's real state to the player
-*> when the target is in the height range, when the target is not void, lies outside the dimension's
+*> when the target is in the height range, when the target is neither void nor replaceable (tag minecraft:replaceable), lies outside the dimension's
 *> height range or would overlap a player's or a mob's box (standin §3, the movement.cob rule:
 *> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
@@ -281,6 +281,10 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:replaceable".
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-REPLACEABLE         BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -310,7 +314,13 @@
      END-IF
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-OLD
      MOVE 1 TO WS-HIT
-     IF WS-OLD = 0
+*>   A target in the block tag minecraft:replaceable (water, lava, grass, snow; 29 section 9.5) is replaced like the void.
+     MOVE 0 TO WS-REPLACEABLE
+     IF WS-OLD > 0
+         MOVE CB-S-BLOCK(WS-OLD + 1) TO WS-BLOCK
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-REPLACEABLE
+     END-IF
+     IF WS-OLD = 0 OR WS-REPLACEABLE = 1
          CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
      END-IF
      IF WS-HIT = 1
@@ -341,6 +351,7 @@
  01 WS-PLACED              BINARY-LONG.
  01 WS-TRAVEL              BINARY-LONG.
  01 WS-BENCH               BINARY-LONG.
+ 01 WS-STATION             BINARY-LONG.
  01 WS-BED                 BINARY-LONG.
  01 WS-BONE                BINARY-LONG.
  01 WS-BONE-USED           BINARY-LONG.
@@ -349,6 +360,7 @@
  01 WS-OPENED              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TOOL                BINARY-LONG.
+ 01 WS-SWITCH              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -374,19 +386,26 @@
      CALL "GB-HELD-BONEMEAL" USING WS-ITEM WS-BONE
      MOVE 0 TO WS-BONE-USED
      CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-STATION
      MOVE 0 TO WS-SHELF
 *>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
      IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
-         MOVE 0 TO WS-CONT
+         MOVE 0 TO WS-CONT WS-STATION
      ELSE
          CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
      END-IF
+*>   A lever, button, door, trapdoor or fence gate takes the click (core/src/use-switch.cob).
+     CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
      EVALUATE TRUE
          WHEN WS-TOOL = 1
+             CONTINUE
+         WHEN WS-SWITCH = 1
              CONTINUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
          WHEN WS-BENCH = 1
+             CONTINUE
+         WHEN WS-STATION > 0
              CONTINUE
          WHEN WS-BED = 1
              CONTINUE
@@ -410,6 +429,9 @@
      END-IF
      IF WS-BENCH = 1
          CALL "MENU-BENCH-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-STATION > 0
+         CALL "MENU-STATION-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-STATION
      END-IF
      IF WS-BED = 1 AND PSB-HAND = 0
          CALL "WORLDSIM-SLEEP-USE" USING L-ID PSB-BX PSB-BY PSB-BZ

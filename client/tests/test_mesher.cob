@@ -33,6 +33,7 @@
  01 WS-VERTICES            BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-NAME                PIC X(80).
+ 01 WS-FD                 BINARY-LONG.
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-EXPECT-U            FLOAT-SHORT.
  01 WS-EXPECT-V            FLOAT-SHORT.
@@ -146,7 +147,11 @@
 *>   and is opaque; greystone at (9, 1, 1) next to it loses its west face (its east face looks into the dark lucite cell: 0.10).
      MOVE 1000 TO SK-U
      MOVE BM-STATE(3) TO BM-STATE(301)
-     MOVE 1 TO ST-OPAQUE(301) ST-OPAQUE(401)
+     MOVE 1 TO ST-OPAQUE(301) ST-OPAQUE(401) ST-SHAPED(301) ST-SHAPED(401)
+*>   An opaque state is a whole face for the neighbour that looks at it (ST-NB, the face classes of state-faces.cob).
+     PERFORM VARYING WS-FD FROM 1 BY 1 UNTIL WS-FD > 6
+         MOVE 1 TO ST-NB(300 * 6 + WS-FD) ST-NB(400 * 6 + WS-FD)
+     END-PERFORM
      MOVE 77 TO ST-BLOCK(301)
      MOVE 300 TO CE-STATE(1 * 256 + 1 * 16 + 3 + 1)
      MOVE 300 TO CE-STATE(1 * 256 + 1 * 16 + 4 + 1)

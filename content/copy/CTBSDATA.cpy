@@ -1,5 +1,5 @@
 *> The rows of the shape rule table (docs/protocol/51-block-shapes.md sections 3 and 4), read by BSH-RULES-LOAD: classes ~ mode ~ property ~ value ~ collision ~ outline.
- 78 BSD-COUNT             VALUE 93.
+ 78 BSD-COUNT             VALUE 127.
  01 BSD-DATA.
     05 FILLER PIC X(500) VALUE "|TorchBlock|RedstoneTorchBlock|~S~~~N~6 0 6 10 10 10".
     05 FILLER PIC X(500) VALUE "|WallTorchBlock|RedstoneWallTorchBlock|~Y~facing~~N~5.5 3 11 10.5 13 16".
@@ -31,8 +31,8 @@
     05 FILLER PIC X(500) VALUE "|CarrotBlock|PotatoBlock|~H~age~~N~2 1".
     05 FILLER PIC X(500) VALUE "|NetherWartBlock|~H~age~~N~5 3".
     05 FILLER PIC X(500) VALUE "|SnowLayerBlock|~H~layers~~-2 2~0 2".
-    05 FILLER PIC X(500) VALUE "|ChestBlock|TrappedChestBlock|EnderChestBlock|WeatheringCopperChestBlock|~S~~~1 0 1 15 14 15~=".
-    05 FILLER PIC X(500) VALUE "|BedBlock|StrawBedBlock|~S~~~0 3 0 16 9 16~=".
+    05 FILLER PIC X(500) VALUE "|EnderChestBlock|~S~~~1 0 1 15 14 15~=".
+    05 FILLER PIC X(500) VALUE "|StrawBedBlock|~S~~~0 3 0 16 9 16~=".
     05 FILLER PIC X(500) VALUE "|AnvilBlock|~Y~facing~~2 0 2 14 4 14,4 4 3 12 5 13,6 5 4 10 10 12,3 10 0 13 16 16~=".
     05 FILLER PIC X(500) VALUE "|LadderBlock|~Y~facing~~0 0 13 16 16 16~=".
     05 FILLER PIC X(500) VALUE "|LanternBlock|WeatheringLanternBlock|~P~hanging~true~6 8 6 10 10 10,5 1 5 11 8 11~=".
@@ -66,7 +66,7 @@
     05 FILLER PIC X(500) VALUE "|DragonEggBlock|DecoratedPotBlock|~S~~~1 0 1 15 16 15~=".
     05 FILLER PIC X(500) VALUE "|HeavyCoreBlock|~S~~~4 0 4 12 8 12~=".
     05 FILLER PIC X(500) VALUE "|AzaleaBlock|~S~~~0 8 0 16 16 16,6 0 6 10 8 10~=".
-    05 FILLER PIC X(500) VALUE "|LecternBlock|~S~~~0 0 0 16 2 16,4 2 4 12 14 12~=".
+    05 FILLER PIC X(500) VALUE "|LecternBlock|~Y~facing~~0 0 0 16 2 16,4 2 4 12 14 12~0 0 0 16 2 16,4 2 4 12 14 12,0 10 1 16 14 5.333333,0 12 5.333333 16 16 9.666667,0 14 9.666667 16 18 14".
     05 FILLER PIC X(500) VALUE "|SkullBlock|PlayerHeadBlock|WitherSkullBlock|~S~~~4 0 4 12 8 12~=".
     05 FILLER PIC X(500) VALUE "|ConduitBlock|~S~~~5 5 5 11 11 11~=".
     05 FILLER PIC X(500) VALUE "|CakeBlock|~S~~~1 0 1 15 8 15~=".
@@ -94,5 +94,39 @@
     05 FILLER PIC X(500) VALUE "|KelpBlock|~S~~~N~0 0 0 16 9 16".
     05 FILLER PIC X(500) VALUE "|CactusFlowerBlock|~S~~~N~1 0 1 15 12 15".
     05 FILLER PIC X(500) VALUE "|StemBlock|~H~age~~N~2 2".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~north~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,6 4 0 10 8 8~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~east~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,8 4 6 16 8 10~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~south~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,6 4 8 10 8 16~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~west~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,0 4 6 8 8 10~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~down~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,6 0 6 10 6 10~=".
+    05 FILLER PIC X(500) VALUE "|CauldronBlock|LavaCauldronBlock|LayeredCauldronBlock|~S~~~0 0 0 4 3 4,12 0 0 16 3 4,0 0 12 4 3 16,12 0 12 16 3 16,0 3 0 16 4 16,0 4 0 16 16 2,0 4 14 16 16 16,0 4 2 2 16 14,14 4 2 16 16 14~=".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~0~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~1~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 3 16,0 3 0 16 16 2,0 3 14 16 16 16,0 3 2 2 16 14,14 3 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~2~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 5 16,0 5 0 16 16 2,0 5 14 16 16 16,0 5 2 2 16 14,14 5 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~3~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 7 16,0 7 0 16 16 2,0 7 14 16 16 16,0 7 2 2 16 14,14 7 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~4~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 9 16,0 9 0 16 16 2,0 9 14 16 16 16,0 9 2 2 16 14,14 9 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~5~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 11 16,0 11 0 16 16 2,0 11 14 16 16 16,0 11 2 2 16 14,14 11 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~6~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 13 16,0 13 0 16 16 2,0 13 14 16 16 16,0 13 2 2 16 14,14 13 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~7~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 15 16,0 15 0 16 16 2,0 15 14 16 16 16,0 15 2 2 16 14,14 15 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~8~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 15 16,0 15 0 16 16 2,0 15 14 16 16 16,0 15 2 2 16 14,14 15 2 16 16 14".
+    05 FILLER PIC X(500) VALUE "|GrindstoneBlock|~Q~face~wall~2 6 7 4 10 16,2 5 3 4 11 9,12 6 7 14 10 16,12 5 3 14 11 9,4 2 0 12 14 12~=".
+    05 FILLER PIC X(500) VALUE "|GrindstoneBlock|~Q~face~floor~2 0 6 4 9 10,2 7 5 4 13 11,12 0 6 14 9 10,12 7 5 14 13 11,4 4 2 12 16 14~=".
+    05 FILLER PIC X(500) VALUE "|GrindstoneBlock|~Q~face~ceiling~2 7 6 4 16 10,2 3 5 4 9 11,12 7 6 14 16 10,12 3 5 14 9 11,4 0 2 12 12 14~=".
+    05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~floor~0 0 4 16 16 12~=".
+    05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~ceiling~5 6 5 11 13 11,4 4 4 12 6 12,7 13 7 9 16 9~=".
+    05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~single_wall~5 6 5 11 13 11,4 4 4 12 6 12,7 13 0 9 15 13~=".
+    05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~double_wall~5 6 5 11 13 11,4 4 4 12 6 12,7 13 0 9 15 16~=".
+    05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~false~N~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16".
+    05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~true~N~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16,0 0 0 16 2 16".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~north~0 0 0 16 16 4,6 6 4 10 10 20~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~south~0 0 12 16 16 16,6 6 -4 10 10 12~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~west~0 0 0 4 16 16,4 6 6 20 10 10~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~east~12 0 0 16 16 16,-4 6 6 12 10 10~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~down~0 0 0 16 4 16,6 4 6 10 20 10~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~up~0 12 0 16 16 16,6 -4 6 10 12 10~=".
+    05 FILLER PIC X(500) VALUE "|PiglinWallSkullBlock|~Y~facing~~3 4 8 13 12 16~=".
+    05 FILLER PIC X(500) VALUE "|WallSkullBlock|PlayerWallHeadBlock|WitherWallSkullBlock|~Y~facing~~4 4 8 12 12 16~=".
+    05 FILLER PIC X(500) VALUE "|ChestBlock|TrappedChestBlock|CopperChestBlock|WeatheringCopperChestBlock|~K~CH~~~".
+    05 FILLER PIC X(500) VALUE "|BedBlock|~K~BD~~~".
  01 BSD-TABLE REDEFINES BSD-DATA.
-    05 BSD-ROW             PIC X(500) OCCURS 93 TIMES.
+    05 BSD-ROW             PIC X(500) OCCURS 127 TIMES.

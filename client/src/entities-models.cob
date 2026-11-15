@@ -246,6 +246,52 @@
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 6 TIMES.
  01 WS-N                   BINARY-LONG.
+*> The baked mesh of each replica row, entity-relative (the model pose and light do not change while a mob stands or walks: 34-7 1.6 gives no
+*> walk animation to the replica), kept with the key it was baked for: the cost of a frame is then a copy of the vertices with the offset to the eye
+*> (lane resume T5820: baking 70 mobs each frame took 340 ms in a debug build).
+ 01 WS-BAKED.
+    05 WS-BK OCCURS 512 TIMES.
+       10 WS-BK-KEY.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 14 TIMES VALUE 0.
+       10 WS-BK-N             BINARY-LONG VALUE 0.
+       10 WS-BK-NC            BINARY-LONG VALUE 0.
+       10 WS-BK-CORNER OCCURS 40 TIMES.
+          15 WS-BK-CP OCCURS 8 TIMES.
+             20 WS-BK-CX      FLOAT-SHORT.
+             20 WS-BK-CY      FLOAT-SHORT.
+             20 WS-BK-CZ      FLOAT-SHORT.
+       10 WS-BK-VK            BINARY-LONG OCCURS 1440 TIMES.
+       10 WS-BK-V OCCURS 1440 TIMES.
+          15 WS-BK-X          FLOAT-SHORT.
+          15 WS-BK-Y          FLOAT-SHORT.
+          15 WS-BK-Z          FLOAT-SHORT.
+          15 WS-BK-U          FLOAT-SHORT.
+          15 WS-BK-W          FLOAT-SHORT.
+          15 WS-BK-B          FLOAT-SHORT.
+          15 WS-BK-A          FLOAT-SHORT VALUE 1.
+          15 WS-BK-SKY        FLOAT-SHORT VALUE 0.
+          15 WS-BK-R          FLOAT-SHORT VALUE 1.
+          15 WS-BK-G          FLOAT-SHORT VALUE 1.
+          15 WS-BK-BLUE       FLOAT-SHORT VALUE 1.
+ 01 WS-KEY-NOW.
+    05 WS-KN                  FLOAT-LONG OCCURS 14 TIMES.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-E2                  BINARY-LONG.
+ 01 WS-BN                  BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-VW                  BINARY-LONG.
+ 01 WS-VA                  BINARY-LONG.
+ 01 WS-NC                  BINARY-LONG.
+ 01 WS-QJ                  BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-EC.
+    05 WS-ECP OCCURS 8 TIMES.
+       10 WS-ECX           FLOAT-SHORT.
+       10 WS-ECY           FLOAT-SHORT.
+       10 WS-ECZ           FLOAT-SHORT.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -268,6 +314,56 @@
      IF WS-D > 4096
          GOBACK
      END-IF
+*>   The light of the entity's cell.
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW))
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
+     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
+*>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
+     MOVE 1 TO WS-HOOK-X WS-HOOK-Y
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
+         CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
+         COMPUTE WS-KSWELL = WS-SWELL / 28
+         COMPUTE WS-FSW = 1 + FUNCTION SIN(WS-KSWELL * 100) * WS-KSWELL / 100
+         COMPUTE WS-C4 = FUNCTION MIN(FUNCTION MAX(WS-KSWELL, 0), 1)
+         COMPUTE WS-C4 = WS-C4 * WS-C4 * WS-C4 * WS-C4
+         COMPUTE WS-HOOK-X = (1 + WS-C4 * 0.4) * WS-FSW
+         COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
+     END-IF
+*>   The key of the bake: everything the mesh depends on besides the position.
+     MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
+     MOVE WS-SLOT TO WS-KN(2)
+     MOVE EN-YAW(WS-ROW) TO WS-KN(3)
+     MOVE EN-HEAD-YAW(WS-ROW) TO WS-KN(4)
+     MOVE EN-PITCH(WS-ROW) TO WS-KN(5)
+     MOVE WS-HOOK-X TO WS-KN(6)
+     MOVE WS-HOOK-Y TO WS-KN(7)
+     MOVE WS-LIGHT TO WS-KN(8)
+     MOVE EA-W TO WS-KN(9)
+     MOVE EA-H TO WS-KN(10)
+     MOVE EA-MT-X(WS-SLOT) TO WS-KN(11)
+     MOVE EA-MT-Y(WS-SLOT) TO WS-KN(12)
+     MOVE EA-MT-W(WS-SLOT) TO WS-KN(13)
+     MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
+*>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
+*>   between its models within a frame; the first entry whose key is the key, else the one of the same model or the free one, is the one used.
+     MOVE 0 TO WS-HIT
+     MOVE WS-ROW TO WS-E
+     COMPUTE WS-E2 = WS-ROW + 256
+     EVALUATE TRUE
+         WHEN WS-BK-KEY(WS-ROW) = WS-KEY-NOW AND WS-BK-N(WS-ROW) > 0
+             MOVE 1 TO WS-HIT
+         WHEN WS-BK-KEY(WS-E2) = WS-KEY-NOW AND WS-BK-N(WS-E2) > 0
+             MOVE 1 TO WS-HIT
+             MOVE WS-E2 TO WS-E
+         WHEN WS-BK-N(WS-ROW) = 0 OR WS-BK-KF(WS-ROW, 1) = WS-KN(1)
+             CONTINUE
+         WHEN OTHER
+             MOVE WS-E2 TO WS-E
+     END-EVALUATE
+     IF WS-HIT = 0
+         MOVE 0 TO WS-BN WS-NC
 *>   The model: built once per row of the table, then copied.
      MOVE EN-MODEL(WS-ROW) TO WS-K
      IF WS-HAVE(WS-K) = 0
@@ -332,28 +428,11 @@
              END-IF
          END-PERFORM
      END-PERFORM
-*>   The light of the entity's cell.
-     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW))
-     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-ROW))
-     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW))
-     CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
-     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
-*>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
-     MOVE 1 TO WS-HOOK-X WS-HOOK-Y
-     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
-         CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
-         COMPUTE WS-KSWELL = WS-SWELL / 28
-         COMPUTE WS-FSW = 1 + FUNCTION SIN(WS-KSWELL * 100) * WS-KSWELL / 100
-         COMPUTE WS-C4 = FUNCTION MIN(FUNCTION MAX(WS-KSWELL, 0), 1)
-         COMPUTE WS-C4 = WS-C4 * WS-C4 * WS-C4 * WS-C4
-         COMPUTE WS-HOOK-X = (1 + WS-C4 * 0.4) * WS-FSW
-         COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
-     END-IF
      MOVE MM-TEXW TO WS-RI(6)
      MOVE MM-TEXH TO WS-RI(7)
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > MM-COUNT
          PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > MM-NCUBES(WS-P) OR WS-VIS(WS-P + 1) = 0
-             IF RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
+             IF WS-BN + 36 <= 1440
                  MOVE MC-OX(WS-P, WS-C) TO WS-BI(1)
                  MOVE MC-OY(WS-P, WS-C) TO WS-BI(2)
                  MOVE MC-OZ(WS-P, WS-C) TO WS-BI(3)
@@ -421,9 +500,15 @@
                                  MOVE WS-T TO WS-X
                          END-EVALUATE
                      END-PERFORM
-                     COMPUTE WS-WX(WS-K) = EN-X(WS-ROW) - L-EYE(1) + WS-X
-                     COMPUTE WS-WY(WS-K) = EN-Y(WS-ROW) - L-EYE(2) + WS-Y
-                     COMPUTE WS-WZ(WS-K) = EN-Z(WS-ROW) - L-EYE(3) + WS-Z
+                     COMPUTE WS-WX(WS-K) = WS-X
+                     COMPUTE WS-WY(WS-K) = WS-Y
+                     COMPUTE WS-WZ(WS-K) = WS-Z
+                 END-PERFORM
+                 ADD 1 TO WS-NC
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
+                     MOVE WS-WX(WS-K) TO WS-BK-CX(WS-E, WS-NC, WS-K)
+                     MOVE WS-WY(WS-K) TO WS-BK-CY(WS-E, WS-NC, WS-K)
+                     MOVE WS-WZ(WS-K) TO WS-BK-CZ(WS-E, WS-NC, WS-K)
                  END-PERFORM
 *>               The six faces: down, up, west, north, east, south.
                  PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 5
@@ -433,9 +518,7 @@
                      COMPUTE WS-A = WS-F * 4
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
                          COMPUTE WS-J = WS-FO(WS-K)
-                         MOVE WS-WX(WS-J) TO WS-QX(WS-K)
-                         MOVE WS-WY(WS-J) TO WS-QY(WS-K)
-                         MOVE WS-WZ(WS-J) TO WS-QZ(WS-K)
+                         MOVE WS-J TO WS-QJ(WS-K)
                          COMPUTE WS-UI(1) = WS-K - 1
                          MOVE WS-RO(WS-A + 1) TO WS-UI(2)
                          MOVE WS-RO(WS-A + 2) TO WS-UI(3)
@@ -448,19 +531,40 @@
                      COMPUTE WS-BRIGHT = FUNCTION MAX(WS-FACTOR(WS-F + 1) * WS-LIGHT, 0.1)
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
                          MOVE WS-ORD(WS-K) TO WS-N
-                         ADD 1 TO RL-EN-COUNT
-                         MOVE WS-QX(WS-N) TO RL-EN-X(RL-EN-COUNT)
-                         MOVE WS-QY(WS-N) TO RL-EN-Y(RL-EN-COUNT)
-                         MOVE WS-QZ(WS-N) TO RL-EN-Z(RL-EN-COUNT)
-                         MOVE WS-QU(WS-N) TO RL-EN-U(RL-EN-COUNT)
-                         MOVE WS-QV(WS-N) TO RL-EN-V(RL-EN-COUNT)
-                         MOVE WS-BRIGHT TO RL-EN-B(RL-EN-COUNT)
-                         MOVE 1 TO RL-EN-A(RL-EN-COUNT)
-                         MOVE 0 TO RL-EN-SKY(RL-EN-COUNT)
-                         MOVE 1 TO RL-EN-R(RL-EN-COUNT) RL-EN-G(RL-EN-COUNT) RL-EN-BLUE(RL-EN-COUNT)
+                         ADD 1 TO WS-BN
+                         MOVE WS-QJ(WS-N) TO WS-BK-VK(WS-E, WS-BN)
+                         MOVE WS-QU(WS-N) TO WS-BK-U(WS-E, WS-BN)
+                         MOVE WS-QV(WS-N) TO WS-BK-W(WS-E, WS-BN)
+                         MOVE WS-BRIGHT TO WS-BK-B(WS-E, WS-BN)
                      END-PERFORM
                  END-PERFORM
              END-IF
+         END-PERFORM
+     END-PERFORM
+         MOVE WS-BN TO WS-BK-N(WS-E)
+         MOVE WS-NC TO WS-BK-NC(WS-E)
+         MOVE WS-KEY-NOW TO WS-BK-KEY(WS-E)
+     END-IF
+*>   Copy the baked cuboids (36 vertices each) to the frame, eye-relative: the eight corners of a cuboid get the offset to the eye, the 36 vertices
+*>   take their corner; one that no longer fits the vertex capacity is left out.
+     COMPUTE WS-OX = EN-X(WS-ROW) - L-EYE(1)
+     COMPUTE WS-OY = EN-Y(WS-ROW) - L-EYE(2)
+     COMPUTE WS-OZ = EN-Z(WS-ROW) - L-EYE(3)
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR RL-EN-COUNT + 36 > CL-MAX-ENTITY-VERTICES
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
+             COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
+             COMPUTE WS-ECY(WS-K) = WS-BK-CY(WS-E, WS-C, WS-K) + WS-OY
+             COMPUTE WS-ECZ(WS-K) = WS-BK-CZ(WS-E, WS-C, WS-K) + WS-OZ
+         END-PERFORM
+         COMPUTE WS-VA = WS-C * 36 - 35
+         PERFORM VARYING WS-VW FROM 0 BY 1 UNTIL WS-VW > 35
+             ADD 1 TO RL-EN-COUNT
+             MOVE WS-BK-V(WS-E, WS-VA) TO RL-EN-VERTEX(RL-EN-COUNT)
+             MOVE WS-BK-VK(WS-E, WS-VA) TO WS-J
+             MOVE WS-ECX(WS-J) TO RL-EN-X(RL-EN-COUNT)
+             MOVE WS-ECY(WS-J) TO RL-EN-Y(RL-EN-COUNT)
+             MOVE WS-ECZ(WS-J) TO RL-EN-Z(RL-EN-COUNT)
+             ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM
      GOBACK.

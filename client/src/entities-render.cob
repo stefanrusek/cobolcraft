@@ -166,6 +166,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY CLMODELS.
+ COPY CONTENT.
 *> The model boxes (08 §10.11; standin-content §3.2, §12.6): entity type, from x y z and to x y z
 *> in model pixels, the top row of its part's strip, the stand-in texture width and height.
  01 WS-BOX-DATA.
@@ -190,6 +191,12 @@
  01 WS-T                   BINARY-LONG.
  01 WS-SAVED               PIC X(1024).
  01 WS-SAVED-MODEL         BINARY-LONG.
+ 01 WS-SEEN                BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
  01 WS-BOX.
     05 WS-CORNER           FLOAT-LONG OCCURS 6 TIMES.
 *> The part's strip (top-left texel), the stand-in texture size and the image's atlas rectangle.
@@ -212,7 +219,22 @@
 *>   Every model the replica shows has its image in the atlas before any vertex takes a texture coordinate from it.
      CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+*>       An entity wholly outside the view frustum (a sphere of 6 blocks round its feet and a block above them, the figures being
+*>       smaller) is not meshed: underground most of the mobs are behind the rock or the player.
+         MOVE 1 TO WS-SEEN
+         IF RL-CULL-ON = 1 AND EN-USED(WS-R) = 1
+             COMPUTE WS-DX = EN-X(WS-R) - L-EYE(1)
+             COMPUTE WS-DY = EN-Y(WS-R) + 1 - L-EYE(2)
+             COMPUTE WS-DZ = EN-Z(WS-R) - L-EYE(3)
+             PERFORM VARYING WS-P FROM 0 BY 3 UNTIL WS-P > 9 OR WS-SEEN = 0
+                 COMPUTE WS-DOT = RL-CULL-PLANE(WS-P + 1) * WS-DX + RL-CULL-PLANE(WS-P + 2) * WS-DY
+                     + RL-CULL-PLANE(WS-P + 3) * WS-DZ + 6
+                 IF WS-DOT < 0
+                     MOVE 0 TO WS-SEEN
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
                      CALL "ENTITY-ARROW-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
@@ -230,7 +252,7 @@
              END-IF
          END-IF
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
-             IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
+             IF EN-USED(WS-R) = 1 AND WS-SEEN = 1 AND EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
                      AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
                  PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
                      MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)
@@ -255,6 +277,23 @@
          MOVE PL-Y TO EN-Y(WS-R)
          MOVE PL-Z TO EN-Z(WS-R)
          MOVE PL-YAW TO EN-YAW(WS-R)
+*>       A world of the standard set: the row is a "player" of the model table (the humanoid with the default skin), emitted like any
+*>       other replica row; only the cobolcraft stand-in world keeps the operator's box.
+         IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+             MOVE 1 TO EN-USED(WS-R) EN-VANILLA(WS-R)
+             MOVE PL-YAW TO EN-HEAD-YAW(WS-R)
+             MOVE PL-PITCH TO EN-PITCH(WS-R)
+             MOVE 1 TO EN-ON-GROUND(WS-R)
+             MOVE SPACES TO EN-KEY(WS-R)
+             MOVE "player" TO EN-KEY(WS-R)
+             CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-R) EN-MODEL(WS-R)
+             ADD 1 TO EN-COUNT
+             CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
+             CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             SUBTRACT 1 FROM EN-COUNT
+             MOVE WS-SAVED TO EN-ENTITY(WS-R)
+             GOBACK
+         END-IF
          MOVE 1 TO WS-B
          PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
              MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)

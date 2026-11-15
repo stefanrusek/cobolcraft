@@ -400,6 +400,11 @@
              MOVE 1 TO WS-HAS-WEATHER
          END-IF
      END-IF
+*>   A standard world whose level.dat is flat (an old build wrote it so over a real world) is saved in the 26.3 layout from now on:
+*>   the game cannot open a standard folder whose level.dat has no Data compound (07 section 10.8).
+     IF WS-VANILLA = 0 AND CW-WORLD-TYPE = "standard"
+         MOVE 1 TO CW-LAYOUT
+     END-IF
 *>   A weather of the cobolcraft form of before the shared state: the kind is the flags, the remaining time the clear time or
 *>   the rain and thunder time (until changed: the longest time).
      IF WS-HAS-WEATHER = 0 AND WS-LEGACY-KIND > 0

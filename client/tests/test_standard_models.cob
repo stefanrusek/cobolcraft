@@ -31,6 +31,9 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-BLOCK-ROW           PIC X(819).
  01 WS-SLOTS               BINARY-LONG.
+ 01 WS-HAVE               BINARY-LONG.
+ 01 WS-VAL.
+    05 WS-DV               FLOAT-LONG OCCURS 9 TIMES.
  01 WS-SLOT                BINARY-LONG.
  01 WS-DIRECTION           BINARY-LONG.
  01 WS-VERTICES            BINARY-LONG.
@@ -135,6 +138,21 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A chest (no block state file in the pack, no elements in any case): the lazy bake gives it the entity model of 52, 18 quads
+*>   for a single chest (T5001).
+     MOVE "chest" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-BLOCK-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+     CALL "MODEL-SLOT-OF" USING CLIENT-STATE WS-STATE WS-SLOT
+     MOVE "standard models a chest state bakes the 18 quads of the entity model" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SLOT > 0
+         MOVE BM-QUAD-COUNT(WS-SLOT) TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   The icon of the stone item (a block item: the pack's items/stone.json names the stone block model): the
 *>   pack's stone sprite, found on first use and kept.
      MOVE "stone" TO WS-KEY
@@ -185,6 +203,20 @@
      IF WS-SLOT > 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An item whose definition is code-drawn (a chest: a select whose fallback is a special model; also banners, beds, shields) shows
+*>   its base model's particle texture instead of no icon (user bug: a flat olive hotbar slot).
+     MOVE "chest" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SLOT
+     MOVE SPACES TO WS-SPRITE-ID
+     MOVE "minecraft:block/stone" TO WS-SPRITE-ID
+     MOVE 21 TO WS-SPRITE-LENGTH
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-SPRITE-ID WS-SPRITE-LENGTH WS-SPRITE-FOUND
+     MOVE "standard models a code-drawn item's icon is its base model's particle sprite" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-SPRITE-FOUND TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The hand draws a block item with the faces of its model, not one icon on every face (user bug: a flat coloured cube).
      MOVE "grass_block" TO WS-KEY
@@ -237,7 +269,7 @@
      MOVE WS-SLOT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The hand holding the block item: 36 vertices, and the up face and a side face sample different atlas regions (vertex 1 of face 1 is a side,
-*>   vertex 1 of face 5 the up face); a flat item (stick) is the 36-vertex slab of one icon, the same region on every face.
+*>   vertex 1 of face 5 the up face); a flat item (stick) is an extruded icon.
      MOVE "grass_block" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      MOVE SCR-WORLD TO SM-SCREEN
@@ -245,6 +277,10 @@
      MOVE 0 TO PL-HELD
      MOVE 1 TO PL-SLOT-COUNT(1)
      MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     MOVE 5000000 TO CL-NOW-MS
+     COMPUTE CL-HAND-ITEM = WS-ITEM + 1
+     MOVE 1 TO CL-HAND-H CL-HAND-OH
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "standard models the hand holding a grass block samples the side and the top texture, not one icon on six faces" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
@@ -256,13 +292,61 @@
      MOVE "stick" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     MOVE 5000000 TO CL-NOW-MS
+     COMPUTE CL-HAND-ITEM = WS-ITEM + 1
+     MOVE 1 TO CL-HAND-H CL-HAND-OH
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
      CALL "HAND-MESH" USING CLIENT-STATE
-     MOVE "standard models the hand holding a stick is a 36-vertex slab with one icon on every face" TO TL-CASE
+     MOVE "standard models the hand holding a stick is an extruded icon: whole quads, more than front and back" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF RL-HAND-COUNT = 36 AND RL-HAND-U(1) = RL-HAND-U(25) AND RL-HAND-V(1) = RL-HAND-V(25)
+     IF RL-HAND-COUNT > 12 AND FUNCTION MOD(RL-HAND-COUNT, 6) = 0 AND RL-HAND-U(1) NOT = RL-HAND-U(2)
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+     MOVE "standard models the stick's first person display is item/generated's (rotation y -90, scale 0.68)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(2) = -90 AND WS-DV(3) = 25 AND WS-DV(7) > 0.67 AND WS-DV(7) < 0.69
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A block item: block/cube's display (rotation y 45, scale 0.4), drawn as the cube; a code-drawn chest: nothing; an item with no definition: no display.
+     MOVE "stone" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     COMPUTE CL-HAND-ITEM = WS-ITEM + 1
+     CALL "HAND-MESH" USING CLIENT-STATE
+     CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+     MOVE "standard models the stone item takes block/cube's display (rotation y 45, scale 0.4) and is a cube of 36 vertices" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(2) = 45 AND WS-DV(7) > 0.39 AND WS-DV(7) < 0.41 AND RL-HAND-COUNT = 36
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "chest" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     COMPUTE CL-HAND-ITEM = WS-ITEM + 1
+     CALL "HAND-MESH" USING CLIENT-STATE
+     CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+     MOVE "standard models a code-drawn (special) model is not drawn by the hand (display 2, no vertices)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 2 AND RL-HAND-COUNT = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "dirt" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+     MOVE "standard models an item with no definition has no display (the defaults apply)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HAVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3000 TO WS-ITEM
+     CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+     MOVE "standard models an item id beyond the table has no display" TO TL-CASE
+     MOVE WS-HAVE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -1 TO WS-ITEM
      CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SLOT

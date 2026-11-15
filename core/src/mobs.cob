@@ -736,6 +736,44 @@
  END PROGRAM MOB-STEP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-ACTIVE.
+*> USING tracker row (BINARY-LONG), active out (BINARY-LONG): 0 when the dimension has a player and every one of them is more than
+*> MOB-ACTIVE-RANGE blocks (3D) from the mob, else 1. A mob out of reach of every player is not stepped (MOBS-TICK): nothing in
+*> range sees it, hears it or is hunted by it (the notice and give-up ranges are all below the range), and a cave holding 70 of
+*> them cost 25 ms of every tick.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY MOBS.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-PLAYERS             BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-LIMIT               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ACTIVE.
+     MOVE 0 TO WS-PLAYERS WS-NEAR
+     COMPUTE WS-LIMIT = MOB-ACTIVE-RANGE * MOB-ACTIVE-RANGE
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR WS-NEAR = 1
+         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+             ADD 1 TO WS-PLAYERS
+             COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
+                 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+             IF WS-D2 <= WS-LIMIT
+                 MOVE 1 TO WS-NEAR
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1 TO L-ACTIVE
+     IF WS-PLAYERS > 0 AND WS-NEAR = 0
+         MOVE 0 TO L-ACTIVE
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-ACTIVE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MOBS-TICK.
 *> No parameters; step 6 of standin §9.5. While the hostile-mobs setting is off, every hostile mob
 *> is removed first (Remove Entities, US9-6, §12.4). Then MOB-STEP for every mob in ascending
@@ -751,6 +789,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-SHIFT               PIC 9.
+ 01 WS-ACTIVE              BINARY-LONG.
  01 WS-ORDERS.
     05 WS-ORDER            BINARY-LONG OCCURS 1024 TIMES.
  LINKAGE SECTION.
@@ -767,7 +806,11 @@
          IF WS-M > 0 AND CS-HOSTILE-MOBS NOT = 1 AND MB-KIND(WS-M) = MOB-HOSTILE
              CALL "ENTITY-REMOVE" USING WS-ROW
          END-IF
+         MOVE 1 TO WS-ACTIVE
          IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1
+             CALL "MOB-ACTIVE" USING WS-ROW WS-ACTIVE
+         END-IF
+         IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1 AND WS-ACTIVE = 1
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I
              MOVE 1 TO WS-SHIFT

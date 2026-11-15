@@ -40,6 +40,7 @@
      MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
      MOVE 1 TO PL-SLOT-ITEM(PL-HELD + 1)
      MOVE 0 TO CL-SWING-AT
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
      MOVE "acceptance US20-1 a block in the selected slot: the hand is a cube of 36 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
@@ -81,10 +82,14 @@
 
 *>   A flat item (the pry bar, item 10) is a thin icon: 36 vertices of thickness 0.02.
      MOVE 10 TO PL-SLOT-ITEM(PL-HELD + 1)
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
-     MOVE "acceptance US20-1 a tool in the slot: a flat icon, 36 vertices" TO TL-CASE
-     MOVE 36 TO TL-EXPECTED-N
-     MOVE RL-HAND-COUNT TO TL-OBSERVED-N
+     MOVE "acceptance US20-1 a tool in the slot: an extruded icon (front, back and edge quads)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-HAND-COUNT > 12 AND FUNCTION MOD(RL-HAND-COUNT, 6) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The icon's four corners take four different texels of its sprite: a corner coordinate that was read as a whole number instead of
 *>   a float collapsed every corner onto the sprite's top-left texel (a black quad in the live client).
@@ -118,6 +123,7 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE CL-NOW-MS = CL-SWING-AT + 150
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE 9 TO WS-MINZ
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HAND-COUNT
@@ -131,6 +137,7 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE CL-NOW-MS = CL-SWING-AT + 300
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE 9 TO WS-MINZ
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HAND-COUNT
@@ -159,6 +166,7 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "acceptance US20-1 an empty hand draws no model" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
@@ -166,18 +174,21 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
      MOVE 1 TO CL-CAMERA
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "acceptance US20-1 third person draws no hand" TO TL-CASE
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CL-CAMERA
      MOVE SCR-INVENTORY TO SM-SCREEN
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "acceptance US20-1 the inventory screen draws no hand" TO TL-CASE
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE SCR-WORLD TO SM-SCREEN
      MOVE 255 TO PL-SLOT-ITEM(PL-HELD + 1)
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "acceptance US20-1 an item outside the registry draws no model" TO TL-CASE
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
@@ -185,6 +196,7 @@
      MOVE 1 TO PL-SLOT-ITEM(PL-HELD + 1)
      MOVE IT-SPRITE(2) TO WS-SPRITE-SAVED
      MOVE 0 TO IT-SPRITE(2)
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "acceptance US20-1 an item whose icon is not loaded draws no model" TO TL-CASE
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
@@ -193,6 +205,7 @@
 *>   The swing ends at 300 ms and stays over (not a second, mirrored swing), and a click on the inventory screen starts none.
      MOVE 1 TO CL-SWING-AT
      COMPUTE CL-NOW-MS = CL-SWING-AT + 450
+     CALL "TEST-HAND-SETTLE" USING CLIENT-STATE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE 9 TO WS-MINZ
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HAND-COUNT
@@ -222,5 +235,21 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-F2US20-HAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-HAND-SETTLE.
+*> USING CLIENT-STATE: the equip animation has run for the selected stack (it is shown at full height).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 0 TO CL-HAND-ITEM
+     IF PL-SLOT-COUNT(PL-HELD + 1) > 0
+         COMPUTE CL-HAND-ITEM = PL-SLOT-ITEM(PL-HELD + 1) + 1
+     END-IF
+     MOVE 1 TO CL-HAND-H CL-HAND-OH
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     GOBACK.
+ END PROGRAM TEST-HAND-SETTLE.
 
  COPY CLTEST.

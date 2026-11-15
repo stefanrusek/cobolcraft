@@ -108,6 +108,31 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The view frustum: a plane facing +x with the eye 1000 blocks to the +x side has the operator wholly behind it (nothing meshed); from
+*>   1000 blocks to the -x side the operator is in front of it (36 vertices); a frustum that is not set (RL-CULL-ON 0) leaves the figure.
+     MOVE 1 TO RL-CULL-ON
+     MOVE 0 TO RL-CULL-PLANE(1) RL-CULL-PLANE(2) RL-CULL-PLANE(3) RL-CULL-PLANE(4) RL-CULL-PLANE(5) RL-CULL-PLANE(6)
+         RL-CULL-PLANE(7) RL-CULL-PLANE(8) RL-CULL-PLANE(9) RL-CULL-PLANE(10) RL-CULL-PLANE(11) RL-CULL-PLANE(12)
+     MOVE 1 TO RL-CULL-PLANE(1)
+     MOVE 1000 TO WS-EYE(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entities render an operator wholly behind a frustum plane is not meshed (0 vertices)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -1000 TO WS-EYE(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entities render an operator in front of every frustum plane is meshed (36 vertices)" TO TL-CASE
+     MOVE 36 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO RL-CULL-ON
+     MOVE 1000 TO WS-EYE(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entities render with no frustum set the operator is meshed wherever the eye is (36 vertices)" TO TL-CASE
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITIES-RENDER.
  COPY CLTEST.

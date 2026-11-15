@@ -26,6 +26,7 @@
  01 WS-ARG                 BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TEN                 BINARY-LONG VALUE 10.
  01 WS-MS                  BINARY-LONG VALUE 20.
  01 WS-EVENT.
     05 WS-KIND             BINARY-LONG.
@@ -128,6 +129,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 1 TO PL-MODE
+*>   A second click on the same slot within 250 ms is a double click (PICKUP_ALL): let the time pass.
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-TEN
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
      MOVE SPACES TO TL-OBSERVED

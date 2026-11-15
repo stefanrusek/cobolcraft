@@ -203,6 +203,7 @@
  78 WX-HAILSTORM            VALUE 2.
 
 *> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
+ 78 ST-CMAX                VALUE 300.   *> face classes of the state tables (state-tables.cob; class 1 the whole face, 2 none, 300 the catch-all)
  78 DIR-NONE                VALUE 0.
  78 DIR-DOWN                VALUE 1.
  78 DIR-UP                  VALUE 2.
@@ -223,7 +224,7 @@
  78 CL-MAX-WIDGETS          VALUE 512.
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
- 78 CL-MAX-LANG             VALUE 640.
+ 78 CL-MAX-LANG             VALUE 12000.
  78 CL-MAX-SPRITES          VALUE 4096. *> block and item atlas sprites (Faithful alone has 1,297 block sprites)
  78 CL-MAX-STATES           VALUE 65536. *> state ids are 16 bits (CE-STATE, contract/copy/CELLS.cpy)
  78 CL-STAND-STATES         VALUE 18.   *> states of the stand-in table below

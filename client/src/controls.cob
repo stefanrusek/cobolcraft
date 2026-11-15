@@ -90,13 +90,13 @@
      IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-ITEM > 0
          CALL "BOOK-USE-CHECK" USING CLIENT-STATE WS-ITEM
      END-IF
-*>   Use: a block item placed against the face, a glowtube toggled, a goto_pad used; otherwise
-*>   a food item held on the world screen is eaten.
+*>   Use: Use Item On is sent for any block aimed at, whatever the hand holds (the server decides: it opens a menu, toggles a switch,
+*>   places the held block or does nothing; the sneaking rule is the server's, 29 section 9). A food item or a bucket held on the
+*>   world screen then also sends Use Item (eaten, or the fluid ray), which the server answers when the block did not take the click.
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
+         CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
+     END-IF
      EVALUATE TRUE
-         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
-                 AND (WS-IBLOCK = 1 OR WS-STATE = 13 OR WS-STATE = 14
-                 OR WS-STATE = 16)
-             CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD
                  AND WS-IFOOD > 0 AND PL-EATING = 0
              CALL "CONTROLS-SEND-EAT" USING CLIENT-STATE
@@ -116,6 +116,14 @@
          CALL "CONTROLS-SEND-ATTACK" USING CLIENT-STATE
      END-IF
 *>   A survival break in progress: aborted, or finished once its time has passed.
+*>   Airborne (13 section 2.1 step 7): the server adds a fifth of the progress in a tick the player is not on the ground, so
+*>   the time of the frame counts a fifth: the start of the break moves forward by the other four fifths.
+     IF CT-BREAKING = 1
+         IF PL-ON-GROUND = 0 AND CL-NOW-MS > CT-BREAK-LAST
+             COMPUTE CT-BREAK-START = CT-BREAK-START + (CL-NOW-MS - CT-BREAK-LAST) * 4 / 5
+         END-IF
+         MOVE CL-NOW-MS TO CT-BREAK-LAST
+     END-IF
      MOVE 0 TO WS-SAME
      IF TG-HIT = 1 AND TG-X = CT-BREAK-X AND TG-Y = CT-BREAK-Y AND TG-Z = CT-BREAK-Z
          MOVE 1 TO WS-SAME
@@ -165,7 +173,7 @@
          CALL "CONTROLS-SEND-ACTION" USING CLIENT-STATE WS-ACTION
          IF PL-MODE NOT = 1
              MOVE 1 TO CT-BREAKING
-             MOVE CL-NOW-MS TO CT-BREAK-START
+             MOVE CL-NOW-MS TO CT-BREAK-START CT-BREAK-LAST
              CALL "CONTROLS-BREAK-TIME" USING CLIENT-STATE WS-STATE WS-ITEM CT-BREAK-MS
          END-IF
      END-IF
@@ -190,6 +198,19 @@
  01 WS-IBLOCK              BINARY-LONG.
  01 WS-ITOOL               PIC X.
  01 WS-IFOOD               BINARY-LONG.
+ 01 WS-BLOCK-KEY           PIC X(48).
+ 01 WS-SPEED               BINARY-LONG.
+ 01 WS-RULE-CORRECT        BINARY-LONG.
+ 01 WS-CORRECT             BINARY-LONG.
+ 01 WS-HASTE               BINARY-LONG.
+ 01 WS-FATIGUE             BINARY-LONG.
+ 01 WS-EFFICIENCY          BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG.
+ 01 WS-MILLI               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-RATE                FLOAT-SHORT.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-STATE                BINARY-LONG.
@@ -204,14 +225,46 @@
          CALL "CONTENT-BLOCK-OF-STATE" USING L-STATE WS-CODE WS-INDEX WS-ROW WS-STATUS
          MOVE WS-ROW TO CT-BLOCK-ROW
          COMPUTE WS-HARDNESS = FUNCTION NUMVAL(CT-BR-HARDNESS)
-         EVALUATE TRUE
-             WHEN WS-HARDNESS < 0
-                 MOVE -1 TO L-MS
-             WHEN CT-BR-TOOL-REQUIRED = "yes"
-                 COMPUTE L-MS = WS-HARDNESS * 5000
-             WHEN OTHER
-                 COMPUTE L-MS = WS-HARDNESS * 1500
-         END-EVALUATE
+         IF WS-HARDNESS < 0
+             MOVE -1 TO L-MS
+             GOBACK
+         END-IF
+         IF WS-HARDNESS = 0
+             MOVE 0 TO L-MS
+             GOBACK
+         END-IF
+*>       The tool component's rules of the held item give the speed and the correct tool for drops (17 section 1.3); a block that
+*>       needs no tool is always correct. The rate is BREAK-RATE's (core), the time the ticks that reach 1.0 (13 section 2.1).
+         MOVE SPACES TO WS-BLOCK-KEY
+         MOVE CT-BR-KEY TO WS-BLOCK-KEY
+         CALL "TOOL-RULE-EVAL" USING L-ITEM WS-BLOCK-KEY WS-CODE WS-SPEED WS-RULE-CORRECT
+         MOVE 1 TO WS-CORRECT
+         IF CT-BR-TOOL-REQUIRED = "yes"
+             MOVE WS-RULE-CORRECT TO WS-CORRECT
+         END-IF
+         MOVE 0 TO WS-HASTE WS-FATIGUE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EF-COUNT
+             IF EF-ID(WS-I) = 2 AND EF-AMP(WS-I) + 1 > WS-HASTE
+                 COMPUTE WS-HASTE = EF-AMP(WS-I) + 1
+             END-IF
+             IF EF-ID(WS-I) = 3 AND EF-AMP(WS-I) + 1 > WS-FATIGUE
+                 COMPUTE WS-FATIGUE = EF-AMP(WS-I) + 1
+             END-IF
+         END-PERFORM
+         COMPUTE WS-MILLI = WS-HARDNESS * 1000
+         MOVE 0 TO WS-EFFICIENCY
+         MOVE PL-EYES-WATER TO WS-WATER
+         MOVE 1 TO WS-GROUND
+         CALL "BREAK-RATE" USING WS-MILLI WS-SPEED WS-CORRECT WS-EFFICIENCY WS-HASTE WS-FATIGUE
+             WS-WATER WS-GROUND WS-RATE
+         COMPUTE WS-TICKS = FUNCTION INTEGER(1 / WS-RATE)
+         IF WS-TICKS > 1
+             SUBTRACT 1 FROM WS-TICKS
+         END-IF
+         PERFORM UNTIL WS-TICKS * WS-RATE >= 1.0
+             ADD 1 TO WS-TICKS
+         END-PERFORM
+         COMPUTE L-MS = WS-TICKS * 50
          GOBACK
      END-IF
 *>   The block id is the hex digit of the state's row (0 to 9, A, B).

@@ -278,7 +278,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-SPECIAL.
 *> USING which (BINARY-LONG: 1 collision, 2 outline), code (PIC X(12)): the shape of a coded family (51 section 3.2: ST stairs, DR doors,
-*> TD trapdoors, FN fences, GT fence gates, WL walls, PN panes and bars, ML vines and lichen) from the properties of the current state,
+*> TD trapdoors, FN fences, GT fence gates, WL walls, PN panes and bars, ML vines and lichen, CH chests, BD beds) from the properties of the current state,
 *> appended to BSC-SHAPE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -455,6 +455,33 @@
                      CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
                  END-IF
              END-PERFORM
+         WHEN "CH"
+*>           A chest (R-E1): single is the 14 high column; a joined half reaches into the connected half, whose direction is clockwise
+*>           of the facing for the left type and counter-clockwise for the right.
+             MOVE "type" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             EVALUATE WS-VALUE
+                 WHEN "left"
+                     COMPUTE WS-KEY = FUNCTION MOD(WS-KEY + 1, 4)
+                     MOVE "1 0 0 15 14 15" TO WS-TEXT
+                 WHEN "right"
+                     COMPUTE WS-KEY = FUNCTION MOD(WS-KEY + 3, 4)
+                     MOVE "1 0 0 15 14 15" TO WS-TEXT
+                 WHEN OTHER
+                     MOVE 0 TO WS-KEY
+                     MOVE "1 0 1 15 14 15" TO WS-TEXT
+             END-EVALUATE
+             CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
+         WHEN "BD"
+*>           A bed (R-E3): the mattress and two legs at the end away from the other half, authored for the key north (the head half's facing; the
+*>           foot half's key is the opposite of its facing).
+             MOVE "part" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE = "foot"
+                 COMPUTE WS-KEY = FUNCTION MOD(WS-KEY + 2, 4)
+             END-IF
+             MOVE "0 3 0 16 9 16,0 0 0 3 3 3,13 0 0 16 3 3" TO WS-TEXT
+             CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
          WHEN "ML"
 *>           No collision; the outline is a one pixel sheet on every set face, the full cube when none is set.
              IF L-WHICH = 2
@@ -532,6 +559,11 @@
          WHEN "K"
              CALL "BSH-SPECIAL" USING L-WHICH BSR-PROP(L-RULE)
          WHEN "Y"
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
+         WHEN "Q"
+             MOVE "facing" TO WS-NAME
              CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
              CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
              CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY

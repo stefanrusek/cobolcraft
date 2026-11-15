@@ -330,6 +330,37 @@
      MOVE "cursor 0x0 38:7x5 39:7x64 40:7x64" TO TL-EXPECTED
      PERFORM CHECK
 
+     MOVE "test inventory click a drag whose packets all carry the client's one state id (the client only learns "
+         & "a new id from an echo) is not resynchronised: no Container Set Content, the slots echoed once (40-1 §4.2)" TO TL-CASE
+     PERFORM BUILD-CLICK
+     MOVE 3 TO WS-C-TYPE
+     MOVE 2 TO WS-C-BUTTON
+     MOVE 39 TO WS-C-SLOT
+     PERFORM FEED-CLICK
+     CALL "TEST-DRAIN-IDS" USING WS-BOB WS-TEXT
+     PERFORM BUILD-CLICK
+     MOVE 5 TO WS-C-TYPE
+     MOVE 0 TO WS-C-BUTTON
+     MOVE -999 TO WS-C-SLOT
+     MOVE 7 TO WS-C-CARRIED-ITEM
+     MOVE 64 TO WS-C-CARRIED-COUNT
+     PERFORM FEED-CLICK
+     MOVE 1 TO WS-C-BUTTON
+     MOVE 41 TO WS-C-SLOT
+     PERFORM FEED-CLICK
+     MOVE 42 TO WS-C-SLOT
+     PERFORM FEED-CLICK
+     MOVE 2 TO WS-C-BUTTON
+     MOVE -999 TO WS-C-SLOT
+     MOVE 0 TO WS-C-CARRIED-ITEM WS-C-CARRIED-COUNT
+     PERFORM FEED-CLICK
+     CALL "TEST-DRAIN-IDS" USING WS-BOB WS-TEXT
+     MOVE "20x2" TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM SHOW
+     MOVE "cursor 0x0 38:7x5 39:7x64 40:7x64 41:7x32 42:7x32" TO TL-EXPECTED
+     PERFORM CHECK
+
 *>   Decoding.
      MOVE "test inventory click decode: a click type outside 0 to 6 is PICKUP (0)" TO TL-CASE
      PERFORM BUILD-CLICK

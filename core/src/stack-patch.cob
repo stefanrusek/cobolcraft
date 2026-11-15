@@ -57,6 +57,13 @@
              END-PERFORM
              MOVE PL-CARRIED-VAR(WS-ROW) TO WS-V
              CALL "SP-MARK" USING WS-MARKS WS-V
+*>           The own slots and the result of a workstation menu (menu-station.cob).
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+                 MOVE MN-WSLOT-VAR(WS-ROW, WS-I) TO WS-V
+                 CALL "SP-MARK" USING WS-MARKS WS-V
+             END-PERFORM
+             MOVE MN-RESULT-VAR(WS-ROW) TO WS-V
+             CALL "SP-MARK" USING WS-MARKS WS-V
          END-IF
      END-PERFORM
      CALL "BE-MARK-PATCHES" USING WS-MARKS

@@ -224,6 +224,14 @@
          COMPUTE WS-PLANE(WS-C + 9) = (WS-FWD(WS-C) * WS-TANY - WS-UP(WS-C)) / WS-NORM
      END-PERFORM
      COMPUTE WS-HALF-H = PL-HEIGHT / 2 + 1
+*>   The planes also serve the entity figures (ENTITIES-MESH leaves out those wholly outside the view).
+     MOVE WS-WORLD TO RL-CULL-ON
+     IF RL-CULL-DISABLE = 1
+         MOVE 0 TO RL-CULL-ON
+     END-IF
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 12
+         MOVE WS-PLANE(WS-P) TO RL-CULL-PLANE(WS-P)
+     END-PERFORM
 *>   Uploads of changed meshes; opaque draws; translucent candidates.
      MOVE 0 TO WS-TCOUNT
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
@@ -423,8 +431,10 @@
      MOVE MESH-SLOT-HAND TO WS-SLOT
      MOVE CC-PIPE-OPAQUE TO WS-PIPE
      MOVE CC-TEX-BLOCKS TO WS-TEX
+     MOVE RL-HAND-SAME TO RL-NO-UPLOAD
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HAND-VERTEX(1) RL-HAND-COUNT RL-HAND-UPLOADED
          WS-PIPE WS-TEX WS-HAND-PROJ-TABLE
+     MOVE 0 TO RL-NO-UPLOAD
      ADD 1 TO RL-UPLOAD-COUNT
      MOVE MESH-SLOT-UI TO RL-U-SLOT(RL-UPLOAD-COUNT)
      SET RL-U-ADDR(RL-UPLOAD-COUNT) TO ADDRESS OF RL-UI-VERTEX(1)
@@ -493,7 +503,7 @@
  PROGRAM-ID. RENDER-MESH-ADD.
 *> USING CLIENT-STATE, slot, first vertex, vertex count, count last uploaded (updated), pipeline,
 *> texture, matrix (16 FLOAT-LONG): a mesh built this frame is uploaded while it has vertices and
-*> once more when it no longer has (freed), and drawn while it has vertices.
+*> once more when it no longer has (freed), and drawn while it has vertices; with RL-NO-UPLOAD 1 it is only drawn.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
@@ -509,7 +519,7 @@
     05 L-MATRIX            FLOAT-LONG OCCURS 16 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-SLOT L-VERTICES L-COUNT L-UPLOADED L-PIPE L-TEX
          L-MATRIX-TABLE.
-     IF L-COUNT > 0 OR L-UPLOADED > 0
+     IF (L-COUNT > 0 OR L-UPLOADED > 0) AND RL-NO-UPLOAD = 0
          ADD 1 TO RL-UPLOAD-COUNT
          MOVE L-SLOT TO RL-U-SLOT(RL-UPLOAD-COUNT)
          SET RL-U-ADDR(RL-UPLOAD-COUNT) TO ADDRESS OF L-VERTICES

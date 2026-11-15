@@ -17,6 +17,15 @@
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
     05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
     05 CL-SWING-AT           BINARY-DOUBLE.   *> the clock when the hand last began to swing (0 = never)
+    05 CL-HAND-ITEM          BINARY-LONG.     *> the stack the hand shows: item id + 1, 0 none (equip animation, hand.cob; 12 section 6.2)
+    05 CL-HAND-H             FLOAT-LONG.      *> the equip height 0 to 1 and its value one client tick (50 ms) earlier
+    05 CL-HAND-OH            FLOAT-LONG.
+    05 CL-HAND-KEY-ITEM      BINARY-LONG.     *> what the vertices in RL-HAND-VERTEX were built for (hand.cob reuses them while it is unchanged and no swing runs)
+    05 CL-HAND-KEY-SPRITE    BINARY-LONG.
+    05 CL-HAND-KEY-E         FLOAT-LONG.
+    05 CL-HAND-KEY-LIGHT     FLOAT-LONG.
+    05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
+    05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
     05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
@@ -281,14 +290,22 @@
        10 MC-DISP OCCURS 21 TIMES.
           15 MC-DISP-ITEM    BINARY-LONG.
           15 MC-DISP-COUNT   BINARY-LONG.
+       10 SC-COUNT           BINARY-LONG.            *> the stonecutter list: the entries of the latest Update Recipes (core/src/menu-station.cob sends the ones of the input item)
+       10 SC-ENTRY OCCURS 32 TIMES.
+          15 SC-ITEM         BINARY-LONG.            *> the result item of the entry
+          15 SC-AMOUNT       BINARY-LONG.
+       10 SC-START           BINARY-LONG.            *> the index of the first visible entry (a multiple of 4)
        10 CX-DRAG-ON         BINARY-LONG.
        10 CX-DRAG-BUTTON     BINARY-LONG.
        10 CX-DRAG-N          BINARY-LONG.
        10 CX-DRAG-SLOT       BINARY-LONG OCCURS 64 TIMES.
+       10 CX-DRAG-ARG        BINARY-LONG OCCURS 64 TIMES.
        10 CX-SKIP-RELEASE    BINARY-LONG.
        10 CX-PREV-SLOT       BINARY-LONG.
        10 CX-PREV-MS         BINARY-DOUBLE.
        10 CX-DOUBLE          BINARY-LONG.
+       10 CX-LAST-X          BINARY-LONG.
+       10 CX-LAST-Y          BINARY-LONG.
 *>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
 *>     last sent (itemName; AN-SENT-NULL 1 = none yet).
 *>     The mount inventory (40-6): the entity id, its kind (1 horse family, 2 nautilus), whether the saddle and body slots are shown and the body icon (1 horse armor, 2 llama, 3 nautilus).
@@ -433,6 +450,7 @@
        10 PL-HEIGHT          BINARY-LONG.
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
+       10 PL-DAY-TICKS       BINARY-DOUBLE.  *> the clock's total ticks, never wrapped (the debug overlay's day count)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
        10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
        10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
@@ -547,6 +565,7 @@
        10 CT-BREAK-HELD      BINARY-LONG.    *> the held slot when the break began (a change aborts it)
        10 CT-BREAK-START     BINARY-DOUBLE.  *> clock of the start destroy
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
+       10 CT-BREAK-LAST      BINARY-DOUBLE.  *> clock of the last frame of the break (airborne time counts a fifth)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
        10 CT-DONE-X          BINARY-LONG.
        10 CT-DONE-MS         BINARY-DOUBLE.  *> clock of that stop destroy (the 5-tick cooldown, 13 section 2.2)
@@ -617,6 +636,11 @@
           15 EN-VANILLA      PIC 9.
           15 EN-KEY          PIC X(24).
           15 EN-MODEL        BINARY-LONG.
+*>        The attack box of an entity of the standard set (EN-VANILLA 1; 21 section 2): 1 when the left button attacks it (a living entity, a player,
+*>        a boat, a minecart, an armor stand, an end crystal; not an item, an orb or a projectile), the half width and the height in blocks.
+          15 EN-BOX-ATTACK    PIC 9.
+          15 EN-BOX-HALF      FLOAT-LONG.
+          15 EN-BOX-HEIGHT    FLOAT-LONG.
 *>        Set Entity Data of the models: the value of an experience_orb (entry 8), the swell direction of a creeper (entry 16: -1 idle, 1
 *>        fusing), the swell counter at the moment the direction last changed and that moment (CL-NOW-MS); the counter then runs 1 a tick.
           15 EN-VALUE        BINARY-LONG.
@@ -751,8 +775,11 @@
        10 PK-ERROR OCCURS 8 TIMES.
           15 PK-ERROR-TEXT   PIC X(256).
           15 PK-ERROR-LENGTH BINARY-LONG.
+       10 LG-FILES           BINARY-LONG.
+       10 LG-FAILED          BINARY-LONG.
+       10 LG-OVERFLOW        BINARY-LONG.
        10 LG-COUNT           BINARY-LONG.
-       10 LG-ENTRY OCCURS 640 TIMES.
+       10 LG-ENTRY OCCURS 12000 TIMES.
           15 LG-KEY          PIC X(80).
           15 LG-KEY-LENGTH   BINARY-LONG.
           15 LG-TEXT         PIC X(200).
@@ -937,6 +964,10 @@
        10 IS-SPRITE          BINARY-LONG OCCURS 2048 TIMES.
 *>     The faces of a block item's model (ITEM-FACE-SPRITE): IS-FACE-DONE(i + 1) = 1 when the item is a block model, and IS-FACE-SPRITE(i * 6 + d) is
 *>     the sprite of face d (DIR-DOWN to DIR-EAST) of its first element, the up sprite where the model has no such face.
+*>     The first person display transform of each item's model (ITEM-SPRITE-OF; 08 section 5.6, 12 section 8.2): IS-FP-STATE(i + 1) = 1 when its model chain
+*>     names `display.firstperson_righthand`, IS-FP-VAL(i * 9 + n) the rotation x y z, translation x y z (sixteenths) and scale x y z.
+       10 IS-FP-STATE        PIC 9 OCCURS 2048 TIMES.
+       10 IS-FP-VAL          FLOAT-SHORT OCCURS 18432 TIMES.
        10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
        10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
 *>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
@@ -948,7 +979,17 @@
        10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
        10 ST-FLUID           PIC 9 OCCURS 65536 TIMES.        *> state id + 1: the fluid the cell holds (29a section 1.2): 0 none, 1 water, 2 lava (liquid blocks; always-wet blocks hold water)
        10 ST-LEVEL           PIC 99 OCCURS 65536 TIMES.       *> state id + 1: the liquid block's level 0 to 15 (0 source; 1 to 7 amount 8 - level; 8 and over falling)
-       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
+       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.       *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
+*>     Face-level occlusion (12: Block.shouldRenderFace compares the face shapes). ST-SHAPED(s + 1) = 1 for a state that occludes by its shape (the full
+*>     cube, a slab, a stair, a carpet, a trapdoor ...); ST-OWN(s * 6 + d) the class of the face of state s that a quad with the cull direction d
+*>     (DIR-DOWN to DIR-EAST) must have covered to be hidden (the whole face for a state that does not occlude), ST-NB(s * 6 + d) the class of the
+*>     part of its face toward the viewer (looking in direction d) that state s covers wholly (class 2, none, for a state that does not occlude);
+*>     ST-COVER((nb - 1) * ST-CMAX + own) = 1 when the face class nb hides the face class own. The face classes are the distinct 16 x 16 masks.
+       10 ST-SHAPED          PIC 9 OCCURS 65536 TIMES.
+       10 ST-LIKE            PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = no occluder with a full cube outline (glass, leaves, ice): its faces are hidden by the same block
+       10 ST-OWN             BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
+       10 ST-NB              BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
+       10 ST-COVER           PIC 9 OCCURS 90000 TIMES.
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -1015,6 +1056,9 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
+       10 RL-CULL-ON         BINARY-LONG.    *> 1 when RL-CULL-PLANE holds this frame's view frustum (RENDER-LIST-BUILD)
+       10 RL-CULL-DISABLE    BINARY-LONG.    *> 1 keeps every entity figure whatever the view (tests of figure geometry from a fixed eye); 0 in the game
+       10 RL-CULL-PLANE OCCURS 12 TIMES FLOAT-LONG.    *> left, right, bottom, top: unit normals pointing inward (a point is inside when n . (p - eye) >= 0)
        10 RL-EN-VERTEX OCCURS 49152 TIMES.
           15 RL-EN-X         FLOAT-SHORT.
           15 RL-EN-Y         FLOAT-SHORT.
@@ -1106,7 +1150,9 @@
 *>     The hand (view space, texture 0; hand.cob).
        10 RL-HAND-COUNT      BINARY-LONG.
        10 RL-HAND-UPLOADED   BINARY-LONG.
-       10 RL-HAND-VERTEX OCCURS 36 TIMES.
+       10 RL-HAND-SAME       BINARY-LONG.    *> 1 when this frame's hand mesh is the one already uploaded (no upload needed)
+       10 RL-NO-UPLOAD       BINARY-LONG.    *> 1 while RENDER-MESH-ADD only draws a mesh (set around the hand's call)
+       10 RL-HAND-VERTEX OCCURS 2048 TIMES.
           15 RL-HAND-X       FLOAT-SHORT.
           15 RL-HAND-Y       FLOAT-SHORT.
           15 RL-HAND-Z       FLOAT-SHORT.

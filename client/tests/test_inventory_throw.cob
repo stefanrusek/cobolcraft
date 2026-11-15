@@ -75,8 +75,8 @@
      MOVE "slot 0x0 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test inventory throw a left drag from slot 2 released outside the window throws the "
-         & "carried stack: PICKUP -999 button 0" TO TL-CASE
+     MOVE "test inventory throw a left press on slot 2 picks it up and its release outside the "
+         & "window is swallowed (vanilla skipNextRelease): only the PICKUP of slot 2" TO TL-CASE
      MOVE 2 TO WS-SLOT
      PERFORM SLOT-POS
      INITIALIZE WS-EVENTS
@@ -95,12 +95,12 @@
      MOVE 2 TO WS-N
      CALL "TEST-EVENTS" USING CLIENT-STATE WS-EVENTS WS-N
      PERFORM OBSERVE
-     MOVE "1200010026000001002600" & "0104400000 120001fc1900000000 slot 0x0 cursor 0x0"
+     MOVE "1200010026000001002600" & "0104400000 slot 0x0 cursor 64x4"
          TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw a left click outside the window with a carried stack sends "
-         & "PICKUP -999 button 0; without one nothing" TO TL-CASE
+         & "PICKUP -999 button 0; without one THROW -999 (vanilla)" TO TL-CASE
      MOVE 3 TO WS-SLOT
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-SLOT WS-FOUND
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
@@ -108,7 +108,7 @@
      PERFORM CLICK-OUTSIDE
      PERFORM CLICK-OUTSIDE
      PERFORM OBSERVE
-     MOVE "120001fc1900000000 slot 0x0 cursor 0x0" TO TL-EXPECTED
+     MOVE "120001fc1900000000 120001fc1900040000 slot 64x4 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw a right click outside the window sends PICKUP -999 button 1 and "

@@ -92,6 +92,19 @@
      STRING WS-MARK1 " " WS-MARK2 DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A draw entry with a negative slot is the depth clear before the hand (cc_vk_clear_depth): the frame is still presented.
+     ADD 1 TO RL-DRAW-COUNT
+     MOVE -1 TO RL-D-SLOT(RL-DRAW-COUNT)
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "submit a draw entry with a negative slot clears the depth buffer and the frame is presented" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-PRESENTED = 1
+         MOVE "1" TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      CALL "TEST-CLOSE-REQUEST"
      CALL "CL-RUN" USING CLIENT-STATE
      MOVE "submit CL-RUN runs frames until the window's close-requested event ends the run"

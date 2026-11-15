@@ -84,6 +84,10 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-FACING              PIC X(8).
+ 01 WS-CTYPE               PIC X(8).
+ 01 WS-CNAME               PIC X(48).
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-STATE                BINARY-LONG.
@@ -121,6 +125,23 @@
          END-IF
      END-IF
      CALL "STATE-BAKE" USING CLIENT-STATE L-BM-ROW STATE-MODELS
+*>   The chest family has no elements in its block model: the closed entity model of 52 is baked instead (models-chest.cob).
+     MOVE 0 TO WS-HITS
+     INSPECT WS-NAME TALLYING WS-HITS FOR ALL "chest"
+     IF WS-HITS > 0 AND WS-STATUS = CT-OK
+         MOVE "south" TO WS-FACING
+         MOVE "single" TO WS-CTYPE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-P-COUNT
+             IF WS-P-NAME(WS-I) = "facing"
+                 MOVE WS-P-VALUE(WS-I) TO WS-FACING
+             END-IF
+             IF WS-P-NAME(WS-I) = "type"
+                 MOVE WS-P-VALUE(WS-I) TO WS-CTYPE
+             END-IF
+         END-PERFORM
+         MOVE WS-NAME TO WS-CNAME
+         CALL "CHEST-BAKE" USING CLIENT-STATE L-BM-ROW WS-CNAME WS-FACING WS-CTYPE
+     END-IF
      GOBACK.
  END PROGRAM LAZY-STATE-BAKE.
 
@@ -150,15 +171,30 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ *> The model of a definition (08 5.7): the first of these that holds a string. The first ten reach a "minecraft:model" (directly, or as
+*> the fallback, the false branch, the first composite member or the first entry of a select, condition, composite or range_dispatch, also through a select case);
+*> the last four reach the "base" of a code-drawn "minecraft:special" model, whose icon is its particle texture.
  01 WS-JPATHS.
-    05 FILLER              PIC X(24) VALUE "model.model".
-    05 FILLER              PIC X(24) VALUE "model.fallback.model".
-    05 FILLER              PIC X(24) VALUE "model.on_false.model".
-    05 FILLER              PIC X(24) VALUE "model.models".
+    05 FILLER              PIC X(48) VALUE "model.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.model".
+    05 FILLER              PIC X(48) VALUE "model.on_false.model".
+    05 FILLER              PIC X(48) VALUE "model.models[0].model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.on_false.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.fallback.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.on_false.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.cases[0].model.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.base".
+    05 FILLER              PIC X(48) VALUE "model.fallback.base".
+    05 FILLER              PIC X(48) VALUE "model.on_false.base".
+    05 FILLER              PIC X(48) VALUE "model.fallback.on_false.base".
  01 WS-JPATH-TABLE REDEFINES WS-JPATHS.
-    05 WS-JPATH            PIC X(24) OCCURS 4 TIMES.
+    05 WS-JPATH            PIC X(48) OCCURS 14 TIMES.
  01 WS-K                   BINARY-LONG.
- 01 WS-JP                  PIC X(32).
+ 01 WS-JP                  PIC X(48).
+ 01 WS-SPECIAL             BINARY-LONG.
+ 01 WS-PARTICLE            PIC X(80) VALUE "#particle".
  01 WS-JP-LENGTH           BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
  01 WS-ID                  PIC X(80).
@@ -197,6 +233,7 @@
      END-IF
      MOVE 1 TO WS-SPRITE
      MOVE 0 TO WS-FACES
+     MOVE 0 TO MR-FP-PRESENT WS-SPECIAL
      CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
          WS-KNOWN
      IF WS-KNOWN = 1
@@ -211,12 +248,16 @@
              MOVE SPACES TO WS-ID
              MOVE 0 TO WS-ID-LENGTH
              IF JD-ERROR = 0
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3 OR WS-ID-LENGTH > 0
+                 MOVE 0 TO WS-SPECIAL
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 14 OR WS-ID-LENGTH > 0
                      MOVE SPACES TO WS-JP
                      MOVE WS-JPATH(WS-K) TO WS-JP
                      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-JP)) TO WS-JP-LENGTH
                      CALL "JSON-FIND" USING JSON-DOC WS-JP WS-JP-LENGTH WS-NODE
                      CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-ID WS-CAP WS-ID-LENGTH
+                     IF WS-K > 10
+                         MOVE 1 TO WS-SPECIAL
+                     END-IF
                  END-PERFORM
              END-IF
              IF WS-ID-LENGTH > 0
@@ -224,6 +265,9 @@
                      WS-GENERATED
                  IF WS-GENERATED = 1
                      CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-LAYER WS-SPRITE
+                 ELSE
+                 IF WS-SPECIAL = 1
+                     CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-PARTICLE WS-SPRITE
                  ELSE
                      CALL "MODEL-RESOLVE" USING CLIENT-STATE WS-ID WS-ID-LENGTH MODEL-RESOLVED
                      MOVE 0 TO WS-F
@@ -252,8 +296,20 @@
                          END-PERFORM
                      END-IF
                  END-IF
+                 END-IF
              END-IF
          END-IF
+     END-IF
+     IF WS-SPECIAL = 1
+*>       A code-drawn model (a shield, a chest, a banner ...): the hand has no model of it to draw (state 2).
+         MOVE 2 TO IS-FP-STATE(L-ITEM + 1)
+     END-IF
+     IF MR-FP-PRESENT = 1 AND WS-SPECIAL = 0
+         MOVE 1 TO IS-FP-STATE(L-ITEM + 1)
+         PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 9
+             COMPUTE WS-SLOT = L-ITEM * 9 + WS-D
+             MOVE MR-FP(WS-D) TO IS-FP-VAL(WS-SLOT)
+         END-PERFORM
      END-IF
      IF WS-FACES = 1
          MOVE 1 TO IS-FACE-DONE(L-ITEM + 1)
@@ -292,3 +348,37 @@
      END-IF
      GOBACK.
  END PROGRAM ITEM-FACE-SPRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-HAND-DISPLAY.
+*> USING CLIENT-STATE, item id, present out (1 when the item's model chain names display.firstperson_righthand; 2 for a code-drawn "special" model, which the hand does not draw), values out (9 FLOAT-LONG: rotation x y z in
+*> degrees, translation x y z in sixteenths, scale x y z). The standard set's models are read on the item's first use (ITEM-SPRITE-OF); a stand-in item
+*> and an item whose models name none have present 0 (the caller uses the defaults of 12 section 8.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ICON                BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-VALUES.
+    05 L-VALUE             FLOAT-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-PRESENT L-VALUES.
+     MOVE 0 TO L-PRESENT
+     IF L-ITEM >= 0 AND L-ITEM < 2048
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE L-ITEM WS-ICON
+         IF IS-FP-STATE(L-ITEM + 1) = 2
+             MOVE 2 TO L-PRESENT
+         END-IF
+         IF IS-FP-STATE(L-ITEM + 1) = 1
+             MOVE 1 TO L-PRESENT
+             PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 9
+                 COMPUTE WS-SLOT = L-ITEM * 9 + WS-D
+                 MOVE IS-FP-VAL(WS-SLOT) TO L-VALUE(WS-D)
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-HAND-DISPLAY.

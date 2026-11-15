@@ -24,6 +24,9 @@
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
+ 01 WS-CHUNK-X            BINARY-LONG.
+ 01 WS-CHUNK-Z            BINARY-LONG.
+ 01 WS-CHUNK-ROW          BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TICKS               BINARY-LONG.
  01 WS-DIM                 BINARY-LONG VALUE 1.
@@ -176,6 +179,46 @@
      MOVE 4 TO TL-EXPECTED-N
      MOVE EN-HURT(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T6102 test mob movement given a sodgrazer 4 blocks above the ground and Alice 500 blocks away (more than "
+         & "MOB-ACTIVE-RANGE) when a tick passes then it is not stepped (it does not fall); with Alice at the "
+         & "spawn point it does" TO TL-CASE
+     PERFORM OPEN-AND-JOIN
+     MOVE 11.5 TO WS-X
+     MOVE 60 TO WS-Y
+     MOVE 8.5 TO WS-Z
+     PERFORM ADD-MOB
+     MOVE 500 TO PL-X(CN-PLAYER(WS-ALICE))
+     MOVE 16000 TO CW-TIME
+     CALL "TEST-TICKS" USING WS-ONE
+     PERFORM DRAIN-IDS
+     PERFORM DESCRIBE
+     MOVE "| 11.500 60.000 8.500 yaw 0 ground 0" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
+     MOVE 11.5 TO PL-X(CN-PLAYER(WS-ALICE))
+     CALL "TEST-TICKS" USING WS-ONE
+     PERFORM DRAIN-IDS
+     PERFORM DESCRIBE
+     MOVE "54 | 11.500 59.952 8.500 yaw 0 ground 0" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
+     MOVE "T6102 test mob movement given a sodgrazer whose chunk is not loaded when MOB-STEP runs for it then it stays where it "
+         & "is" TO TL-CASE
+     PERFORM OPEN-AND-JOIN
+     MOVE 70.5 TO WS-X
+     MOVE 60 TO WS-Y
+     MOVE 8.5 TO WS-Z
+     PERFORM ADD-MOB
+     MOVE 4 TO WS-CHUNK-X
+     MOVE 0 TO WS-CHUNK-Z
+     CALL "WORLD-FIND" USING WS-DIM WS-CHUNK-X WS-CHUNK-Z WS-CHUNK-ROW
+     IF WS-CHUNK-ROW > 0
+         CALL "WORLD-CHUNK-RELEASE" USING WS-CHUNK-ROW
+     END-IF
+     MOVE 16000 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW
+     PERFORM DRAIN-IDS
+     PERFORM DESCRIBE
+     MOVE "| 70.500 60.000 8.500 yaw 0 ground 0" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
      MOVE "test mob movement given two abends in reach of survival Alice, the lower tracker row "
          & "holding the higher entity id, when a tick passes then they act in entity id order: "
          & "entity 3 hits her (source 4), the other hit is ignored" TO TL-CASE

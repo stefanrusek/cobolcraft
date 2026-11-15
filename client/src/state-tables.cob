@@ -5,9 +5,11 @@
 *> set (ST-COUNT = CT-STATE-COUNT, at most CL-MAX-STATES); with none they come from the stand-in
 *> table CL-BS of CLCONST.cpy (ST-COUNT = CL-STAND-STATES). The rule on a content row: a block is
 *> opaque unless its flags say noOcclusion, noCollision, air, liquid or replaceable, or its class
-*> is a shape that does not fill the cube (slabs, stairs, fences, walls, doors, panes and the
+*> is open (fences, walls, doors, panes and the
 *> like) or a see-through material (glass, ice, leaves): the client holds no shape for a state, so this is the class-level approximation of the
-*> occlusion shape (24 part 1 section 5.2: canOcclude and a full block shape). A state at or above
+*> occlusion shape (24 part 1 section 5.2: canOcclude and a full block shape). A state that passes the class rule occludes by its outline shape (51; the
+*> face classes of state-faces.cob: ST-SHAPED, ST-OWN, ST-NB, ST-COVER): a neighbour hides a face only when its face covers the whole face (a slab hides the
+*> side of a full block not at all, the full block hides the whole side of the slab); it is opaque (ST-OPAQUE) only when its outline is the full cube (a double slab is). A state at or above
 *> ST-COUNT is not opaque and has block 0. STATE-TABLES-ENSURE builds them when they are not.
 
  IDENTIFICATION DIVISION.
@@ -32,6 +34,7 @@
  COPY CLCONST.
  COPY CONTENT.
  COPY CTBSHAPE.
+ COPY CLFACES.
  01 WS-S                   BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
@@ -43,6 +46,10 @@
  01 WS-FLUID               PIC 9.
  01 WS-HITS                BINARY-LONG.
  01 WS-P                   BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-OPP                 BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
  01 WS-PROPS.
     05 WS-P-COUNT          BINARY-LONG.
     05 WS-P-ENTRY OCCURS 16 TIMES.
@@ -54,8 +61,14 @@
      CALL "STATE-LIMIT" USING WS-LIMIT
      MOVE FUNCTION MIN(WS-LIMIT, CL-MAX-STATES) TO ST-COUNT
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
-         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S) ST-OVERLAY(WS-S)
+         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S) ST-OVERLAY(WS-S) ST-SHAPED(WS-S) ST-LIKE(WS-S)
      END-PERFORM
+*>   A state that does not occlude: its faces need the whole neighbour face to hide them (class 1) and hide nothing (class 2).
+     PERFORM VARYING WS-AT FROM 1 BY 1 UNTIL WS-AT > 393222
+         MOVE 1 TO ST-OWN(WS-AT)
+         MOVE 2 TO ST-NB(WS-AT)
+     END-PERFORM
+     CALL "STATE-FACES-INIT"
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
          MOVE SPACES TO ST-BLOCK-NAME(WS-S)
      END-PERFORM
@@ -67,6 +80,26 @@
              CALL "CONTENT-BLOCK-OF-STATE" USING WS-CODE WS-BLOCK WS-INDEX WS-ROW WS-STATUS
              MOVE WS-BLOCK TO ST-BLOCK(WS-S)
              CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
+*>           A state that occludes by its shape (the class rule below: not an open or see-through class; slabs, stairs, carpets, snow layers and trapdoors are in) hides what its faces cover
+*>           (the face classes); it is opaque, hiding every face and the light, only when its outline shape is the full cube (id 1).
+             IF WS-OPAQUE = 1 AND BSH-READY = 1 AND BSH-OUT(WS-S) NOT = 0
+                 MOVE 1 TO ST-SHAPED(WS-S)
+                 MOVE BSH-OUT(WS-S) TO WS-SHAPE
+                 CALL "STATE-FACES-SHAPE" USING WS-SHAPE
+                 PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+                     COMPUTE WS-OPP = WS-D + 1 - 2 * FUNCTION MOD(WS-D + 1, 2)
+                     COMPUTE WS-AT = WS-CODE * 6 + WS-D
+                     MOVE SF-OWN(WS-SHAPE + 1, WS-D) TO ST-OWN(WS-AT)
+                     MOVE SF-NB(WS-SHAPE + 1, WS-OPP) TO ST-NB(WS-AT)
+                 END-PERFORM
+             END-IF
+*>           A state that does not occlude but fills the cube (glass, ice, leaves) hides its faces against the same block.
+             IF WS-OPAQUE = 0 AND BSH-READY = 1 AND BSH-OUT(WS-S) = 1
+                 MOVE 1 TO ST-LIKE(WS-S)
+             END-IF
+             IF WS-OPAQUE = 1 AND BSH-READY = 1 AND BSH-OUT(WS-S) NOT = 1
+                 MOVE 0 TO WS-OPAQUE
+             END-IF
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
              MOVE WS-ROW TO CT-BLOCK-ROW
              CALL "STATE-FLUID-OF" USING WS-ROW WS-FLUID
@@ -111,9 +144,18 @@
              IF WS-CODE >= 65
                  COMPUTE ST-BLOCK(WS-S) = WS-CODE - 55
              END-IF
-             MOVE CL-BS-OPAQUE(WS-S) TO ST-OPAQUE(WS-S)
+             MOVE CL-BS-OPAQUE(WS-S) TO ST-OPAQUE(WS-S) ST-SHAPED(WS-S)
+             COMPUTE ST-LIKE(WS-S) = 1 - CL-BS-OPAQUE(WS-S)
+*>           An opaque stand-in state is a whole face for its neighbours.
+             IF CL-BS-OPAQUE(WS-S) = 1
+                 PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+                     COMPUTE WS-AT = (WS-S - 1) * 6 + WS-D
+                     MOVE 1 TO ST-NB(WS-AT)
+                 END-PERFORM
+             END-IF
          END-PERFORM
      END-IF
+     CALL "STATE-FACES-MATRIX" USING CLIENT-STATE
      MOVE 1 TO ST-READY
      GOBACK.
  END PROGRAM STATE-TABLES-BUILD.
@@ -157,6 +199,7 @@
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  01 WS-HITS                BINARY-LONG.
+ 01 WS-TRAP                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  PIC X(819).
  01 L-OPAQUE               PIC 9.
@@ -165,12 +208,16 @@
      MOVE 0 TO WS-HITS
      INSPECT CT-BR-FLAGS TALLYING WS-HITS FOR ALL "noOcclusion" ALL "noCollision" ALL "air"
          ALL "liquid" ALL "replaceable"
-     INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "Slab" ALL "Stair" ALL "Fence" ALL "Wall"
-         ALL "Door" ALL "Pane" ALL "Bars" ALL "Carpet" ALL "SnowLayer" ALL "Chest" ALL "Bed"
+     INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "Fence" ALL "Wall"
+         ALL "Door" ALL "Pane" ALL "Bars" ALL "Chest" ALL "Bed"
          ALL "Anvil" ALL "Cauldron" ALL "Hopper" ALL "Ladder" ALL "Rail" ALL "Button" ALL "Lever"
          ALL "Torch" ALL "Sign" ALL "Banner" ALL "Skull" ALL "Flower" ALL "Sapling" ALL "Cake"
          ALL "Lantern" ALL "Campfire" ALL "Liquid" ALL "Air" ALL "Transparent" ALL "Glass"
          ALL "IceBlock" ALL "Leaves"
+*>   A trapdoor (class TrapDoorBlock) is no door: it occludes by its shape, as slabs, stairs, carpets and snow layers do.
+     MOVE 0 TO WS-TRAP
+     INSPECT CT-BR-CLASS TALLYING WS-TRAP FOR ALL "TrapDoor"
+     SUBTRACT WS-TRAP FROM WS-HITS
      MOVE 1 TO L-OPAQUE
      IF WS-HITS > 0
          MOVE 0 TO L-OPAQUE

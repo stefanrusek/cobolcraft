@@ -22,6 +22,10 @@
           15 MF-CULL         BINARY-LONG.    *> DIR-*, DIR-NONE when absent
           15 MF-ROTATION     BINARY-LONG.    *> 0, 90, 180, 270
           15 MF-TINT         BINARY-LONG.    *> tintindex (08 5.5), -1 when absent
+*>  The display transform for the context firstperson_righthand of the nearest model of the chain that names one (client/src/models.cob DISPLAY-PARSE):
+*>  rotation x y z (degrees), translation x y z (sixteenths) and scale x y z.
+    05 MR-FP-PRESENT         PIC 9.
+    05 MR-FP                 FLOAT-SHORT OCCURS 9 TIMES.
     05 MR-SLOT-COUNT         BINARY-LONG.
     05 MR-SLOT OCCURS 16 TIMES.
        10 MS-NAME            PIC X(32).

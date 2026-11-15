@@ -45,6 +45,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONSOLELANG.
+ COPY CONSOLEDEATH.
  01 WS-LINE                PIC X(4096).
  01 WS-LENGTH              BINARY-LONG.
  01 WS-TEMPLATE            PIC X(1024).
@@ -53,6 +54,7 @@
  01 WS-ARG                 BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-SHOWN               PIC X(1024).
+ 01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-TEXT.
@@ -75,6 +77,17 @@
              MOVE 1 TO WS-FOUND
          END-IF
      END-PERFORM
+*>   Not there: a vanilla death message of CONSOLEDEATH.cpy (%1$s, %2$s, %3$s by position).
+     IF WS-FOUND = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DT-COUNT
+             IF DT-KEY-LENGTH(WS-I) = PB-TX-LENGTH
+                     AND DT-KEY(WS-I)(1:DT-KEY-LENGTH(WS-I)) = PB-TX-VALUE(1:PB-TX-LENGTH)
+                 MOVE DT-TEXT(WS-I) TO WS-TEMPLATE
+                 MOVE DT-TEXT-LENGTH(WS-I) TO WS-TEMPLATE-LENGTH
+                 MOVE 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+     END-IF
 *>   A key that CONSOLELANG.cpy does not hold may be one of the command framework's (BRLANG.cpy, BRLANGC.cpy): its text.
      IF WS-FOUND = 0
          CALL "BR-LANG-TEXT" USING PB-TEXT WS-SHOWN WS-LENGTH
@@ -85,18 +98,27 @@
      MOVE 1 TO WS-ARG
      MOVE 1 TO WS-I
      PERFORM UNTIL WS-I > WS-TEMPLATE-LENGTH
-         IF WS-TEMPLATE(WS-I:2) = "%s" AND WS-I < WS-TEMPLATE-LENGTH
-             IF WS-ARG <= PB-TX-ARG-COUNT AND PB-TX-ARG-LENGTH(WS-ARG) > 0
-                 MOVE PB-TX-ARG-VALUE(WS-ARG)(1:PB-TX-ARG-LENGTH(WS-ARG))
-                     TO WS-LINE(WS-LENGTH + 1:PB-TX-ARG-LENGTH(WS-ARG))
-                 ADD PB-TX-ARG-LENGTH(WS-ARG) TO WS-LENGTH
+         MOVE 0 TO WS-N
+         EVALUATE TRUE
+             WHEN WS-TEMPLATE(WS-I:2) = "%s" AND WS-I < WS-TEMPLATE-LENGTH
+                 MOVE WS-ARG TO WS-N
+                 ADD 1 TO WS-ARG
+                 ADD 2 TO WS-I
+             WHEN WS-TEMPLATE(WS-I:1) = "%" AND WS-TEMPLATE(WS-I + 1:1) >= "1"
+                     AND WS-TEMPLATE(WS-I + 1:1) <= "9" AND WS-TEMPLATE(WS-I + 2:2) = "$s"
+                 MOVE FUNCTION NUMVAL(WS-TEMPLATE(WS-I + 1:1)) TO WS-N
+                 ADD 4 TO WS-I
+             WHEN OTHER
+                 MOVE WS-TEMPLATE(WS-I:1) TO WS-LINE(WS-LENGTH + 1:1)
+                 ADD 1 TO WS-LENGTH
+                 ADD 1 TO WS-I
+         END-EVALUATE
+         IF WS-N > 0 AND WS-N <= PB-TX-ARG-COUNT
+             IF PB-TX-ARG-LENGTH(WS-N) > 0
+                 MOVE PB-TX-ARG-VALUE(WS-N)(1:PB-TX-ARG-LENGTH(WS-N))
+                     TO WS-LINE(WS-LENGTH + 1:PB-TX-ARG-LENGTH(WS-N))
+                 ADD PB-TX-ARG-LENGTH(WS-N) TO WS-LENGTH
              END-IF
-             ADD 1 TO WS-ARG
-             ADD 2 TO WS-I
-         ELSE
-             MOVE WS-TEMPLATE(WS-I:1) TO WS-LINE(WS-LENGTH + 1:1)
-             ADD 1 TO WS-LENGTH
-             ADD 1 TO WS-I
          END-IF
      END-PERFORM
      CALL "CORE-LOG" USING WS-LINE WS-LENGTH

@@ -148,14 +148,20 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FLUID-TOUCHES-WATER.
-*> USING dimension row, feet x, y, z (FLOAT-LONG), wet out (BINARY-LONG 1 or 0): the box of a player (feet up to 1.8) touches water: one of the cells
-*> of its column from the feet's cell up holds water whose surface (the cell's y plus 1 under water, else amount / 9) is not below the feet (29a 8.2
-*> step 6, in the column of the feet only). Touching water ends a fall (8.3 step 2: resetFallDistance).
+*> USING dimension row, feet x, y, z (FLOAT-LONG), wet out (BINARY-LONG 1 or 0): the box of a player (0.6 wide, feet up to 1.8, shrunk by 0.001 as
+*> Entity.updateFluidHeightAndDoFluidPushing does) touches water: a cell of the box holds water, a water block of any level (a source, a flowing cell,
+*> a falling stream), a waterlogged block or a bubble column, whose surface (the cell's y plus 1 under water, else amount / 9, a waterlogged cell a
+*> source) is not below the feet (29a 8.2 step 6). Touching water ends a fall (8.3 step 2: resetFallDistance), whichever of the columns under the box
+*> holds it: a player sinking along the edge of a stream lands without damage.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
  01 WS-YA                  BINARY-LONG.
  01 WS-Y0                  BINARY-LONG.
  01 WS-Y1                  BINARY-LONG.
@@ -174,9 +180,17 @@
  01 WS-SOLID               BINARY-LONG.
  01 WS-HOLDS               BINARY-LONG.
  01 WS-SAME                BINARY-LONG.
+ 01 WS-WET-CELL            BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-BUBBLE              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112) VALUE "bubble_column".
+ 01 WS-BUBBLE-COUNT        BINARY-LONG VALUE -1.
+ 01 WS-PROPS               PIC X(160).
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-TOP                 FLOAT-LONG.
  01 WS-HIGH                FLOAT-LONG.
+ 01 WS-LOW                 FLOAT-LONG.
+ COPY CBLOCKS.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -185,27 +199,56 @@
  01 L-WET                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-WET.
      MOVE 0 TO L-WET
-     COMPUTE WS-X = FUNCTION INTEGER(L-X)
-     COMPUTE WS-Z = FUNCTION INTEGER(L-Z)
+*>   The block id of the bubble column, looked up again only when the block tables changed (their size).
+     IF WS-BUBBLE-COUNT NOT = CB-BLOCK-COUNT
+         CALL "BLOCKS-ID-OF" USING WS-KEY WS-BUBBLE
+         MOVE CB-BLOCK-COUNT TO WS-BUBBLE-COUNT
+     END-IF
+     COMPUTE WS-LOW = L-X - 0.299
+     COMPUTE WS-X0 = FUNCTION INTEGER(WS-LOW)
+     COMPUTE WS-HIGH = L-X + 0.299
+     COMPUTE WS-X1 = FUNCTION INTEGER(WS-HIGH)
+     COMPUTE WS-LOW = L-Z - 0.299
+     COMPUTE WS-Z0 = FUNCTION INTEGER(WS-LOW)
+     COMPUTE WS-HIGH = L-Z + 0.299
+     COMPUTE WS-Z1 = FUNCTION INTEGER(WS-HIGH)
      COMPUTE WS-Y0 = FUNCTION INTEGER(L-Y)
      COMPUTE WS-HIGH = L-Y + 1.8
      COMPUTE WS-Y1 = FUNCTION INTEGER(WS-HIGH)
-     PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1 OR L-WET = 1
-         CALL "FLUID-CELL" USING L-DIM WS-X WS-Y WS-Z WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
-         IF WS-FLUID = 1
-             COMPUTE WS-YA = WS-Y + 1
-             CALL "FLUID-CELL" USING L-DIM WS-X WS-YA WS-Z WS-A-STATE WS-A-FLUID WS-A-KIND WS-A-AMOUNT WS-A-FALLING WS-A-SOLID
-                 WS-A-HOLDS
-             MOVE 0 TO WS-SAME
-             IF WS-A-FLUID = 1
-                 MOVE 1 TO WS-SAME
-             END-IF
-             CALL "FL-HEIGHT" USING WS-AMOUNT WS-SAME WS-HEIGHT
-             COMPUTE WS-TOP = WS-Y + WS-HEIGHT
-             IF WS-TOP >= L-Y
-                 MOVE 1 TO L-WET
-             END-IF
-         END-IF
+     PERFORM VARYING WS-X FROM WS-X0 BY 1 UNTIL WS-X > WS-X1 OR L-WET = 1
+         PERFORM VARYING WS-Z FROM WS-Z0 BY 1 UNTIL WS-Z > WS-Z1 OR L-WET = 1
+             PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1 OR L-WET = 1
+                 CALL "FLUID-CELL" USING L-DIM WS-X WS-Y WS-Z WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
+                 MOVE WS-FLUID TO WS-WET-CELL
+*>               A waterlogged block holds a water source; a bubble column is water.
+                 IF WS-STATE NOT = 0 AND WS-FLUID = 0
+                     MOVE 0 TO WS-HITS
+                     IF CB-S-BLOCK(WS-STATE + 1) = WS-BUBBLE
+                         MOVE 1 TO WS-HITS
+                     END-IF
+                     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
+                     INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "waterlogged=true"
+                     IF WS-HITS > 0
+                         MOVE 1 TO WS-WET-CELL
+                         MOVE 8 TO WS-AMOUNT
+                     END-IF
+                 END-IF
+                 IF WS-WET-CELL = 1
+                     COMPUTE WS-YA = WS-Y + 1
+                     CALL "FLUID-CELL" USING L-DIM WS-X WS-YA WS-Z WS-A-STATE WS-A-FLUID WS-A-KIND WS-A-AMOUNT WS-A-FALLING
+                         WS-A-SOLID WS-A-HOLDS
+                     MOVE 0 TO WS-SAME
+                     IF WS-A-FLUID = 1
+                         MOVE 1 TO WS-SAME
+                     END-IF
+                     CALL "FL-HEIGHT" USING WS-AMOUNT WS-SAME WS-HEIGHT
+                     COMPUTE WS-TOP = WS-Y + WS-HEIGHT
+                     IF WS-TOP >= L-Y
+                         MOVE 1 TO L-WET
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM FLUID-TOUCHES-WATER.
