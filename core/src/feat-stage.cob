@@ -162,6 +162,8 @@
      COMPUTE WS-BX = J-CX * 16
      COMPUTE WS-BZ = J-CZ * 16
      CALL "FL-OPEN" USING J-ADDR J-CX J-CZ WS-MIN-Y WS-HEIGHT WS-SEA
+*>   the spare of the Gaussian source (35-1 section 5.3) does not carry over from the chunk generated before in this process
+     CALL "F351-GAUSSIAN-RESET"
      CALL "ORE-DECOR-SEED" USING CV-SEED WS-BX WS-BZ WS-XR WS-DECOR
      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > FI-COUNT(WS-K)
          IF WS-WANT-FLAG(WS-J) = 1

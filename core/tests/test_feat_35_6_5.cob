@@ -26,30 +26,14 @@
  01 WS-C3                  FLOAT-LONG.
  01 WS-C4                  FLOAT-LONG.
  01 WS-SIX                 BINARY-LONG VALUE 6.
- 01 WS-TIP                 BINARY-LONG.
  01 WS-ABOVE               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
  01 WS-H                   BINARY-LONG.
- 01 WS-HT                  BINARY-LONG.
- 01 WS-MERGE               BINARY-LONG.
- 01 WS-D                   BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
  01 WS-PY                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
  01 WS-QX                  BINARY-LONG.
  01 WS-QZ                  BINARY-LONG.
- 01 WS-PIECES.
-    05 WS-PC               BINARY-LONG OCCURS 8 TIMES.
- 01 WS-NP                  BINARY-LONG.
- 01 WS-WLF                 BINARY-LONG.
- 01 WS-THICKS.
-    05 FILLER PIC X(9) VALUE "tip_merge".
-    05 FILLER PIC X(9) VALUE "tip      ".
-    05 FILLER PIC X(9) VALUE "frustum  ".
-    05 FILLER PIC X(9) VALUE "middle   ".
-    05 FILLER PIC X(9) VALUE "base     ".
- 01 WS-THICK-T REDEFINES WS-THICKS.
-    05 WS-THICK            PIC X(9) OCCURS 5 TIMES.
  01 WS-HZ.
     05 FILLER BINARY-LONG VALUE 2.
     05 FILLER BINARY-LONG VALUE 5.
@@ -59,7 +43,6 @@
     05 WS-HD               BINARY-LONG OCCURS 4 TIMES.
  01 WS-TALL                BINARY-LONG.
  01 WS-DV                  BINARY-LONG.
- 01 WS-KD                  BINARY-LONG.
  01 WS-TOTAL-POINTED       BINARY-LONG.
  01 WS-TOTAL-BASE          BINARY-LONG.
  01 WS-SAME                BINARY-LONG.
@@ -363,6 +346,9 @@
                  MOVE WS-DV TO WS-TIP
                  MOVE FT-A(WS-FT) TO WS-J
                  CALL "SP-GROW" USING WS-J WS-OX WS-OY WS-OZ WS-TIP WS-HT WS-MERGE
+                 MOVE WS-OX TO WS-GX
+                 MOVE WS-OY TO WS-GY
+                 MOVE WS-OZ TO WS-GZ
                  PERFORM MODEL-GROW
                  PERFORM COMPARE
              END-PERFORM
@@ -419,34 +405,6 @@
      MOVE WS-B-BASE TO WS-WANT
      PERFORM COUNT-BLOCK
      ADD WS-N TO WS-TOTAL-BASE
-     .
-*> MODEL-IN-SET: WS-D = 1 when the block WS-MB is in the replaceable set
- MODEL-IN-SET.
-     MOVE 0 TO WS-D
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
-         IF WS-MB = WS-SETB(WS-I)
-             MOVE 1 TO WS-D
-         END-IF
-     END-PERFORM
-     .
-*> MODEL-ISBASE: WS-D = 1 when the model cell (WS-MX, WS-MY, WS-MZ) is the base block or in the set
- MODEL-ISBASE.
-     PERFORM MGET
-     PERFORM MBLOCK
-     PERFORM MODEL-IN-SET
-     IF WS-MB = WS-B-BASE
-         MOVE 1 TO WS-D
-     END-IF
-     .
-*> MODEL-PLACE: placeBaseBlockIfPossible at (WS-MX, WS-MY, WS-MZ)
- MODEL-PLACE.
-     PERFORM MGET
-     PERFORM MBLOCK
-     PERFORM MODEL-IN-SET
-     IF WS-D = 1
-         MOVE WS-S-BASE TO WS-MV
-         PERFORM MSET
-     END-IF
      .
 *> MODEL-SPEL: section 5.2 on the model cells with the second random source
  MODEL-SPEL.
@@ -541,71 +499,12 @@
          ADD 1 TO WS-TALL
      END-IF
      MOVE 0 TO WS-MERGE
+     MOVE WS-OX TO WS-GX
+     MOVE WS-OY TO WS-GY
+     MOVE WS-OZ TO WS-GZ
      PERFORM MODEL-GROW
      .
-*> MODEL-GROW: section 5.3 at (WS-OX, WS-OY, WS-OZ) for the tip WS-TIP, the height WS-HT and WS-MERGE: the list of pieces is built as the section lists them, then written
- MODEL-GROW.
-     COMPUTE WS-KD = WS-TIP + 1
-     COMPUTE WS-D = WS-KD
-*>   the base cell behind the first piece: the opposite direction is the other one of the pair (DOWN 0 / UP 1)
-     COMPUTE WS-MX = WS-OX
-     IF WS-TIP = 0
-         COMPUTE WS-MY = WS-OY + 1
-     ELSE
-         COMPUTE WS-MY = WS-OY - 1
-     END-IF
-     MOVE WS-OZ TO WS-MZ
-     PERFORM MODEL-ISBASE
-     IF WS-D = 0
-         EXIT PARAGRAPH
-     END-IF
-     MOVE 0 TO WS-NP
-     IF WS-HT >= 3
-         ADD 1 TO WS-NP
-         MOVE 4 TO WS-PC(WS-NP)
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-HT - 3
-             ADD 1 TO WS-NP
-             MOVE 3 TO WS-PC(WS-NP)
-         END-PERFORM
-     END-IF
-     IF WS-HT >= 2
-         ADD 1 TO WS-NP
-         MOVE 2 TO WS-PC(WS-NP)
-     END-IF
-     ADD 1 TO WS-NP
-     IF WS-MERGE = 1
-         MOVE 0 TO WS-PC(WS-NP)
-     ELSE
-         MOVE 1 TO WS-PC(WS-NP)
-     END-IF
-     MOVE WS-OX TO WS-MX
-     MOVE WS-OY TO WS-MY
-     MOVE WS-OZ TO WS-MZ
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NP
-         PERFORM MGET
-         PERFORM MBLOCK
-         MOVE "false" TO WS-NAME
-         IF WS-MB = WS-B-WATER
-             MOVE "true" TO WS-NAME
-         END-IF
-         MOVE SPACES TO WS-PAIRS
-         COMPUTE WS-KD = WS-PC(WS-I) + 1
-         IF WS-TIP = 0
-             STRING "thickness=" FUNCTION TRIM(WS-THICK(WS-KD)) ",vertical_direction=down,waterlogged=" FUNCTION TRIM(WS-NAME)
-                 DELIMITED BY SIZE INTO WS-PAIRS
-         ELSE
-             STRING "thickness=" FUNCTION TRIM(WS-THICK(WS-KD)) ",vertical_direction=up,waterlogged=" FUNCTION TRIM(WS-NAME)
-                 DELIMITED BY SIZE INTO WS-PAIRS
-         END-IF
-         MOVE "pointed_dripstone" TO WS-KEY
-         CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-MV
-         PERFORM MSET
-         COMPUTE WS-KD = WS-TIP + 1
-         COMPUTE WS-MX = WS-MX + WS-SX(WS-KD)
-         COMPUTE WS-MY = WS-MY + WS-SY(WS-KD)
-         COMPUTE WS-MZ = WS-MZ + WS-SZ(WS-KD)
-     END-PERFORM
-     .
+ COPY SPELMODEL.
  COPY SPELPROC.
  COPY FWTEST.
  END PROGRAM TEST-FEAT-35-6-5.

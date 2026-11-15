@@ -212,3 +212,5 @@
        10 WA-IP OCCURS 3 TIMES.
           15 WA-IPV         BINARY-LONG OCCURS 4 TIMES.
        10 WA-F              FLOAT-LONG OCCURS 4 TIMES.
+*>     ten more floats (the float providers of speleothem_cluster: feat-35-6.cob)
+       10 WA-G              FLOAT-LONG OCCURS 10 TIMES.

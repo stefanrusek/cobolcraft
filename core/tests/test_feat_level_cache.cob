@@ -136,6 +136,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   an ordinal outside 0 to 5 acts as 5 and shares its cache entry
+     MOVE 33 TO WS-X
      MOVE 5 TO WS-ORD
      CALL "FL-HEIGHT-OF" USING WS-ORD WS-X WS-Z WS-H
      MOVE FL-SCANS TO WS-S0
@@ -146,6 +147,9 @@
      MOVE "test feat level cache: an ordinal outside 0 to 5 is answered as 5 from the same entry" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = (FL-SCANS - WS-S0) * 1000 + WS-H - WS-H2
+     IF WS-H = FL-MIN-Y
+         ADD 77 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-ORD
 

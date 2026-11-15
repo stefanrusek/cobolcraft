@@ -93,3 +93,23 @@
        10 WS-SX            BINARY-LONG.
        10 WS-SY            BINARY-LONG.
        10 WS-SZ            BINARY-LONG.
+ 01 WS-GX                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-GZ                  BINARY-LONG.
+ 01 WS-TIP                 BINARY-LONG.
+ 01 WS-HT                  BINARY-LONG.
+ 01 WS-MERGE               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-KD                  BINARY-LONG.
+ 01 WS-PIECES.
+    05 WS-PC               BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-NP                  BINARY-LONG.
+ 01 WS-WLF                 BINARY-LONG.
+ 01 WS-THICKS.
+    05 FILLER PIC X(9) VALUE "tip_merge".
+    05 FILLER PIC X(9) VALUE "tip      ".
+    05 FILLER PIC X(9) VALUE "frustum  ".
+    05 FILLER PIC X(9) VALUE "middle   ".
+    05 FILLER PIC X(9) VALUE "base     ".
+ 01 WS-THICK-T REDEFINES WS-THICKS.
+    05 WS-THICK            PIC X(9) OCCURS 5 TIMES.
