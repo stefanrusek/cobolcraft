@@ -78,3 +78,5 @@
  01 FK-THEN           PIC X(40) VALUE "then".
  01 FK-FALLBACK       PIC X(40) VALUE "fallback".
  01 FK-DISK-TARGET    PIC X(40) VALUE "target".
+ 01 FK-MEAN           PIC X(40) VALUE "mean".
+ 01 FK-DEVIATION      PIC X(40) VALUE "deviation".

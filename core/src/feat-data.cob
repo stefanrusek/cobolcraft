@@ -244,6 +244,7 @@
  01 WS-IDX                 BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
  01 WS-V                   BINARY-LONG.
+ 01 WS-FL                  FLOAT-LONG.
  LOCAL-STORAGE SECTION.
  01 LS-INNER.
     05 LS-I                BINARY-LONG OCCURS 4 TIMES.
@@ -342,6 +343,32 @@
              PERFORM VARYING LS-K FROM 1 BY 1 UNTIL LS-K > 4
                  CALL "FD-POOL-ADD" USING LS-I(LS-K) WS-IDX
              END-PERFORM
+         WHEN "minecraft:clamped_normal"
+         WHEN "clamped_normal"
+*>           (int) clamp(mean + (float) gaussian * deviation, min, max) (23 section 7): V(2) min, V(3) max, V(4) the first of two pool entries, mean and deviation in millionths
+             MOVE 8 TO L-V(1)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-MIN-INC WS-N
+             CALL "FD-J-INT" USING JSON-DOC WS-N L-V(2) L-OK
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-MAX-INC WS-N
+             CALL "FD-J-INT" USING JSON-DOC WS-N L-V(3) WS-OK
+             IF WS-OK = 0 OR L-V(3) < L-V(2)
+                 MOVE 0 TO L-OK
+             END-IF
+             COMPUTE L-V(4) = FD-POOL-COUNT + 1
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-MEAN WS-N
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-N WS-FL WS-OK
+             IF WS-OK = 0
+                 MOVE 0 TO L-OK
+             END-IF
+             COMPUTE WS-V ROUNDED = WS-FL * 1000000
+             CALL "FD-POOL-ADD" USING WS-V WS-IDX
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-DEVIATION WS-N
+             CALL "FD-J-DOUBLE" USING JSON-DOC WS-N WS-FL WS-OK
+             IF WS-OK = 0
+                 MOVE 0 TO L-OK
+             END-IF
+             COMPUTE WS-V ROUNDED = WS-FL * 1000000
+             CALL "FD-POOL-ADD" USING WS-V WS-IDX
          WHEN "minecraft:trapezoid"
          WHEN "trapezoid"
              MOVE 5 TO L-V(1)
@@ -1926,6 +1953,26 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-MULTI-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 45
+*>           speleothem (feat-35-6.cob): unsupported when a block, the set or the pointed block's states are missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-SPEL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 46
+*>           speleothem_cluster (feat-35-6.cob): unsupported when a block, a provider or a number is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-CLUSTER-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE

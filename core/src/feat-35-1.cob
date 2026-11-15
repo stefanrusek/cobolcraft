@@ -7,6 +7,7 @@
 *>   F351-NEXT-BOOLEAN USING state, result out (BINARY-LONG 0 or 1)      nextBoolean(): the top bit
 *>   F351-NEXT-LONG USING state, result out (BINARY-DOUBLE signed)       nextLong(): two next(32), the low word sign-extended
 *>   F351-NEXT-GAUSSIAN USING state, result out (FLOAT-LONG)             nextGaussian(): Marsaglia polar; the spare survives a reseed
+*>   F351-GAUSSIAN-RESET                                                  drops the spare (entry of the same program)
 *>   F351-MODIFY USING state, modifier index, x, y, z (BINARY-LONG), out count, out positions: one modifier on one position (section 7)
 *>   F351-PLACE USING state, x, y, z, result out (BINARY-LONG 0 or 1): the evaluator of 8.2 over F351-PROGRAM; the feature records FO-POS
 
@@ -114,6 +115,11 @@
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-V2 WS-M WS-SPARE
      MOVE 1 TO WS-HAVE
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-V1 WS-M L-RESULT
+     GOBACK.
+*>   F351-GAUSSIAN-RESET (no parameters): drops the spare, so that the next Gaussian starts a fresh pair (the stage does it at the start of every chunk step: the draws of a chunk must not
+*>   depend on the chunks generated before it in the same process)
+     ENTRY "F351-GAUSSIAN-RESET"
+     MOVE 0 TO WS-HAVE
      GOBACK.
  END PROGRAM F351-NEXT-GAUSSIAN.
 

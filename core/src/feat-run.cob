@@ -37,6 +37,11 @@
  01 WS-RANGE               BINARY-LONG.
  01 WS-SLOPE               BINARY-LONG.
  01 WS-SIDE                BINARY-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-FA                  FLOAT-LONG.
+ 01 WS-FB                  FLOAT-LONG.
+ 01 WS-FC                  FLOAT-LONG.
+ 01 WS-MILLION             FLOAT-LONG VALUE 1000000.
  LOCAL-STORAGE SECTION.
  01 LS-SOURCE.
     05 LS-Q                BINARY-LONG OCCURS 4 TIMES.
@@ -96,6 +101,30 @@
              IF L-VALUE > L-V(3)
                  MOVE L-V(3) TO L-VALUE
              END-IF
+*>       clamped_normal: one Gaussian draw, (int) clamp(mean + (float) g * deviation, min, max), every step in single precision (the mean and deviation are pool entries in millionths)
+         WHEN 8
+             CALL "F351-NEXT-GAUSSIAN" USING L-STATE WS-G
+             CALL "FR-F32" USING WS-G
+             MOVE FD-POOL(L-V(4)) TO WS-FA
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FA WS-MILLION WS-FB
+             CALL "FR-F32" USING WS-FB
+             COMPUTE WS-BOUND = L-V(4) + 1
+             MOVE FD-POOL(WS-BOUND) TO WS-FA
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FA WS-MILLION WS-FC
+             CALL "FR-F32" USING WS-FC
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-G WS-FC WS-FA
+             CALL "FR-F32" USING WS-FA
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-FB WS-FA WS-G
+             CALL "FR-F32" USING WS-G
+             MOVE L-V(2) TO WS-FA
+             MOVE L-V(3) TO WS-FB
+             IF WS-G < WS-FA
+                 MOVE WS-FA TO WS-G
+             END-IF
+             IF WS-G > WS-FB
+                 MOVE WS-FB TO WS-G
+             END-IF
+             CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-G L-VALUE
          WHEN OTHER
              IF L-V(4) = 0 AND L-V(3) = 0 - L-V(2)
                  COMPUTE WS-BOUND = L-V(3) + 1
@@ -1154,6 +1183,10 @@
              CALL "FR-SCULK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 28
              CALL "FR-MULTI" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 46
+             CALL "FR-CLUSTER" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 45
+             CALL "FR-SPEL" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1000
              CALL "FR-BAMBOO" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57
