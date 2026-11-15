@@ -249,6 +249,41 @@
          TO L-STATE
      GOBACK.
  END PROGRAM WORLD-GET-BLOCK.
+ 
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-PEEK-BLOCK.
+*> USING dim, x, y, z, state out (BINARY-LONG; world block position): the block state there when the chunk is loaded, 0 (void) when it is not or the
+*> position is outside the dimension's height range; never loads or generates a chunk (a per-tick read next to a player must not make a chunk ahead of
+*> the generation queue).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     MOVE 0 TO L-STATE
+     IF L-Y < DM-MIN-Y(L-DIM) OR L-Y >= DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM)
+         GOBACK
+     END-IF
+     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
+     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+     IF WS-ROW > 0
+         SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+         MOVE CE-STATE((L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1)
+             TO L-STATE
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-PEEK-BLOCK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-SET-BLOCK.

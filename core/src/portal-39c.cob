@@ -403,6 +403,7 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
@@ -461,7 +462,9 @@
          PERFORM VARYING WS-X FROM WS-MIN-X BY 1 UNTIL WS-X > WS-MAX-X
              PERFORM VARYING WS-Y FROM WS-MIN-Y BY 1 UNTIL WS-Y > WS-MAX-Y
                  PERFORM VARYING WS-Z FROM WS-MIN-Z BY 1 UNTIL WS-Z > WS-MAX-Z
-                     CALL "PORTAL-CELL-KIND" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-KIND
+*>                   a cell of a chunk that is not loaded reads void: the sweep does not make the chunk ahead of the generation queue
+                     CALL "WORLD-PEEK-BLOCK" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-STATE
+                     CALL "PORTAL-STATE-KIND" USING WS-STATE WS-KIND
                      IF WS-KIND = 2 AND L-FOUND = 0
                          MOVE 1 TO L-FOUND
                          MOVE WS-X TO L-X

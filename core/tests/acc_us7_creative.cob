@@ -77,8 +77,11 @@
 
      MOVE "acceptance US7-6 given a creative player when every cause of §10.3 would damage them "
          & "then their health stays 20 and nothing is sent" TO TL-CASE
+*>   The void is the one cause that hurts a creative player (bypasses_invulnerability, 17 section 4.12; the Nether and End lane): it is left out.
      PERFORM VARYING WS-CAUSE FROM 1 BY 1 UNTIL WS-CAUSE > CAUSE-COUNT
-         CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
+         IF WS-CAUSE NOT = CAUSE-VOID
+             CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
+         END-IF
      END-PERFORM
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
      MOVE 20 TO WS-E1
