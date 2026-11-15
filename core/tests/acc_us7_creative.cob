@@ -35,6 +35,7 @@
  01 WS-SLOT                BINARY-LONG VALUE 8.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG VALUE 3.
+ 01 WS-VOID-AMOUNT         BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-TICKS               BINARY-LONG.
@@ -112,6 +113,28 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
      MOVE "health 14 food 18" TO TL-EXPECTED
      PERFORM CHECK
+
+*>   The void hurts a creative player (bypasses_invulnerability, 17 section 4.12): 4 hurt it, 100 kill it (death.attack.outOfWorld), and a dead
+*>   player is not hurt again.
+     MOVE "US7 edge given a creative player when the void hurts them for 4 then their health is 10 (14 less 4)" TO TL-CASE
+     MOVE 1 TO PL-MODE(WS-ROW)
+     MOVE 4 TO WS-VOID-AMOUNT
+     CALL "HEALTH-DAMAGE" USING WS-ROW WS-VOID-AMOUNT CAUSE-VOID WS-NO-ENTITY WS-NO-ATTACKER
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "US7 edge given a creative player when the void hurts them for 100 then they are dead" TO TL-CASE
+     MOVE 100 TO WS-VOID-AMOUNT
+     CALL "HEALTH-DAMAGE" USING WS-ROW WS-VOID-AMOUNT CAUSE-VOID WS-NO-ENTITY WS-NO-ATTACKER
+     MOVE PS-DEAD TO TL-EXPECTED-N
+     MOVE PL-STATE(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "US7 edge given a dead creative player when the void hurts them again then nothing changes (still dead, health 0)" TO TL-CASE
+     CALL "HEALTH-DAMAGE" USING WS-ROW WS-VOID-AMOUNT CAUSE-VOID WS-NO-ENTITY WS-NO-ATTACKER
+     COMPUTE TL-OBSERVED-N = PL-STATE(WS-ROW) * 100 + PL-HEALTH(WS-ROW)
+     MOVE 200 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> Alice rises 10 blocks (on-ground false) and lands back at feet y 101 (on-ground true).
