@@ -26,6 +26,8 @@
  01 WS-A                   PIC X(304640) BASED.
  01 WS-WORKERS             BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
  01 WS-SLEEP               PIC 9V99 VALUE 0.01.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
@@ -109,6 +111,15 @@
      MOVE WS-FLAG TO TL-OBSERVED-N
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the idle worker stopped gracefully ends at the end of its input (its process leaves its coverage data behind)
+     MOVE GW-SLOT(1) TO WS-SLOT
+     CALL STATIC "cc_wk_stop" USING BY VALUE WS-SLOT BY VALUE 0 RETURNING WS-RC
+     MOVE "test nether worker the idle worker stopped gracefully is reaped" TO TL-CASE
+     MOVE WS-RC TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO GW-SLOT(1)
 
 *>   the standard overworld is not asked for its neighbours here (its light never generates them either)
      MOVE 5 TO WS-CX

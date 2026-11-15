@@ -144,7 +144,7 @@
      CALL "PB-FREE" USING ST-BUFFER
 
      MOVE "acceptance US12 39§8 A player changes dimension: the packets come in order: Respawn, Difficulty, Event, Abilities, Slot, "
-         & "Container Content, Initialize Border, spawn, Set Time, weather, XP, Health, sound, Player Position, then the chunks through the feed (T6301)" TO TL-CASE
+         & "Container Content, Initialize Border, spawn, Set Time, weather, XP, Health, sound, position, then the feed's chunks" TO TL-CASE
      MOVE "84 10 34 65 107 18 44 99 115 39 96 73 105 106 47 12 46 11" TO TL-EXPECTED
      MOVE WS-ORDER TO TL-OBSERVED
      PERFORM CHECK
