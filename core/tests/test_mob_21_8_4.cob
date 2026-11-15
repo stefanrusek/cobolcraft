@@ -24,6 +24,8 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-FB-TYPE             BINARY-LONG.
  01 WS-SAND                BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-Y3                  BINARY-LONG.
  01 WS-SAND-ITEM           BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
@@ -45,6 +47,8 @@
  01 WS-UUID                PIC X(16).
  01 WS-D                   FLOAT-LONG.
  01 WS-V                   FLOAT-LONG.
+ 01 WS-V2                  FLOAT-LONG.
+ 01 WS-V3                  FLOAT-LONG.
  01 WS-AN                  FLOAT-SHORT.
  01 WS-DATA                BINARY-LONG.
  01 WS-RULE-NAME           PIC X(40) VALUE "entity_drops".
@@ -60,6 +64,8 @@
      CALL "GB-RULES-OPEN"
      MOVE "minecraft:falling_block" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-FB-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
      MOVE "minecraft:sand" TO WS-KEY
      CALL "MS-TEST-STATE" USING WS-KEY WS-SAND
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SAND-ITEM WS-ITEM-ROW WS-STATUS
@@ -97,7 +103,7 @@
      CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-D
      CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-D
      CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-D
-     CALL "PB-GET-LPVEC3" USING PB-BUFFER WS-V WS-V WS-V
+     CALL "PB-GET-LPVEC3" USING PB-BUFFER WS-V WS-V2 WS-V3
      CALL "PB-GET-ANGLE" USING PB-BUFFER WS-AN
      CALL "PB-GET-ANGLE" USING PB-BUFFER WS-AN
      CALL "PB-GET-ANGLE" USING PB-BUFFER WS-AN
@@ -158,6 +164,22 @@
      MOVE 0 TO WS-E
      COMPUTE WS-O = WS-STATE + WS-ITEMS
      PERFORM CHECK-N
+*>   A wall to the east and to the south stops the sideways speed (and the entity then lands on the floor).
+     COMPUTE WS-X2 = WS-BX - 4
+     COMPUTE WS-Y3 = WS-LY + 3
+     COMPUTE WS-I = WS-X2 + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-Y3 WS-BZ WS-STONE
+     COMPUTE WS-I = WS-BZ + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X2 WS-Y3 WS-I WS-STONE
+     CALL "FB-SPAWN" USING WS-DIM WS-X2 WS-Y3 WS-BZ WS-SAND WS-ROW
+     MOVE 1.1 TO EN-VX(WS-ROW)
+     MOVE 1.1 TO EN-VZ(WS-ROW)
+     CALL "FB-STEP" USING WS-ROW
+     MOVE "acceptance US15 21§8.4 stone blocks to the east and south stop the sideways speed of the falling block" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O = FUNCTION INTEGER(EN-VX(WS-ROW) * 1000) + FUNCTION INTEGER(EN-VZ(WS-ROW) * 1000)
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW
 *>   Expiry in the air after 600 ticks: the item drops.
      COMPUTE WS-X2 = WS-BX + 4
      CALL "FB-SPAWN" USING WS-DIM WS-X2 WS-SY WS-BZ WS-SAND WS-ROW
