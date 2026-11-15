@@ -591,6 +591,13 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-IX                  BINARY-LONG.
  01 WS-IZ                  BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-WIN-N               BINARY-LONG.
+ 01 WS-WIN.
+    05 WS-WIN-REC OCCURS 18496 TIMES.
+       10 WW-X             BINARY-LONG.
+       10 WW-Z             BINARY-LONG.
+       10 WW-STRUCT        BINARY-LONG.
  LINKAGE SECTION.
  01 L-JOB.
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
@@ -614,6 +621,21 @@
      COMPUTE WS-BX = J-CX * 16
      COMPUTE WS-BZ = J-CZ * 16
      CALL "ORE-DECOR-SEED" USING CV-SEED WS-BX WS-BZ WS-XR WS-DECOR
+*>   the starts of the 17 x 17 chunks around this one, once for every structure of the step: in scan order (x outer, z inner), as (x, z, structure row)
+     MOVE 0 TO WS-WIN-N
+     PERFORM VARYING WS-IX FROM 0 BY 1 UNTIL WS-IX > 16
+         COMPUTE WS-SX = J-CX - 8 + WS-IX
+         PERFORM VARYING WS-IZ FROM 0 BY 1 UNTIL WS-IZ > 16
+             COMPUTE WS-SZ = J-CZ - 8 + WS-IZ
+             CALL "STRUCT-CHUNK-STARTS" USING WS-SEED WS-SX WS-SZ WS-N
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+                 ADD 1 TO WS-WIN-N
+                 MOVE WS-SX TO WW-X(WS-WIN-N)
+                 MOVE WS-SZ TO WW-Z(WS-WIN-N)
+                 MOVE SC-STRUCT(WS-I) TO WW-STRUCT(WS-WIN-N)
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > SD-ST-COUNT
          MOVE SDT-KEY(WS-R) TO WS-KEY
          CALL "STRUCT-GATE" USING WS-KEY WS-ON
@@ -629,28 +651,22 @@
              CALL "WGR-SET-SEED" USING WS-XR WS-FSEED
              MOVE WX-LO TO SP-XR-LO
              MOVE WX-HI TO SP-XR-HI
-             COMPUTE WS-SX = J-CX - 8
-             PERFORM VARYING WS-IX FROM 0 BY 1 UNTIL WS-IX > 16
-                 COMPUTE WS-SX = J-CX - 8 + WS-IX
-                 PERFORM VARYING WS-IZ FROM 0 BY 1 UNTIL WS-IZ > 16
-                     COMPUTE WS-SZ = J-CZ - 8 + WS-IZ
-                     CALL "STRUCT-CHUNK-STARTS" USING WS-SEED WS-SX WS-SZ WS-N
-                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-                         IF SC-STRUCT(WS-I) = WS-R
-                             CALL "STRUCT-FIND-POINT" USING WS-R WS-SEED WS-SX WS-SZ WS-X WS-Y WS-Z WS-VALID
-                             IF SP-COUNT > 0
-                                 CALL "SPB-UNION-ALL" USING WS-BOX
-                                 IF SDT-ADAPT(WS-R) NOT = 0
-                                     CALL "SPB-BOX-INFLATE" USING WS-BOX WS-INFLATE
-                                 END-IF
-                                 CALL "SPB-BOX-INTERSECTS-XZ" USING WS-BOX SP-WBOX WS-CHUNK
-                                 IF WS-CHUNK = 1
-                                     CALL "STRUCT-PLACE-START"
-                                 END-IF
-                             END-IF
+             PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > WS-WIN-N
+                 IF WW-STRUCT(WS-W) = WS-R
+                     MOVE WW-X(WS-W) TO WS-SX
+                     MOVE WW-Z(WS-W) TO WS-SZ
+                     CALL "STRUCT-FIND-POINT" USING WS-R WS-SEED WS-SX WS-SZ WS-X WS-Y WS-Z WS-VALID
+                     IF SP-COUNT > 0
+                         CALL "SPB-UNION-ALL" USING WS-BOX
+                         IF SDT-ADAPT(WS-R) NOT = 0
+                             CALL "SPB-BOX-INFLATE" USING WS-BOX WS-INFLATE
                          END-IF
-                     END-PERFORM
-                 END-PERFORM
+                         CALL "SPB-BOX-INTERSECTS-XZ" USING WS-BOX SP-WBOX WS-CHUNK
+                         IF WS-CHUNK = 1
+                             CALL "STRUCT-PLACE-START"
+                         END-IF
+                     END-IF
+                 END-IF
              END-PERFORM
          END-IF
      END-PERFORM

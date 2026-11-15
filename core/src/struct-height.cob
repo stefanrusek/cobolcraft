@@ -83,6 +83,19 @@
  01 WS-SEA-Y               BINARY-LONG VALUE 62.
  01 WS-SEA                 BINARY-LONG.
  01 WS-SEA-TYPE            BINARY-LONG.
+*> the heights of whole columns (both kinds, one walk), keyed by the column's place in a 128 x 128 column tile; an entry holds the stamp it was made under
+ 01 WS-COLUMNS.
+    05 WS-COLUMN OCCURS 16384 TIMES.
+       10 WS-K-STAMP       BINARY-LONG VALUE -1.
+       10 WS-K-X           BINARY-LONG.
+       10 WS-K-Z           BINARY-LONG.
+       10 WS-K-H0          BINARY-LONG.
+       10 WS-K-H1          BINARY-LONG.
+ 01 WS-KX                  BINARY-LONG.
+ 01 WS-KZ                  BINARY-LONG.
+ 01 WS-KSLOT               BINARY-LONG.
+ 01 WS-H0                  BINARY-LONG.
+ 01 WS-H1                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
@@ -91,6 +104,18 @@
  PROCEDURE DIVISION USING L-X L-Z L-KIND L-HEIGHT.
 *>   the interpolated nodes of the final density, found again when the content or the noises change (their stamp)
      COMPUTE WS-LVL = WG-LOAD-GEN + NZ-GEN
+*>   a column asked before under this stamp is answered from the column cache (the query is a pure function of the stamp and the column)
+     COMPUTE WS-KX = FUNCTION MOD(L-X, 128)
+     COMPUTE WS-KZ = FUNCTION MOD(L-Z, 128)
+     COMPUTE WS-KSLOT = WS-KX * 128 + WS-KZ + 1
+     IF WS-K-STAMP(WS-KSLOT) = WS-LVL AND WS-K-X(WS-KSLOT) = L-X AND WS-K-Z(WS-KSLOT) = L-Z
+         IF L-KIND = 1
+             MOVE WS-K-H1(WS-KSLOT) TO L-HEIGHT
+         ELSE
+             MOVE WS-K-H0(WS-KSLOT) TO L-HEIGHT
+         END-IF
+         GOBACK
+     END-IF
      IF WS-LVL NOT = WS-STAMP
          MOVE WS-LVL TO WS-STAMP
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SH-CACHE-SIZE
@@ -197,16 +222,24 @@
      SET DNG-PTR TO WS-SAVE-PTR
 *>   the heightmap predicate: stone, and for the world surface the fluid of the global picker
      CALL "AQ-PICKER" USING WS-SEA-Y WS-SEA WS-SEA-TYPE
+     COMPUTE WS-H1 = WS-SOLID-TOP + 1
+     IF WS-FOUND = 0
+         MOVE -64 TO WS-H1
+     END-IF
+     COMPUTE WS-H0 = WS-SOLID-TOP + 1
+     IF WS-FOUND = 0 OR WS-H0 < WS-SEA
+         MOVE WS-SEA TO WS-H0
+     END-IF
+     COMPUTE WS-LVL = WG-LOAD-GEN + NZ-GEN
+     MOVE WS-LVL TO WS-K-STAMP(WS-KSLOT)
+     MOVE L-X TO WS-K-X(WS-KSLOT)
+     MOVE L-Z TO WS-K-Z(WS-KSLOT)
+     MOVE WS-H0 TO WS-K-H0(WS-KSLOT)
+     MOVE WS-H1 TO WS-K-H1(WS-KSLOT)
      IF L-KIND = 1
-         COMPUTE L-HEIGHT = WS-SOLID-TOP + 1
-         IF WS-FOUND = 0
-             MOVE -64 TO L-HEIGHT
-         END-IF
+         MOVE WS-H1 TO L-HEIGHT
      ELSE
-         COMPUTE L-HEIGHT = WS-SOLID-TOP + 1
-         IF WS-FOUND = 0 OR L-HEIGHT < WS-SEA
-             MOVE WS-SEA TO L-HEIGHT
-         END-IF
+         MOVE WS-H0 TO L-HEIGHT
      END-IF
      GOBACK.
  END PROGRAM STRUCT-BASE-HEIGHT.

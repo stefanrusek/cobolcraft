@@ -30,7 +30,7 @@
  END PROGRAM STRUCT-TPL-RESET.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-TPL-STATE.
+ PROGRAM-ID. STRUCT-TPL-STATE-RAW.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-BASE                BINARY-LONG.
@@ -119,6 +119,62 @@
              END-IF
          END-IF
      END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-TPL-STATE-RAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-TPL-STATE.
+*> USING block key, properties, state out: STRUCT-TPL-STATE-RAW remembered. A state is a function of the key, the pairs and the open block tables (CB-EPOCH), and the lookup of the engine
+*> scans the block's states once per pair, so the answers are kept in a table of 4096 entries found by a hash of the key and the pairs (an entry made under another CB-EPOCH, or for other
+*> text, is replaced; pairs longer than 160 bytes are never kept). Every template of a structure asks the same few hundred states again.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-MEMO.
+    05 WS-M OCCURS 4096 TIMES.
+       10 WM-EPOCH         BINARY-LONG VALUE -1.
+       10 WM-KEY           PIC X(112).
+       10 WM-PAIRS         PIC X(160).
+       10 WM-STATE         BINARY-LONG.
+ 01 WS-HASH                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-PAIRS-LENGTH        BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(112).
+ 01 L-PAIRS                PIC X(600).
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-PAIRS L-STATE.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PAIRS TRAILING)) TO WS-PAIRS-LENGTH
+     IF L-PAIRS = SPACES
+         MOVE 0 TO WS-PAIRS-LENGTH
+     END-IF
+     IF WS-PAIRS-LENGTH > 160
+         CALL "STRUCT-TPL-STATE-RAW" USING L-KEY L-PAIRS L-STATE
+         GOBACK
+     END-IF
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-KEY TRAILING)) TO WS-KEY-LENGTH
+     MOVE 7 TO WS-HASH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-KEY-LENGTH
+         COMPUTE WS-CODE = FUNCTION ORD(L-KEY(WS-I:1))
+         COMPUTE WS-HASH = FUNCTION MOD(WS-HASH * 31 + WS-CODE, 4093)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-PAIRS-LENGTH
+         COMPUTE WS-CODE = FUNCTION ORD(L-PAIRS(WS-I:1))
+         COMPUTE WS-HASH = FUNCTION MOD(WS-HASH * 31 + WS-CODE, 4093)
+     END-PERFORM
+     COMPUTE WS-SLOT = WS-HASH + 1
+     IF WM-EPOCH(WS-SLOT) = CB-EPOCH AND WM-KEY(WS-SLOT) = L-KEY AND WM-PAIRS(WS-SLOT) = L-PAIRS(1:160)
+         MOVE WM-STATE(WS-SLOT) TO L-STATE
+         GOBACK
+     END-IF
+     CALL "STRUCT-TPL-STATE-RAW" USING L-KEY L-PAIRS L-STATE
+     MOVE CB-EPOCH TO WM-EPOCH(WS-SLOT)
+     MOVE L-KEY TO WM-KEY(WS-SLOT)
+     MOVE L-PAIRS(1:160) TO WM-PAIRS(WS-SLOT)
+     MOVE L-STATE TO WM-STATE(WS-SLOT)
      GOBACK.
  END PROGRAM STRUCT-TPL-STATE.
 

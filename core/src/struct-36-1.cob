@@ -703,6 +703,7 @@
          END-PERFORM
      END-PERFORM
      MOVE 1 TO SD-POSS-DONE
+     ADD 1 TO SD-EPOCH
      GOBACK.
  END PROGRAM STRUCT-POSSIBLE-BUILD.
 
@@ -797,6 +798,7 @@
      CALL "STRUCT-GATE" USING L-KEY WS-FLAG
      IF WS-FLAG = 0 AND SD-GATE-COUNT < SD-MAX-GATE
          ADD 1 TO SD-GATE-COUNT
+         ADD 1 TO SD-EPOCH
          MOVE L-KEY TO SD-GATE(SD-GATE-COUNT)
      END-IF
      GOBACK.
@@ -809,11 +811,12 @@
  COPY STRUCTDATA.
  PROCEDURE DIVISION.
      MOVE 0 TO SD-GATE-COUNT
+     ADD 1 TO SD-EPOCH
      GOBACK.
  END PROGRAM STRUCT-GATE-RESET.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-CHUNK-STARTS.
+ PROGRAM-ID. STRUCT-CHUNK-STARTS-RAW.
 *> USING seed (BINARY-DOUBLE), chunk x, chunk z, count out: 5.2 for each set whose structures the biome source can make, in set order: a set that is not holding a start in this chunk
 *> (isStructureChunk) makes none; else the entries are tried in the chooser's order (STRUCT-ENTRY-ORDER); an entry that is off in the gate or whose stub position fails the biome
 *> check fails and the next is tried; the first that passes is the set's start (SD-START: set, structure, stub x, y 0, z at the chunk's middle). At most one start per set.
@@ -882,6 +885,68 @@
          END-IF
      END-PERFORM
      MOVE SD-START-COUNT TO L-COUNT
+     GOBACK.
+ END PROGRAM STRUCT-CHUNK-STARTS-RAW.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-CHUNK-STARTS.
+*> USING seed (BINARY-DOUBLE), chunk x, chunk z, count out: the starts of the chunk (STRUCT-CHUNK-STARTS-RAW), answered from the start list cache when the chunk was asked for under the same seed,
+*> content and noise generation, structure data epoch (SD-EPOCH: data, gate and possible sets) and test aid of the jigsaw surface. The starts of a chunk are a pure function of those, so a
+*> cached answer is the answer the engine would make (docs/design/world-types.md structures part 8); a chunk of more than SD-CACHE-STARTS starts is never kept. The rows SC-* of the answer are
+*> left in SD-START as the engine leaves them.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ COPY STRUCTJIG.
+ COPY CTWORLDGEN.
+ COPY NOISE.
+ 01 WS-GEN                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SEED L-CX L-CZ L-COUNT.
+     COMPUTE WS-GEN = WG-LOAD-GEN + NZ-GEN
+*>   the slot is the chunk's place in a 64 x 64 chunk tile, so any 64 x 64 chunks (a window of 17 x 17 and the whole area around a player) never share one
+     COMPUTE WS-SX = FUNCTION MOD(L-CX, 64)
+     COMPUTE WS-SZ = FUNCTION MOD(L-CZ, 64)
+     COMPUTE WS-SLOT = WS-SX * 64 + WS-SZ + 1
+     IF SK-USED(WS-SLOT) = 1 AND SK-CX(WS-SLOT) = L-CX AND SK-CZ(WS-SLOT) = L-CZ AND SK-SEED(WS-SLOT) = L-SEED
+        AND SK-GEN(WS-SLOT) = WS-GEN AND SK-EPOCH(WS-SLOT) = SD-EPOCH AND SK-AID(WS-SLOT) = JIG-TEST-SURFACE
+         MOVE SK-N(WS-SLOT) TO SD-START-COUNT L-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SK-N(WS-SLOT)
+             MOVE SK-SET(WS-SLOT, WS-I) TO SC-SET(WS-I)
+             MOVE SK-STRUCT(WS-SLOT, WS-I) TO SC-STRUCT(WS-I)
+             MOVE SK-X(WS-SLOT, WS-I) TO SC-X(WS-I)
+             MOVE SK-Y(WS-SLOT, WS-I) TO SC-Y(WS-I)
+             MOVE SK-Z(WS-SLOT, WS-I) TO SC-Z(WS-I)
+         END-PERFORM
+         ADD 1 TO SD-CACHE-HITS
+         GOBACK
+     END-IF
+     CALL "STRUCT-CHUNK-STARTS-RAW" USING L-SEED L-CX L-CZ L-COUNT
+     ADD 1 TO SD-CACHE-MISSES
+     IF L-COUNT <= SD-CACHE-STARTS
+         MOVE 1 TO SK-USED(WS-SLOT)
+         MOVE L-SEED TO SK-SEED(WS-SLOT)
+         MOVE L-CX TO SK-CX(WS-SLOT)
+         MOVE L-CZ TO SK-CZ(WS-SLOT)
+         MOVE WS-GEN TO SK-GEN(WS-SLOT)
+         MOVE SD-EPOCH TO SK-EPOCH(WS-SLOT)
+         MOVE JIG-TEST-SURFACE TO SK-AID(WS-SLOT)
+         MOVE L-COUNT TO SK-N(WS-SLOT)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+             MOVE SC-SET(WS-I) TO SK-SET(WS-SLOT, WS-I)
+             MOVE SC-STRUCT(WS-I) TO SK-STRUCT(WS-SLOT, WS-I)
+             MOVE SC-X(WS-I) TO SK-X(WS-SLOT, WS-I)
+             MOVE SC-Y(WS-I) TO SK-Y(WS-SLOT, WS-I)
+             MOVE SC-Z(WS-I) TO SK-Z(WS-SLOT, WS-I)
+         END-PERFORM
+     END-IF
      GOBACK.
  END PROGRAM STRUCT-CHUNK-STARTS.
 

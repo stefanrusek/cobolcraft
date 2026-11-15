@@ -714,12 +714,12 @@
  COPY STRUCTTPL.
  COPY CTWORLDGEN.
  COPY NOISE.
- 78 MS-SLOTS               VALUE 6.
+ 78 MS-SLOTS               VALUE 12.
  78 MS-PIECES              VALUE 400.
  78 MS-JUNCS               VALUE 1200.
  01 WS-MEMO.
     05 MS-NEXT             BINARY-LONG VALUE 0.
-    05 MS-REC OCCURS 6 TIMES.
+    05 MS-REC OCCURS 12 TIMES.
        10 MS-USED          BINARY-LONG VALUE 0.
        10 MS-STRUCT        BINARY-LONG.
        10 MS-SEED          BINARY-DOUBLE.
@@ -733,7 +733,7 @@
        10 MS-N             BINARY-LONG.
        10 MS-JN            BINARY-LONG.
  01 WS-PIECES.
-    05 MP-REC OCCURS 2400 TIMES.
+    05 MP-REC OCCURS 4800 TIMES.
        10 MP-EL            BINARY-LONG.
        10 MP-X             BINARY-LONG.
        10 MP-Y             BINARY-LONG.
@@ -744,7 +744,7 @@
        10 MP-AUX           BINARY-LONG.
        10 MP-B             BINARY-LONG OCCURS 6 TIMES.
  01 WS-JUNCS.
-    05 MJ-REC OCCURS 7200 TIMES.
+    05 MJ-REC OCCURS 14400 TIMES.
        10 MJ-OWNER         BINARY-LONG.
        10 MJ-X             BINARY-LONG.
        10 MJ-Y             BINARY-LONG.

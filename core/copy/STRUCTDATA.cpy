@@ -24,6 +24,11 @@
     05 SD-STARTS-SEEN       BINARY-LONG.
     05 SD-GATE-COUNT        BINARY-LONG.
     05 SD-START-COUNT       BINARY-LONG.
+*>  SD-EPOCH changes whenever the data, the gate or the possible sets change (STRUCT-RESET, STRUCT-GATE-ON, STRUCT-GATE-RESET, STRUCT-POSSIBLE-BUILD); the start list cache (SD-SCACHE) is valid
+*>  for one epoch, one world seed and one content and noise generation. SD-CACHE-HITS and SD-CACHE-MISSES count the calls of STRUCT-CHUNK-STARTS answered from it and made by the engine.
+    05 SD-EPOCH             BINARY-LONG.
+    05 SD-CACHE-HITS        BINARY-LONG.
+    05 SD-CACHE-MISSES      BINARY-LONG.
 *>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa) or the shipwreck's is_beached (1 beached) or the ocean ruin's biome_temp (1 warm)
 *>  SDT-LARGE and SDT-CLUSTER the ocean ruin's large_probability and cluster_probability (float32 values)
 *>  SDT-JIG-* the fields of a jigsaw structure (STRUCT-JIG-READ in struct-jig.cob, 36-3 3.1): the start pool, size, absolute start height, heightmap (-1 none, 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), expansion hack, horizontal and vertical distance, padding bottom and top, ignore_waterlogging, and ok (1 when the assembler can build it)
@@ -99,3 +104,22 @@
        10 SC-X              BINARY-LONG.
        10 SC-Y              BINARY-LONG.
        10 SC-Z              BINARY-LONG.
+*>  the start list cache of STRUCT-CHUNK-STARTS: a direct-mapped table keyed by the chunk, SK-N starts of at most SD-CACHE-STARTS (a chunk with more is not kept)
+ 78 SD-CACHE-SLOTS       VALUE 4096.
+ 78 SD-CACHE-STARTS      VALUE 8.
+ 01 STRUCT-START-CACHE EXTERNAL.
+    05 SD-SCACHE OCCURS 4096 TIMES.
+       10 SK-USED           BINARY-LONG.
+       10 SK-SEED           BINARY-DOUBLE.
+       10 SK-CX             BINARY-LONG.
+       10 SK-CZ             BINARY-LONG.
+       10 SK-GEN            BINARY-LONG.
+       10 SK-EPOCH          BINARY-LONG.
+       10 SK-AID            BINARY-LONG.
+       10 SK-N              BINARY-LONG.
+       10 SK-REC OCCURS 8 TIMES.
+          15 SK-SET         BINARY-LONG.
+          15 SK-STRUCT      BINARY-LONG.
+          15 SK-X           BINARY-LONG.
+          15 SK-Y           BINARY-LONG.
+          15 SK-Z           BINARY-LONG.
