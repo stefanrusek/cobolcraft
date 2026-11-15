@@ -226,6 +226,9 @@
      COMPUTE WS-HALF-H = PL-HEIGHT / 2 + 1
 *>   The planes also serve the entity figures (ENTITIES-MESH leaves out those wholly outside the view).
      MOVE WS-WORLD TO RL-CULL-ON
+     IF RL-CULL-DISABLE = 1
+         MOVE 0 TO RL-CULL-ON
+     END-IF
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 12
          MOVE WS-PLANE(WS-P) TO RL-CULL-PLANE(WS-P)
      END-PERFORM
