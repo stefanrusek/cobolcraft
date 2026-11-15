@@ -214,7 +214,7 @@
      CALL "BE-CREATE" USING WS-DIM WS-SX WS-FY WS-SZ WS-BTYPE WS-BKEY WS-BLEN WS-BE3
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "BE-SAVE" USING WS-BE3 WS-FORM PB-BUFFER
-     MOVE "implementation 31-7 3.1: a spawner without a species saves the keys of 31-7 section 3.1 (177 bytes: BEX-SAVE writes the full set, not only the seven shorts)" TO WS-CASE
+     MOVE "implementation 31-7 3.1: a spawner without a species saves the keys of 31-7 3.1 (177 bytes, the full set)" TO WS-CASE
      MOVE 177 TO WS-E
      MOVE PB-LENGTH TO WS-O
      PERFORM CHECK-N
