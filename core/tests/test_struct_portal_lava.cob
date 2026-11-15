@@ -121,15 +121,16 @@
      PERFORM CHECK
      MOVE WS-STAIRS TO CU-STATE
      PERFORM RUN-ONE
-     MOVE "test struct portal lava given a stair, glass, a chest, a plant or a torch over lava when they are processed then they stay (solid and opaque flags: the documented approximation)" TO TL-CASE
+     MOVE "test struct portal lava given a stair or a chest over lava they stay, and glass (not opaque), a plant and a torch (not solid) become lava (solid and opaque flags: the documented approximation)" TO TL-CASE
      MOVE 0 TO WS-FLAG
      MOVE 0 TO WS-I
      IF CU-STATE = WS-STAIRS
          ADD 1 TO WS-I
      END-IF
+*>   Glass does not occlude (T5501: its flags hold noOcclusion), so it is not opaque and the approximation turns it into lava.
      MOVE WS-GLASS TO CU-STATE
      PERFORM RUN-ONE
-     IF CU-STATE = WS-GLASS
+     IF CU-STATE = WS-LAVA
          ADD 1 TO WS-I
      END-IF
      MOVE WS-CHEST TO CU-STATE
@@ -137,14 +138,15 @@
      IF CU-STATE = WS-CHEST
          ADD 1 TO WS-I
      END-IF
+*>   A plant and a torch have no collision (noCollision, now read from the registry's other-settings columns: T5501), so they are not solid and become lava too.
      MOVE WS-GRASS TO CU-STATE
      PERFORM RUN-ONE
-     IF CU-STATE = WS-GRASS
+     IF CU-STATE = WS-LAVA
          ADD 1 TO WS-I
      END-IF
      MOVE WS-TORCH TO CU-STATE
      PERFORM RUN-ONE
-     IF CU-STATE = WS-TORCH
+     IF CU-STATE = WS-LAVA
          ADD 1 TO WS-I
      END-IF
      IF WS-I = 5

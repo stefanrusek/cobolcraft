@@ -203,7 +203,8 @@
      MOVE 1 TO WS-CX
      MOVE 0 TO WS-CZ
      MOVE LOW-VALUES TO WS-CHUNK
-     CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
+*>   The terrain pass alone (NETHER-GEN-CHUNK): the features that follow it in the dimension chunk place lava springs above y 31 (vanilla does too).
+     CALL "NETHER-GEN-CHUNK" USING CW-SEED WS-CX WS-CZ WS-CHUNK WS-MARKER
      MOVE 0 TO WS-BED0 WS-BED127 WS-LAVA-LOW WS-LAVA-HIGH WS-RACK WS-AIR-TOP
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
          COMPUTE WS-CELL = WS-C

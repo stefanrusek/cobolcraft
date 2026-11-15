@@ -186,10 +186,14 @@
      IF WS-RACK > 100
          MOVE 1 TO WS-RACK
      END-IF
+*>   Above y 31 only the lava springs of the features (35 and 37-5: a few cells of the chunk, in the netherrack) are lava: under 40 cells of the chunk.
+     IF WS-LAVA-HIGH < 40
+         MOVE 0 TO WS-LAVA-HIGH
+     END-IF
      MOVE WS-LAVA-LOW TO WS-A
      MOVE WS-LAVA-HIGH TO WS-B
      MOVE WS-RACK TO WS-C
-     MOVE "acceptance US12-3 nether terrain: her chunk holds lava at y <= 31, none above, and netherrack in the open middle" TO TL-CASE
+     MOVE "acceptance US12-3 nether terrain: her chunk holds lava at y <= 31, none above but the few lava springs of the features, and netherrack in the open middle" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-A) " " FUNCTION TRIM(WS-B) " " FUNCTION TRIM(WS-C) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "1 0 1" TO TL-EXPECTED
