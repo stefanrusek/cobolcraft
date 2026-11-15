@@ -10,6 +10,7 @@
  78 FD-MAX-PR            VALUE 4096.
  78 FD-MAX-POOL          VALUE 65536.
  78 FD-MAX-PV            VALUE 2048.
+ 78 FD-MAX-WA            VALUE 128.
  01 FEAT-DATA EXTERNAL.
     05 FD-DIR               PIC X(1100).
     05 FD-GEN               BINARY-LONG.
@@ -22,6 +23,8 @@
     05 FD-PV-COUNT          BINARY-LONG.
     05 FD-BAD               BINARY-LONG.
     05 FD-TR-COUNT          BINARY-LONG.
+    05 FD-BC-COUNT          BINARY-LONG.
+    05 FD-WA-COUNT          BINARY-LONG.
 *>  placed features: PF-STATUS 0 stub (not compiled), 1 compiled, 2 unsupported; the modifiers PF-MD-FIRST on for PF-MD-COUNT; the feature index PF-FT
     05 FD-PF OCCURS 1024 TIMES.
        10 PF-KEY            PIC X(80).
@@ -29,7 +32,7 @@
        10 PF-MD-FIRST       BINARY-LONG.
        10 PF-MD-COUNT       BINARY-LONG.
        10 PF-FT             BINARY-LONG.
-*>  modifiers: MD-KIND, MD-A to MD-D, MD-PR (predicate, second predicate MD-PR2), MD-P twelve provider integers, MD-F a float
+*>  modifiers: MD-KIND, MD-A to MD-D, MD-PR (predicate, second predicate MD-PR2), MD-P twelve provider integers, MD-F and MD-F2 floats
     05 FD-MD OCCURS 8192 TIMES.
        10 MD-KIND           BINARY-LONG.
        10 MD-A              BINARY-LONG.
@@ -40,6 +43,7 @@
        10 MD-PR2            BINARY-LONG.
        10 MD-P              BINARY-LONG OCCURS 12 TIMES.
        10 MD-F              FLOAT-LONG.
+       10 MD-F2             FLOAT-LONG.
 *>  features: FT-TYPE the id of worldgen/feature_type (-1 unsupported); FT-A, FT-B, FT-C parameters (children from CH-ROW FT-A for FT-B rows, FT-C the default placed feature)
     05 FD-FT OCCURS 2048 TIMES.
        10 FT-KEY            PIC X(80).
@@ -71,12 +75,25 @@
        10 PR-CHILD          BINARY-LONG.
        10 PR-NEXT           BINARY-LONG.
     05 FD-POOL              BINARY-LONG OCCURS 65536 TIMES.
-*>  providers: PV-TYPE 1 simple (PV-A the state), 2 weighted (PV-POOL, PV-N pairs state and weight in the pool), 3 random_block (PV-POOL, PV-N block indices); 0 unsupported
+*>  providers: PV-TYPE 1 simple (PV-A the state), 2 weighted (PV-POOL, PV-N pairs state and weight in the pool), 3 random_block (PV-POOL, PV-N block indices), 4 randomized_int (PV-POOL, PV-N the states of the values PV-LO on, PV-IP the int provider of the values); 0 unsupported
     05 FD-PV OCCURS 2048 TIMES.
        10 PV-TYPE           BINARY-LONG.
        10 PV-A              BINARY-LONG.
        10 PV-POOL           BINARY-LONG.
        10 PV-N              BINARY-LONG.
+       10 PV-LO             BINARY-LONG.
+       10 PV-IP.
+          15 PV-IP-V        BINARY-LONG OCCURS 4 TIMES.
+*>      noise providers (core/src/feat-prov-noise.cob): PV-TYPE 6 noise, 7 dual_noise, 8 noise_threshold; PV-H1 the noise handle, PV-F1 its scale; the states PV-POOL, PV-N (the low states of a
+*>      threshold provider); dual_noise PV-H2 the slow noise, PV-F2 its scale, PV-B and PV-C the variety; noise_threshold PV-F2 the threshold, PV-F3 high_chance, PV-A the default state,
+*>      PV-B and PV-C the high states
+       10 PV-B              BINARY-LONG.
+       10 PV-C              BINARY-LONG.
+       10 PV-H1             BINARY-LONG.
+       10 PV-H2             BINARY-LONG.
+       10 PV-F1             FLOAT-LONG.
+       10 PV-F2             FLOAT-LONG.
+       10 PV-F3             FLOAT-LONG.
 *>  tree features (type 51; core/src/feat-tree.cob FD-TREE-NODE and FR-TREE, docs/protocol/35-worldgen-features-3 sections 2 to 5): FT-A of the feature is the row. The trunk is the
 *>  straight placer (base height and the two random heights); the foliage placer TR-FKIND 1 blob, 2 spruce, 3 pine, each int provider four integers like FR-INT-SAMPLE (TR-FH the
 *>  height, TR-RAD the radius, TR-OFF the offset, TR-TH the spruce trunk_height); the size TR-SZ-LIMIT, TR-SZ-LOWER, TR-SZ-UPPER (two layers); the states are default states (the log's
@@ -108,3 +125,92 @@
        10 TR-LOGS-N         BINARY-LONG.
        10 TR-CANT-START     BINARY-LONG.
        10 TR-CANT-N         BINARY-LONG.
+*>     batch 3 (tree types): the trunk placer TR-TKIND (1 straight, 2 fancy, 3 dark oak, 4 giant, 5 mega jungle, 6 forking), the foliage placer TR-FKIND adds 4 acacia, 5 fancy, 6 jungle, 7 mega pine,
+*>     8 dark oak (TR-FH is its height or the crown_height of the mega pine); the size TR-SZ-KIND 0 two layers, 1 three layers (TR-SZ-UPLIM the upper_limit, TR-SZ-MID the middle_size)
+       10 TR-TKIND          BINARY-LONG.
+       10 TR-SZ-KIND        BINARY-LONG.
+       10 TR-SZ-UPLIM       BINARY-LONG.
+       10 TR-SZ-MID         BINARY-LONG.
+       10 TR-LVS-START      BINARY-LONG.
+       10 TR-LVS-N          BINARY-LONG.
+*>     batch 4 (mangrove, 35-3 4.8 and 6): TR-TKIND 7 upwards branching (TR-EBS extra_branch_steps and TR-EBL extra_branch_length are int providers, TR-PROB the branch probability, the
+*>     pool TR-CGT the can_grow_through blocks), TR-MINCLIP the min_clipped_height (-1 absent); the root placer (TR-ROOT 1): TR-TOY the trunk_offset_y provider, the states TR-ROOT-STATE,
+*>     TR-ABOVE-STATE (TR-ABOVE-ON, TR-ABOVE-CHANCE) and TR-MUD-STATE, the pools TR-RCG (root can_grow_through) and TR-MUD (muddy_roots_in), TR-MAXW and TR-MAXL the root width and length
+*>     limits, TR-SKEW the random skew chance
+       10 TR-EBS.
+          15 TR-EBS-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-EBL.
+          15 TR-EBL-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-TOY.
+          15 TR-TOY-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-PROB           FLOAT-LONG.
+       10 TR-ABOVE-CHANCE   FLOAT-LONG.
+       10 TR-SKEW           FLOAT-LONG.
+       10 TR-CGT-START      BINARY-LONG.
+       10 TR-CGT-N          BINARY-LONG.
+       10 TR-MINCLIP        BINARY-LONG.
+       10 TR-ROOT           BINARY-LONG.
+       10 TR-ROOT-STATE     BINARY-LONG.
+       10 TR-ABOVE-ON       BINARY-LONG.
+       10 TR-ABOVE-STATE    BINARY-LONG.
+       10 TR-MUD-STATE      BINARY-LONG.
+       10 TR-RCG-START      BINARY-LONG.
+       10 TR-RCG-N          BINARY-LONG.
+       10 TR-MUD-START      BINARY-LONG.
+       10 TR-MUD-N          BINARY-LONG.
+       10 TR-MAXW           BINARY-LONG.
+       10 TR-MAXL           BINARY-LONG.
+*>     batch 5 (35-3 4.7 bending, 4.9 cherry, 5.2 bush, random spread and cherry foliage): TR-TKIND 8 cherry, 9 bending; TR-FKIND 9 bush, 10 random spread, 11 cherry. TR-MHL the min_height_for_leaves
+*>     and TR-BEND the bend_length provider of the bending trunk; the cherry trunk's providers TR-BC (branch_count), TR-BHL (branch_horizontal_length), TR-BSO (branch_start_offset_from_top, the uniform
+*>     range: a and b of the provider) and TR-BEO (branch_end_offset_from_top); TR-ATTEMPTS the leaf_placement_attempts of the random spread; TR-CF1 to TR-CF4 the cherry foliage chances
+*>     (wide_bottom_layer_hole_chance, corner_hole_chance, hanging_leaves_chance, hanging_leaves_extension_chance)
+       10 TR-MHL            BINARY-LONG.
+       10 TR-ATTEMPTS       BINARY-LONG.
+       10 TR-BEND.
+          15 TR-BEND-V      BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BC.
+          15 TR-BC-V        BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BHL.
+          15 TR-BHL-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BSO.
+          15 TR-BSO-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-BEO.
+          15 TR-BEO-V       BINARY-LONG OCCURS 4 TIMES.
+       10 TR-CF1            FLOAT-LONG.
+       10 TR-CF2            FLOAT-LONG.
+       10 TR-CF3            FLOAT-LONG.
+       10 TR-CF4            FLOAT-LONG.
+*>     batch 6 (decorators): TR-NDEC decorators in TR-DEC(1 ..), the stump decorators of a fallen tree TR-NSDEC from TR-DEC(6); TD-KIND 0 accepted and ignored, 1 attached_to_logs,
+*>     TD-PROB the probability, TD-PV the provider (PV row), TD-ND and TD-DIR the directions (ordinals DOWN 0 UP 1 NORTH 2 SOUTH 3 WEST 4 EAST 5)
+       10 TR-NDEC           BINARY-LONG.
+       10 TR-NSDEC          BINARY-LONG.
+       10 TR-DEC OCCURS 10 TIMES.
+          15 TD-KIND        BINARY-LONG.
+          15 TD-PROB        FLOAT-LONG.
+          15 TD-PV          BINARY-LONG.
+          15 TD-ND          BINARY-LONG.
+          15 TD-DIR         BINARY-LONG OCCURS 6 TIMES.
+*>  block columns (type 2; core/src/feat-column.cob FR-BLOCK-COLUMN, docs/protocol/35-worldgen-features-4 section 5): FT-A of the feature is the row. BC-DIR 1 up or -1 down, BC-TIP prioritize_tip, BC-PR the
+*>  allowed_placement predicate, BC-N layers (at most 4), each with the four integers of its height int provider and the provider index.
+    05 FD-BC OCCURS 128 TIMES.
+       10 BC-DIR            BINARY-LONG.
+       10 BC-TIP            BINARY-LONG.
+       10 BC-PR             BINARY-LONG.
+       10 BC-N              BINARY-LONG.
+       10 BC-LAYER OCCURS 4 TIMES.
+          15 BC-H           BINARY-LONG OCCURS 4 TIMES.
+          15 BC-PV          BINARY-LONG.
+*>  water, surface and underground features (types spring_feature 48, lake 25, disk 10, freeze_top_layer 19 and later families; core/src/feat-spring.cob and its siblings): FT-A of the feature is the
+*>  row. A row has twelve integers WA-I, four pools (WA-START and WA-N: a slice of FD-POOL each), four predicates WA-PR, four providers WA-PV, three int providers WA-IP (four integers each, like
+*>  FR-INT-SAMPLE) and four floats WA-F; each family says in its own header what the fields hold.
+    05 FD-WA OCCURS 128 TIMES.
+       10 WA-I              BINARY-LONG OCCURS 12 TIMES.
+       10 WA-START          BINARY-LONG OCCURS 4 TIMES.
+       10 WA-N              BINARY-LONG OCCURS 4 TIMES.
+       10 WA-PR             BINARY-LONG OCCURS 4 TIMES.
+       10 WA-PV             BINARY-LONG OCCURS 4 TIMES.
+       10 WA-IP OCCURS 3 TIMES.
+          15 WA-IPV         BINARY-LONG OCCURS 4 TIMES.
+       10 WA-F              FLOAT-LONG OCCURS 4 TIMES.
+*>     ten more floats (the float providers of speleothem_cluster: feat-35-6.cob)
+       10 WA-G              FLOAT-LONG OCCURS 10 TIMES.

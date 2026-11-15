@@ -226,6 +226,7 @@
        10 CK-CHANGED         PIC 9.              *> set by a block change (persist on save)
        10 CK-LIT             PIC 9.              *> light computed
        10 CK-FOREIGN         PIC 9.              *> 1: its palette holds a key of another world type (WT-23): void, never saved
+       10 CK-RESEND          PIC 9.              *> 1: overflow of a neighbour was written into this lit chunk, the tick sends it again (OV-FLUSH)
        10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per

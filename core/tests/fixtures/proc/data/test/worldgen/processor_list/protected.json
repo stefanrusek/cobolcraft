@@ -1,0 +1,11 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:protected_blocks",
+   "value": [
+    "minecraft:bedrock",
+    "minecraft:obsidian"
+   ]
+  }
+ ]
+}

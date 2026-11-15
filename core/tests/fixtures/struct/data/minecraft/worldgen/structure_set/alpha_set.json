@@ -1,0 +1,1 @@
+{"placement":{"type":"minecraft:random_spread","spacing":32,"separation":8,"salt":12345,"locate_offset":[4,0,-4]},"structures":[{"structure":"minecraft:s_one","weight":2},{"structure":"minecraft:s_two","weight":1},{"structure":"minecraft:s_three","weight":1}]}

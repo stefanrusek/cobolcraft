@@ -10,7 +10,7 @@
 *>   GEN-BLOCK-STATE USING key (PIC X(48)), state out: the default state of that block of the core's block table, 0 when absent.
 *>   GEN-JOB-START USING job, dimension row, chunk x, chunk z: allocates the chunk memory and the work state.
 *>   GEN-JOB-STEP USING job: runs one step; the job is complete (GJ-ACTIVE 2) after the last.
-*>   GEN-JOB-INSTALL USING job, chunk memory, marker-y out: copies the finished chunk out.
+*>   GEN-JOB-INSTALL USING job, chunk memory, marker-y out: copies the finished chunk out and publishes its overflow (GEN-OVERFLOW, GENOVER.cpy).
 *>   GEN-JOB-FREE USING job: gives the chunk memory back; the job is idle (GJ-ACTIVE 0).
 *>   GEN-JOB-RUN-ALL USING dimension row, chunk x, chunk z, chunk memory, marker-y out: the atomic reference.
 
@@ -154,7 +154,7 @@
      MOVE 0 TO J-SUB
      MOVE 0 TO J-STEPS
      MOVE 0 TO J-G-COUNT
-     MOVE 0 TO J-AQ-READY
+     MOVE 0 TO J-AQ-READY J-OV-COUNT J-OV-LOST J-BE-COUNT J-BE-LOST
      MOVE LOW-VALUES TO J-CV
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
          MOVE -65 TO J-HM-SURFACE(WS-I)
@@ -225,8 +225,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-JOB-INSTALL.
+*> USING job, chunk memory, marker-y out: copies the finished chunk out and publishes the job's overflow in GEN-OVERFLOW (gen-overflow.cob) and its block-entity requests in GEN-BE (gen-be.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY GENOVER.
+ COPY GENBE.
  01 WS-SRC                 PIC X(304640) BASED.
  01 WS-DST                 PIC X(304640) BASED.
  LINKAGE SECTION.
@@ -238,6 +241,8 @@
      SET ADDRESS OF WS-SRC TO J-ADDR
      SET ADDRESS OF WS-DST TO ADDRESS OF L-CHUNK
      MOVE WS-SRC TO WS-DST
+     MOVE J-OV TO GO-DATA
+     MOVE J-BE TO GB-DATA
      MOVE -1 TO L-MARKER-Y
      GOBACK.
  END PROGRAM GEN-JOB-INSTALL.

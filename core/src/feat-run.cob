@@ -27,7 +27,7 @@
  END PROGRAM FR-NEXT-INT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FR-INT-SAMPLE.
+ PROGRAM-ID. FR-INT-SAMPLE IS RECURSIVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -37,6 +37,14 @@
  01 WS-RANGE               BINARY-LONG.
  01 WS-SLOPE               BINARY-LONG.
  01 WS-SIDE                BINARY-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-FA                  FLOAT-LONG.
+ 01 WS-FB                  FLOAT-LONG.
+ 01 WS-FC                  FLOAT-LONG.
+ 01 WS-MILLION             FLOAT-LONG VALUE 1000000.
+ LOCAL-STORAGE SECTION.
+ 01 LS-SOURCE.
+    05 LS-Q                BINARY-LONG OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-P.
@@ -80,6 +88,43 @@
              COMPUTE WS-BOUND = WS-B + 1
              CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
              COMPUTE L-VALUE = L-V(2) + WS-A
+*>       clamped: the source (four integers in the pool from L-V(4)) is sampled with its own draws, then clamped to L-V(2) .. L-V(3)
+         WHEN 7
+             PERFORM VARYING WS-RANGE FROM 1 BY 1 UNTIL WS-RANGE > 4
+                 COMPUTE WS-BOUND = L-V(4) + WS-RANGE - 1
+                 MOVE FD-POOL(WS-BOUND) TO LS-Q(WS-RANGE)
+             END-PERFORM
+             CALL "FR-INT-SAMPLE" USING L-STATE LS-SOURCE L-VALUE
+             IF L-VALUE < L-V(2)
+                 MOVE L-V(2) TO L-VALUE
+             END-IF
+             IF L-VALUE > L-V(3)
+                 MOVE L-V(3) TO L-VALUE
+             END-IF
+*>       clamped_normal: one Gaussian draw, (int) clamp(mean + (float) g * deviation, min, max), every step in single precision (the mean and deviation are pool entries in millionths)
+         WHEN 8
+             CALL "F351-NEXT-GAUSSIAN" USING L-STATE WS-G
+             CALL "FR-F32" USING WS-G
+             MOVE FD-POOL(L-V(4)) TO WS-FA
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FA WS-MILLION WS-FB
+             CALL "FR-F32" USING WS-FB
+             COMPUTE WS-BOUND = L-V(4) + 1
+             MOVE FD-POOL(WS-BOUND) TO WS-FA
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FA WS-MILLION WS-FC
+             CALL "FR-F32" USING WS-FC
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-G WS-FC WS-FA
+             CALL "FR-F32" USING WS-FA
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-FB WS-FA WS-G
+             CALL "FR-F32" USING WS-G
+             MOVE L-V(2) TO WS-FA
+             MOVE L-V(3) TO WS-FB
+             IF WS-G < WS-FA
+                 MOVE WS-FA TO WS-G
+             END-IF
+             IF WS-G > WS-FB
+                 MOVE WS-FB TO WS-G
+             END-IF
+             CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-G L-VALUE
          WHEN OTHER
              IF L-V(4) = 0 AND L-V(3) = 0 - L-V(2)
                  COMPUTE WS-BOUND = L-V(3) + 1
@@ -287,6 +332,22 @@
                      MOVE 1 TO L-RESULT
                  END-IF
              END-IF
+*>       has_sturdy_face: the block at the offset is a full block (opaque; air, water and lava never are)
+         WHEN 4
+             CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+             CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+             IF LS-BLOCK > 0
+                 IF CB-OPAQUE(LS-BLOCK) = 1
+                     MOVE 1 TO L-RESULT
+                 END-IF
+             END-IF
+*>       replaceable: the builder flag of the block at the offset (a cell outside the level reads as air, which is replaceable)
+         WHEN 6
+             CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+             CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+             IF LS-BLOCK > 0
+                 MOVE CB-REPLACEABLE(LS-BLOCK) TO L-RESULT
+             END-IF
          WHEN 8
              IF LS-Y >= FL-MIN-Y AND LS-Y <= FL-MIN-Y + FL-HEIGHT - 1
                  MOVE 1 TO L-RESULT
@@ -310,6 +371,74 @@
              CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
              CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
              CALL "FR-POOL-HAS" USING PR-POOL(L-PRED) PR-N(L-PRED) LS-BLOCK L-RESULT
+*>           sugar cane (24 part 3 7.10.2): sugar cane below, or a block of supports_sugar_cane with water or a block of supports_sugar_cane_adjacently beside it
+             IF PR-A(L-PRED) = 2
+                 MOVE 0 TO L-RESULT
+                 IF LS-BLOCK = PR-E(L-PRED)
+                     MOVE 1 TO L-RESULT
+                 ELSE
+                     CALL "FR-POOL-HAS" USING PR-POOL(L-PRED) PR-N(L-PRED) LS-BLOCK LS-K
+                     PERFORM VARYING LS-DX FROM 0 BY 1 UNTIL LS-DX > 3 OR LS-K = 0 OR L-RESULT = 1
+                         MOVE LS-X TO LS-V
+                         MOVE LS-Z TO LS-R
+                         EVALUATE LS-DX
+                             WHEN 0
+                                 ADD 1 TO LS-V
+                             WHEN 1
+                                 SUBTRACT 1 FROM LS-V
+                             WHEN 2
+                                 ADD 1 TO LS-R
+                             WHEN OTHER
+                                 SUBTRACT 1 FROM LS-R
+                         END-EVALUATE
+                         CALL "FL-GET-STATE" USING LS-V LS-Y LS-R LS-STATE
+                         CALL "FL-CLASS" USING LS-STATE LS-CLASS
+                         CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+                         CALL "FR-POOL-HAS" USING PR-C(L-PRED) PR-D(L-PRED) LS-BLOCK LS-DZ
+                         IF LS-CLASS = 2 OR LS-DZ = 1
+                             MOVE 1 TO L-RESULT
+                         END-IF
+                     END-PERFORM
+                 END-IF
+             END-IF
+*>           cactus (29b part 4 section 4.1): the block below is a cactus or in supports_cactus, no horizontal neighbour is solid or lava, the cell above holds no liquid
+             IF PR-A(L-PRED) = 3
+                 IF PR-E(L-PRED) > 0 AND LS-BLOCK = PR-E(L-PRED)
+                     MOVE 1 TO L-RESULT
+                 END-IF
+                 COMPUTE LS-Y = LS-Y + 1
+                 PERFORM VARYING LS-DX FROM 0 BY 1 UNTIL LS-DX > 3 OR L-RESULT = 0
+                     MOVE LS-X TO LS-V
+                     MOVE LS-Z TO LS-R
+                     EVALUATE LS-DX
+                         WHEN 0
+                             ADD 1 TO LS-V
+                         WHEN 1
+                             SUBTRACT 1 FROM LS-V
+                         WHEN 2
+                             ADD 1 TO LS-R
+                         WHEN OTHER
+                             SUBTRACT 1 FROM LS-R
+                     END-EVALUATE
+                     CALL "FL-GET-STATE" USING LS-V LS-Y LS-R LS-STATE
+                     CALL "FL-CLASS" USING LS-STATE LS-CLASS
+                     CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+                     IF LS-CLASS = 3
+                         MOVE 0 TO L-RESULT
+                     END-IF
+                     IF LS-BLOCK > 0 AND (LS-CLASS = 0 OR LS-CLASS = 4)
+                         IF CB-SOLID(LS-BLOCK) = 1
+                             MOVE 0 TO L-RESULT
+                         END-IF
+                     END-IF
+                 END-PERFORM
+                 COMPUTE LS-Y = LS-Y + 1
+                 CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+                 CALL "FL-CLASS" USING LS-STATE LS-CLASS
+                 IF LS-CLASS = 2 OR LS-CLASS = 3
+                     MOVE 0 TO L-RESULT
+                 END-IF
+             END-IF
          WHEN 11
              CALL "FR-PRED-TEST" USING PR-CHILD(L-PRED) L-X L-Y L-Z LS-R
              COMPUTE L-RESULT = 1 - LS-R
@@ -343,16 +472,22 @@
  END PROGRAM FR-PRED-TEST.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FR-PROV-STATE.
+ PROGRAM-ID. FR-PROV-STATE IS RECURSIVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  COPY CBLOCKS.
+ LOCAL-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
  01 WS-TOTAL               BINARY-LONG.
  01 WS-DRAW                BINARY-LONG.
  01 WS-RUN                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-PR                  BINARY-LONG.
+ 01 WS-PV                  BINARY-LONG.
+ 01 WS-TEST                BINARY-LONG.
+ 01 WS-P4.
+    05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-PV                   BINARY-LONG.
@@ -390,6 +525,37 @@
                  MOVE CB-DEFAULT-STATE(WS-BLOCK) TO L-STATE-OUT
                  MOVE 1 TO L-OK
              END-IF
+*>       rule_based: the first rule whose predicate holds at the position and whose provider gives a state wins, else the fallback provider (a null state when there is none)
+         WHEN 5
+             PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= PV-N(L-PV) OR L-OK = 1
+                 MOVE FD-POOL(PV-POOL(L-PV) + WS-I * 2) TO WS-PR
+                 MOVE FD-POOL(PV-POOL(L-PV) + WS-I * 2 + 1) TO WS-PV
+                 CALL "FR-PRED-TEST" USING WS-PR L-X L-Y L-Z WS-TEST
+                 IF WS-TEST = 1
+                     CALL "FR-PROV-STATE" USING L-STATE WS-PV L-X L-Y L-Z L-STATE-OUT L-OK
+                 END-IF
+             END-PERFORM
+             IF L-OK = 0 AND PV-A(L-PV) > 0
+                 MOVE PV-A(L-PV) TO WS-PV
+                 CALL "FR-PROV-STATE" USING L-STATE WS-PV L-X L-Y L-Z L-STATE-OUT L-OK
+             END-IF
+*>       randomized_int: one sample of the values picks the state resolved when the data was compiled
+         WHEN 4
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 MOVE PV-IP-V(L-PV, WS-I) TO WS-Q(WS-I)
+             END-PERFORM
+             CALL "FR-INT-SAMPLE" USING L-STATE WS-P4 WS-DRAW
+             COMPUTE WS-RUN = WS-DRAW - PV-LO(L-PV)
+             IF WS-RUN >= 0 AND WS-RUN < PV-N(L-PV)
+                 MOVE FD-POOL(PV-POOL(L-PV) + WS-RUN) TO L-STATE-OUT
+                 MOVE 1 TO L-OK
+             END-IF
+*>       the noise providers (feat-prov-noise.cob)
+         WHEN 6
+         WHEN 7
+         WHEN 8
+             CALL "FR-PROV-NOISE" USING L-STATE L-PV L-X L-Y L-Z L-STATE-OUT
+             MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
  END PROGRAM FR-PROV-STATE.
@@ -500,13 +666,21 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-MODIFY.
 *> USING state, modifier index, top placed feature (0 none), x, y, z, count out, positions out (4096 x 3 BINARY-LONG): one placement modifier of the compiled
-*> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8), randomly_selected
+*> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8) are the biome info noise of feat-noise.cob; randomly_selected
 *> (16) and fixed_placement (17) are not compiled.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  COPY FEATLEVEL.
  01 WS-ONCE                BINARY-LONG.
+ 01 WS-REPEAT              BINARY-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-NX                  FLOAT-LONG.
+ 01 WS-NZ                  FLOAT-LONG.
+ 01 WS-NOISE               FLOAT-LONG.
+ 01 WS-RATIO               FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG VALUE 200.
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  01 WS-P6.
@@ -557,7 +731,7 @@
        10 L-OY             BINARY-LONG.
        10 L-OZ             BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-MD L-TOP L-X L-Y L-Z L-COUNT L-OUT.
-     MOVE 0 TO L-COUNT WS-ONCE
+     MOVE 0 TO L-COUNT WS-ONCE WS-REPEAT
      EVALUATE MD-KIND(L-MD)
          WHEN 0
              CALL "FR-PRED-TEST" USING MD-PR(L-MD) L-X L-Y L-Z WS-ONCE
@@ -594,15 +768,32 @@
                  MOVE MD-P(L-MD, WS-I) TO WS-Q(WS-I)
              END-PERFORM
              CALL "FR-INT-SAMPLE" USING L-STATE WS-P4 WS-N
-             IF WS-N > WS-CAP
-                 MOVE WS-CAP TO WS-N
+             MOVE 1 TO WS-REPEAT
+*>       noise_based_count (35-1 7.9): ceil((noise + offset) * ratio) repeats, the noise at (x / factor, z / factor); no draw
+         WHEN 7
+             MOVE L-X TO WS-FX
+             MOVE L-Z TO WS-FZ
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FX MD-F(L-MD) WS-NX
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FZ MD-F(L-MD) WS-NZ
+             CALL "F351-SIMPLEX" USING WS-NX WS-NZ WS-NOISE
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-NOISE MD-F2(L-MD) WS-T
+             MOVE MD-A(L-MD) TO WS-RATIO
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-T WS-RATIO WS-U
+             CALL STATIC "cc_f64_ceil" USING BY REFERENCE WS-U WS-T
+             CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-T WS-N
+             MOVE 1 TO WS-REPEAT
+*>       noise_threshold_count (35-1 7.10): below_noise when the noise at (x / 200, z / 200) is below noise_level, else above_noise; no draw
+         WHEN 8
+             MOVE L-X TO WS-FX
+             MOVE L-Z TO WS-FZ
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FX WS-SCALE WS-NX
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-FZ WS-SCALE WS-NZ
+             CALL "F351-SIMPLEX" USING WS-NX WS-NZ WS-NOISE
+             MOVE MD-B(L-MD) TO WS-N
+             IF WS-NOISE < MD-F(L-MD)
+                 MOVE MD-A(L-MD) TO WS-N
              END-IF
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-                 ADD 1 TO L-COUNT
-                 MOVE L-X TO L-OX(L-COUNT)
-                 MOVE L-Y TO L-OY(L-COUNT)
-                 MOVE L-Z TO L-OZ(L-COUNT)
-             END-PERFORM
+             MOVE 1 TO WS-REPEAT
          WHEN 9
              MOVE 0 TO WS-LAYER WS-STOP
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
@@ -762,6 +953,18 @@
              COMPUTE L-OY(1) = L-Y + WS-DY
              COMPUTE L-OZ(1) = L-Z + WS-DZ
      END-EVALUATE
+*>   the repeating counts: N positions, at most WS-CAP
+     IF WS-REPEAT = 1
+         IF WS-N > WS-CAP
+             MOVE WS-CAP TO WS-N
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             ADD 1 TO L-COUNT
+             MOVE L-X TO L-OX(L-COUNT)
+             MOVE L-Y TO L-OY(L-COUNT)
+             MOVE L-Z TO L-OZ(L-COUNT)
+         END-PERFORM
+     END-IF
      IF WS-ONCE = 1
          ADD 1 TO L-COUNT
          MOVE L-X TO L-OX(L-COUNT)
@@ -892,8 +1095,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-PLACE-FT IS RECURSIVE.
-*> USING state, feature index, x, y, z, result out (1 or 0): the leaf and combinator features of 35-1 section 9 and simple_block (35-4 section 4, with canSurvive
-*> approximated by "a block that is not air lies below"). A feature type that is not compiled places nothing and returns false.
+*> USING state, feature index, x, y, z, result out (1 or 0): the leaf and combinator features of 35-1 section 9 and simple_block (35-4 section 4, FR-SIMPLE-BLOCK). A feature type that is not compiled places nothing and returns false.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -906,13 +1108,9 @@
  01 LS-U                   FLOAT-LONG.
  01 LS-STATE               BINARY-LONG.
  01 LS-OK                  BINARY-LONG.
- 01 LS-YB                  BINARY-LONG.
- 01 LS-CLASS               BINARY-LONG.
  01 LS-TOTAL               BINARY-LONG.
  01 LS-DRAW                BINARY-LONG.
  01 LS-RUN                 BINARY-LONG.
- 01 LS-B                   BINARY-LONG.
- 01 LS-FLAGS               BINARY-LONG VALUE 2.
  01 LS-ZERO                BINARY-LONG VALUE 0.
  01 LS-CH                  BINARY-LONG.
  01 LS-PFX                BINARY-LONG.
@@ -927,6 +1125,10 @@
      MOVE 0 TO L-RESULT
      CALL "FD-ENSURE-FT" USING L-FT
      EVALUATE FT-TYPE(L-FT)
+         WHEN 2
+             CALL "FR-BLOCK-COLUMN" USING L-STATE FT-A(L-FT) L-X L-Y L-Z L-RESULT
+         WHEN 54
+             CALL "FR-VINES" USING L-X L-Y L-Z L-RESULT
          WHEN 30
              MOVE 1 TO L-RESULT
          WHEN 36
@@ -962,6 +1164,31 @@
              CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CH) LS-ZERO L-X L-Y L-Z L-RESULT
          WHEN 51
              CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 16
+             CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 10
+             CALL "FR-DISK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 19
+             CALL "FR-FREEZE" USING L-FT L-X L-Z L-RESULT
+         WHEN 25
+             CALL "FR-LAKE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 48
+             CALL "FR-SPRING" USING L-FT L-X L-Y L-Z L-RESULT
+         WHEN 27
+             CALL "FR-ROOM" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 53
+         WHEN 56
+             CALL "FR-VPATCH" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 40
+             CALL "FR-SCULK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 28
+             CALL "FR-MULTI" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 46
+             CALL "FR-CLUSTER" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 45
+             CALL "FR-SPEL" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 1000
+             CALL "FR-BAMBOO" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57
              MOVE 0 TO LS-TOTAL
              PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT)
@@ -989,13 +1216,7 @@
          WHEN 42
              CALL "FR-PROV-STATE" USING L-STATE FT-A(L-FT) L-X L-Y L-Z LS-STATE LS-OK
              IF LS-OK = 1
-                 COMPUTE LS-YB = L-Y - 1
-                 CALL "FL-GET-STATE" USING L-X LS-YB L-Z LS-B
-                 CALL "FL-CLASS" USING LS-B LS-CLASS
-                 IF LS-CLASS NOT = 1 AND LS-YB >= FL-MIN-Y
-                     CALL "FL-SET-STATE" USING L-X L-Y L-Z LS-STATE LS-FLAGS LS-OK
-                     MOVE 1 TO L-RESULT
-                 END-IF
+                 CALL "FR-SIMPLE-BLOCK" USING LS-STATE L-X L-Y L-Z L-RESULT
              END-IF
      END-EVALUATE
      GOBACK.

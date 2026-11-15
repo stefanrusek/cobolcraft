@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:chest",
+ "pools": [
+  {"rolls": 1, "entries": [{"type": "minecraft:item", "name": "cobolcraft:grit", "modifier": {"type": "minecraft:set_count", "count": 10}}]},
+  {"rolls": 1, "entries": [{"type": "minecraft:item", "name": "cobolcraft:loam"}]}
+ ]
+}

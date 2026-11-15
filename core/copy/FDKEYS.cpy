@@ -47,3 +47,36 @@
  01 FK-MIN-INC-X      PIC X(40) VALUE "min_inclusive".
  01 FK-PROPERTIES-UC  PIC X(40) VALUE "Properties".
  01 FK-DISTRIBUTION   PIC X(40) VALUE "distribution".
+ 01 FK-RATIO          PIC X(40) VALUE "noise_to_count_ratio".
+ 01 FK-FACTOR         PIC X(40) VALUE "noise_factor".
+ 01 FK-NOISE-OFFSET   PIC X(40) VALUE "noise_offset".
+ 01 FK-NOISE-LEVEL    PIC X(40) VALUE "noise_level".
+ 01 FK-BELOW-NOISE    PIC X(40) VALUE "below_noise".
+ 01 FK-ABOVE-NOISE    PIC X(40) VALUE "above_noise".
+ 01 FK-DIR            PIC X(40) VALUE "direction".
+ 01 FK-ALLOWED-PLACE  PIC X(40) VALUE "allowed_placement".
+ 01 FK-PRIORITIZE     PIC X(40) VALUE "prioritize_tip".
+ 01 FK-LAYERS         PIC X(40) VALUE "layers".
+ 01 FK-PROVIDER       PIC X(40) VALUE "provider".
+ 01 FK-SOURCE         PIC X(40) VALUE "source".
+ 01 FK-PROPERTY       PIC X(40) VALUE "property".
+ 01 FK-VALUES         PIC X(40) VALUE "values".
+ 01 FK-VALID-BLOCKS   PIC X(40) VALUE "valid_blocks".
+ 01 FK-REQUIRES-BELOW PIC X(40) VALUE "requires_block_below".
+ 01 FK-ROCK-COUNT     PIC X(40) VALUE "rock_count".
+ 01 FK-HOLE-COUNT     PIC X(40) VALUE "hole_count".
+ 01 FK-FLUID          PIC X(40) VALUE "fluid".
+ 01 FK-BARRIER        PIC X(40) VALUE "barrier".
+ 01 FK-CAN-PLACE      PIC X(40) VALUE "can_place_feature".
+ 01 FK-CAN-REPLACE-AF PIC X(40) VALUE "can_replace_with_air_or_fluid".
+ 01 FK-CAN-REPLACE-B  PIC X(40) VALUE "can_replace_with_barrier".
+ 01 FK-STATE-PROVIDER PIC X(40) VALUE "state_provider".
+ 01 FK-RADIUS         PIC X(40) VALUE "radius".
+ 01 FK-HALF-HEIGHT    PIC X(40) VALUE "half_height".
+ 01 FK-RULES          PIC X(40) VALUE "rules".
+ 01 FK-IF-TRUE        PIC X(40) VALUE "if_true".
+ 01 FK-THEN           PIC X(40) VALUE "then".
+ 01 FK-FALLBACK       PIC X(40) VALUE "fallback".
+ 01 FK-DISK-TARGET    PIC X(40) VALUE "target".
+ 01 FK-MEAN           PIC X(40) VALUE "mean".
+ 01 FK-DEVIATION      PIC X(40) VALUE "deviation".

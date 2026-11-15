@@ -20,7 +20,7 @@
 *>   BE-STATE-MAKE USING block id, direction, chest type, flag, state out
 *>   BE-FIND USING dim, x, y, z, index out                         the live entity at a position (0 none)
 *>   BE-MARK-CHUNK USING index                                     setChanged: the entity and its chunk are unsaved
-*>   BE-DROP-CONTENTS USING index                                  Containers.dropContents: every stack becomes a ground item
+*>   BE-DROP-CONTENTS USING index                                  Containers.dropContents: a loot table is rolled first (BE-LOOT-FILL), then every stack becomes a ground item
 *>   BE-PARTNER-SET USING dim, x, y, z, state                      the neighbour update of a double chest half (no recursion into BE-BLOCK-SET)
 *>   BE-BLOCK-SET USING dim, x, y, z, old state, new state         creates and removes the entity with the block
 *>   BE-PLACE-STATE USING connection id, PLAY-SERVERBOUND, dim, x, y, z, state in and out    the placed state of the chest family
@@ -382,9 +382,11 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
+     CALL "BE-LOOT-FILL" USING L-INDEX WS-NO-PLAYER
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 27
          IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
              MOVE BE-SLOT-ITEM(L-INDEX, WS-S) TO WS-ITEM

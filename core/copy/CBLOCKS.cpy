@@ -6,6 +6,7 @@
 *> Derived from a content row (24 part 1 section 2; the rules are in block-props.cob):
 *>   CB-SOLID    1 unless the flags hold noCollision or air.
 *>   CB-OPAQUE   0 when the flags hold noOcclusion, noCollision or air, else 1 (until the light engine of 32).
+*>   CB-REPLACEABLE 1 when the flags hold replaceable (24 part 1 section 10.1: BlockState.canBeReplaced, the ReplaceablePredicate of world generation).
 *>   CB-BREAK-MS the hardness in milliseconds (hardness x 1000, rounded; -1 for a negative hardness = unbreakable; 0 none).
 *>   CB-CLASS    tool class from the block tags: 1 minecraft:mineable/pickaxe, 2 minecraft:mineable/shovel, else 0.
 *>   CB-TOOL-REQ 1 when the row's "tool req." column is yes (13 section 2.6 "Req"); CB-NEED-TIER 3, 2 or 1 when the block is in
@@ -33,6 +34,7 @@
        10 CB-FIRST-STATE     BINARY-LONG.
        10 CB-STATES          BINARY-LONG.
        10 CB-DEFAULT-STATE   BINARY-LONG.
+       10 CB-REPLACEABLE     BINARY-LONG.
     05 CB-STATE OCCURS 40000 TIMES.
        10 CB-S-BLOCK         BINARY-SHORT UNSIGNED.
        10 CB-S-LIGHT         BINARY-CHAR UNSIGNED.
@@ -66,7 +68,7 @@
     05 CR-SLAG               BINARY-LONG.
 
 *> The biomes of the open set (registry minecraft:worldgen/biome), read by BLOCKS-OPEN from the entries' payloads: the key
-*> (with namespace) and has_precipitation of each biome id (index = id + 1).
+*> (with namespace), has_precipitation, the base temperature (a float widened to a double) and whether the temperature modifier is "frozen" of each biome id (index = id + 1).
  78 CBI-MAX                VALUE 128.
  01 CORE-BIOMES EXTERNAL.
     05 CBI-COUNT             BINARY-LONG.
@@ -74,3 +76,5 @@
        10 CBI-KEY            PIC X(48).
        10 CBI-KEY-LENGTH     BINARY-LONG.
        10 CBI-PRECIPITATION  BINARY-LONG.
+       10 CBI-TEMPERATURE    FLOAT-LONG.
+       10 CBI-FROZEN         BINARY-LONG.

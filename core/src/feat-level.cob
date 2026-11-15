@@ -5,9 +5,10 @@
 *>   FL-OPEN USING chunk address (POINTER), chunk x, chunk z, min y, height, sea level (BINARY-LONG)
 *>   FL-CLOSE
 *>   FL-GET-STATE USING x, y, z (block coordinates), state out (BINARY-LONG): air (FL-S-AIR) outside the chunk's column, void_air outside the build height
-*>   FL-SET-STATE USING x, y, z, state, flags, ok out: 1 written (or a y outside the build height, discarded silently as in 4.1 item 3), 0 outside the chunk's column
+*>   FL-SET-STATE USING x, y, z, state, flags, ok out: 1 written (or a y outside the build height, discarded silently as in 4.1 item 3), 0 outside the chunk's column (counted, and recorded in the overflow list FL-OV-* when y is inside the build height: GENOVER.cpy)
 *>   FL-CLASS USING state, class out: 1 air (air, cave air, void air), 2 water, 3 lava, 4 bedrock, 0 any other block
-*>   FL-HEIGHT-OF USING heightmap ordinal (0 to 5, section 4.2), x, z, height out: the first free y over the highest qualifying block, min y for none
+*>   FL-HEIGHT-OF USING heightmap ordinal (0 to 5, section 4.2), x, z, height out: the first free y over the highest qualifying block, min y for none; remembered per column and kind
+*>     (FL-HT of FEATLEVEL.cpy) until a write of FL-SET-STATE into the column or the next FL-OPEN, so a repeated query costs no scan
 *>   FL-BIOME-AT USING x, y, z, biome key out (PIC X(40))
 *>   FL-BLOCK-OF USING state, block index out (the number in CORE-BLOCKS)
 
@@ -18,6 +19,7 @@
  COPY FEATLEVEL.
  COPY CBLOCKS.
  01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-FULL                PIC X(48).
  LINKAGE SECTION.
  01 L-ADDR                 USAGE POINTER.
@@ -33,7 +35,12 @@
      MOVE L-MIN-Y TO FL-MIN-Y
      MOVE L-HEIGHT TO FL-HEIGHT
      MOVE L-SEA TO FL-SEA
-     MOVE 0 TO FL-DISCARDED FL-WRITES
+     MOVE 0 TO FL-DISCARDED FL-WRITES FL-OV-COUNT FL-OV-LOST FL-SCANS
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+             MOVE FL-HT-NONE TO FL-HT(WS-K, WS-I)
+         END-PERFORM
+     END-PERFORM
      IF FL-EPOCH NOT = CB-EPOCH + 1
          MOVE 0 TO FL-B-AIR FL-B-CAVE-AIR FL-B-VOID-AIR FL-B-WATER FL-B-LAVA FL-B-BEDROCK FL-S-AIR FL-S-VOID-AIR
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
@@ -156,6 +163,8 @@
  01 WS-LX                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
+ 01 WS-COL                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -174,9 +183,25 @@
              COMPUTE WS-INDEX = (L-Y - FL-MIN-Y) * 256 + WS-LZ * 16 + WS-LX + 1
              MOVE L-STATE TO CE-STATE(WS-INDEX)
              ADD 1 TO FL-WRITES
+*>           the heightmap answers of the column are stale
+             COMPUTE WS-COL = WS-LZ * 16 + WS-LX + 1
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                 MOVE FL-HT-NONE TO FL-HT(WS-K, WS-COL)
+             END-PERFORM
          END-IF
      ELSE
          ADD 1 TO FL-DISCARDED
+         IF L-Y >= FL-MIN-Y AND L-Y <= FL-MIN-Y + FL-HEIGHT - 1
+             IF FL-OV-COUNT < 1024
+                 ADD 1 TO FL-OV-COUNT
+                 MOVE L-X TO FL-OV-X(FL-OV-COUNT)
+                 MOVE L-Y TO FL-OV-Y(FL-OV-COUNT)
+                 MOVE L-Z TO FL-OV-Z(FL-OV-COUNT)
+                 MOVE L-STATE TO FL-OV-STATE(FL-OV-COUNT)
+             ELSE
+                 ADD 1 TO FL-OV-LOST
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM FL-SET-STATE.
@@ -198,6 +223,8 @@
  01 WS-LEN                 BINARY-LONG.
  01 WS-CLASS               BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-COL                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ORDINAL              BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -208,66 +235,81 @@
      COMPUTE WS-LX = L-X - FL-CX * 16
      COMPUTE WS-LZ = L-Z - FL-CZ * 16
      IF WS-LX >= 0 AND WS-LX <= 15 AND WS-LZ >= 0 AND WS-LZ <= 15
+*>       the answer of an earlier scan of the column, when no write into it came since (any ordinal outside 0 to 5 acts as 5 below)
+         COMPUTE WS-COL = WS-LZ * 16 + WS-LX + 1
+         MOVE L-ORDINAL TO WS-K
+         IF WS-K < 0 OR WS-K > 5
+             MOVE 5 TO WS-K
+         END-IF
+         ADD 1 TO WS-K
+         IF FL-HT(WS-K, WS-COL) NOT = FL-HT-NONE
+             MOVE FL-HT(WS-K, WS-COL) TO L-HEIGHT
+             GOBACK
+         END-IF
+         ADD 1 TO FL-SCANS
          SET ADDRESS OF CE-CHUNK TO FL-ADDR
          MOVE 0 TO WS-PASS
          COMPUTE WS-TOP = FL-MIN-Y + FL-HEIGHT - 1
          PERFORM VARYING WS-Y FROM WS-TOP BY -1 UNTIL WS-Y < FL-MIN-Y OR WS-PASS = 1
              COMPUTE WS-INDEX = (WS-Y - FL-MIN-Y) * 256 + WS-LZ * 16 + WS-LX + 1
-             MOVE CE-STATE(WS-INDEX) TO WS-STATE
-             CALL "FL-CLASS" USING WS-STATE WS-CLASS
-             CALL "FL-BLOCK-OF" USING WS-STATE WS-B
-             EVALUATE L-ORDINAL
-                 WHEN 0
-                 WHEN 1
-                     IF WS-CLASS NOT = 1
-                         MOVE 1 TO WS-PASS
-                     END-IF
-                 WHEN 2
-                 WHEN 3
-                     IF WS-B > 0 AND WS-CLASS NOT = 1 AND CB-SOLID(WS-B) = 1
-                         MOVE 1 TO WS-PASS
-                     END-IF
-                 WHEN 4
-                     IF WS-CLASS = 2 OR WS-CLASS = 3 OR (WS-B > 0 AND WS-CLASS NOT = 1 AND CB-SOLID(WS-B) = 1)
-                         MOVE 1 TO WS-PASS
-                     END-IF
-                 WHEN OTHER
-                     IF WS-CLASS = 2 OR WS-CLASS = 3
-                         MOVE 1 TO WS-PASS
-                     END-IF
-                     IF WS-PASS = 0 AND WS-B > 0 AND WS-CLASS NOT = 1 AND CB-SOLID(WS-B) = 1
-                         MOVE CB-KEY-LENGTH(WS-B) TO WS-LEN
-                         IF WS-LEN < 7 OR CB-KEY(WS-B)(WS-LEN - 6:7) NOT = "_leaves"
+*>           plain air never qualifies for any kind: most cells over the ground are skipped by one comparison
+             IF CE-STATE(WS-INDEX) NOT = FL-S-AIR
+                 MOVE CE-STATE(WS-INDEX) TO WS-STATE
+                 CALL "FL-CLASS" USING WS-STATE WS-CLASS
+                 CALL "FL-BLOCK-OF" USING WS-STATE WS-B
+                 EVALUATE L-ORDINAL
+                     WHEN 0
+                     WHEN 1
+                         IF WS-CLASS NOT = 1
                              MOVE 1 TO WS-PASS
                          END-IF
-                     END-IF
-             END-EVALUATE
-             IF WS-PASS = 1
-                 COMPUTE L-HEIGHT = WS-Y + 1
+                     WHEN 2
+                     WHEN 3
+                         IF WS-B > 0 AND WS-CLASS NOT = 1 AND CB-SOLID(WS-B) = 1
+                             MOVE 1 TO WS-PASS
+                         END-IF
+                     WHEN 4
+                         IF WS-CLASS = 2 OR WS-CLASS = 3 OR (WS-B > 0 AND WS-CLASS NOT = 1 AND CB-SOLID(WS-B) = 1)
+                             MOVE 1 TO WS-PASS
+                         END-IF
+                     WHEN OTHER
+                         IF WS-CLASS = 2 OR WS-CLASS = 3
+                             MOVE 1 TO WS-PASS
+                         END-IF
+                         IF WS-PASS = 0 AND WS-B > 0 AND WS-CLASS NOT = 1 AND CB-SOLID(WS-B) = 1
+                             MOVE CB-KEY-LENGTH(WS-B) TO WS-LEN
+                             IF WS-LEN < 7 OR CB-KEY(WS-B)(WS-LEN - 6:7) NOT = "_leaves"
+                                 MOVE 1 TO WS-PASS
+                             END-IF
+                         END-IF
+                 END-EVALUATE
+                 IF WS-PASS = 1
+                     COMPUTE L-HEIGHT = WS-Y + 1
+                 END-IF
              END-IF
          END-PERFORM
+         MOVE L-HEIGHT TO FL-HT(WS-K, WS-COL)
      END-IF
      GOBACK.
  END PROGRAM FL-HEIGHT-OF.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FL-BIOME-AT.
+ PROGRAM-ID. FL-BIOME-ID.
+*> USING x, y, z, biome id out: the id (0-based, the index into CORE-BIOMES minus one) of the biome cell at the position (a position outside the chunk's column or the build height takes the nearest cell).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATLEVEL.
- COPY CBLOCKS.
  COPY CELLS.
  01 WS-LX                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
  01 WS-LY                  BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
- 01 WS-ID                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- 01 L-BIOME                PIC X(40).
- PROCEDURE DIVISION USING L-X L-Y L-Z L-BIOME.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-ID.
      COMPUTE WS-LX = L-X - FL-CX * 16
      COMPUTE WS-LZ = L-Z - FL-CZ * 16
      IF WS-LX < 0
@@ -291,7 +333,23 @@
      END-IF
      SET ADDRESS OF CE-CHUNK TO FL-ADDR
      COMPUTE WS-INDEX = FUNCTION INTEGER(WS-LY / 16) * 64 + FUNCTION MOD(FUNCTION INTEGER(WS-LY / 4), 4) * 16 + FUNCTION INTEGER(WS-LZ / 4) * 4 + FUNCTION INTEGER(WS-LX / 4) + 1
-     MOVE CE-BIOME(WS-INDEX) TO WS-ID
+     MOVE CE-BIOME(WS-INDEX) TO L-ID
+     GOBACK.
+ END PROGRAM FL-BIOME-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-BIOME-AT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BIOME                PIC X(40).
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-BIOME.
+     CALL "FL-BIOME-ID" USING L-X L-Y L-Z WS-ID
      MOVE SPACES TO L-BIOME
      IF WS-ID < CBI-COUNT
          MOVE CBI-KEY(WS-ID + 1) TO L-BIOME

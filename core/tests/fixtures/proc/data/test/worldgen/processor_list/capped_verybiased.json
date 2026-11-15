@@ -1,0 +1,27 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:capped",
+   "limit": {
+    "type": "minecraft:very_biased_to_bottom",
+    "min_inclusive": 0,
+    "max_inclusive": 10
+   },
+   "delegate": {
+    "processor_type": "minecraft:rule",
+    "rules": [
+     {
+      "input_predicate": {
+       "predicate_type": "minecraft:block_match",
+       "block": "minecraft:stone"
+      },
+      "location_predicate": {
+       "predicate_type": "minecraft:always_true"
+      },
+      "output_state": "minecraft:cobblestone"
+     }
+    ]
+   }
+  }
+ ]
+}

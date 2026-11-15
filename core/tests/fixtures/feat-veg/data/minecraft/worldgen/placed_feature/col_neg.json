@@ -1,0 +1,26 @@
+{
+ "feature": {
+  "type": "minecraft:block_column",
+  "allowed_placement": {
+   "type": "minecraft:matching_block_tag",
+   "tag": "minecraft:air"
+  },
+  "direction": "up",
+  "layers": [
+   {
+    "height": -1,
+    "provider": {
+     "id": "minecraft:glass"
+    }
+   },
+   {
+    "height": 2,
+    "provider": {
+     "id": "minecraft:glass"
+    }
+   }
+  ],
+  "prioritize_tip": false
+ },
+ "placement": []
+}

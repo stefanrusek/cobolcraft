@@ -58,3 +58,24 @@
 *>  "1" marked, LOW-VALUES not; index (y + 63) + (z + 16 * x) * 376 + 1
     05 GJ-CV.
        10 GJ-CV-MASK        PIC X OCCURS 96256 TIMES.
+*>  the overflow of the feature stage (GENOVER.cpy, gen-overflow.cob): the blocks the features wrote outside the chunk, in order, at most 1024; GJ-OV-LOST counts the rest
+    05 GJ-OV.
+       10 GJ-OV-COUNT       BINARY-LONG.
+       10 GJ-OV-LOST        BINARY-LONG.
+       10 GJ-OV-ENTRY OCCURS 1024 TIMES.
+          15 GJ-OV-X        BINARY-LONG.
+          15 GJ-OV-Y        BINARY-LONG.
+          15 GJ-OV-Z        BINARY-LONG.
+          15 GJ-OV-STATE    BINARY-LONG.
+*>  the block-entity requests of the structures placed in the chunk (GENBE.cpy, gen-be.cob): at most 64, GJ-BE-LOST counts the rest
+    05 GJ-BE.
+       10 GJ-BE-COUNT       BINARY-LONG.
+       10 GJ-BE-LOST        BINARY-LONG.
+       10 GJ-BE-ENTRY OCCURS 64 TIMES.
+          15 GJ-BE-X        BINARY-LONG.
+          15 GJ-BE-Y        BINARY-LONG.
+          15 GJ-BE-Z        BINARY-LONG.
+          15 GJ-BE-KIND     BINARY-LONG.
+          15 GJ-BE-SEED     BINARY-DOUBLE.
+          15 GJ-BE-LOOT     PIC X(48).
+          15 GJ-BE-TEXT     PIC X(32).

@@ -1,7 +1,7 @@
 *> The feature stage of the chunk generation (docs/protocol/35-worldgen-features-1 section 6; core/src/gen-job.cob stage GJ-STAGE-FEATURES): step GJ-SUB (0 to 10) is the
 *> decoration step of that number for the chunk being generated: the placed features of the biomes present in the chunk, in the order of the feature index of the step, each
 *> seeded with decorationSeed + index + 10000 * step (5.1) and placed at the chunk's origin (16 cx, min y, 16 cz) through the level of feat-level.cob.
-*> Deviations (the lane's notes): only the origins of this chunk are decorated and only blocks inside it are written (the 3 x 3 window of 4.1 is the chunk); the feature index
+*> Deviations (the lane's notes): only the origins of this chunk are decorated and only blocks inside it are written, the others are kept as overflow for the neighbour chunk (gen-overflow.cob; the 3 x 3 window of 4.1 is the chunk); the feature index
 *> of a placed feature in a step is its position in the list of the step over the loaded biomes in table order, without repeats (the global sort of 11 section 6.2 is not tabulated:
 *> open question 14 of 35-1). A world without loaded biomes with feature lists runs no feature.
 *>
@@ -87,6 +87,7 @@
  01 WS-TOP                 BINARY-LONG.
  01 WS-INDEX0              BINARY-LONG.
  01 WS-HAVE                BINARY-LONG.
+ 01 WS-GATE                BINARY-LONG.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
  01 WS-HEIGHT              BINARY-LONG VALUE 384.
  01 WS-SEA                 BINARY-LONG VALUE 63.
@@ -95,6 +96,8 @@
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
  PROCEDURE DIVISION USING L-JOB.
      ADD 1 TO GS-FEATURE
+*>   structure starts (36-1 section 5): a no-op while no structure is gated on (struct-36-1.cob)
+     CALL "STRUCT-STAGE-HOOK" USING L-JOB
      IF CV-READY NOT = 1 OR J-SUB > 10
          GOBACK
      END-IF
@@ -140,7 +143,8 @@
                          MOVE WGN-TEXT-1(WS-NODE)(1:80) TO WS-KEY
                          PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > FI-COUNT(WS-K)
                              IF FI-KEY(WS-K, WS-J) = WS-KEY
-                                 IF FI-ONLY NOT = 1 OR WS-KEY(1:16) = "minecraft:trees_"
+                                 CALL "FR-GATE" USING WS-KEY WS-GATE
+                                 IF WS-GATE = 1
                                      MOVE 1 TO WS-WANT-FLAG(WS-J)
                                      MOVE 1 TO WS-HAVE
                                  END-IF
@@ -158,6 +162,8 @@
      COMPUTE WS-BX = J-CX * 16
      COMPUTE WS-BZ = J-CZ * 16
      CALL "FL-OPEN" USING J-ADDR J-CX J-CZ WS-MIN-Y WS-HEIGHT WS-SEA
+*>   the spare of the Gaussian source (35-1 section 5.3) does not carry over from the chunk generated before in this process
+     CALL "F351-GAUSSIAN-RESET"
      CALL "ORE-DECOR-SEED" USING CV-SEED WS-BX WS-BZ WS-XR WS-DECOR
      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > FI-COUNT(WS-K)
          IF WS-WANT-FLAG(WS-J) = 1
@@ -171,6 +177,8 @@
              END-IF
          END-IF
      END-PERFORM
+     CALL "OV-KEEP" USING L-JOB
+     CALL "GBE-KEEP" USING L-JOB
      CALL "FL-CLOSE"
      GOBACK.
  END PROGRAM GEN-STAGE-FEATURES.

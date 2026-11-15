@@ -1,0 +1,188 @@
+*> Implementation test of the worldgen block-entity channel (GENBE.cpy, core/src/gen-be.cob): requests are appended bounded (64, the rest counted), handed to the job bounded, and applied to an
+*> installed chunk through BE-BLOCK-SET: a chest gets its loot table and seed (rolled at the first open), a spawner its entity id as the SpawnData key kept with the entity's extra keys, a
+*> request whose position holds no block with an entity makes none.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GEN-BE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ COPY BESTATE.
+ COPY EXTRAS.
+ COPY GENBE.
+ COPY GENQUEUE.
+ 01 WS-ANSWER              PIC X(327700) BASED.
+ 01 WS-CHUNK-OUT           PIC X(304640).
+ 01 WS-MARKER              BINARY-LONG.
+ 01 WS-TAKEN               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 WS-PTR                 USAGE POINTER.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-LOOT                PIC X(48).
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-CHEST               BINARY-LONG.
+ 01 WS-SPAWNER             BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-INDEX2              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 3.
+ 01 WS-ROW                 BINARY-LONG VALUE 5.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-LIT-1               BINARY-LONG.
+ 01 WS-LIT-2               BINARY-LONG.
+ 01 WS-LIT-3               BINARY-LONG.
+ 01 WS-LIT-4               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "standard" TO CS-WORLD-TYPE
+     MOVE "content/tests/fixtures/std" TO CS-GENERATED-DIR
+     MOVE "12345" TO CS-SEED-TEXT
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 0 TO GBL-COUNT GBL-LOST J-BE-COUNT J-BE-LOST GB-COUNT GB-LOST
+
+*>   the level's list is bounded
+     MOVE "minecraft:chests/abandoned_mineshaft" TO WS-LOOT
+     MOVE SPACES TO WS-TEXT
+     MOVE 77 TO WS-SEED
+     MOVE 1 TO WS-KIND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 66
+         MOVE WS-I TO WS-X
+         CALL "GBE-ADD" USING WS-X WS-Y WS-Z WS-KIND WS-LOOT WS-SEED WS-TEXT
+     END-PERFORM
+     MOVE "test gen be: 66 requests: 64 kept and 2 counted as lost" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = GBL-COUNT * 100 + GBL-LOST
+     MOVE 6402 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen be: a request keeps its position, kind, loot table and seed" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = GBL-X(7) * 1000 + GBL-KIND(7) * 100 + GBL-SEED(7)
+     MOVE 7177 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the job's list is bounded too
+     MOVE 62 TO J-BE-COUNT
+     CALL "GBE-KEEP" USING WS-JOB
+     MOVE "test gen be: kept into a job that has room for two: 64 in the job, 64 lost (the level's 2 lost and 62 that did not fit) and the level's list is empty" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = J-BE-COUNT * 10000 + J-BE-LOST * 10 + GBL-COUNT + GBL-LOST
+     COMPUTE TL-EXPECTED-N = 64 * 10000 + 64 * 10
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen be: the first of the entries that fit is the level's first" TO TL-CASE
+     MOVE J-BE-X(63) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   application to a chunk (dimension 3, the standard overworld with min y -64; row 5, chunk (2, -1)), published as the install does
+     MOVE "minecraft:chest" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-CHEST
+     MOVE "minecraft:spawner" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-SPAWNER
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STONE
+     ALLOCATE 304640 CHARACTERS INITIALIZED RETURNING WS-PTR
+     SET ADDRESS OF CE-CHUNK TO WS-PTR
+     MOVE WS-PTR TO CK-ADDR(5)
+     MOVE 2 TO CK-X(5)
+     MOVE -1 TO CK-Z(5)
+*>   chest at (35, 10, -3), spawner at (40, -5, -16), stone at (33, 0, -2)
+     COMPUTE WS-CELL = (10 + 64) * 256 + (-3 + 16) * 16 + (35 - 32) + 1
+     MOVE WS-CHEST TO CE-STATE(WS-CELL)
+     COMPUTE WS-CELL = (-5 + 64) * 256 + (-16 + 16) * 16 + (40 - 32) + 1
+     MOVE WS-SPAWNER TO CE-STATE(WS-CELL)
+     COMPUTE WS-CELL = (0 + 64) * 256 + (-2 + 16) * 16 + (33 - 32) + 1
+     MOVE WS-STONE TO CE-STATE(WS-CELL)
+     MOVE 3 TO GB-COUNT
+     MOVE 35 TO GB-X(1)
+     MOVE 10 TO GB-Y(1)
+     MOVE -3 TO GB-Z(1)
+     MOVE 1 TO GB-KIND(1)
+     MOVE -5 TO GB-SEED(1)
+     MOVE "minecraft:chests/abandoned_mineshaft" TO GB-LOOT(1)
+     MOVE 40 TO GB-X(2)
+     MOVE -5 TO GB-Y(2)
+     MOVE -16 TO GB-Z(2)
+     MOVE 2 TO GB-KIND(2)
+     MOVE "minecraft:cave_spider" TO GB-TEXT(2)
+     MOVE 33 TO GB-X(3)
+     MOVE 0 TO GB-Y(3)
+     MOVE -2 TO GB-Z(3)
+     MOVE 1 TO GB-KIND(3)
+     MOVE "minecraft:chests/abandoned_mineshaft" TO GB-LOOT(3)
+     CALL "GBE-APPLY" USING WS-DIM WS-ROW
+     MOVE 35 TO WS-X
+     MOVE 10 TO WS-Y
+     MOVE -3 TO WS-Z
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX
+     MOVE "test gen be: the chest request made a block entity of type chest (1)" TO TL-CASE
+     MOVE BE-TYPE(WS-INDEX) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "test gen be: the chest has the loot table key" TO TL-CASE
+     MOVE BE-LOOT(WS-INDEX)(1:BE-LOOT-LENGTH(WS-INDEX)) TO TL-OBSERVED
+     MOVE "minecraft:chests/abandoned_mineshaft" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE "test gen be: and the seed" TO TL-CASE
+     MOVE BE-SEED(WS-INDEX) TO TL-OBSERVED-N
+     MOVE -5 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 40 TO WS-X
+     MOVE -5 TO WS-Y
+     MOVE -16 TO WS-Z
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX2
+     MOVE "test gen be: the spawner request made a block entity with the SpawnData key (52 bytes: the compound, entity and string tags with their names, the id of 21 characters, three End tags)" TO TL-CASE
+     MOVE EX-B-LEN(WS-INDEX2) TO TL-OBSERVED-N
+     MOVE 52 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "test gen be: its bytes hold the entity id after the string tag" TO TL-CASE
+     MOVE EX-B-DATA(WS-INDEX2)(29:21) TO TL-OBSERVED
+     MOVE "minecraft:cave_spider" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 33 TO WS-X
+     MOVE 0 TO WS-Y
+     MOVE -2 TO WS-Z
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX
+     MOVE "N" TO TL-MODE
+     MOVE "test gen be: a request at a stone block makes no entity" TO TL-CASE
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen be: the list is empty after the apply" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = GB-COUNT + GB-LOST
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the worker's answer carries the requests after the overflow: GEN-STANDARD-TAKE publishes them
+     ALLOCATE GW-ANSWER-BYTES CHARACTERS INITIALIZED RETURNING GW-ADDR(1)
+     SET ADDRESS OF WS-ANSWER TO GW-ADDR(1)
+     MOVE X"01000000" TO WS-ANSWER(321037:4)
+     MOVE 1 TO GQ-READY
+     MOVE 3 TO GW-DIM(1)
+     MOVE 5 TO GW-CX(1)
+     MOVE 6 TO GW-CZ(1)
+     MOVE 5 TO WS-CX
+     MOVE 6 TO WS-CZ
+     CALL "GEN-STANDARD-TAKE" USING WS-DIM WS-CX WS-CZ WS-CHUNK-OUT WS-MARKER WS-TAKEN
+     MOVE "test gen be: an answer of the worker brings its request list: one request published" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-TAKEN * 10 + GB-COUNT
+     MOVE 11 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ END PROGRAM TEST-GEN-BE.
+ COPY CORETEST.

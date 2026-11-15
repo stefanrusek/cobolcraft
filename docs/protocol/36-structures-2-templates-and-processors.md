@@ -918,7 +918,7 @@ An implementation is correct against this document when:
 2. The data-fixer upgrade for older structure files (`DataFixTypes.STRUCTURE`, base version 500) was not read; all shipped files are already at 5023, so it matters
    only for user-supplied or world-generated files.
 3. `BlockState.rotate` and `BlockState.mirror` are per-block rules (24-x, block registry parts); this document uses them without restating them. Properties such as
-   a jigsaw's `orientation` rotate by their own rule (31-6 section 8, 24).
+   a jigsaw's `orientation` rotate by their own rule (31-6 section 8, 24). Answered by [24-block-registry-9-rotation-and-mirror.md](24-block-registry-9-rotation-and-mirror.md) (consolidated rules and block table).
 4. `LiquidBlockContainer.placeLiquid` and the fluid cells' source tests are the fluid engine's (29a); only their use in sections 5.3 and 5.4 is specified here.
 5. `Entity.rotate`, `Entity.mirror`, hanging-entity overrides and `EntityType.create` from NBT are entity-model topics (44, 45); sections 5.6 uses them as black boxes.
 6. (Closed: `allowNbt` read, sections 6.2 and 9.6; number kept.)

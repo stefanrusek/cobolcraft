@@ -8,7 +8,7 @@
 *>   GEN-WORKERS-CONFIG USING size (BINARY-LONG): the pool size (0 to GW-MAX, other values are bounded); stops the running workers first.
 *>   GEN-WORKERS-STOP: kills and reaps every worker (GEN-QUEUE-RESET, CORE-STOP).
 *>   GEN-WORKERS-TICK: the pool's share of one tick (GEN-QUEUE-TICK): finished answers are installed, idle workers get the nearest chunks.
-*>   GEN-STANDARD-TAKE USING dimension row, chunk x, chunk z, chunk memory, marker-y out, flag out: copies the finished answer GQ-READY into the chunk.
+*>   GEN-STANDARD-TAKE USING dimension row, chunk x, chunk z, chunk memory, marker-y out, flag out: copies the finished answer GQ-READY into the chunk and its overflow into GEN-OVERFLOW.
 *>   GEN-WORKER-START, GEN-WORKER-SERVE, GEN-WORKER-HANDLE, GEN-WORKER-EXIT: the worker side.
 
  IDENTIFICATION DIVISION.
@@ -30,6 +30,8 @@
 *> writes the answer; 1 when answered, 0 at end of input or when the answer cannot be written.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY GENOVER.
+ COPY GENBE.
  78 WS-REQUEST-BYTES       VALUE 12.
  01 WS-REQUEST.
     05 WS-DIM              BINARY-LONG.
@@ -38,7 +40,9 @@
  01 WS-ANSWER.
     05 WS-MARKER           BINARY-LONG.
     05 WS-CHUNK            PIC X(304640).
- 01 WS-LENGTH              BINARY-LONG VALUE 304644.
+    05 WS-OVERFLOW         PIC X(16392).
+    05 WS-BE               PIC X(6664).
+ 01 WS-LENGTH              BINARY-LONG VALUE 327700.
  01 WS-RC                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-OUTCOME              BINARY-LONG.
@@ -49,6 +53,8 @@
          GOBACK
      END-IF
      CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
+     MOVE GO-DATA TO WS-OVERFLOW
+     MOVE GB-DATA TO WS-BE
      CALL STATIC "cc_wk_child_write" USING BY REFERENCE WS-ANSWER BY VALUE WS-LENGTH RETURNING WS-RC
      IF WS-RC = WS-LENGTH
          MOVE 1 TO L-OUTCOME
@@ -212,7 +218,7 @@
     05 WS-CX               BINARY-LONG.
     05 WS-CZ               BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
- 01 WS-BYTES               BINARY-LONG VALUE 304644.
+ 01 WS-BYTES               BINARY-LONG VALUE GW-ANSWER-BYTES.
  LINKAGE SECTION.
  01 L-I                    BINARY-LONG.
  PROCEDURE DIVISION USING L-I.
@@ -299,7 +305,9 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY GENQUEUE.
- 01 WS-ANSWER              PIC X(304644) BASED.
+ COPY GENOVER.
+ COPY GENBE.
+ 01 WS-ANSWER              PIC X(327700) BASED.
  01 WS-DST                 PIC X(304640) BASED.
  01 WS-MARKER              BINARY-LONG BASED.
  LINKAGE SECTION.
@@ -317,6 +325,8 @@
              SET ADDRESS OF WS-MARKER TO GW-ADDR(GQ-READY)
              SET ADDRESS OF WS-DST TO ADDRESS OF L-CHUNK
              MOVE WS-ANSWER(5:304640) TO WS-DST
+             MOVE WS-ANSWER(304645:16392) TO GO-DATA
+             MOVE WS-ANSWER(321037:6664) TO GB-DATA
              MOVE WS-MARKER TO L-MARKER-Y
              MOVE 1 TO L-FLAG
          END-IF

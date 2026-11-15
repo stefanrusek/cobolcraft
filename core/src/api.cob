@@ -518,6 +518,29 @@
  COPY FEATINDEX.
  01 WS-GEN-STATUS          BINARY-LONG.
  01 WS-GEN-DIR             PIC X(1100).
+ 01 WS-MINESHAFT           PIC X(80) VALUE "minecraft:mineshaft".
+ 01 WS-MINESHAFT-MESA      PIC X(80) VALUE "minecraft:mineshaft_mesa".
+ 01 WS-IGLOO               PIC X(80) VALUE "minecraft:igloo".
+ 01 WS-SWAMP-HUT           PIC X(80) VALUE "minecraft:swamp_hut".
+ 01 WS-DESERT-PYRAMID      PIC X(80) VALUE "minecraft:desert_pyramid".
+ 01 WS-BURIED-TREASURE     PIC X(80) VALUE "minecraft:buried_treasure".
+ 01 WS-JUNGLE-TEMPLE       PIC X(80) VALUE "minecraft:jungle_pyramid".
+ 01 WS-SHIPWRECK           PIC X(80) VALUE "minecraft:shipwreck".
+ 01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
+ 01 WS-RUIN-WARM           PIC X(80) VALUE "minecraft:ocean_ruin_warm".
+ 01 WS-RUIN-COLD           PIC X(80) VALUE "minecraft:ocean_ruin_cold".
+ 01 WS-OUTPOST             PIC X(80) VALUE "minecraft:pillager_outpost".
+ 01 WS-VILLAGE-PLAINS      PIC X(80) VALUE "minecraft:village_plains".
+ 01 WS-VILLAGE-DESERT      PIC X(80) VALUE "minecraft:village_desert".
+ 01 WS-VILLAGE-SAVANNA     PIC X(80) VALUE "minecraft:village_savanna".
+ 01 WS-VILLAGE-SNOWY       PIC X(80) VALUE "minecraft:village_snowy".
+ 01 WS-VILLAGE-TAIGA       PIC X(80) VALUE "minecraft:village_taiga".
+ 01 WS-PORTAL              PIC X(80) VALUE "minecraft:ruined_portal".
+ 01 WS-PORTAL-DESERT       PIC X(80) VALUE "minecraft:ruined_portal_desert".
+ 01 WS-PORTAL-JUNGLE       PIC X(80) VALUE "minecraft:ruined_portal_jungle".
+ 01 WS-PORTAL-SWAMP        PIC X(80) VALUE "minecraft:ruined_portal_swamp".
+ 01 WS-PORTAL-MOUNTAIN     PIC X(80) VALUE "minecraft:ruined_portal_mountain".
+ 01 WS-PORTAL-OCEAN        PIC X(80) VALUE "minecraft:ruined_portal_ocean".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -530,9 +553,41 @@
          CALL "DENSITY-FUNCTIONS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "MATERIAL-RULES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
-*>       the feature lists of the biomes; the stage runs only their tree features (FI-ONLY)
+*>       the feature lists of the biomes; the stage runs the placed features of the supported families (FR-GATE)
          CALL "BIOMES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
-         MOVE 1 TO FI-ONLY
+*>       the structure sets and structures (36-1)
+         CALL "STRUCT-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+*>       the structures that are on: the mineshaft (36-5 section 2) and its mesa type (the base height of the column query STRUCT-BASE-HEIGHT, 37-2 section 6.5)
+         CALL "STRUCT-GATE-RESET"
+         CALL "STRUCT-GATE-ON" USING WS-MINESHAFT
+         CALL "STRUCT-GATE-ON" USING WS-MINESHAFT-MESA
+*>       the template structures that were tested on the real data (struct-tpl-gen.cob): the igloo and the two shipwrecks
+         CALL "STRUCT-GATE-ON" USING WS-IGLOO
+         CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK
+         CALL "STRUCT-GATE-ON" USING WS-SHIPWRECK-BEACHED
+*>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
+         CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
+         CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
+*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier, no feature elements: docs/design/world-types.md structures part 8)
+         CALL "STRUCT-GATE-ON" USING WS-OUTPOST
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-PLAINS
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-DESERT
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SAVANNA
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SNOWY
+         CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
+*>       the ruined portals of the overworld (struct-portal.cob; the nether one needs the Nether pipeline and stays off)
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-DESERT
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-JUNGLE
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-SWAMP
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-MOUNTAIN
+         CALL "STRUCT-GATE-ON" USING WS-PORTAL-OCEAN
+*>       the scattered pieces tested on the real data (struct-scatter.cob): the swamp hut, the jungle temple, the desert pyramid and the buried treasure
+         CALL "STRUCT-GATE-ON" USING WS-SWAMP-HUT
+         CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE
+         CALL "STRUCT-GATE-ON" USING WS-DESERT-PYRAMID
+         CALL "STRUCT-GATE-ON" USING WS-BURIED-TREASURE
+         MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF
      GOBACK.
