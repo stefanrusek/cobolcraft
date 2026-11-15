@@ -361,10 +361,15 @@
      EVALUATE TRUE
          WHEN PSB-ACTION = 2
              CALL "BLOCK-BREAK-END" USING WS-ROW
-         WHEN WS-HARDNESS <= 0
+*>       The void and an unbreakable block (hardness below 0) are never broken; a hardness of 0 (torch, mushroom, grass, flower,
+*>       sugar cane) is not unbreakable: its progress per tick is infinite (13 section 2.1), so Start breaks it at once.
+         WHEN WS-STATE = 0 OR WS-HARDNESS < 0
              CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
          WHEN PSB-ACTION = 0 AND PL-MODE(WS-ROW) = 1
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
+         WHEN PSB-ACTION = 0 AND WS-HARDNESS = 0
+             CALL "BLOCK-BREAK-END" USING WS-ROW
+             CALL "BREAK-FINISH" USING WS-ROW WS-DIM PSB-BX PSB-BY PSB-BZ
          WHEN PSB-ACTION = 0
              CALL "BLOCK-BREAK-END" USING WS-ROW
              MOVE 0 TO WS-ITEM
