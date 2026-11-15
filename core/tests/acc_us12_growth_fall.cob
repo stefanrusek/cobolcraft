@@ -1,6 +1,6 @@
 *> Acceptance test of the falling blocks of docs/protocol/29b part 1 section 3.1 wired into the block-update hooks (specs 002 phase 42): a falling block placed in the air schedules its
 *> tick after its delay of 2 (onPlace row), the tick moves it to its landing cell above the first block with a solid face, and a falling block placed on a solid block stays. The
-*> falling block entity's flight is not simulated (the block lands at once). The cobolcraft world has no sand, so the test adds it to the block table and registers the rows
+*> falling block is an entity that flies down tick by tick (21 section 8.4), so the landing is checked after 30 more ticks. The cobolcraft world has no sand, so the test adds it to the block table and registers the rows
 *> through GB-RULES-OPEN, which CORE-WORLD-OPEN runs for the blocks of the open tables.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US12-GROWTH-FALL.
@@ -65,6 +65,8 @@
      CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
      CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
      MOVE WS-STATE TO WS-EDIT2
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
      MOVE 81 TO WS-Y
      CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
      MOVE WS-STATE TO WS-EDIT3
@@ -133,6 +135,8 @@
      CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
      CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
      MOVE WS-STATE TO WS-EDIT2
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
      MOVE 81 TO WS-Y
      CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
      MOVE WS-STATE TO WS-EDIT3

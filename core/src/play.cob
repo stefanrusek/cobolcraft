@@ -257,6 +257,9 @@
          WHEN L-PACKET-ID = 67
              CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              IF WS-WORN = 0
+                 CALL "BOAT-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
                  CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
              END-IF
              IF WS-WORN = 0

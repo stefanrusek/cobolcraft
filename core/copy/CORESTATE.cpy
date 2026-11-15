@@ -426,6 +426,19 @@
           15 EN-SNIF-EXP-X   BINARY-LONG.
           15 EN-SNIF-EXP-Y   BINARY-LONG.
           15 EN-SNIF-EXP-Z   BINARY-LONG.
+*>     --- 002-lane-mobsfull-h24: falling block entity (core/src/mob-21-8.cob; 21 section 8.4, 29b part 1 section 4) ---
+       10 EN-FB-STATE         BINARY-LONG.        *> falling block: the block state id it carries (0 = not a falling block); the Add Entity Data
+       10 EN-FB-TIME          BINARY-LONG.        *> falling block: ticks lived
+       10 EN-FB-CANCEL        BINARY-LONG.        *> falling block: cancelDrop, 1 = it never places itself
+*>     --- 002-lane-mobsfull-h24: boats and rafts (core/src/mob-21-boat.cob; 21 section 8.8, 44 part 8 section 3) ---
+       10 EN-BT-KIND          BINARY-LONG.        *> boat: 1 boat or raft, 2 chest boat or raft (0 = not a boat)
+       10 EN-BT-HURT          BINARY-LONG.        *> boat: hurt time (metadata 8)
+       10 EN-BT-HDIR          BINARY-LONG.        *> boat: hurt direction (metadata 9), 1 or -1
+       10 EN-BT-DAMAGE        BINARY-LONG.        *> boat: damage (metadata 10, whole points x 10)
+       10 EN-BT-OOC           BINARY-LONG.        *> boat: outOfControlTicks (ticks under water)
+       10 EN-BT-STATUS        BINARY-LONG.        *> boat: the last status, 0 in water, 1 under water, 2 under flowing water, 3 on land, 4 in air, 5 none yet
+       10 EN-BT-LASTYD        FLOAT-LONG.         *> boat: the vertical speed of the last move (lastYd)
+       10 EN-BT-WLEVEL        FLOAT-LONG.         *> boat: waterLevel of the last status
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
