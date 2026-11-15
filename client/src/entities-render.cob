@@ -286,10 +286,7 @@
              MOVE 1 TO EN-ON-GROUND(WS-R)
              MOVE PL-POSE TO EN-POSE(WS-R)
              MOVE PL-SWIM-AMOUNT TO EN-SWIM(WS-R)
-             MOVE 0 TO EN-FLAGS(WS-R)
-             IF PL-SWIMMING = 1
-                 MOVE 16 TO EN-FLAGS(WS-R)
-             END-IF
+             COMPUTE EN-FLAGS(WS-R) = PL-SWIMMING * 16
              MOVE SPACES TO EN-KEY(WS-R)
              MOVE "player" TO EN-KEY(WS-R)
              CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-R) EN-MODEL(WS-R)

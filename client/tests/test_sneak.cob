@@ -30,6 +30,9 @@
  01 WS-P3                  PIC X(80).
  01 WS-YAW                 FLOAT-LONG.
  01 WS-PITCH               FLOAT-LONG.
+ 01 WS-DX                 FLOAT-LONG.
+ 01 WS-DZ                 FLOAT-LONG.
+ 01 WS-SHIFT-ARG          BINARY-LONG.
  01 WS-EYE-TABLE.
     05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION.
@@ -316,6 +319,70 @@
      MOVE PL-POSE TO TL-OBSERVED-N
      PERFORM ASSERT-N
      MOVE 0 TO PL-MODE
+
+*>   Shift held in the same gap: the crouching box (1.5) does not fit either, so the wanted crouching pose becomes swimming (3).
+     MOVE 0 TO PL-POSE PL-SWIMMING PL-FLYING
+     MOVE 21.5 TO PL-X
+     MOVE 0.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 1 TO WS-SHIFT-ARG
+     CALL "PHYS-POSE" USING CLIENT-STATE WS-SHIFT-ARG
+     MOVE "shift held in a gap 1.0 high: the pose is swimming (3), the crouching box does not fit" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE PL-POSE TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+*>   A solid cell in the player's own cell: the swimming box (0.6) does not fit, so the pose is left as it was.
+     MOVE 21 TO WS-X
+     MOVE 10 TO WS-Y
+     MOVE 0 TO WS-Z
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO PL-POSE
+     MOVE 0 TO WS-SHIFT-ARG
+     CALL "PHYS-POSE" USING CLIENT-STATE WS-SHIFT-ARG
+     MOVE "a solid cell around the player (the swimming box does not fit): the pose is left as it was" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-POSE TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+
+*>   The pit is dug again (air over y 9) for it.
+     PERFORM VARYING WS-X FROM 3 BY 1 UNTIL WS-X > 8
+         PERFORM VARYING WS-Z FROM -4 BY 1 UNTIL WS-Z > 4
+             MOVE 9 TO WS-Y
+             CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+         END-PERFORM
+     END-PERFORM
+*>   The sneak edge clamp on its own (PHYS-BACKOFF; the pit of x 3 to 8, z -4 to 4 is still there): a 1.0 step along +x from the floor
+*>   edge at x 2.6 would end wholly over the pit, so it is cut back in steps of 0.05 until the box keeps its footing; likewise along -z
+*>   from the floor at z 5.6.
+     MOVE 2.6 TO PL-X
+     MOVE 0.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 1.0 TO WS-DX
+     MOVE 0 TO WS-DZ
+     CALL "PHYS-BACKOFF" USING CLIENT-STATE WS-DX WS-DZ
+     MOVE "the edge clamp cuts a 1.0 step along +x back to less than 0.8" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DX > 0 AND WS-DX < 0.8
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM ASSERT-N
+*>   A diagonal step past the pit corner (x 3, z 5): each axis alone keeps the box over the floor, both together would fall, so both
+*>   offsets are cut back together.
+     MOVE 2.6 TO PL-X
+     MOVE 5.6 TO PL-Z
+     MOVE 1.0 TO WS-DX
+     MOVE -1.0 TO WS-DZ
+     CALL "PHYS-BACKOFF" USING CLIENT-STATE WS-DX WS-DZ
+     MOVE "the edge clamp cuts a diagonal step (1.0, -1.0) back on both axes" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DX > 0 AND WS-DX < 1.0 AND WS-DZ < 0 AND WS-DZ > -1.0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM ASSERT-N
 
 *>   Crawling (pose 3 on land) is moving slowly too: 0.06 a tick, and no sprint (53 sections 3.3, 6).
      MOVE 270 TO PL-YAW
