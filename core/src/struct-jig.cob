@@ -67,7 +67,7 @@
  01 WS-BOX0.
     05 B0                  BINARY-LONG OCCURS 6 TIMES.
  01 WS-SBOX.
-    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==SB-==.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==SBX-==.
 *> holders: the limit box (inclusive) and the chain of removed boxes
  01 WS-HOLDERS.
     05 WH-COUNT            BINARY-LONG.
@@ -215,12 +215,12 @@
 
 *> a piece of element WS-CEL at (WS-OX, WS-OY, WS-OZ) with rotation WS-CROT, ground delta WS-GROUND, box WS-BOX: the row in WS-CHILD
  ADD-PIECE.
-     MOVE WB(1) TO SB-X0
-     MOVE WB(2) TO SB-Y0
-     MOVE WB(3) TO SB-Z0
-     MOVE WB(4) TO SB-X1
-     MOVE WB(5) TO SB-Y1
-     MOVE WB(6) TO SB-Z1
+     MOVE WB(1) TO SBX-X0
+     MOVE WB(2) TO SBX-Y0
+     MOVE WB(3) TO SBX-Z0
+     MOVE WB(4) TO SBX-X1
+     MOVE WB(5) TO SBX-Y1
+     MOVE WB(6) TO SBX-Z1
      CALL "SPB-ADD" USING WS-PIECE-TYPE WS-ORIENT WS-ZERO WS-Z2 WS-SBOX WS-CHILD
      IF WS-CHILD > 0
          MOVE WS-CEL TO SP-F1(WS-CHILD)
