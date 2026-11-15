@@ -1,0 +1,13 @@
+format=1
+tool=cobolcraft-extract 1
+jar-version=26.3
+jar-sha256=4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d
+jar-size=41483720
+world-version=5023
+protocol-version=777
+resource-format=97.1
+data-format=121.0
+files-resource=6
+files-data=14
+files-feature=4
+files-total=24
