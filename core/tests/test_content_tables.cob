@@ -448,8 +448,12 @@
        "cobolcraft:subroutine 1 cobolcraft:sunless 0 128 32 2 2 0 0 2 1 1 5 2".
     05 FILLER PIC X(100) VALUE
        "minecraft:overworld 0 minecraft:overworld -64 384 63 3 1 1 1 -1 2 0 16 7".
+    05 FILLER PIC X(100) VALUE
+       "minecraft:the_nether 1 minecraft:the_nether 0 256 32 4 2 0 0 -1 3 0 16 7".
+    05 FILLER PIC X(100) VALUE
+       "minecraft:the_end 2 minecraft:the_end 0 256 0 5 1 1 0 -1 3 0 16 7".
  01 WS-DIMENSION-TABLE REDEFINES WS-DIMENSION-ROWS.
-    05 WS-DIMENSION-ROW    PIC X(100) OCCURS 3 TIMES.
+    05 WS-DIMENSION-ROW    PIC X(100) OCCURS 5 TIMES.
  01 WS-OPEN-TYPE          BINARY-LONG VALUE 1.
  01 WS-OPEN-DIR           PIC X(1100) VALUE SPACES.
  01 WS-OPEN-STATUS        BINARY-LONG.
@@ -646,7 +650,7 @@
      MOVE DIM-GEN-SUBROUTINE TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-LIGHT-STANDIN TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-LIGHT-BLOCK-ONLY TO WS-NUM PERFORM ADD-NUM
-     MOVE "1 2 3 1 2 1 2" TO TL-EXPECTED
+     MOVE "1 2 5 1 2 1 2" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test content tables subroutine generator constants" TO TL-CASE
@@ -721,12 +725,13 @@
      MOVE CAUSE-DROWN TO WS-NUM PERFORM ADD-NUM
      MOVE CAUSE-EXPLOSION TO WS-NUM PERFORM ADD-NUM
      MOVE CAUSE-ARROW TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-VOID TO WS-NUM PERFORM ADD-NUM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CAUSE-COUNT
          MOVE RULE-CAUSE-TYPE(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE RULE-CAUSE-AMOUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE RULE-CAUSE-EXHAUST(WS-I) TO WS-NUM PERFORM ADD-NUM
      END-PERFORM
-     MOVE "1 2 3 4 5 6 7 8 9 10 1 0 0 28 3 100 29 0 100 30 1 0 31 1 100 0 0 0 28 0 100 6 2 0 0 0 100 0 0 100" TO TL-EXPECTED
+     MOVE "1 2 3 4 5 6 7 8 9 10 11 1 0 0 28 3 100 29 0 100 30 1 0 31 1 100 0 0 0 28 0 100 6 2 0 0 0 100 0 0 100 0 4 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test content tables attacks (§10.4: reach 4.0 from the eye point feet + 1.6)" TO TL-CASE
@@ -779,7 +784,7 @@
      END-PERFORM
      MOVE "cobolcraft.death.fall,v cobolcraft.death.mob.abend,v cobolcraft.death.player,v,a "
          & "cobolcraft.death.starvation,v cobolcraft.death.hail,v cobolcraft.death.command,v death.attack.mob,v,a "
-         & "death.attack.drown,v death.attack.explosion,v death.attack.arrow,v,a"
+         & "death.attack.drown,v death.attack.explosion,v death.attack.arrow,v,a death.attack.outOfWorld,v"
          TO TL-EXPECTED
      PERFORM ASSERT-ROW
 

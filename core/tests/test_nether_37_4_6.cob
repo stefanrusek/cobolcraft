@@ -1,0 +1,160 @@
+*> Implementation test of the Nether cave carver (core/src/nether-37-4b.cob; T1683 to T1686; docs/protocol/37-nether-4 sections 6, 7 and the worked example 9.9,
+*> world seed 0, source chunk (-2, -2)): the start draw, the count draws, the cave position, the tunnel yaw, pitch, thickness, steps and walker seed,
+*> the ellipsoid with the floor -0.7 (example 10: a column carved 66..97 with the axis at y 78) and the lava below y 32 / air from y 32 of carved blocks.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-NETHER-37-4-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CBLOCKS.
+ COPY CELLS.
+ COPY NETHER.
+ COPY NETHERCV.
+ 01 WS-U                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-R                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-SEED                BINARY-DOUBLE SIGNED VALUE 0.
+ 01 WS-SX                  BINARY-LONG VALUE -2.
+ 01 WS-SZ                  BINARY-LONG VALUE -2.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-SCALED              FLOAT-LONG.
+ 01 WS-DIFF                BINARY-DOUBLE.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CY                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-HR                  FLOAT-LONG.
+ 01 WS-VR                  FLOAT-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-CHUNK               PIC X(304640).
+ 01 WS-CELL                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     PERFORM NETHER-TABLES
+     CALL "NETHER-SETUP" USING WS-SEED
+     CALL "NETHER-CV-SETUP"
+     MOVE 0 TO WS-U
+     CALL "JRAND-LARGE-FEATURE-SEED" USING WS-R WS-U WS-SX WS-SZ
+     CALL "JRAND-NEXT-FLOAT" USING WS-R WS-F
+     MOVE "acceptance US12-core 37-4§9.9 start draw of (-2, -2) is 0.11626184 (1e-8)" TO TL-CASE
+     MOVE 11626184 TO TL-EXPECTED-N
+     COMPUTE WS-SCALED = WS-F * 100000000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
+     PERFORM ALLOW-ONE
+     MOVE 10 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-BOUND WS-A
+     COMPUTE WS-BOUND = WS-A + 1
+     CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-BOUND WS-B
+     COMPUTE WS-BOUND = WS-B + 1
+     CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-BOUND WS-C
+     MOVE "acceptance US12-core 37-4§9.9 count draws 6, 1, 1: count 1" TO TL-CASE
+     MOVE 611 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-A * 100 + WS-B * 10 + WS-C
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "NETHER-CV-HEAD" USING WS-R WS-SX WS-SZ
+     MOVE "acceptance US12-core 37-4§9.9 cave at (-29, 78, -18), no room, one tunnel" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = -29 * 1000000 + 78 * 1000 + 18
+     COMPUTE TL-OBSERVED-N = NC-CAVE-X * 1000000 + NC-CAVE-Y * 1000 - NC-CAVE-Z
+     IF NC-CAVE-ROOM NOT = 0 OR NC-CAVE-TUNNELS NOT = 1
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "NETHER-CV-TUNNEL" USING WS-R
+     MOVE "acceptance US12-core 37-4§9.9 tunnel yaw 2.4950655 (1e-7)" TO TL-CASE
+     MOVE 24950655 TO TL-EXPECTED-N
+     COMPUTE WS-SCALED = NC-TUN-YAW * 10000000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
+     PERFORM ALLOW-ONE
+     MOVE "acceptance US12-core 37-4§9.9 tunnel pitch 0.0546752 (1e-7)" TO TL-CASE
+     MOVE 546752 TO TL-EXPECTED-N
+     COMPUTE WS-SCALED = NC-TUN-PITCH * 10000000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
+     PERFORM ALLOW-ONE
+     MOVE "acceptance US12-core 37-4§9.9 tunnel thickness 2.2020168 (1e-7)" TO TL-CASE
+     MOVE 22020168 TO TL-EXPECTED-N
+     COMPUTE WS-SCALED = NC-TUN-THICK * 10000000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
+     PERFORM ALLOW-ONE
+     MOVE "acceptance US12-core 37-4§9.9 tunnel max steps 96" TO TL-CASE
+     MOVE 96 TO TL-EXPECTED-N
+     MOVE NC-TUN-STEPS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12-core 37-4§9.9 walker seed -7856524665581999152" TO TL-CASE
+     MOVE -7856524665581999152 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = NC-TUN-SEED - 18446744073709551616
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   example 10: the ellipsoid at the walker's mid-step: horizontal 3.7020, vertical 18.51 at cy 78: the axis column carved 66..97
+     MOVE 3.5 TO WS-CX
+     MOVE 3.5 TO WS-CZ
+     MOVE 78 TO WS-CY
+     MOVE 3.7020 TO WS-HR
+     MOVE 18.510 TO WS-VR
+     MOVE 0 TO WS-CELL
+     MOVE LOW-VALUES TO NC-MASK
+     MOVE 0 TO NC-CX NC-CZ
+     CALL "NETHER-CV-ELLIPSOID" USING WS-CX WS-CY WS-CZ WS-HR WS-VR
+     MOVE 0 TO WS-FIRST
+     MOVE 0 TO WS-LAST
+     PERFORM VARYING WS-Y FROM 1 BY 1 UNTIL WS-Y > 120
+         COMPUTE WS-IDX = (WS-Y - 1) + (3 + 16 * 3) * 120 + 1
+         IF NC-MASK(WS-IDX:1) = "1"
+             IF WS-FIRST = 0
+                 MOVE WS-Y TO WS-FIRST
+             END-IF
+             MOVE WS-Y TO WS-LAST
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12-core 37-4§9.10 column over the axis is marked 66..97 (flat floor at -0.7)" TO TL-CASE
+     MOVE 66097 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FIRST * 1000 + WS-LAST
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   application: a low cave (example 11) carves lava below y 32, air from 32, never bedrock
+     MOVE LOW-VALUES TO WS-CHUNK
+     SET ADDRESS OF CE-CHUNK TO ADDRESS OF WS-CHUNK
+     PERFORM VARYING WS-CELL FROM 1 BY 1 UNTIL WS-CELL > 32768
+         MOVE 100 TO CE-STATE(WS-CELL)
+     END-PERFORM
+     MOVE 3 TO WS-A
+     MOVE 3 TO WS-B
+     COMPUTE WS-IDX = (3 * 256) + 3 * 16 + 3 + 1
+     MOVE NH-S-BEDROCK TO CE-STATE(WS-IDX)
+     MOVE LOW-VALUES TO NC-MASK
+     MOVE 20 TO WS-CY
+     CALL "NETHER-CV-ELLIPSOID" USING WS-CX WS-CY WS-CZ WS-HR WS-VR
+     MOVE 0 TO NC-CX NC-CZ
+     CALL "NETHER-CARVE-APPLY-ONLY" USING WS-CHUNK
+     MOVE "acceptance US12-core 37-4§9.11 carved y 20 over the axis is lava" TO TL-CASE
+     MOVE 102 TO TL-EXPECTED-N
+     COMPUTE WS-CELL = 20 * 256 + 3 * 16 + 3 + 1
+     MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12-core 37-4§9.11 carved y 35 over the axis is air" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE WS-CELL = 35 * 256 + 3 * 16 + 3 + 1
+     MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12-core 37-4§6.4 the marked bedrock block is kept" TO TL-CASE
+     MOVE NH-S-BEDROCK TO TL-EXPECTED-N
+     COMPUTE WS-CELL = 3 * 256 + 3 * 16 + 3 + 1
+     MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12-core 37-4§6.4 y 1 is never carved (mask starts at y 1, lowest carved y 2)" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     COMPUTE WS-CELL = 1 * 256 + 3 * 16 + 3 + 1
+     MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+
+ ALLOW-ONE.
+     COMPUTE WS-DIFF = TL-OBSERVED-N - TL-EXPECTED-N
+     IF WS-DIFF >= -1 AND WS-DIFF <= 1
+         MOVE TL-EXPECTED-N TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ COPY NETHERTEST.
+ END PROGRAM TEST-NETHER-37-4-6.

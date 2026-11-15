@@ -22,23 +22,43 @@
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      MOVE "standard" TO WS-TYPE
-     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ONE
+     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ZERO
      MOVE CW-DIM-COUNT TO WS-E1
      MOVE DM-MIN-Y(CW-DIM(1)) TO WS-E2
      MOVE DM-HEIGHT(CW-DIM(1)) TO WS-E3
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(DM-KEY(CW-DIM(1))) " " FUNCTION TRIM(WS-E2) " "
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "world dims a standard world has minecraft:overworld only, -64 and 384, extras on or off" TO TL-CASE
+     MOVE "world dims a standard world with extra-dimensions off has minecraft:overworld only, -64 and 384" TO TL-CASE
      MOVE "1 minecraft:overworld -64 384" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ONE
+     MOVE CW-DIM-COUNT TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(DM-KEY(CW-DIM(1))) " " FUNCTION TRIM(DM-KEY(CW-DIM(2))) " "
+         FUNCTION TRIM(DM-KEY(CW-DIM(3))) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "world dims a standard world with extra-dimensions on has overworld, the_nether, the_end in Login order" TO TL-CASE
+     MOVE "3 minecraft:overworld minecraft:the_nether minecraft:the_end" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE SPACES TO TL-OBSERVED
+     MOVE DM-MIN-Y(4) TO WS-E1
+     MOVE DM-HEIGHT(4) TO WS-E2
+     MOVE DM-SEA-LEVEL(4) TO WS-E3
+     MOVE DM-TYPE-ID(5) TO WS-E4
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "world dims the nether is 0 to 255, sea level 32 and the end has dimension type id 2" TO TL-CASE
+     MOVE "0 256 32 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "debug" TO WS-TYPE
-     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ZERO
+     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ONE
      MOVE CW-DIM-COUNT TO WS-E1
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(DM-KEY(CW-DIM(1))) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "world dims a debug world has minecraft:overworld only" TO TL-CASE
+     MOVE "world dims a debug world has minecraft:overworld only, extra-dimensions on or not" TO TL-CASE
      MOVE "1 minecraft:overworld" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -61,7 +81,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "standard" TO WS-TYPE
-     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ZERO
+     CALL "WORLD-DIMS-SELECT" USING WS-TYPE WS-ONE
      MOVE 1.5 TO CW-SPAWN-X
      MOVE 70 TO CW-SPAWN-Y
      MOVE 2.5 TO CW-SPAWN-Z

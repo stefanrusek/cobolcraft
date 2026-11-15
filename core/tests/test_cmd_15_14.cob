@@ -20,6 +20,8 @@
  01 WS-ALICE               BINARY-LONG.
  01 WS-ALFRED              BINARY-LONG.
  01 WS-TRANSACTION         BINARY-LONG.
+ 01 WS-SAVE-D1             BINARY-LONG.
+ 01 WS-SAVE-D2             BINARY-LONG.
  01 WS-LINE                PIC X(768).
  01 WS-LENGTH              BINARY-LONG.
  01 WS-TEXT                PIC X(4096).
@@ -148,6 +150,8 @@
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US13 15§14 Suggestions a dimension argument offer" & "s the enabled dimensions: only cobolcraft:main in a world wi" & "thout extra dimensions" TO TL-CASE
+     MOVE 1 TO CW-DIM(1)
+     MOVE 2 TO CW-DIM(2)
      MOVE 20 TO WS-TRANSACTION
      MOVE "/execute in " TO WS-LINE
      MOVE 12 TO WS-LENGTH
@@ -166,6 +170,21 @@
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ALFRED WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-SAVE-D1
+     MOVE 2 TO WS-SAVE-D2
+     MOVE 3 TO CW-DIM(1)
+     MOVE 4 TO CW-DIM(2)
+     MOVE 5 TO CW-DIM(3)
+     MOVE 3 TO CW-DIM-COUNT
+     MOVE "acceptance US13 15§14 Suggestions a standard world offers minecraft:overworld, the_nether and the_end" TO TL-CASE
+     MOVE 22 TO WS-TRANSACTION
+     MOVE "22 12 0 [minecraft:overworld,minecraft:the_end,minecraft:the_nether]" TO TL-EXPECTED
+     CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ALFRED WS-TEXT
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-SAVE-D1 TO CW-DIM(1)
+     MOVE WS-SAVE-D2 TO CW-DIM(2)
      MOVE 1 TO CW-DIM-COUNT
      MOVE "acceptance US13 15§14 Suggestions the list is cut at 1000 entries (BR-SG-MAX)" TO TL-CASE
      MOVE "N" TO TL-MODE

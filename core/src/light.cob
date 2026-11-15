@@ -1237,3 +1237,72 @@
      END-PERFORM
      GOBACK.
  END PROGRAM LIGHT-SET-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-BATCH-BEGIN.
+*> No arguments: from now on WORLD-SET-BLOCK defers the light recompute (LIGHT-BATCH-END runs it); nests.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY LIGHTBATCH.
+ PROCEDURE DIVISION.
+     ADD 1 TO LB-DEPTH
+     GOBACK.
+ END PROGRAM LIGHT-BATCH-BEGIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-BATCH-NOTE.
+*> USING row, world x, cell y, world z (BINARY-LONG) of a block change in a batch: remembers the chunk row whose light is stale (once; a batch
+*> touches few rows) and the change, for LIGHT-BATCH-END to redo; a change beyond the 1024 kept is redone at once.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY LIGHTBATCH.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z.
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LB-COUNT
+         IF LB-ROW(WS-I) = L-ROW
+             MOVE 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     IF WS-FOUND = 0 AND LB-COUNT < 64
+         ADD 1 TO LB-COUNT
+         MOVE L-ROW TO LB-ROW(LB-COUNT)
+     END-IF
+     IF LB-CHANGES < 1024
+         ADD 1 TO LB-CHANGES
+         MOVE L-ROW TO LB-CH-ROW(LB-CHANGES)
+         MOVE L-X TO LB-CH-X(LB-CHANGES)
+         MOVE L-Y TO LB-CH-Y(LB-CHANGES)
+         MOVE L-Z TO LB-CH-Z(LB-CHANGES)
+     ELSE
+         CALL "LIGHT-BLOCK-CHANGED" USING L-ROW L-X L-Y L-Z
+     END-IF
+     GOBACK.
+ END PROGRAM LIGHT-BATCH-NOTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-BATCH-END.
+*> No arguments: closes a batch; when the outermost one closes, the light is redone for every noted change once, in the order noted
+*> (LIGHT-BLOCK-CHANGED), and the notes are dropped.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY LIGHTBATCH.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     SUBTRACT 1 FROM LB-DEPTH
+     IF LB-DEPTH = 0
+         MOVE LB-CHANGES TO WS-N
+         MOVE 0 TO LB-CHANGES LB-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             CALL "LIGHT-BLOCK-CHANGED" USING LB-CH-ROW(WS-I) LB-CH-X(WS-I) LB-CH-Y(WS-I) LB-CH-Z(WS-I)
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM LIGHT-BATCH-END.

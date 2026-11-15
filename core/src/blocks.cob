@@ -355,6 +355,7 @@
  01 WS-BED                 BINARY-LONG.
  01 WS-BONE                BINARY-LONG.
  01 WS-BONE-USED           BINARY-LONG.
+ 01 WS-EYE                 BINARY-LONG.
  01 WS-CONT                BINARY-LONG.
  01 WS-SHELF               BINARY-LONG.
  01 WS-OPENED              BINARY-LONG.
@@ -387,6 +388,7 @@
      MOVE 0 TO WS-BONE-USED
      CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
      CALL "MENU-STATION-KIND" USING WS-STATE WS-STATION
+     CALL "END-EYE-USE" USING L-ID WS-STATE WS-ITEM PSB-BX PSB-BY PSB-BZ WS-EYE
      MOVE 0 TO WS-SHELF
 *>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
      IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
@@ -400,6 +402,8 @@
          WHEN WS-TOOL = 1
              CONTINUE
          WHEN WS-SWITCH = 1
+             CONTINUE
+         WHEN WS-EYE = 1
              CONTINUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL

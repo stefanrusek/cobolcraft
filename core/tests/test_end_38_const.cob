@@ -1,0 +1,228 @@
+*> Implementation test of the End's fixed values of sections 7 to 11 (core/src/end-38b.cob END-CONST): every value of the biome thresholds (7), the placed feature numbers (8), the arrival,
+*> platform and void numbers (9), the end city set (10) and the sky and flash numbers (11).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-END-38-CONST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-VALUE               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     MOVE "disc-radius-chunks" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§7 fixed value disc-radius-chunks" TO TL-CASE
+     MOVE 64 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "highlands-above-x10000" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§7 fixed value highlands-above-x10000" TO TL-CASE
+     MOVE 2500 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "midlands-from-x10000" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§7 fixed value midlands-from-x10000" TO TL-CASE
+     MOVE -625 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "small-islands-below-x10000" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§7 fixed value small-islands-below-x10000" TO TL-CASE
+     MOVE -2187 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "island-rarity" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value island-rarity" TO TL-CASE
+     MOVE 14 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "island-min-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value island-min-y" TO TL-CASE
+     MOVE 55 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "island-max-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value island-max-y" TO TL-CASE
+     MOVE 70 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "gateway-rarity" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value gateway-rarity" TO TL-CASE
+     MOVE 700 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "gateway-exit-x" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value gateway-exit-x" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "gateway-exit-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value gateway-exit-y" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "gateway-exit-z" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value gateway-exit-z" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "chorus-count-max" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value chorus-count-max" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "spike-step" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value spike-step" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "platform-x" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value platform-x" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "platform-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value platform-y" TO TL-CASE
+     MOVE 49 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "platform-z" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§8 fixed value platform-z" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "spawn-x" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value spawn-x" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "spawn-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value spawn-y" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "spawn-z" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value spawn-z" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "arrival-yaw" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value arrival-yaw" TO TL-CASE
+     MOVE 90 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "platform-floor-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value platform-floor-y" TO TL-CASE
+     MOVE 48 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "platform-half" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value platform-half" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "platform-air-layers" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value platform-air-layers" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "void-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value void-y" TO TL-CASE
+     MOVE -64 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "void-damage-x10" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value void-damage-x10" TO TL-CASE
+     MOVE 40 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "build-limit-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§9 fixed value build-limit-y" TO TL-CASE
+     MOVE 255 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "city-spacing" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§10 fixed value city-spacing" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "city-separation" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§10 fixed value city-separation" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "city-salt" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§10 fixed value city-salt" TO TL-CASE
+     MOVE 10387313 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "flash-window" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value flash-window" TO TL-CASE
+     MOVE 600 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "flash-sound-delay" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value flash-sound-delay" TO TL-CASE
+     MOVE 30 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "flash-height" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value flash-height" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "flash-scale" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value flash-scale" TO TL-CASE
+     MOVE 60 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "sky-box-half-size" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value sky-box-half-size" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "sky-box-quads" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value sky-box-quads" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "sky-box-colour" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§11 fixed value sky-box-colour" TO TL-CASE
+     MOVE 2631720 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.

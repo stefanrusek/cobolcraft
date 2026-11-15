@@ -126,6 +126,12 @@
              COMPUTE RL-CLEAR(2) = FUNCTION MOD(WS-FOG-Q, 256) / 255
              COMPUTE RL-CLEAR(3) = FUNCTION MOD(WS-FOG, 256) / 255
      END-EVALUATE
+*>   A dimension with its own atmospheric fog (DIMFX-ENV: the Nether, the End) clears to its fog colour when the eye is in no fluid.
+     IF DX-FOG-SET = 1 AND PL-EYE-LAVA = 0 AND PL-EYE-WATER = 0
+         MOVE DX-FOG-R TO RL-CLEAR(1)
+         MOVE DX-FOG-G TO RL-CLEAR(2)
+         MOVE DX-FOG-B TO RL-CLEAR(3)
+     END-IF
      MOVE 0 TO RL-DRAW-COUNT RL-UPLOAD-COUNT
      CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VIEW-YAW WS-VIEW-PITCH WS-EYE-TABLE
 *>   Projection (column-major).
@@ -160,6 +166,17 @@
          MOVE RL-CLEAR(2) TO RL-FOG(2)
          MOVE RL-CLEAR(3) TO RL-FOG(3)
          MOVE 1 TO RL-FOG(4)
+     END-IF
+*>   The environmental fog of such a dimension: its colour, strength 1 and the start and end distances it sets (the Nether 10 to 96).
+     IF DX-FOG-SET = 1 AND PL-EYE-LAVA = 0 AND PL-EYE-WATER = 0
+         MOVE RL-CLEAR(1) TO RL-FOG(1)
+         MOVE RL-CLEAR(2) TO RL-FOG(2)
+         MOVE RL-CLEAR(3) TO RL-FOG(3)
+         MOVE 1 TO RL-FOG(4)
+         IF DX-FOG-END > 0
+             MOVE DX-FOG-START TO RL-FOG(5)
+             MOVE DX-FOG-END TO RL-FOG(6)
+         END-IF
      END-IF
      MOVE RL-PROJ(1) TO RL-FOG(7)
      MOVE RL-PROJ(6) TO RL-FOG(8)

@@ -10,7 +10,7 @@
     05 W2-SLEEP-PCT              BINARY-LONG.
     05 W2-SLEEPING               BINARY-LONG OCCURS 64 TIMES.
     05 W2-SLEEP-COUNTER          BINARY-LONG OCCURS 64 TIMES.
-    05 W2-BORDER OCCURS 3 TIMES.
+    05 W2-BORDER OCCURS 5 TIMES.
        10 W2-B-CX                FLOAT-LONG.
        10 W2-B-CZ                FLOAT-LONG.
        10 W2-B-SIZE              FLOAT-LONG.

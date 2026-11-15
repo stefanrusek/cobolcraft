@@ -318,8 +318,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDGEN-DIM-CHUNK.
 *> USING dimension row, chunk x, chunk z (BINARY-LONG), chunk memory, marker-y out: the chunk from
-*> the dimension's generator (DIMENSIONS.cpy DM-GENERATOR): WORLDGEN-CHUNK (§5.2) or
-*> WORLDGEN-SUB-CHUNK (§15.2).
+*> the dimension's generator (DIMENSIONS.cpy DM-GENERATOR): WORLDGEN-CHUNK (§5.2),
+*> WORLDGEN-SUB-CHUNK (§15.2), the standard overworld pipeline, or the placeholders of the nether and the end
+*> (nether-gen-placeholder.cob; the one place the generator lane's real generators plug in).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
@@ -335,6 +336,10 @@
              CALL "WORLDGEN-SUB-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN DIM-GEN-STANDARD
              CALL "WORLDGEN-STANDARD-CHUNK" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
+         WHEN DIM-GEN-NETHER
+             CALL "NETHER-DIM-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+         WHEN DIM-GEN-END
+             CALL "END-DIM-CHUNK" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN OTHER
              CALL "WORLDGEN-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
      END-EVALUATE
@@ -367,6 +372,8 @@
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
  01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-ID                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-CX                   BINARY-LONG.
@@ -375,7 +382,14 @@
     05 L-BIOME             BINARY-LONG OCCURS 16 TIMES.
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-BIOMES.
      IF DM-BIOME(L-DIM) < 0
-         CALL "WORLDGEN-BIOMES" USING L-CX L-CZ L-BIOMES
+         EVALUATE DM-GENERATOR(L-DIM)
+             WHEN DIM-GEN-NETHER
+                 CALL "NETHER-DIM-BIOMES" USING L-CX L-CZ L-BIOMES
+             WHEN DIM-GEN-END
+                 CALL "END-DIM-BIOMES" USING L-CX L-CZ L-BIOMES
+             WHEN OTHER
+                 CALL "WORLDGEN-BIOMES" USING L-CX L-CZ L-BIOMES
+         END-EVALUATE
          GOBACK
      END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16

@@ -20,6 +20,7 @@
        10 KX-XP-POINTS       BINARY-LONG.
        10 KX-XP-TOTAL        BINARY-LONG.
 *>     --- end 002-lane-mobs2 ---
+       10 KX-SEEN-CREDITS     PIC 9.          *> seenCredits (45 section 3, 39 section 7.5)
        10 KX-BOOK-SET        PIC 9.
        10 KX-BOOK-OPEN       PIC 9 OCCURS 4 TIMES.
        10 KX-BOOK-FILTER     PIC 9 OCCURS 4 TIMES.

@@ -33,3 +33,4 @@
        10 TB-MOD            BINARY-LONG.
        10 TB-FOG            BINARY-DOUBLE.  *> attributes visual/water_fog_color (ARGB), 0 none
        10 TB-FOG-END        COMP-1.         *> visual/water_fog_end_distance multiply argument, 0 none
+       10 TB-FOGC           BINARY-DOUBLE.  *> attribute visual/fog_color (ARGB), 0 none (the atmospheric fog of the Nether biomes, 37-3 section 7.1)

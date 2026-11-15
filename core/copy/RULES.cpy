@@ -52,7 +52,9 @@
  78 CAUSE-EXPLOSION           VALUE 9.
  *> CAUSE-ARROW (002-lane-mobs2): an arrow (damage type arrow, 44 section 7.3); armor applies.
  78 CAUSE-ARROW               VALUE 10.
- 78 CAUSE-COUNT               VALUE 10.
+*> CAUSE-VOID (002-nether-h9): below the world (damage type out_of_world, 4.0 each tick, bypasses armor, Resistance and creative, 17 section 4.12 and 18 section 4.3).
+ 78 CAUSE-VOID                VALUE 11.
+ 78 CAUSE-COUNT               VALUE 11.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).
@@ -87,8 +89,11 @@
     05 FILLER BINARY-LONG VALUE 0.             *> arrow: the standard set looks the id up by key (DAMAGE-TYPE-ID)
     05 FILLER BINARY-LONG VALUE 0.
     05 FILLER BINARY-LONG VALUE 100.           *> exhaustion
+    05 FILLER BINARY-LONG VALUE 0.             *> void: the standard set looks the id up by key (DAMAGE-TYPE-ID)
+    05 FILLER BINARY-LONG VALUE 4.
+    05 FILLER BINARY-LONG VALUE 0.             *> exhaustion
  01 RULE-CAUSE-TABLE REDEFINES RULE-CAUSE-DATA.
-    05 RULE-CAUSE OCCURS 10 TIMES.
+    05 RULE-CAUSE OCCURS 11 TIMES.
        10 RULE-CAUSE-TYPE    BINARY-LONG.
        10 RULE-CAUSE-AMOUNT  BINARY-LONG.
        10 RULE-CAUSE-EXHAUST BINARY-LONG.

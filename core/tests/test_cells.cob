@@ -1,5 +1,5 @@
 *> Implementation test of the cell layout the core adopts (T0321/T0322; contract/copy/CELLS.cpy, data-model
-*> section 4): CORE-MAX-DIMS 3 and CORE-CHUNK-BYTES = CE-CHUNK-BYTES; a state is 2 bytes (unsigned,
+*> section 4): CORE-MAX-DIMS 5 and CORE-CHUNK-BYTES = CE-CHUNK-BYTES; a state is 2 bytes (unsigned,
 *> little-endian); light is 4 bits per cell in light-section arrays that start one section below the
 *> dimension (byte index 2048 + (cell - 1) div 2 + 1, even cell in the low nibble); sections derive from the
 *> dimension's min_y and height (24 in the overworld); the core's own chunks use this layout.
@@ -25,14 +25,14 @@
  01 WS-NUM                 BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
-     MOVE "test cells the core keeps three dimensions" TO TL-CASE
-     MOVE 3 TO TL-EXPECTED-N
+     MOVE "test cells the core keeps five dimension rows" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
      MOVE CORE-MAX-DIMS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "test cells weather levels exist for the third dimension" TO TL-CASE
-     MOVE 0.5 TO CW-RAIN-LEVEL(3)
+     MOVE "test cells weather levels exist for the fifth dimension row" TO TL-CASE
+     MOVE 0.5 TO CW-RAIN-LEVEL(5)
      MOVE 50 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = CW-RAIN-LEVEL(3) * 100
+     COMPUTE TL-OBSERVED-N = CW-RAIN-LEVEL(5) * 100
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test cells a core chunk is the CE-CHUNK-BYTES block" TO TL-CASE
      MOVE CE-CHUNK-BYTES TO TL-EXPECTED-N

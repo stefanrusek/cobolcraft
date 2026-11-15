@@ -11,6 +11,7 @@
  COPY COREAPI.
  COPY CELLS.
  COPY LIGHTWORK.
+ COPY LIGHTBATCH.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -269,6 +270,27 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A batch keeps 1024 changes for its end and redoes the ones beyond at once; the end leaves no change or row noted.
+     MOVE 0 TO WS-CX WS-CZ
+     CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-ROW
+     MOVE 1 TO CK-LIT(WS-ROW)
+     MOVE 8 TO WS-X WS-Z
+     MOVE 60 TO WS-Y
+     CALL "LIGHT-BATCH-BEGIN"
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 1030
+         CALL "LIGHT-BATCH-NOTE" USING WS-ROW WS-X WS-Y WS-Z
+     END-PERFORM
+     MOVE "test light window a batch keeps 1024 changes and redoes the rest at once" TO TL-CASE
+     MOVE LB-CHANGES TO TL-OBSERVED-N
+     MOVE 1024 TO TL-EXPECTED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "LIGHT-BATCH-END"
+     MOVE "test light window the end of the batch leaves no change and no row noted" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = LB-CHANGES + LB-COUNT + LB-DEPTH
+     MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

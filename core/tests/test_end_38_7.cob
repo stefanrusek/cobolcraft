@@ -1,0 +1,164 @@
+*> Implementation test of the End biome source (core/src/end-38.cob END-BIOME-OF, END-BIOME-STORE; T1733, T1734; docs/protocol/38-end.md section 7 and the
+*> worked biomes of 13.2, world seed 0): the disc of 64 chunks (inclusive) is the_end, beyond it the island field at the chunk's 8-offset centre picks
+*> highlands (above 0.25), midlands (from -0.0625), small_end_islands (below -0.21875) or barrens; the stored cells hold the chunk's biome id.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-END-38-7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CBLOCKS.
+ COPY CELLS.
+ COPY END.
+ 01 WS-SEED                BINARY-DOUBLE SIGNED VALUE 0.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-CHUNK               PIC X(304640).
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-WANT                BINARY-DOUBLE.
+ 01 WS-GOT                 BINARY-DOUBLE.
+ 01 WS-DIFF                BINARY-DOUBLE.
+ 01 WS-TOL                 BINARY-LONG VALUE 20.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     PERFORM END-TABLES
+     CALL "END-SETUP" USING WS-SEED
+     MOVE 0 TO WS-SX
+     MOVE 0 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (0, 0)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 63 TO WS-SX
+     MOVE 0 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (1023, 0)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 64 TO WS-SX
+     MOVE 0 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (1024, 0), 64 * 64 <= 4096" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 65 TO WS-SX
+     MOVE 0 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source section 65 leaves the disc" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-INDEX NOT = 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 93 TO WS-SX
+     MOVE 0 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (1500, 0): erosion -0.0829359" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -75 TO WS-SX
+     MOVE 56 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (-1200, 900): 0.1110801" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 187 TO WS-SX
+     MOVE -63 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (3000, -1000): 0.3602252" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 63 TO WS-SX
+     MOVE 63 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (1008, 1008): -0.1142252" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -75 TO WS-SX
+     MOVE -57 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (-1200, -900): 0.0017004" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 125 TO WS-SX
+     MOVE 125 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (2000, 2000): -0.5320311" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 75 TO WS-SX
+     MOVE 75 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (1200, 1200): -0.6173931" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 187 TO WS-SX
+     MOVE 187 TO WS-SZ
+     CALL "END-BIOME-OF" USING WS-SX WS-SZ WS-INDEX
+     MOVE "acceptance US12 38§7 The End biome source block (3000, 3000): 0.5625" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1496 TO WS-X
+     MOVE 8 TO WS-Z
+     CALL "END-ISLANDS" USING WS-X WS-Z WS-V
+     MOVE "acceptance US12 38§7 The End biome source erosion at sample point (1496, 8) -0.0829359" TO TL-CASE
+     MOVE -829359 TO WS-WANT
+     PERFORM CHECK-V
+     MOVE -1192 TO WS-X
+     MOVE 904 TO WS-Z
+     CALL "END-ISLANDS" USING WS-X WS-Z WS-V
+     MOVE "acceptance US12 38§7 The End biome source erosion at sample point (-1192, 904) 0.1110801" TO TL-CASE
+     MOVE 1110801 TO WS-WANT
+     PERFORM CHECK-V
+     MOVE 1016 TO WS-X
+     MOVE 1016 TO WS-Z
+     CALL "END-ISLANDS" USING WS-X WS-Z WS-V
+     MOVE "acceptance US12 38§7 The End biome source erosion at sample point (1016, 1016) -0.1142252" TO TL-CASE
+     MOVE -1142252 TO WS-WANT
+     PERFORM CHECK-V
+     MOVE 2008 TO WS-X
+     MOVE 2008 TO WS-Z
+     CALL "END-ISLANDS" USING WS-X WS-Z WS-V
+     MOVE "acceptance US12 38§7 The End biome source erosion at sample point (2008, 2008) -0.5320311" TO TL-CASE
+     MOVE -5320311 TO WS-WANT
+     PERFORM CHECK-V
+     MOVE 187 TO WS-SX
+     MOVE -63 TO WS-SZ
+     CALL "END-STATES"
+     MOVE 187 TO WS-SX
+     MOVE -63 TO WS-SZ
+     MOVE LOW-VALUES TO WS-CHUNK
+     SET ADDRESS OF CE-CHUNK TO ADDRESS OF WS-CHUNK
+     CALL "END-BIOME-STORE" USING WS-CHUNK WS-SX WS-SZ
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1024
+         IF CE-BIOME(WS-I) NOT = EN-BIOME-ID(2)
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 38§7 The End biome source stored cells of chunk (187, -63) are all end_highlands" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 38§7 The End biome source end_highlands id is 1 in the table order" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-BIOME-ID(2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ COPY ENDTEST.

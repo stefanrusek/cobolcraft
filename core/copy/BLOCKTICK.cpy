@@ -15,7 +15,7 @@
 *> BT-TRIG is the absolute game time (CW-TICKS) the tick is due.
  01 BLOCK-TICKS EXTERNAL.
     05 BT-COUNT                  BINARY-LONG.
-    05 BT-SUB-COUNT              BINARY-LONG OCCURS 3 TIMES.
+    05 BT-SUB-COUNT              BINARY-LONG OCCURS 5 TIMES.
     05 BT-TICK OCCURS 32768 TIMES.
        10 BT-T-DIM               BINARY-LONG.
        10 BT-T-TYPE              BINARY-LONG.

@@ -112,6 +112,9 @@
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
          CALL "CORE-LOG" USING WS-LINE WS-LINE-LENGTH
      END-IF
+     IF WS-FOUND = 1
+         CALL "PORTAL-POI-SCAN" USING L-ROW
+     END-IF
      IF WS-FOUND = 0
          CALL "WORLDGEN-DIM-CHUNK" USING L-DIM L-CX L-CZ CE-CHUNK WS-MARKER-Y
          IF WS-MARKER-Y >= 0
@@ -252,12 +255,13 @@
 *> USING dim, x, y, z, state (BINARY-LONG; world block position): sets the block state there. Outside
 *> the dimension's height range, or when the cell already holds that state, nothing happens.
 *> Otherwise the chunk is loaded and lit first, its changed flag is set, its per-section light source
-*> counts follow, and the light of the affected chunks is recomputed (LIGHT-BLOCK-CHANGED).
+*> counts follow, and the light of the affected chunks is recomputed (LIGHT-BLOCK-CHANGED; inside a LIGHT-BATCH-BEGIN / -END pair once at the end).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY CBLOCKS.
+ COPY LIGHTBATCH.
  COPY CELLS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -297,7 +301,11 @@
      END-IF
      CALL "BR-ADJUST" USING WS-ROW WS-SECTION WS-OLD L-STATE
      COMPUTE WS-CELL-Y = L-Y - DM-MIN-Y(L-DIM)
-     CALL "LIGHT-BLOCK-CHANGED" USING WS-ROW L-X WS-CELL-Y L-Z
+     IF LB-DEPTH > 0
+         CALL "LIGHT-BATCH-NOTE" USING WS-ROW L-X WS-CELL-Y L-Z
+     ELSE
+         CALL "LIGHT-BLOCK-CHANGED" USING WS-ROW L-X WS-CELL-Y L-Z
+     END-IF
      CALL "BE-BLOCK-SET" USING L-DIM L-X L-Y L-Z WS-OLD L-STATE
      GOBACK.
  END PROGRAM WORLD-SET-BLOCK.

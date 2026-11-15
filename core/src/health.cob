@@ -264,6 +264,8 @@
                      MOVE "death.attack.drown" TO WS-KEY
                  WHEN CAUSE-COMMAND
                      MOVE "death.attack.genericKill" TO WS-KEY
+                 WHEN CAUSE-VOID
+                     MOVE "death.attack.outOfWorld" TO WS-KEY
                  WHEN OTHER
                      MOVE "death.attack.generic" TO WS-KEY
              END-EVALUATE
@@ -516,6 +518,8 @@
              MOVE "minecraft:explosion" TO WS-WANTED
          WHEN CAUSE-ARROW
              MOVE "minecraft:arrow" TO WS-WANTED
+         WHEN CAUSE-VOID
+             MOVE "minecraft:out_of_world" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE
@@ -771,11 +775,15 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-KEEP                BINARY-LONG VALUE 0.
  01 WS-ON-GROUND           BINARY-LONG VALUE 1.
+ 01 WS-CREDITS             BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
      MOVE CN-PLAYER(L-ID) TO WS-ROW
+     IF PSB-ACTION = 0
+         CALL "END-CREDITS-RESPAWN" USING L-ID WS-CREDITS
+     END-IF
      IF PSB-ACTION NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-DEAD
          GOBACK
      END-IF
