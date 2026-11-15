@@ -1154,6 +1154,8 @@
              CALL "FR-SCULK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 28
              CALL "FR-MULTI" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 45
+             CALL "FR-SPEL" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1000
              CALL "FR-BAMBOO" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57
