@@ -5,7 +5,7 @@
  PROGRAM-ID. CL-ITEM-INFO.
 *> USING CLIENT-STATE, item id, namespace out (PIC X(16)), path out (PIC X(40)), maximum stack size out, places a block out (1/0), tool class out (PIC X: H the pickaxe and axe
 *> rules, S the shovel rule, space none), food out (the nutrition; 0 none), known out (1/0). The content row's class BlockItem places a block; its components summary holds "tool
-*> #minecraft:mineable/<kind> ..." for a tool and "food <nutrition>" for a food.
+*> #minecraft:mineable/<kind> ..." for a tool and "food apple", "food Foods.BEEF" or "food {6,1.2,true}" for a food (CONTENT-FOOD).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -21,7 +21,9 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-POS                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
- 01 WS-NUM                 PIC X(8).
+ 01 WS-SAT                 BINARY-LONG.
+ 01 WS-ALWAYS              BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ITEM                 BINARY-LONG.
@@ -66,17 +68,8 @@
                  END-IF
              END-PERFORM
          END-IF
-         MOVE 0 TO WS-POS
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 150
-             IF WS-COMP(WS-I:5) = "food " AND WS-POS = 0
-                 MOVE WS-I TO WS-POS
-             END-IF
-         END-PERFORM
-         IF WS-POS > 0
-             MOVE SPACES TO WS-NUM
-             UNSTRING WS-COMP(WS-POS + 5:) DELIMITED BY "," OR SPACE INTO WS-NUM
-             MOVE FUNCTION NUMVAL(WS-NUM) TO L-FOOD
-         END-IF
+*>       The food component names a constant of Foods or holds its numbers (CONTENT-FOOD).
+         CALL "CONTENT-FOOD" USING WS-COMP L-FOOD WS-SAT WS-ALWAYS WS-TICKS
      ELSE
          IF WS-STATUS = 4 AND L-ITEM >= 0 AND L-ITEM < CL-ITEM-COUNT
              MOVE 1 TO L-KNOWN

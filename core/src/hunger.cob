@@ -87,6 +87,7 @@
  COPY CITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -94,11 +95,15 @@
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      COMPUTE WS-SLOT = PL-HELD(WS-ROW) + 1
      IF PL-MODE(WS-ROW) NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE
-             OR PL-FOOD(WS-ROW) >= RULE-MAX-FOOD
              OR PL-SLOT-COUNT(WS-ROW, WS-SLOT) = 0
          GOBACK
      END-IF
-     IF IT-FOOD(PL-SLOT-ITEM(WS-ROW, WS-SLOT) + 1) = 0
+     COMPUTE WS-ITEM = PL-SLOT-ITEM(WS-ROW, WS-SLOT) + 1
+     IF IT-FOOD(WS-ITEM) = 0
+         GOBACK
+     END-IF
+*>   A full player eats only an item that can always be eaten (golden apple, honey bottle, chorus fruit: 25 part 5 section 4.3).
+     IF PL-FOOD(WS-ROW) >= RULE-MAX-FOOD AND IT-FOOD-ALWAYS(WS-ITEM) = 0
          GOBACK
      END-IF
      MOVE PL-SLOT-ITEM(WS-ROW, WS-SLOT) TO PL-EATING-ITEM(WS-ROW)
@@ -145,6 +150,7 @@
  01 WS-ENOUGH              FLOAT-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-USE-TICKS           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -154,8 +160,12 @@
          GOBACK
      END-IF
 *>   Eating completion (§11.6).
+     MOVE RULE-EAT-TICKS TO WS-USE-TICKS
+     IF PL-EATING-ITEM(WS-ROW) > 0 AND IT-FOOD-TICKS(PL-EATING-ITEM(WS-ROW) + 1) > 0
+         MOVE IT-FOOD-TICKS(PL-EATING-ITEM(WS-ROW) + 1) TO WS-USE-TICKS
+     END-IF
      IF PL-EATING-ITEM(WS-ROW) > 0
-             AND CW-TICKS - PL-EATING-START(WS-ROW) >= RULE-EAT-TICKS
+             AND CW-TICKS - PL-EATING-START(WS-ROW) >= WS-USE-TICKS
          MOVE PL-EATING-SLOT(WS-ROW) TO WS-SLOT
          IF PL-HELD(WS-ROW) = WS-SLOT
                  AND PL-SLOT-ITEM(WS-ROW, WS-SLOT + 1) = PL-EATING-ITEM(WS-ROW)
@@ -164,7 +174,9 @@
              COMPUTE WS-ITEM = PL-EATING-ITEM(WS-ROW) + 1
              COMPUTE WS-FOOD = PL-FOOD(WS-ROW) + IT-FOOD(WS-ITEM)
              COMPUTE PL-FOOD(WS-ROW) = FUNCTION MIN(RULE-MAX-FOOD, WS-FOOD)
-             COMPUTE PL-SATURATION(WS-ROW) = FUNCTION MIN(PL-SATURATION(WS-ROW), PL-FOOD(WS-ROW))
+*>           The saturation of the food (nutrition x modifier x 2, 25 part 1 section 8.2) adds up to the food level (17 section 4.9).
+             COMPUTE PL-SATURATION(WS-ROW) = FUNCTION MIN(PL-FOOD(WS-ROW),
+                 PL-SATURATION(WS-ROW) + IT-FOOD-SAT(WS-ITEM) / 1000)
              CALL "HEALTH-SEND" USING WS-ROW
              COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
              CALL "INV-SLOT-SEND" USING PL-CONN(WS-ROW) WS-SLOT
