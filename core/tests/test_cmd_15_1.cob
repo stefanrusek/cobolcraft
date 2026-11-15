@@ -862,7 +862,7 @@
      COMPUTE TL-EXPECTED-N = WS-NODE * 10 + BR-N-LEVEL(WS-NODE)
      COMPUTE TL-OBSERVED-N = BR-N-REDIRECT(WS-TARGET) * 10 + BR-N-LEVEL(WS-TARGET)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "advancement" TO WS-NAME
+     MOVE "test" TO WS-NAME
      PERFORM FIND-BY-NAME
      MOVE "acceptance US13 15§1 Table of contents of the standard commands a command that is not implemented is not registered" TO TL-CASE
      MOVE "N" TO TL-MODE

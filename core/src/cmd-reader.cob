@@ -71,6 +71,40 @@
  END PROGRAM BR-RAISE-3.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-RAISE-4.
+*> USING key (PIC X(48)), argument count, then four arguments each as a text (PIC X(64)) and its length (BINARY-LONG), cursor: an exception with up to four
+*> arguments (commands.spreadplayers.failed.*).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ARG1                 PIC X(64).
+ 01 L-LEN1                 BINARY-LONG.
+ 01 L-ARG2                 PIC X(64).
+ 01 L-LEN2                 BINARY-LONG.
+ 01 L-ARG3                 PIC X(64).
+ 01 L-LEN3                 BINARY-LONG.
+ 01 L-ARG4                 PIC X(64).
+ 01 L-LEN4                 BINARY-LONG.
+ 01 L-CURSOR               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-COUNT L-ARG1 L-LEN1 L-ARG2 L-LEN2 L-ARG3 L-LEN3 L-ARG4 L-LEN4 L-CURSOR.
+     MOVE L-KEY TO BR-E-KEY
+     MOVE L-COUNT TO BR-E-ARG-COUNT
+     MOVE L-LEN1 TO BR-E-ARG-LENGTH(1)
+     MOVE L-ARG1 TO BR-E-ARG(1)
+     MOVE L-LEN2 TO BR-E-ARG-LENGTH(2)
+     MOVE L-ARG2 TO BR-E-ARG(2)
+     MOVE L-LEN3 TO BR-E-ARG-LENGTH(3)
+     MOVE L-ARG3 TO BR-E-ARG(3)
+     MOVE L-LEN4 TO BR-E-ARG-LENGTH(4)
+     MOVE L-ARG4 TO BR-E-ARG(4)
+     MOVE L-CURSOR TO BR-E-CURSOR
+     GOBACK.
+ END PROGRAM BR-RAISE-4.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-RAISE-PLAIN.
 *> USING key (PIC X(48)), cursor: an exception with no arguments.
  DATA DIVISION.

@@ -49,6 +49,9 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
      MOVE "world" TO CS-NEW-WORLD-NAME
+     MOVE "auto" TO CS-WORLD-TYPE
+     MOVE "." TO CS-GAME-DIR
+     MOVE "./generated" TO CS-GENERATED-DIR
 
 *>   US13-2: a configuration file with every non-pack key set away from its default.
      MOVE "build/server-test-config" TO WS-SCRATCH
@@ -111,7 +114,7 @@
      MOVE "port=25565 | default-game-mode=creative | description=A CobolCraft server | view-dis"
          & "tance=8 | player-combat=true | hostile-mobs=true | weather-changes=true | extra-dimen"
          & "sions=true | allow-list=false | pack-url= | pack-sha1= | pack-id= | pack-required=false"
-         & " | pack-prompt= | generation-workers=auto | starter-kit=true lines 32 uncommented 0" TO TL-EXPECTED
+         & " | pack-prompt= | world-type=auto | generated-dir= | generation-workers=auto | starter-kit=true lines 36 uncommented 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-LINE-NO TO WS-COUNT
      STRING FUNCTION TRIM(WS-PAIRS) " lines " FUNCTION TRIM(WS-COUNT) DELIMITED BY SIZE

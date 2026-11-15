@@ -1,0 +1,679 @@
+*> Test of 31-4 section 4, Bell (core/src/be-31-4.cob; T0911): ringing and the event, the tick with resonance, the end actions, the particle count and colours, the proper hit test, the ring conditions, the redstone edge and the animation.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-4-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FG                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-TX                 PIC X(64).
+ 01 WS-DROPS.
+    05 WS-DROP            OCCURS 4 TIMES.
+       10 WS-DROP-ITEM    BINARY-LONG.
+       10 WS-DROP-COUNT   BINARY-LONG.
+       10 WS-DROP-VAR     BINARY-LONG.
+ 01 WS-KINDS.
+    05 WS-KIND            BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-DRAWS.
+    05 WS-DRAW            BINARY-LONG OCCURS 16 TIMES.
+ COPY CTRECIPE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-4§4 Bell: onHit (4.2): the click direction is stored; a bell that is not shaking starts (shaking true), one that shakes restarts (ticks 0); the block event is type 1 with the direction value as data" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:bell" TO WS-KEY
+     MOVE 14 TO WS-SVL
+     MOVE 30 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 3 TO WS-A
+     CALL "BE4-BELL-HIT" USING WS-IDX WS-A WS-F WS-G
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 20 TO BE-XI(WS-IDX, 1)
+     MOVE 5 TO WS-A
+     CALL "BE4-BELL-HIT" USING WS-IDX WS-A WS-F WS-G
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "3 1 1 3 5 0 1 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: triggerEvent (4.2): type 1 sets clickDirection from the data, ticks 0, shaking true and resonationTicks 0 (handled); any other type goes to the base class (not handled, state kept)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:bell" TO WS-KEY
+     MOVE 14 TO WS-SVL
+     MOVE 30 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1000 TO BE-XI(WS-IDX, 4)
+     MOVE 33 TO BE-XI(WS-IDX, 5)
+     MOVE 7 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     CALL "BE4-BELL-EVENT" USING WS-IDX WS-A WS-B WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 9 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-BELL-EVENT" USING WS-IDX WS-A WS-B WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 4 0 1 0 0 9" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: updateEntities (4.2): the list is refreshed when there is none or gameTime is above lastRingTimestamp + 60 (at 160 it is reused; at 161 it is refreshed and the timestamp moves; at 200 it is reused)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:bell" TO WS-KEY
+     MOVE 14 TO WS-SVL
+     MOVE 30 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 100 TO WS-A
+     CALL "BE4-BELL-REFRESH" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 160 TO WS-A
+     CALL "BE4-BELL-REFRESH" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 161 TO WS-A
+     CALL "BE4-BELL-REFRESH" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 200 TO WS-A
+     CALL "BE4-BELL-REFRESH" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 100 0 100 1 161 0 161" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: tick (4.3, worked example 4.6): after the event, with a raider near, tick 5 starts the resonance (sound), ticks 5 to 44 raise resonationTicks to 40, tick 45 runs the end action and ends the resonance," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:bell" TO WS-KEY
+     MOVE 14 TO WS-SVL
+     MOVE 30 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE4-BELL-EVENT" USING WS-IDX WS-A WS-B WS-E
+     MOVE 0 TO WS-G
+     MOVE 0 TO WS-H
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-F
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 60
+     CALL "BE4-BELL-TICK" USING WS-IDX WS-F WS-A WS-B
+     IF WS-A = 1
+     MOVE WS-J TO WS-G
+     END-IF
+     IF WS-B = 1
+     MOVE WS-J TO WS-H
+     END-IF
+     IF BE-XI(WS-IDX, 2) = 0 AND WS-C = 0
+     MOVE WS-J TO WS-C
+     END-IF
+     END-PERFORM
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "5 45 50 40 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: tick without raiders (4.3): the shake runs (ticks 20, shaking) but no resonance starts without a raider within 32" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:bell" TO WS-KEY
+     MOVE 14 TO WS-SVL
+     MOVE 30 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE4-BELL-EVENT" USING WS-IDX WS-A WS-B WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 20
+     CALL "BE4-BELL-TICK" USING WS-IDX WS-F WS-A WS-B
+     ADD WS-A TO WS-G
+     END-PERFORM
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 20 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: client particles (4.3, V10): n = clamp((c - 21) / -2, 3, 15) with truncating division gives 10, 9, 9, 3, 3, 3, 3 for c = 1, 2, 3, 15, 17, 25, 40; the colour starts at 16700985 and rises by 5 per" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 15 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 17 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 25 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 40 TO WS-A
+     CALL "BE4-BELL-COUNT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     CALL "BE4-BELL-COLOR" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE4-BELL-COLOR" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 9 TO WS-A
+     CALL "BE4-BELL-COLOR" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "10 9 9 3 3 3 3 16700990 16700995 16701030" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: isProperHit (4.5, V11): never on the Y axis or above relative y 0.8123999834060669 (0.8124 is already above); floor needs the facing axis, walls the other axis, ceiling any horizontal hit (attachment" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 4 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.9
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.8124
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 0.1
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 4 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.9
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.8124
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 0.1
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 4 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.9
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.8124
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 0.1
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 4 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     COMPUTE WS-FA = 0.5
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.9
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     COMPUTE WS-FA = 0.8124
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 0.1
+     CALL "BE4-BELL-PROPER" USING WS-A WS-B WS-C WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 1 0 0 0 0 1 1 1 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: attemptToRing and the redstone edge (4.5): a bell entity on the server rings in the direction hit, or its facing when none (dir used, ring 1); the client or a missing entity does not ring (-1, 0); a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 3 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE4-BELL-RING" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE -1 TO WS-C
+     MOVE 4 TO WS-E
+     CALL "BE4-BELL-RING" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 3 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE4-BELL-RING" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 3 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE4-BELL-RING" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-BELL-NEIGHBOR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-BELL-NEIGHBOR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-BELL-NEIGHBOR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-BELL-NEIGHBOR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "3 1 4 1 -1 0 -1 0 1 1 0 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§4 Bell: bell animation (4.4): a = Mth.sin(ticks / PI) / (4 + ticks / 3) (the table sine); north tilts x by -a, south by +a, east z by -a, west by +a; other directions leave both 0 (x then z rotation)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     COMPUTE WS-FA = 0.0
+     MOVE 2 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-FA = 10.5
+     MOVE 2 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-FA = 10.5
+     MOVE 3 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-FA = 10.5
+     MOVE 5 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-FA = 10.5
+     MOVE 4 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-FA = 10.5
+     MOVE 0 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-FA = 10.5
+     MOVE -1 TO WS-A
+     CALL "BE4-BELL-ANIM" USING WS-FA WS-A WS-FB WS-FC
+     COMPUTE WS-SHOW ROUNDED = (WS-FB) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     MOVE "0 0 26563 0 -26563 0 0 26563 0 -26563 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-4-4.
+
+ COPY CORETEST.

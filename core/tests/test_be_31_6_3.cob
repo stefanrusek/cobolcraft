@@ -1,0 +1,1569 @@
+*> Test of 31-6 section 3, When a command block runs (core/src/be-31-6.cob; T0937): markConditionMet, setAutomatic, power edges, the scheduled tick, the chain walk, the comparator and performCommand.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-6-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-FV                  FLOAT-SHORT.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-P                 BINARY-LONG.
+ 01 WS-Q                 BINARY-LONG.
+ 01 WS-R                 BINARY-LONG.
+ 01 WS-S                 BINARY-LONG.
+ 01 WS-U                 BINARY-LONG.
+ 01 WS-V                 BINARY-LONG.
+ 01 WS-W                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FS1                FLOAT-SHORT.
+ 01 WS-FS2                FLOAT-SHORT.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N48                PIC X(48).
+ 01 WS-T64                PIC X(64).
+ 01 WS-T256               PIC X(256).
+ 01 WS-T2                 PIC X(64).
+ 01 WS-TAB.
+    05 WS-TV              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-LONG1              BINARY-DOUBLE.
+ 01 WS-LONG2              BINARY-DOUBLE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-6§3 When a command block runs: markConditionMet (3.2): a non-conditional block is always met; a conditional one is met only when the block behind is a command block with successCount > 0 (-1 = no command block" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE -1 TO WS-B
+     CALL "BE6-MARK-CONDITION" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 5 TO WS-B
+     CALL "BE6-MARK-CONDITION" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-MARK-CONDITION" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-MARK-CONDITION" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE -1 TO WS-B
+     CALL "BE6-MARK-CONDITION" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-MARK-CONDITION" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 1 1 1 1 0 0 0 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: setAutomatic (3.3): a tick is scheduled only when auto turns from false to true while not powered, with a level and a mode other than SEQUENCE (old auto, powered, new, has level," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE WS-A TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-SET-AUTOMATIC" USING WS-IDX WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 1 1 0 1 0 1 0 1 0 1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: onModeSwitch (3.3): a tick is scheduled when the new mode is AUTO and the block is powered or automatic and has a level" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-MODE-SWITCH" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-MODE-SWITCH" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-MODE-SWITCH" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-MODE-SWITCH" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-MODE-SWITCH" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-MODE-SWITCH" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: setPoweredAndUpdate (3.4): only a rising edge schedules, and not for an automatic block or a chain block; a power-off stores and schedules nothing; an equal value does nothing" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-SET-POWERED" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 1 1 0 1 0 1 0 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: placement (3.4): without block_entity_data trackOutput takes send_command_feedback and the block automatic flag is applied through setAutomatic; with it neither; the neighbour" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE6-PLACED" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE6-PLACED" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE6-PLACED" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE6-PLACED" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE6-PLACED" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE6-PLACED" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 1 1 1 0 0 1 1 0 1 0 1 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: scheduled tick (3.5, 3.6): AUTO recomputes the flag and runs on the previous one, repeats while powered or automatic; REDSTONE runs on the previous flag and never repeats;" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 7 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO BE-XI(WS-IDX, 3)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE6-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 1 7 1 1 0 1 0 1 0 0 0 0 1 0 0 0 7 0 1 1 0 7 0 1 1 0 7 1 1 0 0 0 1 0 0 0 0 0 0 0 0 7 0 1 1 0 7 1 " &
+         "0 0 0 7 1 0 0 0 7 1 0 0 0 7 0 0 0 0 7 0 0 0 0 7 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: chain step (3.7 steps 2 and 3): leave the walk when the block is not a chain command block entity in mode SEQUENCE; run when powered or automatic and met (leave when the run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     MOVE 0 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 0 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     MOVE 1 TO WS-H
+     CALL "BE6-CHAIN-BLOCK" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 6 0 6 0 6 1 6 2 6 4 0 3 6 3 6" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: chain counter (3.7 worked example): with max_command_sequence_length 1 the counter is spent after block B so the warning is logged; with 2 it is spent when the step finds air, so" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-P
+     CALL "BE6-CHAIN-WARN" USING WS-A WS-P WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-P
+     CALL "BE6-CHAIN-WARN" USING WS-A WS-P WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-P
+     CALL "BE6-CHAIN-WARN" USING WS-A WS-P WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 1 1 1 1 1 2 1 1 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: chain limit (3.7): the counter is tested before it is decremented; at 0 or below the loop is not entered; a negative rule logs the warning with 0" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-P
+     CALL "BE6-CHAIN-LIMIT" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE6-CHAIN-WARN" USING WS-A WS-P WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -5 TO WS-A
+     MOVE -5 TO WS-P
+     CALL "BE6-CHAIN-WARN" USING WS-A WS-P WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: comparator output (3.8): the raw successCount (not clamped to 15 here), 0 when the entity is not a command block entity" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 12 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     CALL "BE6-COMPARATOR" USING WS-A WS-IDX WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     CALL "BE6-COMPARATOR" USING WS-A WS-IDX WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 20 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO WS-A
+     CALL "BE6-COMPARATOR" USING WS-A WS-IDX WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     CALL "BE6-COMPARATOR" USING WS-A WS-IDX WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "12 0 20 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: performCommand (3.9): a second run in the same game tick returns false and does nothing; Searge (any case) sets lastOutput to #itzlipofutzli, successCount 1 and keeps" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-SEED(WS-IDX)
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 7)
+     MOVE SPACES TO WS-T256
+     MOVE "say hi" TO WS-T256
+     MOVE 6 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 5 TO WS-LONG1
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-PERFORM" USING WS-IDX WS-LONG1 WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SEED(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 5 TO BE-SEED(WS-IDX)
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 7)
+     MOVE SPACES TO WS-T256
+     MOVE "say hi" TO WS-T256
+     MOVE 6 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 5 TO WS-LONG1
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-PERFORM" USING WS-IDX WS-LONG1 WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SEED(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 5 TO BE-SEED(WS-IDX)
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 7)
+     MOVE SPACES TO WS-T256
+     MOVE "SearGe" TO WS-T256
+     MOVE 6 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 6 TO WS-LONG1
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-PERFORM" USING WS-IDX WS-LONG1 WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SEED(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 5 TO BE-SEED(WS-IDX)
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 7)
+     MOVE SPACES TO WS-T256
+     MOVE "say hi" TO WS-T256
+     MOVE 6 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 7 TO WS-LONG1
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-PERFORM" USING WS-IDX WS-LONG1 WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SEED(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 5 TO BE-SEED(WS-IDX)
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 1 TO BE-XI(WS-IDX, 7)
+     MOVE SPACES TO WS-T256
+     MOVE 0 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 7 TO WS-LONG1
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-PERFORM" USING WS-IDX WS-LONG1 WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SEED(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 5 TO BE-SEED(WS-IDX)
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 0 TO BE-XI(WS-IDX, 7)
+     MOVE SPACES TO WS-T256
+     MOVE "say hi" TO WS-T256
+     MOVE 6 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE 5 TO BE-XI(WS-IDX, 4)
+     MOVE 8 TO WS-LONG1
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-PERFORM" USING WS-IDX WS-LONG1 WS-A WS-B WS-C WS-E
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SEED(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 2 0 5 0 0 5 0 5 1 0 1 14 5 1 0 0 0 7 1 0 0 0 7 1 1 1 0 -1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§3 When a command block runs: setCommand (3.9): stores the command and resets successCount to 0" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:command_block" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 23 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 9 TO BE-XI(WS-IDX, 4)
+     MOVE SPACES TO WS-T256
+     MOVE "say hi" TO WS-T256
+     MOVE 6 TO WS-LEN
+     CALL "BE6-SET-COMMAND" USING WS-IDX WS-T256 WS-LEN
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-CMD-LENGTH(WS-IDX) TO WS-SHOW
+     PERFORM ADD-N
+     STRING BE-CMD(WS-IDX)(1:BE-CMD-LENGTH(WS-IDX)) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "0 6 say hi" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-FLOAT.
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WS-NM WS-NML WS-FV
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-6-3.
+
+ COPY CORETEST.

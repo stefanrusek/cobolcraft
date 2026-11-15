@@ -1,0 +1,264 @@
+*> Test of 29b part 2 section 9, Farmland (core/src/growth-29b-2b.cob; T0551): farmland of 9.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-ISG), calls the program with the input group (and the key) and shows the first outputs of WS-RSG joined by "/", one group per
+*> call; expected values come from the rules, tables and worked cases of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-2-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A                   PIC X(48).
+ 01 WS-B                   PIC X(48).
+ 01 WS-C                   PIC X(48).
+ 01 WS-STEM                BINARY-LONG.
+ 01 WS-T1                  BINARY-LONG.
+ 01 WS-T2                  BINARY-LONG.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-2§9 Farmland: survive and block-above rule (9.1, 14.6): a solid block above that is not in maintains_farmland makes it unable to survive; an UP update schedules a 1-tick check; placement gives farmland or dirt" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/1 0/1/1/0 1/0/0/1 0/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§9 Farmland: shape and flags (9): column(16, 0, 15), shape used for light occlusion, not pathfindable, always random ticks" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SOIL-SHAPE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "15/1/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§9 Farmland: water search box (9.2): from (-4, 0, -4) to (4, 1, 4) inclusive, 162 cells; wet when any water cell is in it or it rains at pos.above()" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE SPACES TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-BOX" USING WS-ISG WS-RSG
+     MOVE 7 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-WET" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-WET" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-WET" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "-4/0/-4/4/1/4/162 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§9 Farmland: moisture (9.2, 14.6): wet jumps to 7; dry decrements; dry at 0 turns to dirt unless a maintains_farmland block is above" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-MOIST" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/1 1/1 0/1 0/0 0/2 7/1 7/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§9 Farmland: trampling (9.3, 14.7): nextFloat < d - 0.5 (draw made first, server only); living; spawn protection for players or mob_griefing; volume above 0.512" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 499999 1000 1 1 0 1 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 500000 1000 1 1 0 1 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 400 1 1 0 1 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 999999 2000 1 0 0 1 90 130" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2000 1 0 0 0 90 130" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2000 1 1 1 1 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2000 1 1 0 0 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2000 0 0 0 1 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2000 1 0 0 1 40 70" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2000 1 0 0 1 60 195" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 2000 1 1 0 1 60 180" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-FARM-TRAMPLE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1000 0/1/1000 0/1/400 1/1/2000 0/1/2000 0/1/2000 1/1/2000 0/1/2000 0/1/2000 1/1/2000 0/0/2000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§9 Farmland: turnToBaseBlock (9.4): pushEntitiesUp first, setBlockAndUpdate (flags 3), then game event block_change" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE SPACES TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-TURN-BASE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§9 Farmland: pushEntitiesUp (9.5): delta is the new shape minus the old (farmland to dirt: y 15 to 16); an entity overlapping it is lifted by its penetration depth" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1500 1600 1500 3300" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PUSH-UP" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1500 1600 1550 3350" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PUSH-UP" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1500 1600 1600 3400" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PUSH-UP" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1500 1600 0 1500" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PUSH-UP" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1600 1500 1500 3300" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PUSH-UP" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1500/1600/1/100 0/1500/1600/1/50 0/1500/1600/0/0 0/1500/1600/0/0 1/0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-A) "|" FUNCTION TRIM(WS-B) "|" FUNCTION TRIM(WS-C) "|" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T1 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T2 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-2-9.

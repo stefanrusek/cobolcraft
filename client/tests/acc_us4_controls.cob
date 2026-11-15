@@ -4,7 +4,7 @@
 *> item held sends Use Item On with that face and the hit point; the left button sends start destroy,
 *> and in survival stop destroy once the break time has passed (a quarter of it with the matching
 *> tool), or abort destroy when released early; in creative start destroy alone; the right button
-*> on a glowtube without a block item sends Use Item On, on another block nothing. What the server
+*> on any targeted block sends Use Item On whatever the hand holds (T4800). What the server
 *> receives is read on the server side of a real loopback connection.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US4-CONTROLS.

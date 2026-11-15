@@ -1,0 +1,804 @@
+*> Test of 40-5§4 section, Lectern (T1057): slot, page data slot, buttons, redstone signal, book view layout, keys and the lectern screen (core/src/menu-40-5.cob).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-5-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NM                PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-5§4 Lectern: 4.2 slot 0 at (0, 0): mayPlace true, the book container canPlaceItem" &
+         " false for every slot (slot -> x, y, mayPlace, container canPlaceItem)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SLOT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.3 page count: the written book pages, else the writable book pages" &
+         ", else 0 (written present, pages, writable present, pages -> count)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 5 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGECOUNT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5 1 9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGECOUNT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGECOUNT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGECOUNT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 5 9 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.2 hasBook: the stack has writable_book_content or written_book_con" &
+         "tent (written, writable -> has book)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-HASBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-HASBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-HASBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-HASBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.2 stillValid: block entity in place, player in range and the lecte" &
+         "rn still has a book (block entity, in range, has book -> valid)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VALID" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.3 data slot 0 set: the value clamps to 0 .. page count - 1 and cou" &
+         "nts as a change when it differs from the stored page (value, page count, stored -> stored" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CLAMP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "9 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CLAMP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "-3 5 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CLAMP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 5 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CLAMP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CLAMP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 5 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CLAMP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 4/1 0/1 4/0 0/0 2/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.4 buttons: ids 100 and up jump to the page, 1 previous, 2 next (cl" &
+         "amped, no permission check), 3 takes the book only with mayBuild, other ids do nothing (id," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "102 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "109 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "100 3 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 4 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 5 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 5 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 2 5 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "99 2 5 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-BUTTON" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0 1/4/0 1/0/0 1/2/0 1/0/0 1/1/0 1/4/0 1/2/1 0/2/0 0/2/0 0/2/0 0/2/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.4 take book: the book goes into the inventory when it fits, else i" &
+         "t is dropped (fits -> added, dropped)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TAKE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TAKE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.5 quick-move always returns the empty stack (index -> moved count)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-QUICK" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-QUICK" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.6, 5.10 redstone signal: 0 without a book, else floor(14 x page / " &
+         "(pages - 1)) + 1, with f = 1 for a one-page book (has book, page, pages -> signal)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 6 15" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 13 15" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 4 15 8 15 15 7 3 11 7 14" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7, E10 layout: backgroundLeft = (width - 192) / 2; page text x + 3" &
+         "6; indicator right edge x + 148; forward x + 116; back x + 43; the 200-wide Done at (width -" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "854" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "192" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "400" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "255" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "331/367/479/447/374/327 0/36/148/116/43/-4 104/140/252/220/147/100 31/67/179/147/74/27" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 vertical layout: text lines at 32 + 9 i, indicator y 18, page bu" &
+         "ttons y 159, background top 2, menu controls top 196 (line -> y, indicator y, button y, top," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUTY" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUTY" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "13" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LAYOUTY" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "32/18/159/2/196 41/18/159/2/196 149/18/159/2/196" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 at most min(14, lines) lines of the split page are drawn (lines " &
+         "-> shown)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LINES" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LINES" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "14" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LINES" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "15" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LINES" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "40" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LINES" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5 14 14 14" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 page indicator: Page <page + 1> of <max(pages, 1)> (page, pages " &
+         "-> shown page, total)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-INDICATOR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-INDICATOR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-INDICATOR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-INDICATOR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-INDICATOR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 1/1 2/5 5/5 1/9" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 button visibility: forward while page < pages - 1, back while pa" &
+         "ge > 0 (page, pages -> forward, back)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VIS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VIS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VIS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VIS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-VIS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 0/0 1/0 1/1 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 setBookAccess clamps the page to 0 .. pages (the upper bound is " &
+         "the count) (page, pages -> page)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "9 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "-2 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETBOOK" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 5 5 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 setPage clamps to 0 .. pages - 1 and reports a change only when " &
+         "different (page, current, pages -> page, changed)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETPAGE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETPAGE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "9 3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETPAGE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "-1 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETPAGE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-SETPAGE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3/0 4/1 4/1 0/0 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 keys: code 1073741899 presses the back button (1), 1073741902 th" &
+         "e forward button (2), others nothing (code -> button)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1073741899" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-KEY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1073741902" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-KEY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1073741900" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-KEY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-KEY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "75" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-KEY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 text clicks: the left button (1) with an event: change page (1-b" &
+         "ased) forces page - 1, run command closes the container on the server and runs, other events" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TEXTCLICK" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TEXTCLICK" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TEXTCLICK" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TEXTCLICK" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TEXTCLICK" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TEXTCLICK" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/3 1/2/0 1/3/0 0/0/0 0/0/0 0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7, E11 forcePage: when the page differs from the menu page send bu" &
+         "tton id 100 + page and report success (page, menu page -> sent, id)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "9 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-FORCE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-FORCE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-FORCE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-FORCE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/109 0/0 1/104 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7, E10 controls: a player who may build gets Done (width 98) at wi" &
+         "dth / 2 - 100 and Take Book at width / 2 + 2 at y 196, else a single 200-wide Done (mayBuild," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 854" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CONTROLS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 854" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CONTROLS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 401" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CONTROLS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 401" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-CONTROLS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/327/98/429/98 1/327/200/0/0 2/100/98/202/98 1/100/200/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 page buttons: on the lectern screen the back button sends id 1 a" &
+         "nd the forward button id 2 and the page changes with the server update; on the plain book" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGEPRESS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGEPRESS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGEPRESS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-PAGEPRESS" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 2/0 0/1 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 listener: a slot change rebuilds the access from the book (1) or" &
+         " uses the empty access (2); a data change calls setPage (3) (kind 1 slot 2 data, is a book ->" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LISTEN" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LISTEN" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LISTEN" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-LISTEN" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 3 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§4 Lectern: 4.7 the page turn sound plays only for a screen created with playTur" &
+         "nSound: the plain book screen, not the lectern (lectern -> sound)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TURNSOUND" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN5-L-TURNSOUND" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-MENU-40-5-4.

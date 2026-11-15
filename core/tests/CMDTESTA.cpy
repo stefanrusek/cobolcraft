@@ -1,0 +1,136 @@
+*> Test helpers of the lane-A command tests (test infrastructure, excluded from coverage). COPY this after CMDTEST.cpy (after the END
+*> PROGRAM of a test program).
+*>   TA-CHECK USING connection id, case (PIC X(240)), line (PIC X(768)), expected (PIC X(1024)): the player runs the line and the
+*>     texts it was sent (as TEST-RUN shows them) are compared with the expected text.
+*>   TA-CHECK-N USING connection id, case, line, expected (BINARY-DOUBLE): the player runs the line (BR-EXECUTE); its result is compared;
+*>     what the player was sent is dropped.
+*>   TA-CHECK-IDS USING connection id, case, expected (PIC X(1024)): the packet ids the connection was sent (TEST-DRAIN-IDS).
+*>   TA-CHECK-CONSOLE USING case, line, expected: the console runs the line; the console lines are compared.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TA-CHECK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-LINE                 PIC X(768).
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-LINE L-EXPECTED.
+     CALL "TEST-RUN" USING L-ID L-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING L-CASE L-EXPECTED WS-TEXT
+     GOBACK.
+ END PROGRAM TA-CHECK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TA-CHECK-N.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-NUM                 BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-LINE                 PIC X(768).
+ 01 L-EXPECTED             BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-ID L-CASE L-LINE L-EXPECTED.
+     CALL "TEST-RUN-RESULT" USING L-ID L-LINE WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING L-ID WS-TEXT
+     CALL "TEST-EXPECT-NUMBER" USING L-CASE L-EXPECTED WS-NUM
+     GOBACK.
+ END PROGRAM TA-CHECK-N.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TA-CHECK-IDS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-EXPECTED.
+     CALL "TEST-DRAIN-IDS" USING L-ID WS-IDS
+     MOVE WS-IDS TO WS-TEXT
+     CALL "TEST-EXPECT" USING L-CASE L-EXPECTED WS-TEXT
+     GOBACK.
+ END PROGRAM TA-CHECK-IDS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TA-CHECK-CONSOLE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(240).
+ 01 L-LINE                 PIC X(768).
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-CASE L-LINE L-EXPECTED.
+     CALL "TEST-RUN-CONSOLE" USING L-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING L-CASE L-EXPECTED WS-TEXT
+     GOBACK.
+ END PROGRAM TA-CHECK-CONSOLE.
+
+*>   TA-CHECK-HEX USING connection id, case, wanted packet id (BINARY-LONG), expected hex (PIC X(1024)): the body (after the id) of the first packet of
+*>     that id the connection was sent, as lowercase hex ("none" when there is none), is compared with the expected hex.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TA-CHECK-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-AREA                PIC X(65536) BASED.
+ 01 WS-COPY                PIC X(512).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-WANTED               BINARY-LONG.
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-WANTED L-EXPECTED.
+     MOVE "none" TO WS-HEX
+     MOVE 0 TO WS-FOUND WS-OUTCOME
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
+             MOVE 1 TO WS-FOUND
+             SET ADDRESS OF WS-AREA TO PK-ADDR
+             COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+             MOVE SPACES TO WS-COPY
+             MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+             CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     MOVE WS-HEX TO WS-TEXT
+     CALL "TEST-EXPECT" USING L-CASE L-EXPECTED WS-TEXT
+     GOBACK.
+ END PROGRAM TA-CHECK-HEX.
+
+*>   TA-SET-HOST-KIND USING kind (BINARY-LONG): CS-HOST-KIND of the settings of the open world (0 dedicated, 1 single-player, 2 opened to others).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TA-SET-HOST-KIND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     MOVE L-KIND TO CS-HOST-KIND
+     GOBACK.
+ END PROGRAM TA-SET-HOST-KIND.

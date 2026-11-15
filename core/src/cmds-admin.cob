@@ -1180,3 +1180,1045 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-PARDON-IP.
+
+*> ---- Lane cmds-a: the dev and debug commands (16 §12), the profilers, transfer, serverpack, fetchprofile, publish, unpublish ----
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-RAISE.
+*> USING key (PIC X(72)), argument count, argument 1 (PIC X(64)), its length, argument 2 (PIC X(64)), its length: the command fails
+*> with that exception (BR-RAISE; BR-R-FAILED 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(72).
+ 01 L-N-ARGS               BINARY-LONG.
+ 01 L-A1                   PIC X(64).
+ 01 L-L1                   BINARY-LONG.
+ 01 L-A2                   PIC X(64).
+ 01 L-L2                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-N-ARGS L-A1 L-L1 L-A2 L-L2.
+     CALL "BR-RAISE" USING L-KEY L-N-ARGS L-A1 L-L1 L-A2 L-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED
+     GOBACK.
+ END PROGRAM BA-RAISE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-RAISE-PLAIN.
+*> USING key (PIC X(72)): the command fails with that exception, which has no arguments.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(72).
+ PROCEDURE DIVISION USING L-KEY.
+     MOVE SPACES TO WS-A1 WS-A2
+     CALL "BA-RAISE" USING L-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+     GOBACK.
+ END PROGRAM BA-RAISE-PLAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-SAY.
+*> USING key (PIC X(72)), broadcast flag (1 = B): the source is told the text of that key with no arguments (BR-FEEDBACK).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(72).
+ 01 L-BROADCAST            BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-BROADCAST.
+     CALL "BX-KEY" USING PB-TEXT L-KEY
+     CALL "BR-FEEDBACK" USING PB-TEXT L-BROADCAST
+     GOBACK.
+ END PROGRAM BA-SAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-SEND.
+*> USING packet (PB-BUFFER), dimension row (0 = every dimension, else a row of the DIMENSIONS.cpy table: PL-DIM, BS-DIM): the packet is sent to every player in play (join
+*> sent) of that dimension.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIM                  BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-DIM.
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
+         IF PL-USED(WS-ROW) = 1 AND PL-ENTITY-ROW(WS-ROW) > 0 AND (L-DIM = 0 OR PL-DIM(WS-ROW) = L-DIM)
+             CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BA-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-FIXED.
+*> USING scaled value (BINARY-DOUBLE, not negative: the number times 10 to the decimals), decimals (1 or 2), text out (PIC X(32)),
+*> length out: the number with that many decimals (the %.1f and %.2f of 16 §4.11, §11.17).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIVISOR             BINARY-DOUBLE.
+ 01 WS-INT                 BINARY-DOUBLE.
+ 01 WS-FRAC                BINARY-DOUBLE.
+ 01 WS-EDIT                PIC -(18)9.
+ 01 WS-FRAC-DIGITS         PIC 99.
+ LINKAGE SECTION.
+ 01 L-VALUE                BINARY-DOUBLE.
+ 01 L-DECIMALS             BINARY-LONG.
+ 01 L-TEXT                 PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALUE L-DECIMALS L-TEXT L-LENGTH.
+     COMPUTE WS-DIVISOR = 10 ** L-DECIMALS
+     DIVIDE L-VALUE BY WS-DIVISOR GIVING WS-INT REMAINDER WS-FRAC
+     MOVE WS-INT TO WS-EDIT
+     MOVE WS-FRAC TO WS-FRAC-DIGITS
+     MOVE SPACES TO L-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) "." WS-FRAC-DIGITS(3 - L-DECIMALS:L-DECIMALS) DELIMITED BY SIZE INTO L-TEXT
+     COMPUTE L-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(L-TEXT))
+     GOBACK.
+ END PROGRAM BA-FIXED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-HOST-KIND.
+*> USING kind out (BINARY-LONG): CS-HOST-KIND of the settings of the open world (0 dedicated server, 1 single-player, 2 opened to others;
+*> 0 while no world is open: the settings are still all zero bytes).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     IF CS-HOST-KIND IS NUMERIC
+         MOVE CS-HOST-KIND TO L-KIND
+     ELSE
+         MOVE 0 TO L-KIND
+     END-IF
+     GOBACK.
+ END PROGRAM BA-HOST-KIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-CHASE.
+*> chase follow [<host> <port>] | lead [<bind_address> <port>] | stop (16 §12, §14a, level 0, DEBUG_CHASE_COMMAND): the chase (a test-time follower
+*> of another server's player positions) has no subsystem here and the catalog names no message; the result is 0. BLOCKED docs: the
+*> already-running failure of 14a has no key.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     MOVE 0 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-CHASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-CHASE.
+*> The forms of chase (16 §12, §14a): the hostless forms use the defaults localhost:10000 and 0.0.0.0:10000.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 0.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-CHASE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "chase follow" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "chase follow <host:word> <port:int:1:65535>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "chase lead" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "chase lead <bind_address:word> <port:int:1024:65535>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "chase stop" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-CHASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DEBUGPATH.
+*> debugpath <to> (16 §12, level 2, dev): no pathfinding debug view exists here and the catalog names no message or result; the result is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     MOVE 0 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-DEBUGPATH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-DEBUGPATH.
+*> The form of debugpath (16 §12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-DEBUGPATH.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "debugpath <to:pos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-DEBUGPATH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DEBUGMOBSPAWNING.
+*> debugmobspawning <mob_category> <at> (16 §12, level 2, dev): no spawn debug view exists here and the catalog names no message or result;
+*> the result is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     MOVE 0 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-DEBUGMOBSPAWNING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-DEBUGMOBSPAWNING.
+*> The forms of debugmobspawning (16 §12): each spawn category (18 §1.2, serialized names) followed by a block position.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-DEBUGMOBSPAWNING.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-CATEGORIES.
+    05 FILLER PIC X(28) VALUE "monster".
+    05 FILLER PIC X(28) VALUE "creature".
+    05 FILLER PIC X(28) VALUE "ambient".
+    05 FILLER PIC X(28) VALUE "axolotls".
+    05 FILLER PIC X(28) VALUE "underground_water_creature".
+    05 FILLER PIC X(28) VALUE "water_creature".
+    05 FILLER PIC X(28) VALUE "water_ambient".
+    05 FILLER PIC X(28) VALUE "misc".
+ 01 WS-TABLE REDEFINES WS-CATEGORIES.
+    05 WS-CATEGORY          PIC X(28) OCCURS 8 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+         MOVE SPACES TO WS-PATH
+         STRING "debugmobspawning " FUNCTION TRIM(WS-CATEGORY(WS-I)) " <at:pos>" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-DEBUGMOBSPAWNING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DEBUGCONFIG.
+*> debugconfig config <target> | unconfig <target> | dialog <target> <dialog> (16 §12, level 3, dev, dedicated): moving a player into and out of the
+*> configuration phase is not part of the play loop here and the catalog names no message or result; the result is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     MOVE 0 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-DEBUGCONFIG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-DEBUGCONFIG.
+*> The forms of debugconfig (16 §12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-DEBUGCONFIG.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "debugconfig config <target:player>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "debugconfig unconfig <target:uuid>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "debugconfig dialog <target:uuid> <dialog:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-DEBUGCONFIG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-RAID.
+*> raid start <omenlvl> | stop | check | sound <type> | spawnleader | setomen <level> | glow (16 §12, §14a, level 3, dev): raids do not exist here; the
+*> catalog names no message ("none referenced") and gives the result 1 (start: -1 on a failure that cannot happen without raids).
+*> BLOCKED docs: the failures "no raid" and "not in a raid" have no keys.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     MOVE 1 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-RAID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-RAID.
+*> The forms of raid (16 §12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-RAID.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "raid start <omenlvl:int:0:>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "raid stop" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "raid check" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "raid sound <type:component>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "raid spawnleader" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "raid setomen <level:int:0:>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "raid glow" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-RAID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SPAWN-ARMOR-TRIMS.
+*> spawn_armor_trims *_lag_my_game | <pattern> (16 §12, §14a, level 2, dev): the armor stand display of every trim is not built here; the catalog
+*> names no message and gives the result 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     MOVE 1 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-SPAWN-ARMOR-TRIMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-SPAWN-ARMOR-TRIMS.
+*> The forms of spawn_armor_trims (16 §12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-SPAWN-ARMOR-TRIMS.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "spawn_armor_trims *_lag_my_game" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "spawn_armor_trims <pattern:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-SPAWN-ARMOR-TRIMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SERVERPACK.
+*> serverpack push <url> <uuid> <hash> | pop <uuid> (16 §11.21, level 2, dev): every player in play is sent Resource Pack Push (0x52: pack id, URL, hash,
+*> required false, no prompt) or Resource Pack Pop (0x51, the pack id present); no message; the result is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-PUSH           PIC X(32) VALUE "push".
+ 01 WS-NAME-URL            PIC X(32) VALUE "url".
+ 01 WS-NAME-UUID           PIC X(32) VALUE "uuid".
+ 01 WS-NAME-HASH           PIC X(32) VALUE "hash".
+ 01 WS-LIT                 BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-URL                 PIC X(1024).
+ 01 WS-HASH                PIC X(40).
+ 01 WS-HASH-LENGTH         BINARY-LONG.
+ 01 WS-TEXT                PIC X(36).
+ 01 WS-UUID                PIC X(16).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 2048.
+ 01 WS-ID-PUSH             BINARY-LONG VALUE 82.
+ 01 WS-ID-POP              BINARY-LONG VALUE 81.
+ 01 WS-MAX-URL             BINARY-LONG VALUE 32767.
+ 01 WS-MAX-HASH            BINARY-LONG VALUE 40.
+ 01 WS-FALSE               BINARY-LONG VALUE 0.
+ 01 WS-TRUE                BINARY-LONG VALUE 1.
+ 01 WS-EVERY               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-UUID WS-INDEX
+     MOVE BA-START(WS-INDEX) TO WS-START
+     COMPUTE WS-LENGTH = FUNCTION MIN(BA-END(WS-INDEX) - WS-START, 36)
+     MOVE SPACES TO WS-TEXT
+     MOVE BR-R-LINE(WS-START + 1:WS-LENGTH) TO WS-TEXT
+     CALL "CONFIG-PACK-UUID" USING WS-TEXT WS-UUID
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BX-LIT" USING WS-NAME-PUSH WS-LIT
+     IF WS-LIT > 0
+         CALL "BX-FIND" USING WS-NAME-URL WS-INDEX
+         MOVE BA-START(WS-INDEX) TO WS-START
+         COMPUTE WS-LENGTH = BA-END(WS-INDEX) - WS-START
+         IF WS-LENGTH > 1 AND BR-R-LINE(WS-START + 1:1) = '"'
+             ADD 1 TO WS-START
+             SUBTRACT 2 FROM WS-LENGTH
+         END-IF
+         MOVE SPACES TO WS-URL
+         MOVE BR-R-LINE(WS-START + 1:WS-LENGTH) TO WS-URL
+         CALL "BX-FIND" USING WS-NAME-HASH WS-INDEX
+         MOVE BA-START(WS-INDEX) TO WS-START
+         COMPUTE WS-HASH-LENGTH = FUNCTION MIN(BA-END(WS-INDEX) - WS-START, 40)
+         MOVE SPACES TO WS-HASH
+         MOVE BR-R-LINE(WS-START + 1:WS-HASH-LENGTH) TO WS-HASH
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID-PUSH
+         CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+         CALL "PB-PUT-STRING" USING PB-BUFFER WS-URL WS-LENGTH WS-MAX-URL
+         CALL "PB-PUT-STRING" USING PB-BUFFER WS-HASH WS-HASH-LENGTH WS-MAX-HASH
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+     ELSE
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID-POP
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-TRUE
+         CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     END-IF
+     CALL "BA-SEND" USING PB-BUFFER WS-EVERY
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE 0 TO BR-R-RESULT
+     GOBACK.
+ END PROGRAM CX-SERVERPACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-SERVERPACK.
+*> The forms of serverpack (16 §11.21).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-SERVERPACK.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "serverpack push <url:phrase> <uuid:uuid> <hash:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "serverpack pop <uuid:uuid>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-SERVERPACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-TRANSFER.
+*> transfer <hostname> [<port> [<players>]] (16 §11.13, level 3): each target (the source player when none is given; the console must name
+*> players) is sent Transfer (0x84: host, port, default 25565); commands.transfer.success.single [player, host, port] or .multiple [count, host,
+*> port] is broadcast; the result is the number of players. (commands.transfer.error.no_players cannot occur: a selector that finds no player fails
+*> in the framework.)
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-HOST           PIC X(32) VALUE "hostname".
+ 01 WS-NAME-PORT           PIC X(32) VALUE "port".
+ 01 WS-NAME-PLAYERS        PIC X(32) VALUE "players".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-HOST                PIC X(256).
+ 01 WS-HOST-LENGTH         BINARY-LONG.
+ 01 WS-PORT                BINARY-LONG VALUE 25565.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ID                  BINARY-LONG VALUE 132.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-HOST WS-INDEX
+     MOVE BA-START(WS-INDEX) TO WS-START
+     COMPUTE WS-HOST-LENGTH = FUNCTION MIN(BA-END(WS-INDEX) - WS-START, 256)
+     MOVE SPACES TO WS-HOST
+     MOVE BR-R-LINE(WS-START + 1:WS-HOST-LENGTH) TO WS-HOST
+     MOVE 25565 TO WS-PORT
+     CALL "BX-FIND" USING WS-NAME-PORT WS-INDEX
+     IF WS-INDEX > 0
+         MOVE BA-IVAL(WS-INDEX) TO WS-PORT
+     END-IF
+     CALL "BX-TARGETS-OR-SELF" USING WS-NAME-PLAYERS WS-ROWS
+     IF BR-R-FAILED = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+         CALL "PB-PUT-STRING" USING PB-BUFFER WS-HOST WS-HOST-LENGTH WS-MAX
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PORT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             CALL "CORE-SEND" USING PL-CONN(BX-ROW(WS-I)) PB-BUFFER
+         END-PERFORM
+         CALL "PB-FREE" USING PB-BUFFER
+         IF BX-COUNT = 1
+             MOVE "commands.transfer.success.single" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(BX-ROW(1)) PL-NAME-LENGTH(BX-ROW(1))
+         ELSE
+             MOVE "commands.transfer.success.multiple" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT BX-COUNT
+         END-IF
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-HOST WS-HOST-LENGTH
+         CALL "CMD-TEXT-INT" USING PB-TEXT WS-PORT
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE BX-COUNT TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-TRANSFER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-TRANSFER.
+*> The forms of transfer (16 §11.13): the port defaults to 25565.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-TRANSFER.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "transfer <hostname:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "transfer <hostname:word> <port:int:1:65535>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "transfer <hostname:word> <port:int:1:65535> <players:players>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-TRANSFER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-WARDEN-SPAWN-TRACKER.
+*> warden_spawn_tracker clear | set <warning_level> (16 §12, §14a, level 2, dev): the player running it is the target (the console fails with
+*> permissions.requires.player); wardens do not exist here, so no warning level is kept; commands.warden_spawn_tracker.clear.success.single or
+*> .set.success.single [player] is broadcast; the result is the tracker total, 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-CLEAR          PIC X(32) VALUE "clear".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-LIT                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     CALL "BX-TARGETS-OR-SELF" USING WS-NAME-TARGET WS-ROWS
+     IF BR-R-FAILED = 0
+         CALL "BX-LIT" USING WS-NAME-CLEAR WS-LIT
+         IF WS-LIT > 0
+             MOVE "commands.warden_spawn_tracker.clear.success.single" TO WS-KEY
+         ELSE
+             MOVE "commands.warden_spawn_tracker.set.success.single" TO WS-KEY
+         END-IF
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(BX-ROW(1)) PL-NAME-LENGTH(BX-ROW(1))
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-WARDEN-SPAWN-TRACKER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-WARDEN-SPAWN-TRACKER.
+*> The forms of warden_spawn_tracker (16 §12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-WARDEN-SPAWN-TRACKER.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "warden_spawn_tracker clear" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "warden_spawn_tracker set <warning_level:int:0:4>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-WARDEN-SPAWN-TRACKER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-FETCHPROFILE.
+*> fetchprofile name <name> | id <id> | entity <entity> (16 §11.20, level 2): the profile service is online-only and a server without it cannot
+*> resolve: name and id fail with commands.fetchprofile.name.failure [name] and .id.failure [id] (the failure line of the lookup); entity of a player
+*> is commands.fetchprofile.entity.success [name, "name (uuid)": the serialized profile is not in the docs] and of any other entity
+*> commands.fetchprofile.no_profile [entity type key] (both failures red, the success not broadcast: the B/Q mark is not in the docs); the result is
+*> 1 (the lookup runs asynchronously).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY RULES.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-NAME           PIC X(32) VALUE "name".
+ 01 WS-NAME-ID             PIC X(32) VALUE "id".
+ 01 WS-NAME-ENTITY         PIC X(32) VALUE "entity".
+ 01 WS-LIT                 BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-PROFILE             PIC X(64).
+ 01 WS-PROFILE-LENGTH      BINARY-LONG.
+ 01 WS-HEX                 PIC X(32).
+ 01 WS-UUID-TEXT           PIC X(36).
+ 01 WS-PLAYER-NAME         PIC X(16).
+ 01 WS-PLAYER-LENGTH       BINARY-LONG.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The failure WS-KEY with the text of the argument WS-INDEX.
+ FAIL-TEXT.
+     MOVE BA-START(WS-INDEX) TO WS-START
+     COMPUTE WS-LENGTH = FUNCTION MIN(BA-END(WS-INDEX) - WS-START, 256)
+     MOVE SPACES TO WS-TEXT
+     MOVE BR-R-LINE(WS-START + 1:WS-LENGTH) TO WS-TEXT
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-LENGTH
+     CALL "BR-FAILURE" USING PB-TEXT.
+
+*> The entity of the row WS-ROW: a player has its name and offline uuid as profile, any other entity has no profile.
+ ENTITY-RESULT.
+     IF WS-ROW > 0
+         MOVE "commands.fetchprofile.entity.success" TO WS-KEY
+         MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(PL-UUID(WS-ROW))) TO WS-HEX
+         STRING WS-HEX(1:8) "-" WS-HEX(9:4) "-" WS-HEX(13:4) "-" WS-HEX(17:4) "-" WS-HEX(21:12) DELIMITED BY SIZE
+             INTO WS-UUID-TEXT
+         MOVE PL-NAME(WS-ROW) TO WS-PLAYER-NAME
+         MOVE PL-NAME-LENGTH(WS-ROW) TO WS-PLAYER-LENGTH
+         MOVE SPACES TO WS-PROFILE
+         STRING WS-PLAYER-NAME(1:WS-PLAYER-LENGTH) " (" WS-UUID-TEXT ")" DELIMITED BY SIZE INTO WS-PROFILE
+         COMPUTE WS-PROFILE-LENGTH = WS-PLAYER-LENGTH + 39
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-PLAYER-NAME WS-PLAYER-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-PROFILE WS-PROFILE-LENGTH
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     ELSE
+         MOVE "commands.fetchprofile.no_profile" TO WS-KEY
+         COMPUTE WS-ENTITY = 0 - WS-ROW
+         COMPUTE WS-ROW = EN-TYPE(WS-ENTITY) + 1
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT ET-KEY(WS-ROW) ET-KEY-LENGTH(WS-ROW)
+         CALL "BR-FAILURE" USING PB-TEXT
+     END-IF.
+
+ MAIN-LINE.
+     MOVE 1 TO BR-R-RESULT
+     CALL "BX-LIT" USING WS-NAME-NAME WS-LIT
+     IF WS-LIT > 0
+         MOVE "commands.fetchprofile.name.failure" TO WS-KEY
+         CALL "BX-FIND" USING WS-NAME-NAME WS-INDEX
+         PERFORM FAIL-TEXT
+     ELSE
+         CALL "BX-LIT" USING WS-NAME-ID WS-LIT
+         IF WS-LIT > 0
+             MOVE "commands.fetchprofile.id.failure" TO WS-KEY
+             CALL "BX-FIND" USING WS-NAME-ID WS-INDEX
+             PERFORM FAIL-TEXT
+         ELSE
+             CALL "BX-FIND" USING WS-NAME-ENTITY WS-INDEX
+             CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+             IF BR-R-FAILED = 0
+                 MOVE BX-ROW(1) TO WS-ROW
+                 PERFORM ENTITY-RESULT
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-FETCHPROFILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-FETCHPROFILE.
+*> The forms of fetchprofile (16 §11.20).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-FETCHPROFILE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "fetchprofile name <name:greedy>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "fetchprofile id <id:uuid>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "fetchprofile entity <entity:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-FETCHPROFILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-PUBLISH.
+*> publish [<allowCommands> [<port>]] (16 §11.15, level 4, a hosted world; world-types 11.1): a world already published is
+*> commands.publish.alreadyPublished.lan [port]; else the port is the one given (0 is kept: the artifact announces the number it was given) or, when
+*> omitted, a free port (a listener on port 0 that is closed again), the world becomes a world opened to others (CORE-OPEN-TO-OTHERS: guests in
+*> survival, operators when allowCommands is true), commands.publish.started.lan [port] is broadcast and the result is the port. The core binds
+*> nothing: the host listens on BP-PORT while BP-PUBLISHED is 1. BLOCKED docs: commands.publish.failed (a bind failure is the host's).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ COPY BRCMDA.
+ COPY PROTO.
+ 01 WS-NAME-ALLOW          PIC X(32) VALUE "allowCommands".
+ 01 WS-NAME-PORT           PIC X(32) VALUE "port".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ALLOW               BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG VALUE 0.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HANDLE              BINARY-LONG VALUE 0.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-PORT                BINARY-LONG VALUE 0.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-NUMBER              PIC X(16).
+ 01 WS-NUMBER-LENGTH       BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-N-ARGS              BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     IF BP-PUBLISHED = 1
+         MOVE BP-PORT TO WS-EDIT
+         MOVE "commands.publish.alreadyPublished.lan" TO WS-KEY
+         MOVE SPACES TO WS-A1 WS-A2
+         MOVE FUNCTION TRIM(WS-EDIT) TO WS-A1
+         COMPUTE WS-NUMBER-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT))
+         CALL "BA-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-NUMBER-LENGTH WS-A2 WS-L2
+     ELSE
+         MOVE 0 TO WS-ALLOW
+         CALL "BX-FIND" USING WS-NAME-ALLOW WS-INDEX
+         IF WS-INDEX > 0
+             MOVE BA-IVAL(WS-INDEX) TO WS-ALLOW
+         END-IF
+         CALL "BX-FIND" USING WS-NAME-PORT WS-INDEX
+         IF WS-INDEX > 0
+             MOVE BA-IVAL(WS-INDEX) TO WS-PORT
+         ELSE
+             MOVE 0 TO WS-PORT
+             CALL STATIC "cc_net_listen" USING BY VALUE WS-ZERO BY REFERENCE WS-HANDLE WS-PORT RETURNING WS-STATUS
+             CALL STATIC "cc_net_close" USING BY VALUE WS-HANDLE
+         END-IF
+         MOVE WS-PORT TO BP-PORT
+         MOVE 1 TO BP-PUBLISHED
+         CALL "CORE-OPEN-TO-OTHERS" USING WS-MODE WS-ALLOW
+         MOVE "commands.publish.started.lan" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-INT" USING PB-TEXT WS-PORT
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE WS-PORT TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-PUBLISH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-PUBLISH.
+*> The forms of publish (16 §11.15).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 4.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-PUBLISH.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "publish" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "publish <allowCommands:bool>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "publish <allowCommands:bool> <port:int:0:65535>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-PUBLISH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-UNPUBLISH.
+*> unpublish (16 §11.16, level 4, a hosted world): a published world is closed (BP-PUBLISHED 0, the host stops listening; the world stays a world opened to
+*> others for the session, CORE-OPEN-TO-OTHERS), commands.unpublish.success is broadcast and the result is 1; else commands.unpublish.notPublished.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ COPY BRCMDA.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     IF BP-PUBLISHED = 0
+         MOVE "commands.unpublish.notPublished" TO WS-KEY
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE 0 TO BP-PUBLISHED BP-PORT
+         MOVE "commands.unpublish.success" TO WS-KEY
+         CALL "BA-SAY" USING WS-KEY WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-UNPUBLISH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-UNPUBLISH.
+*> The form of unpublish (16 §11.16).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 4.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-UNPUBLISH.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "unpublish" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-UNPUBLISH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-PROFILE.
+*> USING which (1 debug, 2 perf): the profiler runs of `debug start|stop` (16 §11.19, level 3, broadcast) and `perf start|stop` (§11.17, level 4, not broadcast):
+*> start while running is commands.<name>.alreadyRunning, stop while stopped .notRunning; start remembers the tick (BF-START) and tells .started; stop
+*> tells .stopped [seconds (ticks / 20, two decimals), ticks, ticks per second] and ends the run. The result is 0, and of debug stop the ticks per second
+*> as an integer. BLOCKED docs: the debug report file of perf stop (commands.perf.reportSaved) has no format; the 10 second run of perf is not timed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY BRCMDA.
+ COPY PROTO.
+ 01 WS-NAME-START          PIC X(32) VALUE "start".
+ 01 WS-LIT                 BINARY-LONG.
+ 01 WS-NAME                PIC X(8).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG.
+ 01 WS-TICKS               BINARY-DOUBLE.
+ 01 WS-TICKS-LONG          BINARY-LONG.
+ 01 WS-SCALED              BINARY-DOUBLE.
+ 01 WS-DECIMALS            BINARY-LONG VALUE 2.
+ 01 WS-SECONDS             PIC X(32).
+ 01 WS-SECONDS-LENGTH      BINARY-LONG.
+ 01 WS-RATE                PIC X(32).
+ 01 WS-RATE-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-WHICH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-WHICH.
+     IF L-WHICH = 1
+         MOVE "debug" TO WS-NAME
+         MOVE 5 TO WS-NAME-LENGTH
+         MOVE 1 TO WS-BROADCAST
+     ELSE
+         MOVE "perf" TO WS-NAME
+         MOVE 4 TO WS-NAME-LENGTH
+         MOVE 0 TO WS-BROADCAST
+     END-IF
+     CALL "BX-LIT" USING WS-NAME-START WS-LIT
+     EVALUATE TRUE
+         WHEN WS-LIT > 0 AND BF-START(L-WHICH) > 0
+             MOVE SPACES TO WS-KEY
+             STRING "commands." WS-NAME(1:WS-NAME-LENGTH) ".alreadyRunning" DELIMITED BY SIZE INTO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN WS-LIT > 0
+             COMPUTE BF-START(L-WHICH) = CW-TICKS + 1
+             MOVE SPACES TO WS-KEY
+             STRING "commands." WS-NAME(1:WS-NAME-LENGTH) ".started" DELIMITED BY SIZE INTO WS-KEY
+             CALL "BA-SAY" USING WS-KEY WS-BROADCAST
+             MOVE 0 TO BR-R-RESULT
+         WHEN BF-START(L-WHICH) = 0
+             MOVE SPACES TO WS-KEY
+             STRING "commands." WS-NAME(1:WS-NAME-LENGTH) ".notRunning" DELIMITED BY SIZE INTO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN OTHER
+             COMPUTE WS-TICKS = CW-TICKS + 1 - BF-START(L-WHICH)
+             MOVE WS-TICKS TO WS-TICKS-LONG
+             MOVE 0 TO BF-START(L-WHICH)
+             COMPUTE WS-SCALED = WS-TICKS * 5
+             CALL "BA-FIXED" USING WS-SCALED WS-DECIMALS WS-SECONDS WS-SECONDS-LENGTH
+             MOVE 0 TO WS-SCALED
+             IF WS-TICKS > 0
+                 MOVE 2000 TO WS-SCALED
+             END-IF
+             CALL "BA-FIXED" USING WS-SCALED WS-DECIMALS WS-RATE WS-RATE-LENGTH
+             MOVE SPACES TO WS-KEY
+             STRING "commands." WS-NAME(1:WS-NAME-LENGTH) ".stopped" DELIMITED BY SIZE INTO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SECONDS WS-SECONDS-LENGTH
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-TICKS-LONG
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-RATE WS-RATE-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 0 TO BR-R-RESULT
+             IF L-WHICH = 1
+                 COMPUTE BR-R-RESULT = WS-SCALED / 100
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BA-PROFILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DEBUG.
+*> debug start | stop (16 §11.19, level 3): the tick profiler run (BA-PROFILE 1). BLOCKED docs: `debug function <name>` needs the function engine.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WHICH               BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     CALL "BA-PROFILE" USING WS-WHICH
+     GOBACK.
+ END PROGRAM CX-DEBUG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-PERF.
+*> perf start | stop (16 §11.17, level 4): the performance profiler run (BA-PROFILE 2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WHICH               BINARY-LONG VALUE 2.
+ PROCEDURE DIVISION.
+     CALL "BA-PROFILE" USING WS-WHICH
+     GOBACK.
+ END PROGRAM CX-PERF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-DEBUG.
+*> The forms of debug (16 §11.19).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-DEBUG.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "debug start" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "debug stop" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-DEBUG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-PERF.
+*> The forms of perf (16 §11.17).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 4.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-PERF.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "perf start" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "perf stop" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-PERF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-DEV.
+*> The dev and debug commands of 16 §2, §12 in registration order, each only when its condition holds (BRCMDA.cpy): chase with BA-CHASE-COMMAND; raid,
+*> debugpath, debugmobspawning, warden_spawn_tracker, spawn_armor_trims and serverpack with BA-DEV-COMMANDS; debugconfig with BA-DEV-COMMANDS and a
+*> dedicated host (CS-HOST-KIND 0). jfr (BA-PROFILER) is BLOCKED docs.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMDA.
+ 01 WS-KIND                BINARY-LONG.
+ PROCEDURE DIVISION.
+     IF BA-CHASE-COMMAND = 1
+         CALL "CMDS-REG-CHASE"
+     END-IF
+     IF BA-DEV-COMMANDS = 1
+         CALL "CMDS-REG-RAID"
+         CALL "CMDS-REG-DEBUGPATH"
+         CALL "CMDS-REG-DEBUGMOBSPAWNING"
+         CALL "CMDS-REG-WARDEN-SPAWN-TRACKER"
+         CALL "CMDS-REG-SPAWN-ARMOR-TRIMS"
+         CALL "CMDS-REG-SERVERPACK"
+         CALL "BA-HOST-KIND" USING WS-KIND
+         IF WS-KIND = 0
+             CALL "CMDS-REG-DEBUGCONFIG"
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CMDS-REG-DEV.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-LAN.
+*> publish and unpublish (16 §2): registered when the world is hosted (CS-HOST-KIND not 0: a single-player world or one opened to others).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KIND                BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "BA-HOST-KIND" USING WS-KIND
+     IF WS-KIND NOT = 0
+         CALL "CMDS-REG-PUBLISH"
+         CALL "CMDS-REG-UNPUBLISH"
+     END-IF
+     GOBACK.
+ END PROGRAM CMDS-REG-LAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DISPATCH-A.
+*> The commands of the lane cmds-a that BR-CMD-CALL does not name: any other command id is help (a command of the lane cmds-items/entities/... is
+*> added to BR-CMD-CALL itself).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ COPY BRRUN.
+ PROCEDURE DIVISION.
+     EVALUATE BR-R-COMMAND
+         WHEN BC-CHASE
+             CALL "CX-CHASE"
+         WHEN BC-DEBUG
+             CALL "CX-DEBUG"
+         WHEN BC-DEBUGCONFIG
+             CALL "CX-DEBUGCONFIG"
+         WHEN BC-DEBUGMOBSPAWNING
+             CALL "CX-DEBUGMOBSPAWNING"
+         WHEN BC-DEBUGPATH
+             CALL "CX-DEBUGPATH"
+         WHEN BC-FETCHPROFILE
+             CALL "CX-FETCHPROFILE"
+         WHEN BC-PERF
+             CALL "CX-PERF"
+         WHEN BC-PUBLISH
+             CALL "CX-PUBLISH"
+         WHEN BC-UNPUBLISH
+             CALL "CX-UNPUBLISH"
+         WHEN BC-RAID
+             CALL "CX-RAID"
+         WHEN BC-SERVERPACK
+             CALL "CX-SERVERPACK"
+         WHEN BC-SPAWN-ARMOR-TRIMS
+             CALL "CX-SPAWN-ARMOR-TRIMS"
+         WHEN BC-TRANSFER
+             CALL "CX-TRANSFER"
+         WHEN BC-TICK
+             CALL "CX-TICK"
+         WHEN BC-WORLDBORDER
+             CALL "CX-WORLDBORDER"
+         WHEN BC-BOSSBAR
+             CALL "CX-BOSSBAR"
+         WHEN BC-DIALOG
+             CALL "CX-DIALOG"
+         WHEN BC-POSTEFFECT
+             CALL "CX-POSTEFFECT"
+         WHEN BC-TEAMMSG
+             CALL "CX-TEAMMSG"
+         WHEN BC-TELLRAW
+             CALL "CX-TELLRAW"
+         WHEN BC-TITLE
+             CALL "CX-TITLE"
+         WHEN BC-WARDEN-SPAWN-TRACKER
+             CALL "CX-WARDEN-SPAWN-TRACKER"
+         WHEN OTHER
+             CALL "CX-DISPATCH-C"
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-DISPATCH-A.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BA-ENSURE.
+*> No arguments: the state of BRCMDA.cpy gets its defaults the first time (the tick rate 20.0, 16 §4.9).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMDA.
+ PROCEDURE DIVISION.
+     IF BA-INIT = 0
+         MOVE 1 TO BA-INIT
+         MOVE 20 TO BT-RATE
+     END-IF
+     GOBACK.
+ END PROGRAM BA-ENSURE.

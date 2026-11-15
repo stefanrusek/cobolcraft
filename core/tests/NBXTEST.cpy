@@ -1,0 +1,42 @@
+*> Test helpers of the NBT tree tests (test infrastructure, excluded from coverage): COPY after CMDTEST.cpy.
+*>   TS-PARSE USING SNBT text (PIC X(256)), node out; TS-SHOW USING case, node, expected print (PIC X(256)).
+*> TS-PARSE USING text (PIC X(256)), node out: the SNBT text parsed into a tree.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TS-PARSE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-START               BINARY-LONG VALUE 0.
+ 01 WS-END                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN                   PIC X(256).
+ 01 L-NODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-IN L-NODE.
+     MOVE SPACES TO WS-TEXT
+     MOVE L-IN TO WS-TEXT
+     COMPUTE WS-END = FUNCTION LENGTH(FUNCTION TRIM(L-IN TRAILING))
+     CALL "NBX-PARSE" USING WS-TEXT WS-START WS-END L-NODE
+     GOBACK.
+ END PROGRAM TS-PARSE.
+
+*> TS-SHOW USING case, node, expected text (PIC X(256)): the printed tree is compared.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TS-SHOW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRINT               PIC X(4096).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-EXPECTED            PIC X(1024).
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(240).
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-OUT                  PIC X(256).
+ PROCEDURE DIVISION USING L-CASE L-NODE L-OUT.
+     MOVE SPACES TO WS-PRINT
+     MOVE 1 TO WS-POS
+     CALL "NBX-PRINT" USING L-NODE WS-PRINT WS-POS
+     MOVE L-OUT TO WS-EXPECTED
+     CALL "TEST-EXPECT" USING L-CASE WS-EXPECTED WS-PRINT
+     GOBACK.
+ END PROGRAM TS-SHOW.
+

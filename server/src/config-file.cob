@@ -16,14 +16,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SV-CONFIG-FATAL.
-*> USING key (PIC X(256)), problem (PIC X(64)): ends the server with
+*> USING key (PIC X(256)), problem (PIC X(128)): ends the server with
 *> "FATAL configuration: <key>: <problem>" (cc_fatal, exit status 1). Does not return.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WHAT                PIC X(400).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(256).
- 01 L-PROBLEM              PIC X(64).
+ 01 L-PROBLEM              PIC X(128).
  PROCEDURE DIVISION USING L-KEY L-PROBLEM.
      MOVE LOW-VALUES TO WS-WHAT
      STRING "configuration: " FUNCTION TRIM(L-KEY) ": " FUNCTION TRIM(L-PROBLEM)
@@ -76,17 +76,19 @@
  01 WS-VALID               PIC 9.
  01 WS-FLAG                PIC 9.
  01 WS-KIT-FLAG            BINARY-LONG.
- 01 WS-PORT-PROBLEM        PIC X(64) VALUE "must be a number from 1 to 65535".
- 01 WS-VIEW-PROBLEM        PIC X(64) VALUE "must be a number from 2 to 32".
- 01 WS-MODE-PROBLEM        PIC X(64) VALUE "must be creative or survival".
- 01 WS-TEXT-PROBLEM        PIC X(64) VALUE "longer than 256 characters".
- 01 WS-BOOLEAN-PROBLEM     PIC X(64) VALUE "must be true or false".
- 01 WS-WORKERS-PROBLEM     PIC X(64) VALUE "must be auto or a number from 0 to 4".
- 01 WS-UNKNOWN-PROBLEM     PIC X(64) VALUE "unknown key".
- 01 WS-URL-LENGTH-PROBLEM  PIC X(64) VALUE "longer than 1024 characters".
- 01 WS-URL-PROBLEM         PIC X(64) VALUE "must be empty or an http:// or https:// URL".
- 01 WS-SHA1-PROBLEM        PIC X(64) VALUE "must be empty or 40 hex digits".
- 01 WS-ID-PROBLEM          PIC X(64) VALUE "must be empty or a UUID (8-4-4-4-12 hex digits)".
+ 01 WS-PORT-PROBLEM        PIC X(128) VALUE "must be a number from 1 to 65535".
+ 01 WS-VIEW-PROBLEM        PIC X(128) VALUE "must be a number from 2 to 32".
+ 01 WS-MODE-PROBLEM        PIC X(128) VALUE "must be creative or survival".
+ 01 WS-TEXT-PROBLEM        PIC X(128) VALUE "longer than 256 characters".
+ 01 WS-BOOLEAN-PROBLEM     PIC X(128) VALUE "must be true or false".
+ 01 WS-UNKNOWN-PROBLEM     PIC X(128) VALUE "unknown key".
+ 01 WS-URL-LENGTH-PROBLEM  PIC X(128) VALUE "longer than 1024 characters".
+ 01 WS-URL-PROBLEM         PIC X(128) VALUE "must be empty or an http:// or https:// URL".
+ 01 WS-SHA1-PROBLEM        PIC X(128) VALUE "must be empty or 40 hex digits".
+ 01 WS-ID-PROBLEM          PIC X(128) VALUE "must be empty or a UUID (8-4-4-4-12 hex digits)".
+ 01 WS-TYPE-PROBLEM        PIC X(128).
+ 01 WS-DIR-PROBLEM         PIC X(128) VALUE "longer than 1024 characters".
+ 01 WS-WORKERS-PROBLEM     PIC X(128) VALUE "must be auto or a number from 0 to 4".
  01 WS-I                   BINARY-LONG.
  01 WS-HEX                 BINARY-LONG.
  01 WS-DASHES              BINARY-LONG.
@@ -168,6 +170,26 @@
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-VIEW-PROBLEM
              END-IF
              MOVE WS-NUMBER TO CS-VIEW-DISTANCE
+         WHEN "world-type"
+             EVALUATE WS-VALUE
+                 WHEN "auto"
+                 WHEN "standard"
+                 WHEN "cobolcraft"
+                     MOVE WS-VALUE(1:10) TO CS-WORLD-TYPE
+                 WHEN OTHER
+*>                   world-types WT-20: the value is shown as given.
+                     MOVE SPACES TO WS-TYPE-PROBLEM
+                     STRING "must be auto, standard or cobolcraft (got '" WS-VALUE(1:WS-VALUE-LENGTH)
+                         "')" DELIMITED BY SIZE INTO WS-TYPE-PROBLEM
+                     CALL "SV-CONFIG-FATAL" USING WS-KEY WS-TYPE-PROBLEM
+             END-EVALUATE
+         WHEN "generated-dir"
+             IF WS-VALUE-LENGTH > 1024
+                 CALL "SV-CONFIG-FATAL" USING WS-KEY WS-DIR-PROBLEM
+             END-IF
+             IF WS-VALUE-LENGTH > 0
+                 MOVE WS-VALUE TO CS-GENERATED-DIR
+             END-IF
          WHEN "generation-workers"
              EVALUATE TRUE
                  WHEN WS-VALUE = "auto"
@@ -291,13 +313,17 @@
     05 FILLER PIC X(128) VALUE "pack-required=false".
     05 FILLER PIC X(128) VALUE "# Message shown when the pack is offered, up to 256 characters, or empty".
     05 FILLER PIC X(128) VALUE "pack-prompt=".
+    05 FILLER PIC X(128) VALUE "# Type of a world the server creates: auto, standard or cobolcraft".
+    05 FILLER PIC X(128) VALUE "world-type=auto".
+    05 FILLER PIC X(128) VALUE "# Folder of the generated Minecraft content, empty for ./generated".
+    05 FILLER PIC X(128) VALUE "generated-dir=".
     05 FILLER PIC X(128) VALUE "# Chunk generation worker processes of the standard world: auto (half the pr"
         & "ocessors), or 0 to 4 (0 generates inside the tick)".
     05 FILLER PIC X(128) VALUE "generation-workers=auto".
     05 FILLER PIC X(128) VALUE "# New survival players of a standard world start with a crafting table and wood: true or false".
     05 FILLER PIC X(128) VALUE "starter-kit=true".
  01 WS-DEFAULT-TABLE REDEFINES WS-DEFAULTS.
-    05 WS-DEFAULT          PIC X(128) OCCURS 32 TIMES.
+    05 WS-DEFAULT          PIC X(128) OCCURS 36 TIMES.
  PROCEDURE DIVISION.
      OPEN OUTPUT CONF-FILE
      IF WS-STATUS NOT = "00"
@@ -305,7 +331,7 @@
          CALL "SV-PRINT" USING WS-PTR WS-ERROR-LENGTH
          GOBACK
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 32
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
          WRITE CONF-LINE FROM WS-DEFAULT(WS-I)
      END-PERFORM
      CLOSE CONF-FILE
@@ -333,7 +359,7 @@
  01 WS-PATH                PIC X(32) VALUE "cobolcraft-server.conf".
  01 WS-STATUS              PIC XX.
  01 WS-KEY                 PIC X(256) VALUE "cobolcraft-server.conf".
- 01 WS-PROBLEM             PIC X(64).
+ 01 WS-PROBLEM             PIC X(128).
  01 WS-KIT-FLAG            BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -347,6 +373,9 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
      MOVE "world" TO CS-NEW-WORLD-NAME
+     MOVE "auto" TO CS-WORLD-TYPE
+     MOVE "." TO CS-GAME-DIR
+     MOVE "./generated" TO CS-GENERATED-DIR
      CALL "GEN-WORKERS-AUTO"
      MOVE 1 TO WS-KIT-FLAG
      CALL "STARTER-KIT-CONFIG" USING WS-KIT-FLAG

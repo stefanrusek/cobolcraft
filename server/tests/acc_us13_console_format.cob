@@ -7,7 +7,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  01 WS-SCRATCH             PIC X(256) VALUE "build/server-test-console-format".
- 01 WS-CONF                PIC X(4096) VALUE "port=25575".
+ 01 WS-CONF                PIC X(4096) VALUE "port=25575|world-type=cobolcraft|generated-dir=../../contract/fixtures/content/valid".
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
  01 WS-CAPTURED            PIC X(4096).
  01 WS-COMMAND             PIC X(64) VALUE Z"nosuchcommand".
@@ -28,7 +28,10 @@
          TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-EXPECTED
-     STRING WS-STAMP-BEFORE "Created new world in ./world | " WS-STAMP-BEFORE
+     STRING WS-STAMP-BEFORE "World type: cobolcraft | " WS-STAMP-BEFORE
+         "Generated directory: ../../contract/fixtures/content/valid | " WS-STAMP-BEFORE
+         "Registries: 13 blocks, 19 block states, 19 items, 4 entity types | " WS-STAMP-BEFORE
+         "Created new world in ./world | " WS-STAMP-BEFORE
          "Ready: accepting players on 0.0.0.0:25575" DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      IF WS-STAMP-AFTER NOT = WS-STAMP-BEFORE

@@ -217,6 +217,8 @@
  01 WS-LITERAL             BINARY-LONG.
  01 WS-ARGUMENT            BINARY-LONG.
  01 WS-ASK                 BINARY-LONG.
+ 01 WS-PLAYERS             BINARY-LONG.
+ 01 WS-FIT                 BINARY-LONG.
  01 WS-WORD                PIC X(1024).
  01 WS-WORD-LENGTH         BINARY-LONG.
  01 WS-NAME                PIC X(32).
@@ -230,7 +232,7 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
-     MOVE 0 TO CS-COUNT WS-ASK WS-NODE
+     MOVE 0 TO CS-COUNT WS-ASK WS-NODE WS-PLAYERS
      IF CH-LINE-LENGTH > 0 AND CH-LINE(1:1) = "/" AND CM-COUNT > 0
          COMPUTE WS-NODE = CM-ROOT + 1
          MOVE 2 TO WS-START
@@ -294,6 +296,10 @@
                  IF WS-ARGUMENT > 0
                      COMPUTE WS-BIT = CM-FLAGS(WS-ARGUMENT) / 16
                      COMPUTE WS-ASK = FUNCTION MOD(WS-BIT, 2)
+*>                   An entity or game profile argument completes from the players online (15 section 14).
+                     IF WS-ASK = 0 AND (CM-PARSER(WS-ARGUMENT) = 6 OR CM-PARSER(WS-ARGUMENT) = 7)
+                         MOVE 1 TO WS-PLAYERS
+                     END-IF
                  END-IF
                  MOVE 0 TO WS-NODE
              WHEN WS-LITERAL > 0
@@ -307,6 +313,27 @@
      END-PERFORM
      CALL "CHAT-SORT" USING CLIENT-STATE
      EVALUATE TRUE
+         WHEN WS-PLAYERS = 1
+             MOVE 0 TO CS-ASKED-LENGTH CS-ANSWERS
+             COMPUTE WS-WORD-LENGTH = CH-LINE-LENGTH - CS-WORD-START + 1
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PI-COUNT OR CS-ANSWERS = CL-MAX-SUGGEST
+                 MOVE 0 TO WS-FIT
+                 IF PI-USED(WS-I) = 1 AND PI-NAME-LENGTH(WS-I) >= WS-WORD-LENGTH
+                     IF WS-WORD-LENGTH = 0
+                         MOVE 1 TO WS-FIT
+                     ELSE
+                         IF FUNCTION LOWER-CASE(PI-NAME(WS-I)(1:WS-WORD-LENGTH))
+                                 = FUNCTION LOWER-CASE(CH-LINE(CS-WORD-START:WS-WORD-LENGTH))
+                             MOVE 1 TO WS-FIT
+                         END-IF
+                     END-IF
+                 END-IF
+                 IF WS-FIT = 1
+                     ADD 1 TO CS-ANSWERS
+                     MOVE PI-NAME(WS-I) TO CS-A-TEXT(CS-ANSWERS)
+                     MOVE PI-NAME-LENGTH(WS-I) TO CS-A-LENGTH(CS-ANSWERS)
+                 END-IF
+             END-PERFORM
          WHEN WS-ASK = 0
              MOVE 0 TO CS-ASKED-LENGTH CS-ANSWERS
          WHEN CS-ASKED-LENGTH = CH-LINE-LENGTH

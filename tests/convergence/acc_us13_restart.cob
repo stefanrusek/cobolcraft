@@ -97,13 +97,18 @@
      CALL "RS-GROUND-ITEM" USING CONVH WS-ALICE WS-ITEM-BEFORE
 
 *>   Hurt and hungry, then off to the subroutine (standing on its slag floor: h = 35 at (10, 10)).
-     MOVE "vitality Alice 17" TO WS-LINE
+*>   T4804: the stand-in commands (vitality, ration, relocate) are the standard ones: the hunger effect for a few
+*>   seconds, then damage 3, then a teleport (T4805: tp does not leave the dimension of the player, so the travel
+*>   to the Subroutine is covered by acc_us12_dimensions US12-3, which leaves and rejoins there).
+     MOVE "effect give Alice minecraft:hunger 3 255 true" TO WS-LINE
      CALL "CV-SERVER-CONSOLE" USING CONVH WS-LINE
-     MOVE "ration Alice 9" TO WS-LINE
+     MOVE 80 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     MOVE "damage Alice 3" TO WS-LINE
      CALL "CV-SERVER-CONSOLE" USING CONVH WS-LINE
-     MOVE "relocate Alice at 10.5 36 10.5 subroutine" TO WS-LINE
+     MOVE "tp Alice 10.5 36 10.5" TO WS-LINE
      CALL "CV-SERVER-CONSOLE" USING CONVH WS-LINE
-     MOVE "cobolcraft:subroutine" TO WS-DIM
+     MOVE "cobolcraft:main" TO WS-DIM
      CALL "RS-UNTIL-DIM" USING CONVH WS-ALICE WS-DIM
      MOVE 40 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -135,19 +140,19 @@
          INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "acceptance US13-4 the state before the stop is the one the Player made: subroutine, "
-         & "health 17, food 9, survival, one greystone placed and one thrown" TO TL-CASE
-     MOVE "cobolcraft:subroutine mode 0 health 17.0 food 9 inv 1:62x2" TO TL-EXPECTED
+     MOVE "acceptance US13-4 the state before the stop is the one the Player made: hurt to health 17, "
+         & "hungry (food 6 after the hunger effect), survival, one greystone placed and one thrown" TO TL-CASE
+     MOVE "cobolcraft:main mode 0 health 17.0 food 6 inv 1:62x2" TO TL-EXPECTED
      MOVE 0 TO WS-I
-     INSPECT WS-BEFORE TALLYING WS-I FOR ALL " mode 0 health 17.0 food 9 inv 1:62x2 "
+     INSPECT WS-BEFORE TALLYING WS-I FOR ALL " mode 0 health 17.0 food 6 inv 1:62x2 "
      MOVE WS-BEFORE TO TL-OBSERVED
-     IF WS-I = 1 AND WS-BEFORE(1:22) = "cobolcraft:subroutine "
+     IF WS-I = 1 AND WS-BEFORE(1:16) = "cobolcraft:main "
          MOVE TL-EXPECTED TO TL-OBSERVED
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Back to the main dimension, a dozen blocks south of the spawn (out of pickup range).
-     MOVE "relocate Alice at 4.5 54 20.5 main" TO WS-LINE
+     MOVE "tp Alice 4.5 54 20.5" TO WS-LINE
      CALL "CV-SERVER-CONSOLE" USING CONVH WS-LINE
      MOVE "cobolcraft:main" TO WS-DIM
      CALL "RS-UNTIL-DIM" USING CONVH WS-ALICE WS-DIM

@@ -1,0 +1,796 @@
+*> Test of 31-5 section 2, Beacon (core/src/be-31-5.cob; T0923): the effect tiers, validateEffects, the effect numbers, the base scan, the beam sections, the pulse and the saved keys.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-5-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-PK                 PIC X(32).
+ 01 WS-SK                 PIC X(32).
+ 01 WS-PASSES.
+    05 WS-PASS            BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-OFFS.
+    05 WS-OFF             OCCURS 64 TIMES.
+       10 WS-OX           BINARY-LONG.
+       10 WS-OY           BINARY-LONG.
+       10 WS-OZ           BINARY-LONG.
+ 01 WS-TX                 PIC X(64).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-5§2 Beacon: tier table (2.1): speed and haste need 1, resistance and jump_boost 2, strength 3, regeneration 4, any other effect 2147483647, none 0 (a key with the minecraft: namespace is the same effect)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE 5 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "haste" TO WS-PK
+     MOVE 5 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "resistance" TO WS-PK
+     MOVE 10 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "jump_boost" TO WS-PK
+     MOVE 10 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "strength" TO WS-PK
+     MOVE 8 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "regeneration" TO WS-PK
+     MOVE 12 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "levitation" TO WS-PK
+     MOVE 10 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE 0 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "minecraft:speed" TO WS-PK
+     MOVE 15 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "abcdefghijklmn" TO WS-PK
+     MOVE 14 TO WS-A
+     CALL "BE5-BEACON-REQUIRED" USING WS-PK WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 2 2 3 4 2147483647 0 1 2147483647" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: validateEffects (2.5, worked example 3): a secondary needs levels 4; both required levels must be within the levels; a primary of tier 4 (regeneration) is invalid; a secondary below tier 4 must" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "regeneration" TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 12 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "regeneration" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE 12 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "speed" TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 5 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "speed" TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 5 TO WS-B
+     MOVE 3 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "resistance" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "speed" TO WS-SK
+     MOVE 10 TO WS-A
+     MOVE 5 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "strength" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE 8 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 3 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "strength" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE 8 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "haste" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "resistance" TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "speed" TO WS-SK
+     MOVE 0 TO WS-A
+     MOVE 5 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "regeneration" TO WS-SK
+     MOVE 0 TO WS-A
+     MOVE 12 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "jump_boost" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "jump_boost" TO WS-SK
+     MOVE 10 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "levitation" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE 10 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "levitation" TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE "speed" TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "haste" TO WS-SK
+     MOVE 5 TO WS-A
+     MOVE 5 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-PK
+     MOVE SPACES TO WS-SK
+     MOVE "speed" TO WS-SK
+     MOVE 0 TO WS-A
+     MOVE 5 TO WS-B
+     MOVE 4 TO WS-C
+     CALL "BE5-BEACON-VALIDATE" USING WS-PK WS-A WS-SK WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 1 1 0 0 1 0 0 0 1 1 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: effects (2.4, worked example 1): range levels * 10 + 10, duration (9 + 2 * levels) * 20 ticks (260 at levels 2), amplifier 1 only at levels 4 when the primary equals the secondary, the secondary" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-BEACON-EFFECTS" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-EV
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-EV TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "20 220 0 0 30 260 0 0 40 300 0 0 50 340 0 1 50 340 1 0 50 340 1 0 50 340 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: base scan (2.3, worked example 1): layer i is a (2i + 1) square below the beacon; the first failing layer or a layer below the world minimum stops the scan (levels 0 to 4)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 64 TO WS-A
+     MOVE -64 TO WS-B
+     MOVE 1 TO WS-PASS(1)
+     MOVE 1 TO WS-PASS(2)
+     MOVE 0 TO WS-PASS(3)
+     MOVE 0 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 64 TO WS-A
+     MOVE -64 TO WS-B
+     MOVE 1 TO WS-PASS(1)
+     MOVE 1 TO WS-PASS(2)
+     MOVE 1 TO WS-PASS(3)
+     MOVE 1 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 64 TO WS-A
+     MOVE -64 TO WS-B
+     MOVE 0 TO WS-PASS(1)
+     MOVE 1 TO WS-PASS(2)
+     MOVE 1 TO WS-PASS(3)
+     MOVE 1 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 64 TO WS-A
+     MOVE -64 TO WS-B
+     MOVE 1 TO WS-PASS(1)
+     MOVE 0 TO WS-PASS(2)
+     MOVE 0 TO WS-PASS(3)
+     MOVE 0 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 63 TO WS-A
+     MOVE 62 TO WS-B
+     MOVE 1 TO WS-PASS(1)
+     MOVE 1 TO WS-PASS(2)
+     MOVE 1 TO WS-PASS(3)
+     MOVE 1 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -62 TO WS-A
+     MOVE -64 TO WS-B
+     MOVE 1 TO WS-PASS(1)
+     MOVE 1 TO WS-PASS(2)
+     MOVE 1 TO WS-PASS(3)
+     MOVE 1 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -63 TO WS-A
+     MOVE -64 TO WS-B
+     MOVE 1 TO WS-PASS(1)
+     MOVE 1 TO WS-PASS(2)
+     MOVE 1 TO WS-PASS(3)
+     MOVE 1 TO WS-PASS(4)
+     CALL "BE5-BEACON-BASE" USING WS-A WS-B WS-PASSES WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "2 4 0 1 1 2 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: beam sections (2.2 step 3, worked example 2): the beacon cell creates the white base, red glass starts its own section (the first glass above the base), the second red adds a cell, blue starts a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 15 TO WS-A
+     MOVE "minecraft:beacon" TO WS-KEY
+     MOVE 16 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 16383998 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 1 TO WS-A
+     MOVE 11546150 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 1 TO WS-A
+     MOVE 11546150 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 1 TO WS-A
+     MOVE 3949738 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 7) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 8) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 10) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 11) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "3 16383998 2 11546150 2 7747944 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: blocked beam (2.2 step 3): a non-beam cell with no section yet blocks the beam (sections cleared, blocked 1); a cell with light dampening 15 (kind 3) blocks too; bedrock (kind 4) does not (it adds" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 15 TO WS-A
+     MOVE "minecraft:beacon" TO WS-KEY
+     MOVE 16 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 16383998 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 7) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 16383998 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-CELL" USING WS-IDX WS-A WS-B WS-C
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 7) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 1 1 2 0 1 1 2 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: pulse (2.2 step 5): every 80 ticks, with an open beam the base is rescanned (recompute 1), and when the levels are above 0 the effects are applied and the ambient sound plays (apply 1); otherwise" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 80 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE5-BEACON-PULSE" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 160 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE5-BEACON-PULSE" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 81 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE5-BEACON-PULSE" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-BEACON-PULSE" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 80 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-BEACON-PULSE" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 0 0 0 0 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: activation sounds (2.2 step 6, 2.6): beacon.activate (1) when the levels rise from 0, beacon.deactivate (2) when they fall to 0, nothing otherwise" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE5-BEACON-SOUND" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-SOUND" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE5-BEACON-SOUND" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE5-BEACON-SOUND" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE5-BEACON-SOUND" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 2 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: saved keys (2.1): primary_effect and secondary_effect load when they are valid effects and save back; Levels is written (the value of the entity, 0 after a load) but never read; CustomName is kept;" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 15 TO WS-A
+     MOVE "minecraft:beacon" TO WS-KEY
+     MOVE 16 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "primary_effect" TO WS-NM
+     MOVE 14 TO WS-NML
+     MOVE "minecraft:speed" TO WS-SV
+     MOVE 15 TO WS-SVL
+     PERFORM NB-S
+     MOVE "secondary_effect" TO WS-NM
+     MOVE 16 TO WS-NML
+     MOVE "minecraft:regeneration" TO WS-SV
+     MOVE 22 TO WS-SVL
+     PERFORM NB-S
+     MOVE "Levels" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE 4 TO WS-NV
+     PERFORM NB-I
+     MOVE "CustomName" TO WS-NM
+     MOVE 10 TO WS-NML
+     MOVE "Beam" TO WS-SV
+     MOVE 4 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 15 TO WS-A
+     MOVE "minecraft:beacon" TO WS-KEY
+     MOVE 16 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "primary_effect" TO WS-NM
+     MOVE 14 TO WS-NML
+     MOVE "minecraft:levitation" TO WS-SV
+     MOVE 20 TO WS-SVL
+     PERFORM NB-S
+     MOVE "secondary_effect" TO WS-NM
+     MOVE 16 TO WS-NML
+     MOVE "minecraft:haste" TO WS-SV
+     MOVE 15 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE 15 TO WS-A
+     MOVE "minecraft:beacon" TO WS-KEY
+     MOVE 16 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 3 TO BE-XI(WS-IDX, 3)
+     PERFORM SAVE-RENDER
+     MOVE "{primary_effect:minecraft:speed,secondary_effect:minecraft:regeneration,Levels:0,CustomName:Beam} 0 " &
+         "{secondary_effect:minecraft:haste,Levels:0} {Levels:3}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§2 Beacon: lock (2.1): the lock code is saved as lock {items} when set (kept from the load), after CustomName" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 15 TO WS-A
+     MOVE "minecraft:beacon" TO WS-KEY
+     MOVE 16 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "lock" TO WS-NM
+     MOVE 4 TO WS-NML
+     PERFORM NB-C
+     MOVE "other" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-I
+     MOVE "items" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE "minecraft:key" TO WS-SV
+     MOVE 13 TO WS-SVL
+     PERFORM NB-S
+     PERFORM NB-E
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{Levels:0,lock:{items:minecraft:key}}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-5-2.
+
+ COPY CORETEST.

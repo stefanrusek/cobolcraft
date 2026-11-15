@@ -40,6 +40,45 @@
  78 BC-FILL              VALUE 38.
  78 BC-EFFECT            VALUE 39.
  78 BC-EXECUTE           VALUE 40.
+*> Ids 201 and up: the commands of entities and items of the lane cmds-b (core/src/cmds-entities.cob, cmds-items.cob).
+ 78 BC-DAMAGE            VALUE 201.
+ 78 BC-ROTATE            VALUE 202.
+ 78 BC-TAG               VALUE 203.
+ 78 BC-SWING             VALUE 204.
+ 78 BC-EXPERIENCE        VALUE 205.
+ 78 BC-ENCHANT           VALUE 206.
+ 78 BC-SPREADPLAYERS     VALUE 207.
+ 78 BC-RECIPE            VALUE 208.
+ 78 BC-ITEM              VALUE 209.
+ 78 BC-LOOT              VALUE 210.
+ 78 BC-ADVANCEMENT       VALUE 211.
+ 78 BC-ATTRIBUTE         VALUE 212.
+ 78 BC-RIDE              VALUE 213.
+ 78 BC-SPECTATE          VALUE 214.
+ 78 BC-WAYPOINT          VALUE 215.
+*> The commands of core/src/cmds-admin.cob, cmds-state.cob and cmds-chat.cob added in the lane cmds-a (run by CX-DISPATCH-A).
+ 78 BC-CHASE             VALUE 101.
+ 78 BC-DEBUG             VALUE 102.
+ 78 BC-DEBUGCONFIG       VALUE 103.
+ 78 BC-DEBUGMOBSPAWNING  VALUE 104.
+ 78 BC-DEBUGPATH         VALUE 105.
+ 78 BC-FETCHPROFILE      VALUE 106.
+ 78 BC-PERF              VALUE 107.
+ 78 BC-PUBLISH           VALUE 108.
+ 78 BC-UNPUBLISH         VALUE 109.
+ 78 BC-RAID              VALUE 110.
+ 78 BC-SERVERPACK        VALUE 111.
+ 78 BC-SPAWN-ARMOR-TRIMS VALUE 112.
+ 78 BC-TRANSFER          VALUE 113.
+ 78 BC-WARDEN-SPAWN-TRACKER VALUE 114.
+ 78 BC-TICK              VALUE 115.
+ 78 BC-WORLDBORDER       VALUE 116.
+ 78 BC-BOSSBAR           VALUE 117.
+ 78 BC-DIALOG            VALUE 118.
+ 78 BC-POSTEFFECT        VALUE 119.
+ 78 BC-TEAMMSG           VALUE 120.
+ 78 BC-TELLRAW           VALUE 121.
+ 78 BC-TITLE             VALUE 122.
 *> The modifier ids of the clauses of execute (BR-N-MODIFIER of the node that ends a clause; core/src/cmds-execute.cob).
  78 MX-AS                 VALUE 1.
  78 MX-AT                 VALUE 2.
@@ -53,3 +92,23 @@
  78 MX-ANCHORED           VALUE 10.
  78 MX-IN                 VALUE 11.
  78 MX-IF                 VALUE 12.
+*> The commands of core/src/cmds-world.cob added in the lane cmds-c (run by CX-DISPATCH-C).
+ 78 BC-CLONE             VALUE 301.
+ 78 BC-FILLBIOME         VALUE 302.
+ 78 BC-FORCELOAD         VALUE 303.
+ 78 BC-LOCATE            VALUE 304.
+ 78 BC-PARTICLE          VALUE 305.
+ 78 BC-PLACE             VALUE 306.
+ 78 BC-PLAYSOUND         VALUE 307.
+ 78 BC-STOPSOUND         VALUE 308.
+*> The commands of core/src/cmds-scoreboard.cob and core/src/cmds-data.cob added in the lane cmds-d (run by CX-DISPATCH-D).
+ 78 BC-SCOREBOARD       VALUE 401.
+ 78 BC-TEAM             VALUE 402.
+ 78 BC-TRIGGER          VALUE 403.
+ 78 BC-DATA             VALUE 404.
+ 78 BC-FUNCTION         VALUE 405.
+ 78 BC-SCHEDULE         VALUE 406.
+ 78 BC-RETURN           VALUE 407.
+ 78 BC-COMPUTE          VALUE 408.
+ 78 BC-STOPWATCH        VALUE 409.
+ 78 BC-DATAPACK         VALUE 410.

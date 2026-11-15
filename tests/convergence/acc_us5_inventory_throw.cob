@@ -3,7 +3,9 @@
 *> survival) opens her inventory screen, presses Q over hotbar slot 0 (greystone) and drags the
 *> loam of slot 1 out of the window; a second client on a further memory connection of the same
 *> core (Bobby, at (4.5, 54, 30.5)) sees both ground items appear, and the world holds Alice's
-*> inventory without them.
+*> inventory without them. Updated for feature 002: the standard tp command replaces the retired relocate, and the
+*> creative throw (CC-0006): in creative a stack picked on the creative screen and released outside the window is
+*> thrown too.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US5-INVENTORY-THROW.
  DATA DIVISION.
@@ -34,11 +36,16 @@
  01 WS-OUT-X               FLOAT-SHORT VALUE 2.
  01 WS-OUT-Y               FLOAT-SHORT VALUE 2.
  01 WS-LENGTH              BINARY-LONG.
- 01 WS-LINE                PIC X(64) VALUE "/relocate Bobby at 4.5 54 30.5".
+ 01 WS-LINE                PIC X(64) VALUE "/tp Bobby 4.5 54 30.5".
  01 WS-SCREEN              BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
  01 WS-ITEM                BINARY-LONG.
  01 WS-SUM                 BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-GRID-ARG            BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  01 WS-E3                  PIC -(9)9.
@@ -55,7 +62,7 @@
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED-A
      CALL "CV-ATTACH" USING CONVH WS-BOBBY
      CALL "CV-UNTIL-PLAY" USING CONVH WS-BOBBY WS-JOINED-B
-     MOVE 30 TO WS-LENGTH
+     MOVE 21 TO WS-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-LINE WS-LENGTH
      MOVE 20 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -115,6 +122,65 @@
      STRING "screen " FUNCTION TRIM(WS-E4) " bobby greystone " FUNCTION TRIM(WS-E1) " loam "
          FUNCTION TRIM(WS-E2) " | alice cursor " FUNCTION TRIM(WS-E3) " | core "
          FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CC-0006: in creative mode the creative screen's cursor stack is the client's alone; a click outside the
+*>   window still throws it (Set Creative Mode Slot -1) and Bobby sees the ground item with the whole stack.
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
+     MOVE "/gamemode creative" TO WS-LINE
+     MOVE 18 TO WS-LENGTH
+     CALL "CV-SAY" USING CONVH WS-ALICE WS-LINE WS-LENGTH
+     MOVE 10 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     MOVE CC-KEY-E TO WS-KEY
+     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
+     CALL "CV-STEP" USING CONVH
+     MOVE SM-SCREEN TO WS-SCREEN
+     MOVE 0 TO IN-CAPTURED
+     MOVE ACT-CREATIVE-GRID TO WS-ACTION
+     MOVE 901 TO WS-GRID-ARG
+     CALL "CV-CLICK" USING CONVH WS-ALICE WS-ACTION WS-GRID-ARG WS-FOUND
+     MOVE PL-CARRIED-ITEM TO WS-ITEM
+     MOVE PL-CARRIED-COUNT TO WS-COUNT
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     PERFORM GROUND-SUM
+     MOVE WS-SUM TO WS-BEFORE
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND
+     CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-BUTTON WS-OUT-X WS-OUT-Y
+     CALL "CV-STEP" USING CONVH
+     MOVE CC-EV-BUTTON-UP TO WS-KIND
+     CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-BUTTON WS-OUT-X WS-OUT-Y
+     CALL "CV-STEP" USING CONVH
+     MOVE 8 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     PERFORM GROUND-SUM
+     COMPUTE WS-SUM = WS-SUM - WS-BEFORE
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+     MOVE WS-SCREEN TO WS-E4
+     MOVE WS-COUNT TO WS-E1
+     MOVE WS-SUM TO WS-E2
+     MOVE PL-CARRIED-COUNT TO WS-E3
+     MOVE "convergence creative throw (CC-0006) given the creative screen with a stack on the cursor when "
+         & "Alice clicks outside the window then the stack is thrown: Bobby sees the same count more on "
+         & "the ground and her cursor is empty" TO TL-CASE
+     MOVE "screen 23 held more than 0 | bobby sees the same count | alice cursor 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-COUNT = 0
+         MOVE "screen 23 held 0 (nothing was picked up)" TO TL-OBSERVED
+     ELSE
+         IF WS-SUM = WS-COUNT
+             STRING "screen " FUNCTION TRIM(WS-E4) " held more than 0 | bobby sees the same count | "
+                 "alice cursor " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+         ELSE
+             STRING "screen " FUNCTION TRIM(WS-E4) " held " FUNCTION TRIM(WS-E1) " | bobby sees "
+                 FUNCTION TRIM(WS-E2) " | alice cursor " FUNCTION TRIM(WS-E3)
+                 DELIMITED BY SIZE INTO TL-OBSERVED
+         END-IF
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

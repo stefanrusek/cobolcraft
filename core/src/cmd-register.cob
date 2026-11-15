@@ -10,7 +10,7 @@
 *>   holder and holders (score_holder, one or several); pos, colpos, vec3, vec2, rotation, angle, swizzle (coordinates);
 *>   blockstate, blockpred, item, itempred, component, style, message, nbt (compound), nbttag, nbtpath; objective, criteria,
 *>   operation, particle, team, slot, slots, resloc, function, anchor, intrange, floatrange, dimension, gamemode, uuid,
-*>   hexcolor, teamcolor; time (min ticks); entitytype and effecttype (a resource of the registry minecraft:entity_type, minecraft:mob_effect).
+*>   hexcolor, teamcolor, dslot (a scoreboard display slot); time (min ticks); entitytype and effecttype and enchanttype and recipetype (a resource of the registry minecraft:entity_type, minecraft:mob_effect, minecraft:enchantment, minecraft:recipe).
 *>
 *> Entry points:
 *>   BR-REG USING level (of the first word), command id, line (PIC X(256)): adds the nodes and sets the command of the last
@@ -191,12 +191,42 @@
          WHEN "uuid"        MOVE BR-P-UUID TO WS-TYPE-ID
          WHEN "hexcolor"    MOVE BR-P-HEX-COLOR TO WS-TYPE-ID
          WHEN "teamcolor"   MOVE BR-P-TEAM-COLOR TO WS-TYPE-ID
+         WHEN "dslot"       MOVE BR-P-SLOT-DISPLAY TO WS-TYPE-ID
          WHEN "entitytype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:entity_type" TO WS-REGISTRY
          WHEN "effecttype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:mob_effect" TO WS-REGISTRY
+         WHEN "enchanttype"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:enchantment" TO WS-REGISTRY
+         WHEN "loottable"   MOVE BR-P-LOOT-TABLE TO WS-TYPE-ID
+         WHEN "modifier"    MOVE BR-P-LOOT-MODIFIER TO WS-TYPE-ID
+         WHEN "recipetype"
+             MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
+             MOVE "minecraft:recipe" TO WS-REGISTRY
+         WHEN "biome"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/biome" TO WS-REGISTRY
+         WHEN "biomeortag"
+             MOVE BR-P-RES-OR-TAG TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/biome" TO WS-REGISTRY
+         WHEN "structortag"
+             MOVE BR-P-RES-OR-TAG-KEY TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
+         WHEN "structkey"
+             MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
+         WHEN "poolkey"
+             MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/template_pool" TO WS-REGISTRY
+         WHEN "poiortag"
+             MOVE BR-P-RES-OR-TAG TO WS-TYPE-ID
+             MOVE "minecraft:point_of_interest_type" TO WS-REGISTRY
+         WHEN "feature"     MOVE BR-P-FEATURE TO WS-TYPE-ID
+         WHEN "mirror"      MOVE BR-P-MIRROR TO WS-TYPE-ID
+         WHEN "templaterot" MOVE BR-P-TEMPLATE-ROT TO WS-TYPE-ID
          WHEN OTHER         MOVE BR-P-TIME TO WS-TYPE-ID
      END-EVALUATE.
 

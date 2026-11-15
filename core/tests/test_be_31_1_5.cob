@@ -29,7 +29,7 @@
  01 WS-PACKET              BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
  01 WS-WRITTEN             BINARY-LONG.
- 01 WS-DATA                PIC X(64).
+ 01 WS-DATA                PIC X(512).
  01 WS-DLEN                BINARY-LONG.
  01 WS-GX                  BINARY-LONG.
  01 WS-GY                  BINARY-LONG.
@@ -75,7 +75,7 @@
      MOVE "20" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 31-1§5 sync: a sign sends Block Entity Data with its position, type 7 and an empty compound; a chest sends none" TO TL-CASE
+     MOVE "acceptance US12 31-1§5 sync: a sign sends Block Entity Data with its position, type 7 and its text compound (31-3 2.10: 2 empty sides and is_waxed, 159 bytes); a chest sends none" TO TL-CASE
      MOVE "minecraft:oak_sign" TO WS-KEY
      MOVE 18 TO WS-LEN
      MOVE 7 TO WS-T
@@ -87,7 +87,7 @@
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "BE-DATA-PACKET" USING WS-SIGN PB-BUFFER WS-WRITTEN
      MOVE 0 TO PB-POS
-     MOVE 64 TO WS-CAP64
+     MOVE 512 TO WS-CAP64
      CALL "PB-GET-BLOCK-ENTITY-DATA" USING PB-BUFFER WS-GX WS-GY WS-GZ WS-GT WS-DATA WS-CAP64 WS-DLEN
      MOVE WS-WRITTEN TO WS-EDIT
      MOVE WS-GX TO WS-EDIT2
@@ -108,10 +108,10 @@
      MOVE SPACES TO WS-TEXT2
      STRING FUNCTION TRIM(WS-TEXT) " chest " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT2
      MOVE WS-TEXT2 TO WS-TEXT
-     MOVE "1 35 -3 type 7 len 2 tag 11 chest 0 0" TO TL-EXPECTED
+     MOVE "1 35 -3 type 7 len 159 tag 11 chest 0 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 31-1§5 sync: chunk entries: packed xz 61 (x 3, z 13), y 64, type id; a chest and a data-less sign have no tag, a banner has one" TO TL-CASE
+     MOVE "acceptance US12 31-1§5 sync: chunk entries: packed xz 61 (x 3, z 13), y 64, type id; a chest has no tag, a sign (text keys, 31-3 2.10) and a banner have one" TO TL-CASE
      CALL "BE-CHUNK-ENTRY" USING WS-CHEST WS-PACKED WS-GY WS-GT WS-PRESENT
      MOVE WS-PACKED TO WS-EDIT
      MOVE WS-GY TO WS-EDIT2
@@ -131,7 +131,7 @@
      MOVE SPACES TO WS-TEXT2
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-EDIT4) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT2
      MOVE WS-TEXT2 TO WS-TEXT
-     MOVE "61 64 1 0 0 1" TO TL-EXPECTED
+     MOVE "61 64 1 0 1 1" TO TL-EXPECTED
      PERFORM CHECK
      GOBACK.
 

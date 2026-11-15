@@ -421,7 +421,8 @@ END PROGRAM BR-SNBT-STRING.
      ELSE
          MOVE 0 TO LS-DIGITS
          MOVE 10 TO LS-BASE
-         IF LS-I < LS-C AND BR-IN-TEXT(LS-I:1) = "0"
+*> 0x and 0b start a numeral only when digits follow: 0b alone is the byte 0 (a class example of 15 §9.4).
+         IF LS-I + 1 < LS-C AND BR-IN-TEXT(LS-I:1) = "0"
              EVALUATE BR-IN-TEXT(LS-I + 1:1)
                  WHEN "x"
                  WHEN "X"

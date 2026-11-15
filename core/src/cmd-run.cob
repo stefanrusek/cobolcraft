@@ -166,8 +166,38 @@
          WHEN BC-SAVE-ON
          WHEN BC-SAVE-OFF
              CALL "CX-SAVE-SWITCH"
+         WHEN BC-DAMAGE
+             CALL "CX-DAMAGE"
+         WHEN BC-ROTATE
+             CALL "CX-ROTATE"
+         WHEN BC-TAG
+             CALL "CX-TAG"
+         WHEN BC-SWING
+             CALL "CX-SWING"
+         WHEN BC-EXPERIENCE
+             CALL "CX-EXPERIENCE"
+         WHEN BC-ENCHANT
+             CALL "CX-ENCHANT"
+         WHEN BC-SPREADPLAYERS
+             CALL "CX-SPREADPLAYERS"
+         WHEN BC-RECIPE
+             CALL "CX-RECIPE"
+         WHEN BC-ITEM
+             CALL "CX-ITEM"
+         WHEN BC-LOOT
+             CALL "CX-LOOT"
+         WHEN BC-WAYPOINT
+             CALL "CX-WAYPOINT"
+         WHEN BC-ADVANCEMENT
+             CALL "CX-ADVANCEMENT"
+         WHEN BC-ATTRIBUTE
+             CALL "CX-ATTRIBUTE"
+         WHEN BC-RIDE
+             CALL "CX-RIDE"
+         WHEN BC-SPECTATE
+             CALL "CX-SPECTATE"
          WHEN OTHER
-             CALL "CX-HELP"
+             CALL "CX-DISPATCH-A"
      END-EVALUATE
      GOBACK.
  END PROGRAM BR-CMD-CALL.

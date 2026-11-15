@@ -239,8 +239,8 @@
  78 CL-DRAW-RESERVE         VALUE 7.
  78 CL-MAX-DIM-TYPES        VALUE 8.
  78 CL-MAX-LEVELS           VALUE 8.
- 78 CL-MAX-NODES            VALUE 160.
- 78 CL-MAX-LINKS            VALUE 160.
+ 78 CL-MAX-NODES            VALUE 2048.
+ 78 CL-MAX-LINKS            VALUE 4096.
  78 CL-MAX-SUGGEST          VALUE 10.   *> suggestion lines shown
  78 CL-MAX-COMMANDS         VALUE 64.   *> command suggestions kept (sorted, then the first CL-MAX-SUGGEST shown)
  78 CL-MAX-PACKS            VALUE 16.

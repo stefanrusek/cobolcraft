@@ -319,6 +319,8 @@
              MOVE 16 TO WS-SERIALIZER
          WHEN 28
              MOVE 15 TO WS-SERIALIZER
+         WHEN 32
+             MOVE 17 TO WS-SERIALIZER
          WHEN OTHER
              MOVE 14 TO WS-SERIALIZER
      END-EVALUATE
