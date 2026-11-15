@@ -53,6 +53,11 @@
  01 WS-CAUSE               BINARY-LONG VALUE 1.
  01 WS-MOVED               BINARY-LONG.
  01 WS-TICKS               BINARY-LONG VALUE 400.
+ 01 WS-FLOOR-X             BINARY-LONG.
+ 01 WS-FLOOR-Z             BINARY-LONG.
+ 01 WS-FLOOR-Y             BINARY-LONG.
+ 01 WS-FLOOR-SIZE          BINARY-LONG VALUE 41.
+ 01 WS-FLOOR-KIND          BINARY-LONG VALUE 1.
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-TEXT                PIC X(1024).
  01 WS-NEEDLE              PIC X(40).
@@ -77,7 +82,7 @@
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:cow" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-TYPE WS-ENTITY-ROW WS-STATUS
-     MOVE "minecraft:enderman" TO WS-KEY
+     MOVE "minecraft:bat" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:porkchop" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-PORK WS-ITEM-ROW WS-STATUS
@@ -96,7 +101,7 @@
      CALL "STDMOB-INDEX" USING WS-COW-TYPE WS-INDEX
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "test stdmob slice: STDMOB-INDEX of the player and of an enderman is 0" TO TL-CASE
+     MOVE "test stdmob slice: STDMOB-INDEX of the player and of a bat is 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      CALL "STDMOB-INDEX" USING WS-PLAYER-TYPE WS-INDEX
      MOVE WS-INDEX TO TL-OBSERVED-N
@@ -142,7 +147,7 @@
      CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "minecraft:enderman" TO WS-KEY
+     MOVE "minecraft:bat" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
 
 *>   A pig spawned by MOB-SPAWN has the full health of its row (19 section 2.1: max_health 10).
@@ -238,6 +243,12 @@
      COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
      COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+*>   Wandering: a pig on the player's cell moves within 400 ticks and stays near.
+*>   (the test world is void: a stone floor keeps the pig from falling out of the world, where it would die, 18 section 2.5)
+     COMPUTE WS-FLOOR-X = FUNCTION INTEGER(WS-X) - 20
+     COMPUTE WS-FLOOR-Z = FUNCTION INTEGER(WS-Z) - 20
+     COMPUTE WS-FLOOR-Y = FUNCTION INTEGER(WS-Y) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FLOOR-X WS-FLOOR-Z WS-FLOOR-SIZE WS-FLOOR-Y WS-FLOOR-KIND
      CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE "test stdmob slice: a pig wanders in 400 ticks" TO TL-CASE
@@ -345,3 +356,4 @@
      END-PERFORM.
  END PROGRAM TEST-STDMOB-SLICE.
  COPY CORETEST.
+ COPY MOBSPTEST.

@@ -218,6 +218,10 @@
          GOBACK
      END-IF
      MOVE CN-PLAYER(L-ID) TO WS-ROW
+*>   A rider's position is its vehicle's (MOB-RIDE-MOVE): its own reports are ignored.
+     IF PL-ENTITY-ROW(WS-ROW) > 0 AND EN-VEHICLE(PL-ENTITY-ROW(WS-ROW)) > 0
+         GOBACK
+     END-IF
      MOVE 0 TO WS-MOVED
      IF L-PACKET-ID = 30 OR L-PACKET-ID = 31
          CALL "MOVE-COLLIDES-POSE" USING PL-DIM(WS-ROW) PL-POSE(WS-ROW) PSB-X PSB-Y PSB-Z WS-HIT

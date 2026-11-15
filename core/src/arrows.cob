@@ -6,6 +6,7 @@
 *> cells (it stops at the last free point and sticks) and against the boxes of players and standard mobs other than its owner (inflated by the
 *> margin max(0, min(0.3, (tick - 2) / 20)) of 44 section 7.3); a hit does ceil(speed x base damage) (a player through HEALTH-HURT with CAUSE-ARROW, a
 *> mob in whole points) and removes the arrow; then drag 0.99 and gravity 0.05.
+*> A stray, bogged or parched arrow carries its effect in EN-VARIANT of the arrow row (STDMOB-ARROW-KIND) and a player it hits gets it (STDMOB-ARROW-APPLY, 20 section 5).
 *> Approximations (open): block hits use sample steps and not an exact voxel clip, water drag, critical arrows, piercing, Punch and Power, fire,
 *> tipped arrows, pickup of stuck arrows and the arrow count of the victim are not modelled.
 *>
@@ -149,6 +150,7 @@
          END-IF
          COMPUTE WS-MILLI = WS-DAMAGE * 1000
          CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI WS-CAUSE WS-OWNER-ID WS-OWNER-PLAYER WS-RESULT
+         CALL "STDMOB-ARROW-APPLY" USING L-PLAYER EN-VARIANT(L-ARROW)
      ELSE
          MOVE 0 TO EN-HURT(L-ENTITY)
          CALL "HEALTH-MOB-DAMAGE" USING L-ENTITY WS-DAMAGE WS-CAUSE WS-OWNER-PLAYER
@@ -532,11 +534,9 @@
              CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R2
              COMPUTE WS-BASE = 2000 + BW-DIFFICULTY * 110 + (WS-R1 - WS-R2) * 0.57425
              CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY WS-AZ WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+             CALL "STDMOB-ARROW-KIND" USING L-M EN-VARIANT(WS-ARROW)
              MOVE 0 TO EN-DRAW(L-ROW)
-             MOVE 40 TO WS-INTERVAL
-             IF BW-DIFFICULTY >= 3
-                 MOVE 20 TO WS-INTERVAL
-             END-IF
+             CALL "STDMOB-BOW-INTERVAL" USING L-M BW-DIFFICULTY WS-INTERVAL
              MOVE WS-INTERVAL TO EN-SHOOT-TIME(L-ROW)
          END-IF
      ELSE

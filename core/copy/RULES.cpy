@@ -55,6 +55,14 @@
 *> CAUSE-VOID (002-nether-h9): below the world (damage type out_of_world, 4.0 each tick, bypasses armor, Resistance and creative, 17 section 4.12 and 18 section 4.3).
  78 CAUSE-VOID                VALUE 11.
  78 CAUSE-COUNT               VALUE 11.
+*> Causes of damage that only a mob takes (002-lane-mobsfull-h15, 18 sections 2.5, 3.3, 7.3): they have no RULE-CAUSE row (the table stays CAUSE-COUNT long);
+*> DAMAGE-TYPE-ID gives them the damage type on_fire, lava, in_wall, cramming by key (generic, id 0, where the open set has none); a mob below the world takes CAUSE-VOID (out_of_world).
+ 78 CAUSE-ON-FIRE              VALUE 12.
+ 78 CAUSE-LAVA                 VALUE 13.
+ 78 CAUSE-IN-WALL              VALUE 14.
+ 78 CAUSE-CRAMMING             VALUE 15.
+*> CAUSE-GENERIC (002-lane-mobsfull-h20): damage of the generic type that a mob takes from itself (the death of a stung bee, 19 section 16); no RULE-CAUSE row.
+ 78 CAUSE-GENERIC              VALUE 16.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

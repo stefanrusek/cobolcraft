@@ -61,6 +61,7 @@
 *>     left out.
 *>   TEST-ATTACK USING connection id, target entity id: feeds Attack (05c 0x01).
 *>   TEST-CLIENT-COMMAND USING connection id, action: feeds Client Command (05c 0x0C).
+*>   TEST-INTERACT USING connection id, target entity id, hand, sneaking: feeds Interact (05c 0x1A) with the interaction point (0, 0, 0).
 *>   TEST-DRAIN-HEALTH USING connection id, text out (PIC X(4096)): drains the connection and lists
 *>     its health packets separated by " | ": Set Health "health <h> food <f>", Damage Event
 *>     "damage <entity> type <t> source <s>", Hurt Animation "hurt <entity>", Player Combat Kill
@@ -1170,6 +1171,33 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM TEST-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-INTERACT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 26.
+ 01 WS-PX                  FLOAT-LONG VALUE 0.
+ 01 WS-PY                  FLOAT-LONG VALUE 0.
+ 01 WS-PZ                  FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TARGET               BINARY-LONG.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-SNEAK                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-TARGET L-HAND L-SNEAK.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TARGET
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-HAND
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-PX WS-PY WS-PZ
+     CALL "PB-PUT-BOOL" USING PB-BUFFER L-SNEAK
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-INTERACT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CLIENT-COMMAND.

@@ -25,7 +25,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-TYPE                BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-VANILLA             BINARY-LONG VALUE 100.
+ 01 WS-VANILLA             BINARY-LONG VALUE 1.   *> the area effect cloud: no standard-mob row (type 100, the phantom, has one since row 36)
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.

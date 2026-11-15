@@ -5,7 +5,9 @@
 *> of a mob on ground with friction 0.6). SM-KIND 0 passive (category creature), 1 hostile (monster). SM-ATTACK: attack damage in points, before the
 *> difficulty scaling of 20 section 3.1. SM-FOLLOW: the follow range in blocks. SM-BURNS 1: burns in daylight (20 section 3.5). SM-XP: the experience a player's kill gives (18 section 7.5; 20 section 3.1: Monster 5; 0 = an animal, 1 + nextInt(3)). SM-NEUTRAL 1: takes a target only where the light is below 13 (the spider, 20 section 7.1). The loot of a mob is its
 *> table minecraft:entities/<key> (18 section 7.6; STDMOB-DROPS).
- 78 SM-COUNT                 VALUE 9.
+ 78 SM-BASE-COUNT            VALUE 15.
+ 78 SM-COUNT                 VALUE 67.
+*> Rows SM-BASE-COUNT + 1 to 25 are the land species of document 19 (MOB19ROWS.cpy); rows 26 and 27, slime and enderman, are MOB20ROWS.cpy; rows 28 to 33 are the neutral species (MOB19NEUTRAL.cpy); row 34, silverfish, is MOB20ROWS2.cpy. Rows 35 to 41 are the water animals (MOB21ROWS.cpy).
 *> The first SM-NATURAL rows spawn on grass in the natural cycle (18 section 6.8 animal rule); rows SM-HOSTILE-FIRST to SM-COUNT are monsters.
  78 SM-NATURAL               VALUE 4.
  78 SM-HOSTILE-FIRST         VALUE 6.
@@ -25,6 +27,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 3.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "cow".
        10 FILLER BINARY-LONG VALUE 10.
@@ -39,6 +43,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 3.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "sheep".
        10 FILLER BINARY-LONG VALUE 8.
@@ -53,6 +59,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 3.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "chicken".
        10 FILLER BINARY-LONG VALUE 4.
@@ -67,6 +75,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 3.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "mooshroom".
        10 FILLER BINARY-LONG VALUE 10.
@@ -81,6 +91,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 3.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "zombie".
        10 FILLER BINARY-LONG VALUE 20.
@@ -95,6 +107,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 2.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "spider".
        10 FILLER BINARY-LONG VALUE 16.
@@ -109,6 +123,8 @@
        10 FILLER BINARY-LONG VALUE 0.             *> fuse: ticks of swelling before an explosion (0: the mob does not swell)
        10 FILLER BINARY-LONG VALUE 0.             *> blast power of that explosion
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 2.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "creeper".
        10 FILLER BINARY-LONG VALUE 20.
@@ -123,6 +139,8 @@
        10 FILLER BINARY-LONG VALUE 30.             *> fuse (maxSwell, 20 section 6.1)
        10 FILLER BINARY-LONG VALUE 3.              *> explosion radius 3
        10 FILLER BINARY-LONG VALUE 0.             *> ranged: 1 = shoots arrows with a bow (SM-RANGED, 20 section 5)
+       10 FILLER BINARY-LONG VALUE 2.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "skeleton".
        10 FILLER BINARY-LONG VALUE 20.
@@ -137,8 +155,115 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 1.              *> ranged
+       10 FILLER BINARY-LONG VALUE 2.             *> natural spawn rule (SM-SPAWN)
+       10 FILLER BINARY-LONG VALUE 0.             *> melee hit effect (SM-HITFX)
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "zombie_villager".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 117.            *> 0.23 x 1.0, as the zombie (20 section 4.2)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 3.
+       10 FILLER BINARY-LONG VALUE 35.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "husk".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 117.            *> 0.23 x 1.0; not sun-sensitive; Hunger on hit (20 section 4.3)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 3.
+       10 FILLER BINARY-LONG VALUE 35.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 1.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "stray".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 138.            *> 0.25 x 1.0; bow (20 section 5; arrow effect open)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "bogged".
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 138.            *> 0.25 x 1.0; bow (20 section 5; arrow effect and 70/50 interval open)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "parched".
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 138.            *> 0.25 x 1.0; bow, not in burn_in_daylight (20 section 5)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "cave_spider".
+       10 FILLER BINARY-LONG VALUE 12.
+       10 FILLER BINARY-LONG VALUE 198.            *> 0.3 x 1.0; Poison on hit (20 section 7.2)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 5.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 2.
+ COPY MOB19ROWS.
+ COPY MOB20ROWS.
+ COPY MOB19NEUTRAL.
+ COPY MOB20ROWS2.
+ COPY MOB21ROWS.
+ COPY MOB20ROWS3.
+ COPY MOB21ROWS2.
+ COPY MOB19ROWS2.
+ COPY MOB21ROWS3.
  01 STD-MOB-TABLE REDEFINES STD-MOB-DATA.
-    05 SM-ENTRY OCCURS 9 TIMES.
+    05 SM-ENTRY OCCURS SM-COUNT TIMES.
        10 SM-KEY                PIC X(24).
        10 SM-HEALTH             BINARY-LONG.
        10 SM-WALK-MILLI         BINARY-LONG.
@@ -152,6 +277,8 @@
        10 SM-FUSE               BINARY-LONG.
        10 SM-BLAST              BINARY-LONG.
        10 SM-RANGED             BINARY-LONG.
+       10 SM-SPAWN              BINARY-LONG.
+       10 SM-HITFX              BINARY-LONG.
 *> Walking (19 section 2.1, 18 section 4.2 RandomStrollGoal): a standing mob starts a stroll on a tick with probability 1/120 and walks it
 *> 3 to 10 blocks along one heading, then it stands.
  78 SM-STROLL-ODDS           VALUE 120.

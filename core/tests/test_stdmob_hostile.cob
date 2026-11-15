@@ -228,8 +228,12 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE WS-NIGHT TO CW-TIME
      CALL "MOB-SPAWN" USING WS-DIM WS-ZOMBIE-TYPE WS-X WS-Y WS-Z WS-YAW WS-ZOMBIE
+*>   (kept on its one stone block: wandering off it the zombie would fall out of the void test world and die, 18 section 2.5)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 700
          ADD 1 TO CW-TIME
+         MOVE WS-X TO EN-X(WS-ZOMBIE)
+         MOVE WS-Y TO EN-Y(WS-ZOMBIE)
+         MOVE WS-Z TO EN-Z(WS-ZOMBIE)
          CALL "MOB-STEP" USING WS-ZOMBIE
      END-PERFORM
      MOVE "test stdmob hostile: a zombie at night keeps its 20 health" TO TL-CASE

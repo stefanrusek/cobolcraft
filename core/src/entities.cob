@@ -77,13 +77,13 @@
  PROGRAM-ID. ENTITY-ADD-BUILD.
 *> USING tracker row, PB-BUFFER: Add Entity 0x01 (05a; 09 §3.2, §3.3): entity id, UUID, type,
 *> position, movement as LpVec3 (a ground item's current motion EN-VX to EN-VZ; (0, 0, 0) for
-*> players and mobs, 09 §3.3 Mobs rows), pitch, yaw and head yaw (= yaw) as Angles, data 0.
+*> players and mobs, 09 §3.3 Mobs rows), pitch, yaw and head yaw (= yaw) as Angles, data 0 (a falling block: its block state id, 05a 0x01).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
  01 WS-PACKET-ID           BINARY-LONG VALUE 1.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-DATA                BINARY-LONG.
  01 WS-VX                  FLOAT-LONG.
  01 WS-VY                  FLOAT-LONG.
  01 WS-VZ                  FLOAT-LONG.
@@ -108,7 +108,11 @@
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-PITCH(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO WS-DATA
+     IF EN-FB-STATE(L-ROW) > 0
+         MOVE EN-FB-STATE(L-ROW) TO WS-DATA
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-DATA
      GOBACK.
  END PROGRAM ENTITY-ADD-BUILD.
 
@@ -298,7 +302,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-SEES.
-*> USING player row, tracker row, sees out (BINARY-LONG 1 or 0): the visibility rule above.
+*> USING player row, tracker row, sees out (BINARY-LONG 1 or 0): the visibility rule above, and the entity must lie within its tracking range (18 section 9.1: M189-IN-RANGE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -319,7 +323,7 @@
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW) / 16)
      IF FUNCTION ABS(WS-CX - PL-CENTER-X(L-PLAYER)) <= CS-VIEW-DISTANCE
              AND FUNCTION ABS(WS-CZ - PL-CENTER-Z(L-PLAYER)) <= CS-VIEW-DISTANCE
-         MOVE 1 TO L-SEES
+         CALL "M189-IN-RANGE" USING L-PLAYER L-ROW L-SEES
      END-IF
      GOBACK.
  END PROGRAM ENTITY-SEES.
@@ -338,7 +342,12 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-SEES                BINARY-LONG.
  01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-TNT-TYPE            BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-WOOL                BINARY-LONG.
+ 01 WS-NEEDED              BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
  01 WS-IDS.
     05 WS-ID               BINARY-LONG OCCURS 16 TIMES.
  LINKAGE SECTION.
@@ -349,12 +358,20 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
+     MOVE 0 TO WS-NEW
      CALL "ENTITY-SEES" USING L-PLAYER L-ROW WS-SEES
      CALL "XP-ORB-TYPE" USING WS-ORB-TYPE
+     CALL "TNT-TYPE" USING WS-TNT-TYPE
      CALL "PB-RESET" USING PB-BUFFER
      IF WS-SEES = 1 AND VW-SEEN(L-PLAYER)(L-ROW:1) NOT = "1"
          CALL "ENTITY-ADD-BUILD" USING L-ROW PB-BUFFER
          MOVE "1" TO VW-SEEN(L-PLAYER)(L-ROW:1)
+         MOVE 1 TO WS-NEW
+         IF EN-VARIANT(L-ROW) > 0
+             CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "STDMOB-VARIANT-BUILD" USING L-ROW PB-BUFFER
+         END-IF
          IF EN-TYPE(L-ROW) = CR-LOOSE-ITEM
              CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
              CALL "PB-RESET" USING PB-BUFFER
@@ -374,6 +391,19 @@
              CALL "PB-RESET" USING PB-BUFFER
              CALL "SET-ENTITY-DATA-ORB-BUILD" USING EN-ID(L-ROW) EN-ITEM(L-ROW) PB-BUFFER
          END-IF
+         IF WS-TNT-TYPE > 0 AND EN-TYPE(L-ROW) = WS-TNT-TYPE
+             CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "SET-ENTITY-DATA-FUSE-BUILD" USING EN-ID(L-ROW) EN-SWELL(L-ROW) PB-BUFFER
+         END-IF
+         CALL "MOB-DATA-VALUES" USING L-ROW WS-BABY WS-WOOL WS-NEEDED
+         IF WS-NEEDED = 1
+             IF PB-LENGTH > 0
+                 CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             END-IF
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "MOB-DATA-BUILD" USING L-ROW PB-BUFFER
+         END-IF
      END-IF
      IF WS-SEES = 0 AND VW-SEEN(L-PLAYER)(L-ROW:1) = "1"
          MOVE EN-ID(L-ROW) TO WS-ID(1)
@@ -382,6 +412,12 @@
      END-IF
      IF PB-LENGTH > 0
          CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+     END-IF
+     IF WS-NEW = 1 AND EN-EQUIP(L-ROW) > 0
+         CALL "STDMOB-EQUIP-SEND" USING L-ROW
+     END-IF
+     IF WS-NEW = 1 AND EN-LEASH(L-ROW) > 0
+         CALL "MOB-LEASH-PAIR" USING L-PLAYER L-ROW
      END-IF
      GOBACK.
  END PROGRAM ENTITY-VIEW-UPDATE.

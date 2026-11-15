@@ -204,6 +204,8 @@
        10 PL-XP-POINTS       BINARY-LONG.        *> points into the current level
        10 PL-XP-TOTAL        BINARY-LONG.        *> total experience points
        10 PL-XP-DELAY        BINARY-LONG.        *> takeXpDelay: ticks until the next orb pickup
+*>     --- 002-lane-mobsfull-h11: the time_since_rest statistic (core/src/mob-20-12.cob; 44-5 section 10C item 2); not saved ---
+       10 PL-REST            BINARY-LONG.        *> ticks since the last death or bed entry, not counting sleep
 *>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
@@ -228,6 +230,7 @@
        10 CK-FOREIGN         PIC 9.              *> 1: its palette holds a key of another world type (WT-23): void, never saved
        10 CK-RESEND          PIC 9.              *> 1: overflow of a neighbour was written into this lit chunk, the tick sends it again (OV-FLUSH)
        10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
+       10 CK-FRESH           PIC 9.              *> generated (not read from a file) and not yet given its chunk-generation spawns (MS6-CHUNK-GEN-TICK)
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
 *> entity in the world that other players can see: players once their join is sent (EN-PLAYER is
@@ -297,7 +300,153 @@
        10 EN-STRAFE-BACK     BINARY-LONG.        *> strafingBackwards 0 or 1
        10 EN-STRAFE-X        FLOAT-LONG.         *> the strafe walk of this tick
        10 EN-STRAFE-Z        FLOAT-LONG.
+*>     --- 002-lane-mobsfull-h5: per-entity variant (core/src/mob-20-3.cob) ---
+       10 EN-VARIANT         BINARY-LONG.        *> zombie family: 1 = baby; creeper: 1 = powered; slime: its size (0 = not set, read as 1); the metadata sync is STDMOB-VARIANT-BUILD
+       10 EN-EQUIP           BINARY-LONG.        *> armour of a zombie or skeleton: 10 x (tier + 1) + number of slots worn (head, chest, legs, feet in that order); 0 none (20 section 3.6)
+       10 EN-REINF           BINARY-LONG.        *> zombie reinforcement chance in ten-thousandths (20 section 4.1)
+       10 EN-ENDER-TICKS     BINARY-LONG.        *> enderman: ticks since its target changed (the 600-tick daylight rule, 20 section 8.1)
+*>     --- 002-lane-mobsfull-h6: breeding, ageing, wool, eggs (core/src/mob-18-8.cob; 18 section 8.1, 19 sections 2.2 to 2.5) ---
+*>     A baby has EN-VARIANT 1 (the same flag as the zombie family) and a negative EN-MOBAGE; an adult in breeding cooldown has a positive one.
+       10 EN-MOBAGE          BINARY-LONG.        *> AgeableMob age in ticks: -24000 a new baby, 0 adult, 6000 after breeding (counts toward 0)
+       10 EN-LOVE            BINARY-LONG.        *> inLove: ticks left in love mode (600 after feeding)
+       10 EN-LOVE-CAUSE      BINARY-LONG.        *> player row that fed it (0 none)
+       10 EN-LOVE-TIME       BINARY-LONG.        *> BreedGoal loveTime: ticks spent walking to the partner
+       10 EN-LOVE-PARTNER    BINARY-LONG.        *> tracker row of the partner being walked to (0 none)
+       10 EN-FORCED          BINARY-LONG.        *> forcedAgeTimer: ticks left of the age-up effect after feeding a baby
+       10 EN-LOCKED          BINARY-LONG.        *> age locked (golden dandelion): 1 keeps the age from counting
+       10 EN-TAMED           BINARY-LONG.        *> horse family: 1 when tamed (love mode needs it)
+       10 EN-WOOL            BINARY-LONG.        *> sheep: the metadata byte (colour 0 to 15, +16 sheared); mooshroom: type 0 red 1 brown; pig, cow, chicken: variant
+       10 EN-EGG             BINARY-LONG.        *> chicken: eggTime, ticks to the next egg
+       10 EN-EAT             BINARY-LONG.        *> sheep: the EatBlock timer, 0 or the ticks left of the 40
+*>     --- 002-lane-mobsfull-h7: taming (core/src/mob-18-8.cob 18 section 8.2; wolf, 19 section 6.1). EN-TAMED is the tame flag. ---
+       10 EN-OWNER-UUID      PIC X(16).          *> the owner's UUID of a tame pet (spaces: none)
+       10 EN-SIT             BINARY-LONG.        *> orderedToSit: 1 while the pet is ordered to sit
+       10 EN-PET-MOVING      BINARY-LONG.        *> 1 while a pet walks to its owner (FollowOwnerGoal, M188-FOLLOW)
+       10 EN-FOE             BINARY-LONG.        *> a pet's or golem's mob target: tracker row (0 none), its entity id in EN-FOE-ID
+       10 EN-FOE-ID          BINARY-LONG.
+       10 EN-PET-CD          BINARY-LONG.        *> ticks until the pet's next melee hit
+*>     --- 002-lane-mobsfull-h8: main hand, helmet wear (core/src/mob-20-3.cob) ---
+       10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1), 4 bow (skeleton family, 5)
+       10 EN-HEAD-WEAR       BINARY-LONG.        *> durability damage of the helmet worn (EN-EQUIP head slot); -1 = broken, the head is empty (20 section 3.5)
+       10 EN-WAKE            BINARY-LONG.        *> silverfish: wake-up-friends timer, 20 after a hit by an attacker, counting down to the scan (20 section 9.1)
+*>     --- 002-lane-mobsfull-h10: aquatic mobs (core/src/mob-21-4.cob; docs/protocol/21 section 4) ---
+       10 EN-DRY             BINARY-LONG.        *> ticks out of water (a fish: air 300 - EN-DRY; a dolphin: moistness 2400 - EN-DRY); 0 in water
+       10 EN-SWIM-SPEED      FLOAT-LONG.         *> a swimmer's current move speed (FishMoveControl lerp 0.125 toward attribute x modifier)
+       10 EN-DEST-Y          BINARY-LONG.        *> the cell y a swimmer is heading for (EN-DEST-X/-Z, EN-COOLDOWN the ticks left)
+       10 EN-IDLE            BINARY-LONG.        *> squid noActionTime: ticks without a player within 32 blocks
+       10 EN-SQ-MX           FLOAT-LONG.         *> a squid's movement vector m (blocks per tick, 21 section 4.5)
+       10 EN-SQ-MY           FLOAT-LONG.
+       10 EN-SQ-MZ           FLOAT-LONG.
+       10 EN-SQ-PHASE        FLOAT-LONG.         *> tentacleMovement phase, 0 to 2 pi
+       10 EN-SQ-TSPEED       FLOAT-LONG.         *> tentacleSpeed (0 = not drawn yet)
+       10 EN-DARK            BINARY-LONG.        *> glow squid: ticks left without glowing after a hit
+       10 EN-INFLATE         BINARY-LONG.        *> pufferfish inflateCounter (the puff state is EN-VARIANT, 0 to 2)
+       10 EN-DEFLATE         BINARY-LONG.        *> pufferfish deflateTimer
+*>     --- 002-lane-mobsfull-h11: mob effects, creeper ignition, phantom flight (core/src/mob-20-6.cob, 20-7, 20-11, 20-12) ---
+*>     Effects of a mob (ticks left, -1 = no expiry, 0 = none): the spider's Hard spawn effect (20 section 7.1) and the witch's potions (20 section 11).
+       10 EN-FX-SPEED          BINARY-LONG.        *> Speed: the walk speed x 1.2
+       10 EN-FX-STRENGTH       BINARY-LONG.        *> Strength: +3 attack damage
+       10 EN-FX-REGEN          BINARY-LONG.        *> Regeneration: 1 health every 50 ticks
+       10 EN-FX-INVIS          BINARY-LONG.        *> Invisibility (the entity flags sent to the viewers do not show it: open)
+       10 EN-FX-FIRE           BINARY-LONG.        *> Fire Resistance (witch)
+       10 EN-FX-WATER          BINARY-LONG.        *> Water Breathing (witch)
+       10 EN-FALL              FLOAT-LONG.         *> creeper: the distance fallen in the air so far (20 section 6.1)
+       10 EN-IGNITED           BINARY-LONG.        *> creeper: 1 when set off by flint and steel or a fire charge (20 section 6.1)
+       10 EN-PH-PHASE          BINARY-LONG.        *> phantom: 0 CIRCLE, 1 SWOOP (20 section 12)
+       10 EN-PH-TIMER          BINARY-LONG.        *> phantom: ticks until the next sweep
+       10 EN-PH-SCAN           BINARY-LONG.        *> phantom: the target scan counter
+       10 EN-PH-CW             BINARY-LONG.        *> phantom: clockwise sign, +1 or -1
+       10 EN-PH-SET            BINARY-LONG.        *> phantom: 1 once the anchor is set
+       10 EN-PH-AX             FLOAT-LONG.         *> phantom: anchor block (lower corner)
+       10 EN-PH-AY             FLOAT-LONG.
+       10 EN-PH-AZ             FLOAT-LONG.
+       10 EN-PH-TX             FLOAT-LONG.         *> phantom: move target point
+       10 EN-PH-TY             FLOAT-LONG.
+       10 EN-PH-TZ             FLOAT-LONG.
+       10 EN-PH-ANGLE          FLOAT-LONG.         *> phantom: circle angle in radians
+       10 EN-PH-DIST           FLOAT-LONG.         *> phantom: circle distance
+       10 EN-PH-HEIGHT         FLOAT-LONG.         *> phantom: circle height
+       10 EN-PH-SPEED          FLOAT-LONG.         *> phantom: the move control speed (starts 0.1)
 *>     --- end 002-lane-mobs2 ---
+*>     --- 002-lane-mobsfull-h12: Nether and End mobs (core/src/mob-21-5.cob) ---
+       10 EN-ANGER           BINARY-LONG.        *> zombified piglin, piglin: ticks of anger left (0 calm); the target is EN-TARGET
+       10 EN-ALERT           BINARY-LONG.        *> ticks until an angry zombified piglin alerts the others again (alertOthers, 4 to 6 s)
+*>     --- 002-lane-mobsfull-h14: saddles, riding, leads (core/src/mob-18-ride.cob; 18 sections 8.3 and 8.4, 19 sections 2.1 and 3) ---
+       10 EN-SADDLE          BINARY-LONG.        *> 1 when the saddle slot holds a saddle (horse family, pig)
+       10 EN-RIDER           BINARY-LONG.        *> player row riding this mob (0 none)
+       10 EN-VEHICLE         BINARY-LONG.        *> on a player's entity: the tracker row of the mob it rides (0 none)
+       10 EN-TEMPER          BINARY-LONG.        *> horse family: temper 0 to 100 (19 section 3.4)
+       10 EN-LEASH           BINARY-LONG.        *> player row holding a lead on this mob (0 none; a fence knot is an open item)
+*>     --- 002-lane-mobsfull-h15: surroundings and memory of a standard mob (core/src/mob-18-2.cob; 18 sections 2.5, 2.8) ---
+       10 EN-AIR-LOST        BINARY-LONG.        *> air supply lost: the air is 300 less this (0 = full); 320 = air -20, drowning damage and back to 300
+       10 EN-KILLER-AGE      BINARY-LONG.        *> ticks left of lastHurtByPlayerMemoryTime (100 after a hit by a player); at 0 EN-KILLER is cleared (0 = not counting)
+*>     --- 002-lane-mobsfull-h18: pet care (core/src/mob-19-5.cob; 19 sections 5 and 6) ---
+       10 EN-COLLAR          BINARY-LONG.        *> collar colour of a tame wolf or cat: the dye id + 1 (0 = never dyed, the default red 14)
+*>     --- 002-lane-mobsfull-h20: bee (core/src/mob-19-16.cob; 19 section 16) ---
+       10 EN-BEE-STUNG       BINARY-LONG.        *> bee: 1 once it has stung (metadata 18 bit 4)
+       10 EN-BEE-NECTAR      BINARY-LONG.        *> bee: 1 while it carries nectar (metadata 18 bit 8)
+       10 EN-BEE-ROLL        BINARY-LONG.        *> bee: 1 while angry with its target within 2 blocks (metadata 18 bit 2)
+       10 EN-BEE-T           BINARY-LONG.        *> bee: ticks since the sting (timeSinceSting)
+       10 EN-BEE-WET         BINARY-LONG.        *> bee: consecutive ticks in water
+*>     --- 002-lane-mobsfull-h20: turtle (core/src/mob-19-12.cob; 19 section 12) ---
+       10 EN-HOME-SET         BINARY-LONG.        *> turtle: 1 once its home is set (the block of its spawn)
+       10 EN-HOME-X           BINARY-LONG.        *> turtle: home block
+       10 EN-HOME-Y           BINARY-LONG.
+       10 EN-HOME-Z           BINARY-LONG.
+       10 EN-TURTLE-EGG       BINARY-LONG.        *> turtle: 1 while it carries an egg (hasEgg, metadata 18)
+       10 EN-TURTLE-LAY       BINARY-LONG.        *> turtle: layEggCounter, 0 = not laying (layingEgg, metadata 19, is counter > 0)
+*>     --- 002-lane-mobsfull-h20: armadillo (core/src/mob-19-13.cob; 19 section 13) ---
+       10 EN-ARMA            BINARY-LONG.        *> armadillo: state 0 idle, 1 rolling, 2 scared, 3 unrolling (metadata 18)
+       10 EN-ARMA-T          BINARY-LONG.        *> armadillo: ticks left of the rolling (10) or unrolling (30) state
+       10 EN-ARMA-SCAN       BINARY-LONG.        *> armadillo: ticks since the last danger scan (every 80)
+       10 EN-DANGER          BINARY-LONG.        *> armadillo: ticks left of danger_detected_recently (80)
+       10 EN-SCUTE           BINARY-LONG.        *> armadillo: scuteTime, ticks to the next scute
+*>     --- 002-lane-mobsfull-h21: tadpole, frog, panda, fox, allay, sniffer, llama, camel (core/src/mob-19-7.cob to mob-19-15.cob) ---
+       10 EN-TAD-AGE          BINARY-LONG.        *> tadpole: age in ticks (24000 = frog); locked with EN-LOCKED
+       10 EN-TONGUE           BINARY-LONG.        *> frog: tongue state 0 none, 1 moving to the target, 2 catch animation, 3 eat animation
+       10 EN-TONGUE-T         BINARY-LONG.        *> frog: animation timer of the tongue
+       10 EN-TONGUE-ROW       BINARY-LONG.        *> frog: tracker row of the tongue target and its entity id in EN-TONGUE-ID
+       10 EN-TONGUE-ID        BINARY-LONG.
+       10 EN-GENE-MAIN        BINARY-LONG.        *> panda: main gene (0 normal, 1 lazy, 2 worried, 3 playful, 4 brown, 5 weak, 6 aggressive)
+       10 EN-GENE-HIDDEN      BINARY-LONG.        *> panda: hidden gene
+       10 EN-PANDA-SNEEZE     BINARY-LONG.        *> panda: sneeze counter (metadata 19), 0 = not sneezing
+       10 EN-FOX-HELD         BINARY-LONG.        *> fox: item id in the main hand (0 empty); dropped on death
+       10 EN-FOX-TRUST-A      PIC X(16).          *> fox: UUID of the first trusted player (spaces: none; metadata 20)
+       10 EN-FOX-TRUST-B      PIC X(16).          *> fox: UUID of the second trusted player (metadata 21)
+       10 EN-ALLAY-ITEM       BINARY-LONG.        *> allay: item id held in the main hand (0 empty)
+       10 EN-ALLAY-LIKED      PIC X(16).          *> allay: UUID of the liked player (spaces: none)
+       10 EN-ALLAY-DUP        BINARY-LONG.        *> allay: ticks of duplication cooldown left (metadata 17 canDuplicate is true at 0)
+       10 EN-ALLAY-DANCE      BINARY-LONG.        *> allay: 1 while dancing (metadata 16)
+       10 EN-ALLAY-T          BINARY-LONG.        *> allay: ticks since the last regeneration
+       10 EN-STRENGTH         BINARY-LONG.        *> llama: strength 1 to 5 (metadata 20); the variant 0 to 3 is EN-WOOL (metadata 21)
+*>     --- 002-lane-mobsfull-h23: wolf armour (core/src/mob-19-6.cob; 19 section 6.1) ---
+       10 EN-WOLF-ARM         BINARY-LONG.        *> wolf: item id of the armour in the body slot (0 none)
+       10 EN-WOLF-ARM-DMG     BINARY-LONG.        *> wolf: durability damage of that armour
+*>     --- 002-lane-mobsfull-h23: sniffer (core/src/mob-19-14.cob; 19 section 14) ---
+       10 EN-SNIF            BINARY-LONG.        *> sniffer: state 0 idling, 1 feeling happy, 2 scenting, 3 sniffing, 4 searching, 5 digging, 6 rising (metadata 18)
+       10 EN-SNIF-T          BINARY-LONG.        *> sniffer: ticks left of a timed state (1 to 3)
+       10 EN-SNIF-SEED       BINARY-LONG.        *> sniffer: tick at which the seed drops while digging (metadata 19)
+       10 EN-SNIF-EXP-N      BINARY-LONG.        *> sniffer: number of explored positions (at most 20, newest first)
+       10 EN-SNIF-EXP OCCURS 20 TIMES.
+          15 EN-SNIF-EXP-X   BINARY-LONG.
+          15 EN-SNIF-EXP-Y   BINARY-LONG.
+          15 EN-SNIF-EXP-Z   BINARY-LONG.
+*>     --- 002-lane-mobsfull-h24: falling block entity (core/src/mob-21-8.cob; 21 section 8.4, 29b part 1 section 4) ---
+       10 EN-FB-STATE         BINARY-LONG.        *> falling block: the block state id it carries (0 = not a falling block); the Add Entity Data
+       10 EN-FB-TIME          BINARY-LONG.        *> falling block: ticks lived
+       10 EN-FB-CANCEL        BINARY-LONG.        *> falling block: cancelDrop, 1 = it never places itself
+*>     --- 002-lane-mobsfull-h24: boats and rafts (core/src/mob-21-boat.cob; 21 section 8.8, 44 part 8 section 3) ---
+       10 EN-BT-KIND          BINARY-LONG.        *> boat: 1 boat or raft, 2 chest boat or raft (0 = not a boat)
+       10 EN-BT-HURT          BINARY-LONG.        *> boat: hurt time (metadata 8)
+       10 EN-BT-HDIR          BINARY-LONG.        *> boat: hurt direction (metadata 9), 1 or -1
+       10 EN-BT-DAMAGE        BINARY-LONG.        *> boat: damage (metadata 10, whole points x 10)
+       10 EN-BT-OOC           BINARY-LONG.        *> boat: outOfControlTicks (ticks under water)
+       10 EN-BT-STATUS        BINARY-LONG.        *> boat: the last status, 0 in water, 1 under water, 2 under flowing water, 3 on land, 4 in air, 5 none yet
+       10 EN-BT-LASTYD        FLOAT-LONG.         *> boat: the vertical speed of the last move (lastYd)
+       10 EN-BT-WLEVEL        FLOAT-LONG.         *> boat: waterLevel of the last status
+*>     --- 002-lane-mobsfull-h25: saved mob state (core/src/entity-mobdata.cob) ---
+       10 EN-LEASH-UUID      PIC X(16).          *> a mob loaded leashed: the UUID of the holder until that player is in the dimension (MOB-LEASH-RESTORE); spaces: none
+       10 EN-RIDER2          BINARY-LONG.        *> a camel: the player row of its second rider, the rear seat (0 none; EN-RIDER is the first)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

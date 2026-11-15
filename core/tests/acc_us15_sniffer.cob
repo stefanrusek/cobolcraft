@@ -1,0 +1,364 @@
+*> Acceptance test (US15; docs/protocol/19 section 14): the sniffer's state machine (feeling happy, scenting and sniffing run out), digging (metadata 19 = tick + 120, entity event 63, the seed drop of one torchflower seeds or pitcher pod,
+*> the explored list of 20 positions newest first), canDig by the caller-supplied diggable flag, and the entity data 18 and 19. The world has a stone floor of 9 x 9 blocks.
+*> cat heals 1 x nutrition, an ocelot trusts a player after raw fish (1 in 3, events 40 and 41, metadata 18). The world has a stone floor of 9 x 9 blocks at y = floor.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-SNIFFER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO.
+ COPY BRWORLD.
+ COPY XORO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-XLO                BINARY-LONG.
+ 01 WS-XHI                BINARY-LONG.
+ 01 WS-ZLO                BINARY-LONG.
+ 01 WS-ZHI                BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-WANT-KEY            PIC X(112).
+ 01 WS-WANT-TYPE           BINARY-LONG.
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-GIVE-COUNT          BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ 01 WS-ROW-C               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-ORBS                BINARY-LONG.
+ 01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-COUNT-ITEM          BINARY-LONG.
+ 01 WS-COUNT-TOTAL         BINARY-LONG.
+ 01 WS-ID-A                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-OBSERVE             BINARY-DOUBLE.
+ 01 WS-SLOT-ITEM           BINARY-LONG.
+ 01 WS-WHEAT               BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-V-BABY              BINARY-LONG.
+ 01 WS-V-WOOL              BINARY-LONG.
+ 01 WS-V-NEEDED            BINARY-LONG.
+ 01 WS-MDI                 BINARY-LONG.
+ 01 WS-MDV                 BINARY-LONG.
+ 01 WS-MDS                 BINARY-LONG.
+ 01 WS-PK                  BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MQ-==.
+ 01 WS-SNIFFER           BINARY-LONG.
+ 01 WS-TORCH-ID         BINARY-LONG.
+ 01 WS-PITCHER-ID       BINARY-LONG.
+ 01 WS-OK                BINARY-LONG.
+ 01 WS-DIGGABLE          BINARY-LONG.
+ 01 WS-BX                BINARY-LONG.
+ 01 WS-BY                BINARY-LONG.
+ 01 WS-BZ                BINARY-LONG.
+ 01 WS-HX2               FLOAT-LONG.
+ 01 WS-HZ2               FLOAT-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 6000 TO CW-TIME
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     COMPUTE WS-XLO = WS-CX - 4
+     COMPUTE WS-XHI = WS-CX + 4
+     COMPUTE WS-ZLO = WS-CZ - 4
+     COMPUTE WS-ZHI = WS-CZ + 4
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-STATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 COMPUTE WS-E = WS-FLOOR + WS-I
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-E WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE "minecraft:experience_orb" TO WS-WANT-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-WANT-KEY WS-ORB-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+
+*> The sniffer: an adult on the floor
+     MOVE "sniffer" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE 0 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-SNIFFER
+     MOVE 1 TO EN-ON-GROUND(WS-SNIFFER)
+     MOVE 0 TO EN-MOBAGE(WS-SNIFFER)
+     MOVE "torchflower_seeds" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO WS-TORCH-ID
+     MOVE "pitcher_pod" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO WS-PITCHER-ID
+     MOVE 1 TO WS-DIGGABLE
+     CALL "SNIFFER-CAN-DIG" USING WS-SNIFFER WS-DIGGABLE WS-OK
+     MOVE "acceptance US15 19§14 Sniffer: an adult on the ground with a diggable block ahead can dig" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO WS-DIGGABLE
+     CALL "SNIFFER-CAN-DIG" USING WS-SNIFFER WS-DIGGABLE WS-OK
+     MOVE "acceptance US15 19§14 Sniffer: no dig where the block is not diggable" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO WS-DIGGABLE
+     MOVE -24000 TO EN-MOBAGE(WS-SNIFFER)
+     CALL "SNIFFER-CAN-DIG" USING WS-SNIFFER WS-DIGGABLE WS-OK
+     MOVE "acceptance US15 19§14 Sniffer: a baby does not dig" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-MOBAGE(WS-SNIFFER)
+     MOVE 0 TO EN-ON-GROUND(WS-SNIFFER)
+     CALL "SNIFFER-CAN-DIG" USING WS-SNIFFER WS-DIGGABLE WS-OK
+     MOVE "acceptance US15 19§14 Sniffer: a sniffer in the air does not dig" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO EN-ON-GROUND(WS-SNIFFER)
+*> Digging starts: state 5, drop tick = tick + 120, entity data 18 and 19
+     MOVE 1000 TO CW-TIME
+     CALL "SNIFFER-DIG-START" USING WS-SNIFFER
+     MOVE "acceptance US15 19§14 Sniffer: digging is state 5" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE EN-SNIF(WS-SNIFFER) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 18 TO WS-MDI
+     MOVE WS-SNIFFER TO WS-ROW-A
+     PERFORM FIND-DATA
+     MOVE "acceptance US15 19§14 Sniffer: metadata 18 is the state id" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE WS-MDV TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 19 TO WS-MDI
+     PERFORM FIND-DATA
+     MOVE "acceptance US15 19§14 Sniffer: metadata 19 is the tick of the seed, tick + 120" TO WS-CASE
+     MOVE 1120 TO WS-EXPECT
+     MOVE WS-MDV TO WS-OBSERVE
+     PERFORM CHECK-N
+     PERFORM COUNT-SEEDS
+     MOVE 1119 TO CW-TIME
+     CALL "SNIFFER-TICK" USING WS-SNIFFER
+     MOVE WS-N TO WS-EXPECT
+     PERFORM COUNT-SEEDS
+     MOVE "acceptance US15 19§14 Sniffer: no seed before the tick" TO WS-CASE
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1120 TO CW-TIME
+     CALL "SNIFFER-TICK" USING WS-SNIFFER
+     PERFORM COUNT-SEEDS
+     MOVE "acceptance US15 19§14 Sniffer: the seed drops at the tick (one torchflower seeds or pitcher pod)" TO WS-CASE
+     COMPUTE WS-EXPECT = 1
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§14 Sniffer: after the drop the sniffer rises (state 6)" TO WS-CASE
+     MOVE 6 TO WS-EXPECT
+     MOVE EN-SNIF(WS-SNIFFER) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§14 Sniffer: the dug position is explored" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-SNIF-EXP-N(WS-SNIFFER) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO WS-DIGGABLE
+     CALL "SNIFFER-CAN-DIG" USING WS-SNIFFER WS-DIGGABLE WS-OK
+     MOVE "acceptance US15 19§14 Sniffer: an explored position is not dug again" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+*> The explored list keeps the newest 20
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 25
+         MOVE 1121 TO CW-TIME
+         COMPUTE EN-X(WS-SNIFFER) = WS-CX + 0.5 + WS-I
+         COMPUTE EN-Z(WS-SNIFFER) = WS-CZ - 3.5
+         MOVE 0 TO EN-YAW(WS-SNIFFER)
+         CALL "SNIFFER-DIG-START" USING WS-SNIFFER
+         COMPUTE CW-TIME = CW-TIME + 120
+         CALL "SNIFFER-TICK" USING WS-SNIFFER
+     END-PERFORM
+     MOVE "acceptance US15 19§14 Sniffer: the explored list holds at most 20 positions" TO WS-CASE
+     MOVE 20 TO WS-EXPECT
+     MOVE EN-SNIF-EXP-N(WS-SNIFFER) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> The idle states run out
+     MOVE 1 TO WS-I
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         CALL "SNIFFER-SET-STATE" USING WS-SNIFFER WS-I
+         MOVE "acceptance US15 19§14 Sniffer: feeling happy, scenting and sniffing last 40 ticks at least" TO WS-CASE
+         MOVE 1 TO WS-EXPECT
+         MOVE 0 TO WS-OBSERVE
+         IF EN-SNIF-T(WS-SNIFFER) >= 40 AND EN-SNIF(WS-SNIFFER) = WS-I
+             MOVE 1 TO WS-OBSERVE
+         END-IF
+         PERFORM CHECK-N
+         MOVE 0 TO WS-N
+         PERFORM UNTIL EN-SNIF(WS-SNIFFER) = 0 OR WS-N > 200
+             CALL "SNIFFER-TICK" USING WS-SNIFFER
+             ADD 1 TO WS-N
+         END-PERFORM
+         MOVE "acceptance US15 19§14 Sniffer: the state ends within 100 ticks and the sniffer idles" TO WS-CASE
+         MOVE 1 TO WS-EXPECT
+         MOVE 0 TO WS-OBSERVE
+         IF WS-N <= 100 AND WS-N >= 40
+             MOVE 1 TO WS-OBSERVE
+         END-IF
+         PERFORM CHECK-N
+     END-PERFORM
+     MOVE 1 TO WS-I
+     CALL "SNIFFER-SET-STATE" USING WS-SNIFFER WS-I
+     MOVE EN-SNIF-T(WS-SNIFFER) TO WS-N
+     MOVE 0 TO EN-HURT(WS-SNIFFER)
+     CALL "STDMOB-STEP" USING WS-SNIFFER
+     MOVE "acceptance US15 19§14 Sniffer: the mob step ticks the sniffer's state timer" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-N - 1
+     MOVE EN-SNIF-T(WS-SNIFFER) TO WS-OBSERVE
+     PERFORM CHECK-N
+     STOP RUN.
+
+ COUNT-SEEDS.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND (EN-ITEM(WS-I) = WS-TORCH-ID OR EN-ITEM(WS-I) = WS-PITCHER-ID) AND EN-ITEM(WS-I) > 0
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM.
+
+ FIND-ITEM.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-ITEM-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS.
+
+*> FIND-DATA: Set Entity Data as MOB-DATA-BUILD makes it for row WS-ROW-A: the value of entry WS-MDI (BOOLEAN, BYTE, INT: the int), -1 when absent
+ FIND-DATA.
+     CALL "PB-INIT" USING MQ-BUFFER WS-CAPACITY
+     CALL "MOB-DATA-BUILD" USING WS-ROW-A MQ-BUFFER
+     CALL "PB-GET-VARINT" USING MQ-BUFFER WS-PK
+     CALL "PB-GET-VARINT" USING MQ-BUFFER WS-PK
+     MOVE -1 TO WS-MDV
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL WS-DONE = 1
+         INITIALIZE MQ-METADATA-ENTRY-X
+         CALL "PB-GET-METADATA-ENTRY-X" USING MQ-BUFFER MQ-METADATA-ENTRY-X
+         IF MQ-MX-INDEX = MQ-MD-END OR MQ-ERROR = 1
+             MOVE 1 TO WS-DONE
+         ELSE
+             IF MQ-MX-INDEX = WS-MDI
+                 MOVE MQ-MX-INT TO WS-MDV
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING MQ-BUFFER.
+
+ SPAWN-MOB.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+
+ FIND-TYPE.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS.
+
+ GIVE-HELD.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-ITEM-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE WS-GIVE-COUNT TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1).
+
+ COUNT-BABIES.
+     MOVE 0 TO WS-BABIES
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-MOBAGE(WS-N) < 0 AND EN-VARIANT(WS-N) = 1
+             ADD 1 TO WS-BABIES
+             MOVE WS-N TO WS-BABY
+         END-IF
+     END-PERFORM.
+
+ COUNT-ORBS.
+     MOVE 0 TO WS-ORBS
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS
+         END-IF
+     END-PERFORM.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OBSERVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-SNIFFER.
+ COPY CORETEST.

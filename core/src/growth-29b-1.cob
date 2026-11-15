@@ -1,8 +1,7 @@
 *> Falling blocks, the shared behaviour model and the falling block entity (docs/protocol/29b part 1 sections 1 to 4) as programs of plain numbers (GB- prefix), with
 *> the gravity rules wired into the block-update hooks: GB-RULES-OPEN registers the rows of 3.1 for the falling blocks of the open block tables (called when a world
-*> opens) and GB-FALL-TICK runs the scheduled tick (BU-HOOK effect 6). The falling block ENTITY has no entity type in this core: a scheduled fall puts the block at its
-*> landing cell at once (the first cell whose cell below is not free), without the per-tick motion, the damage to entities, the landing events or the item drop of
-*> the entity; those rules of 4.1 to 4.8 stay helpers (GB-FALL-STEP, GB-LAND, GB-EXPIRY, GB-FALL-DAMAGE, GB-FALL-NBT, GB-FORCE-TICK). Sections 5 to 7 (the bone meal
+*> opens) and GB-FALL-TICK runs the scheduled tick (BU-HOOK effect 6). A scheduled fall starts the falling block entity (FB-SPAWN, FB-STEP and FB-TICK of
+*> core/src/mob-21-8.cob: motion, landing, expiry); the damage to entities, Add Transient Block and block entity data of 4.3 to 4.8 stay helpers (GB-FALL-STEP, GB-LAND, GB-EXPIRY, GB-FALL-DAMAGE, GB-FALL-NBT, GB-FORCE-TICK). Sections 5 to 7 (the bone meal
 *> framework, crop helpers, saplings) are helpers only, at the end of the file.
 
  IDENTIFICATION DIVISION.
@@ -511,9 +510,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GB-FALL-TICK.
 *> USING dimension row, x, y, z (BINARY-LONG): the scheduled tick of a falling block (3.1 ST, BU-HOOK effect 6): nothing unless the cell below is free and y >= the dimension's minimum
-*> y (GB-FALL-DECIDE; a cell is free when it has no collision, the air, liquids and the replaceable blocks of this approximation); then the block's cell is cleared (flags 3, as
-*> FallingBlockEntity.fall) and the block is written at its landing cell, the lowest of the free cells below it whose cell below is not free (4.3 without the entity's flight, the
-*> concrete powder solidification and the events).
+*> y (GB-FALL-DECIDE; a cell is free when it has no collision, the air, liquids and the replaceable blocks of this approximation); then FB-SPAWN (core/src/mob-21-8.cob) clears the
+*> block's cell and starts the falling block entity (FallingBlockEntity.fall), whose ticks (FB-TICK) fly it down and place it where it lands.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
@@ -528,12 +526,7 @@
  01 WS-BELOW               BINARY-LONG.
  01 WS-FREE                BINARY-LONG.
  01 WS-FALLS               BINARY-LONG.
- 01 WS-LAND                BINARY-LONG.
- 01 WS-NEXT                BINARY-LONG.
- 01 WS-AIR                 BINARY-LONG VALUE 0.
- 01 WS-FLAGS               BINARY-LONG VALUE 3.
- 01 WS-BUDGET              BINARY-LONG VALUE 512.
- 01 WS-RESULT              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -551,17 +544,7 @@
      IF WS-FALLS = 0
          GOBACK
      END-IF
-     CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z WS-AIR WS-FLAGS WS-BUDGET WS-RESULT
-     MOVE WS-BELOW TO WS-LAND
-     PERFORM UNTIL WS-LAND <= DM-MIN-Y(L-DIM)
-         COMPUTE WS-NEXT = WS-LAND - 1
-         CALL "FLUID-CELL" USING L-DIM L-X WS-NEXT L-Z WS-STATE2 WS-F WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
-         IF WS-HOLDS = 0
-             EXIT PERFORM
-         END-IF
-         MOVE WS-NEXT TO WS-LAND
-     END-PERFORM
-     CALL "LEVEL-SET-BLOCK" USING L-DIM L-X WS-LAND L-Z WS-STATE WS-FLAGS WS-BUDGET WS-RESULT
+     CALL "FB-SPAWN" USING L-DIM L-X L-Y L-Z WS-STATE WS-ROW
      GOBACK.
  END PROGRAM GB-FALL-TICK.
 

@@ -24,7 +24,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 9 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS SM-COUNT TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -192,7 +192,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-XP.
 *> USING dim, x, y, z (FLOAT-LONG), type, killer player row (BINARY-LONG): the experience of a defeated standard mob (18 section 7.5 dropExperience):
-*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3)) as orbs at its position (XP-AWARD). Equipment bonuses and
+*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3); SM-XP -1: a golem, none) as orbs at its position (XP-AWARD). Equipment bonuses and
 *> the mob_drops game rule are not modelled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -216,19 +216,22 @@
              CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-POINTS
              ADD 1 TO WS-POINTS
          END-IF
-         CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
+         IF WS-POINTS > 0
+             CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-XP.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DIE.
-*> USING tracker row of a standard mob whose health reached 0 (18 section 7.5): its loot lands on the ground now (STDMOB-DROPS), Entity Event 3
+*> USING tracker row of a standard mob whose health reached 0 (18 section 7.5): its loot and experience land now (STDMOB-DROPS; both only while the game rule mob_drops is true), Entity Event 3
 *> (death) goes to the viewers, and the row stays as a dying mob for 20 ticks: health 0, EN-COOLDOWN counts the ticks (deathTime), the
 *> panic and the stroll end. STDMOB-STEP finishes it (Entity Event 60, removal).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-EVENT               BINARY-LONG VALUE 3.
@@ -239,6 +242,9 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-KILLED              BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "mob_drops".
+ 01 WS-RULE                BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -254,8 +260,18 @@
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
      MOVE EN-KILLER(L-ROW) TO WS-KILLED
-     CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
-     CALL "STDMOB-XP" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
+     CALL "STDMOB-INDEX" USING WS-TYPE WS-M
+     CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
+     IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube"
+         CALL "STDMOB-SLIME-DIE" USING L-ROW WS-KILLED
+     ELSE
+         IF WS-RULE = 1
+             CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
+             CALL "FOX-DROP-HELD" USING L-ROW
+             CALL "WOLF-ARMOR-DROP" USING L-ROW
+             CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW)
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM STDMOB-DIE.
 
@@ -310,7 +326,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-NAME.
 *> USING entity type id (BINARY-LONG), name out (PIC X(16)), length out (BINARY-LONG): the display name of a table mob, its key with the first letter
-*> in capitals (zombie: Zombie), for the death message of a player it killed. A type with no row gives spaces and 0.
+*> in capitals, underscores as spaces (zombie: Zombie, zombie_villager: Zombie Villager), for the death message of a player it killed. A type with no row gives spaces and 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STDMOBS.
@@ -318,6 +334,7 @@
  01 WS-LOWER               PIC X(26) VALUE "abcdefghijklmnopqrstuvwxyz".
  01 WS-UPPER               PIC X(26) VALUE "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
  01 WS-TEXT                PIC X(24).
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-TYPE                 BINARY-LONG.
  01 L-NAME                 PIC X(16).
@@ -328,7 +345,13 @@
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
      IF WS-M > 0
          MOVE SM-KEY(WS-M) TO WS-TEXT
+         INSPECT WS-TEXT CONVERTING "_" TO " "
          INSPECT WS-TEXT(1:1) CONVERTING WS-LOWER TO WS-UPPER
+         PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > 24
+             IF WS-TEXT(WS-I - 1:1) = SPACE AND WS-TEXT(WS-I:1) NOT = SPACE
+                 INSPECT WS-TEXT(WS-I:1) CONVERTING WS-LOWER TO WS-UPPER
+             END-IF
+         END-PERFORM
          MOVE WS-TEXT(1:16) TO L-NAME
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO L-LENGTH
      END-IF
@@ -422,6 +445,14 @@
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      MOVE 0 TO WS-LIGHT
+     IF SM-NEUTRAL(L-M) = 2
+         CALL "STDMOB-ENDER-AIM" USING L-ROW L-M
+         GOBACK
+     END-IF
+     IF SM-NEUTRAL(L-M) = 3 OR SM-NEUTRAL(L-M) = 4
+         CALL "NETHER-AGGRO" USING L-ROW L-M
+         GOBACK
+     END-IF
      IF SM-NEUTRAL(L-M) = 1
          COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
          COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW)) + 1
@@ -545,8 +576,8 @@
  PROGRAM-ID. STDMOB-BURN.
 *> USING tracker row, table row of a mob that burns in daylight (SM-BURNS 1, 20 section 3.5; STDMOB-STEP calls it for those rows only). While not burning, in the monsters_burn window of the day
 *> (SM-BURN-DAY-START to SM-BURN-DAY-END) and with raw light 13 or more at its eye cell (the sky is open there), a hash of the entity id and the time
-*> sets it on fire for SM-BURN-TICKS with the chance of the light (SM-BURN-CHANCE, per ten thousand). While burning EN-BURN counts down and every
-*> SM-BURN-STEP ticks the mob takes 1 point (HEALTH-MOB-DAMAGE, the generic cause). Water, rain and head items are not modelled.
+*> sets it on fire for SM-BURN-TICKS with the chance of the light (SM-BURN-CHANCE, per ten thousand). While it burns nothing new ignites; the fire tick (1 point every 20 ticks, on_fire) is M182-ENV-TICK's (core/src/mob-18-2.cob). The chance is stopped when the mob is sheltered (STDMOB-SHELTERED: water, powder snow, no
+*> visible sky, rain); a worn helmet takes durability damage nextInt(2) instead of igniting the mob and breaks at its maximum (EN-HEAD-WEAR).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -561,18 +592,16 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
- 01 WS-AMOUNT              BINARY-LONG VALUE 1.
- 01 WS-CAUSE               BINARY-LONG VALUE 6.
- 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-FEET                BINARY-LONG.
+ 01 WS-SHELTERED           BINARY-LONG.
+ 01 WS-TIER                BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
+*>   While it burns the fire tick is M182-ENV-TICK's (18 section 2.5): nothing new ignites.
      IF EN-BURN(L-ROW) > 0
-         SUBTRACT 1 FROM EN-BURN(L-ROW)
-         IF FUNCTION MOD(EN-BURN(L-ROW), SM-BURN-STEP) = 0
-             CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-AMOUNT WS-CAUSE WS-NO-ATTACKER
-         END-IF
          GOBACK
      END-IF
      COMPUTE WS-T = FUNCTION MOD(CW-TIME, 24000)
@@ -591,7 +620,24 @@
      MOVE 11 TO WS-ARG(3)
      CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
      IF FUNCTION MOD(WS-R, 10000) < SM-BURN-CHANCE(WS-LIGHT - 12)
-         MOVE SM-BURN-TICKS TO EN-BURN(L-ROW)
+         COMPUTE WS-FEET = WS-BY - 1
+         CALL "STDMOB-SHELTERED" USING EN-DIM(L-ROW) WS-BX WS-FEET WS-BZ WS-SHELTERED
+         IF WS-SHELTERED = 0
+             IF EN-EQUIP(L-ROW) = 0 OR EN-HEAD-WEAR(L-ROW) = -1
+                 MOVE SM-BURN-TICKS TO EN-BURN(L-ROW)
+             ELSE
+*>               A worn helmet takes nextInt(2) points of durability instead and the mob does not ignite; at its maximum it breaks (3.5 step 5).
+                 MOVE 19 TO WS-ARG(3)
+                 CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+                 ADD FUNCTION MOD(WS-R, 2) TO EN-HEAD-WEAR(L-ROW)
+                 COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
+                 CALL "STDMOB-HEAD-MAX" USING WS-TIER WS-MAX
+                 IF EN-HEAD-WEAR(L-ROW) >= WS-MAX
+                     MOVE -1 TO EN-HEAD-WEAR(L-ROW)
+                     CALL "STDMOB-EQUIP-SEND" USING L-ROW
+                 END-IF
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-BURN.
@@ -695,7 +741,7 @@
      COMPUTE WS-DZ = EN-WAY-Z(L-ROW) - EN-Z(L-ROW)
      COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
      IF WS-H > 0.05
-         COMPUTE WS-SPEED = SM-WALK-MILLI(L-M) / 1000
+         CALL "STDMOB-SPEED" USING L-ROW L-M WS-SPEED
          COMPUTE L-HX = WS-SPEED * WS-DX / WS-H
          COMPUTE L-HZ = WS-SPEED * WS-DZ / WS-H
      END-IF
@@ -731,10 +777,10 @@
  PROGRAM-ID. STDMOB-SWELL.
 *> USING tracker row, table row of a mob with a fuse (SM-FUSE above 0: the creeper, 20 section 6.1), stop out (BINARY-LONG): the swell goal. The swell
 *> direction is 1 while the swell is above 0 and the target is within 7 blocks (distance squared 49), or from 0 while the target is within 3 blocks
-*> (distance squared 9); otherwise -1. The swell moves by the direction (not below 0). A change of direction goes to the viewers (Set Entity Data,
+*> (distance squared 9) and the mob sees the target (MOB-SEES from its eyes, feet + 1.445); an ignited mob (EN-IGNITED) always swells; otherwise -1. The swell moves by the direction (not below 0). A change of direction goes to the viewers (Set Entity Data,
 *> entry 16). At the fuse the mob explodes at its position with its blast power (EXPLODE-RUN, source this mob, destroying blocks) and the row is removed
 *> without loot or experience. stop out: 0 nothing, 1 the mob stands still (it is swelling), 2 it exploded and the row is gone. The line of sight is
-*> not tested yet (open).
+*> is tested from the creeper's eyes.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -751,6 +797,11 @@
  01 WS-POWER               FLOAT-LONG.
  01 WS-DESTROY             BINARY-LONG VALUE 1.
  01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
+ 01 WS-EYE-X               FLOAT-LONG.
+ 01 WS-EYE-Y               FLOAT-LONG.
+ 01 WS-EYE-Z               FLOAT-LONG.
+ 01 WS-TARGET-Y            FLOAT-LONG.
+ 01 WS-SEES                BINARY-LONG.
  01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
@@ -770,9 +821,17 @@
          COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
          COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
          COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
-         IF (EN-SWELL(L-ROW) > 0 AND WS-D2 <= 49) OR (EN-SWELL(L-ROW) = 0 AND WS-D2 < 9)
+         COMPUTE WS-EYE-X = EN-X(L-ROW)
+         COMPUTE WS-EYE-Y = EN-Y(L-ROW) + 1.445
+         COMPUTE WS-EYE-Z = EN-Z(L-ROW)
+         COMPUTE WS-TARGET-Y = PL-Y(WS-P) + 1.62
+         CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-EYE-X WS-EYE-Y WS-EYE-Z PL-X(WS-P) WS-TARGET-Y PL-Z(WS-P) WS-SEES
+         IF WS-SEES = 1 AND ((EN-SWELL(L-ROW) > 0 AND WS-D2 <= 49) OR (EN-SWELL(L-ROW) = 0 AND WS-D2 < 9))
              MOVE 1 TO WS-DIR
          END-IF
+     END-IF
+     IF EN-IGNITED(L-ROW) = 1
+         MOVE 1 TO WS-DIR
      END-IF
      ADD WS-DIR TO EN-SWELL(L-ROW)
      IF EN-SWELL(L-ROW) < 0
@@ -791,6 +850,9 @@
          MOVE EN-Y(L-ROW) TO WS-Y
          MOVE EN-Z(L-ROW) TO WS-Z
          MOVE SM-BLAST(L-M) TO WS-POWER
+         IF EN-VARIANT(L-ROW) = 1
+             COMPUTE WS-POWER = WS-POWER * 2
+         END-IF
          MOVE L-ROW TO WS-ROW
          CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
          MOVE WS-GRIEF TO WS-DESTROY
@@ -813,11 +875,13 @@
 *> - a hostile mob burns in daylight (STDMOB-BURN), keeps a target (STDMOB-TARGET), counts its attack timer down (EN-COOLDOWN), walks toward the
 *>   target at the walk speed until its box is within the melee reach, and with the timer at 0 and the target in reach hits it (HEALTH-MOB-HIT, the
 *>   attack damage of the row), the timer becoming SM-ATTACK-TICKS; with no target it strolls like the animals;
+*> - an iron golem fights hostile mobs (GOLEM-TICK) and golems never stroll;
+*> - a tame wolf obeys PET-TICK first (mob-pets.cob): sitting it stays, otherwise it bites the mob that targets its owner or follows the owner;
 *> - a mob that was hit panics (EN-FLEE ticks left, away from the attacker at the panic speed);
 *> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time):
 *>   it picks a cell up to 10 blocks away on each axis (RandomStrollGoal: 10 horizontally; EN-DEST-X/-Z), and walks to it by STDMOB-HEAD for at most
 *>   SM-STROLL-TICKS ticks (EN-COOLDOWN = the ticks left) or until it is in the cell;
-*> then MOB-PHYSICS moves it.
+*> then MOB-PHYSICS moves it. A water animal (SM-KIND 2 to 4) is STDMOB-AQUATIC-STEP's (core/src/mob-21-4.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -851,6 +915,21 @@
  01 WS-GZ                  BINARY-LONG.
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
+ 01 WS-LIFE-WALK           BINARY-LONG.
+ 01 WS-LIFE-HX             FLOAT-LONG.
+ 01 WS-LIFE-HZ             FLOAT-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-LEAP-ROLL           BINARY-LONG.
+ 01 WS-AVOID               BINARY-LONG.
+ 01 WS-AHX                 FLOAT-LONG.
+ 01 WS-AHZ                 FLOAT-LONG.
+ 01 WS-FALL-Y              FLOAT-LONG.
+ 01 WS-LEAPT               BINARY-LONG.
+ 01 WS-PET-HX              FLOAT-LONG.
+ 01 WS-PET-HZ              FLOAT-LONG.
+ 01 WS-RIDE-DONE           BINARY-LONG.
+ 01 WS-TAD-GONE            BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -866,6 +945,12 @@
          CALL "ENTITY-REMOVE" USING WS-ROW
          GOBACK
      END-IF
+     IF EN-LEASH-UUID(WS-ROW) NOT = SPACES
+         CALL "MOB-LEASH-RESTORE" USING WS-ROW
+     END-IF
+     IF EN-LEASH(WS-ROW) > 0
+         CALL "MOB-LEASH-TICK" USING WS-ROW
+     END-IF
      IF EN-HEALTH(WS-ROW) = 0
          ADD 1 TO EN-COOLDOWN(WS-ROW)
          IF EN-COOLDOWN(WS-ROW) >= SM-DEATH-TICKS
@@ -879,17 +964,62 @@
      IF WS-CHUNK = 0
          GOBACK
      END-IF
+     CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
+     IF SM-KEY(WS-M) = "silverfish"
+         CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
+     END-IF
+*>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
+     IF SM-KEY(WS-M) = "endermite"
+         ADD 1 TO EN-WAKE(WS-ROW)
+         IF EN-WAKE(WS-ROW) >= 2400
+             CALL "ENTITY-REMOVE" USING WS-ROW
+             GOBACK
+         END-IF
+     END-IF
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
+     END-IF
+*>   The memory of the player who hit it lasts 100 ticks (18 section 2.8, lastHurtByPlayerMemoryTime).
+     IF EN-KILLER-AGE(WS-ROW) > 0
+         SUBTRACT 1 FROM EN-KILLER-AGE(WS-ROW)
+         IF EN-KILLER-AGE(WS-ROW) = 0
+             MOVE 0 TO EN-KILLER(WS-ROW)
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "tadpole"
+         CALL "TADPOLE-TICK" USING WS-ROW WS-TAD-GONE
+         IF WS-TAD-GONE = 1
+             GOBACK
+         END-IF
+     END-IF
+     IF SM-KIND(WS-M) >= 2
+         CALL "STDMOB-AQUATIC-STEP" USING WS-ROW WS-M
+         GOBACK
+     END-IF
+*>   Fire, lava, drowning, in-wall damage and cramming (18 section 2.5); a mob that dies of them is not stepped any further.
+     CALL "M182-ENV-TICK" USING WS-ROW
+     IF EN-HEALTH(WS-ROW) = 0
+         GOBACK
+     END-IF
+     IF SM-KEY(WS-M) = "phantom"
+         CALL "STDMOB-PHANTOM-TICK" USING WS-ROW WS-M
+         GOBACK
+     END-IF
+     IF SM-RANGED(WS-M) = 4
+         CALL "GHAST-TICK" USING WS-ROW WS-M
+         GOBACK
+     END-IF
+     IF EN-RIDER(WS-ROW) > 0
+         CALL "MOB-RIDE-TICK" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
      END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      MOVE 0 TO WS-HX WS-HZ WS-CHASE
      IF SM-KIND(WS-M) = 1
          IF SM-BURNS(WS-M) = 1
              CALL "STDMOB-BURN" USING WS-ROW WS-M
-         END-IF
-         IF EN-HEALTH(WS-ROW) = 0
-             GOBACK
          END-IF
          CALL "STDMOB-AGGRO" USING WS-ROW WS-M
          IF EN-COOLDOWN(WS-ROW) > 0
@@ -899,34 +1029,116 @@
              MOVE 1 TO WS-CHASE
          END-IF
      END-IF
-     MOVE 0 TO WS-STOP
+     MOVE 0 TO WS-STOP WS-LIFE-WALK
+     IF SM-KIND(WS-M) = 0
+         CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
+     END-IF
+     MOVE 0 TO WS-PET-WALK
+     IF SM-NEUTRAL(WS-M) = 6 AND EN-TAMED(WS-ROW) = 0
+         CALL "NETHER-AGGRO" USING WS-ROW WS-M
+         IF EN-COOLDOWN(WS-ROW) > 0
+             SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
+         END-IF
+         IF EN-TARGET(WS-ROW) > 0
+             MOVE 1 TO WS-CHASE
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "wolf" AND EN-TAMED(WS-ROW) = 1
+         CALL "PET-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "cat" OR "ocelot"
+         CALL "CAT-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "iron_golem"
+         CALL "GOLEM-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "bee"
+         CALL "BEE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "turtle"
+         CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "armadillo"
+         CALL "ARMADILLO-TICK" USING WS-ROW WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "frog"
+         CALL "FROG-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "allay"
+         CALL "ALLAY-TICK" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "sniffer"
+         CALL "SNIFFER-TICK" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "fox"
+         CALL "FOX-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "panda"
+         CALL "PANDA-TICK" USING WS-ROW
+         IF EN-TARGET(WS-ROW) > 0
+             MOVE 1 TO WS-CHASE
+         END-IF
+     END-IF
      IF SM-FUSE(WS-M) > 0
          CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
          IF WS-STOP = 2
              GOBACK
          END-IF
      END-IF
-     IF SM-RANGED(WS-M) > 0
+     IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
          CALL "STDMOB-SHOOT" USING WS-ROW WS-M WS-STOP
+     END-IF
+     IF SM-RANGED(WS-M) = 3
+         CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
+     END-IF
+     IF SM-RANGED(WS-M) = 5
+         CALL "BLAZE-ATTACK" USING WS-ROW WS-M
+         CALL "BLAZE-HEIGHT" USING WS-ROW
+     END-IF
+     IF SM-RANGED(WS-M) = 6
+         CALL "SHULKER-ATTACK" USING WS-ROW WS-M
+     END-IF
+     IF SM-KEY(WS-M) = "snow_golem"
+         CALL "SNOW-GOLEM-TICK" USING WS-ROW WS-M
+     END-IF
+     MOVE 0 TO WS-AVOID
+     IF SM-FUSE(WS-M) > 0 AND WS-STOP = 0
+         CALL "STDMOB-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
      END-IF
      EVALUATE TRUE
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.
              MOVE EN-TARGET(WS-ROW) TO WS-P
-             COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
-             COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
-             CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             IF WS-P > 0
+                 COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
+                 COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
+                 CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             END-IF
 *>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
-             IF SM-RANGED(WS-M) > 0
+             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF
+         WHEN WS-AVOID = 1
+*>           A creeper flees a cat or ocelot (AvoidEntityGoal, priority 3 before the melee goal).
+             MOVE WS-AHX TO WS-HX
+             MOVE WS-AHZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-CHASE = 1
              MOVE EN-TARGET(WS-ROW) TO WS-P
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(WS-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
              CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             MOVE EN-ID(WS-ROW) TO WS-ARG(1)
+             MOVE CW-TIME TO WS-ARG(2)
+             MOVE 19 TO WS-ARG(3)
+             CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+             COMPUTE WS-LEAP-ROLL = FUNCTION MOD(WS-R, 5)
+             CALL "STDMOB-LEAP" USING WS-ROW WS-M WS-LEAP-ROLL WS-LEAPT
              COMPUTE WS-REACH = SM-REACH-MILLI / 1000
              IF FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH
                  COMPUTE WS-GX = FUNCTION INTEGER(PL-X(WS-P))
@@ -938,8 +1150,17 @@
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
                  MOVE SM-ATTACK-TICKS TO EN-COOLDOWN(WS-ROW)
-                 CALL "HEALTH-MOB-HIT" USING WS-P SM-ATTACK(WS-M) WS-ROW
+                 CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-M WS-DAMAGE
+                 IF WS-DAMAGE > 0
+                     CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-ROW
+                 END-IF
+                 IF SM-HITFX(WS-M) > 0
+                     CALL "STDMOB-HIT-EFFECT" USING WS-P WS-M
+                 END-IF
              END-IF
+         WHEN WS-PET-WALK = 2
+*>           A tame wolf ordered to sit stays where it is (SitWhenOrderedToGoal, 18 section 8.2).
+             MOVE 0 TO EN-COOLDOWN(WS-ROW) EN-FLEE(WS-ROW)
          WHEN EN-FLEE(WS-ROW) > 0
              SUBTRACT 1 FROM EN-FLEE(WS-ROW)
              MOVE EN-FLEE-PLAYER(WS-ROW) TO WS-P
@@ -955,6 +1176,23 @@
              COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
              COMPUTE WS-HX = - FUNCTION SIN(WS-RADIANS) * WS-SPEED
              COMPUTE WS-HZ = FUNCTION COS(WS-RADIANS) * WS-SPEED
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN WS-PET-WALK = 1
+*>           A tame wolf walks to its foe or its owner (PET-TICK).
+             MOVE WS-PET-HX TO WS-HX
+             MOVE WS-PET-HZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN WS-LIFE-WALK = 1
+*>           An animal in love walks to its partner (MOB-LIFE-TICK, 18 section 8.1 BreedGoal).
+             MOVE WS-LIFE-HX TO WS-HX
+             MOVE WS-LIFE-HZ TO WS-HZ
+             CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem"
+*>           A golem does not stroll: the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN OTHER
              IF EN-COOLDOWN(WS-ROW) = 0
@@ -992,7 +1230,10 @@
          COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.91
          COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.91
      END-IF
+     MOVE EN-Y(WS-ROW) TO WS-FALL-Y
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+*>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
+     CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.
  END PROGRAM STDMOB-STEP.
 
@@ -1311,42 +1552,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SPAWN-TICK.
-*> No parameters: in a standard world, for each enabled dimension and each alive player in it in player-row order: on ticks with Time mod SM-SPAWN-TICKS
-*> = 0 one attempt at animals (the friendly cycle, mode 1), and on ticks with Time mod SM-HOSTILE-TICKS = 0 one attempt at monsters (mode 2) while the
-*> difficulty is not Peaceful and the hostile-mobs setting is on (STDMOB-SPAWN-TRY).
+*> No parameters: the natural spawning of a standard world is MS6-CYCLE (core/src/mob-18-6.cob, 18 section 6): biome spawn tables, caps, light and
+*> placement rules, packs. The per-column programs above (STDMOB-SPAWN-TRY, STDMOB-SPAWN-PACK and the rules) stay as the earlier slice's rule.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY CONTENT.
- COPY STDMOBS.
- COPY BRWORLD.
- 01 WS-D                   BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-PLAYER              BINARY-LONG.
- 01 WS-MODE                BINARY-LONG.
- LINKAGE SECTION.
- COPY COREAPI.
+ 01 WS-GEN                 BINARY-LONG.
  PROCEDURE DIVISION.
-     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
-     IF CT-OPEN = 0 OR CT-SET-TYPE NOT = CT-TYPE-STANDARD
-         GOBACK
-     END-IF
-     CALL "BR-WORLD-READY"
-     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > CW-DIM-COUNT
-         MOVE CW-DIM(WS-D) TO WS-DIM
-         PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-             IF PL-USED(WS-PLAYER) = 1 AND PL-STATE(WS-PLAYER) = PS-ALIVE AND PL-DIM(WS-PLAYER) = WS-DIM
-                 IF FUNCTION MOD(CW-TIME, SM-SPAWN-TICKS) = 0
-                     MOVE 1 TO WS-MODE
-                     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-MODE
-                 END-IF
-                 IF FUNCTION MOD(CW-TIME, SM-HOSTILE-TICKS) = 0 AND BW-DIFFICULTY > 0 AND CS-HOSTILE-MOBS = 1
-                     MOVE 2 TO WS-MODE
-                     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-MODE
-                 END-IF
-             END-IF
-         END-PERFORM
-     END-PERFORM
+     CALL "MS6-CHUNK-GEN-TICK" USING WS-GEN
+     CALL "MS6-CYCLE"
+     CALL "STDMOB-REST-TICK"
+     CALL "STDMOB-PHANTOM-SPAWNER"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 

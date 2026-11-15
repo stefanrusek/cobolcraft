@@ -90,6 +90,14 @@
      MOVE RULE-CAUSE-TYPE(CAUSE-DROWN) TO TL-EXPECTED-N
      MOVE WS-ID TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The causes only a mob takes (18 sections 2.5, 3.3): the registry of this set lacks on_fire, lava, in_wall and cramming, so they are generic (0).
+     PERFORM VARYING WS-CAUSE FROM CAUSE-ON-FIRE BY 1 UNTIL WS-CAUSE > CAUSE-VOID
+         CALL "DAMAGE-TYPE-ID" USING WS-CAUSE WS-ID
+         MOVE "test stdmob damage: a mob-only cause (fire, lava, in wall, cramming) is generic when the registry lacks it" TO TL-CASE
+         MOVE 0 TO TL-EXPECTED-N
+         MOVE WS-ID TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
 *>   Death messages of the standard set.
      MOVE "T" TO TL-MODE
      MOVE CAUSE-MOB TO WS-CAUSE
