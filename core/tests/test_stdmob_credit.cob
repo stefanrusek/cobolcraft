@@ -129,6 +129,12 @@
      MOVE "death.attack.generic.player|2|Steve|Zombie" TO TL-EXPECTED
      PERFORM OBSERVE-ARGS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CAUSE-VOID TO WS-CAUSE
+     PERFORM BUILD
+     MOVE "test stdmob credit: the void with a credit is death.attack.outOfWorld.player" TO TL-CASE
+     MOVE "death.attack.outOfWorld.player|2|Steve|Zombie" TO TL-EXPECTED
+     PERFORM OBSERVE-ARGS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A kill by a player and by a mob; with a named weapon the .item form.
      MOVE CAUSE-PLAYER TO WS-CAUSE
      MOVE "Alexx" TO PL-KILLER-NAME(WS-A)
