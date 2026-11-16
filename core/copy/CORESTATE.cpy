@@ -462,6 +462,8 @@
        10 EN-RAM-CD           BINARY-LONG.        *> goat: ticks until it may ram again
        10 EN-RAM-DX           FLOAT-LONG.         *> goat: the ram direction (unit, horizontal)
        10 EN-RAM-DZ           FLOAT-LONG.
+       10 EN-RAM-PX           FLOAT-LONG.         *> goat: the ram point (where the charge ends)
+       10 EN-RAM-PZ           FLOAT-LONG.
        10 EN-ARMA-PEEK        BINARY-LONG.        *> armadillo: peek timer (ArmadilloBallUp)
        10 EN-ARMA-AROUND      BINARY-LONG.        *> armadillo: the stored danger-around flag
        10 EN-BEE-POLL         BINARY-LONG.        *> bee: ticks of the current pollination (pollinatingTicks)
