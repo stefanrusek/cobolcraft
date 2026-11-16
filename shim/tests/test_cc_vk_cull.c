@@ -1,7 +1,9 @@
 /* Implementation test of CC_PIPE_TRANSLUCENT_CULL (bug-sweep T10401: translucent blocks showed their back faces) against the real GPU. A quad
  * whose corners run clockwise on the screen (the winding of the block meshes, seen from outside) is drawn with the pipeline: its texel (alpha
  * 190) is blended over the clear colour; the same quad with the corners reversed (seen from behind) is culled and leaves the clear colour; the
- * pipeline without the culling (CC_PIPE_TRANSLUCENT) draws both. */
+ * pipeline without the culling (CC_PIPE_TRANSLUCENT) draws both.
+ * Also (bug-sweep T10404: the grass block's tinted side overlay was never seen): of two opaque quads at the same depth the one drawn second wins
+ * (depth test less or equal, as the renderer's solid layers have it). */
 #include <stdio.h>
 #include <string.h>
 
@@ -93,6 +95,8 @@ static void frame(int reverse, int pipeline, char out[9]) {
     cc_vk_present();
 }
 
+static float mesh_first[6 * 11];
+
 int main(void) {
     cc_win_open(320, 240, "test_cc_vk_cull", 0);
     cc_vk_init();
@@ -107,6 +111,21 @@ int main(void) {
     tl_str("test cc_vk the translucent pipeline with culling drops a quad seen from behind", "000000FF", back);
     frame(1, CC_PIPE_TRANSLUCENT, back);
     tl_str("test cc_vk the translucent pipeline without culling draws a quad seen from behind", "C86432FF", back);
+    static const uint8_t other[2 * 2 * 4] = {10, 220, 30, 255, 10, 220, 30, 255, 10, 220, 30, 255, 10, 220, 30, 255};
+    cc_vk_texture(CC_TEX_ENTITIES, 2, 2, other);
+    float second[6 * 11];
+    quad(0, second);
+    cc_vk_mesh(2, second, 6);
+    quad(0, mesh_first);
+    cc_vk_mesh(1, mesh_first, 6);
+    const float clear[4] = {0, 0, 0, 1};
+    cc_vk_frame_begin(clear);
+    cc_vk_draw(1, CC_PIPE_OPAQUE, CC_TEX_BLOCKS, IDENTITY);
+    cc_vk_draw(2, CC_PIPE_OPAQUE, CC_TEX_ENTITIES, IDENTITY);
+    cc_vk_submit();
+    centre_pixel(back);
+    cc_vk_present();
+    tl_str("test cc_vk of two opaque quads at the same depth the second wins", "0ADC1EFF", back);
     cc_vk_shutdown();
     cc_win_close();
     return 0;

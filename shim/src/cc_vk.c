@@ -483,7 +483,7 @@ static void create_pipeline(int p, VkShaderModule vert, VkShaderModule frag) {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = p != CC_PIPE_UI,
         .depthWriteEnable = p == CC_PIPE_OPAQUE,
-        .depthCompareOp = p == CC_PIPE_CRUMBLING ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_LESS,
+        .depthCompareOp = p == CC_PIPE_CRUMBLING || p == CC_PIPE_OPAQUE ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_LESS, /* the solid layers pass equal depth: a block's overlay element lies in the plane of its base */
     };
     VkPipelineColorBlendAttachmentState blend = {
         .blendEnable = p != CC_PIPE_OPAQUE,
