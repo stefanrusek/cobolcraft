@@ -72,7 +72,7 @@
      MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
 
      MOVE "test nether player switched into the nether Alice is sent Respawn, abilities, held slot, inventory, "
-         & "Set Health, spawn, Set Time, game event 13, the chunk batch and Player Position (no weather pair)" TO TL-CASE
+         & "Set Health, spawn, Set Time, game event 13 (no weather pair); the chunks follow through the feed (T6301)" TO TL-CASE
      MOVE DIM-STANDARD-NETHER TO WS-DEST
      MOVE 10.5 TO WS-X
      MOVE 41 TO WS-Y
@@ -80,7 +80,7 @@
      CALL "DIM-SWITCH" USING WS-ROW WS-DEST WS-X WS-Y WS-Z
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "84 10 34 65 107 18 44 106 99 115 39 96 12 46x25 11 73 105 106" TO TL-EXPECTED
+     MOVE "84 10 34 65 107 18 44 106 99 115 39 96 73 105 106" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-ACCEPT-TELEPORT" USING WS-ALICE
 
