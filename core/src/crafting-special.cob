@@ -74,6 +74,9 @@
        10 WS-FIREWORK      BINARY-LONG.
  01 WS-SUFFIX-DYE          PIC X(8) VALUE "_dye".
  01 WS-SUFFIX-BANNER       PIC X(8) VALUE "_banner".
+ 01 WS-ING-1               PIC X(800).
+ 01 WS-ING-2               PIC X(800).
+ 01 WS-ING-3               PIC X(800).
  01 WS-S                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
@@ -188,7 +191,9 @@
 
 *> 27 2.9: the centre passes the source, the other eight the material; potion_contents (53) of the centre goes on the result.
  IMBUE-RULE.
-     CALL "RECIPE-CENTRE-MATCH" USING L-ITEMS RR-ING(L-ROW, 1) RR-ING(L-ROW, 2) L-MATCHED
+     MOVE RR-ING(L-ROW, 1) TO WS-ING-1
+     MOVE RR-ING(L-ROW, 2) TO WS-ING-2
+     CALL "RECIPE-CENTRE-MATCH" USING L-ITEMS WS-ING-1 WS-ING-2 L-MATCHED
      IF L-MATCHED = 1
          MOVE 53 TO WS-TYPE
          CALL "SP-GET-COMPONENT-X" USING L-VAR(5) WS-TYPE WS-VALUE WS-LENGTH WS-FOUND
@@ -199,7 +204,10 @@
 
 *> 27 2.12 rocket: flight duration = the number of fuels, the explosions of the stars that have one, in slot order.
  ROCKET-RULE.
-     CALL "RECIPE-ROCKET-MATCH" USING L-ITEMS RR-ING(L-ROW, 1) RR-ING(L-ROW, 2) RR-ING(L-ROW, 3) L-MATCHED WS-FLIGHT
+     MOVE RR-ING(L-ROW, 1) TO WS-ING-1
+     MOVE RR-ING(L-ROW, 2) TO WS-ING-2
+     MOVE RR-ING(L-ROW, 3) TO WS-ING-3
+     CALL "RECIPE-ROCKET-MATCH" USING L-ITEMS WS-ING-1 WS-ING-2 WS-ING-3 L-MATCHED WS-FLIGHT
      IF L-MATCHED = 1
          MOVE SPACES TO WS-VALUE
          MOVE 1 TO WS-POS
