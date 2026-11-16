@@ -894,6 +894,8 @@
  01 WS-CHUNK               BINARY-LONG.
  01 WS-HX                  FLOAT-LONG.
  01 WS-HZ                  FLOAT-LONG.
+ 01 WS-FRICTION            FLOAT-LONG.
+ 01 WS-ICE-SCALE           FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
@@ -1221,14 +1223,30 @@
              END-IF
      END-EVALUATE
 *>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.
-     COMPUTE WS-HX = WS-HX + EN-VX(WS-ROW)
-     COMPUTE WS-HZ = WS-HZ + EN-VZ(WS-ROW)
+*>   Over a block of friction F above 0.6 (ice, 18 section 3.2) the walk only accelerates by 0.454 x 0.21600002 / F^3 of its step, and EN-VX, EN-VZ
+*>   carry the velocity with a decay of F x 0.91.
+     MOVE 0.6 TO WS-FRICTION
      IF EN-ON-GROUND(WS-ROW) = 1
-         COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.546
-         COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.546
+         CALL "STDMOB-FRICTION" USING EN-DIM(WS-ROW) EN-X(WS-ROW) EN-Y(WS-ROW) EN-Z(WS-ROW) WS-FRICTION
+     END-IF
+     IF EN-ON-GROUND(WS-ROW) = 1 AND WS-FRICTION > 0.6
+         COMPUTE WS-ICE-SCALE = 0.454 * 0.21600002 / (WS-FRICTION ** 3)
+         COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) + WS-HX * WS-ICE-SCALE
+         COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) + WS-HZ * WS-ICE-SCALE
+         MOVE EN-VX(WS-ROW) TO WS-HX
+         MOVE EN-VZ(WS-ROW) TO WS-HZ
+         COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * WS-FRICTION * 0.91
+         COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * WS-FRICTION * 0.91
      ELSE
-         COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.91
-         COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.91
+         COMPUTE WS-HX = WS-HX + EN-VX(WS-ROW)
+         COMPUTE WS-HZ = WS-HZ + EN-VZ(WS-ROW)
+         IF EN-ON-GROUND(WS-ROW) = 1
+             COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.546
+             COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.546
+         ELSE
+             COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.91
+             COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.91
+         END-IF
      END-IF
      MOVE EN-Y(WS-ROW) TO WS-FALL-Y
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
@@ -1236,6 +1254,37 @@
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.
  END PROGRAM STDMOB-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FRICTION.
+*> USING dim (BINARY-LONG), x, y, z (FLOAT-LONG: the feet), friction out (FLOAT-LONG): the friction of the block 0.500001 below the feet, BSH-SLIP of its
+*> state in thousandths (ice 0.98, blue ice 0.989, slime 0.8), 0.6 for any other block (18 section 3.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-FRICTION             FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FRICTION.
+     MOVE 0.6 TO L-FRICTION
+     COMPUTE WS-BX = FUNCTION INTEGER(L-X)
+     COMPUTE WS-BY = FUNCTION INTEGER(L-Y - 0.500001)
+     COMPUTE WS-BZ = FUNCTION INTEGER(L-Z)
+     CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
+     IF WS-STATE > 0 AND WS-STATE < BSH-MAX-STATES
+         IF BSH-SLIP(WS-STATE + 1) > 0
+             COMPUTE L-FRICTION = BSH-SLIP(WS-STATE + 1) / 1000
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-FRICTION.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SPOT-OK.

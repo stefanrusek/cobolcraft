@@ -208,6 +208,10 @@
  01 WS-SET-SPAWN           BINARY-LONG.
  01 WS-OVERLAY             BINARY-LONG.
  01 WS-UPDATE              BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-SAME                BINARY-LONG.
+ COPY BRWORLD.
+ COPY PROTO.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -241,6 +245,33 @@
      END-IF
      CALL "WS-START" USING WS-BUSY WS-CAN-SLEEP WS-CAN-SPAWN WS-WITHIN WS-FREE WS-CREATIVE WS-NO WS-NO2 W2-SLEEP-PCT
          WS-RESULT WS-SET-SPAWN WS-OVERLAY WS-UPDATE
+*>   Step 5: the respawn point becomes the bed (before the sleep test, so also by day), with "Respawn point set" when it differs from the old one.
+     IF WS-SET-SPAWN = 1
+         CALL "BR-WORLD-READY"
+         MOVE 1 TO WS-SAME
+         IF BW-SPAWN-SET(WS-ROW) = 0 OR BW-SPAWN-BED(WS-ROW) = 0 OR BW-SPAWN-DIM(WS-ROW) NOT = PL-DIM(WS-ROW)
+                 OR BW-SPAWN-Y(WS-ROW) NOT = L-Y OR BW-SPAWN-X(WS-ROW) NOT = L-X + 0.5 OR BW-SPAWN-Z(WS-ROW) NOT = L-Z + 0.5
+             MOVE 0 TO WS-SAME
+         END-IF
+         MOVE 1 TO BW-SPAWN-SET(WS-ROW)
+         MOVE 1 TO BW-SPAWN-BED(WS-ROW)
+         MOVE PL-DIM(WS-ROW) TO BW-SPAWN-DIM(WS-ROW)
+         COMPUTE BW-SPAWN-X(WS-ROW) = L-X + 0.5
+         MOVE L-Y TO BW-SPAWN-Y(WS-ROW)
+         COMPUTE BW-SPAWN-Z(WS-ROW) = L-Z + 0.5
+         MOVE PL-YAW(WS-ROW) TO BW-SPAWN-YAW(WS-ROW)
+         MOVE PL-PITCH(WS-ROW) TO BW-SPAWN-PITCH(WS-ROW)
+         IF WS-SAME = 0
+             INITIALIZE PB-TEXT
+             MOVE PB-TEXT-PLAIN TO PB-TX-KIND
+             MOVE "Respawn point set" TO PB-TX-VALUE
+             MOVE 17 TO PB-TX-LENGTH
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "SYSTEM-CHAT-BUILD" USING PB-TEXT PB-BUFFER
+             CALL "CORE-SEND" USING L-ID PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+         END-IF
+     END-IF
      IF WS-RESULT = 0
          MOVE 1 TO W2-SLEEPING(WS-ROW)
          MOVE 0 TO W2-SLEEP-COUNTER(WS-ROW)

@@ -658,6 +658,7 @@
  01 WS-WHICH               BINARY-LONG.
  01 WS-NAME                PIC X(24).
  01 WS-VALUE               PIC X(16).
+ 01 WS-SLIPPERY            BINARY-LONG.
  01 WS-CLIMBABLE.
     05 FILLER              PIC X(70) VALUE "|LadderBlock|VineBlock|ScaffoldingBlock|".
     05 FILLER              PIC X(70) VALUE "|WeepingVinesBlock|WeepingVinesPlantBlock|".
@@ -676,7 +677,7 @@
          MOVE 0 TO BSH-HASH(WS-S)
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-MAX-STATES
-         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S)
+         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S)
      END-PERFORM
      INITIALIZE BSH-SHAPE(1) BSC-SHAPE
      MOVE 1 TO BSC-N
@@ -724,6 +725,24 @@
          END-PERFORM
          MOVE 0 TO WS-HITS
          INSPECT WS-CLIMBABLE TALLYING WS-HITS FOR ALL WS-KEY(1:WS-LENGTH)
+*>       The friction of the block (18 section 3.2).
+         EVALUATE FUNCTION TRIM(CT-BR-KEY)
+             WHEN "minecraft:ice"
+             WHEN "minecraft:packed_ice"
+             WHEN "minecraft:frosted_ice"
+             WHEN "ice"
+             WHEN "packed_ice"
+             WHEN "frosted_ice"
+                 MOVE 980 TO WS-SLIPPERY
+             WHEN "minecraft:blue_ice"
+             WHEN "blue_ice"
+                 MOVE 989 TO WS-SLIPPERY
+             WHEN "minecraft:slime_block"
+             WHEN "slime_block"
+                 MOVE 800 TO WS-SLIPPERY
+             WHEN OTHER
+                 MOVE 0 TO WS-SLIPPERY
+         END-EVALUATE
          IF WS-NEEDS = 1
              CALL "BSH-PROPS-SPLIT" USING CT-BR-PROPS
          END-IF
@@ -758,6 +777,7 @@
              IF WS-HITS > 0
                  MOVE 1 TO BSH-CLIMB(WS-S)
              END-IF
+             MOVE WS-SLIPPERY TO BSH-SLIP(WS-S)
          END-PERFORM
      END-PERFORM
      MOVE 1 TO BSH-READY
