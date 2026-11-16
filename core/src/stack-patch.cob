@@ -28,10 +28,14 @@
  COPY CORESTATE.
  COPY CMENU.
  COPY CSTACK.
+ COPY VILSTATE.
+ COPY CITEMS.
+ COPY CITEMPHYS.
  01 WS-MARKS.
     05 WS-MARK             BINARY-LONG OCCURS 512 TIMES.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 512
@@ -67,6 +71,21 @@
          END-IF
      END-PERFORM
      CALL "BE-MARK-PATCHES" USING WS-MARKS
+*>   The results of the villagers' offers and the stacks of the item entities on the ground.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VL-MAX
+         IF VL-ID(WS-I) > 0
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > VL-O-N(WS-I)
+                 MOVE VL-O-VAR(WS-I, WS-J) TO WS-V
+                 CALL "SP-MARK" USING WS-MARKS WS-V
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = CR-LOOSE-ITEM
+             MOVE IP-I-VAR(WS-I) TO WS-V
+             CALL "SP-MARK" USING WS-MARKS WS-V
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 512
          IF WS-MARK(WS-I) = 0
              MOVE 0 TO SP-LIVE(WS-I)

@@ -617,9 +617,10 @@
  END PROGRAM VIL-ENCH-PICK.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. VIL-ROW-EXTRA.
-*> USING trade row, salt, extra out (54 section 4.1 and 4.3): the extra price of a trade by its modifier: 1 enchanted book the E of VIL-ENCH-PICK, 2 equipment enchanted at 5 to 19
-*> levels E = V, anything else 0.
+ PROGRAM-ID. VIL-ROW-STACK.
+*> USING trade row, salt, extra out, patch handle out (54 section 4.1 and 4.3; lane itemcomp T9610): the extra price of a trade by its modifier (1 enchanted book the E of VIL-ENCH-PICK,
+*> 2 equipment enchanted at 5 to 19 levels E = V, anything else 0) and the patch of the result: a book's stored_enchantments (45) holds the drawn enchantment at the drawn level (a key
+*> the registry does not know leaves the patch 0). Equipment keeps no patch (the enchanting-table selection is not in the core): the enchanted equipment is a gap.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WANT                 PIC X(32).
@@ -634,26 +635,51 @@
  01 WS-MASK                 BINARY-LONG.
  01 WS-MOD                  BINARY-LONG.
  01 WS-KEY                  PIC X(24).
+ 01 WS-KEY112               PIC X(112).
  01 WS-LEVEL                BINARY-LONG.
  01 WS-MAXL                 BINARY-LONG.
  01 WS-DOUBLE               BINARY-LONG.
  01 WS-SALT2                BINARY-LONG.
  01 WS-SPAN                 BINARY-LONG VALUE 15.
  01 WS-R                    BINARY-LONG.
+ 01 WS-ID                   BINARY-LONG.
+ 01 WS-STORED               BINARY-LONG VALUE 45.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-SALT                  BINARY-LONG.
  01 L-EXTRA                 BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SALT L-EXTRA.
-     MOVE 0 TO L-EXTRA
+ 01 L-HANDLE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SALT L-EXTRA L-HANDLE.
+     MOVE 0 TO L-EXTRA L-HANDLE
      CALL "VIL-TRADE-ROW" USING L-ROW WS-WANT WS-WC WS-EXT WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
      EVALUATE WS-MOD
          WHEN 1
              CALL "VIL-ENCH-PICK" USING L-SALT WS-KEY WS-LEVEL L-EXTRA WS-MAXL WS-DOUBLE
+             MOVE SPACES TO WS-KEY112
+             MOVE WS-KEY TO WS-KEY112
+             CALL "LOOT-ENCH-ID" USING WS-KEY112 WS-ID
+             IF WS-ID >= 0
+                 CALL "SC-ENCH-ADD" USING L-HANDLE WS-STORED WS-ID WS-LEVEL
+             END-IF
          WHEN 2
              COMPUTE WS-SALT2 = L-SALT * 5 + 11
              CALL "XP-RANDOM" USING WS-SALT2 WS-SPAN WS-R
              COMPUTE L-EXTRA = 5 + WS-R
      END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-ROW-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ROW-EXTRA.
+*> USING trade row, salt, extra out: VIL-ROW-STACK without the patch.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HANDLE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-EXTRA                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SALT L-EXTRA.
+     CALL "VIL-ROW-STACK" USING L-ROW L-SALT L-EXTRA WS-HANDLE
      GOBACK.
  END PROGRAM VIL-ROW-EXTRA.
