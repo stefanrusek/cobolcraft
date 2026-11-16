@@ -146,3 +146,32 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM BLOCK-DROPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-DROPS-NO-TOOL.
+*> USING dimension row, x, y, z, state (BINARY-LONG): the drops of a block destroyed by the world, not by a player (Block.dropResources without a tool, 29 section 10.4): the loot table of the block rolled
+*> with no tool, else the stand-in yield of the block.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-TOOL                BINARY-LONG VALUE 0.
+ 01 WS-COUNT               BINARY-LONG VALUE 0.
+ 01 WS-HANDLE              BINARY-LONG VALUE 0.
+ 01 WS-NO-RADIUS           BINARY-LONG VALUE 0.
+ 01 WS-RADIUS              FLOAT-LONG VALUE 0.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     CALL "BLOCK-DROPS-SPAWN" USING L-DIM L-X L-Y L-Z L-STATE WS-TOOL WS-COUNT WS-HANDLE WS-NO-RADIUS WS-RADIUS WS-FOUND
+     IF WS-FOUND = 0
+         MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
+         CALL "GI-BLOCK-YIELD" USING L-DIM L-X L-Y L-Z WS-BLOCK
+     END-IF
+     GOBACK.
+ END PROGRAM BLOCK-DROPS-NO-TOOL.

@@ -330,6 +330,10 @@
      END-IF
 *>   A door or tall plant needs its upper half's cell (empty or replaceable) too, and places both halves.
      CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
+*>   BlockItem.canPlace: the block must survive where it is placed (a plant on its ground, kelp and seagrass in a water source only; support-29.cob).
+     IF WS-FITS = 1
+         CALL "SUP-PLACE-OK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
+     END-IF
      IF WS-FITS = 0
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
