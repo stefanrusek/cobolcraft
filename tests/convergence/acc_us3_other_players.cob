@@ -150,8 +150,27 @@
          INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The dimension case (Alice leaves for cobolcraft:subroutine and Bobby no longer sees her) waits for T4805
-*>   (the standard teleport into another dimension: execute in ... run tp leaves the player in cobolcraft:main).
+*>   Another dimension (54 s9: a location form uses the executor's level, so execute in ... run tp crosses dimensions):
+*>   Alice leaves for cobolcraft:subroutine and Bobby, who stays in cobolcraft:main, no longer sees her; she comes back.
+     MOVE "/gamemode creative Alice" TO WS-SAY
+     PERFORM ALICE-SAYS
+     MOVE "/execute in cobolcraft:subroutine run tp Alice 8 70 8" TO WS-SAY
+     PERFORM ALICE-SAYS
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     CALL "FIGURES" USING CLIENT-STATE WS-FIGURES WS-ROW
+     MOVE WS-FIGURES TO WS-E1
+     MOVE "/execute in cobolcraft:main run tp Alice 6 60 8" TO WS-SAY
+     PERFORM ALICE-SAYS
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     CALL "FIGURES" USING CLIENT-STATE WS-FIGURES WS-ROW
+     MOVE WS-FIGURES TO WS-E2
+     MOVE "acceptance US3-5 given another player in view when they travel to another dimension then "
+         & "the Player no longer sees them, and sees them again when they come back" TO TL-CASE
+     MOVE "other dimension 0 back 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "other dimension " FUNCTION TRIM(WS-E1) " back " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Bobby disconnects (pause menu, disconnect control): Alice no longer sees him.
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
