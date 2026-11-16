@@ -44,3 +44,12 @@ profiling of the first manual run shows.
 
 - What are the targets: the frame rate, the time to the first complete view, and the platform they're measured on?
 - Profile first. Is the cost in the COBOL mesh loop, in the per-block lookups, or in uploads through the shim?
+
+## Notes
+
+- 2026-11-16 (task T3610, lane misc3): `acc_us3_streaming` measured on the current branch, uninstrumented build, one run on the
+  operator's machine: 67.7 s wall clock (66.7 s user), all 56 points of SC-007 PASS. The ticket's figure of about 3 minutes
+  was from the instrumented gate run; no instrumented figure was taken in this lane (coverage builds are the integrator's).
+  The test is faster than the ticket states but still the longest of the convergence tests together with `acc_us5_ground_items`
+  (about 3 minutes, 6205 frames for the 6000 tick item lifetime). No frame-rate or first-view targets exist yet, so the
+  ticket stays `draft`: the Open Questions above are unanswered.
