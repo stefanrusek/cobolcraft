@@ -1109,6 +1109,13 @@
      IF SM-KEY(WS-M) = "vex"
          CALL "VEX-STEP" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "illusioner"
+         CALL "ILLUSIONER-STEP" USING WS-ROW
+         CALL "ILLUSIONER-IS-CASTING" USING WS-ROW WS-EVK-CAST
+         IF WS-EVK-CAST = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
      CALL "RAID-RAIDER-STEP" USING WS-ROW
      IF SM-KEY(WS-M) = "ravager"
          CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL

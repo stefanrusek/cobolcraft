@@ -1,6 +1,6 @@
 *> Evoker spells, evoker fangs and vexes (docs/protocol/20 sections 13.3 and 13.4; core/src/mob-20-evoker.cob), EXTERNAL.
-*> EV-ENTRY: one per evoker entity id (EV-ID 0 = free): the spell being cast (0 none, 1 summon vex, 2 fangs, 3 wololo), EV-CAST the casting ticks left, EV-WARM the warm-up
-*> ticks left before the spell is performed, EV-NEXT the game tick from which the next spell may start.
+*> EV-ENTRY: one per evoker entity id (EV-ID 0 = free): the spell being cast (0 none, 1 summon vex, 2 fangs, 3 wololo, 4 disappear, 5 blindness), EV-CAST the casting ticks left, EV-WARM the warm-up
+*> ticks left before the spell is performed, EV-NEXT the game tick from which the next spell may start, EV-LAST the entity id the illusioner last blinded.
 *> EV-PLAN: the fang layout computed by EVK-FANGS-PLAN: offsets from the evoker and the warm-up of each fang.
 *> FG-ENTRY: the live fangs (FG-USED 1), their warm-up counter and the entity id of the evoker that cast them.
 *> VX-ENTRY: one per summoned vex (VX-ID 0 = free): the owner's entity id, the life ticks left and the starvation timer.
@@ -14,6 +14,7 @@
        10 EV-CAST            BINARY-LONG.
        10 EV-WARM            BINARY-LONG.
        10 EV-NEXT            BINARY-DOUBLE.
+       10 EV-LAST            BINARY-LONG.
  01 EV-PLAN EXTERNAL.
     05 EV-PLAN-COUNT         BINARY-LONG.
     05 EV-PLAN-ENTRY         OCCURS 16 TIMES.
