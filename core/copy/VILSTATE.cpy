@@ -15,6 +15,7 @@
        10 VL-LAST-RESTOCK    BINARY-LONG.
        10 VL-RESTOCKS        BINARY-LONG.
        10 VL-FOOD            BINARY-LONG.
+       10 VL-LAST-DECAY      BINARY-LONG.
        10 VL-O-N             BINARY-LONG.
        10 VL-OFFER           OCCURS 16 TIMES.
           15 VL-O-ROW        BINARY-LONG.

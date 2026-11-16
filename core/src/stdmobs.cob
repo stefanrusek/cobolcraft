@@ -1076,6 +1076,9 @@
      IF SM-KEY(WS-M) = "piglin"
          CALL "PIGLIN-TICK" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "villager"
+         CALL "VL-STEP" USING WS-ROW
+     END-IF
      IF SM-KEY(WS-M) = "hoglin"
          CALL "PIGLIN-ZOMBIFY" USING WS-ROW WS-STOP
          IF WS-STOP = 1
