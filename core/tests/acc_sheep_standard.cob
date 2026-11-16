@@ -91,6 +91,19 @@
  01 WS-WOOL-ID             BINARY-LONG.
  01 WS-WOOL-BEFORE         BINARY-LONG.
  01 WS-DELTA               BINARY-LONG.
+ 01 WS-PAIR                BINARY-LONG.
+ 01 WS-PAIRS.
+    05 FILLER              PIC X(32) VALUE "cow                 beef".
+    05 FILLER              PIC X(32) VALUE "pig                 porkchop".
+    05 FILLER              PIC X(32) VALUE "chicken             feather".
+    05 FILLER              PIC X(32) VALUE "zombie              rotten_flesh".
+    05 FILLER              PIC X(32) VALUE "skeleton            bone".
+    05 FILLER              PIC X(32) VALUE "creeper             gunpowder".
+    05 FILLER              PIC X(32) VALUE "spider              string".
+ 01 WS-PAIR-TABLE REDEFINES WS-PAIRS.
+    05 WS-PAIR-ROW         OCCURS 7 TIMES.
+       10 WS-PAIR-MOB      PIC X(20).
+       10 WS-PAIR-ITEM     PIC X(12).
  01 WS-ORBS-BEFORE         BINARY-LONG.
 
  PROCEDURE DIVISION.
@@ -243,6 +256,64 @@
      MOVE 1 TO WS-EXPECT
      MOVE WS-DELTA TO WS-OBSERVE
      PERFORM CHECK-N
+*>   Killed by a player: an experience orb lands (18 section 7.5 dropExperience)
+     MOVE "experience_orb" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ORB-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE 0 TO WS-ORBS-BEFORE
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS-BEFORE
+         END-IF
+     END-PERFORM
+     MOVE 3 TO WS-DZ
+     MOVE -2 TO WS-DX
+     MOVE "sheep" TO WS-WANT-KEY
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE WS-PLAYER TO EN-KILLER(WS-ROW-B)
+     CALL "STDMOB-DIE" USING WS-ROW-B
+     MOVE 0 TO WS-ORBS
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS
+         END-IF
+     END-PERFORM
+     COMPUTE WS-DELTA = WS-ORBS - WS-ORBS-BEFORE
+     MOVE "acceptance sheep standard: a sheep killed by a player leaves an experience orb" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-DELTA >= 1
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+*>   Other mobs' loot tables roll through the same path (the standard drops: 30 deaths each yield the item at least once)
+     MOVE 1 TO WS-PAIR
+     PERFORM UNTIL WS-PAIR > 7
+         MOVE WS-PAIR-MOB(WS-PAIR) TO WS-WANT-KEY
+         MOVE WS-PAIR-ITEM(WS-PAIR) TO WS-ITEM-KEY
+         PERFORM FIND-ITEM
+         PERFORM COUNT-ITEMS
+         MOVE WS-COUNT-ITEM TO WS-WOOL-BEFORE
+         PERFORM 30 TIMES
+             MOVE 0 TO WS-DX
+             MOVE 0 TO WS-DZ
+             PERFORM SPAWN-MOB
+             MOVE WS-E TO WS-ROW-B
+             MOVE WS-PLAYER TO EN-KILLER(WS-ROW-B)
+             CALL "STDMOB-DIE" USING WS-ROW-B
+         END-PERFORM
+         PERFORM COUNT-ITEMS
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance sheep standard: 30 " FUNCTION TRIM(WS-PAIR-MOB(WS-PAIR)) " deaths drop " FUNCTION TRIM(WS-PAIR-ITEM(WS-PAIR))
+             DELIMITED BY SIZE INTO WS-CASE
+         MOVE 1 TO WS-EXPECT
+         MOVE 0 TO WS-OBSERVE
+         IF WS-COUNT-ITEM > WS-WOOL-BEFORE
+             MOVE 1 TO WS-OBSERVE
+         END-IF
+         PERFORM CHECK-N
+         ADD 1 TO WS-PAIR
+     END-PERFORM
      STOP RUN.
 
  SPAWN-MOB.
