@@ -13,6 +13,8 @@
  WORKING-STORAGE SECTION.
  COPY WSIM2.
  01 WS-I                   BINARY-LONG.
+ 01 WS-PCT-RULE            PIC X(40) VALUE "players_sleeping_percentage".
+ 01 WS-PCT                 BINARY-DOUBLE.
  PROCEDURE DIVISION.
      IF W2-READY = 0
          MOVE 1 TO W2-READY
@@ -33,6 +35,9 @@
              MOVE 0 TO W2-B-DURATION(WS-I) W2-B-PROGRESS(WS-I) W2-B-MOVING(WS-I)
          END-PERFORM
      END-IF
+*>   The game rule players_sleeping_percentage (33 section 6) is the percentage of every sleep check.
+     CALL "BR-RULE-GET" USING WS-PCT-RULE WS-PCT
+     MOVE WS-PCT TO W2-SLEEP-PCT
      GOBACK.
  END PROGRAM WORLDSIM-ENSURE2.
 
