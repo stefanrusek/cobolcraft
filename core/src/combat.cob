@@ -218,8 +218,8 @@
  END PROGRAM COMBAT-BLOCK-LOWER.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. COMBAT-SHIELD.
-*> USING victim player row, attacker player row, amount in and out (thousandths): 17 section 3.6. A raised shield (5 ticks of use) with the attacker
+ PROGRAM-ID. COMBAT-SHIELD-POS.
+*> USING victim player row, attacker x and z (FLOAT-LONG), amount in and out (thousandths), blocked out: 17 section 3.6 for an attacker at that position. A raised shield (5 ticks of use) with the attacker
 *> in front of it (angle at most 90 degrees) blocks the whole hit: the amount becomes 0, the shield wears floor(1 + damage) from 3.0 on, and a hit
 *> with an axe disables the shield for 100 ticks. The hit does no further damage (no window, no knockback).
  DATA DIVISION.
@@ -249,9 +249,12 @@
  01 WS-SLOT5               BINARY-LONG VALUE 5.
  LINKAGE SECTION.
  01 L-VICTIM               BINARY-LONG.
- 01 L-ATTACKER             BINARY-LONG.
+ 01 L-AX                   FLOAT-LONG.
+ 01 L-AZ                   FLOAT-LONG.
  01 L-AMOUNT               BINARY-LONG.
- PROCEDURE DIVISION USING L-VICTIM L-ATTACKER L-AMOUNT.
+ 01 L-BLOCKED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-VICTIM L-AX L-AZ L-AMOUNT L-BLOCKED.
+     MOVE 0 TO L-BLOCKED
      CALL "COMBAT-TS-CHECK" USING L-VICTIM
      IF TS-BLOCK-START(L-VICTIM) = 0
          GOBACK
@@ -273,8 +276,8 @@
      COMPUTE WS-USED = CW-TICKS + 1 - TS-BLOCK-START(L-VICTIM)
      CALL "TOOL-SHIELD-BLOCKING" USING WS-USED WS-BLOCKING
      COMPUTE WS-YAW ROUNDED = PL-YAW(L-VICTIM)
-     COMPUTE WS-DX ROUNDED = (PL-X(L-ATTACKER) - PL-X(L-VICTIM)) * 1000
-     COMPUTE WS-DZ ROUNDED = (PL-Z(L-ATTACKER) - PL-Z(L-VICTIM)) * 1000
+     COMPUTE WS-DX ROUNDED = (L-AX - PL-X(L-VICTIM)) * 1000
+     COMPUTE WS-DZ ROUNDED = (L-AZ - PL-Z(L-VICTIM)) * 1000
      CALL "TOOL-SHIELD-ANGLE" USING WS-HAS WS-YAW WS-DX WS-DZ WS-INSIDE
      CALL "TOOL-SHIELD-RESOLVE" USING L-AMOUNT WS-BYPASSED WS-PIERCING WS-BLOCKING WS-INSIDE WS-BLOCKED WS-REMAINING
          WS-WEAR WS-PUSH
@@ -282,12 +285,38 @@
          GOBACK
      END-IF
      MOVE WS-REMAINING TO L-AMOUNT
+     MOVE 1 TO L-BLOCKED
      IF WS-WEAR > 0
          IF TS-BLOCK-HAND(L-VICTIM) = 0
              CALL "TOOL-HURT-STACK" USING PL-CONN(L-VICTIM) PL-HELD(L-VICTIM) WS-WEAR WS-BROKE
          ELSE
              CALL "COMBAT-EQUIP-HURT" USING L-VICTIM WS-SLOT5 WS-WEAR
          END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM COMBAT-SHIELD-POS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMBAT-SHIELD.
+*> USING victim player row, attacker player row, amount in and out (thousandths): 17 section 3.6 (COMBAT-SHIELD-POS for the block); a blocking hit with an axe disables the shield for 100 ticks.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTOOLS.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-BLOCKED             BINARY-LONG.
+ 01 WS-DISABLE-SECONDS     BINARY-LONG VALUE 5000.
+ 01 WS-DISABLE-SCALE       BINARY-LONG VALUE 1000.
+ 01 WS-COOLDOWN            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-VICTIM               BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-VICTIM L-ATTACKER L-AMOUNT.
+     CALL "COMBAT-SHIELD-POS" USING L-VICTIM PL-X(L-ATTACKER) PL-Z(L-ATTACKER) L-AMOUNT WS-BLOCKED
+     IF WS-BLOCKED = 0
+         GOBACK
      END-IF
      MOVE SPACES TO WS-KEY
      IF PL-SLOT-COUNT(L-ATTACKER, PL-HELD(L-ATTACKER) + 1) > 0
@@ -348,6 +377,11 @@
  01 WS-HANDLE              BINARY-LONG.
  01 WS-WEAPON              PIC X(64).
  01 WS-RULE-BLOCKED        BINARY-LONG.
+ 01 WS-MOB                 BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-SHIELDED            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -375,6 +409,26 @@
          CALL "COMBAT-SHIELD" USING WS-ROW L-ATTACKER WS-IN
          IF WS-IN <= 0
              GOBACK
+         END-IF
+     END-IF
+*>   A mob's melee hit (the source is the mob's entity id) meets a raised shield the same way (17 section 3.6); a ravager whose hit is blocked may be stunned (20 section 13.6).
+     IF L-CAUSE = CAUSE-MOB AND L-SOURCE > 0
+         MOVE 0 TO WS-MOB
+         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT OR WS-MOB > 0
+             IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = L-SOURCE AND EN-PLAYER(WS-N) = 0
+                 MOVE WS-N TO WS-MOB
+             END-IF
+         END-PERFORM
+         IF WS-MOB > 0
+             MOVE EN-X(WS-MOB) TO WS-AX
+             MOVE EN-Z(WS-MOB) TO WS-AZ
+             CALL "COMBAT-SHIELD-POS" USING WS-ROW WS-AX WS-AZ WS-IN WS-SHIELDED
+             IF WS-SHIELDED = 1
+                 CALL "RAVAGER-BLOCKED" USING WS-MOB WS-ROW
+                 IF WS-IN <= 0
+                     GOBACK
+                 END-IF
+             END-IF
          END-IF
      END-IF
      IF PL-HURT-COOLDOWN(WS-ROW) > RULE-HURT-FRESH AND WS-IN <= TS-LAST-HURT(WS-ROW)

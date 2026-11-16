@@ -1,0 +1,88 @@
+ *> Acceptance test, ravager riders (docs/protocol/20 section 14.3; lane 002-lane-mobsb7, T9501): in wave 5 each ravager of the wave carries a pillager, in waves 7 and later the first
+*> ravager an evoker and the later ones vindicators; the rider rides (EN-MOUNT) and joins the raid.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-RAID-RIDER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY RAIDSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-RTYPE               BINARY-LONG.
+ 01 WS-PTYPE               BINARY-LONG.
+ 01 WS-ETYPE               BINARY-LONG.
+ 01 WS-VTYPE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-RIDERS              BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-SECOND              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ONE-SLOT           BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE "minecraft:ravager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-RTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:pillager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:evoker" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ETYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:vindicator" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-VTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE 1 TO RD-USED(1)
+     MOVE 5 TO RD-ID(1)
+     MOVE 1 TO RD-STATUS(1)
+     MOVE PL-DIM(WS-PLAYER) TO RD-DIM(1)
+     MOVE 1 TO RD-OMEN(1)
+     COMPUTE RD-SX(1) = PL-X(WS-PLAYER)
+     COMPUTE RD-SY(1) = PL-Y(WS-PLAYER)
+     COMPUTE RD-SZ(1) = PL-Z(WS-PLAYER)
+     MOVE 1 TO RD-SPAWN-SET(1)
+     MOVE 4 TO RD-GROUPS(1)
+     CALL "RAID-SPAWN-GROUP" USING WS-ONE-SLOT WS-ZERO
+     MOVE 0 TO WS-RIDERS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-RTYPE AND EN-PASS(WS-I) > 0
+             MOVE EN-PASS(WS-I) TO WS-ROW
+             IF EN-TYPE(WS-ROW) = WS-PTYPE AND EN-MOUNT(WS-ROW) = WS-I
+                 ADD 1 TO WS-RIDERS
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§14.3 wave 5: the ravager carries a pillager" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-RIDERS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO RD-GROUPS(1)
+     MOVE 3 TO BW-DIFFICULTY
+     CALL "RAID-SPAWN-GROUP" USING WS-ONE-SLOT WS-ZERO
+     MOVE 0 TO WS-FIRST WS-SECOND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-RTYPE AND EN-PASS(WS-I) > 0
+             MOVE EN-PASS(WS-I) TO WS-ROW
+             IF EN-TYPE(WS-ROW) = WS-ETYPE
+                 ADD 1 TO WS-FIRST
+             END-IF
+             IF EN-TYPE(WS-ROW) = WS-VTYPE
+                 ADD 1 TO WS-SECOND
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§14.3 wave 7: one ravager has an evoker" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FIRST TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§14.3 wave 7: the second has a vindicator" TO TL-CASE
+     MOVE WS-SECOND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US15-RAID-RIDER.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.

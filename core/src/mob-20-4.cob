@@ -76,6 +76,10 @@
      IF SM-KEY(L-M) = "witch" AND EN-DRAW(L-ROW) > 0
          MOVE 0 TO L-SPEED
      END-IF
+*>   A strider that is not on or in lava is suffocating: the speed modifier -0.34 multiplied-base (21 section 5.7), the squared speed 0.66 squared.
+     IF EN-COLD(L-ROW) = 1 AND SM-KEY(L-M) = "strider"
+         COMPUTE L-SPEED = L-SPEED * 0.4356
+     END-IF
 *>   An angry zombified piglin has the transient +0.05 speed modifier (21 section 5.5.3): (0.23 + 0.05) squared / 0.454.
      IF EN-ANGER(L-ROW) > 0 AND SM-KEY(L-M) = "zombified_piglin"
          COMPUTE L-SPEED = 173 / 1000

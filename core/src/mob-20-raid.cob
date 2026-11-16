@@ -232,6 +232,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY VILPOIX.
+ COPY DIMENSIONS.
  COPY RAIDSTATE.
  01 WS-I                    BINARY-LONG.
  01 WS-N                    BINARY-LONG.
@@ -246,6 +247,8 @@
  01 WS-AMP                  BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-ROMEN                BINARY-LONG VALUE 34.
+ 01 WS-RAIDS-RULE           PIC X(40) VALUE "raids".
+ 01 WS-RAIDS                BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-PLAYER                BINARY-LONG.
  01 L-X                     BINARY-LONG.
@@ -254,6 +257,11 @@
  01 L-SLOT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-PLAYER L-X L-Y L-Z L-SLOT.
      MOVE 0 TO L-SLOT WS-N WS-SUM-X WS-SUM-Y WS-SUM-Z
+*>   Nothing for a spectator (the caller), with the raids game rule false or where can_start_raid is false (the Nether, 37-1 section 3.8).
+     CALL "BR-RULE-GET" USING WS-RAIDS-RULE WS-RAIDS
+     IF WS-RAIDS = 0 OR DM-KEY(PL-DIM(L-PLAYER)) = "minecraft:the_nether"
+         GOBACK
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PX-MAX
          IF PX-KIND(WS-I) > 0 AND PX-DIM(WS-I) = PL-DIM(L-PLAYER)
              IF FUNCTION ABS(PX-X(WS-I) - L-X) <= 64 AND FUNCTION ABS(PX-Y(WS-I) - L-Y) <= 64 AND FUNCTION ABS(PX-Z(WS-I) - L-Z) <= 64
@@ -388,6 +396,119 @@
      END-IF
      GOBACK.
  END PROGRAM RAID-RAIDER-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-WALK.
+*> USING raider row, hx out, hz out, walk out: PathfindToRaidGoal (20 section 13, priority 3): a raider that belongs to an ongoing raid, has no target, no mob rider and is not in a village walks
+*> toward a point within 15 blocks of the raid centre at its walk speed (a straight line: no pathfinder; the point is chosen again every 100 ticks or on arrival). Every 20 ticks it recruits
+*> the raiders within 16 blocks that have no raid into the raid's current wave (groupsSpawned + 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ COPY RAIDSTATE.
+ 01 WS-M                    BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-X                    BINARY-LONG.
+ 01 WS-Y                    BINARY-LONG.
+ 01 WS-Z                    BINARY-LONG.
+ 01 WS-VILLAGE              BINARY-LONG.
+ 01 WS-N                    BINARY-LONG.
+ 01 WS-S                    BINARY-LONG.
+ 01 WS-WAVE                 BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-MEMBER               BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG VALUE 3.
+ 01 WS-ARGS.
+    05 WS-ARG               BINARY-DOUBLE OCCURS 16 TIMES.
+ 01 WS-R                    BINARY-DOUBLE.
+ 01 WS-Q                    BINARY-DOUBLE.
+ 01 WS-DX                   FLOAT-LONG.
+ 01 WS-DZ                   FLOAT-LONG.
+ 01 WS-H                    FLOAT-LONG.
+ 01 WS-SPEED                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-HX                    FLOAT-LONG.
+ 01 L-HZ                    FLOAT-LONG.
+ 01 L-WALK                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
+     MOVE 0 TO L-HX L-HZ L-WALK WS-SLOT
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     IF NOT (SM-KEY(WS-M) = "vindicator" OR "evoker" OR "pillager" OR "ravager" OR "witch" OR "illusioner")
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) = EN-ID(L-ROW)
+             MOVE RR-RAID(WS-I) TO WS-SLOT
+         END-IF
+     END-PERFORM
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     IF RD-USED(WS-SLOT) = 0 OR RD-STATUS(WS-SLOT) NOT = 1
+         GOBACK
+     END-IF
+*>   Recruit nearby raiders without a raid every 20 ticks.
+     IF FUNCTION MOD(CW-TICKS, 20) = 0
+         COMPUTE WS-WAVE = RD-GROUPS(WS-SLOT) + 1
+         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+             IF WS-N NOT = L-ROW AND EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
+                 CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
+                 IF WS-S > 0
+                     IF SM-KEY(WS-S) = "vindicator" OR "evoker" OR "pillager" OR "ravager" OR "witch" OR "illusioner"
+                         MOVE 0 TO WS-MEMBER
+                         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+                             IF RR-ID(WS-I) = EN-ID(WS-N)
+                                 MOVE 1 TO WS-MEMBER
+                             END-IF
+                         END-PERFORM
+                         IF WS-MEMBER = 0 AND FUNCTION ABS(EN-X(WS-N) - EN-X(L-ROW)) <= 16 AND FUNCTION ABS(EN-Z(WS-N) - EN-Z(L-ROW)) <= 16
+                                 AND FUNCTION ABS(EN-Y(WS-N) - EN-Y(L-ROW)) <= 16
+                             CALL "RAID-JOIN" USING WS-SLOT WS-WAVE WS-N WS-ZERO
+                         END-IF
+                     END-IF
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     IF EN-TARGET(L-ROW) > 0 OR EN-PASS(L-ROW) > 0
+         GOBACK
+     END-IF
+     COMPUTE WS-X = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-Y = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-Z = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "RAID-IS-VILLAGE" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-VILLAGE
+     IF WS-VILLAGE = 1
+         GOBACK
+     END-IF
+     COMPUTE WS-DX = EN-DEST-X(L-ROW) + 0.5 - EN-X(L-ROW)
+     COMPUTE WS-DZ = EN-DEST-Z(L-ROW) + 0.5 - EN-Z(L-ROW)
+     COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     IF (EN-DEST-X(L-ROW) = 0 AND EN-DEST-Z(L-ROW) = 0) OR WS-H < 1.5 OR FUNCTION MOD(CW-TICKS + EN-ID(L-ROW), 100) = 0
+         MOVE EN-ID(L-ROW) TO WS-ARG(1)
+         MOVE CW-TICKS TO WS-ARG(2)
+         MOVE 53 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+         COMPUTE EN-DEST-X(L-ROW) = RD-CX(WS-SLOT) + FUNCTION MOD(WS-R, 31) - 15
+         COMPUTE WS-Q = WS-R / 31
+         COMPUTE EN-DEST-Z(L-ROW) = RD-CZ(WS-SLOT) + FUNCTION MOD(WS-Q, 31) - 15
+         COMPUTE WS-DX = EN-DEST-X(L-ROW) + 0.5 - EN-X(L-ROW)
+         COMPUTE WS-DZ = EN-DEST-Z(L-ROW) + 0.5 - EN-Z(L-ROW)
+         COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     END-IF
+     IF WS-H > 0.1
+         COMPUTE WS-SPEED = SM-WALK-MILLI(WS-M) / 1000
+         COMPUTE L-HX = WS-DX / WS-H * WS-SPEED
+         COMPUTE L-HZ = WS-DZ / WS-H * WS-SPEED
+         MOVE 1 TO L-WALK
+     END-IF
+     GOBACK.
+ END PROGRAM RAID-WALK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-PLAYER-TICK.
@@ -567,7 +688,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-SPAWN-GROUP.
 *> USING raid slot, bonus group (0/1): spawnGroup (20 section 14.3): vindicators, evokers, pillagers, witches, ravagers at the wave spawn position, one leader per call among
-*> the raiders that can lead, the riders of the ravagers (spawned beside the ravager: mobs cannot ride mobs here), then groupsSpawned + 1.
+*> the raiders that can lead, the riders of the ravagers (they ride it: MOB-MOUNT), then groupsSpawned + 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -594,6 +715,7 @@
  01 WS-ROW                  BINARY-LONG.
  01 WS-RIDER-TYPE           BINARY-LONG.
  01 WS-RIDER                BINARY-LONG.
+ 01 WS-MOUNTED              BINARY-LONG.
  01 WS-X                    FLOAT-LONG.
  01 WS-Y                    FLOAT-LONG.
  01 WS-Z                    FLOAT-LONG.
@@ -640,6 +762,7 @@
                      MOVE 0 TO WS-LEAD
                      CALL "MOB-SPAWN" USING RD-DIM(L-SLOT) WS-RIDER-TYPE WS-X WS-Y WS-Z WS-YAW WS-RIDER
                      CALL "RAID-JOIN" USING L-SLOT WS-WAVE WS-RIDER WS-LEAD
+                     CALL "MOB-MOUNT" USING WS-RIDER WS-ROW WS-MOUNTED
                  END-IF
              END-IF
          END-PERFORM
@@ -1163,7 +1286,10 @@
  COPY RAIDSTATE.
  01 WS-P                    BINARY-LONG.
  01 WS-R                    BINARY-LONG.
+ 01 WS-RAIDS-RULE           PIC X(40) VALUE "raids".
+ 01 WS-RAIDS                BINARY-DOUBLE.
  PROCEDURE DIVISION.
+     CALL "BR-RULE-GET" USING WS-RAIDS-RULE WS-RAIDS
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
          IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0
              CALL "RAID-PLAYER-TICK" USING WS-P
@@ -1171,7 +1297,12 @@
      END-PERFORM
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > RD-MAX
          IF RD-USED(WS-R) = 1
-             CALL "RAID-TICK" USING WS-R
+*>           Raids.tick: with the raids game rule false a raid is stopped and removed.
+             IF WS-RAIDS = 0
+                 CALL "RAID-DROP" USING WS-R
+             ELSE
+                 CALL "RAID-TICK" USING WS-R
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

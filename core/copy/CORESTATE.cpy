@@ -562,6 +562,16 @@
        10 EN-FROG-JVX          FLOAT-LONG.         *> frog: the launch vector
        10 EN-FROG-JVY          FLOAT-LONG.
        10 EN-FROG-JVZ          FLOAT-LONG.
+*>     --- 002-lane-mobsb7: mobs riding mobs (core/src/mob-mount.cob; 18 section 8.4) ---
+       10 EN-MOUNT           BINARY-LONG.        *> a mob riding another mob: the tracker row of its vehicle (0 none)
+       10 EN-MOUNT-ID        BINARY-LONG.        *> and that vehicle's entity id (guards a reused row)
+       10 EN-PASS            BINARY-LONG.        *> a mob with a mob rider: the tracker row of the rider (0 none)
+       10 EN-JOCKEY          BINARY-LONG.        *> a chicken: 1 when it is a chicken jockey (never lays eggs)
+*>     --- 002-lane-mobsb7: the strider (core/src/mob-21-strider.cob; 21 section 5.7) ---
+       10 EN-COLD            BINARY-LONG.        *> strider: 1 when suffocating (not on or in lava; metadata 19)
+       10 EN-BOOST           BINARY-LONG.        *> strider: the boost total in ticks (metadata 18)
+       10 EN-BOOST-T         BINARY-LONG.        *> strider: ticks into the boost
+       10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

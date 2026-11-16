@@ -21,8 +21,11 @@
     05 FILLER              FLOAT-LONG VALUE 0.86875.
     05 FILLER              PIC X(24) VALUE "camel".
     05 FILLER              FLOAT-LONG VALUE 2.0.
+*>  The strider has no passenger attachment in 18 section 1.1.1 (open): 0.
+    05 FILLER              PIC X(24) VALUE "strider".
+    05 FILLER              FLOAT-LONG VALUE 0.
  01 WS-TABLE REDEFINES WS-SEATS.
-    05 WS-SEAT OCCURS 5 TIMES.
+    05 WS-SEAT OCCURS 6 TIMES.
        10 WS-SEAT-KEY      PIC X(24).
        10 WS-SEAT-Y        FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
@@ -31,7 +34,7 @@
  01 L-SEAT                 FLOAT-LONG.
  PROCEDURE DIVISION USING L-KEY L-SEAT.
      MOVE 0 TO L-SEAT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
          IF WS-SEAT-KEY(WS-I) = L-KEY
              COMPUTE L-SEAT = WS-SEAT-Y(WS-I) - 0.6
          END-IF
@@ -101,20 +104,26 @@
  PROCEDURE DIVISION USING L-ROW.
      MOVE 0 TO WS-COUNT
      IF EN-RIDER(L-ROW) > 0
-         MOVE 1 TO WS-COUNT
+         ADD 1 TO WS-COUNT
      END-IF
      IF EN-RIDER2(L-ROW) > 0
-         MOVE 2 TO WS-COUNT
+         ADD 1 TO WS-COUNT
+     END-IF
+     IF EN-PASS(L-ROW) > 0
+         ADD 1 TO WS-COUNT
      END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
-     IF WS-COUNT > 0
+     IF EN-RIDER(L-ROW) > 0
          CALL "PB-PUT-VARINT" USING PB-BUFFER PL-ENTITY-ID(EN-RIDER(L-ROW))
      END-IF
-     IF WS-COUNT = 2
+     IF EN-RIDER2(L-ROW) > 0
          CALL "PB-PUT-VARINT" USING PB-BUFFER PL-ENTITY-ID(EN-RIDER2(L-ROW))
+     END-IF
+     IF EN-PASS(L-ROW) > 0
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(EN-PASS(L-ROW))
      END-IF
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
@@ -171,7 +180,7 @@
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0 AND EN-MOBAGE(L-ROW) >= 0
          EVALUATE TRUE
-             WHEN EN-RIDER(L-ROW) = 0 AND (EN-SADDLE(L-ROW) = 1 OR WS-KEY NOT = "pig")
+             WHEN EN-RIDER(L-ROW) = 0 AND (EN-SADDLE(L-ROW) = 1 OR (WS-KEY NOT = "pig" AND WS-KEY NOT = "strider"))
                  MOVE L-PLAYER TO EN-RIDER(L-ROW)
                  MOVE 1 TO WS-TAKEN
              WHEN EN-RIDER(L-ROW) > 0 AND EN-RIDER2(L-ROW) = 0 AND WS-KEY = "camel"
@@ -213,7 +222,7 @@
  PROCEDURE DIVISION USING L-PLAYER L-ROW L-SADDLED.
      MOVE 0 TO L-SADDLED
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     IF EN-SADDLE(L-ROW) = 0 AND EN-MOBAGE(L-ROW) >= 0 AND (EN-TAMED(L-ROW) = 1 OR WS-KEY = "pig")
+     IF EN-SADDLE(L-ROW) = 0 AND EN-MOBAGE(L-ROW) >= 0 AND (EN-TAMED(L-ROW) = 1 OR WS-KEY = "pig" OR WS-KEY = "strider")
          CALL "MOB-TAKE" USING L-PLAYER
          MOVE 1 TO EN-SADDLE(L-ROW) L-SADDLED
          CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
@@ -277,6 +286,8 @@
  01 WS-DELTA               BINARY-LONG VALUE 5.
  01 WS-EVENT               BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-HELD                BINARY-LONG.
+ 01 WS-HELD-KEY            PIC X(48).
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-DONE                 BINARY-LONG.
@@ -284,7 +295,18 @@
      MOVE EN-SADDLE(L-ROW) TO L-DONE
      CALL "MOB-RIDE-SYNC" USING L-ROW
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     IF EN-TAMED(L-ROW) = 0 AND WS-KEY NOT = "pig" AND WS-KEY NOT = "camel"
+*>   A strider is controlled only by a rider that holds a warped fungus on a stick (44-6 section 8.1); otherwise it walks on its own with the rider on it.
+     IF WS-KEY = "strider" AND L-DONE = 1
+         MOVE 0 TO L-DONE
+         COMPUTE WS-HELD = PL-HELD(EN-RIDER(L-ROW)) + 1
+         IF PL-SLOT-COUNT(EN-RIDER(L-ROW), WS-HELD) > 0
+             CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(EN-RIDER(L-ROW), WS-HELD) WS-HELD-KEY
+             IF WS-HELD-KEY = "warped_fungus_on_a_stick"
+                 MOVE 1 TO L-DONE
+             END-IF
+         END-IF
+     END-IF
+     IF EN-TAMED(L-ROW) = 0 AND WS-KEY NOT = "pig" AND WS-KEY NOT = "camel" AND WS-KEY NOT = "strider"
          MOVE EN-ID(L-ROW) TO WS-ARG(1)
          MOVE CW-TIME TO WS-ARG(2)
          MOVE 41 TO WS-ARG(3)

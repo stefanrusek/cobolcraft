@@ -169,7 +169,13 @@
  01 WS-SIGN                 BINARY-LONG.
  01 WS-RESULT               BINARY-LONG.
  01 WS-K                    BINARY-LONG.
+ 01 WS-PATROLS-RULE         PIC X(40) VALUE "spawn_patrols".
+ 01 WS-PATROLS              BINARY-DOUBLE.
  PROCEDURE DIVISION.
+     CALL "BR-RULE-GET" USING WS-PATROLS-RULE WS-PATROLS
+     IF WS-PATROLS = 0
+         GOBACK
+     END-IF
      IF PT-NEXT > 0
          SUBTRACT 1 FROM PT-NEXT
          GOBACK

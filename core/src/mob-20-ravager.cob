@@ -5,7 +5,7 @@
 *>   RAVAGER-STEP USING ravager row, immobile out one tick: the timers, the roar (countdown 20, the blast at 10), immobile 1 while stunned, roaring or within 10 ticks of a hit
 *> The roar: every living entity within the box inflated by 4 that is no ravager takes 6 mob-attack damage unless it is an illager, and every one that is no player is thrown
 *> (push 4 x dx / n, 0.2, 4 x dz / n with n the squared horizontal distance, at least 0.001); players get entity event 69 (the client applies the throw).
-*> Gaps: nothing calls RAVAGER-STUN yet (a mob hit blocked by a raised shield is not modelled), the speed lerp 0.1 towards 0.35 and leaf destruction, stun particles, the box is
+*> Gaps: the speed lerp 0.1 towards 0.35 and leaf destruction, stun particles, the box is
 *> taken as 4.975 blocks horizontally and -4 to +6.2 vertically from the feet, the roar sound.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-RV-FIND.
@@ -78,6 +78,53 @@
      END-IF
      GOBACK.
  END PROGRAM RAVAGER-STUN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAVAGER-BLOCKED.
+*> USING mob row, blocking player row (called by HEALTH-HURT when a raised shield blocked a mob's hit, Ravager.blockedByShield, 20 section 13.6): only a ravager with RoarTick 0 reacts:
+*> with probability 0.5 it is stunned for 40 ticks (RAVAGER-STUN; the document does not give the push of the blocker, not modelled), else strongKnockback on the blocker: push
+*> (dx / n x 4, 0.2, dz / n x 4) with n = max(dx squared + dz squared, 0.001), sent to the player as Set Entity Motion.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY EVKSTATE.
+ 01 WS-KEY                  PIC X(24).
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-ONE                  BINARY-LONG VALUE 1.
+ 01 WS-SALT                 BINARY-LONG VALUE 107.
+ 01 WS-BOUND                BINARY-LONG VALUE 2.
+ 01 WS-DRAW                 BINARY-LONG.
+ 01 WS-DX                   FLOAT-LONG.
+ 01 WS-DZ                   FLOAT-LONG.
+ 01 WS-NN                   FLOAT-LONG.
+ 01 WS-VX                   BINARY-LONG.
+ 01 WS-VY                   BINARY-LONG VALUE 200.
+ 01 WS-VZ                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-PLAYER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PLAYER.
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     IF WS-KEY NOT = "ravager"
+         GOBACK
+     END-IF
+     CALL "EVK-RV-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
+     IF WS-SLOT = 0 OR RV-ROAR(WS-SLOT) > 0
+         GOBACK
+     END-IF
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+     IF WS-DRAW = 0
+         CALL "RAVAGER-STUN" USING L-ROW
+     ELSE
+         COMPUTE WS-DX = PL-X(L-PLAYER) - EN-X(L-ROW)
+         COMPUTE WS-DZ = PL-Z(L-PLAYER) - EN-Z(L-ROW)
+         COMPUTE WS-NN = FUNCTION MAX(WS-DX * WS-DX + WS-DZ * WS-DZ, 0.001)
+         COMPUTE WS-VX = WS-DX / WS-NN * 4000
+         COMPUTE WS-VZ = WS-DZ / WS-NN * 4000
+         CALL "COMBAT-MOTION-SEND" USING L-PLAYER WS-VX WS-VY WS-VZ
+     END-IF
+     GOBACK.
+ END PROGRAM RAVAGER-BLOCKED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAVAGER-ROAR.

@@ -62,6 +62,8 @@
  01 WS-BX                  FLOAT-LONG.
  01 WS-BZ                  FLOAT-LONG.
  01 WS-BY                  FLOAT-LONG.
+ 01 WS-KIN                 BINARY-LONG.
+ 01 WS-OM                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
@@ -77,7 +79,20 @@
      CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
      COMPUTE EN-ALERT(L-ROW) = 80 + FUNCTION MOD(WS-R, 41)
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF WS-E NOT = L-ROW AND EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = EN-TYPE(L-ROW) AND EN-HEALTH(WS-E) > 0
+         MOVE 0 TO WS-KIN
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = EN-TYPE(L-ROW)
+             MOVE 1 TO WS-KIN
+         END-IF
+*>       The anger of a piglin reaches every adult piglin and brute around it (broadcastAngerTarget, 44-6 section 2.5).
+         IF EN-USED(WS-E) = 1 AND SM-KEY(WS-M) = "piglin" AND EN-MOBAGE(WS-E) >= 0
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-OM
+             IF WS-OM > 0
+                 IF SM-KEY(WS-OM) = "piglin_brute" OR (SM-KEY(WS-OM) = "piglin" AND EN-MOBAGE(L-ROW) >= 0)
+                     MOVE 1 TO WS-KIN
+                 END-IF
+             END-IF
+         END-IF
+         IF WS-E NOT = L-ROW AND WS-KIN = 1 AND EN-HEALTH(WS-E) > 0
                  AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-TARGET(WS-E) = 0 AND EN-TAMED(WS-E) = 0
              COMPUTE WS-DX = FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW))
              COMPUTE WS-DY = FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW))
@@ -112,12 +127,27 @@
  COPY STDMOBS.
  01 WS-M                   BINARY-LONG.
  01 WS-TICKS               BINARY-LONG.
+ 01 WS-AVOID-KIND          BINARY-LONG VALUE 3.
+ 01 WS-BABY-TICKS          BINARY-LONG VALUE 100.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ATTACKER             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-ATTACKER.
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      IF WS-M = 0
+         GOBACK
+     END-IF
+     IF SM-KEY(WS-M) = "piglin" AND EN-MOBAGE(L-ROW) < 0
+*>       A baby avoids its attacker for 100 ticks and gets no anger itself; the others are told (44-6 section 2.3 step 6).
+         CALL "PGB-AVOID-SET" USING L-ROW WS-AVOID-KIND PL-X(L-ATTACKER) PL-Z(L-ATTACKER) WS-BABY-TICKS
+         CALL "NETHER-ALERT" USING L-ROW L-ATTACKER
+         GOBACK
+     END-IF
+     IF SM-KEY(WS-M) = "piglin_brute"
+*>       A brute hit by a player takes it as its target and tells the piglins around it.
+         MOVE L-ATTACKER TO EN-TARGET(L-ROW)
+         MOVE PL-ENTITY-ID(L-ATTACKER) TO EN-TARGET-ID(L-ROW)
+         CALL "NETHER-ALERT" USING L-ROW L-ATTACKER
          GOBACK
      END-IF
      IF SM-NEUTRAL(WS-M) = 3 OR SM-NEUTRAL(WS-M) = 4 OR SM-NEUTRAL(WS-M) = 5 OR (SM-NEUTRAL(WS-M) = 6 AND EN-TAMED(L-ROW) = 0)
@@ -142,10 +172,19 @@
  01 WS-BEST                BINARY-LONG.
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-GOLD                BINARY-LONG.
+ 01 WS-AVOIDING            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
+     IF SM-NEUTRAL(L-M) = 4
+         CALL "PGB-AVOIDING" USING L-ROW WS-AVOIDING
+         IF WS-AVOIDING = 1
+*>           Near a zombified piglin or zoglin the piglin has no target (44-6 section 2.2 step 1).
+             MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+             GOBACK
+         END-IF
+     END-IF
      IF SM-NEUTRAL(L-M) = 4 AND EN-ANGER(L-ROW) = 0
 *>       A calm piglin attacks the nearest player in range that wears no golden armor.
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) WS-BEST

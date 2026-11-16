@@ -3,7 +3,7 @@
 *>                                       brute: canHunt is false) with no player target and no foe, once the gap is over, takes the nearest visible adult hoglin within its follow range
 *>                                       as its foe (EN-FOE)
 *>   PIGLIN-HUNT-DONE USING piglin row   a kill: the foe is cleared and the gap restarts
-*> Gaps: the celebration after a kill (CELEBRATE for 300 ticks), the exact branch conditions the document did not expand (hoglin counts, baby piglins), a crossbow piglin shoots
+*> The celebration after a kill is PGB-CELEBRATE (mob-21-brain.cob). Gaps: the exact branch conditions the document did not expand (hoglin counts, baby piglins), a crossbow piglin shoots
 *> instead of hitting (it hits here), a piglin fleeing hoglins that outnumber it, the zoglin and zombified piglin fights, hoglin repellents.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PH-FIND.
@@ -47,9 +47,19 @@
  COPY CORESTATE.
  COPY HUNT.
  01 WS-SLOT                 BINARY-LONG.
+ 01 WS-FOE                  BINARY-LONG.
+ 01 WS-SALT                 BINARY-LONG VALUE 103.
+ 01 WS-BOUND                BINARY-LONG VALUE 10.
+ 01 WS-DRAW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   The kill is celebrated (StartCelebratingIfTargetDead: 300 ticks at the place, dancing with probability 1/10).
+     MOVE EN-FOE(L-ROW) TO WS-FOE
+     IF WS-FOE > 0
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+         CALL "PGB-CELEBRATE" USING L-ROW WS-FOE WS-DRAW
+     END-IF
      MOVE 0 TO EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
      CALL "PH-FIND" USING EN-ID(L-ROW) WS-SLOT
      IF WS-SLOT > 0

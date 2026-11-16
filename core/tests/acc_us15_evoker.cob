@@ -35,6 +35,11 @@
  01 WS-BLUE                BINARY-LONG.
  01 WS-H0                  FLOAT-SHORT.
  01 WS-DIFF                FLOAT-LONG.
+ 01 WS-FX0                 BINARY-LONG.
+ 01 WS-FZ0                 BINARY-LONG.
+ 01 WS-FYI                 BINARY-LONG.
+ 01 WS-FSIZE               BINARY-LONG VALUE 45.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -114,7 +119,11 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-YES TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   Live: an evoker with the player as target, 10 blocks away.
+*>   Live: an evoker with the player as target, 10 blocks away, on a stone floor (the fangs need ground under them, 13.3).
+     COMPUTE WS-FX0 = FUNCTION INTEGER(PL-X(WS-PLAYER)) - 15
+     COMPUTE WS-FZ0 = FUNCTION INTEGER(PL-Z(WS-PLAYER)) - 15
+     COMPUTE WS-FYI = FUNCTION INTEGER(PL-Y(WS-PLAYER)) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX0 WS-FZ0 WS-FSIZE WS-FYI WS-FKIND
      MOVE PL-X(WS-PLAYER) TO WS-X
      MOVE PL-Y(WS-PLAYER) TO WS-Y
      MOVE PL-Z(WS-PLAYER) TO WS-Z

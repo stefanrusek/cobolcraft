@@ -240,6 +240,7 @@
          WHEN 2 MOVE "minecraft:iron_spear" TO L-KEY
          WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
          WHEN 4 MOVE "minecraft:bow" TO L-KEY
+         WHEN 9 MOVE "minecraft:warped_fungus_on_a_stick" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -349,6 +350,7 @@
  01 WS-CONVERT             BINARY-LONG.
  01 WS-ZSLOT               BINARY-LONG.
  01 WS-ZNO                 BINARY-LONG VALUE 0.
+ 01 WS-DANCE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
@@ -435,6 +437,19 @@
              MOVE 1 TO WS-VALUE
          END-IF
      END-IF
+*>   A piglin that has danced (lane mobsb7, PGBRAIN.cpy): metadata 19 BOOLEAN, true while dancing and false once it has stopped, when it is the only entry.
+     IF WS-INDEX = 0 AND WS-M > 0
+         IF SM-KEY(WS-M) = "piglin"
+             CALL "PGB-DANCE-OF" USING EN-ID(L-ROW) WS-DANCE
+             IF WS-DANCE > 0
+                 MOVE 19 TO WS-INDEX
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+                 IF WS-DANCE = 1
+                     MOVE 1 TO WS-VALUE
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
 *>   An ignited creeper (metadata 18 BOOLEAN true, 6.1) follows the powered entry, or is the only one.
      IF WS-M > 0 AND SM-KEY(WS-M) = "creeper" AND EN-IGNITED(L-ROW) = 1
          IF WS-INDEX = 0
@@ -507,7 +522,7 @@
  END PROGRAM STDMOB-XP-POINTS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STDMOB-FINALIZE.
+ PROGRAM-ID. STDMOB-FINALIZE RECURSIVE.
 *> USING xoro state, tracker row: finalizeSpawn of a freshly spawned standard mob (4.1, 3.6). A zombie, zombie villager or husk is a baby with probability
 *> 0.05 (EN-VARIANT 1), rolls its armour (STDMOB-EQUIP-ROLL with the special multiplier of the effective difficulty; EN-EQUIP), gets the reinforcement
 *> chance nextDouble x 0.1 (EN-REINF, ten-thousandths) and with probability 0.05 x special is a leader: +0.5 + nextDouble x 0.25 chance and the maximum
@@ -545,6 +560,7 @@
              CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
              IF WS-D < 0.05
                  MOVE 1 TO EN-VARIANT(L-ROW)
+                 CALL "MOB-JOCKEY-ZOMBIE" USING L-STATE L-ROW
              END-IF
              CALL "STDMOB-EQUIP-ROLL" USING L-STATE BW-DIFFICULTY WS-SPECIAL WS-TIER WS-SLOTS
              IF WS-SLOTS > 0
@@ -592,7 +608,12 @@
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M
          WHEN "spider"
          WHEN "cave_spider"
+             IF SM-KEY(WS-M) = "spider"
+                 CALL "MOB-JOCKEY-SPIDER" USING L-STATE L-ROW
+             END-IF
              CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "strider"
+             CALL "STRIDER-JOCKEY" USING L-STATE L-ROW
          WHEN "phantom"
 *>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).
              COMPUTE EN-PH-AX(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))

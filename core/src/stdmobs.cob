@@ -857,6 +857,7 @@
          CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
          MOVE WS-GRIEF TO WS-DESTROY
          CALL "EXPLODE-RUN" USING WS-DIM WS-X WS-Y WS-Z WS-POWER WS-DESTROY WS-ROW
+         CALL "CREEPER-CLOUD" USING L-ROW
          CALL "ENTITY-REMOVE" USING L-ROW
          MOVE 2 TO L-STOP
          GOBACK
@@ -1033,6 +1034,18 @@
          CALL "GHAST-TICK" USING WS-ROW WS-M
          GOBACK
      END-IF
+     IF EN-MOUNT(WS-ROW) > 0
+         CALL "MOB-MOUNT-STEP" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
+     END-IF
+     IF EN-PASS(WS-ROW) > 0
+         CALL "MOB-MOUNT-DRIVE" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
+     END-IF
      IF EN-RIDER(WS-ROW) > 0
          CALL "MOB-RIDE-TICK" USING WS-ROW WS-RIDE-DONE
          IF WS-RIDE-DONE = 1
@@ -1126,9 +1139,16 @@
      IF SM-KEY(WS-M) = "piglin"
          CALL "PIGLIN-TICK" USING WS-ROW
          CALL "PIGLIN-HUNT-STEP" USING WS-ROW
+         CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "hoglin"
+         CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "strider"
+         CALL "STRIDER-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "evoker"
          CALL "EVK-STEP" USING WS-ROW
@@ -1148,6 +1168,7 @@
          END-IF
      END-IF
      CALL "RAID-RAIDER-STEP" USING WS-ROW
+     CALL "RAID-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      IF SM-KEY(WS-M) = "ravager"
          CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL
          IF WS-RV-STILL = 1
@@ -1371,6 +1392,9 @@
 *>   A mob on the ground steps on or lands on a turtle egg under it (29b part 7 section 3).
      IF EN-ON-GROUND(WS-ROW) = 1
          CALL "M44-EGG-STEP" USING WS-ROW WS-WAS-GROUND
+     END-IF
+     IF SM-KEY(WS-M) = "strider"
+         CALL "STRIDER-LAVA" USING WS-ROW WS-FALL-Y
      END-IF
 *>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y
