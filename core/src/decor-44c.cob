@@ -33,6 +33,7 @@
  01 WS-RAIL                BINARY-LONG.
  01 WS-SHAPE               BINARY-LONG.
  01 WS-POWERED             BINARY-LONG.
+ 01 WS-PLACED-FLAG         BINARY-LONG.
  01 WS-MC                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG VALUE 1.
  01 WS-WIDTHS.
@@ -61,6 +62,8 @@
              MOVE 1 TO WS-GLOW
          WHEN "painting"
              MOVE 3 TO WS-KIND
+         WHEN "end_crystal"
+             MOVE 5 TO WS-KIND
          WHEN "minecart"
              MOVE 4 TO WS-KIND
              MOVE 1 TO WS-MC
@@ -109,6 +112,10 @@
              END-IF
          WHEN 2
              CALL "ITEM-FRAME-PLACE" USING WS-ROW PSB-BX PSB-BY PSB-BZ PSB-FACE WS-GLOW WS-NEW
+         WHEN 5
+             IF PSB-FACE = 1
+                 CALL "CRYSTAL-PLACE" USING WS-ROW PSB-BX PSB-BY PSB-BZ WS-PLACED-FLAG
+             END-IF
          WHEN 3
              CALL "PAINTING-PLACE" USING PL-DIM(WS-ROW) PSB-BX PSB-BY PSB-BZ PSB-FACE WS-COUNT WS-WIDTHS WS-HEIGHTS WS-NEW
              IF WS-NEW > 0
@@ -187,6 +194,7 @@
  COPY PROJSTATE.
  01 WS-SLOT                BINARY-LONG.
  01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-NO2                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -206,6 +214,9 @@
              MOVE 1 TO L-DONE
          WHEN 13
              CALL "PAINTING-HURT" USING L-ROW L-PLAYER L-DONE
+             MOVE 1 TO L-DONE
+         WHEN 16
+             CALL "CRYSTAL-HURT" USING L-ROW WS-NO WS-NO2 L-PLAYER L-DONE
              MOVE 1 TO L-DONE
      END-EVALUATE
      GOBACK.
