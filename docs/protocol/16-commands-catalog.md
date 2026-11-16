@@ -516,6 +516,8 @@ teleport <targets> <location> facing entity <facingEntity:entity> [<facingAnchor
 teleport <targets> <destination:entity>
 ```
 
+**Dimension and relative coordinates (54 §9, supersedes the wording below):** the location forms move every target into the **executor's** level (the one `execute in` sets), the entity-destination forms into the destination entity's level, so a teleport can cross dimensions; `~` and `^` are resolved once against the executor, not against each target. A refused move (the routine returns false) is still counted (54 §9.2), contrary to the "not counted" below.
+
 Behaviour (read): tracker-style counting, one tracked entry per entity successfully teleported; with zero entries tracked the usual selector error applies upstream.
 
 * **Position forms.** The destination position is checked with the spawnable-bounds test: block X and Z must lie in [-30000000, 30000000) and block Y in [-20000000, 20000000); otherwise error `commands.teleport.invalidPosition`. Each of x, y, z may be relative (`~`): a relative component is added to the entity's current value of that coordinate (relative flags are computed per axis from the coordinate argument; for local `^` coordinates the position flags are taken from the argument's relative flags as well). Yaw and pitch each may be relative to the entity's current yaw and pitch; when no rotation argument is given the entity keeps its yaw and pitch. The resulting yaw and pitch are wrapped to degrees with `wrapDegrees` and passed to the entity's teleport routine with a boolean `true`. If that routine refuses (returns false) the entity is skipped without error and not counted.
@@ -1216,6 +1218,8 @@ particle <name:particle> [<pos:vec3> [<delta:vec3> <speed:float min 0> <count:in
 
 ### 7.9 `playsound`
 
+Audible distance, minimum volume and listener rules: 54 §10.
+
 ```
 playsound <sound:identifier> <source> [<targets:players> [<pos:vec3> [<volume:float min 0> [<pitch:float 0..2> [<minVolume:float 0..1>]]]]]
 ```
@@ -1709,6 +1713,8 @@ random reset <sequence> [<seed> [<includeWorldSeed> [<includeSequenceId>]]]
 The sequence generator algorithm and the meaning of the seed flags are inside `MinecraftServer`/the random-sequence store and were not read.
 
 ### 10.9 `compute`
+
+Grammar (context-source nodes `default`, `block <pos>`, `entity <target>`), provider ids, contexts and result rules: 54 §13.
 
 Level 2. Evaluates number providers (`data/minecraft/context_float_provider`, `context_int_provider`; 4 and 26 files).
 

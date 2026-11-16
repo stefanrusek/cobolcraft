@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -317,9 +317,181 @@ The remaining Phase 49 task remarks were checked and are either already answered
 
 ---
 
+## 9. Dimension and coordinate handling of `teleport` / `tp`
+
+**Gap closed:** which dimension each `teleport` form uses (T4805; unblocks T4807 and T4813). Source: `TeleportCommand` (all execution methods and `performTeleport`), `Relative`, `Entity.teleport` (cr4 round, same jar as above).
+
+### 9.1 Dimension per form
+
+| Form | Destination level | Notes |
+|---|---|---|
+| `teleport <location>` (source itself) | the **executor's** level (`CommandSourceStack.getLevel`, the level `execute in <dimension>` sets) | a source without an entity fails with the usual "entity required" error |
+| `teleport <targets> <location>` and every variant (rotation, `facing <location>`, `facing entity <entity> [anchor]`) | the **executor's** level | the same level is used for every target |
+| `teleport <destination>` and `teleport <targets> <destination>` | the **destination entity's own level**, with its x, y, z, yaw and pitch and an empty relative set | the executor's level plays no part |
+
+Neither the target's own level nor a world default is consulted: a target in another dimension than the destination level is moved into it. So `execute in <dimension> run tp <player> x y z` does send the player to that dimension, and `tp <player> <entity in another dimension>` follows the destination entity across dimensions.
+
+### 9.2 Same dimension or crossing
+
+Each target is handed to `Entity.teleport` with a transition naming the destination level, the position, zero velocity and the rotation. `Entity.teleport` compares the destination dimension key with the entity's current one:
+
+- equal: same-dimension move (passengers are moved by their own transitions first; the position is set; players are sent the position update);
+- different: cross-dimension move: passengers are ejected and each teleported by its own transition; a **new entity of the same type** is created in the destination level (spawn reason `DIMENSION_TRAVEL`), state is copied from the old one (`restoreFrom`), the old one is removed, and the new one is positioned and added to the destination level. For players the usual dimension-change path (Respawn, chunk and state resend: 05a/05b, 17 §4.10) is expected (the `ServerPlayer` override was not read; inferred).
+
+Targets in different dimensions from each other are independent: each goes to the one destination level. A target whose `teleportTo` returns false (removed entity) gets no facing step and none of the step-5 side effects, but it **is still counted**: the move routine returns nothing and the loop tracks every target unconditionally (corrected in review; 16 §5.2's older "not counted" wording is superseded). The result is therefore the number of targets selected, and the success message reports that count.
+
+### 9.3 Relative and local coordinates (refines 5.2)
+
+1. The coordinate argument is resolved **against the executor** once for all targets (`~` adds the source's position as `positioned` set it; `^` uses the source's rotation), not per target. 5.2's "added to the entity's current value" is true only when target and executor coincide.
+2. The bounds test of 5.2 applies to the resolved position. The code turns a relative axis into a delta against the target and the move adds the target's position back, so the net position is always the resolved absolute one.
+3. Relative set handed to the move: relative coordinate axes set the matching **velocity** (DELTA_X/Y/Z) flags (that velocity component is kept); the position (X, Y, Z) flags are set only when the target already is in the destination dimension, otherwise none. Rotation: without a rotation argument yaw and pitch are both flagged relative (the target keeps its own); with one, each is relative per its own `~`.
+4. Yaw and pitch are wrapped to (-180, 180] (`Mth.wrapDegrees`) before the move.
+5. After a successful move: the facing step, if any; then, for a living entity that is not fall-flying, velocity x (1, 0, 1); on-ground = true; a pathfinder mob's navigation is stopped.
+
+Worked examples: `execute in the_nether run tp @s 8 70 8` from the overworld: the player ends in the Nether at (8, 70, 8). `execute at <pig> run tp @a ~ ~1 ~`: every player goes to the one point one block above that pig, and a player in another dimension than the executor's level is moved into the executor's level.
+
+---
+
+## 10. `/playsound` audible distance
+
+**Gap closed:** the range, minimum-volume and listener rules behind `commands.playsound.failed` (T1913). Source: `PlaySoundCommand.playSound`, `SoundEvent.getRange`, `CommandResponseTracker`.
+
+1. **Listeners.** Only targets whose level is the executor's level are considered (a target in another dimension is skipped silently). Without `<targets>` the target set is the calling player alone; the position default is the executor's position; volume 1.0, pitch 1.0, minVolume 0.0.
+2. **Range.** The command builds a variable-range sound event from the id (no fixed range, whatever the sound table says): range = 16 when volume <= 1, else 16 x volume. The check compares the squared distance from the given position to the target's position (x, y, z) against range squared.
+3. **Inside range** (distance squared <= range squared): the target gets Sound (0x77, 05b) at the given position with the given volume and pitch.
+4. **Outside range:** if minVolume <= 0 the target is skipped (nothing sent). If minVolume > 0 the target gets the sound at a position 2 blocks from the target along the line towards the given position (target + 2 x unit vector), with volume = minVolume (the client attenuates by its own rules, 12 sound).
+5. One seed (`nextLong` of the executor level's random source) is drawn before the loop and sent to every target in the packet's seed field. The sound is sent as an inline (direct) sound event holding the id, never a registry id.
+6. Every target that was sent a packet (rule 3 or 4) is tracked. Zero tracked: error `commands.playsound.failed`. One: `commands.playsound.success.single` (sound id, the player's display name); several: `.multiple` (sound id, count). Result = tracker total (the number of players reached).
+
+Worked examples: players at distance 10 and 100 from the position, volume 1, minVolume 0: only the first is reached, result 1. Same with minVolume 0.5: both are reached, the second hears volume 0.5 at 2 blocks away; result 2. Volume 8: range 128, both are in range. No players in range and minVolume 0: failed.
+
+---
+
+## 11. Saturation effect as an effect instance (`/effect give`, beacons, anything that adds the instance)
+
+**Gap closed:** how the `saturation` effect restores food when it is held as an instance (it was documented only for drinking, 17 §4.9). Source: `SaturationMobEffect`, `InstantaneousMobEffect`, `MobEffectInstance.tickServer`, `LivingEntity.tickEffects` and `addEffect`, `EffectCommands.giveEffect` / `computeDurationInTicks`.
+
+1. **Instance creation by `/effect give <targets> <effect> [seconds] [amplifier] [hideParticles]`.** For an instantaneous effect (`instant_health`, `instant_damage`, `saturation`) the duration is the given `seconds` value taken **as ticks, not multiplied by 20**; without it the duration is 1 tick. (Other effects: seconds x 20, `infinite` is -1, default 600 ticks.) The instance is added with `addEffect`; adding does **not** apply the effect (`onEffectStarted` of the base class is empty and the saturation class overrides neither it nor `onEffectAdded`).
+2. **Per-tick application.** Once per server tick of the living entity, each active instance is ticked. An instantaneous effect applies when its remaining duration is >= 1, then the duration is reduced by 1; the instance is removed when the duration reaches 0. So a saturation instance of duration D applies on D consecutive ticks, starting with the entity tick after the command: `/effect give @s saturation` (duration 1) applies once; `/effect give @s saturation 5` applies 5 times; amplifier `a` is used for every application.
+3. **One application** (`SaturationMobEffect.applyEffectTick`): for a player, `FoodData.eat(a + 1, 1.0)`: food = clamp(food + a + 1, 0, 20) and saturation = clamp(saturation + (a + 1) x 1.0 x 2, 0, food) (17 §4.9). For any non-player target nothing happens (the instance is still consumed).
+4. **Interplay with hunger** (17 §4.9): there is none beyond the food and saturation values. The instance does not touch exhaustion; the regeneration rule that uses "food = 20 and saturation > 0" (heal every 10 ticks) therefore starts at once after the first application. Ordinary food and saturation changes mark the player for a Set Health packet (0x6A) as in 17 §4.9.
+5. `/effect clear` removes the instance like any other effect.
+
+Worked examples: food 10, saturation 0: `/effect give @s saturation` (a = 0): after the next tick food 11, saturation 2.0 (min(0 + 2, 11)). `/effect give @s saturation 3 4`: three ticks, each +5 food and +10 saturation, both capped (saturation to the food level): after tick 1 food 15, saturation 10; tick 2 food 20, saturation 20; tick 3 food 20, saturation 20. Amplifier 255 (maximum): +256 per application, clamped to 20.
+
+---
+
+## 12. Spawn-reason light rules (zombie reinforcements) and sniffer dig cadence
+
+**Gap closed:** the "reasons that ignore light requirements" that 20 §3.3 left unread, and the timings of the sniffer's dig cycle that 19 §14 lacked. Source: `EntitySpawnReason`, `Monster.checkMonsterSpawnRules`, `Sniffer`, `SnifferAi` and its nested behaviours.
+
+### 12.1 Spawn reasons and light
+
+`EntitySpawnReason` declares 19 reasons, in this order (ordinals 0 to 18, inferred from declaration order): NATURAL, CHUNK_GENERATION, SPAWNER, STRUCTURE, BREEDING, MOB_SUMMONED, JOCKEY, EVENT, CONVERSION, REINFORCEMENT, TRIGGERED, BUCKET, SPAWN_ITEM_USE, COMMAND, DISPENSER, PATROL, TRIAL_SPAWNER, LOAD, DIMENSION_TRAVEL.
+
+| Predicate | True for |
+|---|---|
+| `ignoresLightRequirements` | **TRIAL_SPAWNER only** |
+| `isSpawner` | SPAWNER and TRIAL_SPAWNER |
+
+`checkMonsterSpawnRules` runs the dark check of 20 §3.3 for every reason except TRIAL_SPAWNER, then the standard mob rule. So a **REINFORCEMENT** spawn (zombie reinforcements, 20 §3 "Reinforcements") must pass the full dark check at its chosen position: sky light <= a fresh nextInt(32), block light 0 in the Overworld, and the raw brightness <= one 0..7 sample (flat 10 in a thunderstorm). A SPAWNER (classic spawner block) is not exempt from the dark check by this predicate; it is exempt only from the sky-access test of `checkSurfaceMonstersSpawnRules` (20 §3.3) through `isSpawner`. The random calls of the dark check are drawn from the spawning level's random source.
+
+### 12.2 Sniffer dig cycle (extends 19 §14)
+
+Activities in priority order DIG, SNIFF, IDLE (`setActiveActivityToFirstValid`, evaluated by `updateActivity` every server tick after the brain tick). Definitions:
+
+| Piece | Rule |
+|---|---|
+| `canSniff` | false when tempted, panicking, in water, in love, off the ground, a passenger or leashed |
+| Sniffing behaviour (idle activity, 40 to 80 ticks run time, per 19 §14 "Sniffing(40, 80)") | start: not a baby, `canSniff`, no walk target, no sniffing target, no sniff cooldown; start moves to state SNIFFING (3); when it ends **by timing out** the state returns to IDLING and `calculateDigPosition` chooses a spot (up to 5 attempts of a random land position near the sniffer, horizontal radius 10, vertical 2 (inferred reading of the constants), first one whose block below passes the dig test of 19 §14 and is not in the explored list); the sniffing-target memory is set to it and a walk target to it with speed 1.25 |
+| Searching behaviour (activity SNIFF) | needs a walk target, a sniffing target and not panicking; max run time 600 ticks; start: state SEARCHING (4); keeps running while `canSniff` and the walk target equals the sniffing target; on stop, if `canDig` and `canSniff`: set the digging memory, erase the walk target and the sniffing target |
+| Digging behaviour (activity DIG) | needs the digging memory, no walk target, no sniff cooldown, not panicking; run time 160 to 180 ticks (random between); keeps going while the digging memory is present, `canDig` and not in love; start: state DIGGING (5) (seed tick = `tickCount + 120`, entity event 63; the sniffer then emits digging particles and the seed drops per 19 §14 when `tickCount` reaches the stored value, with the drop sound, from the head block) |
+| End of Digging | **timed out** (ran its full 160 to 180 ticks): the sniff cooldown memory is set for **9600 ticks** (8 minutes) and the digging memory stays; **interrupted**: `resetSniffing` (erase the digging and sniffing-target memories and go to state IDLING; no cooldown) |
+| FinishedDigging behaviour | needs the digging memory and the sniff cooldown both present, no walk target, not panicking; run time 40 ticks; start: state RISING (6); stop: if it timed out, state IDLING; then `onDiggingComplete` (stores the dug position in the explored list, 19 §14), erase the digging memory and set the happy memory (the FEELING_HAPPY idle behaviour then plays) |
+| Cooldown effect | the Sniffing behaviour cannot start while the sniff cooldown exists, so a completed dig is followed by at least 9600 ticks without a new sniff, search or dig; a dig interrupted before its end leaves no cooldown |
+
+Cycle length for a successful dig: sniff 40 to 80 ticks, walk to the target (path length dependent, searching limited to 600 ticks), dig 160 to 180 ticks (seed at 120 ticks into it), rise 40 ticks, then 9600 ticks cooldown.
+
+Worked example: a sniffer starts Sniffing at tick 0 and times out at tick 60: IDLING, a target is chosen 7 blocks away and walked to at speed 1.25 (about 35 ticks): Searching stops, digging memory set at about tick 95; Digging runs 170 ticks (ends tick 265), the seed dropped at tick 215; sniff cooldown until tick 9865; FinishedDigging 40 ticks to tick 305, RISING then IDLING.
+
+Not read: the exact argument order of the random position lookup (marked inferred), `FeelingHappy` and `Scenting` internals beyond the 19 §14 figures (40 to 100 and 40 to 80 ticks).
+
+---
+
+## 13. `/compute`: grammar, context sources, provider ids, results
+
+**Gap closed:** what T1832 / T1833 lacked: the context-source nodes, the provider argument grammar, the provider ids, evaluation and result rules (16 §10.9 gave only message keys). Source: `ComputeCommand`, `LootContextSources` and its `ContextDecorator`, `ResourceOrIdArgument`, `LootContextParamSets`, the 4 + 26 data files. The provider JSON forms and arithmetic are in 26 §9 and 25-1 §9; this section only adds what the command does with them.
+
+### 13.1 Tree
+
+Level 2 on the `compute` root only. The provider part is the same under four prefixes:
+
+```
+compute                         (float <provider> [<scale:float>] | integer <provider>)
+compute default                 (same)
+compute block <pos:block_pos>   (same)
+compute entity <target:entity>  (same)
+```
+
+`compute ...` without a source is the same context as `compute default ...`. `<scale>` is any float (no bounds) and defaults to 1.0 (inferred: the no-scale handler passes the constant 1). Argument names: `provider`, `scale`, `computePos`, `computeTarget`.
+
+### 13.2 Context built for the evaluation
+
+All start with the source's level, the optional parameter `this_entity` = the executing entity (absent when the source has none) and `origin` = the source's position (a Vec3, possibly fractional). The parameter sets are those of 26 §3.2:
+
+| Form | Set | Extra parameters |
+|---|---|---|
+| none / `default` | `command_compute_default` | none |
+| `block <pos>` | `command_compute_position` | the position must be loaded (the loaded-block-position getter; an unloaded position gives the usual unloaded-position error, inferred from the getter); `block_state` = the state at `<pos>` in the source's level; `block_entity` = the block entity there, optional |
+| `entity <target>` | `command_compute_entity` | `target_entity` = the one entity selected (the usual single-entity selector rules) |
+
+The loot context is created without a seed (a fresh random source: any random provider is unseeded).
+
+### 13.3 Provider argument
+
+The argument is parsed by `ResourceOrIdArgument`: either an **identifier** naming an entry of the registry the node needs (`context_float_provider` after `float`, `context_int_provider` after `integer`), or an inline SNBT value decoded with the provider's codec (a plain number is a constant provider; `{...}` a compound form of 26 §9). A missing identifier fails with `argument.resource_or_id.no_such_element` (argument: the id); an inline value the codec rejects fails with `argument.resource_or_id.failed_to_parse`. Suggestions: the registry entry ids. Examples listed by the argument: `foo`, `foo:bar`, `012`, `{}`, `true`.
+
+Provider ids (the pack's entries, count read from the jar):
+- `context_float_provider` (4): `brewing/speed_default`, `cooking/fast_speed_multiplier`, `cooking/normal_speed_multiplier`, `cooking/speed_default`.
+- `context_int_provider` (26): `brewing/uses_default`; `compostable/always_add_one`, `compostable/low`, `compostable/low_medium`, `compostable/medium`, `compostable/medium_high`; `cooking/fast_burn_time_reduction_factor`, `cooking/normal_burn_time_reduction_factor`; `cooking/time_bamboo`, `time_blaze_rod`, `time_boats`, `time_coal`, `time_coal_block`, `time_dried_kelp_block`, `time_dry_plants`, `time_hanging_signs`, `time_lava_bucket`, `time_roots`, `time_wood_blocks`, `time_wood_items_extra_small`, `time_wood_items_large`, `time_wood_items_small`, `time_wood_slabs`, `time_wool`, `time_wool_carpets`, `time_wool_slabs` (each under the `cooking/` prefix, namespace `minecraft`). Values: 25-1 §9.
+
+### 13.4 Evaluation and result
+
+- **integer:** the provider is evaluated with `getIntUnsafe` (arithmetic problems throw, such as a division by zero). Result = that int. Message: `command.compute.result.named.exact` (provider id, value) when the provider was given by an id, else `command.compute.result.unnamed.exact` (value). Both are sent as success feedback (broadcast to ops allowed: inferred).
+- **float:** evaluated with `getFloatUnsafe` to v. If v is not finite (NaN, infinite), the command fails with the invalid-value message (below) carrying `Float.toString(v)` (`NaN`, `Infinity`, `-Infinity`). Otherwise result r = floor(v x scale) as an int. Message: when `(float) r` equals v, the **exact** message with r; else the **rounded** message `command.compute.result.named.rounded` (id, v, r) / `.unnamed.rounded` (v, r). (The comparison is against the unscaled v, as read; so with scale 1 the exact message appears only for whole values, and `compute float 0.5 2` prints rounded with v 0.5 and r 1.)
+- **Invalid:** an arithmetic exception while evaluating fails with `command.compute.result.named.invalid` (id, exception message) when named, `command.compute.result.unnamed.invalid` (message) when inline. These are command errors, so the result is 0 and there is no success output.
+- The named forms print the provider id as a translation-style argument built from the identifier (rendered as the id text when no translation exists: inferred).
+
+Worked examples: `compute integer cooking/time_coal` prints "<id> returned value N" with N the provider's value (25-1 §9) and returns N; `compute float 2.5` prints "Number provider returned value 2.5 (rounded to 2)" and returns 2; `compute float 3` prints "Number provider returned value 3" (the exact message carries the int r) and returns 3; `compute float 0.5 2` prints "... returned value 0.5 (rounded to 1)" and returns 1.
+
+---
+
+## 14. Server side of tab completion (Commands and Command Suggestions)
+
+**Gap closed:** what the server does between a Command Suggestion request (05c 0x0F) and the Command Suggestions answer (05a 0x0F), and when it sends the Commands tree (T2014 fixtures). Source: `ServerGamePacketListenerImpl.handleCustomCommandSuggestions`, `ServerCommandSuggestionsProvider`, `ClientboundCommandSuggestionsPacket`, `PlayerList` (`placeNewPlayer`, `respawn`, `op`, `deop`, `sendPlayerPermissionLevel`), `Commands.sendCommands`.
+
+### 14.1 Request handling
+
+1. The handler keeps the request's transaction id and passes the text to the player's `ServerCommandSuggestionsProvider`. Each player has one provider and one slot for the **latest unprocessed request**.
+2. A new request replaces the slot's content. A replaced request that was not yet processed is **dropped without any answer** (its id is never echoed: its pending answer is simply never completed, no cancel call exists). Only the newest request is answered. The same applies to a request being parsed: after the parse, if the slot has been refilled by a newer request, the current one is abandoned unanswered and the newer one is handled on a later tick.
+3. Once per server tick (the budget is refilled every tick: the minimum interval is 1 tick) the provider takes the slot, so **at most one request per player is processed per tick**; a request arriving with budget available is scheduled on the server thread at once (executed at the next server task run), otherwise it waits for the next tick.
+4. Processing: if the text starts with `/` that one character is skipped (the reader keeps the full text, so every range stays counted in the original text **including the slash**, as 09 says); the text is parsed by the command dispatcher with the player's own command source (so requirement predicates and permission levels filter what can be suggested: 15 framework); completion suggestions are then asked from the parse result at the end of the text (15a §6).
+5. The result is capped at **1000** suggestions (the first 1000 of the sorted list; the range is kept). The text of each entry is the suggestion text; the tooltip is present only when the suggestion carries one.
+6. The answer is Command Suggestions (0x0F) with the request's transaction id, Start and Length of the suggestions' range (`StringRange` start and length), and the entries in order. It is not sent when the connection no longer accepts messages (disconnected: the request is dropped). A parse or completion failure is logged and gives no answer.
+
+Worked example: text `/gamemode s`, one request, budget available: range start 10 length 1 (the `s`), entries `spectator`, `survival` in the library's sorted order, id echoed. Two requests `/g` (id 1) and `/ga` (id 2) arriving within the same tick before processing: only id 2 is answered (start 1 length 2).
+
+### 14.2 When the Commands tree is sent
+
+Commands (0x10) is built per player: the dispatcher's root is copied keeping only the nodes the player's command source may use (requirement predicates evaluated for that player; children of a hidden node are hidden with it), then serialised (15 framework, 05a 0x10). It is sent: when the player joins (`placeNewPlayer`), after a respawn (`respawn`), and whenever the permission level is re-sent (`op`, `deop`, and the public `sendPlayerPermissionLevel`). Within the permission re-send the order is: when the player has a connection, an Entity Event (0x22 in 05a) on the player with status 24 + permission level (24 to 28, level 0 to 4) is sent first, then Commands. Before the player's first server tick the provider has no budget, so a request that early waits for that tick. No other trigger was found: among the classes of `net.minecraft.server.players`, `net.minecraft.commands` and the top-level `net.minecraft.server` / `server.commands` classes, only `PlayerList` calls `Commands.sendCommands` (a `/reload` path that re-sends the tree through the public permission re-send was not traced; see Open questions).
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
 2. The ram-run-up distance ordering (7.1, "squared distance") and the camel `standUpInstantly` constant (6.4) remain as marked.
+
+3. (cr4) Not read: the `ServerPlayer` cross-dimension override (9.2); the argument order of the sniffer dig-position lookup (12.2); `FeelingHappy` and `Scenting` internals (12.2); how a float provider's value is printed (Java float text assumed, 13.4); the message of integer arithmetic exceptions (13.4); whether `/reload` re-sends the Commands tree (14.2); `/test`, `/dialog show`, `/raid` failure keys and `/perf` report format (not traced; `/jfr` is a JVM profiler and not applicable).
 
 Closed in review: the horizontal plane order is north, east, south, west (read from the plane's static initialiser; also in 24); the camel sitting dimensions are in 6.4.
