@@ -931,6 +931,7 @@
  01 WS-RIDE-DONE           BINARY-LONG.
  01 WS-FLIER               BINARY-LONG.
  01 WS-TAD-GONE            BINARY-LONG.
+ 01 WS-WAS-GROUND          BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1258,7 +1259,12 @@
      IF WS-FLIER = 1
          GOBACK
      END-IF
+     MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+*>   A mob on the ground steps on or lands on a turtle egg under it (29b part 7 section 3).
+     IF EN-ON-GROUND(WS-ROW) = 1
+         CALL "M44-EGG-STEP" USING WS-ROW WS-WAS-GROUND
+     END-IF
 *>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.

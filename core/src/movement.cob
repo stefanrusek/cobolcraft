@@ -197,6 +197,11 @@
  01 WS-ON-GROUND           BINARY-LONG.
  01 WS-FALL                FLOAT-LONG.
  01 WS-WET                 BINARY-LONG.
+ 01 WS-EGG-TRIGGER          BINARY-LONG.
+ 01 WS-EGG-CAREFUL          BINARY-LONG.
+ 01 WS-EGG-PLAYER           BINARY-LONG VALUE 3.
+ 01 WS-EGG-NOZOMBIE         BINARY-LONG VALUE 0.
+ 01 WS-EGG-HIT              BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
@@ -316,6 +321,16 @@
              COMPUTE WS-EXHAUST = WS-RATE / 1000
              CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          END-IF
+     END-IF
+*>   A walking or landing player tramples a turtle egg under the feet (29b part 7 section 3; M44-EGG-TRAMPLE).
+     IF PL-ON-GROUND(WS-ROW) = 1 AND PL-FLYING(WS-ROW) = 0 AND (PL-MODE(WS-ROW) = 0 OR PL-MODE(WS-ROW) = 2)
+         MOVE 1 TO WS-EGG-TRIGGER
+         IF WS-OLD-ON-GROUND = 0
+             MOVE 2 TO WS-EGG-TRIGGER
+         END-IF
+         MOVE PL-SNEAKING(WS-ROW) TO WS-EGG-CAREFUL
+         CALL "M44-EGG-TRAMPLE" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-EGG-PLAYER WS-EGG-TRIGGER
+             WS-EGG-CAREFUL WS-EGG-NOZOMBIE WS-EGG-HIT
      END-IF
 *>   Fall damage (17 section 4.11): floor(distance + 1e-6 - 3).
      COMPUTE WS-AMOUNT = FUNCTION INTEGER(WS-FALL + 0.000001 - RULE-SAFE-FALL)
