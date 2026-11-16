@@ -86,14 +86,14 @@ struct cc_vk_state {
     VkSampler repeat_sampler; /* repeat (cc_vk_texture_wrap) */
     VkSampler mip_sampler;        /* linear through the mip chain, clamp-to-edge */
     VkSampler mip_repeat_sampler; /* the same with repeat */
-    int32_t wrap[6];          /* per texture id: CC_WRAP_CLAMP or CC_WRAP_REPEAT */
+    int32_t wrap[7];          /* per texture id: CC_WRAP_CLAMP or CC_WRAP_REPEAT */
     VkCommandPool commands;
     VkCommandBuffer cmd;
     VkSemaphore acquired;
     VkFence done;
     uint32_t image_index;
     int stale;
-    texture_t textures[6];
+    texture_t textures[7];
     mesh_t meshes[CC_MESH_SLOT_MAX + 1];
     garbage_t *garbage;
     size_t garbage_count, garbage_cap;

@@ -473,6 +473,7 @@ static void vulkan(void) {
         cc_vk_glint_offset(no_shift);
         tl_int("contract shim cc_vk_glint_offset takes a pointer to 2 floats and returns", 1, 1);
         tl_int("contract shim cc_vk_texture of the glint texture id returns 0", 0, cc_vk_texture(CC_TEX_GLINT, 4, 4, rgba));
+        tl_int("contract shim cc_vk_texture of the armour glint texture id returns 0", 0, cc_vk_texture(CC_TEX_GLINT_ARMOR, 4, 4, rgba));
     }
     static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling", "glint"};
     const float clear[4] = {0, 0, 0, 1};

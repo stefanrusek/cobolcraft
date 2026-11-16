@@ -115,6 +115,10 @@ int main(void) {
     cc_vk_texture(CC_TEX_GLINT, 2, 2, shine);
     frame(0.5f, CC_TEX_GLINT, pixel);
     tl_str("test cc_vk the glint texture id CC_TEX_GLINT draws like any texture", "A4FF72FF", pixel);
+    cc_vk_texture_wrap(CC_TEX_GLINT_ARMOR, CC_WRAP_REPEAT);
+    cc_vk_texture(CC_TEX_GLINT_ARMOR, 2, 2, shine);
+    frame(0.5f, CC_TEX_GLINT_ARMOR, pixel);
+    tl_str("test cc_vk the armour glint texture id CC_TEX_GLINT_ARMOR draws like any texture", "A4FF72FF", pixel);
     float off[2] = {0.5f, 0};
     cc_vk_glint_offset(off);
     frame(0.5f, CC_TEX_GLINT, pixel);

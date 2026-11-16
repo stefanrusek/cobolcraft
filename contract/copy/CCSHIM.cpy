@@ -32,6 +32,7 @@
  78 CC-TEX-ENVIRONMENT      VALUE 3.   *> environment atlas
  78 CC-TEX-PARTICLES        VALUE 4.   *> particle atlas
  78 CC-TEX-GLINT            VALUE 5.   *> enchantment glint texture (repeat wrap)
+ 78 CC-TEX-GLINT-ARMOR      VALUE 6.   *> armour glint texture (repeat wrap)
 
 *> Texture wrap modes of cc_vk_texture_wrap (§9).
  78 CC-WRAP-CLAMP           VALUE 0.   *> clamp-to-edge (the default)

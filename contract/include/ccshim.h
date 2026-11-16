@@ -67,6 +67,7 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_TEX_ENVIRONMENT 3 /* environment atlas */
 #define CC_TEX_PARTICLES   4 /* particle atlas */
 #define CC_TEX_GLINT       5 /* the enchantment glint texture (128 x 128, repeat wrap, 54 section 19); drawn with CC_PIPE_GLINT */
+#define CC_TEX_GLINT_ARMOR 6 /* the armour glint texture (textures/misc/enchanted_glint_armor.png, repeat wrap) */
 
 /* Texture wrap modes of cc_vk_texture_wrap (§9). */
 #define CC_WRAP_CLAMP  0 /* clamp-to-edge (the default) */

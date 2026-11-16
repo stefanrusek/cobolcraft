@@ -675,7 +675,7 @@ int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)
 }
 
 int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels) {
-    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT || w <= 0 || h <= 0) cc_fatal("cc_vk_texture: invalid texture");
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || w <= 0 || h <= 0) cc_fatal("cc_vk_texture: invalid texture");
     int32_t longest = w > h ? w : h, most = 1;
     while ((longest >> most) > 0) most++;
     if (mip_levels < 1 || mip_levels > most) cc_fatal("cc_vk_texture_ex: invalid mip level count");
@@ -763,7 +763,7 @@ void cc_vk_texture_update_end(void) {
 }
 
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba) {
-    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
     texture_t *t = &cc_vk_state.textures[tex_id];
     if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > t->width || y + h > t->height) cc_fatal("cc_vk_texture_update: invalid rectangle");
     init_lut();
@@ -834,7 +834,7 @@ int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, in
 
 /* The wrap mode of texture `tex_id` for its next cc_vk_texture upload (§9). */
 int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap) {
-    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT || wrap < CC_WRAP_CLAMP || wrap > CC_WRAP_REPEAT) cc_fatal("cc_vk_texture_wrap: invalid texture or mode");
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || wrap < CC_WRAP_CLAMP || wrap > CC_WRAP_REPEAT) cc_fatal("cc_vk_texture_wrap: invalid texture or mode");
     cc_vk_state.wrap[tex_id] = wrap;
     return 0;
 }
@@ -881,7 +881,7 @@ int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
 
 void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16]) {
     if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || pipeline < CC_PIPE_OPAQUE || pipeline > CC_PIPE_GLINT ||
-        tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
+        tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
     mesh_t *m = &cc_vk_state.meshes[slot];
     if (m->count == 0) return;
     VkDeviceSize offset = 0;
@@ -1021,7 +1021,7 @@ void cc_vk_frame_end(void) {
 void cc_vk_shutdown(void) {
     check(vkDeviceWaitIdle(cc_vk_state.device), "cc_vk_shutdown: vkDeviceWaitIdle failed");
     for (int32_t slot = CC_MESH_SLOT_MIN; slot <= CC_MESH_SLOT_MAX; slot++) cc_vk_mesh(slot, NULL, 0);
-    for (int i = CC_TEX_BLOCKS; i <= CC_TEX_GLINT; i++) {
+    for (int i = CC_TEX_BLOCKS; i <= CC_TEX_GLINT_ARMOR; i++) {
         texture_t *t = &cc_vk_state.textures[i];
         discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set});
         free(t->pixels);
