@@ -3,7 +3,7 @@
 *> (generated from section 24 by a script, 397 trades) with the pick counts of TRADESETS.cpy; the biome table is VILBIOME.cpy.
 *>
 *>   VIL-TRADE-SET USING profession (X(16)), level, first row out, trade count out, pick amount out        24 the rows of a trade set (0 rows: no set)
-*>   VIL-OFFER-PICK USING profession, level, villager type (0 to 6), salt, rows out (3 BINARY-LONG), count out   22.4 selection without replacement
+*>   VIL-OFFER-PICK USING profession, level, villager type (0 to 6), salt, rows out (5 BINARY-LONG), count out   22.4 selection without replacement
 *>   VIL-XP-THRESHOLD USING level, threshold out; VIL-LEVEL-UP USING level, xp, levels up out              22.2
 *>   VIL-DEMAND USING uses, max uses, demand, new demand out                                               22.4 updateDemand
 *>   VIL-SPECIAL USING reputation, multiplier milli, base count, hero amplifier (-1 none), diff out         22.4 updateSpecialPrices
@@ -99,7 +99,7 @@
  01 L-TYPE                  BINARY-LONG.
  01 L-SALT                  BINARY-LONG.
  01 L-ROWS.
-    05 L-ROW                BINARY-LONG OCCURS 3 TIMES.
+    05 L-ROW                BINARY-LONG OCCURS 5 TIMES.
  01 L-COUNT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-PROF L-LEVEL L-TYPE L-SALT L-ROWS L-COUNT.
      MOVE 0 TO L-COUNT
@@ -492,3 +492,80 @@
      END-IF
      GOBACK.
  END PROGRAM VIL-WANDER-CHANCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-TRADE-ROW.
+*> USING row (1 to 397), price item out, price count, second item out, second count, result item out, result count, max uses, xp, multiplier milli, type mask, modifier.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TRADES.
+ 01 WS-TR REDEFINES TRADE-DATA.
+    05 WS-ROW OCCURS 397 TIMES.
+       10 FILLER                PIC X(16).
+       10 FILLER                BINARY-LONG.
+       10 WS-WANT               PIC X(32).
+       10 WS-WC                 BINARY-LONG.
+       10 WS-EXTRA              PIC X(32).
+       10 WS-EC                 BINARY-LONG.
+       10 WS-GIVE               PIC X(32).
+       10 WS-GC                 BINARY-LONG.
+       10 WS-MU                 BINARY-LONG.
+       10 WS-XP                 BINARY-LONG.
+       10 WS-MULT               BINARY-LONG.
+       10 WS-MASK               BINARY-LONG.
+       10 WS-MOD                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-WANT                  PIC X(32).
+ 01 L-WC                    BINARY-LONG.
+ 01 L-EXTRA                 PIC X(32).
+ 01 L-EC                    BINARY-LONG.
+ 01 L-GIVE                  PIC X(32).
+ 01 L-GC                    BINARY-LONG.
+ 01 L-MU                    BINARY-LONG.
+ 01 L-XP                    BINARY-LONG.
+ 01 L-MULT                  BINARY-LONG.
+ 01 L-MASK                  BINARY-LONG.
+ 01 L-MOD                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WANT L-WC L-EXTRA L-EC L-GIVE L-GC L-MU L-XP L-MULT L-MASK L-MOD.
+     MOVE WS-WANT(L-ROW) TO L-WANT
+     MOVE WS-WC(L-ROW) TO L-WC
+     MOVE WS-EXTRA(L-ROW) TO L-EXTRA
+     MOVE WS-EC(L-ROW) TO L-EC
+     MOVE WS-GIVE(L-ROW) TO L-GIVE
+     MOVE WS-GC(L-ROW) TO L-GC
+     MOVE WS-MU(L-ROW) TO L-MU
+     MOVE WS-XP(L-ROW) TO L-XP
+     MOVE WS-MULT(L-ROW) TO L-MULT
+     MOVE WS-MASK(L-ROW) TO L-MASK
+     MOVE WS-MOD(L-ROW) TO L-MOD
+     GOBACK.
+ END PROGRAM VIL-TRADE-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-PRICE.
+*> USING base count, demand, multiplier milli, special difference, max stack size, count out: 22.4 getCostA = clamp(base + max(0, floor(base x demand x multiplier)) + special, 1, max stack).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ADJ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BASE                  BINARY-LONG.
+ 01 L-DEMAND                BINARY-LONG.
+ 01 L-MULT                  BINARY-LONG.
+ 01 L-SPECIAL               BINARY-LONG.
+ 01 L-MAXSTACK              BINARY-LONG.
+ 01 L-COUNT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BASE L-DEMAND L-MULT L-SPECIAL L-MAXSTACK L-COUNT.
+     COMPUTE WS-ADJ = FUNCTION INTEGER(L-BASE * L-DEMAND * L-MULT / 1000)
+     IF WS-ADJ < 0
+         MOVE 0 TO WS-ADJ
+     END-IF
+     COMPUTE L-COUNT = L-BASE + WS-ADJ + L-SPECIAL
+     IF L-COUNT < 1
+         MOVE 1 TO L-COUNT
+     END-IF
+     IF L-COUNT > L-MAXSTACK
+         MOVE L-MAXSTACK TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-PRICE.

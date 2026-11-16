@@ -6,7 +6,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  01 WS-ROWS.
-    05 WS-R               BINARY-LONG OCCURS 3 TIMES.
+    05 WS-R               BINARY-LONG OCCURS 5 TIMES.
  01 WS-NAME               PIC X(90).
  01 WS-E                  BINARY-LONG.
  01 WS-O                  BINARY-LONG.

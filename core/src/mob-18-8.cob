@@ -500,6 +500,9 @@
  01 WS-BOUND-GH            BINARY-LONG VALUE 10.
  01 WS-BOUND-GC            BINARY-LONG VALUE 2.
  01 WS-DRAW-G              BINARY-LONG.
+ 01 WS-VL-VILLAGER         BINARY-LONG VALUE 1.
+ 01 WS-VL-PLAINS           BINARY-LONG VALUE 2.
+ 01 WS-VL-SLOT             BINARY-LONG.
  01 WS-BOUND-S             BINARY-LONG VALUE 6000.
  01 WS-DRAW                BINARY-LONG.
  LINKAGE SECTION.
@@ -537,6 +540,9 @@
              CALL "FOX-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
+         WHEN "villager"
+*>           The villager state (19 section 22; the type is plains until the biome of the position is read: open item).
+             CALL "VL-SETUP" USING EN-ID(L-ROW) WS-VL-VILLAGER WS-VL-PLAINS WS-VL-SLOT
          WHEN "turtle"
 *>           The home of a turtle is the block it spawned in (19 section 12).
              MOVE 1 TO EN-HOME-SET(L-ROW)
