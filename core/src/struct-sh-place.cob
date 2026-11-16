@@ -55,8 +55,8 @@
     05 L-V                 BINARY-LONG OCCURS 6 TIMES.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-C L-FLAG.
-     CALL "SPB-WORLD" USING L-ROW L-V(1) L-V(2) L-V(3) WS-X0 WS-Y0 WS-Z0
-     CALL "SPB-WORLD" USING L-ROW L-V(4) L-V(5) L-V(6) WS-X1 WS-Y1 WS-Z1
+     CALL "SPB-WORLD" USING L-ROW L-V(1) BY CONTENT L-V(2) BY CONTENT L-V(3) BY REFERENCE WS-X0 WS-Y0 WS-Z0
+     CALL "SPB-WORLD" USING L-ROW L-V(4) BY CONTENT L-V(5) BY CONTENT L-V(6) BY REFERENCE WS-X1 WS-Y1 WS-Z1
      CALL "SPB-BOX-NEW" USING WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-A
      CALL "SPB-BOX-INTERSECTS" USING WS-A SP-WBOX L-FLAG
      GOBACK.
@@ -488,7 +488,7 @@
                      IF LS-DRAW < LS-CHANCE
                          MOVE LS-ARG(6:) TO LS-FACE
                          CALL "SHP-RESOLVE" USING L-ROW LS-FACE LS-STATE
-                         CALL "SHP-PUT" USING L-ROW LS-V(1) LS-V(2) LS-V(3) LS-STATE
+                         CALL "SHP-PUT" USING L-ROW LS-V(1) BY CONTENT LS-V(2) BY CONTENT LS-V(3) BY REFERENCE LS-STATE
                      END-IF
                  WHEN "W"
 *>                   generateMaybeBox: a draw for every cell first, then the cell when the draw is not above the chance
@@ -522,7 +522,7 @@
                  WHEN "C"
                      MOVE SPACES TO LS-LOOT
                      MOVE LS-ARG TO LS-LOOT
-                     CALL "SHP-CHEST" USING L-ROW LS-V(1) LS-V(2) LS-V(3) LS-LOOT
+                     CALL "SHP-CHEST" USING L-ROW LS-V(1) BY CONTENT LS-V(2) BY CONTENT LS-V(3) BY REFERENCE LS-LOOT
                  WHEN "F"
 *>                   an end portal frame: facing from the argument, eye from the flags drawn for the room
                      ADD 1 TO SH-EYE-IDX
@@ -533,7 +533,7 @@
                      END-IF
                      STRING "end_portal_frame[facing=" LS-ARG(1:1) ",eye=" FUNCTION TRIM(LS-EYE-TEXT) "]" DELIMITED BY SIZE INTO LS-FACE
                      CALL "SHP-RESOLVE" USING L-ROW LS-FACE LS-STATE
-                     CALL "SHP-PUT" USING L-ROW LS-V(1) LS-V(2) LS-V(3) LS-STATE
+                     CALL "SHP-PUT" USING L-ROW LS-V(1) BY CONTENT LS-V(2) BY CONTENT LS-V(3) BY REFERENCE LS-STATE
              END-EVALUATE
          END-IF
      END-PERFORM
@@ -579,7 +579,7 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     CALL "SHP-RUN" USING L-ROW WS-S0 WS-ZERO WS-ZERO WS-ZERO
+     CALL "SHP-RUN" USING L-ROW WS-S0 WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
      MOVE 1 TO WS-ALL
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
          MOVE SP-XR-LO TO WX-LO
@@ -595,9 +595,9 @@
          END-IF
      END-PERFORM
      MOVE 0 TO SH-EYE-IDX
-     CALL "SHP-RUN" USING L-ROW WS-SF WS-ZERO WS-ZERO WS-ZERO
+     CALL "SHP-RUN" USING L-ROW WS-SF WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
      IF WS-ALL = 1
-         CALL "SHP-RUN" USING L-ROW WS-SQ WS-ZERO WS-ZERO WS-ZERO
+         CALL "SHP-RUN" USING L-ROW WS-SQ WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
      END-IF
      CALL "SPB-WORLD" USING L-ROW WS-LX WS-LY WS-LZ WS-WX WS-WY WS-WZ
      CALL "SPB-BOX-INSIDE" USING SP-WBOX WS-WX WS-WY WS-WZ WS-IN
@@ -645,7 +645,7 @@
          WHEN 20
              MOVE "FC0" TO WS-SEG
              PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z >= SP-F2(L-ROW)
-                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO WS-ZERO WS-Z
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY REFERENCE WS-Z
              END-PERFORM
          WHEN 22
              MOVE "TU0" TO WS-SEG
@@ -727,5 +727,5 @@
      END-EVALUATE
      GOBACK.
  RUN-SEG.
-     CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO WS-ZERO WS-ZERO.
+     CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO.
  END PROGRAM SH-POST.
