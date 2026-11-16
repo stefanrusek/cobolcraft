@@ -472,6 +472,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
+ 01 WS-SMAX                BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
@@ -508,9 +509,10 @@
                      COMPUTE WS-SLOT = L-FIRST + WS-I
                  END-IF
                  CALL "MENU-GET-X" USING L-ROW WS-SLOT WS-ITEM WS-COUNT WS-VAR
+                 CALL "MENU-SLOT-MAX" USING L-ROW WS-SLOT L-ITEM WS-SMAX
                  IF WS-PASS = 1
-                     IF WS-COUNT > 0 AND WS-ITEM = L-ITEM AND WS-VAR = L-VAR AND WS-COUNT < WS-MAX
-                         COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-MAX - WS-COUNT)
+                     IF WS-COUNT > 0 AND WS-ITEM = L-ITEM AND WS-VAR = L-VAR AND WS-COUNT < WS-SMAX
+                         COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-SMAX - WS-COUNT)
                          ADD WS-N TO WS-COUNT
                          SUBTRACT WS-N FROM L-COUNT
                          CALL "MENU-SET-X" USING L-ROW WS-SLOT WS-ITEM WS-COUNT L-VAR
@@ -523,7 +525,7 @@
                      IF WS-COUNT = 0
                          CALL "MENU-MAY-PLACE" USING L-ROW WS-SLOT L-ITEM WS-MAY
                          IF WS-MAY = 1
-                             COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-MAX)
+                             COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-SMAX)
                              CALL "MENU-SET-X" USING L-ROW WS-SLOT L-ITEM WS-N L-VAR
                              SUBTRACT WS-N FROM L-COUNT
                              MOVE 1 TO L-CHANGED
@@ -568,6 +570,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-SMAX                BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -582,7 +585,8 @@
          GOBACK
      END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
-     COMPUTE WS-N = IT-MAX-STACK(PL-CARRIED-ITEM(L-ROW) + 1) - WS-COUNT
+     CALL "MENU-SLOT-MAX" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-SMAX
+     COMPUTE WS-N = WS-SMAX - WS-COUNT
      COMPUTE WS-N = FUNCTION MIN(WS-N, PL-CARRIED-COUNT(L-ROW), L-AMOUNT)
      IF WS-N <= 0
          GOBACK
@@ -613,6 +617,7 @@
  01 WS-N                   BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-SV                  BINARY-LONG.
+ 01 WS-SMAX                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -660,7 +665,8 @@
                  END-IF
                  CALL "MENU-INSERT" USING L-ROW L-SLOT WS-AMOUNT
              ELSE
-                 IF PL-CARRIED-COUNT(L-ROW) <= IT-MAX-STACK(PL-CARRIED-ITEM(L-ROW) + 1)
+                 CALL "MENU-SLOT-MAX" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-SMAX
+                 IF PL-CARRIED-COUNT(L-ROW) <= WS-SMAX
                      CALL "MENU-SET-X" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) PL-CARRIED-COUNT(L-ROW)
                          PL-CARRIED-VAR(L-ROW)
                      MOVE WS-SI TO PL-CARRIED-ITEM(L-ROW)
@@ -711,6 +717,7 @@
  01 WS-HC                  BINARY-LONG.
  01 WS-SI                  BINARY-LONG.
  01 WS-SC                  BINARY-LONG.
+ 01 WS-SMAX                BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
  01 WS-HV                  BINARY-LONG.
  01 WS-SV                  BINARY-LONG.
@@ -735,6 +742,10 @@
      IF WS-HC > 0
          CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT WS-HI WS-MAY
          IF WS-MAY = 0
+             GOBACK
+         END-IF
+         CALL "MENU-SLOT-MAX" USING L-ROW L-SLOT WS-HI WS-SMAX
+         IF WS-HC > WS-SMAX
              GOBACK
          END-IF
      END-IF
