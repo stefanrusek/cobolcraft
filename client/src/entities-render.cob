@@ -240,12 +240,19 @@
  01 WS-OV-G                FLOAT-LONG.
  01 WS-OV-B                FLOAT-LONG.
  01 WS-OV-M                BINARY-LONG.
+ 01 WS-G0                  BINARY-LONG.
+ 01 WS-GI                  BINARY-LONG.
+ 01 WS-GSLOT               BINARY-LONG.
+ 01 WS-GU                  FLOAT-LONG.
+ 01 WS-GV                  FLOAT-LONG.
+ 01 WS-GSCALE              FLOAT-LONG VALUE 0.5.
+ 01 WS-GSTR                FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
-     MOVE 0 TO RL-EN-COUNT
+     MOVE 0 TO RL-EN-COUNT RL-GL-COUNT
      MOVE 0 TO WS-STRIP-X
 *>   Every model the replica shows has its image in the atlas before any vertex takes a texture coordinate from it.
      CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
@@ -302,6 +309,22 @@
                      MOVE 0 TO EN-OVL(WS-R) EN-OVN(WS-R)
                  END-IF
              END-PERFORM
+*>           The glint layers 13 to 16 of the armor pieces whose stack has the foil (54 section 19.3): the piece's model again, into the glint mesh.
+             IF EN-EQ-FOIL(WS-R, 3) + EN-EQ-FOIL(WS-R, 4) + EN-EQ-FOIL(WS-R, 5) + EN-EQ-FOIL(WS-R, 6) > 0
+                 PERFORM VARYING WS-OV FROM 13 BY 1 UNTIL WS-OV > 16
+                     CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-OV-CODE WS-OV-R WS-OV-G WS-OV-B WS-OV-M
+                     IF WS-OV-CODE > 0 AND WS-OV-M > 0 AND CL-MD-FAMILY(EN-MODEL(WS-R)) > 0
+                         MOVE WS-OV-CODE TO EN-OVL(WS-R)
+                         MOVE WS-OV TO EN-OVN(WS-R)
+                         MOVE WS-OV-M TO EN-MODEL(WS-R)
+                         MOVE RL-EN-COUNT TO WS-G0
+                         CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                         PERFORM GLINT-MOVE
+                         MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
+                         MOVE 0 TO EN-OVL(WS-R) EN-OVN(WS-R)
+                     END-IF
+                 END-PERFORM
+             END-IF
          END-IF
          MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
@@ -370,6 +393,34 @@
          MOVE WS-SAVED TO EN-ENTITY(WS-R)
      END-IF
      GOBACK.
+
+*> The vertices the glint layer just appended to RL-EN-VERTEX (from WS-G0 + 1) move to the glint mesh: the model-space texture coordinate of the layer's atlas slot
+*> through GLINT-UV at the armour scale 0.5, brightness the glint strength, alpha 1, no sky term, no tint (54 section 19.3).
+ GLINT-MOVE.
+     CALL "GLINT-STRENGTH" USING CLIENT-STATE WS-GSTR
+     MOVE 0 TO WS-GSLOT
+     PERFORM VARYING WS-GI FROM 1 BY 1 UNTIL WS-GI > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-GI) = EN-MODEL(WS-R) AND EA-MT-TEX(WS-GI) = WS-OV-CODE
+             MOVE WS-GI TO WS-GSLOT
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-GI FROM WS-G0 BY 1 UNTIL WS-GI >= RL-EN-COUNT OR WS-GSLOT = 0
+         IF RL-GL-COUNT < CL-MAX-GLINT-VERTICES
+             ADD 1 TO RL-GL-COUNT
+             MOVE RL-EN-X(WS-GI + 1) TO RL-GL-X(RL-GL-COUNT)
+             MOVE RL-EN-Y(WS-GI + 1) TO RL-GL-Y(RL-GL-COUNT)
+             MOVE RL-EN-Z(WS-GI + 1) TO RL-GL-Z(RL-GL-COUNT)
+             COMPUTE WS-GU = (RL-EN-U(WS-GI + 1) * EA-W - EA-MT-X(WS-GSLOT)) / EA-MT-W(WS-GSLOT)
+             COMPUTE WS-GV = (RL-EN-V(WS-GI + 1) * EA-H - EA-MT-Y(WS-GSLOT)) / EA-MT-H(WS-GSLOT)
+             CALL "GLINT-UV" USING WS-GU WS-GV WS-GSCALE
+             MOVE WS-GU TO RL-GL-U(RL-GL-COUNT)
+             MOVE WS-GV TO RL-GL-V(RL-GL-COUNT)
+             MOVE WS-GSTR TO RL-GL-B(RL-GL-COUNT)
+             MOVE 1 TO RL-GL-A(RL-GL-COUNT) RL-GL-R(RL-GL-COUNT) RL-GL-G(RL-GL-COUNT) RL-GL-BLUE(RL-GL-COUNT)
+             MOVE 0 TO RL-GL-SKY(RL-GL-COUNT)
+         END-IF
+     END-PERFORM
+     MOVE WS-G0 TO RL-EN-COUNT.
  END PROGRAM ENTITIES-MESH.
 
  IDENTIFICATION DIVISION.

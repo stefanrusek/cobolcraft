@@ -1036,7 +1036,15 @@
           15 GS-BT           BINARY-LONG.
           15 GS-BR           BINARY-LONG.
           15 GS-BB           BINARY-LONG.
-       10 AT-UPLOAD          PIC 9 OCCURS 5 TIMES.   *> texture id + 1 to be uploaded
+       10 AT-UPLOAD          PIC 9 OCCURS 7 TIMES.   *> texture id + 1 to be uploaded
+*>     The enchantment glint textures (textures 5 and 6, repeat wrapping; glint.cob GLINT-TEXTURES-BUILD; 54 section 19.3): the item glint and the armour glint,
+*>     RGBA, width and height 0 and the address NULL when the stack has no such image (nothing is drawn with the glint then).
+       10 GT-ITEM-W          BINARY-LONG.
+       10 GT-ITEM-H          BINARY-LONG.
+       10 GT-ITEM-ADDR       USAGE POINTER.
+       10 GT-ARMOR-W         BINARY-LONG.
+       10 GT-ARMOR-H         BINARY-LONG.
+       10 GT-ARMOR-ADDR      USAGE POINTER.
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
        10 EA-W               BINARY-LONG.
@@ -1226,6 +1234,22 @@
           15 RL-EN-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-EN-G         FLOAT-SHORT.
           15 RL-EN-BLUE      FLOAT-SHORT.
+*>     The armour glint mesh of the frame (eye-relative, texture 6, pipeline CC-PIPE-GLINT; glint.cob, ENTITIES-MESH): the glint layers 13 to 16 of ENTITY-OVERLAY,
+*>     vertices as RL-EN-VERTEX (brightness the glint strength, texture coordinates through GLINT-UV).
+       10 RL-GL-COUNT        BINARY-LONG.
+       10 RL-GL-UPLOADED     BINARY-LONG.
+       10 RL-GL-VERTEX OCCURS 8192 TIMES.
+          15 RL-GL-X         FLOAT-SHORT.
+          15 RL-GL-Y         FLOAT-SHORT.
+          15 RL-GL-Z         FLOAT-SHORT.
+          15 RL-GL-U         FLOAT-SHORT.
+          15 RL-GL-V         FLOAT-SHORT.
+          15 RL-GL-B         FLOAT-SHORT.
+          15 RL-GL-A         FLOAT-SHORT.
+          15 RL-GL-SKY       FLOAT-SHORT.
+          15 RL-GL-R         FLOAT-SHORT.
+          15 RL-GL-G         FLOAT-SHORT.
+          15 RL-GL-BLUE      FLOAT-SHORT.
 *>     Item icons of the slot widgets (texture 0), the UI drawn over them (the slot counts,
 *>     texture 2; UI-QUAD writes there while RL-UI-LAYER is 1) and the target highlight
 *>     (eye-relative, texture 2); each with the vertex count last uploaded.

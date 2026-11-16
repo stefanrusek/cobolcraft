@@ -92,6 +92,24 @@
      STRING WS-MARK1 " " WS-MARK2 DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   The glint textures (54 section 19.3): textures 5 and 6 go up when marked (the item glint 8 x 8 with a mip chain, the armour glint 2 x 2 without) and the marks clear; the frame is
+*>   presented with the glint offset set.
+     ALLOCATE 256 CHARACTERS INITIALIZED RETURNING GT-ITEM-ADDR
+     ALLOCATE 16 CHARACTERS INITIALIZED RETURNING GT-ARMOR-ADDR
+     MOVE 8 TO GT-ITEM-W GT-ITEM-H
+     MOVE 2 TO GT-ARMOR-W GT-ARMOR-H
+     MOVE 1 TO AT-UPLOAD(6) AT-UPLOAD(7)
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "submit the marked glint textures are uploaded (marks cleared) and the frame is presented" TO TL-CASE
+     MOVE "1 00" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-PRESENTED TO WS-MARK1
+     STRING WS-MARK1 " " AT-UPLOAD(6) AT-UPLOAD(7) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     FREE GT-ITEM-ADDR GT-ARMOR-ADDR
+     MOVE 0 TO GT-ITEM-W GT-ARMOR-W
+
 *>   A draw entry with a negative slot is the depth clear before the hand (cc_vk_clear_depth): the frame is still presented.
      ADD 1 TO RL-DRAW-COUNT
      MOVE -1 TO RL-D-SLOT(RL-DRAW-COUNT)

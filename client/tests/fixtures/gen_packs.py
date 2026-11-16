@@ -299,6 +299,15 @@ PACKS["weather2"] = ("folder", {
 })
 
 
+# The enchantment glint textures (54 section 19.3): the item glint 8 x 8 and the armour glint 4 x 4 (the real ones are 128 x 128).
+MISC = "assets/minecraft/textures/misc/"
+PACKS["glint"] = ("folder", {
+    "pack.mcmeta": new_style("Glint textures"),
+    MISC + "enchanted_glint_item.png": png(8, 8, lambda x, y: (x * 30, y * 30, 90, 255)),
+    MISC + "enchanted_glint_armor.png": png(4, 4, lambda x, y: (200, x * 40, y * 40, 255)),
+})
+
+
 def zip_bytes(files):
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:

@@ -1,0 +1,135 @@
+*> Implementation test of client/src/glint.cob (54 section 19.3, 19.4): GLINT-TEXTURES-BUILD loads the item and the armour glint textures of the pack stack
+*> (textures/misc/enchanted_glint_item.png and enchanted_glint_armor.png) into GT-ITEM and GT-ARMOR and marks textures 5 and 6 (AT-UPLOAD 6 and 7) for upload; with
+*> no pack giving them nothing is loaded or marked (the glint is not drawn). GLINT-OFFSET: the translation of the texture matrix of 12 section 8.3 for the frame
+*> clock CL-NOW-MS and the glint speed option (default 0.5): t = ms x speed x 8; u = -(t mod 110000) / 110000, v = (t mod 30000) / 30000. GLINT-STRENGTH: the glint
+*> strength option (default 0.75).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GLINT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY TESTLIB.
+ 01 WS-DIR                 PIC X(64) VALUE "build/client-test-glint".
+ 01 WS-DIR-LENGTH          BINARY-LONG VALUE 23.
+ 01 WS-NAMES               PIC X(256) VALUE "glint".
+ 01 WS-IDS                 PIC X(256) VALUE "file/glint".
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-UI                  PIC -(5)9.
+ 01 WS-VI                  PIC -(5)9.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-E                   PIC -(5)9.
+ 01 WS-P1                  PIC 9(4).
+ 01 WS-P2                  PIC 9(4).
+ 01 WS-P3                  PIC 9(4).
+ 01 WS-P4                  PIC 9(4).
+ 01 WS-NAME                PIC X(40).
+ 01 WS-VALUE               PIC X(4096).
+ 01 WS-LEN                 BINARY-LONG VALUE 3.
+ 01 B-IMG                  PIC X(1024) BASED.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "GLINT-TEXTURES-BUILD" USING CLIENT-STATE
+     MOVE "T" TO TL-MODE
+     MOVE "glint textures: no pack gives them, nothing is loaded" TO TL-CASE
+     MOVE GT-ITEM-W TO WS-E
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E) " " AT-UPLOAD(6) AT-UPLOAD(7) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 00" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
+     CALL "TEST-PACK-ENABLE" USING CLIENT-STATE WS-IDS
+     CALL "GLINT-TEXTURES-BUILD" USING CLIENT-STATE
+     MOVE "glint textures: the item glint is 8 x 8, the armour glint 4 x 4, both marked for upload" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE GT-ITEM-W TO WS-P1
+     MOVE GT-ITEM-H TO WS-P2
+     MOVE GT-ARMOR-W TO WS-P3
+     MOVE GT-ARMOR-H TO WS-P4
+     STRING WS-P1 "x" WS-P2 " " WS-P3 "x" WS-P4 " " AT-UPLOAD(6) AT-UPLOAD(7)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0008x0008 0004x0004 11" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     SET ADDRESS OF B-IMG TO GT-ITEM-ADDR
+     MOVE "glint textures: the item glint's pixel (1, 2) is 30, 60, 90, 255" TO TL-CASE
+     COMPUTE WS-P1 = FUNCTION ORD(B-IMG((2 * 8 + 1) * 4 + 1:1)) - 1
+     COMPUTE WS-P2 = FUNCTION ORD(B-IMG((2 * 8 + 1) * 4 + 2:1)) - 1
+     COMPUTE WS-P3 = FUNCTION ORD(B-IMG((2 * 8 + 1) * 4 + 3:1)) - 1
+     COMPUTE WS-P4 = FUNCTION ORD(B-IMG((2 * 8 + 1) * 4 + 4:1)) - 1
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-P1 "," WS-P2 "," WS-P3 "," WS-P4 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0030,0060,0090,0255" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     SET ADDRESS OF B-IMG TO GT-ARMOR-ADDR
+     MOVE "glint textures: the armour glint's pixel (3, 1) is 200, 120, 40, 255" TO TL-CASE
+     COMPUTE WS-P1 = FUNCTION ORD(B-IMG((1 * 4 + 3) * 4 + 1:1)) - 1
+     COMPUTE WS-P2 = FUNCTION ORD(B-IMG((1 * 4 + 3) * 4 + 2:1)) - 1
+     COMPUTE WS-P3 = FUNCTION ORD(B-IMG((1 * 4 + 3) * 4 + 3:1)) - 1
+     COMPUTE WS-P4 = FUNCTION ORD(B-IMG((1 * 4 + 3) * 4 + 4:1)) - 1
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-P1 "," WS-P2 "," WS-P3 "," WS-P4 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0200,0120,0040,0255" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Built again: the old images are freed and the new ones loaded (no leak, same result).
+     CALL "GLINT-TEXTURES-BUILD" USING CLIENT-STATE
+     MOVE "glint textures: built again the sizes stay" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE GT-ITEM-W TO WS-P1
+     MOVE GT-ARMOR-W TO WS-P3
+     STRING WS-P1 "x" WS-P3 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0008x0004" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The offset: default speed 0.5.
+     CALL "OPTIONS-DEFAULTS" USING CLIENT-STATE
+     MOVE 0 TO CL-NOW-MS
+     CALL "GLINT-OFFSET" USING CLIENT-STATE WS-U WS-V
+     MOVE "glint offset at ms 0 is (0, 0)" TO TL-CASE
+     PERFORM SHOW-UV
+     MOVE "0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10000 TO CL-NOW-MS
+     CALL "GLINT-OFFSET" USING CLIENT-STATE WS-U WS-V
+     MOVE "glint offset at ms 10000, speed 0.5 (t 40000): u -0.364, v 0.333" TO TL-CASE
+     PERFORM SHOW-UV
+     MOVE "-364 333" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 70000 TO CL-NOW-MS
+     CALL "GLINT-OFFSET" USING CLIENT-STATE WS-U WS-V
+     MOVE "glint offset at ms 70000 (t 280000, mod 110000 = 60000): u -0.545, v 0.333" TO TL-CASE
+     PERFORM SHOW-UV
+     MOVE "-545 333" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "glintSpeed" TO WS-NAME
+     MOVE "1.0" TO WS-VALUE
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-NAME WS-VALUE WS-LEN WS-B
+     MOVE 10000 TO CL-NOW-MS
+     CALL "GLINT-OFFSET" USING CLIENT-STATE WS-U WS-V
+     MOVE "glint offset at ms 10000, speed 1.0 (t 80000): u -0.727, v 0.667" TO TL-CASE
+     PERFORM SHOW-UV
+     MOVE "-727 667" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "GLINT-STRENGTH" USING CLIENT-STATE WS-S
+     COMPUTE WS-A = WS-S * 1000
+     MOVE WS-A TO WS-E
+     MOVE "glint strength defaults to 0.75" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "750" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ SHOW-UV.
+     COMPUTE WS-A ROUNDED = WS-U * 1000
+     COMPUTE WS-B ROUNDED = WS-V * 1000
+     MOVE WS-A TO WS-UI
+     MOVE WS-B TO WS-VI
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-UI) " " FUNCTION TRIM(WS-VI) DELIMITED BY SIZE INTO TL-OBSERVED.
+ END PROGRAM TEST-GLINT.
+ COPY CLTEST.
+ COPY PACKTEST.

@@ -83,11 +83,15 @@
          WHEN "zombie" WHEN "husk" WHEN "drowned" WHEN "skeleton" WHEN "stray" WHEN "bogged" WHEN "parched" WHEN "wither_skeleton"
          WHEN "zombified_piglin" WHEN "piglin" WHEN "piglin_brute"
 *>           The armor pieces of an adult (34-2 1.5), in the order chest, legs, feet, head: layers 5 to 8, each with the model row of its slot.
-             IF L-N >= 5 AND L-N <= 12 AND EN-BABY(L-ROW) = 0
-*>               Layers 9 to 12 are the trims of the pieces of layers 5 to 8 (54 section 18).
+             IF L-N >= 5 AND L-N <= 16 AND EN-BABY(L-ROW) = 0
+*>               Layers 9 to 12 are the trims of the pieces of layers 5 to 8 (54 section 18), layers 13 to 16 their glints (54 section 19.3).
                  COMPUTE WS-LAYER = L-N
-                 IF L-N > 8
-                     SUBTRACT 4 FROM WS-LAYER
+                 IF L-N > 12
+                     SUBTRACT 8 FROM WS-LAYER
+                 ELSE
+                     IF L-N > 8
+                         SUBTRACT 4 FROM WS-LAYER
+                     END-IF
                  END-IF
                  EVALUATE WS-LAYER
                      WHEN 5 MOVE 2 TO WS-WANT
@@ -99,7 +103,7 @@
                  COMPUTE WS-ITEM = EN-EQ(L-ROW, 7 - WS-WANT)
                  IF WS-ITEM > 0
                      CALL "ENTITY-ARMOR-ASSET" USING CLIENT-STATE WS-ITEM WS-SLOT WS-ASSET
-                     IF WS-SLOT = WS-WANT AND L-N > 8
+                     IF WS-SLOT = WS-WANT AND L-N > 8 AND L-N <= 12
 *>                       The trim: the palette of the material (darker for the armor's own material) and the pattern, code 100000 + palette * 100 + pattern.
                          IF EN-EQ-TRIM-MAT(L-ROW, 7 - WS-WANT) >= 1 AND EN-EQ-TRIM-MAT(L-ROW, 7 - WS-WANT) <= 11
                                  AND EN-EQ-TRIM-PAT(L-ROW, 7 - WS-WANT) >= 1 AND EN-EQ-TRIM-PAT(L-ROW, 7 - WS-WANT) <= 18
@@ -108,7 +112,8 @@
                              PERFORM ARMOR-MODEL-ROW
                          END-IF
                      END-IF
-                     IF WS-SLOT = WS-WANT AND L-N <= 8
+                     IF WS-SLOT = WS-WANT AND (L-N <= 8 OR (L-N > 12 AND EN-EQ-FOIL(L-ROW, 7 - WS-WANT) = 1))
+*>                       The piece itself, or (layers 13 to 16, the foil) its glint: the same model and texture, drawn into the glint mesh by ENTITIES-MESH.
                          COMPUTE L-CODE = 6000 + WS-ASSET
                          PERFORM ARMOR-MODEL-ROW
                      END-IF

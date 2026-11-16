@@ -1,6 +1,6 @@
 *> Render-list submission (research R4; shim-abi.md §9): SUBMIT-FRAME uploads the atlases marked
 *> for upload (texture 0 the block atlas, texture 1 the entity atlas, texture 2 the UI atlas,
-*> texture 3 the environment atlas, with repeat wrapping, texture 4 the particle atlas) with cc_vk_texture and the render list's
+*> texture 3 the environment atlas, with repeat wrapping, texture 4 the particle atlas, textures 5 and 6 the item and armour glint, repeat wrapping, mip levels from 8 x 8 up) with cc_vk_texture and the render list's
 *> meshes with cc_vk_mesh, then records the draws in render-list order between cc_vk_frame_begin
 *> (the clear colour) and cc_vk_frame_end. A minimised window skips the frame.
 
@@ -17,6 +17,10 @@
  01 WS-WRAP                BINARY-LONG.
  01 WS-DAYLIGHT            FLOAT-SHORT.
  01 WS-CLEAR               FLOAT-SHORT OCCURS 4 TIMES.
+ 01 WS-MIPS                BINARY-LONG.
+ 01 WS-GU                  FLOAT-LONG.
+ 01 WS-GV                  FLOAT-LONG.
+ 01 WS-GLINT-UV            FLOAT-SHORT OCCURS 2 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-PRESENTED            BINARY-LONG.
@@ -68,6 +72,31 @@
              BY VALUE PRA-ADDR RETURNING WS-RC
          MOVE 0 TO AT-UPLOAD(5)
      END-IF
+     IF AT-UPLOAD(6) = 1
+         MOVE CC-TEX-GLINT TO WS-TEX
+         MOVE CC-WRAP-REPEAT TO WS-WRAP
+         CALL STATIC "cc_vk_texture_wrap" USING BY VALUE WS-TEX BY VALUE WS-WRAP RETURNING WS-RC
+*>       The glint is sampled linearly (the blur flag, 54 section 19.3): a mip chain selects the shim's linear sampler.
+         MOVE 1 TO WS-MIPS
+         IF GT-ITEM-W >= 8 AND GT-ITEM-H >= 8
+             MOVE 4 TO WS-MIPS
+         END-IF
+         CALL STATIC "cc_vk_texture_ex" USING BY VALUE WS-TEX BY VALUE GT-ITEM-W BY VALUE GT-ITEM-H
+             BY VALUE GT-ITEM-ADDR BY VALUE WS-MIPS RETURNING WS-RC
+         MOVE 0 TO AT-UPLOAD(6)
+     END-IF
+     IF AT-UPLOAD(7) = 1
+         MOVE CC-TEX-GLINT-ARMOR TO WS-TEX
+         MOVE CC-WRAP-REPEAT TO WS-WRAP
+         CALL STATIC "cc_vk_texture_wrap" USING BY VALUE WS-TEX BY VALUE WS-WRAP RETURNING WS-RC
+         MOVE 1 TO WS-MIPS
+         IF GT-ARMOR-W >= 8 AND GT-ARMOR-H >= 8
+             MOVE 4 TO WS-MIPS
+         END-IF
+         CALL STATIC "cc_vk_texture_ex" USING BY VALUE WS-TEX BY VALUE GT-ARMOR-W BY VALUE GT-ARMOR-H
+             BY VALUE GT-ARMOR-ADDR BY VALUE WS-MIPS RETURNING WS-RC
+         MOVE 0 TO AT-UPLOAD(7)
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-UPLOAD-COUNT
          CALL STATIC "cc_vk_mesh" USING BY VALUE RL-U-SLOT(WS-I) BY VALUE RL-U-ADDR(WS-I)
              BY VALUE RL-U-COUNT(WS-I) RETURNING WS-RC
@@ -79,6 +108,11 @@
          COMPUTE WS-DAYLIGHT = SK-U / 1000
          CALL STATIC "cc_vk_daylight" USING BY REFERENCE WS-DAYLIGHT
          CALL STATIC "cc_vk_fog" USING BY REFERENCE RL-FOG(1)
+*>       The scrolling of the glint texture (54 section 19.4): the translation of the texture matrix for the frame clock, for the glint draws.
+         CALL "GLINT-OFFSET" USING CLIENT-STATE WS-GU WS-GV
+         MOVE WS-GU TO WS-GLINT-UV(1)
+         MOVE WS-GV TO WS-GLINT-UV(2)
+         CALL STATIC "cc_vk_glint_offset" USING BY REFERENCE WS-GLINT-UV(1)
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
              IF RL-D-SLOT(WS-I) < 0
                  CALL STATIC "cc_vk_clear_depth"
