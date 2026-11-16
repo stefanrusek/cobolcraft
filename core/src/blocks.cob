@@ -374,6 +374,7 @@
  01 WS-TOOL                BINARY-LONG.
  01 WS-SWITCH              BINARY-LONG.
  01 WS-KNOT                BINARY-LONG.
+ 01 WS-NOTE                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -413,8 +414,15 @@
      CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
 *>   A fence takes the lead of the player's mobs (a leash knot, 24 section 6.3).
      CALL "MOB-FENCE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ WS-KNOT
+*>   A note block is tuned by a right click (M44-NOTE-USE).
+     MOVE 0 TO WS-NOTE
+     IF NOT (PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0)
+         CALL "M44-NOTE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE WS-NOTE
+     END-IF
      EVALUATE TRUE
          WHEN WS-KNOT = 1
+             CONTINUE
+         WHEN WS-NOTE = 1
              CONTINUE
          WHEN WS-TOOL = 1
              CONTINUE

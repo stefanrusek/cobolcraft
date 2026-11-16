@@ -155,6 +155,13 @@
  01 WS-BEFORE              BINARY-LONG.
  01 WS-EVENT               BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-BROKE               BINARY-LONG.
+ 01 WS-SCREAM              BINARY-LONG.
+ 01 WS-TICKS               FLOAT-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-NOBLOCK             BINARY-LONG VALUE 0.
+ 01 WS-STRENGTH            FLOAT-LONG.
  COPY PROTO.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -173,7 +180,8 @@
              END-IF
          END-IF
      END-PERFORM
-     MOVE 0 TO WS-DX WS-DZ
+*>   With no player the target is far away (a target at 0 would count as a hit).
+     MOVE 1000 TO WS-DX WS-DZ
      IF WS-BEST > 0
          COMPUTE WS-DX = PL-X(WS-BEST) - EN-X(L-ROW)
          COMPUTE WS-DZ = PL-Z(WS-BEST) - EN-Z(L-ROW)
@@ -204,6 +212,21 @@
          CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
          CALL "PB-FREE" USING PB-BUFFER
      END-IF
+*>   The charge without a hit: a horn-breaking block ahead breaks a horn and ends the ram (54 section 7.2).
+     IF EN-RAM-STATE(L-ROW) = 2 AND WS-HIT = 0 AND (L-HX NOT = 0 OR L-HZ NOT = 0)
+         CALL "M44-GOAT-HORN-TEST" USING L-ROW L-HX L-HZ WS-BROKE
+         IF WS-BROKE = 1
+             MOVE 0 TO EN-RAM-STATE(L-ROW) EN-RAM-T(L-ROW) L-HX L-HZ
+             MOVE FUNCTION MOD(EN-WOOL(L-ROW), 2) TO WS-SCREAM
+             CALL "M44-RAM-COOLDOWN" USING WS-SCREAM WS-DRAW WS-TICKS
+             MOVE WS-TICKS TO EN-RAM-CD(L-ROW)
+             MOVE 59 TO WS-EVENT
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+             CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+         END-IF
+     END-IF
      IF EN-RAM-STATE(L-ROW) = 1
          MOVE 2 TO L-WALK
      END-IF
@@ -216,6 +239,11 @@
              MOVE 1 TO WS-DAMAGE
          END-IF
          CALL "HEALTH-MOB-HIT" USING WS-BEST WS-DAMAGE L-ROW
+*>       Knockback of the player along the charge (54 section 7.2): speed 0.2 x 1.65, force 2.5 (1.0 baby), no shield block.
+         MOVE 0.2 TO WS-SPEED
+         MOVE EN-VARIANT(L-ROW) TO WS-BABY
+         CALL "M44-RAM-KNOCKBACK" USING WS-SPEED WS-BABY WS-NOBLOCK WS-STRENGTH
+         CALL "M44-RAM-KNOCK" USING WS-BEST L-ROW WS-STRENGTH
      END-IF
      GOBACK.
  END PROGRAM M44-GOAT-TICK.
