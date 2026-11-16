@@ -481,8 +481,8 @@
  END PROGRAM THROWN-SYNC.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. THROWN-FLY.
-*> USING tracker row, gravity (FLOAT-LONG), hit out, entity row out, player row out (44 part 8 section 6.5): the tick count (EN-COOLDOWN) rises, gravity then drag 0.99 change the
+ PROGRAM-ID. THROWN-FLY2.
+*> THROWN-FLY with the drag as a parameter. USING tracker row, gravity, drag (FLOAT-LONG), hit out, entity row out, player row out (44 part 8 section 6.5): the tick count (EN-COOLDOWN) rises, gravity then drag 0.99 change the
 *> velocity, and the segment of the new velocity is walked in steps of at most 0.1 block against solid cells and against players and standard mobs other than the owner
 *> (EN-TARGET-ID; ARROW-FIND-HIT with its margin). The position ends at the last free point (a block hit, hit 1) or at the sample inside the entity (hit 2); no hit: hit 0
 *> and the viewers are told. Water drag 0.8 is open.
@@ -505,16 +505,17 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-GRAVITY              FLOAT-LONG.
+ 01 L-DRAG                 FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
  01 L-PLAYER               BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-GRAVITY L-HIT L-ENTITY L-PLAYER.
+ PROCEDURE DIVISION USING L-ROW L-GRAVITY L-DRAG L-HIT L-ENTITY L-PLAYER.
      MOVE 0 TO L-HIT L-ENTITY L-PLAYER
      ADD 1 TO EN-COOLDOWN(L-ROW)
      COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) - L-GRAVITY
-     COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
-     COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99
-     COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+     COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * L-DRAG
+     COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * L-DRAG
+     COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * L-DRAG
      COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
      COMPUTE WS-STEPS = FUNCTION INTEGER(WS-SPEED / 0.1) + 1
      MOVE EN-X(L-ROW) TO WS-PX
@@ -550,6 +551,23 @@
      IF L-HIT = 0
          CALL "THROWN-SYNC" USING L-ROW
      END-IF
+     GOBACK.
+ END PROGRAM THROWN-FLY2.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-FLY.
+*> USING tracker row, gravity (FLOAT-LONG), hit out, entity row out, player row out: THROWN-FLY2 with the drag 0.99 of a thrown item.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DRAG                FLOAT-LONG VALUE 0.99.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-GRAVITY              FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-GRAVITY L-HIT L-ENTITY L-PLAYER.
+     CALL "THROWN-FLY2" USING L-ROW L-GRAVITY WS-DRAG L-HIT L-ENTITY L-PLAYER
      GOBACK.
  END PROGRAM THROWN-FLY.
 
