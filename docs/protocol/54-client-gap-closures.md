@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -634,6 +634,88 @@ Gap closed: 43 §7.4 gives the mixing formula and 43 §7 the tint use; this sect
 | Mixing | `DyedItemColor.applyDyes(stack, dyes)` returns a copy of the stack with `dyed_color` set to the 43 §7.4 result (stack and the plain-component forms exist; the stack form also requires nothing else). Used by the crafting recipe (27) and the cauldron wash (29b-7, which removes the component). |
 
 The `dye` component (46) is a different thing: a bare `DyeColor` for dye items. Network: VarInt id of the dye colour (the enum order of 43 §8, ids 0 to 15, an id-enum codec); NBT: String with the dye name (`white`, `orange`, ... `black`). No default; an item that is a dye carries it in its prototype (25-4).
+
+---
+
+## 18. `trim` (58), `provides_trim_material` (64), the trim registries and how a trim is drawn
+
+Gap closed: 04 §6 has the registry file schemas, 25-4 §5 the material items (with the layout of `provides_trim_material` "not read") and 34-2 §4 (item 6) the worn-armour drawing steps; the palette mechanism is in 14 §7.4. This section gives the component layouts, the full contents of the two registries (data files of the jar), the palette image contents and the recolouring and override rules, so that the models lane can draw a trim without reading anything else.
+
+### 18.1 Layouts
+
+| Component | Network | NBT form | Notes |
+|---|---|---|---|
+| `trim` (58), record `ArmorTrim` | Holder of `trim_material` (00 §10.2: VarInt 0 plus the inline material of the next table, or registry position + 1), **then** Holder of `trim_pattern` (same rule). Material first, pattern second. | Compound `{material: <id>, pattern: <id>}`, both required. Each value is the holder codec of a data-driven registry: a String identifier (`minecraft:gold`, `minecraft:wild`) for a registered entry, or an inline compound of the entry's own schema (the reader accepts both; the writer writes the identifier for a registered holder). | No default; the component is absent on an untrimmed item. The `show_in_tooltip` flag of 1.20 does not exist in 26.3 (hiding is 15.4 `hidden_components`). Equality: both holders equal. |
+| `provides_trim_material` (64), value `TrimMaterial` holder | Holder of `trim_material` (as above) | String identifier, or inline `{palette_id, description}` | Set on the nine ingots and gems of 25-4 plus `redstone` and `resin_brick` (25-3 §5.5); a smithing table reads it from the material slot item. |
+| inline `TrimMaterial` (network `DIRECT_STREAM_CODEC`) | Identifier `palette_id`, then TextComponent `description` | `palette_id` String (required), `description` text component (required) | **Exactly two fields in 26.3.** There is no `asset_name`, no `ingredient`, no `item_model_index` and no per-armour-material `override_armor_materials` map; the "darker" colour variant is a client-side rule (18.4). |
+| inline `TrimPattern` (network `DIRECT_STREAM_CODEC`) | Identifier `asset_id`, TextComponent `description`, Boolean `decal` | `asset_id` String (required), `description` (required), `decal` Boolean, default false and always written | No template item or ingredient field (the link from a template item to its pattern is not in the registry entry; see 40-3). |
+
+### 18.2 `trim_material` registry contents (11 entries, `data/minecraft/trim_material/<name>.json` in the artifact; registry ids are assigned in the order the registry is synchronised, 04 and 46; the file order here is alphabetical (inferred as the load order))
+
+All entries have the same shape (`palette_id`, `description` = a translatable component with a colour and key `trim_material.minecraft.<name>`). Values read from the files:
+
+| name | `palette_id` (texture file `textures/palettes/trim/<n>.png`) | description colour (text colour of the tooltip line) |
+|---|---|---|
+| amethyst | `minecraft:trim/amethyst` | `#9A5CC6` |
+| copper | `minecraft:trim/copper` | `#B4684D` |
+| diamond | `minecraft:trim/diamond` | `#6EECD2` |
+| emerald | `minecraft:trim/emerald` | `#11A036` |
+| gold | `minecraft:trim/gold` | `#DEB12D` |
+| iron | `minecraft:trim/iron` | `#ECECEC` |
+| lapis | `minecraft:trim/lapis` | `#416E97` |
+| netherite | `minecraft:trim/netherite` | `#625859` |
+| quartz | `minecraft:trim/quartz` | `#E3D4C4` |
+| redstone | `minecraft:trim/redstone` | `#971607` |
+| resin | `minecraft:trim/resin` | `#FC7812` |
+
+### 18.3 `trim_pattern` registry contents (18 entries, `data/minecraft/trim_pattern/<name>.json`)
+
+Entries: `bolt`, `coast`, `dune`, `eye`, `flow`, `host`, `raiser`, `rib`, `sentry`, `shaper`, `silence`, `snout`, `spire`, `tide`, `vex`, `ward`, `wayfinder`, `wild`. Every entry has `asset_id` = `minecraft:<name>`, `decal` = **false**, `description` = translatable `trim_pattern.minecraft.<name>` (no colour). The worn-armour texture of a pattern is `textures/trims/entity/<layer type>/<name>.png` for the layer types `humanoid` (64 x 32 here; an armour-body sheet) and `humanoid_leggings`, each with a `.mcmeta` naming the key palette `trim_base`. 
+
+### 18.4 Rendering rule (worn armour, and the same palettes for item icons)
+
+1. **Key palette** (`textures/palettes/trim_base.png`, 8 x 1 pixels, left to right): `E0E0E0 C0C0C0 A0A0A0 808080 606060 404040 202020 000000`. A trim pattern texture is drawn in these eight greys only (read in `bolt.png`: the pixels are `A0A0A0`, `808080`, `C0C0C0` and `606060`, with alpha 255, the rest transparent).
+2. **Palette selection.** The palette id is the material's `palette_id`, unless the equipment asset of the worn piece (the asset the armour item names, 22/34) has a `trim_overrides` list: its entries are tried in order and the first whose `when` matches the trim (`when` has `material` and/or `pattern`, at least one) replaces the palette (`palette`) and/or the pattern texture (`texture`), at least one of the two being given. In the 26.3 assets only five equipment assets have an override and each has one entry replacing the palette by the `_darker` variant when the trim material equals the armour's own material:
+
+| Equipment asset (armour material) | Override `when.material` | Palette used instead |
+|---|---|---|
+| `iron` | `minecraft:iron` | `minecraft:trim/iron_darker` |
+| `copper` | `minecraft:copper` | `minecraft:trim/copper_darker` |
+| `gold` | `minecraft:gold` | `minecraft:trim/gold_darker` |
+| `diamond` | `minecraft:diamond` | `minecraft:trim/diamond_darker` |
+| `netherite` | `minecraft:netherite` | `minecraft:trim/netherite_darker` |
+
+   Armour made of `leather`, `chainmail`, `turtle_scute`, `armadillo_scute` has no override, so a trim of any material uses the material's normal palette. The item-icon overlays use the same eleven normal palettes plus the five `_darker` ones through the items atlas (`paletted_permutations` with key `trim_base`, 14 §7.4), and the item model is expected to choose the `_darker` permutation under the same condition (inferred; the item-model JSON was not read in this round, Open question 4).
+3. **Texture path.** `textures/trims/entity/<layer type name>/<pattern asset path>.png` (the layer type names are `humanoid`, `humanoid_leggings`, `humanoid_baby`, ...; the layer type `humanoid_baby` has no trim, 34-2), unless the override gave a texture id (then that id's path is used with the same prefix).
+4. **Recolouring** (done once per pair of texture and palette, then cached): the two palettes must have the same number of colours (8; a mismatch is an error). A mapping is built from each opaque-able entry of the key palette (alpha not 0) to the colour at the same index of the chosen palette. For every pixel of the pattern texture: if its alpha is 0 the pixel is left unchanged; otherwise its RGB (forced opaque) is looked up in the mapping; a colour not in the mapping stays as it is (inferred: the default of the lookup is the input colour); the output alpha is `pixelAlpha * paletteColorAlpha / 255`, the palette colours being opaque.
+5. **Order and render type** are in 34-2 §4 item 6 (after the base layers, render type `armorTrim` with the pattern's `decal` flag, then once more with `trimmedArmorGlint` if the stack has the foil, 19.3).
+
+### 18.5 The 16 palette images (`textures/palettes/trim/<name>.png`, all 8 x 1, left to right, RGB hex)
+
+| Palette | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| amethyst | C98FF3 | 9A5CC6 | 6C49AA | 523687 | 422776 | 361C6A | 240C53 | 17063B |
+| copper | E3826C | B4684D | 9A472C | 793C28 | 6D3420 | 5F2B18 | 4C2010 | 3D180B |
+| copper_darker | 7B4135 | 6B3628 | 592A19 | 4C2416 | 401E11 | 36190F | 29140C | 1B0E08 |
+| diamond | CBFFF5 | 6EECD2 | 2CBAA8 | 1D969A | 0C788D | 076578 | 04515F | 013C47 |
+| diamond_darker | 15B3A1 | 0A9CA1 | 048185 | 027472 | 065D5B | 095148 | 034642 | 04403E |
+| emerald | 82F6AD | 0EC754 | 11A036 | 107B24 | 0E7222 | 09631B | 035013 | 023D0E |
+| gold | FFFD90 | ECD93F | DEB12D | B16712 | A0450A | 803503 | 712D00 | 572300 |
+| gold_darker | C29C2A | BA8327 | A35F14 | 89470C | 803503 | 712D00 | 572300 | 3E1B03 |
+| iron | C5D2D4 | BFC9C8 | 9DAAAA | 7B8989 | 717D7D | 657070 | 576363 | 465151 |
+| iron_darker | A2B0B3 | 8A9291 | 6F7676 | 576363 | 3D4949 | 313B3B | 2B3434 | 1D2828 |
+| lapis | 416E97 | 1C4D9C | 21497B | 123365 | 112E63 | 0C285A | 091E45 | 051636 |
+| netherite | 5A575A | 443A3B | 312E31 | 2F2727 | 231E1E | 1A1616 | 100C0C | 090707 |
+| netherite_darker | 2E2829 | 282425 | 281D1D | 241A1A | 1F1717 | 1D1313 | 140F0F | 0B0909 |
+| quartz | F2EFED | F6EADF | E3DBC4 | B6AD96 | 908E80 | 656156 | 45433C | 2A2822 |
+| redstone | E62008 | BD2008 | 971607 | 781101 | 650B01 | 520D06 | 360803 | 1D0502 |
+| resin | FFC354 | F69F3B | F0852A | EC7214 | DB5F10 | C7490A | A53B11 | 802A1A |
+
+All pixels opaque. Worked example: a pixel `A0A0A0` (key index 3) of a `wild` texture on a gold trim over diamond armour becomes `DEB12D` (gold palette index 3); on gold armour with a gold trim it becomes `A35F14` (`gold_darker` index 3); a `606060` pixel (index 5) becomes `803503` on gold and `712D00` on gold_darker.
+
+### 18.6 Apply rules (where they live)
+
+The smithing table result (template + armour + material) and the template tooltips are in 40-3; the stack's `trim` is set to the material found through `provides_trim_material` of the addition slot and the pattern of the template. The creative and recipe-display forms use the `smithing_trim` slot display (05a, with an inline `trim_pattern` holder).
 
 ---
 
