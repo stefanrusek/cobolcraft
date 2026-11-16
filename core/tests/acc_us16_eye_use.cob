@@ -1,5 +1,5 @@
 *> Acceptance test, the eye of ender item (docs/protocol/25 section 6.3 use in air, 21 section 8.12; lane featsb7, T10000): Use Item with an ender_eye in the main hand
-*> asks the stronghold locate (STRUCT-NEAREST-NAMED "stronghold", radius not used) for the nearest ring chunk of the level seed; when none is found nothing is thrown and
+*> asks the stronghold locate (STRUCT-NEAREST-NAMED "strongholds", radius not used) for the nearest ring chunk of the level seed; when none is found nothing is thrown and
 *> nothing is consumed (CONSUME); otherwise an eye_of_ender entity appears at (x, y + 0.5 x 1.8, z) of the player, signalled to the locate position (a target beyond 12 blocks is
 *> replaced by position + (dx / h x 12, 8, dz / h x 12)), a survival stack loses one and a creative stack stays; a ray that hits an end_portal_frame passes the item on (nothing thrown).
  IDENTIFICATION DIVISION.
@@ -122,7 +122,7 @@
      COMPUTE TL-OBSERVED-N = FUNCTION ABS(EN-VX(WS-ROW)) + FUNCTION ABS(EN-VY(WS-ROW)) + FUNCTION ABS(EN-VZ(WS-ROW))
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the nearest ring chunk of the origin (0, y, 0) is (-13,-106) (36-5 4.1 / 36-1 12.3 vectors)
-     MOVE "stronghold" TO WS-NAME
+     MOVE "strongholds" TO WS-NAME
      COMPUTE WS-OX = FUNCTION INTEGER(PL-X(WS-PLAYER))
      COMPUTE WS-OY = FUNCTION INTEGER(PL-Y(WS-PLAYER))
      COMPUTE WS-OZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))

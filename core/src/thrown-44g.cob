@@ -1,6 +1,6 @@
 *> The eye of ender item used in the air (docs/protocol/25 section 6.3 use, 21 section 8.12, 36-5 section 3.10; lane featsb7, T10000). THROWN-ITEM-USE hands an ender_eye to EYE-ITEM-USE:
 *> the block ray of the look (reach 4.5, 5.0 in creative, fluids ignored) that ends on an end_portal_frame passes the item on (done 0: the use on the block handles it); otherwise
-*> the stronghold locate (STRUCT-NEAREST-NAMED "stronghold" over the ring chunk list of the level seed, STRUCT-LOAD data and climate source as the world generation set them up) gives
+*> the stronghold locate (STRUCT-NEAREST-NAMED "strongholds" over the ring chunk list of the level seed, STRUCT-LOAD data and climate source as the world generation set them up) gives
 *> the target (the locate position); none found leaves everything (CONSUME), else an eye_of_ender entity is made at (x, y + 0.9, z) of the player (EYE-SPAWN, signalTo, 4 in 5 survive) and a
 *> survival stack loses one. Not done: the launch sound, the statistic and the used_ender_eye trigger.
 *>
@@ -37,7 +37,7 @@
  01 WS-IS                  BINARY-LONG.
  01 WS-HAS-EYE             BINARY-LONG.
  01 WS-FACING              BINARY-LONG.
- 01 WS-NAME                PIC X(40) VALUE "stronghold".
+ 01 WS-NAME                PIC X(40) VALUE "strongholds".
  01 WS-OX                  BINARY-LONG.
  01 WS-OY                  BINARY-LONG.
  01 WS-OZ                  BINARY-LONG.

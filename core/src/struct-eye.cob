@@ -6,7 +6,7 @@
 *> Entry points:
 *>   STRUCT-NEAREST-RING USING set, seed (BINARY-DOUBLE), origin x, origin y, origin z, found out (0 for a set that is not concentric_rings or has no ring), chunk x out, chunk z out, locate x out, y out, z out
 *>   STRUCT-NEAREST-NAMED USING name (PIC X(40), the path of the set key without the namespace: "stronghold"), seed, origin x, y, z, found out, chunk x, chunk z, locate x, y, z out:
-*>     the same for the set of that name (found 0 when the structure sets of the loaded data have none); the eye of ender uses the name "stronghold"
+*>     the same for the set of that name (found 0 when the structure sets of the loaded data have none); the eye of ender uses the name "strongholds" (the key of the structure set)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-NEAREST-RING.
