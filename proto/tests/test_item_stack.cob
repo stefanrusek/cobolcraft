@@ -137,6 +137,90 @@
      PERFORM CHECK-PUT-ERROR.
 
  GET-CASES.
+     MOVE "01 01 01 00 2f 00 ff 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of dyed_color (47) is an Int" TO TL-CASE
+     MOVE "c1 i1 +47=00ff0000 pos 9 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 41 03" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of ominous_bottle_amplifier (65) is a VarInt" TO TL-CASE
+     MOVE "c1 i1 +65=03 pos 6 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 09 08 00 02 48 69" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of item_name (9) is a text component" TO TL-CASE
+     MOVE "c1 i1 +9=0800024869 pos 10 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 0b 02 08 00 02 48 69 08 00 02 48 69" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of lore (11) is a count of text components" TO TL-CASE
+     MOVE "c1 i1 +11=0208000248690800024869 pos 16 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 35 01 18 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of potion_contents (53) with a potion only" TO TL-CASE
+     MOVE "c1 i1 +53=0118000000 pos 10 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 35 00 00 01 08 01 c8 01 00 01 01 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of potion_contents (53) with one custom effect" TO TL-CASE
+     MOVE "c1 i1 +53=0000010801c8010001010000 pos 17 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 35 00 01 ff 00 ff 00 00 01 02 48 69" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of potion_contents (53) with a colour and a custom name" TO TL-CASE
+     MOVE "c1 i1 +53=0001ff00ff000001024869 pos 16 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 35 00 00 01 08 01 05 00 01 01 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of potion_contents (53) with a hidden effect is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 46 01 01 00 ff 00 00 00 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of firework_explosion (70)" TO TL-CASE
+     MOVE "c1 i1 +70=010100ff0000000100 pos 14 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 47 02 01 01 01 00 ff 00 00 00 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of fireworks (71) with one explosion" TO TL-CASE
+     MOVE "c1 i1 +71=0201010100ff0000000100 pos 16 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 47 02 08" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of fireworks (71) with more than 7 explosions is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 46 01 ff ff ff ff 0f" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of firework_explosion (70) with a negative colour count is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 35 00 00 09" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of potion_contents (53) with an effect count above 8 is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 0b ac 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of lore (11) with 300 lines is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
      MOVE "00" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X

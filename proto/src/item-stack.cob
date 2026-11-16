@@ -64,7 +64,9 @@
 *> documents give (17 §1.2): VarInt for 1, 2, 3, 12, 19, 31 and 75; no payload for 4, 22 and 34;
 *> Boolean for 21; Float for 7 and 54; a text component (00 §9, as PB-GET-TEXT reads it) for 6;
 *> ItemEnchantments for 13 and 45 (a VarInt count of 0 to PB-ISX-VALUE-MAX, then that many pairs of
-*> VarInt enchantment id and VarInt level); the book components 56 and 57 (a book whose value is over PB-ISX-VALUE-MAX bytes is
+*> VarInt enchantment id and VarInt level); item_name 9 (text), lore 11, dyed_color 47 (Int), ominous_bottle_amplifier 65 (VarInt), potion_contents 53,
+*> firework_explosion 70 and fireworks 71 (lane itemcomp T9607, codec shapes of 25 section 9.1; the layout of an effect instance, an explosion and a lore line is the vanilla
+*> codec shape, no document gives it); the book components 56 and 57 (a book whose value is over PB-ISX-VALUE-MAX bytes is
 *> an error, as any value: the stack is then rejected whole).
 *> The bytes of the value are kept verbatim in PB-ISX-VALUE. Any other type, a count above
 *> PB-ISX-MAX-COMPONENTS or negative, a value longer than PB-ISX-VALUE-MAX or a short read sets
@@ -82,6 +84,7 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-PAIRS               BINARY-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  01 WS-PAGES               BINARY-LONG.
  01 WS-STR                 PIC X(3100).
  01 WS-STR-LEN             BINARY-LONG.
@@ -110,7 +113,7 @@
          CALL "PB-GET-VARINT" USING PB-BUFFER PB-ISX-TYPE(WS-I)
          MOVE PB-POS TO WS-VALUE-START
          EVALUATE PB-ISX-TYPE(WS-I)
-             WHEN 1 WHEN 2 WHEN 3 WHEN 12 WHEN 19 WHEN 31 WHEN 75
+             WHEN 1 WHEN 2 WHEN 3 WHEN 12 WHEN 19 WHEN 31 WHEN 65 WHEN 75
                  CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
              WHEN 4 WHEN 22 WHEN 34
                  CONTINUE
@@ -118,8 +121,69 @@
                  CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
              WHEN 7 WHEN 54
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
-             WHEN 6
+             WHEN 6 WHEN 9
                  CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+*>           lore (11): a VarInt count of 0 to 256 text components
+             WHEN 11
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINED
+                 IF WS-CONTAINED < 0 OR WS-CONTAINED > 256
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-CONTAINED
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-CONTAINED OR PB-ERROR = 1
+                     CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+                 END-PERFORM
+*>           dyed_color (47): an Int (the RGB colour)
+             WHEN 47
+                 CALL "PB-GET-INT" USING PB-BUFFER WS-SCRATCH
+*>           potion_contents (53; 25 section 9.1): Boolean and VarInt potion, Boolean and Int colour, a VarInt count of 0 to 8 effects (VarInt id,
+*>           amplifier and duration, Booleans ambient, visible and icon, a Boolean for a hidden effect, which is rejected), Boolean and String name
+             WHEN 53
+                 CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                 IF WS-BOOLEAN = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 END-IF
+                 CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                 IF WS-BOOLEAN = 1
+                     CALL "PB-GET-INT" USING PB-BUFFER WS-SCRATCH
+                 END-IF
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINED
+                 IF WS-CONTAINED < 0 OR WS-CONTAINED > 8
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-CONTAINED
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-CONTAINED OR PB-ERROR = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                     IF WS-BOOLEAN = 1
+                         MOVE 1 TO PB-ERROR
+                     END-IF
+                 END-PERFORM
+                 IF PB-ERROR = 0
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                     IF WS-BOOLEAN = 1
+                         CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     END-IF
+                 END-IF
+*>           firework_explosion (70): VarInt shape, VarInt count and Ints colours, VarInt count and Ints fade colours, Booleans trail and twinkle
+             WHEN 70
+                 PERFORM READ-EXPLOSION
+*>           fireworks (71): VarInt flight duration, VarInt count of 0 to 7 explosions
+             WHEN 71
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-PAGES
+                 IF WS-PAGES < 0 OR WS-PAGES > 7
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-PAGES
+                 END-IF
+                 PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-PAGES OR PB-ERROR = 1
+                     PERFORM READ-EXPLOSION
+                 END-PERFORM
 *>           container (77, ItemContainerContents): a VarInt count of 0 to 256, then that many stacks, each a count (0 = empty) and, when
 *>           not empty, item, added and removed counts of 0 (a stack with components inside a container is not read)
              WHEN 77
@@ -216,4 +280,19 @@
          INITIALIZE PB-ITEMSTACK-X
      END-IF
      GOBACK.
+
+ READ-EXPLOSION.
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+     PERFORM 2 TIMES
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-LENGTH
+         IF WS-LENGTH < 0 OR WS-LENGTH > 64
+             MOVE 1 TO PB-ERROR
+             MOVE 0 TO WS-LENGTH
+         END-IF
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-LENGTH
+             CALL "PB-GET-INT" USING PB-BUFFER WS-SCRATCH
+         END-PERFORM
+     END-PERFORM
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN.
  END PROGRAM PB-GET-ITEM-STACK.
