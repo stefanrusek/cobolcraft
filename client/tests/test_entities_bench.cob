@@ -80,13 +80,33 @@
      DISPLAY "BENCH entities-mesh ms per frame (70 mobs): " WS-MS-TEXT " vertices " RL-EN-COUNT
      COMPUTE WS-COUNT = WS-MS
      MOVE "N" TO TL-MODE
-     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 20 ms a frame" TO TL-CASE
+     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 10 ms a frame when nothing moves" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-COUNT < 20
+     IF WS-COUNT < 10
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The eye moving every frame (every cuboid is shifted again, 24 float additions each, 0.5 microsecond apiece: the cost the offset cache saves when nothing moves).
+     PERFORM NOW
+     MOVE WS-HUNDREDTHS TO WS-T0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-FRAMES
+         COMPUTE WS-EYE(1) = 10 + FUNCTION MOD(WS-I, 2) * 0.05
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     END-PERFORM
+     PERFORM NOW
+     COMPUTE WS-MS = (WS-HUNDREDTHS - WS-T0) * 10 / WS-FRAMES
+     MOVE WS-MS TO WS-MS-TEXT
+     DISPLAY "BENCH entities-mesh ms per frame (70 mobs, the eye moving): " WS-MS-TEXT
+     COMPUTE WS-COUNT = WS-MS
+     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 40 ms a frame when the eye moves" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-COUNT < 40
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO WS-EYE(1)
 *>   The baked mesh follows the row: a row whose model changes and changes back draws the same vertices; a third model in turn replaces an entry.
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-VERTS

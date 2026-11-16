@@ -27,8 +27,10 @@
  01 WS-MODEL               BINARY-LONG.
  01 WS-SERIAL              BINARY-LONG.
  01 WS-INT                 BINARY-LONG.
+ 01 WS-I-D                 PIC 9.
  01 WS-INT2                BINARY-LONG.
  01 WS-INT3                BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE VALUE 0.
  01 WS-INDEX               BINARY-LONG.
  01 WS-KEY24               PIC X(24).
  01 WS-CASES-DATA.
@@ -144,14 +146,14 @@
      MOVE 18 TO WS-INDEX
      MOVE 25 TO WS-SERIAL
      MOVE 5 TO WS-INT
-     MOVE 0 TO WS-INT2 WS-INT3
-     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3
+     MOVE 0 TO WS-INT2 WS-INT3 WS-LONG
+     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3 WS-LONG
      MOVE "acceptance variants wolf entry 18 is not the variant" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      MOVE EN-VAR(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 23 TO WS-INDEX
-     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3
+     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3 WS-LONG
      MOVE "acceptance variants wolf entry 23 is the variant" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      MOVE EN-VAR(1) TO TL-OBSERVED-N
@@ -162,7 +164,7 @@
      MOVE 2 TO WS-INT
      MOVE 4 TO WS-INT2
      MOVE 3 TO WS-INT3
-     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3
+     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3 WS-LONG
      MOVE "acceptance variants villager data is type, profession and level" TO TL-CASE
      MOVE 243 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = EN-VAR(1) * 100 + EN-VAR2(1) * 10 + EN-VAR3(1)
@@ -250,7 +252,57 @@
      MOVE 249 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(RL-EN-COUNT) * 255
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A full atlas (64 slots of models no longer on screen) is released for the mobs now on screen instead of leaving them undrawn.
+*>   Fish models by variant (34-8 section 5): a large tropical fish (pattern base 1, pattern index 3) draws the large body and its pattern layer with pattern
+*>   texture code 4, a puff state 2 pufferfish the big model, a salmon of type 2 the large one and of type 0 the small one.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         MOVE 0 TO EA-MT-COUNT
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE "tropical_fish" TO WS-KEY
+                 MOVE "tropical_fish~l" TO WS-K20
+                 COMPUTE WS-INT = 1 + 3 * 256
+             WHEN 2
+                 MOVE "pufferfish" TO WS-KEY
+                 MOVE "pufferfish~2" TO WS-K20
+                 MOVE 2 TO WS-INT
+             WHEN 3
+                 MOVE "salmon" TO WS-KEY
+                 MOVE "salmon~l" TO WS-K20
+                 MOVE 2 TO WS-INT
+             WHEN OTHER
+                 MOVE "salmon" TO WS-KEY
+                 MOVE "salmon~s" TO WS-K20
+                 MOVE 0 TO WS-INT
+         END-EVALUATE
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+         MOVE 1 TO WS-ID
+         CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+         MOVE WS-INT TO EN-VAR(1)
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         MOVE 0 TO WS-N
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+             IF CL-MD-KEY(EA-MT-MODEL(WS-S)) = WS-K20
+                 ADD 1 TO WS-N
+             END-IF
+             IF CL-MD-KEY(EA-MT-MODEL(WS-S)) = "tropical_pattern~l" AND EA-MT-TEX(WS-S) = 4
+                 ADD 10 TO WS-N
+             END-IF
+         END-PERFORM
+         MOVE "N" TO TL-MODE
+         MOVE WS-I TO WS-I-D
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance variants " FUNCTION TRIM(WS-KEY) " case " WS-I-D " draws the model row " FUNCTION TRIM(WS-K20)
+             DELIMITED BY SIZE INTO TL-CASE
+         IF WS-I = 1
+             MOVE 11 TO TL-EXPECTED-N
+         ELSE
+             MOVE 1 TO TL-EXPECTED-N
+         END-IF
+         MOVE WS-N TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   A full atlas (64 slots of models no longer on screen) gives the mobs now on screen the slots least recently used instead of leaving them undrawn.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 64
          MOVE WS-S TO EA-MT-MODEL(WS-S)
@@ -268,10 +320,10 @@
          CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
      END-PERFORM
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
-     MOVE "acceptance variants a full atlas is released for the three mobs on screen" TO TL-CASE
+     MOVE "acceptance variants a full atlas evicts slots for the three mobs on screen" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF RL-EN-COUNT >= 108 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0 AND EA-MT-COUNT = 3
+     IF RL-EN-COUNT >= 108 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0 AND EA-MT-COUNT = 64
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

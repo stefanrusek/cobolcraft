@@ -94,6 +94,20 @@ PACKS = {
         "pack.mcmeta": new_style("Entity model pack"),
         "assets/minecraft/textures/entity/creeper/creeper.png": png(64, 32, lambda x, y: (10 + x, 10 + y, 77, 255)),
     }),
+    # "villagerhat": the villager hat metadata (34-3 1.5): the .mcmeta files of type and profession textures (hat full, partial, an unknown value, a section
+    # that is not there, a file that is not JSON), for villagers and zombie villagers.
+    "villagerhat": ("folder", dict(
+        [("pack.mcmeta", new_style("Villager hat pack"))]
+        + [("assets/minecraft/textures/entity/%s/type/plains.png.mcmeta" % w, json.dumps({"villager": {"hat": "full"}}).encode())
+           for w in ("villager", "zombie_villager")]
+        + [("assets/minecraft/textures/entity/%s/type/desert.png.mcmeta" % w, json.dumps({"villager": {"hat": "partial"}}).encode())
+           for w in ("villager", "zombie_villager")]
+        + [("assets/minecraft/textures/entity/villager/type/swamp.png.mcmeta", json.dumps({"villager": {"hat": "weird"}}).encode()),
+           ("assets/minecraft/textures/entity/villager/profession/armorer.png.mcmeta", json.dumps({"villager": {"hat": "partial"}}).encode()),
+           ("assets/minecraft/textures/entity/villager/profession/butcher.png.mcmeta", json.dumps({"villager": {"hat": "full"}}).encode()),
+           ("assets/minecraft/textures/entity/zombie_villager/profession/butcher.png.mcmeta", json.dumps({"villager": {"hat": "full"}}).encode()),
+           ("assets/minecraft/textures/entity/villager/profession/cleric.png.mcmeta", b"this is not json"),
+           ("assets/minecraft/textures/entity/villager/profession/farmer.png.mcmeta", json.dumps({"other": 1}).encode())])),
     # "cracks": the ten break-stage images (12 section 4.1), stage N in the colour (20 N, 0, 255 - 20 N).
     "cracks": ("folder", dict(
         [("pack.mcmeta", new_style("Cracks pack"))]

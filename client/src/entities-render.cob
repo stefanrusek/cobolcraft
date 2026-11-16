@@ -82,6 +82,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     CALL "VILLAGER-HAT-RESET"
      MOVE 0 TO EA-W EA-H
      COMPUTE WS-N = 3 + EA-MT-COUNT
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
@@ -227,6 +228,12 @@
     05 WS-RECT-Y           BINARY-LONG.
     05 WS-RECT-W           BINARY-LONG.
     05 WS-RECT-H           BINARY-LONG.
+ 01 WS-OV                  BINARY-LONG.
+ 01 WS-OV-CODE             BINARY-LONG.
+ 01 WS-OV-R                FLOAT-LONG.
+ 01 WS-OV-G                FLOAT-LONG.
+ 01 WS-OV-B                FLOAT-LONG.
+ 01 WS-OV-M                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -253,10 +260,9 @@
              END-PERFORM
          END-IF
          MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND EN-BABY(WS-R) = 1
-             IF CL-MD-BABY(EN-MODEL(WS-R)) > 0
-                 MOVE CL-MD-BABY(EN-MODEL(WS-R)) TO EN-MODEL(WS-R)
-             END-IF
+         MOVE 0 TO EN-HAND-OK(WS-R, 1) EN-HAND-OK(WS-R, 2)
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+             CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R EN-MODEL(WS-R)
          END-IF
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE
@@ -276,6 +282,20 @@
                  CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
+*>           The overlay layers (ENTITY-OVERLAY: villager type, profession and level, horse markings, collars): the model again with the layer's texture.
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 8
+                 CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-OV-CODE WS-OV-R WS-OV-G WS-OV-B WS-OV-M
+                 IF WS-OV-CODE > 0 AND CL-MD-FAMILY(EN-MODEL(WS-R)) > 0
+                     MOVE WS-OV-CODE TO EN-OVL(WS-R)
+                     MOVE WS-OV TO EN-OVN(WS-R)
+                     IF WS-OV-M > 0
+                         MOVE WS-OV-M TO EN-MODEL(WS-R)
+                     END-IF
+                     CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                     MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
+                     MOVE 0 TO EN-OVL(WS-R) EN-OVN(WS-R)
+                 END-IF
+             END-PERFORM
          END-IF
          MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
@@ -513,6 +533,8 @@
  01 WS-K                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-RX                  FLOAT-LONG.
  01 WS-RZ                  FLOAT-LONG.
@@ -598,6 +620,21 @@
                  MOVE 1 TO RL-GI-A(RL-GI-COUNT)
                  MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
                  MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+*>   The items in the hands of the mobs drawn this frame (ENTITY-MODEL-EMIT found their hands): the main hand is the right arm's, a left-handed mob (mob flags bit 2)
+*>   holds it in the left.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1
+             PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 2
+                 COMPUTE WS-SLOT = WS-H
+                 IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(WS-R) / 2), 2) = 1
+                     COMPUTE WS-SLOT = 3 - WS-H
+                 END-IF
+                 IF EN-HAND-OK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-SLOT) > 0
+                     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
+                 END-IF
              END-PERFORM
          END-IF
      END-PERFORM

@@ -86,66 +86,96 @@
  END PROGRAM CREEPER-SWELL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-SLOT-ENSURE.
+*> USING CLIENT-STATE, model row, texture code, new out (BINARY-LONG, set to 1 when a slot's image changed; never reset here): the atlas slot of the pair gets the
+*> stamp of this pass; a pair that has none takes a free slot, or when the 64 are in use the slot least recently used (the lowest index of equal age) that no mob
+*> drew in this pass; when every slot was drawn in this pass the pair is not given one (its mob is not drawn).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-OLD                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-MODEL                BINARY-LONG.
+ 01 L-TEX                  BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-MODEL L-TEX L-NEW.
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-S) = L-MODEL AND EA-MT-TEX(WS-S) = L-TEX
+             MOVE WS-S TO WS-FOUND
+         END-IF
+     END-PERFORM
+     IF WS-FOUND > 0
+         MOVE EA-MT-STAMP TO EA-MT-USED(WS-FOUND)
+         GOBACK
+     END-IF
+     IF EA-MT-COUNT < 64
+         ADD 1 TO EA-MT-COUNT
+         MOVE EA-MT-COUNT TO WS-FOUND
+     ELSE
+         MOVE 0 TO WS-OLD
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 64
+             IF EA-MT-USED(WS-S) < EA-MT-STAMP AND (WS-OLD = 0 OR EA-MT-USED(WS-S) < EA-MT-USED(WS-OLD))
+                 MOVE WS-S TO WS-OLD
+             END-IF
+         END-PERFORM
+         MOVE WS-OLD TO WS-FOUND
+     END-IF
+     IF WS-FOUND > 0
+         MOVE L-MODEL TO EA-MT-MODEL(WS-FOUND)
+         MOVE L-TEX TO EA-MT-TEX(WS-FOUND)
+         MOVE EA-MT-STAMP TO EA-MT-USED(WS-FOUND)
+         MOVE 1 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-SLOT-ENSURE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-MODEL-SLOTS.
-*> USING CLIENT-STATE: every used replica row with a model gets an atlas slot (EA-MT, at most 32: a model beyond them is not
-*> drawn); the atlas is rebuilt once when a slot was added.
+*> USING CLIENT-STATE: every used replica row with a model gets an atlas slot for its model and texture code, for its extra layer and for each overlay layer
+*> (EA-MT, at most 64: ENTITY-SLOT-ENSURE; an overlay with a model of its own, the armor pieces, takes its slot for that model); the atlas is rebuilt once when a slot's image changed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLMODELS.
  01 WS-R                   BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-EM                  BINARY-LONG.
  01 WS-TEX                 BINARY-LONG.
- 01 WS-RESET               BINARY-LONG.
+ 01 WS-OV                  BINARY-LONG.
+ 01 WS-OVR                 FLOAT-LONG.
+ 01 WS-OVG                 FLOAT-LONG.
+ 01 WS-OVB                 FLOAT-LONG.
+ 01 WS-OVM                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO WS-NEW WS-RESET
+     MOVE 0 TO WS-NEW
+     ADD 1 TO EA-MT-STAMP
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
-             MOVE EN-MODEL(WS-R) TO WS-EM
-             IF EN-BABY(WS-R) = 1 AND CL-MD-BABY(WS-EM) > 0
-                 MOVE CL-MD-BABY(WS-EM) TO WS-EM
-             END-IF
+             CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
-             MOVE 0 TO WS-FOUND
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                 IF EA-MT-MODEL(WS-S) = WS-EM AND EA-MT-TEX(WS-S) = WS-TEX
-                     MOVE 1 TO WS-FOUND
-                 END-IF
-             END-PERFORM
-*>           The atlas is full (64 images): once a call, every slot is released and the pass starts again with the rows on screen, so the images that
-*>           are no longer needed make room instead of the newest mobs not being drawn.
-             IF WS-FOUND = 0 AND EA-MT-COUNT >= 64 AND WS-RESET = 0
-                 MOVE 0 TO EA-MT-COUNT WS-R
-                 MOVE 1 TO WS-RESET WS-NEW
-             END-IF
-             IF WS-FOUND = 0 AND EA-MT-COUNT < 64
-                 ADD 1 TO EA-MT-COUNT
-                 MOVE WS-EM TO EA-MT-MODEL(EA-MT-COUNT)
-                 MOVE WS-TEX TO EA-MT-TEX(EA-MT-COUNT)
-                 MOVE 1 TO WS-NEW
-             END-IF
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
              MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0
-                 MOVE 0 TO WS-FOUND
-                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                     IF EA-MT-MODEL(WS-S) = WS-X
-                         MOVE 1 TO WS-FOUND
-                     END-IF
-                 END-PERFORM
-                 IF WS-FOUND = 0 AND EA-MT-COUNT < 64
-                     ADD 1 TO EA-MT-COUNT
-                     MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
-                     MOVE 0 TO EA-MT-TEX(EA-MT-COUNT)
-                     MOVE 1 TO WS-NEW
-                 END-IF
+                 CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-X WS-TEX
+                 CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
+*>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 8
+                 CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
+                 IF WS-TEX > 0 AND WS-OVM = 0
+                     CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+                 END-IF
+                 IF WS-TEX > 0 AND WS-OVM > 0
+                     CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-OVM WS-TEX WS-NEW
+                 END-IF
+             END-PERFORM
          END-IF
      END-PERFORM
      IF WS-NEW = 1
@@ -164,9 +194,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 160 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 200 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 160 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 200 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXC                BINARY-LONG.
  01 WS-TR                  FLOAT-LONG.
@@ -273,11 +303,22 @@
 *> The baked mesh of each replica row, entity-relative (the pose changes with the walk state, the swing and the aggressive flag, which are in the key), kept with the key it was baked for: the cost of a frame is then a copy of the vertices with the offset to the eye
 *> (lane resume T5820: baking 70 mobs each frame took 340 ms in a debug build).
  01 WS-BAKED.
-    05 WS-BK OCCURS 512 TIMES.
+    05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
           15 WS-BK-KF          FLOAT-LONG OCCURS 24 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
+       10 WS-BK-HR            BINARY-LONG VALUE 0.
+       10 WS-BK-HL            BINARY-LONG VALUE 0.
+       10 WS-BK-OK            BINARY-LONG VALUE 0.
+       10 WS-BK-OFX           FLOAT-LONG VALUE 0.
+       10 WS-BK-OFY           FLOAT-LONG VALUE 0.
+       10 WS-BK-OFZ           FLOAT-LONG VALUE 0.
+       10 WS-BK-EC OCCURS 40 TIMES.
+          15 WS-BK-ECP OCCURS 8 TIMES.
+             20 WS-BK-ECX     FLOAT-SHORT.
+             20 WS-BK-ECY     FLOAT-SHORT.
+             20 WS-BK-ECZ     FLOAT-SHORT.
        10 WS-BK-CORNER OCCURS 40 TIMES.
           15 WS-BK-CP OCCURS 8 TIMES.
              20 WS-BK-CX      FLOAT-SHORT.
@@ -296,6 +337,17 @@
           15 WS-BK-R          FLOAT-SHORT VALUE 1.
           15 WS-BK-G          FLOAT-SHORT VALUE 1.
           15 WS-BK-BLUE       FLOAT-SHORT VALUE 1.
+ 01 WS-POOL.
+    05 WS-POOL-ROW         BINARY-LONG OCCURS 768 TIMES VALUE 0.
+    05 WS-POOL-LAYER       BINARY-LONG OCCURS 768 TIMES VALUE 0.
+ 01 WS-INDEX-TABLE.
+    05 WS-IX-ROW OCCURS 256 TIMES.
+       10 WS-IX            BINARY-LONG OCCURS 10 TIMES VALUE 0.
+ 01 WS-NEXT                BINARY-LONG VALUE 0.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-LB                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
     05 WS-KN                  FLOAT-LONG OCCURS 24 TIMES.
  01 WS-HIT                 BINARY-LONG.
@@ -322,6 +374,16 @@
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
  01 WS-MAINARM             BINARY-LONG.
+ 01 WS-ANIM                PIC X.
+ 01 WS-POSE-KEY            PIC X(20).
+ 01 WS-FK                  PIC X(24).
+ 01 WS-FM                  BINARY-LONG.
+ 01 WS-HK                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-HP.
+    05 WS-HPV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-HA.
+    05 WS-HAV               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
@@ -356,6 +418,24 @@
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
 *>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
      MOVE 1 TO WS-HOOK-X WS-HOOK-Y
+*>   The setupAnim program of the row; an armor row (code A) is posed as the mob that wears it (its own row, or the baby row of a baby).
+     MOVE CL-MD-ANIM(EN-MODEL(WS-ROW)) TO WS-ANIM
+     IF WS-ANIM = "A" OR "E"
+         MOVE EN-KEY(WS-ROW) TO WS-FK
+         CALL "ENTITY-MODEL-FIND" USING WS-FK WS-FM
+         IF WS-FM > 0 AND EN-BABY(WS-ROW) = 1 AND CL-MD-BABY(WS-FM) > 0
+             MOVE CL-MD-BABY(WS-FM) TO WS-FM
+         END-IF
+         MOVE "-" TO WS-ANIM
+         IF WS-FM > 0
+             MOVE CL-MD-ANIM(WS-FM) TO WS-ANIM
+         END-IF
+     END-IF
+*>   The key the pose program picks the mob by: the row's own, or the wearer's for an armor row.
+     MOVE CL-MD-KEY(EN-MODEL(WS-ROW)) TO WS-POSE-KEY
+     IF (CL-MD-ANIM(EN-MODEL(WS-ROW)) = "A" OR "E") AND WS-FM > 0
+         MOVE CL-MD-KEY(WS-FM) TO WS-POSE-KEY
+     END-IF
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
          CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
          COMPUTE WS-KSWELL = WS-SWELL / 28
@@ -372,9 +452,15 @@
 *>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
 *>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
 *>   6.7); the opaque entity mesh has no such test, so the layer is enlarged by 0.3 percent about the entity origin to lie just outside the body.
-     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y" OR "E"
          MOVE 1.003 TO WS-HOOK-X WS-HOOK-Y
          MOVE 1 TO WS-LIGHT
+     END-IF
+*>   An overlay layer (ENTITY-OVERLAY, EN-OVL > 0): the model of the mob again, enlarged by 0.3 percent about the entity origin for each layer so that it
+*>   lies over the body and the layers before it.
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) <= 4
+         COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * EN-OVN(WS-ROW))
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
      END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
@@ -399,15 +485,15 @@
      MOVE 0 TO WS-WPOS WS-WSPEED WS-SWP WS-AGE
      MOVE 0 TO WS-SWT WS-SWARM WS-AGG
      MOVE 1 TO WS-MAINARM
-     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+     IF WS-ANIM = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H" OR "N"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
              OR "blaze" OR "enderman" OR "enderman_eyes"
-             OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "W" OR "V"
+             OR WS-ANIM = "W" OR "V"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
-         IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+         IF WS-ANIM = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
                  OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
-                 OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "V"
+                 OR WS-ANIM = "V" OR "N"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -428,30 +514,78 @@
              END-IF
          END-IF
      END-IF
+*>   A boat (code B): the rowing time of each paddle (7.3 getRowingTime at partial 1): the paddle position while the paddle is held, else 0 (the replica keeps the
+*>   left position in EN-WALK-POS, the right in EN-WALK-SPEED, the held flags in EN-X1 and EN-X2).
+     IF WS-ANIM = "B"
+         MOVE 0 TO WS-WPOS WS-WSPEED
+         IF EN-X1(WS-ROW) = 1
+             MOVE EN-WALK-POS(WS-ROW) TO WS-WPOS
+         END-IF
+         IF EN-X2(WS-ROW) = 1
+             MOVE EN-WALK-SPEED(WS-ROW) TO WS-WSPEED
+         END-IF
+     END-IF
      MOVE WS-WPOS TO WS-KN(17)
      MOVE WS-WSPEED TO WS-KN(18)
      MOVE WS-SWP TO WS-KN(19)
      MOVE WS-AGE TO WS-KN(22)
+*>   The corals of the warm zombie nautilus are hidden under body armor (34-8 6.4): the key holds whether body armor is worn.
+     MOVE 0 TO WS-KN(23)
+     IF EN-EQ(WS-ROW, 7) > 0
+         MOVE 1 TO WS-KN(23)
+     END-IF
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
-*>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
-*>   between its models within a frame; the first entry whose key is the key, else the one of the same model or the free one, is the one used.
-     MOVE 0 TO WS-HIT
-     MOVE WS-ROW TO WS-E
-     COMPUTE WS-E2 = WS-ROW + 256
-     EVALUATE TRUE
-         WHEN WS-BK-KEY(WS-ROW) = WS-KEY-NOW AND WS-BK-N(WS-ROW) > 0
+*>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
+*>   model of the same entity), 2 + n the overlay layer n. The entry whose key is the key is used; else the layer's own entry is baked again.
+     MOVE 0 TO WS-HIT WS-E
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 1 AND EN-OVN(WS-ROW) <= 8
+         COMPUTE WS-LA = EN-OVN(WS-ROW) + 2
+         MOVE WS-LA TO WS-LB WS-LC
+     ELSE
+         MOVE 1 TO WS-LA
+         MOVE 2 TO WS-LB
+         MOVE 1 TO WS-LC
+     END-IF
+     IF WS-IX(WS-ROW, WS-LA) > 0
+         IF WS-BK-KEY(WS-IX(WS-ROW, WS-LA)) = WS-KEY-NOW AND WS-BK-N(WS-IX(WS-ROW, WS-LA)) > 0
              MOVE 1 TO WS-HIT
-         WHEN WS-BK-KEY(WS-E2) = WS-KEY-NOW AND WS-BK-N(WS-E2) > 0
+             MOVE WS-IX(WS-ROW, WS-LA) TO WS-E
+         END-IF
+     END-IF
+     IF WS-HIT = 0 AND WS-LB NOT = WS-LA AND WS-IX(WS-ROW, WS-LB) > 0
+         IF WS-BK-KEY(WS-IX(WS-ROW, WS-LB)) = WS-KEY-NOW AND WS-BK-N(WS-IX(WS-ROW, WS-LB)) > 0
              MOVE 1 TO WS-HIT
-             MOVE WS-E2 TO WS-E
-         WHEN WS-BK-N(WS-ROW) = 0 OR WS-BK-KF(WS-ROW, 1) = WS-KN(1)
-             CONTINUE
-         WHEN OTHER
-             MOVE WS-E2 TO WS-E
-     END-EVALUATE
+             MOVE WS-IX(WS-ROW, WS-LB) TO WS-E
+         END-IF
+     END-IF
      IF WS-HIT = 0
+*>       The model of the row's entry 1 is the model's; another model (the extra layer) takes entry 2.
+         IF WS-LA = 1 AND WS-IX(WS-ROW, 1) > 0
+             IF WS-BK-KF(WS-IX(WS-ROW, 1), 1) NOT = WS-KN(1) AND WS-BK-N(WS-IX(WS-ROW, 1)) > 0
+                 MOVE 2 TO WS-LC
+             END-IF
+         END-IF
+         IF WS-IX(WS-ROW, WS-LC) = 0
+             ADD 1 TO WS-NEXT
+             IF WS-NEXT > 768
+                 MOVE 1 TO WS-NEXT
+             END-IF
+             IF WS-POOL-ROW(WS-NEXT) > 0
+                 MOVE 0 TO WS-IX(WS-POOL-ROW(WS-NEXT), WS-POOL-LAYER(WS-NEXT))
+             END-IF
+             MOVE WS-ROW TO WS-POOL-ROW(WS-NEXT)
+             MOVE WS-LC TO WS-POOL-LAYER(WS-NEXT)
+             MOVE WS-NEXT TO WS-IX(WS-ROW, WS-LC)
+             MOVE 0 TO WS-BK-N(WS-NEXT)
+         END-IF
+         MOVE WS-IX(WS-ROW, WS-LC) TO WS-E
+     END-IF
+     IF WS-HIT = 0
+         ADD 1 TO RL-EN-BAKES
          MOVE 0 TO WS-BN WS-NC
+         MOVE 0 TO WS-BK-OK(WS-E)
+         MOVE 0 TO WS-BK-HR(WS-E) WS-BK-HL(WS-E)
 *>   The model: built once per row of the table, then copied.
      MOVE EN-MODEL(WS-ROW) TO WS-K
      IF WS-HAVE(WS-K) = 0
@@ -482,7 +616,7 @@
      MOVE WS-SWARM TO WS-ST(21)
      MOVE WS-AGG TO WS-ST(18)
      MOVE WS-MAINARM TO WS-ST(13)
-     EVALUATE CL-MD-ANIM(WS-K)
+     EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
          WHEN "C"
@@ -505,9 +639,23 @@
              MOVE 4 TO WS-VARIANT
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
+         WHEN "N"
+             MOVE WS-WPOS TO WS-I(3)
+             MOVE WS-WSPEED TO WS-I(4)
+             MOVE WS-AGE TO WS-I(5)
+             CALL "EF8-NAUTILUS-ANIM" USING EMM-MODEL WS-IN
+             IF CL-MD-KEY(WS-K) = "zombie_nautilus~w" AND EN-EQ(WS-ROW, 7) > 0
+                 MOVE "corals" TO WS-FK
+                 CALL "EMM-FIND" USING EMM-MODEL WS-FK WS-HK
+                 MOVE 0 TO MM-VISIBLE(WS-HK)
+             END-IF
+         WHEN "B"
+             MOVE WS-WPOS TO WS-I(3)
+             MOVE WS-WSPEED TO WS-I(4)
+             CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
          WHEN "W"
          WHEN "V"
-             CALL "ENTITY-POSE-MORE" USING EMM-MODEL CL-MD-KEY(WS-K) WS-IN WS-AGE
+             CALL "ENTITY-POSE-MORE" USING EMM-MODEL WS-POSE-KEY WS-IN WS-AGE
          WHEN "H"
              MOVE 0 TO WS-VARIANT
              IF EN-POSE(WS-ROW) = 5
@@ -543,11 +691,15 @@
 *>   The render sequence of the body yaw (the replica's yaw): operations in the order EF7-SETUP-ROTATIONS lists them.
      MOVE 0 TO WS-SRI(1) WS-SRI(2) WS-SRI(4) WS-SRI(5)
      MOVE EN-YAW(WS-ROW) TO WS-SRI(3)
-     CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
+     IF WS-ANIM = "B"
+         CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
+     ELSE
+         CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
+     END-IF
      MOVE WS-SRO(1) TO WS-NOPS
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
-     IF CL-MD-ANIM(WS-K) = "H" AND EN-SWIM(WS-ROW) > 0
+     IF WS-ANIM = "H" AND EN-SWIM(WS-ROW) > 0
          PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 2
              COMPUTE WS-OB = WS-J * 4 - 2
              COMPUTE WS-OD = WS-OB + 8
@@ -571,7 +723,7 @@
          ADD 2 TO WS-NOPS
      END-IF
 *>   A crouching player is drawn 0.125 lower, outermost (53 section 14.1).
-     IF CL-MD-ANIM(WS-K) = "H" AND EN-POSE(WS-ROW) = 5
+     IF WS-ANIM = "H" AND EN-POSE(WS-ROW) = 5
          PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 1
              COMPUTE WS-OB = WS-J * 4 - 2
              COMPUTE WS-OD = WS-OB + 4
@@ -695,6 +847,16 @@
                      MOVE WS-WY(WS-K) TO WS-BK-CY(WS-E, WS-NC, WS-K)
                      MOVE WS-WZ(WS-K) TO WS-BK-CZ(WS-E, WS-NC, WS-K)
                  END-PERFORM
+*>               The cuboid of an arm (the first of a part named right_arm, left_arm, or the crossed arms, kept as a negative index): where the held item goes.
+                 IF MM-NAME(WS-P) = "right_arm" AND WS-BK-HR(WS-E) = 0
+                     MOVE WS-NC TO WS-BK-HR(WS-E)
+                 END-IF
+                 IF MM-NAME(WS-P) = "left_arm" AND WS-BK-HL(WS-E) = 0
+                     MOVE WS-NC TO WS-BK-HL(WS-E)
+                 END-IF
+                 IF MM-NAME(WS-P) = "arms" AND WS-BK-HR(WS-E) = 0
+                     COMPUTE WS-BK-HR(WS-E) = 0 - WS-NC
+                 END-IF
 *>               The six faces: down, up, west, north, east, south.
                  PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 5
                      MOVE WS-F TO WS-FI(1)
@@ -714,7 +876,7 @@
                          COMPUTE WS-QV(WS-K) = (EA-MT-Y(WS-SLOT) + WS-UO(2) * EA-MT-H(WS-SLOT)) / EA-H
                      END-PERFORM
                      COMPUTE WS-BRIGHT = FUNCTION MAX(WS-FACTOR(WS-F + 1) * WS-LIGHT, 0.1)
-                     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
+                     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y" OR "E"
                          MOVE 1 TO WS-BRIGHT
                      END-IF
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
@@ -739,12 +901,24 @@
      COMPUTE WS-OY = EN-Y(WS-ROW) - L-EYE(2)
      COMPUTE WS-OZ = EN-Z(WS-ROW) - L-EYE(3)
      CALL "ENTITY-TINT" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TR WS-TG WS-TB
+*>   The corners shifted last time are kept with the offset they were shifted by: a mob and an eye that did not move need no shifting (a float addition costs
+*>   half a microsecond: 24 of them a cuboid were two thirds of a frame of 70 mobs).
+     MOVE 0 TO WS-REUSE
+     IF WS-BK-OK(WS-E) = 1 AND WS-BK-OFX(WS-E) = WS-OX AND WS-BK-OFY(WS-E) = WS-OY AND WS-BK-OFZ(WS-E) = WS-OZ
+         MOVE 1 TO WS-REUSE
+     END-IF
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR RL-EN-COUNT + 36 > CL-MAX-ENTITY-VERTICES
-         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
-             COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
-             COMPUTE WS-ECY(WS-K) = WS-BK-CY(WS-E, WS-C, WS-K) + WS-OY
-             COMPUTE WS-ECZ(WS-K) = WS-BK-CZ(WS-E, WS-C, WS-K) + WS-OZ
-         END-PERFORM
+         IF WS-REUSE = 1
+             MOVE WS-BK-EC(WS-E, WS-C) TO WS-EC
+         ELSE
+             ADD 1 TO RL-EN-SHIFTS
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
+                 COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
+                 COMPUTE WS-ECY(WS-K) = WS-BK-CY(WS-E, WS-C, WS-K) + WS-OY
+                 COMPUTE WS-ECZ(WS-K) = WS-BK-CZ(WS-E, WS-C, WS-K) + WS-OZ
+             END-PERFORM
+             MOVE WS-EC TO WS-BK-EC(WS-E, WS-C)
+         END-IF
          COMPUTE WS-VA = WS-C * 36 - 35
          PERFORM VARYING WS-VW FROM 0 BY 1 UNTIL WS-VW > 35
              ADD 1 TO RL-EN-COUNT
@@ -759,6 +933,35 @@
              ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM
+     IF WS-REUSE = 0 AND WS-C > WS-BK-NC(WS-E)
+         MOVE 1 TO WS-BK-OK(WS-E)
+         MOVE WS-OX TO WS-BK-OFX(WS-E)
+         MOVE WS-OY TO WS-BK-OFY(WS-E)
+         MOVE WS-OZ TO WS-BK-OFZ(WS-E)
+     END-IF
+*>   The hands of a mob that holds an item (the base model only): where GROUND-ITEMS-MESH draws what the mob holds (ENTITY-HAND-FIND).
+     IF EN-OVL(WS-ROW) = 0 AND (EN-EQ(WS-ROW, 1) > 0 OR EN-EQ(WS-ROW, 2) > 0)
+         IF WS-BK-HR(WS-E) NOT = 0
+             MOVE 1 TO WS-HK
+             MOVE WS-BK-HR(WS-E) TO WS-HI
+             IF WS-HI < 0
+                 MOVE 2 TO WS-HK
+                 COMPUTE WS-HI = 0 - WS-HI
+             END-IF
+             CALL "ENTITY-HAND-FIND" USING WS-BK-CORNER(WS-E, WS-HI) WS-HK WS-HP WS-HA EN-HAND-OK(WS-ROW, 1)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                 MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K)
+                 MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K + 3)
+             END-PERFORM
+         END-IF
+         IF WS-BK-HL(WS-E) > 0
+             CALL "ENTITY-HAND-FIND" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) 1 WS-HP WS-HA EN-HAND-OK(WS-ROW, 2)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                 MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K)
+                 MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K + 3)
+             END-PERFORM
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM ENTITY-MODEL-EMIT.
 

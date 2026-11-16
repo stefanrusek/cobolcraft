@@ -10,7 +10,10 @@
 *> swing (12 section 6.4: animation = min(ticks / duration, 1) then ticks + 1, ended once ticks exceed the duration).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLMODELS.
  01 WS-R                   BINARY-LONG.
+ 01 WS-PAD-L               FLOAT-LONG.
+ 01 WS-PAD-R               FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
@@ -50,10 +53,24 @@
                  WHEN OTHER
                      COMPUTE WS-TARGET = FUNCTION MIN(WS-D * 4, 1)
              END-EVALUATE
+             MOVE EN-WALK-POS(WS-R) TO WS-PAD-L
+             MOVE EN-WALK-SPEED(WS-R) TO WS-PAD-R
              MOVE EN-WALK-SPEED(WS-R) TO EN-WALK-SPEED-OLD(WS-R)
              COMPUTE EN-WALK-SPEED(WS-R) = EN-WALK-SPEED(WS-R) + (WS-TARGET - EN-WALK-SPEED(WS-R)) * WS-SMOOTH
              COMPUTE EN-WALK-POS(WS-R) = EN-WALK-POS(WS-R) + EN-WALK-SPEED(WS-R)
              MOVE WS-SCALE TO EN-WALK-SCALE(WS-R)
+*>           A boat's paddles (34-8 7.3 tick): a held paddle's position advances pi / 8 each tick, a free one is back at 0 (left in EN-WALK-POS, right in EN-WALK-SPEED).
+             IF EN-MODEL(WS-R) > 0
+                 IF CL-MD-ANIM(EN-MODEL(WS-R)) = "B"
+                     MOVE 0 TO EN-WALK-POS(WS-R) EN-WALK-SPEED(WS-R)
+                     IF EN-X1(WS-R) = 1
+                         COMPUTE EN-WALK-POS(WS-R) = WS-PAD-L + 0.3926991
+                     END-IF
+                     IF EN-X2(WS-R) = 1
+                         COMPUTE EN-WALK-SPEED(WS-R) = WS-PAD-R + 0.3926991
+                     END-IF
+                 END-IF
+             END-IF
              ADD 1 TO EN-AGE(WS-R)
              MOVE EN-X(WS-R) TO EN-OX(WS-R)
              MOVE EN-Y(WS-R) TO EN-OY(WS-R)

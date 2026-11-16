@@ -122,7 +122,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-PACKET.
 *> USING CLIENT-STATE, packet PB-BUFFER (PB-POS after the id), packet id (1, 54, 55, 57, 70, 71,
-*> 78, 85, 101, 103, 123, 127 or 128). 123 is Swing Animation (54 section 2.1); the walk animation is ticked by ENTITIES-ANIM-TICK.
+*> 78, 85, 101, 103, 104, 123, 127 or 128). 104 is Set Equipment (EN-EQ). 123 is Swing Animation (54 section 2.1); the walk animation is ticked by ENTITIES-ANIM-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -179,6 +179,7 @@
  01 WS-HAND                BINARY-LONG.
  01 WS-SWTYPE              BINARY-LONG.
  01 WS-DUR                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -240,6 +241,13 @@
                  MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
                  MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)
+                 MOVE 0 TO EN-X1(WS-ROW) EN-OVL(WS-ROW) EN-OVN(WS-ROW)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+                     MOVE 0 TO EN-EQ(WS-ROW, WS-I)
+                 END-PERFORM
+                 MOVE 0 TO EN-HAND-OK(WS-ROW, 1) EN-HAND-OK(WS-ROW, 2)
+                 MOVE 14 TO EN-X2(WS-ROW)
+                 MOVE -1 TO EN-X3(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
                  IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
@@ -267,7 +275,7 @@
                  MOVE MD-MX-IS-ITEM TO MD-MD-IS-ITEM
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END AND WS-ROW > 0
                      CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE WS-ROW MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT
-                         MD-MX-INT-2 MD-MX-INT-3
+                         MD-MX-INT-2 MD-MX-INT-3 MD-MX-LONG
                  END-IF
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END
                      CALL "HUD-ENTITY-DATA" USING CLIENT-STATE WS-ID MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT
@@ -412,6 +420,21 @@
                  MOVE WS-Y TO EN-OY(WS-ROW)
                  MOVE WS-Z TO EN-OZ(WS-ROW)
              END-IF
+         WHEN 104
+*>           Set Equipment: entity id, then (slot byte, stack) pairs, every pair but the last with bit 0x80 on the byte (05b 0x68).
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+             CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+             MOVE 128 TO WS-SLOT
+             PERFORM UNTIL WS-SLOT < 128 OR PB-ERROR = 1
+                 CALL "PB-GET-UBYTE" USING PB-BUFFER WS-SLOT
+                 CALL "PB-GET-ITEM-STACK" USING PB-BUFFER MD-ITEMSTACK-X
+                 IF PB-ERROR = 0 AND WS-ROW > 0 AND FUNCTION MOD(WS-SLOT, 128) < 8
+                     MOVE MD-ISX-ITEM TO EN-EQ(WS-ROW, FUNCTION MOD(WS-SLOT, 128) + 1)
+                     IF MD-ISX-COUNT <= 0
+                         MOVE 0 TO EN-EQ(WS-ROW, FUNCTION MOD(WS-SLOT, 128) + 1)
+                     END-IF
+                 END-IF
+             END-PERFORM
          WHEN 123
 *>           Swing Animation: entity id, hand, animation type, duration (54 section 2.1; ignored for an unknown entity).
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID

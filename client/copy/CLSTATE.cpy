@@ -453,6 +453,7 @@
        10 PL-HEIGHT          BINARY-LONG.
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
+       10 PL-GAME-TIME       BINARY-DOUBLE.  *> the world's game time: the first field of Set Time, plus 1 each client tick (the clock of entity timers such as the wolf's anger end time)
        10 PL-DAY-TICKS       BINARY-DOUBLE.  *> the clock's total ticks, never wrapped (the debug overlay's day count)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
        10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
@@ -700,6 +701,20 @@
           15 EN-VAR          BINARY-LONG.
           15 EN-VAR2         BINARY-LONG.
           15 EN-VAR3         BINARY-LONG.
+*>        More metadata of the overlay layers (ENTITY-VARIANT-SET): X1 the tamable flags byte of a wolf and cat (bit 4 tame) or the fox flags (bit 32 sleeping), X2 the
+*>        collar dye id (default 14, red), X3 the wolf's anger end time; EN-OVL the texture code of the overlay layer being drawn (0 none) and EN-OVN its index (1 to 4).
+          15 EN-X1           BINARY-LONG.
+          15 EN-X2           BINARY-LONG.
+          15 EN-X3           BINARY-DOUBLE.
+          15 EN-OVL          BINARY-LONG.
+          15 EN-OVN          BINARY-LONG.
+*>        Equipment (Set Equipment 0x68, slot ordinals 0 main hand, 1 off hand, 2 feet, 3 legs, 4 chest, 5 head, 6 body, 7 saddle; EN-EQ(row, slot + 1) the item registry id,
+*>        0 empty) and the hands of the model drawn this frame (ENTITY-MODEL-EMIT: 1 right arm, 2 left arm; OK 1 when found, the point of the hand and the direction from
+*>        the shoulder to the hand relative to the entity, ENTITY-HAND-FIND), where GROUND-ITEMS-MESH draws the held items.
+          15 EN-EQ           BINARY-LONG OCCURS 8 TIMES.
+          15 EN-HAND OCCURS 2 TIMES.
+             20 EN-HAND-OK    BINARY-LONG.
+             20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -987,6 +1002,8 @@
           15 EA-MT-Y         BINARY-LONG.
           15 EA-MT-W         BINARY-LONG.
           15 EA-MT-H         BINARY-LONG.
+          15 EA-MT-USED      BINARY-LONG.    *> the value of EA-MT-STAMP when a mob last drew the slot (least recently used goes first when the atlas is full)
+       10 EA-MT-STAMP        BINARY-LONG.    *> the number of ENTITY-MODEL-SLOTS passes so far
 *>     Environment atlas (texture 3, repeat wrapping; 08 §10.11; weather-render.cob): row k
 *>     (1 drizzle, 2 hailstorm) is its image's columns (left column, size); the image is repeated
 *>     down its columns over the whole atlas height.
@@ -1137,6 +1154,8 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
+       10 RL-EN-BAKES        BINARY-LONG.    *> running count of model bakes (ENTITY-MODEL-EMIT) and of cuboid corner shifts (the offset to the eye added to a cuboid's 8 corners); tests read the difference between two frames
+       10 RL-EN-SHIFTS       BINARY-LONG.
        10 RL-CULL-ON         BINARY-LONG.    *> 1 when RL-CULL-PLANE holds this frame's view frustum (RENDER-LIST-BUILD)
        10 RL-CULL-DISABLE    BINARY-LONG.    *> 1 keeps every entity figure whatever the view (tests of figure geometry from a fixed eye); 0 in the game
        10 RL-CULL-PLANE OCCURS 12 TIMES FLOAT-LONG.    *> left, right, bottom, top: unit normals pointing inward (a point is inside when n . (p - eye) >= 0)

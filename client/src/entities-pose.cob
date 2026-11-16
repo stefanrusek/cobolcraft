@@ -263,6 +263,14 @@
                  MOVE WS-STOP TO L-I(WS-J)
              END-PERFORM
              CALL "EM3-CREAKING-ANIM" USING EMM-MODEL L-IN
+*>       The copper golem walks (34-3 9.2): the walk keyframes with the walk state; no item in the hands, the state animations stopped.
+         WHEN "copper_golem"
+             MOVE L-AGE TO L-I(5)
+             MOVE 0 TO L-I(6) L-I(7)
+             PERFORM VARYING WS-J FROM 8 BY 1 UNTIL WS-J > 12
+                 MOVE WS-STOP TO L-I(WS-J)
+             END-PERFORM
+             CALL "EM3-COPPER-ANIM" USING EMM-MODEL L-IN
          WHEN "zombie_villager"
              MOVE WS-BABY TO L-I(1)
              MOVE 1 TO L-I(2)
