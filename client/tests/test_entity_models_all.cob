@@ -239,6 +239,10 @@
          MOVE WS-NAME TO WS-KEY
          CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
          CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+*>       Evoker fangs are drawn once the bite has started.
+         IF WS-KEY = "evoker_fangs"
+             MOVE 1 TO EN-FA(1)
+         END-IF
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
          MOVE SPACES TO TL-CASE
          STRING "acceptance models " FUNCTION TRIM(WS-NAME) " is meshed as whole cuboids" DELIMITED BY SIZE INTO TL-CASE

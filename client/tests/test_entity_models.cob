@@ -273,6 +273,10 @@
          MOVE 10.5 TO WS-Z
          MOVE 45 TO WS-YAW
          CALL "ETM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+*>       Evoker fangs are drawn once the bite has started.
+         IF WS-KEY = "evoker_fangs"
+             MOVE 1 TO EN-FA(1)
+         END-IF
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
          IF RL-EN-COUNT >= 36 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0
              ADD 1 TO WS-OK

@@ -94,6 +94,13 @@
                  MOVE WS-COV(3) TO EN-SQ-TGT(WS-R)
                  MOVE WS-COV(4) TO EN-WOG(WS-R)
              END-IF
+*>           Evoker fangs (34-3 4.8): lifeTicks fall by 1 a tick once the bite started (EM3-FANGS-TICK; the crit particle burst is not made here).
+             IF EN-KEY(WS-R) = "evoker_fangs"
+                 MOVE EN-FA(WS-R) TO WS-CIV(1)
+                 MOVE EN-FL(WS-R) TO WS-CIV(2)
+                 CALL "EM3-FANGS-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-FL(WS-R)
+             END-IF
 *>           The aquatic mobs: whether the middle of the box is in water (34-8 5: a fish out of water lies on its side).
              IF EN-KEY(WS-R) = "squid" OR "glow_squid" OR "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
                  CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
@@ -297,8 +304,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-EVENT.
-*> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 19 resets a squid's tentacle movement to 0 ("squid animation sync"). Another event or an unknown id
-*> changes nothing.
+*> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 19 resets a squid's tentacle movement to 0 ("squid animation sync"), 4 starts the bite of evoker
+*> fangs. Another event or an unknown id changes nothing.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ROW                 BINARY-LONG.
@@ -312,6 +319,31 @@
          IF L-EVENT = 19
              MOVE 0 TO EN-TM(WS-ROW)
          END-IF
+         IF L-EVENT = 4 AND EN-KEY(WS-ROW) = "evoker_fangs"
+             MOVE 1 TO EN-FA(WS-ROW)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM ENTITY-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-FANGS-PROGRESS.
+*> USING CLIENT-STATE, replica row of evoker fangs, progress out (FLOAT-LONG): EvokerFangs.getAnimationProgress at partial tick 1 (EM3-FANGS-PROGRESS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CI.
+    05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-CO.
+    05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-P                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-P.
+     MOVE EN-FA(L-ROW) TO WS-CIV(1)
+     MOVE EN-FL(L-ROW) TO WS-CIV(2)
+     MOVE 1 TO WS-CIV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-CI WS-CO
+     MOVE WS-COV(1) TO L-P
+     GOBACK.
+ END PROGRAM ENTITY-FANGS-PROGRESS.

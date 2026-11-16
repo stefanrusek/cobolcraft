@@ -384,6 +384,7 @@
     05 WS-HPV               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-HA.
     05 WS-HAV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-FP                  FLOAT-LONG.
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
@@ -394,6 +395,13 @@
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
      MOVE L-ROW TO WS-ROW
+*>   Evoker fangs are not drawn before the bite (34-3 4.8: progress 0).
+     IF EN-KEY(WS-ROW) = "evoker_fangs"
+         CALL "ENTITY-FANGS-PROGRESS" USING CLIENT-STATE WS-ROW WS-FP
+         IF WS-FP = 0
+             GOBACK
+         END-IF
+     END-IF
      MOVE 0 TO WS-SLOT
      CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TEXC
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
@@ -483,6 +491,7 @@
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
+     COMPUTE WS-KN(28) = EN-FL(WS-ROW) * 2 + EN-FA(WS-ROW)
 *>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
 *>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
 *>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
@@ -684,6 +693,10 @@
                      CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
                  WHEN "chicken"
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+                 WHEN "evoker_fangs"
+                     CALL "ENTITY-FANGS-PROGRESS" USING CLIENT-STATE WS-ROW WS-FP
+                     MOVE WS-FP TO WS-I(1)
+                     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
 *>               The magma cube's slices spread with the squish (34-6 7.2).
                  WHEN "magma_cube"
                      MOVE EN-SQ(WS-ROW) TO WS-I(1)
@@ -705,6 +718,8 @@
      EVALUATE TRUE
          WHEN WS-ANIM = "B"
              CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "evoker_fangs"
+             CALL "ENTITY-FANGS-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "squid" OR "glow_squid"
              CALL "ENTITY-SQUID-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"

@@ -707,6 +707,9 @@
           15 EN-RS           FLOAT-LONG.
           15 EN-XR           FLOAT-LONG.
           15 EN-ZR           FLOAT-LONG.
+*>        Evoker fangs (34-3 4.8): the bite has started (Entity Event 4) and lifeTicks (22 at spawn, falling by 1 a tick once started).
+          15 EN-FA           PIC 9.
+          15 EN-FL           BINARY-LONG.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the
