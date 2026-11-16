@@ -1168,6 +1168,8 @@
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 24
+             CALL "FR-ICEBERG" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 47
              CALL "FR-SPIKE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 17
