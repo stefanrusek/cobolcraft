@@ -953,6 +953,7 @@
  COPY FDCONST.
  COPY FEATDATA.
  COPY FDKEYS.
+ 01 WS-K-ROT-DIRECTION      PIC X(40) VALUE "direction".
  LOCAL-STORAGE SECTION.
  01 WS-TEXT                PIC X(120).
  01 WS-LEN                 BINARY-LONG.
@@ -1074,6 +1075,32 @@
              WHEN "noise_threshold"
                  MOVE 8 TO WS-D
                  CALL "FD-PROV-NOISE" USING JSON-DOC L-NODE WS-ROW WS-D
+             WHEN "minecraft:rotated"
+             WHEN "rotated"
+*>               rotated (35-2 section 4.3): PV-A the inner provider, PV-N the direction (0 down, 1 up, 2 north, 3 south, 4 west, 5 east; -1 when the data names none, then one draw)
+                 MOVE 9 TO PV-TYPE(WS-ROW)
+                 MOVE -1 TO PV-N(WS-ROW)
+                 CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-STATE WS-E
+                 CALL "FD-PROV-NODE" USING JSON-DOC WS-E PV-A(WS-ROW)
+                 CALL "FD-J-STRING" USING JSON-DOC WS-K-ROT-DIRECTION L-NODE WS-TEXT WS-LEN
+                 IF WS-LEN > 0
+                     EVALUATE FUNCTION TRIM(WS-TEXT)
+                         WHEN "down"
+                             MOVE 0 TO PV-N(WS-ROW)
+                         WHEN "up"
+                             MOVE 1 TO PV-N(WS-ROW)
+                         WHEN "north"
+                             MOVE 2 TO PV-N(WS-ROW)
+                         WHEN "south"
+                             MOVE 3 TO PV-N(WS-ROW)
+                         WHEN "west"
+                             MOVE 4 TO PV-N(WS-ROW)
+                         WHEN "east"
+                             MOVE 5 TO PV-N(WS-ROW)
+                         WHEN OTHER
+                             MOVE 1 TO FD-BAD
+                     END-EVALUATE
+                 END-IF
              WHEN "minecraft:random_block"
              WHEN "random_block"
                  MOVE 3 TO PV-TYPE(WS-ROW)
@@ -1410,12 +1437,15 @@
  END PROGRAM FD-J-HP.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FD-MD-NODE.
-*> USING doc, node: appends the modifier of a placement entry to FD-MD (kind the id of worldgen/placement_modifier_type; FD-BAD for an unsupported one).
+ PROGRAM-ID. FD-MD-NODE IS RECURSIVE.
+*> USING doc, node: appends the modifier of a placement entry to FD-MD (kind the id of worldgen/placement_modifier_type; FD-BAD for an unsupported one). randomly_selected (kind 16)
+*> keeps the rows of its alternatives in MD-P (at most 12) and their number in MD-B.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  COPY FDKEYS.
+ 01 WS-K-PLACEMENTS        PIC X(40) VALUE "placements".
+ LOCAL-STORAGE SECTION.
  01 WS-TEXT                PIC X(120).
  01 WS-LEN                 BINARY-LONG.
  01 WS-NAME                PIC X(48).
@@ -1427,6 +1457,7 @@
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-CHILD               BINARY-LONG.
  01 WS-P6.
     05 WS-R6               BINARY-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
@@ -1600,6 +1631,26 @@
              END-IF
          WHEN 14
              CONTINUE
+         WHEN 16
+             MOVE 0 TO MD-B(WS-ROW)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-PLACEMENTS WS-E
+             IF WS-E = 0
+                 MOVE 1 TO FD-BAD
+             ELSE
+                 IF JN-TYPE(WS-E) NOT = JT-ARRAY OR JN-COUNT(WS-E) < 1 OR JN-COUNT(WS-E) > 12
+                     MOVE 1 TO FD-BAD
+                 ELSE
+                     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
+                         CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-OK
+                         COMPUTE WS-CHILD = FD-MD-COUNT + 1
+                         CALL "FD-MD-NODE" USING JSON-DOC WS-OK
+                         MOVE WS-CHILD TO MD-P(WS-ROW, WS-I + 1)
+                         ADD 1 TO MD-B(WS-ROW)
+                     END-PERFORM
+*>                   MD-A the last row of the alternatives (the next modifier of the list is the row after it)
+                     MOVE FD-MD-COUNT TO MD-A(WS-ROW)
+                 END-IF
+             END-IF
          WHEN 15
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-X WS-E
              CALL "FD-J-IP" USING JSON-DOC WS-E WS-P4 WS-OK
@@ -1806,6 +1857,7 @@
              CALL "FD-PFREF-NODE" USING JSON-DOC LS-E FT-C(LS-ROW)
          WHEN 43
          WHEN 41
+         WHEN 32
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-FEATURES LS-E
              IF LS-E > 0
                  IF JN-TYPE(LS-E) = JT-ARRAY
@@ -1872,6 +1924,137 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 20
+*>           geode (feat-geode.cob): unsupported when a required member is missing or a provider, state or block set cannot be compiled
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-GEODE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 26
+*>           large_dripstone (feat-drip.cob): unsupported when a member is missing or a float provider is not a constant or a uniform one
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-DRIP-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 5
+*>           bonus_chest (feat-bonus.cob): unsupported when the chest or the torch is missing from the block table
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-BONUS-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 50
+*>           template (feat-template.cob): unsupported when a template file, a weight or a rotation is missing or the processors cannot be compiled
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-TEMPLATE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 8
+         WHEN 7
+*>           coral_tree and coral_claw (feat-coral.cob): unsupported when the placed feature is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-CORAL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 24
+*>           iceberg (feat-iceberg.cob): unsupported when the state or a block it needs is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-ICEBERG-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 47
+*>           ice spike (feat-spike.cob): unsupported when the state or a predicate is missing or not compiled
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-SPIKE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 17
+*>           fill layer (feat-fill.cob): unsupported when the state or the height is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FILL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 3
+*>           block pile (feat-pile.cob): unsupported when the state provider is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-PILE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 52
+*>           underwater magma (feat-magma.cob): unsupported when a number is missing or the table has no magma block
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-MAGMA-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 29
+*>           replace blobs (feat-blob.cob): unsupported when the state, target or radius is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-RBLOB-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 4
+*>           blue ice (feat-ice.cob): unsupported when the block table lacks packed_ice, ice or blue_ice
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-ICE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 1
+*>           forest rock, a block_blob (feat-blob.cob): unsupported when the state or can_place_on is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-BLOB-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE
@@ -1992,7 +2175,7 @@
              MOVE -1 TO FT-TYPE(LS-ROW)
              MOVE 1 TO FD-BAD
      END-EVALUATE
-     IF FT-TYPE(LS-ROW) = 36 OR FT-TYPE(LS-ROW) = 43 OR FT-TYPE(LS-ROW) = 41 OR FT-TYPE(LS-ROW) = 34 OR FT-TYPE(LS-ROW) = 57
+     IF FT-TYPE(LS-ROW) = 36 OR FT-TYPE(LS-ROW) = 43 OR FT-TYPE(LS-ROW) = 41 OR FT-TYPE(LS-ROW) = 34 OR FT-TYPE(LS-ROW) = 57 OR FT-TYPE(LS-ROW) = 32
          COMPUTE FT-A(LS-ROW) = FD-CH-COUNT + 1
          MOVE LS-NC TO FT-B(LS-ROW)
          PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > LS-NC

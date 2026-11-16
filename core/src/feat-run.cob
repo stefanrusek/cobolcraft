@@ -488,6 +488,14 @@
  01 WS-TEST                BINARY-LONG.
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-BOUND6              BINARY-LONG.
+ 01 WS-ROT                 BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FACE-NAME           PIC X(40).
+ 01 WS-AXIS-NAME           PIC X(40).
+ 01 WS-AXIS-KEY            PIC X(40) VALUE "axis".
+ 01 WS-FACING-KEY          PIC X(40) VALUE "facing".
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-PV                   BINARY-LONG.
@@ -549,6 +557,43 @@
              IF WS-RUN >= 0 AND WS-RUN < PV-N(L-PV)
                  MOVE FD-POOL(PV-POOL(L-PV) + WS-RUN) TO L-STATE-OUT
                  MOVE 1 TO L-OK
+             END-IF
+*>       rotated (35-2 section 4.3): the direction (a draw when the data names none) comes first, then the inner provider's state; axis takes the axis of the direction and facing the direction
+*>       (a block without the property, or without that value, keeps its state; the properties are found by name: the document's identity rule for the two axis and three facing
+*>       properties is not modelled, the data uses rotated only on hay_block and the wall fans)
+         WHEN 9
+             MOVE PV-N(L-PV) TO WS-DIR
+             IF WS-DIR < 0
+                 MOVE 6 TO WS-BOUND6
+                 CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND6 WS-DIR
+             END-IF
+             MOVE PV-A(L-PV) TO WS-PV
+             CALL "FR-PROV-STATE" USING L-STATE WS-PV L-X L-Y L-Z L-STATE-OUT L-OK
+             IF L-OK = 1
+                 EVALUATE WS-DIR
+                     WHEN 0
+                         MOVE "down" TO WS-FACE-NAME
+                         MOVE "y" TO WS-AXIS-NAME
+                     WHEN 1
+                         MOVE "up" TO WS-FACE-NAME
+                         MOVE "y" TO WS-AXIS-NAME
+                     WHEN 2
+                         MOVE "north" TO WS-FACE-NAME
+                         MOVE "z" TO WS-AXIS-NAME
+                     WHEN 3
+                         MOVE "south" TO WS-FACE-NAME
+                         MOVE "z" TO WS-AXIS-NAME
+                     WHEN 4
+                         MOVE "west" TO WS-FACE-NAME
+                         MOVE "x" TO WS-AXIS-NAME
+                     WHEN OTHER
+                         MOVE "east" TO WS-FACE-NAME
+                         MOVE "x" TO WS-AXIS-NAME
+                 END-EVALUATE
+                 MOVE L-STATE-OUT TO WS-ROT
+                 CALL "FD-STATE-SET" USING WS-ROT WS-AXIS-KEY WS-AXIS-NAME L-STATE-OUT WS-FOUND
+                 MOVE L-STATE-OUT TO WS-ROT
+                 CALL "FD-STATE-SET" USING WS-ROT WS-FACING-KEY WS-FACE-NAME L-STATE-OUT WS-FOUND
              END-IF
 *>       the noise providers (feat-prov-noise.cob)
          WHEN 6
@@ -664,7 +709,7 @@
  END PROGRAM FR-FLOOR-OF-LAYER.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FR-MODIFY.
+ PROGRAM-ID. FR-MODIFY IS RECURSIVE.
 *> USING state, modifier index, top placed feature (0 none), x, y, z, count out, positions out (4096 x 3 BINARY-LONG): one placement modifier of the compiled
 *> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8) are the biome info noise of feat-noise.cob; randomly_selected
 *> (16) and fixed_placement (17) are not compiled.
@@ -717,6 +762,9 @@
  01 WS-SZ                  BINARY-LONG.
  01 WS-STEPS               BINARY-LONG.
  01 WS-STAGE               BINARY-LONG.
+ LOCAL-STORAGE SECTION.
+ 01 LS-DRAW                BINARY-LONG.
+ 01 LS-CHILD               BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-MD                   BINARY-LONG.
@@ -928,6 +976,13 @@
              MOVE L-X TO L-OX(1)
              MOVE WS-Y TO L-OY(1)
              MOVE L-Z TO L-OZ(1)
+         WHEN 16
+*>           randomly_selected (35-1 section 7.17): one nextInt(n) picks the alternative, which runs on the same input and emits into the same list
+             CALL "WGR-NEXT-INT-BOUND" USING L-STATE MD-B(L-MD) LS-DRAW
+             MOVE MD-P(L-MD, LS-DRAW + 1) TO LS-CHILD
+             CALL "FR-MODIFY" USING L-STATE LS-CHILD L-TOP L-X L-Y L-Z L-COUNT L-OUT
+*>           the alternative has emitted its own positions: the flags it left in the shared storage must not emit them again
+             MOVE 0 TO WS-ONCE WS-REPEAT
          WHEN 14
              CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-DX
              CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-DZ
@@ -1003,6 +1058,7 @@
  01 LS-I                   BINARY-LONG.
  01 LS-MD                  BINARY-LONG.
  01 LS-LAST                BINARY-LONG.
+ 01 LS-END                 BINARY-LONG.
  01 LS-R                   BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
@@ -1036,8 +1092,13 @@
          MOVE LS-SM(LS-SP) TO LS-M
          SUBTRACT 1 FROM LS-SP
          CALL "FR-MODIFY" USING L-STATE LS-M L-TOP LS-X LS-Y LS-Z LS-COUNT LS-OUT
-         IF LS-M < LS-LAST
-             COMPUTE LS-MD = LS-M + 1
+*>       the modifier's own row, or the last row of its alternatives (randomly_selected keeps them behind it)
+         MOVE LS-M TO LS-END
+         IF MD-KIND(LS-M) = 16
+             MOVE MD-A(LS-M) TO LS-END
+         END-IF
+         IF LS-END < LS-LAST
+             COMPUTE LS-MD = LS-END + 1
              PERFORM VARYING LS-I FROM LS-COUNT BY -1 UNTIL LS-I < 1
                  IF LS-SP < 4096
                      ADD 1 TO LS-SP
@@ -1166,6 +1227,34 @@
              CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 16
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 1
+             CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 20
+             CALL "FR-GEODE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 26
+             CALL "FR-DRIP" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 5
+             CALL "FR-BONUS" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 50
+             CALL "FR-TEMPLATE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 8
+             CALL "FR-CORAL-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 7
+             CALL "FR-CORAL-CLAW" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 24
+             CALL "FR-ICEBERG" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 47
+             CALL "FR-SPIKE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 17
+             CALL "FR-FILL" USING L-FT L-X L-Y L-Z L-RESULT
+         WHEN 3
+             CALL "FR-PILE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 52
+             CALL "FR-MAGMA" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 29
+             CALL "FR-RBLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 4
+             CALL "FR-ICE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 10
              CALL "FR-DISK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 19
@@ -1212,6 +1301,15 @@
              PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT) OR L-RESULT = 0
                  COMPUTE LS-CH = FT-A(L-FT) + LS-I
                  CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CH) LS-ZERO L-X L-Y L-Z L-RESULT
+             END-PERFORM
+         WHEN 32
+*>           overlay (35-5 section 1.3): every member from the same position, the result the OR of theirs (a failing member does not stop the others)
+             PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT)
+                 COMPUTE LS-CH = FT-A(L-FT) + LS-I
+                 CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CH) LS-ZERO L-X L-Y L-Z LS-OK
+                 IF LS-OK = 1
+                     MOVE 1 TO L-RESULT
+                 END-IF
              END-PERFORM
          WHEN 42
              CALL "FR-PROV-STATE" USING L-STATE FT-A(L-FT) L-X L-Y L-Z LS-STATE LS-OK

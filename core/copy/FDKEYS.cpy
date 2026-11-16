@@ -80,3 +80,7 @@
  01 FK-DISK-TARGET    PIC X(40) VALUE "target".
  01 FK-MEAN           PIC X(40) VALUE "mean".
  01 FK-DEVIATION      PIC X(40) VALUE "deviation".
+ 01 FK-CAN-PLACE-ON    PIC X(40) VALUE "can_place_on".
+ 01 FK-FLOOR-RANGE    PIC X(40) VALUE "floor_search_range".
+ 01 FK-PLACE-PROB     PIC X(40) VALUE "placement_probability_per_valid_position".
+ 01 FK-PLACE-RADIUS   PIC X(40) VALUE "placement_radius_around_floor".
