@@ -53,6 +53,9 @@
  01 WS-CREATED             BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG VALUE 5.
  01 WS-HANDLE              BINARY-LONG.
+ 01 WS-NEAR-X              FLOAT-LONG.
+ 01 WS-NEAR-Y              FLOAT-LONG.
+ 01 WS-NEAR-Z              FLOAT-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -231,7 +234,11 @@
      PERFORM ACT
      MOVE "none" TO WS-DROPS
      PERFORM VARYING WS-KEYS FROM 1 BY 1 UNTIL WS-KEYS > EN-COUNT
+         COMPUTE WS-NEAR-X = EN-X(WS-KEYS) - WS-X - 0.5
+         COMPUTE WS-NEAR-Y = EN-Y(WS-KEYS) - WS-Y
+         COMPUTE WS-NEAR-Z = EN-Z(WS-KEYS) - WS-Z - 0.5
          IF EN-USED(WS-KEYS) = 1 AND EN-PLAYER(WS-KEYS) = 0 AND EN-ITEM-COUNT(WS-KEYS) > 0
+                 AND FUNCTION ABS(WS-NEAR-X) <= 3 AND FUNCTION ABS(WS-NEAR-Y) <= 3 AND FUNCTION ABS(WS-NEAR-Z) <= 3
              MOVE EN-ITEM(WS-KEYS) TO WS-DROPPED
              MOVE SPACES TO WS-DROPS
              MOVE IT-KEY(WS-DROPPED + 1) TO WS-DROPS
@@ -241,7 +248,8 @@
      END-PERFORM
      STRING FUNCTION TRIM(WS-RATE) " " FUNCTION TRIM(WS-DROPS) DELIMITED BY SIZE INTO WS-TEXT.
 
-*> Breaks WS-BLOCK-KEY with WS-TOOL-KEY (blank: the empty hand) held in slot 0 and appends "rate drop" to WS-TEXT.
+*> Breaks WS-BLOCK-KEY with WS-TOOL-KEY (blank: the empty hand) held in slot 0 and appends "rate drop" to WS-TEXT. Only an item within 3 blocks of the cell counts (a mob
+*> that died elsewhere in the world, such as a squid, drops its own loot).
  MINE.
      MOVE 0 TO WS-I
      MOVE WS-BLOCK-KEY TO WS-KEY
@@ -269,7 +277,11 @@
      PERFORM ACT
      MOVE "none" TO WS-DROPS
      PERFORM VARYING WS-KEYS FROM 1 BY 1 UNTIL WS-KEYS > EN-COUNT
+         COMPUTE WS-NEAR-X = EN-X(WS-KEYS) - WS-X - 0.5
+         COMPUTE WS-NEAR-Y = EN-Y(WS-KEYS) - WS-Y
+         COMPUTE WS-NEAR-Z = EN-Z(WS-KEYS) - WS-Z - 0.5
          IF EN-USED(WS-KEYS) = 1 AND EN-PLAYER(WS-KEYS) = 0 AND EN-ITEM-COUNT(WS-KEYS) > 0
+                 AND FUNCTION ABS(WS-NEAR-X) <= 3 AND FUNCTION ABS(WS-NEAR-Y) <= 3 AND FUNCTION ABS(WS-NEAR-Z) <= 3
              MOVE EN-ITEM(WS-KEYS) TO WS-DROPPED
              MOVE SPACES TO WS-DROPS
              MOVE IT-KEY(WS-DROPPED + 1) TO WS-DROPS
