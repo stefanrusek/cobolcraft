@@ -362,12 +362,13 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-SPRINT.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 1 sets the
-*> sprinting flag (not for a survival player whose food is 6 or less), action 2 clears it, any
-*> other action is ignored.
+*> sprinting flag (not for a survival player whose food is 6 or less), action 2 clears it, action 3 (START_RIDING_JUMP, the strength in
+*> PSB-DATA) jumps the mount the player rides (M44-RIDING-JUMP), any other action is ignored.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY RULES.
+ 01 WS-JUMPED              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -378,6 +379,10 @@
      END-IF
      IF PSB-ACTION = 2
          MOVE 0 TO PL-SPRINTING(CN-PLAYER(L-ID))
+     END-IF
+*>   START_RIDING_JUMP (action 3): the strength 0 to 100 in the data jumps the mount (M44-RIDING-JUMP).
+     IF PSB-ACTION = 3
+         CALL "M44-RIDING-JUMP" USING CN-PLAYER(L-ID) PSB-DATA WS-JUMPED
      END-IF
      CALL "POSE-UPDATE" USING CN-PLAYER(L-ID)
      GOBACK.

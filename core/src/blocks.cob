@@ -371,6 +371,7 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TOOL                BINARY-LONG.
  01 WS-SWITCH              BINARY-LONG.
+ 01 WS-KNOT                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -407,7 +408,11 @@
      END-IF
 *>   A lever, button, door, trapdoor or fence gate takes the click (core/src/use-switch.cob).
      CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
+*>   A fence takes the lead of the player's mobs (a leash knot, 24 section 6.3).
+     CALL "MOB-FENCE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ WS-KNOT
      EVALUATE TRUE
+         WHEN WS-KNOT = 1
+             CONTINUE
          WHEN WS-TOOL = 1
              CONTINUE
          WHEN WS-SWITCH = 1

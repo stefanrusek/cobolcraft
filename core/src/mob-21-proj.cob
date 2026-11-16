@@ -1,6 +1,6 @@
 *> Generic projectile entities of the Nether and End mobs (002-lane-mobsfull-h19; docs/protocol/44 part 8 sections 6.4 and 6.5, 21 sections 5.1, 5.2, 6.2,
 *> 19 section 20, 17 section 3.15). A projectile is a tracker row of the standard entity type of its kind: 1 fireball (the ghast's large fireball), 2 small_fireball
-*> (the blaze's), 3 snowball (the snow golem's), 4 shulker_bullet. EN-ITEM holds the explosion power of a large fireball, EN-TARGET-ID the entity id of the owner
+*> (the blaze's), 3 snowball (the snow golem's), 4 shulker_bullet, 5 llama_spit (the llama's, M44-LLAMA-SPIT). EN-ITEM holds the explosion power of a large fireball, EN-TARGET-ID the entity id of the owner
 *> (0 none), EN-COOLDOWN the ticks flown (the hit margin of ARROW-FIND-HIT, which this file shares with the arrows), EN-WAY-X, EN-FLEE-X and EN-WAY-Z the position the
 *> viewers were last told. The kind is found from the entity type (PROJ-KIND); no kind is stored.
 *> Motion (44 part 8): a fireball starts at 0.1 along its direction and each tick v = (v + normalize(v) x 0.1) x 0.95 (the thrust accelerationPower 0.1 and the
@@ -32,10 +32,11 @@
     05 FILLER              PIC X(112) VALUE "minecraft:small_fireball".
     05 FILLER              PIC X(112) VALUE "minecraft:snowball".
     05 FILLER              PIC X(112) VALUE "minecraft:shulker_bullet".
+    05 FILLER              PIC X(112) VALUE "minecraft:llama_spit".
  01 WS-KEY-TABLE REDEFINES WS-KEYS.
-    05 WS-KEY              PIC X(112) OCCURS 4 TIMES.
+    05 WS-KEY              PIC X(112) OCCURS 5 TIMES.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 4 TIMES VALUE 0.
+    05 WS-ID               BINARY-LONG OCCURS 5 TIMES VALUE 0.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 PIC X(66).
@@ -49,7 +50,7 @@
          GOBACK
      END-IF
      IF WS-LOADED = 0
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
              CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY(WS-I) WS-ID(WS-I) WS-ROW WS-STATUS
          END-PERFORM
          MOVE 1 TO WS-LOADED
@@ -69,7 +70,7 @@
  01 L-KIND                 BINARY-LONG.
  PROCEDURE DIVISION USING L-TYPE L-KIND.
      MOVE 0 TO L-KIND
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 5
          CALL "PROJ-TYPE" USING WS-K WS-TYPE
          IF WS-TYPE > 0 AND WS-TYPE = L-TYPE
              MOVE WS-K TO L-KIND
@@ -162,6 +163,8 @@
              MOVE 0.1 TO WS-SPEED
          WHEN 3
              MOVE 1.6 TO WS-SPEED
+         WHEN 5
+             MOVE 1.5 TO WS-SPEED
          WHEN OTHER
 *>           A shulker bullet starts at rest (BULLET-SELECT sets its aim).
              MOVE 0 TO WS-SPEED
@@ -227,6 +230,9 @@
              MOVE 5 TO WS-DAMAGE
          WHEN 4
              MOVE 4 TO WS-DAMAGE
+         WHEN 5
+*>           The llama's spit hurts by 1 (21 section 8.14).
+             MOVE 1 TO WS-DAMAGE
          WHEN 3
 *>           The snowball hurts a blaze for 3 and nothing else (17 section 3.15).
              IF L-ENTITY > 0
@@ -672,6 +678,11 @@
 *>       Thrown: gravity 0.03, then drag 0.99.
          COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
          COMPUTE EN-VY(L-ROW) = (EN-VY(L-ROW) - 0.03) * 0.99
+         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+         WHEN 5
+*>       Llama spit: drag 0.99, then gravity 0.06 (21 section 8.14).
+         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
+         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99 - 0.06
          COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
          WHEN OTHER
          CALL "BULLET-AIM" USING L-ROW

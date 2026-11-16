@@ -220,6 +220,8 @@
 *>   Avoiding players: the fox is 10 blocks east of the player.
      COMPUTE WS-X = WS-PX + 10
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-A
+*>   A full hand: the fox does not walk to the dropped emerald of the cases above (item search, 002-lane-mobsa5).
+     MOVE 1 TO EN-FOX-HELD(WS-A)
      CALL "FOX-TICK" USING WS-A WS-HX WS-HZ WS-WALK
      MOVE "acceptance US15 44-4§4 an untrusted player 10 blocks away: the fox flees east at 0.5 a tick (1.6)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
