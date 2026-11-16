@@ -581,6 +581,18 @@
          WHEN "NAUTILUS_BABY"
              CALL "EF8-M-NAUTILUS-BABY" USING EMM-MODEL
 
+         WHEN "BOAT"
+             CALL "EF8-M-BOAT" USING EMM-MODEL
+
+         WHEN "CHEST_BOAT"
+             CALL "EF8-M-BOAT-CHEST" USING EMM-MODEL
+
+         WHEN "RAFT"
+             CALL "EF8-M-RAFT" USING EMM-MODEL
+
+         WHEN "CHEST_RAFT"
+             CALL "EF8-M-RAFT-CHEST" USING EMM-MODEL
+
          WHEN "DOLPHIN"
              CALL "EF8-M-DOLPHIN" USING EMM-MODEL
 

@@ -8,6 +8,7 @@
 *> USING CLIENT-STATE, replica row, entry index, serializer, value, second and third value (VILLAGER_DATA), long value (the wolf's anger end time).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLMODELS.
  01 WS-WANT                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -71,6 +72,11 @@
              MOVE L-LONG TO EN-X3(L-ROW)
          WHEN EN-KEY(L-ROW) = "fox" AND L-INDEX = 19 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
+*>   A boat's paddle states (21 appendix: entries 11 left and 12 right, BOOLEAN): the paddle is held (EN-X1 left, EN-X2 right).
+         WHEN L-INDEX = 11 AND L-SERIALIZER = 8 AND EN-MODEL(L-ROW) > 0 AND CL-MD-ANIM(EN-MODEL(L-ROW)) = "B"
+             MOVE L-INT TO EN-X1(L-ROW)
+         WHEN L-INDEX = 12 AND L-SERIALIZER = 8 AND EN-MODEL(L-ROW) > 0 AND CL-MD-ANIM(EN-MODEL(L-ROW)) = "B"
+             MOVE L-INT TO EN-X2(L-ROW)
          WHEN EN-KEY(L-ROW) = "panda" AND L-INDEX = 22 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
          WHEN OTHER

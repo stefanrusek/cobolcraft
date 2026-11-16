@@ -194,9 +194,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 176 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 200 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 176 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 200 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXC                BINARY-LONG.
  01 WS-TR                  FLOAT-LONG.
@@ -514,6 +514,17 @@
              END-IF
          END-IF
      END-IF
+*>   A boat (code B): the rowing time of each paddle (7.3 getRowingTime at partial 1): the paddle position while the paddle is held, else 0 (the replica keeps the
+*>   left position in EN-WALK-POS, the right in EN-WALK-SPEED, the held flags in EN-X1 and EN-X2).
+     IF WS-ANIM = "B"
+         MOVE 0 TO WS-WPOS WS-WSPEED
+         IF EN-X1(WS-ROW) = 1
+             MOVE EN-WALK-POS(WS-ROW) TO WS-WPOS
+         END-IF
+         IF EN-X2(WS-ROW) = 1
+             MOVE EN-WALK-SPEED(WS-ROW) TO WS-WSPEED
+         END-IF
+     END-IF
      MOVE WS-WPOS TO WS-KN(17)
      MOVE WS-WSPEED TO WS-KN(18)
      MOVE WS-SWP TO WS-KN(19)
@@ -623,6 +634,10 @@
              MOVE 4 TO WS-VARIANT
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
+         WHEN "B"
+             MOVE WS-WPOS TO WS-I(3)
+             MOVE WS-WSPEED TO WS-I(4)
+             CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
          WHEN "W"
          WHEN "V"
              CALL "ENTITY-POSE-MORE" USING EMM-MODEL WS-POSE-KEY WS-IN WS-AGE
@@ -661,7 +676,11 @@
 *>   The render sequence of the body yaw (the replica's yaw): operations in the order EF7-SETUP-ROTATIONS lists them.
      MOVE 0 TO WS-SRI(1) WS-SRI(2) WS-SRI(4) WS-SRI(5)
      MOVE EN-YAW(WS-ROW) TO WS-SRI(3)
-     CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
+     IF WS-ANIM = "B"
+         CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
+     ELSE
+         CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
+     END-IF
      MOVE WS-SRO(1) TO WS-NOPS
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).

@@ -220,7 +220,8 @@
 *>   A standard-world type without a model (id 0) and an id outside the registry draw nothing, not the stand-in operator.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE 8 TO WS-ID
-     MOVE 0 TO WS-TYPE
+     MOVE "marker" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
      MOVE 10.5 TO WS-X
      MOVE 10.5 TO WS-Z
      MOVE 0 TO WS-YAW
