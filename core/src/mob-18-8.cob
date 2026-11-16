@@ -372,7 +372,8 @@
                      OR EN-FOX-FLAGS(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
-             IF SM-KEY(WS-M) = "panda" AND (EN-GENE-MAIN(L-ROW) > 0 OR EN-GENE-HIDDEN(L-ROW) > 0 OR EN-PANDA-SNEEZE(L-ROW) > 0)
+             IF SM-KEY(WS-M) = "panda" AND (EN-GENE-MAIN(L-ROW) > 0 OR EN-GENE-HIDDEN(L-ROW) > 0 OR EN-PANDA-SNEEZE(L-ROW) > 0
+                     OR EN-PANDA-FLAGS(L-ROW) > 0 OR EN-PANDA-EAT(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
              IF SM-KEY(WS-M) = "bee"

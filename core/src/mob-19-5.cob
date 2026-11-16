@@ -379,11 +379,18 @@
          MOVE EN-GENE-HIDDEN(L-ROW) TO CD-MX-INT
          CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
          MOVE 23 TO CD-MX-INDEX
-         MOVE 0 TO CD-MX-INT
+         MOVE EN-PANDA-FLAGS(L-ROW) TO CD-MX-INT
          IF EN-PANDA-SNEEZE(L-ROW) > 0
-             MOVE 2 TO CD-MX-INT
+             ADD 2 TO CD-MX-INT
          END-IF
          CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         IF EN-PANDA-EAT(L-ROW) > 0
+*>           The eating counter (20, INT; 44 part 4 section 7).
+             MOVE WS-SERIALIZER-INT TO CD-MX-SERIALIZER
+             MOVE 20 TO CD-MX-INDEX
+             MOVE EN-PANDA-EAT(L-ROW) TO CD-MX-INT
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER CD-METADATA-ENTRY-X
+         END-IF
      END-IF
      IF WS-KEY = "tadpole" AND EN-LOCKED(L-ROW) = 1
 *>       Tadpole: age locked (17, BOOLEAN; 16 from bucket is false; 19 section 11.2).
