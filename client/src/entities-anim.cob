@@ -21,6 +21,10 @@
  01 WS-TARGET              FLOAT-LONG.
  01 WS-SMOOTH              FLOAT-LONG.
  01 WS-SCALE               FLOAT-LONG.
+ 01 WS-CI.
+    05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-CO.
+    05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -70,6 +74,22 @@
                          COMPUTE EN-WALK-SPEED(WS-R) = WS-PAD-R + 0.3926991
                      END-IF
                  END-IF
+             END-IF
+*>           The squish of a slime or magma cube (34-6 7.4 AbstractCubeMob.tick): EF6-CUBE-TICK with the on-ground flag of the last movement packet.
+             IF EN-KEY(WS-R) = "slime" OR "magma_cube"
+                 MOVE EN-SQ(WS-R) TO WS-CIV(1)
+                 MOVE EN-SQ-TGT(WS-R) TO WS-CIV(2)
+                 MOVE EN-ON-GROUND(WS-R) TO WS-CIV(3)
+                 MOVE EN-WOG(WS-R) TO WS-CIV(4)
+                 MOVE 0 TO WS-CIV(5)
+                 IF EN-KEY(WS-R) = "magma_cube"
+                     MOVE 1 TO WS-CIV(5)
+                 END-IF
+                 CALL "EF6-CUBE-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-SQ-OLD(WS-R)
+                 MOVE WS-COV(2) TO EN-SQ(WS-R)
+                 MOVE WS-COV(3) TO EN-SQ-TGT(WS-R)
+                 MOVE WS-COV(4) TO EN-WOG(WS-R)
              END-IF
              ADD 1 TO EN-AGE(WS-R)
              MOVE EN-X(WS-R) TO EN-OX(WS-R)
@@ -178,3 +198,31 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-SWING-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-CUBE-SCALE.
+*> USING CLIENT-STATE, replica row of a slime or magma cube, x and z scale out, y scale out (FLOAT-LONG): applySizeAndSquish (34-6 7.4): n = the size (1 until the
+*> server sent it), q = squish / (n x 0.5 + 1), r = 1 / (q + 1): scale (r x n, n / r, r x n).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CI.
+    05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-CO.
+    05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-XZ                   FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-XZ L-Y.
+     MOVE 1 TO WS-CIV(1)
+     IF EN-VAR(L-ROW) > 0
+         MOVE EN-VAR(L-ROW) TO WS-CIV(1)
+     END-IF
+     MOVE EN-SQ(L-ROW) TO WS-CIV(2)
+     MOVE 0 TO WS-CIV(3)
+     CALL "EF6-CUBE-SCALE" USING WS-CI WS-CO
+     MOVE WS-COV(1) TO L-XZ
+     MOVE WS-COV(2) TO L-Y
+     GOBACK.
+ END PROGRAM ENTITY-CUBE-SCALE.

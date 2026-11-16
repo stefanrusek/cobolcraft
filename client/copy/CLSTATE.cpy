@@ -692,6 +692,12 @@
           15 EN-SW-TYPE      BINARY-LONG.
           15 EN-SW-ANIM      FLOAT-LONG.
           15 EN-AGE          FLOAT-LONG.    *> ageInTicks: client ticks since the entity was added (34-2: arm bob and sway)
+*>        The squish of a slime or magma cube (34-6 7.4 AbstractCubeMob.tick, ENTITIES-ANIM-TICK): the squish, its value one tick ago, the target squish and the
+*>        was-on-ground flag.
+          15 EN-SQ           FLOAT-LONG.
+          15 EN-SQ-OLD       FLOAT-LONG.
+          15 EN-SQ-TGT       FLOAT-LONG.
+          15 EN-WOG          PIC 9.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the

@@ -446,8 +446,8 @@
          COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
      END-IF
 *>   The size of a slime or magma cube (Set Entity Data entry 18, 34-6 section 7: the scale (r x n, n / r, r x n) with squish 0 is n on every axis).
-     IF (EN-KEY(WS-ROW) = "slime" OR "magma_cube") AND EN-VAR(WS-ROW) > 0
-         MOVE EN-VAR(WS-ROW) TO WS-HOOK-X WS-HOOK-Y
+     IF EN-KEY(WS-ROW) = "slime" OR "magma_cube"
+         CALL "ENTITY-CUBE-SCALE" USING CLIENT-STATE WS-ROW WS-HOOK-X WS-HOOK-Y
      END-IF
 *>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
 *>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
@@ -479,6 +479,7 @@
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
+     MOVE EN-SQ(WS-ROW) TO WS-KN(24)
 *>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
 *>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
 *>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
@@ -677,6 +678,10 @@
                      CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
                  WHEN "chicken"
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+*>               The magma cube's slices spread with the squish (34-6 7.2).
+                 WHEN "magma_cube"
+                     MOVE EN-SQ(WS-ROW) TO WS-I(1)
+                     CALL "EF6-MAGMA-ANIM" USING EMM-MODEL WS-IN
                  WHEN "blaze"
                      MOVE WS-AGE TO WS-I(3)
                      CALL "EF7-BLAZE-ANIM" USING EMM-MODEL WS-IN
