@@ -2,7 +2,7 @@
 *> (the trunk provider's state, log_length, the stump and log decorators), FR-FALLEN places it: the stump at the origin, then log_length - 2 logs along a random horizontal direction
 *> starting 2 or 3 cells from the origin on the ground the search of 7.3 finds, when the walk is supported (7.4).
 *> Deviations: block entities and post-processing marks are not written; "face sturdy on UP" is approximated by a solid block (CB-SOLID, not air) below; decorators supported: attached_to_logs
-*> (feat-tree-deco.cob), any other decorator type makes the feature unsupported.
+*> (feat-tree-deco.cob), every other type but creaking_heart (it needs the logs tag of a tree row) runs over the logs with no leaves and no roots.
 *>
 *> Entry points: FD-FALLEN-NODE USING doc, node, row out (0 and FD-BAD when unsupported); FR-FALLEN USING state, feature, x, y, z, result out (always 1, 7: place always returns true).
 
@@ -53,7 +53,7 @@
              CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-N
              ADD 1 TO TR-NDEC(WS-ROW)
              CALL "FD-DECO-NODE" USING JSON-DOC WS-N WS-ROW TR-NDEC(WS-ROW)
-             IF TD-KIND(WS-ROW, TR-NDEC(WS-ROW)) NOT = 1
+             IF TD-KIND(WS-ROW, TR-NDEC(WS-ROW)) = 11
                  MOVE 1 TO FD-BAD
              END-IF
          END-PERFORM
@@ -68,7 +68,7 @@
              COMPUTE WS-OK = 6 + TR-NSDEC(WS-ROW)
              CALL "FD-DECO-NODE" USING JSON-DOC WS-N WS-ROW WS-OK
              ADD 1 TO TR-NSDEC(WS-ROW)
-             IF TD-KIND(WS-ROW, WS-OK) NOT = 1
+             IF TD-KIND(WS-ROW, WS-OK) = 11
                  MOVE 1 TO FD-BAD
              END-IF
          END-PERFORM
@@ -169,7 +169,7 @@
  PROCEDURE DIVISION USING L-STATE L-FT L-X L-Y L-Z L-RESULT.
      MOVE 1 TO L-RESULT
      MOVE FT-A(L-FT) TO WS-ROW
-     MOVE 0 TO TW-NLOG
+     MOVE 0 TO TW-NLOG TW-NLEAF TW-NRL TW-LOGS-N
      CALL "FL-SET-STATE" USING L-X L-Y L-Z TR-LOG-STATE(WS-ROW) WS-FLAGS WS-OK
      ADD 1 TO TW-NLOG
      MOVE L-X TO TW-LOG-X(1)

@@ -621,7 +621,8 @@
              GOBACK
          END-IF
      END-IF
-*>   step 7: the roots come before the trunk
+*>   step 7: the roots come before the trunk (the root list is empty for a tree without a root placer: the decorators read it)
+     MOVE 0 TO TW-NRL
      IF TR-ROOT(WS-ROW) = 1
          CALL "FR-ROOTS" USING L-STATE WS-ROW L-X L-Y L-Z WS-OY WS-OK
          IF WS-OK = 0

@@ -74,6 +74,28 @@
              COMPUTE WS-BOUND = L-V(3) - L-V(2) + 1
              CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
              COMPUTE L-VALUE = L-V(2) + WS-A
+*>       trapezoid (35-4 2.2): symmetric with no plateau: nextInt(max + 1) - nextInt(max + 1); a plateau over the whole span: one draw; else min + nextInt(hi + 1) + nextInt(lo + 1)
+         WHEN 5
+             COMPUTE WS-RANGE = L-V(3) - L-V(2)
+             EVALUATE TRUE
+                 WHEN L-V(4) = 0 AND L-V(3) = 0 - L-V(2)
+                     COMPUTE WS-BOUND = L-V(3) + 1
+                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
+                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-B
+                     COMPUTE L-VALUE = WS-A - WS-B
+                 WHEN L-V(4) = WS-RANGE
+                     COMPUTE WS-BOUND = WS-RANGE + 1
+                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
+                     COMPUTE L-VALUE = L-V(2) + WS-A
+                 WHEN OTHER
+                     COMPUTE WS-SLOPE = WS-RANGE - L-V(4)
+                     DIVIDE WS-SLOPE BY 2 GIVING WS-SIDE
+                     COMPUTE WS-BOUND = WS-RANGE - WS-SIDE + 1
+                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
+                     COMPUTE WS-BOUND = WS-SIDE + 1
+                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-B
+                     COMPUTE L-VALUE = L-V(2) + WS-A + WS-B
+             END-EVALUATE
          WHEN 3
              COMPUTE WS-BOUND = L-V(3) - L-V(2) + 1
              CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
@@ -1229,6 +1251,11 @@
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 22
+             CALL "FR-FUNGUS" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 21
+         WHEN 23
+             CALL "FR-MUSH" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 20
              CALL "FR-GEODE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 26
@@ -1251,6 +1278,16 @@
              CALL "FR-PILE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 52
              CALL "FR-MAGMA" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 9
+             CALL "FR-DELTA" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 49
+             CALL "FR-STEP" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 44
+             CALL "FR-PILLAR" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 35
+             CALL "FR-NSPREAD" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 33
+             CALL "FR-PATCHY" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 29
              CALL "FR-RBLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 4

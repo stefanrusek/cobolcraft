@@ -274,6 +274,8 @@
              CALL "FD-J-INT" USING JSON-DOC WS-N L-V(2) L-OK
          WHEN "minecraft:uniform"
          WHEN "uniform"
+         WHEN " "
+*>           an object without a type that has min_inclusive and max_inclusive is the UniformInt codec itself (the cherry trunk's branch_start_offset_from_top); FD-J-RANGE says when they are missing
              MOVE 2 TO L-V(1)
              CALL "FD-J-RANGE" USING JSON-DOC L-NODE WS-MN WS-MX L-OK
              MOVE WS-MN TO L-V(2)
@@ -739,10 +741,21 @@
                      MOVE 1 TO LS-N
                  END-IF
              END-IF
+*>           mangrove propagule (29b part 2 section 11.1, the default standing state): the block below is in supports_mangrove_propagule, PR-A 4
+             IF LS-N = 0 AND LS-LEN > 18
+                 IF LS-TEXT(LS-LEN - 17:18) = "mangrove_propagule"
+                     MOVE 4 TO PR-A(LS-ROW)
+                     MOVE 1 TO LS-N
+                 END-IF
+             END-IF
              IF LS-N = 0
                  MOVE 1 TO FD-BAD
              END-IF
              COMPUTE PR-POOL(LS-ROW) = FD-POOL-COUNT + 1
+             IF PR-A(LS-ROW) = 4
+                 MOVE "minecraft:supports_mangrove_propagule" TO LS-TAG
+                 CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
+             END-IF
              IF PR-A(LS-ROW) = 3
                  MOVE "minecraft:supports_cactus" TO LS-TAG
                  CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
@@ -1799,6 +1812,7 @@
  01 LS-CHANCE              BINARY-LONG.
  01 LS-CH                  BINARY-LONG.
  01 LS-NC                 BINARY-LONG.
+ 01 LS-MKIND              BINARY-LONG.
  01 LS-SAVED-BAD           BINARY-LONG.
  01 LS-KIDS.
     05 LS-KID OCCURS 64 TIMES.
@@ -1929,6 +1943,32 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 22
+*>           huge_fungus (feat-fungus.cob): unsupported when a state, the predicate or a block is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FUNGUS-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 21
+         WHEN 23
+*>           huge_brown_mushroom (21) and huge_red_mushroom (23) (feat-mush.cob): unsupported when a provider, the predicate or a tag is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             IF LS-N = 21
+                 MOVE 1 TO LS-MKIND
+             ELSE
+                 MOVE 2 TO LS-MKIND
+             END-IF
+             CALL "FD-MUSH-NODE" USING JSON-DOC L-NODE LS-MKIND FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 20
 *>           geode (feat-geode.cob): unsupported when a required member is missing or a provider, state or block set cannot be compiled
              MOVE FD-BAD TO LS-SAVED-BAD
@@ -2015,6 +2055,56 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-PILE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 9
+*>           delta_feature (feat-nether.cob): unsupported when a member, provider or predicate is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-DELTA-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 49
+*>           stepped_column_cluster (feat-nether.cob): unsupported when a member, provider or predicate is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-STEP-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 44
+*>           single_block_pillar (feat-nether.cob): unsupported when a member, provider or predicate is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-PILLAR-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 35
+*>           random_neighbor_spread (feat-nether.cob): unsupported when a member, provider or predicate is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-NSPREAD-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 33
+*>           projected_random_patchy_square (feat-nether.cob): unsupported when a member, provider or predicate is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-PATCHY-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE

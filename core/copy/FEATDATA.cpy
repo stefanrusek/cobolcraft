@@ -190,6 +190,11 @@
           15 TD-PV          BINARY-LONG.
           15 TD-ND          BINARY-LONG.
           15 TD-DIR         BINARY-LONG OCCURS 6 TIMES.
+*>        the decorators of feat-tree-deco2.cob: TD-I three integers (attached_to_leaves: exclusion_radius_xz, exclusion_radius_y, required_empty_blocks; place_on_ground: tries, radius, height), TD-F2 and TD-F3 two more floats (pale_moss: trunk and ground probability, TD-PROB the leaves one), TD-FT the pale moss patch feature
+          15 TD-I           BINARY-LONG OCCURS 3 TIMES.
+          15 TD-F2          FLOAT-LONG.
+          15 TD-F3          FLOAT-LONG.
+          15 TD-FT          BINARY-LONG.
 *>  block columns (type 2; core/src/feat-column.cob FR-BLOCK-COLUMN, docs/protocol/35-worldgen-features-4 section 5): FT-A of the feature is the row. BC-DIR 1 up or -1 down, BC-TIP prioritize_tip, BC-PR the
 *>  allowed_placement predicate, BC-N layers (at most 4), each with the four integers of its height int provider and the provider index.
     05 FD-BC OCCURS 128 TIMES.
@@ -209,7 +214,7 @@
        10 WA-N              BINARY-LONG OCCURS 4 TIMES.
        10 WA-PR             BINARY-LONG OCCURS 4 TIMES.
        10 WA-PV             BINARY-LONG OCCURS 4 TIMES.
-       10 WA-IP OCCURS 3 TIMES.
+       10 WA-IP OCCURS 4 TIMES.
           15 WA-IPV         BINARY-LONG OCCURS 4 TIMES.
        10 WA-F              FLOAT-LONG OCCURS 4 TIMES.
 *>     ten more floats (the float providers of speleothem_cluster: feat-35-6.cob)

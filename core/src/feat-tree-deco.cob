@@ -18,6 +18,18 @@
  01 WS-K-PROB              PIC X(40) VALUE "probability".
  01 WS-K-PROVIDER          PIC X(40) VALUE "block_provider".
  01 WS-K-DIRS              PIC X(40) VALUE "directions".
+ 01 WS-K-PROVIDER-ALT      PIC X(40) VALUE "provider".
+ 01 WS-K-TRIES             PIC X(40) VALUE "tries".
+ 01 WS-K-RADIUS            PIC X(40) VALUE "radius".
+ 01 WS-K-HEIGHT            PIC X(40) VALUE "height".
+ 01 WS-K-BSP               PIC X(40) VALUE "block_state_provider".
+ 01 WS-K-EXC-XZ            PIC X(40) VALUE "exclusion_radius_xz".
+ 01 WS-K-EXC-Y             PIC X(40) VALUE "exclusion_radius_y".
+ 01 WS-K-REQ               PIC X(40) VALUE "required_empty_blocks".
+ 01 WS-K-LEAVES-P          PIC X(40) VALUE "leaves_probability".
+ 01 WS-K-TRUNK-P           PIC X(40) VALUE "trunk_probability".
+ 01 WS-K-GROUND-P          PIC X(40) VALUE "ground_probability".
+ 01 WS-PATCH-KEY           PIC X(80) VALUE "minecraft:pale_moss_patch".
  01 WS-DECOS.
     05 FILLER              PIC X(40) VALUE "minecraft:attached_to_logs".
     05 FILLER              PIC X(40) VALUE "minecraft:beehive".
@@ -73,25 +85,7 @@
              CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-PROB WS-ZERO TD-PROB(L-ROW, L-SLOT)
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-PROVIDER WS-E
              CALL "FD-PROV-NODE" USING JSON-DOC WS-E TD-PV(L-ROW, L-SLOT)
-             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-DIRS WS-E
-             IF WS-E = 0
-                 MOVE 1 TO FD-BAD
-             ELSE
-                 PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
-                     CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-N
-                     MOVE SPACES TO WS-TEXT
-                     CALL "JSON-STRING" USING JSON-DOC WS-N WS-TEXT WS-CAP WS-LEN
-                     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
-                         IF WS-DIRNAME(WS-J) = WS-TEXT
-                             ADD 1 TO TD-ND(L-ROW, L-SLOT)
-                             COMPUTE TD-DIR(L-ROW, L-SLOT, TD-ND(L-ROW, L-SLOT)) = WS-J - 1
-                         END-IF
-                     END-PERFORM
-                 END-PERFORM
-             END-IF
-             IF TD-ND(L-ROW, L-SLOT) = 0
-                 MOVE 1 TO FD-BAD
-             END-IF
+             PERFORM READ-DIRS
          WHEN "minecraft:trunk_vine"
              MOVE 2 TO TD-KIND(L-ROW, L-SLOT)
          WHEN "minecraft:leave_vine"
@@ -100,8 +94,90 @@
          WHEN "minecraft:cocoa"
              MOVE 4 TO TD-KIND(L-ROW, L-SLOT)
              CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-PROB WS-ZERO TD-PROB(L-ROW, L-SLOT)
+         WHEN "minecraft:beehive"
+             MOVE 5 TO TD-KIND(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-PROB WS-ZERO TD-PROB(L-ROW, L-SLOT)
+         WHEN "minecraft:alter_ground"
+             MOVE 6 TO TD-KIND(L-ROW, L-SLOT)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-PROVIDER-ALT WS-E
+             CALL "FD-PROV-NODE" USING JSON-DOC WS-E TD-PV(L-ROW, L-SLOT)
+         WHEN "minecraft:place_on_ground"
+             MOVE 7 TO TD-KIND(L-ROW, L-SLOT)
+             MOVE 128 TO TD-I(L-ROW, L-SLOT, 1)
+             MOVE 2 TO TD-I(L-ROW, L-SLOT, 2)
+             MOVE 1 TO TD-I(L-ROW, L-SLOT, 3)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-TRIES WS-E
+             IF WS-E > 0
+                 CALL "FD-J-INT" USING JSON-DOC WS-E TD-I(L-ROW, L-SLOT, 1) WS-N
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-RADIUS WS-E
+             IF WS-E > 0
+                 CALL "FD-J-INT" USING JSON-DOC WS-E TD-I(L-ROW, L-SLOT, 2) WS-N
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-HEIGHT WS-E
+             IF WS-E > 0
+                 CALL "FD-J-INT" USING JSON-DOC WS-E TD-I(L-ROW, L-SLOT, 3) WS-N
+             END-IF
+             IF TD-I(L-ROW, L-SLOT, 1) < 1 OR TD-I(L-ROW, L-SLOT, 2) < 0 OR TD-I(L-ROW, L-SLOT, 3) < 0
+                 MOVE 1 TO FD-BAD
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-BSP WS-E
+             CALL "FD-PROV-NODE" USING JSON-DOC WS-E TD-PV(L-ROW, L-SLOT)
+         WHEN "minecraft:shelf_mushroom"
+             MOVE 8 TO TD-KIND(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-PROB WS-ZERO TD-PROB(L-ROW, L-SLOT)
+         WHEN "minecraft:attached_to_leaves"
+             MOVE 9 TO TD-KIND(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-PROB WS-ZERO TD-PROB(L-ROW, L-SLOT)
+             MOVE 0 TO TD-I(L-ROW, L-SLOT, 1) TD-I(L-ROW, L-SLOT, 2)
+             MOVE 1 TO TD-I(L-ROW, L-SLOT, 3)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-EXC-XZ WS-E
+             IF WS-E > 0
+                 CALL "FD-J-INT" USING JSON-DOC WS-E TD-I(L-ROW, L-SLOT, 1) WS-N
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-EXC-Y WS-E
+             IF WS-E > 0
+                 CALL "FD-J-INT" USING JSON-DOC WS-E TD-I(L-ROW, L-SLOT, 2) WS-N
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-REQ WS-E
+             IF WS-E > 0
+                 CALL "FD-J-INT" USING JSON-DOC WS-E TD-I(L-ROW, L-SLOT, 3) WS-N
+             END-IF
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-PROVIDER WS-E
+             CALL "FD-PROV-NODE" USING JSON-DOC WS-E TD-PV(L-ROW, L-SLOT)
+             PERFORM READ-DIRS
+         WHEN "minecraft:pale_moss"
+             MOVE 10 TO TD-KIND(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-LEAVES-P WS-ZERO TD-PROB(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-TRUNK-P WS-ZERO TD-F2(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-GROUND-P WS-ZERO TD-F3(L-ROW, L-SLOT)
+             CALL "FD-GET-FT" USING WS-PATCH-KEY TD-FT(L-ROW, L-SLOT)
+         WHEN "minecraft:creaking_heart"
+             MOVE 11 TO TD-KIND(L-ROW, L-SLOT)
+             CALL "FD-TREE-FLOAT" USING JSON-DOC L-NODE WS-K-PROB WS-ZERO TD-PROB(L-ROW, L-SLOT)
      END-EVALUATE
      GOBACK.
+ READ-DIRS.
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-DIRS WS-E
+     IF WS-E = 0
+         MOVE 1 TO FD-BAD
+     ELSE
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
+             CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-N
+             MOVE SPACES TO WS-TEXT
+             CALL "JSON-STRING" USING JSON-DOC WS-N WS-TEXT WS-CAP WS-LEN
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
+                 IF WS-DIRNAME(WS-J) = WS-TEXT
+                     ADD 1 TO TD-ND(L-ROW, L-SLOT)
+                     COMPUTE TD-DIR(L-ROW, L-SLOT, TD-ND(L-ROW, L-SLOT)) = WS-J - 1
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-IF
+     IF TD-ND(L-ROW, L-SLOT) = 0
+         MOVE 1 TO FD-BAD
+     END-IF
+     .
  END PROGRAM FD-DECO-NODE.
 
  IDENTIFICATION DIVISION.
@@ -502,6 +578,20 @@
                  CALL "FR-DEC-VINES" USING L-STATE L-ROW WS-S
              WHEN 4
                  CALL "FR-DEC-COCOA" USING L-STATE L-ROW WS-S
+             WHEN 5
+                 CALL "FR-DEC-BEEHIVE" USING L-STATE L-ROW WS-S
+             WHEN 6
+                 CALL "FR-DEC-ALTER" USING L-STATE L-ROW WS-S
+             WHEN 7
+                 CALL "FR-DEC-PLACE" USING L-STATE L-ROW WS-S
+             WHEN 8
+                 CALL "FR-DEC-SHELF" USING L-STATE L-ROW WS-S
+             WHEN 9
+                 CALL "FR-DEC-LEAVES" USING L-STATE L-ROW WS-S
+             WHEN 10
+                 CALL "FR-DEC-PALE" USING L-STATE L-ROW WS-S
+             WHEN 11
+                 CALL "FR-DEC-HEART" USING L-STATE L-ROW WS-S
          END-EVALUATE
      END-PERFORM
      GOBACK.
