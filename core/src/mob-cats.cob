@@ -130,6 +130,7 @@
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-GROUND              BINARY-LONG VALUE 1.
+ 01 WS-RELAX               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -189,6 +190,12 @@
      END-IF
      IF EN-TAMED(L-ROW) = 1 AND SM-KEY(WS-M) = "cat"
          CALL "PET-OWNER" USING L-ROW WS-OWNER
+         CALL "CAT-RELAX" USING L-ROW WS-OWNER WS-RELAX
+         IF WS-RELAX = 2
+             MOVE 0 TO EN-PET-MOVING(L-ROW)
+             MOVE 2 TO L-WALK
+             GOBACK
+         END-IF
          IF WS-OWNER = 0
              MOVE 0 TO EN-PET-MOVING(L-ROW)
              GOBACK

@@ -117,6 +117,7 @@
      MOVE 3 TO EN-GENE-MAIN(WS-ROW)
      MOVE 5 TO EN-GENE-HIDDEN(WS-ROW)
      MOVE "cat" TO WS-WANT-KEY PERFORM SPAWN-MOB
+     MOVE 7 TO EN-WOOL(WS-ROW)
      MOVE 1 TO EN-TAMED(WS-ROW)
      MOVE PL-UUID(WS-PLAYER) TO EN-OWNER-UUID(WS-ROW)
      MOVE 0 TO EN-COLLAR(WS-ROW)
@@ -226,7 +227,7 @@
      PERFORM CHECK-MOB
      MOVE 10 TO WS-I
      MOVE "mobdata cat read back: tame by its owner, the default collar stays unset" TO TL-CASE
-     MOVE "age 0 forced 0 lock 0 love 0 own p sit 0 tame 1 col 0 wool 0 sad 0 arm 0/0 temper 0 str 0 egg 0 var 0 gene 0/0"
+     MOVE "age 0 forced 0 lock 0 love 0 own p sit 0 tame 1 col 0 wool 7 sad 0 arm 0/0 temper 0 str 0 egg 0 var 0 gene 0/0"
          TO TL-EXPECTED
      PERFORM CHECK-MOB
      MOVE 11 TO WS-I

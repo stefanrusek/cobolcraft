@@ -491,6 +491,7 @@
        10 EN-FLY-Z            FLOAT-LONG.
        10 EN-FLY-MOD          FLOAT-LONG.         *> the speed modifier of the wanted point (0 = 1.0)
        10 EN-SENT-AGE         BINARY-LONG.        *> ticks since the last absolute position sent (a full sync every 400)
+       10 EN-CAT-RELAX        BINARY-LONG.        *> tame cat: 1 while it relaxes on its sleeping owner, 2 once the owner has slept 100 ticks (CatRelaxOnOwnerGoal)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
