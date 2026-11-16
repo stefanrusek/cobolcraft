@@ -1877,6 +1877,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 1
+*>           forest rock, a block_blob (feat-blob.cob): unsupported when the state or can_place_on is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-BLOB-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 10
 *>           a disk (feat-disk.cob): unsupported when a provider or the target is not compiled whole
              MOVE FD-BAD TO LS-SAVED-BAD

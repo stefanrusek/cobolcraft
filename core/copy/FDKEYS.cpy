@@ -80,3 +80,4 @@
  01 FK-DISK-TARGET    PIC X(40) VALUE "target".
  01 FK-MEAN           PIC X(40) VALUE "mean".
  01 FK-DEVIATION      PIC X(40) VALUE "deviation".
+ 01 FK-CAN-PLACE-ON    PIC X(40) VALUE "can_place_on".

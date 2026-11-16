@@ -1166,6 +1166,8 @@
              CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 16
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 1
+             CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 10
              CALL "FR-DISK" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 19
