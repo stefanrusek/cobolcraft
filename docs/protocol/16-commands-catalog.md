@@ -504,7 +504,7 @@ An empty selector result is the framework's "no entity found" error (15 framewor
 
 ### 5.2 `teleport` (alias `tp`)
 
-Level 2. `tp` is a redirect to `teleport` (same nodes, same level).
+Level 2. `tp` is a redirect to `teleport` (same nodes, same level). **Closed (54 §3):** every location form needs level 2, the check is on the two root literals only, children carry none.
 
 ```
 teleport <location:vec3>                        -> teleports the source entity
