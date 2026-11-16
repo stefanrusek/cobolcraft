@@ -2317,8 +2317,8 @@
 *> distance is the horizontal one): the nearest sample that has the biome (or a #tag member) is the answer (the rings are searched until the nearest point of the next
 *> ring, 32 blocks times its number, is farther than the best sample), shown as [x, y, z] with the floor of the
 *> distance (commands.locate.biome.success [biome, coordinates, distance], quiet; the result is the distance); a dimension that cannot produce the biome (its single biome,
-*> else lowland and upland, WORLDGEN-BIOMES) or none within the radius is commands.locate.biome.not_found [biome]. structure and poi find nothing: the world has no structure
-*> or point-of-interest store, so they are commands.locate.structure.not_found and commands.locate.poi.not_found [identifier] (an unknown structure or point of interest
+*> else lowland and upland, WORLDGEN-BIOMES) or none within the radius is commands.locate.biome.not_found [biome]. structure searches the structure sets of the loaded data (cmd-locate.cob, radius 100 cells; Y shown as ~);
+*> poi finds nothing: the world has no point-of-interest store, so it is commands.locate.poi.not_found [identifier] (an unknown structure or point of interest
 *> is refused by the argument parser, argument.resource.not_found, before the command runs, so commands.locate.structure.invalid is not raised). Not done: the clickable
 *> coordinates (the message arguments are plain text).
  DATA DIVISION.
@@ -2327,6 +2327,8 @@
  COPY DIMENSIONS.
  COPY BRRUN.
  COPY PROTO.
+ 01 WS-WANT-ID             PIC X(80).
+ 01 WS-COLONS              BINARY-LONG.
  01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
  01 WS-NAME-BIOME          PIC X(32) VALUE "biome".
  01 WS-NAME-POI            PIC X(32) VALUE "poi".
@@ -2452,8 +2454,46 @@
          WHEN WS-STRUCTURE-LIT > 0
              CALL "BX-FIND" USING WS-NAME-STRUCTURE WS-ARG
              CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
-             MOVE "commands.locate.structure.not_found" TO WS-KEY
-             PERFORM FAIL-TEXT
+             MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
+             CALL "CXC-ARG-REF" USING WS-ARG WS-REGISTRY WS-KIND WS-ID WS-TAG
+             MOVE SPACES TO WS-WANT-ID
+             IF WS-KIND = 2
+                 MOVE WS-TAG TO WS-WANT-ID
+             ELSE
+                 MOVE 0 TO WS-COLONS
+                 INSPECT WS-TEXT(1:WS-TEXT-LENGTH) TALLYING WS-COLONS FOR ALL ":"
+                 IF WS-COLONS > 0
+                     MOVE WS-TEXT TO WS-WANT-ID
+                 ELSE
+                     STRING "minecraft:" WS-TEXT(1:WS-TEXT-LENGTH) DELIMITED BY SIZE INTO WS-WANT-ID
+                 END-IF
+             END-IF
+             COMPUTE WS-SX = FUNCTION INTEGER(BS-X)
+             COMPUTE WS-SZ = FUNCTION INTEGER(BS-Z)
+             CALL "CXC-STRUCT-NEAREST" USING WS-KIND WS-WANT-ID WS-SX WS-SZ CW-SEED WS-FOUND WS-BEST-X WS-BEST-Z WS-BEST-D2
+             IF WS-FOUND = 0
+                 MOVE "commands.locate.structure.not_found" TO WS-KEY
+                 PERFORM FAIL-TEXT
+             ELSE
+                 COMPUTE WS-DISTANCE = FUNCTION INTEGER(FUNCTION SQRT(WS-BEST-D2))
+                 MOVE SPACES TO WS-COORD
+                 MOVE "[" TO WS-COORD(1:1)
+                 MOVE 2 TO WS-COORD-LENGTH
+                 MOVE WS-BEST-X TO WS-VALUE
+                 PERFORM ADD-NUMBER
+                 MOVE ", ~, " TO WS-COORD(WS-COORD-LENGTH:5)
+                 ADD 5 TO WS-COORD-LENGTH
+                 MOVE WS-BEST-Z TO WS-VALUE
+                 PERFORM ADD-NUMBER
+                 MOVE "]" TO WS-COORD(WS-COORD-LENGTH:1)
+                 MOVE "commands.locate.structure.success" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-COORD WS-COORD-LENGTH
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-DISTANCE
+                 CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+                 MOVE WS-DISTANCE TO BR-R-RESULT
+             END-IF
          WHEN WS-POI-LIT > 0
              CALL "BX-FIND" USING WS-NAME-POI WS-ARG
              CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
