@@ -923,6 +923,10 @@
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-EVK-CAST            BINARY-LONG.
+ 01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-VS-HX               FLOAT-LONG.
+ 01 WS-VS-HZ               FLOAT-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
  01 WS-AVOID               BINARY-LONG.
  01 WS-AHX                 FLOAT-LONG.
@@ -1047,6 +1051,10 @@
              MOVE 1 TO WS-CHASE
          END-IF
      END-IF
+     MOVE 0 TO WS-VS-WALK
+     IF SM-KIND(WS-M) = 1 AND EN-TARGET(WS-ROW) = 0
+         CALL "MOBVS-TICK" USING WS-ROW WS-M WS-VS-HX WS-VS-HZ WS-VS-WALK
+     END-IF
      MOVE 0 TO WS-STOP WS-LIFE-WALK
      IF SM-KIND(WS-M) = 0
          CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
@@ -1116,6 +1124,17 @@
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "evoker"
+         CALL "EVK-STEP" USING WS-ROW
+         CALL "EVK-IS-CASTING" USING WS-ROW WS-EVK-CAST
+         IF WS-EVK-CAST = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "vex"
+         CALL "VEX-STEP" USING WS-ROW
+     END-IF
+     CALL "RAID-RAIDER-STEP" USING WS-ROW
      IF SM-KEY(WS-M) = "wandering_trader"
          CALL "TRADER-STEP" USING WS-ROW
          IF EN-USED(WS-ROW) = 0
@@ -1213,6 +1232,14 @@
                      CALL "STDMOB-HIT-EFFECT" USING WS-P WS-M
                  END-IF
              END-IF
+         WHEN WS-VS-WALK = 1
+*>           A zombie, vindicator or ravager walks to a villager (MOBVS-TICK, 20 sections 4 and 13).
+             MOVE WS-VS-HX TO WS-HX
+             MOVE WS-VS-HZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-PET-WALK = 2
 *>           A tame wolf ordered to sit stays where it is (SitWhenOrderedToGoal, 18 section 8.2).
              MOVE 0 TO EN-COOLDOWN(WS-ROW) EN-FLEE(WS-ROW)
@@ -1680,6 +1707,9 @@
      CALL "STDMOB-REST-TICK"
      CALL "STDMOB-PHANTOM-SPAWNER"
      CALL "TRADER-TICK"
+     CALL "EVK-FANG-TICK"
+     CALL "RAID-WORLD-TICK"
+     CALL "PATROL-TICK"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 
