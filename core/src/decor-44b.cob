@@ -16,7 +16,7 @@
 *>   ITEM-FRAME-INTERACT USING frame row, player row, done out
 *>   ITEM-FRAME-SIGNAL USING frame row, signal out
 *>   ITEM-FRAME-HURT USING frame row, attacker player row (0 none), explosion (0 or 1), done out
-*>   PAINTING-PLACE USING dim, clicked x, y, z, face, candidate count, widths (table of 8), heights (table of 8), row out (0 none)
+*>   PAINTING-PLACE USING dim, clicked x, y, z, face, candidate count, widths (table of 64), heights (table of 64), row out (0 none); PJ-I4 of the painting is the index of the chosen candidate
 *>   PAINTING-HURT USING painting row, attacker player row, done out
 
  IDENTIFICATION DIVISION.
@@ -444,7 +444,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-FITS.
-    05 WS-FIT              BINARY-LONG OCCURS 8 TIMES.
+    05 WS-FIT              BINARY-LONG OCCURS 64 TIMES.
  01 WS-MAX                 BINARY-LONG.
  01 WS-AREA                BINARY-LONG.
  01 WS-N                   BINARY-LONG.
@@ -467,9 +467,9 @@
  01 L-FACE                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  01 L-WIDTHS.
-    05 L-W                 BINARY-LONG OCCURS 8 TIMES.
+    05 L-W                 BINARY-LONG OCCURS 64 TIMES.
  01 L-HEIGHTS.
-    05 L-H                 BINARY-LONG OCCURS 8 TIMES.
+    05 L-H                 BINARY-LONG OCCURS 64 TIMES.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACE L-COUNT L-WIDTHS L-HEIGHTS L-ROW.
      MOVE 0 TO L-ROW
@@ -536,6 +536,7 @@
          CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
          MOVE L-W(WS-PICK) TO PJ-I2(WS-SLOT)
          MOVE L-H(WS-PICK) TO PJ-I3(WS-SLOT)
+         MOVE WS-PICK TO PJ-I4(WS-SLOT)
      END-IF
      GOBACK.
  END PROGRAM PAINTING-PLACE.

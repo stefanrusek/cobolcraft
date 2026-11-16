@@ -1,0 +1,982 @@
+*> The ender dragon's phases (docs/protocol/21 section 6.4.3, 44 part 9 section 1; lane 002-lane-mobsb8, T9702): setPhase and the begin rules, the eleven phase ticks, the strafe, the fireball and the
+*> breath cloud. The phase ids: 0 holding pattern, 1 strafe player, 2 landing approach, 3 landing, 4 takeoff, 5 sitting flaming, 6 sitting scanning, 7 sitting attacking, 8 charging player, 9 dying,
+*> 10 hovering. The state is DRAGSTATE.cpy. Gaps: the phase id is not sent as entity data 16, the sounds, particles and world events 1017 (fireball) and 2006 are sent where the event exists.
+*>
+*>   DRAGON-SET-PHASE USING row, phase
+*>   DRAGON-PLAYER-NEAR USING x, y, z (FLOAT-LONG), maximum distance (FLOAT-LONG), player row out: the nearest living survival or adventure player of the dragon's dimension (DG-FIGHT 0: any)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-SET-PHASE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DRAGSTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PHASE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PHASE.
+     IF L-PHASE = DG-PHASE
+         GOBACK
+     END-IF
+     MOVE L-PHASE TO DG-PHASE
+     EVALUATE L-PHASE
+         WHEN 0 WHEN 2 WHEN 4
+             MOVE 0 TO DG-HAS-PATH DG-HAS-TARGET DG-CHARGE-T
+         WHEN 1
+             MOVE 0 TO DG-CHARGE DG-HAS-TARGET DG-HAS-PATH DG-PROW
+         WHEN 5
+             ADD 1 TO DG-FLAMES
+             MOVE 0 TO DG-FLAME-T
+         WHEN 6
+             MOVE 0 TO DG-SCAN
+         WHEN 7
+             MOVE 0 TO DG-ROAR
+         WHEN 8
+             MOVE 0 TO DG-CHARGE-T DG-HAS-TARGET
+         WHEN 9
+             MOVE 0 TO DG-HAS-TARGET DG-DEATH-T
+         WHEN 10
+             MOVE 0 TO DG-HAS-TARGET
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DRAGON-SET-PHASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-ROLL.
+*> USING bound, result out (0 to bound - 1): a deterministic draw (the hash of the tick and a running count).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SALT                BINARY-LONG VALUE 9142.
+ LINKAGE SECTION.
+ 01 L-BOUND                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-BOUND L-RESULT.
+     CALL "XP-RANDOM" USING WS-SALT L-BOUND L-RESULT
+     GOBACK.
+ END PROGRAM DRAGON-ROLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-PLAYER-NEAR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-BEST                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-MAX                  FLOAT-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-MAX L-PLAYER.
+     MOVE 0 TO L-PLAYER
+     COMPUTE WS-BEST = L-MAX * L-MAX
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+                 AND (PL-MODE(WS-P) = 0 OR PL-MODE(WS-P) = 2)
+             COMPUTE WS-D2 = (PL-X(WS-P) - L-X) ** 2 + (PL-Y(WS-P) - L-Y) ** 2 + (PL-Z(WS-P) - L-Z) ** 2
+             IF WS-D2 <= WS-BEST
+                 MOVE WS-D2 TO WS-BEST
+                 MOVE WS-P TO L-PLAYER
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DRAGON-PLAYER-NEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-PODIUM-Y.
+*> USING row, y out: the surface of the podium column (0, 0) of the dragon's dimension.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-Y.
+     CALL "DRAGON-SURFACE" USING EN-DIM(L-ROW) WS-ZERO WS-ZERO2 L-Y
+     GOBACK.
+ END PROGRAM DRAGON-PODIUM-Y.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-ARRIVED.
+*> USING row, use collision (0 or 1), need a new target out: no target, within 10 blocks of it, beyond 150, or in a wall.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-D2                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-COLLIDE              BINARY-LONG.
+ 01 L-NEED                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-COLLIDE L-NEED.
+     MOVE 0 TO L-NEED WS-D2
+     IF DG-HAS-TARGET = 1
+         COMPUTE WS-D2 = (DG-TX - EN-X(L-ROW)) ** 2 + (DG-TY - EN-Y(L-ROW)) ** 2 + (DG-TZ - EN-Z(L-ROW)) ** 2
+     END-IF
+     IF WS-D2 < 100 OR WS-D2 > 22500 OR (L-COLLIDE = 1 AND DG-WALL = 1)
+         MOVE 1 TO L-NEED
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-ARRIVED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-FIND-NEW.
+*> USING row: the ring part of findNewTarget (holding pattern and strafe): when the path is null or done, the next ring node (a flip of the direction one time in 8), then the next path node is the target.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ COPY FIGHTRT.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-CLOSEST             BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-EIGHT               BINARY-LONG VALUE 8.
+ 01 WS-CW                  BINARY-LONG.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-NO2                 BINARY-LONG VALUE 0.
+ 01 WS-NO3                 BINARY-LONG VALUE 0.
+ 01 WS-NO4                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF DG-HAS-PATH = 0 OR DG-PATH-I > DG-PATH-N
+         MOVE EN-X(L-ROW) TO WS-X
+         MOVE EN-Y(L-ROW) TO WS-Y
+         MOVE EN-Z(L-ROW) TO WS-Z
+         CALL "DRAGON-CLOSEST" USING WS-X WS-Y WS-Z FR-CRYSTALS WS-CLOSEST
+         MOVE WS-CLOSEST TO WS-N
+         IF DG-PHASE = 1
+             MOVE DG-SCW TO WS-CW
+         ELSE
+             MOVE DG-CW TO WS-CW
+         END-IF
+         CALL "DRAGON-ROLL" USING WS-EIGHT WS-ROLL
+         IF WS-ROLL = 0
+             COMPUTE WS-CW = 1 - WS-CW
+             ADD 6 TO WS-N
+         END-IF
+         IF DG-PHASE = 1
+             MOVE WS-CW TO DG-SCW
+         ELSE
+             MOVE WS-CW TO DG-CW
+         END-IF
+         IF WS-CW = 1
+             ADD 1 TO WS-N
+         ELSE
+             SUBTRACT 1 FROM WS-N
+         END-IF
+         IF FR-CRYSTALS = 0
+             COMPUTE WS-N = FUNCTION MOD(WS-N - 12, 8) + 12
+         ELSE
+             COMPUTE WS-N = FUNCTION MOD(WS-N + 12, 12)
+         END-IF
+         CALL "DRAGON-PATH" USING WS-CLOSEST WS-N WS-NO WS-NO2 WS-NO3 WS-NO4 FR-CRYSTALS
+         IF DG-HAS-PATH = 1
+             MOVE 2 TO DG-PATH-I
+         END-IF
+     END-IF
+     CALL "DRAGON-NAV"
+     GOBACK.
+ END PROGRAM DRAGON-FIND-NEW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-STRAFE-SET.
+*> USING row, player row: DragonStrafePlayerPhase.setTarget (44 part 9 section 1.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ COPY FIGHTRT.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-GOAL                BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-YO                  FLOAT-LONG.
+ 01 WS-YES                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PLAYER.
+     MOVE L-PLAYER TO DG-PROW
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     CALL "DRAGON-CLOSEST" USING WS-X WS-Y WS-Z FR-CRYSTALS WS-START
+     MOVE PL-X(L-PLAYER) TO WS-X
+     MOVE PL-Y(L-PLAYER) TO WS-Y
+     MOVE PL-Z(L-PLAYER) TO WS-Z
+     CALL "DRAGON-CLOSEST" USING WS-X WS-Y WS-Z FR-CRYSTALS WS-GOAL
+     COMPUTE WS-BX = FUNCTION INTEGER(PL-X(L-PLAYER))
+     COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(L-PLAYER))
+     COMPUTE WS-DIST = FUNCTION SQRT((WS-BX - EN-X(L-ROW)) ** 2 + (WS-BZ - EN-Z(L-ROW)) ** 2)
+     COMPUTE WS-YO = FUNCTION MIN(0.4 + WS-DIST / 80 - 1, 10)
+     MOVE WS-YO TO DG-YOFF
+     COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(L-PLAYER) + WS-YO)
+     CALL "DRAGON-PATH" USING WS-START WS-GOAL WS-YES WS-BX WS-BY WS-BZ FR-CRYSTALS
+     IF DG-HAS-PATH = 1
+         MOVE 2 TO DG-PATH-I
+     END-IF
+     CALL "DRAGON-NAV"
+     GOBACK.
+ END PROGRAM DRAGON-STRAFE-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-HOLD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ COPY FIGHTRT.
+ 01 WS-NEED                BINARY-LONG.
+ 01 WS-COLLIDE             BINARY-LONG VALUE 1.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-C3                  BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-RANGE               FLOAT-LONG VALUE 128.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "DRAGON-ARRIVED" USING L-ROW WS-COLLIDE WS-NEED
+     IF WS-NEED = 0
+         GOBACK
+     END-IF
+     IF DG-HAS-PATH = 0 OR DG-PATH-I > DG-PATH-N
+         CALL "DRAGON-PODIUM-Y" USING L-ROW WS-PY
+         COMPUTE WS-BOUND = FR-CRYSTALS + 3
+         CALL "DRAGON-ROLL" USING WS-BOUND WS-ROLL
+         IF WS-ROLL = 0
+             MOVE 2 TO WS-PHASE
+             CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+             GOBACK
+         END-IF
+         MOVE 0 TO WS-X WS-Z
+         MOVE WS-PY TO WS-Y
+         CALL "DRAGON-PLAYER-NEAR" USING L-ROW WS-X WS-Y WS-Z WS-RANGE WS-P
+         MOVE 64 TO WS-R
+         IF WS-P > 0
+             COMPUTE WS-R = ((PL-X(WS-P) + 0.5) ** 2 + (PL-Y(WS-P) - WS-PY) ** 2 + (PL-Z(WS-P) + 0.5) ** 2) / 512
+         END-IF
+         COMPUTE WS-BOUND = WS-R + 2
+         CALL "DRAGON-ROLL" USING WS-BOUND WS-ROLL
+         MOVE WS-ROLL TO WS-R
+         IF WS-P > 0 AND WS-R NOT = 0
+             COMPUTE WS-BOUND = FR-CRYSTALS + 2
+             CALL "DRAGON-ROLL" USING WS-BOUND WS-ROLL
+             MOVE WS-ROLL TO WS-R
+         END-IF
+         IF WS-R = 0 AND WS-P > 0
+             MOVE 1 TO WS-PHASE
+             CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+             CALL "DRAGON-STRAFE-SET" USING L-ROW WS-P
+             GOBACK
+         END-IF
+     END-IF
+     CALL "DRAGON-FIND-NEW" USING L-ROW
+     GOBACK.
+ END PROGRAM DRAGON-HOLD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-BREATH.
+*> USING row: the lingering breath cloud of SITTING_FLAMING (21 section 6.4.3): centre 2.5 blocks ahead of the head, on the first non-air cell below it, radius 5, duration 200, scale 0.25, instant damage.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ COPY PROJSTATE.
+ 01 WS-PI                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-RADIUS              FLOAT-LONG VALUE 5.0.
+ 01 WS-DUR                 BINARY-LONG VALUE 200.
+ 01 WS-WAIT                BINARY-LONG VALUE 20.
+ 01 WS-REAPP               BINARY-LONG VALUE 20.
+ 01 WS-CLOUD               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG VALUE 6.
+ 01 WS-AMP                 BINARY-LONG VALUE 0.
+ 01 WS-FDUR                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "DRAGON-PARTS" USING L-ROW
+     MOVE FUNCTION PI TO WS-PI
+     COMPUTE WS-YAW = EN-YAW(L-ROW) * WS-PI / 180
+     COMPUTE WS-X = DG-PART-X(1) + FUNCTION SIN(WS-YAW) * 2.5
+     COMPUTE WS-Z = DG-PART-Z(1) - FUNCTION COS(WS-YAW) * 2.5
+     COMPUTE WS-CX = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-CZ = FUNCTION INTEGER(WS-Z)
+     COMPUTE WS-CY = FUNCTION INTEGER(DG-PART-Y(1) + 0.5)
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL WS-DONE = 1 OR WS-CY < 0
+         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-STATE
+         IF WS-STATE NOT = 0
+             MOVE 1 TO WS-DONE
+         ELSE
+             SUBTRACT 1 FROM WS-CY
+         END-IF
+     END-PERFORM
+     COMPUTE WS-Y = WS-CY + 1
+     CALL "CLOUD-SPAWN" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-RADIUS WS-DUR WS-WAIT WS-REAPP EN-ID(L-ROW) WS-CLOUD
+     IF WS-CLOUD > 0
+         CALL "POTION-FX" USING WS-CLOUD WS-FX WS-AMP WS-FDUR
+         CALL "PJ-FIND" USING EN-ID(WS-CLOUD) WS-SLOT
+         MOVE 250 TO PJ-SCALE(WS-SLOT)
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-BREATH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-FIREBALL.
+*> USING row, player row: launches a dragon fireball (PJ-KIND 18) from 1 block ahead of the head at the player's half height (world event 1017).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:dragon_fireball".
+ 01 WS-KIND                BINARY-LONG VALUE 18.
+ 01 WS-PI                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HY                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-BALL                BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 1017.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PLAYER.
+     CALL "DRAGON-PARTS" USING L-ROW
+     MOVE FUNCTION PI TO WS-PI
+     COMPUTE WS-YAW = EN-YAW(L-ROW) * WS-PI / 180
+     COMPUTE WS-HX = DG-PART-X(1) + FUNCTION SIN(WS-YAW)
+     COMPUTE WS-HY = DG-PART-Y(1) + 1.0
+     COMPUTE WS-HZ = DG-PART-Z(1) - FUNCTION COS(WS-YAW)
+     COMPUTE WS-DX = PL-X(L-PLAYER) - WS-HX
+     COMPUTE WS-DY = PL-Y(L-PLAYER) + 0.9 - WS-HY
+     COMPUTE WS-DZ = PL-Z(L-PLAYER) - WS-HZ
+     COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+     IF WS-LEN = 0
+         MOVE 1 TO WS-LEN
+     END-IF
+     COMPUTE WS-VX = WS-DX / WS-LEN * 0.1
+     COMPUTE WS-VY = WS-DY / WS-LEN * 0.1
+     COMPUTE WS-VZ = WS-DZ / WS-LEN * 0.1
+     CALL "THROWN-SPAWN" USING WS-KIND WS-KEY EN-DIM(L-ROW) WS-HX WS-HY WS-HZ WS-VX WS-VY WS-VZ EN-ID(L-ROW) WS-BALL
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "LEVEL-EVENT" USING EN-DIM(L-ROW) WS-EVENT WS-CX WS-CY WS-CZ WS-NONE WS-NONE2
+     GOBACK.
+ END PROGRAM DRAGON-FIREBALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DFIRE-HIT.
+*> USING fireball row: a cloud of radius 3 for 600 ticks growing to 7 (instant damage amplifier 1, scale 0.25, owner the dragon) at the hit position, world event 2006; the fireball is gone.
+*> Gap: the cloud is not moved to the first entity within 4 blocks.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-OWNER               BINARY-LONG.
+ 01 WS-RADIUS              FLOAT-LONG VALUE 3.0.
+ 01 WS-DUR                 BINARY-LONG VALUE 600.
+ 01 WS-WAIT                BINARY-LONG VALUE 20.
+ 01 WS-REAPP               BINARY-LONG VALUE 20.
+ 01 WS-CLOUD               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG VALUE 6.
+ 01 WS-AMP                 BINARY-LONG VALUE 1.
+ 01 WS-FDUR                BINARY-LONG VALUE 1.
+ 01 WS-EVENT               BINARY-LONG VALUE 2006.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE EN-DIM(L-ROW) TO WS-DIM
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     MOVE EN-TARGET-ID(L-ROW) TO WS-OWNER
+     CALL "PJ-DROP" USING L-ROW
+     CALL "CLOUD-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-RADIUS WS-DUR WS-WAIT WS-REAPP WS-OWNER WS-CLOUD
+     IF WS-CLOUD > 0
+         CALL "POTION-FX" USING WS-CLOUD WS-FX WS-AMP WS-FDUR
+         CALL "PJ-FIND" USING EN-ID(WS-CLOUD) WS-SLOT
+         MOVE 250 TO PJ-SCALE(WS-SLOT)
+         COMPUTE PJ-RPT(WS-SLOT) = (7.0 - 3.0) / 600
+     END-IF
+     COMPUTE WS-CX = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-CY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-CZ = FUNCTION INTEGER(WS-Z)
+     CALL "LEVEL-EVENT" USING WS-DIM WS-EVENT WS-CX WS-CY WS-CZ WS-NONE WS-NONE2
+     GOBACK.
+ END PROGRAM DFIRE-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DFIRE-STEP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-INERTIA             FLOAT-LONG VALUE 0.95.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     COMPUTE WS-LEN = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
+     IF WS-LEN > 0
+         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + EN-VX(L-ROW) / WS-LEN * 0.1
+         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + EN-VY(L-ROW) / WS-LEN * 0.1
+         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + EN-VZ(L-ROW) / WS-LEN * 0.1
+     END-IF
+     CALL "THROWN-FLY2" USING L-ROW WS-ZERO WS-INERTIA WS-HIT WS-ENTITY WS-PLAYER
+     IF WS-HIT > 0
+         CALL "DFIRE-HIT" USING L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM DFIRE-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-STRAFE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-NEED                BINARY-LONG.
+ 01 WS-NOCOLLIDE           BINARY-LONG VALUE 0.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-YO                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-SEES                BINARY-LONG.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EY                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
+ 01 WS-PI                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-L1                  FLOAT-LONG.
+ 01 WS-V1X                 FLOAT-LONG.
+ 01 WS-V1Z                 FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-ANGLE               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF DG-PROW = 0
+         MOVE 0 TO WS-PHASE
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+         GOBACK
+     END-IF
+     IF PL-USED(DG-PROW) = 0 OR PL-STATE(DG-PROW) NOT = PS-ALIVE OR PL-DIM(DG-PROW) NOT = EN-DIM(L-ROW)
+         MOVE 0 TO DG-PROW
+         MOVE 0 TO WS-PHASE
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+         GOBACK
+     END-IF
+     IF DG-HAS-PATH = 1 AND DG-PATH-I > DG-PATH-N
+         COMPUTE WS-H = FUNCTION SQRT((PL-X(DG-PROW) - EN-X(L-ROW)) ** 2 + (PL-Z(DG-PROW) - EN-Z(L-ROW)) ** 2)
+         COMPUTE WS-YO = FUNCTION MIN(0.4 + WS-H / 80 - 1, 10)
+         MOVE PL-X(DG-PROW) TO DG-TX
+         COMPUTE DG-TY = PL-Y(DG-PROW) + WS-YO
+         MOVE PL-Z(DG-PROW) TO DG-TZ
+         MOVE 1 TO DG-HAS-TARGET
+     END-IF
+     CALL "DRAGON-ARRIVED" USING L-ROW WS-NOCOLLIDE WS-NEED
+     IF WS-NEED = 1
+         CALL "DRAGON-FIND-NEW" USING L-ROW
+     END-IF
+     COMPUTE WS-D2 = (PL-X(DG-PROW) - EN-X(L-ROW)) ** 2 + (PL-Y(DG-PROW) - EN-Y(L-ROW)) ** 2 + (PL-Z(DG-PROW) - EN-Z(L-ROW)) ** 2
+     IF WS-D2 >= 4096
+         IF DG-CHARGE > 0
+             SUBTRACT 1 FROM DG-CHARGE
+         END-IF
+         GOBACK
+     END-IF
+     CALL "DRAGON-PARTS" USING L-ROW
+     MOVE DG-PART-X(1) TO WS-EX
+     COMPUTE WS-EY = DG-PART-Y(1) + 0.5
+     MOVE DG-PART-Z(1) TO WS-EZ
+     MOVE PL-X(DG-PROW) TO WS-TX
+     COMPUTE WS-TY = PL-Y(DG-PROW) + 1.62
+     MOVE PL-Z(DG-PROW) TO WS-TZ
+     CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-EX WS-EY WS-EZ WS-TX WS-TY WS-TZ WS-SEES
+     IF WS-SEES = 0
+         IF DG-CHARGE > 0
+             SUBTRACT 1 FROM DG-CHARGE
+         END-IF
+         GOBACK
+     END-IF
+     ADD 1 TO DG-CHARGE
+     MOVE FUNCTION PI TO WS-PI
+     COMPUTE WS-YAW = EN-YAW(L-ROW) * WS-PI / 180
+     COMPUTE WS-V1X = PL-X(DG-PROW) - EN-X(L-ROW)
+     COMPUTE WS-V1Z = PL-Z(DG-PROW) - EN-Z(L-ROW)
+     COMPUTE WS-L1 = FUNCTION SQRT(WS-V1X * WS-V1X + WS-V1Z * WS-V1Z)
+     MOVE 180 TO WS-ANGLE
+     IF WS-L1 > 0
+         COMPUTE WS-DOT = (FUNCTION SIN(WS-YAW) * WS-V1X - FUNCTION COS(WS-YAW) * WS-V1Z) / WS-L1
+         COMPUTE WS-DOT = FUNCTION MAX(-1, FUNCTION MIN(1, WS-DOT))
+         COMPUTE WS-ANGLE = FUNCTION ACOS(WS-DOT) * 57.2957763671875 + 0.5
+     END-IF
+     IF DG-CHARGE >= 5 AND WS-ANGLE >= 0 AND WS-ANGLE < 10
+         CALL "DRAGON-FIREBALL" USING L-ROW DG-PROW
+         MOVE 0 TO DG-CHARGE
+         MOVE 0 TO WS-PHASE
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-STRAFE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-APPROACH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ COPY FIGHTRT.
+ 01 WS-NEED                BINARY-LONG.
+ 01 WS-COLLIDE             BINARY-LONG VALUE 1.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-RANGE               FLOAT-LONG VALUE 128.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-CLOSEST             BINARY-LONG.
+ 01 WS-GOAL                BINARY-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-GX                  FLOAT-LONG.
+ 01 WS-GY                  FLOAT-LONG.
+ 01 WS-GZ                  FLOAT-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-YES                 BINARY-LONG VALUE 1.
+ 01 WS-PHASE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "DRAGON-ARRIVED" USING L-ROW WS-COLLIDE WS-NEED
+     IF WS-NEED = 1
+         IF DG-HAS-PATH = 0 OR DG-PATH-I > DG-PATH-N
+             CALL "DRAGON-PODIUM-Y" USING L-ROW WS-PY
+             MOVE EN-X(L-ROW) TO WS-X
+             MOVE EN-Y(L-ROW) TO WS-Y
+             MOVE EN-Z(L-ROW) TO WS-Z
+             CALL "DRAGON-CLOSEST" USING WS-X WS-Y WS-Z FR-CRYSTALS WS-CLOSEST
+             MOVE 0 TO WS-X WS-Z
+             MOVE WS-PY TO WS-Y
+             CALL "DRAGON-PLAYER-NEAR" USING L-ROW WS-X WS-Y WS-Z WS-RANGE WS-P
+             MOVE 40 TO WS-GX
+             MOVE WS-PY TO WS-GY
+             MOVE 0 TO WS-GZ
+             IF WS-P > 0
+                 COMPUTE WS-H = FUNCTION SQRT(PL-X(WS-P) ** 2 + PL-Z(WS-P) ** 2)
+                 IF WS-H > 0
+                     COMPUTE WS-GX = 0 - PL-X(WS-P) / WS-H * 40
+                     MOVE 105 TO WS-GY
+                     COMPUTE WS-GZ = 0 - PL-Z(WS-P) / WS-H * 40
+                 END-IF
+             END-IF
+             CALL "DRAGON-CLOSEST" USING WS-GX WS-GY WS-GZ FR-CRYSTALS WS-GOAL
+             CALL "DRAGON-PATH" USING WS-CLOSEST WS-GOAL WS-YES WS-ZERO WS-PY WS-ZERO2 FR-CRYSTALS
+             IF DG-HAS-PATH = 1
+                 MOVE 2 TO DG-PATH-I
+             END-IF
+         END-IF
+     END-IF
+     CALL "DRAGON-NAV"
+     IF DG-HAS-PATH = 1 AND DG-PATH-I > DG-PATH-N
+         MOVE 3 TO WS-PHASE
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-APPROACH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-LANDING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-PHASE               BINARY-LONG VALUE 6.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "DRAGON-PODIUM-Y" USING L-ROW WS-PY
+     MOVE 0.5 TO DG-TX
+     MOVE WS-PY TO DG-TY
+     MOVE 0.5 TO DG-TZ
+     MOVE 1 TO DG-HAS-TARGET
+     COMPUTE WS-D2 = (DG-TX - EN-X(L-ROW)) ** 2 + (DG-TY - EN-Y(L-ROW)) ** 2 + (DG-TZ - EN-Z(L-ROW)) ** 2
+     IF WS-D2 < 1
+         MOVE 0 TO DG-FLAMES
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-LANDING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-TAKEOFF.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ COPY FIGHTRT.
+ 01 WS-PI                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-GX                  FLOAT-LONG.
+ 01 WS-GY                  FLOAT-LONG VALUE 105.
+ 01 WS-GZ                  FLOAT-LONG.
+ 01 WS-CLOSEST             BINARY-LONG.
+ 01 WS-GOAL                BINARY-LONG.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-NO2                 BINARY-LONG VALUE 0.
+ 01 WS-NO3                 BINARY-LONG VALUE 0.
+ 01 WS-NO4                 BINARY-LONG VALUE 0.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-NEED                BINARY-LONG.
+ 01 WS-NOCOLLIDE           BINARY-LONG VALUE 0.
+ 01 WS-PHASE               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF DG-CHARGE-T = 0
+         MOVE 1 TO DG-CHARGE-T
+         MOVE FUNCTION PI TO WS-PI
+         COMPUTE WS-YAW = EN-YAW(L-ROW) * WS-PI / 180
+         MOVE EN-X(L-ROW) TO WS-X
+         MOVE EN-Y(L-ROW) TO WS-Y
+         MOVE EN-Z(L-ROW) TO WS-Z
+         CALL "DRAGON-CLOSEST" USING WS-X WS-Y WS-Z FR-CRYSTALS WS-CLOSEST
+         COMPUTE WS-GX = FUNCTION SIN(WS-YAW) * 40
+         COMPUTE WS-GZ = 0 - FUNCTION COS(WS-YAW) * 40
+         CALL "DRAGON-CLOSEST" USING WS-GX WS-GY WS-GZ FR-CRYSTALS WS-GOAL
+         CALL "DRAGON-PATH" USING WS-CLOSEST WS-GOAL WS-NO WS-NO2 WS-NO3 WS-NO4 FR-CRYSTALS
+         IF DG-HAS-PATH = 1
+             MOVE 2 TO DG-PATH-I
+         END-IF
+         CALL "DRAGON-NAV"
+     ELSE
+         CALL "DRAGON-ARRIVED" USING L-ROW WS-NOCOLLIDE WS-NEED
+         IF WS-NEED = 1
+             CALL "DRAGON-NAV"
+         END-IF
+     END-IF
+     CALL "DRAGON-PODIUM-Y" USING L-ROW WS-PY
+     COMPUTE WS-D2 = EN-X(L-ROW) ** 2 + (EN-Y(L-ROW) - WS-PY) ** 2 + EN-Z(L-ROW) ** 2
+     IF WS-D2 >= 100
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-TAKEOFF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-SCANNING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-PI                  FLOAT-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-BEST                FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-ATAN                FLOAT-LONG.
+ 01 WS-TURN                FLOAT-LONG.
+ 01 WS-RANGE               FLOAT-LONG VALUE 150.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     ADD 1 TO DG-SCAN
+     MOVE 0 TO WS-P
+     MOVE 1.0E+30 TO WS-BEST
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > CORE-MAX-PLAYERS
+         IF PL-USED(WS-Q) = 1 AND PL-ENTITY-ROW(WS-Q) > 0 AND PL-STATE(WS-Q) = PS-ALIVE AND PL-DIM(WS-Q) = EN-DIM(L-ROW)
+                 AND (PL-MODE(WS-Q) = 0 OR PL-MODE(WS-Q) = 2)
+             COMPUTE WS-DX = PL-X(WS-Q) - EN-X(L-ROW)
+             COMPUTE WS-DZ = PL-Z(WS-Q) - EN-Z(L-ROW)
+             COMPUTE WS-DIST = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+             IF WS-DIST <= 20 AND FUNCTION ABS(PL-Y(WS-Q) - EN-Y(L-ROW)) <= 10 AND WS-DIST < WS-BEST
+                 MOVE WS-DIST TO WS-BEST
+                 MOVE WS-Q TO WS-P
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-P > 0
+         IF DG-SCAN > 25
+             MOVE 7 TO WS-PHASE
+             CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+             GOBACK
+         END-IF
+         MOVE FUNCTION PI TO WS-PI
+         COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
+         COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
+         COMPUTE WS-DIST = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+         COMPUTE WS-YAW = EN-YAW(L-ROW) * WS-PI / 180
+         MOVE 180 TO WS-ANGLE
+         IF WS-DIST > 0
+             COMPUTE WS-DOT = (FUNCTION SIN(WS-YAW) * WS-DX - FUNCTION COS(WS-YAW) * WS-DZ) / WS-DIST
+             COMPUTE WS-DOT = FUNCTION MAX(-1, FUNCTION MIN(1, WS-DOT))
+             COMPUTE WS-ANGLE = FUNCTION ACOS(WS-DOT) * 57.2957763671875 + 0.5
+         END-IF
+         IF WS-ANGLE >= 10
+             CALL "DRAGON-ATAN2" USING WS-DX WS-DZ WS-ATAN
+             COMPUTE WS-TURN = 180 - WS-ATAN - EN-YAW(L-ROW)
+             CALL "DRAGON-WRAP" USING WS-TURN
+             COMPUTE WS-TURN = FUNCTION MAX(-100, FUNCTION MIN(100, WS-TURN))
+             COMPUTE DG-YROT-A = DG-YROT-A * 0.8 + WS-TURN * ((0.7 / FUNCTION MIN(WS-DIST + 1, 40)) / (WS-DIST + 1))
+             COMPUTE EN-YAW(L-ROW) = EN-YAW(L-ROW) + DG-YROT-A
+         END-IF
+         GOBACK
+     END-IF
+     IF DG-SCAN >= 100
+         MOVE EN-X(L-ROW) TO WS-X
+         MOVE EN-Y(L-ROW) TO WS-Y
+         MOVE EN-Z(L-ROW) TO WS-Z
+         CALL "DRAGON-PLAYER-NEAR" USING L-ROW WS-X WS-Y WS-Z WS-RANGE WS-P
+         IF WS-P = 0
+             MOVE 4 TO WS-PHASE
+             CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+         ELSE
+             MOVE 8 TO WS-PHASE
+             CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+             MOVE PL-X(WS-P) TO DG-TX
+             MOVE PL-Y(WS-P) TO DG-TY
+             MOVE PL-Z(WS-P) TO DG-TZ
+             MOVE 1 TO DG-HAS-TARGET
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-SCANNING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-ATTACKING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DRAGSTATE.
+ 01 WS-PHASE               BINARY-LONG VALUE 5.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     ADD 1 TO DG-ROAR
+     IF DG-ROAR >= 40
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-ATTACKING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-FLAMING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DRAGSTATE.
+ 01 WS-PHASE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     ADD 1 TO DG-FLAME-T
+     IF DG-FLAME-T = 10
+         CALL "DRAGON-BREATH" USING L-ROW
+     END-IF
+     IF DG-FLAME-T >= 200
+         MOVE 6 TO WS-PHASE
+         IF DG-FLAMES >= 4
+             MOVE 4 TO WS-PHASE
+         END-IF
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-FLAMING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-CHARGING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-PHASE               BINARY-LONG VALUE 0.
+ 01 WS-D2                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF DG-HAS-TARGET = 0
+         CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+         GOBACK
+     END-IF
+     IF DG-CHARGE-T > 0
+         ADD 1 TO DG-CHARGE-T
+         IF DG-CHARGE-T >= 10
+             CALL "DRAGON-SET-PHASE" USING L-ROW WS-PHASE
+         END-IF
+         GOBACK
+     END-IF
+     COMPUTE WS-D2 = (DG-TX - EN-X(L-ROW)) ** 2 + (DG-TY - EN-Y(L-ROW)) ** 2 + (DG-TZ - EN-Z(L-ROW)) ** 2
+     IF WS-D2 < 100 OR WS-D2 > 22500 OR DG-WALL = 1
+         ADD 1 TO DG-CHARGE-T
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-CHARGING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-DYING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "DRAGON-PODIUM-Y" USING L-ROW WS-PY
+     MOVE 0.5 TO DG-TX
+     MOVE WS-PY TO DG-TY
+     MOVE 0.5 TO DG-TZ
+     MOVE 1 TO DG-HAS-TARGET
+     COMPUTE WS-D2 = (DG-TX - EN-X(L-ROW)) ** 2 + (DG-TY - EN-Y(L-ROW)) ** 2 + (DG-TZ - EN-Z(L-ROW)) ** 2
+     IF WS-D2 < 100 OR WS-D2 > 22500 OR DG-WALL = 1
+         MOVE 0 TO DG-HP
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-DYING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-HOVER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF DG-HAS-TARGET = 0
+         MOVE EN-X(L-ROW) TO DG-TX
+         MOVE EN-Y(L-ROW) TO DG-TY
+         MOVE EN-Z(L-ROW) TO DG-TZ
+         MOVE 1 TO DG-HAS-TARGET
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-HOVER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-PH-RUN.
+*> USING row, phase: the tick of one phase.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PHASE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PHASE.
+     EVALUATE L-PHASE
+         WHEN 0
+             CALL "DRAGON-HOLD" USING L-ROW
+         WHEN 1
+             CALL "DRAGON-STRAFE" USING L-ROW
+         WHEN 2
+             CALL "DRAGON-APPROACH" USING L-ROW
+         WHEN 3
+             CALL "DRAGON-LANDING" USING L-ROW
+         WHEN 4
+             CALL "DRAGON-TAKEOFF" USING L-ROW
+         WHEN 5
+             CALL "DRAGON-FLAMING" USING L-ROW
+         WHEN 6
+             CALL "DRAGON-SCANNING" USING L-ROW
+         WHEN 7
+             CALL "DRAGON-ATTACKING" USING L-ROW
+         WHEN 8
+             CALL "DRAGON-CHARGING" USING L-ROW
+         WHEN 9
+             CALL "DRAGON-DYING" USING L-ROW
+         WHEN 10
+             CALL "DRAGON-HOVER" USING L-ROW
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DRAGON-PH-RUN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAGON-PHASE-TICK.
+*> USING row: ticks the current phase; a phase that changed is ticked once more in the same tick (21 section 6.4.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DRAGSTATE.
+ 01 WS-OLD                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE DG-PHASE TO WS-OLD
+     CALL "DRAGON-PH-RUN" USING L-ROW WS-OLD
+     IF DG-PHASE NOT = WS-OLD
+         MOVE DG-PHASE TO WS-OLD
+         CALL "DRAGON-PH-RUN" USING L-ROW WS-OLD
+     END-IF
+     GOBACK.
+ END PROGRAM DRAGON-PHASE-TICK.
