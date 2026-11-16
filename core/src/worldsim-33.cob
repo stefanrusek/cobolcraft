@@ -2279,7 +2279,7 @@
      MOVE CW-THUNDER-LEVEL(L-DIM) TO WS-THUNDER-LEVEL
      CALL "WW-IS" USING WS-CAN WS-RAIN-LEVEL WS-THUNDER-LEVEL WS-RAINING WS-THUNDERING
      CALL "BR-RANDOM-TICK-ROW" USING L-DIM WS-ZERO-ROW WS-X WS-Y WS-Z
-     CALL "WL-SECTION-RUN" USING L-DIM WS-ZERO-ROW WS-X WS-Y WS-Z WS-N WS-Y
+     CALL "WL-SECTION-RUN" USING L-DIM WS-ZERO-ROW WS-X WS-Y WS-Z WS-N WS-SECTIONS
 *>   The players that tick chunks of this dimension (BT-CHUNK-TICKS asked of each chunk: a player of the dimension with an entity whose
 *>   centre chunk is within the view distance on both axes), listed once for the run.
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
