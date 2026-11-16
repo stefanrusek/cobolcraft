@@ -1490,6 +1490,8 @@
              CALL "MOB-TADPOLE-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "allay"
              CALL "MOB-ALLAY-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "armadillo" AND WS-HELD = "brush"
+             CALL "MOB-ARMADILLO-BRUSH" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "creeper"
              CALL "STDMOB-IGNITE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN OTHER

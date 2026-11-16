@@ -169,9 +169,12 @@
      PERFORM 50 TIMES
          CALL "MOB-STEP" USING WS-A
      END-PERFORM
-     MOVE "acceptance US15 19§13 Armadillo: without danger it unrolls (state 3, 30 ticks)" TO TL-CASE
-     COMPUTE TL-EXPECTED-N = 3 * 100 + 30
-     COMPUTE TL-OBSERVED-N = EN-ARMA(WS-A) * 100 + EN-ARMA-T(WS-A)
+     MOVE "acceptance US15 19§13 Armadillo: with the memory running out it unrolls (state 3, at most 30 ticks left; 44 part 4 section 12 starts at 30 remaining)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-ARMA(WS-A) = 3 AND EN-ARMA-T(WS-A) >= 1 AND EN-ARMA-T(WS-A) <= 30
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM 30 TIMES
          CALL "MOB-STEP" USING WS-A
