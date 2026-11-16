@@ -79,6 +79,10 @@
      MOVE SPACES TO WS-BASE WS-TAIL
      UNSTRING CL-MD-KEY(L-MODEL) DELIMITED BY "~" INTO WS-BASE WS-TAIL
 *>   An extra layer (the sheep's wool, the slime's outer layer) keeps its own image.
+*>   The pattern layer of a tropical fish: the pattern index of the packed variant plus 1.
+     IF EN-VAR(L-ROW) >= 0 AND WS-BASE = "tropical_pattern"
+         COMPUTE L-CODE = FUNCTION MOD(FUNCTION INTEGER(EN-VAR(L-ROW) / 256), 256) + 1
+     END-IF
      IF EN-VAR(L-ROW) >= 0 AND WS-BASE = EN-KEY(L-ROW)
          EVALUATE EN-KEY(L-ROW)
              WHEN "pig" WHEN "cow" WHEN "chicken" WHEN "mooshroom" WHEN "rabbit" WHEN "fox" WHEN "frog" WHEN "axolotl"
@@ -107,6 +111,7 @@
  01 WS-DIR                 PIC X(10).
  01 WS-PTR                 BINARY-LONG.
  01 WS-BABY                PIC X(5).
+ 01 WS-DIGIT               PIC 9.
  01 WS-I                   BINARY-LONG.
  01 WS-NAMES-DATA.
     05 FILLER PIC X(54) VALUE "cold              temperate         warm              ".
@@ -194,6 +199,16 @@
                  IF L-CODE <= 5
                      COMPUTE WS-I = 46 + L-CODE
                      STRING "textures/entity/parrot/parrot_" FUNCTION TRIM(WS-NM(WS-I)) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
+             WHEN "tropical_pattern"
+                 IF L-CODE <= 6
+                     MOVE L-CODE TO WS-DIGIT
+                     MOVE "a" TO WS-NAME
+                     IF WS-TAIL = "l"
+                         MOVE "b" TO WS-NAME
+                     END-IF
+                     STRING "textures/entity/fish/tropical_" FUNCTION TRIM(WS-NAME) "_pattern_" WS-DIGIT ".png"
+                         DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "fox"
                  IF L-CODE = 2
@@ -310,3 +325,56 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-TINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-MODEL-ROW.
+*> USING CLIENT-STATE, replica row, model row out (BINARY-LONG): the row of CL-MODELS that draws the entity now: its type's row, the baby row for a baby (CL-MD-BABY),
+*> and for the fish the row of their variant (34-8 section 5: the tropical fish of pattern base LARGE, the pufferfish of puff state 1 and 2, the salmon of type 0 and 2,
+*> rows keyed tropical_fish~l, pufferfish~1, pufferfish~2, salmon~s, salmon~l).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLMODELS.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-FIND                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-MODEL                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-MODEL.
+     MOVE EN-MODEL(L-ROW) TO L-MODEL
+     IF L-MODEL > 0 AND EN-BABY(L-ROW) = 1 AND CL-MD-BABY(L-MODEL) > 0
+         MOVE CL-MD-BABY(L-MODEL) TO L-MODEL
+     END-IF
+     MOVE SPACES TO WS-KEY
+     IF L-MODEL > 0 AND EN-VAR(L-ROW) >= 0
+         EVALUATE EN-KEY(L-ROW)
+             WHEN "tropical_fish"
+                 IF FUNCTION MOD(EN-VAR(L-ROW), 256) = 1
+                     MOVE "tropical_fish~l" TO WS-KEY
+                 END-IF
+             WHEN "pufferfish"
+                 IF EN-VAR(L-ROW) = 1
+                     MOVE "pufferfish~1" TO WS-KEY
+                 END-IF
+                 IF EN-VAR(L-ROW) >= 2
+                     MOVE "pufferfish~2" TO WS-KEY
+                 END-IF
+             WHEN "salmon"
+                 IF EN-VAR(L-ROW) = 0
+                     MOVE "salmon~s" TO WS-KEY
+                 END-IF
+                 IF EN-VAR(L-ROW) >= 2
+                     MOVE "salmon~l" TO WS-KEY
+                 END-IF
+             WHEN OTHER
+                 CONTINUE
+         END-EVALUATE
+     END-IF
+     IF WS-KEY NOT = SPACES
+         CALL "ENTITY-MODEL-FIND" USING WS-KEY WS-FIND
+         IF WS-FIND > 0
+             MOVE WS-FIND TO L-MODEL
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-MODEL-ROW.

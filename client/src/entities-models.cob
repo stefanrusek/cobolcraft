@@ -100,6 +100,7 @@
  01 WS-EM                  BINARY-LONG.
  01 WS-TEX                 BINARY-LONG.
  01 WS-RESET               BINARY-LONG.
+ 01 WS-TEX2                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -107,10 +108,7 @@
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
-             MOVE EN-MODEL(WS-R) TO WS-EM
-             IF EN-BABY(WS-R) = 1 AND CL-MD-BABY(WS-EM) > 0
-                 MOVE CL-MD-BABY(WS-EM) TO WS-EM
-             END-IF
+             CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
              MOVE 0 TO WS-FOUND
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
@@ -133,6 +131,7 @@
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
              MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0
+                 CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-X WS-TEX2
                  MOVE 0 TO WS-FOUND
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
                      IF EA-MT-MODEL(WS-S) = WS-X
@@ -142,7 +141,7 @@
                  IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                      ADD 1 TO EA-MT-COUNT
                      MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
-                     MOVE 0 TO EA-MT-TEX(EA-MT-COUNT)
+                     MOVE WS-TEX2 TO EA-MT-TEX(EA-MT-COUNT)
                      MOVE 1 TO WS-NEW
                  END-IF
              END-IF

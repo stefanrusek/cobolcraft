@@ -253,10 +253,8 @@
              END-PERFORM
          END-IF
          MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND EN-BABY(WS-R) = 1
-             IF CL-MD-BABY(EN-MODEL(WS-R)) > 0
-                 MOVE CL-MD-BABY(EN-MODEL(WS-R)) TO EN-MODEL(WS-R)
-             END-IF
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+             CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R EN-MODEL(WS-R)
          END-IF
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE

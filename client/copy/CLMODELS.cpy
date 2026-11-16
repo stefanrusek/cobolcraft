@@ -22,7 +22,7 @@
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
 *>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; nautilus and boats are not in the table yet.
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 139.
+ 78 CL-MODEL-COUNT           VALUE 145.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -1275,8 +1275,62 @@
     05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_a.png".
     05 FILLER PIC 999 VALUE 138.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tropical_pattern~l".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "TROPICAL_LARGE_PATTERN".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_b_pattern_1.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tropical_fish~l".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "TROPICAL_LARGE".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_b.png".
+    05 FILLER PIC 999 VALUE 140.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pufferfish~1".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "PUFFERFISH_MEDIUM".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/pufferfish.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pufferfish~2".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "PUFFERFISH_BIG".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/pufferfish.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "salmon~s".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "SALMON_SMALL".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/salmon.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "salmon~l".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "SALMON_LARGE".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/salmon.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 139 TIMES.
+    05 CL-MD OCCURS 145 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).
