@@ -186,6 +186,8 @@
                          CALL "EGG-STEP" USING WS-ROW
                      WHEN 7
                          CALL "BOBBER-STEP" USING WS-ROW
+                     WHEN 8
+                         CALL "FIREWORK-STEP" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF
