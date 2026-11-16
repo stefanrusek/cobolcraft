@@ -36,6 +36,16 @@
  01 WS-INT3                BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
  01 WS-BASE-COUNT          BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-BAD-COUNT           BINARY-LONG.
+ 01 WS-BAD-SEEN            BINARY-LONG.
+ 01 WS-BAD-DUP             BINARY-LONG.
+ 01 WS-BAD-MOVED           BINARY-LONG.
+ 01 WS-SEEN                BINARY-LONG.
+ 01 WS-PREV-TABLE.
+    05 WS-PREV             BINARY-LONG OCCURS 64 TIMES.
  01 WS-EYE-TABLE.
     05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
 
@@ -113,6 +123,78 @@
      MOVE "acceptance atlas lru a second frame keeps slot 2" TO TL-CASE
      MOVE WS-MODEL TO TL-EXPECTED-N
      MOVE EA-MT-MODEL(2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Stress: 150 frames, each shows a window of 24 mobs of different models taken from the whole table (starting at another model every frame, so over the run far
+*>   more than 64 models pass through the atlas). In every frame the atlas holds at most 64 slots without a pair twice, every mob on screen has its slot, and a
+*>   frame repeated with the same mobs moves no slot.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE 0 TO WS-BAD-COUNT WS-BAD-SEEN WS-BAD-DUP WS-BAD-MOVED
+     PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 149
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         MOVE 0 TO WS-N
+         MOVE 0 TO WS-W
+         PERFORM UNTIL WS-N >= 24 OR WS-W >= CL-MODEL-COUNT
+             COMPUTE WS-INDEX = FUNCTION MOD(WS-F * 7 + WS-W, CL-MODEL-COUNT) + 1
+             ADD 1 TO WS-W
+             MOVE SPACES TO WS-KEY
+             MOVE CL-MD-KEY(WS-INDEX) TO WS-KEY
+             CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+             IF WS-STATUS = 0
+                 ADD 1 TO WS-N
+                 MOVE WS-N TO WS-ID
+                 CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+             END-IF
+         END-PERFORM
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         IF EA-MT-COUNT > 64
+             ADD 1 TO WS-BAD-COUNT
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             MOVE 0 TO WS-SEEN
+             IF EN-MODEL(WS-I) > 0
+                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+                     IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-I)
+                         MOVE 1 TO WS-SEEN
+                     END-IF
+                 END-PERFORM
+                 IF WS-SEEN = 0
+                     ADD 1 TO WS-BAD-SEEN
+                 END-IF
+             END-IF
+         END-PERFORM
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J >= WS-S
+                 IF EA-MT-MODEL(WS-J) = EA-MT-MODEL(WS-S) AND EA-MT-TEX(WS-J) = EA-MT-TEX(WS-S)
+                     ADD 1 TO WS-BAD-DUP
+                 END-IF
+             END-PERFORM
+             MOVE EA-MT-MODEL(WS-S) TO WS-PREV(WS-S)
+         END-PERFORM
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+             IF WS-PREV(WS-S) NOT = EA-MT-MODEL(WS-S)
+                 ADD 1 TO WS-BAD-MOVED
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE "acceptance atlas lru stress: never more than 64 slots" TO TL-CASE
+     MOVE WS-BAD-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance atlas lru stress: every mob on screen has its slot" TO TL-CASE
+     MOVE WS-BAD-SEEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance atlas lru stress: no pair in two slots" TO TL-CASE
+     MOVE WS-BAD-DUP TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance atlas lru stress: a repeated frame moves no slot" TO TL-CASE
+     MOVE WS-BAD-MOVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance atlas lru stress: the atlas ends full" TO TL-CASE
+     MOVE 64 TO TL-EXPECTED-N
+     MOVE EA-MT-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-ATLAS-LRU.

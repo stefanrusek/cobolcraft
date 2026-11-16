@@ -303,13 +303,22 @@
 *> The baked mesh of each replica row, entity-relative (the pose changes with the walk state, the swing and the aggressive flag, which are in the key), kept with the key it was baked for: the cost of a frame is then a copy of the vertices with the offset to the eye
 *> (lane resume T5820: baking 70 mobs each frame took 340 ms in a debug build).
  01 WS-BAKED.
-    05 WS-BK OCCURS 512 TIMES.
+    05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
           15 WS-BK-KF          FLOAT-LONG OCCURS 24 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
        10 WS-BK-HL            BINARY-LONG VALUE 0.
+       10 WS-BK-OK            BINARY-LONG VALUE 0.
+       10 WS-BK-OFX           FLOAT-LONG VALUE 0.
+       10 WS-BK-OFY           FLOAT-LONG VALUE 0.
+       10 WS-BK-OFZ           FLOAT-LONG VALUE 0.
+       10 WS-BK-EC OCCURS 40 TIMES.
+          15 WS-BK-ECP OCCURS 8 TIMES.
+             20 WS-BK-ECX     FLOAT-SHORT.
+             20 WS-BK-ECY     FLOAT-SHORT.
+             20 WS-BK-ECZ     FLOAT-SHORT.
        10 WS-BK-CORNER OCCURS 40 TIMES.
           15 WS-BK-CP OCCURS 8 TIMES.
              20 WS-BK-CX      FLOAT-SHORT.
@@ -328,6 +337,17 @@
           15 WS-BK-R          FLOAT-SHORT VALUE 1.
           15 WS-BK-G          FLOAT-SHORT VALUE 1.
           15 WS-BK-BLUE       FLOAT-SHORT VALUE 1.
+ 01 WS-POOL.
+    05 WS-POOL-ROW         BINARY-LONG OCCURS 768 TIMES VALUE 0.
+    05 WS-POOL-LAYER       BINARY-LONG OCCURS 768 TIMES VALUE 0.
+ 01 WS-INDEX-TABLE.
+    05 WS-IX-ROW OCCURS 256 TIMES.
+       10 WS-IX            BINARY-LONG OCCURS 10 TIMES VALUE 0.
+ 01 WS-NEXT                BINARY-LONG VALUE 0.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-LB                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
     05 WS-KN                  FLOAT-LONG OCCURS 24 TIMES.
  01 WS-HIT                 BINARY-LONG.
@@ -500,24 +520,55 @@
      MOVE WS-AGE TO WS-KN(22)
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
-*>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
-*>   between its models within a frame; the first entry whose key is the key, else the one of the same model or the free one, is the one used.
-     MOVE 0 TO WS-HIT
-     MOVE WS-ROW TO WS-E
-     COMPUTE WS-E2 = WS-ROW + 256
-     EVALUATE TRUE
-         WHEN WS-BK-KEY(WS-ROW) = WS-KEY-NOW AND WS-BK-N(WS-ROW) > 0
+*>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
+*>   model of the same entity), 2 + n the overlay layer n. The entry whose key is the key is used; else the layer's own entry is baked again.
+     MOVE 0 TO WS-HIT WS-E
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 1 AND EN-OVN(WS-ROW) <= 8
+         COMPUTE WS-LA = EN-OVN(WS-ROW) + 2
+         MOVE WS-LA TO WS-LB WS-LC
+     ELSE
+         MOVE 1 TO WS-LA
+         MOVE 2 TO WS-LB
+         MOVE 1 TO WS-LC
+     END-IF
+     IF WS-IX(WS-ROW, WS-LA) > 0
+         IF WS-BK-KEY(WS-IX(WS-ROW, WS-LA)) = WS-KEY-NOW AND WS-BK-N(WS-IX(WS-ROW, WS-LA)) > 0
              MOVE 1 TO WS-HIT
-         WHEN WS-BK-KEY(WS-E2) = WS-KEY-NOW AND WS-BK-N(WS-E2) > 0
+             MOVE WS-IX(WS-ROW, WS-LA) TO WS-E
+         END-IF
+     END-IF
+     IF WS-HIT = 0 AND WS-LB NOT = WS-LA AND WS-IX(WS-ROW, WS-LB) > 0
+         IF WS-BK-KEY(WS-IX(WS-ROW, WS-LB)) = WS-KEY-NOW AND WS-BK-N(WS-IX(WS-ROW, WS-LB)) > 0
              MOVE 1 TO WS-HIT
-             MOVE WS-E2 TO WS-E
-         WHEN WS-BK-N(WS-ROW) = 0 OR WS-BK-KF(WS-ROW, 1) = WS-KN(1)
-             CONTINUE
-         WHEN OTHER
-             MOVE WS-E2 TO WS-E
-     END-EVALUATE
+             MOVE WS-IX(WS-ROW, WS-LB) TO WS-E
+         END-IF
+     END-IF
      IF WS-HIT = 0
+*>       The model of the row's entry 1 is the model's; another model (the extra layer) takes entry 2.
+         IF WS-LA = 1 AND WS-IX(WS-ROW, 1) > 0
+             IF WS-BK-KF(WS-IX(WS-ROW, 1), 1) NOT = WS-KN(1) AND WS-BK-N(WS-IX(WS-ROW, 1)) > 0
+                 MOVE 2 TO WS-LC
+             END-IF
+         END-IF
+         IF WS-IX(WS-ROW, WS-LC) = 0
+             ADD 1 TO WS-NEXT
+             IF WS-NEXT > 768
+                 MOVE 1 TO WS-NEXT
+             END-IF
+             IF WS-POOL-ROW(WS-NEXT) > 0
+                 MOVE 0 TO WS-IX(WS-POOL-ROW(WS-NEXT), WS-POOL-LAYER(WS-NEXT))
+             END-IF
+             MOVE WS-ROW TO WS-POOL-ROW(WS-NEXT)
+             MOVE WS-LC TO WS-POOL-LAYER(WS-NEXT)
+             MOVE WS-NEXT TO WS-IX(WS-ROW, WS-LC)
+             MOVE 0 TO WS-BK-N(WS-NEXT)
+         END-IF
+         MOVE WS-IX(WS-ROW, WS-LC) TO WS-E
+     END-IF
+     IF WS-HIT = 0
+         ADD 1 TO RL-EN-BAKES
          MOVE 0 TO WS-BN WS-NC
+         MOVE 0 TO WS-BK-OK(WS-E)
          MOVE 0 TO WS-BK-HR(WS-E) WS-BK-HL(WS-E)
 *>   The model: built once per row of the table, then copied.
      MOVE EN-MODEL(WS-ROW) TO WS-K
@@ -816,12 +867,24 @@
      COMPUTE WS-OY = EN-Y(WS-ROW) - L-EYE(2)
      COMPUTE WS-OZ = EN-Z(WS-ROW) - L-EYE(3)
      CALL "ENTITY-TINT" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TR WS-TG WS-TB
+*>   The corners shifted last time are kept with the offset they were shifted by: a mob and an eye that did not move need no shifting (a float addition costs
+*>   half a microsecond: 24 of them a cuboid were two thirds of a frame of 70 mobs).
+     MOVE 0 TO WS-REUSE
+     IF WS-BK-OK(WS-E) = 1 AND WS-BK-OFX(WS-E) = WS-OX AND WS-BK-OFY(WS-E) = WS-OY AND WS-BK-OFZ(WS-E) = WS-OZ
+         MOVE 1 TO WS-REUSE
+     END-IF
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR RL-EN-COUNT + 36 > CL-MAX-ENTITY-VERTICES
-         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
-             COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
-             COMPUTE WS-ECY(WS-K) = WS-BK-CY(WS-E, WS-C, WS-K) + WS-OY
-             COMPUTE WS-ECZ(WS-K) = WS-BK-CZ(WS-E, WS-C, WS-K) + WS-OZ
-         END-PERFORM
+         IF WS-REUSE = 1
+             MOVE WS-BK-EC(WS-E, WS-C) TO WS-EC
+         ELSE
+             ADD 1 TO RL-EN-SHIFTS
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
+                 COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
+                 COMPUTE WS-ECY(WS-K) = WS-BK-CY(WS-E, WS-C, WS-K) + WS-OY
+                 COMPUTE WS-ECZ(WS-K) = WS-BK-CZ(WS-E, WS-C, WS-K) + WS-OZ
+             END-PERFORM
+             MOVE WS-EC TO WS-BK-EC(WS-E, WS-C)
+         END-IF
          COMPUTE WS-VA = WS-C * 36 - 35
          PERFORM VARYING WS-VW FROM 0 BY 1 UNTIL WS-VW > 35
              ADD 1 TO RL-EN-COUNT
@@ -836,6 +899,12 @@
              ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM
+     IF WS-REUSE = 0 AND WS-C > WS-BK-NC(WS-E)
+         MOVE 1 TO WS-BK-OK(WS-E)
+         MOVE WS-OX TO WS-BK-OFX(WS-E)
+         MOVE WS-OY TO WS-BK-OFY(WS-E)
+         MOVE WS-OZ TO WS-BK-OFZ(WS-E)
+     END-IF
 *>   The hands of a mob that holds an item (the base model only): where GROUND-ITEMS-MESH draws what the mob holds (ENTITY-HAND-FIND).
      IF EN-OVL(WS-ROW) = 0 AND (EN-EQ(WS-ROW, 1) > 0 OR EN-EQ(WS-ROW, 2) > 0)
          IF WS-BK-HR(WS-E) NOT = 0

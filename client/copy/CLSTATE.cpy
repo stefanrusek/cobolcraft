@@ -1151,6 +1151,8 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
+       10 RL-EN-BAKES        BINARY-LONG.    *> running count of model bakes (ENTITY-MODEL-EMIT) and of cuboid corner shifts (the offset to the eye added to a cuboid's 8 corners); tests read the difference between two frames
+       10 RL-EN-SHIFTS       BINARY-LONG.
        10 RL-CULL-ON         BINARY-LONG.    *> 1 when RL-CULL-PLANE holds this frame's view frustum (RENDER-LIST-BUILD)
        10 RL-CULL-DISABLE    BINARY-LONG.    *> 1 keeps every entity figure whatever the view (tests of figure geometry from a fixed eye); 0 in the game
        10 RL-CULL-PLANE OCCURS 12 TIMES FLOAT-LONG.    *> left, right, bottom, top: unit normals pointing inward (a point is inside when n . (p - eye) >= 0)
