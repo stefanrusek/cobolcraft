@@ -944,7 +944,7 @@
 *>     The images of the entity models (entities-models.cob), stacked below the stand-ins in the order the replica first
 *>     showed them: slot k holds the CL-MODELS row EA-MT-MODEL and its image's rectangle.
        10 EA-MT-COUNT        BINARY-LONG.
-       10 EA-MT OCCURS 16 TIMES.
+       10 EA-MT OCCURS 24 TIMES.
           15 EA-MT-MODEL     BINARY-LONG.
           15 EA-MT-X         BINARY-LONG.
           15 EA-MT-Y         BINARY-LONG.

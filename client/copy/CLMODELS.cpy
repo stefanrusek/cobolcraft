@@ -13,7 +13,7 @@
 *>                (EF6-CREEPER-TEXTURE, EMD-RENDERER, EF7-BLAZE-TEXTURE, EF8-SQUID-TEXTURE, EF6-SPIDER-TEXTURE); spaces for a type whose texture
 *>                the replica cannot choose (the cow, pig and wolf textures come from a variant registry entry that the replica does not hold; a
 *>                null variant is the missing texture, 34-4 2.1): it is drawn with the missing-texture image.
- 78 CL-MODEL-COUNT           VALUE 16.
+ 78 CL-MODEL-COUNT           VALUE 21.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -54,7 +54,7 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/spider/spider.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 99 VALUE 17.
     05 FILLER PIC X(20) VALUE "zombie".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ZOMBIE".
@@ -143,8 +143,48 @@
     05 FILLER PIC X VALUE "H".
     05 FILLER PIC X(64) VALUE "textures/entity/player/wide/steve.png".
     05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC X(20) VALUE "spider_eyes".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "SPIDER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "Y".
+    05 FILLER PIC X(64) VALUE "textures/entity/spider/spider_eyes.png".
+    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC X(20) VALUE "cave_spider".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "CAVE_SPIDER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/spider/cave_spider.png".
+    05 FILLER PIC 99 VALUE 19.
+    05 FILLER PIC X(20) VALUE "cave_spider_eyes".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "CAVE_SPIDER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "Y".
+    05 FILLER PIC X(64) VALUE "textures/entity/spider/spider_eyes.png".
+    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC X(20) VALUE "enderman".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "ENDERMAN".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/enderman/enderman.png".
+    05 FILLER PIC 99 VALUE 21.
+    05 FILLER PIC X(20) VALUE "enderman_eyes".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "ENDERMAN".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "Y".
+    05 FILLER PIC X(64) VALUE "textures/entity/enderman/enderman_eyes.png".
+    05 FILLER PIC 99 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 16 TIMES.
+    05 CL-MD OCCURS 21 TIMES.
        10 CL-MD-KEY         PIC X(20).
        10 CL-MD-FAMILY      PIC 9.
        10 CL-MD-LAYER       PIC X(24).
