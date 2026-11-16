@@ -1,4 +1,4 @@
-# 54. Client gap closures (walk animation, swing and aggressive pose, teleport permission, trades, variant ids, camel, goat)
+# 54. Client gap closures (walk animation, swing and aggressive pose, teleport permission, trades, variant ids, camel, goat, data component layouts)
 
 | Item | Value |
 |---|---|
@@ -515,7 +515,7 @@ Every type of 46 §8.1 has both an NBT codec and a network codec, except the nin
 |---|---|---|---|---|
 | 20 | `creative_slot_lock` | no | yes (Unit) | Never written to disk; a client-side creative-inventory marker. |
 | 42 | `additional_trade_cost` | no | yes (VarInt) | Transient; a merchant-screen overlay (40-5). |
-| 50 | `map_post_processing` | no | yes | Transient enum (§24.3). |
+| 50 | `map_post_processing` | no | yes | Transient enum (§26.1). |
 | 22 | `intangible_projectile` | yes (Unit) | no | The client never sees it. |
 | 49 | `map_decorations` | yes | no | Server-only; the client draws decorations from the map data packet. |
 | 59 | `debug_stick_state` | yes | no | Server-only. |
@@ -582,7 +582,7 @@ Gap closed: 25-5 §9 gives the behaviour of `PotionContents` (colour, name key, 
 
 ### 16.2 Mob effect instance (`MobEffectInstance.STREAM_CODEC` and `MobEffectInstance.CODEC`)
 
-Used by `potion_contents.custom_effects`, `suspicious_stew_effects` (§23, as a different record), the `apply_effects` consume effect (§22.3) and saved entity effects. The record is the effect id followed by a nested "details" record.
+Used by `potion_contents.custom_effects`, `suspicious_stew_effects` (§24.3, as a different record), the `apply_effects` consume effect (§24.2) and saved entity effects. The record is the effect id followed by a nested "details" record.
 
 | # | Field | Network | NBT key and form | Default (NBT) |
 |---|---|---|---|---|
@@ -1085,5 +1085,7 @@ On the network `equippable` has no defaults: all fields are written (17 §1.2 or
 2. The ram-run-up distance ordering (7.1, "squared distance") and the camel `standUpInstantly` constant (6.4) remain as marked.
 
 3. (cr4) Not read: the `ServerPlayer` cross-dimension override (9.2); the argument order of the sniffer dig-position lookup (12.2); `FeelingHappy` and `Scenting` internals (12.2); how a float provider's value is printed (Java float text assumed, 13.4); the message of integer arithmetic exceptions (13.4); whether `/reload` re-sends the Commands tree (14.2); `/test`, `/dialog show`, `/raid` failure keys and `/perf` report format (not traced; `/jfr` is a JVM profiler and not applicable).
+
+4. (cr5) Not read or inferred in the data component sections 15 to 26: the item-model JSON that selects the `_darker` trim palette for item icons (18.4); the level text of an enchantment name line (15.5); whether the network decoder of `bundle_contents`, `ominous_bottle_amplifier` and `container` re-checks the persistence ranges (inferred not); the Optional wrapper of `container` slots on the wire (inferred from the element type, 25.2); the NBT key `type` of a consume effect and an attribute display (inferred from the dispatch codecs' default key, 24.2, 26.6); the NBT default of `directional_particles` (24.2); duplicate slot handling of `container` (25.2); the dye component's and dyed colour's id-enum codecs (17); the meaning of each book generation value (26.3); which hidden `ArmorTrim` tooltip lines exist; the exact registry order of trim materials and patterns (alphabetical file order assumed, 18.2).
 
 Closed in review: the horizontal plane order is north, east, south, west (read from the plane's static initialiser; also in 24); the camel sitting dimensions are in 6.4.
