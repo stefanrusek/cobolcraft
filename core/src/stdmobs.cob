@@ -1072,6 +1072,7 @@
          CALL "ALLAY-TICK" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "sniffer"
+         CALL "M44-SNIF-BRAIN" USING WS-ROW
          CALL "SNIFFER-TICK" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "fox"

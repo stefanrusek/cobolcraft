@@ -144,7 +144,7 @@
              CALL "SNIFFER-SET-STATE" USING L-ROW WS-ZERO
          END-IF
      END-IF
-     IF EN-SNIF(L-ROW) = 5 AND CW-TIME >= EN-SNIF-SEED(L-ROW)
+     IF EN-SNIF(L-ROW) = 5 AND EN-SNIF-SEED(L-ROW) > 0 AND CW-TIME >= EN-SNIF-SEED(L-ROW)
          CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
          MOVE "torchflower_seeds" TO WS-KEY
          IF WS-DRAW = 1
@@ -164,7 +164,8 @@
          MOVE WS-BY TO EN-SNIF-EXP-Y(L-ROW, 1)
          MOVE WS-BZ TO EN-SNIF-EXP-Z(L-ROW, 1)
          COMPUTE EN-SNIF-EXP-N(L-ROW) = FUNCTION MIN(EN-SNIF-EXP-N(L-ROW) + 1, 20)
-         MOVE 6 TO EN-SNIF(L-ROW)
+*>       The drop happens once; the dig goes on until M44-SNIF-BRAIN ends it (160 to 180 ticks, 44 part 4 section 13), then the sniffer rises.
+         MOVE 0 TO EN-SNIF-SEED(L-ROW)
          CALL "MOB-DATA-SEND" USING L-ROW
      END-IF
      GOBACK.

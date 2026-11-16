@@ -218,8 +218,8 @@
      COMPUTE WS-EXPECT = 1
      MOVE WS-N TO WS-OBSERVE
      PERFORM CHECK-N
-     MOVE "acceptance US15 19§14 Sniffer: after the drop the sniffer rises (state 6)" TO WS-CASE
-     MOVE 6 TO WS-EXPECT
+     MOVE "acceptance US15 19§14 Sniffer: after the drop the sniffer keeps digging (state 5) until the dig ends (44 part 4 section 13)" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
      MOVE EN-SNIF(WS-SNIFFER) TO WS-OBSERVE
      PERFORM CHECK-N
      MOVE "acceptance US15 19§14 Sniffer: the dug position is explored" TO WS-CASE
