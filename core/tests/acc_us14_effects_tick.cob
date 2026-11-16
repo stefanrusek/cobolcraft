@@ -60,7 +60,7 @@
      PERFORM CHECK
 
      MOVE "acceptance US14 regeneration I for 100 ticks fires at d 100 and 50: heals 2" TO TL-CASE
-     MOVE 7 TO WS-ID
+     MOVE 9 TO WS-ID
      MOVE 100 TO WS-DURATION
      MOVE 100 TO WS-TICKS
      MOVE 10 TO WS-START-HEALTH
