@@ -227,3 +227,127 @@
      CALL "M19-FLOOR-OK" USING L-CLASS WS-KEY L-OK
      GOBACK.
  END PROGRAM M19-FLOOR-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-BIOME-FLAGS.
+*> USING bare biome key (PIC X(48), no namespace), flags out (BINARY-LONG): the biome tags of 1.6 as a sum of bits: 1 spawns_cold_variant_farm_animals,
+*> 2 spawns_warm_variant_farm_animals, 4 spawns_cold_variant_frogs, 8 spawns_warm_variant_frogs, 16 spawns_snow_foxes (also the white rabbits).
+*> The tag members are listed in 1.6 (the #is_end, #is_nether, #is_jungle, #is_savanna and #is_badlands tags spelled out).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-FLAGS.
+     MOVE 0 TO L-FLAGS
+     EVALUATE L-KEY
+         WHEN "snowy_plains" WHEN "ice_spikes" WHEN "frozen_peaks" WHEN "jagged_peaks" WHEN "snowy_slopes" WHEN "frozen_ocean"
+         WHEN "deep_frozen_ocean" WHEN "grove" WHEN "deep_dark" WHEN "frozen_river" WHEN "snowy_taiga" WHEN "snowy_beach"
+         WHEN "the_end" WHEN "small_end_islands" WHEN "end_midlands" WHEN "end_highlands" WHEN "end_barrens"
+             MOVE 5 TO L-FLAGS
+         WHEN "cold_ocean" WHEN "deep_cold_ocean" WHEN "old_growth_pine_taiga" WHEN "old_growth_spruce_taiga" WHEN "taiga"
+         WHEN "windswept_forest" WHEN "windswept_gravelly_hills" WHEN "windswept_hills" WHEN "stony_peaks" WHEN "dappled_forest"
+             MOVE 1 TO L-FLAGS
+         WHEN "desert" WHEN "warm_ocean" WHEN "bamboo_jungle" WHEN "jungle" WHEN "sparse_jungle" WHEN "savanna" WHEN "savanna_plateau"
+         WHEN "windswept_savanna" WHEN "nether_wastes" WHEN "soul_sand_valley" WHEN "crimson_forest" WHEN "warped_forest"
+         WHEN "basalt_deltas" WHEN "badlands" WHEN "eroded_badlands" WHEN "wooded_badlands" WHEN "mangrove_swamp"
+             MOVE 10 TO L-FLAGS
+         WHEN "deep_lukewarm_ocean" WHEN "lukewarm_ocean"
+             MOVE 2 TO L-FLAGS
+     END-EVALUATE
+     EVALUATE L-KEY
+         WHEN "snowy_plains" WHEN "ice_spikes" WHEN "frozen_ocean" WHEN "snowy_taiga" WHEN "frozen_river" WHEN "snowy_beach"
+         WHEN "frozen_peaks" WHEN "jagged_peaks" WHEN "snowy_slopes" WHEN "grove"
+             ADD 16 TO L-FLAGS
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM M19-BIOME-FLAGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-WOLF-VARIANT.
+*> USING bare biome key, variant out: the wolf variant of 1.6: pale (0, priority 0) unless a variant has the biome (priority 1): 1 ashen (snowy taiga), 2 black (old-growth pine
+*> taiga), 3 chestnut (old-growth spruce taiga), 4 rusty (jungle tag), 5 snowy (grove), 6 spotted (savanna tag), 7 striped (badlands tag), 8 woods (forest). Every biome
+*> has at most one variant at the top priority, so the random choice of 1.6 step 3 has one candidate.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-VARIANT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-VARIANT.
+     EVALUATE L-KEY
+         WHEN "snowy_taiga" MOVE 1 TO L-VARIANT
+         WHEN "old_growth_pine_taiga" MOVE 2 TO L-VARIANT
+         WHEN "old_growth_spruce_taiga" MOVE 3 TO L-VARIANT
+         WHEN "bamboo_jungle" WHEN "jungle" WHEN "sparse_jungle" MOVE 4 TO L-VARIANT
+         WHEN "grove" MOVE 5 TO L-VARIANT
+         WHEN "savanna" WHEN "savanna_plateau" WHEN "windswept_savanna" MOVE 6 TO L-VARIANT
+         WHEN "badlands" WHEN "eroded_badlands" WHEN "wooded_badlands" MOVE 7 TO L-VARIANT
+         WHEN "forest" MOVE 8 TO L-VARIANT
+         WHEN OTHER MOVE 0 TO L-VARIANT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM M19-WOLF-VARIANT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-BIOME-KEY-AT.
+*> USING dim, x, y, z (BINARY-LONG), bare key out (PIC X(48)): the key without namespace of the biome of the 4 x 4 x 4 cell at the position; spaces when the chunk is not loaded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-CHUNK               BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-FULL                PIC X(48).
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-KEY                  PIC X(48).
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-KEY.
+     MOVE SPACES TO L-KEY WS-FULL
+     COMPUTE WS-CX = FUNCTION INTEGER(L-X / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
+     CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-CHUNK
+     IF WS-CHUNK > 0
+         SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-CHUNK)
+         COMPUTE WS-LX = L-X - WS-CX * 16
+         COMPUTE WS-LZ = L-Z - WS-CZ * 16
+         COMPUTE WS-LY = FUNCTION MIN(FUNCTION MAX(L-Y - DM-MIN-Y(L-DIM), 0), DM-HEIGHT(L-DIM) - 1)
+         COMPUTE WS-INDEX = FUNCTION INTEGER(WS-LY / 16) * 64 + FUNCTION MOD(FUNCTION INTEGER(WS-LY / 4), 4) * 16
+             + FUNCTION INTEGER(WS-LZ / 4) * 4 + FUNCTION INTEGER(WS-LX / 4) + 1
+         MOVE CE-BIOME(WS-INDEX) TO WS-ID
+         COMPUTE WS-ID = FUNCTION MIN(WS-ID, CBI-MAX - 1)
+         MOVE CBI-KEY(WS-ID + 1) TO WS-FULL
+         CALL "KEY-BARE" USING WS-FULL L-KEY
+     END-IF
+     GOBACK.
+ END PROGRAM M19-BIOME-KEY-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-PACK-SHARE.
+*> USING first row, row (BINARY-LONG): a group spawn gives every wolf, fox and llama after the first the first member's variant (19 sections 6.1, 7 and 3.7). first 0 or another species: unchanged.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-FIRST-KEY           PIC X(24).
+ LINKAGE SECTION.
+ 01 L-FIRST                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-FIRST L-ROW.
+     IF L-FIRST > 0
+         CALL "MOB-SPECIES-KEY" USING L-FIRST WS-FIRST-KEY
+         CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+         IF WS-KEY = WS-FIRST-KEY AND (WS-KEY = "wolf" OR "fox" OR "llama")
+             MOVE EN-WOOL(L-FIRST) TO EN-WOOL(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM M19-PACK-SHARE.

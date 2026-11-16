@@ -475,8 +475,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-BORN.
-*> USING row: the first state of a new mob (19 sections 2.4 and 2.5): a sheep gets its spawn colour (M19-SHEEP-COLOR, temperate configuration; the biome configuration is an open
-*> item), a chicken its egg timer 6000 + nextInt(6000).
+*> USING row: the first state of a new mob (19 sections 2.4 and 2.5): a sheep gets its spawn colour (M19-SHEEP-COLOR, the configuration by the biome tags), a chicken its egg timer
+*> 6000 + nextInt(6000); the variant of a wolf, frog, fox, pig, cow and chicken follows the biome of the cell (1.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -502,16 +502,66 @@
  01 WS-DRAW-G              BINARY-LONG.
  01 WS-BOUND-S             BINARY-LONG VALUE 6000.
  01 WS-DRAW                BINARY-LONG.
+ 01 WS-IX                  BINARY-LONG.
+ 01 WS-IY                  BINARY-LONG.
+ 01 WS-IZ                  BINARY-LONG.
+ 01 WS-BIOME               PIC X(48).
+ 01 WS-TAGS                BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-COLD                BINARY-LONG.
+ 01 WS-WARM                BINARY-LONG.
+ 01 WS-COLD-FROG           BINARY-LONG.
+ 01 WS-WARM-FROG           BINARY-LONG.
+ 01 WS-SNOW                BINARY-LONG.
+ 01 WS-SALT-V              BINARY-LONG VALUE 57.
+ 01 WS-BOUND-V             BINARY-LONG VALUE 2.
+ 01 WS-DRAW-V              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+*>   The biome of the spawn cell picks the variant (19 section 1.6): the tags for farm animals, frogs and foxes; the wolf by its own table. A column that is not loaded has no biome.
+     COMPUTE WS-IX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-IY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-IZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "M19-BIOME-KEY-AT" USING EN-DIM(L-ROW) WS-IX WS-IY WS-IZ WS-BIOME
+     CALL "M19-BIOME-FLAGS" USING WS-BIOME WS-TAGS
+     MOVE FUNCTION MOD(WS-TAGS, 2) TO WS-COLD
+     COMPUTE WS-Q = WS-TAGS / 2
+     MOVE FUNCTION MOD(WS-Q, 2) TO WS-WARM
+     COMPUTE WS-Q = WS-TAGS / 4
+     MOVE FUNCTION MOD(WS-Q, 2) TO WS-COLD-FROG
+     COMPUTE WS-Q = WS-TAGS / 8
+     MOVE FUNCTION MOD(WS-Q, 2) TO WS-WARM-FROG
+     COMPUTE WS-Q = WS-TAGS / 16
+     MOVE FUNCTION MOD(WS-Q, 2) TO WS-SNOW
      EVALUATE WS-KEY
+         WHEN "wolf"
+             CALL "M19-WOLF-VARIANT" USING WS-BIOME EN-WOOL(L-ROW)
+         WHEN "frog"
+*>           cold has priority 1 with the warm tag never overlapping it; temperate (0) otherwise.
+             COMPUTE EN-WOOL(L-ROW) = WS-COLD-FROG + 2 * WS-WARM-FROG
+         WHEN "fox"
+             MOVE WS-SNOW TO EN-WOOL(L-ROW)
+             CALL "FOX-BORN" USING L-ROW
+         WHEN "pig"
+         WHEN "cow"
+             CALL "XP-RANDOM" USING WS-SALT-V WS-BOUND-V WS-DRAW-V
+             CALL "M19-FARM-VARIANT" USING WS-COLD WS-WARM WS-DRAW-V EN-WOOL(L-ROW)
          WHEN "sheep"
+             MOVE 0 TO WS-CONFIG
+             IF WS-COLD = 1
+                 MOVE 2 TO WS-CONFIG
+             END-IF
+             IF WS-WARM = 1
+                 MOVE 1 TO WS-CONFIG
+             END-IF
              CALL "XP-RANDOM" USING WS-SALT-W WS-BOUND-W WS-W
              CALL "XP-RANDOM" USING WS-SALT-C WS-BOUND-C WS-C
              CALL "M19-SHEEP-COLOR" USING WS-CONFIG WS-W WS-C EN-WOOL(L-ROW)
          WHEN "chicken"
+             CALL "XP-RANDOM" USING WS-SALT-V WS-BOUND-V WS-DRAW-V
+             CALL "M19-FARM-VARIANT" USING WS-COLD WS-WARM WS-DRAW-V EN-WOOL(L-ROW)
              CALL "XP-RANDOM" USING WS-SALT-E WS-BOUND-E WS-DRAW
              COMPUTE EN-EGG(L-ROW) = 6000 + WS-DRAW
          WHEN "parrot"
@@ -533,8 +583,6 @@
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
          WHEN "llama"
              CALL "LLAMA-BORN" USING L-ROW
-         WHEN "fox"
-             CALL "FOX-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
          WHEN "turtle"

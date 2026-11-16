@@ -928,6 +928,7 @@
  01 WS-ENTRY               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-A                   BINARY-LONG.
@@ -975,7 +976,7 @@
          GOBACK
      END-IF
      PERFORM VARYING WS-PACK FROM 1 BY 1 UNTIL WS-PACK > 3 OR WS-DONE-ALL = 1
-         MOVE 0 TO WS-IN-PACK WS-ENTRY WS-ROW WS-DONE-PACK WS-I
+         MOVE 0 TO WS-IN-PACK WS-ENTRY WS-ROW WS-DONE-PACK WS-I WS-FIRST
          MOVE L-PX TO WS-X
          MOVE L-PZ TO WS-Z
          CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-DBL
@@ -1030,6 +1031,11 @@
                  CALL "CONTENT-ENTITY-BY-KEY" USING WS-EKEY WS-TYPE WS-ENTITY-ROW WS-STATUS
                  CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-NEW
                  CALL "STDMOB-FINALIZE" USING L-STATE WS-NEW
+*>               A group shares the first member's variant (wolf, fox, llama).
+                 IF WS-IN-PACK = 0
+                     MOVE WS-NEW TO WS-FIRST
+                 END-IF
+                 CALL "M19-PACK-SHARE" USING WS-FIRST WS-NEW
                  ADD 1 TO L-SPAWNED WS-IN-PACK
                  CALL "MS6-COST-ADD" USING L-BIOME WS-KEY24 WS-POINTS WS-PN WS-FX WS-FY WS-FZ
                  IF L-SPAWNED >= 4
