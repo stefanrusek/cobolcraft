@@ -1930,6 +1930,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 22
+*>           huge_fungus (feat-fungus.cob): unsupported when a state, the predicate or a block is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FUNGUS-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 21
          WHEN 23
 *>           huge_brown_mushroom (21) and huge_red_mushroom (23) (feat-mush.cob): unsupported when a provider, the predicate or a tag is missing

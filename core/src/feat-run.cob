@@ -1229,6 +1229,8 @@
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 22
+             CALL "FR-FUNGUS" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 21
          WHEN 23
              CALL "FR-MUSH" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
