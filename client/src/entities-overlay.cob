@@ -15,7 +15,9 @@
 *> Horse: 1 markings (entry 19 value / 256 of 1 to 4). Wolf and cat: 1 collar when tame (flags bit 4).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLMODELS.
  01 WS-NOW                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-MARK                BINARY-LONG.
  01 WS-WANT                BINARY-LONG.
@@ -97,6 +99,60 @@
          WHEN OTHER
              CONTINUE
      END-EVALUATE
+*>   Body armor (layer 5) and the saddle (layer 6) of the animals (34-4 8 and 9.3, 34-5 2.6): the item's piece, the model row of the piece (WS-FK), the carpet of a
+*>   trader llama when no carpet is worn (a baby wears that one only, with the baby row).
+     IF L-CODE = 0 AND (L-N = 5 OR L-N = 6)
+         MOVE 0 TO WS-KIND
+         MOVE 0 TO WS-ASSET
+         MOVE SPACES TO WS-FK
+         IF L-N = 5
+             MOVE EN-EQ(L-ROW, 7) TO WS-ITEM
+         ELSE
+             MOVE EN-EQ(L-ROW, 8) TO WS-ITEM
+         END-IF
+         IF WS-ITEM > 0
+             CALL "ENTITY-BODY-ASSET" USING CLIENT-STATE WS-ITEM WS-KIND WS-ASSET
+         END-IF
+         EVALUATE TRUE
+             WHEN L-N = 5 AND WS-KIND = 1 AND EN-BABY(L-ROW) = 0 AND EN-KEY(L-ROW) = "horse"
+                 MOVE "horse_armor" TO WS-FK
+             WHEN L-N = 5 AND WS-KIND = 1 AND EN-BABY(L-ROW) = 0 AND (EN-KEY(L-ROW) = "zombie_horse" OR "skeleton_horse")
+                 MOVE "undead_horse_armor" TO WS-FK
+             WHEN L-N = 5 AND WS-KIND = 2 AND EN-BABY(L-ROW) = 0 AND EN-KEY(L-ROW) = "wolf"
+                 MOVE "wolf_armor" TO WS-FK
+             WHEN L-N = 5 AND WS-KIND = 3 AND EN-BABY(L-ROW) = 0 AND (EN-KEY(L-ROW) = "llama" OR "trader_llama")
+                 MOVE "llama_decor" TO WS-FK
+             WHEN L-N = 6 AND WS-KIND = 4 AND EN-BABY(L-ROW) = 0
+                 STRING FUNCTION TRIM(EN-KEY(L-ROW)) "_saddle" DELIMITED BY SIZE INTO WS-FK
+*>               The row key of the skeleton horse's saddle is shortened to the 20 characters of a key.
+                 IF EN-KEY(L-ROW) = "skeleton_horse"
+                     MOVE "skhorse_saddle" TO WS-FK
+                 END-IF
+             WHEN OTHER
+                 CONTINUE
+         END-EVALUATE
+         IF WS-FK NOT = SPACES
+             IF L-N = 5
+                 COMPUTE L-CODE = 7000 + WS-ASSET
+             ELSE
+                 MOVE 8001 TO L-CODE
+             END-IF
+         END-IF
+         IF WS-FK = SPACES AND L-N = 5 AND EN-KEY(L-ROW) = "trader_llama"
+             MOVE "llama_decor" TO WS-FK
+             MOVE 7026 TO L-CODE
+         END-IF
+         IF L-CODE > 0
+             CALL "ENTITY-MODEL-FIND" USING WS-FK L-MODEL
+             IF L-MODEL = 0
+                 MOVE 0 TO L-CODE
+             END-IF
+         END-IF
+         IF L-CODE = 7026 AND EN-BABY(L-ROW) = 1
+             MOVE 7027 TO L-CODE
+             MOVE CL-MD-BABY(L-MODEL) TO L-MODEL
+         END-IF
+     END-IF
 *>   The tint of the layer: ENTITY-TINT reads the layer in EN-OVL.
      MOVE 1 TO L-RED L-GREEN L-BLUE
      IF L-CODE > 0
@@ -157,3 +213,88 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-ARMOR-ASSET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BODY-ASSET.
+*> USING CLIENT-STATE, item registry id, kind out (1 horse armor, 2 wolf armor, 3 llama carpet, 4 saddle, 0 none), asset out (the index of the asset in the name table
+*> of ENTITY-TEX-PATH minus 30: horse armor 1 leather, 2 copper, 4 iron, 5 gold, 6 diamond, 8 netherite; wolf armor 9 armadillo scute; carpet 10 + the dye id): from the
+*> item's key (<material>_horse_armor, wolf_armor, <dye>_carpet, saddle; 25-4 section 8).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-NAME                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-TOOL                PIC X.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ 01 WS-MATERIAL            PIC X(20).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-MAT-DATA.
+    05 FILLER PIC X(12) VALUE "leather     ".
+    05 FILLER PIC X(12) VALUE "copper      ".
+    05 FILLER PIC X(12) VALUE "chainmail   ".
+    05 FILLER PIC X(12) VALUE "iron        ".
+    05 FILLER PIC X(12) VALUE "golden      ".
+    05 FILLER PIC X(12) VALUE "diamond     ".
+    05 FILLER PIC X(12) VALUE "turtle      ".
+    05 FILLER PIC X(12) VALUE "netherite   ".
+ 01 WS-MAT REDEFINES WS-MAT-DATA.
+    05 WS-MT                PIC X(12) OCCURS 8 TIMES.
+ 01 WS-DYE-DATA.
+    05 FILLER PIC X(12) VALUE "white       ".
+    05 FILLER PIC X(12) VALUE "orange      ".
+    05 FILLER PIC X(12) VALUE "magenta     ".
+    05 FILLER PIC X(12) VALUE "light_blue  ".
+    05 FILLER PIC X(12) VALUE "yellow      ".
+    05 FILLER PIC X(12) VALUE "lime        ".
+    05 FILLER PIC X(12) VALUE "pink        ".
+    05 FILLER PIC X(12) VALUE "gray        ".
+    05 FILLER PIC X(12) VALUE "light_gray  ".
+    05 FILLER PIC X(12) VALUE "cyan        ".
+    05 FILLER PIC X(12) VALUE "purple      ".
+    05 FILLER PIC X(12) VALUE "blue        ".
+    05 FILLER PIC X(12) VALUE "brown       ".
+    05 FILLER PIC X(12) VALUE "green       ".
+    05 FILLER PIC X(12) VALUE "red         ".
+    05 FILLER PIC X(12) VALUE "black       ".
+ 01 WS-DYE REDEFINES WS-DYE-DATA.
+    05 WS-DY                PIC X(12) OCCURS 16 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ASSET                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-KIND L-ASSET.
+     MOVE 0 TO L-KIND L-ASSET
+     CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
+     IF WS-NAME = "saddle"
+         MOVE 4 TO L-KIND
+         MOVE 1 TO L-ASSET
+     END-IF
+     IF WS-NAME = "wolf_armor"
+         MOVE 2 TO L-KIND
+         MOVE 9 TO L-ASSET
+     END-IF
+     MOVE SPACES TO WS-MATERIAL
+     UNSTRING WS-NAME DELIMITED BY "_horse_armor" INTO WS-MATERIAL
+     IF FUNCTION TRIM(WS-NAME) NOT = FUNCTION TRIM(WS-MATERIAL)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+             IF WS-MT(WS-I) = WS-MATERIAL
+                 MOVE 1 TO L-KIND
+                 MOVE WS-I TO L-ASSET
+             END-IF
+         END-PERFORM
+     END-IF
+     MOVE SPACES TO WS-MATERIAL
+     UNSTRING WS-NAME DELIMITED BY "_carpet" INTO WS-MATERIAL
+     IF FUNCTION TRIM(WS-NAME) NOT = FUNCTION TRIM(WS-MATERIAL)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             IF WS-DY(WS-I) = WS-MATERIAL
+                 MOVE 3 TO L-KIND
+                 COMPUTE L-ASSET = 9 + WS-I
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-BODY-ASSET.

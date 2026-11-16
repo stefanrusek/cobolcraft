@@ -166,16 +166,19 @@
     05 FILLER PIC X(90) VALUE "red_blue          blue              green             yellow_blue       grey              ".
  01 WS-NAMES REDEFINES WS-NAMES-DATA.
     05 WS-NM                PIC X(18) OCCURS 51 TIMES.
-*> The overlay layers (ENTITY-OVERLAY): villager types 1 to 7, professions 8 to 21, levels 22 to 26, markings 27 to 30, armor assets 31 to 38.
+*> The overlay layers (ENTITY-OVERLAY): villager types 1 to 7, professions 8 to 21, levels 22 to 26, markings 27 to 30, armor assets 31 to 39 (the last of them the wolf's armadillo scute), llama carpets 40 to 55 by dye, the trader llama's 56 and 57 (baby).
  01 WS-OVL-DATA.
-    05 FILLER PIC X(98) VALUE "desert        jungle        plains        savanna       snow          swamp         taiga         ".
-    05 FILLER PIC X(196) VALUE "armorer       butcher       cartographer  cleric        farmer        fisherman     fletcher      leatherworker librarian     mason         nitwit        shepherd      toolsmith     weaponsmith   ".
-    05 FILLER PIC X(70) VALUE "stone         iron          gold          emerald       diamond       ".
-    05 FILLER PIC X(56) VALUE "white         whitefield    whitedots     blackdots     ".
-    05 FILLER PIC X(112) VALUE "leather       copper        chainmail     iron          gold          diamond       turtle_scute  netherite     ".
+    05 FILLER PIC X(126) VALUE "desert            jungle            plains            savanna           snow              swamp             taiga             ".
+    05 FILLER PIC X(252) VALUE "armorer           butcher           cartographer      cleric            farmer            fisherman         fletcher          leatherworker     librarian         mason             nitwit            shepherd          toolsmith         weaponsmith       ".
+    05 FILLER PIC X(90) VALUE "stone             iron              gold              emerald           diamond           ".
+    05 FILLER PIC X(72) VALUE "white             whitefield        whitedots         blackdots         ".
+    05 FILLER PIC X(162) VALUE "leather           copper            chainmail         iron              gold              diamond           turtle_scute      netherite         armadillo_scute   ".
+    05 FILLER PIC X(288) VALUE "white             orange            magenta           light_blue        yellow            lime              pink              gray              light_gray        cyan              purple            blue              brown             green             red               black             ".
+    05 FILLER PIC X(36) VALUE "trader_llama      trader_llama_baby ".
  01 WS-OVL REDEFINES WS-OVL-DATA.
-    05 WS-OV                PIC X(14) OCCURS 38 TIMES.
+    05 WS-OV                PIC X(18) OCCURS 57 TIMES.
  01 WS-CD                  BINARY-LONG.
+ 01 WS-DIRNAME             PIC X(24).
  01 WS-STATE               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
@@ -223,6 +226,26 @@
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 7 AND WS-CD >= 1 AND WS-CD <= 27
+                 AND (WS-BASE = "horse_armor" OR "undead_horse_armor" OR "wolf_armor" OR "llama_decor")
+*>               Body armor: the equipment layer type directory (horse_body, wolf_body, llama_body) and the asset.
+                 MOVE "horse_body" TO WS-NAME
+                 IF WS-BASE = "wolf_armor"
+                     MOVE "wolf_body" TO WS-NAME
+                 END-IF
+                 IF WS-BASE = "llama_decor"
+                     MOVE "llama_body" TO WS-NAME
+                 END-IF
+                 COMPUTE WS-I = 30 + WS-CD
+                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 8 AND WS-CD = 1
+*>               A saddle: the row key is the layer type (horse_saddle, pig_saddle, strider_saddle, ...).
+                 MOVE WS-BASE TO WS-DIRNAME
+                 IF WS-BASE = "skhorse_saddle"
+                     MOVE "skeleton_horse_saddle" TO WS-DIRNAME
+                 END-IF
+                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-DIRNAME) "/saddle.png" DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 5 AND (WS-BASE = "wolf" OR "cat")
                  STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/" FUNCTION TRIM(WS-BASE) "_collar" FUNCTION TRIM(WS-BABY) ".png"
                      DELIMITED BY SIZE INTO L-PATH

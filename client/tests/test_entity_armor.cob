@@ -21,7 +21,8 @@
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-ID                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
- 01 WS-I-D                 PIC 9.
+ 01 WS-I-D                 PIC 99.
+ 01 WS-LAYER               BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
@@ -33,7 +34,7 @@
  01 WS-GREEN               FLOAT-LONG.
  01 WS-BLUE                FLOAT-LONG.
  01 WS-PATH                PIC X(64).
- 01 WS-K20                 PIC X(20).
+ 01 WS-K20                 PIC X(24).
  01 WS-BASE-COUNT          BINARY-LONG.
  01 WS-CASES-DATA.
     05 FILLER PIC X(20) VALUE "iron_helmet".
@@ -253,6 +254,155 @@
          MOVE EA-MT-COUNT TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+*>   Body armor and saddles (34-4 9.3 and 8, 34-5 2.6, 25-4 section 8): layer 5 is the body item (horse armor of the horse and the undead horses, wolf armor, the carpet of a
+*>   llama or the blue carpet of a trader llama), layer 6 the saddle. Each has a model row of its own.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         EVALUATE WS-I
+             WHEN 1 MOVE "horse" TO WS-KEY
+             WHEN 2 MOVE "zombie_horse" TO WS-KEY
+             WHEN 3 MOVE "wolf" TO WS-KEY
+             WHEN 4 MOVE "llama" TO WS-KEY
+             WHEN 5 MOVE "trader_llama" TO WS-KEY
+             WHEN 6 MOVE "trader_llama" TO WS-KEY
+             WHEN 7 MOVE "llama" TO WS-KEY
+             WHEN 8 MOVE "horse" TO WS-KEY
+             WHEN 9 MOVE "donkey" TO WS-KEY
+             WHEN 10 MOVE "pig" TO WS-KEY
+             WHEN 11 MOVE "strider" TO WS-KEY
+             WHEN OTHER MOVE "skeleton_horse" TO WS-KEY
+         END-EVALUATE
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+         MOVE 1 TO WS-ID
+         CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+         MOVE 5 TO WS-LAYER
+         MOVE 0 TO EN-BABY(1)
+         EVALUATE WS-I
+             WHEN 1 MOVE "iron_horse_armor" TO WS-K20
+             WHEN 2 MOVE "diamond_horse_armor" TO WS-K20
+             WHEN 3 MOVE "wolf_armor" TO WS-K20
+             WHEN 4 MOVE "light_blue_carpet" TO WS-K20
+             WHEN 5 MOVE "stone" TO WS-K20
+             WHEN 6 MOVE "stone" TO WS-K20
+             WHEN 7 MOVE "white_carpet" TO WS-K20
+             WHEN OTHER
+                 MOVE "saddle" TO WS-K20
+                 MOVE 6 TO WS-LAYER
+         END-EVALUATE
+         IF WS-I = 6 OR WS-I = 7
+             MOVE 1 TO EN-BABY(1)
+         END-IF
+         MOVE WS-K20 TO WS-KEY
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+         IF WS-LAYER = 5
+             MOVE WS-ITEM TO EN-EQ(1, 7)
+         ELSE
+             MOVE WS-ITEM TO EN-EQ(1, 8)
+         END-IF
+         CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 WS-LAYER WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+         MOVE "N" TO TL-MODE
+         MOVE SPACES TO TL-CASE
+         MOVE WS-I TO WS-I-D
+         STRING "acceptance armor body case " WS-I-D " code" DELIMITED BY SIZE INTO TL-CASE
+         EVALUATE WS-I
+             WHEN 1 MOVE 7004 TO TL-EXPECTED-N
+             WHEN 2 MOVE 7006 TO TL-EXPECTED-N
+             WHEN 3 MOVE 7009 TO TL-EXPECTED-N
+             WHEN 4 MOVE 7013 TO TL-EXPECTED-N
+             WHEN 5 MOVE 7026 TO TL-EXPECTED-N
+             WHEN 6 MOVE 7027 TO TL-EXPECTED-N
+             WHEN 7 MOVE 0 TO TL-EXPECTED-N
+             WHEN OTHER MOVE 8001 TO TL-EXPECTED-N
+         END-EVALUATE
+         MOVE WS-CODE TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance armor body case " WS-I-D " model row" DELIMITED BY SIZE INTO TL-CASE
+         MOVE "T" TO TL-MODE
+         EVALUATE WS-I
+             WHEN 1 MOVE "horse_armor" TO TL-EXPECTED
+             WHEN 2 MOVE "undead_horse_armor" TO TL-EXPECTED
+             WHEN 3 MOVE "wolf_armor" TO TL-EXPECTED
+             WHEN 4 MOVE "llama_decor" TO TL-EXPECTED
+             WHEN 5 MOVE "llama_decor" TO TL-EXPECTED
+             WHEN 6 MOVE "llama_decor~b" TO TL-EXPECTED
+             WHEN 7 MOVE SPACES TO TL-EXPECTED
+             WHEN 8 MOVE "horse_saddle" TO TL-EXPECTED
+             WHEN 9 MOVE "donkey_saddle" TO TL-EXPECTED
+             WHEN 10 MOVE "pig_saddle" TO TL-EXPECTED
+             WHEN 11 MOVE "strider_saddle" TO TL-EXPECTED
+             WHEN OTHER MOVE "skhorse_saddle" TO TL-EXPECTED
+         END-EVALUATE
+         MOVE SPACES TO TL-OBSERVED
+         IF WS-MODEL > 0
+             MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   Texture paths of body armor and saddles.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+         EVALUATE WS-I
+             WHEN 1 MOVE "horse_armor" TO WS-K20
+             WHEN 2 MOVE "undead_horse_armor" TO WS-K20
+             WHEN 3 MOVE "wolf_armor" TO WS-K20
+             WHEN 4 MOVE "llama_decor" TO WS-K20
+             WHEN 5 MOVE "llama_decor~b" TO WS-K20
+             WHEN 6 MOVE "horse_saddle" TO WS-K20
+             WHEN 7 MOVE "pig_saddle" TO WS-K20
+             WHEN OTHER MOVE "skhorse_saddle" TO WS-K20
+         END-EVALUATE
+         EVALUATE WS-I
+             WHEN 1 MOVE 7004 TO WS-CODE
+             WHEN 2 MOVE 7006 TO WS-CODE
+             WHEN 3 MOVE 7009 TO WS-CODE
+             WHEN 4 MOVE 7013 TO WS-CODE
+             WHEN 5 MOVE 7027 TO WS-CODE
+             WHEN OTHER MOVE 8001 TO WS-CODE
+         END-EVALUATE
+         MOVE SPACES TO WS-PATH
+         CALL "ENTITY-TEX-PATH" USING WS-K20 WS-CODE WS-PATH
+         MOVE "T" TO TL-MODE
+         MOVE SPACES TO TL-CASE
+         MOVE WS-I TO WS-I-D
+         STRING "acceptance armor body path case " WS-I-D DELIMITED BY SIZE INTO TL-CASE
+         EVALUATE WS-I
+             WHEN 1 MOVE "textures/entity/equipment/horse_body/iron.png" TO TL-EXPECTED
+             WHEN 2 MOVE "textures/entity/equipment/horse_body/diamond.png" TO TL-EXPECTED
+             WHEN 3 MOVE "textures/entity/equipment/wolf_body/armadillo_scute.png" TO TL-EXPECTED
+             WHEN 4 MOVE "textures/entity/equipment/llama_body/light_blue.png" TO TL-EXPECTED
+             WHEN 5 MOVE "textures/entity/equipment/llama_body/trader_llama_baby.png" TO TL-EXPECTED
+             WHEN 6 MOVE "textures/entity/equipment/horse_saddle/saddle.png" TO TL-EXPECTED
+             WHEN 7 MOVE "textures/entity/equipment/pig_saddle/saddle.png" TO TL-EXPECTED
+             WHEN OTHER MOVE "textures/entity/equipment/skeleton_horse_saddle/saddle.png" TO TL-EXPECTED
+         END-EVALUATE
+         MOVE WS-PATH TO TL-OBSERVED
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   A horse in armor and saddle draws body, armor and saddle: three slots; a baby horse in armor draws no armor (the baby has no armor model).
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "horse" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE "iron_horse_armor" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 7)
+     MOVE "saddle" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 8)
+     MOVE 0 TO EA-MT-COUNT
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance armor a horse in armor and saddle takes three slots" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE EA-MT-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO EN-BABY(1)
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 5 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+     MOVE "acceptance armor a baby horse has no armor layer" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-CODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-ARMOR.
 

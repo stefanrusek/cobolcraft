@@ -23,7 +23,7 @@
 *>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
 *>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; nautilus and boats are not in the table yet.
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 149.
+ 78 CL-MODEL-COUNT           VALUE 161.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -1366,8 +1366,116 @@
     05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "horse_armor".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "HORSE_ARMOR".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/horse_body/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "undead_horse_armor".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "UNDEAD_HORSE_ARMOR".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/horse_body/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "wolf_armor".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "WOLF_ARMOR".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/wolf_body/armadillo_scute.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "llama_decor".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "LLAMA_DECOR".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/llama_body/white.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 154.
+    05 FILLER PIC X(20) VALUE "llama_decor~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "LLAMA_BABY_DECOR".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/llama_body/trader_llama_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "horse_saddle".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "HORSE_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/horse_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "donkey_saddle".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "DONKEY_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/donkey_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "mule_saddle".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "MULE_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/mule_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "skhorse_saddle".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "SKELETON_HORSE_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/skeleton_horse_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zombie_horse_saddle".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_HORSE_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/zombie_horse_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pig_saddle".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "PIG_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/pig_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "strider_saddle".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "STRIDER_SADDLE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/strider_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 149 TIMES.
+    05 CL-MD OCCURS 161 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

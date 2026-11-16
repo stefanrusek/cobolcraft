@@ -194,9 +194,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 160 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 176 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 160 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 176 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXC                BINARY-LONG.
  01 WS-TR                  FLOAT-LONG.
@@ -355,6 +355,7 @@
  01 WS-AGG                 BINARY-LONG.
  01 WS-MAINARM             BINARY-LONG.
  01 WS-ANIM                PIC X.
+ 01 WS-POSE-KEY            PIC X(20).
  01 WS-FK                  PIC X(24).
  01 WS-FM                  BINARY-LONG.
  01 WS-HK                  BINARY-LONG.
@@ -409,6 +410,11 @@
          IF WS-FM > 0
              MOVE CL-MD-ANIM(WS-FM) TO WS-ANIM
          END-IF
+     END-IF
+*>   The key the pose program picks the mob by: the row's own, or the wearer's for an armor row.
+     MOVE CL-MD-KEY(EN-MODEL(WS-ROW)) TO WS-POSE-KEY
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "A" AND WS-FM > 0
+         MOVE CL-MD-KEY(WS-FM) TO WS-POSE-KEY
      END-IF
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
          CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
@@ -568,7 +574,7 @@
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
          WHEN "W"
          WHEN "V"
-             CALL "ENTITY-POSE-MORE" USING EMM-MODEL CL-MD-KEY(WS-K) WS-IN WS-AGE
+             CALL "ENTITY-POSE-MORE" USING EMM-MODEL WS-POSE-KEY WS-IN WS-AGE
          WHEN "H"
              MOVE 0 TO WS-VARIANT
              IF EN-POSE(WS-ROW) = 5
