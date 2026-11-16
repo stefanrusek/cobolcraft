@@ -173,6 +173,97 @@
      PERFORM PUT-EQUIP
      MOVE "eqcomp an inline pattern holder reads as no trim" TO WS-LABEL
      PERFORM CHECK-HEAD-NONE
+*>   Inline holders (54 section 18.1): an inline material or pattern is the identifier String then the text component (network NBT, skipped), the pattern then a decal Boolean;
+*>   the identifier names the material (minecraft:trim/<name>) or the pattern (minecraft:<name>) of the registries; an unknown name, or a value cut off or malformed, reads as no trim.
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 26 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00136D696E6563726166743A7472696D2F676F6C64080001780C" TO PB-ISX-VALUE(1)(1:26)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp an inline gold material with registry pattern 12" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 5 TO WS-E2
+     MOVE 12 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 35 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"03000E6D696E6563726166743A77696C640A0800097472616E736C617465" TO PB-ISX-VALUE(1)(1:30)
+     MOVE X"0001780000" TO PB-ISX-VALUE(1)(31:5)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp registry material 3 with an inline wild pattern (compound text, decal)" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 3 TO WS-E2
+     MOVE 18 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 46 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00136D696E6563726166743A7472696D2F69726F6E08000178000E6D696E" TO PB-ISX-VALUE(1)(1:30)
+     MOVE X"6563726166743A626F6C740800017800" TO PB-ISX-VALUE(1)(31:16)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp an inline iron material and an inline bolt pattern" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 6 TO WS-E2
+     MOVE 1 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 45 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00136D696E6563726166743A7472696D2F676F6C6408000178000D6D696E" TO PB-ISX-VALUE(1)(1:30)
+     MOVE X"6563726166743A7A7A7A0800017800" TO PB-ISX-VALUE(1)(31:15)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp an inline pattern of an unknown name" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2
+     MOVE 0 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 6 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00136D696E65" TO PB-ISX-VALUE(1)(1:6)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp an inline material cut off" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2
+     MOVE 0 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 25 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00136D696E6563726166743A7472696D2F676F6C640D00000C" TO PB-ISX-VALUE(1)(1:25)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp an inline material with a bad text component" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2
+     MOVE 0 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 66 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00186D696E6563726166743A7472696D2F6E65746865726974650A080009" TO PB-ISX-VALUE(1)(1:30)
+     MOVE X"7472616E736C6174650001780000106D696E6563726166743A7472696D5F" TO PB-ISX-VALUE(1)(31:30)
+     MOVE X"780800017800" TO PB-ISX-VALUE(1)(61:6)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "eqcomp an unknown inline pattern after a netherite material" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2
+     MOVE 0 TO WS-E3
+     MOVE 0 TO WS-E4
+     PERFORM CHECK-HEAD
 *>   A stack for an unknown entity changes nothing (and the slot above 7 is ignored).
      MOVE 99 TO WS-ID
      MOVE 0 TO PB-ISX-ADDED-COUNT

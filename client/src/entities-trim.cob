@@ -245,3 +245,60 @@
      END-PERFORM
      GOBACK.
  END PROGRAM TRIM-RECOLOUR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TRIM-NAME-OF.
+*> USING identifier (X(40), the text after the last ":" or "/" is the name, as in minecraft:trim/gold or minecraft:wild), kind (1 trim material, 2 trim pattern),
+*> number out (the material 1 to 11 or the pattern 1 to 18 of the registries of 54 section 18, 0 for a name that is none of them): the inline holders of a trim.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MATERIALS-DATA.
+    05 FILLER PIC X(10) VALUE "amethyst  ".
+    05 FILLER PIC X(10) VALUE "copper    ".
+    05 FILLER PIC X(10) VALUE "diamond   ".
+    05 FILLER PIC X(10) VALUE "emerald   ".
+    05 FILLER PIC X(10) VALUE "gold      ".
+    05 FILLER PIC X(10) VALUE "iron      ".
+    05 FILLER PIC X(10) VALUE "lapis     ".
+    05 FILLER PIC X(10) VALUE "netherite ".
+    05 FILLER PIC X(10) VALUE "quartz    ".
+    05 FILLER PIC X(10) VALUE "redstone  ".
+    05 FILLER PIC X(10) VALUE "resin     ".
+ 01 WS-MATERIALS REDEFINES WS-MATERIALS-DATA.
+    05 WS-MAT               PIC X(10) OCCURS 11 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-PATTERN             PIC X(10).
+ LINKAGE SECTION.
+ 01 L-ID                   PIC X(40).
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-NUMBER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-KIND L-NUMBER.
+     MOVE 0 TO L-NUMBER
+     MOVE 1 TO WS-START
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
+         IF L-ID(WS-I:1) = ":" OR L-ID(WS-I:1) = "/"
+             COMPUTE WS-START = WS-I + 1
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO WS-NAME
+     IF WS-START <= 40
+         MOVE L-ID(WS-START:) TO WS-NAME
+     END-IF
+     IF L-KIND = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+             IF WS-NAME = WS-MAT(WS-I)
+                 MOVE WS-I TO L-NUMBER
+             END-IF
+         END-PERFORM
+     ELSE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+             CALL "TRIM-PATTERN-NAME" USING WS-I WS-PATTERN
+             IF WS-NAME = WS-PATTERN
+                 MOVE WS-I TO L-NUMBER
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM TRIM-NAME-OF.

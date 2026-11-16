@@ -554,6 +554,12 @@
  01 WS-B1                  BINARY-LONG.
  01 WS-B2                  BINARY-LONG.
  01 WS-B3                  BINARY-LONG.
+ 01 WS-MAT                 BINARY-LONG.
+ 01 WS-PAT                 BINARY-LONG.
+ 01 WS-TRIM-OK             BINARY-LONG.
+ 01 WS-ID                  PIC X(40).
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -587,13 +593,7 @@
                      COMPUTE EN-EQ-DYE(L-ROW, L-SLOT + 1) = WS-B1 * 65536 + WS-B2 * 256 + WS-B3
                  END-IF
              WHEN 58
-                 IF WS-LEN >= 2 AND WS-B1 > 0
-                     COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(2:1)) - 1
-                     IF WS-B2 > 0
-                         MOVE WS-B1 TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1)
-                         MOVE WS-B2 TO EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1)
-                     END-IF
-                 END-IF
+                 PERFORM READ-TRIM
              WHEN 21
                  MOVE WS-B1 TO WS-OVERRIDE
              WHEN 13
@@ -646,4 +646,65 @@
              ADD 1 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
          END-IF
      END-PERFORM.
+
+*> The trim component (54 section 18.1): the material holder, then the pattern holder; a holder is the registry position + 1, or 0 and the inline value (the identifier
+*> String, the text component, and for a pattern the decal Boolean). An inline holder is read by its identifier (TRIM-NAME-OF); an unknown one, or a value that is cut off or
+*> malformed, leaves the slot with no trim.
+ READ-TRIM.
+     MOVE 0 TO WS-MAT WS-PAT
+     MOVE 1 TO WS-P WS-TRIM-OK
+     MOVE 1 TO WS-KIND
+     PERFORM READ-HOLDER
+     IF WS-MAT > 0 AND WS-TRIM-OK = 1
+         MOVE 2 TO WS-KIND
+         PERFORM READ-HOLDER
+     END-IF
+     IF WS-MAT >= 1 AND WS-MAT <= 11 AND WS-PAT >= 1 AND WS-PAT <= 18 AND WS-TRIM-OK = 1
+         MOVE WS-MAT TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1)
+         MOVE WS-PAT TO EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1)
+     END-IF.
+
+*> One holder at WS-P (WS-KIND 1 material into WS-MAT, 2 pattern into WS-PAT).
+ READ-HOLDER.
+     MOVE 0 TO WS-NUM
+     IF WS-P > WS-LEN
+         MOVE 0 TO WS-TRIM-OK
+     ELSE
+         COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+         ADD 1 TO WS-P
+         IF WS-B2 > 0
+             MOVE WS-B2 TO WS-NUM
+         ELSE
+             PERFORM READ-INLINE
+         END-IF
+     END-IF
+     IF WS-KIND = 1
+         MOVE WS-NUM TO WS-MAT
+     ELSE
+         MOVE WS-NUM TO WS-PAT
+     END-IF.
+
+*> An inline holder: the identifier (a one-byte length, at most 40), then the text component of network NBT; a pattern's decal byte is not read.
+ READ-INLINE.
+     MOVE SPACES TO WS-ID
+     IF WS-P > WS-LEN
+         MOVE 0 TO WS-TRIM-OK
+     ELSE
+         COMPUTE WS-L = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+         ADD 1 TO WS-P
+         IF WS-L > 40 OR WS-P + WS-L - 1 > WS-LEN
+             MOVE 0 TO WS-TRIM-OK
+         ELSE
+             IF WS-L > 0
+                 MOVE PB-ISX-VALUE(WS-K)(WS-P:WS-L) TO WS-ID
+             END-IF
+             ADD WS-L TO WS-P
+             CALL "ITEM-NBT-SKIP" USING PB-ISX-VALUE(WS-K) WS-LEN WS-P WS-B3
+             IF WS-B3 = 1
+                 CALL "TRIM-NAME-OF" USING WS-ID WS-KIND WS-NUM
+             ELSE
+                 MOVE 0 TO WS-TRIM-OK
+             END-IF
+         END-IF
+     END-IF.
  END PROGRAM ENTITY-EQ-COMPONENTS.
