@@ -149,7 +149,12 @@
      MOVE "facing=north,half=bottom,open=false,powered=false,waterlogged=false" TO TL-EXPECTED
      PERFORM CHECK-PROPS
 
-*>   Sneaking with an item held: the item is used on the block, the lever stays.
+*>   Sneaking with an item held: the item is used on the block, the lever stays (its wall block is behind it, as a lever without support breaks, T10305).
+     MOVE "stone" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     ADD 1 TO WS-Z
+     PERFORM PUT-BLOCK
+     SUBTRACT 1 FROM WS-Z
      MOVE "lever" TO WS-KEY
      MOVE SPACES TO WS-PAIRS
      PERFORM PUT-BLOCK

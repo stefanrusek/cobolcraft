@@ -39,6 +39,7 @@
  01 WS-WATER               BINARY-LONG.
  01 WS-WATER-FLOW          BINARY-LONG.
  01 WS-SNOW                BINARY-LONG.
+ 01 WS-ICE                 BINARY-LONG.
  01 WS-CANE                BINARY-LONG.
  01 WS-KELP                BINARY-LONG.
  01 WS-KELP-PLANT          BINARY-LONG.
@@ -309,6 +310,34 @@
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE "acceptance support standard: kelp is placed under water in a water source" TO WS-CASE
      MOVE WS-KELP TO WS-EXPECT
+     MOVE WS-STATE TO WS-OBSERVE
+     PERFORM CHECK-N
+*>   Ice broken by a survival player over water leaves a water source (29b 7.1 playerDestroy), not a hole the neighbouring water flows into
+     MOVE "ice" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE WS-FOUND-STATE TO WS-ICE
+     COMPUTE WS-X = WS-BX + 8
+     COMPUTE WS-Z = WS-BZ + 5
+     COMPUTE WS-Y = WS-FLOOR + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-WATER
+     COMPUTE WS-Y = WS-FLOOR + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-ICE
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "BREAK-FINISH" USING WS-PLAYER WS-DIM WS-X WS-Y WS-Z
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE "acceptance support standard: ice broken over water becomes a water source" TO WS-CASE
+     MOVE WS-WATER TO WS-EXPECT
+     MOVE WS-STATE TO WS-OBSERVE
+     PERFORM CHECK-N
+     COMPUTE WS-X = WS-BX + 10
+     COMPUTE WS-Y = WS-FLOOR + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
+     COMPUTE WS-Y = WS-FLOOR + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-ICE
+     CALL "BREAK-FINISH" USING WS-PLAYER WS-DIM WS-X WS-Y WS-Z
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE "acceptance support standard: ice broken over a solid block becomes a water source too" TO WS-CASE
+     MOVE WS-WATER TO WS-EXPECT
      MOVE WS-STATE TO WS-OBSERVE
      PERFORM CHECK-N
      STOP RUN.

@@ -447,7 +447,7 @@
                  END-IF
              END-IF
          WHEN 12
-             IF SP-RULE(WS-BELOW) = 12
+             IF WS-BELOW > 0 AND SP-RULE(WS-BELOW) = 12
                  MOVE 1 TO L-OK
              ELSE
                  MOVE 2048 TO WS-BIT
@@ -604,3 +604,93 @@
      END-IF
      GOBACK.
  END PROGRAM SUP-PLACE-OK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ICE-AFTER-BREAK.
+*> USING dimension row, x, y, z, state (the ice that was broken), player row (BINARY-LONG): IceBlock.playerDestroy (29b section 7.1, lane bugsw T10306: a broken ice left air, so the
+*> neighbouring water flowed into the hole as flowing water): unless the tool in the main hand has silk touch (the tag prevents_ice_melting), the broken ice becomes a water source when the
+*> block below blocks motion (a solid block, the tag ice_melts_when_destroyed_above) or is a liquid. The Nether's water_evaporates is not modelled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY SUPSTATE.
+ 01 WS-FULL                PIC X(48).
+ 01 WS-STATE-BELOW         BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "minecraft:block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:ice_melts_when_destroyed_above".
+ 01 WS-IN-TAG              BINARY-LONG.
+ 01 WS-LIQUID              BINARY-LONG.
+ 01 WS-SILK-KEY            PIC X(112) VALUE "minecraft:silk_touch".
+ 01 WS-SILK                BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-IDS.
+    05 WS-ID               BINARY-LONG OCCURS 20 TIMES.
+ 01 WS-LEVELS.
+    05 WS-LEVEL            BINARY-LONG OCCURS 20 TIMES.
+ 01 WS-PREVENTS            BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-ROW.
+     IF L-STATE <= 0 OR L-STATE >= CB-STATE-COUNT
+         GOBACK
+     END-IF
+     COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
+     CALL "KEY-NAMESPACED" USING CB-KEY(WS-BLOCK) WS-FULL
+     IF FUNCTION TRIM(WS-FULL) NOT = "minecraft:ice"
+         GOBACK
+     END-IF
+*>   Silk touch on the tool in the main hand prevents the melting.
+     MOVE 0 TO WS-PREVENTS
+     IF L-ROW > 0
+         IF PL-SLOT-COUNT(L-ROW, PL-HELD(L-ROW) + 1) > 0
+             MOVE PL-SLOT-VAR(L-ROW, PL-HELD(L-ROW) + 1) TO WS-HANDLE
+             IF WS-HANDLE > 0
+                 CALL "LOOT-ENCH-ID" USING WS-SILK-KEY WS-SILK
+                 CALL "LOOT-STACK-ENCHANTS" USING WS-HANDLE WS-COUNT WS-IDS WS-LEVELS
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+                     IF WS-ID(WS-I) = WS-SILK
+                         MOVE 1 TO WS-PREVENTS
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-IF
+     END-IF
+     IF WS-PREVENTS = 1
+         GOBACK
+     END-IF
+     CALL "SUP-OPEN"
+     COMPUTE WS-Y = L-Y - 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-STATE-BELOW
+     MOVE 0 TO WS-IN-TAG WS-LIQUID
+     IF WS-STATE-BELOW > 0 AND WS-STATE-BELOW < CB-STATE-COUNT
+         MOVE CB-S-BLOCK(WS-STATE-BELOW + 1) TO WS-BELOW
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BELOW WS-IN-TAG
+         IF CB-SOLID(WS-BELOW + 1) = 1
+             MOVE 1 TO WS-IN-TAG
+         END-IF
+         IF WS-BELOW + 1 = SP-WATER
+             MOVE 1 TO WS-LIQUID
+         END-IF
+         CALL "KEY-NAMESPACED" USING CB-KEY(WS-BELOW + 1) WS-FULL
+         IF FUNCTION TRIM(WS-FULL) = "minecraft:lava"
+             MOVE 1 TO WS-LIQUID
+         END-IF
+     END-IF
+     IF (WS-IN-TAG = 1 OR WS-LIQUID = 1) AND SP-WATER > 0
+         MOVE CB-DEFAULT-STATE(SP-WATER) TO WS-NEW
+         CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM ICE-AFTER-BREAK.
