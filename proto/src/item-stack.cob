@@ -170,14 +170,44 @@
                          CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
                      END-IF
                  END-IF
+*>           trim (58; 54 section 18.1): the Holder of trim_material, then the Holder of trim_pattern: a VarInt, 0 followed by the inline entry (material:
+*>           Identifier and text; pattern: Identifier, text and a Boolean decal), else a registry position + 1
+             WHEN 58
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 IF WS-SCRATCH = 0
+                     CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+                 END-IF
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 IF WS-SCRATCH = 0
+                     CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                 END-IF
+*>           banner_patterns (74; 54 section 22.1): a VarInt count, each layer a Holder of banner_pattern (0 then the inline asset id and translation key, both
+*>           Strings, else registry position + 1) and a VarInt dye id
+             WHEN 74
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINED
+                 IF WS-CONTAINED < 0 OR WS-CONTAINED > 256
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-CONTAINED
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-CONTAINED OR PB-ERROR = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                     IF WS-SCRATCH = 0
+                         CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                         CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     END-IF
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 END-PERFORM
 *>           firework_explosion (70): VarInt shape, VarInt count and Ints colours, VarInt count and Ints fade colours, Booleans trail and twinkle
              WHEN 70
                  PERFORM READ-EXPLOSION
-*>           fireworks (71): VarInt flight duration, VarInt count of 0 to 7 explosions
+*>           fireworks (71; 54 section 21.2): VarInt flight duration, VarInt count of 0 to 256 explosions
              WHEN 71
                  CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
                  CALL "PB-GET-VARINT" USING PB-BUFFER WS-PAGES
-                 IF WS-PAGES < 0 OR WS-PAGES > 7
+                 IF WS-PAGES < 0 OR WS-PAGES > 256
                      MOVE 1 TO PB-ERROR
                      MOVE 0 TO WS-PAGES
                  END-IF

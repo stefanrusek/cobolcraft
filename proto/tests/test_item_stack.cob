@@ -137,6 +137,36 @@
      PERFORM CHECK-PUT-ERROR.
 
  GET-CASES.
+     MOVE "01 01 01 00 47 02 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of fireworks (71) with 8 explosions is read (the limit is 256, 54 section 21.2)" TO TL-CASE
+     MOVE "c1 i1 +71=020800000000000000000000000000000000000000000000000000000000000000000000000000000000 pos 47 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 3a 05 03" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of trim (58) with two registry holders" TO TL-CASE
+     MOVE "c1 i1 +58=0503 pos 7 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 3a 00 02 61 62 08 00 01 78 00 02 63 64 08 00 01 79 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of trim (58) with an inline material and an inline pattern" TO TL-CASE
+     MOVE "c1 i1 +58=0002616208000178000263640800017901 pos 22 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a 01 03 0e" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with one registry layer" TO TL-CASE
+     MOVE "c1 i1 +74=01030e pos 8 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a 01 00 02 61 62 02 63 64 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with one inline layer" TO TL-CASE
+     MOVE "c1 i1 +74=010002616202636401 pos 14 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
      MOVE "01 01 01 00 2f 00 ff 00 00" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
@@ -197,10 +227,10 @@
      MOVE "test item-stack get of fireworks (71) with one explosion" TO TL-CASE
      MOVE "c1 i1 +71=0201010100ff0000000100 pos 16 error 0" TO TL-EXPECTED
      PERFORM CHECK-GET
-     MOVE "01 01 01 00 47 02 08" TO WS-HEX
+     MOVE "01 01 01 00 47 02 81 02" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
-     MOVE "test item-stack get of fireworks (71) with more than 7 explosions is rejected" TO TL-CASE
+     MOVE "test item-stack get of fireworks (71) with more than 256 explosions is rejected" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET
      MOVE "01 01 01 00 46 01 ff ff ff ff 0f" TO WS-HEX
