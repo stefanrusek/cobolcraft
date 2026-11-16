@@ -878,6 +878,7 @@
 *> - an iron golem fights hostile mobs (GOLEM-TICK) and golems never stroll;
 *> - a tame wolf obeys PET-TICK first (mob-pets.cob): sitting it stays, otherwise it bites the mob that targets its owner or follows the owner;
 *> - a mob that was hit panics (EN-FLEE ticks left, away from the attacker at the panic speed);
+*> - an animal in love walks to its partner, then an animal follows the player who holds its food (MOB-TEMPT-TICK, core/src/mob-18-tempt.cob);
 *> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time):
 *>   it picks a cell up to 10 blocks away on each axis (RandomStrollGoal: 10 horizontally; EN-DEST-X/-Z), and walks to it by STDMOB-HEAD for at most
 *>   SM-STROLL-TICKS ticks (EN-COOLDOWN = the ticks left) or until it is in the cell;
@@ -930,6 +931,10 @@
  01 WS-PET-HZ              FLOAT-LONG.
  01 WS-RIDE-DONE           BINARY-LONG.
  01 WS-TAD-GONE            BINARY-LONG.
+ 01 WS-TEMPT-WALK          BINARY-LONG.
+ 01 WS-TEMPT-HX            FLOAT-LONG.
+ 01 WS-TEMPT-HZ            FLOAT-LONG.
+ 01 WS-TEMPT-YAW           FLOAT-SHORT.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1033,7 +1038,12 @@
      IF SM-KIND(WS-M) = 0
          CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
      END-IF
-     MOVE 0 TO WS-PET-WALK
+     MOVE 0 TO WS-PET-WALK WS-TEMPT-WALK
+*>   The tempt goal of an animal (MOB-TEMPT-TICK, 18 section 4.7): it follows a player who holds its food.
+     IF SM-KIND(WS-M) = 0
+         MOVE WS-YAW TO WS-TEMPT-YAW
+         CALL "MOB-TEMPT-TICK" USING WS-ROW WS-M WS-TEMPT-HX WS-TEMPT-HZ WS-TEMPT-YAW WS-TEMPT-WALK
+     END-IF
      IF SM-NEUTRAL(WS-M) = 6 AND EN-TAMED(WS-ROW) = 0
          CALL "NETHER-AGGRO" USING WS-ROW WS-M
          IF EN-COOLDOWN(WS-ROW) > 0
@@ -1190,6 +1200,12 @@
              MOVE WS-LIFE-HX TO WS-HX
              MOVE WS-LIFE-HZ TO WS-HZ
              CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN WS-TEMPT-WALK > 0
+*>           An animal follows the player who holds its food (MOB-TEMPT-TICK), or stands facing them within 2.5 blocks.
+             MOVE WS-TEMPT-HX TO WS-HX
+             MOVE WS-TEMPT-HZ TO WS-HZ
+             MOVE WS-TEMPT-YAW TO WS-YAW
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem"
 *>           A golem does not stroll: the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).

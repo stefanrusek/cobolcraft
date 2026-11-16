@@ -447,6 +447,8 @@
 *>     --- 002-lane-mobsfull-h25: saved mob state (core/src/entity-mobdata.cob) ---
        10 EN-LEASH-UUID      PIC X(16).          *> a mob loaded leashed: the UUID of the holder until that player is in the dimension (MOB-LEASH-RESTORE); spaces: none
        10 EN-RIDER2          BINARY-LONG.        *> a camel: the player row of its second rider, the rear seat (0 none; EN-RIDER is the first)
+*>     --- 002-lane-tempt: the TemptGoal (core/src/mob-18-tempt.cob; 18 section 4.7) ---
+       10 EN-TEMPT           BINARY-LONG.        *> 0 idle, -1 the tempt goal runs, above 0 the ticks of cooldown left after it stopped (100)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
