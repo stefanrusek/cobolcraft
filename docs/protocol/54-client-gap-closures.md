@@ -81,6 +81,22 @@ If the entity is not a passenger and is alive: `walkAnimationPos` = `position(pt
 - The server sets it from goals: the zombie attack goal raises it when its raise-arm counter reaches 5 ticks and clears it on stop (18, ZombieAttackGoal); the ranged bow goal sets it while running; illager, piglin and panda attack goals set it for their duration (18).
 - **Readers (client):** extraction copies `isAggressive` into the render state of: zombie, husk, drowned, zombie villager, zombified piglin (not the giant: flag stays false), skeleton family (stray, bogged, wither skeleton), illagers (pillager, vindicator, illusioner; evoker and others use `armPose`), and the piglin and piglin brute (via their arm pose). The pose formulas are 34-2 §4.3 (zombie arms, -2.0943952 aggressive and -1.3962634 otherwise), 34-2 §4.5 (skeleton), 34-2 §4.6 (piglin) and 34-3 §4.3 (illagers); this section adds only the drivers.
 
+## 3. `teleport` / `tp` permission of the location forms
+
+**Gap closed:** which permission level the location forms need (16 §5.2 was silent).
+
+Read from `TeleportCommand.register`: exactly two `requires` predicates exist in the class, one on the `teleport` root literal and one on the `tp` root literal, each "source has permission `LEVEL_GAMEMASTERS`" (level 2). No child node carries a predicate and the execution methods make no further permission check (the class contains four permission references, all inside those two registrations). Consequences:
+
+| Form | Permission |
+|---|---|
+| `teleport <location>` | level 2 (the root's) |
+| `teleport <destination>` | level 2 |
+| `teleport <targets> <location>` (plus rotation, `facing <location>`, `facing entity <entity> [anchor]`) | level 2 |
+| `teleport <targets> <destination>` | level 2 |
+| every form under the alias `tp` | level 2 (its own predicate, the same value) |
+
+So every form, including the one-argument location form that moves the source itself, needs level 2 (game master); there are no level-0 or level-1 forms. A source below level 2 does not see the `teleport` and `tp` nodes in the command tree sent to it (15 framework: requirement filtering), so the literal is also unknown for completion. The `<targets>` selector's own rule (selectors that name other entities need level 2) is already met when the root is.
+
 ---
 
 ## Open questions
