@@ -71,6 +71,30 @@
      MOVE WS-OUT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   An overlay of state 503 (the drag preview rectangle) is one quad of alpha 0.50 and the next, state 0, is opaque again (40-1 5.4).
+     MOVE 2 TO SM-WIDGET-COUNT
+     INITIALIZE SM-WIDGET(1)
+     INITIALIZE SM-WIDGET(2)
+     MOVE WK-OVERLAY TO SM-W-KIND(1) SM-W-KIND(2)
+     MOVE SW-WHITE TO SM-W-ARG(1) SM-W-ARG(2)
+     MOVE 16 TO SM-W-W(1) SM-W-H(1) SM-W-W(2) SM-W-H(2)
+     MOVE 503 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "ui an overlay of state 503 is drawn with alpha 0.50 and an overlay of state 0 after it with alpha 1.00"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "12.00 0.50 1.00" TO TL-EXPECTED
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-PTR
+     MOVE RL-UI-COUNT TO WS-E
+     STRING FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     COMPUTE WS-E ROUNDED = RL-UI-A(1)
+     STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     COMPUTE WS-E ROUNDED = RL-UI-A(7)
+     STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     MOVE WS-OUT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   A button 100 x 20 at (0, 0) with "Ab" centred; a focused field "x"; a selected entry "y".
      MOVE 3 TO SM-WIDGET-COUNT
      INITIALIZE SM-WIDGET(1) SM-WIDGET(2) SM-WIDGET(3)
