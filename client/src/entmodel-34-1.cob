@@ -163,8 +163,8 @@
                  MOVE WS-TX(WS-K) TO EF-X(WS-N, WS-SRC)
                  MOVE WS-TY(WS-K) TO EF-Y(WS-N, WS-SRC)
                  MOVE WS-TZ(WS-K) TO EF-Z(WS-N, WS-SRC)
-                 MOVE WS-TTU(WS-K) TO EF-TU(WS-N, WS-K)
-                 MOVE WS-TTV(WS-K) TO EF-TV(WS-N, WS-K)
+                 MOVE WS-TTU(WS-K) TO EF-TU(WS-N, WS-SRC)
+                 MOVE WS-TTV(WS-K) TO EF-TV(WS-N, WS-SRC)
              END-PERFORM
              IF EC-MIRROR NOT = 0
                  IF WS-D = 3

@@ -704,7 +704,13 @@
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
                          COMPUTE WS-J = WS-FO(WS-K)
                          MOVE WS-J TO WS-QJ(WS-K)
-                         COMPUTE WS-UI(1) = WS-K - 1
+*>                       A mirrored cuboid reverses the order of the corners but each corner keeps its own texel (34-1 1.3 step 7: the vertices carry their texture
+*>                       coordinates when they are reversed), so the texel of slot k is that of the unmirrored slot 5 - k: the image is flipped left to right only.
+                         IF MC-MIRROR(WS-P, WS-C) = 0
+                             COMPUTE WS-UI(1) = WS-K - 1
+                         ELSE
+                             COMPUTE WS-UI(1) = 4 - WS-K
+                         END-IF
                          MOVE WS-RO(WS-A + 1) TO WS-UI(2)
                          MOVE WS-RO(WS-A + 2) TO WS-UI(3)
                          MOVE WS-RO(WS-A + 3) TO WS-UI(4)
