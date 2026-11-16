@@ -154,6 +154,31 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE EN-USED(WS-CLOUD) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An infinite effect and a duration on use: two victims each take 50 off a duration of 100, so the cloud ends at the first application.
+     MOVE 100 TO WS-DURATION
+     MOVE 0 TO WS-WAIT
+     MOVE 3.0 TO WS-R
+     CALL "CLOUD-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-R WS-DURATION WS-WAIT WS-REAPP WS-OWNER WS-CLOUD
+     CALL "PJ-FIND" USING EN-ID(WS-CLOUD) WS-SLOT
+     MOVE 1 TO PJ-FXN(WS-SLOT)
+     MOVE 1 TO PJ-FX-ID(WS-SLOT, 1)
+     MOVE 0 TO PJ-FX-AMP(WS-SLOT, 1)
+     MOVE -1 TO PJ-FX-DUR(WS-SLOT, 1)
+     MOVE 1000 TO PJ-SCALE(WS-SLOT)
+     MOVE -50 TO PJ-DUR-USE(WS-SLOT)
+     CALL "MEF-REMOVE" USING EN-ID(WS-PIG) WS-SLOW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         CALL "CLOUD-STEP" USING WS-CLOUD
+     END-PERFORM
+     CALL "MEF-LEVEL" USING EN-ID(WS-PIG) WS-SLOW WS-LEVEL WS-TICKS
+     MOVE "acceptance US16 44-9 3 an infinite effect stays infinite (-1 ticks)" TO TL-CASE
+     MOVE 999 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-LEVEL * 1000 + WS-TICKS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-9 3 a duration on use that takes it to 0 discards the cloud" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-CLOUD) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full state table makes a spawn fail without leaving an entity.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PJ-MAX
          MOVE 9999 TO PJ-ENT(WS-I)

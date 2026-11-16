@@ -449,3 +449,443 @@
      END-IF
      GOBACK.
  END PROGRAM CLOUD-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-SYNC.
+*> USING tracker row: the position and motion of a thrown entity to its viewers (Teleport Entity), when it moved since the last one (EN-WAY-X, EN-FLEE-X, EN-WAY-Z hold it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-X(L-ROW) = EN-WAY-X(L-ROW) AND EN-Y(L-ROW) = EN-FLEE-X(L-ROW) AND EN-Z(L-ROW) = EN-WAY-Z(L-ROW)
+         GOBACK
+     END-IF
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) EN-VX(L-ROW) EN-VY(L-ROW)
+         EN-VZ(L-ROW) EN-YAW(L-ROW) EN-PITCH(L-ROW) EN-ON-GROUND(L-ROW) PB-BUFFER
+     CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     MOVE EN-X(L-ROW) TO EN-WAY-X(L-ROW)
+     MOVE EN-Y(L-ROW) TO EN-FLEE-X(L-ROW)
+     MOVE EN-Z(L-ROW) TO EN-WAY-Z(L-ROW)
+     CALL "ENTITY-TRACK" USING L-ROW
+     GOBACK.
+ END PROGRAM THROWN-SYNC.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-FLY.
+*> USING tracker row, gravity (FLOAT-LONG), hit out, entity row out, player row out (44 part 8 section 6.5): the tick count (EN-COOLDOWN) rises, gravity then drag 0.99 change the
+*> velocity, and the segment of the new velocity is walked in steps of at most 0.1 block against solid cells and against players and standard mobs other than the owner
+*> (EN-TARGET-ID; ARROW-FIND-HIT with its margin). The position ends at the last free point (a block hit, hit 1) or at the sample inside the entity (hit 2); no hit: hit 0
+*> and the viewers are told. Water drag 0.8 is open.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SPEED               FLOAT-LONG.
+ 01 WS-STEPS               BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-QX                  FLOAT-LONG.
+ 01 WS-QY                  FLOAT-LONG.
+ 01 WS-QZ                  FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-GRAVITY              FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-GRAVITY L-HIT L-ENTITY L-PLAYER.
+     MOVE 0 TO L-HIT L-ENTITY L-PLAYER
+     ADD 1 TO EN-COOLDOWN(L-ROW)
+     COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) - L-GRAVITY
+     COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
+     COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99
+     COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+     COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
+     COMPUTE WS-STEPS = FUNCTION INTEGER(WS-SPEED / 0.1) + 1
+     MOVE EN-X(L-ROW) TO WS-PX
+     MOVE EN-Y(L-ROW) TO WS-PY
+     MOVE EN-Z(L-ROW) TO WS-PZ
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-STEPS OR L-HIT > 0
+         COMPUTE WS-QX = EN-X(L-ROW) + EN-VX(L-ROW) * WS-S / WS-STEPS
+         COMPUTE WS-QY = EN-Y(L-ROW) + EN-VY(L-ROW) * WS-S / WS-STEPS
+         COMPUTE WS-QZ = EN-Z(L-ROW) + EN-VZ(L-ROW) * WS-S / WS-STEPS
+         COMPUTE WS-CX = FUNCTION INTEGER(WS-QX)
+         COMPUTE WS-CY = FUNCTION INTEGER(WS-QY)
+         COMPUTE WS-CZ = FUNCTION INTEGER(WS-QZ)
+         CALL "GI-SOLID-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-SOLID
+         IF WS-SOLID = 1
+             MOVE 1 TO L-HIT
+         ELSE
+             CALL "ARROW-FIND-HIT" USING L-ROW WS-QX WS-QY WS-QZ L-ENTITY L-PLAYER
+             IF L-ENTITY > 0 OR L-PLAYER > 0
+                 MOVE 2 TO L-HIT
+                 MOVE WS-QX TO WS-PX
+                 MOVE WS-QY TO WS-PY
+                 MOVE WS-QZ TO WS-PZ
+             ELSE
+                 MOVE WS-QX TO WS-PX
+                 MOVE WS-QY TO WS-PY
+                 MOVE WS-QZ TO WS-PZ
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE WS-PX TO EN-X(L-ROW)
+     MOVE WS-PY TO EN-Y(L-ROW)
+     MOVE WS-PZ TO EN-Z(L-ROW)
+     IF L-HIT = 0
+         CALL "THROWN-SYNC" USING L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM THROWN-FLY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-SPAWN.
+*> USING kind, key (PIC X(112)), dim, x, y, z, vx, vy, vz (FLOAT-LONG), owner entity id, row out (0 when it cannot be made): a thrown entity of that kind (PROJSTATE.cpy), facing its velocity,
+*> moving by that velocity, owned (EN-TARGET-ID and PJ-OWNER) and told to the viewers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-KEY                  PIC X(112).
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-KEY L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-OWNER L-ROW.
+     MOVE 0 TO L-ROW
+     CALL "THROWN-TYPE" USING L-KEY WS-TYPE
+     IF WS-TYPE = 0
+         GOBACK
+     END-IF
+     CALL "ENTITY-ALLOC" USING WS-ROW
+     CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
+     CALL "PJ-ALLOC" USING EN-ID(WS-ROW) L-KIND WS-SLOT
+     IF WS-SLOT = 0
+         INITIALIZE EN-ENTRY(WS-ROW)
+         GOBACK
+     END-IF
+     MOVE WS-TYPE TO EN-TYPE(WS-ROW)
+     CALL "ENTITY-SET-UUID" USING WS-ROW
+     MOVE L-DIM TO EN-DIM(WS-ROW)
+     MOVE L-X TO EN-X(WS-ROW) EN-WAY-X(WS-ROW)
+     MOVE L-Y TO EN-Y(WS-ROW) EN-FLEE-X(WS-ROW)
+     MOVE L-Z TO EN-Z(WS-ROW) EN-WAY-Z(WS-ROW)
+     MOVE L-VX TO EN-VX(WS-ROW)
+     MOVE L-VY TO EN-VY(WS-ROW)
+     MOVE L-VZ TO EN-VZ(WS-ROW)
+     MOVE L-OWNER TO EN-TARGET-ID(WS-ROW) PJ-OWNER(WS-SLOT)
+     MOVE 1000 TO PJ-SCALE(WS-SLOT)
+     COMPUTE WS-H = FUNCTION SQRT(L-VX * L-VX + L-VZ * L-VZ)
+     IF WS-H > 0
+         COMPUTE EN-PITCH(WS-ROW) = FUNCTION ATAN(L-VY / WS-H) * 180 / FUNCTION PI
+     END-IF
+     CALL "ENTITY-TRACK" USING WS-ROW
+     MOVE WS-ROW TO L-ROW
+     GOBACK.
+ END PROGRAM THROWN-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-SPAWN.
+*> USING lingering (0 splash, 1 lingering), dim, x, y, z, vx, vy, vz (FLOAT-LONG), owner entity id, row out: the generic thrown potion entity (splash_potion or lingering_potion). The
+*> effects are added with POTION-FX; item entities carry no components, so the contents are the caller's.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SPLASH              PIC X(112) VALUE "minecraft:splash_potion".
+ 01 WS-LINGER              PIC X(112) VALUE "minecraft:lingering_potion".
+ 01 WS-KIND                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LINGERING            BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-LINGERING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-OWNER L-ROW.
+     IF L-LINGERING = 1
+         MOVE 2 TO WS-KIND
+         CALL "THROWN-SPAWN" USING WS-KIND WS-LINGER L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-OWNER L-ROW
+     ELSE
+         MOVE 1 TO WS-KIND
+         CALL "THROWN-SPAWN" USING WS-KIND WS-SPLASH L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-OWNER L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM POTION-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-FX.
+*> USING tracker row, effect, amplifier, duration: adds an effect to the contents of a potion (at most 4; more are ignored).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ 01 L-AMP                  BINARY-LONG.
+ 01 L-DUR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EFFECT L-AMP L-DUR.
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT > 0 AND PJ-FXN(WS-SLOT) < 4
+         ADD 1 TO PJ-FXN(WS-SLOT)
+         MOVE L-EFFECT TO PJ-FX-ID(WS-SLOT, PJ-FXN(WS-SLOT))
+         MOVE L-AMP TO PJ-FX-AMP(WS-SLOT, PJ-FXN(WS-SLOT))
+         MOVE L-DUR TO PJ-FX-DUR(WS-SLOT, PJ-FXN(WS-SLOT))
+     END-IF
+     GOBACK.
+ END PROGRAM POTION-FX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-GAP.
+*> USING ex, ey, ez (the box's bottom centre), half width, height, margin, hx, hy, hz (the 0.25 box of the thrown entity, bottom centre) (FLOAT-LONG), d2 out: the squared gap between
+*> the entity's box inflated by the margin and the thrown entity's box (0 when they overlap).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GX                  FLOAT-LONG.
+ 01 WS-GY                  FLOAT-LONG.
+ 01 WS-GZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-EX                   FLOAT-LONG.
+ 01 L-EY                   FLOAT-LONG.
+ 01 L-EZ                   FLOAT-LONG.
+ 01 L-HW                   FLOAT-LONG.
+ 01 L-H                    FLOAT-LONG.
+ 01 L-M                    FLOAT-LONG.
+ 01 L-HX                   FLOAT-LONG.
+ 01 L-HY                   FLOAT-LONG.
+ 01 L-HZ                   FLOAT-LONG.
+ 01 L-D2                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-EX L-EY L-EZ L-HW L-H L-M L-HX L-HY L-HZ L-D2.
+     COMPUTE WS-GX = FUNCTION MAX(0, FUNCTION ABS(L-EX - L-HX) - (L-HW + L-M + 0.125))
+     COMPUTE WS-GZ = FUNCTION MAX(0, FUNCTION ABS(L-EZ - L-HZ) - (L-HW + L-M + 0.125))
+     COMPUTE WS-GY = FUNCTION MAX(0, FUNCTION MAX(L-EY - L-M - (L-HY + 0.25), L-HY - (L-EY + L-H + L-M)))
+     COMPUTE L-D2 = WS-GX * WS-GX + WS-GY * WS-GY + WS-GZ * WS-GZ
+     GOBACK.
+ END PROGRAM THROWN-GAP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-EFFECTS.
+*> USING slot, tracker row, player row (one 0), intensity in thousandths: the effects of a splash potion on one victim (10.2): instant effects scaled by the intensity, the others with the
+*> duration (int)(d t s + 0.5) when it ends later than 20 ticks.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROJSTATE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-MAPPED              BINARY-LONG.
+ 01 WS-APPLIES             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-T                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-ROW L-PLAYER L-T.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PJ-FXN(L-SLOT)
+         IF PJ-FX-ID(L-SLOT, WS-I) = 5 OR PJ-FX-ID(L-SLOT, WS-I) = 6
+             CALL "THROWN-INSTANT" USING L-ROW L-PLAYER PJ-FX-ID(L-SLOT, WS-I) PJ-FX-AMP(L-SLOT, WS-I) L-T
+         ELSE
+             IF PJ-FX-DUR(L-SLOT, WS-I) = -1
+                 MOVE -1 TO WS-MAPPED
+                 MOVE 1 TO WS-APPLIES
+             ELSE
+                 CALL "TOOL-SPLASH-DURATION" USING PJ-FX-DUR(L-SLOT, WS-I) L-T PJ-SCALE(L-SLOT) WS-MAPPED WS-APPLIES
+             END-IF
+             IF WS-APPLIES = 1
+                 CALL "THROWN-EFFECT-ADD" USING L-ROW L-PLAYER PJ-FX-ID(L-SLOT, WS-I) PJ-FX-AMP(L-SLOT, WS-I) WS-MAPPED
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM POTION-EFFECTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-SPLASH.
+*> USING tracker row, slot: onHitAsPotion of a splash potion at the row's position: every living entity within the box inflated by (4, 2, 4) whose squared gap is below 16.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY PROJSTATE.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-MARGIN              FLOAT-LONG.
+ 01 WS-HW                  FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-D2M                 BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HY                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-PW                  FLOAT-LONG VALUE 0.3.
+ 01 WS-PH                  FLOAT-LONG VALUE 1.8.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT.
+     COMPUTE WS-MARGIN = FUNCTION MAX(0, FUNCTION MIN(0.3, (EN-COOLDOWN(L-ROW) - 2) / 20))
+     MOVE EN-X(L-ROW) TO WS-HX
+     MOVE EN-Y(L-ROW) TO WS-HY
+     MOVE EN-Z(L-ROW) TO WS-HZ
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND PL-MODE(WS-P) < 3
+             CALL "THROWN-GAP" USING PL-X(WS-P) PL-Y(WS-P) PL-Z(WS-P) WS-PW WS-PH WS-MARGIN WS-HX WS-HY WS-HZ WS-D2
+             COMPUTE WS-D2M = FUNCTION INTEGER(WS-D2 * 1000)
+             CALL "TOOL-SPLASH-INTENSITY" USING WS-D2M WS-T
+             IF WS-D2 < 16 AND WS-T > 0
+                 CALL "POTION-EFFECTS" USING L-SLOT PL-ENTITY-ROW(WS-P) WS-P WS-T
+             END-IF
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND WS-E NOT = L-ROW AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-HEALTH(WS-E) > 0
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-M
+             IF WS-M > 0
+                 COMPUTE WS-HW = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
+                 COMPUTE WS-H = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
+                 CALL "THROWN-GAP" USING EN-X(WS-E) EN-Y(WS-E) EN-Z(WS-E) WS-HW WS-H WS-MARGIN WS-HX WS-HY WS-HZ WS-D2
+                 COMPUTE WS-D2M = FUNCTION INTEGER(WS-D2 * 1000)
+                 CALL "TOOL-SPLASH-INTENSITY" USING WS-D2M WS-T
+                 IF WS-D2 < 16 AND WS-T > 0
+                     CALL "POTION-EFFECTS" USING L-SLOT WS-E WS-NONE WS-T
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM POTION-SPLASH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-BURST.
+*> USING tracker row, hit entity row (0 none): the hit of a potion (10.2). A splash potion applies its effects around the hit point; a lingering one makes a cloud (radius 3.0, radius on
+*> use -0.5, duration 600, wait 10, reapplication 20, radius per tick -0.005) at the hit entity or at the potion. The level event 2007 (instant effects) or 2002 with the sound event, the
+*> potion discarded. Douse fire, water-sensitive mobs and axolotls (tags of the potion) are open: item entities carry no components.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-CLOUD               BINARY-LONG.
+ 01 WS-CSLOT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-RADIUS              FLOAT-LONG VALUE 3.0.
+ 01 WS-DURATION            BINARY-LONG VALUE 600.
+ 01 WS-WAIT                BINARY-LONG VALUE 10.
+ 01 WS-REAPP               BINARY-LONG VALUE 20.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-SOUND               BINARY-LONG.
+ 01 WS-DATA                BINARY-LONG VALUE 3694022.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-HIT.
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     MOVE EN-DIM(L-ROW) TO WS-DIM
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     IF PJ-KIND(WS-SLOT) = 1 AND PJ-FXN(WS-SLOT) > 0
+         CALL "POTION-SPLASH" USING L-ROW WS-SLOT
+     END-IF
+     IF PJ-KIND(WS-SLOT) = 2 AND PJ-FXN(WS-SLOT) > 0
+         IF L-HIT > 0
+             MOVE EN-X(L-HIT) TO WS-X
+             MOVE EN-Y(L-HIT) TO WS-Y
+             MOVE EN-Z(L-HIT) TO WS-Z
+         END-IF
+         CALL "CLOUD-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-RADIUS WS-DURATION WS-WAIT WS-REAPP PJ-OWNER(WS-SLOT) WS-CLOUD
+         IF WS-CLOUD > 0
+             CALL "PJ-FIND" USING EN-ID(WS-CLOUD) WS-CSLOT
+             MOVE -0.005 TO PJ-RPT(WS-CSLOT)
+             MOVE -0.5 TO PJ-ROU(WS-CSLOT)
+             MOVE PJ-SCALE(WS-SLOT) TO PJ-SCALE(WS-CSLOT)
+             MOVE PJ-FXN(WS-SLOT) TO PJ-FXN(WS-CSLOT)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PJ-FXN(WS-SLOT)
+                 MOVE PJ-FX(WS-SLOT, WS-I) TO PJ-FX(WS-CSLOT, WS-I)
+             END-PERFORM
+         END-IF
+     END-IF
+     MOVE 2002 TO WS-EVENT
+     MOVE 1053 TO WS-SOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PJ-FXN(WS-SLOT)
+         IF PJ-FX-ID(WS-SLOT, WS-I) = 5 OR PJ-FX-ID(WS-SLOT, WS-I) = 6
+             MOVE 2007 TO WS-EVENT
+             MOVE 1054 TO WS-SOUND
+         END-IF
+     END-PERFORM
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "LEVEL-EVENT" USING WS-DIM WS-EVENT WS-CX WS-CY WS-CZ WS-DATA WS-NONE
+     CALL "LEVEL-EVENT" USING WS-DIM WS-SOUND WS-CX WS-CY WS-CZ WS-NONE WS-NONE2
+     CALL "PJ-DROP" USING L-ROW
+     GOBACK.
+ END PROGRAM POTION-BURST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-STEP.
+*> USING tracker row: one tick of a thrown potion (gravity 0.05, 44 part 8 section 6.5); a hit bursts it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GRAVITY             FLOAT-LONG VALUE 0.05.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "THROWN-FLY" USING L-ROW WS-GRAVITY WS-HIT WS-ENTITY WS-PLAYER
+     IF WS-HIT = 1
+         CALL "POTION-BURST" USING L-ROW WS-ENTITY
+     END-IF
+     IF WS-HIT = 2
+         IF WS-PLAYER > 0
+             MOVE 0 TO WS-ENTITY
+         END-IF
+         CALL "POTION-BURST" USING L-ROW WS-ENTITY
+     END-IF
+     GOBACK.
+ END PROGRAM POTION-STEP.
