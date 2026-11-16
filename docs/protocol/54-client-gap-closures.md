@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23); food, consumable, remainder, cooldown, stew (§24); containers and blobs (§25) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23); food, consumable, remainder, cooldown, stew (§24); containers and blobs (§25); maps, instruments, books, profile, attributes, tool, equippable (§26) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -998,7 +998,7 @@ Both are `CustomData`, a wrapper of one NBT compound.
 | Network | the type id (VarInt), then network NBT compound (00 §8) of the data **without** the `id` key (order: type first, compound second; the order follows the composite codec's argument order and is inferred) | same, with the block entity type id |
 | NBT | one compound: key `id` (String, the type identifier; required) plus the data keys at the same level | same |
 | Stored form | the compound is held without `id`; reading the saved form strips `id` into the type, writing puts it back (`stripId`) | same |
-| Apply | `loadInto(entity)`: the entity's current save data (without id) is merged under the component's compound (the component keys win), then loaded; used by spawn eggs and the like (25-6 §5). Spawner use: the compound gets `id` put back and is merged into the spawn data. | `loadInto(block entity)`: the block entity's custom save data is merged under the compound, then loaded; on failure the previous data is restored ("rollback") and a message "Failed to apply custom data to block entity" is logged. Operators-only types: 31-1 (six types, `OP_ONLY_CUSTOM_DATA`). |
+| Apply | `loadInto(entity)`: the entity's current save data (without id) is merged under the component's compound (the component keys win), then loaded; used by spawn eggs and the like (25-6). Spawner use: the compound gets `id` put back and is merged into the spawn data. | `loadInto(block entity)`: the block entity's custom save data is merged under the compound, then loaded; on failure the previous data is restored ("rollback") and a message "Failed to apply custom data to block entity" is logged. Operators-only types: 31-1 (six types, `OP_ONLY_CUSTOM_DATA`). |
 | Default | absent | absent |
 | Equality | the type and the compound | same |
 | Tooltip | for `entity_data` of a spawn-egg style item on a peaceful world the key `item.spawn_egg.peaceful` is used (text only) | none read |
@@ -1012,6 +1012,70 @@ Both are `CustomData`, a wrapper of one NBT compound.
 | NBT | A compound whose values are all Strings (`{"facing": "north", "waterlogged": "true"}`); a non-string value fails the decode. Booleans and numbers are therefore written as their state-name strings. |
 | Default | `EMPTY` (no properties); the component is absent on ordinary block items. |
 | Equality | map equality. |
+
+---
+
+## 26. Remaining components: maps, instrument, jukebox, books, profile, lodestone tracker, glider, attribute modifiers, tool, equippable
+
+Gap closed: layouts and NBT forms for the last group of the cr5 task. Behaviour stays in 17 (tool, equippable, attribute modifiers), 25-5 (maps, compass), 25-7 (jukebox discs, horns) and 31-4 (lectern books). The registry has **no** `map_color` component in 26.3 (the 122 types of 46 §8.1 contain `map_id`, `map_decorations` and `map_post_processing` only); a map's colour data lives in the map saved data.
+
+### 26.1 Maps
+
+| Component | Network | NBT | Default / notes |
+|---|---|---|---|
+| `map_id` (48), `MapId` | VarInt | Int | absent until the map is created; the key of the saved data `map_<id>` (45) |
+| `map_decorations` (49) | **not sent** (persistent only) | compound mapping a decoration name String to `{type: <map_decoration_type id>, x: Double, z: Double, rotation: Float}` (all four required) | `EMPTY` is in the prototype of the map items (25-1 `mapProperties`); used by banners and structure markers on a map |
+| `map_post_processing` (50) | VarInt enum id: 0 `lock`, 1 `scale` | **not saved** (transient) | marks a map stack that still needs its lock or scale step when first read by the server (25-5) |
+
+### 26.2 `instrument` (63) and `jukebox_playable` (66)
+
+| Component | Network | NBT | Notes |
+|---|---|---|---|
+| `instrument` (63), holder of `instrument` | Holder (00 §10.2): 0 + inline value, or registry position + 1; inline value: sound holder (17 §1.2 form), Float use_duration, Float range, VarInt durability_damage, TextComponent description | String id, or an inline compound `{sound_event: <sound>, use_duration: Float >= 0, range: Float > 0, durability_damage: Int >= 0 (default 0, read), description: <text>}` | `sound_event` is a sound holder in the NBT form (id String or `{sound_id, range?}`) |
+| `jukebox_playable` (66) | Holder of `jukebox_song`: 0 + inline, or position + 1; inline: sound holder, TextComponent description, Float length_in_seconds, VarInt comparator_output | String id, or inline `{sound_event, description, length_in_seconds: Float > 0, comparator_output: Int 0..15}` | The component is the song itself (a one-field record); 25-7 §4.1 states the values per disc. |
+
+### 26.3 Books
+
+| Component | Network | NBT | Limits |
+|---|---|---|---|
+| `writable_book_content` (56) | VarInt count (at most 100), then pages; page = String(1024) **raw**, then Optional String(1024) **filtered** (Boolean + String) | `{pages: List}` (key optional, default empty); a page is either a String of at most 1024 characters, or `{raw: String, filtered: String (optional)}` | at most 100 pages; page length 1024 (`PAGE_EDIT_LENGTH`); the filtered text is only set by chat filtering and is empty in a normal server |
+| `written_book_content` (57) | Filterable String title (raw String(32) + Optional filtered String(32)), String(32767) author, VarInt generation, VarInt page count then pages (each Filterable TextComponent: raw + Optional filtered), Boolean resolved | `{title: <String or {raw, filtered?}>, author: String, generation: Int 0..3 (default 0), pages: List (default empty), resolved: Boolean (default false)}`; a page is a text component or `{raw: <text>, filtered: <text> (optional)}` | title at most 32 characters in the codecs (the editing UI allows 16: `TITLE_LENGTH`); `MAX_GENERATION` = 3 (values 0 to 3; what each value means is not read); page text component serialised length at most 32767; no page-count bound seen in the codecs |
+
+A Filterable value is the plain value, or a pair (raw, filtered). On the network the pair is always written (raw first, then Optional filtered); in NBT a plain value is read as (raw, none).
+
+### 26.4 `profile` (72), `ResolvableProfile`
+
+Network layout is in 00 §13.3 (Either full profile or partial, then the skin patch). NBT: a compound holding **either** the full stored profile (`id` as an int array of 4 (UUID), `name` (a player name: 1 to 16 characters), `properties` list of `{name, value, signature?}`) **or** the partial profile (`name` optional, `id` optional, `properties` default empty), together with the skin patch keys (`texture` body asset id, `cape` asset id, `elytra` asset id, `model` the model type name; each optional); or a bare String player name (shorthand, partial profile with only the name). Saving writes the compound form. The name rule (`PLAYER_NAME`) is a string of length 0 to 16 passing the name validation of 02.
+
+### 26.5 `lodestone_tracker` (69), `glider` (34)
+
+| Component | Network | NBT | Default |
+|---|---|---|---|
+| `lodestone_tracker` | Optional GlobalPos (Boolean + dimension identifier + position, 00 §4.3), Boolean tracked | `{target: <global pos compound>, tracked: Boolean}`; the `target` key is optional, `tracked` default **true** | no default; the key `target` form is the global position codec (`dimension` identifier and `pos` int array of 3, inferred); a compass with `tracked` true and a target that no longer has a lodestone block loses its target (25-5 §7). Equality: both fields. |
+| `glider` | none (Unit) | empty compound | A marker component: an item that carries it can glide (17 §1.2 lists it as a Unit component; the flight rules are not in this section). |
+
+### 26.6 `attribute_modifiers` (16)
+
+| Level | Network | NBT |
+|---|---|---|
+| Component | VarInt count, then count entries | List of entries |
+| Entry | RegistryId of `attribute` (VarInt; a reference holder), modifier (Identifier id, Double amount, VarInt operation id), VarInt slot group id, display (VarInt type id then payload) | `{type: <attribute id>, id: <identifier>, amount: Double, operation: String, slot: String (default `any`), display: {type: ..} (default `{type: "default"}`)}` |
+| Operation | 0 `add_value`, 1 `add_multiplied_base`, 2 `add_multiplied_total` | the three names |
+| Slot group | 0 `any`, 1 `mainhand`, 2 `offhand`, 3 `hand`, 4 `feet`, 5 `legs`, 6 `chest`, 7 `head`, 8 `armor`, 9 `body`, 10 `saddle` (the six listed group ids for `feet` to `saddle` were read; the lower ids follow the declaration order) | the lowercase names |
+| Display | 0 `default` (no payload), 1 `hidden` (no payload), 2 `override` (TextComponent) | `{type: default}`, `{type: hidden}`, `{type: override, value: <text>}` |
+
+`EMPTY` (no entries) is in the common prototype (25-1 §7.1). Equality: ordered list. Tooltip numbers use the pattern `#.##` for amounts (text rule only).
+
+### 26.7 `tool` (28) and `equippable` (32): NBT and defaults
+
+Network layouts are in 17 §1.2. NBT:
+
+| Component | NBT keys (required unless a default is given) |
+|---|---|
+| `tool` | `rules` List of `{blocks: HolderSet of block (id, `#tag` or list), speed: Float > 0 (optional), correct_for_drops: Boolean (optional)}`; `default_mining_speed` Float default **1.0**; `damage_per_block` Int >= 0 default **1**; `can_destroy_blocks_in_creative` Boolean default **true** |
+| `equippable` | `slot` String (required: `mainhand`, `offhand`, `feet`, `legs`, `chest`, `head`, `body`, `saddle`); `equip_sound` sound default `item.armor.equip_generic`; `asset_id` String (optional, an equipment asset key); `camera_overlay` String (optional identifier); `allowed_entities` HolderSet of entity type (optional); `dispensable` default **true**; `swappable` default **true**; `damage_on_hurt` default **true**; `equip_on_interact` default **false**; `can_be_sheared` default **false**; `shearing_sound` sound default `item.shears.snip` |
+
+On the network `equippable` has no defaults: all fields are written (17 §1.2 order: slot, equip_sound, Optional asset, Optional camera overlay, Optional HolderSet, five Booleans, shearing sound).
 
 ---
 
