@@ -86,7 +86,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-MODEL-SLOTS.
-*> USING CLIENT-STATE: every used replica row with a model gets an atlas slot (EA-MT, at most 16: a model beyond them is not
+*> USING CLIENT-STATE: every used replica row with a model gets an atlas slot (EA-MT, at most 32: a model beyond them is not
 *> drawn); the atlas is rebuilt once when a slot was added.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -108,7 +108,7 @@
                      MOVE 1 TO WS-FOUND
                  END-IF
              END-PERFORM
-             IF WS-FOUND = 0 AND EA-MT-COUNT < 16
+             IF WS-FOUND = 0 AND EA-MT-COUNT < 32
                  ADD 1 TO EA-MT-COUNT
                  MOVE EN-MODEL(WS-R) TO EA-MT-MODEL(EA-MT-COUNT)
                  MOVE 1 TO WS-NEW
@@ -122,7 +122,7 @@
                          MOVE 1 TO WS-FOUND
                      END-IF
                  END-PERFORM
-                 IF WS-FOUND = 0 AND EA-MT-COUNT < 16
+                 IF WS-FOUND = 0 AND EA-MT-COUNT < 32
                      ADD 1 TO EA-MT-COUNT
                      MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
                      MOVE 1 TO WS-NEW
@@ -146,9 +146,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 16 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 32 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 16 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 32 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
@@ -333,6 +333,13 @@
          COMPUTE WS-HOOK-X = (1 + WS-C4 * 0.4) * WS-FSW
          COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
      END-IF
+*>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
+*>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
+*>   6.7); the opaque entity mesh has no such test, so the layer is enlarged by 0.3 percent about the entity origin to lie just outside the body.
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
+         MOVE 1.003 TO WS-HOOK-X WS-HOOK-Y
+         MOVE 1 TO WS-LIGHT
+     END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
      MOVE WS-SLOT TO WS-KN(2)
@@ -400,6 +407,17 @@
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
          WHEN "K"
              MOVE 2 TO WS-VARIANT
+             CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
+*>       Drowned (5), piglin and piglin brute (3), zombified piglin (4): the variants of 34-2 4.
+         WHEN "D"
+             MOVE 5 TO WS-VARIANT
+             CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
+         WHEN "P"
+             MOVE 3 TO WS-VARIANT
+             MOVE 5 TO WS-ST(25)
+             CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
+         WHEN "G"
+             MOVE 4 TO WS-VARIANT
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
          WHEN "H"
@@ -586,6 +604,9 @@
                          COMPUTE WS-QV(WS-K) = (EA-MT-Y(WS-SLOT) + WS-UO(2) * EA-MT-H(WS-SLOT)) / EA-H
                      END-PERFORM
                      COMPUTE WS-BRIGHT = FUNCTION MAX(WS-FACTOR(WS-F + 1) * WS-LIGHT, 0.1)
+                     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
+                         MOVE 1 TO WS-BRIGHT
+                     END-IF
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
                          MOVE WS-ORD(WS-K) TO WS-N
                          ADD 1 TO WS-BN

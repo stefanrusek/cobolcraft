@@ -250,7 +250,9 @@
                      CALL "HUD-ENTITY-DATA" USING CLIENT-STATE WS-ID MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT
                          MD-MD-FLOAT
                  END-IF
-                 IF WS-ROW > 0 AND MD-MD-INDEX = 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
+*>               The item stack of a stand-in loose item is entry 0; the item entity of a standard world has it as entry 8 (21 App A DATA_ITEM).
+                 IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
+                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND EN-KEY(WS-ROW) = "item"))
                      MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
                      MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
                  END-IF

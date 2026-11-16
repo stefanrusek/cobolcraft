@@ -254,7 +254,7 @@
  78 CL-MAX-ENTITIES         VALUE 256.
  78 CL-MAX-PLAYER-INFO      VALUE 64.
  78 CL-MAX-ENTITY-VERTICES  VALUE 49152.
- 78 CL-MAX-GI-VERTICES      VALUE 1536.
+ 78 CL-MAX-GI-VERTICES      VALUE 6144.
  78 CL-MAX-BIOMES           VALUE 255.  *> biome ids are one byte; 255 is none known
 *> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
  78 CL-MAX-WX-VERTICES      VALUE 3468.

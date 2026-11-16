@@ -946,7 +946,7 @@
 *>     The images of the entity models (entities-models.cob), stacked below the stand-ins in the order the replica first
 *>     showed them: slot k holds the CL-MODELS row EA-MT-MODEL and its image's rectangle.
        10 EA-MT-COUNT        BINARY-LONG.
-       10 EA-MT OCCURS 16 TIMES.
+       10 EA-MT OCCURS 32 TIMES.
           15 EA-MT-MODEL     BINARY-LONG.
           15 EA-MT-X         BINARY-LONG.
           15 EA-MT-Y         BINARY-LONG.
@@ -1181,7 +1181,7 @@
 *>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
        10 RL-GI-COUNT        BINARY-LONG.
        10 RL-GI-UPLOADED     BINARY-LONG.
-       10 RL-GI-VERTEX OCCURS 1536 TIMES.
+       10 RL-GI-VERTEX OCCURS 6144 TIMES.
           15 RL-GI-X         FLOAT-SHORT.
           15 RL-GI-Y         FLOAT-SHORT.
           15 RL-GI-Z         FLOAT-SHORT.
