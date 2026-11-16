@@ -631,6 +631,13 @@
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.
        10 EN-COUNT           BINARY-LONG.    *> rows ever used
+*>        The ender dragon's flight history (34-7 8.1; one dragon per world): the entity id that owns it (0 none), the head index and 64 samples of y and yaw in degrees (the group
+*>        layout of EF7-HIST-*).
+       10 EN-DR-ID           BINARY-LONG.
+       10 EN-DR-HIST.
+          15 EN-DR-HEAD      BINARY-LONG.
+          15 EN-DR-HY        FLOAT-LONG OCCURS 64 TIMES.
+          15 EN-DR-HR        FLOAT-LONG OCCURS 64 TIMES.
        10 EN-ENTITY OCCURS 256 TIMES.
           15 EN-USED         PIC 9.
           15 EN-ID           BINARY-LONG.

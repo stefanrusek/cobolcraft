@@ -305,7 +305,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 32 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 36 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
@@ -349,7 +349,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 32 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 36 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -491,6 +491,10 @@
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
      COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
      MOVE EN-TM(WS-ROW) TO WS-KN(29)
+     MOVE 0 TO WS-KN(33)
+     IF EN-KEY(WS-ROW) = "ender_dragon"
+         MOVE EN-DR-HEAD TO WS-KN(33)
+     END-IF
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
@@ -700,6 +704,11 @@
                      CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
                  WHEN "chicken"
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+*>               The ender dragon: flap time, the flight history at partial tick 1; not landing, not sitting.
+                 WHEN "ender_dragon"
+                     MOVE EN-TM(WS-ROW) TO WS-I(1)
+                     MOVE 1 TO WS-I(2)
+                     CALL "EF7-DRAGON-ANIM" USING EMM-MODEL EN-DR-HIST WS-IN
                  WHEN "evoker_fangs"
                      CALL "ENTITY-FANGS-PROGRESS" USING CLIENT-STATE WS-ROW WS-FP
                      MOVE WS-FP TO WS-I(1)
@@ -725,6 +734,8 @@
      EVALUATE TRUE
          WHEN WS-ANIM = "B"
              CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "ender_dragon"
+             CALL "ENTITY-DRAGON-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "evoker_fangs"
              CALL "ENTITY-FANGS-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "squid" OR "glow_squid"

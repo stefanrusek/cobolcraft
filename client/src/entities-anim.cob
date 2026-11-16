@@ -22,6 +22,8 @@
  01 WS-SMOOTH              FLOAT-LONG.
  01 WS-SCALE               FLOAT-LONG.
  01 WS-VY                  FLOAT-LONG.
+ 01 WS-YW                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
  01 WS-WET                 BINARY-LONG.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -120,6 +122,18 @@
                  IF WS-WET = 0 AND EN-ON-GROUND(WS-R) = 1
                      MOVE 1 TO EN-DRY(WS-R)
                  END-IF
+             END-IF
+*>           The ender dragon (34-7 8.1, 8.8): the flap time (no phase or wall data in the replica: not sitting, not in a wall) and one history sample (y, yaw wrapped to
+*>           -180 to 180) a tick; a dragon with another id than the history's owner restarts the ring.
+             IF EN-KEY(WS-R) = "ender_dragon"
+                 IF EN-DR-ID NOT = EN-ID(WS-R)
+                     MOVE EN-ID(WS-R) TO EN-DR-ID
+                     CALL "EF7-HIST-INIT" USING EN-DR-HIST
+                 END-IF
+                 COMPUTE WS-D2 = 0.2 / (FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ) * 10 + 1) * 2 ** WS-VY
+                 COMPUTE EN-TM(WS-R) = EN-TM(WS-R) + WS-D2
+                 COMPUTE WS-YW = EN-YAW(WS-R) - 360 * FUNCTION INTEGER((EN-YAW(WS-R) + 180) / 360)
+                 CALL "EF7-HIST-RECORD" USING EN-DR-HIST EN-Y(WS-R) WS-YW
              END-IF
 *>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
 *>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).
@@ -440,3 +454,4 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-BOAT-SET.
+
