@@ -182,6 +182,9 @@
                  END-IF
                  MOVE 1 TO L-DONE
              END-IF
+             IF L-DONE = 0
+                 CALL "MINECART-USE" USING L-PLAYER L-ROW L-DONE
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM DECOR-INTERACT.
