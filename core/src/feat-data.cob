@@ -243,6 +243,8 @@
  01 WS-W                   BINARY-LONG.
  01 WS-IDX                 BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
+ 01 WS-FMN                 BINARY-LONG.
+ 01 WS-FMX                 BINARY-LONG.
  01 WS-V                   BINARY-LONG.
  01 WS-FL                  FLOAT-LONG.
  LOCAL-STORAGE SECTION.
@@ -310,6 +312,20 @@
                      IF WS-OK = 0
                          CALL "FD-J-MEMBER" USING JSON-DOC WS-E FK-VALUE WS-E2
                          CALL "FD-J-INT" USING JSON-DOC WS-E2 WS-V WS-OK
+                     END-IF
+*>                   a uniform entry (the dripleaf stem height): one value of 1000000000 + (min + 10000) * 20000 + (max + 10000), decoded by FR-INT-SAMPLE (constants are far below it)
+                     IF WS-OK = 0 AND WS-E > 0
+                         CALL "FD-J-STRING" USING JSON-DOC FK-TYPE WS-E WS-TEXT WS-LEN
+                         IF FUNCTION TRIM(WS-TEXT) = "minecraft:uniform" OR FUNCTION TRIM(WS-TEXT) = "uniform"
+                             CALL "FD-J-RANGE" USING JSON-DOC WS-E WS-FMN WS-FMX WS-OK
+                             IF WS-OK = 1
+                                 IF WS-FMN < -10000 OR WS-FMX > 9999 OR WS-FMN > WS-FMX
+                                     MOVE 0 TO WS-OK
+                                 ELSE
+                                     COMPUTE WS-V = 1000000000 + (WS-FMN + 10000) * 20000 + (WS-FMX + 10000)
+                                 END-IF
+                             END-IF
+                         END-IF
                      END-IF
                      IF WS-OK = 0
                          MOVE 0 TO L-OK
@@ -724,6 +740,12 @@
              MOVE 0 TO LS-N
              IF LS-LEN > 7
                  IF LS-TEXT(LS-LEN - 6:7) = "sapling"
+                     MOVE 1 TO LS-N
+                 END-IF
+             END-IF
+*>           firefly bush (29b part 4 section 10.7, the survival table): the block below is in supports_vegetation, as for a sapling
+             IF LS-N = 0 AND LS-LEN > 12
+                 IF LS-TEXT(LS-LEN - 11:12) = "firefly_bush"
                      MOVE 1 TO LS-N
                  END-IF
              END-IF
@@ -1471,6 +1493,8 @@
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-CHILD               BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SAVED               BINARY-LONG.
  01 WS-P6.
     05 WS-R6               BINARY-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
@@ -1688,6 +1712,33 @@
              END-PERFORM
              IF WS-OK = 0
                  MOVE 1 TO FD-BAD
+             END-IF
+         WHEN 17
+*>           fixed_placement (35-1 7.18): positions [[x, y, z], ...] in MD-P(3 * i - 2 .. 3 * i), at most four, the count in MD-B
+             MOVE 0 TO MD-B(WS-ROW)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-POSITIONS WS-E
+             IF WS-E = 0
+                 MOVE 1 TO FD-BAD
+             ELSE
+                 IF JN-TYPE(WS-E) NOT = JT-ARRAY OR JN-COUNT(WS-E) > 4
+                     MOVE 1 TO FD-BAD
+                 ELSE
+                     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
+                         CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-CHILD
+                         IF JN-TYPE(WS-CHILD) NOT = JT-ARRAY OR JN-COUNT(WS-CHILD) NOT = 3
+                             MOVE 1 TO FD-BAD
+                         ELSE
+                             ADD 1 TO MD-B(WS-ROW)
+                             PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 2
+                                 CALL "JSON-ELEMENT" USING JSON-DOC WS-CHILD WS-K WS-OK
+                                 CALL "FD-J-INT" USING JSON-DOC WS-OK MD-P(WS-ROW, WS-I * 3 + WS-K + 1) WS-SAVED
+                                 IF WS-SAVED = 0
+                                     MOVE 1 TO FD-BAD
+                                 END-IF
+                             END-PERFORM
+                         END-IF
+                     END-PERFORM
+                 END-IF
              END-IF
          WHEN OTHER
              MOVE 1 TO FD-BAD
@@ -1994,6 +2045,44 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BONUS-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 15
+         WHEN 11
+         WHEN 14
+*>           end_spike, end_gateway and end_podium (feat-end.cob): unsupported with a custom spike list, without the exact flag or with a bad exit, or with a non-boolean active
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             MOVE FT-TYPE(LS-ROW) TO LS-N
+             CALL "FD-END-NODE" USING JSON-DOC L-NODE LS-N LS-ROW
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 6
+         WHEN 12
+         WHEN 13
+         WHEN 55
+             CONTINUE
+         WHEN 38
+*>           root_system (feat-root.cob): unsupported when a number is out of range or a block, provider or predicate is unsupported; its tree may be unsupported
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-ROOTSYS-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 18
+*>           fossil (feat-fossil.cob): unsupported when a template file or a processor list is missing or the lists differ in length
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FOSSIL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE

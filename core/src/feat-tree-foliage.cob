@@ -112,7 +112,7 @@
              IF WS-SKIP = 0
                  COMPUTE WS-PX = L-X + WS-DX
                  COMPUTE WS-PZ = L-Z + WS-DZ
-                 CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ
+                 CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ L-STATE
              END-IF
          END-PERFORM
      END-PERFORM

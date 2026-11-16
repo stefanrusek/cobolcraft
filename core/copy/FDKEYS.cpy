@@ -12,6 +12,7 @@
  01 FK-COUNT          PIC X(40) VALUE "count".
  01 FK-CHANCE         PIC X(40) VALUE "chance".
  01 FK-HEIGHTMAP      PIC X(40) VALUE "heightmap".
+ 01 FK-POSITIONS      PIC X(40) VALUE "positions".
  01 FK-X              PIC X(40) VALUE "x".
  01 FK-Y              PIC X(40) VALUE "y".
  01 FK-Z              PIC X(40) VALUE "z".

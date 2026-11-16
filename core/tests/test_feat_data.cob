@@ -148,7 +148,7 @@
      MOVE "minecraft:bad_modifier" TO WS-KEY
      CALL "FD-GET-PF" USING WS-KEY WS-PF
      CALL "FD-ENSURE-PF" USING WS-PF
-     MOVE "acceptance feature data: a fixed_placement modifier is not compiled: status 2" TO TL-CASE
+     MOVE "acceptance feature data: a placement modifier of an unknown type is not compiled: status 2" TO TL-CASE
      MOVE PF-STATUS(WS-PF) TO TL-OBSERVED-N
      MOVE 2 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

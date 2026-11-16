@@ -58,6 +58,12 @@
        10 TW-LEAF-X          BINARY-LONG.
        10 TW-LEAF-Y          BINARY-LONG.
        10 TW-LEAF-Z          BINARY-LONG.
+       10 TW-LEAF-S          BINARY-LONG.
+    05 TW-LP-START           BINARY-LONG.
+    05 TW-LP-N               BINARY-LONG.
+    05 TW-LP-TOTAL           BINARY-LONG.
+    05 TW-LEAF-STATE0        BINARY-LONG.
+    05 TW-LEAFAT             BINARY-LONG OCCURS 24696 TIMES.
     05 TW-GRIDS.
        10 TW-GRID            PIC 9 OCCURS 24696 TIMES.
     05 TW-DISTS.

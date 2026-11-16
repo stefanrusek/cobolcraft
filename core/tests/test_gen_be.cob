@@ -13,6 +13,7 @@
  COPY BESTATE.
  COPY EXTRAS.
  COPY GENBE.
+ COPY ENDGATEWAY.
  COPY GENQUEUE.
  01 WS-ANSWER              PIC X(327700) BASED.
  01 WS-CHUNK-OUT           PIC X(304640).
@@ -42,6 +43,9 @@
  01 WS-ROW                 BINARY-LONG VALUE 5.
  01 WS-CELL                BINARY-LONG.
  01 WS-HEX                 PIC X(1024).
+ 01 WS-GNUMS.
+    05 WS-GNUM             PIC S9(9) SIGN LEADING SEPARATE OCCURS 3 TIMES.
+    05 FILLER              PIC X(2) VALUE SPACES.
  01 WS-LIT-1               BINARY-LONG.
  01 WS-LIT-2               BINARY-LONG.
  01 WS-LIT-3               BINARY-LONG.
@@ -105,7 +109,18 @@
      MOVE WS-SPAWNER TO CE-STATE(WS-CELL)
      COMPUTE WS-CELL = (0 + 64) * 256 + (-2 + 16) * 16 + (33 - 32) + 1
      MOVE WS-STONE TO CE-STATE(WS-CELL)
-     MOVE 3 TO GB-COUNT
+     MOVE 0 TO EG-COUNT
+     MOVE 4 TO GB-COUNT
+*>   kind 3: the entity of an end gateway at (34, 12, -4) with the exit (7, 8, -9), not exact (flags 1)
+     MOVE 34 TO GB-X(4)
+     MOVE 12 TO GB-Y(4)
+     MOVE -4 TO GB-Z(4)
+     MOVE 3 TO GB-KIND(4)
+     MOVE 1 TO GB-SEED(4)
+     MOVE 7 TO WS-GNUM(1)
+     MOVE 8 TO WS-GNUM(2)
+     MOVE -9 TO WS-GNUM(3)
+     MOVE WS-GNUMS TO GB-TEXT(4)
      MOVE 35 TO GB-X(1)
      MOVE 10 TO GB-Y(1)
      MOVE -3 TO GB-Z(1)
@@ -162,6 +177,19 @@
      MOVE "test gen be: a request at a stone block makes no entity" TO TL-CASE
      MOVE WS-INDEX TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen be: a kind 3 request made one gateway entity row (no block entity of the chunk)" TO TL-CASE
+     MOVE 34 TO WS-X
+     MOVE 12 TO WS-Y
+     MOVE -4 TO WS-Z
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX
+     COMPUTE TL-OBSERVED-N = EG-COUNT * 10 + WS-INDEX
+     MOVE 10 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen be: the gateway row keeps dimension, position, the exit (7, 8, -9) and not exact" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = EG-DIM(1) * 100000000 + (EG-X(1) - 30) * 10000000 + (EG-Y(1) - 10) * 1000000 + (EG-Z(1) + 10) * 100000
+         + EG-HAS-EXIT(1) * 10000 + EG-EXIT-X(1) * 1000 + EG-EXIT-Y(1) * 100 + (EG-EXIT-Z(1) + 20) * 10 + EG-EXACT(1)
+     COMPUTE TL-EXPECTED-N = 3 * 100000000 + 4 * 10000000 + 2 * 1000000 + 6 * 100000 + 10000 + 7000 + 800 + 110
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test gen be: the list is empty after the apply" TO TL-CASE
      COMPUTE TL-OBSERVED-N = GB-COUNT + GB-LOST
