@@ -34,9 +34,9 @@
  01 WS-TIME               BINARY-LONG.
  01 WS-MID                BINARY-LONG.
  PROCEDURE DIVISION.
-     MOVE SM-HEALTH(SM-COUNT - 2) TO WS-O
+     MOVE SM-HEALTH(SM-COUNT - 3) TO WS-O
      MOVE 20 TO WS-E
-     MOVE "acceptance US15 19§22.1 the villager row (third from last since T8802) has 20 health" TO WS-NAME
+     MOVE "acceptance US15 19§22.1 the villager row (4th from last) has 20 health" TO WS-NAME
      PERFORM CHECK-N
 *>   A villager with no profession has no offers; a workstation gives it one.
      MOVE 501 TO WS-ID

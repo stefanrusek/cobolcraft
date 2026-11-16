@@ -857,6 +857,7 @@
          CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
          MOVE WS-GRIEF TO WS-DESTROY
          CALL "EXPLODE-RUN" USING WS-DIM WS-X WS-Y WS-Z WS-POWER WS-DESTROY WS-ROW
+         CALL "CREEPER-CLOUD" USING L-ROW
          CALL "ENTITY-REMOVE" USING L-ROW
          MOVE 2 TO L-STOP
          GOBACK
@@ -920,6 +921,11 @@
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-EVK-CAST            BINARY-LONG.
+ 01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-RV-STILL            BINARY-LONG.
+ 01 WS-VS-HX               FLOAT-LONG.
+ 01 WS-VS-HZ               FLOAT-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
  01 WS-AVOID               BINARY-LONG.
  01 WS-AHX                 FLOAT-LONG.
@@ -1019,6 +1025,18 @@
          CALL "GHAST-TICK" USING WS-ROW WS-M
          GOBACK
      END-IF
+     IF EN-MOUNT(WS-ROW) > 0
+         CALL "MOB-MOUNT-STEP" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
+     END-IF
+     IF EN-PASS(WS-ROW) > 0
+         CALL "MOB-MOUNT-DRIVE" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
+     END-IF
      IF EN-RIDER(WS-ROW) > 0
          CALL "MOB-RIDE-TICK" USING WS-ROW WS-RIDE-DONE
          IF WS-RIDE-DONE = 1
@@ -1038,6 +1056,10 @@
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
          END-IF
+     END-IF
+     MOVE 0 TO WS-VS-WALK
+     IF SM-KIND(WS-M) = 1 AND EN-TARGET(WS-ROW) = 0
+         CALL "MOBVS-TICK" USING WS-ROW WS-M WS-VS-HX WS-VS-HZ WS-VS-WALK
      END-IF
      MOVE 0 TO WS-STOP WS-LIFE-WALK
      IF SM-KIND(WS-M) = 0
@@ -1085,9 +1107,42 @@
      END-IF
      IF SM-KEY(WS-M) = "piglin"
          CALL "PIGLIN-TICK" USING WS-ROW
+         CALL "PIGLIN-HUNT-STEP" USING WS-ROW
+         CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "hoglin"
+         CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "strider"
+         CALL "STRIDER-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "evoker"
+         CALL "EVK-STEP" USING WS-ROW
+         CALL "EVK-IS-CASTING" USING WS-ROW WS-EVK-CAST
+         IF WS-EVK-CAST = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "vex"
+         CALL "VEX-STEP" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "illusioner"
+         CALL "ILLUSIONER-STEP" USING WS-ROW
+         CALL "ILLUSIONER-IS-CASTING" USING WS-ROW WS-EVK-CAST
+         IF WS-EVK-CAST = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
+     CALL "RAID-RAIDER-STEP" USING WS-ROW
+     CALL "RAID-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     IF SM-KEY(WS-M) = "ravager"
+         CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL
+         IF WS-RV-STILL = 1
+             MOVE 1 TO WS-STOP
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "wandering_trader"
          CALL "TRADER-STEP" USING WS-ROW
@@ -1118,6 +1173,9 @@
      END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
+         IF EN-HAND(WS-ROW) < 5 OR EN-HAND(WS-ROW) > 8
+             CALL "WITCH-THROW-STEP" USING WS-ROW
+         END-IF
      END-IF
      IF SM-RANGED(WS-M) = 5
          CALL "BLAZE-ATTACK" USING WS-ROW WS-M
@@ -1186,6 +1244,14 @@
                      CALL "STDMOB-HIT-EFFECT" USING WS-P WS-M
                  END-IF
              END-IF
+         WHEN WS-VS-WALK = 1
+*>           A zombie, vindicator or ravager walks to a villager (MOBVS-TICK, 20 sections 4 and 13).
+             MOVE WS-VS-HX TO WS-HX
+             MOVE WS-VS-HZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-PET-WALK = 2
 *>           A tame wolf ordered to sit stays where it is (SitWhenOrderedToGoal, 18 section 8.2).
              MOVE 0 TO EN-COOLDOWN(WS-ROW) EN-FLEE(WS-ROW)
@@ -1260,6 +1326,9 @@
      END-IF
      MOVE EN-Y(WS-ROW) TO WS-FALL-Y
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+     IF SM-KEY(WS-M) = "strider"
+         CALL "STRIDER-LAVA" USING WS-ROW WS-FALL-Y
+     END-IF
 *>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.
@@ -1591,6 +1660,10 @@
      CALL "STDMOB-REST-TICK"
      CALL "STDMOB-PHANTOM-SPAWNER"
      CALL "TRADER-TICK"
+     CALL "EVK-FANG-TICK"
+     CALL "RAID-WORLD-TICK"
+     CALL "PATROL-TICK"
+     CALL "POTIONS-TICK"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 

@@ -374,6 +374,9 @@
              IF SM-KEY(WS-M) = "panda" AND (EN-GENE-MAIN(L-ROW) > 0 OR EN-GENE-HIDDEN(L-ROW) > 0 OR EN-PANDA-SNEEZE(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "strider" AND (EN-COLD(L-ROW) = 1 OR EN-BOOST(L-ROW) > 0)
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "bee"
 *>               The flags byte of a bee (19 section 16): 2 rolling, 4 stung, 8 nectar.
                  COMPUTE L-WOOL = 2 * EN-BEE-ROLL(L-ROW) + 4 * EN-BEE-STUNG(L-ROW) + 8 * EN-BEE-NECTAR(L-ROW)
@@ -449,6 +452,21 @@
          MOVE WS-SERIALIZER-INT TO MD-MX-SERIALIZER
          MOVE EN-WOOL(L-ROW) TO MD-MX-INT
          CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     END-IF
+*>   A strider: index 18 INT the boost total, index 19 BOOLEAN suffocating (21 section 5.7).
+     IF WS-KEY = "strider" AND EN-BOOST(L-ROW) > 0
+         INITIALIZE MD-METADATA-ENTRY-X
+         MOVE 18 TO MD-MX-INDEX
+         MOVE WS-SERIALIZER-INT TO MD-MX-SERIALIZER
+         MOVE EN-BOOST(L-ROW) TO MD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     END-IF
+     IF WS-KEY = "strider" AND EN-COLD(L-ROW) = 1
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 19 TO MD-MD-INDEX
+         MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+         MOVE 1 TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
      CALL "MOB-CARE-DATA" USING L-ROW PB-BUFFER
      MOVE MD-MD-END TO MD-MD-INDEX
@@ -936,7 +954,7 @@
              CALL "TURTLE-GROWN" USING L-ROW
          END-IF
      END-IF
-     IF WS-KEY = "chicken" AND EN-MOBAGE(L-ROW) >= 0 AND EN-VARIANT(L-ROW) = 0
+     IF WS-KEY = "chicken" AND EN-MOBAGE(L-ROW) >= 0 AND EN-VARIANT(L-ROW) = 0 AND EN-JOCKEY(L-ROW) = 0
          CALL "XP-RANDOM" USING WS-SALT-EGG WS-BOUND-EGG WS-DRAW
          CALL "M19-CHICKEN-EGG-TICK" USING EN-EGG(L-ROW) WS-DRAW WS-LAID
          IF WS-LAID = 1

@@ -267,6 +267,9 @@
                  CALL "THROWN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
              IF WS-WORN = 0
+                 CALL "STRIDER-STICK-USE" USING L-ID WS-WORN
+             END-IF
+             IF WS-WORN = 0
                  CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
              END-IF
              IF WS-WORN = 0

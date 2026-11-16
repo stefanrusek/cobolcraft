@@ -86,3 +86,29 @@
      END-IF
      GOBACK.
  END PROGRAM HOGLIN-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-ATTACK-EVENT.
+*> USING mob row: a hoglin, zoglin or ravager that hits broadcasts entity event 4, the attack animation (21 section 5.6, 20 section 13.6), to the players that see it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-KEY                  PIC X(24).
+ 01 WS-EVENT                BINARY-LONG VALUE 4.
+ 01 WS-CAPACITY             BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-MOB                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-MOB.
+     CALL "MOB-SPECIES-KEY" USING L-MOB WS-KEY
+     IF WS-KEY = "ravager"
+         CALL "RAVAGER-ATTACKED" USING L-MOB
+     END-IF
+     IF WS-KEY = "hoglin" OR "zoglin" OR "ravager"
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-MOB) WS-EVENT PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING L-MOB PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-ATTACK-EVENT.
