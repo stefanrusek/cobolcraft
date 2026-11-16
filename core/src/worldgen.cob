@@ -324,6 +324,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
+ 01 WS-TAKEN               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-CX                   BINARY-LONG.
@@ -337,7 +338,11 @@
          WHEN DIM-GEN-STANDARD
              CALL "WORLDGEN-STANDARD-CHUNK" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN DIM-GEN-NETHER
-             CALL "NETHER-DIM-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+*>           a worker's finished answer for this chunk is the chunk (T6300), else it is made here
+             CALL "GEN-STANDARD-TAKE" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y WS-TAKEN
+             IF WS-TAKEN = 0
+                 CALL "NETHER-DIM-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+             END-IF
          WHEN DIM-GEN-END
              CALL "END-DIM-CHUNK" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN OTHER
