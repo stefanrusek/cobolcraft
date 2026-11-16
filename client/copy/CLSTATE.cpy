@@ -1179,7 +1179,7 @@
 *>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
        10 RL-GI-COUNT        BINARY-LONG.
        10 RL-GI-UPLOADED     BINARY-LONG.
-       10 RL-GI-VERTEX OCCURS 1536 TIMES.
+       10 RL-GI-VERTEX OCCURS 6144 TIMES.
           15 RL-GI-X         FLOAT-SHORT.
           15 RL-GI-Y         FLOAT-SHORT.
           15 RL-GI-Z         FLOAT-SHORT.

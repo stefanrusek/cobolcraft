@@ -559,5 +559,150 @@
              END-PERFORM
          END-IF
      END-PERFORM
+     CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE
      GOBACK.
  END PROGRAM GROUND-ITEMS-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VANILLA-ITEMS-MESH.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG): appends the dropped items of a standard-set world (the "item" entity, EN-VANILLA 1) to RL-GI-VERTEX as
+*> ItemEntityRenderer draws them (34-9 section 9.1 and 9.2) with the flat model of the item's icon: a quad 0.5 wide (x -0.25 to 0.25, y -0.125 to
+*> 0.375, the ground display transform of 12 section 8.2: translate (0, 2, 0) / 16, scale 0.5), thickness 1/16 x 0.5 so a flat model. The pose: translate
+*> (0, bob + base, 0) with base = 0.0625 + 0.125 and bob = sin(age / 10 + bobOffs) x 0.1 + 0.1, then rotate about Y by age / 20 + bobOffs radians (age in
+*> ticks from the clock; bobOffs is a random phase of the client's own, taken as entity id mod 64 / 64 x 2 pi). Copies by stack size (1, 2, 3, 4, 5 at 1,
+*> 2 to 16, 17 to 32, 33 to 48, 49 up); flat stacking: step = zs x 1.5 = 0.046875, the first copy at z = -(step (n - 1)) / 2, copy k at z + k step, copies
+*> after the first moved by ((r1 x 2 - 1) x 0.075, (r2 x 2 - 1) x 0.075) with r from the Java LCG seeded with the item id (damage value 0), restarted
+*> for each item. Both sides of the quad are drawn (12 vertices a copy).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-COPIES              BINARY-LONG.
+ 01 WS-SPRITE              BINARY-LONG.
+ 01 WS-AGE                 FLOAT-LONG.
+ 01 WS-PHASE               FLOAT-LONG.
+ 01 WS-BOB                 FLOAT-LONG.
+ 01 WS-SPIN-SIN            FLOAT-LONG.
+ 01 WS-SPIN-COS            FLOAT-LONG.
+ 01 WS-Z0                  FLOAT-LONG.
+ 01 WS-LX                  FLOAT-LONG.
+ 01 WS-LY                  FLOAT-LONG.
+ 01 WS-LZ                  FLOAT-LONG.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-STATE               BINARY-DOUBLE UNSIGNED.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-R1                  FLOAT-LONG.
+ 01 WS-R2                  FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE-ID            BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-U16                 FLOAT-SHORT.
+ 01 WS-V16                 FLOAT-SHORT.
+ 01 WS-CORNERS.
+    05 WS-C OCCURS 4 TIMES.
+       10 WS-C-X             FLOAT-SHORT.
+       10 WS-C-Y             FLOAT-SHORT.
+       10 WS-C-Z             FLOAT-SHORT.
+       10 WS-C-U             FLOAT-SHORT.
+       10 WS-C-V             FLOAT-SHORT.
+*> The twelve vertices of a copy: the front triangles 1 2 3, 1 3 4 and the back triangles 1 3 2, 1 4 3.
+ 01 WS-ORDER-DATA          PIC X(12) VALUE "123134132143".
+ 01 WS-ORDER REDEFINES WS-ORDER-DATA.
+    05 WS-ORD              PIC 9 OCCURS 12 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
+     COMPUTE WS-AGE = CL-NOW-MS / 50
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1 AND EN-KEY(WS-R) = "item" AND EN-STACK-COUNT(WS-R) > 0
+             EVALUATE TRUE
+                 WHEN EN-STACK-COUNT(WS-R) <= 1
+                     MOVE 1 TO WS-COPIES
+                 WHEN EN-STACK-COUNT(WS-R) <= 16
+                     MOVE 2 TO WS-COPIES
+                 WHEN EN-STACK-COUNT(WS-R) <= 32
+                     MOVE 3 TO WS-COPIES
+                 WHEN EN-STACK-COUNT(WS-R) <= 48
+                     MOVE 4 TO WS-COPIES
+                 WHEN OTHER
+                     MOVE 5 TO WS-COPIES
+             END-EVALUATE
+             IF RL-GI-COUNT + 12 * WS-COPIES <= CL-MAX-GI-VERTICES
+                 CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-SPRITE
+                 MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
+                 COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-R))
+                 COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-R))
+                 COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-R))
+                 CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
+                 COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15, 0.1)
+                 COMPUTE WS-PHASE = FUNCTION MOD(EN-ID(WS-R), 64) / 64 * 2 * FUNCTION PI
+                 COMPUTE WS-BOB = FUNCTION SIN(WS-AGE / 10 + WS-PHASE) * 0.1 + 0.1 + 0.1875
+                 COMPUTE WS-SPIN-SIN = FUNCTION SIN(WS-AGE / 20 + WS-PHASE)
+                 COMPUTE WS-SPIN-COS = FUNCTION COS(WS-AGE / 20 + WS-PHASE)
+                 COMPUTE WS-Z0 = 0 - 0.046875 * (WS-COPIES - 1) / 2
+                 MOVE EN-STACK-ITEM(WS-R) TO WS-SEED
+                 CALL "JRAND-SET-SEED" USING WS-STATE WS-SEED
+                 PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N >= WS-COPIES
+                     MOVE 0 TO WS-OX WS-OY
+                     IF WS-N > 0
+                         CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R1
+                         CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R2
+                         COMPUTE WS-OX = (WS-R1 * 2 - 1) * 0.075
+                         COMPUTE WS-OY = (WS-R2 * 2 - 1) * 0.075
+                     END-IF
+                     COMPUTE WS-LZ = WS-Z0 + 0.046875 * WS-N
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         MOVE -0.25 TO WS-SIDE
+                         MOVE 0 TO WS-U16
+                         IF WS-K = 2 OR WS-K = 3
+                             MOVE 0.25 TO WS-SIDE
+                             MOVE 16 TO WS-U16
+                         END-IF
+                         MOVE 0.375 TO WS-TOP
+                         MOVE 0 TO WS-V16
+                         IF WS-K >= 3
+                             MOVE -0.125 TO WS-TOP
+                             MOVE 16 TO WS-V16
+                         END-IF
+                         COMPUTE WS-LX = WS-SIDE + WS-OX
+                         COMPUTE WS-LY = WS-TOP + WS-OY
+                         COMPUTE WS-SX = WS-LX * WS-SPIN-COS + WS-LZ * WS-SPIN-SIN
+                         COMPUTE WS-SZ = WS-LZ * WS-SPIN-COS - WS-LX * WS-SPIN-SIN
+                         COMPUTE WS-C-X(WS-K) = EN-X(WS-R) - L-EYE(1) + WS-SX
+                         COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2) + WS-BOB + WS-LY
+                         COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SZ
+                         CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16 WS-V16 WS-C-U(WS-K) WS-C-V(WS-K)
+                     END-PERFORM
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+                         MOVE WS-ORD(WS-I) TO WS-K
+                         ADD 1 TO RL-GI-COUNT
+                         MOVE WS-C-X(WS-K) TO RL-GI-X(RL-GI-COUNT)
+                         MOVE WS-C-Y(WS-K) TO RL-GI-Y(RL-GI-COUNT)
+                         MOVE WS-C-Z(WS-K) TO RL-GI-Z(RL-GI-COUNT)
+                         MOVE WS-C-U(WS-K) TO RL-GI-U(RL-GI-COUNT)
+                         MOVE WS-C-V(WS-K) TO RL-GI-V(RL-GI-COUNT)
+                         MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
+                         MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                         MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                         MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+                     END-PERFORM
+                 END-PERFORM
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VANILLA-ITEMS-MESH.
