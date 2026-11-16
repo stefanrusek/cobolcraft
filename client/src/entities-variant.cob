@@ -81,6 +81,11 @@
              MOVE L-INT TO EN-X2(L-ROW)
          WHEN EN-KEY(L-ROW) = "panda" AND L-INDEX = 22 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
+*>   An enderman's carried block (entry 16, OPTIONAL_BLOCK_STATE: the raw VarInt, 0 none) and creepy flag (entry 17, BOOLEAN).
+         WHEN EN-KEY(L-ROW) = "enderman" AND L-INDEX = 16 AND L-SERIALIZER = 15
+             MOVE L-INT TO EN-CARRY(L-ROW)
+         WHEN EN-KEY(L-ROW) = "enderman" AND L-INDEX = 17 AND L-SERIALIZER = 8
+             MOVE L-INT TO EN-CREEPY(L-ROW)
 *>   A guardian's moving flag (entry 16, BOOLEAN) in EN-X1 and its active attack target (entry 17, VarInt): a new target restarts the attack time (EN-RS).
          WHEN (EN-KEY(L-ROW) = "guardian" OR "elder_guardian") AND L-INDEX = 16 AND L-SERIALIZER = 8
              MOVE L-INT TO EN-X1(L-ROW)

@@ -7,7 +7,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-POSE-MORE.
 *> USING model (EMM-MODEL), row key (X(20)), state (16 FLOAT-LONG: 1 pitch, 2 head yaw relative to the body, 3 walk position, 4 walk speed; 15 1 when an aquatic mob is out
-*> of water (a turtle: on land), 16 a squid's tentacle angle or a guardian's spikes animation, 14 a guardian's tail animation; the rest 0), age in ticks.
+*> of water (a turtle: on land), 16 a squid's tentacle angle or a guardian's spikes animation, 14 a guardian's tail animation, 13 an iron golem's attack tick, 12 its offer-flower tick; the rest 0), age in ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STOP                FLOAT-LONG VALUE -2147483648.
@@ -26,6 +26,8 @@
  01 WS-DRY                 FLOAT-LONG.
  01 WS-TANGLE              FLOAT-LONG.
  01 WS-TMOVE               FLOAT-LONG.
+ 01 WS-ATK                 FLOAT-LONG.
+ 01 WS-FLW                 FLOAT-LONG.
  01 WS-WET                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
@@ -48,6 +50,8 @@
      MOVE L-I(15) TO WS-DRY
      MOVE L-I(16) TO WS-TANGLE
      MOVE L-I(14) TO WS-TMOVE
+     MOVE L-I(13) TO WS-ATK
+     MOVE L-I(12) TO WS-FLW
      COMPUTE WS-WET = 1 - WS-DRY
      PERFORM VARYING WS-J FROM 5 BY 1 UNTIL WS-J > 16
          MOVE 0 TO L-I(WS-J)
@@ -201,6 +205,10 @@
              MOVE L-AGE TO L-I(3)
              CALL "EM3-VEX-ANIM" USING EMM-MODEL L-IN
          WHEN "iron_golem"
+             IF WS-ATK > 1
+                 COMPUTE L-I(5) = WS-ATK - 1
+             END-IF
+             MOVE WS-FLW TO L-I(6)
              CALL "EM3-IRON-GOLEM-ANIM" USING EMM-MODEL L-IN
          WHEN "snow_golem"
              CALL "EM3-SNOW-GOLEM-ANIM" USING EMM-MODEL L-IN

@@ -491,6 +491,8 @@
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
      COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
      MOVE EN-TM(WS-ROW) TO WS-KN(29)
+     COMPUTE WS-KN(34) = EN-CARRY(WS-ROW) * 10 + EN-CREEPY(WS-ROW)
+     COMPUTE WS-KN(35) = EN-ATK(WS-ROW) * 1000 + EN-FLW(WS-ROW)
      MOVE 0 TO WS-KN(33)
      IF EN-KEY(WS-ROW) = "ender_dragon"
          MOVE EN-DR-HEAD TO WS-KN(33)
@@ -643,6 +645,8 @@
      MOVE EN-TA(WS-ROW) TO WS-I(16)
      MOVE EN-DRY(WS-ROW) TO WS-I(15)
      MOVE EN-TM(WS-ROW) TO WS-I(14)
+     MOVE EN-ATK(WS-ROW) TO WS-I(13)
+     MOVE EN-FLW(WS-ROW) TO WS-I(12)
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
@@ -722,7 +726,11 @@
                      CALL "EF7-BLAZE-ANIM" USING EMM-MODEL WS-IN
                  WHEN "enderman"
                  WHEN "enderman_eyes"
-                     MOVE 0 TO WS-CARRIED WS-CREEPY
+                     MOVE 0 TO WS-CARRIED
+                     IF EN-CARRY(WS-ROW) > 0
+                         MOVE 1 TO WS-CARRIED
+                     END-IF
+                     MOVE EN-CREEPY(WS-ROW) TO WS-CREEPY
                      CALL "EF6-ENDERMAN-ANIM" USING EMM-MODEL WS-STATE WS-CARRIED WS-CREEPY
                  WHEN OTHER
                      CONTINUE

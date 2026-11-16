@@ -729,6 +729,12 @@
           15 EN-BBM          FLOAT-LONG.
           15 EN-BBA          FLOAT-LONG.
           15 EN-BUW          PIC 9.
+*>        Held-item poses: the enderman's carried block state (entry 16, 0 none) and creepy flag (17); the iron golem's attack tick (Entity Event 4: 10) and offer-flower
+*>        tick (event 11: 400, event 34: 0), both falling by 1 a tick.
+          15 EN-CARRY        BINARY-LONG.
+          15 EN-CREEPY       PIC 9.
+          15 EN-ATK          BINARY-LONG.
+          15 EN-FLW          BINARY-LONG.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the

@@ -123,6 +123,15 @@
                      MOVE 1 TO EN-DRY(WS-R)
                  END-IF
              END-IF
+*>           The iron golem's attack and offer-flower ticks fall by 1 a tick (34-3 7).
+             IF EN-KEY(WS-R) = "iron_golem"
+                 IF EN-ATK(WS-R) > 0
+                     SUBTRACT 1 FROM EN-ATK(WS-R)
+                 END-IF
+                 IF EN-FLW(WS-R) > 0
+                     SUBTRACT 1 FROM EN-FLW(WS-R)
+                 END-IF
+             END-IF
 *>           The ender dragon (34-7 8.1, 8.8): the flap time (no phase or wall data in the replica: not sitting, not in a wall) and one history sample (y, yaw wrapped to
 *>           -180 to 180) a tick; a dragon with another id than the history's owner restarts the ring.
              IF EN-KEY(WS-R) = "ender_dragon"
@@ -378,7 +387,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-EVENT.
 *> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 19 resets a squid's tentacle movement to 0 ("squid animation sync"), 4 starts the bite of evoker
-*> fangs. Another event or an unknown id changes nothing.
+*> fangs; an iron golem's 4 (attack tick 10), 11 (offer flower 400) and 34 (stop). Another event or an unknown id changes nothing.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ROW                 BINARY-LONG.
@@ -394,6 +403,18 @@
          END-IF
          IF L-EVENT = 4 AND EN-KEY(WS-ROW) = "evoker_fangs"
              MOVE 1 TO EN-FA(WS-ROW)
+         END-IF
+         IF EN-KEY(WS-ROW) = "iron_golem"
+             EVALUATE L-EVENT
+                 WHEN 4
+                     MOVE 10 TO EN-ATK(WS-ROW)
+                 WHEN 11
+                     MOVE 400 TO EN-FLW(WS-ROW)
+                 WHEN 34
+                     MOVE 0 TO EN-FLW(WS-ROW)
+                 WHEN OTHER
+                     CONTINUE
+             END-EVALUATE
          END-IF
      END-IF
      GOBACK.
