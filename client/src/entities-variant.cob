@@ -37,6 +37,8 @@
          WHEN "slime"
          WHEN "magma_cube"
              MOVE 18 TO WS-WANT
+         WHEN "zombie_nautilus"
+             MOVE 21 TO WS-WANT
          WHEN "wolf"
              MOVE 23 TO WS-WANT
          WHEN "cat"
@@ -233,7 +235,7 @@
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 7 AND WS-CD >= 1 AND WS-CD <= 27
-                 AND (WS-BASE = "horse_armor" OR "undead_horse_armor" OR "wolf_armor" OR "llama_decor")
+                 AND (WS-BASE = "horse_armor" OR "undead_horse_armor" OR "wolf_armor" OR "llama_decor" OR "nautilus_armor")
 *>               Body armor: the equipment layer type directory (horse_body, wolf_body, llama_body) and the asset.
                  MOVE "horse_body" TO WS-NAME
                  IF WS-BASE = "wolf_armor"
@@ -241,6 +243,9 @@
                  END-IF
                  IF WS-BASE = "llama_decor"
                      MOVE "llama_body" TO WS-NAME
+                 END-IF
+                 IF WS-BASE = "nautilus_armor"
+                     MOVE "nautilus_body" TO WS-NAME
                  END-IF
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
@@ -510,6 +515,10 @@
                  END-IF
                  IF EN-VAR(L-ROW) >= 2
                      MOVE "salmon~l" TO WS-KEY
+                 END-IF
+             WHEN "zombie_nautilus"
+                 IF EN-VAR(L-ROW) = 1
+                     MOVE "zombie_nautilus~w" TO WS-KEY
                  END-IF
              WHEN OTHER
                  CONTINUE

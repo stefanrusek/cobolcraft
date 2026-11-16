@@ -122,6 +122,10 @@
                  MOVE "wolf_armor" TO WS-FK
              WHEN L-N = 5 AND WS-KIND = 3 AND EN-BABY(L-ROW) = 0 AND (EN-KEY(L-ROW) = "llama" OR "trader_llama")
                  MOVE "llama_decor" TO WS-FK
+             WHEN L-N = 5 AND WS-KIND = 5 AND EN-BABY(L-ROW) = 0 AND (EN-KEY(L-ROW) = "nautilus" OR "zombie_nautilus")
+                 MOVE "nautilus_armor" TO WS-FK
+             WHEN L-N = 6 AND WS-KIND = 4 AND EN-BABY(L-ROW) = 0 AND EN-KEY(L-ROW) = "zombie_nautilus"
+                 MOVE "nautilus_saddle" TO WS-FK
              WHEN L-N = 6 AND WS-KIND = 4 AND EN-BABY(L-ROW) = 0
                  STRING FUNCTION TRIM(EN-KEY(L-ROW)) "_saddle" DELIMITED BY SIZE INTO WS-FK
 *>               The row key of the skeleton horse's saddle is shortened to the 20 characters of a key.
@@ -282,6 +286,16 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
              IF WS-MT(WS-I) = WS-MATERIAL
                  MOVE 1 TO L-KIND
+                 MOVE WS-I TO L-ASSET
+             END-IF
+         END-PERFORM
+     END-IF
+     MOVE SPACES TO WS-MATERIAL
+     UNSTRING WS-NAME DELIMITED BY "_nautilus_armor" INTO WS-MATERIAL
+     IF FUNCTION TRIM(WS-NAME) NOT = FUNCTION TRIM(WS-MATERIAL)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+             IF WS-MT(WS-I) = WS-MATERIAL
+                 MOVE 5 TO L-KIND
                  MOVE WS-I TO L-ASSET
              END-IF
          END-PERFORM

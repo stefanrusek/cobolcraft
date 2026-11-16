@@ -485,7 +485,7 @@
      MOVE 0 TO WS-WPOS WS-WSPEED WS-SWP WS-AGE
      MOVE 0 TO WS-SWT WS-SWARM WS-AGG
      MOVE 1 TO WS-MAINARM
-     IF WS-ANIM = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+     IF WS-ANIM = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H" OR "N"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
              OR "blaze" OR "enderman" OR "enderman_eyes"
              OR WS-ANIM = "W" OR "V"
@@ -493,7 +493,7 @@
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
          IF WS-ANIM = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
                  OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
-                 OR WS-ANIM = "V"
+                 OR WS-ANIM = "V" OR "N"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -529,6 +529,11 @@
      MOVE WS-WSPEED TO WS-KN(18)
      MOVE WS-SWP TO WS-KN(19)
      MOVE WS-AGE TO WS-KN(22)
+*>   The corals of the warm zombie nautilus are hidden under body armor (34-8 6.4): the key holds whether body armor is worn.
+     MOVE 0 TO WS-KN(23)
+     IF EN-EQ(WS-ROW, 7) > 0
+         MOVE 1 TO WS-KN(23)
+     END-IF
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
 *>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
@@ -634,6 +639,16 @@
              MOVE 4 TO WS-VARIANT
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
+         WHEN "N"
+             MOVE WS-WPOS TO WS-I(3)
+             MOVE WS-WSPEED TO WS-I(4)
+             MOVE WS-AGE TO WS-I(5)
+             CALL "EF8-NAUTILUS-ANIM" USING EMM-MODEL WS-IN
+             IF CL-MD-KEY(WS-K) = "zombie_nautilus~w" AND EN-EQ(WS-ROW, 7) > 0
+                 MOVE "corals" TO WS-FK
+                 CALL "EMM-FIND" USING EMM-MODEL WS-FK WS-HK
+                 MOVE 0 TO MM-VISIBLE(WS-HK)
+             END-IF
          WHEN "B"
              MOVE WS-WPOS TO WS-I(3)
              MOVE WS-WSPEED TO WS-I(4)

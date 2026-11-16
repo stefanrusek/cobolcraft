@@ -65,8 +65,8 @@
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
 *>   The table rows and their textures: ten woods of boat and chest boat, and the two rafts.
      MOVE "N" TO TL-MODE
-     MOVE "acceptance boats the table has 186 rows" TO TL-CASE
-     MOVE 186 TO TL-EXPECTED-N
+     MOVE "acceptance boats the table has 189 rows" TO TL-CASE
+     MOVE 189 TO TL-EXPECTED-N
      MOVE CL-MODEL-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12

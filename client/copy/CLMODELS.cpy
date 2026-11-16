@@ -21,10 +21,10 @@
 *>                entity type. Babies are drawn from that row with its own atlas slot (EN-BABY, entities-render.cob ENTITIES-MESH); the variant
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
 *>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
-*>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are at rest (code -); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle rowing times
+*>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 186.
+ 78 CL-MODEL-COUNT           VALUE 189.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -1480,7 +1480,7 @@
     05 FILLER PIC X(24) VALUE "NAUTILUS".
     05 FILLER PIC 999 VALUE 128.
     05 FILLER PIC 999 VALUE 128.
-    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X VALUE "N".
     05 FILLER PIC X(64) VALUE "textures/entity/nautilus/nautilus.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 163.
@@ -1489,7 +1489,7 @@
     05 FILLER PIC X(24) VALUE "NAUTILUS_BABY".
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC 999 VALUE 64.
-    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X VALUE "N".
     05 FILLER PIC X(64) VALUE "textures/entity/nautilus/nautilus_baby.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
@@ -1498,7 +1498,7 @@
     05 FILLER PIC X(24) VALUE "ZOMBIE_NAUTILUS".
     05 FILLER PIC 999 VALUE 128.
     05 FILLER PIC 999 VALUE 128.
-    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X VALUE "N".
     05 FILLER PIC X(64) VALUE "textures/entity/nautilus/zombie_nautilus.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
@@ -1700,8 +1700,35 @@
     05 FILLER PIC X(64) VALUE "textures/entity/chest_boat/bamboo.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zombie_nautilus~w".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_NAUTILUS_CORAL".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "N".
+    05 FILLER PIC X(64) VALUE "textures/entity/nautilus/zombie_nautilus_coral.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "nautilus_saddle".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "NAUTILUS_SADDLE".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/nautilus_saddle/saddle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "nautilus_armor".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "NAUTILUS_ARMOR".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/nautilus_body/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 186 TIMES.
+    05 CL-MD OCCURS 189 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).
