@@ -226,7 +226,10 @@
      MOVE 19 TO TL-EXPECTED-N
      MOVE EN-HEALTH(WS-A) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A right click through the packet.
+*>   A right click through the packet. The allay flies about while it is stepped (18 FlyingMoveControl), so it is brought back beside the player first.
+     MOVE PL-X(WS-PLAYER) TO EN-X(WS-A)
+     MOVE PL-Y(WS-PLAYER) TO EN-Y(WS-A)
+     MOVE PL-Z(WS-PLAYER) TO EN-Z(WS-A)
      MOVE WS-EMERALD TO PL-SLOT-ITEM(WS-PLAYER, 1)
      MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, 1)
      CALL "TEST-INTERACT" USING PL-CONN(WS-PLAYER) EN-ID(WS-A) WS-HAND WS-SNEAK

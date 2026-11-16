@@ -282,6 +282,8 @@
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
  01 WS-R                   BINARY-DOUBLE.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -296,6 +298,17 @@
              MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
          END-IF
      END-IF
+*>   Eating (44 part 4 section 7): a sitting panda with an item starts on nextInt(80) = 1; the counter runs on and ends on nextInt(20) = 1 past 100.
+     MOVE EN-ID(L-ROW) TO WS-ARG(1)
+     MOVE CW-TIME TO WS-ARG(2)
+     MOVE 66 TO WS-ARG(3)
+     CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+     COMPUTE WS-DRAW = FUNCTION MOD(WS-R, 80)
+     CALL "M44-PANDA-EAT-START" USING L-ROW WS-DRAW WS-DONE
+     MOVE 67 TO WS-ARG(3)
+     CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+     COMPUTE WS-DRAW = FUNCTION MOD(WS-R, 20)
+     CALL "M44-PANDA-EAT-TICK" USING L-ROW WS-DRAW WS-DONE
 *>   The sneeze: the counter counts up and at 21 the panda sneezes; an adult starts one by a roll.
      IF EN-PANDA-SNEEZE(L-ROW) > 0
          ADD 1 TO EN-PANDA-SNEEZE(L-ROW)

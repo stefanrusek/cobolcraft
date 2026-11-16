@@ -480,6 +480,9 @@
  PROGRAM-ID. ENTITY-MOVE.
 *> USING tracker row, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT), on-ground (BINARY-LONG): the
 *> entity's new position and rotation, sent as described above; then ENTITY-TRACK.
+*> A standard mob (18 section 9.2) sends only on its type's update interval (CW-TIME a multiple of it) and against the position and rotation last sent (EN-SENT-X to EN-SENT-PITCH): EN-X to
+*> EN-PITCH are its simulation state, updated on every call. The first call of a row takes the old position as the last sent one; every interval tick counts EN-SENT-AGE up and after 400 the
+*> send is an absolute Teleport Entity (the age is 1 again).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -495,6 +498,16 @@
  01 WS-SX                  BINARY-LONG.
  01 WS-SY                  BINARY-LONG.
  01 WS-SZ                  BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-GATE                BINARY-LONG.
+ 01 WS-TRACK               BINARY-LONG.
+ 01 WS-UPD                 BINARY-LONG.
+ 01 WS-DUE                 BINARY-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-BYAW                FLOAT-SHORT.
+ 01 WS-BPITCH              FLOAT-SHORT.
  01 WS-VX                  FLOAT-LONG VALUE 0.
  01 WS-VY                  FLOAT-LONG VALUE 0.
  01 WS-VZ                  FLOAT-LONG VALUE 0.
@@ -513,14 +526,60 @@
          MOVE 1 TO WS-READY
      END-IF
      MOVE L-ROW TO WS-ROW
+     MOVE 0 TO WS-GATE
+     MOVE 1 TO WS-DUE
+     IF EN-PLAYER(WS-ROW) = 0
+         CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+         IF WS-M > 0
+             MOVE 1 TO WS-GATE
+         END-IF
+     END-IF
+     IF WS-GATE = 1
+         IF EN-SENT-AGE(WS-ROW) = 0
+             MOVE EN-X(WS-ROW) TO EN-SENT-X(WS-ROW)
+             MOVE EN-Y(WS-ROW) TO EN-SENT-Y(WS-ROW)
+             MOVE EN-Z(WS-ROW) TO EN-SENT-Z(WS-ROW)
+             MOVE EN-YAW(WS-ROW) TO EN-SENT-YAW(WS-ROW)
+             MOVE EN-PITCH(WS-ROW) TO EN-SENT-PITCH(WS-ROW)
+             MOVE 1 TO EN-SENT-AGE(WS-ROW)
+         END-IF
+         CALL "M189-TRACK" USING EN-TYPE(WS-ROW) WS-TRACK WS-UPD
+         CALL "M189-UPDATE-DUE" USING CW-TIME WS-UPD WS-DUE
+         IF WS-DUE = 0
+             MOVE L-X TO EN-X(WS-ROW)
+             MOVE L-Y TO EN-Y(WS-ROW)
+             MOVE L-Z TO EN-Z(WS-ROW)
+             MOVE L-YAW TO EN-YAW(WS-ROW)
+             MOVE L-PITCH TO EN-PITCH(WS-ROW)
+             MOVE L-ON-GROUND TO EN-ON-GROUND(WS-ROW)
+             CALL "ENTITY-TRACK" USING WS-ROW
+             GOBACK
+         END-IF
+         ADD 1 TO EN-SENT-AGE(WS-ROW)
+         MOVE EN-SENT-X(WS-ROW) TO WS-BX
+         MOVE EN-SENT-Y(WS-ROW) TO WS-BY
+         MOVE EN-SENT-Z(WS-ROW) TO WS-BZ
+         MOVE EN-SENT-YAW(WS-ROW) TO WS-BYAW
+         MOVE EN-SENT-PITCH(WS-ROW) TO WS-BPITCH
+     ELSE
+         MOVE EN-X(WS-ROW) TO WS-BX
+         MOVE EN-Y(WS-ROW) TO WS-BY
+         MOVE EN-Z(WS-ROW) TO WS-BZ
+         MOVE EN-YAW(WS-ROW) TO WS-BYAW
+         MOVE EN-PITCH(WS-ROW) TO WS-BPITCH
+     END-IF
      CALL "PB-RESET" USING MV-BUFFER
      CALL "PB-RESET" USING HD-BUFFER
-     COMPUTE WS-DX = FUNCTION INTEGER(L-X * 4096 + 0.5) - FUNCTION INTEGER(EN-X(WS-ROW) * 4096 + 0.5)
-     COMPUTE WS-DY = FUNCTION INTEGER(L-Y * 4096 + 0.5) - FUNCTION INTEGER(EN-Y(WS-ROW) * 4096 + 0.5)
-     COMPUTE WS-DZ = FUNCTION INTEGER(L-Z * 4096 + 0.5) - FUNCTION INTEGER(EN-Z(WS-ROW) * 4096 + 0.5)
+     COMPUTE WS-DX = FUNCTION INTEGER(L-X * 4096 + 0.5) - FUNCTION INTEGER(WS-BX * 4096 + 0.5)
+     COMPUTE WS-DY = FUNCTION INTEGER(L-Y * 4096 + 0.5) - FUNCTION INTEGER(WS-BY * 4096 + 0.5)
+     COMPUTE WS-DZ = FUNCTION INTEGER(L-Z * 4096 + 0.5) - FUNCTION INTEGER(WS-BZ * 4096 + 0.5)
      EVALUATE TRUE
+         WHEN WS-GATE = 1 AND EN-SENT-AGE(WS-ROW) > 400
+             MOVE 1 TO EN-SENT-AGE(WS-ROW)
+             CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(WS-ROW) L-X L-Y L-Z WS-VX WS-VY WS-VZ
+                 L-YAW L-PITCH L-ON-GROUND MV-BUFFER
          WHEN WS-DX = 0 AND WS-DY = 0 AND WS-DZ = 0
-             IF L-YAW NOT = EN-YAW(WS-ROW) OR L-PITCH NOT = EN-PITCH(WS-ROW)
+             IF L-YAW NOT = WS-BYAW OR L-PITCH NOT = WS-BPITCH
                  CALL "MOVE-ENTITY-ROT-BUILD" USING EN-ID(WS-ROW) L-ON-GROUND L-YAW L-PITCH
                      MV-BUFFER
              END-IF
@@ -528,7 +587,7 @@
                  OR FUNCTION ABS(WS-DZ) > 32767
              CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(WS-ROW) L-X L-Y L-Z WS-VX WS-VY WS-VZ
                  L-YAW L-PITCH L-ON-GROUND MV-BUFFER
-         WHEN L-YAW NOT = EN-YAW(WS-ROW) OR L-PITCH NOT = EN-PITCH(WS-ROW)
+         WHEN L-YAW NOT = WS-BYAW OR L-PITCH NOT = WS-BPITCH
              MOVE WS-DX TO WS-SX
              MOVE WS-DY TO WS-SY
              MOVE WS-DZ TO WS-SZ
@@ -541,7 +600,7 @@
              CALL "MOVE-ENTITY-POS-BUILD" USING EN-ID(WS-ROW) WS-SX WS-SY WS-SZ L-ON-GROUND
                  MV-BUFFER
      END-EVALUATE
-     IF L-YAW NOT = EN-YAW(WS-ROW)
+     IF L-YAW NOT = WS-BYAW
          CALL "ROTATE-HEAD-BUILD" USING EN-ID(WS-ROW) L-YAW HD-BUFFER
      END-IF
      PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
@@ -552,6 +611,13 @@
              CALL "CORE-SEND" USING PL-CONN(WS-PLAYER) HD-BUFFER
          END-IF
      END-PERFORM
+     IF WS-GATE = 1
+         MOVE L-X TO EN-SENT-X(WS-ROW)
+         MOVE L-Y TO EN-SENT-Y(WS-ROW)
+         MOVE L-Z TO EN-SENT-Z(WS-ROW)
+         MOVE L-YAW TO EN-SENT-YAW(WS-ROW)
+         MOVE L-PITCH TO EN-SENT-PITCH(WS-ROW)
+     END-IF
      MOVE L-X TO EN-X(WS-ROW)
      MOVE L-Y TO EN-Y(WS-ROW)
      MOVE L-Z TO EN-Z(WS-ROW)

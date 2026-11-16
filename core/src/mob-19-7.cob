@@ -170,6 +170,9 @@
              END-IF
          END-IF
      END-PERFORM
+     IF WS-BEST = 0
+         CALL "M44-FOX-HUNT" USING L-ROW L-HX L-HZ L-WALK
+     END-IF
      IF WS-BEST > 0
          MOVE 1 TO L-WALK
          COMPUTE WS-DX = EN-X(L-ROW) - PL-X(WS-BEST)
