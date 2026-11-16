@@ -92,6 +92,10 @@
  01 WS-LENGTH              FLOAT-LONG.
  01 WS-YAW                 FLOAT-LONG.
  01 WS-HX                  FLOAT-LONG.
+ 01 WS-FRICTION            FLOAT-LONG.
+ 01 WS-ICE-SCALE           FLOAT-LONG.
+ 01 WS-ICE-HX              FLOAT-LONG.
+ 01 WS-ICE-HZ              FLOAT-LONG.
  01 WS-HZ                  FLOAT-LONG.
  01 WS-AXIS                BINARY-LONG.
  01 WS-BLOCKED             BINARY-LONG.
@@ -252,6 +256,31 @@
      END-IF
      IF PL-FLYING = 0 AND WS-FLUID = 0
          COMPUTE PL-VY = (PL-VY - 0.08) * 0.98
+     END-IF
+*>   Slippery ground (18 section 3.2, 13 section 1.3): over a block of friction F above 0.6 the walk only accelerates by speed x 0.21600002 / F^3
+*>   (0.454 of the direct step) and the velocity is kept with a drag of F x 0.91 a tick (0.91 in the air, 0.546 on ordinary ground, where only
+*>   what was carried over from ice remains); on ordinary ground nothing is carried and the step is direct as before.
+     IF PL-FLYING = 1 OR WS-FLUID > 0
+         MOVE 0 TO PL-SLIP-X PL-SLIP-Z
+     ELSE
+         CALL "PHYS-FRICTION" USING CLIENT-STATE WS-FRICTION
+         MOVE 0 TO WS-ICE-HX WS-ICE-HZ
+         IF PL-ON-GROUND = 1 AND WS-FRICTION > 0.6
+             COMPUTE WS-ICE-SCALE = 0.454 * 0.21600002 / (WS-FRICTION ** 3)
+             COMPUTE WS-ICE-HX = WS-HX * WS-ICE-SCALE
+             COMPUTE WS-ICE-HZ = WS-HZ * WS-ICE-SCALE
+             MOVE 0 TO WS-HX WS-HZ
+         END-IF
+         COMPUTE WS-HX = WS-HX + PL-SLIP-X + WS-ICE-HX
+         COMPUTE WS-HZ = WS-HZ + PL-SLIP-Z + WS-ICE-HZ
+         COMPUTE PL-SLIP-X = (PL-SLIP-X + WS-ICE-HX) * WS-FRICTION * 0.91
+         COMPUTE PL-SLIP-Z = (PL-SLIP-Z + WS-ICE-HZ) * WS-FRICTION * 0.91
+         IF FUNCTION ABS(PL-SLIP-X) < 0.003
+             MOVE 0 TO PL-SLIP-X
+         END-IF
+         IF FUNCTION ABS(PL-SLIP-Z) < 0.003
+             MOVE 0 TO PL-SLIP-Z
+         END-IF
      END-IF
 *>   The push of an Explode packet's knockback adds to the horizontal move and decays by 0.546 a tick on the ground, 0.91 in the air.
      COMPUTE WS-HX = WS-HX + PL-KB-X
@@ -485,6 +514,39 @@
      END-IF
      GOBACK.
  END PROGRAM PHYS-CLIMBING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-FRICTION.
+*> USING CLIENT-STATE, friction out (FLOAT-LONG): 1.0 in the air; on the ground the friction of the block 0.500001 below the feet (BSH-SLIP of its
+*> state in thousandths, ice 0.98, blue ice 0.989, slime 0.8), 0.6 for any other block (18 section 3.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-FRICTION             FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-FRICTION.
+     MOVE 1 TO L-FRICTION
+     IF PL-ON-GROUND = 1
+         MOVE 0.6 TO L-FRICTION
+         COMPUTE WS-X = FUNCTION INTEGER(PL-X)
+         COMPUTE WS-Y = FUNCTION INTEGER(PL-Y - 0.500001)
+         COMPUTE WS-Z = FUNCTION INTEGER(PL-Z)
+         CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLOCK
+         IF WS-STATE > 0 AND WS-STATE < BSH-MAX-STATES
+             IF BSH-SLIP(WS-STATE + 1) > 0
+                 COMPUTE L-FRICTION = BSH-SLIP(WS-STATE + 1) / 1000
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PHYS-FRICTION.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-STEP-UP.

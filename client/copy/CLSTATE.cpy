@@ -258,6 +258,8 @@
        10 PL-XP-TOTAL        BINARY-LONG.
        10 PL-KB-X            FLOAT-LONG.     *> the horizontal push of an Explode packet's knockback, decaying each tick (physics.cob)
        10 PL-KB-Z            FLOAT-LONG.
+       10 PL-SLIP-X          FLOAT-LONG.     *> the horizontal velocity kept on slippery ground (ice) and in the air after it, decaying by friction x 0.91 a tick (physics.cob)
+       10 PL-SLIP-Z          FLOAT-LONG.
        10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
 *>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
 *>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
