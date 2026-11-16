@@ -642,6 +642,7 @@
          CALL "ARMADILLO-HURT" USING WS-ROW L-ATTACKER
          CALL "PANDA-HURT" USING WS-ROW L-ATTACKER
      END-IF
+     CALL "PIGLIN-HURT" USING WS-ROW
 *>   Wolf armour absorbs the hit instead of the wolf (19 section 6.1).
      CALL "WOLF-ARMOR-ABSORB" USING WS-ROW WS-DMG WS-ABSORBED
      IF WS-ABSORBED = 1
