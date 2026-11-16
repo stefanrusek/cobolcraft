@@ -200,6 +200,56 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Tints: the wool of an orange sheep (dye 1) is 0xBA of 255 in red, a white sheep's 0xE6, a sheared sheep has no wool; a tropical fish of base colour red
+*>   (id 14) has its base layer multiplied by 0xB0.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE "sheep" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE 1 TO EN-VAR(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-EN-COUNT TO WS-N
+     MOVE "acceptance variants the wool of an orange sheep is tinted 0xBA" TO TL-CASE
+     MOVE 186 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(RL-EN-COUNT) * 255
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance variants the body of the sheep is not tinted" TO TL-CASE
+     MOVE 255 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(1) * 255
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-VAR(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance variants the wool of a white sheep is tinted 0xE6" TO TL-CASE
+     MOVE 230 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(RL-EN-COUNT) * 255
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 16 TO EN-VAR(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance variants a sheared sheep has no wool" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-EN-COUNT > 0 AND RL-EN-COUNT < WS-N
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE "tropical_fish" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     COMPUTE EN-VAR(1) = 14 * 65536 + 1 * 16777216
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance variants a red tropical fish has its base layer tinted 0xB0" TO TL-CASE
+     MOVE 176 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(1) * 255
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance variants its pattern layer takes the pattern colour (orange 0xF9)" TO TL-CASE
+     MOVE 249 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(RL-EN-COUNT) * 255
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full atlas (64 slots of models no longer on screen) is released for the mobs now on screen instead of leaving them undrawn.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 64

@@ -269,7 +269,9 @@
              END-EVALUATE
 *>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
              MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
+*>           A sheared sheep (entry 18 bit 16) draws no wool.
              IF CL-MD-EXTRA(WS-SAVED-MODEL) > 0
+                     AND NOT (EN-KEY(WS-R) = "sheep" AND EN-VAR(WS-R) >= 16 AND FUNCTION MOD(FUNCTION INTEGER(EN-VAR(WS-R) / 16), 2) = 1)
                  MOVE CL-MD-EXTRA(WS-SAVED-MODEL) TO EN-MODEL(WS-R)
                  CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)

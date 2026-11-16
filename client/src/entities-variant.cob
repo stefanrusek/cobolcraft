@@ -221,3 +221,92 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-TEX-PATH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-TINT.
+*> USING CLIENT-STATE, replica row, model row drawn, red, green, blue out (FLOAT-LONG 0 to 1, the colour the model's texture is multiplied by): the wool of a sheep in
+*> the colour of its dye (34-4 section 5: white 0xE6E6E6, else each channel of the dye's diffuse colour x 0.75 rounded down), the base layer of a tropical fish in its
+*> base colour and the pattern layer in its pattern colour (34-8 section 5.4: the packed variant EN-VAR, base colour bits 16 to 23, pattern colour bits 24 to 31, dye
+*> diffuse colours of the same table); 1 for everything else.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLMODELS.
+ 01 WS-DIFFUSE-DATA.
+    05 FILLER PIC 9(8) VALUE 16383998.
+    05 FILLER PIC 9(8) VALUE 16351261.
+    05 FILLER PIC 9(8) VALUE 13061821.
+    05 FILLER PIC 9(8) VALUE 3847130.
+    05 FILLER PIC 9(8) VALUE 16701501.
+    05 FILLER PIC 9(8) VALUE 8439583.
+    05 FILLER PIC 9(8) VALUE 15961002.
+    05 FILLER PIC 9(8) VALUE 4673362.
+    05 FILLER PIC 9(8) VALUE 10329495.
+    05 FILLER PIC 9(8) VALUE 1481884.
+    05 FILLER PIC 9(8) VALUE 8991416.
+    05 FILLER PIC 9(8) VALUE 3949738.
+    05 FILLER PIC 9(8) VALUE 8606770.
+    05 FILLER PIC 9(8) VALUE 6192150.
+    05 FILLER PIC 9(8) VALUE 11546150.
+    05 FILLER PIC 9(8) VALUE 1908001.
+ 01 WS-DIFFUSE REDEFINES WS-DIFFUSE-DATA.
+    05 WS-DF                PIC 9(8) OCCURS 16 TIMES.
+ 01 WS-BASE                PIC X(20).
+ 01 WS-TAIL                PIC X(2).
+ 01 WS-DYE                 BINARY-LONG.
+ 01 WS-RGB                 BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-MODEL                BINARY-LONG.
+ 01 L-RED                  FLOAT-LONG.
+ 01 L-GREEN                FLOAT-LONG.
+ 01 L-BLUE                 FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-MODEL L-RED L-GREEN L-BLUE.
+     MOVE 1 TO L-RED L-GREEN L-BLUE
+     MOVE SPACES TO WS-BASE WS-TAIL
+     UNSTRING CL-MD-KEY(L-MODEL) DELIMITED BY "~" INTO WS-BASE WS-TAIL
+     MOVE 0 TO WS-MODE
+     MOVE 0 TO WS-DYE
+     EVALUATE WS-BASE
+         WHEN "sheep_wool"
+             MOVE 1 TO WS-MODE
+             IF EN-VAR(L-ROW) >= 0
+                 COMPUTE WS-DYE = FUNCTION MOD(EN-VAR(L-ROW), 16)
+             END-IF
+         WHEN "tropical_fish"
+             MOVE 2 TO WS-MODE
+             IF EN-VAR(L-ROW) >= 0
+                 COMPUTE WS-DYE = FUNCTION MOD(FUNCTION INTEGER(EN-VAR(L-ROW) / 65536), 16)
+             END-IF
+         WHEN "tropical_pattern"
+             MOVE 2 TO WS-MODE
+             IF EN-VAR(L-ROW) >= 0
+                 COMPUTE WS-DYE = FUNCTION MOD(FUNCTION INTEGER(EN-VAR(L-ROW) / 16777216), 16)
+             END-IF
+         WHEN OTHER
+             CONTINUE
+     END-EVALUATE
+     IF WS-MODE > 0
+         MOVE WS-DF(WS-DYE + 1) TO WS-RGB
+         COMPUTE WS-R = FUNCTION INTEGER(WS-RGB / 65536)
+         COMPUTE WS-G = FUNCTION MOD(FUNCTION INTEGER(WS-RGB / 256), 256)
+         COMPUTE WS-B = FUNCTION MOD(WS-RGB, 256)
+         IF WS-MODE = 1
+             IF WS-DYE = 0
+                 MOVE 230 TO WS-R WS-G WS-B
+             ELSE
+                 COMPUTE WS-R = FUNCTION INTEGER(WS-R * 0.75)
+                 COMPUTE WS-G = FUNCTION INTEGER(WS-G * 0.75)
+                 COMPUTE WS-B = FUNCTION INTEGER(WS-B * 0.75)
+             END-IF
+         END-IF
+         COMPUTE L-RED = WS-R / 255
+         COMPUTE L-GREEN = WS-G / 255
+         COMPUTE L-BLUE = WS-B / 255
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-TINT.

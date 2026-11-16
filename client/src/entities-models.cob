@@ -169,6 +169,9 @@
     05 WS-HAVE             PIC 9 OCCURS 160 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXC                BINARY-LONG.
+ 01 WS-TR                  FLOAT-LONG.
+ 01 WS-TG                  FLOAT-LONG.
+ 01 WS-TB                  FLOAT-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -735,6 +738,7 @@
      COMPUTE WS-OX = EN-X(WS-ROW) - L-EYE(1)
      COMPUTE WS-OY = EN-Y(WS-ROW) - L-EYE(2)
      COMPUTE WS-OZ = EN-Z(WS-ROW) - L-EYE(3)
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TR WS-TG WS-TB
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR RL-EN-COUNT + 36 > CL-MAX-ENTITY-VERTICES
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
              COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
@@ -749,6 +753,9 @@
              MOVE WS-ECX(WS-J) TO RL-EN-X(RL-EN-COUNT)
              MOVE WS-ECY(WS-J) TO RL-EN-Y(RL-EN-COUNT)
              MOVE WS-ECZ(WS-J) TO RL-EN-Z(RL-EN-COUNT)
+             MOVE WS-TR TO RL-EN-R(RL-EN-COUNT)
+             MOVE WS-TG TO RL-EN-G(RL-EN-COUNT)
+             MOVE WS-TB TO RL-EN-BLUE(RL-EN-COUNT)
              ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM
