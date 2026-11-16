@@ -235,6 +235,7 @@
          GOBACK
      END-IF
      ADD 1 TO CW-TICKS
+     CALL "CMD-SUGGEST-FLUSH"
 *>   A debug world runs no world work (debug-world.md section 6): only the connections' keep-alives.
      CALL "WORLD-IS-DEBUG" USING WS-DEBUG
      IF WS-DEBUG = 1
