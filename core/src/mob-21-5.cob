@@ -57,6 +57,10 @@
  01 WS-TICKS               BINARY-LONG.
  01 WS-SEES                BINARY-LONG.
  01 WS-AY                  FLOAT-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
  01 WS-BY                  FLOAT-LONG.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
@@ -83,7 +87,11 @@
 *>               BeeHurtByOtherGoal alerts only bees the angry bee has a line of sight to (44 part 4 section 15); eyes taken 0.3 above the feet (stand-in).
                  COMPUTE WS-AY = EN-Y(L-ROW) + 0.3
                  COMPUTE WS-BY = EN-Y(WS-E) + 0.3
-                 CALL "MOB-SEES" USING EN-DIM(L-ROW) EN-X(L-ROW) WS-AY EN-Z(L-ROW) EN-X(WS-E) WS-BY EN-Z(WS-E) WS-SEES
+                 MOVE EN-X(L-ROW) TO WS-AX
+                 MOVE EN-Z(L-ROW) TO WS-AZ
+                 MOVE EN-X(WS-E) TO WS-BX
+                 MOVE EN-Z(WS-E) TO WS-BZ
+                 CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-AX WS-AY WS-AZ WS-BX WS-BY WS-BZ WS-SEES
              END-IF
              IF WS-DX <= SM-FOLLOW(WS-M) AND WS-DZ <= SM-FOLLOW(WS-M) AND WS-DY <= 10 AND WS-SEES = 1
                  CALL "NETHER-ANGER-TICKS" USING WS-E WS-TICKS
