@@ -1348,6 +1348,10 @@
              MOVE 1 TO WS-PERSIST
          END-IF
      END-IF
+*>   A mob a structure made (EN-PERSISTENT: PersistenceRequired) is never removed for distance.
+     IF EN-PERSISTENT(L-ROW) = 1
+         MOVE 1 TO WS-PERSIST
+     END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
      IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1
          MOVE 1 TO WS-PEACEFUL

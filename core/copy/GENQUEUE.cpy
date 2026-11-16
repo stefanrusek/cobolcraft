@@ -33,7 +33,7 @@
 *> the answer buffer GW-ADDR (marker-y, the chunk, then the overflow GO-DATA of GENOVER.cpy: 8 + 16 * 1024 bytes). GQ-READY is the worker whose finished answer the chunk installer takes (0 = none).
  78 GW-MAX                 VALUE 8.
  78 GW-POOL-MAX            VALUE 4.
- 78 GW-ANSWER-BYTES        VALUE 327700.
+ 78 GW-ANSWER-BYTES        VALUE 349788.
  01 GEN-WORKERS EXTERNAL.
     05 GQ-WORKERS           BINARY-LONG.
     05 GW-ACTIVE            BINARY-LONG.

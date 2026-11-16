@@ -465,6 +465,8 @@
        10 EN-BOOST           BINARY-LONG.        *> strider: the boost total in ticks (metadata 18)
        10 EN-BOOST-T         BINARY-LONG.        *> strider: ticks into the boost
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
+*>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
+       10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
