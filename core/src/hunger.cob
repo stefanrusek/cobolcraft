@@ -87,6 +87,8 @@
  COPY CITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-ALWAYS              BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
@@ -103,7 +105,12 @@
          GOBACK
      END-IF
 *>   A full player eats only an item that can always be eaten (golden apple, honey bottle, chorus fruit: 25 part 5 section 4.3).
-     IF PL-FOOD(WS-ROW) >= RULE-MAX-FOOD AND IT-FOOD-ALWAYS(WS-ITEM) = 0
+     CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT) WS-KEY
+     CALL "FOOD-ALWAYS" USING WS-KEY WS-ALWAYS
+     IF IT-FOOD-ALWAYS(WS-ITEM) NOT = 0
+         MOVE 1 TO WS-ALWAYS
+     END-IF
+     IF PL-FOOD(WS-ROW) >= RULE-MAX-FOOD AND WS-ALWAYS = 0
          GOBACK
      END-IF
      MOVE PL-SLOT-ITEM(WS-ROW, WS-SLOT) TO PL-EATING-ITEM(WS-ROW)

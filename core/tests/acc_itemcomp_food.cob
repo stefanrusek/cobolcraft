@@ -41,6 +41,19 @@
      COMPUTE WS-SLOT = PL-HELD(WS-PLAYER) + 1
      MOVE 0 TO PSB-HAND
 
+     MOVE "acceptance itemcomp standard world: bread, golden apple and rotten flesh rows carry a food value (CONTENT-FOOD)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "minecraft:bread" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE IT-FOOD(WS-ITEM + 1) TO WS-E1
+     MOVE "minecraft:golden_apple" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE IT-FOOD(WS-ITEM + 1) TO WS-E2
+     MOVE IT-FOOD-ALWAYS(WS-ITEM + 1) TO WS-E3
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "5 4 1" TO TL-EXPECTED
+     PERFORM CHECK
+
      MOVE "acceptance itemcomp 24-5 a golden apple eaten at full food gives regeneration II for 100 ticks and absorption for 2400" TO TL-CASE
      MOVE "golden_apple" TO WS-KEY
      MOVE 0 TO WS-HANDLE
@@ -152,15 +165,12 @@
      STRING "minecraft:" FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE INTO WS-ITEM-ROW
      MOVE WS-ITEM-ROW TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
-*>   The content rows of the standard set carry no food value for the table (IT-FOOD), so the test gives the item one.
-     IF IT-FOOD(WS-ITEM + 1) = 0
-         MOVE 4 TO IT-FOOD(WS-ITEM + 1)
-     END-IF
+*>   Standard world: the nutrition comes from the content row (CONTENT-FOOD), the test gives the item nothing.
      MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-SLOT)
      MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, WS-SLOT)
      MOVE WS-HANDLE TO PL-SLOT-VAR(WS-PLAYER, WS-SLOT)
      CALL "HUNGER-USE-ITEM" USING WS-CONN PLAY-SERVERBOUND
-     PERFORM 31 TIMES
+     PERFORM 45 TIMES
          ADD 1 TO CW-TICKS
          CALL "HUNGER-TICK" USING WS-PLAYER
      END-PERFORM

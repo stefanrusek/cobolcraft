@@ -8,53 +8,6 @@
  PROGRAM-ID. CONTENT-FOOD.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-FOODS.
-    05 FILLER PIC X(30) VALUE "apple                 04024000".
-    05 FILLER PIC X(30) VALUE "baked_potato          05060000".
-    05 FILLER PIC X(30) VALUE "beef                  03018000".
-    05 FILLER PIC X(30) VALUE "beetroot              01012000".
-    05 FILLER PIC X(30) VALUE "beetroot_soup         06072000".
-    05 FILLER PIC X(30) VALUE "bread                 05060000".
-    05 FILLER PIC X(30) VALUE "carrot                03036000".
-    05 FILLER PIC X(30) VALUE "chicken               02012000".
-    05 FILLER PIC X(30) VALUE "chorus_fruit          04024001".
-    05 FILLER PIC X(30) VALUE "cod                   02004000".
-    05 FILLER PIC X(30) VALUE "cooked_beef           08128000".
-    05 FILLER PIC X(30) VALUE "cooked_chicken        06072000".
-    05 FILLER PIC X(30) VALUE "cooked_cod            05060000".
-    05 FILLER PIC X(30) VALUE "cooked_mutton         06096000".
-    05 FILLER PIC X(30) VALUE "cooked_porkchop       08128000".
-    05 FILLER PIC X(30) VALUE "cooked_rabbit         05060000".
-    05 FILLER PIC X(30) VALUE "cooked_salmon         06096000".
-    05 FILLER PIC X(30) VALUE "cookie                02004000".
-    05 FILLER PIC X(30) VALUE "dried_kelp            01006000".
-    05 FILLER PIC X(30) VALUE "enchanted_golden_apple04096001".
-    05 FILLER PIC X(30) VALUE "glow_berries          02004000".
-    05 FILLER PIC X(30) VALUE "golden_apple          04096001".
-    05 FILLER PIC X(30) VALUE "golden_carrot         06144000".
-    05 FILLER PIC X(30) VALUE "honey_bottle          06012001".
-    05 FILLER PIC X(30) VALUE "melon_slice           02012000".
-    05 FILLER PIC X(30) VALUE "mushroom_stew         06072000".
-    05 FILLER PIC X(30) VALUE "mutton                02012000".
-    05 FILLER PIC X(30) VALUE "poisonous_potato      02012000".
-    05 FILLER PIC X(30) VALUE "porkchop              03018000".
-    05 FILLER PIC X(30) VALUE "potato                01006000".
-    05 FILLER PIC X(30) VALUE "pufferfish            01002000".
-    05 FILLER PIC X(30) VALUE "pumpkin_pie           08048000".
-    05 FILLER PIC X(30) VALUE "rabbit                03018000".
-    05 FILLER PIC X(30) VALUE "rabbit_stew           10120000".
-    05 FILLER PIC X(30) VALUE "rotten_flesh          04008000".
-    05 FILLER PIC X(30) VALUE "salmon                02004000".
-    05 FILLER PIC X(30) VALUE "spider_eye            02032000".
-    05 FILLER PIC X(30) VALUE "suspicious_stew       06072001".
-    05 FILLER PIC X(30) VALUE "sweet_berries         02004000".
-    05 FILLER PIC X(30) VALUE "tropical_fish         01002000".
- 01 WS-TABLE REDEFINES WS-FOODS.
-    05 WS-ROW OCCURS 40 TIMES.
-       10 WS-NAME            PIC X(22).
-       10 WS-NUTRITION       PIC 99.
-       10 WS-SATURATION      PIC 9(5).
-       10 WS-ALWAYS          PIC 9.
  01 WS-POS                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-TOKEN               PIC X(40).
@@ -109,20 +62,85 @@
                  MOVE WS-KEY(7:) TO WS-KEY-REST
                 MOVE WS-KEY-REST TO WS-KEY
              END-IF
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
-                 IF WS-NAME(WS-I) = WS-KEY
-                     MOVE WS-NUTRITION(WS-I) TO L-NUTRITION
-                     MOVE WS-SATURATION(WS-I) TO L-SATURATION
-                     MOVE WS-ALWAYS(WS-I) TO L-ALWAYS
-                     MOVE 32 TO L-TICKS
-                     IF WS-KEY = "dried_kelp"
-                         MOVE 16 TO L-TICKS
-                     END-IF
-                     IF WS-KEY = "honey_bottle"
-                         MOVE 40 TO L-TICKS
-                     END-IF
-                 END-IF
-             END-PERFORM
+             CALL "CONTENT-FOOD-NAMED" USING WS-KEY L-NUTRITION L-SATURATION L-ALWAYS L-TICKS
      END-EVALUATE
      GOBACK.
  END PROGRAM CONTENT-FOOD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTENT-FOOD-NAMED.
+*> USING key (PIC X(40), lower case, without minecraft: or Foods.), nutrition, saturation, always, ticks out as CONTENT-FOOD: the Foods table row of that name
+*> (the suspicious stew's row says only "food," and takes the food of its own item key).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOODS.
+    05 FILLER PIC X(30) VALUE "apple                 04024000".
+    05 FILLER PIC X(30) VALUE "baked_potato          05060000".
+    05 FILLER PIC X(30) VALUE "beef                  03018000".
+    05 FILLER PIC X(30) VALUE "beetroot              01012000".
+    05 FILLER PIC X(30) VALUE "beetroot_soup         06072000".
+    05 FILLER PIC X(30) VALUE "bread                 05060000".
+    05 FILLER PIC X(30) VALUE "carrot                03036000".
+    05 FILLER PIC X(30) VALUE "chicken               02012000".
+    05 FILLER PIC X(30) VALUE "chorus_fruit          04024001".
+    05 FILLER PIC X(30) VALUE "cod                   02004000".
+    05 FILLER PIC X(30) VALUE "cooked_beef           08128000".
+    05 FILLER PIC X(30) VALUE "cooked_chicken        06072000".
+    05 FILLER PIC X(30) VALUE "cooked_cod            05060000".
+    05 FILLER PIC X(30) VALUE "cooked_mutton         06096000".
+    05 FILLER PIC X(30) VALUE "cooked_porkchop       08128000".
+    05 FILLER PIC X(30) VALUE "cooked_rabbit         05060000".
+    05 FILLER PIC X(30) VALUE "cooked_salmon         06096000".
+    05 FILLER PIC X(30) VALUE "cookie                02004000".
+    05 FILLER PIC X(30) VALUE "dried_kelp            01006000".
+    05 FILLER PIC X(30) VALUE "enchanted_golden_apple04096001".
+    05 FILLER PIC X(30) VALUE "glow_berries          02004000".
+    05 FILLER PIC X(30) VALUE "golden_apple          04096001".
+    05 FILLER PIC X(30) VALUE "golden_carrot         06144000".
+    05 FILLER PIC X(30) VALUE "honey_bottle          06012001".
+    05 FILLER PIC X(30) VALUE "melon_slice           02012000".
+    05 FILLER PIC X(30) VALUE "mushroom_stew         06072000".
+    05 FILLER PIC X(30) VALUE "mutton                02012000".
+    05 FILLER PIC X(30) VALUE "poisonous_potato      02012000".
+    05 FILLER PIC X(30) VALUE "porkchop              03018000".
+    05 FILLER PIC X(30) VALUE "potato                01006000".
+    05 FILLER PIC X(30) VALUE "pufferfish            01002000".
+    05 FILLER PIC X(30) VALUE "pumpkin_pie           08048000".
+    05 FILLER PIC X(30) VALUE "rabbit                03018000".
+    05 FILLER PIC X(30) VALUE "rabbit_stew           10120000".
+    05 FILLER PIC X(30) VALUE "rotten_flesh          04008000".
+    05 FILLER PIC X(30) VALUE "salmon                02004000".
+    05 FILLER PIC X(30) VALUE "spider_eye            02032000".
+    05 FILLER PIC X(30) VALUE "suspicious_stew       06072001".
+    05 FILLER PIC X(30) VALUE "sweet_berries         02004000".
+    05 FILLER PIC X(30) VALUE "tropical_fish         01002000".
+ 01 WS-TABLE REDEFINES WS-FOODS.
+    05 WS-ROW OCCURS 40 TIMES.
+       10 WS-NAME            PIC X(22).
+       10 WS-NUTRITION       PIC 99.
+       10 WS-SATURATION      PIC 9(5).
+       10 WS-ALWAYS          PIC 9.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(40).
+ 01 L-NUTRITION            BINARY-LONG.
+ 01 L-SATURATION           BINARY-LONG.
+ 01 L-ALWAYS               BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-NUTRITION L-SATURATION L-ALWAYS L-TICKS.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
+         IF WS-NAME(WS-I) = L-KEY
+             MOVE WS-NUTRITION(WS-I) TO L-NUTRITION
+             MOVE WS-SATURATION(WS-I) TO L-SATURATION
+             MOVE WS-ALWAYS(WS-I) TO L-ALWAYS
+             MOVE 32 TO L-TICKS
+             IF L-KEY = "dried_kelp"
+                 MOVE 16 TO L-TICKS
+             END-IF
+             IF L-KEY = "honey_bottle"
+                 MOVE 40 TO L-TICKS
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CONTENT-FOOD-NAMED.

@@ -19,6 +19,9 @@
 *>
 *> Entry points:
 *>   CRAFT-ING-TEST USING item id (BINARY-LONG, 0 = empty), ingredient (PIC X(800)), result out (1 or 0)
+*>   CRAFT-MATCH-X USING width, height, items (9), handles (9), row out, result item out, result count out, result handle out: CRAFT-MATCH over a grid whose stacks carry components;
+*>     the rows of serializers 2, 3 and 8 to 13 read them (crafting-special.cob) and a transmute result keeps the input's patch
+*>   CRAFT-TAKE-X USING width, height, items, counts, handles: CRAFT-TAKE that clears emptied handles and keeps the banner duplicate's remainder
 *>   CRAFT-MATCH USING width, height, items (table of 9 BINARY-LONG), row out (the RC-STORE row, 0 = no recipe),
 *>     result item out (BINARY-LONG), result count out (BINARY-LONG)
 *>   CRAFT-TAKE USING width, height, items (table of 9), counts (table of 9): one item of each non-empty slot is
@@ -198,7 +201,7 @@
  END PROGRAM CRAFT-MATCH-SHAPELESS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. CRAFT-MATCH.
+ PROGRAM-ID. CRAFT-MATCH-X.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTRECIPE.
@@ -221,16 +224,22 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-T-COUNT             BINARY-LONG.
  01 WS-T-PASS              BINARY-LONG.
+ 01 WS-T-INPUT             BINARY-LONG.
+ 01 WS-S-ITEM              BINARY-LONG.
+ 01 WS-S-VAR               BINARY-LONG.
  LINKAGE SECTION.
  01 L-WIDTH                BINARY-LONG.
  01 L-HEIGHT               BINARY-LONG.
  01 L-ITEMS.
     05 L-ITEM              BINARY-LONG OCCURS 9 TIMES.
+ 01 L-VARS.
+    05 L-VAR               BINARY-LONG OCCURS 9 TIMES.
  01 L-ROW                  BINARY-LONG.
  01 L-RESULT-ITEM          BINARY-LONG.
  01 L-RESULT-COUNT         BINARY-LONG.
- PROCEDURE DIVISION USING L-WIDTH L-HEIGHT L-ITEMS L-ROW L-RESULT-ITEM L-RESULT-COUNT.
-     MOVE 0 TO L-ROW L-RESULT-ITEM L-RESULT-COUNT
+ 01 L-RESULT-VAR           BINARY-LONG.
+ PROCEDURE DIVISION USING L-WIDTH L-HEIGHT L-ITEMS L-VARS L-ROW L-RESULT-ITEM L-RESULT-COUNT L-RESULT-VAR.
+     MOVE 0 TO L-ROW L-RESULT-ITEM L-RESULT-COUNT L-RESULT-VAR
 *>   The bounding box of the non-empty slots.
      MOVE 0 TO WS-N
      MOVE L-HEIGHT TO WS-MIN-ROW
@@ -280,6 +289,11 @@
          IF RR-SERIALIZER(WS-K) = 4
              CALL "RECIPE-TRANSMUTE-MATCH" USING WS-K L-ITEMS WS-MATCHED WS-T-COUNT
          END-IF
+*>       The rows that read the components of the stacks (crafting-special.cob).
+         MOVE 0 TO WS-S-ITEM WS-S-VAR
+         IF RR-SERIALIZER(WS-K) = 2 OR RR-SERIALIZER(WS-K) = 3 OR (RR-SERIALIZER(WS-K) >= 8 AND RR-SERIALIZER(WS-K) <= 13)
+             CALL "CRAFT-SPECIAL" USING WS-K L-ITEMS L-VARS WS-MATCHED WS-S-ITEM WS-S-VAR
+         END-IF
          IF WS-MATCHED = 1
              MOVE WS-K TO L-ROW
          END-IF
@@ -290,10 +304,25 @@
          CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ITEM-ROW WS-STATUS
          MOVE WS-ID TO L-RESULT-ITEM
          MOVE RR-RESULT-COUNT(L-ROW) TO L-RESULT-COUNT
+         MOVE WS-S-VAR TO L-RESULT-VAR
+         IF WS-S-ITEM > 0
+             MOVE WS-S-ITEM TO L-RESULT-ITEM
+         END-IF
 *>       A transmute recipe (27 2.4) gives its own count (plus the material count when it adds it); one that names no
 *>       result gives the input's item.
          IF RR-SERIALIZER(L-ROW) = 4
              MOVE WS-T-COUNT TO L-RESULT-COUNT
+*>           The result keeps the components of the input stack (27 2.4: the input's patch is carried over).
+             MOVE 0 TO WS-T-INPUT
+             PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 9 OR WS-T-INPUT > 0
+                 IF L-ITEM(WS-SLOT) NOT = 0
+                     CALL "CRAFT-ING-TEST" USING L-ITEM(WS-SLOT) RR-ING(L-ROW, 1) WS-T-PASS
+                     IF WS-T-PASS = 1
+                         MOVE WS-SLOT TO WS-T-INPUT
+                         MOVE L-VAR(WS-SLOT) TO L-RESULT-VAR
+                     END-IF
+                 END-IF
+             END-PERFORM
              IF RR-RESULT-ID(L-ROW) = SPACES
                  PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 9 OR L-RESULT-ITEM > 0
                      IF L-ITEM(WS-SLOT) NOT = 0
@@ -306,6 +335,31 @@
              END-IF
          END-IF
      END-IF
+     GOBACK.
+ END PROGRAM CRAFT-MATCH-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CRAFT-MATCH.
+*> USING width, height, items (9), row out, result item out, result count out: CRAFT-MATCH-X for a grid whose stacks carry no components.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-VARS.
+    05 WS-VAR              BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-RESULT-VAR          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-ITEMS.
+    05 L-ITEM              BINARY-LONG OCCURS 9 TIMES.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-RESULT-ITEM          BINARY-LONG.
+ 01 L-RESULT-COUNT         BINARY-LONG.
+ PROCEDURE DIVISION USING L-WIDTH L-HEIGHT L-ITEMS L-ROW L-RESULT-ITEM L-RESULT-COUNT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         MOVE 0 TO WS-VAR(WS-I)
+     END-PERFORM
+     CALL "CRAFT-MATCH-X" USING L-WIDTH L-HEIGHT L-ITEMS WS-VARS L-ROW L-RESULT-ITEM L-RESULT-COUNT WS-RESULT-VAR
      GOBACK.
  END PROGRAM CRAFT-MATCH.
 
@@ -335,6 +389,62 @@
  END PROGRAM CRAFT-TAKE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CRAFT-TAKE-X.
+*> USING width, height, items (9), counts (9), handles (9): CRAFT-TAKE that knows the recipe: the patch handle of an emptied slot is cleared, and the banner duplicate
+*> recipe (27 2.6) leaves a one-count copy of the patterned banner in its slot (the remainder).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTRECIPE.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-RITEM               BINARY-LONG.
+ 01 WS-RCOUNT              BINARY-LONG.
+ 01 WS-RVAR                BINARY-LONG.
+ 01 WS-LAYERS              BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG.
+ 01 WS-KEEP-ITEM           BINARY-LONG.
+ 01 WS-KEEP-VAR            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-ITEMS.
+    05 L-ITEM              BINARY-LONG OCCURS 9 TIMES.
+ 01 L-COUNTS.
+    05 L-COUNT             BINARY-LONG OCCURS 9 TIMES.
+ 01 L-VARS.
+    05 L-VAR               BINARY-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING L-WIDTH L-HEIGHT L-ITEMS L-COUNTS L-VARS.
+     CALL "CRAFT-MATCH-X" USING L-WIDTH L-HEIGHT L-ITEMS L-VARS WS-ROW WS-RITEM WS-RCOUNT WS-RVAR
+     MOVE 0 TO WS-KEEP
+     IF WS-ROW > 0
+         IF RR-SERIALIZER(WS-ROW) = 11
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9
+                 IF L-ITEM(WS-J) NOT = 0
+                     CALL "SC-BANNER-COUNT" USING L-VAR(WS-J) WS-LAYERS
+                     IF WS-LAYERS > 0
+                         MOVE WS-J TO WS-KEEP
+                         MOVE L-ITEM(WS-J) TO WS-KEEP-ITEM
+                         MOVE L-VAR(WS-J) TO WS-KEEP-VAR
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-IF
+     CALL "CRAFT-TAKE" USING L-WIDTH L-HEIGHT L-ITEMS L-COUNTS
+     IF WS-KEEP > 0 AND L-ITEM(WS-KEEP) = 0
+         MOVE WS-KEEP-ITEM TO L-ITEM(WS-KEEP)
+         MOVE 1 TO L-COUNT(WS-KEEP)
+         MOVE WS-KEEP-VAR TO L-VAR(WS-KEEP)
+     END-IF
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9
+         IF L-ITEM(WS-J) = 0
+             MOVE 0 TO L-VAR(WS-J)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CRAFT-TAKE-X.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CRAFT-GRID-TAKE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -346,35 +456,41 @@
     05 WS-ITEM             BINARY-LONG OCCURS 9 TIMES.
  01 WS-COUNTS.
     05 WS-COUNT            BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-VARS.
+    05 WS-VAR              BINARY-LONG OCCURS 9 TIMES.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
-         MOVE 0 TO WS-ITEM(WS-I) WS-COUNT(WS-I)
+         MOVE 0 TO WS-ITEM(WS-I) WS-COUNT(WS-I) WS-VAR(WS-I)
      END-PERFORM
      IF MN-WINDOW(L-ROW) = 0
          MOVE 2 TO WS-SIZE WS-SIZE-H
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
              MOVE MN-IGRID-ITEM(L-ROW, WS-I) TO WS-ITEM(WS-I)
              MOVE MN-IGRID-COUNT(L-ROW, WS-I) TO WS-COUNT(WS-I)
+             MOVE MN-IGRID-VAR(L-ROW, WS-I) TO WS-VAR(WS-I)
          END-PERFORM
      ELSE
          MOVE 3 TO WS-SIZE WS-SIZE-H
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
              MOVE MN-BGRID-ITEM(L-ROW, WS-I) TO WS-ITEM(WS-I)
              MOVE MN-BGRID-COUNT(L-ROW, WS-I) TO WS-COUNT(WS-I)
+             MOVE MN-BGRID-VAR(L-ROW, WS-I) TO WS-VAR(WS-I)
          END-PERFORM
      END-IF
-     CALL "CRAFT-TAKE" USING WS-SIZE WS-SIZE-H WS-ITEMS WS-COUNTS
+     CALL "CRAFT-TAKE-X" USING WS-SIZE WS-SIZE-H WS-ITEMS WS-COUNTS WS-VARS
      IF MN-WINDOW(L-ROW) = 0
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
              MOVE WS-ITEM(WS-I) TO MN-IGRID-ITEM(L-ROW, WS-I)
              MOVE WS-COUNT(WS-I) TO MN-IGRID-COUNT(L-ROW, WS-I)
+             MOVE WS-VAR(WS-I) TO MN-IGRID-VAR(L-ROW, WS-I)
          END-PERFORM
      ELSE
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
              MOVE WS-ITEM(WS-I) TO MN-BGRID-ITEM(L-ROW, WS-I)
              MOVE WS-COUNT(WS-I) TO MN-BGRID-COUNT(L-ROW, WS-I)
+             MOVE WS-VAR(WS-I) TO MN-BGRID-VAR(L-ROW, WS-I)
          END-PERFORM
      END-IF
      GOBACK.
