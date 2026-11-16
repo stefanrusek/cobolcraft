@@ -375,15 +375,15 @@
  01 L-OWNER                 BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-WARM L-OWNER.
      MOVE 0 TO WS-DONE
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EF-MAX OR WS-DONE = 1
-         IF EF-USED(WS-I) = 0
-             MOVE 1 TO EF-USED(WS-I)
-             MOVE L-DIM TO EF-DIM(WS-I)
-             MOVE L-X TO EF-X(WS-I)
-             MOVE L-Y TO EF-Y(WS-I)
-             MOVE L-Z TO EF-Z(WS-I)
-             MOVE L-WARM TO EF-WARM(WS-I)
-             MOVE L-OWNER TO EF-OWNER(WS-I)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FG-MAX OR WS-DONE = 1
+         IF FG-USED(WS-I) = 0
+             MOVE 1 TO FG-USED(WS-I)
+             MOVE L-DIM TO FG-DIM(WS-I)
+             MOVE L-X TO FG-X(WS-I)
+             MOVE L-Y TO FG-Y(WS-I)
+             MOVE L-Z TO FG-Z(WS-I)
+             MOVE L-WARM TO FG-WARM(WS-I)
+             MOVE L-OWNER TO FG-OWNER(WS-I)
              MOVE 1 TO WS-DONE
          END-IF
      END-PERFORM
@@ -407,44 +407,44 @@
  01 WS-NONE                 BINARY-LONG VALUE 0.
  01 WS-ALLY                 BINARY-LONG.
  PROCEDURE DIVISION.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EF-MAX
-         IF EF-USED(WS-I) = 1
-             SUBTRACT 1 FROM EF-WARM(WS-I)
-             IF EF-WARM(WS-I) <= -8
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FG-MAX
+         IF FG-USED(WS-I) = 1
+             SUBTRACT 1 FROM FG-WARM(WS-I)
+             IF FG-WARM(WS-I) <= -8
 *>               The bite: living entities in the box inflated by 0.2; the owner's family is spared.
                  MOVE 0 TO WS-O
                  PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
-                     IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = EF-OWNER(WS-I)
+                     IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = FG-OWNER(WS-I)
                          MOVE WS-N TO WS-O
                      END-IF
                  END-PERFORM
                  IF WS-O > 0
                      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
-                         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EF-DIM(WS-I) AND PL-MODE(WS-P) < 2
-                             IF FUNCTION ABS(PL-X(WS-P) - EF-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - EF-Z(WS-I)) <= 0.75
-                                     AND PL-Y(WS-P) <= EF-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= EF-Y(WS-I)
+                         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = FG-DIM(WS-I) AND PL-MODE(WS-P) < 2
+                             IF FUNCTION ABS(PL-X(WS-P) - FG-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - FG-Z(WS-I)) <= 0.75
+                                     AND PL-Y(WS-P) <= FG-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= FG-Y(WS-I)
                                  CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-O
                              END-IF
                          END-IF
                      END-PERFORM
                      PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
-                         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EF-DIM(WS-I)
+                         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = FG-DIM(WS-I)
                              CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
                              MOVE 0 TO WS-ALLY
                              IF WS-S > 0
                                  IF SM-KEY(WS-S) = "evoker" OR "vindicator" OR "pillager" OR "illusioner" OR "vex" OR "ravager"
                                      MOVE 1 TO WS-ALLY
                                  END-IF
-                                 IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - EF-X(WS-I)) <= 0.75
-                                         AND FUNCTION ABS(EN-Z(WS-N) - EF-Z(WS-I)) <= 0.75
-                                         AND EN-Y(WS-N) <= EF-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= EF-Y(WS-I)
+                                 IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - FG-X(WS-I)) <= 0.75
+                                         AND FUNCTION ABS(EN-Z(WS-N) - FG-Z(WS-I)) <= 0.75
+                                         AND EN-Y(WS-N) <= FG-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= FG-Y(WS-I)
                                      CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-MOB WS-NONE
                                  END-IF
                              END-IF
                          END-IF
                      END-PERFORM
                  END-IF
-                 MOVE 0 TO EF-USED(WS-I)
+                 MOVE 0 TO FG-USED(WS-I)
              END-IF
          END-IF
      END-PERFORM

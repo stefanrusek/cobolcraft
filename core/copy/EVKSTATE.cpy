@@ -2,10 +2,10 @@
 *> EV-ENTRY: one per evoker entity id (EV-ID 0 = free): the spell being cast (0 none, 1 summon vex, 2 fangs, 3 wololo), EV-CAST the casting ticks left, EV-WARM the warm-up
 *> ticks left before the spell is performed, EV-NEXT the game tick from which the next spell may start.
 *> EV-PLAN: the fang layout computed by EVK-FANGS-PLAN: offsets from the evoker and the warm-up of each fang.
-*> EF-ENTRY: the live fangs (EF-USED 1), their warm-up counter and the entity id of the evoker that cast them.
+*> FG-ENTRY: the live fangs (FG-USED 1), their warm-up counter and the entity id of the evoker that cast them.
 *> VX-ENTRY: one per summoned vex (VX-ID 0 = free): the owner's entity id, the life ticks left and the starvation timer.
  78 EV-MAX                VALUE 32.
- 78 EF-MAX                VALUE 128.
+ 78 FG-MAX                VALUE 128.
  78 VX-MAX                VALUE 96.
  01 EV-STATE EXTERNAL.
     05 EV-ENTRY              OCCURS 32 TIMES.
@@ -20,15 +20,15 @@
        10 EV-PLAN-DX         FLOAT-LONG.
        10 EV-PLAN-DZ         FLOAT-LONG.
        10 EV-PLAN-WARM       BINARY-LONG.
- 01 EF-STATE EXTERNAL.
-    05 EF-ENTRY              OCCURS 128 TIMES.
-       10 EF-USED            BINARY-LONG.
-       10 EF-DIM             BINARY-LONG.
-       10 EF-X               FLOAT-LONG.
-       10 EF-Y               FLOAT-LONG.
-       10 EF-Z               FLOAT-LONG.
-       10 EF-WARM            BINARY-LONG.
-       10 EF-OWNER           BINARY-LONG.
+ 01 FG-STATE EXTERNAL.
+    05 FG-ENTRY              OCCURS 128 TIMES.
+       10 FG-USED            BINARY-LONG.
+       10 FG-DIM             BINARY-LONG.
+       10 FG-X               FLOAT-LONG.
+       10 FG-Y               FLOAT-LONG.
+       10 FG-Z               FLOAT-LONG.
+       10 FG-WARM            BINARY-LONG.
+       10 FG-OWNER           BINARY-LONG.
  01 VX-STATE EXTERNAL.
     05 VX-ENTRY              OCCURS 96 TIMES.
        10 VX-ID              BINARY-LONG.
