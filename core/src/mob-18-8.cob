@@ -541,7 +541,8 @@
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
          WHEN "villager"
-*>           The villager state (19 section 22; the type is plains until the biome of the position is read: open item).
+*>           The villager state (19 section 22; the type follows the biome of the position, 22.1).
+             CALL "VL-BIOME-TYPE-AT" USING L-ROW WS-VL-PLAINS
              CALL "VL-SETUP" USING EN-ID(L-ROW) WS-VL-VILLAGER WS-VL-PLAINS WS-VL-SLOT
          WHEN "turtle"
 *>           The home of a turtle is the block it spawned in (19 section 12).
