@@ -364,6 +364,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Programs that never return in a test**: a test runs itself again with arguments through
   `CALL "SYSTEM"` (`FUNCTION MODULE-PATH`; the status is `RETURN-CODE / 256`), and a SIGALRM handler
   (`SET proc-pointer TO ENTRY "..."`, `signal`, `alarm`) can end a window run (`test_cl_main_run`).
+- **Game rules** are read with `CALL "BR-RULE-GET" USING name-PIC-X(40) value-BINARY-DOUBLE` (boolean 1 or 0, integer rules
+  their value; core/src/cmd-rules.cob); a test sets one with `BR-RULE-FIND` then `BR-RULE-SET` and must put it back.
+  `RULE-CAUSE-*` tables hold the 11 player damage causes only: a cause above `CAUSE-COUNT` (fire, lava) never reaches `HEALTH-HURT`.
+- **`STRING` of a numeric item**: a `BINARY-LONG` is not display data; move it to a `PIC 99` first. A literal before a `DELIMITED BY SPACE`
+  source needs its own `DELIMITED BY SIZE`, else the text stops at its first space.
+- **macOS tools**: `sed -i ''` needs the empty suffix, and `git add -A -- . ':!scratchpad'` fails (and stops a following `&&`) because
+  scratchpad is git-ignored: use plain `git add -A`.
 
 ## Failure handling (FR-012)
 
