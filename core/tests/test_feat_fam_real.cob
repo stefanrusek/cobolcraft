@@ -148,6 +148,22 @@
          STOP RUN
      END-IF
 
+*>   The chunks of the spawn area are loaded at world open and take the overflow of their neighbours (docs/design/world-types.md
+*>   "Chunk borders"), so they differ from the atomic chunk by design. The worker is compared on the chunk with the most family
+*>   blocks of a far area (chunks 8..10), which the world has not loaded: the worker makes it from nothing, with no overflow.
+     MOVE 0 TO WS-BEST-SCORE
+     PERFORM VARYING WS-CX FROM 8 BY 1 UNTIL WS-CX > 10
+         PERFORM VARYING WS-CZ FROM 8 BY 1 UNTIL WS-CZ > 10
+             CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-REF WS-REF-Y
+             PERFORM COUNT-CHUNK
+             IF WS-SCORE > WS-BEST-SCORE OR (WS-CX = 8 AND WS-CZ = 8)
+                 MOVE WS-SCORE TO WS-BEST-SCORE
+                 MOVE WS-CX TO WS-BEST-X
+                 MOVE WS-CZ TO WS-BEST-Z
+                 MOVE WS-REF TO WS-BEST
+             END-IF
+         END-PERFORM
+     END-PERFORM
 *>   the worker makes the same chunk
      CALL "GEN-QUEUE-RESET"
      CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS
