@@ -24,6 +24,9 @@
  01 WS-PTR                 USAGE POINTER.
  01 WS-ID                  PIC X(96).
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-ROW2               BINARY-LONG.
+ 01 WS-SAVED-USED         BINARY-LONG.
+ 01 WS-ED3                PIC -(8)9.
  01 WS-OX                  BINARY-LONG VALUE 4.
  01 WS-OY                  BINARY-LONG VALUE 10.
  01 WS-OZ                  BINARY-LONG VALUE 4.
@@ -108,6 +111,31 @@
      MOVE FUNCTION TRIM(WS-F1) TO TL-OBSERVED
      MOVE "0.0" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
+
+*>   A compound over the 1344 bytes is counted but not kept; a full table keeps none either.
+     MOVE "test:bigent" TO WS-ID
+     CALL "STRUCT-TPL-LOAD" USING WS-TPL-DIR WS-ID WS-ROW2
+     MOVE "a record whose compound is 1400+ bytes is counted (1), not kept (0 records), and TE-LOST rises" TO WS-LABEL
+     MOVE TP-ENTITIES(WS-ROW2) TO WS-ED
+     MOVE TP-ENT-N(WS-ROW2) TO WS-ED2
+     MOVE TE-LOST TO WS-ED3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-ED) " " FUNCTION TRIM(WS-ED2) " " FUNCTION TRIM(WS-ED3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 0 1" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE TE-USED TO WS-SAVED-USED
+     MOVE TE-MAX TO TE-USED
+     MOVE "test:onlyent1" TO WS-ID
+     CALL "STRUCT-TPL-LOAD" USING WS-TPL-DIR WS-ID WS-ROW2
+     MOVE "with the entity table full the record is counted (1), not kept (0) and TE-LOST is 2" TO WS-LABEL
+     MOVE TP-ENTITIES(WS-ROW2) TO WS-ED
+     MOVE TP-ENT-N(WS-ROW2) TO WS-ED2
+     MOVE TE-LOST TO WS-ED3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-ED) " " FUNCTION TRIM(WS-ED2) " " FUNCTION TRIM(WS-ED3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 0 2" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE WS-SAVED-USED TO TE-USED
 
 *>   Placing: no rotation, no box.
      PERFORM FRESH-SETTINGS

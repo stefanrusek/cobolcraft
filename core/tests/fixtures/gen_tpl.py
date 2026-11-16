@@ -99,10 +99,13 @@ def flt_list(n, vs): return lst(n, 5, [struct.pack(">f", f) for f in vs])
 VILLAGER = body_comp(lst("pos", 6, [struct.pack(">d", d) for d in (1.5, 0.0, 2.5)]), int_list("blockPos", [1, 0, 2]),
                      comp("nbt", string("id", "minecraft:villager"), flt_list("Rotation", [90.0, 0.0]), byte("PersistenceRequired", 0),
                           comp("VillagerData", string("profession", "minecraft:nitwit"), integer("level", 2), string("type", "minecraft:plains"))))
-WITCH = body_comp(lst("pos", 6, [struct.pack(">d", d) for d in (3.5, 0.0, 0.5)]), int_list("blockPos", [3, 0, 0]),
+WITCH = body_comp(lst("pos", 6, [struct.pack(">d", d) for d in (3.5, 0.0, 0.5)]), int_list("blockPos", [3, 0, 0]), integer("extra", 7),
                   comp("nbt", string("id", "minecraft:witch"), byte("PersistenceRequired", 1)))
 NOTHING = body_comp(lst("pos", 6, [struct.pack(">d", 0.0)] * 3), int_list("blockPos", [0, 0, 0]))
 write("test", "ents", int_list("size", [4, 2, 4]), lst("entities", 10, [VILLAGER, WITCH, NOTHING]), lst("blocks", 10, [block([0, 0, 0], 0)]), lst("palette", 10, [v("stone")]))
+# A record whose compound is over the 1344 bytes the cache keeps (counted, not kept).
+BIGENT = body_comp(lst("pos", 6, [struct.pack(">d", 0.5)] * 3), comp("nbt", string("id", "minecraft:pig"), string("pad", "x" * 1400)))
+write("test", "bigent", int_list("size", [1, 1, 1]), lst("entities", 10, [BIGENT]), lst("blocks", 10, []), lst("palette", 10, [v("stone")]))
 write("test", "nothing", int_list("size", [1, 1, 1]), lst("entities", 10, []), lst("blocks", 10, []), lst("palette", 10, [v("stone")]))
 write("test", "cube3", int_list("size", [3, 3, 3]),
       lst("blocks", 10, [block([x, y, z], 0) for y in range(3) for x in range(3) for z in range(3)]), lst("palette", 10, [v("stone")]))
