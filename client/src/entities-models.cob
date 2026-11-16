@@ -382,10 +382,12 @@
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
              OR "blaze" OR "enderman" OR "enderman_eyes"
+             OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "W" OR "V"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
          IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
                  OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
+                 OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "V"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -483,6 +485,9 @@
              MOVE 4 TO WS-VARIANT
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
+         WHEN "W"
+         WHEN "V"
+             CALL "ENTITY-POSE-MORE" USING EMM-MODEL CL-MD-KEY(WS-K) WS-IN WS-AGE
          WHEN "H"
              MOVE 0 TO WS-VARIANT
              IF EN-POSE(WS-ROW) = 5
