@@ -36,6 +36,7 @@
        10 VX-OWNER           BINARY-LONG.
        10 VX-LIFE            BINARY-LONG.
        10 VX-STARVE          BINARY-LONG.
+       10 VX-CHARGING        BINARY-LONG.
 *> RV-ENTRY: one per ravager entity id (RV-ID 0 = free): RV-STUN the stun ticks left, RV-ROAR the roar countdown, RV-ATTACK the ticks since a hit (10 down to 0).
  78 RV-MAX                VALUE 32.
  01 RV-STATE EXTERNAL.

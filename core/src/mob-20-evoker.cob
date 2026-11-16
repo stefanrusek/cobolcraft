@@ -12,8 +12,10 @@
 *>   EVK-FANG-ADD USING dim, x, y, z, warm-up, owner entity id
 *>   EVK-FANG-TICK                                     the world tick of all fangs (STDMOB-SPAWN-TICK)
 *>   VEX-STEP USING vex row                            limited life and starvation
-*> Gaps: the wololo spell (no sheep colour is kept), the fang column scan for the highest suitable block (the lower of the two feet is used), the fang as a visible entity and its
-*> life counter (a fang is removed at its bite), the spell id metadata 17, the vex movement and contact attack, an owner-less magic bite.
+*> Wololo (EVK-WOLOLO-PICK, performed in EVK-STEP; the document's start condition is a target, so the fang goal always goes first: only EVK-BEGIN starts it), the fang column
+*> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7).
+*> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the vex flight (no flying speed in the documents), an owner-less magic bite, the height of a
+*> partial block in the fang cell.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-FIND.
  DATA DIVISION.
@@ -173,6 +175,7 @@
  01 WS-CAST                 BINARY-LONG.
  01 WS-INTERVAL             BINARY-LONG.
  01 WS-WARM                 BINARY-LONG.
+ 01 WS-SHEEP                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-SPELL                 BINARY-LONG.
@@ -184,6 +187,15 @@
          MOVE WS-CAST TO EV-CAST(WS-SLOT)
          MOVE WS-WARM TO EV-WARM(WS-SLOT)
          COMPUTE EV-NEXT(WS-SLOT) = CW-TICKS + WS-INTERVAL
+         IF L-SPELL = 3
+             CALL "EVK-WOLOLO-PICK" USING L-ROW WS-SHEEP
+             IF WS-SHEEP > 0
+                 MOVE EN-ID(WS-SHEEP) TO EV-LAST(WS-SLOT)
+             ELSE
+                 MOVE 0 TO EV-LAST(WS-SLOT)
+             END-IF
+         END-IF
+         CALL "EVK-SPELL-SEND" USING L-ROW
      END-IF
      GOBACK.
  END PROGRAM EVK-BEGIN.
@@ -234,6 +246,11 @@
  01 WS-FX                   FLOAT-LONG.
  01 WS-FY                   FLOAT-LONG.
  01 WS-FZ                   FLOAT-LONG.
+ 01 WS-MINY                 FLOAT-LONG.
+ 01 WS-MAXY                 FLOAT-LONG.
+ 01 WS-FOUND                BINARY-LONG.
+ 01 WS-CY                   BINARY-LONG.
+ 01 WS-N                    BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -275,14 +292,28 @@
                              END-IF
                              CALL "EVK-FANGS-PLAN" USING WS-D2 WS-YAW
                              IF PL-Y(WS-P) < EN-Y(L-ROW)
-                                 MOVE PL-Y(WS-P) TO WS-FY
+                                 MOVE PL-Y(WS-P) TO WS-MINY
+                                 COMPUTE WS-MAXY = EN-Y(L-ROW) + 1
                              ELSE
-                                 MOVE EN-Y(L-ROW) TO WS-FY
+                                 MOVE EN-Y(L-ROW) TO WS-MINY
+                                 COMPUTE WS-MAXY = PL-Y(WS-P) + 1
                              END-IF
                              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EV-PLAN-COUNT
                                  COMPUTE WS-FX = EN-X(L-ROW) + EV-PLAN-DX(WS-I)
                                  COMPUTE WS-FZ = EN-Z(L-ROW) + EV-PLAN-DZ(WS-I)
-                                 CALL "EVK-FANG-ADD" USING EN-DIM(L-ROW) WS-FX WS-FY WS-FZ EV-PLAN-WARM(WS-I) EN-ID(L-ROW)
+                                 CALL "EVK-FANG-COLUMN" USING EN-DIM(L-ROW) WS-FX WS-FZ WS-MINY WS-MAXY WS-FOUND WS-CY
+                                 IF WS-FOUND = 1
+                                     MOVE WS-CY TO WS-FY
+                                     CALL "EVK-FANG-ADD" USING EN-DIM(L-ROW) WS-FX WS-FY WS-FZ EV-PLAN-WARM(WS-I) EN-ID(L-ROW)
+                                 END-IF
+                             END-PERFORM
+                         WHEN 3
+*>                           Wololo: the chosen sheep, if alive, turns red (colour 14; the sheared bit is kept).
+                             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+                                 IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = EV-LAST(WS-SLOT) AND EN-HEALTH(WS-N) > 0 AND EV-LAST(WS-SLOT) > 0
+                                     COMPUTE EN-WOOL(WS-N) = EN-WOOL(WS-N) - FUNCTION MOD(EN-WOOL(WS-N), 16) + 14
+                                     CALL "MOB-DATA-SEND" USING WS-N
+                                 END-IF
                              END-PERFORM
                          WHEN OTHER
                              CONTINUE
@@ -295,6 +326,7 @@
          END-IF
          IF EV-CAST(WS-SLOT) = 0 AND EV-WARM(WS-SLOT) = 0
              MOVE 0 TO EV-SPELL(WS-SLOT)
+             CALL "EVK-SPELL-SEND" USING L-ROW
          END-IF
          GOBACK
      END-IF
@@ -468,6 +500,10 @@
  01 WS-SLOT                 BINARY-LONG.
  01 WS-ONE                  BINARY-LONG VALUE 1.
  01 WS-NONE                 BINARY-LONG VALUE 0.
+ 01 WS-D2                   FLOAT-LONG.
+ 01 WS-SALT                 BINARY-LONG VALUE 74.
+ 01 WS-SEVEN                BINARY-LONG VALUE 7.
+ 01 WS-DRAW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -494,8 +530,243 @@
              END-IF
          END-IF
      END-IF
+*>   VexChargeAttackGoal: with a living target more than 2 blocks away and a 1 in 7 draw the charge starts; a charging vex that touches its target hurts it.
+     IF EN-TARGET(L-ROW) > 0 AND VX-CHARGING(WS-SLOT) = 0
+         COMPUTE WS-D2 = (PL-X(EN-TARGET(L-ROW)) - EN-X(L-ROW)) ** 2 + (PL-Y(EN-TARGET(L-ROW)) - EN-Y(L-ROW)) ** 2
+             + (PL-Z(EN-TARGET(L-ROW)) - EN-Z(L-ROW)) ** 2
+         CALL "XP-RANDOM" USING WS-SALT WS-SEVEN WS-DRAW
+         IF WS-D2 > 4 AND WS-DRAW = 0
+             CALL "VEX-CHARGE" USING L-ROW
+         END-IF
+     END-IF
+     CALL "VEX-CONTACT" USING L-ROW
      GOBACK.
  END PROGRAM VEX-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EVK-SPELL-SEND.
+*> USING caster row: Set Entity Data (0x65) index 17 BYTE of the spell being cast (EV-SPELL: 0 none, 1 to 5), 13.3, to the viewers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY EVKSTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID            BINARY-LONG VALUE 101.
+ 01 WS-CAPACITY             BINARY-LONG VALUE 64.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-NO                   BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "EVK-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
+     IF WS-SLOT > 0
+         CALL "PB-INIT" USING MD-BUFFER WS-CAPACITY
+         CALL "PB-PUT-VARINT" USING MD-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING MD-BUFFER EN-ID(L-ROW)
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 17 TO MD-MD-INDEX
+         MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
+         MOVE EV-SPELL(WS-SLOT) TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING MD-BUFFER MD-METADATA-ENTRY
+         MOVE MD-MD-END TO MD-MD-INDEX
+         CALL "PB-PUT-ENTITY-METADATA" USING MD-BUFFER MD-METADATA-ENTRY
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW MD-BUFFER
+         CALL "PB-FREE" USING MD-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM EVK-SPELL-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EVK-FANG-COLUMN.
+*> USING dim, x, z (FLOAT-LONG), min y, max y (FLOAT-LONG), found out, y out (BINARY-LONG): the fang column of 13.3: scanning down from the cell of max y while the cell is at or above
+*> the cell of min y less 1, the first cell with a solid block under it holds the fang (its y; a full block in the cell itself would add its height: the cells are scanned for air only). None when
+*> the scan finds no ground.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                    BINARY-LONG.
+ 01 WS-Z                    BINARY-LONG.
+ 01 WS-Y                    BINARY-LONG.
+ 01 WS-LOW                  BINARY-LONG.
+ 01 WS-BELOW                BINARY-LONG.
+ 01 WS-SOLID                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                   BINARY-LONG.
+ 01 L-X                     FLOAT-LONG.
+ 01 L-Z                     FLOAT-LONG.
+ 01 L-MINY                  FLOAT-LONG.
+ 01 L-MAXY                  FLOAT-LONG.
+ 01 L-FOUND                 BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-MINY L-MAXY L-FOUND L-Y.
+     MOVE 0 TO L-FOUND L-Y
+     COMPUTE WS-X = FUNCTION INTEGER(L-X)
+     COMPUTE WS-Z = FUNCTION INTEGER(L-Z)
+     COMPUTE WS-Y = FUNCTION INTEGER(L-MAXY)
+     COMPUTE WS-LOW = FUNCTION INTEGER(L-MINY) - 1
+     PERFORM UNTIL WS-Y < WS-LOW OR L-FOUND = 1
+         COMPUTE WS-BELOW = WS-Y - 1
+         CALL "GI-SOLID-CELL" USING L-DIM WS-X WS-BELOW WS-Z WS-SOLID
+         IF WS-SOLID = 1
+             MOVE 1 TO L-FOUND
+             MOVE WS-Y TO L-Y
+         ELSE
+             SUBTRACT 1 FROM WS-Y
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EVK-FANG-COLUMN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EVK-WOLOLO-PICK.
+*> USING evoker row, sheep row out: a sheep of colour blue (11) within the box inflated by (16, 4, 16) around the evoker, chosen at random among them, only with the mob_griefing rule true.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-RULE-NAME            PIC X(40) VALUE "mob_griefing".
+ 01 WS-RULE                 BINARY-DOUBLE.
+ 01 WS-N                    BINARY-LONG.
+ 01 WS-S                    BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG.
+ 01 WS-PICK                 BINARY-LONG.
+ 01 WS-K                    BINARY-LONG.
+ 01 WS-SALT                 BINARY-LONG VALUE 73.
+ 01 WS-DRAW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SHEEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SHEEP.
+     MOVE 0 TO L-SHEEP WS-COUNT
+     CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
+     IF WS-RULE = 0
+         GOBACK
+     END-IF
+     PERFORM 2 TIMES
+         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+             IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
+                 CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
+                 IF WS-S > 0
+                     IF SM-KEY(WS-S) = "sheep" AND FUNCTION MOD(EN-WOOL(WS-N), 16) = 11
+                             AND FUNCTION ABS(EN-X(WS-N) - EN-X(L-ROW)) <= 16.3 AND FUNCTION ABS(EN-Z(WS-N) - EN-Z(L-ROW)) <= 16.3
+                             AND EN-Y(WS-N) <= EN-Y(L-ROW) + 1.95 + 4 AND EN-Y(WS-N) + 1.3 >= EN-Y(L-ROW) - 4
+                         IF WS-PICK = 0
+                             ADD 1 TO WS-COUNT
+                         ELSE
+                             ADD 1 TO WS-K
+                             IF WS-K = WS-PICK
+                                 MOVE WS-N TO L-SHEEP
+                             END-IF
+                         END-IF
+                     END-IF
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-PICK = 0
+             IF WS-COUNT = 0
+                 GOBACK
+             END-IF
+             CALL "XP-RANDOM" USING WS-SALT WS-COUNT WS-DRAW
+             COMPUTE WS-PICK = WS-DRAW + 1
+             MOVE 0 TO WS-K
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EVK-WOLOLO-PICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VEX-FLAG-SEND.
+*> USING vex row: Set Entity Data index 16 BYTE, the vex flags (bit 0 charging).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY EVKSTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID            BINARY-LONG VALUE 101.
+ 01 WS-CAPACITY             BINARY-LONG VALUE 64.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-FLAGS                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 0 TO WS-FLAGS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VX-MAX
+         IF VX-ID(WS-I) = EN-ID(L-ROW)
+             MOVE VX-CHARGING(WS-I) TO WS-FLAGS
+         END-IF
+     END-PERFORM
+     CALL "PB-INIT" USING MD-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING MD-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING MD-BUFFER EN-ID(L-ROW)
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE 16 TO MD-MD-INDEX
+     MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
+     MOVE WS-FLAGS TO MD-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING MD-BUFFER MD-METADATA-ENTRY
+     MOVE MD-MD-END TO MD-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING MD-BUFFER MD-METADATA-ENTRY
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW MD-BUFFER
+     CALL "PB-FREE" USING MD-BUFFER
+     GOBACK.
+ END PROGRAM VEX-FLAG-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VEX-CHARGE.
+*> USING vex row: the charge starts (VexChargeAttackGoal.start): the charging flag is set and sent. The flight to the target's eye (speed 1.0) needs the vex flying speed, which no document gives:
+*> the vex does not move yet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY EVKSTATE.
+ 01 WS-I                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VX-MAX
+         IF VX-ID(WS-I) = EN-ID(L-ROW)
+             MOVE 1 TO VX-CHARGING(WS-I)
+             CALL "VEX-FLAG-SEND" USING L-ROW
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VEX-CHARGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VEX-CONTACT.
+*> USING vex row: while charging, a vex whose box (0.4 x 0.8) meets its target's (a player 0.6 x 1.8) hurts it for 4 (the attack damage) and the charge ends (flag cleared and sent).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY EVKSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-P                    BINARY-LONG.
+ 01 WS-DAMAGE               BINARY-LONG VALUE 4.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 0 TO WS-SLOT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VX-MAX OR WS-SLOT > 0
+         IF VX-ID(WS-I) = EN-ID(L-ROW)
+             MOVE WS-I TO WS-SLOT
+         END-IF
+     END-PERFORM
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     IF VX-CHARGING(WS-SLOT) = 0
+         GOBACK
+     END-IF
+     MOVE EN-TARGET(L-ROW) TO WS-P
+     IF WS-P > 0
+         IF FUNCTION ABS(PL-X(WS-P) - EN-X(L-ROW)) <= 0.5 AND FUNCTION ABS(PL-Z(WS-P) - EN-Z(L-ROW)) <= 0.5
+                 AND PL-Y(WS-P) <= EN-Y(L-ROW) + 0.8 AND PL-Y(WS-P) + 1.8 >= EN-Y(L-ROW)
+             CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
+             MOVE 0 TO VX-CHARGING(WS-SLOT)
+             CALL "VEX-FLAG-SEND" USING L-ROW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM VEX-CONTACT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ILLUSIONER-IS-CASTING.
