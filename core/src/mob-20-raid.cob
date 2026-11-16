@@ -232,6 +232,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY VILPOIX.
+ COPY DIMENSIONS.
  COPY RAIDSTATE.
  01 WS-I                    BINARY-LONG.
  01 WS-N                    BINARY-LONG.
@@ -246,6 +247,8 @@
  01 WS-AMP                  BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-ROMEN                BINARY-LONG VALUE 34.
+ 01 WS-RAIDS-RULE           PIC X(40) VALUE "raids".
+ 01 WS-RAIDS                BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-PLAYER                BINARY-LONG.
  01 L-X                     BINARY-LONG.
@@ -254,6 +257,11 @@
  01 L-SLOT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-PLAYER L-X L-Y L-Z L-SLOT.
      MOVE 0 TO L-SLOT WS-N WS-SUM-X WS-SUM-Y WS-SUM-Z
+*>   Nothing for a spectator (the caller), with the raids game rule false or where can_start_raid is false (the Nether, 37-1 section 3.8).
+     CALL "BR-RULE-GET" USING WS-RAIDS-RULE WS-RAIDS
+     IF WS-RAIDS = 0 OR DM-KEY(PL-DIM(L-PLAYER)) = "minecraft:the_nether"
+         GOBACK
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PX-MAX
          IF PX-KIND(WS-I) > 0 AND PX-DIM(WS-I) = PL-DIM(L-PLAYER)
              IF FUNCTION ABS(PX-X(WS-I) - L-X) <= 64 AND FUNCTION ABS(PX-Y(WS-I) - L-Y) <= 64 AND FUNCTION ABS(PX-Z(WS-I) - L-Z) <= 64
@@ -1165,7 +1173,10 @@
  COPY RAIDSTATE.
  01 WS-P                    BINARY-LONG.
  01 WS-R                    BINARY-LONG.
+ 01 WS-RAIDS-RULE           PIC X(40) VALUE "raids".
+ 01 WS-RAIDS                BINARY-DOUBLE.
  PROCEDURE DIVISION.
+     CALL "BR-RULE-GET" USING WS-RAIDS-RULE WS-RAIDS
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
          IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0
              CALL "RAID-PLAYER-TICK" USING WS-P
@@ -1173,7 +1184,12 @@
      END-PERFORM
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > RD-MAX
          IF RD-USED(WS-R) = 1
-             CALL "RAID-TICK" USING WS-R
+*>           Raids.tick: with the raids game rule false a raid is stopped and removed.
+             IF WS-RAIDS = 0
+                 CALL "RAID-DROP" USING WS-R
+             ELSE
+                 CALL "RAID-TICK" USING WS-R
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
