@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -830,6 +830,35 @@ Gap closed: 27 §8 (recipes), 26 and 42-2 use these values; the layouts were not
 - **Validation:** the record's constructor rejects a list of more than 256 explosions with an exception ("Got N explosions, but maximum is 256"), so the network decoder and the NBT decoder both fail on it. The flight duration has no range check on the network (VarInt), the NBT form accepts only 0 to 255.
 - **Prototype:** the `firework_rocket` item has `fireworks` = (flight duration 1, no explosions) in its prototype (25-6 row 1053; behaviour 17 §3.13). The meaning of the duration and the crafting that fills the list are in 17 §3.13 and 27 §8, not repeated here.
 - Equality: the duration and the list of explosions (each by 21.1 equality).
+
+---
+
+## 22. `banner_patterns` (74), `base_color` (75), `provides_banner_patterns` (67), `ominous_bottle_amplifier` (65), the omen bottle effect
+
+Gap closed: 31-3 §3 gives the banner block entity's `patterns` and the 43 pattern entries; 20 and 25-8 give the omen behaviour. This section gives the item component layouts and the exact drawing rule of the layers (banner and shield) that 52 §6 leaves out ("patterns out of scope").
+
+### 22.1 Layouts
+
+| Component | Network | NBT | Default | Notes |
+|---|---|---|---|---|
+| `banner_patterns` (74), `BannerPatternLayers` | VarInt count, then count layers; layer = Holder of `banner_pattern` (00 §10.2: 0 + inline pattern, or registry position + 1) then VarInt dye colour id (43 §8 order, 0 to 15). No count limit. | List of compounds `{pattern: <id or inline>, color: <dye name String>}`, both keys required; the list has no length limit on load (31-3 §3: the limit 6 is only a crafting and tooltip rule) | `EMPTY` (no layers) is the prototype of the shield item (17 §2) and the value a banner stack gets when none is set | Inline pattern compound: `{asset_id: String, translation_key: String}` (04 §6). Equality: the ordered list of (pattern, colour). Tooltip: at most the first 6 layers are listed. |
+| `base_color` (75) | VarInt dye colour id (the dye id enum of 43 §8) | String, the dye name (`white` ... `black`) | absent | Colour the shield base is tinted with (22.3); written to a shield when a banner is applied to it (crafting, 40-4). |
+| `provides_banner_patterns` (67), a HolderSet of `banner_pattern` | HolderSet (00 §10.3: VarInt 0 plus a tag name String, or n + 1 followed by n ids) | Either a String `#minecraft:pattern_item/globe` (a tag, with the leading `#`), a single String id, or a List of ids | absent | On the 10 patterned banner items (31-3 §3: one tag per item, each tag naming one pattern); the loom reads the set of the pattern item. |
+| `ominous_bottle_amplifier` (65), record `OminousBottleAmplifier` | VarInt `value` | Int in 0 to 4 inclusive (outside fails the decode); a bare Int, not a compound | the `ominous_bottle` prototype carries 0 (25-8) | Network layout confirmed: one VarInt, no range check on the wire (the range is a persistence codec rule; the network codec is a plain VarInt composite, inferred that a constructor does not re-check it). |
+
+### 22.2 Omen bottle effect
+
+Consuming an ominous bottle (listener `OminousBottleAmplifier.onConsume`): gives the consumer the mob effect `bad_omen` with duration **120000** ticks and amplifier = `value`. The three trailing flags of the instance (ambient, show_particles, show_icon) are false, false, true (20 §Starting). The tooltip shows the same effect (name and 120000 ticks, shown as `100:00`). What `bad_omen` does afterwards (turning into `raid_omen` and starting a raid inside a village, the per-tick checks) is 20 (Raid), 17 §4 (effect ticking) and is not repeated.
+
+### 22.3 Drawing rules (banner layers and shield)
+
+Inputs: base colour, the ordered layer list, a flag "is shield". Sprites come from two atlases whose definition files take a whole directory each: `textures/atlas/banner_patterns.png` from `entity/banner/` and `textures/atlas/shield_patterns.png` from `entity/shield/`; a layer's sprite is `entity/banner/<pattern asset id path>` (shield: `entity/shield/<...>`), and the pattern-less base sprite is `base` (`entity/banner/base` or `entity/shield/base`).
+
+1. The base layer (order value 1) is the flag or shield model drawn with the `base` sprite tinted by the **base colour's diffuse colour** (43 §8 "diffuse", the colour used for leather mixing and banner layers; opaque).
+2. Then, for the first `min(layers, 16)` layers in list order, layer `i` (0-based) is the same model drawn with that pattern's sprite, tinted by the layer's dye diffuse colour, at order value `i + 2`. The renderer cap is **16** layers (a constant of the renderer); the game's rules cap crafting at 6, so a stack or block entity loaded from NBT with 7 to 16 layers still draws them all, and layers beyond 16 are never drawn.
+3. The render type of the pattern layers is the banner-pattern type (52 §1 table; translucent in the sense that the sprite alpha selects where the dye shows). The wind animation parameter of the flag is the same for the base and the layers.
+4. **Shield.** A shield stack is "patterned" when its `banner_patterns` (default `EMPTY`) is non-empty **or** it has a `base_color`. A patterned shield draws the `shield_base` sprite (white shield with the pattern area), otherwise the plain `shield_base_nopattern` sprite. For a patterned shield, the pattern layers of rule 1 and 2 are drawn on top with `is shield` set; the base colour is `base_color`, or white when absent. When the stack has the foil (19), the plain-shield part is drawn with the solid-entity glint type and, if patterned, one extra glint pass (`patterned_shield_glint`, 19.3) is added over the pattern layers.
+5. Block-entity banners use the same layer function with the `patterns` of the block entity and the block's own colour as base (52 §6.3; wall and standing transforms, the swing from `(game time + position hash) mod 100`).
 
 ---
 
