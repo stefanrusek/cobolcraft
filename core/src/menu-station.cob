@@ -51,6 +51,8 @@
              MOVE 3 TO L-KIND
          WHEN "enchanting_table"
              MOVE 7 TO L-KIND
+         WHEN "grindstone"
+             MOVE 2 TO L-KIND
          WHEN "anvil"
              MOVE 4 TO L-KIND
          WHEN "chipped_anvil"
@@ -325,16 +327,25 @@
  COPY CMENU.
  01 WS-SET                 BINARY-LONG.
  01 WS-LAPIS               BINARY-LONG.
+ 01 WS-DAMAGEABLE          BINARY-LONG.
+ 01 WS-ENCHANTED           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-RESULT.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-HANDLE L-RESULT.
      MOVE 1 TO L-RESULT
      IF MN-CFAMILY(L-ROW) = 23
          COMPUTE WS-SET = L-SLOT + 1
          CALL "MENU-SMITH-SET" USING WS-SET L-ITEM L-RESULT
+     END-IF
+*>   The grindstone's inputs take a damageable stack or one with enchantments (40-3 section 4.1).
+     IF MN-CFAMILY(L-ROW) = 22 AND L-SLOT < 2
+         CALL "GRIND-DAMAGEABLE" USING L-ITEM L-HANDLE WS-DAMAGEABLE
+         CALL "GRIND-HAS-ENCH" USING L-HANDLE WS-ENCHANTED
+         CALL "MN3-GRIND-MAYPLACE" USING WS-DAMAGEABLE WS-ENCHANTED L-RESULT
      END-IF
 *>   The enchanting table's lapis slot takes only lapis lazuli (40-4 section 2.2).
      IF MN-CFAMILY(L-ROW) = 27
@@ -417,6 +428,9 @@
  01 WS-KEY                 PIC X(112).
  01 WS-ROW-X               PIC X(270).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-BASE-I              BINARY-LONG.
+ 01 WS-BASE-V              BINARY-LONG.
+ 01 WS-ADD-I               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
@@ -425,7 +439,7 @@
  PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-VAR.
      MOVE 0 TO L-ITEM L-COUNT L-VAR
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT OR L-ITEM > 0
-         IF RR-SERIALIZER(WS-K) = 19
+         IF RR-SERIALIZER(WS-K) = 19 OR RR-SERIALIZER(WS-K) = 21
              MOVE 1 TO WS-OK
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 3
                  IF RR-ING(WS-K, WS-S) = SPACES
@@ -443,7 +457,20 @@
                      END-IF
                  END-IF
              END-PERFORM
-             IF WS-OK = 1
+             IF WS-OK = 1 AND RR-SERIALIZER(WS-K) = 21
+*>               smithing_trim (27 section 3.3, 54 section 18.6): one copy of the base with the trim of the pattern and the addition's material.
+                 MOVE MN-WSLOT-ITEM(L-ROW, 2) TO WS-BASE-I
+                 MOVE MN-WSLOT-VAR(L-ROW, 2) TO WS-BASE-V
+                 MOVE MN-WSLOT-ITEM(L-ROW, 3) TO WS-ADD-I
+                 CALL "SMITH-TRIM-RESULT" USING RR-EXTRA(WS-K) WS-BASE-I WS-BASE-V WS-ADD-I L-VAR WS-STATUS
+                 IF WS-STATUS = 1
+                     MOVE MN-WSLOT-ITEM(L-ROW, 2) TO L-ITEM
+                     MOVE 1 TO L-COUNT
+                 ELSE
+                     MOVE 0 TO L-VAR
+                 END-IF
+             END-IF
+             IF WS-OK = 1 AND RR-SERIALIZER(WS-K) = 19
                  MOVE RR-RESULT-ID(WS-K) TO WS-KEY
                  CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY L-ITEM WS-ROW-X WS-STATUS
                  IF WS-STATUS = CT-OK
@@ -549,6 +576,9 @@
      IF MN-CFAMILY(L-ROW) = 27
          CALL "MENU-ENCH-UPDATE" USING L-ROW
      END-IF
+     IF MN-CFAMILY(L-ROW) = 22
+         CALL "MENU-GRIND-UPDATE" USING L-ROW
+     END-IF
      IF MN-CFAMILY(L-ROW) = 21
          MOVE 0 TO WS-ITEM
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
@@ -599,6 +629,9 @@
      END-IF
      IF MN-CFAMILY(L-ROW) = 24
          CALL "MENU-ANVIL-TAKEN" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 22
+         CALL "MENU-GRIND-TAKEN" USING L-ROW
      END-IF
 *>   The smithing table (40-3 section 5.4): one item of each of the three inputs is used up, then the result is made again.
      IF MN-CFAMILY(L-ROW) = 23
@@ -702,6 +735,11 @@
  01 L-RET-COUNT            BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT.
      MOVE 0 TO L-RET-ITEM L-RET-COUNT
+*>   The grindstone's rules are 40-3 section 4.5.
+     IF MN-CFAMILY(L-ROW) = 22
+         CALL "MENU-GRIND-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
 *>   The enchanting table's rules are 40-4 section 2.7.
      IF MN-CFAMILY(L-ROW) = 27
          CALL "MENU-ENCH-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT

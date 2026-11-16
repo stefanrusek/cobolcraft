@@ -396,8 +396,8 @@
  END PROGRAM MENU-EQUIP-KIND.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-MAY-PLACE.
-*> USING row, menu slot, item, result out: the result slot takes nothing; an armor slot only its armor; the off-hand
+ PROGRAM-ID. MENU-MAY-PLACE-X.
+*> USING row, menu slot, item, patch handle of the stack (0 none), result out: the result slot takes nothing; an armor slot only its armor; the off-hand
 *> slot only an off-hand item; every other slot takes anything.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -413,8 +413,9 @@
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-RESULT.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-HANDLE L-RESULT.
      MOVE 1 TO L-RESULT
      CALL "MENU-LOCATE" USING L-ROW L-SLOT WS-KIND WS-INDEX
      EVALUATE WS-KIND
@@ -436,7 +437,7 @@
              END-IF
              IF MN-CFAMILY(L-ROW) >= 20
                  COMPUTE WS-START = WS-INDEX - 1
-                 CALL "MENU-STATION-MAYPLACE" USING L-ROW WS-START L-ITEM L-RESULT
+                 CALL "MENU-STATION-MAYPLACE" USING L-ROW WS-START L-ITEM L-HANDLE L-RESULT
              END-IF
              IF MN-CFAMILY(L-ROW) = 4 AND L-ITEM > 0 AND L-ITEM < IT-COUNT
                  MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-KL
@@ -453,6 +454,22 @@
                  MOVE 0 TO L-RESULT
              END-IF
      END-EVALUATE
+     GOBACK.
+ END PROGRAM MENU-MAY-PLACE-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-MAY-PLACE.
+*> USING row, menu slot, item, result out: MENU-MAY-PLACE-X for a stack without a patch.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-RESULT.
+     CALL "MENU-MAY-PLACE-X" USING L-ROW L-SLOT L-ITEM WS-NONE L-RESULT
      GOBACK.
  END PROGRAM MENU-MAY-PLACE.
 
@@ -523,7 +540,7 @@
                      END-IF
                  ELSE
                      IF WS-COUNT = 0
-                         CALL "MENU-MAY-PLACE" USING L-ROW WS-SLOT L-ITEM WS-MAY
+                         CALL "MENU-MAY-PLACE-X" USING L-ROW WS-SLOT L-ITEM L-VAR WS-MAY
                          IF WS-MAY = 1
                              COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-SMAX)
                              CALL "MENU-SET-X" USING L-ROW WS-SLOT L-ITEM WS-N L-VAR
@@ -580,7 +597,7 @@
      IF PL-CARRIED-COUNT(L-ROW) <= 0
          GOBACK
      END-IF
-     CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
+     CALL "MENU-MAY-PLACE-X" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW) WS-MAY
      IF WS-MAY = 0
          GOBACK
      END-IF
@@ -630,7 +647,7 @@
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
      MOVE 0 TO WS-MAY
      IF PL-CARRIED-COUNT(L-ROW) > 0
-         CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
+         CALL "MENU-MAY-PLACE-X" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW) WS-MAY
      END-IF
      EVALUATE TRUE
          WHEN WS-SC = 0
@@ -740,7 +757,7 @@
          GOBACK
      END-IF
      IF WS-HC > 0
-         CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT WS-HI WS-MAY
+         CALL "MENU-MAY-PLACE-X" USING L-ROW L-SLOT WS-HI WS-HV WS-MAY
          IF WS-MAY = 0
              GOBACK
          END-IF
@@ -894,7 +911,7 @@
      END-IF
      IF WS-OK = 1
          CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
-         CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
+         CALL "MENU-MAY-PLACE-X" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW) WS-MAY
          IF WS-MAY = 0
              MOVE 0 TO WS-OK
          END-IF
