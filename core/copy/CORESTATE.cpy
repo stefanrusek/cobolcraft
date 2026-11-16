@@ -473,6 +473,10 @@
        10 EN-BEE-CROPS        BINARY-LONG.        *> bee: crops grown since the last pollination
        10 EN-LLAMA-HEAD       BINARY-LONG.        *> llama: tracker row of the llama in front in a caravan (0 none)
        10 EN-LLAMA-TAIL       BINARY-LONG.        *> llama: tracker row of the llama behind it (0 none)
+*>     --- 002-lane-mobsa5: llama caravan and spit (core/src/mob-44-p.cob) ---
+       10 EN-SPIT-TGT         BINARY-LONG.        *> llama: player row it spits at (0 none)
+       10 EN-SPIT-CD          BINARY-LONG.        *> llama: attackTime of the ranged attack goal (-1 not started)
+       10 EN-SPIT-AGE         BINARY-LONG.        *> llama: the last EN-KILLER-AGE seen (a rise is a new hit)
        10 EN-LLAMA-SPIT       BINARY-LONG.        *> llama: didSpit
        10 EN-LLAMA-SPEED      FLOAT-LONG.         *> llama: the caravan follow speed (2.1 at the start)
        10 EN-LLAMA-DIST       BINARY-LONG.        *> llama: the caravan distance counter
