@@ -317,6 +317,41 @@ The remaining Phase 49 task remarks were checked and are either already answered
 
 ---
 
+## 9. Dimension and coordinate handling of `teleport` / `tp`
+
+**Gap closed:** which dimension each `teleport` form uses (T4805; unblocks T4807 and T4813). Source: `TeleportCommand` (all execution methods and `performTeleport`), `Relative`, `Entity.teleport` (cr4 round, same jar as above).
+
+### 9.1 Dimension per form
+
+| Form | Destination level | Notes |
+|---|---|---|
+| `teleport <location>` (source itself) | the **executor's** level (`CommandSourceStack.getLevel`, the level `execute in <dimension>` sets) | a source without an entity fails with the usual "entity required" error |
+| `teleport <targets> <location>` and every variant (rotation, `facing <location>`, `facing entity <entity> [anchor]`) | the **executor's** level | the same level is used for every target |
+| `teleport <destination>` and `teleport <targets> <destination>` | the **destination entity's own level**, with its x, y, z, yaw and pitch and an empty relative set | the executor's level plays no part |
+
+Neither the target's own level nor a world default is consulted: a target in another dimension than the destination level is moved into it. So `execute in <dimension> run tp <player> x y z` does send the player to that dimension, and `tp <player> <entity in another dimension>` follows the destination entity across dimensions.
+
+### 9.2 Same dimension or crossing
+
+Each target is handed to `Entity.teleport` with a transition naming the destination level, the position, zero velocity and the rotation. `Entity.teleport` compares the destination dimension key with the entity's current one:
+
+- equal: same-dimension move (passengers are moved by their own transitions first; the position is set; players are sent the position update);
+- different: cross-dimension move: passengers are ejected and each teleported by its own transition; a **new entity of the same type** is created in the destination level (spawn reason `DIMENSION_TRAVEL`), state is copied from the old one (`restoreFrom`), the old one is removed, and the new one is positioned and added to the destination level. For players the usual dimension-change path (Respawn, chunk and state resend: 05a/05b, 17 §4.10) is expected (the `ServerPlayer` override was not read; inferred).
+
+Targets in different dimensions from each other are independent: each goes to the one destination level. A target whose `teleportTo` returns false (removed entity) is skipped entirely: no facing, no side effects, not tracked, and the loop goes on. The result is the number of targets tracked.
+
+### 9.3 Relative and local coordinates (refines 5.2)
+
+1. The coordinate argument is resolved **against the executor** once for all targets (`~` adds the source's position as `positioned` set it; `^` uses the source's rotation), not per target. 5.2's "added to the entity's current value" is true only when target and executor coincide.
+2. The bounds test of 5.2 applies to the resolved position. The code turns a relative axis into a delta against the target and the move adds the target's position back, so the net position is always the resolved absolute one.
+3. Relative set handed to the move: relative coordinate axes set the matching **velocity** (DELTA_X/Y/Z) flags (that velocity component is kept); the position (X, Y, Z) flags are set only when the target already is in the destination dimension, otherwise none. Rotation: without a rotation argument yaw and pitch are both flagged relative (the target keeps its own); with one, each is relative per its own `~`.
+4. Yaw and pitch are wrapped to (-180, 180] (`Mth.wrapDegrees`) before the move.
+5. After a successful move: the facing step, if any; then, for a living entity that is not fall-flying, velocity x (1, 0, 1); on-ground = true; a pathfinder mob's navigation is stopped.
+
+Worked examples: `execute in the_nether run tp @s 8 70 8` from the overworld: the player ends in the Nether at (8, 70, 8). `execute at <pig> run tp @a ~ ~1 ~`: every player goes to the one point one block above that pig, and a player in another dimension than the executor's level is moved into the executor's level.
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
