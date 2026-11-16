@@ -571,14 +571,21 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-DROP.
-*> USING raid slot: removes the raid and the memberships of its raiders.
+*> USING raid slot: removes the raid, its boss bar and the memberships of its raiders.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY RAIDSTATE.
  01 WS-I                    BINARY-LONG.
+ 01 WS-REMOVE               BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-SLOT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SLOT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         IF RP-BAR(WS-I) > 0 AND RP-BAR(WS-I) = RD-ID(L-SLOT)
+             CALL "RAID-BAR-SEND" USING L-SLOT WS-REMOVE WS-I
+             MOVE 0 TO RP-BAR(WS-I)
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
          IF RR-ID(WS-I) > 0 AND RR-RAID(WS-I) = L-SLOT
              INITIALIZE RR-ENTRY(WS-I)
@@ -729,6 +736,166 @@
  END PROGRAM RAID-MOVE-CENTER.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-BAR-PROGRESS.
+*> USING raid slot, progress out (millionths): after a victory 0; between waves (no raider alive, cooldown above 0) (300 - cooldown) / 300; else the living raiders' health
+*> over the total health of the raiders that joined.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-E                    BINARY-LONG.
+ 01 WS-ALIVE                BINARY-LONG.
+ 01 WS-SUM                  BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-PROGRESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-PROGRESS.
+     MOVE 0 TO L-PROGRESS WS-SUM
+     IF RD-STATUS(L-SLOT) = 2
+         GOBACK
+     END-IF
+     CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
+     IF WS-ALIVE = 0 AND RD-COOLDOWN(L-SLOT) > 0
+         COMPUTE L-PROGRESS = FUNCTION MAX(0, FUNCTION MIN(1000000, (300 - RD-COOLDOWN(L-SLOT)) * 1000000 / 300))
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) > 0 AND RR-RAID(WS-I) = L-SLOT
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+                 IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = RR-ID(WS-I) AND EN-HEALTH(WS-E) > 0
+                     COMPUTE WS-SUM = WS-SUM + EN-HEALTH(WS-E) * 1000
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     IF RD-TOTAL(L-SLOT) > 0
+         COMPUTE L-PROGRESS = FUNCTION MAX(0, FUNCTION MIN(1000000, WS-SUM * 1000000 / RD-TOTAL(L-SLOT)))
+     END-IF
+     GOBACK.
+ END PROGRAM RAID-BAR-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-BAR-NAME.
+*> USING raid slot, text out (X(64)), length out: "Raid", followed by " - Victory" or " - Defeat" after the end, or " - N raiders remaining" while 1 or 2 are alive (the component
+*> strings were not read in the document: plain text is used).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RAIDSTATE.
+ 01 WS-ALIVE                BINARY-LONG.
+ 01 WS-DIGIT                PIC 9.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-TEXT                  PIC X(64).
+ 01 L-LEN                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-TEXT L-LEN.
+     MOVE SPACES TO L-TEXT
+     MOVE "Raid" TO L-TEXT
+     MOVE 4 TO L-LEN
+     EVALUATE RD-STATUS(L-SLOT)
+         WHEN 2
+             MOVE "Raid - Victory" TO L-TEXT
+             MOVE 14 TO L-LEN
+         WHEN 3
+             MOVE "Raid - Defeat" TO L-TEXT
+             MOVE 13 TO L-LEN
+         WHEN OTHER
+             CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
+             IF WS-ALIVE >= 1 AND WS-ALIVE <= 2
+                 MOVE WS-ALIVE TO WS-DIGIT
+                 STRING "Raid - " WS-DIGIT " raiders remaining" DELIMITED BY SIZE INTO L-TEXT
+                 MOVE 26 TO L-LEN
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM RAID-BAR-NAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-BAR-SEND.
+*> USING raid slot, operation (0 ADD, 1 REMOVE, 2 UPDATE_PROGRESS, 3 UPDATE_NAME), player row: Boss Event 0x09 (05a) to that player. The bar is red, notched_10, no flags;
+*> its uuid is 15 zero bytes and 100 + the raid slot.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY             BINARY-LONG VALUE 1024.
+ 01 WS-ID                   BINARY-LONG VALUE 9.
+ 01 WS-UUID                 PIC X(16).
+ 01 WS-PROGRESS             BINARY-LONG.
+ 01 WS-FLOAT                FLOAT-SHORT.
+ 01 WS-TEXT                 PIC X(1024).
+ 01 WS-NAME                 PIC X(64).
+ 01 WS-LEN                  BINARY-LONG.
+ 01 WS-COLOR                BINARY-LONG VALUE 2.
+ 01 WS-STYLE                BINARY-LONG VALUE 2.
+ 01 WS-FLAGS                BINARY-LONG VALUE 0.
+ 01 WS-BYTE                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-OP                    BINARY-LONG.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-OP L-ROW.
+     MOVE LOW-VALUES TO WS-UUID
+     COMPUTE WS-BYTE = 100 + L-SLOT
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-UUID(16:1)
+     CALL "RAID-BAR-PROGRESS" USING L-SLOT WS-PROGRESS
+     COMPUTE WS-FLOAT = WS-PROGRESS / 1000000
+     CALL "RAID-BAR-NAME" USING L-SLOT WS-NAME WS-LEN
+     MOVE SPACES TO WS-TEXT
+     MOVE WS-NAME TO WS-TEXT
+     CALL "BX-LITERAL" USING WS-TEXT WS-LEN PB-TEXT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-OP
+     EVALUATE L-OP
+         WHEN 0
+             CALL "PB-PUT-TEXT" USING PB-BUFFER PB-TEXT
+             CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLOAT
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COLOR
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-STYLE
+             CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-FLAGS
+         WHEN 2
+             CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLOAT
+         WHEN 3
+             CALL "PB-PUT-TEXT" USING PB-BUFFER PB-TEXT
+     END-EVALUATE
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM RAID-BAR-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-BAR-REFRESH.
+*> USING raid slot: every player in the raid's dimension gets ADD once, then the progress and the name (the document does not say which players the raid refreshes: every
+*> player of the dimension is used).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-P                    BINARY-LONG.
+ 01 WS-ADD                  BINARY-LONG VALUE 0.
+ 01 WS-PROGRESS-OP          BINARY-LONG VALUE 2.
+ 01 WS-NAME-OP              BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT.
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-DIM(WS-P) = RD-DIM(L-SLOT)
+             IF RP-BAR(WS-P) = RD-ID(L-SLOT)
+                 CALL "RAID-BAR-SEND" USING L-SLOT WS-PROGRESS-OP WS-P
+                 CALL "RAID-BAR-SEND" USING L-SLOT WS-NAME-OP WS-P
+             ELSE
+                 CALL "RAID-BAR-SEND" USING L-SLOT WS-ADD WS-P
+                 MOVE RD-ID(L-SLOT) TO RP-BAR(WS-P)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-BAR-REFRESH.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-TICK.
 *> USING raid slot: Raid.tick (20 section 14.2) in the order of the document. Not modelled: the active flag (a loaded centre chunk), the boss bar, the horn, the 600 tick raider
 *> grace and the outside-village counter of the raiders (no no-action time is kept).
@@ -760,6 +927,9 @@
      END-IF
      IF RD-STATUS(L-SLOT) = 2 OR RD-STATUS(L-SLOT) = 3
          ADD 1 TO RD-CELEB(L-SLOT)
+         IF FUNCTION MOD(RD-CELEB(L-SLOT), 20) = 0
+             CALL "RAID-BAR-REFRESH" USING L-SLOT
+         END-IF
          IF RD-CELEB(L-SLOT) >= 600
              CALL "RAID-DROP" USING L-SLOT
          END-IF
@@ -813,6 +983,7 @@
      IF FUNCTION MOD(RD-TICKS(L-SLOT), 20) = 0
          CALL "RAID-REFRESH" USING L-SLOT
          CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
+         CALL "RAID-BAR-REFRESH" USING L-SLOT
      END-IF
 *>   Wave spawning: while the cooldown is 0, no raider lives and a wave (or the bonus wave) remains.
      MOVE 0 TO WS-FAILS

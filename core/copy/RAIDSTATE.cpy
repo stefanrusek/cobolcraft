@@ -4,7 +4,7 @@
 *> RD-TOTAL the sum of the health of the raiders that joined (thousandths); RD-LEADER the entity id of the current wave's banner wearer (0 none); RD-SPAWN-SET 1 when
 *> RD-SX, RD-SY, RD-SZ is the wave spawn position; RD-HERO the entity ids of the players that earned the Hero of the Village (0 free).
 *> RR-ENTRY: one raider's membership (RR-ID entity id, 0 = free): RR-RAID the raid index, RR-WAVE its wave, RR-OUTSIDE the ticks it was outside a village.
-*> RP-ENTRY: per player row, the position stored when Bad Omen turned into Raid Omen (RP-SET 1).
+*> RP-ENTRY: per player row, the position stored when Bad Omen turned into Raid Omen (RP-SET 1) and the id of the raid whose boss bar the player has (RP-BAR, 0 none).
  78 RD-MAX                VALUE 8.
  78 RR-MAX                VALUE 256.
  01 RD-STATE EXTERNAL.
@@ -44,3 +44,4 @@
        10 RP-X               BINARY-LONG.
        10 RP-Y               BINARY-LONG.
        10 RP-Z               BINARY-LONG.
+       10 RP-BAR             BINARY-LONG.
