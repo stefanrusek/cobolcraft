@@ -285,6 +285,7 @@
  01 WS-TAG                 PIC X(112) VALUE "minecraft:replaceable".
  01 WS-BLOCK               BINARY-LONG.
  01 WS-REPLACEABLE         BINARY-LONG.
+ 01 WS-FITS                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -327,8 +328,15 @@
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
+*>   A door or tall plant needs its upper half's cell (empty or replaceable) too, and places both halves.
+     CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
+     IF WS-FITS = 0
+         CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
+         GOBACK
+     END-IF
      CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 1 TO L-PLACED
      GOBACK.
  END PROGRAM BLOCK-PLACE.
