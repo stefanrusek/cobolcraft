@@ -3426,7 +3426,7 @@ Continued from Phase 49a; same goal as stated there.
 
 #### Phase 51: US21-core — vanilla configuration conformance (automated half of Q-1)
 
-- [ ] T2921 [US21-core] Write contract test `core/tests/contract_vanilla_config.cob`: the configuration packet stream of a standard world (Known Packs, 51 Registry Data, Update Tags, Finish Configuration, then Login) equals the bytes of the 04 worked examples and the 46 id tables (US21-1)
+- [ ] T2921 [US21-core] Write contract test `core/tests/contract_vanilla_config.cob`: the configuration packet stream of a standard world (Known Packs, 51 Registry Data, Update Tags, Finish Configuration, then Login) equals the bytes of the 04 worked examples and the 46 id tables (US21-1) [misc3 note, not started: docs/protocol/04 has field schemas and orderings (sections 1 to 3) but no worked byte example of a Registry Data or Update Tags stream, and the standard payload comes from the extracted jar data, so a byte-exact expectation cannot be written from the docs alone; a test of the stream shape (packet order, the registry list and entry counts of 04 section 3 and the 46 id tables) on the extraction output is the feasible form and needs the operator to confirm that weaker reading of "equals the bytes"]
 - [ ] T2922 [US21-core] Make the configuration phase of `core/src/config-phase.cob` pass `contract_vanilla_config` for the standard set and send only the cobolcraft registries for the cobolcraft set (WT-16, US21-2)
 - [ ] T2923 [US21-core] Gate: run `make gate-core` and record the command and real output
 
