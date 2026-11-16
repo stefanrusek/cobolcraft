@@ -2,16 +2,18 @@
 spile: ticket
 id: CC-0005
 type: bug
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-06
 relations:
   depends_on: []
   relates_to: []
   supersedes: []
-implementation: []
+implementation:
+  branch: 002-client-polish
+  pr: 2
 ---
 
 # CC-0005: Server tests do not depend on port 25565 being free
@@ -29,3 +31,6 @@ free port chosen at run time. The convergence harness already does this.
 - Given a server already listening on 25565, when I run `make gate-server` or `make gate`, then every test passes.
 - Given a test that checks the default port value, when it runs, then it checks the configured value without binding
   the default port.
+
+> [!NOTE]
+> Closed by feature 002 tasks T2929 (server tests choose a free port; server/tests/test_default_port_free.cob); recorded by task T3611.
