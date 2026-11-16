@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -556,6 +556,65 @@ Rule (`TooltipDisplay.shows(type)`): a component's tooltip lines are shown iff `
 ### 15.5 Enchantment tooltip order (for completeness)
 
 Enchantment lines are written first for the enchantments in the data tag `#minecraft:tooltip_order` (in the tag's order, only those present with level above 0), then for the remaining enchantments in the map's iteration order. Each line is the enchantment's full name for that level (the enchantment's name with its level appended; the level text rules were not read in this round). No sort by level.
+
+---
+
+## 16. `potion_contents` (53), `potion_duration_scale` (54) and the mob effect instance layouts
+
+Gap closed: 25-5 §9 gives the behaviour of `PotionContents` (colour, name key, application, the 46 potions with their effects, effect colours) and says the layouts are a composite of four fields without field-level detail. This section gives the exact network and NBT layouts, including the effect instance record that `custom_effects` (and the suspicious stew, §23, and the consume effects, §22) reuse. The potion list itself is 25-5 §9.3 (registry ids in 46 §4.3); the effect list for each potion was spot-checked against the artifact in this round (all duration and amplifier numbers for night_vision, invisibility, leaping, fire_resistance, swiftness, slowness, turtle_master, water_breathing, healing, harming, poison, regeneration, strength, weakness, luck, slow_falling, wind_charged, weaving, oozing and infested agree; water, mundane, thick and awkward have no effect).
+
+### 16.1 `potion_contents` (53)
+
+| # | Field | Network | NBT key and form | Default / absent |
+|---|---|---|---|---|
+| 1 | potion | Optional (Boolean flag, then RegistryId of `potion`) | `potion` String, a potion identifier such as `minecraft:strong_healing` | absent |
+| 2 | custom_color | Optional (Boolean flag, then Int, 4 bytes big-endian, not VarInt) | `custom_color` Int (ARGB as a signed 32-bit integer; for example `-13083194`) | absent |
+| 3 | custom_effects | VarInt count, then count mob effect instances (§16.2) | `custom_effects` List of compounds (§16.2) | empty list (key omitted when empty on read: the codec reads a missing key as an empty list) |
+| 4 | custom_name | Optional (Boolean flag, then String(32767)) | `custom_name` String | absent |
+
+- **Shorthand on load:** the component codec first tries the compound form; if that fails it accepts a bare potion identifier String and builds a contents with only that potion (`new PotionContents(holder)`). Saving always writes the compound form. A compound with every key missing decodes to the empty contents.
+- **Empty value** (`EMPTY`): all four fields absent. The `potion` item prototype is empty (25-5 §9.2); stacks created by `/give` or the creative tab carry the potion `water`.
+- **Colour fields:** `custom_color` is an ARGB int. The colour used for drawing the potion item tint, the liquid in a cauldron and the particles is `getColor` of 25-5 §9.1 (the alpha byte of a `custom_color` is kept as stored; the weighted-effect colour is opaque).
+- **`custom_name`** is not a text component but the last segment of the language key `<item description id>.effect.<custom_name>` (25-5 §9.1), for example the string `awkward` selects `item.minecraft.potion.effect.awkward`. Maximum length 32767 characters on the network (String codec bound, 00 §3.1).
+- **Equality:** field-wise equality (potion holder, colour, list of instances in order, name). Two potions with the same potion and different custom effect order do not stack.
+- **`isPotionWithoutCustomEffects`** (used by cauldron and brewing checks, 25-5 §9.1) is true when custom effects is empty.
+- No validation limit exists on the number of custom effects or on the colour.
+
+### 16.2 Mob effect instance (`MobEffectInstance.STREAM_CODEC` and `MobEffectInstance.CODEC`)
+
+Used by `potion_contents.custom_effects`, `suspicious_stew_effects` (§23, as a different record), the `apply_effects` consume effect (§22.3) and saved entity effects. The record is the effect id followed by a nested "details" record.
+
+| # | Field | Network | NBT key and form | Default (NBT) |
+|---|---|---|---|---|
+| 1 | effect | RegistryId of `mob_effect` (VarInt; a reference holder, no inline form) | `id` String (effect identifier, required) | required |
+| 2 | amplifier | VarInt | `amplifier` Byte (an unsigned byte, 0 to 255; the codec is the unsigned-byte codec) | 0 |
+| 3 | duration | VarInt (ticks; `-1` = infinite) | `duration` Int | 0 |
+| 4 | ambient | Boolean | `ambient` Boolean | false |
+| 5 | show_particles (the "visible" flag) | Boolean | `show_particles` Boolean | true |
+| 6 | show_icon | Boolean | `show_icon` Boolean | **the value of show_particles** when the key is absent (read in `Details.create`) |
+| 7 | hidden_effect | Optional details (Boolean flag, then fields 2 to 7 again, recursively) | `hidden_effect` Compound with keys 2 to 7 and `hidden_effect` again (recursive); absent when none | absent |
+
+Notes:
+
+- Field order on the wire is exactly the order of the table: effect id, then amplifier, duration, ambient, show_particles, show_icon, then the optional hidden effect. The hidden effect has no effect id of its own (it belongs to the same effect: it is the weaker previous instance that comes back when the stronger one expires).
+- `INFINITE_DURATION` = -1. A duration of 0 is legal (an instant effect uses 1 in the potion table; `new MobEffectInstance(effect)` with no duration has duration 0).
+- Constructors used by the potion table: (effect, duration) has amplifier 0, ambient false, visible true, icon true; (effect, duration, amplifier) the same with the amplifier.
+- Effect duration scaling used by the potion duration scale (§16.3): scaled duration = `max(floor(duration * scale), 1)` (25-5 §9.1).
+- Equality of instances is by value (effect, the details), including the hidden effect.
+
+### 16.3 `potion_duration_scale` (54)
+
+| Aspect | Value |
+|---|---|
+| Network | Float (4 bytes big-endian) |
+| NBT | Float; the codec requires a value `>= 0.0` (a negative value fails the decode) |
+| Default | absent = 1.0 where the consumer reads it with a default of 1.0 (`PotionContents.onConsume`, 25-5 §9.1) |
+| Values in the item data | splash potion 1.0, lingering potion 0.25, tipped arrow 0.125 (17 §1.2 and 25-5 §9.2) |
+| Behaviour | Multiplies the duration of every effect applied from the stack's `potion_contents` (not instant effects' amplifier, only their duration through the 25-5 rule); the display tooltip uses the same scale. It does not change the colour. |
+
+### 16.4 Worked example
+
+A tipped arrow for `strong_harming`: patch added entries `53 potion_contents` with network bytes `01 <VarInt registry id of strong_harming>` (potion present), `00` (no custom colour), `00` (no custom effects), `00` (no custom name), then `54 potion_duration_scale` with Float `0.125` (`3E 00 00 00`). A custom-effect potion with one effect `regeneration` amplifier 1 for 450 ticks, particles shown: after the potion field (`00`) and colour field (`00`): VarInt 1, VarInt effect id, VarInt 1, VarInt 450 (`C2 03`), Boolean 0, Boolean 1, Boolean 1, Boolean 0 (no hidden effect), then `00` for the name.
 
 ---
 
