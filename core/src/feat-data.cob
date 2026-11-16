@@ -274,6 +274,8 @@
              CALL "FD-J-INT" USING JSON-DOC WS-N L-V(2) L-OK
          WHEN "minecraft:uniform"
          WHEN "uniform"
+         WHEN " "
+*>           an object without a type that has min_inclusive and max_inclusive is the UniformInt codec itself (the cherry trunk's branch_start_offset_from_top); FD-J-RANGE says when they are missing
              MOVE 2 TO L-V(1)
              CALL "FD-J-RANGE" USING JSON-DOC L-NODE WS-MN WS-MX L-OK
              MOVE WS-MN TO L-V(2)

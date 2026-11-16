@@ -315,6 +315,61 @@
      MOVE WS-OK TO WS-OBS
      MOVE 0 TO WS-EXP
      PERFORM ASSERT-N
+
+*>   the cherry tree of the data: branch_start_offset_from_top is a bare uniform (no type member)
+     MOVE "minecraft:d2_cherry" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE "35-3§4 the cherry tree of the data (a bare uniform branch_start_offset_from_top) compiles as a tree" TO WS-CASE
+     MOVE FT-TYPE(WS-FT) TO WS-OBS
+     MOVE 51 TO WS-EXP
+     PERFORM ASSERT-N
+
+*>   the decorators of a fallen tree: any type but creaking_heart (no logs tag), the stump's trunk_vine and the logs' shelf_mushroom run
+     MOVE "minecraft:d2_fallen" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE "35-3§7 a fallen tree with a trunk_vine stump and shelf_mushroom log decorators compiles (type 16)" TO WS-CASE
+     MOVE FT-TYPE(WS-FT) TO WS-OBS
+     MOVE 16 TO WS-EXP
+     PERFORM ASSERT-N
+     MOVE "minecraft:d2_fallen_heart" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     CALL "FD-ENSURE-FT" USING WS-FT
+     MOVE "35-3§7 a fallen tree with a creaking_heart log decorator is unsupported" TO WS-CASE
+     MOVE FT-TYPE(WS-FT) TO WS-OBS
+     MOVE -1 TO WS-EXP
+     PERFORM ASSERT-N
+     MOVE "minecraft:d2_fallen" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     MOVE 0 TO WS-ACTIVE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 24
+         MOVE WS-I TO WS-SEED
+         MOVE 9 TO WS-LAYOUT
+         PERFORM NEW-WORLD
+         CALL "WGR-SET-SEED" USING XR-STATE WS-SEED
+         MOVE 24 TO WS-X
+         MOVE 63 TO WS-Y
+         MOVE 40 TO WS-Z
+         CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-X WS-Y WS-Z WS-OK
+         PERFORM VARYING WS-X FROM 16 BY 1 UNTIL WS-X > 31
+             PERFORM VARYING WS-Z FROM 32 BY 1 UNTIL WS-Z > 47
+                 PERFORM VARYING WS-Y FROM 63 BY 1 UNTIL WS-Y > 66
+                     PERFORM BLOCK-NOW
+                     IF WS-BLOCK = WS-B-SHELF
+                         ADD 1 TO WS-ACTIVE
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     MOVE "35-3§7 fallen trees over 24 seeds carry shelf_mushrooms (the log decorator runs on the logs)" TO WS-CASE
+     MOVE 0 TO WS-OBS
+     IF WS-ACTIVE > 0
+         MOVE 1 TO WS-OBS
+     END-IF
+     MOVE 1 TO WS-EXP
+     PERFORM ASSERT-N
      STOP RUN.
 
  LOOK-UP-BLOCKS.
