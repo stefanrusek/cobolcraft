@@ -921,6 +921,9 @@
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
  01 WS-EVK-CAST            BINARY-LONG.
+ 01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-VS-HX               FLOAT-LONG.
+ 01 WS-VS-HZ               FLOAT-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
  01 WS-AVOID               BINARY-LONG.
  01 WS-AHX                 FLOAT-LONG.
@@ -1039,6 +1042,10 @@
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
          END-IF
+     END-IF
+     MOVE 0 TO WS-VS-WALK
+     IF SM-KIND(WS-M) = 1 AND EN-TARGET(WS-ROW) = 0
+         CALL "MOBVS-TICK" USING WS-ROW WS-M WS-VS-HX WS-VS-HZ WS-VS-WALK
      END-IF
      MOVE 0 TO WS-STOP WS-LIFE-WALK
      IF SM-KIND(WS-M) = 0
@@ -1198,6 +1205,14 @@
                      CALL "STDMOB-HIT-EFFECT" USING WS-P WS-M
                  END-IF
              END-IF
+         WHEN WS-VS-WALK = 1
+*>           A zombie, vindicator or ravager walks to a villager (MOBVS-TICK, 20 sections 4 and 13).
+             MOVE WS-VS-HX TO WS-HX
+             MOVE WS-VS-HZ TO WS-HZ
+             IF WS-HX NOT = 0 OR WS-HZ NOT = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
+             END-IF
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-PET-WALK = 2
 *>           A tame wolf ordered to sit stays where it is (SitWhenOrderedToGoal, 18 section 8.2).
              MOVE 0 TO EN-COOLDOWN(WS-ROW) EN-FLEE(WS-ROW)
