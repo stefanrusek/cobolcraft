@@ -758,6 +758,7 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-REACH               FLOAT-LONG.
  01 WS-EXHAUST             FLOAT-LONG.
+ 01 WS-REDIRECTED          BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  COPY PLAYPKT.
@@ -804,6 +805,11 @@
      END-IF
      COMPUTE WS-EXHAUST = RULE-EXHAUST-ATTACK-MILLI / 1000
      CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
+*>   A large fireball is redirected onto the player's aim (44 part 8 section 6.3, thrown-44f.cob).
+     CALL "PROJ-REDIRECT" USING WS-ROW WS-ENTITY WS-REDIRECTED
+     IF WS-REDIRECTED = 1
+         GOBACK
+     END-IF
 *>   The standard set: the tool rules of 17 section 4 (combat.cob COMBAT-ATTACK); the cobolcraft set keeps its stand-in damage below.
      IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
          CALL "COMBAT-ATTACK" USING WS-ROW WS-ENTITY
