@@ -226,6 +226,45 @@ So sitting down takes 40 ticks and standing up takes 52 ticks, measured from L. 
 
 **Client animation states (`setupAnimationStates`, each client tick):** the idle animation restarts whenever its timeout reaches 0 (the timeout is then set to 80 + nextInt(40) ticks, else it decrements by 1; it runs whether sitting or not). If visually sitting: the stand-up and dash animations stop; while `isVisuallySittingDown` the sit animation starts if stopped and the sit-pose animation stops; once the 40 ticks have passed the sit animation stops and the sit-pose (held) animation starts if stopped. If not visually sitting: sit and sit-pose animations stop; the dash animation runs while DASH is true; the stand-up animation runs while in a pose transition with poseTime >= 0 (that is, during the 52 ticks after standing up). The model animations (key frames) are in 34-4.
 
+## 7. Goat ram behaviour
+
+**Gap closed:** trigger, charge, hit and knockback, cooldown and sounds of the goat ram (19 §10 gave only the constants and said the ram code "was not read"). Read from `GoatAi.initRamActivity`, `PrepareRamNearestTarget`, `RamTarget`, `Goat`. The ram is the `RAM` brain activity (19 §10, selection order RAM, LONG_JUMP, IDLE); the `CountDownCooldownTicks` behaviour of the core activity decrements `RAM_COOLDOWN_TICKS` each tick. Constants repeated from 19 §10 are marked (19).
+
+### 7.1 Phase 1: choosing a run-up (`PrepareRamNearestTarget`, brain priority 1 of the RAM activity)
+
+- **Runs when** (memories): no `RAM_COOLDOWN_TICKS`, no `RAM_TARGET`, no tempting player, no breed target, and `NEAREST_VISIBLE_LIVING_ENTITIES` present. Time-out 160 ticks. Parameters (19): minimum run-up distance 4, maximum 7, walk speed 1.25, prepare time 20 ticks, targeting conditions `RAM_TARGET_CONDITIONS`.
+- **Targeting conditions:** the combat targeting conditions plus a selector that rejects other goats, rejects armor stands unless mob griefing is on, and requires the candidate's bounding box to lie within the world border (19).
+- **start:** among the goat's nearest visible living entities, the closest one that passes `RAM_TARGET_CONDITIONS` becomes the target and a run-up is chosen (below); if none passes, nothing is chosen.
+- **Choosing the run-up (`chooseRamPosition`):** clear the "reached" timestamp. The target's block position T must be a *walkable block* (the goat's navigation says it is a stable destination, and the path-type malus of that block for the goat is exactly 0), otherwise there is no candidate. For each of the four horizontal directions (the order of `Direction.Plane.HORIZONTAL`), start at T and step one block at a time up to 7 steps; stop (stepping back one block) at the first block that is not walkable. Keep the end position when its Manhattan distance to T is at least 4. Sort the kept positions by distance to the goat's own block position (closest first; squared distance, inferred) and take the first one for which the navigation can create a path to it (distance parameter 0) that reaches it. That position S with the target's block T and the target entity form the candidate; if none qualifies, there is no candidate.
+- **tick (every tick while running; with no candidate nothing happens):** set `WALK_TARGET` = S at speed 1.25 (completion range 0) and `LOOK_TARGET` = the target entity. Then:
+  1. If the target's block position is no longer T: broadcast Entity Event **59** (stop lowering the head), stop the navigation, and choose a new run-up for the target (this also clears the reached timestamp).
+  2. Else if the goat's block position equals S: broadcast Entity Event **58** (lower the head); on the first such tick record the current game time as the reached timestamp; when game time minus the timestamp is at least 20: set `RAM_TARGET` = the **far edge of T as seen from the goat**: the bottom centre of T plus (0.5 x sign(T.x - goatBlock.x), 0, 0.5 x sign(T.z - goatBlock.z)) (the sign of zero is 0), play the prepare sound (below) at the goat with volume 1 and the goat's voice pitch, and drop the candidate.
+- **canStillUse:** a candidate exists and its target is alive. **stop:** if there is no `RAM_TARGET` (the run-up was abandoned or timed out): broadcast Entity Event 59 and set `RAM_COOLDOWN_TICKS` to the minimum of the goat's ram range: **600** for a normal goat, **100** for a screaming goat (19).
+
+### 7.2 Phase 2: the charge (`RamTarget`, priority 0)
+
+- **Runs when** `RAM_COOLDOWN_TICKS` is absent and `RAM_TARGET` is present; time-out **200** ticks.
+- **start:** `ramDirection` = normalize of (goatBlock.x - RAM_TARGET.x, 0, goatBlock.z - RAM_TARGET.z), the horizontal direction **from the target point back toward the goat** (the goat's block position at this moment). `WALK_TARGET` = the `RAM_TARGET` point at ramming speed **3.0** (19), completion range 0.
+- **tick:** first collect living entities whose boxes overlap the goat's own bounding box (not inflated) and that pass `RAM_TARGET_CONDITIONS`.
+  - **Hit** (the list is non-empty; the first entity E is used): damage E with the "no aggro mob attack" damage source of the goat, amount = the goat's `attack_damage` attribute (adult 2, baby 1 (19)); if damage was dealt, apply the post-attack enchantment effects. Then compute the knockback: A = (Speed amplifier + 1 if the goat has Speed, else 0), B = (Slowness amplifier + 1 if it has Slowness, else 0); base = clamp(goat movement speed x 1.65, 0.2, 3.0) + 0.25 x (A - B). Run item blocking of E against a mob-attack damage source with the same amount (E's shield); let f = 0.5 if something was blocked (blocked amount > 0) else 1. E gets `knockback(f x base x force, ramDirection.x, ramDirection.z)` with force **2.5** for an adult goat and **1.0** for a baby (19), using the standard knockback of 17 (`LivingEntity.knockback`, the knockback-resistance factor, velocity halving and the ground lift apply). Because the direction points from the target back to the goat, the entity is thrown along the direction of the charge. Then `finishRam`, and the impact sound (below) plays at the goat (volume 1, pitch 1, NEUTRAL).
+  - **Horn-breaking block** (no hit): the block at floor(goat position + normalize(goat velocity x (1, 0, 1))) or the block above it has the block tag `snaps_goat_horn` (members in 7.4). If so: play the impact sound; call `dropHorn` (19 §10: removes one horn and drops a goat horn item, not for babies; returns whether a horn dropped); if it dropped, play the horn-break sound; then `finishRam` (in both cases).
+  - **Otherwise:** finish the ram when the `WALK_TARGET` memory is absent, or `RAM_TARGET` is absent, or the walk target's tracker position is within 0.25 blocks of `RAM_TARGET` (the tracker position is a block centre, so this last test practically never holds; the normal end is the navigation erasing the walk target on arrival, or the 200-tick time-out).
+- **finishRam:** broadcast Entity Event **59**; set `RAM_COOLDOWN_TICKS` = a sample of the goat's range: **uniform 600 to 6000** for a normal goat, **uniform 100 to 300** for a screaming goat (19); erase `RAM_TARGET`.
+
+### 7.3 Client side
+
+Entity Event 58 sets the goat's `isLoweringHead`, Entity Event 59 clears it. Every client tick (`Goat.aiStep`): `lowerHeadTick` += 1 while lowering, else -= 2; then clamp to 0 to 20. The head pitch added by the model is `getRammingXHeadRot` = (lowerHeadTick / 20) x (52.5 degrees for a baby, 30 degrees for an adult) converted to radians (x 0.017453292). So the head lowers over 20 ticks and rises in 10.
+
+### 7.4 Sounds and tags
+
+| Moment | Normal goat | Screaming goat | Source, volume, pitch |
+|---|---|---|---|
+| prepare (run-up reached and 20 ticks held) | `entity.goat.prepare_ram` | `entity.goat.screaming.prepare_ram` | NEUTRAL, 1, voice pitch |
+| impact (hit an entity or a horn-breaking block) | `entity.goat.ram_impact` | `entity.goat.screaming.ram_impact` | NEUTRAL, 1, 1 |
+| horn drops | `entity.goat.horn_break` | `entity.goat.horn_break` (same) | NEUTRAL, 1, 1 |
+
+Block tag `snaps_goat_horn`: `overworld_natural_logs` (tag), stone, packed_ice, iron_ore, coal_ore, copper_ore, emerald_ore.
+
 ---
 
 ## Open questions
