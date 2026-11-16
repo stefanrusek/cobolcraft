@@ -1,5 +1,5 @@
 *> The throwing of items by players and the tick of the thrown entities of lane 002-lane-mobsb6 (17 section 3.15, 44 part 8 sections 6.1 and 6.5).
-*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees). The projectile
+*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5). The projectile
 *> starts at (x, eye y - 0.1, z) of the player, moves along (-sin(yaw) cos(pitch), -sin(pitch + offset), cos(yaw) cos(pitch)) normalised and scaled by the speed; a survival
 *> player's stack loses one. Gaps: the inaccuracy (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled; item stacks carry no
 *> components, so a thrown potion has no contents (a water bottle) until the caller adds effects.
@@ -63,6 +63,9 @@
  01 WS-VY                  FLOAT-LONG.
  01 WS-VZ                  FLOAT-LONG.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-PJ                  BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-EKEY                PIC X(112).
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -90,6 +93,15 @@
              MOVE 1 TO WS-KIND
              MOVE 1 TO WS-LINGER
              MOVE -20 TO WS-OFFSET
+         WHEN "ender_pearl"
+             MOVE 2 TO WS-KIND
+             MOVE 1.5 TO WS-SPEED
+         WHEN "egg"
+             MOVE 3 TO WS-KIND
+             MOVE 1.5 TO WS-SPEED
+         WHEN "snowball"
+             MOVE 4 TO WS-KIND
+             MOVE 1.5 TO WS-SPEED
      END-EVALUATE
      IF WS-KIND = 0
          GOBACK
@@ -102,7 +114,27 @@
      MOVE PSB-YAW TO WS-YAW
      MOVE PSB-PITCH TO WS-PITCH
      CALL "THROWN-DIRECTION" USING WS-YAW WS-PITCH WS-OFFSET WS-SPEED WS-VX WS-VY WS-VZ
-     CALL "POTION-SPAWN" USING WS-LINGER WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+     EVALUATE WS-KIND
+         WHEN 1
+             CALL "POTION-SPAWN" USING WS-LINGER WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+         WHEN 2
+             MOVE 4 TO WS-PJ
+             MOVE "minecraft:ender_pearl" TO WS-EKEY
+             CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+         WHEN 3
+             MOVE 6 TO WS-PJ
+             MOVE "minecraft:egg" TO WS-EKEY
+             CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+         WHEN OTHER
+*>           The snowball is the projectile of mob-21-proj.cob (PROJ-SPAWN starts it at 1.6; the thrown speed is 1.5).
+             MOVE 3 TO WS-PJ
+             CALL "PROJ-SPAWN" USING WS-PJ WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-NONE PL-ENTITY-ID(WS-ROW) WS-NEW
+             IF WS-NEW > 0
+                 COMPUTE EN-VX(WS-NEW) = WS-VX
+                 COMPUTE EN-VY(WS-NEW) = WS-VY
+                 COMPUTE EN-VZ(WS-NEW) = WS-VZ
+             END-IF
+     END-EVALUATE
      IF WS-NEW > 0
          CALL "MOB-TAKE" USING WS-ROW
      END-IF
@@ -138,6 +170,10 @@
                          CALL "POTION-STEP" USING WS-ROW
                      WHEN 3
                          CALL "CLOUD-STEP" USING WS-ROW
+                     WHEN 4
+                         CALL "PEARL-STEP" USING WS-ROW
+                     WHEN 6
+                         CALL "EGG-STEP" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF
