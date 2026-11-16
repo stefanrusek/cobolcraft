@@ -1799,6 +1799,7 @@
  01 LS-CHANCE              BINARY-LONG.
  01 LS-CH                  BINARY-LONG.
  01 LS-NC                 BINARY-LONG.
+ 01 LS-MKIND              BINARY-LONG.
  01 LS-SAVED-BAD           BINARY-LONG.
  01 LS-KIDS.
     05 LS-KID OCCURS 64 TIMES.
@@ -1924,6 +1925,22 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 21
+         WHEN 23
+*>           huge_brown_mushroom (21) and huge_red_mushroom (23) (feat-mush.cob): unsupported when a provider, the predicate or a tag is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             IF LS-N = 21
+                 MOVE 1 TO LS-MKIND
+             ELSE
+                 MOVE 2 TO LS-MKIND
+             END-IF
+             CALL "FD-MUSH-NODE" USING JSON-DOC L-NODE LS-MKIND FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE
