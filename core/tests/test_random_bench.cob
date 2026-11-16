@@ -9,6 +9,7 @@
  COPY COREAPI.
  COPY PROTO.
  COPY BRWORLD.
+ COPY BUSTATE.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-NAME                PIC X(16) VALUE "Stefan".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
@@ -62,6 +63,7 @@
          MOVE WS-MS TO WS-MS-TEXT
          DISPLAY "BENCH worldsim-random ms per tick at speed " WS-SPEED ": " WS-MS-TEXT
      END-PERFORM
+     DISPLAY "BENCH hook rules: " BU-RULE-COUNT
      STOP RUN.
  NOW.
      MOVE FUNCTION CURRENT-DATE TO WS-DATE

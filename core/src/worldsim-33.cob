@@ -2279,6 +2279,7 @@
      MOVE CW-THUNDER-LEVEL(L-DIM) TO WS-THUNDER-LEVEL
      CALL "WW-IS" USING WS-CAN WS-RAIN-LEVEL WS-THUNDER-LEVEL WS-RAINING WS-THUNDERING
      CALL "BR-RANDOM-TICK-ROW" USING L-DIM WS-ZERO-ROW WS-X WS-Y WS-Z
+     CALL "WL-SECTION-RUN" USING L-DIM WS-ZERO-ROW WS-X WS-Y WS-Z WS-N WS-Y
 *>   The players that tick chunks of this dimension (BT-CHUNK-TICKS asked of each chunk: a player of the dimension with an entity whose
 *>   centre chunk is within the view distance on both axes), listed once for the run.
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
@@ -2305,26 +2306,14 @@
              IF WS-TICKING = 1
                  COMPUTE WS-X0 = CK-X(WS-ROW) * 16
                  COMPUTE WS-Z0 = CK-Z(WS-ROW) * 16
-                 PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WSM-SPEED
-                     CALL "WL-RANDOM-POS" USING WSM-RAND(L-DIM) WS-X0 WS-Y0 WS-Z0 WS-MASK WS-X WS-Y WS-Z
-                     COMPUTE WS-DRAW = FUNCTION MOD(FUNCTION INTEGER(FUNCTION ABS(WSM-RAND(L-DIM)) / 65536), 48)
-                     CALL "WL-ICE-ATTEMPT" USING WS-DRAW WS-ATTEMPT
-                     IF WS-ATTEMPT = 1
-                         CALL "WORLDSIM-PRECIPITATION" USING L-DIM WS-X WS-Z WS-RAINING
-                     END-IF
-                 END-PERFORM
+*>               The 1 in 48 precipitation draws of the chunk and the random positions of its sections (worldsim-33f.cob: the same draws and ticks as the loops of WL-RANDOM-POS and
+*>               BR-RANDOM-TICK-ROW, without the decimal arithmetic).
+                 CALL "WL-PRECIP-RUN" USING L-DIM WS-X0 WS-Z0 WSM-SPEED WS-RAINING
                  PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
-                     MOVE 0 TO WS-VISIT
                      COMPUTE WS-N = WS-S + 1
                      IF BR-TICKING-BLOCKS(WS-ROW, WS-N) > 0 OR BR-TICKING-FLUIDS(WS-ROW, WS-N) > 0
-                         MOVE 1 TO WS-VISIT
-                     END-IF
-                     IF WS-VISIT = 1
                          COMPUTE WS-Y0 = DM-MIN-Y(L-DIM) + WS-S * 16
-                         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WSM-SPEED
-                             CALL "WL-RANDOM-POS" USING WSM-RAND(L-DIM) WS-X0 WS-Y0 WS-Z0 WS-MASK WS-X WS-Y WS-Z
-                             CALL "BR-RANDOM-TICK-ROW" USING L-DIM WS-ROW WS-X WS-Y WS-Z
-                         END-PERFORM
+                         CALL "WL-SECTION-RUN" USING L-DIM WS-ROW WS-X0 WS-Y0 WS-Z0 WSM-SPEED DM-MIN-Y(L-DIM)
                      END-IF
                  END-PERFORM
              END-IF
