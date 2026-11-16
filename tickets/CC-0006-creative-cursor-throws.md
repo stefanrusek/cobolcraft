@@ -2,16 +2,18 @@
 spile: ticket
 id: CC-0006
 type: bug
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-06
 relations:
   depends_on: []
   relates_to: []
   supersedes: []
-implementation: []
+implementation:
+  branch: 002-client-polish
+  pr: 2
 ---
 
 # CC-0006: A creative player's carried stack can be thrown out of the inventory window
@@ -44,3 +46,6 @@ way a survival player can.
 > Current behaviour (Phase 49, T1088): in creative mode the client predicts the outside throw and sends Container Click
 > at -999, but the server's cursor is empty, so nothing is thrown and the stack is lost. Closing the screen puts the
 > carried stack back in both modes (the creative client sends Set Creative Mode Slot for the slots it fills).
+
+> [!NOTE]
+> Closed by feature 002 tasks T0397, T0398, T3021 and T3601 (core creative cursor throw in core/src/inventory.cob, client acc_f2us9_creative_throw, convergence acc_us5_inventory_throw); recorded by task T3611.

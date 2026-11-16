@@ -347,6 +347,7 @@
  01 WS-DTYPE               BINARY-LONG.
  01 WS-HANDLE              BINARY-LONG.
  01 WS-WEAPON              PIC X(64).
+ 01 WS-RULE-BLOCKED        BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -362,6 +363,10 @@
      END-IF
 *>   Creative players are hurt by the void too (bypasses_invulnerability, 17 section 4.12); every other mode but survival is not hurt.
      IF PL-MODE(WS-ROW) NOT = 0 AND NOT (PL-MODE(WS-ROW) = 1 AND L-CAUSE = CAUSE-VOID)
+         GOBACK
+     END-IF
+     CALL "HURT-RULE-BLOCKED" USING L-CAUSE L-ATTACKER WS-RULE-BLOCKED
+     IF WS-RULE-BLOCKED = 1
          GOBACK
      END-IF
      CALL "COMBAT-TS-CHECK" USING WS-ROW

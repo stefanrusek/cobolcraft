@@ -254,9 +254,16 @@
  01 WS-DRAW-RAIN           BINARY-LONG VALUE 2.
  01 WS-LOW                 BINARY-LONG.
  01 WS-HIGH                BINARY-LONG.
+ 01 WS-ADVANCE-RULE        PIC X(40) VALUE "advance_weather".
+ 01 WS-ADVANCE             BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM.
+*>   advance_weather false (33 section 6): the timers and flags stand still (the smoothing of part B continues).
+     CALL "BR-RULE-GET" USING WS-ADVANCE-RULE WS-ADVANCE
+     IF WS-ADVANCE = 0
+         GOBACK
+     END-IF
      MOVE CW-CLEAR-TIME TO WS-CLEAR
      MOVE CW-THUNDER-TIME TO WS-THUNDER-T
      MOVE CW-RAIN-TIME TO WS-RAIN-T

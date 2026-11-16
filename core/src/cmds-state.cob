@@ -1201,6 +1201,7 @@
              MOVE 1 TO BR-R-FAILED
          ELSE
              CALL "BR-RULE-SET" USING WS-ENTRY WS-VALUE
+             CALL "RULE-CHANGED" USING WS-ENTRY
              MOVE "commands.gamerule.set" TO WS-KEY
              PERFORM TELL-RULE
              CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
