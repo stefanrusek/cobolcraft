@@ -93,8 +93,8 @@
      MOVE "minecraft:classic_vines_cave_feature" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: the cave vines stay off" TO TL-CASE
      PERFORM CHECK-GATE-ZERO
-     MOVE "minecraft:amethyst_geode" TO WS-GATE-KEY
-     MOVE "acceptance US12 vegetation gate: an unsupported family (geode) stays off" TO TL-CASE
+     MOVE "minecraft:fossil_upper" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: an unsupported family (fossil) stays off" TO TL-CASE
      PERFORM CHECK-GATE-ZERO
      MOVE "minecraft:ore_coal_upper" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: an ore placed feature stays off" TO TL-CASE

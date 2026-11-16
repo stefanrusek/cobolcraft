@@ -739,10 +739,21 @@
                      MOVE 1 TO LS-N
                  END-IF
              END-IF
+*>           mangrove propagule (29b part 2 section 11.1, the default standing state): the block below is in supports_mangrove_propagule, PR-A 4
+             IF LS-N = 0 AND LS-LEN > 18
+                 IF LS-TEXT(LS-LEN - 17:18) = "mangrove_propagule"
+                     MOVE 4 TO PR-A(LS-ROW)
+                     MOVE 1 TO LS-N
+                 END-IF
+             END-IF
              IF LS-N = 0
                  MOVE 1 TO FD-BAD
              END-IF
              COMPUTE PR-POOL(LS-ROW) = FD-POOL-COUNT + 1
+             IF PR-A(LS-ROW) = 4
+                 MOVE "minecraft:supports_mangrove_propagule" TO LS-TAG
+                 CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)
+             END-IF
              IF PR-A(LS-ROW) = 3
                  MOVE "minecraft:supports_cactus" TO LS-TAG
                  CALL "FD-TAG-BLOCKS" USING LS-TAG PR-N(LS-ROW)

@@ -63,3 +63,22 @@
     05 TW-DISTS.
        10 TW-DIST            PIC 9 OCCURS 24696 TIMES.
     05 TW-QUEUE              BINARY-LONG OCCURS 24760 TIMES.
+*> Tree decorators of feat-tree-deco2.cob: TW-SHL the shuffled copy of the sorted leaf list, TW-RS the root indices sorted by y, TW-LL the lowest layer of getLowestTrunkOrRootOfTree (TW-NLL positions), TW-XC the
+*> exclusion centres of attached_to_leaves, TW-CAND the beehive candidates.
+    05 TW-SHL               BINARY-LONG OCCURS 24696 TIMES.
+    05 TW-RS                BINARY-LONG OCCURS 160 TIMES.
+    05 TW-NLL               BINARY-LONG.
+    05 TW-LL OCCURS 2400 TIMES.
+       10 TW-LL-X           BINARY-LONG.
+       10 TW-LL-Y           BINARY-LONG.
+       10 TW-LL-Z           BINARY-LONG.
+    05 TW-NXC               BINARY-LONG.
+    05 TW-XC OCCURS 1024 TIMES.
+       10 TW-XC-X           BINARY-LONG.
+       10 TW-XC-Y           BINARY-LONG.
+       10 TW-XC-Z           BINARY-LONG.
+    05 TW-NCAND             BINARY-LONG.
+    05 TW-CAND OCCURS 2048 TIMES.
+       10 TW-CAND-X         BINARY-LONG.
+       10 TW-CAND-Y         BINARY-LONG.
+       10 TW-CAND-Z         BINARY-LONG.
