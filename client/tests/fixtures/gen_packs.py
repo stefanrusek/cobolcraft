@@ -308,6 +308,25 @@ PACKS["glint"] = ("folder", {
 })
 
 
+# A trim pattern texture (54 section 18.4): the key greys A0A0A0 and 606060 at (0, 0) and (1, 0), a clear texel at (2, 0), a colour outside the key at (3, 0).
+def trim_pixel(x, y):
+    if y == 0 and x == 0:
+        return (0xA0, 0xA0, 0xA0, 255)
+    if y == 0 and x == 1:
+        return (0x60, 0x60, 0x60, 255)
+    if y == 0 and x == 2:
+        return (0xA0, 0xA0, 0xA0, 0)
+    if y == 0 and x == 3:
+        return (0x12, 0x34, 0x56, 255)
+    return (0, 0, 0, 0)
+
+
+PACKS["trimtex"] = ("folder", {
+    "pack.mcmeta": new_style("Trim pattern texture"),
+    "assets/minecraft/textures/trims/entity/humanoid/wild.png": png(64, 32, trim_pixel),
+})
+
+
 def zip_bytes(files):
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
