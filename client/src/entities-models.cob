@@ -135,7 +135,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-MODEL-SLOTS.
 *> USING CLIENT-STATE: every used replica row with a model gets an atlas slot for its model and texture code, for its extra layer and for each overlay layer
-*> (EA-MT, at most 64: ENTITY-SLOT-ENSURE); the atlas is rebuilt once when a slot's image changed.
+*> (EA-MT, at most 64: ENTITY-SLOT-ENSURE; an overlay with a model of its own, the armor pieces, takes its slot for that model); the atlas is rebuilt once when a slot's image changed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLMODELS.
@@ -148,6 +148,7 @@
  01 WS-OVR                 FLOAT-LONG.
  01 WS-OVG                 FLOAT-LONG.
  01 WS-OVB                 FLOAT-LONG.
+ 01 WS-OVM                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -166,10 +167,13 @@
                  CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 4
-                 CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB
-                 IF WS-TEX > 0
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 8
+                 CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
+                 IF WS-TEX > 0 AND WS-OVM = 0
                      CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+                 END-IF
+                 IF WS-TEX > 0 AND WS-OVM > 0
+                     CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-OVM WS-TEX WS-NEW
                  END-IF
              END-PERFORM
          END-IF
@@ -350,6 +354,9 @@
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
  01 WS-MAINARM             BINARY-LONG.
+ 01 WS-ANIM                PIC X.
+ 01 WS-FK                  PIC X(24).
+ 01 WS-FM                  BINARY-LONG.
  01 WS-HK                  BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
  01 WS-HP.
@@ -390,6 +397,19 @@
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
 *>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
      MOVE 1 TO WS-HOOK-X WS-HOOK-Y
+*>   The setupAnim program of the row; an armor row (code A) is posed as the mob that wears it (its own row, or the baby row of a baby).
+     MOVE CL-MD-ANIM(EN-MODEL(WS-ROW)) TO WS-ANIM
+     IF WS-ANIM = "A"
+         MOVE EN-KEY(WS-ROW) TO WS-FK
+         CALL "ENTITY-MODEL-FIND" USING WS-FK WS-FM
+         IF WS-FM > 0 AND EN-BABY(WS-ROW) = 1 AND CL-MD-BABY(WS-FM) > 0
+             MOVE CL-MD-BABY(WS-FM) TO WS-FM
+         END-IF
+         MOVE "-" TO WS-ANIM
+         IF WS-FM > 0
+             MOVE CL-MD-ANIM(WS-FM) TO WS-ANIM
+         END-IF
+     END-IF
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
          CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
          COMPUTE WS-KSWELL = WS-SWELL / 28
@@ -412,7 +432,7 @@
      END-IF
 *>   An overlay layer (ENTITY-OVERLAY, EN-OVL > 0): the model of the mob again, enlarged by 0.3 percent about the entity origin for each layer so that it
 *>   lies over the body and the layers before it.
-     IF EN-OVL(WS-ROW) > 0
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) <= 4
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * EN-OVN(WS-ROW))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
      END-IF
@@ -439,15 +459,15 @@
      MOVE 0 TO WS-WPOS WS-WSPEED WS-SWP WS-AGE
      MOVE 0 TO WS-SWT WS-SWARM WS-AGG
      MOVE 1 TO WS-MAINARM
-     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+     IF WS-ANIM = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
              OR "blaze" OR "enderman" OR "enderman_eyes"
-             OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "W" OR "V"
+             OR WS-ANIM = "W" OR "V"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
-         IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+         IF WS-ANIM = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
                  OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
-                 OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "V"
+                 OR WS-ANIM = "V"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -523,7 +543,7 @@
      MOVE WS-SWARM TO WS-ST(21)
      MOVE WS-AGG TO WS-ST(18)
      MOVE WS-MAINARM TO WS-ST(13)
-     EVALUATE CL-MD-ANIM(WS-K)
+     EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
          WHEN "C"
@@ -588,7 +608,7 @@
      MOVE WS-SRO(1) TO WS-NOPS
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
-     IF CL-MD-ANIM(WS-K) = "H" AND EN-SWIM(WS-ROW) > 0
+     IF WS-ANIM = "H" AND EN-SWIM(WS-ROW) > 0
          PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 2
              COMPUTE WS-OB = WS-J * 4 - 2
              COMPUTE WS-OD = WS-OB + 8
@@ -612,7 +632,7 @@
          ADD 2 TO WS-NOPS
      END-IF
 *>   A crouching player is drawn 0.125 lower, outermost (53 section 14.1).
-     IF CL-MD-ANIM(WS-K) = "H" AND EN-POSE(WS-ROW) = 5
+     IF WS-ANIM = "H" AND EN-POSE(WS-ROW) = 5
          PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 1
              COMPUTE WS-OB = WS-J * 4 - 2
              COMPUTE WS-OD = WS-OB + 4

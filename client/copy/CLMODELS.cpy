@@ -20,9 +20,10 @@
 *>   CL-MD-BABY   the row of the baby model of the type (0 none: the adult model is drawn for a baby); rows whose key ends in ~b are baby rows and no
 *>                entity type. Babies are drawn from that row with its own atlas slot (EN-BABY, entities-render.cob ENTITIES-MESH); the variant
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
+*>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
 *>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; nautilus and boats are not in the table yet.
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 145.
+ 78 CL-MODEL-COUNT           VALUE 149.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -1329,8 +1330,44 @@
     05 FILLER PIC X(64) VALUE "textures/entity/fish/salmon.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_head".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ARMOR_HEAD".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_chest".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ARMOR_CHEST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_legs".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ARMOR_LEGS".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_leggings/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_feet".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ARMOR_FEET".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 145 TIMES.
+    05 CL-MD OCCURS 149 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

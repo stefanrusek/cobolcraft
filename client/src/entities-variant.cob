@@ -149,7 +149,7 @@
  WORKING-STORAGE SECTION.
  01 WS-BASE                PIC X(20).
  01 WS-TAIL                PIC X(2).
- 01 WS-NAME                PIC X(16).
+ 01 WS-NAME                PIC X(20).
  01 WS-DIR                 PIC X(10).
  01 WS-PTR                 BINARY-LONG.
  01 WS-BABY                PIC X(5).
@@ -166,14 +166,15 @@
     05 FILLER PIC X(90) VALUE "red_blue          blue              green             yellow_blue       grey              ".
  01 WS-NAMES REDEFINES WS-NAMES-DATA.
     05 WS-NM                PIC X(18) OCCURS 51 TIMES.
-*> The overlay layers (ENTITY-OVERLAY): villager types 1 to 7, professions 8 to 21, levels 22 to 26, markings 27 to 30.
+*> The overlay layers (ENTITY-OVERLAY): villager types 1 to 7, professions 8 to 21, levels 22 to 26, markings 27 to 30, armor assets 31 to 38.
  01 WS-OVL-DATA.
     05 FILLER PIC X(98) VALUE "desert        jungle        plains        savanna       snow          swamp         taiga         ".
     05 FILLER PIC X(196) VALUE "armorer       butcher       cartographer  cleric        farmer        fisherman     fletcher      leatherworker librarian     mason         nitwit        shepherd      toolsmith     weaponsmith   ".
     05 FILLER PIC X(70) VALUE "stone         iron          gold          emerald       diamond       ".
     05 FILLER PIC X(56) VALUE "white         whitefield    whitedots     blackdots     ".
+    05 FILLER PIC X(112) VALUE "leather       copper        chainmail     iron          gold          diamond       turtle_scute  netherite     ".
  01 WS-OVL REDEFINES WS-OVL-DATA.
-    05 WS-OV                PIC X(14) OCCURS 30 TIMES.
+    05 WS-OV                PIC X(14) OCCURS 38 TIMES.
  01 WS-CD                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
@@ -213,6 +214,14 @@
              WHEN WS-KIND = 4 AND WS-CD >= 1 AND WS-CD <= 4 AND WS-BASE = "horse"
                  COMPUTE WS-I = 26 + WS-CD
                  STRING "textures/entity/horse/horse_markings_" FUNCTION TRIM(WS-OV(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 6 AND WS-CD >= 1 AND WS-CD <= 8 AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
+                 MOVE "humanoid" TO WS-NAME
+                 IF WS-BASE = "armor_legs"
+                     MOVE "humanoid_leggings" TO WS-NAME
+                 END-IF
+                 COMPUTE WS-I = 30 + WS-CD
+                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 5 AND (WS-BASE = "wolf" OR "cat")
                  STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/" FUNCTION TRIM(WS-BASE) "_collar" FUNCTION TRIM(WS-BABY) ".png"

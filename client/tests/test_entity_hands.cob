@@ -245,6 +245,36 @@
      MOVE 12 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Every mob with arms in its model holds an item: its hand is found by the name of the arm part.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         EVALUATE WS-I
+             WHEN 1 MOVE "skeleton" TO WS-KEY
+             WHEN 2 MOVE "piglin" TO WS-KEY
+             WHEN 3 MOVE "pillager" TO WS-KEY
+             WHEN 4 MOVE "witch" TO WS-KEY
+             WHEN 5 MOVE "vex" TO WS-KEY
+             WHEN 6 MOVE "allay" TO WS-KEY
+             WHEN 7 MOVE "iron_golem" TO WS-KEY
+             WHEN 8 MOVE "wandering_trader" TO WS-KEY
+             WHEN 9 MOVE "zombie_villager" TO WS-KEY
+             WHEN 10 MOVE "husk" TO WS-KEY
+             WHEN 11 MOVE "evoker" TO WS-KEY
+             WHEN OTHER MOVE "drowned" TO WS-KEY
+         END-EVALUATE
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+         MOVE 1 TO WS-ID
+         CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+         MOVE 3 TO EN-EQ(1, 1)
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         MOVE "N" TO TL-MODE
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance hands a " FUNCTION TRIM(WS-KEY) " holds its item" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 12 TO TL-EXPECTED-N
+         MOVE RL-GI-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
      STOP RUN.
  END PROGRAM TEST-ENTITY-HANDS.
 

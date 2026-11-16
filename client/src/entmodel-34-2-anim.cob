@@ -493,8 +493,13 @@
      END-IF
      COMPUTE WS-T = L-S(6) * 0.1 + L-S(3) * 0.5
      COMPUTE WS-AMP = 0.08 + L-S(4) * 0.4
-     COMPUTE MM-CZROT(L-P(7)) = -WS-BASE - FUNCTION COS(WS-T * 1.2) * WS-AMP
-     COMPUTE MM-CZROT(L-P(8)) = WS-BASE + FUNCTION COS(WS-T) * WS-AMP
+*>   The armor models of a piglin have no ears (the part indexes are 0).
+     IF L-P(7) > 0
+         COMPUTE MM-CZROT(L-P(7)) = -WS-BASE - FUNCTION COS(WS-T * 1.2) * WS-AMP
+     END-IF
+     IF L-P(8) > 0
+         COMPUTE MM-CZROT(L-P(8)) = WS-BASE + FUNCTION COS(WS-T) * WS-AMP
+     END-IF
      GOBACK.
  END PROGRAM EMD-A-EARS.
 
