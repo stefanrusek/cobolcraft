@@ -367,6 +367,20 @@ Worked examples: players at distance 10 and 100 from the position, volume 1, min
 
 ---
 
+## 11. Saturation effect as an effect instance (`/effect give`, beacons, anything that adds the instance)
+
+**Gap closed:** how the `saturation` effect restores food when it is held as an instance (it was documented only for drinking, 17 §4.9). Source: `SaturationMobEffect`, `InstantaneousMobEffect`, `MobEffectInstance.tickServer`, `LivingEntity.tickEffects` and `addEffect`, `EffectCommands.giveEffect` / `computeDurationInTicks`.
+
+1. **Instance creation by `/effect give <targets> <effect> [seconds] [amplifier] [hideParticles]`.** For an instantaneous effect (`instant_health`, `instant_damage`, `saturation`) the duration is the given `seconds` value taken **as ticks, not multiplied by 20**; without it the duration is 1 tick. (Other effects: seconds x 20, `infinite` is -1, default 600 ticks.) The instance is added with `addEffect`; adding does **not** apply the effect (`onEffectStarted` of the base class is empty and the saturation class overrides neither it nor `onEffectAdded`).
+2. **Per-tick application.** Once per server tick of the living entity, each active instance is ticked. An instantaneous effect applies when its remaining duration is >= 1, then the duration is reduced by 1; the instance is removed when the duration reaches 0. So a saturation instance of duration D applies on D consecutive ticks, starting with the entity tick after the command: `/effect give @s saturation` (duration 1) applies once; `/effect give @s saturation 5` applies 5 times; amplifier `a` is used for every application.
+3. **One application** (`SaturationMobEffect.applyEffectTick`): for a player, `FoodData.eat(a + 1, 1.0)`: food = clamp(food + a + 1, 0, 20) and saturation = clamp(saturation + (a + 1) x 1.0 x 2, 0, food) (17 §4.9). For any non-player target nothing happens (the instance is still consumed).
+4. **Interplay with hunger** (17 §4.9): there is none beyond the food and saturation values. The instance does not touch exhaustion; the regeneration rule that uses "food = 20 and saturation > 0" (heal every 10 ticks) therefore starts at once after the first application. Ordinary food and saturation changes mark the player for a Set Health packet (0x6A) as in 17 §4.9.
+5. `/effect clear` removes the instance like any other effect.
+
+Worked examples: food 10, saturation 0: `/effect give @s saturation` (a = 0): after the next tick food 11, saturation 2.0 (min(0 + 2, 11)). `/effect give @s saturation 3 4`: three ticks, each +5 food and +10 saturation, both capped (saturation to the food level): after tick 1 food 15, saturation 10; tick 2 food 20, saturation 20; tick 3 food 20, saturation 20. Amplifier 255 (maximum): +256 per application, clamped to 20.
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
