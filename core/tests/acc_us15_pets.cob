@@ -250,8 +250,8 @@
      PERFORM CHECK-N
      COMPUTE EN-X(WS-ROW-A) = EN-X(WS-ROW-B) - 1
      PERFORM PET-CALL
-     MOVE "acceptance US15 18§8.2 Taming, ownership: a wolf in reach bites its foe for 4" TO WS-CASE
-     COMPUTE WS-EXPECT = WS-N - 4
+     MOVE "acceptance US15 18§8.2 Taming, ownership: a wolf in reach bites its foe for 4 (a zombie's armor 2 makes it 3.904: 3 points)" TO WS-CASE
+     COMPUTE WS-EXPECT = WS-N - 3
      MOVE EN-HEALTH(WS-ROW-B) TO WS-OBSERVE
      PERFORM CHECK-N
      MOVE "acceptance US15 18§8.2 Taming, ownership: the bite starts the 20-tick timer" TO WS-CASE
@@ -261,7 +261,7 @@
      MOVE 0 TO EN-HURT(WS-ROW-B)
      PERFORM PET-CALL
      MOVE "acceptance US15 18§8.2 Taming, ownership: no second bite while the timer runs" TO WS-CASE
-     COMPUTE WS-EXPECT = WS-N - 4
+     COMPUTE WS-EXPECT = WS-N - 3
      MOVE EN-HEALTH(WS-ROW-B) TO WS-OBSERVE
      PERFORM CHECK-N
      MOVE "acceptance US15 18§8.2 Taming, ownership: the timer counts down" TO WS-CASE
