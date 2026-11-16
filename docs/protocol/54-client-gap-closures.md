@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -615,6 +615,25 @@ Notes:
 ### 16.4 Worked example
 
 A tipped arrow for `strong_harming`: patch added entries `53 potion_contents` with network bytes `01 <VarInt registry id of strong_harming>` (potion present), `00` (no custom colour), `00` (no custom effects), `00` (no custom name), then `54 potion_duration_scale` with Float `0.125` (`3E 00 00 00`). A custom-effect potion with one effect `regeneration` amplifier 1 for 450 ticks, particles shown: after the potion field (`00`) and colour field (`00`): VarInt 1, VarInt effect id, VarInt 1, VarInt 450 (`C2 03`), Boolean 0, Boolean 1, Boolean 1, Boolean 0 (no hidden effect), then `00` for the name.
+
+---
+
+## 17. `dyed_color` (47) and the `dye` component (46)
+
+Gap closed: 43 §7.4 gives the mixing formula and 43 §7 the tint use; this section gives the layouts, the accepted NBT forms and the constants.
+
+| Aspect | `dyed_color` (47) |
+|---|---|
+| Value | A record with one field `rgb` (an Int). The tooltip-only `show_in_tooltip` flag of earlier versions does not exist in 26.3 (hiding the tooltip line is §15.4). |
+| Network | Int, 4 bytes big-endian (not VarInt): the stored `rgb` value. Nothing else. |
+| NBT | Int holding the colour. Accepted forms on load: an Int (taken as is), or a List of 3 Floats `[r, g, b]` in 0.0 to 1.0 which is converted to an opaque ARGB int. Saving always writes the Int. The value is not masked or range checked. |
+| Meaning of the stored int | Only the red, green and blue bytes are used. Mixing (43 §7.4) writes alpha 0; vanilla data and commands may store an opaque value (alpha 255, a negative Int); both behave the same because every reader applies `ARGB.opaque(rgb)` (43 §7, `DyedItemColor.getOrDefault`). A stored value of `0` is a real colour (black), not "undyed". |
+| Default | none: the component is absent on an undyed item. The renderer's fallback for an undyed leather piece is `LEATHER_COLOR` = `-6265536` = `0xFFA06540` (brown), used by the tint sources through `color_when_undyed` (43 §7). |
+| Equality | `rgb` equality. Two leather armour pieces stack-merge only with the same stored int, so an alpha-0 and an alpha-255 encoding of the same colour are different component values. |
+| Tooltip (not needed for the store) | Shows the colour as `#RRGGBB` (format `#%06X` of the low 24 bits) when advanced tooltips are on, else the translatable `item.dyed`. |
+| Mixing | `DyedItemColor.applyDyes(stack, dyes)` returns a copy of the stack with `dyed_color` set to the 43 §7.4 result (stack and the plain-component forms exist; the stack form also requires nothing else). Used by the crafting recipe (27) and the cauldron wash (29b-7, which removes the component). |
+
+The `dye` component (46) is a different thing: a bare `DyeColor` for dye items. Network: VarInt id of the dye colour (the enum order of 43 §8, ids 0 to 15, an id-enum codec); NBT: String with the dye name (`white`, `orange`, ... `black`). No default; an item that is a dye carries it in its prototype (25-4).
 
 ---
 
