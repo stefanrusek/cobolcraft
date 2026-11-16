@@ -20,9 +20,9 @@
 *>   CL-MD-BABY   the row of the baby model of the type (0 none: the adult model is drawn for a baby); rows whose key ends in ~b are baby rows and no
 *>                entity type. Babies are drawn from that row with its own atlas slot (EN-BABY, entities-render.cob ENTITIES-MESH); the variant
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
-*>                A row without a built mesh program (dolphin, axolotl, fish, nautilus: 34-8 sections 3 to 6) is not in the table yet.
+*>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; nautilus and boats are not in the table yet.
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 130.
+ 78 CL-MODEL-COUNT           VALUE 139.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -1194,8 +1194,89 @@
     05 FILLER PIC X(64) VALUE "textures/entity/squid/squid_baby.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "dolphin".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "DOLPHIN".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/dolphin/dolphin.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 132.
+    05 FILLER PIC X(20) VALUE "dolphin~b".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "DOLPHIN_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/dolphin/dolphin_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "axolotl".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "AXOLOTL".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/axolotl/axolotl_lucy.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 134.
+    05 FILLER PIC X(20) VALUE "axolotl~b".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "AXOLOTL_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/axolotl/axolotl_lucy_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "cod".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "COD".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/cod.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "salmon".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "SALMON".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/salmon.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pufferfish".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "PUFFERFISH_SMALL".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/pufferfish.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tropical_pattern".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "TROPICAL_SMALL_PATTERN".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_a_pattern_1.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tropical_fish".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "TROPICAL_SMALL".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_a.png".
+    05 FILLER PIC 999 VALUE 138.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 130 TIMES.
+    05 CL-MD OCCURS 139 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

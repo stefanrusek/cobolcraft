@@ -196,6 +196,40 @@
          WHEN "allay"
              MOVE L-AGE TO L-I(5)
              CALL "EM3-ALLAY-ANIM" USING EMM-MODEL L-IN
+         WHEN "cod"
+             MOVE 1 TO L-I(1)
+             MOVE L-AGE TO L-I(2)
+             MOVE 1 TO L-I(3)
+             CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
+         WHEN "tropical_fish"
+             MOVE 2 TO L-I(1)
+             MOVE L-AGE TO L-I(2)
+             MOVE 1 TO L-I(3)
+             CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
+         WHEN "salmon"
+             MOVE 3 TO L-I(1)
+             MOVE L-AGE TO L-I(2)
+             MOVE 1 TO L-I(3)
+             CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
+         WHEN "pufferfish"
+             MOVE 4 TO L-I(1)
+             MOVE L-AGE TO L-I(2)
+             MOVE 1 TO L-I(3)
+             CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
+         WHEN "dolphin"
+             MOVE WS-PITCH TO L-I(1)
+             MOVE WS-YAW TO L-I(2)
+             IF WS-WSPEED > 0.01
+                 MOVE 1 TO L-I(3)
+             END-IF
+             MOVE L-AGE TO L-I(4)
+             CALL "EF8-DOLPHIN-ANIM" USING EMM-MODEL L-IN
+         WHEN "axolotl"
+             MOVE FUNCTION MIN(WS-WSPEED, 1) TO L-I(3)
+             MOVE L-AGE TO L-I(4)
+             IF WS-BABY = 0
+                 CALL "EF8-AXOLOTL-ANIM" USING EMM-MODEL L-IN
+             END-IF
          WHEN OTHER
              CONTINUE
      END-EVALUATE
