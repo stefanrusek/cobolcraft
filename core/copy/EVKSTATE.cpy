@@ -43,3 +43,19 @@
        10 RV-STUN            BINARY-LONG.
        10 RV-ROAR            BINARY-LONG.
        10 RV-ATTACK          BINARY-LONG.
+*> PZ-ENTRY: thrown potions in flight (PZ-USED 1): position, velocity, the potion (1 harming, 2 healing, 3 regeneration, 4 slowness, 5 poison, 6 weakness), the thrower's entity
+*> id and the tracker row of the visible entity (0 none).
+ 78 PZ-MAX                VALUE 32.
+ 01 PZ-STATE EXTERNAL.
+    05 PZ-ENTRY              OCCURS 32 TIMES.
+       10 PZ-USED            BINARY-LONG.
+       10 PZ-DIM             BINARY-LONG.
+       10 PZ-X               FLOAT-LONG.
+       10 PZ-Y               FLOAT-LONG.
+       10 PZ-Z               FLOAT-LONG.
+       10 PZ-VX              FLOAT-LONG.
+       10 PZ-VY              FLOAT-LONG.
+       10 PZ-VZ              FLOAT-LONG.
+       10 PZ-KIND            BINARY-LONG.
+       10 PZ-OWNER           BINARY-LONG.
+       10 PZ-ROW             BINARY-LONG.
