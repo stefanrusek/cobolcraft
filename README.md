@@ -130,7 +130,7 @@ keeps its data (default `~/.cobolcraft`, created if absent):
 | Path | Contents |
 |---|---|
 | `servers.dat` | the server list |
-| `options.dat` | the enabled resource packs, in order |
+| `options.txt` | the options (`version:5023`) and the enabled resource packs, in order |
 | `resourcepacks/` | your resource packs: `<name>.zip` files and `<name>/` folders |
 | `saves/<folder>/` | single-player worlds |
 | `downloads/` | resource packs downloaded from servers (a cache) |
@@ -182,6 +182,9 @@ down), in every perspective and whatever the player does. A screenshot run can u
 | Throw one / throw the stack | Q / Ctrl+Q (in the inventory screen: from the slot under the pointer) |
 | Throw what you carry (inventory screen) | Drag or click it outside the window (right click: one item) |
 | Chat / command | T / `/` (opens chat with `/` typed) |
+| Debug overlay | F3 |
+| Camera: first person, behind, in front | F5 |
+| Swap the held item with the off hand / the hovered slot | F |
 | Pause menu | Escape |
 | Screenshot (the `key.screenshot` binding) | F2: saves the whole frame as shown to `<gamedir>/screenshots/` and says `Saved screenshot as <file>` in the chat |
 
@@ -218,11 +221,30 @@ is disconnected.
 A single-player world folder (`saves/<folder>`) can be copied to a server directory as `world/` and served,
 and a server's `world/` can be copied into `saves/` and played: the format is the same.
 
+### World types and the extraction tool
+
+A world has one **world type** for its whole life. The **cobolcraft** type is the invented content of
+`docs/design/standin-content.md` and needs no jar. The **standard** type is Minecraft 26.3 content (its
+registries, blocks, items, mobs, recipes, loot, tags and worldgen) and needs the generated packs that the
+extraction tool builds from your own client jar. The server setting `world-type` is `auto`, `standard` or
+`cobolcraft`; the client's create-world screen offers both types, and Create is refused for the standard type
+with an explanation while the generated directory is missing or stale.
+
+```sh
+build/bin/cobolcraft-extract --jar <minecraft-26.3-client.jar> --game-dir <gamedir>
+```
+
+It writes `<gamedir>/generated/` (a data pack and a resource pack). Other options: `--generated-dir <path>`,
+`--force` (rebuild), `--verify` (check an existing directory), `--dry-run` and `--quiet`. No jar and no generated
+file is ever committed: the repository's test runs that need real inputs read them from `tmp/` (the client jar
+and a resource pack, both git-ignored; see `specs/002-client-polish/quickstart.md`), and every other test
+runs with the built-in pack alone.
+
 ### Resource packs
 
 Put a pack in `<gamedir>/resourcepacks/`, as a folder or a `.zip`, with a `pack.mcmeta` at its top
 (format 97). The **Resource Packs** screen lists the packs; enable them and order them there (the top
-pack wins). A pack replaces textures, models, fonts and texts by path; anything it leaves out comes from
+pack wins); **Open Pack Folder** opens `resourcepacks/` in your file manager. A pack replaces textures, models, fonts and texts by path; anything it leaves out comes from
 the packs below it and the built-in pack. A pack that cannot be used is listed with the reason.
 
 When a server offers a pack you are asked whether to use it (or the server list entry's choice applies);
