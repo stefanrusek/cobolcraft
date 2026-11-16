@@ -790,6 +790,10 @@
      IF WS-REDIRECTED = 1
          GOBACK
      END-IF
+     CALL "DECOR-ATTACK" USING WS-ROW WS-ENTITY WS-REDIRECTED
+     IF WS-REDIRECTED = 1
+         GOBACK
+     END-IF
 *>   The standard set: the tool rules of 17 section 4 (combat.cob COMBAT-ATTACK); the cobolcraft set keeps its stand-in damage below.
      IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
          CALL "COMBAT-ATTACK" USING WS-ROW WS-ENTITY
