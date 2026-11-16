@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -790,6 +790,46 @@ Gap closed: the four naming components had no layout section; 25-1 §7.2 has the
 4. Lore lines (`ItemLore.styledLines`): every line is shown with the base style dark purple and italic, merged under the line's own style (a line that sets its own colour or italic keeps it). `lines()` gives the raw lines without that style.
 5. `ItemLore.withLineAdded` appends a line (the 256 cap applies when the new list is built; the constructor rejects a list longer than 256).
 6. Equality of each component is value equality; stacks with different lore or names do not merge.
+
+---
+
+## 21. `fireworks` (71) and `firework_explosion` (70)
+
+Gap closed: 27 §8 (recipes), 26 and 42-2 use these values; the layouts were not written down. Colours are plain Ints in these components (the dye firework colours of 43 §8, as RGB, no alpha required).
+
+### 21.1 `firework_explosion` (70), record `FireworkExplosion`
+
+| # | Field | Network | NBT key and form | Default (NBT) |
+|---|---|---|---|---|
+| 1 | shape | VarInt shape id (table below; an id out of range reads as 0, strategy ZERO) | `shape` String (the serialised name; required) | required |
+| 2 | colors | VarInt count, then count x Int (4 bytes each, big-endian) | `colors` List of Int | empty |
+| 3 | fade_colors | same as `colors` | `fade_colors` List of Int | empty |
+| 4 | has_trail | Boolean | `has_trail` Boolean | false |
+| 5 | has_twinkle | Boolean | `has_twinkle` Boolean | false |
+
+| Shape id | Serialised name | Particle shape (42-2) |
+|---|---|---|
+| 0 | `small_ball` | small ball |
+| 1 | `large_ball` | large ball |
+| 2 | `star` | star |
+| 3 | `creeper` | creeper |
+| 4 | `burst` | burst |
+
+- No length limit is imposed on the colour lists by either codec.
+- The `firework_star` item carries one of these; a rocket carries several inside `fireworks`.
+- Equality: field-wise (shape, the two int lists in order, the two flags). Two stars with the same colours in a different order are different values.
+- `withFadeColors(list)` returns a copy with only `fade_colors` replaced (used by the crafting of 27 §8).
+
+### 21.2 `fireworks` (71), record `Fireworks`
+
+| # | Field | Network | NBT key and form | Default (NBT) |
+|---|---|---|---|---|
+| 1 | flight_duration | VarInt | `flight_duration` Byte (unsigned byte, 0 to 255) | 0 |
+| 2 | explosions | VarInt count (at most 256), then count `firework_explosion` values (21.1 layout, back to back, no component id) | `explosions` List of compounds (21.1), at most 256 | empty list |
+
+- **Validation:** the record's constructor rejects a list of more than 256 explosions with an exception ("Got N explosions, but maximum is 256"), so the network decoder and the NBT decoder both fail on it. The flight duration has no range check on the network (VarInt), the NBT form accepts only 0 to 255.
+- **Prototype:** the `firework_rocket` item has `fireworks` = (flight duration 1, no explosions) in its prototype (25-6 row 1053; behaviour 17 §3.13). The meaning of the duration and the crafting that fills the list are in 17 §3.13 and 27 §8, not repeated here.
+- Equality: the duration and the list of explosions (each by 21.1 equality).
 
 ---
 
