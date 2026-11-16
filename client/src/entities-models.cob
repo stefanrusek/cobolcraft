@@ -293,6 +293,8 @@
  01 WS-WSPEED              FLOAT-LONG.
  01 WS-SWP                 FLOAT-LONG.
  01 WS-AGE                 FLOAT-LONG.
+ 01 WS-CARRIED             BINARY-LONG.
+ 01 WS-CREEPY              BINARY-LONG.
  01 WS-SWT                 BINARY-LONG.
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
@@ -371,9 +373,11 @@
      MOVE 1 TO WS-MAINARM
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
+             OR "blaze" OR "enderman" OR "enderman_eyes"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
          IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+                 OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -479,7 +483,7 @@
              MOVE EN-SWIM(WS-ROW) TO WS-ST(11)
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       The models of the codes - and Y whose animation takes only the walk state (a spider's eyes layer is posed like the spider): wolf (age scale 1),
-*>       spider and cave spider, chicken (no flap).
+*>       spider and cave spider, chicken (no flap), blaze (age), enderman and its eyes (the humanoid state, nothing carried, not creepy).
          WHEN OTHER
              EVALUATE CL-MD-KEY(WS-K)
                  WHEN "spider"
@@ -492,6 +496,13 @@
                      CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
                  WHEN "chicken"
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+                 WHEN "blaze"
+                     MOVE WS-AGE TO WS-I(3)
+                     CALL "EF7-BLAZE-ANIM" USING EMM-MODEL WS-IN
+                 WHEN "enderman"
+                 WHEN "enderman_eyes"
+                     MOVE 0 TO WS-CARRIED WS-CREEPY
+                     CALL "EF6-ENDERMAN-ANIM" USING EMM-MODEL WS-STATE WS-CARRIED WS-CREEPY
                  WHEN OTHER
                      CONTINUE
              END-EVALUATE

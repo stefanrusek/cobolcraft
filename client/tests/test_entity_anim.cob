@@ -509,39 +509,52 @@
          END-IF
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
-     MOVE "spider_eyes" TO WS-KEY
+*>   A key of the table with no animation is left alone: the blaze does not read the walk state (an unknown row stays equal).
+     MOVE "blaze" TO WS-KEY
      MOVE 13 TO WS-ID
      CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
      MOVE 13 TO WS-ROW
-     MOVE 0 TO EN-WALK-SPEED(13) EN-WALK-POS(13)
      CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
      MOVE 0.8 TO EN-WALK-SPEED(13)
      MOVE 1.7 TO EN-WALK-POS(13)
      CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
-     MOVE "entity anim a spider's eyes layer is posed with the walk too (when the key is a row)" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     MOVE 0 TO TL-OBSERVED-N
-     IF WS-SUM-NOW NOT = WS-SUM-REST OR EN-MODEL(13) = 0
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A key of the table with no animation is left alone: the blaze does not read the walk state (an unknown row stays equal).
-     MOVE "blaze" TO WS-KEY
-     MOVE 14 TO WS-ID
-     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
-     MOVE 14 TO WS-ROW
-     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
-     MOVE 0.8 TO EN-WALK-SPEED(14)
-     MOVE 1.7 TO EN-WALK-POS(14)
-     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
-     MOVE "entity anim a blaze (no animation program wired) does not change with the walk state" TO TL-CASE
+     MOVE "entity anim a blaze does not change with the walk state (it reads the age only)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-SUM-NOW = WS-SUM-REST
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     PERFORM VARYING WS-I FROM 9 BY 1 UNTIL WS-I > 14
+*>   The blaze's rods turn with its age; the enderman walks (the eyes layers are extra layers of their base rows, not entity rows).
+     MOVE 40 TO EN-AGE(13)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
+     MOVE 0 TO EN-AGE(13)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
+     MOVE "entity anim a blaze's rods turn with its age (age 40 differs from age 0)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SUM-NOW NOT = WS-SUM-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 14 TO WS-ID
+     MOVE "enderman" TO WS-KEY
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     PERFORM VARYING WS-ROW FROM 14 BY 1 UNTIL WS-ROW > 14
+         MOVE 0 TO EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
+         CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
+         MOVE 0.8 TO EN-WALK-SPEED(WS-ROW)
+         MOVE 1.7 TO EN-WALK-POS(WS-ROW)
+         CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
+         MOVE "entity anim a walking enderman is posed (differs from rest)" TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 0 TO TL-OBSERVED-N
+         IF WS-SUM-NOW NOT = WS-SUM-REST
+             MOVE 1 TO TL-OBSERVED-N
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 9 BY 1 UNTIL WS-I > 16
          MOVE 0 TO EN-USED(WS-I)
      END-PERFORM
 
