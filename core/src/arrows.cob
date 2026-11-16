@@ -119,6 +119,7 @@
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
+ 01 WS-FIRE-TICKS          BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -154,6 +155,17 @@
      ELSE
          MOVE 0 TO EN-HURT(L-ENTITY)
          CALL "HEALTH-MOB-DAMAGE" USING L-ENTITY WS-DAMAGE WS-CAUSE WS-OWNER-PLAYER
+     END-IF
+*>   A burning arrow (a flaming arrow, 17 section 3.9: Flame) sets what it hits alight for five seconds (AbstractArrow.onHitEntity).
+     IF EN-BURN(L-ARROW) > 0
+         MOVE 100 TO WS-FIRE-TICKS
+         IF L-PLAYER > 0
+             CALL "PLAYER-IGNITE" USING L-PLAYER WS-FIRE-TICKS
+         ELSE
+             IF EN-USED(L-ENTITY) = 1
+                 CALL "MOB-IGNITE" USING L-ENTITY WS-FIRE-TICKS
+             END-IF
+         END-IF
      END-IF
      CALL "ENTITY-REMOVE" USING L-ARROW
      GOBACK.

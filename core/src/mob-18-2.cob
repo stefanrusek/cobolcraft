@@ -170,6 +170,14 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-OTHER-M             BINARY-LONG.
  01 WS-LIVING              BINARY-LONG.
+ 01 WS-BFIRE               BINARY-LONG.
+ 01 WS-BSNOW               BINARY-LONG.
+ 01 WS-HALF-W              FLOAT-LONG.
+ 01 WS-DRAW-F              BINARY-LONG.
+ 01 WS-TICKS-F             BINARY-LONG.
+ 01 WS-SECONDS-F           BINARY-LONG.
+ 01 WS-DREW-F              BINARY-LONG.
+ 01 WS-NOT-PLAYER          BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -181,9 +189,11 @@
      COMPUTE WS-IMMUNE = FUNCTION MOD(M1-FLAGS(WS-R1), 2)
      CALL "M182-FLUID" USING EN-DIM(WS-ROW) EN-X(WS-ROW) EN-Y(WS-ROW) EN-Z(WS-ROW) WS-HEIGHT WS-KIND-WATER WS-WET
      CALL "M182-FLUID" USING EN-DIM(WS-ROW) EN-X(WS-ROW) EN-Y(WS-ROW) EN-Z(WS-ROW) WS-HEIGHT WS-KIND-LAVA WS-LAVA
-*>   2. Fire. A fire-immune type has it cleared and water puts it out; the damage is on the tick the count is a multiple of 20, not in lava.
+     COMPUTE WS-HALF-W = ET-WIDTH-MILLI(EN-TYPE(WS-ROW) + 1) / 2000
+     CALL "FIRE-SCAN-BOX" USING EN-DIM(WS-ROW) EN-X(WS-ROW) EN-Y(WS-ROW) EN-Z(WS-ROW) WS-HALF-W WS-HEIGHT WS-BFIRE WS-BSNOW
+*>   2. Fire. A fire-immune type has it cleared and water (and powder snow) puts it out; the damage is on the tick the count is a multiple of 20, not in lava.
      IF EN-BURN(WS-ROW) > 0
-         IF WS-IMMUNE = 1 OR WS-WET = 1
+         IF WS-IMMUNE = 1 OR WS-WET = 1 OR WS-BSNOW = 1
              MOVE 0 TO EN-BURN(WS-ROW)
          ELSE
              IF FUNCTION MOD(EN-BURN(WS-ROW), 20) = 0 AND WS-LAVA = 0 AND EN-FX-FIRE(WS-ROW) = 0
@@ -206,6 +216,20 @@
              IF EN-BURN(WS-ROW) < 300
                  MOVE 300 TO EN-BURN(WS-ROW)
              END-IF
+         END-IF
+     END-IF
+*>   A fire block in the box (29b-8 section 2.10 fireIgnite: the count, then eight seconds; in_fire damage 1.0, soul fire 2.0 unless fire immune; Fire Resistance
+*>   still ignites but takes none).
+     IF WS-BFIRE > 0 AND WS-IMMUNE = 0
+         COMPUTE WS-DRAW-F = FUNCTION MOD(CW-TICKS + WS-ROW, 2)
+         CALL "GC8-FIRE-IGNITE" USING WS-IMMUNE EN-BURN(WS-ROW) WS-NOT-PLAYER WS-DRAW-F WS-TICKS-F WS-SECONDS-F WS-DREW-F
+         MOVE WS-TICKS-F TO EN-BURN(WS-ROW)
+         COMPUTE WS-TICKS-F = WS-SECONDS-F * 20
+         CALL "MOB-IGNITE" USING WS-ROW WS-TICKS-F
+         IF EN-FX-FIRE(WS-ROW) = 0
+             MOVE WS-BFIRE TO WS-AMOUNT
+             MOVE CAUSE-IN-FIRE TO WS-CAUSE
+             CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ATTACKER
          END-IF
      END-IF
      IF EN-HEALTH(WS-ROW) = 0
