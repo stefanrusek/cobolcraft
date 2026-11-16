@@ -198,6 +198,9 @@
  01 WS-BELOW-SOURCE        BINARY-LONG.
  01 WS-ABOVE               BINARY-LONG.
  01 WS-CONVERT             BINARY-LONG.
+ 01 WS-WATER-RULE          PIC X(40) VALUE "water_source_conversion".
+ 01 WS-LAVA-RULE           PIC X(40) VALUE "lava_source_conversion".
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
  01 WS-FAST                BINARY-LONG VALUE 0.
  01 WS-DELAY               BINARY-LONG.
  01 WS-FIND                BINARY-LONG.
@@ -240,8 +243,14 @@
      IF WS-F = L-FLUID AND WS-SOLID = 0
          MOVE 1 TO WS-ABOVE
      END-IF
+*>   WaterFluid.canConvertToSource and LavaFluid.canConvertToSource are the rules water_source_conversion and lava_source_conversion (33 section 6).
      MOVE 0 TO WS-CONVERT
      IF L-FLUID = 1
+         CALL "BR-RULE-GET" USING WS-WATER-RULE WS-RULE-VALUE
+     ELSE
+         CALL "BR-RULE-GET" USING WS-LAVA-RULE WS-RULE-VALUE
+     END-IF
+     IF WS-RULE-VALUE NOT = 0
          MOVE 1 TO WS-CONVERT
      END-IF
      CALL "FLUID-FAST" USING L-DIM WS-FAST

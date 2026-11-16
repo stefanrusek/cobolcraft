@@ -12,6 +12,9 @@
  COPY COREAPI.
  COPY CBLOCKS.
  COPY BUSTATE.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "water_source_conversion".
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-CONN                BINARY-LONG.
@@ -86,6 +89,68 @@
      PERFORM INSTALL
      MOVE WS-BASE TO WS-ICE
      PERFORM PLATFORM
+
+*>   Source conversion off (water_source_conversion false, 33 section 6): the cell between two sources does not become a source.
+     MOVE "acceptance 33 6 given water_source_conversion false and two water sources one cell apart when the fluid ticks run then the cell between them "
+         & "is not a source" TO TL-CASE
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE 100 TO WS-Y
+     MOVE 5 TO WS-X
+     MOVE 22 TO WS-Z
+     MOVE WS-WATER TO WS-STATE
+     CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 7 TO WS-X
+     CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 6 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE 6 TO WS-X
+     CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
+     MOVE "not a source" TO TL-OBSERVED
+     IF WS-STATE = WS-WATER
+         MOVE "a source" TO TL-OBSERVED
+     END-IF
+     MOVE "not a source" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE 0 TO WS-STATE
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 12
+         PERFORM VARYING WS-Z FROM 20 BY 1 UNTIL WS-Z > 28
+             MOVE 100 TO WS-Y
+             CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+         END-PERFORM
+     END-PERFORM
+*>   Lava does not convert by default, and converts with lava_source_conversion true.
+     MOVE "acceptance 33 6 given lava_source_conversion false (the default) and true: the cell between two lava sources is a source only when true" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "lava_source_conversion" TO WS-RULE-NAME
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     PERFORM LAVA-PAIR
+     MOVE "off " TO TL-OBSERVED
+     IF WS-STATE = WS-LAVA
+         MOVE "off lava" TO TL-OBSERVED
+     END-IF
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     PERFORM LAVA-PAIR
+     IF WS-STATE = WS-LAVA
+         MOVE "off on" TO TL-OBSERVED
+     END-IF
+     MOVE "off on" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE "water_source_conversion" TO WS-RULE-NAME
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-STATE
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 12
+         PERFORM VARYING WS-Z FROM 20 BY 1 UNTIL WS-Z > 28
+             MOVE 100 TO WS-Y
+             CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+         END-PERFORM
+     END-PERFORM
 
 *>   Source conversion: two sources with one cell between them.
      MOVE "acceptance US12 29a 2.3 given two water sources one cell apart on a platform when the first fluid tick runs then the cell between them is a "
@@ -285,6 +350,23 @@
 
 *> A greystone platform of 7 x 7 cells under every scenario of the test (x 2 to 8 and 10 to 16, z 20 to 26 and 8 to 12, and so on): simply the cells
 *> the scenarios stand on, y 99.
+ LAVA-PAIR.
+     MOVE 0 TO WS-STATE
+     MOVE 100 TO WS-Y
+     MOVE 22 TO WS-Z
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 12
+         CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     END-PERFORM
+     MOVE WS-LAVA TO WS-STATE
+     MOVE 5 TO WS-X
+     CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 7 TO WS-X
+     CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 60 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE 6 TO WS-X
+     CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE.
+
  PLATFORM.
      MOVE 99 TO WS-Y
      MOVE 2 TO WS-STATE
