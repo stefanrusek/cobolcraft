@@ -369,6 +369,7 @@
      MOVE 0 TO WS-SWT WS-SWARM WS-AGG
      MOVE 1 TO WS-MAINARM
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+             OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
          IF FUNCTION MOD(WS-OB, 2) = 1
@@ -470,8 +471,23 @@
              END-IF
              MOVE EN-SWIM(WS-ROW) TO WS-ST(11)
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
+*>       The models of the codes - and Y whose animation takes only the walk state (a spider's eyes layer is posed like the spider): wolf (age scale 1),
+*>       spider and cave spider, chicken (no flap).
          WHEN OTHER
-             CONTINUE
+             EVALUATE CL-MD-KEY(WS-K)
+                 WHEN "spider"
+                 WHEN "cave_spider"
+                 WHEN "spider_eyes"
+                 WHEN "cave_spider_eyes"
+                     CALL "EF6-SPIDER-ANIM" USING EMM-MODEL WS-IN
+                 WHEN "wolf"
+                     MOVE 1 TO WS-I(5)
+                     CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
+                 WHEN "chicken"
+                     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+                 WHEN OTHER
+                     CONTINUE
+             END-EVALUATE
      END-EVALUATE
 *>   The render sequence of the body yaw (the replica's yaw): operations in the order EF7-SETUP-ROTATIONS lists them.
      MOVE 0 TO WS-SRI(1) WS-SRI(2) WS-SRI(4) WS-SRI(5)

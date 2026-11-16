@@ -456,10 +456,73 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO EN-USED(9)
 
+*>   Models of the codes -: spider, cave spider, wolf and chicken walk (rows 9 to 12: the player's row 9 is free again), and the spider's eyes layer is posed like its body.
+     MOVE 9 TO WS-ID
+     MOVE "spider" TO WS-KEY
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     MOVE 10 TO WS-ID
+     MOVE "cave_spider" TO WS-KEY
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     MOVE 11 TO WS-ID
+     MOVE "wolf" TO WS-KEY
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     MOVE 12 TO WS-ID
+     MOVE "chicken" TO WS-KEY
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     PERFORM VARYING WS-ROW FROM 9 BY 1 UNTIL WS-ROW > 12
+         MOVE 0 TO EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
+         CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
+         MOVE 0.8 TO EN-WALK-SPEED(WS-ROW)
+         MOVE 1.7 TO EN-WALK-POS(WS-ROW)
+         CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
+         MOVE "entity anim a walking spider, cave spider, wolf or chicken is posed (differs from rest)" TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 0 TO TL-OBSERVED-N
+         IF WS-SUM-NOW NOT = WS-SUM-REST
+             MOVE 1 TO TL-OBSERVED-N
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE "spider_eyes" TO WS-KEY
+     MOVE 13 TO WS-ID
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     MOVE 13 TO WS-ROW
+     MOVE 0 TO EN-WALK-SPEED(13) EN-WALK-POS(13)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
+     MOVE 0.8 TO EN-WALK-SPEED(13)
+     MOVE 1.7 TO EN-WALK-POS(13)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
+     MOVE "entity anim a spider's eyes layer is posed with the walk too (when the key is a row)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SUM-NOW NOT = WS-SUM-REST OR EN-MODEL(13) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A key of the table with no animation is left alone: the blaze does not read the walk state (an unknown row stays equal).
+     MOVE "blaze" TO WS-KEY
+     MOVE 14 TO WS-ID
+     CALL "EAN-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+     MOVE 14 TO WS-ROW
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
+     MOVE 0.8 TO EN-WALK-SPEED(14)
+     MOVE 1.7 TO EN-WALK-POS(14)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
+     MOVE "entity anim a blaze (no animation program wired) does not change with the walk state" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SUM-NOW = WS-SUM-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-I FROM 9 BY 1 UNTIL WS-I > 14
+         MOVE 0 TO EN-USED(WS-I)
+     END-PERFORM
+
 *>   The local player's figure in the third-person view walks with the state of the player.
      MOVE 1 TO CL-CAMERA
      MOVE 0 TO PL-ANIM-SPEED PL-ANIM-POS
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          MOVE 0 TO EN-USED(WS-I)
      END-PERFORM
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
