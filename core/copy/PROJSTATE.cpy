@@ -29,6 +29,10 @@
        10 PJ-I2              BINARY-LONG.
        10 PJ-I3              BINARY-LONG.
        10 PJ-I4              BINARY-LONG.
+       10 PJ-I5              BINARY-LONG.
+       10 PJ-I6              BINARY-LONG.
+       10 PJ-I7              BINARY-LONG.
+       10 PJ-I8              BINARY-LONG.
        10 PJ-R1              FLOAT-LONG.
        10 PJ-R2              FLOAT-LONG.
        10 PJ-R3              FLOAT-LONG.
