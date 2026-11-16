@@ -1877,6 +1877,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 17
+*>           fill layer (feat-fill.cob): unsupported when the state or the height is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FILL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 3
 *>           block pile (feat-pile.cob): unsupported when the state provider is not compiled whole
              MOVE FD-BAD TO LS-SAVED-BAD
