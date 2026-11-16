@@ -1,0 +1,76 @@
+*> Implementation test of DOUBLE-PLACE-FITS (core/src/double-block.cob; lane fixa): a lower half placed in the top cell of the dimension has no cell above
+*> (the out-of-height refusal), the same state with air above fits, and a state that is not a lower half always fits.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DOUBLE-PLACE-FITS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY DIMENSIONS.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TEXT                PIC X(5).
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-LOWER               BINARY-LONG.
+ 01 WS-UPPER               BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-X                   BINARY-LONG VALUE 3.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG VALUE 3.
+ 01 WS-FITS                BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE PL-DIM(CN-PLAYER(WS-CONN)) TO WS-DIM
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:oak_door" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4:5) TO WS-TEXT
+     COMPUTE WS-FIRST = FUNCTION NUMVAL(WS-TEXT)
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288:4) TO WS-TEXT
+     COMPUTE WS-COUNT = FUNCTION NUMVAL(WS-TEXT)
+     MOVE 0 TO WS-LOWER WS-UPPER
+     PERFORM VARYING WS-S FROM WS-FIRST BY 1 UNTIL WS-S >= WS-FIRST + WS-COUNT
+         CALL "DOUBLE-HALF" USING WS-S WS-HALF
+         IF WS-HALF = 1 AND WS-LOWER = 0
+             MOVE WS-S TO WS-LOWER
+         END-IF
+         IF WS-HALF = 2 AND WS-UPPER = 0
+             MOVE WS-S TO WS-UPPER
+         END-IF
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     COMPUTE WS-Y = DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM) - 1
+     CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-LOWER WS-FITS
+     MOVE "test double place fits: a lower half in the top cell of the dimension has no room above" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 100 TO WS-Y
+     CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-LOWER WS-FITS
+     MOVE "test double place fits: a lower half with air above fits" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-Y = DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM) - 1
+     CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-UPPER WS-FITS
+     MOVE "test double place fits: an upper half is not tested" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-DOUBLE-PLACE-FITS.
+ COPY CORETEST.
