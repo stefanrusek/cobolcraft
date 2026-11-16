@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -484,6 +484,78 @@ Worked example: text `/gamemode s`, one request, budget available: range start 1
 ### 14.2 When the Commands tree is sent
 
 Commands (0x10) is built per player: the dispatcher's root is copied keeping only the nodes the player's command source may use (requirement predicates evaluated for that player; children of a hidden node are hidden with it), then serialised (15 framework, 05a 0x10). It is sent: when the player joins (`placeNewPlayer`), after a respawn (`respawn`), and whenever the permission level is re-sent (`op`, `deop`, and the public `sendPlayerPermissionLevel`). Within the permission re-send the order is: when the player has a connection, an Entity Event (0x22 in 05a) on the player with status 24 + permission level (24 to 28, level 0 to 4) is sent first, then Commands. Before the player's first server tick the provider has no budget, so a request that early waits for that tick. No other trigger was found: among the classes of `net.minecraft.server.players`, `net.minecraft.commands` and the top-level `net.minecraft.server` / `server.commands` classes, only `PlayerList` calls `Commands.sendCommands` (a `/reload` path that re-sends the tree through the public permission re-send was not traced; see Open questions).
+
+---
+
+## 15. Data components: conventions, persistence table, enchantments (round cr5)
+
+Gap closed: 00 §12.2 and 25-1 §7 name the component registry but not the per-type payloads. Sections 15 to 25 give them, in the priority order of the cr5 task. Section 15 holds the shared conventions, the persistence table of all 122 types, `enchantments`, `stored_enchantments` and `tooltip_display` (the 26.x replacement of the old per-component `show_in_tooltip` flag).
+
+### 15.1 Conventions used by sections 15 to 25
+
+| Term | Meaning |
+|---|---|
+| Component id | Position in the `data_component_type` registry (46 §8.1; ids re-checked in this round against the registration order of `DataComponents.<clinit>`, no difference). |
+| Network layout | The component's `StreamCodec`, the bytes after the VarInt type id in 00 §12.2 / §12.3. Field order is the declaration order given in the tables. |
+| NBT form | The `Codec` used when the stack is saved, i.e. the value under the key `<component id string>` in the stack's `components` compound (07 and 45-3 §4.1 give the patch syntax: key `minecraft:name`, or `!minecraft:name` for a removed default). All numeric widths below are the NBT tag type; an Int means `TAG_Int`. |
+| Opt(x) | An optional field: absent from NBT when equal to the default x (the codec reads a missing key as x). On the network an optional field is a Boolean presence flag followed by the value (00 §6.6) unless the table says otherwise. |
+| Unit | A component with no data. Network: zero bytes. NBT: an empty compound (`MapCodec.unitCodec`; any compound is accepted on load). |
+| Identifier | String(32767) on the network (00 §3.2); NBT String with a namespace (a bare name is read as `minecraft:`). |
+| RegistryId | VarInt registry position (00 §10.1). A `holderRegistry` codec is exactly this (a reference holder; no inline form). NBT: the entry's identifier string. |
+| Holder | 00 §10.2: VarInt 0 followed by an inline value, or n > 0 for registry position n - 1. NBT: the identifier string, or an inline compound for those registries that allow it (said where it matters). |
+| Text | Network: TextComponent NBT form (00 §9.1). NBT: the JSON-like component form (a String for plain text, a compound or list otherwise; `ComponentSerialization.CODEC`). |
+| `cacheEncoding` | A server-side optimisation on the type (the encoded value is memoised). It does not change any byte. |
+| Equality | Component values are compared by value equality of their record classes (field by field; collections element by element, `ItemEnchantments` as a map). Two stacks merge only if item and the whole effective component map are equal (17 §1.1, 13 §3.7). |
+
+### 15.2 Persistence table: which types are saved and which are sent
+
+Every type of 46 §8.1 has both an NBT codec and a network codec, except the nine below (read from the registration lambdas: the builder either lacks `persistent(...)` or lacks `networkSynchronized(...)`).
+
+| Id | Key | Saved in NBT | Sent on the wire | Consequence |
+|---|---|---|---|---|
+| 20 | `creative_slot_lock` | no | yes (Unit) | Never written to disk; a client-side creative-inventory marker. |
+| 42 | `additional_trade_cost` | no | yes (VarInt) | Transient; a merchant-screen overlay (40-5). |
+| 50 | `map_post_processing` | no | yes | Transient enum (§24.3). |
+| 22 | `intangible_projectile` | yes (Unit) | no | The client never sees it. |
+| 49 | `map_decorations` | yes | no | Server-only; the client draws decorations from the map data packet. |
+| 59 | `debug_stick_state` | yes | no | Server-only. |
+| 68 | `recipes` | yes | no | Server-only. |
+| 81 | `lock` | yes | no | Server-only. |
+| 82 | `container_loot` | yes | no | Server-only. |
+
+A type that is not sent must be stripped when a stack is written to a client (the patch simply omits it); a type that is not saved must be dropped when a stack is saved and is absent after a reload. A decoder that meets a non-persistent key in NBT fails the decode of that stack (45-3 §4.1 already states this for transient types).
+
+### 15.3 `enchantments` (13) and `stored_enchantments` (45)
+
+Both types share one value class (`ItemEnchantments`) and one codec; they differ only in meaning (an enchanted book keeps its enchantments in `stored_enchantments` and they do not act on the book).
+
+| Aspect | Rule |
+|---|---|
+| Value | A map from enchantment (registry entry of `enchantment`) to a level. No duplicate keys; iteration order is the map's hash order and carries no meaning (the tooltip sorts, §15.5). |
+| Network layout | VarInt count N, then N pairs: RegistryId of the enchantment (VarInt), VarInt level. No upper bound on N is checked by the codec. |
+| NBT form | A compound whose keys are enchantment identifiers (`minecraft:sharpness`) and whose values are Int levels. Example: `{"minecraft:sharpness": 5, "minecraft:unbreaking": 3}`. There is no `levels` wrapper and no `show_in_tooltip` key in 26.3 (the old flag no longer exists; hiding is §15.4). |
+| Level validation (NBT) | An Int from 1 to 255 inclusive (`Codec.intRange(1, 255)`); a value outside the range fails the decode of the component, and so does an unknown enchantment identifier. |
+| Level validation (network and constructor) | The value-class constructor rejects any stored level below 0 or above 255 with an exception ("Enchantment ... has invalid level"); the network decoder builds the map first and then constructs, so an out-of-range level is a decode failure there too (inferred from the composite codec's construct step). A level of 0 is therefore accepted on the wire and rejected in NBT. |
+| Default / prototype | `enchantments`: `ItemEnchantments.EMPTY` is in the common prototype of every item (25-1 §7.1), so a stack without the key has no enchantments. `stored_enchantments`: no default except that `enchanted_book` has `EMPTY` (25-6). |
+| Empty value | Written as an empty compound when the component is present. A patch that sets `enchantments` to EMPTY is distinct from one that removes the component (a removed `enchantments` makes `getEnchantments` fall back to EMPTY too, so the two behave the same in play). |
+| Edit operations (`ItemEnchantments.Mutable`) | `set(e, level)`: a level of 0 or less removes the entry, otherwise stores `min(level, 255)`. `upgrade(e, level)`: if level is greater than 0, stores the larger of the existing level and `min(level, 255)` (insert when absent); no-op for level 0 or less. `removeIf(pred)` drops matching entries. `getLevel` is 0 when absent. `toImmutable` freezes it. |
+| Equality / stacking | Map equality (same keys, same levels). Two enchanted stacks merge only when equal. |
+| Foil | `enchantments` non-empty gives the foil unless `enchantment_glint_override` decides otherwise (§19). `stored_enchantments` never gives foil by itself (the enchanted book has the override set to true). |
+
+### 15.4 `tooltip_display` (18)
+
+Replaces the pre-26 per-component `show_in_tooltip` Booleans. Common prototype value: `DEFAULT` = hide_tooltip false, hidden set empty (25-1 §7.1).
+
+| Field | Network | NBT key | Default |
+|---|---|---|---|
+| hide_tooltip | Boolean | `hide_tooltip` Byte (0/1) | false |
+| hidden_components | VarInt count, then RegistryId of `data_component_type` each (a linked set: order kept, duplicates collapse) | `hidden_components` List of component identifier Strings | empty |
+
+Rule (`TooltipDisplay.shows(type)`): a component's tooltip lines are shown iff `hide_tooltip` is false and the type is not in the hidden set. This is the whole mechanism by which `enchantments`, `stored_enchantments`, `attribute_modifiers`, `dyed_color`, `trim`, `unbreakable`, `can_place_on`, `can_break`, `potion_contents` and the other tooltip-providing components are hidden. `withHidden(type, hidden)` adds or removes one type. Nothing about the glint or the stack's behaviour depends on this component, only on the tooltip text.
+
+### 15.5 Enchantment tooltip order (for completeness)
+
+Enchantment lines are written first for the enchantments in the data tag `#minecraft:tooltip_order` (in the tag's order, only those present with level above 0), then for the remaining enchantments in the map's iteration order. Each line is the enchantment's full name for that level (the enchantment's name with its level appended; the level text rules were not read in this round). No sort by level.
 
 ---
 
