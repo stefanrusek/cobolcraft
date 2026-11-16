@@ -925,6 +925,7 @@
  01 WS-PET-WALK            BINARY-LONG.
  01 WS-EVK-CAST            BINARY-LONG.
  01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-RV-STILL            BINARY-LONG.
  01 WS-VS-HX               FLOAT-LONG.
  01 WS-VS-HZ               FLOAT-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
@@ -1120,6 +1121,7 @@
      END-IF
      IF SM-KEY(WS-M) = "piglin"
          CALL "PIGLIN-TICK" USING WS-ROW
+         CALL "PIGLIN-HUNT-STEP" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
@@ -1134,7 +1136,20 @@
      IF SM-KEY(WS-M) = "vex"
          CALL "VEX-STEP" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "illusioner"
+         CALL "ILLUSIONER-STEP" USING WS-ROW
+         CALL "ILLUSIONER-IS-CASTING" USING WS-ROW WS-EVK-CAST
+         IF WS-EVK-CAST = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
      CALL "RAID-RAIDER-STEP" USING WS-ROW
+     IF SM-KEY(WS-M) = "ravager"
+         CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL
+         IF WS-RV-STILL = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
      IF SM-KEY(WS-M) = "wandering_trader"
          CALL "TRADER-STEP" USING WS-ROW
          IF EN-USED(WS-ROW) = 0
@@ -1164,6 +1179,9 @@
      END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
+         IF EN-HAND(WS-ROW) < 5 OR EN-HAND(WS-ROW) > 8
+             CALL "WITCH-THROW-STEP" USING WS-ROW
+         END-IF
      END-IF
      IF SM-RANGED(WS-M) = 5
          CALL "BLAZE-ATTACK" USING WS-ROW WS-M
@@ -1710,6 +1728,7 @@
      CALL "EVK-FANG-TICK"
      CALL "RAID-WORLD-TICK"
      CALL "PATROL-TICK"
+     CALL "POTIONS-TICK"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 

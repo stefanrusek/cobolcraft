@@ -64,6 +64,10 @@
          WHEN "ravager"
              MOVE 1 TO WS-ILLAGER
              MOVE 1 TO WS-SEE
+         WHEN "piglin" WHEN "hoglin" WHEN "zoglin"
+             IF EN-FOE(L-ROW) = 0
+                 GOBACK
+             END-IF
          WHEN OTHER
              GOBACK
      END-EVALUATE
@@ -72,6 +76,19 @@
      END-IF
      COMPUTE WS-RANGE = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
      MOVE 0 TO WS-F
+*>   A foe set by a hunt or a retaliation (EN-FOE) comes first.
+     IF EN-FOE(L-ROW) > 0
+         MOVE EN-FOE(L-ROW) TO WS-N
+         IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = EN-FOE-ID(L-ROW) AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
+             MOVE WS-N TO WS-F
+         ELSE
+             MOVE 0 TO EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
+         END-IF
+     END-IF
+     IF WS-F = 0 AND WS-ZOMBIE + WS-ILLAGER = 0
+         GOBACK
+     END-IF
+     IF WS-F = 0
      PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
          IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
@@ -98,6 +115,7 @@
              END-IF
          END-IF
      END-PERFORM
+     END-IF
      IF WS-F = 0
          GOBACK
      END-IF
@@ -115,7 +133,7 @@
      IF EN-PET-CD(L-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH AND FUNCTION ABS(WS-DZ) <= WS-REACH
              AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
          MOVE SM-ATTACK-TICKS TO EN-PET-CD(L-ROW)
-         MOVE SM-ATTACK(L-M) TO WS-DAMAGE
+         CALL "STDMOB-ATTACK-DAMAGE" USING L-ROW L-M WS-DAMAGE
          MOVE 0 TO WS-CONVERTED
          CALL "STDMOB-INDEX" USING EN-TYPE(WS-F) WS-S
          MOVE SM-KEY(WS-S) TO WS-FOE-KEY
@@ -130,6 +148,16 @@
          CALL "MOB-ATTACK-EVENT" USING L-ROW
          IF WS-CONVERTED = 0
              CALL "HEALTH-MOB-DAMAGE" USING WS-F WS-DAMAGE CAUSE-MOB WS-NONE
+         END-IF
+*>       A hoglin or zoglin that is hit by a mob turns on it; a piglin's kill restarts its hunting gap.
+         IF WS-FOE-KEY = "hoglin" OR "zoglin"
+             IF EN-FOE(WS-F) = 0
+                 MOVE L-ROW TO EN-FOE(WS-F)
+                 MOVE EN-ID(L-ROW) TO EN-FOE-ID(WS-F)
+             END-IF
+         END-IF
+         IF SM-KEY(L-M) = "piglin" AND EN-HEALTH(WS-F) = 0
+             CALL "PIGLIN-HUNT-DONE" USING L-ROW
          END-IF
      END-IF
      GOBACK.

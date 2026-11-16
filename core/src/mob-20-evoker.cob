@@ -105,6 +105,12 @@
              MOVE 60 TO L-CAST
              MOVE 140 TO L-INTERVAL
              MOVE 40 TO L-WARM
+         WHEN 4
+             MOVE 20 TO L-CAST
+             MOVE 340 TO L-INTERVAL
+         WHEN 5
+             MOVE 20 TO L-CAST
+             MOVE 180 TO L-INTERVAL
          WHEN OTHER
              MOVE 0 TO L-CAST L-INTERVAL L-WARM
      END-EVALUATE
@@ -490,3 +496,89 @@
      END-IF
      GOBACK.
  END PROGRAM VEX-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ILLUSIONER-IS-CASTING.
+*> USING illusioner row, flag out: 1 while a spell is being cast.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-FLAG                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-FLAG.
+     CALL "EVK-IS-CASTING" USING L-ROW L-FLAG
+     GOBACK.
+ END PROGRAM ILLUSIONER-IS-CASTING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ILLUSIONER-STEP.
+*> USING illusioner row (20 section 13.5): the spell goals share the evoker's casting machine (EV-ENTRY, EVK-SPELL-TIMES, EVK-BEGIN). With a target and the interval over: the
+*> mirror (spell 4, usable when it lacks Invisibility) first, then blindness (spell 5: the target's entity id is not the last one it blinded and the difficulty is above Normal:
+*> the document's effective difficulty above 2.0 is approximated by the difficulty id). The mirror gives itself Invisibility 1200, blindness gives the player Blindness 400.
+*> Gaps: the effective difficulty is only the difficulty id, the illusion copies are client side, blindness on a mob target.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY EVKSTATE.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-ONE                  BINARY-LONG VALUE 1.
+ 01 WS-P                    BINARY-LONG.
+ 01 WS-SPELL                BINARY-LONG.
+ 01 WS-INVIS                BINARY-LONG VALUE 13.
+ 01 WS-BLIND                BINARY-LONG VALUE 14.
+ 01 WS-LEVEL                BINARY-LONG.
+ 01 WS-LEFT                 BINARY-LONG.
+ 01 WS-AMP                  BINARY-LONG VALUE 0.
+ 01 WS-D-INVIS              BINARY-LONG VALUE 1200.
+ 01 WS-D-BLIND              BINARY-LONG VALUE 400.
+ 01 WS-MFLAGS               BINARY-LONG VALUE 2.
+ 01 WS-PFLAGS               BINARY-LONG VALUE 6.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "EVK-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     MOVE EN-TARGET(L-ROW) TO WS-P
+     IF EV-SPELL(WS-SLOT) > 0
+         IF EV-WARM(WS-SLOT) > 0
+             IF WS-P = 0
+                 MOVE 0 TO EV-WARM(WS-SLOT)
+             ELSE
+                 SUBTRACT 1 FROM EV-WARM(WS-SLOT)
+                 IF EV-WARM(WS-SLOT) = 0
+                     IF EV-SPELL(WS-SLOT) = 4
+                         CALL "MEF-ADD" USING EN-ID(L-ROW) WS-INVIS WS-AMP WS-D-INVIS WS-MFLAGS
+                     ELSE
+                         CALL "EFFECT-ADD" USING WS-P WS-BLIND WS-AMP WS-D-BLIND WS-PFLAGS
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+         IF EV-CAST(WS-SLOT) > 0
+             SUBTRACT 1 FROM EV-CAST(WS-SLOT)
+         END-IF
+         IF EV-CAST(WS-SLOT) = 0 AND EV-WARM(WS-SLOT) = 0
+             MOVE 0 TO EV-SPELL(WS-SLOT)
+         END-IF
+         GOBACK
+     END-IF
+     IF WS-P > 0 AND CW-TICKS >= EV-NEXT(WS-SLOT)
+         CALL "MEF-LEVEL" USING EN-ID(L-ROW) WS-INVIS WS-LEVEL WS-LEFT
+         MOVE 0 TO WS-SPELL
+         IF WS-LEVEL = 0
+             MOVE 4 TO WS-SPELL
+         ELSE
+             IF PL-ENTITY-ID(WS-P) NOT = EV-LAST(WS-SLOT) AND BW-DIFFICULTY > 2
+                 MOVE 5 TO WS-SPELL
+                 MOVE PL-ENTITY-ID(WS-P) TO EV-LAST(WS-SLOT)
+             END-IF
+         END-IF
+         IF WS-SPELL > 0
+             CALL "EVK-BEGIN" USING L-ROW WS-SPELL
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ILLUSIONER-STEP.
