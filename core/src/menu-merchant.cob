@@ -1,0 +1,442 @@
+*> The merchant window of a villager and a wandering trader in the live window of a player (docs/protocol/40-menus-5-merchant-beacon-lectern.md section 2, 19 sections 22.4 and 23;
+*> lane 002-lane-mobsb, T7102). A workstation-style menu (menu-station.cob, MN-CFAMILY 29 = 20 + kind 9): own slots 0 and 1 are the payments (MN-WSLOT 1 and 2), own slot 2 the
+*> result (MN-RESULT-*), MN-WDATA(1) is the selected offer (1 based, 0 none), MN-BENCH-X holds the entity id of the merchant. The offers are those of mob-vil.cob (VILSTATE.cpy).
+*> Gaps: the price items with components (the water bottle of the wandering trader) and the results with components (enchanted books, maps, potions, dyed leather, stew) are sent as plain
+*> items; the special price is the one stored per offer (reputation is not computed yet); the xp orb of a trade is not spawned.
+*>
+*>   MERCHANT-ENTITY USING entity id, tracker row out (0 gone)
+*>   MERCHANT-ITEM-ID USING item key (X(32)), item id out (-1 unknown)
+*>   MERCHANT-OFFERS-SEND USING player row           Merchant Offers (05a 0x35)
+*>   MERCHANT-INTERACT USING player row, entity row, used out   a villager with offers: Open Screen, content, offers
+*>   MERCHANT-SELECT USING connection id, offer index (0 based)   Select Trade (05c 0x34, 40-5 2.7)
+*>   MERCHANT-UPDATE USING player row                the result of the selected offer (2.4 updateSellItem)
+*>   MERCHANT-TAKEN USING player row                 the result was taken: payments used up, the use counted (2.5)
+*>   MERCHANT-VALID USING player row, valid out      stillValid: the merchant lives, same dimension, within 4 blocks (2.9)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-ENTITY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-E                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                    BINARY-LONG.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ROW.
+     MOVE 0 TO L-ROW
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR L-ROW > 0
+         IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = L-ID
+             MOVE WS-E TO L-ROW
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MERCHANT-ENTITY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-ITEM-ID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-KEY                  PIC X(112).
+ 01 WS-ROW                  PIC X(270).
+ 01 WS-STATUS               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                   PIC X(32).
+ 01 L-ID                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-ID.
+     MOVE L-KEY TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY L-ID WS-ROW WS-STATUS
+     IF WS-STATUS NOT = CT-OK
+         MOVE -1 TO L-ID
+     END-IF
+     GOBACK.
+ END PROGRAM MERCHANT-ITEM-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-OFFERS-SEND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY VILSTATE.
+ COPY PROTO.
+ 01 WS-READY                PIC 9 VALUE 0.
+ 01 WS-CAPACITY             BINARY-LONG VALUE 16384.
+ 01 WS-PACKET-ID            BINARY-LONG VALUE 53.
+ 01 WS-VROW                 BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-WANT                 PIC X(32).
+ 01 WS-EXTRA                PIC X(32).
+ 01 WS-GIVE                 PIC X(32).
+ 01 WS-WC                   BINARY-LONG.
+ 01 WS-EC                   BINARY-LONG.
+ 01 WS-GC                   BINARY-LONG.
+ 01 WS-MU                   BINARY-LONG.
+ 01 WS-XPV                  BINARY-LONG.
+ 01 WS-MULT                 BINARY-LONG.
+ 01 WS-MASK                 BINARY-LONG.
+ 01 WS-MOD                  BINARY-LONG.
+ 01 WS-ID                   BINARY-LONG.
+ 01 WS-BASE                 BINARY-LONG.
+ 01 WS-OUT                  BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-ONE                  BINARY-LONG VALUE 1.
+ 01 WS-FLOAT                FLOAT-SHORT.
+ 01 WS-LEVEL                BINARY-LONG.
+ 01 WS-SHOW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "MERCHANT-ENTITY" USING MN-BENCH-X(L-ROW) WS-VROW
+     IF WS-VROW = 0
+         GOBACK
+     END-IF
+     CALL "VL-FIND" USING MN-BENCH-X(L-ROW) WS-ZERO WS-SLOT
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER MN-WINDOW(L-ROW)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER VL-O-N(WS-SLOT)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VL-O-N(WS-SLOT)
+         CALL "VIL-TRADE-ROW" USING VL-O-ROW(WS-SLOT, WS-I) WS-WANT WS-WC WS-EXTRA WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+         CALL "MERCHANT-ITEM-ID" USING WS-WANT WS-ID
+         COMPUTE WS-BASE = WS-WC + VL-O-EXTRA(WS-SLOT, WS-I)
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-BASE
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "MERCHANT-ITEM-ID" USING WS-GIVE WS-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-GC
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         IF WS-EC > 0
+             CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+             CALL "MERCHANT-ITEM-ID" USING WS-EXTRA WS-ID
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-EC
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         ELSE
+             CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+         END-IF
+         MOVE 0 TO WS-OUT
+         IF VL-O-USES(WS-SLOT, WS-I) >= WS-MU
+             MOVE 1 TO WS-OUT
+         END-IF
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-OUT
+         CALL "PB-PUT-INT" USING PB-BUFFER VL-O-USES(WS-SLOT, WS-I)
+         CALL "PB-PUT-INT" USING PB-BUFFER WS-MU
+         CALL "PB-PUT-INT" USING PB-BUFFER WS-XPV
+         CALL "PB-PUT-INT" USING PB-BUFFER VL-O-SPECIAL(WS-SLOT, WS-I)
+         COMPUTE WS-FLOAT = WS-MULT / 1000
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLOAT
+         CALL "PB-PUT-INT" USING PB-BUFFER VL-O-DEMAND(WS-SLOT, WS-I)
+     END-PERFORM
+     MOVE 1 TO WS-LEVEL WS-SHOW
+     IF VL-KIND(WS-SLOT) = 1
+         MOVE VL-LEVEL(WS-SLOT) TO WS-LEVEL
+     ELSE
+         MOVE 0 TO WS-SHOW
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-LEVEL
+     CALL "PB-PUT-VARINT" USING PB-BUFFER VL-XP(WS-SLOT)
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-SHOW
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-SHOW
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     GOBACK.
+ END PROGRAM MERCHANT-OFFERS-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-INTERACT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-ENTITY                BINARY-LONG.
+ 01 L-USED                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY L-USED.
+     MOVE 0 TO L-USED
+     CALL "VL-FIND" USING EN-ID(L-ENTITY) WS-ZERO WS-SLOT
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     CALL "VL-ENSURE" USING WS-SLOT
+     CALL "MERCHANT-OPEN-IF" USING L-ROW L-ENTITY WS-SLOT L-USED
+     GOBACK.
+ END PROGRAM MERCHANT-INTERACT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-OPEN-IF.
+*> USING player row, entity row, state slot, used out: opens the window when the merchant has offers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY VILSTATE.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-ZERO2                BINARY-LONG VALUE 0.
+ 01 WS-KIND                 BINARY-LONG VALUE 9.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-ENTITY                BINARY-LONG.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-USED                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY L-SLOT L-USED.
+     IF VL-O-N(L-SLOT) > 0
+         CALL "MENU-STATION-OPEN" USING PL-CONN(L-ROW) EN-ID(L-ENTITY) WS-ZERO WS-ZERO2 WS-KIND
+         CALL "MERCHANT-OFFERS-SEND" USING L-ROW
+         MOVE 1 TO L-USED
+     END-IF
+     GOBACK.
+ END PROGRAM MERCHANT-OPEN-IF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-UPDATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ COPY VILSTATE.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-IDX                  BINARY-LONG.
+ 01 WS-WANT                 PIC X(32).
+ 01 WS-EXTRA                PIC X(32).
+ 01 WS-GIVE                 PIC X(32).
+ 01 WS-WC                   BINARY-LONG.
+ 01 WS-EC                   BINARY-LONG.
+ 01 WS-GC                   BINARY-LONG.
+ 01 WS-MU                   BINARY-LONG.
+ 01 WS-XPV                  BINARY-LONG.
+ 01 WS-MULT                 BINARY-LONG.
+ 01 WS-MASK                 BINARY-LONG.
+ 01 WS-MOD                  BINARY-LONG.
+ 01 WS-ITEM-A               BINARY-LONG.
+ 01 WS-ITEM-B               BINARY-LONG.
+ 01 WS-ITEM-R               BINARY-LONG.
+ 01 WS-COST                 PIC X(32).
+ 01 WS-COST-A               BINARY-LONG.
+ 01 WS-OK                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 0 TO MN-RESULT-ITEM(L-ROW) MN-RESULT-COUNT(L-ROW) MN-RESULT-VAR(L-ROW)
+     MOVE MN-WDATA(L-ROW, 1) TO WS-IDX
+     CALL "VL-FIND" USING MN-BENCH-X(L-ROW) WS-ZERO WS-SLOT
+     IF WS-SLOT = 0 OR WS-IDX < 1 OR WS-IDX > VL-O-N(WS-SLOT)
+         GOBACK
+     END-IF
+     CALL "VIL-TRADE-ROW" USING VL-O-ROW(WS-SLOT, WS-IDX) WS-WANT WS-WC WS-EXTRA WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     IF VL-O-USES(WS-SLOT, WS-IDX) >= WS-MU
+         GOBACK
+     END-IF
+     CALL "VL-OFFER-COST" USING WS-SLOT WS-IDX VL-O-SPECIAL(WS-SLOT, WS-IDX) WS-COST WS-COST-A
+     CALL "MERCHANT-ITEM-ID" USING WS-WANT WS-ITEM-A
+     MOVE 1 TO WS-OK
+     IF MN-WSLOT-COUNT(L-ROW, 1) < WS-COST-A OR MN-WSLOT-ITEM(L-ROW, 1) NOT = WS-ITEM-A
+         MOVE 0 TO WS-OK
+     END-IF
+     IF WS-EC > 0
+         CALL "MERCHANT-ITEM-ID" USING WS-EXTRA WS-ITEM-B
+         IF MN-WSLOT-COUNT(L-ROW, 2) < WS-EC OR MN-WSLOT-ITEM(L-ROW, 2) NOT = WS-ITEM-B
+             MOVE 0 TO WS-OK
+         END-IF
+     END-IF
+     IF WS-OK = 1
+         CALL "MERCHANT-ITEM-ID" USING WS-GIVE WS-ITEM-R
+         MOVE WS-ITEM-R TO MN-RESULT-ITEM(L-ROW)
+         MOVE WS-GC TO MN-RESULT-COUNT(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM MERCHANT-UPDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-TAKEN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ COPY VILSTATE.
+ COPY CORESTATE.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-IDX                  BINARY-LONG.
+ 01 WS-WANT                 PIC X(32).
+ 01 WS-EXTRA                PIC X(32).
+ 01 WS-GIVE                 PIC X(32).
+ 01 WS-WC                   BINARY-LONG.
+ 01 WS-EC                   BINARY-LONG.
+ 01 WS-GC                   BINARY-LONG.
+ 01 WS-MU                   BINARY-LONG.
+ 01 WS-XPV                  BINARY-LONG.
+ 01 WS-MULT                 BINARY-LONG.
+ 01 WS-MASK                 BINARY-LONG.
+ 01 WS-MOD                  BINARY-LONG.
+ 01 WS-COST                 PIC X(32).
+ 01 WS-COST-A               BINARY-LONG.
+ 01 WS-OK                   BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE MN-WDATA(L-ROW, 1) TO WS-IDX
+     CALL "VL-FIND" USING MN-BENCH-X(L-ROW) WS-ZERO WS-SLOT
+     IF WS-SLOT = 0 OR WS-IDX < 1 OR WS-IDX > VL-O-N(WS-SLOT)
+         GOBACK
+     END-IF
+     CALL "VIL-TRADE-ROW" USING VL-O-ROW(WS-SLOT, WS-IDX) WS-WANT WS-WC WS-EXTRA WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     CALL "VL-OFFER-COST" USING WS-SLOT WS-IDX VL-O-SPECIAL(WS-SLOT, WS-IDX) WS-COST WS-COST-A
+     SUBTRACT WS-COST-A FROM MN-WSLOT-COUNT(L-ROW, 1)
+     IF WS-EC > 0
+         SUBTRACT WS-EC FROM MN-WSLOT-COUNT(L-ROW, 2)
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         IF MN-WSLOT-COUNT(L-ROW, WS-I) <= 0
+             MOVE 0 TO MN-WSLOT-ITEM(L-ROW, WS-I) MN-WSLOT-COUNT(L-ROW, WS-I) MN-WSLOT-VAR(L-ROW, WS-I)
+         END-IF
+     END-PERFORM
+     CALL "VL-TRADE" USING WS-SLOT WS-IDX WS-OK
+     CALL "MERCHANT-UPDATE" USING L-ROW
+     CALL "MERCHANT-OFFERS-SEND" USING L-ROW
+     GOBACK.
+ END PROGRAM MERCHANT-TAKEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-VALID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ 01 WS-E                    BINARY-LONG.
+ 01 WS-DX                   FLOAT-LONG.
+ 01 WS-DY                   FLOAT-LONG.
+ 01 WS-DZ                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-VALID                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-VALID.
+     MOVE 0 TO L-VALID
+     CALL "MERCHANT-ENTITY" USING MN-BENCH-X(L-ROW) WS-E
+     IF WS-E > 0
+         IF EN-HEALTH(WS-E) > 0 AND EN-DIM(WS-E) = PL-DIM(L-ROW)
+             COMPUTE WS-DX = EN-X(WS-E) - PL-X(L-ROW)
+             COMPUTE WS-DY = EN-Y(WS-E) - PL-Y(L-ROW)
+             COMPUTE WS-DZ = EN-Z(WS-E) - PL-Z(L-ROW)
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ <= 16
+                 MOVE 1 TO L-VALID
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MERCHANT-VALID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-FILL.
+*> USING player row, payment slot (1 or 2), item id, count wanted: moves up to that many items from the inventory slots into the payment slot.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ 01 WS-J                    BINARY-LONG.
+ 01 WS-LEFT                 BINARY-LONG.
+ 01 WS-TAKE                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-PAY                   BINARY-LONG.
+ 01 L-ITEM                  BINARY-LONG.
+ 01 L-NEED                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PAY L-ITEM L-NEED.
+     MOVE L-NEED TO WS-LEFT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 36 OR WS-LEFT = 0
+         IF PL-SLOT-COUNT(L-ROW, WS-J) > 0 AND PL-SLOT-ITEM(L-ROW, WS-J) = L-ITEM
+             COMPUTE WS-TAKE = FUNCTION MIN(PL-SLOT-COUNT(L-ROW, WS-J), WS-LEFT)
+             SUBTRACT WS-TAKE FROM PL-SLOT-COUNT(L-ROW, WS-J)
+             SUBTRACT WS-TAKE FROM WS-LEFT
+             MOVE L-ITEM TO MN-WSLOT-ITEM(L-ROW, L-PAY)
+             ADD WS-TAKE TO MN-WSLOT-COUNT(L-ROW, L-PAY)
+             IF PL-SLOT-COUNT(L-ROW, WS-J) = 0
+                 MOVE 0 TO PL-SLOT-ITEM(L-ROW, WS-J)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MERCHANT-FILL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-SELECT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY VILSTATE.
+ COPY PROTO.
+ 01 WS-ROW                  BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-IDX                  BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-WANT                 PIC X(32).
+ 01 WS-EXTRA                PIC X(32).
+ 01 WS-GIVE                 PIC X(32).
+ 01 WS-WC                   BINARY-LONG.
+ 01 WS-EC                   BINARY-LONG.
+ 01 WS-GC                   BINARY-LONG.
+ 01 WS-MU                   BINARY-LONG.
+ 01 WS-XPV                  BINARY-LONG.
+ 01 WS-MULT                 BINARY-LONG.
+ 01 WS-MASK                 BINARY-LONG.
+ 01 WS-MOD                  BINARY-LONG.
+ 01 WS-COST                 PIC X(32).
+ 01 WS-COST-A               BINARY-LONG.
+ 01 WS-ITEM                 BINARY-LONG.
+ 01 WS-ITEM-X               BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG.
+ 01 WS-VAR                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                    BINARY-LONG.
+ 01 L-INDEX                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-INDEX.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     IF MN-WINDOW(WS-ROW) = 0 OR MN-CFAMILY(WS-ROW) NOT = 29
+         GOBACK
+     END-IF
+     CALL "VL-FIND" USING MN-BENCH-X(WS-ROW) WS-ZERO WS-SLOT
+     COMPUTE WS-IDX = L-INDEX + 1
+     IF WS-SLOT = 0 OR L-INDEX < 0 OR WS-IDX > VL-O-N(WS-SLOT)
+         GOBACK
+     END-IF
+*>   The payments go back to the inventory first (2.7).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         IF MN-WSLOT-COUNT(WS-ROW, WS-I) > 0
+             MOVE MN-WSLOT-ITEM(WS-ROW, WS-I) TO WS-ITEM
+             MOVE MN-WSLOT-COUNT(WS-ROW, WS-I) TO WS-COUNT
+             MOVE MN-WSLOT-VAR(WS-ROW, WS-I) TO WS-VAR
+             MOVE 0 TO MN-WSLOT-ITEM(WS-ROW, WS-I) MN-WSLOT-COUNT(WS-ROW, WS-I) MN-WSLOT-VAR(WS-ROW, WS-I)
+             CALL "MENU-RETURN-STACK-X" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
+         END-IF
+     END-PERFORM
+     MOVE WS-IDX TO MN-WDATA(WS-ROW, 1)
+     CALL "VIL-TRADE-ROW" USING VL-O-ROW(WS-SLOT, WS-IDX) WS-WANT WS-WC WS-EXTRA WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     IF VL-O-USES(WS-SLOT, WS-IDX) < WS-MU
+         CALL "VL-OFFER-COST" USING WS-SLOT WS-IDX VL-O-SPECIAL(WS-SLOT, WS-IDX) WS-COST WS-COST-A
+         CALL "MERCHANT-ITEM-ID" USING WS-WANT WS-ITEM-X
+         MOVE 1 TO WS-I
+         CALL "MERCHANT-FILL" USING WS-ROW WS-I WS-ITEM-X WS-COST-A
+         IF WS-EC > 0
+             CALL "MERCHANT-ITEM-ID" USING WS-EXTRA WS-ITEM-X
+             MOVE 2 TO WS-I
+             CALL "MERCHANT-FILL" USING WS-ROW WS-I WS-ITEM-X WS-EC
+         END-IF
+     END-IF
+     CALL "MERCHANT-UPDATE" USING WS-ROW
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     GOBACK.
+ END PROGRAM MERCHANT-SELECT.
