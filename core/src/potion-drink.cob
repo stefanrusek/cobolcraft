@@ -1,4 +1,4 @@
-*> Drinking a potion (lane itemcomp, T9606; docs/protocol/25 section 9.1 and 9.2): Use Item with a potion in the main hand starts a 32 tick drink; when it ends the effects of the potion_contents of the stack
+*> Drinking a potion (lane itemcomp, T9606; docs/protocol/25 section 9.1 and 9.2): Use Item with a potion (or an ominous bottle: Bad Omen at the amplifier component for 120000 ticks, the bottle used up; the drink time of the bottle is not in the documents, 32 is assumed) in the main hand starts a 32 tick drink; when it ends the effects of the potion_contents of the stack
 *> apply (POTION-APPLY: the potion's table rows then the custom effects at the stack's duration scale 1.0; instant effects heal or harm at once) and a survival player's stack becomes its use remainder, a
 *> glass bottle. A creative player drinks and keeps the stack. Changing the held slot or item, releasing the item (HUNGER-CANCEL) or a row taken over by another player cancels. Gaps: the off hand, the
 *> drink sound and particles, the potion_duration_scale component (always 1.0) and the consume_item statistic.
@@ -63,7 +63,7 @@
          GOBACK
      END-IF
      CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT) WS-KEY
-     IF WS-KEY = "potion"
+     IF WS-KEY = "potion" OR WS-KEY = "ominous_bottle"
          MOVE PL-HELD(WS-ROW) TO WS-HELD
          MOVE CW-TICKS TO WS-START
          CALL "POTION-DRINK-STATE" USING WS-ROW WS-START-ACTION WS-HELD WS-START PL-ENTITY-ID(WS-ROW)
@@ -133,6 +133,15 @@
  01 WS-BOTTLE-KEY          PIC X(32) VALUE "glass_bottle".
  01 WS-BOTTLE              BINARY-LONG.
  01 WS-TICKS               BINARY-LONG VALUE 32.
+ 01 WS-OMEN-TYPE           BINARY-LONG VALUE 65.
+ 01 WS-BYTE                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-AMP                 BINARY-LONG.
+ 01 WS-BAD-OMEN            BINARY-LONG VALUE 30.
+ 01 WS-OMEN-DURATION       BINARY-LONG VALUE 120000.
+ 01 WS-OMEN-FLAGS          BINARY-LONG VALUE 4.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -145,19 +154,32 @@
          GOBACK
      END-IF
      CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(L-ROW, WS-SLOT + 1) WS-KEY
-     IF WS-KEY NOT = "potion"
+     IF WS-KEY NOT = "potion" AND WS-KEY NOT = "ominous_bottle"
          CALL "POTION-DRINK-STATE" USING L-ROW WS-CLEAR WS-ZERO WS-ZERO-D WS-ZERO2
          GOBACK
      END-IF
      IF CW-TICKS - WS-START < WS-TICKS
          GOBACK
      END-IF
-     CALL "POTION-APPLY" USING L-ROW PL-SLOT-VAR(L-ROW, WS-SLOT + 1)
+     IF WS-KEY = "ominous_bottle"
+         CALL "SP-GET-COMPONENT" USING PL-SLOT-VAR(L-ROW, WS-SLOT + 1) WS-OMEN-TYPE WS-BYTE WS-LENGTH WS-FOUND
+         MOVE 0 TO WS-AMP
+         IF WS-FOUND = 1
+             COMPUTE WS-AMP = FUNCTION ORD(WS-BYTE(1:1)) - 1
+         END-IF
+         CALL "EFFECT-ADD" USING L-ROW WS-BAD-OMEN WS-AMP WS-OMEN-DURATION WS-OMEN-FLAGS
+     ELSE
+         CALL "POTION-APPLY" USING L-ROW PL-SLOT-VAR(L-ROW, WS-SLOT + 1)
+     END-IF
      IF PL-MODE(L-ROW) = 0
-         CALL "MERCHANT-ITEM-ID" USING WS-BOTTLE-KEY WS-BOTTLE
-         MOVE WS-BOTTLE TO PL-SLOT-ITEM(L-ROW, WS-SLOT + 1)
-         MOVE 1 TO PL-SLOT-COUNT(L-ROW, WS-SLOT + 1)
-         MOVE 0 TO PL-SLOT-VAR(L-ROW, WS-SLOT + 1)
+         IF WS-KEY = "ominous_bottle"
+             CALL "INV-REMOVE" USING L-ROW WS-SLOT WS-ONE
+         ELSE
+             CALL "MERCHANT-ITEM-ID" USING WS-BOTTLE-KEY WS-BOTTLE
+             MOVE WS-BOTTLE TO PL-SLOT-ITEM(L-ROW, WS-SLOT + 1)
+             MOVE 1 TO PL-SLOT-COUNT(L-ROW, WS-SLOT + 1)
+             MOVE 0 TO PL-SLOT-VAR(L-ROW, WS-SLOT + 1)
+         END-IF
          COMPUTE PL-STATE-ID(L-ROW) = FUNCTION MOD(PL-STATE-ID(L-ROW) + 1, 32768)
          CALL "INV-SLOT-SEND" USING PL-CONN(L-ROW) WS-SLOT
      END-IF
