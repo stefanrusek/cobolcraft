@@ -147,6 +147,33 @@ Result modifiers: `enchant_with_levels` with `levels` = uniform 5 to 19 (integer
 | `gold_ores` | block and item (same three members) | gold_ore, nether_gold_ore, deepslate_gold_ore |
 | `piglin_loved` (item tag, 26 members) | item | tag `gold_ores`, gold_block, gilded_blackstone, light_weighted_pressure_plate, gold_ingot, bell, clock, golden_carrot, glistering_melon_slice, golden_apple, enchanted_golden_apple, golden_helmet, golden_chestplate, golden_leggings, golden_boots, golden_horse_armor, golden_nautilus_armor, golden_sword, golden_spear, golden_pickaxe, golden_shovel, golden_axe, golden_hoe, raw_gold, raw_gold_block, golden_dandelion |
 
+## 5. Registry id order of metadata variants
+
+**Gap closed:** how the numeric variant ids in entity metadata are determined, and the vanilla id lists.
+
+- **What is sent:** the metadata types WOLF_VARIANT, FROG_VARIANT, CAT_VARIANT, PIG_VARIANT, COW_VARIANT, CHICKEN_VARIANT (and the sound-variant types, ZOMBIE_NAUTILUS_VARIANT; 00 §metadata types) carry a registry id, a VarInt: the position of the entry in that registry. The wire form is the plain id (not id + 1); there is no inline form (read: each variant class's `STREAM_CODEC` is `ByteBufCodecs.holderRegistry`, see 00 §10.1).
+- **How the order is determined:** all of these are data-pack registries (JSON files under `data/<namespace>/<registry>/`, 04 §6, 23 §1). The id of an entry is its index in the sorted order of its identifier: **path first** (UTF-16 code-unit comparison), then namespace (23 §3.4). It is not file listing order, not an explicit field, and not alphabetical by display name. The Registry Data packet (04) lists the entries in id order, and both sides register in that order, so the ids in metadata are defined by what the server sent: a server that sends a different set sends different ids for the same names and the client follows. Adding any entry sorting earlier shifts every later id.
+- **Vanilla set:** the default data pack in the jar's `data/minecraft/` (the optional packs under `data/minecraft/datapacks/` (`minecart_improvements`, `redstone_experiments`, `trade_rebalance`) hold no variant files). Entry names sorted as above, so ids follow:
+
+| Registry | Count | Ids (id name) |
+|---|---|---|
+| `wolf_variant` | 9 | 0 ashen, 1 black, 2 chestnut, 3 pale, 4 rusty, 5 snowy, 6 spotted, 7 striped, 8 woods |
+| `frog_variant` | 3 | 0 cold, 1 temperate, 2 warm |
+| `cat_variant` | 11 | 0 all_black, 1 black, 2 british_shorthair, 3 calico, 4 jellie, 5 persian, 6 ragdoll, 7 red, 8 siamese, 9 tabby, 10 white |
+| `pig_variant` | 3 | 0 cold, 1 temperate, 2 warm |
+| `cow_variant` | 3 | 0 cold, 1 temperate, 2 warm |
+| `chicken_variant` | 3 | 0 cold, 1 temperate, 2 warm |
+| `zombie_nautilus_variant` | 2 | 0 temperate, 1 warm |
+| `wolf_sound_variant` | 7 | 0 angry, 1 big, 2 classic, 3 cute, 4 grumpy, 5 puglin, 6 sad |
+| `cat_sound_variant` | 2 | 0 classic, 1 royal |
+| `pig_sound_variant` | 3 | 0 big, 1 classic, 2 mini |
+| `cow_sound_variant` | 2 | 0 classic, 1 moody |
+| `chicken_sound_variant` | 2 | 0 classic, 1 picky |
+| `sulfur_cube_archetype` | 12 | 0 bouncy, 1 explosive, 2 fast_flat, 3 fast_sliding, 4 high_resistance, 5 hot, 6 light, 7 regular, 8 slow_bouncy, 9 slow_flat, 10 slow_sliding, 11 sticky |
+
+- Each variant's biome or spawn condition and texture are data of the entries themselves (04 §6 schemas, 48); the order above does not depend on them.
+- `painting_variant` (51 entries) is ordered the same way (rule only; its names are not needed for metadata and are not listed here).
+
 ---
 
 ## Open questions
