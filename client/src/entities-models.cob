@@ -305,7 +305,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 24 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 32 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
@@ -349,7 +349,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 24 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 32 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -384,6 +384,9 @@
     05 WS-HPV               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-HA.
     05 WS-HAV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-FP                  FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
@@ -394,6 +397,13 @@
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
      MOVE L-ROW TO WS-ROW
+*>   Evoker fangs are not drawn before the bite (34-3 4.8: progress 0).
+     IF EN-KEY(WS-ROW) = "evoker_fangs"
+         CALL "ENTITY-FANGS-PROGRESS" USING CLIENT-STATE WS-ROW WS-FP
+         IF WS-FP = 0
+             GOBACK
+         END-IF
+     END-IF
      MOVE 0 TO WS-SLOT
      CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TEXC
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
@@ -446,8 +456,8 @@
          COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
      END-IF
 *>   The size of a slime or magma cube (Set Entity Data entry 18, 34-6 section 7: the scale (r x n, n / r, r x n) with squish 0 is n on every axis).
-     IF (EN-KEY(WS-ROW) = "slime" OR "magma_cube") AND EN-VAR(WS-ROW) > 0
-         MOVE EN-VAR(WS-ROW) TO WS-HOOK-X WS-HOOK-Y
+     IF EN-KEY(WS-ROW) = "slime" OR "magma_cube"
+         CALL "ENTITY-CUBE-SCALE" USING CLIENT-STATE WS-ROW WS-HOOK-X WS-HOOK-Y
      END-IF
 *>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
 *>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
@@ -479,6 +489,15 @@
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
+     COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
+     MOVE EN-TM(WS-ROW) TO WS-KN(29)
+     MOVE EN-XR(WS-ROW) TO WS-KN(25)
+     MOVE EN-ZR(WS-ROW) TO WS-KN(26)
+     MOVE EN-DRY(WS-ROW) TO WS-KN(27)
+     COMPUTE WS-KN(28) = EN-FL(WS-ROW) * 2 + EN-FA(WS-ROW)
+     COMPUTE WS-KN(30) = EN-BHT(WS-ROW) * 3 + EN-BHD(WS-ROW)
+     MOVE EN-BDM(WS-ROW) TO WS-KN(31)
+     COMPUTE WS-KN(32) = EN-BBA(WS-ROW) + EN-BUW(WS-ROW) * 100
 *>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
 *>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
 *>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
@@ -616,6 +635,10 @@
      MOVE WS-SWARM TO WS-ST(21)
      MOVE WS-AGG TO WS-ST(18)
      MOVE WS-MAINARM TO WS-ST(13)
+*>   Extra inputs of ENTITY-POSE-MORE: 16 the squid's tentacle angle, 15 the dry flag of an aquatic mob.
+     MOVE EN-TA(WS-ROW) TO WS-I(16)
+     MOVE EN-DRY(WS-ROW) TO WS-I(15)
+     MOVE EN-TM(WS-ROW) TO WS-I(14)
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
@@ -677,6 +700,14 @@
                      CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
                  WHEN "chicken"
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+                 WHEN "evoker_fangs"
+                     CALL "ENTITY-FANGS-PROGRESS" USING CLIENT-STATE WS-ROW WS-FP
+                     MOVE WS-FP TO WS-I(1)
+                     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+*>               The magma cube's slices spread with the squish (34-6 7.2).
+                 WHEN "magma_cube"
+                     MOVE EN-SQ(WS-ROW) TO WS-I(1)
+                     CALL "EF6-MAGMA-ANIM" USING EMM-MODEL WS-IN
                  WHEN "blaze"
                      MOVE WS-AGE TO WS-I(3)
                      CALL "EF7-BLAZE-ANIM" USING EMM-MODEL WS-IN
@@ -691,11 +722,18 @@
 *>   The render sequence of the body yaw (the replica's yaw): operations in the order EF7-SETUP-ROTATIONS lists them.
      MOVE 0 TO WS-SRI(1) WS-SRI(2) WS-SRI(4) WS-SRI(5)
      MOVE EN-YAW(WS-ROW) TO WS-SRI(3)
-     IF WS-ANIM = "B"
-         CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
-     ELSE
-         CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
-     END-IF
+     EVALUATE TRUE
+         WHEN WS-ANIM = "B"
+             CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "evoker_fangs"
+             CALL "ENTITY-FANGS-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "squid" OR "glow_squid"
+             CALL "ENTITY-SQUID-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
+             CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN OTHER
+             CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
+     END-EVALUATE
      MOVE WS-SRO(1) TO WS-NOPS
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
@@ -830,6 +868,19 @@
                                  COMPUTE WS-T = WS-Y * WS-OP-COS(WS-J) - WS-Z * WS-OP-SIN(WS-J)
                                  COMPUTE WS-Z = WS-Y * WS-OP-SIN(WS-J) + WS-Z * WS-OP-COS(WS-J)
                                  MOVE WS-T TO WS-Y
+                             WHEN 8
+*>                               rotation by the listed degrees about the axis (1, 0, 1) / sqrt 2 (Rodrigues' formula)
+                                 COMPUTE WS-DOT = 0.70710678 * (WS-X + WS-Z)
+                                 COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) - 0.70710678 * WS-Y * WS-OP-SIN(WS-J) + 0.70710678 * WS-DOT * (1 - WS-OP-COS(WS-J))
+                                 COMPUTE WS-DY = WS-Y * WS-OP-COS(WS-J) + 0.70710678 * (WS-X - WS-Z) * WS-OP-SIN(WS-J)
+                                 COMPUTE WS-Z = WS-Z * WS-OP-COS(WS-J) + 0.70710678 * WS-Y * WS-OP-SIN(WS-J) + 0.70710678 * WS-DOT * (1 - WS-OP-COS(WS-J))
+                                 MOVE WS-T TO WS-X
+                                 MOVE WS-DY TO WS-Y
+                             WHEN 7
+*>                               rotation about Z by the listed degrees
+                                 COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) - WS-Y * WS-OP-SIN(WS-J)
+                                 COMPUTE WS-Y = WS-X * WS-OP-SIN(WS-J) + WS-Y * WS-OP-COS(WS-J)
+                                 MOVE WS-T TO WS-X
                              WHEN OTHER
 *>                               rotation about Y by the listed degrees
                                  COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) + WS-Z * WS-OP-SIN(WS-J)

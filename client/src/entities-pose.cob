@@ -6,7 +6,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-POSE-MORE.
-*> USING model (EMM-MODEL), row key (X(20)), state (16 FLOAT-LONG: 1 pitch, 2 head yaw relative to the body, 3 walk position, 4 walk speed; the rest 0), age in ticks.
+*> USING model (EMM-MODEL), row key (X(20)), state (16 FLOAT-LONG: 1 pitch, 2 head yaw relative to the body, 3 walk position, 4 walk speed; 15 1 when an aquatic mob is out
+*> of water (a turtle: on land), 16 a squid's tentacle angle or a guardian's spikes animation, 14 a guardian's tail animation; the rest 0), age in ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STOP                FLOAT-LONG VALUE -2147483648.
@@ -22,6 +23,10 @@
  01 WS-J                   BINARY-LONG.
  01 WS-M                   FLOAT-LONG.
  01 WS-Q                   FLOAT-LONG.
+ 01 WS-DRY                 FLOAT-LONG.
+ 01 WS-TANGLE              FLOAT-LONG.
+ 01 WS-TMOVE               FLOAT-LONG.
+ 01 WS-WET                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-KEY                  PIC X(20).
@@ -40,6 +45,10 @@
      MOVE L-I(2) TO WS-YAW
      MOVE L-I(3) TO WS-WPOS
      MOVE L-I(4) TO WS-WSPEED
+     MOVE L-I(15) TO WS-DRY
+     MOVE L-I(16) TO WS-TANGLE
+     MOVE L-I(14) TO WS-TMOVE
+     COMPUTE WS-WET = 1 - WS-DRY
      PERFORM VARYING WS-J FROM 5 BY 1 UNTIL WS-J > 16
          MOVE 0 TO L-I(WS-J)
      END-PERFORM
@@ -121,7 +130,7 @@
              MOVE L-AGE TO L-I(2)
              CALL "EF5-TADPOLE-ANIM" USING EMM-MODEL L-IN
          WHEN "turtle"
-             MOVE 1 TO L-I(5)
+             MOVE WS-DRY TO L-I(5)
              MOVE WS-BABY TO L-I(8)
              CALL "EF5-TURTLE-ANIM" USING EMM-MODEL L-IN
          WHEN "sniffer"
@@ -201,22 +210,22 @@
          WHEN "cod"
              MOVE 1 TO L-I(1)
              MOVE L-AGE TO L-I(2)
-             MOVE 1 TO L-I(3)
+             MOVE WS-WET TO L-I(3)
              CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
          WHEN "tropical_fish"
              MOVE 2 TO L-I(1)
              MOVE L-AGE TO L-I(2)
-             MOVE 1 TO L-I(3)
+             MOVE WS-WET TO L-I(3)
              CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
          WHEN "salmon"
              MOVE 3 TO L-I(1)
              MOVE L-AGE TO L-I(2)
-             MOVE 1 TO L-I(3)
+             MOVE WS-WET TO L-I(3)
              CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
          WHEN "pufferfish"
              MOVE 4 TO L-I(1)
              MOVE L-AGE TO L-I(2)
-             MOVE 1 TO L-I(3)
+             MOVE WS-WET TO L-I(3)
              CALL "EF8-FISH-ANIM" USING EMM-MODEL L-IN
          WHEN "dolphin"
              MOVE WS-PITCH TO L-I(1)
@@ -232,22 +241,17 @@
              IF WS-BABY = 0
                  CALL "EF8-AXOLOTL-ANIM" USING EMM-MODEL L-IN
              END-IF
-*>       The squid's tentacles (34-8 section 2, in water): the movement runs 0.15 a tick (the document's 0.1 to 0.2) and wraps at 2 pi,
-*>       the angle is sin(p x p x pi) x pi x 0.25 in the first half, p = movement / pi, and 0 in the second.
+*>       The squid's tentacles (34-8 section 2): the replica's tentacle angle (ENTITIES-ANIM-TICK).
          WHEN "squid" WHEN "glow_squid"
-             COMPUTE WS-M = FUNCTION MOD(L-AGE * 0.15, 6.2831855)
-             MOVE 0 TO L-I(1)
-             IF WS-M < 3.1415927
-                 COMPUTE WS-Q = WS-M / 3.1415927
-                 COMPUTE L-I(1) = FUNCTION SIN(WS-Q * WS-Q * 3.1415927) * 3.1415927 * 0.25
-             END-IF
+             MOVE WS-TANGLE TO L-I(1)
              CALL "EF8-SQUID-ANIM" USING EMM-MODEL L-IN
          WHEN "chicken"
              CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL L-IN
-*>       The guardian swims with its spikes out and its tail wagging with its age.
+*>       The guardian: the replica's spikes animation (L-I(16)) and tail animation (L-I(14)); no look target (the eye stays centred).
          WHEN "guardian" WHEN "elder_guardian"
-             MOVE 1 TO L-I(3)
-             MOVE L-AGE TO L-I(4) L-I(5)
+             MOVE WS-TANGLE TO L-I(3)
+             MOVE L-AGE TO L-I(4)
+             MOVE WS-TMOVE TO L-I(5)
              CALL "EF6-GUARDIAN-ANIM" USING EMM-MODEL L-IN
          WHEN "wither"
              MOVE L-AGE TO L-I(3)

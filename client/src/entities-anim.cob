@@ -21,6 +21,18 @@
  01 WS-TARGET              FLOAT-LONG.
  01 WS-SMOOTH              FLOAT-LONG.
  01 WS-SCALE               FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-BS                  BINARY-LONG.
+ 01 WS-BK                  BINARY-LONG.
+ 01 WS-BL                  BINARY-LONG.
+ 01 WS-CI.
+    05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-CO.
+    05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -29,6 +41,7 @@
              COMPUTE WS-DX = EN-X(WS-R) - EN-OX(WS-R)
              COMPUTE WS-DY = EN-Y(WS-R) - EN-OY(WS-R)
              COMPUTE WS-DZ = EN-Z(WS-R) - EN-OZ(WS-R)
+             MOVE WS-DY TO WS-VY
              IF EN-KEY(WS-R) NOT = "bee" AND EN-KEY(WS-R) NOT = "parrot"
                  MOVE 0 TO WS-DY
              END-IF
@@ -70,6 +83,118 @@
                          COMPUTE EN-WALK-SPEED(WS-R) = WS-PAD-R + 0.3926991
                      END-IF
                  END-IF
+             END-IF
+*>           The squish of a slime or magma cube (34-6 7.4 AbstractCubeMob.tick): EF6-CUBE-TICK with the on-ground flag of the last movement packet.
+             IF EN-KEY(WS-R) = "slime" OR "magma_cube"
+                 MOVE EN-SQ(WS-R) TO WS-CIV(1)
+                 MOVE EN-SQ-TGT(WS-R) TO WS-CIV(2)
+                 MOVE EN-ON-GROUND(WS-R) TO WS-CIV(3)
+                 MOVE EN-WOG(WS-R) TO WS-CIV(4)
+                 MOVE 0 TO WS-CIV(5)
+                 IF EN-KEY(WS-R) = "magma_cube"
+                     MOVE 1 TO WS-CIV(5)
+                 END-IF
+                 CALL "EF6-CUBE-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-SQ-OLD(WS-R)
+                 MOVE WS-COV(2) TO EN-SQ(WS-R)
+                 MOVE WS-COV(3) TO EN-SQ-TGT(WS-R)
+                 MOVE WS-COV(4) TO EN-WOG(WS-R)
+             END-IF
+*>           Evoker fangs (34-3 4.8): lifeTicks fall by 1 a tick once the bite started (EM3-FANGS-TICK; the crit particle burst is not made here).
+             IF EN-KEY(WS-R) = "evoker_fangs"
+                 MOVE EN-FA(WS-R) TO WS-CIV(1)
+                 MOVE EN-FL(WS-R) TO WS-CIV(2)
+                 CALL "EM3-FANGS-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-FL(WS-R)
+             END-IF
+*>           The aquatic mobs: whether the middle of the box is in water (34-8 5: a fish out of water lies on its side).
+             IF EN-KEY(WS-R) = "squid" OR "glow_squid" OR "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
+                     OR "guardian" OR "elder_guardian"
+                 CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
+                 COMPUTE EN-DRY(WS-R) = 1 - WS-WET
+             END-IF
+*>           A turtle's flag is isOnLand (34-5 14: not in water and on the ground).
+             IF EN-KEY(WS-R) = "turtle"
+                 CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
+                 MOVE 0 TO EN-DRY(WS-R)
+                 IF WS-WET = 0 AND EN-ON-GROUND(WS-R) = 1
+                     MOVE 1 TO EN-DRY(WS-R)
+                 END-IF
+             END-IF
+*>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
+*>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).
+             IF EN-MODEL(WS-R) > 0
+                 IF CL-MD-ANIM(EN-MODEL(WS-R)) = "B"
+                     IF EN-BHT(WS-R) > 0
+                         SUBTRACT 1 FROM EN-BHT(WS-R)
+                     END-IF
+                     IF EN-BDM(WS-R) > 0
+                         COMPUTE EN-BDM(WS-R) = FUNCTION MAX(EN-BDM(WS-R) - 1, 0)
+                     END-IF
+                     IF EN-BBT(WS-R) > 0
+                         COMPUTE EN-BBM(WS-R) = FUNCTION MIN(EN-BBM(WS-R) + 0.05, 1)
+                     ELSE
+                         COMPUTE EN-BBM(WS-R) = FUNCTION MAX(EN-BBM(WS-R) - 0.1, 0)
+                     END-IF
+                     COMPUTE EN-BBA(WS-R) = 10 * FUNCTION SIN(0.5 * EN-AGE(WS-R)) * EN-BBM(WS-R)
+                     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-R))
+                     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-R) + EN-BOX-HEIGHT(WS-R))
+                     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-R))
+                     CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+                     CALL "WORLD-CELL" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-BS WS-BK WS-BL
+                     MOVE 0 TO EN-BUW(WS-R)
+                     IF ST-FLUID(WS-BS + 1) = 1
+                         MOVE 1 TO EN-BUW(WS-R)
+                     END-IF
+                 END-IF
+             END-IF
+*>           The guardian (34-6 11.4 Guardian.aiStep on the client): tail speed and tail animation, spikes animation (a pseudo-random float out of water, the draw of
+*>           the client's random source is not reproducible), the attack time while a target is active (duration 80, elder 60).
+             IF EN-KEY(WS-R) = "guardian" OR "elder_guardian"
+                 COMPUTE WS-CIV(1) = 1 - EN-DRY(WS-R)
+                 MOVE EN-X1(WS-R) TO WS-CIV(2)
+                 MOVE EN-TS(WS-R) TO WS-CIV(3)
+                 MOVE EN-TM(WS-R) TO WS-CIV(4)
+                 MOVE EN-TA(WS-R) TO WS-CIV(5)
+                 COMPUTE WS-CIV(6) = FUNCTION MOD(EN-AGE(WS-R) * 0.61803399 + EN-ID(WS-R) * 0.3819660, 1)
+                 CALL "EF6-GUARDIAN-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(2) TO EN-TM(WS-R)
+                 MOVE WS-COV(3) TO EN-TS(WS-R)
+                 MOVE WS-COV(5) TO EN-TA(WS-R)
+                 MOVE EN-RS(WS-R) TO WS-CIV(1)
+                 MOVE 0 TO WS-CIV(2)
+                 IF EN-TGT(WS-R) NOT = 0
+                     MOVE 1 TO WS-CIV(2)
+                 END-IF
+                 MOVE 80 TO WS-CIV(3)
+                 IF EN-KEY(WS-R) = "elder_guardian"
+                     MOVE 60 TO WS-CIV(3)
+                 END-IF
+                 CALL "EF6-GUARDIAN-ATTACK-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-RS(WS-R)
+             END-IF
+*>           The squid (34-8 2, Squid.aiStep on the client: steps 2 to 4 with the position change as the delta movement): tentacle movement, angle and rotate speed,
+*>           then the body rotations. yBodyRot is the replica's yaw (the server sends it).
+             IF EN-KEY(WS-R) = "squid" OR "glow_squid"
+                 MOVE EN-TM(WS-R) TO WS-CIV(1)
+                 MOVE EN-TS(WS-R) TO WS-CIV(2)
+                 COMPUTE WS-CIV(3) = 1 - EN-DRY(WS-R)
+                 MOVE EN-RS(WS-R) TO WS-CIV(4)
+                 CALL "EF8-SQUID-TENTACLE" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-TM(WS-R)
+                 MOVE WS-COV(2) TO EN-TA(WS-R)
+                 MOVE WS-COV(3) TO EN-RS(WS-R)
+                 COMPUTE WS-CIV(1) = 1 - EN-DRY(WS-R)
+                 MOVE EN-RS(WS-R) TO WS-CIV(2)
+                 MOVE EN-YAW(WS-R) TO WS-CIV(3)
+                 MOVE EN-ZR(WS-R) TO WS-CIV(4)
+                 MOVE EN-XR(WS-R) TO WS-CIV(5)
+                 MOVE WS-DX TO WS-CIV(6)
+                 MOVE WS-VY TO WS-CIV(7)
+                 MOVE WS-DZ TO WS-CIV(8)
+                 CALL "EF8-SQUID-BODY" USING WS-CI WS-CO
+                 MOVE WS-COV(2) TO EN-ZR(WS-R)
+                 MOVE WS-COV(3) TO EN-XR(WS-R)
              END-IF
              ADD 1 TO EN-AGE(WS-R)
              MOVE EN-X(WS-R) TO EN-OX(WS-R)
@@ -178,3 +303,140 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-SWING-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-CUBE-SCALE.
+*> USING CLIENT-STATE, replica row of a slime or magma cube, x and z scale out, y scale out (FLOAT-LONG): applySizeAndSquish (34-6 7.4): n = the size (1 until the
+*> server sent it), q = squish / (n x 0.5 + 1), r = 1 / (q + 1): scale (r x n, n / r, r x n).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CI.
+    05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-CO.
+    05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-XZ                   FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-XZ L-Y.
+     MOVE 1 TO WS-CIV(1)
+     IF EN-VAR(L-ROW) > 0
+         MOVE EN-VAR(L-ROW) TO WS-CIV(1)
+     END-IF
+     MOVE EN-SQ(L-ROW) TO WS-CIV(2)
+     MOVE 0 TO WS-CIV(3)
+     CALL "EF6-CUBE-SCALE" USING WS-CI WS-CO
+     MOVE WS-COV(1) TO L-XZ
+     MOVE WS-COV(2) TO L-Y
+     GOBACK.
+ END PROGRAM ENTITY-CUBE-SCALE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-IN-WATER.
+*> USING CLIENT-STATE, replica row, in water out (BINARY-LONG 0 or 1): 1 when the block cell at the middle of the entity's box (x, y + height / 2, z) holds water
+*> (ST-FLUID 1; a cell of an unloaded chunk is air).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WET                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-WET.
+     CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+     COMPUTE WS-X = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-Y = FUNCTION INTEGER(EN-Y(L-ROW) + EN-BOX-HEIGHT(L-ROW) / 2)
+     COMPUTE WS-Z = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLK
+     MOVE 0 TO L-WET
+     IF ST-FLUID(WS-STATE + 1) = 1
+         MOVE 1 TO L-WET
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-IN-WATER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-EVENT.
+*> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 19 resets a squid's tentacle movement to 0 ("squid animation sync"), 4 starts the bite of evoker
+*> fangs. Another event or an unknown id changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-EVENT.
+     CALL "ENTITY-FIND" USING CLIENT-STATE L-ID WS-ROW
+     IF WS-ROW > 0
+         IF L-EVENT = 19
+             MOVE 0 TO EN-TM(WS-ROW)
+         END-IF
+         IF L-EVENT = 4 AND EN-KEY(WS-ROW) = "evoker_fangs"
+             MOVE 1 TO EN-FA(WS-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-FANGS-PROGRESS.
+*> USING CLIENT-STATE, replica row of evoker fangs, progress out (FLOAT-LONG): EvokerFangs.getAnimationProgress at partial tick 1 (EM3-FANGS-PROGRESS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CI.
+    05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-CO.
+    05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-P                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-P.
+     MOVE EN-FA(L-ROW) TO WS-CIV(1)
+     MOVE EN-FL(L-ROW) TO WS-CIV(2)
+     MOVE 1 TO WS-CIV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-CI WS-CO
+     MOVE WS-COV(1) TO L-P
+     GOBACK.
+ END PROGRAM ENTITY-FANGS-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BOAT-SET.
+*> USING CLIENT-STATE, replica row, entry index, serializer, int value, float value: the boat's hurt metadata (21 8.8): entry 8 hurt time and 9 hurt direction (VarInt), 10 damage
+*> (FLOAT), 13 bubble time (VarInt) of a row drawn by the boat model (code B). Another entry or another mob changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLMODELS.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SERIALIZER           BINARY-LONG.
+ 01 L-INT                  BINARY-LONG.
+ 01 L-FLOAT                FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-INT L-FLOAT.
+     IF EN-MODEL(L-ROW) > 0
+         IF CL-MD-ANIM(EN-MODEL(L-ROW)) = "B"
+             EVALUATE TRUE
+                 WHEN L-INDEX = 8 AND L-SERIALIZER = 1
+                     MOVE L-INT TO EN-BHT(L-ROW)
+                 WHEN L-INDEX = 9 AND L-SERIALIZER = 1
+                     MOVE L-INT TO EN-BHD(L-ROW)
+                 WHEN L-INDEX = 10 AND L-SERIALIZER = 3
+                     MOVE L-FLOAT TO EN-BDM(L-ROW)
+                 WHEN L-INDEX = 13 AND L-SERIALIZER = 1
+                     MOVE L-INT TO EN-BBT(L-ROW)
+                 WHEN OTHER
+                     CONTINUE
+             END-EVALUATE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-BOAT-SET.

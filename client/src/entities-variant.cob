@@ -81,6 +81,14 @@
              MOVE L-INT TO EN-X2(L-ROW)
          WHEN EN-KEY(L-ROW) = "panda" AND L-INDEX = 22 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
+*>   A guardian's moving flag (entry 16, BOOLEAN) in EN-X1 and its active attack target (entry 17, VarInt): a new target restarts the attack time (EN-RS).
+         WHEN (EN-KEY(L-ROW) = "guardian" OR "elder_guardian") AND L-INDEX = 16 AND L-SERIALIZER = 8
+             MOVE L-INT TO EN-X1(L-ROW)
+         WHEN (EN-KEY(L-ROW) = "guardian" OR "elder_guardian") AND L-INDEX = 17 AND L-SERIALIZER = 1
+             IF L-INT NOT = EN-TGT(L-ROW)
+                 MOVE 0 TO EN-RS(L-ROW)
+             END-IF
+             MOVE L-INT TO EN-TGT(L-ROW)
          WHEN OTHER
              CONTINUE
      END-EVALUATE

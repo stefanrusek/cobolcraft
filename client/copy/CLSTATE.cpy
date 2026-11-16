@@ -694,6 +694,36 @@
           15 EN-SW-TYPE      BINARY-LONG.
           15 EN-SW-ANIM      FLOAT-LONG.
           15 EN-AGE          FLOAT-LONG.    *> ageInTicks: client ticks since the entity was added (34-2: arm bob and sway)
+*>        The squish of a slime or magma cube (34-6 7.4 AbstractCubeMob.tick, ENTITIES-ANIM-TICK): the squish, its value one tick ago, the target squish and the
+*>        was-on-ground flag.
+          15 EN-SQ           FLOAT-LONG.
+          15 EN-SQ-OLD       FLOAT-LONG.
+          15 EN-SQ-TGT       FLOAT-LONG.
+          15 EN-WOG          PIC 9.
+*>        Aquatic state (ENTITIES-ANIM-TICK, 34-8 sections 2 and 5): EN-DRY 1 when an aquatic mob's box middle is not in water (0 until a tick says so),
+*>        the squid's tentacle movement, speed (0.1 to 0.2 from the entity id), angle, rotate speed, xBodyRot and zBodyRot in degrees.
+          15 EN-DRY          PIC 9.
+          15 EN-TM           FLOAT-LONG.
+          15 EN-TS           FLOAT-LONG.
+          15 EN-TA           FLOAT-LONG.
+          15 EN-RS           FLOAT-LONG.
+          15 EN-XR           FLOAT-LONG.
+          15 EN-ZR           FLOAT-LONG.
+*>        Evoker fangs (34-3 4.8): the bite has started (Entity Event 4) and lifeTicks (22 at spawn, falling by 1 a tick once started).
+          15 EN-FA           PIC 9.
+          15 EN-FL           BINARY-LONG.
+*>        Guardian (34-6 11.4, ENTITIES-ANIM-TICK; the squid fields are reused: EN-TS tail speed, EN-TM tail animation, EN-TA spikes animation, EN-RS attack time; EN-X1 the
+*>        moving flag, entry 16): the active attack target's entity id (entry 17, 0 none).
+          15 EN-TGT          BINARY-LONG.
+*>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
+*>        and angle in degrees, and 1 when the boat is under water.
+          15 EN-BHT          FLOAT-LONG.
+          15 EN-BHD          BINARY-LONG.
+          15 EN-BDM          FLOAT-LONG.
+          15 EN-BBT          BINARY-LONG.
+          15 EN-BBM          FLOAT-LONG.
+          15 EN-BBA          FLOAT-LONG.
+          15 EN-BUW          PIC 9.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the
