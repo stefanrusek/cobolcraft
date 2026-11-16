@@ -119,7 +119,7 @@
      IF WS-SLOT = 0 OR EN-MOBAGE(L-ROW) < 0
          GOBACK
      END-IF
-     IF VL-KIND(WS-SLOT) NOT = 1 OR VL-PROF(WS-SLOT) NOT = "none"
+     IF VL-KIND(WS-SLOT) NOT = 1 OR VL-PROF(WS-SLOT) NOT = "none" OR VL-POT(WS-SLOT) = 1
          GOBACK
      END-IF
 *>   A scan every 20 to 39 ticks; the first evaluation only sets the timer (44 section 2.1 step 2).

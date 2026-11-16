@@ -21,6 +21,11 @@
        10 VL-GIFT-ACT        BINARY-LONG.        *> 1 while a gift is on its way
        10 VL-GIFT-AGE        BINARY-LONG.        *> ticks since the start
        10 VL-GIFT-PL         BINARY-LONG.        *> the hero's player row
+       10 VL-NEXT-BRAIN      BINARY-LONG.        *> the tick of the next brain decision (T8106)
+       10 VL-SLEEP           BINARY-LONG.        *> 1 while sleeping in the home bed
+       10 VL-LAST-SLEPT      BINARY-LONG.        *> game tick of the last sleep start (0 never)
+       10 VL-LAST-WOKEN      BINARY-LONG.        *> game tick of the last waking (0 never)
+       10 VL-POT             BINARY-LONG.        *> 1 while a job site is claimed but the profession is not taken yet
        10 VL-O-N             BINARY-LONG.
        10 VL-OFFER           OCCURS 16 TIMES.
           15 VL-O-ROW        BINARY-LONG.
