@@ -51,6 +51,18 @@
      MOVE PL-DIM(CN-PLAYER(WS-ID-BOB)) TO WS-NUM
      MOVE 2 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport a location form uses the executor's level: execute in the subroutine run tp Alice sends her there (54 s9.1)" TO TL-CASE
+     MOVE "execute in cobolcraft:subroutine run tp Alice 8 70 8" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE PL-DIM(CN-PLAYER(WS-ID-ALICE)) TO WS-NUM
+     MOVE 2 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport a location form from the overworld executor brings a target in the subroutine back (54 s9.1)" TO TL-CASE
+     MOVE "tp Alice 8 70 8" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE PL-DIM(CN-PLAYER(WS-ID-ALICE)) TO WS-NUM
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
      MOVE "acceptance US13 /teleport a target is moved to a destination" & " in another dimension" TO TL-CASE
      MOVE "tp Alice Bob" TO WS-LINE
      MOVE "commands.teleport.success.entity.single(Alice,Bob)" TO WS-EXPECTED

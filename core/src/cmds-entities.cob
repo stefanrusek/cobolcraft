@@ -4,8 +4,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-TELEPORT.
 *> teleport [<targets>] <location> [<rotation> | facing <point> | facing entity <entity> [<anchor>]] | [<targets>] <destination>
-*> (16 §5.2, level 2; tp is an alias): each target moves to the location (a component is absolute, relative to the target's own,
-*> or local to the source) in its dimension, or to the destination entity (its dimension, position and rotation); a rotation
+*> (16 §5.2, level 2; tp is an alias): each target moves to the location (absolute, relative to the executor's or local to it,
+*> resolved once for all targets, in the executor's dimension, 54 §9) or to the destination entity (its dimension, position and rotation); a rotation
 *> or a point or entity to face turns it; the player is sent Player Position (CMD-MOVE-PLAYER); a location outside the spawnable
 *> bounds is commands.teleport.invalidPosition; commands.teleport.success.location.single [name, x, y, z] or .multiple [count, x, y, z]
 *> (six decimals) and .entity.single [name, destination] or .multiple [count, destination] are broadcast; the result is the number
@@ -101,24 +101,10 @@
      ELSE
          MOVE PL-YAW(WS-ROW) TO WS-YAW
          MOVE PL-PITCH(WS-ROW) TO WS-PITCH
-         IF BA-KIND(WS-LOC, 1) = 2
-             MOVE WS-LOCAL-X TO WS-X
-             MOVE WS-LOCAL-Y TO WS-Y
-             MOVE WS-LOCAL-Z TO WS-Z
-         ELSE
-             MOVE BA-NUM(WS-LOC, 1) TO WS-X
-             IF BA-KIND(WS-LOC, 1) = 1
-                 ADD PL-X(WS-ROW) TO WS-X
-             END-IF
-             MOVE BA-NUM(WS-LOC, 2) TO WS-Y
-             IF BA-KIND(WS-LOC, 2) = 1
-                 ADD PL-Y(WS-ROW) TO WS-Y
-             END-IF
-             MOVE BA-NUM(WS-LOC, 3) TO WS-Z
-             IF BA-KIND(WS-LOC, 3) = 1
-                 ADD PL-Z(WS-ROW) TO WS-Z
-             END-IF
-         END-IF
+         MOVE BS-DIM TO WS-DIM
+         MOVE WS-LOCAL-X TO WS-X
+         MOVE WS-LOCAL-Y TO WS-Y
+         MOVE WS-LOCAL-Z TO WS-Z
      END-IF
      IF WS-ROT > 0
          MOVE BA-NUM(WS-ROT, 1) TO WS-W
@@ -212,7 +198,7 @@
      IF BR-R-FAILED = 0 AND WS-POINT > 0
          CALL "BX-POSITION" USING WS-POINT WS-PX WS-PY WS-PZ
      END-IF
-     IF BR-R-FAILED = 0 AND WS-LOC > 0 AND BA-KIND(WS-LOC, 1) = 2
+     IF BR-R-FAILED = 0 AND WS-LOC > 0
          CALL "BX-POSITION" USING WS-LOC WS-LOCAL-X WS-LOCAL-Y WS-LOCAL-Z
      END-IF
      MOVE 0 TO WS-MOVED
