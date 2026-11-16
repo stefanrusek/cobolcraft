@@ -21,6 +21,19 @@
        10 VL-GIFT-ACT        BINARY-LONG.        *> 1 while a gift is on its way
        10 VL-GIFT-AGE        BINARY-LONG.        *> ticks since the start
        10 VL-GIFT-PL         BINARY-LONG.        *> the hero's player row
+       10 VL-NEXT-BRAIN      BINARY-LONG.        *> the tick of the next brain decision (T8106)
+       10 VL-SLEEP           BINARY-LONG.        *> 1 while sleeping in the home bed
+       10 VL-LAST-SLEPT      BINARY-LONG.        *> game tick of the last sleep start (0 never)
+       10 VL-LAST-WOKEN      BINARY-LONG.        *> game tick of the last waking (0 never)
+       10 VL-POT             BINARY-LONG.        *> 1 while a job site is claimed but the profession is not taken yet
+       10 VL-INV             BINARY-LONG.        *> food points in the inventory (22.6; items are not modelled, only their nutrition), T8800
+       10 VL-LOVE            BINARY-LONG.        *> VillagerMakeLove: the partner's entity id (0 none)
+       10 VL-LOVE-AT         BINARY-LONG.        *> the tick of the birth
+       10 VL-GOLEM-UNTIL     BINARY-LONG.        *> golem_detected_recently: the tick it expires (0 none), T8801
+       10 VL-LAST-GOSSIP     BINARY-LONG.        *> lastGossipTime
+       10 VL-DESPAWN         BINARY-LONG.        *> wandering trader: ticks to despawn (48000 from the spawner, 0 none), T8802
+       10 VL-LLAMA-A         BINARY-LONG.        *> wandering trader: entity ids of its two trader llamas
+       10 VL-LLAMA-B         BINARY-LONG.
        10 VL-O-N             BINARY-LONG.
        10 VL-OFFER           OCCURS 16 TIMES.
           15 VL-O-ROW        BINARY-LONG.

@@ -8,3 +8,4 @@
        10 PO-X               BINARY-LONG.
        10 PO-Y               BINARY-LONG.
        10 PO-Z               BINARY-LONG.
+       10 PO-KIND            BINARY-LONG.        *> 0 job site, 2 home bed, 3 meeting point (T8105)

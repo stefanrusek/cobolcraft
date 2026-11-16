@@ -15,3 +15,36 @@
        10 FILLER BINARY-LONG VALUE 0.  *> ranged
        10 FILLER BINARY-LONG VALUE 0.  *> spawn rule (0: no natural spawn; villages place villagers)
        10 FILLER BINARY-LONG VALUE 0.  *> hit effect
+*> Rows added by lane mobsb4 (T8802): the wandering trader (19 section 23: speed 0.7, stroll 0.35 and panic 0.5 modifiers; no natural spawn, the spawner TRADER-TICK places it) and the trader llama (19 section 3.7: the llama's stats, health gene mean 22).
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "wandering_trader".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 132.
+       10 FILLER BINARY-LONG VALUE 270.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "trader_llama".
+       10 FILLER BINARY-LONG VALUE 22.
+       10 FILLER BINARY-LONG VALUE 33.
+       10 FILLER BINARY-LONG VALUE 97.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.

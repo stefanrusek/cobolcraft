@@ -503,6 +503,7 @@
  01 WS-BOUND-GC            BINARY-LONG VALUE 2.
  01 WS-DRAW-G              BINARY-LONG.
  01 WS-VL-VILLAGER         BINARY-LONG VALUE 1.
+ 01 WS-VL-TRADER           BINARY-LONG VALUE 2.
  01 WS-VL-PLAINS           BINARY-LONG VALUE 2.
  01 WS-VL-SLOT             BINARY-LONG.
  01 WS-BOUND-S             BINARY-LONG VALUE 6000.
@@ -607,8 +608,13 @@
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
          WHEN "llama"
              CALL "LLAMA-BORN" USING L-ROW
+         WHEN "trader_llama"
+             CALL "LLAMA-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
+         WHEN "wandering_trader"
+*>           The trader state (19 section 23): kind 2 builds the three trade sets at once.
+             CALL "VL-SETUP" USING EN-ID(L-ROW) WS-VL-TRADER WS-VL-PLAINS WS-VL-SLOT
          WHEN "villager"
 *>           The villager state (19 section 22; the type follows the biome of the position, 22.1).
              CALL "VL-BIOME-TYPE-AT" USING L-ROW WS-VL-PLAINS
@@ -1491,7 +1497,7 @@
      END-IF
      MOVE WS-KEY48 TO WS-HELD
      MOVE SM-KEY(WS-M) TO WS-KEY
-     IF WS-KEY = "villager"
+     IF WS-KEY = "villager" OR "wandering_trader"
          CALL "MERCHANT-INTERACT" USING WS-ROW WS-ENTITY WS-USED
          IF WS-USED = 1
              GOBACK

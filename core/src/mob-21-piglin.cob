@@ -79,7 +79,7 @@
  01 L-DONE                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ENTITY L-DONE.
      MOVE 0 TO L-DONE
-     IF DM-KEY(EN-DIM(L-ENTITY)) = "minecraft:the_nether"
+     IF DM-KEY(EN-DIM(L-ENTITY)) = "minecraft:the_nether" OR EN-PIG-IMMUNE(L-ENTITY) = 1
          MOVE 0 TO EN-ZOMBIFY(L-ENTITY)
          GOBACK
      END-IF

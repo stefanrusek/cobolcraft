@@ -1,0 +1,199 @@
+*> Acceptance test, iron golem summoning by villagers (docs/protocol/19 section 22.10; lane 002-lane-mobsb4, T8801): a villager that slept within 24000 ticks and has no golem detected
+*> asks the villagers within 10 blocks (at most 5), needs the minimum (3 from panic, 5 after gossip), places an iron golem on a valid standing spot within 8 blocks, and every asker
+*> remembers a golem for 599 ticks. Panicking villagers ask every 100 ticks.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-VILLAGER-GOLEM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY VILSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY24               PIC X(24).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-GTYPE               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG VALUE 40.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-V                   BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-S                   BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-SPAWNED             BINARY-LONG.
+ 01 WS-MIN                 BINARY-LONG.
+ 01 WS-GOLEMS              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-PAIRS               PIC X(160) VALUE SPACES.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-GY                  BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-Y0 = FUNCTION INTEGER(PL-Y(WS-PLAYER))
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FX = WS-X0 - 20
+     COMPUTE WS-FZ = WS-Z0 - 20
+     COMPUTE WS-GY = WS-Y0 - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-SIZE WS-GY WS-KIND
+     MOVE "minecraft:villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:iron_golem" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-GTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE 30000 TO CW-TICKS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         COMPUTE WS-X = WS-X0 + 0.5 + WS-I
+         MOVE PL-Y(WS-PLAYER) TO WS-Y
+         COMPUTE WS-Z = WS-Z0 + 0.5
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-V(WS-I)
+         CALL "VL-FIND" USING EN-ID(WS-V(WS-I)) WS-KIND WS-S(WS-I)
+         MOVE 29500 TO VL-LAST-SLEPT(WS-S(WS-I))
+     END-PERFORM
+*>   Standing spots.
+     COMPUTE WS-Z = WS-Y0
+     CALL "VL-GOLEM-SPOT" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-OK
+     MOVE "acceptance US15 19§22.10 a free cell above a stone floor is a standing spot" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:glass" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-GY WS-Z0 WS-STATE
+     CALL "VL-GOLEM-SPOT" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-OK
+     MOVE "acceptance US15 19§22.10 glass below is rejected" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:oak_leaves" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-GY WS-Z0 WS-STATE
+     CALL "VL-GOLEM-SPOT" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-OK
+     MOVE "acceptance US15 19§22.10 leaves below are rejected" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:red_stained_glass" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-GY WS-Z0 WS-STATE
+     CALL "VL-GOLEM-SPOT" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-OK
+     MOVE "acceptance US15 19§22.10 stained glass below is rejected" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:cobweb" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-GY WS-Z0 WS-STATE
+     CALL "VL-GOLEM-SPOT" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-OK
+     MOVE "acceptance US15 19§22.10 a cobweb below is rejected" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-GY WS-Z0 WS-STATE
+     COMPUTE WS-N = WS-Y0 + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-N WS-Z0 WS-STATE
+     CALL "VL-GOLEM-SPOT" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-OK
+     MOVE "acceptance US15 19§22.10 a block in the body space is rejected" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-N WS-Z0 WS-STATE
+*>   Fewer villagers than the minimum: nothing.
+     MOVE 3 TO WS-MIN
+     MOVE 0 TO VL-LAST-SLEPT(WS-S(3)) VL-LAST-SLEPT(WS-S(4)) VL-LAST-SLEPT(WS-S(5))
+     CALL "VL-GOLEM-CHECK" USING WS-V(1) WS-MIN WS-SPAWNED
+     MOVE "acceptance US15 19§22.10 two villagers that slept are fewer than 3: no golem" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SPAWNED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO VL-LAST-SLEPT(WS-S(1))
+     MOVE 29500 TO VL-LAST-SLEPT(WS-S(3)) VL-LAST-SLEPT(WS-S(4))
+     CALL "VL-GOLEM-CHECK" USING WS-V(1) WS-MIN WS-SPAWNED
+     MOVE "acceptance US15 19§22.10 the asker that never slept does not ask" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SPAWNED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 29500 TO VL-LAST-SLEPT(WS-S(1)) VL-LAST-SLEPT(WS-S(5))
+     MOVE 5999 TO VL-LAST-SLEPT(WS-S(2))
+     CALL "VL-GOLEM-CHECK" USING WS-V(1) WS-MIN WS-SPAWNED
+     MOVE "acceptance US15 19§22.10 4 villagers slept within a day (one 24000 ago does not count) and 3 are needed: golem" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SPAWNED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-GOLEMS
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = WS-GTYPE
+             ADD 1 TO WS-GOLEMS
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§22.10 one iron golem exists" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-GOLEMS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 19§22.10 the askers remember the golem for 599 ticks (until 30599)" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         IF VL-GOLEM-UNTIL(WS-S(WS-I)) = 30599
+             ADD 1 TO TL-OBSERVED-N
+         END-IF
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "VL-GOLEM-CHECK" USING WS-V(1) WS-MIN WS-SPAWNED
+     MOVE "acceptance US15 19§22.10 with a golem detected nobody asks again" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SPAWNED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   After the memory expires the villagers may ask again (a villager 20 blocks away is not asked).
+     MOVE 30600 TO CW-TICKS
+     MOVE 30300 TO VL-LAST-SLEPT(WS-S(2))
+     CALL "VL-GOLEM-CHECK" USING WS-V(1) WS-MIN WS-SPAWNED
+     MOVE "acceptance US15 19§22.10 after 599 ticks the memory is gone and a second golem is summoned" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SPAWNED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Panic: only every 100 ticks and only while panicking.
+     MOVE 35000 TO CW-TICKS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         MOVE 34900 TO VL-LAST-SLEPT(WS-S(WS-I))
+         MOVE 0 TO VL-GOLEM-UNTIL(WS-S(WS-I))
+     END-PERFORM
+     MOVE 0 TO EN-FLEE(WS-V(1))
+     CALL "VL-GOLEM-STEP" USING WS-V(1)
+     MOVE "acceptance US15 19§22.10 a calm villager does not summon by panic" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE VL-GOLEM-UNTIL(WS-S(1)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO EN-FLEE(WS-V(1))
+     MOVE 35001 TO CW-TICKS
+     CALL "VL-GOLEM-STEP" USING WS-V(1)
+     MOVE "acceptance US15 19§22.10 a panicking villager off the 100 tick beat does not ask" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE VL-GOLEM-UNTIL(WS-S(1)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 35000 TO CW-TICKS
+     CALL "VL-GOLEM-STEP" USING WS-V(1)
+     MOVE "acceptance US15 19§22.10 a panicking villager on the 100 tick beat summons with 3 agreeing" TO TL-CASE
+     MOVE 35599 TO TL-EXPECTED-N
+     MOVE VL-GOLEM-UNTIL(WS-S(1)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US15-VILLAGER-GOLEM.
+ COPY CORETEST.
+ COPY MOBSPTEST.
