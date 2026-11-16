@@ -1950,8 +1950,9 @@
 *> is sent Sound 0x77 (05b): the registry id + 1 of the sound event (minecraft:sound_event; a sound the table does not hold goes inline: 0, the identifier and no fixed
 *> range), the source's ordinal, the position in eighths of a block (the source's position when none; x and z of a plain whole number are centred, 15 §8), the volume
 *> (1.0) and pitch (1.0) and the seed 0. commands.playsound.success.single [sound, player] or .multiple [sound, count] is broadcast and the result is the number of
-*> targets. BLOCKED docs: the audible distance (the volume and minVolume rule behind commands.playsound.failed) is not in the docs, so every target is sent the sound
-*> and minVolume is parsed only.
+*> targets, or commands.playsound.failed when none was reached. Audible distance (54 section 10): only targets in the executor's level; range 16 (16 x volume above 1);
+*> inside it the sound is at the point at the volume, outside it skipped unless minVolume is above 0 (then 2 blocks from the target towards the point at minVolume).
+*> The seed stays 0 (no level random source is drawn).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1994,11 +1995,35 @@
  01 WS-I                   BINARY-LONG.
  01 WS-BROADCAST           BINARY-LONG VALUE 1.
  01 WS-MESSAGE-KEY         PIC X(48) VALUE "commands.playsound.success".
+ 01 WS-NAME-MIN            PIC X(32) VALUE "minVolume".
+ 01 WS-MIN-ARG             BINARY-LONG.
+ 01 WS-MIN-VOLUME          FLOAT-SHORT.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SENT                BINARY-LONG.
+ 01 WS-SEND                BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SY                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
+ 01 WS-SVOL                FLOAT-SHORT.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
  PROCEDURE DIVISION.
      CALL "BX-FIND" USING WS-NAME-SOUND WS-SOUND-ARG
      CALL "BX-FIND" USING WS-NAME-POS WS-POS-ARG
      CALL "BX-FIND" USING WS-NAME-VOLUME WS-VOLUME-ARG
      CALL "BX-FIND" USING WS-NAME-PITCH WS-PITCH-ARG
+     CALL "BX-FIND" USING WS-NAME-MIN WS-MIN-ARG
      CALL "CXC-SOURCE-OF" USING WS-SOURCE WS-SOURCE-NAME
      CALL "BX-TARGETS-OR-SELF" USING WS-NAME-TARGETS WS-ROWS
      IF BR-R-FAILED = 0
@@ -2009,9 +2034,6 @@
          IF WS-POS-ARG > 0
              CALL "BX-POSITION" USING WS-POS-ARG WS-X WS-Y WS-Z
          END-IF
-         COMPUTE WS-FX = WS-X * 8
-         COMPUTE WS-FY = WS-Y * 8
-         COMPUTE WS-FZ = WS-Z * 8
          MOVE 1 TO WS-VOLUME WS-PITCH
          IF WS-VOLUME-ARG > 0
              MOVE BA-DVAL(WS-VOLUME-ARG) TO WS-VOLUME
@@ -2019,33 +2041,87 @@
          IF WS-PITCH-ARG > 0
              MOVE BA-DVAL(WS-PITCH-ARG) TO WS-PITCH
          END-IF
+         MOVE 0 TO WS-MIN-VOLUME
+         IF WS-MIN-ARG > 0
+             MOVE BA-DVAL(WS-MIN-ARG) TO WS-MIN-VOLUME
+         END-IF
+         MOVE 16 TO WS-RANGE
+         IF WS-VOLUME > 1
+             COMPUTE WS-RANGE = 16 * WS-VOLUME
+         END-IF
          CALL "CONTENT-STATIC-ID" USING WS-REGISTRY WS-SOUND WS-ID WS-STATUS
          COMPUTE WS-ORDINAL = WS-SOURCE - 1
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-         IF WS-STATUS = CT-OK
-             COMPUTE WS-HOLDER = WS-ID + 1
-             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HOLDER
-         ELSE
-             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-OFF
-             CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-SOUND WS-SOUND-LENGTH
-             CALL "PB-PUT-BOOL" USING PB-BUFFER WS-OFF
-         END-IF
-         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ORDINAL
-         CALL "PB-PUT-INT" USING PB-BUFFER WS-FX
-         CALL "PB-PUT-INT" USING PB-BUFFER WS-FY
-         CALL "PB-PUT-INT" USING PB-BUFFER WS-FZ
-         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-VOLUME
-         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PITCH
-         CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
+         MOVE 0 TO WS-SENT
+*>       54 section 10: only listeners in the executor's level; inside the range (16, or 16 x volume above 1) the sound is at the point
+*>       with the volume; outside it is skipped, or with minVolume above 0 placed 2 blocks from the listener towards the point.
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
-             CALL "CORE-SEND" USING PL-CONN(BX-ROW(WS-I)) PB-BUFFER
+             MOVE BX-ROW(WS-I) TO WS-ROW
+             COMPUTE WS-DX = WS-X - PL-X(WS-ROW)
+             COMPUTE WS-DY = WS-Y - PL-Y(WS-ROW)
+             COMPUTE WS-DZ = WS-Z - PL-Z(WS-ROW)
+             COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+             MOVE 0 TO WS-SEND
+             IF PL-DIM(WS-ROW) = BS-DIM AND WS-D2 <= WS-RANGE * WS-RANGE
+                 MOVE 1 TO WS-SEND
+             END-IF
+             IF PL-DIM(WS-ROW) = BS-DIM AND WS-D2 > WS-RANGE * WS-RANGE AND WS-MIN-VOLUME > 0
+                 MOVE 2 TO WS-SEND
+             END-IF
+             MOVE WS-X TO WS-SX
+             MOVE WS-Y TO WS-SY
+             MOVE WS-Z TO WS-SZ
+             MOVE WS-VOLUME TO WS-SVOL
+             IF WS-SEND = 2
+                 COMPUTE WS-DIST = FUNCTION SQRT(WS-D2)
+                 COMPUTE WS-SX = PL-X(WS-ROW) + 2 * WS-DX / WS-DIST
+                 COMPUTE WS-SY = PL-Y(WS-ROW) + 2 * WS-DY / WS-DIST
+                 COMPUTE WS-SZ = PL-Z(WS-ROW) + 2 * WS-DZ / WS-DIST
+                 MOVE WS-MIN-VOLUME TO WS-SVOL
+             END-IF
+             IF WS-SEND > 0
+                 PERFORM SEND-SOUND
+                 ADD 1 TO WS-SENT
+                 MOVE WS-ROW TO BX-ROW(WS-SENT)
+             END-IF
          END-PERFORM
-         CALL "PB-FREE" USING PB-BUFFER
-         CALL "BX-COUNT-MESSAGE" USING WS-MESSAGE-KEY WS-ROWS WS-BROADCAST WS-SOUND WS-SOUND-LENGTH
-         MOVE BX-COUNT TO BR-R-RESULT
+         IF WS-SENT = 0
+             MOVE "commands.playsound.failed" TO WS-KEY
+             MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         ELSE
+             MOVE WS-SENT TO BX-COUNT
+             CALL "BX-COUNT-MESSAGE" USING WS-MESSAGE-KEY WS-ROWS WS-BROADCAST WS-SOUND WS-SOUND-LENGTH
+             MOVE BX-COUNT TO BR-R-RESULT
+         END-IF
      END-IF
      GOBACK.
+
+*>   Sound 0x77 of WS-SX, WS-SY, WS-SZ and WS-SVOL to the player WS-ROW.
+ SEND-SOUND.
+     COMPUTE WS-FX = WS-SX * 8
+     COMPUTE WS-FY = WS-SY * 8
+     COMPUTE WS-FZ = WS-SZ * 8
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     IF WS-STATUS = CT-OK
+         COMPUTE WS-HOLDER = WS-ID + 1
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HOLDER
+     ELSE
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-OFF
+         CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-SOUND WS-SOUND-LENGTH
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-OFF
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ORDINAL
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-FX
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-FY
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-FZ
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-SVOL
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PITCH
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
+     CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
  END PROGRAM CX-PLAYSOUND.
 
  IDENTIFICATION DIVISION.
