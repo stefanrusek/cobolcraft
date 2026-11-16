@@ -196,6 +196,8 @@
                          CALL "WITHER-STEP" USING WS-ROW
                      WHEN 15
                          CALL "WSKULL-STEP" USING WS-ROW
+                     WHEN 17
+                         CALL "DRAGON-STEP" USING WS-ROW
                      WHEN 18
                          CALL "DFIRE-STEP" USING WS-ROW
                  END-EVALUATE
