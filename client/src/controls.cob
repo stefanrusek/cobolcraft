@@ -3,9 +3,9 @@
 *> 0x29, Use Item On 0x42, Set Carried Item 0x36). Every Player Action and Use Item On carries the
 *> next block-change sequence number (CT-SEQUENCE, from 1).
 *>   CONTROLS-INPUT (world screen, in play), on the target of RAYCAST:
-*>   - the right button pressed sends Use Item On with the target, its face and the hit point when
-*>     the held stack is a block item, or the target is a glowtube (toggle) or a goto_pad (travel);
-*>     otherwise nothing (the server would place nothing);
+*>   - the right button pressed sends Use Item On with the target, its face and the hit point
+*>     for any block aimed at, whatever the hand holds (an empty hand included: crafting table,
+*>     furnace, chests, anvils and the stand-in glowtube and goto_pad all answer on the server);
 *>   - the left button pressed sends start destroy. In creative the break is instant: nothing more.
 *>     In survival the break lasts the block's hand break time (a quarter of it with the tool of
 *>     the block's class; never for baseplate): stop destroy follows once it has passed while the
