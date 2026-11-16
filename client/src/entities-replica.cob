@@ -122,7 +122,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-PACKET.
 *> USING CLIENT-STATE, packet PB-BUFFER (PB-POS after the id), packet id (1, 54, 55, 57, 70, 71,
-*> 78, 85, 101, 103, 127 or 128).
+*> 78, 85, 101, 103, 123, 127 or 128). 123 is Swing Animation (54 section 2.1); the walk animation is ticked by ENTITIES-ANIM-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -176,6 +176,9 @@
  01 WS-MAX-TEXT            BINARY-LONG VALUE 32767.
  01 WS-COLLECTOR           BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-HAND                BINARY-LONG.
+ 01 WS-SWTYPE              BINARY-LONG.
+ 01 WS-DUR                 BINARY-LONG.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -227,6 +230,15 @@
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
                  MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW)
+*>               The walk animation and the swing start at rest (54 section 1.1); the position of the previous tick is this one.
+                 MOVE 0 TO EN-WALK-SPEED-OLD(WS-ROW) EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
+                 MOVE 1 TO EN-WALK-SCALE(WS-ROW)
+                 MOVE WS-X TO EN-OX(WS-ROW)
+                 MOVE WS-Y TO EN-OY(WS-ROW)
+                 MOVE WS-Z TO EN-OZ(WS-ROW)
+                 MOVE 0 TO EN-MOB-FLAGS(WS-ROW) EN-BABY(WS-ROW)
+                 MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
+                 MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
                  IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
@@ -264,6 +276,13 @@
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-INDEX = 6 AND MD-MD-SERIALIZER = PB-MDS-POSE
                      MOVE MD-MD-INT TO EN-POSE(WS-ROW)
+                 END-IF
+*>               A mob's flags byte (entry 15: bit 4 aggressive, 54 section 2.3) and an ageable mob's baby flag (entry 16, BOOLEAN).
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 15 AND MD-MD-SERIALIZER = PB-MDS-BYTE
+                     MOVE MD-MD-INT TO EN-MOB-FLAGS(WS-ROW)
+                 END-IF
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 16 AND MD-MD-SERIALIZER = PB-MDS-BOOLEAN
+                     MOVE MD-MD-INT TO EN-BABY(WS-ROW)
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
                      IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
@@ -377,6 +396,20 @@
                  MOVE WS-YAW TO EN-YAW(WS-ROW)
                  MOVE WS-PITCH TO EN-PITCH(WS-ROW)
                  MOVE WS-FLAGS TO EN-ON-GROUND(WS-ROW)
+*>               A teleport is no walking: the position of the previous tick is the new one.
+                 MOVE WS-X TO EN-OX(WS-ROW)
+                 MOVE WS-Y TO EN-OY(WS-ROW)
+                 MOVE WS-Z TO EN-OZ(WS-ROW)
+             END-IF
+         WHEN 123
+*>           Swing Animation: entity id, hand, animation type, duration (54 section 2.1; ignored for an unknown entity).
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-HAND
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-SWTYPE
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-DUR
+             CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+             IF WS-ROW > 0
+                 CALL "ENTITY-SWING-START" USING CLIENT-STATE WS-ROW WS-HAND WS-SWTYPE WS-DUR
              END-IF
          WHEN 78
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
