@@ -350,6 +350,7 @@
  01 WS-CONVERT             BINARY-LONG.
  01 WS-ZSLOT               BINARY-LONG.
  01 WS-ZNO                 BINARY-LONG VALUE 0.
+ 01 WS-DANCE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
@@ -434,6 +435,19 @@
          IF WS-INDEX > 0
              MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
              MOVE 1 TO WS-VALUE
+         END-IF
+     END-IF
+*>   A piglin that has danced (lane mobsb7, PGBRAIN.cpy): metadata 19 BOOLEAN, true while dancing and false once it has stopped, when it is the only entry.
+     IF WS-INDEX = 0 AND WS-M > 0
+         IF SM-KEY(WS-M) = "piglin"
+             CALL "PGB-DANCE-OF" USING EN-ID(L-ROW) WS-DANCE
+             IF WS-DANCE > 0
+                 MOVE 19 TO WS-INDEX
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+                 IF WS-DANCE = 1
+                     MOVE 1 TO WS-VALUE
+                 END-IF
+             END-IF
          END-IF
      END-IF
 *>   An ignited creeper (metadata 18 BOOLEAN true, 6.1) follows the powered entry, or is the only one.
