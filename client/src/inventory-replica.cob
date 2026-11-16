@@ -43,6 +43,7 @@
                  CALL "PB-GET-ITEM-STACK" USING PB-BUFFER WS-ITEMSTACK-X
                  IF PB-ERROR = 0
                      CALL "STACK-DAMAGE" USING WS-ITEMSTACK-X WS-DAMAGE
+                     CALL "STACK-FOIL" USING WS-ITEMSTACK-X PL-STACK-FOIL
                      CALL "STACK-NOTE-MAX" USING CLIENT-STATE WS-ITEMSTACK-X
                      CALL "CL-MENU-SET" USING CLIENT-STATE WS-CONTAINER WS-I WS-ISX-COUNT WS-ISX-ITEM WS-DAMAGE
                  END-IF
@@ -67,6 +68,7 @@
              IF PB-ERROR = 0
                  MOVE WS-SLOT TO WS-I
                  CALL "STACK-DAMAGE" USING WS-ITEMSTACK-X WS-DAMAGE
+                 CALL "STACK-FOIL" USING WS-ITEMSTACK-X PL-STACK-FOIL
                  CALL "STACK-NOTE-MAX" USING CLIENT-STATE WS-ITEMSTACK-X
                  CALL "CL-MENU-SET" USING CLIENT-STATE WS-CONTAINER WS-I WS-ISX-COUNT WS-ISX-ITEM WS-DAMAGE
                  IF WS-CONTAINER = 0
@@ -152,6 +154,7 @@
              CALL "PB-GET-ITEM-STACK" USING PB-BUFFER WS-ITEMSTACK-X
              IF PB-ERROR = 0
                  CALL "STACK-DAMAGE" USING WS-ITEMSTACK-X WS-DAMAGE
+                 CALL "STACK-FOIL" USING WS-ITEMSTACK-X PL-STACK-FOIL
                  CALL "STACK-NOTE-MAX" USING CLIENT-STATE WS-ITEMSTACK-X
 *>               Set Player Inventory: the player index WS-SLOT (0 to 35 the slots, 36 to 39 feet to head, 40 the off hand).
                  EVALUATE TRUE

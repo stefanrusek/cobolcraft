@@ -139,3 +139,139 @@
      COMPUTE L-V = WS-X * WS-SIN + WS-Y * WS-COS
      GOBACK.
  END PROGRAM GLINT-UV.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STACK-FOIL.
+*> USING PB-ITEMSTACK-X, foil out (1 when the stack has the glint): enchantment_glint_override 21 when present (its Boolean), else enchantments 13 non-empty (54 section 19.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-OVERRIDE            BINARY-LONG.
+ 01 WS-ENCHANTED           BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-FOIL                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-ITEMSTACK-X L-FOIL.
+     MOVE -1 TO WS-OVERRIDE
+     MOVE 0 TO WS-ENCHANTED L-FOIL
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT
+         IF PB-ISX-VALUE-LENGTH(WS-K) > 0
+             COMPUTE WS-B = FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1)) - 1
+             IF PB-ISX-TYPE(WS-K) = 21
+                 MOVE WS-B TO WS-OVERRIDE
+             END-IF
+             IF PB-ISX-TYPE(WS-K) = 13 AND WS-B > 0
+                 MOVE 1 TO WS-ENCHANTED
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-OVERRIDE >= 0
+         IF WS-OVERRIDE > 0
+             MOVE 1 TO L-FOIL
+         END-IF
+     ELSE
+         MOVE WS-ENCHANTED TO L-FOIL
+     END-IF
+     GOBACK.
+ END PROGRAM STACK-FOIL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GLINT-ICON.
+*> USING CLIENT-STATE, sprite, x0, y0, x1, y1 (FLOAT-SHORT, window pixels of the icon's rectangle): the glint over an item icon (54 section 19.3). The glint is added only
+*> where the icon has texels (the item shader discards the others), so quads cover the opaque texels (alpha 26 and up: 0.1) of the sprite, one per run of a row, into
+*> RL-GC-VERTEX while it has room; their glint coordinates are the atlas coordinates of the corners through the item scale 8 (GLINT-UV), the brightness the glint strength.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CORNERS             PIC X(6) VALUE "123134".
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-ALPHA               BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-OPAQUE              BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG VALUE 8.
+ 01 WS-STRENGTH            FLOAT-LONG.
+ 01 WS-STEP-X              FLOAT-LONG.
+ 01 WS-STEP-Y              FLOAT-LONG.
+ 01 WS-RUN-END             BINARY-LONG.
+ 01 B-PIXELS               PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-SPRITE               BINARY-LONG.
+ 01 L-X0                   FLOAT-SHORT.
+ 01 L-Y0                   FLOAT-SHORT.
+ 01 L-X1                   FLOAT-SHORT.
+ 01 L-Y1                   FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-SPRITE L-X0 L-Y0 L-X1 L-Y1.
+     CALL "GLINT-STRENGTH" USING CLIENT-STATE WS-STRENGTH
+     SET ADDRESS OF B-PIXELS TO AT-ADDR
+     COMPUTE WS-STEP-X = (L-X1 - L-X0) / AT-SW(L-SPRITE)
+     COMPUTE WS-STEP-Y = (L-Y1 - L-Y0) / AT-SH(L-SPRITE)
+     PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= AT-SH(L-SPRITE)
+         MOVE 0 TO WS-PX
+         PERFORM UNTIL WS-PX >= AT-SW(L-SPRITE)
+             PERFORM TEXEL-OPAQUE
+             IF WS-OPAQUE = 0
+                 ADD 1 TO WS-PX
+             ELSE
+*>               The run: from WS-PX up to the first transparent texel or the sprite's edge.
+                 MOVE WS-PX TO WS-RUN
+                 PERFORM UNTIL WS-PX >= AT-SW(L-SPRITE) OR WS-OPAQUE = 0
+                     ADD 1 TO WS-PX
+                     IF WS-PX < AT-SW(L-SPRITE)
+                         PERFORM TEXEL-OPAQUE
+                     ELSE
+                         MOVE 0 TO WS-OPAQUE
+                     END-IF
+                 END-PERFORM
+                 MOVE WS-PX TO WS-RUN-END
+                 PERFORM EMIT-RUN
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+
+*> WS-OPAQUE 1 when the texel (WS-PX, WS-PY) of the sprite has alpha 26 or more.
+ TEXEL-OPAQUE.
+     COMPUTE WS-POS = ((AT-Y(L-SPRITE) + WS-PY) * AT-W + AT-X(L-SPRITE) + WS-PX) * 4 + 4
+     COMPUTE WS-ALPHA = FUNCTION ORD(B-PIXELS(WS-POS:1)) - 1
+     MOVE 0 TO WS-OPAQUE
+     IF WS-ALPHA >= 26
+         MOVE 1 TO WS-OPAQUE
+     END-IF.
+
+*> The quad of the run WS-RUN to WS-RUN-END (exclusive) of row WS-PY.
+ EMIT-RUN.
+     IF RL-GC-COUNT + 6 <= 12288
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+             ADD 1 TO RL-GC-COUNT
+             MOVE FUNCTION NUMVAL(WS-CORNERS(WS-K:1)) TO WS-C
+*>           Corner 1 top-left, 2 top-right, 3 bottom-right, 4 bottom-left.
+             MOVE WS-RUN TO WS-CX
+             IF WS-C = 2 OR WS-C = 3
+                 MOVE WS-RUN-END TO WS-CX
+             END-IF
+             MOVE WS-PY TO WS-CY
+             IF WS-C >= 3
+                 COMPUTE WS-CY = WS-PY + 1
+             END-IF
+             COMPUTE RL-GC-X(RL-GC-COUNT) = L-X0 + WS-CX * WS-STEP-X
+             COMPUTE RL-GC-Y(RL-GC-COUNT) = L-Y0 + WS-CY * WS-STEP-Y
+             COMPUTE WS-U = (AT-X(L-SPRITE) + WS-CX) / AT-W
+             COMPUTE WS-V = (AT-Y(L-SPRITE) + WS-CY) / AT-H
+             CALL "GLINT-UV" USING WS-U WS-V WS-SCALE
+             MOVE WS-U TO RL-GC-U(RL-GC-COUNT)
+             MOVE WS-V TO RL-GC-V(RL-GC-COUNT)
+             MOVE 0 TO RL-GC-Z(RL-GC-COUNT) RL-GC-SKY(RL-GC-COUNT)
+             MOVE WS-STRENGTH TO RL-GC-B(RL-GC-COUNT)
+             MOVE 1 TO RL-GC-A(RL-GC-COUNT) RL-GC-R(RL-GC-COUNT) RL-GC-G(RL-GC-COUNT) RL-GC-BLUE(RL-GC-COUNT)
+         END-PERFORM
+     END-IF.
+ END PROGRAM GLINT-ICON.

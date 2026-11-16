@@ -9,6 +9,7 @@
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
  COPY CLCONST.
+ COPY PROTO.
  COPY TESTLIB.
  01 WS-DIR                 PIC X(64) VALUE "build/client-test-glint".
  01 WS-DIR-LENGTH          BINARY-LONG VALUE 23.
@@ -31,6 +32,13 @@
  01 WS-NAME                PIC X(40).
  01 WS-VALUE               PIC X(4096).
  01 WS-LEN                 BINARY-LONG VALUE 3.
+ 01 WS-SPRITE              BINARY-LONG VALUE 1.
+ 01 WS-X0                  FLOAT-SHORT VALUE 100.
+ 01 WS-Y0                  FLOAT-SHORT VALUE 200.
+ 01 WS-X1                  FLOAT-SHORT VALUE 132.
+ 01 WS-Y1                  FLOAT-SHORT VALUE 232.
+ 01 WS-FOIL                BINARY-LONG.
+ 01 WS-OBS                 PIC X(40).
  01 B-IMG                  PIC X(1024) BASED.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
@@ -120,6 +128,115 @@
      MOVE "glint strength defaults to 0.75" TO TL-CASE
      MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
      MOVE "750" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   STACK-FOIL (54 section 19.2): the override when present, else a non-empty enchantments component.
+     MOVE 1 TO PB-ISX-COUNT
+     MOVE 0 TO PB-ISX-ADDED-COUNT
+     CALL "STACK-FOIL" USING PB-ITEMSTACK-X WS-FOIL
+     MOVE "stack foil: no components is no foil" TO TL-CASE
+     MOVE WS-FOIL TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 13 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"02" TO PB-ISX-VALUE(1)(1:1)
+     CALL "STACK-FOIL" USING PB-ITEMSTACK-X WS-FOIL
+     MOVE "stack foil: a non-empty enchantments component is foil" TO TL-CASE
+     MOVE WS-FOIL TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE X"00" TO PB-ISX-VALUE(1)(1:1)
+     CALL "STACK-FOIL" USING PB-ITEMSTACK-X WS-FOIL
+     MOVE "stack foil: an empty enchantments component is no foil" TO TL-CASE
+     MOVE WS-FOIL TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO PB-ISX-ADDED-COUNT
+     MOVE 21 TO PB-ISX-TYPE(2)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(2)
+     MOVE X"01" TO PB-ISX-VALUE(2)(1:1)
+     CALL "STACK-FOIL" USING PB-ITEMSTACK-X WS-FOIL
+     MOVE "stack foil: the override true forces the glint" TO TL-CASE
+     MOVE WS-FOIL TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE X"02" TO PB-ISX-VALUE(1)(1:1)
+     MOVE X"00" TO PB-ISX-VALUE(2)(1:1)
+     CALL "STACK-FOIL" USING PB-ITEMSTACK-X WS-FOIL
+     MOVE "stack foil: the override false suppresses the glint of an enchanted item" TO TL-CASE
+     MOVE WS-FOIL TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   GLINT-ICON: the icon's opaque texels (alpha 26 and up, 0.1) covered by quads, one per run of a row: a 4 x 4 sprite with row 1 opaque at columns 1 and 2 and row 2
+*>   opaque at columns 0 and 3 gives three runs (18 vertices); the first quad is x 108 to 124, y 208 to 216 (8 pixels a texel), its first vertex's glint coordinate the
+*>   atlas coordinate (0.25, 0.25) at scale 8 through GLINT-UV (1.62, 2.32).
+     MOVE 4 TO AT-W AT-H
+     ALLOCATE 64 CHARACTERS INITIALIZED RETURNING AT-ADDR
+     SET ADDRESS OF B-IMG TO AT-ADDR
+     MOVE X"FF" TO B-IMG((1 * 4 + 1) * 4 + 4:1)
+     MOVE X"FF" TO B-IMG((1 * 4 + 2) * 4 + 4:1)
+     MOVE X"FF" TO B-IMG((2 * 4 + 0) * 4 + 4:1)
+     MOVE X"FF" TO B-IMG((2 * 4 + 3) * 4 + 4:1)
+     MOVE X"19" TO B-IMG((3 * 4 + 1) * 4 + 4:1)
+     MOVE 1 TO AT-SPRITE-COUNT
+     MOVE 0 TO AT-X(1) AT-Y(1)
+     MOVE 4 TO AT-SW(1) AT-SH(1)
+     MOVE 0 TO RL-GC-COUNT
+     CALL "GLINT-ICON" USING CLIENT-STATE WS-SPRITE WS-X0 WS-Y0 WS-X1 WS-Y1
+     MOVE "glint icon: three runs of opaque texels are 18 vertices (alpha 25 is under 0.1)" TO TL-CASE
+     MOVE RL-GC-COUNT TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "18" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "glint icon: the first quad's top-left corner is (108, 208)" TO TL-CASE
+     COMPUTE WS-A = RL-GC-X(1)
+     COMPUTE WS-B = RL-GC-Y(1)
+     MOVE WS-A TO WS-UI
+     MOVE WS-B TO WS-VI
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-UI) " " FUNCTION TRIM(WS-VI) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "108 208" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "glint icon: the first quad's third corner is (124, 216)" TO TL-CASE
+     COMPUTE WS-A = RL-GC-X(3)
+     COMPUTE WS-B = RL-GC-Y(3)
+     MOVE WS-A TO WS-UI
+     MOVE WS-B TO WS-VI
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-UI) " " FUNCTION TRIM(WS-VI) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "124 216" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "glint icon: the first vertex's glint coordinate is (1.62, 2.32) hundredths" TO TL-CASE
+     COMPUTE WS-A ROUNDED = RL-GC-U(1) * 100
+     COMPUTE WS-B ROUNDED = RL-GC-V(1) * 100
+     MOVE WS-A TO WS-UI
+     MOVE WS-B TO WS-VI
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-UI) " " FUNCTION TRIM(WS-VI) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "162 232" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "glint icon: brightness is the glint strength (default 0.75), alpha 1" TO TL-CASE
+     COMPUTE WS-A = RL-GC-B(1) * 100
+     COMPUTE WS-B = RL-GC-A(1) * 100
+     MOVE WS-A TO WS-UI
+     MOVE WS-B TO WS-VI
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-UI) " " FUNCTION TRIM(WS-VI) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "75 100" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A full mesh takes no more quads.
+     MOVE 12288 TO RL-GC-COUNT
+     CALL "GLINT-ICON" USING CLIENT-STATE WS-SPRITE WS-X0 WS-Y0 WS-X1 WS-Y1
+     MOVE "glint icon: a full glint icon mesh stays full" TO TL-CASE
+     MOVE RL-GC-COUNT TO WS-E
+     MOVE FUNCTION TRIM(WS-E) TO TL-OBSERVED
+     MOVE "12288" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

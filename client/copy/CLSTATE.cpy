@@ -233,6 +233,9 @@
           15 PL-SLOT-ITEM    BINARY-LONG.
        10 PL-OFFHAND-COUNT   BINARY-LONG.    *> the off-hand stack (menu slot 45, player inventory index 40)
        10 PL-OFFHAND-ITEM    BINARY-LONG.
+       10 PL-STACK-FOIL      BINARY-LONG.
+       10 PL-OFFHAND-FOIL    BINARY-LONG.
+       10 PL-SLOT-FOIL       BINARY-LONG OCCURS 36 TIMES.
        10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
        10 PL-OFFHAND-DAMAGE  BINARY-LONG.
 *>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
@@ -1250,6 +1253,23 @@
           15 RL-GL-R         FLOAT-SHORT.
           15 RL-GL-G         FLOAT-SHORT.
           15 RL-GL-BLUE      FLOAT-SHORT.
+*>     The glint of the item icons (glint.cob GLINT-ICON; UI-SLOT; texture 5, glint pipeline, the UI's matrix): quads over the opaque texels of the icon of each slot whose
+*>     stack has the foil, vertices as RL-IC-VERTEX with the glint coordinates of the item scale 8. PL-STACK-FOIL is the foil decision of the item stack last decoded
+*>     (STACK-FOIL), taken over by the slot the stack is set into; PL-SLOT-FOIL and PL-OFFHAND-FOIL the foil of the player slots 0 to 35 and the off hand.
+       10 RL-GC-COUNT        BINARY-LONG.
+       10 RL-GC-UPLOADED     BINARY-LONG.
+       10 RL-GC-VERTEX OCCURS 12288 TIMES.
+          15 RL-GC-X         FLOAT-SHORT.
+          15 RL-GC-Y         FLOAT-SHORT.
+          15 RL-GC-Z         FLOAT-SHORT.
+          15 RL-GC-U         FLOAT-SHORT.
+          15 RL-GC-V         FLOAT-SHORT.
+          15 RL-GC-B         FLOAT-SHORT.
+          15 RL-GC-A         FLOAT-SHORT.
+          15 RL-GC-SKY       FLOAT-SHORT.
+          15 RL-GC-R         FLOAT-SHORT.
+          15 RL-GC-G         FLOAT-SHORT.
+          15 RL-GC-BLUE      FLOAT-SHORT.
 *>     Item icons of the slot widgets (texture 0), the UI drawn over them (the slot counts,
 *>     texture 2; UI-QUAD writes there while RL-UI-LAYER is 1) and the target highlight
 *>     (eye-relative, texture 2); each with the vertex count last uploaded.

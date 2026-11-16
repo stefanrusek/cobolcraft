@@ -198,6 +198,8 @@
 *> The armour glint of the frame (one mesh, eye-relative, texture 6, glint pipeline).
  78 MESH-SLOT-GLINT         VALUE 65009.
  78 CL-MAX-GLINT-VERTICES   VALUE 8192.
+*> The glint of the item icons (one mesh, the UI's matrix, texture 5, glint pipeline).
+ 78 MESH-SLOT-GLINT-ICONS   VALUE 65010.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
