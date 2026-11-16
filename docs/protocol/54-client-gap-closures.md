@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -716,6 +716,56 @@ All pixels opaque. Worked example: a pixel `A0A0A0` (key index 3) of a `wild` te
 ### 18.6 Apply rules (where they live)
 
 The smithing table result (template + armour + material) and the template tooltips are in 40-3; the stack's `trim` is set to the material found through `provides_trim_material` of the addition slot and the pattern of the template. The creative and recipe-display forms use the `smithing_trim` slot display (05a, with an inline `trim_pattern` holder).
+
+---
+
+## 19. `enchantment_glint_override` (21) and the foil rule: when the glint is drawn and what it looks like
+
+Gap closed: 12 §8.3 states the texture transform and fade constants and describes the glint as a second additive pass; this section adds the component layout, the exact decision of whether a stack has the glint, which drawing paths exist in 26.3 (the item shaders add the glint in the same pass; only armour trims and patterned shields use a separate pass) and the glint-UV rule of the animated items.
+
+### 19.1 The component
+
+| Aspect | Value |
+|---|---|
+| Id, type | 21, `enchantment_glint_override` |
+| Network | Boolean |
+| NBT | Boolean (a Byte 0/1) |
+| Default | absent. (25-6 lists the items whose prototype carries `true`: enchanted golden apple, experience bottle, written book, nether star, enchanted book, end crystal, debug stick.) |
+| Equality | Boolean equality; an explicit `false` is a real value that differs from absence. |
+
+### 19.2 The foil decision (`ItemStack.hasFoil`)
+
+1. If the stack has `enchantment_glint_override`, its value is the answer (`false` suppresses the glint of an enchanted item; `true` forces it).
+2. Otherwise the answer is `Item.isFoil(stack)`: for every item class this is "the `enchantments` component is non-empty" (`ItemStack.isEnchanted`), with one override: the compass class (`CompassItem`) is also foil when the stack has a `lodestone_tracker` component (25-5, any value of the component, enchanted or not; there is no AND with the enchantments).
+3. `stored_enchantments`, `potion_contents`, `trim`, rarity and the `enchantable` component do not give foil. Potions have no glint in 26.3 (no override in the potion class or its prototype).
+4. The decision is made at draw time from the stack; it is not stored. The tooltip name colour uses the rarity component (default `common`), raised when the stack is enchanted (`enchantments` non-empty, independent of the override): `common` and `uncommon` become `rare`, `rare` becomes `epic`, `epic` stays `epic` (`ItemStack.getRarity`).
+
+### 19.3 Where the glint is drawn
+
+| Case | Behaviour |
+|---|---|
+| Item models (inventory slot, hand, item frame, dropped item, shelf) | The item's quads are drawn once with a pipeline that has the `GLINT` shader define: after the base colour has been multiplied by the lightmap (and the damage-flash overlay mixed in), the shader adds the glint and then applies fog. The added term per colour channel is `(GlintAlpha * g)^2`, where `g` is the glint texture sample and `GlintAlpha` the "glint strength" option (12 §8.3 and 13: default 0.75, range 0 to 1). This equals the additive blend source colour times source colour that 12 §8.3 describes (the shader comment says it matches the GLINT blend function). The alpha channel of the item is not changed in the item shader. |
+| Texture and transform for items | `textures/misc/enchanted_glint_item.png` (128 x 128 RGB, with the `blur` texture flag set), sampled through the texture matrix `GLINT_TEXTURING` = `setupGlintTexturing(8.0)` of 12 §8.3 (scroll speed from the "glint speed" option, rotation 10 degrees, scale 8). |
+| Entity models drawn with a solid-entity pipeline (for example a held item shown through an entity render type) | The entity shader adds the same `(GlintAlpha * g)^2` and additionally forces the output alpha to at least `GlintAlpha`; the texture matrix is `setupGlintTexturing(0.16)` (`ENTITY_GLINT_TEXTURING`). |
+| Armour (the first base layer, only when the stack has the foil **and no trim**) | Render type `armorCutoutNoCullGlint`: texture `textures/misc/enchanted_glint_armor.png` (128 x 128, `blur` flag set), texture matrix `setupGlintTexturing(0.5)` (`ARMOR_ENTITY_GLINT_TEXTURING`). |
+| Armour with a trim | The base layers are drawn without the glint. After the trim layer (18.4), a separate pass with render type `trimmedArmorGlint` draws the whole armour model again with the plain `GLINT` pipeline (additive, as 12 §8.3), the armour glint texture, texture matrix scale 0.5, and a small view-space Z offset so it lies over the trim. This pass is made only when the stack has the foil and a trim. |
+| Patterned shield (banner on a shield) | One extra pass `patterned_shield_glint` with the plain `GLINT` pipeline, the item glint texture and the entity matrix (scale 0.16). |
+| Two foil kinds for item models | A model's layer is marked STANDARD or SPECIAL foil. SPECIAL is used for stacks of the item tag `compasses` and for the `clock` item (the two items whose icon texture is an animated, frame-swapping sprite); everything else, and every special (block-entity style) model wrapper, is STANDARD. |
+| SPECIAL glint coordinates | In the SPECIAL pipelines (define `GLINT_SPECIAL`) the glint texture coordinate does not come from the item texture coordinate (which changes with each animation frame) but from a separate per-vertex coordinate generated from the quad's geometry: the same projection that the destroy-overlay decal uses (12 §4.3 "sheeted decal" UV generation, the vertex position transformed by the inverse of the item pose, projected on the plane of the face nearest to the quad's transformed normal), with scale `1/128` (the constant `0.0078125`). The result is then passed through the same texture matrix as above. So a compass or clock glint is a fixed pattern in model space that scrolls, instead of following the animation frames. |
+| Translucent items | The translucent item pipelines have the same two variants (`item_translucent_glint`, `item_translucent_glint_special`) and the same shader term; the order-independent-transparency variants use the same define. |
+| Item entities and GUI | Use the same item-model path (above); the glint is drawn whenever `hasFoil` is true for the stack. In the inventory screen it uses the same pipelines. |
+
+### 19.4 Constants summary
+
+| Quantity | Value |
+|---|---|
+| Glint texture size | 128 x 128 (item: RGB, armour: palettised), both with the `blur` flag |
+| Scroll formula | 12 §8.3: `t = ms * glintSpeed * 8.0`; translate `(-(t mod 110000) / 110000, (t mod 30000) / 30000)`, rotate Z by `0.17453292` rad, then scale |
+| Texture scale | items 8.0, entity models 0.16, armour 0.5 |
+| Strength | `GlintAlpha` = the glint strength option, default 0.75 |
+| Added colour | `rgb += (GlintAlpha * sample.rgb)^2` per channel, before fog |
+| SPECIAL coordinate scale | `1/128` |
+| `MAX_ENCHANTMENT_GLINT_SPEED_MILLIS` | 8.0 (the factor applied to the speed option in the formula above) |
 
 ---
 
