@@ -968,6 +968,12 @@
      IF EN-USED(WS-ROW) = 0 OR EN-HEALTH(WS-ROW) = 0
          GOBACK
      END-IF
+     IF SM-KEY(WS-M) = "zombie_villager"
+         CALL "ZV-TICK" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
      CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW

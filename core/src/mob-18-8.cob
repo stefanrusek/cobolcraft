@@ -1342,7 +1342,7 @@
 *> USING connection id, PLAY-SERVERBOUND (a decoded Interact 0x1A): the main hand of an alive player on a standard passive mob of its dimension that is alive and whose box is
 *> within the attack reach: shears on a sheep (MOB-SHEAR-USE), an empty bucket on a cow or mooshroom (MOB-MILK-USE), shears or a bowl on a mooshroom (MOB-MOOSHROOM-USE),
 *> otherwise the held item as animal food (MOB-FEED-USE). A wolf: MOB-WOLF-USE; iron ingots on an iron golem: MOB-GOLEM-USE; flint and steel or a fire charge on a creeper:
-*> STDMOB-IGNITE (a creeper is the only monster that handles an interaction). Anything else, and the off hand, is not handled yet.
+*> STDMOB-IGNITE (a creeper is the only monster that handles an interaction). A golden apple on a zombie villager with Weakness: ZV-USE (T8102). Anything else, and the off hand, is not handled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1395,7 +1395,7 @@
      IF WS-M = 0
          GOBACK
      END-IF
-     IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0
+     IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0 AND SM-KEY(WS-M) NOT = "zombie_villager"
          GOBACK
      END-IF
      COMPUTE WS-TYPE = EN-TYPE(WS-ENTITY) + 1
@@ -1447,6 +1447,8 @@
              CALL "MOB-PARROT-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "cat" OR "ocelot"
              CALL "MOB-CAT-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "zombie_villager"
+             CALL "ZV-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
          WHEN WS-KEY = "piglin"
              CALL "PIGLIN-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
          WHEN WS-KEY = "iron_golem" AND WS-HELD = "iron_ingot"
