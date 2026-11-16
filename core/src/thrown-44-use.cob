@@ -190,6 +190,8 @@
                          CALL "FIREWORK-STEP" USING WS-ROW
                      WHEN 9
                          CALL "LIGHTNING-STEP" USING WS-ROW
+                     WHEN 10
+                         CALL "MINECART-STEP" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF
