@@ -11,6 +11,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY PROJSTATE.
  01 WS-ROW                 BINARY-LONG.
  01 WS-KEY                 PIC X(48).
  01 WS-KIND                BINARY-LONG.
@@ -37,9 +38,13 @@
  01 WS-MC                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG VALUE 1.
  01 WS-WIDTHS.
-    05 WS-W                BINARY-LONG OCCURS 8 TIMES VALUE 1.
+    05 WS-W                BINARY-LONG OCCURS 64 TIMES VALUE 1.
  01 WS-HEIGHTS.
-    05 WS-H                BINARY-LONG OCCURS 8 TIMES VALUE 1.
+    05 WS-H                BINARY-LONG OCCURS 64 TIMES VALUE 1.
+ 01 WS-IDS.
+    05 WS-VID              BINARY-LONG OCCURS 64 TIMES VALUE 0.
+ 01 WS-VCOUNT              BINARY-LONG.
+ 01 WS-PSLOT               BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -117,8 +122,19 @@
                  CALL "CRYSTAL-PLACE" USING WS-ROW PSB-BX PSB-BY PSB-BZ WS-PLACED-FLAG
              END-IF
          WHEN 3
+             CALL "PAINTING-VARIANTS" USING WS-VCOUNT WS-IDS WS-WIDTHS WS-HEIGHTS
+             IF WS-VCOUNT = 0
+                 MOVE 1 TO WS-COUNT
+                 MOVE 1 TO WS-W(1) WS-H(1)
+             ELSE
+                 MOVE WS-VCOUNT TO WS-COUNT
+             END-IF
              CALL "PAINTING-PLACE" USING PL-DIM(WS-ROW) PSB-BX PSB-BY PSB-BZ PSB-FACE WS-COUNT WS-WIDTHS WS-HEIGHTS WS-NEW
              IF WS-NEW > 0
+                 IF WS-VCOUNT > 0
+                     CALL "PJ-FIND" USING EN-ID(WS-NEW) WS-PSLOT
+                     MOVE WS-VID(PJ-I4(WS-PSLOT)) TO PJ-I4(WS-PSLOT)
+                 END-IF
                  CALL "MOB-TAKE" USING WS-ROW
              END-IF
          WHEN OTHER
