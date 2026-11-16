@@ -576,9 +576,8 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
- 01 WS-DRAW                BINARY-LONG.
- 01 WS-HOLD-X              BINARY-LONG.
- 01 WS-HOLD-Y              BINARY-LONG.
+ 01 WS-ORDERS.
+    05 WS-ORDER            BINARY-LONG OCCURS 121 TIMES.
  01 WS-ID                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-G                    BINARY-LONG.
@@ -595,21 +594,16 @@
              END-IF
          END-PERFORM
      END-PERFORM
-*>   Util.shuffle: from the size down to 2, swap the element i - 1 (1-based i) with the element nextInt(i)
-     PERFORM VARYING WS-I FROM WS-N BY -1 UNTIL WS-I < 2
-         CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-I WS-DRAW
-         COMPUTE WS-J = WS-DRAW + 1
-         MOVE WS-CX(WS-I) TO WS-HOLD-X
-         MOVE WS-CY(WS-I) TO WS-HOLD-Y
-         MOVE WS-CX(WS-J) TO WS-CX(WS-I)
-         MOVE WS-CY(WS-J) TO WS-CY(WS-I)
-         MOVE WS-HOLD-X TO WS-CX(WS-J)
-         MOVE WS-HOLD-Y TO WS-CY(WS-J)
+*>   Util.shuffle (35-5 1.2) of the cell numbers
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         MOVE WS-I TO WS-ORDER(WS-I)
      END-PERFORM
+     CALL "F355-SHUFFLE" USING WS-ORDERS WS-N SP-RNG
      MOVE 10 TO WS-ID
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-         MOVE WS-CX(WS-I) TO WS-X
-         MOVE WS-CY(WS-I) TO WS-Y
+         MOVE WS-ORDER(WS-I) TO WS-J
+         MOVE WS-CX(WS-J) TO WS-X
+         MOVE WS-CY(WS-J) TO WS-Y
          CALL "MNG-GET" USING L-ROOMS WS-X WS-Y WS-V
          IF WS-V = 0
              CALL "MNG-ROOM" USING L-G L-ROOMS WS-X WS-Y WS-ID
