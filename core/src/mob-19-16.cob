@@ -1,7 +1,8 @@
 *> Bee (002-lane-mobsfull-h20; docs/protocol/19-mobs-land-friendly-and-neutral.md section 16), without a hive: it is a neutral mob (SM-NEUTRAL 5) that a hit by a player angers
 *> (NETHER-HURT: anger, the player as target, every bee within the follow range alerted; NETHER-AGGRO counts it down), it walks at its target and stings it once, then it is stung and dies
 *> by the sting countdown. In water for more than 20 consecutive ticks it takes 1 drowning damage a tick. The flags byte of metadata 18 is 2 rolling, 4 stung, 8 nectar (MOB-DATA-VALUES).
-*> Open items: flight (BeeAttack 1.4, the flying speed), the hive (entering and leaving, nest search, honey), flowers and pollination (the nectar flag, crops grown, the timings of the
+*> Flowers, pollination and the hive trips are in core/src/mob-44-k.cob (M44-BEE-BRAIN, 002-lane-mobsa4).
+*> Open items: flight (BeeAttack 1.4, the flying speed), crops grown (the timings of the
 *> flower and hive goals are not in the docs), the anger end time (metadata 19), the stinger count of the victim, the sting damage type for death messages (mob_attack is used), temptation
 *> and growing up faster.
 *>
@@ -67,6 +68,7 @@
  01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
  01 WS-FLAGS               BINARY-LONG VALUE 6.
  01 WS-CAUSE-MOB           BINARY-LONG VALUE CAUSE-MOB.
+ 01 WS-NECTAR-BEFORE       BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -154,6 +156,12 @@
      END-IF
      IF WS-ROLL NOT = EN-BEE-ROLL(L-ROW)
          MOVE WS-ROLL TO EN-BEE-ROLL(L-ROW)
+         CALL "MOB-DATA-SEND" USING L-ROW
+     END-IF
+*>   Flowers, pollination and the hive (core/src/mob-44-k.cob); the nectar flag is metadata 18 bit 8. A bee that went into a hive is no longer a row.
+     MOVE EN-BEE-NECTAR(L-ROW) TO WS-NECTAR-BEFORE
+     CALL "M44-BEE-BRAIN" USING L-ROW
+     IF EN-USED(L-ROW) = 1 AND EN-BEE-NECTAR(L-ROW) NOT = WS-NECTAR-BEFORE
          CALL "MOB-DATA-SEND" USING L-ROW
      END-IF
      GOBACK.

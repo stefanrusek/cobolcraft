@@ -501,6 +501,22 @@
        10 EN-ALLAY-NB-X       BINARY-LONG.
        10 EN-ALLAY-NB-Y       BINARY-LONG.
        10 EN-ALLAY-NB-Z       BINARY-LONG.
+*>     --- 002-lane-mobsa4: bee flowers and hive trips (core/src/mob-44-k.cob) ---
+       10 EN-BEE-FL-ON         BINARY-LONG.        *> bee: 1 while a flower position is remembered
+       10 EN-BEE-FL-X          BINARY-LONG.
+       10 EN-BEE-FL-Y          BINARY-LONG.
+       10 EN-BEE-FL-Z          BINARY-LONG.
+       10 EN-BEE-HV-ON         BINARY-LONG.        *> bee: 1 while a hive position is remembered
+       10 EN-BEE-HV-X          BINARY-LONG.
+       10 EN-BEE-HV-Y          BINARY-LONG.
+       10 EN-BEE-HV-Z          BINARY-LONG.
+       10 EN-BEE-STAY          BINARY-LONG.        *> bee: stayOutOfHiveCountdown
+       10 EN-BEE-NONECT        BINARY-LONG.        *> bee: ticks since the last pollination
+       10 EN-BEE-VAL           BINARY-LONG.        *> bee: ticks until the flower and hive are validated again
+       10 EN-BEE-LOC           BINARY-LONG.        *> bee: ticks until it looks for a hive again
+       10 EN-BEE-TRIP          BINARY-LONG.        *> bee: ticks travelled toward the hive (given up after 2400)
+       10 EN-BEE-HOX           FLOAT-LONG.         *> bee: the hover offset above a flower
+       10 EN-BEE-HOZ           FLOAT-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
