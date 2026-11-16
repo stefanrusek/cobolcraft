@@ -346,6 +346,9 @@
  01 WS-SERIALIZER          BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
  01 WS-EXTRA               BINARY-LONG.
+ 01 WS-CONVERT             BINARY-LONG.
+ 01 WS-ZSLOT               BINARY-LONG.
+ 01 WS-ZNO                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
@@ -397,6 +400,20 @@
                  MOVE EN-VARIANT(L-ROW) TO WS-VALUE
          END-EVALUATE
      END-IF
+*>   A converting zombie villager (curing started, ZVCURE.cpy) adds index 19 BOOLEAN true (20 section 4.2), or is the only entry.
+     MOVE 0 TO WS-CONVERT
+     IF WS-M > 0 AND SM-KEY(WS-M) = "zombie_villager"
+         CALL "ZC-FIND" USING EN-ID(L-ROW) WS-ZNO WS-ZSLOT
+         IF WS-ZSLOT > 0
+             MOVE 1 TO WS-CONVERT
+         END-IF
+     END-IF
+     IF WS-CONVERT = 1 AND WS-INDEX = 0
+         MOVE 19 TO WS-INDEX
+         MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+         MOVE 1 TO WS-VALUE
+         MOVE 0 TO WS-CONVERT
+     END-IF
 *>   An ignited creeper (metadata 18 BOOLEAN true, 6.1) follows the powered entry, or is the only one.
      IF WS-M > 0 AND SM-KEY(WS-M) = "creeper" AND EN-IGNITED(L-ROW) = 1
          IF WS-INDEX = 0
@@ -417,6 +434,12 @@
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
          IF WS-EXTRA = 1
              MOVE 18 TO MD-MD-INDEX
+             MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+             MOVE 1 TO MD-MD-INT
+             CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         END-IF
+         IF WS-CONVERT = 1
+             MOVE 19 TO MD-MD-INDEX
              MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
              MOVE 1 TO MD-MD-INT
              CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY

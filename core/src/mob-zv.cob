@@ -5,6 +5,9 @@
 *>   ZV-USE USING player row, entity row, held key, used out   a golden apple on a zombie villager with Weakness starts the cure
 *>   ZV-TICK USING entity row                                  one tick: the progress, the speed-up blocks, the conversion at 0 (the row may be gone afterwards)
 *>   VL-TRANSFER USING old entity id, new entity id            the villager state and gossip of the old entity belong to the new one
+*>   ZV-KILL-RULE USING difficulty, coin, killer key, yes out  20 section 4 killedEntity: Hard always, Normal on a coin, a zombie family killer
+*>   ZV-KILLED USING victim row, killer row, converted out     a villager killed by a zombie becomes a zombie villager (the caller does not run the death)
+*>   ZV-DROP-EQUIP USING entity row                            dropPreservedEquipment: the armour and the main-hand item as ground items
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ZC-FIND.
@@ -123,6 +126,7 @@
      CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ENTITY) WS-EVENT PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING L-ENTITY PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
+     CALL "STDMOB-VARIANT-SEND" USING L-ENTITY
      MOVE 1 TO L-USED
      GOBACK.
  END PROGRAM ZV-USE.
@@ -179,6 +183,7 @@
      COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
      COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
      CALL "LEVEL-EVENT" USING WS-DIM WS-EVENT WS-BX WS-BY WS-BZ WS-ZERO WS-NO-PLAYER
+     CALL "ZV-DROP-EQUIP" USING L-ROW
      CALL "ENTITY-REMOVE" USING L-ROW
      GOBACK.
  END PROGRAM ZV-CONVERT.
@@ -262,3 +267,134 @@
          END-IF
      END-IF.
  END PROGRAM ZV-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ZV-KILL-RULE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIFF                  BINARY-LONG.
+ 01 L-COIN                  BINARY-LONG.
+ 01 L-KILLER                PIC X(24).
+ 01 L-YES                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIFF L-COIN L-KILLER L-YES.
+     MOVE 0 TO L-YES
+     IF L-KILLER = "zombie" OR "husk" OR "drowned" OR "zombie_villager"
+         IF L-DIFF = 3 OR (L-DIFF = 2 AND L-COIN = 1)
+             MOVE 1 TO L-YES
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ZV-KILL-RULE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ZV-KILLED.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ 01 WS-KEY24                PIC X(24).
+ 01 WS-SALT                 BINARY-LONG VALUE 851.
+ 01 WS-TWO                  BINARY-LONG VALUE 2.
+ 01 WS-COIN                 BINARY-LONG.
+ 01 WS-YES                  BINARY-LONG.
+ 01 WS-KEY                  PIC X(112).
+ 01 WS-ENTITY-ROW           PIC X(66).
+ 01 WS-STATUS               BINARY-LONG.
+ 01 WS-TYPE                 BINARY-LONG.
+ 01 WS-NEW                  BINARY-LONG.
+ 01 WS-OLD                  BINARY-LONG.
+ 01 WS-X                    FLOAT-LONG.
+ 01 WS-Y                    FLOAT-LONG.
+ 01 WS-Z                    FLOAT-LONG.
+ 01 WS-YAW                  FLOAT-SHORT.
+ 01 WS-DIM                  BINARY-LONG.
+ 01 WS-BX                   BINARY-LONG.
+ 01 WS-BY                   BINARY-LONG.
+ 01 WS-BZ                   BINARY-LONG.
+ 01 WS-EVENT                BINARY-LONG VALUE 1026.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-NO-PLAYER            BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-VICTIM                BINARY-LONG.
+ 01 L-KILLER                BINARY-LONG.
+ 01 L-CONVERTED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-VICTIM L-KILLER L-CONVERTED.
+     MOVE 0 TO L-CONVERTED
+     CALL "MOB-SPECIES-KEY" USING L-KILLER WS-KEY24
+     CALL "XP-RANDOM" USING WS-SALT WS-TWO WS-COIN
+     CALL "ZV-KILL-RULE" USING BW-DIFFICULTY WS-COIN WS-KEY24 WS-YES
+     IF WS-YES = 0
+         GOBACK
+     END-IF
+     MOVE "minecraft:zombie_villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE EN-X(L-VICTIM) TO WS-X
+     MOVE EN-Y(L-VICTIM) TO WS-Y
+     MOVE EN-Z(L-VICTIM) TO WS-Z
+     MOVE EN-YAW(L-VICTIM) TO WS-YAW
+     MOVE EN-DIM(L-VICTIM) TO WS-DIM
+     MOVE EN-ID(L-VICTIM) TO WS-OLD
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+     CALL "VL-TRANSFER" USING WS-OLD EN-ID(WS-NEW)
+     IF EN-MOBAGE(L-VICTIM) < 0
+         MOVE EN-MOBAGE(L-VICTIM) TO EN-MOBAGE(WS-NEW)
+         MOVE 1 TO EN-VARIANT(WS-NEW)
+         CALL "STDMOB-VARIANT-SEND" USING WS-NEW
+     END-IF
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     CALL "LEVEL-EVENT" USING WS-DIM WS-EVENT WS-BX WS-BY WS-BZ WS-ZERO WS-NO-PLAYER
+     CALL "ENTITY-REMOVE" USING L-VICTIM
+     MOVE 1 TO L-CONVERTED
+     GOBACK.
+ END PROGRAM ZV-KILLED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ZV-DROP-EQUIP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SLOTS                BINARY-LONG.
+ 01 WS-TIER                 BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-KEY40                PIC X(40).
+ 01 WS-KEY32                PIC X(32).
+ 01 WS-ITEM                 BINARY-LONG.
+ 01 WS-ONE                  BINARY-LONG VALUE 1.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-DELAY                BINARY-LONG VALUE 10.
+ 01 WS-DROP                 BINARY-LONG.
+ 01 WS-X                    FLOAT-LONG.
+ 01 WS-Y                    FLOAT-LONG.
+ 01 WS-Z                    FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     IF EN-EQUIP(L-ROW) > 0
+         COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
+         COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
+             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
+             PERFORM DROP-KEY
+         END-PERFORM
+     END-IF
+     IF EN-HAND(L-ROW) > 0
+         CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-KEY40
+         PERFORM DROP-KEY
+     END-IF
+     GOBACK.
+
+ DROP-KEY.
+     MOVE SPACES TO WS-KEY32
+     IF WS-KEY40(1:10) = "minecraft:"
+         MOVE WS-KEY40(11:30) TO WS-KEY32
+     END-IF
+     CALL "MERCHANT-ITEM-ID" USING WS-KEY32 WS-ITEM
+     IF WS-ITEM >= 0
+         CALL "GI-SPAWN-RANDOM" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-ITEM WS-ONE WS-ZERO WS-DELAY WS-DROP
+     END-IF.
+ END PROGRAM ZV-DROP-EQUIP.
