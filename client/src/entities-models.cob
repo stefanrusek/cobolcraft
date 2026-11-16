@@ -305,7 +305,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 24 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 32 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
@@ -349,7 +349,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 24 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 32 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -479,7 +479,10 @@
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
-     MOVE EN-SQ(WS-ROW) TO WS-KN(24)
+     COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
+     MOVE EN-XR(WS-ROW) TO WS-KN(25)
+     MOVE EN-ZR(WS-ROW) TO WS-KN(26)
+     MOVE EN-DRY(WS-ROW) TO WS-KN(27)
 *>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
 *>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
 *>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
@@ -617,6 +620,9 @@
      MOVE WS-SWARM TO WS-ST(21)
      MOVE WS-AGG TO WS-ST(18)
      MOVE WS-MAINARM TO WS-ST(13)
+*>   Extra inputs of ENTITY-POSE-MORE: 16 the squid's tentacle angle, 15 the dry flag of an aquatic mob.
+     MOVE EN-TA(WS-ROW) TO WS-I(16)
+     MOVE EN-DRY(WS-ROW) TO WS-I(15)
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
@@ -696,11 +702,16 @@
 *>   The render sequence of the body yaw (the replica's yaw): operations in the order EF7-SETUP-ROTATIONS lists them.
      MOVE 0 TO WS-SRI(1) WS-SRI(2) WS-SRI(4) WS-SRI(5)
      MOVE EN-YAW(WS-ROW) TO WS-SRI(3)
-     IF WS-ANIM = "B"
-         CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
-     ELSE
-         CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
-     END-IF
+     EVALUATE TRUE
+         WHEN WS-ANIM = "B"
+             CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "squid" OR "glow_squid"
+             CALL "ENTITY-SQUID-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
+             CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN OTHER
+             CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
+     END-EVALUATE
      MOVE WS-SRO(1) TO WS-NOPS
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
@@ -835,6 +846,11 @@
                                  COMPUTE WS-T = WS-Y * WS-OP-COS(WS-J) - WS-Z * WS-OP-SIN(WS-J)
                                  COMPUTE WS-Z = WS-Y * WS-OP-SIN(WS-J) + WS-Z * WS-OP-COS(WS-J)
                                  MOVE WS-T TO WS-Y
+                             WHEN 7
+*>                               rotation about Z by the listed degrees
+                                 COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) - WS-Y * WS-OP-SIN(WS-J)
+                                 COMPUTE WS-Y = WS-X * WS-OP-SIN(WS-J) + WS-Y * WS-OP-COS(WS-J)
+                                 MOVE WS-T TO WS-X
                              WHEN OTHER
 *>                               rotation about Y by the listed degrees
                                  COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) + WS-Z * WS-OP-SIN(WS-J)

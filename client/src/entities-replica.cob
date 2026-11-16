@@ -241,6 +241,9 @@
                  MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
                  MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE 0 TO EN-SQ(WS-ROW) EN-SQ-OLD(WS-ROW) EN-SQ-TGT(WS-ROW) EN-WOG(WS-ROW)
+                 MOVE 0 TO EN-DRY(WS-ROW) EN-TM(WS-ROW) EN-TA(WS-ROW) EN-RS(WS-ROW) EN-XR(WS-ROW) EN-ZR(WS-ROW)
+*>               The squid's tentacle speed, 0.1 to 0.2 (21 section 4.5 draws it at random; the client keeps a value from the entity id).
+                 COMPUTE EN-TS(WS-ROW) = 0.1 + FUNCTION MOD(WS-ID * 37, 100) / 1000
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)
                  MOVE 0 TO EN-X1(WS-ROW) EN-OVL(WS-ROW) EN-OVN(WS-ROW)
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8

@@ -698,6 +698,15 @@
           15 EN-SQ-OLD       FLOAT-LONG.
           15 EN-SQ-TGT       FLOAT-LONG.
           15 EN-WOG          PIC 9.
+*>        Aquatic state (ENTITIES-ANIM-TICK, 34-8 sections 2 and 5): EN-DRY 1 when an aquatic mob's box middle is not in water (0 until a tick says so),
+*>        the squid's tentacle movement, speed (0.1 to 0.2 from the entity id), angle, rotate speed, xBodyRot and zBodyRot in degrees.
+          15 EN-DRY          PIC 9.
+          15 EN-TM           FLOAT-LONG.
+          15 EN-TS           FLOAT-LONG.
+          15 EN-TA           FLOAT-LONG.
+          15 EN-RS           FLOAT-LONG.
+          15 EN-XR           FLOAT-LONG.
+          15 EN-ZR           FLOAT-LONG.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the

@@ -21,6 +21,8 @@
  01 WS-TARGET              FLOAT-LONG.
  01 WS-SMOOTH              FLOAT-LONG.
  01 WS-SCALE               FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-WET                 BINARY-LONG.
  01 WS-CI.
     05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
  01 WS-CO.
@@ -33,6 +35,7 @@
              COMPUTE WS-DX = EN-X(WS-R) - EN-OX(WS-R)
              COMPUTE WS-DY = EN-Y(WS-R) - EN-OY(WS-R)
              COMPUTE WS-DZ = EN-Z(WS-R) - EN-OZ(WS-R)
+             MOVE WS-DY TO WS-VY
              IF EN-KEY(WS-R) NOT = "bee" AND EN-KEY(WS-R) NOT = "parrot"
                  MOVE 0 TO WS-DY
              END-IF
@@ -90,6 +93,34 @@
                  MOVE WS-COV(2) TO EN-SQ(WS-R)
                  MOVE WS-COV(3) TO EN-SQ-TGT(WS-R)
                  MOVE WS-COV(4) TO EN-WOG(WS-R)
+             END-IF
+*>           The aquatic mobs: whether the middle of the box is in water (34-8 5: a fish out of water lies on its side).
+             IF EN-KEY(WS-R) = "squid" OR "glow_squid" OR "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
+                 CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
+                 COMPUTE EN-DRY(WS-R) = 1 - WS-WET
+             END-IF
+*>           The squid (34-8 2, Squid.aiStep on the client: steps 2 to 4 with the position change as the delta movement): tentacle movement, angle and rotate speed,
+*>           then the body rotations. yBodyRot is the replica's yaw (the server sends it).
+             IF EN-KEY(WS-R) = "squid" OR "glow_squid"
+                 MOVE EN-TM(WS-R) TO WS-CIV(1)
+                 MOVE EN-TS(WS-R) TO WS-CIV(2)
+                 COMPUTE WS-CIV(3) = 1 - EN-DRY(WS-R)
+                 MOVE EN-RS(WS-R) TO WS-CIV(4)
+                 CALL "EF8-SQUID-TENTACLE" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-TM(WS-R)
+                 MOVE WS-COV(2) TO EN-TA(WS-R)
+                 MOVE WS-COV(3) TO EN-RS(WS-R)
+                 COMPUTE WS-CIV(1) = 1 - EN-DRY(WS-R)
+                 MOVE EN-RS(WS-R) TO WS-CIV(2)
+                 MOVE EN-YAW(WS-R) TO WS-CIV(3)
+                 MOVE EN-ZR(WS-R) TO WS-CIV(4)
+                 MOVE EN-XR(WS-R) TO WS-CIV(5)
+                 MOVE WS-DX TO WS-CIV(6)
+                 MOVE WS-VY TO WS-CIV(7)
+                 MOVE WS-DZ TO WS-CIV(8)
+                 CALL "EF8-SQUID-BODY" USING WS-CI WS-CO
+                 MOVE WS-COV(2) TO EN-ZR(WS-R)
+                 MOVE WS-COV(3) TO EN-XR(WS-R)
              END-IF
              ADD 1 TO EN-AGE(WS-R)
              MOVE EN-X(WS-R) TO EN-OX(WS-R)
@@ -226,3 +257,53 @@
      MOVE WS-COV(2) TO L-Y
      GOBACK.
  END PROGRAM ENTITY-CUBE-SCALE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-IN-WATER.
+*> USING CLIENT-STATE, replica row, in water out (BINARY-LONG 0 or 1): 1 when the block cell at the middle of the entity's box (x, y + height / 2, z) holds water
+*> (ST-FLUID 1; a cell of an unloaded chunk is air).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WET                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-WET.
+     CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+     COMPUTE WS-X = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-Y = FUNCTION INTEGER(EN-Y(L-ROW) + EN-BOX-HEIGHT(L-ROW) / 2)
+     COMPUTE WS-Z = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLK
+     MOVE 0 TO L-WET
+     IF ST-FLUID(WS-STATE + 1) = 1
+         MOVE 1 TO L-WET
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-IN-WATER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-EVENT.
+*> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 19 resets a squid's tentacle movement to 0 ("squid animation sync"). Another event or an unknown id
+*> changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-EVENT.
+     CALL "ENTITY-FIND" USING CLIENT-STATE L-ID WS-ROW
+     IF WS-ROW > 0
+         IF L-EVENT = 19
+             MOVE 0 TO EN-TM(WS-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-EVENT.
