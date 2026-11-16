@@ -364,6 +364,7 @@
  01 WS-DROP-TOOL           BINARY-LONG VALUE 0.
  01 WS-DROP-SET            BINARY-LONG VALUE 1.
  01 WS-DECAY-RULE           PIC X(40) VALUE "mob_explosion_drop_decay".
+ 01 WS-TNT-DECAY-RULE       PIC X(40) VALUE "tnt_explosion_drop_decay".
  01 WS-DECAY                BINARY-DOUBLE.
  01 WS-KNOCK.
     05 WS-KN OCCURS 64 TIMES.
@@ -487,6 +488,11 @@
      MOVE 1 TO WS-DROP-SET
      IF L-SOURCE > 0
          CALL "BR-RULE-GET" USING WS-DECAY-RULE WS-DECAY
+         MOVE WS-DECAY TO WS-DROP-SET
+     END-IF
+*>   A primed TNT passes the source -1: its drops decay only while tnt_explosion_drop_decay is true (default false; 33 section 8.3).
+     IF L-SOURCE = -1
+         CALL "BR-RULE-GET" USING WS-TNT-DECAY-RULE WS-DECAY
          MOVE WS-DECAY TO WS-DROP-SET
      END-IF
      IF L-DESTROY = 1

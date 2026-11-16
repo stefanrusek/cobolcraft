@@ -70,9 +70,16 @@
      MOVE "commands.teleport.success.location.single(Alice,1.000000,2.0" & "00000,3.000000)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
-     MOVE "acceptance US13 /teleport relative components are the target" & "'s plus the offset" TO TL-CASE
+     MOVE "acceptance US13 /teleport relative components are the executor's plus the offset, resolved once (54 s9.3)" TO TL-CASE
+     MOVE "tp Opal 10 20 30" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "tp Alice ~1 ~ ~-1" TO WS-LINE
-     MOVE "commands.teleport.success.location.single(Alice,2.000000,2.0" & "00000,2.000000)" TO WS-EXPECTED
+     MOVE "commands.teleport.success.location.single(Alice,11.500000,2" & "0.000000,29.500000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport several targets with a relative location all go to the one point resolved against the executor (54 s9.3)" TO TL-CASE
+     MOVE "tp @a ~ ~1 ~" TO WS-LINE
+     MOVE "commands.teleport.success.location.multiple(3,10.500000,21.0" & "00000,30.500000)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /teleport teleport to an entity: Teleported " & "Alice to Bob" TO TL-CASE

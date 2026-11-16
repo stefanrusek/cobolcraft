@@ -2006,6 +2006,8 @@
              CALL "CX-DATAPACK"
          WHEN BC-DATA
              CALL "CX-DATA"
+         WHEN BC-COMPUTE
+             CALL "CX-COMPUTE"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE

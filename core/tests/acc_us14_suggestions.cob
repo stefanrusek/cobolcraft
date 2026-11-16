@@ -119,6 +119,8 @@
      MOVE "7 5 2 [Alfred,Alice] | 8 0 0 []" TO TL-EXPECTED
      COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-LINE TRAILING))
      CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
+*>   One answer per player per tick (54 section 14.1): the first request is answered by a tick of its own.
+     CALL "CMD-SUGGEST-FLUSH"
      MOVE 8 TO WS-TRANSACTION
      MOVE "/frobnicate x" TO WS-LINE
      MOVE 13 TO WS-LENGTH

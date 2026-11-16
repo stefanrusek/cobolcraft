@@ -193,6 +193,10 @@
          CALL "HUNGER-EXHAUST" USING L-ROW WS-EXHAUST
          GOBACK
      END-IF
+     IF L-EFFECT = 22
+         PERFORM SATURATION-APPLY
+         GOBACK
+     END-IF
      MOVE 0 TO WS-BASE
      EVALUATE L-EFFECT
          WHEN 18
@@ -233,6 +237,13 @@
              END-IF
      END-EVALUATE
      GOBACK.
+
+*>   saturation (22; 54 section 11): one application is eat(amplifier + 1, 1.0): food + a + 1 up to the maximum, saturation + (a + 1) x 2
+*>   up to the food level; an instant effect applies on each tick it is held (the duration step is EFFECTS-TICK's).
+ SATURATION-APPLY.
+     COMPUTE PL-FOOD(L-ROW) = FUNCTION MIN(RULE-MAX-FOOD, PL-FOOD(L-ROW) + L-AMPLIFIER + 1)
+     COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-FOOD(L-ROW), PL-SATURATION(L-ROW) + (L-AMPLIFIER + 1) * 2)
+     CALL "HEALTH-SEND" USING L-ROW.
  END PROGRAM EFFECT-PERIODIC.
 
  IDENTIFICATION DIVISION.

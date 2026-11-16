@@ -163,6 +163,35 @@
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
      MOVE "1 34 0 [ambient,block,hostile,master,music,neutral,player,record,ui,voice,weather]" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+*>   Audible distance (54 s10): range 16 (16 x volume above 1); outside it nothing is sent unless minVolume > 0, then the sound is
+*>   placed 2 blocks from the listener towards the point at volume minVolume. Opal stands at 0.5 64 0.5, the point is 100 blocks east.
+     MOVE "tp Opal 0.5 64.0 0.5" TO WS-LINE
+     CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
+     MOVE "tp Alice 500.5 64.0 0.5" TO WS-LINE
+     CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /playsound a listener out of range with minVolume 0 is skipped: no one reached is commands.playsound.failed (54 s10)" TO TL-CASE
+     MOVE "playsound minecraft:ambient.cave master Opal 100.5 64.0 0.5" TO WS-LINE
+     MOVE "commands.playsound.failed()" TO WS-EXPECTED
+     PERFORM RUN-TEXT
+     MOVE "acceptance US13 /playsound a listener out of range with minVolume 0.5 hears it 2 blocks away at volume 0.5 (54 s10)" TO TL-CASE
+     MOVE "playsound minecraft:ambient.cave master Opal 100.5 64.0 0.5 1 1 0.5" TO WS-LINE
+     MOVE SPACES TO WS-EXPECTED
+     STRING "08" "00" "00000014" "00000200" "00000004" "3f000000" "3f800000" "0000000000000000" DELIMITED BY SIZE INTO WS-EXPECTED
+     PERFORM RUN-PACKET
+     MOVE "acceptance US13 /playsound volume 8 has range 128: the point 100 blocks away is in range, sent at the given point and volume (54 s10)" TO TL-CASE
+     MOVE "playsound minecraft:ambient.cave master Opal 100.5 64.0 0.5 8" TO WS-LINE
+     MOVE SPACES TO WS-EXPECTED
+     STRING "08" "00" "00000324" "00000200" "00000004" "41000000" "3f800000" "0000000000000000" DELIMITED BY SIZE INTO WS-EXPECTED
+     PERFORM RUN-PACKET
+     MOVE "acceptance US13 /playsound several targets, one in range: only the player reached is told (single, Opal) (54 s10)" TO TL-CASE
+     MOVE "playsound minecraft:ambient.cave master @a 0.5 64.0 0.5" TO WS-LINE
+     MOVE "commands.playsound.success.single(minecraft:ambient.cave,Opal)" TO WS-EXPECTED
+     PERFORM RUN-TEXT
+     MOVE "acceptance US13 /playsound with minVolume both players are reached: multiple with 2 (54 s10)" TO TL-CASE
+     MOVE "playsound minecraft:ambient.cave master @a 0.5 64.0 0.5 1 1 0.5" TO WS-LINE
+     MOVE "commands.playsound.success.multiple(minecraft:ambient.cave,2)" TO WS-EXPECTED
+     PERFORM RUN-TEXT
      GOBACK.
 
 *> The line is run by Opal and the replies are compared with WS-EXPECTED.

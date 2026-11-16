@@ -108,7 +108,7 @@
 *>     without trailing spaces.
 *>   TEST-SUGGEST USING connection id, transaction id, text (PIC X(768), with the leading /), byte
 *>     length: feeds Command Suggestion (05c 0x0F).
-*>   TEST-DRAIN-SUGGESTIONS USING connection id, text out (PIC X(4096)): drains the connection and
+*>   TEST-DRAIN-SUGGESTIONS USING connection id, text out (PIC X(4096)): runs the suggestion flush of one tick (CMD-SUGGEST-FLUSH), drains the connection and
 *>     lists its Command Suggestions packets separated by " | " as "<transaction> <start> <length>
 *>     [<suggestion>,...]"; other packets are left out.
 *>   TEST-DRAIN-PACKET USING connection id, packet id, packet PB-BUFFER (initialised), found out:
@@ -2040,6 +2040,7 @@
  PROCEDURE DIVISION USING L-ID L-TEXT.
      MOVE SPACES TO L-TEXT
      MOVE 1 TO WS-PTR
+     CALL "CMD-SUGGEST-FLUSH"
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
      CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE

@@ -12,6 +12,7 @@
  COPY CONTENT.
  COPY PROTO.
  COPY CBLOCKS.
+ COPY CITEMS.
  COPY CMENU.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-NAME                PIC X(16) VALUE "Stefan".
@@ -68,6 +69,14 @@
  01 WS-CHEST               BINARY-LONG.
  01 WS-ITEM-ROW            PIC X(270).
  01 WS-BID                 BINARY-LONG.
+ 01 WS-LOOT-DIR            PIC X(1100) VALUE "core/tests/fixtures/loot-tnt".
+ 01 WS-TNT-SOURCE          BINARY-LONG VALUE -1.
+ 01 WS-RULE-NAME           PIC X(40).
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-KEPT                BINARY-LONG.
+ 01 WS-DECAYED             BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 2 TO CS-VIEW-DISTANCE
@@ -353,8 +362,59 @@
      MOVE "death.attack.explosion(Stefan)" TO TL-EXPECTED
      MOVE WS-CHAT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   TNT blasts (source -1, 33 section 8.3 / 54): drops decay only while tnt_explosion_drop_decay is true (default false: every drop is kept).
+     MOVE PS-ALIVE TO PL-STATE(WS-PLAYER)
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 40.5
+     MOVE 4 TO WS-POWER
+     CALL "LOOT-LOAD" USING WS-LOOT-DIR WS-STATUS
+     MOVE "tnt_explosion_drop_decay" TO WS-RULE-NAME
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE WS-DIRT TO WS-FILL
+     MOVE 3 TO WS-HALF
+     PERFORM FILL-CUBE
+     PERFORM COUNT-ITEMS
+     MOVE WS-N TO WS-BEFORE
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-TNT-SOURCE
+     PERFORM COUNT-ITEMS
+     COMPUTE WS-KEPT = WS-N - WS-BEFORE
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     PERFORM FILL-CUBE
+     PERFORM COUNT-ITEMS
+     MOVE WS-N TO WS-BEFORE
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-TNT-SOURCE
+     PERFORM COUNT-ITEMS
+     COMPUTE WS-DECAYED = WS-N - WS-BEFORE
+     MOVE "N" TO TL-MODE
+     MOVE "test explode: a TNT blast with tnt_explosion_drop_decay false keeps every drop (more than 100 dirt items)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-KEPT > 100
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test explode: with tnt_explosion_drop_decay true the same blast keeps fewer drops" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DECAYED < WS-KEPT
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
      CALL "PB-FREE" USING PB-BUFFER
      STOP RUN.
+ COUNT-ITEMS.
+*>   WS-N = the loose item entities now.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = CR-LOOSE-ITEM
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM.
  FILL-CUBE.
 *>   A cube of WS-FILL with half width WS-HALF around the block cell (WS-BX, WS-BY, WS-BZ), the centre cell itself air.
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2 * WS-HALF
