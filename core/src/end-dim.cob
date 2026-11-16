@@ -70,6 +70,10 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-CRYSTALS.
@@ -85,16 +89,13 @@
          GOBACK
      END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-EC-COUNT
-         CALL "ENTITY-ALLOC" USING WS-ROW
-         CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
-         MOVE WS-TYPE TO EN-TYPE(WS-ROW)
-         CALL "ENTITY-SET-UUID" USING WS-ROW
-         MOVE L-DIM TO EN-DIM(WS-ROW)
-         COMPUTE EN-X(WS-ROW) = L-EC-X(WS-I) + 0.5
-         MOVE L-EC-Y(WS-I) TO EN-Y(WS-ROW)
-         COMPUTE EN-Z(WS-ROW) = L-EC-Z(WS-I) + 0.5
-         MOVE L-EC-YAW(WS-I) TO EN-YAW(WS-ROW)
-         CALL "ENTITY-TRACK" USING WS-ROW
+         COMPUTE WS-X = L-EC-X(WS-I) + 0.5
+         MOVE L-EC-Y(WS-I) TO WS-Y
+         COMPUTE WS-Z = L-EC-Z(WS-I) + 0.5
+         CALL "CRYSTAL-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-ONE WS-ROW
+         IF WS-ROW > 0
+             MOVE L-EC-YAW(WS-I) TO EN-YAW(WS-ROW)
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM END-CRYSTAL-SPAWN.

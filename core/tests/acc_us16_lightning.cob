@@ -1,0 +1,207 @@
+*> Acceptance test, the lightning bolt (docs/protocol/21 section 8.6, 44 part 9 section 2; lane 002-lane-mobsb6, T9006): life 2, flashes, the damage box (+- 3 horizontally), thunderHit: the default
+*> 5.0 damage, a creeper becomes powered, a pig a zombified piglin and a villager a witch unless Peaceful (no damage then), a turtle dies, a mooshroom swaps its variant once per bolt, a visual only bolt
+*> hurts nothing, and the bolt is discarded after its last flash.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US16-LIGHTNING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ COPY BRWORLD.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-CREEPER-T           BINARY-LONG.
+ 01 WS-PIG-T               BINARY-LONG.
+ 01 WS-VIL-T               BINARY-LONG.
+ 01 WS-TURTLE-T            BINARY-LONG.
+ 01 WS-MOO-T               BINARY-LONG.
+ 01 WS-COW-T               BINARY-LONG.
+ 01 WS-ZPIG-T              BINARY-LONG.
+ 01 WS-WITCH-T             BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-CREEPER             BINARY-LONG.
+ 01 WS-PIG                 BINARY-LONG.
+ 01 WS-VIL                 BINARY-LONG.
+ 01 WS-TURTLE              BINARY-LONG.
+ 01 WS-MOO                 BINARY-LONG.
+ 01 WS-COW                 BINARY-LONG.
+ 01 WS-FAR                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-VISUAL              BINARY-LONG VALUE 0.
+ 01 WS-HC                  BINARY-LONG.
+ 01 WS-HF                  BINARY-LONG.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 WS-HP                  FLOAT-SHORT.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE "minecraft:creeper" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-CREEPER-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-VIL-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:turtle" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TURTLE-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:mooshroom" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-MOO-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:zombified_piglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZPIG-T WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:witch" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WITCH-T WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     COMPUTE WS-Y = PL-Y(WS-PLAYER) + 30
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     ADD 20 TO WS-X
+     CALL "MOB-SPAWN" USING WS-DIM WS-CREEPER-T WS-X WS-Y WS-Z WS-YAW WS-CREEPER
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-T WS-X WS-Y WS-Z WS-YAW WS-PIG
+     CALL "MOB-SPAWN" USING WS-DIM WS-VIL-T WS-X WS-Y WS-Z WS-YAW WS-VIL
+     CALL "MOB-SPAWN" USING WS-DIM WS-TURTLE-T WS-X WS-Y WS-Z WS-YAW WS-TURTLE
+     CALL "MOB-SPAWN" USING WS-DIM WS-MOO-T WS-X WS-Y WS-Z WS-YAW WS-MOO
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-T WS-X WS-Y WS-Z WS-YAW WS-COW
+     COMPUTE WS-X = WS-X + 10
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-T WS-X WS-Y WS-Z WS-YAW WS-FAR
+     COMPUTE WS-X = WS-X - 10
+     MOVE EN-HEALTH(WS-CREEPER) TO WS-HC
+     MOVE EN-HEALTH(WS-COW) TO WS-HF
+*>   A visual only bolt hurts nothing.
+     MOVE 1 TO WS-VISUAL
+     CALL "LIGHTNING-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VISUAL WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         CALL "LIGHTNING-STEP" USING WS-ROW
+     END-PERFORM
+     MOVE "acceptance US16 21 8.6 a visual only bolt hurts nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-HF - EN-HEALTH(WS-COW)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     IF WS-SLOT > 0
+         CALL "PJ-DROP" USING WS-ROW
+     END-IF
+     MOVE 0 TO WS-VISUAL
+     CALL "LIGHTNING-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VISUAL WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE "acceptance US16 21 8.6 a bolt starts with life 2 and 1 to 3 flashes" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF PJ-I1(WS-SLOT) = 2 AND PJ-I2(WS-SLOT) >= 1 AND PJ-I2(WS-SLOT) <= 3
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PJ-I2(WS-SLOT)
+     CALL "LIGHTNING-STEP" USING WS-ROW
+     MOVE "acceptance US16 21 8.6 a mooshroom in the box swaps red to brown (EN-WOOL 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-WOOL(WS-MOO) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "LIGHTNING-STEP" USING WS-ROW
+     MOVE "acceptance US16 21 8.6 the same bolt does not swap it again on its next tick" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-WOOL(WS-MOO) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 8.6 a creeper in the box becomes powered (EN-VARIANT 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-VARIANT(WS-CREEPER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 8.6 the creeper took 5 damage (default thunderHit)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-HC - EN-HEALTH(WS-CREEPER)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 8.6 a cow in the box took 5 damage" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-HF - EN-HEALTH(WS-COW)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 8.6 a cow 10 blocks away is untouched" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-FAR) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 8.6 a turtle is killed outright" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-TURTLE) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ZPIG-T
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 44-9 2 the pig became a zombified piglin (the pig row is gone)" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-N * 10 + EN-USED(WS-PIG) * 0
+     IF EN-USED(WS-PIG) = 1 AND EN-TYPE(WS-PIG) = WS-PIG-T
+         ADD 100 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-WITCH-T
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 44-9 2 the villager became a witch" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     IF EN-USED(WS-VIL) = 1 AND EN-TYPE(WS-VIL) = WS-VIL-T
+         ADD 100 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "LIGHTNING-STEP" USING WS-ROW
+     MOVE "acceptance US16 21 8.6 with no flashes left the bolt is gone after its life" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-USED(WS-ROW)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A flash left keeps the bolt alive and sets life 1 again (or waits for the random delay).
+     CALL "LIGHTNING-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VISUAL WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE 2 TO PJ-I2(WS-SLOT)
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
+         CALL "LIGHTNING-STEP" USING WS-ROW
+         IF EN-USED(WS-ROW) = 1 AND PJ-I2(WS-SLOT) < 2
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 21 8.6 flashes are used up one by one and the bolt ends within 40 ticks" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Peaceful: the villager and the pig are hurt, not converted; a player in the box is hurt by 5.
+     MOVE BW-DIFFICULTY TO WS-DIFF
+     MOVE 0 TO BW-DIFFICULTY
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-T WS-X WS-Y WS-Z WS-YAW WS-PIG
+     CALL "MOB-SPAWN" USING WS-DIM WS-VIL-T WS-X WS-Y WS-Z WS-YAW WS-VIL
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HP
+     CALL "LIGHTNING-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VISUAL WS-ROW
+     CALL "LIGHTNING-STEP" USING WS-ROW
+     MOVE WS-DIFF TO BW-DIFFICULTY
+     MOVE "acceptance US16 21 8.6 a player in the box loses 5 health" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-HP - PL-HEALTH(WS-PLAYER)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-9 2 on Peaceful the pig and the villager stay (and are hurt, 5 less health)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-USED(WS-PIG) = 1 AND EN-TYPE(WS-PIG) = WS-PIG-T AND EN-USED(WS-VIL) = 1 AND EN-TYPE(WS-VIL) = WS-VIL-T
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US16-LIGHTNING.
+ COPY CORETEST.
+ COPY MOBSPTEST.

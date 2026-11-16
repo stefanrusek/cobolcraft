@@ -1,0 +1,246 @@
+*> Acceptance test, the ender dragon's flight graph (docs/protocol/21 section 6.4.2, 44 part 9 section 1.2; lane 002-lane-mobsb8, T9700): the 24 node positions (the oracle table), the symmetric
+*> adjacency masks, the node heights from the surface, the nearest node (outer ring excluded without crystals), the A* path, the extra goal node and the empty path.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US16-DRAGON-GRAPH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY DRAGSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-MASK                BINARY-LONG.
+ 01 WS-MASK2               BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-BIT                 BINARY-LONG.
+ 01 WS-BIT2                BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-CRYSTALS            BINARY-LONG.
+ 01 WS-FROM                BINARY-LONG.
+ 01 WS-TO                  BINARY-LONG.
+ 01 WS-EXTRA               BINARY-LONG.
+ 01 WS-EX                  BINARY-LONG.
+ 01 WS-EY                  BINARY-LONG.
+ 01 WS-EZ                  BINARY-LONG.
+ 01 WS-LABEL               PIC X(60).
+ 01 WS-NUM                 PIC 99.
+ 01 WS-OXS.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 60.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 51.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -31.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -52.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -60.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -52.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -30.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 51.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 40.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 28.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -40.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 28.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 20.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -20.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+ 01 WS-OXT REDEFINES WS-OXS.
+    05 WS-OX               PIC S9(3) SIGN LEADING SEPARATE OCCURS 24 TIMES.
+ 01 WS-OZS.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 30.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 51.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 60.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 51.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -31.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -52.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -60.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -52.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -30.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 28.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 40.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 28.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -40.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -29.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 20.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC S9(3) SIGN LEADING SEPARATE VALUE -20.
+ 01 WS-OZT REDEFINES WS-OZS.
+    05 WS-OZ               PIC S9(3) SIGN LEADING SEPARATE OCCURS 24 TIMES.
+ 01 WS-EXP-MASKS.
+    05 FILLER              PIC X(8) VALUE "00006146".
+    05 FILLER              PIC X(8) VALUE "00008197".
+    05 FILLER              PIC X(8) VALUE "00008202".
+    05 FILLER              PIC X(8) VALUE "00016404".
+    05 FILLER              PIC X(8) VALUE "00032808".
+    05 FILLER              PIC X(8) VALUE "00032848".
+    05 FILLER              PIC X(8) VALUE "00065696".
+    05 FILLER              PIC X(8) VALUE "00131392".
+    05 FILLER              PIC X(8) VALUE "00131712".
+    05 FILLER              PIC X(8) VALUE "00263424".
+    05 FILLER              PIC X(8) VALUE "00526848".
+    05 FILLER              PIC X(8) VALUE "00525313".
+    05 FILLER              PIC X(8) VALUE "01581057".
+    05 FILLER              PIC X(8) VALUE "03166214".
+    05 FILLER              PIC X(8) VALUE "02138120".
+    05 FILLER              PIC X(8) VALUE "06373424".
+    05 FILLER              PIC X(8) VALUE "04358208".
+    05 FILLER              PIC X(8) VALUE "12910976".
+    05 FILLER              PIC X(8) VALUE "09044480".
+    05 FILLER              PIC X(8) VALUE "09706496".
+    05 FILLER              PIC X(8) VALUE "15216640".
+    05 FILLER              PIC X(8) VALUE "13688832".
+    05 FILLER              PIC X(8) VALUE "11763712".
+    05 FILLER              PIC X(8) VALUE "08257536".
+ 01 WS-EXP-MASKT REDEFINES WS-EXP-MASKS.
+    05 WS-EXP-MASK         PIC 9(8) OCCURS 24 TIMES.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+*>   The node positions of the oracle table.
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 23
+         CALL "DRAGON-NODE-XZ" USING WS-I WS-X WS-Z
+         IF WS-X NOT = WS-OX(WS-I + 1) OR WS-Z NOT = WS-OZ(WS-I + 1)
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 21 6.4.2 all 24 node positions match the oracle table (x, z)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The adjacency masks of the table, and their symmetry.
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 23
+         CALL "DRAGON-NODE-ADJ" USING WS-I WS-MASK
+         IF WS-MASK NOT = WS-EXP-MASK(WS-I + 1)
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 21 6.4.2 the adjacency masks are the table's" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 23
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 23
+             CALL "DRAGON-NODE-ADJ" USING WS-I WS-MASK
+             CALL "DRAGON-NODE-ADJ" USING WS-J WS-MASK2
+             COMPUTE WS-BIT = FUNCTION MOD(WS-MASK / 2 ** WS-J, 2)
+             COMPUTE WS-BIT2 = FUNCTION MOD(WS-MASK2 / 2 ** WS-I, 2)
+             IF WS-BIT NOT = WS-BIT2
+                 ADD 1 TO WS-BAD
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE "acceptance US16 21 6.4.2 the edges are symmetric" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Paths.
+     MOVE 3 TO WS-CRYSTALS
+     MOVE 0 TO WS-FROM
+     MOVE 3 TO WS-TO
+     MOVE 0 TO WS-EXTRA
+     MOVE 0 TO WS-EX WS-EY WS-EZ
+     CALL "DRAGON-PATH" USING WS-FROM WS-TO WS-EXTRA WS-EX WS-EY WS-EZ WS-CRYSTALS
+     MOVE "acceptance US16 21 6.4.2 the path 0 to 3 runs along the outer ring: 0 1 2 3" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE DG-PATH-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 6.4.2 the path nodes are 0, 1, 2, 3" TO TL-CASE
+     MOVE 123 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = DG-PATH-NODE(1) * 1000 + DG-PATH-NODE(2) * 100 + DG-PATH-NODE(3) * 10 + DG-PATH-NODE(4)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-EXTRA
+     MOVE 5 TO WS-EX
+     MOVE 90 TO WS-EY
+     MOVE 7 TO WS-EZ
+     CALL "DRAGON-PATH" USING WS-FROM WS-TO WS-EXTRA WS-EX WS-EY WS-EZ WS-CRYSTALS
+     MOVE "acceptance US16 21 6.4.2 an extra goal node is appended (node 24 with its position)" TO TL-CASE
+     MOVE 524 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = DG-PATH-N * 100 + DG-PATH-NODE(DG-PATH-N)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 6.4.2 the extra node holds the position given (5, 90, 7)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = DG-EX * 1000 + DG-EY * 10 + DG-EZ
+     COMPUTE TL-EXPECTED-N = 5 * 1000 + 90 * 10 + 7
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-EXTRA
+     MOVE 0 TO WS-TO
+     CALL "DRAGON-PATH" USING WS-FROM WS-TO WS-EXTRA WS-EX WS-EY WS-EZ WS-CRYSTALS
+     MOVE "acceptance US16 21 6.4.2 a start equal to the goal is the null path" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE DG-HAS-PATH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-CRYSTALS
+     MOVE 12 TO WS-FROM
+     MOVE 15 TO WS-TO
+     CALL "DRAGON-PATH" USING WS-FROM WS-TO WS-EXTRA WS-EX WS-EY WS-EZ WS-CRYSTALS
+     MOVE "acceptance US16 21 6.4.2 without crystals (inner ring allowed) the path 12 to 15 takes the inner shortcut: 12 20 21 15" TO TL-CASE
+     MOVE 12202115 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = DG-PATH-NODE(1) * 1000000 + DG-PATH-NODE(2) * 10000 + DG-PATH-NODE(3) * 100 + DG-PATH-NODE(4)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Heights: an empty column gives 73; a stone column up to y 100 raises the middle ring node 12 (40, 0) to surface 101 + 15 and the outer node 0 (60, 0) to 101 + 5.
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
+     MOVE 100 TO WS-Y
+     MOVE 40 TO WS-X
+     MOVE 0 TO WS-Z
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
+     MOVE 60 TO WS-X
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
+     CALL "DRAGON-NODES-INIT" USING WS-DIM
+     MOVE "acceptance US16 21 6.4.2 the middle ring node 12 is at surface + 15" TO TL-CASE
+     MOVE 116 TO TL-EXPECTED-N
+     MOVE DG-NODE-Y(13) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 6.4.2 the outer ring node 0 is at surface + 5" TO TL-CASE
+     MOVE 106 TO TL-EXPECTED-N
+     MOVE DG-NODE-Y(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 21 6.4.2 a node over the void is at the minimum height 73" TO TL-CASE
+     MOVE 73 TO TL-EXPECTED-N
+     MOVE DG-NODE-Y(4) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The nearest node: node 0 with crystals; node 12 without (the outer ring is excluded).
+     MOVE 60 TO WS-FX
+     MOVE 110 TO WS-FY
+     MOVE 1 TO WS-FZ
+     MOVE 3 TO WS-CRYSTALS
+     CALL "DRAGON-CLOSEST" USING WS-FX WS-FY WS-FZ WS-CRYSTALS WS-NODE
+     MOVE "acceptance US16 21 6.4.2 with crystals the nearest node to (60, 110, 1) is 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-NODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-CRYSTALS
+     CALL "DRAGON-CLOSEST" USING WS-FX WS-FY WS-FZ WS-CRYSTALS WS-NODE
+     MOVE "acceptance US16 21 6.4.2 without crystals the nearest node is searched among 12 to 23 only (12)" TO TL-CASE
+     MOVE 12 TO TL-EXPECTED-N
+     MOVE WS-NODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US16-DRAGON-GRAPH.
+ COPY CORETEST.
+ COPY MOBSPTEST.

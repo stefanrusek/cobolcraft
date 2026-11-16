@@ -1310,6 +1310,8 @@
  01 WS-S                   BINARY-LONG.
  01 WS-CAT                 BINARY-LONG.
  01 WS-PERSIST             BINARY-LONG VALUE 0.
+ 01 WS-ZNO                 BINARY-LONG VALUE 0.
+ 01 WS-ZSLOT               BINARY-LONG.
  01 WS-REMOVABLE           BINARY-LONG.
  01 WS-PEACEFUL            BINARY-LONG.
  01 WS-HAVE                BINARY-LONG.
@@ -1336,6 +1338,15 @@
      MOVE 0 TO WS-REMOVABLE
      IF SM-KIND(WS-S) > 0
          MOVE 1 TO WS-REMOVABLE
+     END-IF
+*>   A converting zombie villager is never removed for distance and needs custom persistence (20 section 4.2; T8803).
+     MOVE 0 TO WS-PERSIST
+     IF SM-KEY(WS-S) = "zombie_villager"
+         CALL "ZC-FIND" USING EN-ID(L-ROW) WS-ZNO WS-ZSLOT
+         IF WS-ZSLOT > 0
+             MOVE 0 TO WS-REMOVABLE
+             MOVE 1 TO WS-PERSIST
+         END-IF
      END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
      IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1

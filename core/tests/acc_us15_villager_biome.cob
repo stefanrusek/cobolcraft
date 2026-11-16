@@ -1,0 +1,100 @@
+*> Acceptance test, the villager type of a newborn villager follows the biome of its position (docs/protocol/19 section 22.1; lane 002-lane-mobsb2, T7102): a villager
+*> born in a desert chunk is type 0 (desert), in a snowy_plains chunk type 4, in an unloaded chunk it is plains (2).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-VILLAGER-BIOME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CELLS.
+ COPY CBLOCKS.
+ COPY VILSTATE.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-VROW                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-CHUNK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BID                 BINARY-LONG.
+ 01 WS-WANT                PIC X(48).
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-E1                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     CALL "TEST-STANDARD-TABLES"
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE "villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-ROW) TO WS-X
+     MOVE PL-Y(WS-ROW) TO WS-Y
+     MOVE PL-Z(WS-ROW) TO WS-Z
+     COMPUTE WS-CX = FUNCTION INTEGER(WS-X / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(WS-Z / 16)
+     CALL "WORLD-FIND" USING PL-DIM(WS-ROW) WS-CX WS-CZ WS-CHUNK
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-CHUNK)
+     MOVE 3 TO CBI-COUNT
+     MOVE "minecraft:plains" TO CBI-KEY(1)
+     MOVE "minecraft:desert" TO CBI-KEY(2)
+     MOVE "minecraft:snowy_plains" TO CBI-KEY(3)
+     MOVE "T" TO TL-MODE
+     MOVE "minecraft:desert" TO WS-WANT
+     PERFORM SET-BIOME
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VROW
+     CALL "VL-FIND" USING EN-ID(WS-VROW) WS-NO WS-SLOT
+     MOVE "acceptance US15 19§22.1 a villager born in a desert chunk is type 0" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     MOVE VL-TYPE(WS-SLOT) TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     MOVE "minecraft:snowy_plains" TO WS-WANT
+     PERFORM SET-BIOME
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VROW
+     CALL "VL-FIND" USING EN-ID(WS-VROW) WS-NO WS-SLOT
+     MOVE "acceptance US15 19§22.1 a villager born in a snowy_plains chunk is type 4" TO TL-CASE
+     MOVE "4" TO TL-EXPECTED
+     MOVE VL-TYPE(WS-SLOT) TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     COMPUTE WS-X = WS-X + 100000
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VROW
+     CALL "VL-FIND" USING EN-ID(WS-VROW) WS-NO WS-SLOT
+     MOVE "acceptance US15 19§22.1 a villager born in an unloaded chunk is plains (2)" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     MOVE VL-TYPE(WS-SLOT) TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     STOP RUN.
+
+ SET-BIOME.
+     MOVE 0 TO WS-BID
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CBI-MAX
+         IF CBI-KEY(WS-I) = WS-WANT AND WS-BID = 0
+             COMPUTE WS-BID = WS-I - 1
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1536
+         MOVE WS-BID TO CE-BIOME(WS-I)
+     END-PERFORM.
+
+ CHECK.
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-VILLAGER-BIOME.
+ COPY CORETEST.

@@ -109,6 +109,12 @@
              MOVE 1 TO WS-K
              CALL "MN4-IDENT" USING WS-K L-TYPE L-OWN WS-TOTAL WS-DATA WS-SHIFT
              CALL "MN4-TITLE" USING WS-K WS-T1 WS-T2
+         WHEN 9
+*>           The merchant (40-5 section 2.1: type 19, 3 own slots, the result is own slot 2; the title is the villager's name).
+             MOVE 19 TO L-TYPE
+             MOVE 3 TO L-OWN
+             MOVE 2 TO L-RESULT
+             MOVE "entity.minecraft.villager" TO WS-T1
          WHEN OTHER
              MOVE 11 TO L-TYPE
              MOVE 5 TO L-OWN
@@ -504,6 +510,9 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     IF MN-CFAMILY(L-ROW) = 29
+         CALL "MERCHANT-UPDATE" USING L-ROW
+     END-IF
 *>   The smithing table (40-3 section 5.2 and 5.3): the result of the first matching recipe, the error flag when the three inputs are full and no recipe fits.
      IF MN-CFAMILY(L-ROW) = 23
          CALL "MENU-SMITH-MATCH" USING L-ROW WS-ITEM WS-RCOUNT WS-RVAR
@@ -560,6 +569,9 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     IF MN-CFAMILY(L-ROW) = 29
+         CALL "MERCHANT-TAKEN" USING L-ROW
+     END-IF
 *>   The smithing table (40-3 section 5.4): one item of each of the three inputs is used up, then the result is made again.
      IF MN-CFAMILY(L-ROW) = 23
          MOVE MN-WSLOT-COUNT(L-ROW, 1) TO WS-C0

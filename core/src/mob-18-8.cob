@@ -500,6 +500,10 @@
  01 WS-BOUND-GH            BINARY-LONG VALUE 10.
  01 WS-BOUND-GC            BINARY-LONG VALUE 2.
  01 WS-DRAW-G              BINARY-LONG.
+ 01 WS-VL-VILLAGER         BINARY-LONG VALUE 1.
+ 01 WS-VL-TRADER           BINARY-LONG VALUE 2.
+ 01 WS-VL-PLAINS           BINARY-LONG VALUE 2.
+ 01 WS-VL-SLOT             BINARY-LONG.
  01 WS-BOUND-S             BINARY-LONG VALUE 6000.
  01 WS-DRAW                BINARY-LONG.
  LINKAGE SECTION.
@@ -533,10 +537,19 @@
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
          WHEN "llama"
              CALL "LLAMA-BORN" USING L-ROW
+         WHEN "trader_llama"
+             CALL "LLAMA-BORN" USING L-ROW
          WHEN "fox"
              CALL "FOX-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
+         WHEN "wandering_trader"
+*>           The trader state (19 section 23): kind 2 builds the three trade sets at once.
+             CALL "VL-SETUP" USING EN-ID(L-ROW) WS-VL-TRADER WS-VL-PLAINS WS-VL-SLOT
+         WHEN "villager"
+*>           The villager state (19 section 22; the type follows the biome of the position, 22.1).
+             CALL "VL-BIOME-TYPE-AT" USING L-ROW WS-VL-PLAINS
+             CALL "VL-SETUP" USING EN-ID(L-ROW) WS-VL-VILLAGER WS-VL-PLAINS WS-VL-SLOT
          WHEN "turtle"
 *>           The home of a turtle is the block it spawned in (19 section 12).
              MOVE 1 TO EN-HOME-SET(L-ROW)
@@ -1335,7 +1348,7 @@
 *> USING connection id, PLAY-SERVERBOUND (a decoded Interact 0x1A): the main hand of an alive player on a standard passive mob of its dimension that is alive and whose box is
 *> within the attack reach: shears on a sheep (MOB-SHEAR-USE), an empty bucket on a cow or mooshroom (MOB-MILK-USE), shears or a bowl on a mooshroom (MOB-MOOSHROOM-USE),
 *> otherwise the held item as animal food (MOB-FEED-USE). A wolf: MOB-WOLF-USE; iron ingots on an iron golem: MOB-GOLEM-USE; flint and steel or a fire charge on a creeper:
-*> STDMOB-IGNITE (a creeper is the only monster that handles an interaction). Anything else, and the off hand, is not handled yet.
+*> STDMOB-IGNITE (a creeper is the only monster that handles an interaction). A golden apple on a zombie villager with Weakness: ZV-USE (T8102). Anything else, and the off hand, is not handled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1384,11 +1397,15 @@
      IF WS-USED = 1
          GOBACK
      END-IF
+     CALL "DECOR-INTERACT" USING WS-ROW WS-ENTITY PSB-Y WS-USED
+     IF WS-USED = 1
+         GOBACK
+     END-IF
      CALL "STDMOB-INDEX" USING EN-TYPE(WS-ENTITY) WS-M
      IF WS-M = 0
          GOBACK
      END-IF
-     IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0
+     IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0 AND SM-KEY(WS-M) NOT = "zombie_villager"
          GOBACK
      END-IF
      COMPUTE WS-TYPE = EN-TYPE(WS-ENTITY) + 1
@@ -1413,6 +1430,12 @@
      END-IF
      MOVE WS-KEY48 TO WS-HELD
      MOVE SM-KEY(WS-M) TO WS-KEY
+     IF WS-KEY = "villager" OR "wandering_trader"
+         CALL "MERCHANT-INTERACT" USING WS-ROW WS-ENTITY WS-USED
+         IF WS-USED = 1
+             GOBACK
+         END-IF
+     END-IF
      CALL "MOB-LEASH-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
          GOBACK
@@ -1434,6 +1457,10 @@
              CALL "MOB-PARROT-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "cat" OR "ocelot"
              CALL "MOB-CAT-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "zombie_villager"
+             CALL "ZV-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
+         WHEN WS-KEY = "piglin"
+             CALL "PIGLIN-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
          WHEN WS-KEY = "iron_golem" AND WS-HELD = "iron_ingot"
              CALL "MOB-GOLEM-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "tadpole"

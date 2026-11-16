@@ -504,7 +504,7 @@ An empty selector result is the framework's "no entity found" error (15 framewor
 
 ### 5.2 `teleport` (alias `tp`)
 
-Level 2. `tp` is a redirect to `teleport` (same nodes, same level).
+Level 2. `tp` is a redirect to `teleport` (same nodes, same level). **Closed (54 §3):** every location form needs level 2, the check is on the two root literals only, children carry none.
 
 ```
 teleport <location:vec3>                        -> teleports the source entity
@@ -515,6 +515,8 @@ teleport <targets> <location> facing <facingLocation:vec3>
 teleport <targets> <location> facing entity <facingEntity:entity> [<facingAnchor:feet|eyes>]
 teleport <targets> <destination:entity>
 ```
+
+**Dimension and relative coordinates (54 §9, supersedes the wording below):** the location forms move every target into the **executor's** level (the one `execute in` sets), the entity-destination forms into the destination entity's level, so a teleport can cross dimensions; `~` and `^` are resolved once against the executor, not against each target. A refused move (the routine returns false) is still counted (54 §9.2), contrary to the "not counted" below.
 
 Behaviour (read): tracker-style counting, one tracked entry per entity successfully teleported; with zero entries tracked the usual selector error applies upstream.
 
@@ -1216,6 +1218,8 @@ particle <name:particle> [<pos:vec3> [<delta:vec3> <speed:float min 0> <count:in
 
 ### 7.9 `playsound`
 
+Audible distance, minimum volume and listener rules: 54 §10.
+
 ```
 playsound <sound:identifier> <source> [<targets:players> [<pos:vec3> [<volume:float min 0> [<pitch:float 0..2> [<minVolume:float 0..1>]]]]]
 ```
@@ -1709,6 +1713,8 @@ random reset <sequence> [<seed> [<includeWorldSeed> [<includeSequenceId>]]]
 The sequence generator algorithm and the meaning of the seed flags are inside `MinecraftServer`/the random-sequence store and were not read.
 
 ### 10.9 `compute`
+
+Grammar (context-source nodes `default`, `block <pos>`, `entity <target>`), provider ids, contexts and result rules: 54 §13.
 
 Level 2. Evaluates number providers (`data/minecraft/context_float_provider`, `context_int_provider`; 4 and 26 files).
 

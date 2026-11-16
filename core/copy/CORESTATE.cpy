@@ -328,6 +328,8 @@
 *>     --- 002-lane-mobsfull-h8: main hand, helmet wear (core/src/mob-20-3.cob) ---
        10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1), 4 bow (skeleton family, 5)
        10 EN-HEAD-WEAR       BINARY-LONG.        *> durability damage of the helmet worn (EN-EQUIP head slot); -1 = broken, the head is empty (20 section 3.5)
+*>     --- 002-lane-mobsb4 (T8804): piglin family immunity to zombification (metadata 16 piglin and brute, 18 hoglin; 21 section 5.5) ---
+       10 EN-PIG-IMMUNE       BINARY-LONG.        *> 1 = immune to zombification
        10 EN-WAKE            BINARY-LONG.        *> silverfish: wake-up-friends timer, 20 after a hit by an attacker, counting down to the scan (20 section 9.1)
 *>     --- 002-lane-mobsfull-h10: aquatic mobs (core/src/mob-21-4.cob; docs/protocol/21 section 4) ---
        10 EN-DRY             BINARY-LONG.        *> ticks out of water (a fish: air 300 - EN-DRY; a dolphin: moistness 2400 - EN-DRY); 0 in water
@@ -401,6 +403,12 @@
        10 EN-ARMA-SCAN       BINARY-LONG.        *> armadillo: ticks since the last danger scan (every 80)
        10 EN-DANGER          BINARY-LONG.        *> armadillo: ticks left of danger_detected_recently (80)
        10 EN-SCUTE           BINARY-LONG.        *> armadillo: scuteTime, ticks to the next scute
+*>     --- 002-lane-mobsb: piglin (core/src/mob-21-piglin.cob; 21 section 5.5.1) ---
+       10 EN-ADMIRE          BINARY-LONG.        *> piglin: ticks of admiring left (119 after a gold ingot), 0 = not admiring
+       10 EN-ADMIRE-OFF      BINARY-LONG.        *> piglin: ticks left of ADMIRING_DISABLED (400 after a cancelled admiring)
+       10 EN-ADMIRE-PL       BINARY-LONG.        *> piglin: the player row that gave the ingot
+       10 EN-ZOMBIFY         BINARY-LONG.        *> piglin: timeInOverworld, ticks spent where piglins_zombify is true (converts above 300)
+       10 EN-ADMIRE-CUR      BINARY-LONG.        *> piglin: 1 when the admired item is barter currency (it barters when the admiring ends), 0 a kept loved item
 *>     --- 002-lane-mobsfull-h21: tadpole, frog, panda, fox, allay, sniffer, llama, camel (core/src/mob-19-7.cob to mob-19-15.cob) ---
        10 EN-TAD-AGE          BINARY-LONG.        *> tadpole: age in ticks (24000 = frog); locked with EN-LOCKED
        10 EN-TONGUE           BINARY-LONG.        *> frog: tongue state 0 none, 1 moving to the target, 2 catch animation, 3 eat animation

@@ -964,6 +964,16 @@
      IF WS-CHUNK = 0
          GOBACK
      END-IF
+     CALL "MEF-TICK" USING WS-ROW
+     IF EN-USED(WS-ROW) = 0 OR EN-HEALTH(WS-ROW) = 0
+         GOBACK
+     END-IF
+     IF SM-KEY(WS-M) = "zombie_villager"
+         CALL "ZV-TICK" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
      CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
@@ -1072,6 +1082,24 @@
      END-IF
      IF SM-KEY(WS-M) = "fox"
          CALL "FOX-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "piglin"
+         CALL "PIGLIN-TICK" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "villager"
+         CALL "VL-STEP" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "wandering_trader"
+         CALL "TRADER-STEP" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "hoglin"
+         CALL "PIGLIN-ZOMBIFY" USING WS-ROW WS-STOP
+         IF WS-STOP = 1
+             GOBACK
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "panda"
          CALL "PANDA-TICK" USING WS-ROW
@@ -1562,6 +1590,7 @@
      CALL "MS6-CYCLE"
      CALL "STDMOB-REST-TICK"
      CALL "STDMOB-PHANTOM-SPAWNER"
+     CALL "TRADER-TICK"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 

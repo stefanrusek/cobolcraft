@@ -1,0 +1,297 @@
+*> Acceptance test, minecarts with the old rail behaviour (docs/protocol/44 part 8 section 4 and its worked examples 12.2 to 12.4; lane 002-lane-mobsb6, T9008): the seven kinds, a cart on level track
+*> (move 0.4, slowdown 0.96), a slope (pull 1/128, the height term of step 12), a powered rail (+0.06, brake x 0.5, the start from a solid neighbour), a derailed cart (clamp 0.4, friction 0.5),
+*> the furnace cart's fuel (3600 per item up to 32000), the TNT cart (fuse 80, explosion), the activator rail (plain cart shake, TNT cart prime).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US16-MINECART.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG VALUE 96.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-RAIL                BINARY-LONG.
+ 01 WS-POWERED-RAIL        BINARY-LONG.
+ 01 WS-ACT-RAIL            BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG VALUE 2.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ADDED               BINARY-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-HP                  BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-Y0 = FUNCTION INTEGER(PL-Y(WS-PLAYER))
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 30
+     COMPUTE WS-FX = WS-X0 - 48
+     COMPUTE WS-FZ = WS-Z0 - 48
+     COMPUTE WS-GY = WS-Y0 - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-SIZE WS-GY WS-FKIND
+     MOVE "minecraft:rail" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-RAIL
+     MOVE "minecraft:powered_rail" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-POWERED-RAIL
+     MOVE "minecraft:activator_rail" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-ACT-RAIL
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
+     MOVE "shape" TO WS-NAME
+*>   Level track: a row of east_west rails from x0 - 4 to x0 + 6 at y0 (the default shape of a rail is north_south).
+     MOVE "east_west" TO WS-TEXT
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-RAIL WS-NAME WS-TEXT WS-STATE
+     MOVE WS-STATE TO WS-RAIL
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-POWERED-RAIL WS-NAME WS-TEXT WS-STATE
+     MOVE WS-STATE TO WS-POWERED-RAIL
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-ACT-RAIL WS-NAME WS-TEXT WS-STATE
+     MOVE WS-STATE TO WS-ACT-RAIL
+     PERFORM VARYING WS-I FROM -4 BY 1 UNTIL WS-I > 6
+         COMPUTE WS-CX = WS-X0 + WS-I
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-RAIL
+     END-PERFORM
+*>   The kinds.
+     COMPUTE WS-X = WS-X0 + 0.5
+     COMPUTE WS-Y = WS-Y0 + 0.0625
+     COMPUTE WS-Z = WS-Z0 + 0.5
+     MOVE "minecraft:minecart" TO WS-KEY
+     CALL "THROWN-TYPE" USING WS-KEY WS-TYPE
+     MOVE 1 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE "acceptance US16 44-8 4.1 a plain minecart is kind 10 with minecart kind 1 and its own entity type" TO TL-CASE
+     MOVE 1101 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-TYPE(WS-ROW) = WS-TYPE
+         COMPUTE TL-OBSERVED-N = 1000 + PJ-KIND(WS-SLOT) * 10 + PJ-I1(WS-SLOT)
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-KIND FROM 2 BY 1 UNTIL WS-KIND > 7
+         CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-J
+         CALL "PJ-FIND" USING EN-ID(WS-J) WS-SLOT
+         IF WS-J > 0
+             CALL "PJ-DROP" USING WS-J
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 44-8 4.1 every kind 2 to 7 spawns (the last spawn made a row)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SLOT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-J
+     MOVE "acceptance US16 44-8 4.1 an unknown kind makes no cart" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-J TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   12.2: level track, v = 0.4.
+     MOVE 0.4 TO EN-VX(WS-ROW)
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 12.2 the cart moved 0.4 (x = block + 0.9, millimetres)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-X0 * 1000 + 900
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-X(WS-ROW) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 12.2 the stored speed is 0.384 after the 0.96 slowdown (millionths)" TO TL-CASE
+     MOVE 384000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 1000000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 12.2 the cart stays on the rail height (y = 64.0625 equivalent, ten-thousandths)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-Y0 * 10000 + 625
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-Y(WS-ROW) * 10000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   12.3: slope, ascending_east at x0 + 2.
+     MOVE "ascending_east" TO WS-TEXT
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-RAIL WS-NAME WS-TEXT WS-STATE
+     COMPUTE WS-CX = WS-X0 + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STATE
+     COMPUTE WS-X = WS-X0 + 2.5
+     MOVE 1 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 12.3 a cart at rest on ascending_east rolls west: vx = -0.007890625 (nano-blocks)" TO TL-CASE
+     MOVE -7890625 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 1000000000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   12.4: powered rail, speed 0.384 gives 0.42864; unpowered brake gives 0.72; the start from a solid west neighbour gives 0.02.
+     MOVE "powered" TO WS-NAME
+     MOVE "true" TO WS-TEXT
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-POWERED-RAIL WS-NAME WS-TEXT WS-STATE
+     COMPUTE WS-CX = WS-X0 + 4
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STATE
+     COMPUTE WS-X = WS-X0 + 4.5
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     MOVE 0.384 TO EN-VX(WS-ROW)
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 12.4 on a powered rail 0.384 x 0.96 + 0.06 = 0.42864 (hundred-thousandths)" TO TL-CASE
+     MOVE 42864 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+     MOVE "false" TO WS-TEXT
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-POWERED-RAIL WS-NAME WS-TEXT WS-STATE
+     COMPUTE WS-CX = WS-X0 + 5
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STATE
+     COMPUTE WS-X = WS-X0 + 5.5
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     MOVE 1.5 TO EN-VX(WS-ROW)
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 12.4 an unpowered powered rail brakes: 1.5 x 0.5 x 0.96 = 0.72" TO TL-CASE
+     MOVE 72000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.02 TO EN-VX(WS-ROW)
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 12.4 a slow cart (under 0.03) on a brake rail stops dead" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   Start from rest against a solid block west of a powered rail.
+     MOVE "true" TO WS-TEXT
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-POWERED-RAIL WS-NAME WS-TEXT WS-STATE
+     COMPUTE WS-CX = WS-X0 + 6
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STATE
+     COMPUTE WS-CX = WS-X0 + 7
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STONE
+     COMPUTE WS-CX = WS-X0 + 5
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STONE
+     COMPUTE WS-X = WS-X0 + 6.5
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 12.4 a stopped cart with a solid block to the west starts east at 0.02" TO TL-CASE
+     MOVE 2000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   A derailed cart on the ground: clamp 0.4, friction 0.5.
+     COMPUTE WS-X = WS-X0 + 0.5
+     COMPUTE WS-Z = WS-Z0 + 8.5
+     MOVE WS-Y0 TO WS-Y
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     MOVE 1 TO EN-ON-GROUND(WS-ROW)
+     MOVE 1.0 TO EN-VX(WS-ROW)
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 4.4 a derailed cart: clamped to 0.4, halved on the ground (0.2)" TO TL-CASE
+     MOVE 20000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-ROW) * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   The furnace cart's fuel.
+     MOVE 4 TO WS-KIND
+     COMPUTE WS-Z = WS-Z0 + 12.5
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     COMPUTE WS-PX = WS-X0 - 2
+     MOVE WS-Z TO WS-PZ
+     CALL "MINECART-FUEL" USING WS-ROW WS-PX WS-PZ WS-ADDED
+     MOVE "acceptance US16 44-8 4.6 one fuel item is added and gives 3600 ticks" TO TL-CASE
+     MOVE 13600 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ADDED * 10000 + PJ-I3(WS-SLOT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 4.6 the cart is pushed away from the player (+x)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF PJ-R1(WS-SLOT) > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+         CALL "MINECART-FUEL" USING WS-ROW WS-PX WS-PZ WS-ADDED
+     END-PERFORM
+     MOVE "acceptance US16 44-8 4.6 fuel stops at 32000 (the ninth item is refused: 28800 + 3600 > 32000)" TO TL-CASE
+     MOVE 28800 TO TL-EXPECTED-N
+     MOVE PJ-I3(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 4.6 a refused fuel item reports 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ADDED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   The TNT cart: priming, the fuse, the explosion.
+     MOVE 5 TO WS-KIND
+     COMPUTE WS-Z = WS-Z0 + 16.5
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     CALL "MINECART-PRIME" USING WS-ROW
+     MOVE "acceptance US16 44-8 4.6 priming sets the fuse to 80" TO TL-CASE
+     MOVE 80 TO TL-EXPECTED-N
+     MOVE PJ-I3(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 4.6 each tick the fuse falls by 1" TO TL-CASE
+     MOVE 79 TO TL-EXPECTED-N
+     MOVE PJ-I3(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO PJ-I3(WS-SLOT)
+     CALL "MINECART-STEP" USING WS-ROW
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 4.6 at fuse 0 the cart explodes and is gone" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An activator rail: a powered one shakes a plain cart and primes a TNT cart.
+     MOVE "powered" TO WS-NAME
+     MOVE "true" TO WS-TEXT
+     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-ACT-RAIL WS-NAME WS-TEXT WS-STATE
+     COMPUTE WS-CX = WS-X0 - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-STATE
+     COMPUTE WS-X = WS-X0 - 0.5
+     COMPUTE WS-Z = WS-Z0 + 0.5
+     COMPUTE WS-Y = WS-Y0 + 0.0625
+     MOVE 1 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 4.6 a powered activator rail shakes a plain cart (hurt time 10)" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE PJ-I4(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 4.6 and sets its damage to 50" TO TL-CASE
+     MOVE 50 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(PJ-R3(WS-SLOT))
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+     MOVE 5 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     CALL "MINECART-STEP" USING WS-ROW
+     MOVE "acceptance US16 44-8 4.6 a powered activator rail primes a TNT cart (fuse 79 after its tick)" TO TL-CASE
+     MOVE 79 TO TL-EXPECTED-N
+     MOVE PJ-I3(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US16-MINECART.
+ COPY CORETEST.
+ COPY MOBSPTEST.
