@@ -78,7 +78,7 @@ If the entity is not a passenger and is alive: `walkAnimationPos` = `position(pt
 ### 2.3 Aggressive flag
 
 - Mob metadata slot 15 (BYTE, 18 §1.4): bit 1 no AI, bit 2 left-handed, **bit 4 aggressive** (set with `value | 4`, cleared with `value & ~4`; the other bits are untouched). It is replicated like any metadata, so the client reads it from Set Entity Data.
-- The server sets it from goals: the zombie attack goal raises it when its raise-arm counter reaches 5 ticks and clears it on stop (18, ZombieAttackGoal); the ranged bow goal sets it while running; illager, piglin and panda attack goals set it for their duration (18).
+- The server sets it from goals: the zombie attack goal raises it when its raise-arm counter reaches 5 ticks and clears it on stop (18, ZombieAttackGoal); the ranged bow goal sets it while running; other goal-driven setters exist in the raider hold-ground goal, the illagers, the piglins and the pandas (classes that call `setAggressive` were listed, their conditions were not read; Open question 3).
 - **Readers (client):** extraction copies `isAggressive` into the render state of: zombie, husk, drowned, zombie villager, zombified piglin (not the giant: flag stays false), skeleton family (stray, bogged, wither skeleton), illagers (pillager, vindicator, illusioner; evoker and others use `armPose`), and the piglin and piglin brute (via their arm pose). The pose formulas are 34-2 §4.3 (zombie arms, -2.0943952 aggressive and -1.3962634 otherwise), 34-2 §4.5 (skeleton), 34-2 §4.6 (piglin) and 34-3 §4.3 (illagers); this section adds only the drivers.
 
 ## 3. `teleport` / `tp` permission of the location forms
@@ -267,6 +267,48 @@ Block tag `snaps_goat_horn`: `overworld_natural_logs` (tag), stone, packed_ice, 
 
 ---
 
+## 8. Remaining lists and formulas named by open Phase 49 tasks
+
+**Gaps closed:** the slime-chunk seed formula (task line of the slime, "seed formula not in docs") and the members of the sniffer diggable-block tag ("the sniffer_diggable_block tag ... not in the docs"). Read from `WorldgenRandom.seedSlimeChunk`, `SingleThreadedRandomSource` and `data/minecraft/tags/block/`.
+
+### 8.1 Slime chunk test
+
+20 §10 (b) says the test is `nextInt(10) == 0` on a generator seeded by `seedSlimeChunk(chunkX, chunkZ, worldSeed, 987234911)`. The seeding formula, with all arithmetic as Java: `a` = chunkX and `b` = chunkZ (32-bit ints), `S` = the world seed (64-bit), salt = 987234911.
+
+| Term | Type and wrapping |
+|---|---|
+| T1 | (a x a) x 4987142, computed in 32-bit int arithmetic (wraps), then widened to 64 bits |
+| T2 | a x 5947611, 32-bit int (wraps), widened |
+| T3 | (b x b) in 32-bit int (wraps), widened to 64 bits, then multiplied by the 64-bit constant 4392871 (64-bit wrap) |
+| T4 | b x 389711, 32-bit int (wraps), widened |
+
+Seed = (S + T1 + T2 + T3 + T4) XOR 987234911, summed in 64-bit two's complement. The generator is `SingleThreadedRandomSource(seed)`: the `java.util.Random` linear congruential generator (multiplier 0x5DEECE66D, increment 11, 48-bit mask, initial scramble `(seed XOR 0x5DEECE66D) AND (2^48 - 1)`), the same algorithm as `LegacyRandomSource` in 10 §2.6, including `nextInt(bound)` (power-of-two shortcut or the `next(31) mod bound` rejection loop). The chunk is a slime chunk when the first `nextInt(10)` equals 0 (about 10 percent of chunks). Each query starts from a fresh generator (no state carries over).
+
+Test vectors (computed from this formula with the generator above; not executed in the artifact):
+
+| chunkX | chunkZ | world seed | seed after the XOR | slime chunk |
+|---|---|---|---|---|
+| 0 | 0 | 0 | 987234911 | no |
+| 0 | 0 | 12345 | 987247206 | no |
+| 1 | 0 | 12345 | 981403717 | no |
+| -3 | 7 | 12345 | 876799905 | yes |
+| 5 | 5 | -1 | 889565929 | no |
+| 100 | -200 | 987654321 | 175648119546 | no |
+
+For seed 12345 exactly 23 of the 256 chunks with x and z in -8 to 7 are slime chunks.
+
+### 8.2 Sniffer diggable-block tag
+
+`sniffer_diggable_block` (block tag, used by the sniffer's `canDig`, 19 §14) has the members: tag `dirt` (dirt, coarse_dirt, rooted_dirt), tag `mud` (mud, muddy_mangrove_roots), tag `moss_blocks` (moss_block, pale_moss_block), grass_block, podzol. Related tags: `sniffer_egg_hatch_boost` = moss_block; item tag `sniffer_food` = torchflower_seeds.
+
+### 8.3 Not closed
+
+The remaining Phase 49 task remarks were checked and are either already answered in 20 §10 (slime hop cadence: jump delay 10 + nextInt(20), a third of it when aggressive; per-size speed 0.2 + 0.1 x size) or are not data lists (zombie reinforcement spawn-rule light test reasons, sniffer dig cadence beyond 19 §14, which is already in that section). They are left as stated.
+
+---
+
 ## Open questions
 
-1. None for §1 and §2 beyond those of the cited documents.
+1. The order in which `Direction.Plane.HORIZONTAL` iterates (7.1) was assumed to be the plane constant's order (north, east, south, west) and not read.
+2. The camel's sitting dimensions (6.4) were not read.
+3. The set of mobs that set the aggressive flag from a goal (2.3), beyond the zombie attack goal and ranged bow goal of 18, was not enumerated; only the client readers were.
