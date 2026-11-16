@@ -1999,6 +1999,22 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 15
+         WHEN 11
+*>           end_spike and end_gateway (feat-end.cob): unsupported with a custom spike list or without the exact flag
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-END-NODE" USING JSON-DOC L-NODE LS-N
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 6
+         WHEN 12
+         WHEN 13
+         WHEN 55
+             CONTINUE
          WHEN 18
 *>           fossil (feat-fossil.cob): unsupported when a template file or a processor list is missing or the lists differ in length
              MOVE FD-BAD TO LS-SAVED-BAD

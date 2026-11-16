@@ -1262,6 +1262,13 @@
              CALL "FR-DRIP" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 5
              CALL "FR-BONUS" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 15
+         WHEN 6
+         WHEN 12
+         WHEN 13
+         WHEN 11
+         WHEN 55
+             CALL "FR-END" USING L-STATE FT-TYPE(L-FT) L-X L-Y L-Z L-RESULT
          WHEN 18
              CALL "FR-FOSSIL" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 50
