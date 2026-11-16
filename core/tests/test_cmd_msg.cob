@@ -50,13 +50,13 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
-     MOVE "acceptance US13 /msg tell is the same command" TO TL-CASE
+     MOVE "acceptance US13 /tell is the same command as /msg" TO TL-CASE
      MOVE "tell Bob again" TO WS-LINE
      MOVE "commands.message.display.outgoing(Bob,again)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-ALICE WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
-     MOVE "acceptance US13 /msg w is the same command" TO TL-CASE
+     MOVE "acceptance US13 /w is the same command as /msg" TO TL-CASE
      MOVE "w Bob once more" TO WS-LINE
      MOVE "commands.message.display.outgoing(Bob,once more)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-ALICE WS-LINE WS-TEXT
