@@ -113,7 +113,7 @@
          CALL "PB-GET-VARINT" USING PB-BUFFER PB-ISX-TYPE(WS-I)
          MOVE PB-POS TO WS-VALUE-START
          EVALUATE PB-ISX-TYPE(WS-I)
-             WHEN 1 WHEN 2 WHEN 3 WHEN 12 WHEN 19 WHEN 31 WHEN 65 WHEN 75
+             WHEN 1 WHEN 2 WHEN 3 WHEN 12 WHEN 19 WHEN 31 WHEN 46 WHEN 65 WHEN 75
                  CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
              WHEN 4 WHEN 22 WHEN 34
                  CONTINUE
@@ -183,6 +183,35 @@
                  END-IF
                  PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-PAGES OR PB-ERROR = 1
                      PERFORM READ-EXPLOSION
+                 END-PERFORM
+*>           trim (58; 54 section 18.1): the material Holder then the pattern Holder (VarInt 0 and the inline value, or position + 1); inline material
+*>           Identifier and text, inline pattern Identifier, text and Boolean decal
+             WHEN 58
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 IF WS-SCRATCH = 0
+                     CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+                 END-IF
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 IF WS-SCRATCH = 0
+                     CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+                     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+                 END-IF
+*>           banner_patterns (74; 54 section 22.1): a VarInt count, each layer a banner_pattern Holder (inline: asset id and translation key Strings) and a VarInt dye
+             WHEN 74
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINED
+                 IF WS-CONTAINED < 0 OR WS-CONTAINED > PB-ISX-VALUE-MAX
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-CONTAINED
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-CONTAINED OR PB-ERROR = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                     IF WS-SCRATCH = 0
+                         CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                         CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-AUTHOR WS-STR WS-CAPACITY WS-STR-LEN
+                     END-IF
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
                  END-PERFORM
 *>           container (77, ItemContainerContents): a VarInt count of 0 to 256, then that many stacks, each a count (0 = empty) and, when
 *>           not empty, item, added and removed counts of 0 (a stack with components inside a container is not read)

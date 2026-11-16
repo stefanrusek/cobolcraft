@@ -253,7 +253,11 @@
                  MOVE 0 TO EN-X1(WS-ROW) EN-OVL(WS-ROW) EN-OVN(WS-ROW)
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
                      MOVE 0 TO EN-EQ(WS-ROW, WS-I)
+                     MOVE -1 TO EN-EQ-DYE(WS-ROW, WS-I)
+                     MOVE 0 TO EN-EQ-TRIM-MAT(WS-ROW, WS-I) EN-EQ-TRIM-PAT(WS-ROW, WS-I) EN-EQ-FOIL(WS-ROW, WS-I)
                  END-PERFORM
+                 MOVE -1 TO EN-HB-BASE(WS-ROW, 1) EN-HB-BASE(WS-ROW, 2)
+                 MOVE 0 TO EN-HB-COUNT(WS-ROW, 1) EN-HB-COUNT(WS-ROW, 2)
                  MOVE 0 TO EN-HAND-OK(WS-ROW, 1) EN-HAND-OK(WS-ROW, 2)
                  MOVE 14 TO EN-X2(WS-ROW)
                  MOVE -1 TO EN-X3(WS-ROW)
@@ -448,6 +452,8 @@
                      IF MD-ISX-COUNT <= 0
                          MOVE 0 TO EN-EQ(WS-ROW, FUNCTION MOD(WS-SLOT, 128) + 1)
                      END-IF
+                     COMPUTE WS-I = FUNCTION MOD(WS-SLOT, 128)
+                     CALL "ENTITY-EQ-COMPONENTS" USING CLIENT-STATE WS-ROW WS-I MD-ITEMSTACK-X
                  END-IF
              END-PERFORM
          WHEN 123
@@ -529,3 +535,115 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM ENTITY-PACKET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-EQ-COMPONENTS.
+*> USING CLIENT-STATE, replica row, equipment slot ordinal 0 to 7, the stack of Set Equipment (PB-ITEMSTACK-X): keeps the components the models draw in EN-EQX of the
+*> slot and, for the hands (0 and 1), EN-HB: dyed_color 47 (the low 24 bits of the Int, 54 section 17), trim 58 (both holders as registry position + 1; an inline holder of
+*> unknown length reads as no trim), the glint (enchantment_glint_override 21 when present, else enchantments 13 non-empty: 54 section 19.2), base_color 75 and the
+*> first 16 layers of banner_patterns 74 (holder, 0 for an inline pattern, and dye id; 54 section 22). Everything is reset first: an empty stack or one without them clears.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-OVERRIDE            BINARY-LONG.
+ 01 WS-ENCHANTED           BINARY-LONG.
+ 01 WS-B1                  BINARY-LONG.
+ 01 WS-B2                  BINARY-LONG.
+ 01 WS-B3                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-SLOT PB-ITEMSTACK-X.
+     MOVE -1 TO EN-EQ-DYE(L-ROW, L-SLOT + 1)
+     MOVE 0 TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1) EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1) EN-EQ-FOIL(L-ROW, L-SLOT + 1)
+     IF L-SLOT < 2
+         MOVE -1 TO EN-HB-BASE(L-ROW, L-SLOT + 1)
+         MOVE 0 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+     END-IF
+     IF PB-ISX-COUNT <= 0
+         GOBACK
+     END-IF
+     MOVE -1 TO WS-OVERRIDE
+     MOVE 0 TO WS-ENCHANTED
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT
+         MOVE PB-ISX-VALUE-LENGTH(WS-K) TO WS-LEN
+         IF WS-LEN > 0
+             COMPUTE WS-B1 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1)) - 1
+         ELSE
+             MOVE 0 TO WS-B1
+         END-IF
+         EVALUATE PB-ISX-TYPE(WS-K)
+             WHEN 47
+                 IF WS-LEN >= 4
+                     COMPUTE WS-B1 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(2:1)) - 1
+                     COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(3:1)) - 1
+                     COMPUTE WS-B3 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(4:1)) - 1
+                     COMPUTE EN-EQ-DYE(L-ROW, L-SLOT + 1) = WS-B1 * 65536 + WS-B2 * 256 + WS-B3
+                 END-IF
+             WHEN 58
+                 IF WS-LEN >= 2 AND WS-B1 > 0
+                     COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(2:1)) - 1
+                     IF WS-B2 > 0
+                         MOVE WS-B1 TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1)
+                         MOVE WS-B2 TO EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1)
+                     END-IF
+                 END-IF
+             WHEN 21
+                 MOVE WS-B1 TO WS-OVERRIDE
+             WHEN 13
+                 IF WS-B1 > 0
+                     MOVE 1 TO WS-ENCHANTED
+                 END-IF
+             WHEN 75
+                 IF L-SLOT < 2
+                     MOVE WS-B1 TO EN-HB-BASE(L-ROW, L-SLOT + 1)
+                 END-IF
+             WHEN 74
+                 IF L-SLOT < 2
+                     PERFORM READ-LAYERS
+                 END-IF
+             WHEN OTHER
+                 CONTINUE
+         END-EVALUATE
+     END-PERFORM
+     IF WS-OVERRIDE >= 0
+         MOVE WS-OVERRIDE TO EN-EQ-FOIL(L-ROW, L-SLOT + 1)
+     ELSE
+         MOVE WS-ENCHANTED TO EN-EQ-FOIL(L-ROW, L-SLOT + 1)
+     END-IF
+     GOBACK.
+
+ READ-LAYERS.
+*>   A count of 128 or more is a two-byte VarInt: keep the first 16 of whatever follows is not read (the count reads as 16 and the layers are not walked).
+     IF WS-B1 >= 128
+         MOVE 16 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+         EXIT PARAGRAPH
+     END-IF
+     MOVE 0 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+     MOVE 2 TO WS-P
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-B1 OR WS-N > 16 OR WS-P > WS-LEN
+         COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+         ADD 1 TO WS-P
+         MOVE WS-B2 TO EN-HB-PAT(L-ROW, L-SLOT + 1, WS-N)
+         IF WS-B2 = 0
+*>           An inline pattern: two Strings (a one-byte length each), skipped.
+             PERFORM 2 TIMES
+                 IF WS-P <= WS-LEN
+                     COMPUTE WS-L = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+                     COMPUTE WS-P = WS-P + 1 + WS-L
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-P <= WS-LEN
+             COMPUTE EN-HB-DYE(L-ROW, L-SLOT + 1, WS-N) = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+             ADD 1 TO WS-P
+             ADD 1 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+         END-IF
+     END-PERFORM.
+ END PROGRAM ENTITY-EQ-COMPONENTS.

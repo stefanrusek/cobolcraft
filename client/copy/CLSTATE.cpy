@@ -756,6 +756,20 @@
           15 EN-HAND OCCURS 2 TIMES.
              20 EN-HAND-OK    BINARY-LONG.
              20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
+*>        The item components of the equipment that the models draw (54 sections 17 to 19 and 22; ENTITY-EQ-COMPONENTS, per slot like EN-EQ): EN-EQ-DYE the
+*>        dyed_color RGB (low 24 bits, -1 none), EN-EQ-TRIM-MAT and -PAT the trim's material and pattern holders (registry position + 1, 0 none or an inline holder),
+*>        EN-EQ-FOIL 1 when the stack has the glint (the override, else a non-empty enchantments component). EN-HB, per hand (1 main, 2 off): the base_color dye
+*>        (-1 none), the number of banner_patterns layers (at most 16 kept) and the pattern holder (0 inline) and dye id of each.
+          15 EN-EQX OCCURS 8 TIMES.
+             20 EN-EQ-DYE      BINARY-LONG.
+             20 EN-EQ-TRIM-MAT BINARY-LONG.
+             20 EN-EQ-TRIM-PAT BINARY-LONG.
+             20 EN-EQ-FOIL     BINARY-LONG.
+          15 EN-HB OCCURS 2 TIMES.
+             20 EN-HB-BASE     BINARY-LONG.
+             20 EN-HB-COUNT    BINARY-LONG.
+             20 EN-HB-PAT      BINARY-LONG OCCURS 16 TIMES.
+             20 EN-HB-DYE      BINARY-LONG OCCURS 16 TIMES.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

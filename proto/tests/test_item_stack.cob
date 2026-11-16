@@ -221,6 +221,48 @@
      MOVE "test item-stack get of lore (11) with 300 lines is rejected" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET
+     MOVE "01 01 01 00 2e 05" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of dye (46) is a VarInt" TO TL-CASE
+     MOVE "c1 i1 +46=05 pos 6 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 3a 03 05" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of trim (58) with two registered holders" TO TL-CASE
+     MOVE "c1 i1 +58=0305 pos 7 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 3a 00 01 61 08 00 01 61 00 01 62 08 00 01 62 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of trim (58) with an inline material and an inline pattern" TO TL-CASE
+     MOVE "c1 i1 +58=000161080001610001620800016200 pos 20 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a 02 03 05 00 01 61 01 62 0f" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with a registered and an inline layer" TO TL-CASE
+     MOVE "c1 i1 +74=02030500016101620f pos 14 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with no layers" TO TL-CASE
+     MOVE "c1 i1 +74=00 pos 6 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a ff ff ff ff 0f" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with a negative layer count is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a 01 00 01 61" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) cut short is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
      MOVE "00" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
