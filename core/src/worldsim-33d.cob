@@ -166,6 +166,8 @@
  01 WS-ICE-KEY             PIC X(48) VALUE "minecraft:ice".
  01 WS-SNOW-KEY            PIC X(48) VALUE "minecraft:snow".
  01 WS-HEIGHT              BINARY-LONG VALUE 1.
+ 01 WS-HEIGHT-RULE         PIC X(40) VALUE "max_snow_accumulation_height".
+ 01 WS-HEIGHT-VALUE        BINARY-DOUBLE.
  01 WS-SNOWY               BINARY-LONG.
  01 WS-AIR                 BINARY-LONG.
  01 WS-LAYER               BINARY-LONG VALUE 0.
@@ -239,6 +241,8 @@
          IF WS-SOLID = 1
              MOVE 1 TO WS-SURVIVES
          END-IF
+         CALL "BR-RULE-GET" USING WS-HEIGHT-RULE WS-HEIGHT-VALUE
+         MOVE WS-HEIGHT-VALUE TO WS-HEIGHT
          CALL "WW-SNOW" USING WS-HEIGHT L-RAINING WS-SNOWY WS-INSIDE WS-LIGHT WS-AIR WS-LAYER WS-LAYERS WS-SURVIVES WS-ACTION
              WS-NEW-LAYERS
          IF WS-ACTION = 1
