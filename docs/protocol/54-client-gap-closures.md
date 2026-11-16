@@ -352,6 +352,21 @@ Worked examples: `execute in the_nether run tp @s 8 70 8` from the overworld: th
 
 ---
 
+## 10. `/playsound` audible distance
+
+**Gap closed:** the range, minimum-volume and listener rules behind `commands.playsound.failed` (T1913). Source: `PlaySoundCommand.playSound`, `SoundEvent.getRange`, `CommandResponseTracker`.
+
+1. **Listeners.** Only targets whose level is the executor's level are considered (a target in another dimension is skipped silently). Without `<targets>` the target set is the calling player alone; the position default is the executor's position; volume 1.0, pitch 1.0, minVolume 0.0.
+2. **Range.** The command builds a variable-range sound event from the id (no fixed range, whatever the sound table says): range = 16 when volume <= 1, else 16 x volume. The check compares the squared distance from the given position to the target's position (x, y, z) against range squared.
+3. **Inside range** (distance squared <= range squared): the target gets Sound (0x77, 05b) at the given position with the given volume and pitch.
+4. **Outside range:** if minVolume <= 0 the target is skipped (nothing sent). If minVolume > 0 the target gets the sound at a position 2 blocks from the target along the line towards the given position (target + 2 x unit vector), with volume = minVolume (the client attenuates by its own rules, 12 sound).
+5. One seed (`nextLong` of the executor level's random source) is drawn before the loop and sent to every target in the packet's seed field. The sound is sent as an inline (direct) sound event holding the id, never a registry id.
+6. Every target that was sent a packet (rule 3 or 4) is tracked. Zero tracked: error `commands.playsound.failed`. One: `commands.playsound.success.single` (sound id, the player's display name); several: `.multiple` (sound id, count). Result = tracker total (the number of players reached).
+
+Worked examples: players at distance 10 and 100 from the position, volume 1, minVolume 0: only the first is reached, result 1. Same with minVolume 0.5: both are reached, the second hears volume 0.5 at 2 blocks away; result 2. Volume 8: range 128, both are in range. No players in range and minVolume 0: failed.
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.

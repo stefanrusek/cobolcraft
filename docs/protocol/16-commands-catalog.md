@@ -1218,6 +1218,8 @@ particle <name:particle> [<pos:vec3> [<delta:vec3> <speed:float min 0> <count:in
 
 ### 7.9 `playsound`
 
+Audible distance, minimum volume and listener rules: 54 §10.
+
 ```
 playsound <sound:identifier> <source> [<targets:players> [<pos:vec3> [<volume:float min 0> [<pitch:float 0..2> [<minVolume:float 0..1>]]]]]
 ```
