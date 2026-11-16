@@ -1,5 +1,5 @@
 *> The rows of the shape rule table (docs/protocol/51-block-shapes.md sections 3 and 4), read by BSH-RULES-LOAD: classes ~ mode ~ property ~ value ~ collision ~ outline.
- 78 BSD-COUNT             VALUE 130.
+ 78 BSD-COUNT             VALUE 133.
  01 BSD-DATA.
     05 FILLER PIC X(500) VALUE "|TorchBlock|RedstoneTorchBlock|~S~~~N~6 0 6 10 10 10".
     05 FILLER PIC X(500) VALUE "|WallTorchBlock|RedstoneWallTorchBlock|~Y~facing~~N~5.5 3 11 10.5 13 16".
@@ -23,6 +23,9 @@
     05 FILLER PIC X(500) VALUE "|StandingSignBlock|BannerBlock|~S~~~N~4 0 4 12 16 12".
     05 FILLER PIC X(500) VALUE "|WallSignBlock|~Y~facing~~N~0 4.5 14 16 12.5 16".
     05 FILLER PIC X(500) VALUE "|WallBannerBlock|~Y~facing~~N~0 0 14 16 12.5 16".
+    05 FILLER PIC X(500) VALUE "|BambooStalkBlock|~P~leaves~large~6.5 0 6.5 9.5 16 9.5~3 0 3 13 16 13".
+    05 FILLER PIC X(500) VALUE "|BambooStalkBlock|~S~~~6.5 0 6.5 9.5 16 9.5~5 0 5 11 16 11".
+    05 FILLER PIC X(500) VALUE "|BambooSaplingBlock|~S~~~N~4 0 4 12 12 12".
     05 FILLER PIC X(500) VALUE "|SaplingBlock|~S~~~N~2 0 2 14 12 14".
     05 FILLER PIC X(500) VALUE "|FlowerBlock|WitherRoseBlock|EyeblossomBlock|MushroomBlock|~S~~~N~5 0 5 11 10 11".
     05 FILLER PIC X(500) VALUE "|TallGrassBlock|DryVegetationBlock|NetherRootsBlock|~S~~~N~2 0 2 14 13 14".
@@ -132,4 +135,4 @@
     05 FILLER PIC X(500) VALUE "|ChestBlock|TrappedChestBlock|CopperChestBlock|WeatheringCopperChestBlock|~K~CH~~~".
     05 FILLER PIC X(500) VALUE "|BedBlock|~K~BD~~~".
  01 BSD-TABLE REDEFINES BSD-DATA.
-    05 BSD-ROW             PIC X(500) OCCURS 130 TIMES.
+    05 BSD-ROW             PIC X(500) OCCURS 133 TIMES.

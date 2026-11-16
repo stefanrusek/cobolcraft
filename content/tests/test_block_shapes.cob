@@ -911,6 +911,32 @@
      MOVE "0,0,0,16000,2000,16000;4000,2000,4000,12000,14000,12000;1066" & "7,10000,0,15000,14000,16000;6333,12000,0,10667,16000,16000;2" & "000,14000,0,6333,18000,16000" TO WS-EXPECT
      PERFORM CHECK-OUT
 
+*>   Bamboo (R-F43, R-F42; lane fixa A2): a thin collision at every leaves value, an outline by leaves; the sapling has an outline only.
+     MOVE "bamboo" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "leaves=none" TO WS-P1
+     MOVE "fixa shape: bamboo leaves=none collision is the thin stalk" TO WS-CASE
+     MOVE "6500,0,6500,9500,16000,9500" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "fixa shape: bamboo leaves=none outline" TO WS-CASE
+     MOVE "5000,0,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "leaves=large" TO WS-P1
+     MOVE "fixa shape: bamboo leaves=large collision stays thin" TO WS-CASE
+     MOVE "6500,0,6500,9500,16000,9500" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "fixa shape: bamboo leaves=large outline is wider" TO WS-CASE
+     MOVE "3000,0,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "bamboo_sapling" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "fixa shape: bamboo sapling has no collision" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "fixa shape: bamboo sapling outline" TO WS-CASE
+     MOVE "4000,0,4000,12000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+
 *>   The shape table is full: a new shape is the full cube.
      MOVE 2000 TO BSH-COUNT
      INITIALIZE BSC-SHAPE
