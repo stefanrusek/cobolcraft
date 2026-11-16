@@ -509,7 +509,7 @@ Gap closed: 00 §12.2 and 25-1 §7 name the component registry but not the per-t
 
 ### 15.2 Persistence table: which types are saved and which are sent
 
-Every type of 46 §8.1 has both an NBT codec and a network codec, except the nine below (read from the registration lambdas: the builder either lacks `persistent(...)` or lacks `networkSynchronized(...)`).
+Every type of 46 §8.1 has both an NBT codec and a network codec, except the ten below (read from the registration lambdas: the builder either lacks `persistent(...)` or lacks `networkSynchronized(...)`; re-read by the reviewer for all 122 registrations, and `custom_data` was the one missing from the reader's list).
 
 | Id | Key | Saved in NBT | Sent on the wire | Consequence |
 |---|---|---|---|---|
@@ -517,6 +517,7 @@ Every type of 46 §8.1 has both an NBT codec and a network codec, except the nin
 | 42 | `additional_trade_cost` | no | yes (VarInt) | Transient; a merchant-screen overlay (40-5). |
 | 50 | `map_post_processing` | no | yes | Transient enum (§26.1). |
 | 22 | `intangible_projectile` | yes (Unit) | no | The client never sees it. |
+| 0 | `custom_data` | yes | no | Server-only. The network codec of `CustomData` exists (§25.5) but this registration does not use it, so a stack sent to a client carries no `custom_data` patch entry (the client cannot read it back; `bucket_entity_data`, id 61, is different: persistent and sent). |
 | 49 | `map_decorations` | yes | no | Server-only; the client draws decorations from the map data packet. |
 | 59 | `debug_stick_state` | yes | no | Server-only. |
 | 68 | `recipes` | yes | no | Server-only. |
@@ -555,7 +556,7 @@ Rule (`TooltipDisplay.shows(type)`): a component's tooltip lines are shown iff `
 
 ### 15.5 Enchantment tooltip order (for completeness)
 
-Enchantment lines are written first for the enchantments in the data tag `#minecraft:tooltip_order` (in the tag's order, only those present with level above 0), then for the remaining enchantments in the map's iteration order. Each line is the enchantment's full name for that level (the enchantment's name with its level appended; the level text rules were not read in this round). No sort by level.
+Enchantment lines are written first for the enchantments in the data tag `#minecraft:tooltip_order` (in the tag's order, only those present with level above 0), then for the remaining enchantments in the map's iteration order. Each line is the enchantment's full name for that level (`Enchantment.getFullname`: the enchantment's description text in red when the enchantment is in the tag `#minecraft:curse` (binding and vanishing curse), otherwise gray; then, unless the level is 1 and the enchantment's maximum level is 1, a space and the translatable key `enchantment.level.<level>`, which `en_us` defines for 1 to 10 only (`I` to `X`), so level 11 and above show the raw key text). No sort by level.
 
 ---
 
@@ -650,7 +651,7 @@ Gap closed: 04 §6 has the registry file schemas, 25-4 §5 the material items (w
 | inline `TrimMaterial` (network `DIRECT_STREAM_CODEC`) | Identifier `palette_id`, then TextComponent `description` | `palette_id` String (required), `description` text component (required) | **Exactly two fields in 26.3.** There is no `asset_name`, no `ingredient`, no `item_model_index` and no per-armour-material `override_armor_materials` map; the "darker" colour variant is a client-side rule (18.4). |
 | inline `TrimPattern` (network `DIRECT_STREAM_CODEC`) | Identifier `asset_id`, TextComponent `description`, Boolean `decal` | `asset_id` String (required), `description` (required), `decal` Boolean, default false and always written | No template item or ingredient field (the link from a template item to its pattern is not in the registry entry; see 40-3). |
 
-### 18.2 `trim_material` registry contents (11 entries, `data/minecraft/trim_material/<name>.json` in the artifact; registry ids are assigned in the order the registry is synchronised, 04 and 46; the file order here is alphabetical (inferred as the load order))
+### 18.2 `trim_material` registry contents (11 entries, `data/minecraft/trim_material/<name>.json` in the artifact; registry ids are assigned in the order the registry is synchronised, 04 and 46; the registry loader sorts the entries by identifier before registering them, so the alphabetical order of the table is the id order, read)
 
 All entries have the same shape (`palette_id`, `description` = a translatable component with a colour and key `trim_material.minecraft.<name>`). Values read from the files:
 
@@ -685,7 +686,7 @@ Entries: `bolt`, `coast`, `dune`, `eye`, `flow`, `host`, `raiser`, `rib`, `sentr
 | `diamond` | `minecraft:diamond` | `minecraft:trim/diamond_darker` |
 | `netherite` | `minecraft:netherite` | `minecraft:trim/netherite_darker` |
 
-   Armour made of `leather`, `chainmail`, `turtle_scute`, `armadillo_scute` has no override, so a trim of any material uses the material's normal palette. The item-icon overlays use the same eleven normal palettes plus the five `_darker` ones through the items atlas (`paletted_permutations` with key `trim_base`, 14 §7.4), and the item model is expected to choose the `_darker` permutation under the same condition (inferred; the item-model JSON was not read in this round, Open question 4).
+   Armour made of `leather`, `chainmail`, `turtle_scute`, `armadillo_scute` has no override, so a trim of any material uses the material's normal palette. The item-icon overlays use the same eleven normal palettes plus the five `_darker` ones through the items atlas (`paletted_permutations` with key `trim_base`, 14 §7.4), and the item models do choose it (read): each armour item's model (`assets/minecraft/items/<armour item>.json`) is a select on the item property `minecraft:trim_material` with one case per material, each naming a model whose second layer texture is `trims/items/<piece>_trim_<material>` (piece `helmet`, `chestplate`, `leggings`, `boots`), and the model of the armour's own material uses the `<material>_darker` texture instead (20 models: iron, golden (gold), diamond, netherite and copper armour, four pieces each, with the same-named trim); every other pairing and leather and chainmail use the plain texture. The items atlas builds those 16 permutations from the four `trims/items/<piece>_trim` greys with the key palette (14 §7.4).
 3. **Texture path.** `textures/trims/entity/<layer type name>/<pattern asset path>.png` (the layer type names are `humanoid`, `humanoid_leggings`, `humanoid_baby`, ...; the layer type `humanoid_baby` has no trim, 34-2), unless the override gave a texture id (then that id's path is used with the same prefix).
 4. **Recolouring** (done once per pair of texture and palette, then cached): the two palettes must have the same number of colours (8; a mismatch is an error). A mapping is built from each opaque-able entry of the key palette (alpha not 0) to the colour at the same index of the chosen palette. For every pixel of the pattern texture: if its alpha is 0 the pixel is left unchanged; otherwise its RGB (forced opaque) is looked up in the mapping; a colour not in the mapping stays as it is (inferred: the default of the lookup is the input colour); the output alpha is `pixelAlpha * paletteColorAlpha / 255`, the palette colours being opaque.
 5. **Order and render type** are in 34-2 §4 item 6 (after the base layers, render type `armorTrim` with the pattern's `decal` flag, then once more with `trimmedArmorGlint` if the stack has the foil, 19.3).
@@ -908,12 +909,12 @@ All four are `cacheEncoding` types (a server-side memoisation, not visible in th
 
 Network: VarInt type id (`consume_effect_type`, 46 §8.2: 0 `apply_effects`, 1 `remove_effects`, 2 `clear_all_effects`, 3 `teleport_randomly`, 4 `play_sound`), then the type's payload:
 
-| Id | Type | Network payload | NBT keys (the compound also carries the type name under key `type`, inferred from the dispatch codec's default key; the fields below sit in the same compound) | Defaults and limits |
+| Id | Type | Network payload | NBT keys (the compound also carries the type name under key `type`, read: the dispatch codec uses its default key; the fields below sit in the same compound) | Defaults and limits |
 |---|---|---|---|---|
 | 0 | `apply_effects` | VarInt count, count mob effect instances (§16.2), Float probability | `effects` List of mob effect instances (§16.2), `probability` Float | `probability` default 1.0 and must be in 0.0 to 1.0; the effects apply when `nextFloat() < probability` (25-5 §4.4) |
 | 1 | `remove_effects` | HolderSet of `mob_effect` (00 §10.3) | `effects` HolderSet: a String id, a String tag `#id`, or a list of ids | no default; required |
 | 2 | `clear_all_effects` | nothing | no extra keys | |
-| 3 | `teleport_randomly` | Float diameter, Boolean directional_particles | `diameter` Float, `directional_particles` Boolean | `diameter` default 16.0 and positive; `directional_particles` default **true** for the no-argument constructor used by chorus fruit (25-6; the NBT default of the key was not separately read). Behaviour: 25-6. |
+| 3 | `teleport_randomly` | Float diameter, Boolean directional_particles | `diameter` Float, `directional_particles` Boolean | `diameter` default 16.0 and positive; `directional_particles` default **true** in NBT too (read) and for the no-argument constructor used by chorus fruit (25-6). Behaviour: 25-6. |
 | 4 | `play_sound` | sound (Holder of `sound_event`, as in `consumable`) | `sound` (id or inline) | required |
 
 ### 24.3 `suspicious_stew_effects` (55), `SuspiciousStewEffects`
@@ -963,8 +964,8 @@ Gap closed: item stacks that live inside a component are an `ItemStackTemplate` 
 | Aspect | Value |
 |---|---|
 | Value | An ordered list of at most **256** slots; each slot is empty or an item stack template. Trailing empty slots are not stored (the list ends at the last non-empty slot when built from a container). |
-| Network | VarInt count (at most 256), then count x Optional (Boolean present flag, then an ItemStackTemplate, 25.1). An empty slot is `00`. (The Optional wrapper is inferred from the list element type `Optional<template>`; the 256 bound is read.) |
-| NBT | List of at most 256 compounds `{slot: Int 0..255, item: <template compound>}`, one per **non-empty** slot, in any order; on load the slot list is sized to the highest slot index plus one with the rest empty. Duplicate slot indices: the later entry wins (inferred). A slot number over 255 or a list of more than 256 entries fails the decode. |
+| Network | VarInt count (at most 256), then count x Optional (Boolean present flag, then an ItemStackTemplate, 25.1). An empty slot is `00`. (The Optional wrapper is read: the stream codec is the template codec wrapped in the optional operation, then the 256-bounded list.) |
+| NBT | List of at most 256 compounds `{slot: Int 0..255, item: <template compound>}`, one per **non-empty** slot, in any order; on load the slot list is sized to the highest slot index plus one with the rest empty. Duplicate slot indices: the later entry wins (read: the slots are written into the list in order). A slot number over 255 or a list of more than 256 entries fails the decode. |
 | Default | `EMPTY` (no slots). Present in the prototype of the shulker box items (31-1). |
 | Equality | Slot-by-slot list equality including trailing structure: `[A]` and `[A, empty]` are different lists, but the builders never produce the second. |
 | Behaviour | Destroying a block item entity empties the component and drops the contents (25-1 §6); the tooltip shows the first few non-empty items plus a "more items" line (translation keys `item.container.item_count` and `item.container.more_items`). |
@@ -983,7 +984,7 @@ Both are `CustomData`, a wrapper of one NBT compound.
 
 | Aspect | Value |
 |---|---|
-| Network | Network NBT, compound only (00 §8: type byte 10, no root name, then the compound payload; an End root or a non-compound root fails). Not length-prefixed, not Boolean-prefixed. |
+| Network | `bucket_entity_data` (61): network NBT, compound only (00 §8: type byte 10, no root name, then the compound payload; an End root or a non-compound root fails), not length-prefixed, not Boolean-prefixed. `custom_data` (0): **not sent at all** (15.2: persistent only); the layout just described is the `CustomData` stream codec, which only `bucket_entity_data` uses. |
 | NBT | A compound (the data as it is), **or** a String in the SNBT syntax which is parsed into a compound ("flattened" alternative; the writer always writes the compound). |
 | Default | `EMPTY` (an empty compound). `bucket_entity_data` is in the prototype of every mob bucket as empty (25-5 §3); `custom_data` is absent by default. |
 | Equality | NBT compound equality (key sets and values; list order matters). |
@@ -1086,6 +1087,6 @@ On the network `equippable` has no defaults: all fields are written (17 §1.2 or
 
 3. (cr4) Not read: the `ServerPlayer` cross-dimension override (9.2); the argument order of the sniffer dig-position lookup (12.2); `FeelingHappy` and `Scenting` internals (12.2); how a float provider's value is printed (Java float text assumed, 13.4); the message of integer arithmetic exceptions (13.4); whether `/reload` re-sends the Commands tree (14.2); `/test`, `/dialog show`, `/raid` failure keys and `/perf` report format (not traced; `/jfr` is a JVM profiler and not applicable).
 
-4. (cr5) Not read or inferred in the data component sections 15 to 26: the item-model JSON that selects the `_darker` trim palette for item icons (18.4); the level text of an enchantment name line (15.5); whether the network decoder of `bundle_contents`, `ominous_bottle_amplifier` and `container` re-checks the persistence ranges (inferred not); the Optional wrapper of `container` slots on the wire (inferred from the element type, 25.2); the NBT key `type` of a consume effect and an attribute display (inferred from the dispatch codecs' default key, 24.2, 26.6); the NBT default of `directional_particles` (24.2); duplicate slot handling of `container` (25.2); the dye component's and dyed colour's id-enum codecs (17); the meaning of each book generation value (26.3); which hidden `ArmorTrim` tooltip lines exist; the exact registry order of trim materials and patterns (alphabetical file order assumed, 18.2).
+4. (cr5, after review) Still not read: whether the network decoder of `bundle_contents`, `ominous_bottle_amplifier` and `container` re-checks the persistence ranges (inferred not); the dye component's and dyed colour's id-enum codecs (17); the meaning of each book generation value (26.3); which hidden `ArmorTrim` tooltip lines exist. Settled by the reviewer from the artifact: the `_darker` icon selection (18.4), the enchantment level text (15.5), the container slot Optional wrapper and duplicate-slot rule (25.2), the `type` key of consume effects and attribute displays, the `directional_particles` NBT default (true), and the trim registry order (sorted by identifier, 18.2). Corrected: `custom_data` is persistent only and is not sent (15.2, 25.5).
 
 Closed in review: the horizontal plane order is north, east, south, west (read from the plane's static initialiser; also in 24); the camel sitting dimensions are in 6.4.
