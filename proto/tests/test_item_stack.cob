@@ -167,6 +167,18 @@
      MOVE "test item-stack get of banner_patterns (74) with one inline layer" TO TL-CASE
      MOVE "c1 i1 +74=010002616202636401 pos 14 error 0" TO TL-EXPECTED
      PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a ff ff ff ff 0f" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with a negative layer count is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4a 81 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of banner_patterns (74) with more than 256 layers is rejected" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
      MOVE "01 01 01 00 2f 00 ff 00 00" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X

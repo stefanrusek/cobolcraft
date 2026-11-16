@@ -202,7 +202,7 @@
                  END-PERFORM
 *>           firework_explosion (70): VarInt shape, VarInt count and Ints colours, VarInt count and Ints fade colours, Booleans trail and twinkle
              WHEN 70
-                 PERFORM READ-EXPLOSION
+                 CALL "PB-GET-ISX-EXPLOSION" USING PB-BUFFER
 *>           fireworks (71; 54 section 21.2): VarInt flight duration, VarInt count of 0 to 256 explosions
              WHEN 71
                  CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
@@ -212,7 +212,7 @@
                      MOVE 0 TO WS-PAGES
                  END-IF
                  PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-PAGES OR PB-ERROR = 1
-                     PERFORM READ-EXPLOSION
+                     CALL "PB-GET-ISX-EXPLOSION" USING PB-BUFFER
                  END-PERFORM
 *>           container (77, ItemContainerContents): a VarInt count of 0 to 256, then that many stacks, each a count (0 = empty) and, when
 *>           not empty, item, added and removed counts of 0 (a stack with components inside a container is not read)
@@ -311,7 +311,21 @@
      END-IF
      GOBACK.
 
- READ-EXPLOSION.
+ END PROGRAM PB-GET-ITEM-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-ISX-EXPLOSION.
+*> USING buffer: reads one firework explosion (25 section 9.1): a VarInt shape, the colours and the fade colours as a VarInt count of 0 to 64 and that many Ints,
+*> then the Booleans trail and twinkle. A count outside 0 to 64 sets PB-ERROR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SCRATCH             BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BOOLEAN             BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
      PERFORM 2 TIMES
          CALL "PB-GET-VARINT" USING PB-BUFFER WS-LENGTH
@@ -324,5 +338,6 @@
          END-PERFORM
      END-PERFORM
      CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
-     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN.
- END PROGRAM PB-GET-ITEM-STACK.
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-BOOLEAN
+     GOBACK.
+ END PROGRAM PB-GET-ISX-EXPLOSION.
