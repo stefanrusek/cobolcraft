@@ -650,6 +650,39 @@
  END PROGRAM RAID-SPAWN-GROUP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-CELEBRATE.
+*> USING raid slot, on (1 celebrate, 0 stop): RaiderCelebration (20 section 13): after a lost raid the member raiders without a target celebrate, metadata 16 true (EN-VARIANT 1,
+*> sent by STDMOB-VARIANT-SEND); when the raid ends the flag is cleared (EN-VARIANT 2 stands for "sent false"). Gaps: the celebrate sound and the jump on 1 in 50 ticks.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-E                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-ON                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-ON.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) > 0 AND RR-RAID(WS-I) = L-SLOT
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+                 IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = RR-ID(WS-I) AND EN-HEALTH(WS-E) > 0
+                     IF L-ON = 1 AND EN-TARGET(WS-E) = 0
+                         MOVE 1 TO EN-VARIANT(WS-E)
+                         CALL "STDMOB-VARIANT-SEND" USING WS-E
+                     END-IF
+                     IF L-ON = 0 AND EN-VARIANT(WS-E) = 1
+                         MOVE 2 TO EN-VARIANT(WS-E)
+                         CALL "STDMOB-VARIANT-SEND" USING WS-E
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-CELEBRATE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-DROP.
 *> USING raid slot: removes the raid, its boss bar and the memberships of its raiders.
  DATA DIVISION.
@@ -657,9 +690,11 @@
  COPY RAIDSTATE.
  01 WS-I                    BINARY-LONG.
  01 WS-REMOVE               BINARY-LONG VALUE 1.
+ 01 WS-OFF                  BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-SLOT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SLOT.
+     CALL "RAID-CELEBRATE" USING L-SLOT WS-OFF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
          IF RP-BAR(WS-I) > 0 AND RP-BAR(WS-I) = RD-ID(L-SLOT)
              CALL "RAID-BAR-SEND" USING L-SLOT WS-REMOVE WS-I
@@ -999,6 +1034,7 @@
  01 WS-FLAGS                BINARY-LONG VALUE 4.
  01 WS-HERO                 BINARY-LONG VALUE 31.
  01 WS-BONUS-GROUP          BINARY-LONG.
+ 01 WS-ON                   BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-SLOT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SLOT.
@@ -1026,6 +1062,7 @@
          IF WS-VILLAGE = 0
              IF RD-GROUPS(L-SLOT) > 0
                  MOVE 3 TO RD-STATUS(L-SLOT)
+                 CALL "RAID-CELEBRATE" USING L-SLOT WS-ON
              ELSE
                  CALL "RAID-DROP" USING L-SLOT
              END-IF
