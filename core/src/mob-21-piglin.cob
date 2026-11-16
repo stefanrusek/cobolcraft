@@ -49,7 +49,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PIGLIN-ZOMBIFY.
-*> Piglins and hoglins (zoglin, 21 section 5.6) share the rule. The Nausea of 200 ticks of the converted mob and the cancelling of the admiring (the held items) are not done: open items of T7103.
+*> Piglins and hoglins (zoglin, 21 section 5.6) share the rule. The converted mob gets Nausea for 200 ticks (T8101); the held items other than the ingot are not dropped (open).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -71,6 +71,9 @@
  01 WS-ZERO                 BINARY-LONG VALUE 0.
  01 WS-DELAY                BINARY-LONG VALUE 10.
  01 WS-DROP                 BINARY-LONG.
+ 01 WS-NAUSEA               BINARY-LONG VALUE 8.
+ 01 WS-NAUSEA-TICKS         BINARY-LONG VALUE 200.
+ 01 WS-FLAGS                BINARY-LONG VALUE 3.
  LINKAGE SECTION.
  01 L-ENTITY                BINARY-LONG.
  01 L-DONE                  BINARY-LONG.
@@ -104,6 +107,9 @@
          MOVE EN-YAW(L-ENTITY) TO WS-YAW
          CALL "MOB-SPAWN" USING EN-DIM(L-ENTITY) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
          CALL "ENTITY-REMOVE" USING L-ENTITY
+         IF WS-NEW > 0
+             CALL "MEF-ADD" USING EN-ID(WS-NEW) WS-NAUSEA WS-ZERO WS-NAUSEA-TICKS WS-FLAGS
+         END-IF
          MOVE 1 TO L-DONE
      END-IF
      GOBACK.
