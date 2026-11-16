@@ -300,6 +300,20 @@
  END PROGRAM M182-ENV-TICK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. M182-FALL-ADJUST.
+*> USING species key (PIC X(24)), damage (BINARY-LONG, in and out): the species' own change to the fall damage int: a goat takes 10 less (GOAT_FALL_DAMAGE_REDUCTION, 19 section 10), never below 0.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-DAMAGE.
+     IF L-KEY = "goat"
+         COMPUTE L-DAMAGE = FUNCTION MAX(0, L-DAMAGE - 10)
+     END-IF
+     GOBACK.
+ END PROGRAM M182-FALL-ADJUST.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. M182-FALL.
 *> USING tracker row of a standard mob after its move, y before the move: the distance fallen so far (EN-FALL) grows by what the move went down; touching water
 *> ends the fall; on the ground the landing does floor(distance + 1.0E-6 - 3) fall damage unless the type is fall_damage_immune, a creeper adds the distance to its
@@ -346,6 +360,7 @@
          CALL "M182-TAG" USING WS-KEY WS-TAG WS-IMMUNE
          IF WS-IMMUNE = 0
              CALL "M182-FALL-DAMAGE" USING EN-FALL(WS-ROW) WS-DAMAGE
+             CALL "M182-FALL-ADJUST" USING WS-KEY WS-DAMAGE
              IF WS-DAMAGE > 0
                  CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-DAMAGE WS-CAUSE WS-NO-ATTACKER
              END-IF
