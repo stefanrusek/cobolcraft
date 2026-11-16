@@ -1929,6 +1929,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 26
+*>           large_dripstone (feat-drip.cob): unsupported when a member is missing or a float provider is not a constant or a uniform one
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-DRIP-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 5
 *>           bonus_chest (feat-bonus.cob): unsupported when the chest or the torch is missing from the block table
              MOVE FD-BAD TO LS-SAVED-BAD
