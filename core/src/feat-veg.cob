@@ -15,7 +15,7 @@
  WORKING-STORAGE SECTION.
  COPY FEATINDEX.
 *> the number of families of the table below: a new family adds a row here and raises this number
- 78 FG-COUNT               VALUE 42.
+ 78 FG-COUNT               VALUE 43.
 *> prefix length and prefix, one family each
  01 WS-FAMILIES.
     05 FILLER PIC 99 VALUE 16.
@@ -102,6 +102,8 @@
     05 FILLER PIC X(32) VALUE "minecraft:basalt_blobs".
     05 FILLER PIC 99 VALUE 26.
     05 FILLER PIC X(32) VALUE "minecraft:blackstone_blobs".
+    05 FILLER PIC 99 VALUE 26.
+    05 FILLER PIC X(32) VALUE "minecraft:underwater_magma".
  01 WS-FAMILY-TABLE REDEFINES WS-FAMILIES.
     05 WS-FAMILY OCCURS FG-COUNT TIMES.
        10 WS-FAMILY-LENGTH    PIC 99.

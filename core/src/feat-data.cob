@@ -1877,6 +1877,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 52
+*>           underwater magma (feat-magma.cob): unsupported when a number is missing or the table has no magma block
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-MAGMA-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 29
 *>           replace blobs (feat-blob.cob): unsupported when the state, target or radius is not compiled whole
              MOVE FD-BAD TO LS-SAVED-BAD
