@@ -52,7 +52,7 @@
  01 WS-IMAGES.
     05 WS-IMAGE            PIC X(1048576) OCCURS 3 TIMES.
  01 WS-MODEL-IMAGES.
-    05 WS-MIMAGE           PIC X(262144) OCCURS 32 TIMES.
+    05 WS-MIMAGE           PIC X(262144) OCCURS 64 TIMES.
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-M                   BINARY-LONG.
@@ -70,12 +70,12 @@
  01 WS-TO                  BINARY-LONG.
  01 WS-ROW-BYTES           BINARY-LONG.
  01 WS-RECT.
-    05 WS-RC OCCURS 35 TIMES.
+    05 WS-RC OCCURS 67 TIMES.
        10 WS-RC-Y          BINARY-LONG.
        10 WS-RC-W          BINARY-LONG.
        10 WS-RC-H          BINARY-LONG.
  01 B-IMG                  PIC X(1048576) BASED.
- 01 B-ATLAS                PIC X(4194304) BASED.
+ 01 B-ATLAS                PIC X(16777216) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -191,6 +191,7 @@
  01 WS-T                   BINARY-LONG.
  01 WS-SAVED               PIC X(1024).
  01 WS-SAVED-MODEL         BINARY-LONG.
+ 01 WS-ADULT-MODEL         BINARY-LONG.
  01 WS-SEEN                BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-DX                  FLOAT-LONG.
@@ -234,6 +235,12 @@
                  END-IF
              END-PERFORM
          END-IF
+         MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND EN-BABY(WS-R) = 1
+             IF CL-MD-BABY(EN-MODEL(WS-R)) > 0
+                 MOVE CL-MD-BABY(EN-MODEL(WS-R)) TO EN-MODEL(WS-R)
+             END-IF
+         END-IF
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
@@ -251,6 +258,7 @@
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
          END-IF
+         MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
              IF EN-USED(WS-R) = 1 AND WS-SEEN = 1 AND EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
                      AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES

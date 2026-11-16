@@ -262,6 +262,8 @@
      MOVE 0 TO WS-OK
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-MODEL-COUNT
          CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+*>       The atlas slots (64) hold the models on screen at once: each type is alone in its frame.
+         MOVE 0 TO EA-MT-COUNT
          MOVE SPACES TO WS-KEY
          MOVE CL-MD-KEY(WS-I) TO WS-KEY
          CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS

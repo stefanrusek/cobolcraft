@@ -53,6 +53,8 @@
      EVALUATE CL-MD-FAMILY(L-ROW)
          WHEN 2
              CALL "EMD-LAYER" USING EMM-MODEL WS-LAYER L-OK
+         WHEN 3
+             CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER L-OK
          WHEN 4
              CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER L-OK
          WHEN 5
@@ -95,25 +97,31 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
+ 01 WS-EM                  BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO WS-NEW
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+*>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
+             MOVE EN-MODEL(WS-R) TO WS-EM
+             IF EN-BABY(WS-R) = 1 AND CL-MD-BABY(WS-EM) > 0
+                 MOVE CL-MD-BABY(WS-EM) TO WS-EM
+             END-IF
              MOVE 0 TO WS-FOUND
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                 IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-R)
+                 IF EA-MT-MODEL(WS-S) = WS-EM
                      MOVE 1 TO WS-FOUND
                  END-IF
              END-PERFORM
-             IF WS-FOUND = 0 AND EA-MT-COUNT < 32
+             IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                  ADD 1 TO EA-MT-COUNT
-                 MOVE EN-MODEL(WS-R) TO EA-MT-MODEL(EA-MT-COUNT)
+                 MOVE WS-EM TO EA-MT-MODEL(EA-MT-COUNT)
                  MOVE 1 TO WS-NEW
              END-IF
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
-             MOVE CL-MD-EXTRA(EN-MODEL(WS-R)) TO WS-X
+             MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0
                  MOVE 0 TO WS-FOUND
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
@@ -121,7 +129,7 @@
                          MOVE 1 TO WS-FOUND
                      END-IF
                  END-PERFORM
-                 IF WS-FOUND = 0 AND EA-MT-COUNT < 32
+                 IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                      ADD 1 TO EA-MT-COUNT
                      MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
                      MOVE 1 TO WS-NEW
@@ -145,9 +153,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 32 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 160 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 32 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 160 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
