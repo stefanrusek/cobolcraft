@@ -77,6 +77,7 @@
  01 WS-BLOCK-STATUS        BINARY-LONG.
  01 WS-TEXT                PIC X(160).
  01 WS-HITS                BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
  PROCEDURE DIVISION.
      MOVE 0 TO IT-COUNT
      MOVE CT-OK TO WS-STATUS
@@ -138,6 +139,14 @@
              MOVE CT-IR-COMPONENTS TO WS-COMPONENTS
              CALL "CONTENT-FOOD" USING WS-COMPONENTS IT-FOOD(WS-INDEX) IT-FOOD-SAT(WS-INDEX)
                  IT-FOOD-ALWAYS(WS-INDEX) IT-FOOD-TICKS(WS-INDEX)
+*>           A bare "food," (the suspicious stew) takes the Foods row of its own item key.
+             MOVE 0 TO WS-HITS
+             INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "food, "
+             IF IT-FOOD(WS-INDEX) = 0 AND WS-HITS > 0
+                 MOVE IT-KEY(WS-INDEX) TO WS-NAME
+                 CALL "CONTENT-FOOD-NAMED" USING WS-NAME IT-FOOD(WS-INDEX) IT-FOOD-SAT(WS-INDEX)
+                     IT-FOOD-ALWAYS(WS-INDEX) IT-FOOD-TICKS(WS-INDEX)
+             END-IF
              MOVE "attack_damage " TO WS-MARKER
              CALL "TABLES-NUMBER-AFTER" USING WS-TEXT WS-MARKER WS-VALUE WS-FOUND
              IF WS-FOUND = 1
