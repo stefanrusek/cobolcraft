@@ -2,7 +2,7 @@
 *> The rider is a mob row with EN-MOUNT (the vehicle's row) and EN-MOUNT-ID (its entity id); the vehicle has EN-PASS (the rider's row). A player riding a mob is EN-RIDER
 *> (mob-18-ride.cob) and a mob with a player on it takes no mob rider. The rider is put on the seat of the vehicle by the vehicle's table (MOB-MOUNT-SEAT) less the rider's
 *> riding offset; its position is never sent (18 section 9.2: a passenger sends no movement), only Set Passengers when the passengers change (MOB-RIDE-SEND).
-*> The vehicle's MOVE and LOOK goals are off while a mob rides it (18 section 2.2), so the rider's goals steer it: it walks to the rider's target at its own walk speed.
+*> The vehicle's MOVE and LOOK goals are off while a mob rides it (18 section 2.2), so the rider's goals steer it: it walks to the rider's target at its own walk speed (a strider is not driven: only a player holding the stick steers it, 21 section 5.7).
 *> Open: the strider's seat (not in the 1.1.1 table: 21 section 5.7 and 44-6 section 8 give no passenger attachment, the rider is put at the strider's position), the pairing
 *> bundle's Set Passengers for a viewer who comes into range later, a rider dismounting into water (dismounts_underwater), a chicken jockey's 10 experience.
 *>   MOB-MOUNT-SEAT USING vehicle key, rider key, y out, z out, seat out (1 when the vehicle takes a mob rider)
@@ -251,12 +251,17 @@
  01 WS-GZ                  BINARY-LONG.
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-VKEY                PIC X(24).
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-DRIVEN               BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-DRIVEN.
      MOVE 0 TO L-DRIVEN
      MOVE EN-PASS(L-ROW) TO WS-R
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-VKEY
+     IF WS-VKEY = "strider"
+         GOBACK
+     END-IF
      IF EN-USED(WS-R) = 0 OR EN-MOUNT(WS-R) NOT = L-ROW OR EN-HEALTH(WS-R) = 0
          MOVE 0 TO EN-PASS(L-ROW)
          GOBACK

@@ -240,6 +240,7 @@
          WHEN 2 MOVE "minecraft:iron_spear" TO L-KEY
          WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
          WHEN 4 MOVE "minecraft:bow" TO L-KEY
+         WHEN 9 MOVE "minecraft:warped_fungus_on_a_stick" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -597,6 +598,8 @@
                  CALL "MOB-JOCKEY-SPIDER" USING L-STATE L-ROW
              END-IF
              CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "strider"
+             CALL "STRIDER-JOCKEY" USING L-STATE L-ROW
          WHEN "phantom"
 *>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).
              COMPUTE EN-PH-AX(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))

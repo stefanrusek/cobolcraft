@@ -1111,6 +1111,9 @@
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "strider"
+         CALL "STRIDER-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
      IF SM-KEY(WS-M) = "evoker"
          CALL "EVK-STEP" USING WS-ROW
          CALL "EVK-IS-CASTING" USING WS-ROW WS-EVK-CAST
@@ -1317,6 +1320,9 @@
      END-IF
      MOVE EN-Y(WS-ROW) TO WS-FALL-Y
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+     IF SM-KEY(WS-M) = "strider"
+         CALL "STRIDER-LAVA" USING WS-ROW WS-FALL-Y
+     END-IF
 *>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.
