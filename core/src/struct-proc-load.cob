@@ -734,3 +734,79 @@
      END-IF
      GOBACK.
  END PROGRAM STRUCT-PROC-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-PROC-INLINE.
+*> USING doc, node (the processors member of a template feature: an object with processors, or a bare array), index out: compiles an inline list of the placed document into a new row
+*> of SP-LIST (never cached by key; the same rules as STRUCT-PROC-LOAD), 0 when the list is unsupported (the tables are then put back as they were).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTPROC.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ARRAY               BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-SAVE-PROC           BINARY-LONG.
+ 01 WS-SAVE-RULE           BINARY-LONG.
+ 01 WS-SAVE-TEST           BINARY-LONG.
+ 01 WS-SAVE-POOL           BINARY-LONG.
+ 01 WS-NUM                 PIC 9(6).
+ 01 K-PROCESSORS           PIC X(40) VALUE "processors".
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-INDEX.
+     MOVE 0 TO L-INDEX
+     IF L-NODE = 0 OR SP-LIST-COUNT >= SP-MAX-LISTS
+         GOBACK
+     END-IF
+     ADD 1 TO SP-LIST-COUNT
+     MOVE SP-LIST-COUNT TO WS-ROW
+     MOVE SP-LIST-COUNT TO WS-NUM
+     MOVE SPACES TO SPL-KEY(WS-ROW)
+     STRING "cobolcraft:placed/" WS-NUM DELIMITED BY SIZE INTO SPL-KEY(WS-ROW)
+     MOVE 2 TO SPL-STATUS(WS-ROW)
+     MOVE 0 TO SPL-FIRST(WS-ROW) SPL-N(WS-ROW)
+     MOVE SP-PROC-COUNT TO WS-SAVE-PROC
+     MOVE SP-RULE-COUNT TO WS-SAVE-RULE
+     MOVE SP-TEST-COUNT TO WS-SAVE-TEST
+     MOVE SP-POOL-COUNT TO WS-SAVE-POOL
+     MOVE 0 TO SP-BAD
+     MOVE L-NODE TO WS-ARRAY
+     IF JN-TYPE(L-NODE) = JT-OBJECT
+         CALL "FD-J-MEMBER" USING JSON-DOC L-NODE K-PROCESSORS WS-ARRAY
+     END-IF
+     IF WS-ARRAY = 0 OR JN-TYPE(WS-ARRAY) NOT = JT-ARRAY
+         MOVE 1 TO SP-BAD
+     ELSE
+         MOVE JN-COUNT(WS-ARRAY) TO WS-N
+         IF SP-PROC-COUNT + WS-N > SP-MAX-PROCS
+             MOVE 1 TO SP-BAD
+         ELSE
+             COMPUTE WS-FIRST = SP-PROC-COUNT + 1
+             ADD WS-N TO SP-PROC-COUNT
+             PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+                 CALL "JSON-ELEMENT" USING JSON-DOC WS-ARRAY WS-I WS-E
+                 COMPUTE WS-STATUS = WS-FIRST + WS-I
+                 CALL "SP-COMPILE-PROC" USING JSON-DOC WS-E WS-STATUS
+             END-PERFORM
+         END-IF
+     END-IF
+     IF SP-BAD = 0
+         MOVE 1 TO SPL-STATUS(WS-ROW)
+         MOVE WS-FIRST TO SPL-FIRST(WS-ROW)
+         MOVE WS-N TO SPL-N(WS-ROW)
+         MOVE WS-ROW TO L-INDEX
+     ELSE
+         MOVE WS-SAVE-PROC TO SP-PROC-COUNT
+         MOVE WS-SAVE-RULE TO SP-RULE-COUNT
+         MOVE WS-SAVE-TEST TO SP-TEST-COUNT
+         MOVE WS-SAVE-POOL TO SP-POOL-COUNT
+         MOVE 0 TO SP-BAD
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-PROC-INLINE.

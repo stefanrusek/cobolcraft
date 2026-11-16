@@ -709,7 +709,7 @@
  END PROGRAM FR-FLOOR-OF-LAYER.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FR-MODIFY.
+ PROGRAM-ID. FR-MODIFY IS RECURSIVE.
 *> USING state, modifier index, top placed feature (0 none), x, y, z, count out, positions out (4096 x 3 BINARY-LONG): one placement modifier of the compiled
 *> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8) are the biome info noise of feat-noise.cob; randomly_selected
 *> (16) and fixed_placement (17) are not compiled.
@@ -762,6 +762,9 @@
  01 WS-SZ                  BINARY-LONG.
  01 WS-STEPS               BINARY-LONG.
  01 WS-STAGE               BINARY-LONG.
+ LOCAL-STORAGE SECTION.
+ 01 LS-DRAW                BINARY-LONG.
+ 01 LS-CHILD               BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-MD                   BINARY-LONG.
@@ -973,6 +976,13 @@
              MOVE L-X TO L-OX(1)
              MOVE WS-Y TO L-OY(1)
              MOVE L-Z TO L-OZ(1)
+         WHEN 16
+*>           randomly_selected (35-1 section 7.17): one nextInt(n) picks the alternative, which runs on the same input and emits into the same list
+             CALL "WGR-NEXT-INT-BOUND" USING L-STATE MD-B(L-MD) LS-DRAW
+             MOVE MD-P(L-MD, LS-DRAW + 1) TO LS-CHILD
+             CALL "FR-MODIFY" USING L-STATE LS-CHILD L-TOP L-X L-Y L-Z L-COUNT L-OUT
+*>           the alternative has emitted its own positions: the flags it left in the shared storage must not emit them again
+             MOVE 0 TO WS-ONCE WS-REPEAT
          WHEN 14
              CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-DX
              CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-DZ
@@ -1048,6 +1058,7 @@
  01 LS-I                   BINARY-LONG.
  01 LS-MD                  BINARY-LONG.
  01 LS-LAST                BINARY-LONG.
+ 01 LS-END                 BINARY-LONG.
  01 LS-R                   BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
@@ -1081,8 +1092,13 @@
          MOVE LS-SM(LS-SP) TO LS-M
          SUBTRACT 1 FROM LS-SP
          CALL "FR-MODIFY" USING L-STATE LS-M L-TOP LS-X LS-Y LS-Z LS-COUNT LS-OUT
-         IF LS-M < LS-LAST
-             COMPUTE LS-MD = LS-M + 1
+*>       the modifier's own row, or the last row of its alternatives (randomly_selected keeps them behind it)
+         MOVE LS-M TO LS-END
+         IF MD-KIND(LS-M) = 16
+             MOVE MD-A(LS-M) TO LS-END
+         END-IF
+         IF LS-END < LS-LAST
+             COMPUTE LS-MD = LS-END + 1
              PERFORM VARYING LS-I FROM LS-COUNT BY -1 UNTIL LS-I < 1
                  IF LS-SP < 4096
                      ADD 1 TO LS-SP
@@ -1213,6 +1229,8 @@
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 50
+             CALL "FR-TEMPLATE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 8
              CALL "FR-CORAL-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 7

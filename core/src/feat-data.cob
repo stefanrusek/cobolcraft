@@ -1437,12 +1437,15 @@
  END PROGRAM FD-J-HP.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FD-MD-NODE.
-*> USING doc, node: appends the modifier of a placement entry to FD-MD (kind the id of worldgen/placement_modifier_type; FD-BAD for an unsupported one).
+ PROGRAM-ID. FD-MD-NODE IS RECURSIVE.
+*> USING doc, node: appends the modifier of a placement entry to FD-MD (kind the id of worldgen/placement_modifier_type; FD-BAD for an unsupported one). randomly_selected (kind 16)
+*> keeps the rows of its alternatives in MD-P (at most 12) and their number in MD-B.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
  COPY FDKEYS.
+ 01 WS-K-PLACEMENTS        PIC X(40) VALUE "placements".
+ LOCAL-STORAGE SECTION.
  01 WS-TEXT                PIC X(120).
  01 WS-LEN                 BINARY-LONG.
  01 WS-NAME                PIC X(48).
@@ -1454,6 +1457,7 @@
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-CHILD               BINARY-LONG.
  01 WS-P6.
     05 WS-R6               BINARY-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
@@ -1627,6 +1631,26 @@
              END-IF
          WHEN 14
              CONTINUE
+         WHEN 16
+             MOVE 0 TO MD-B(WS-ROW)
+             CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-PLACEMENTS WS-E
+             IF WS-E = 0
+                 MOVE 1 TO FD-BAD
+             ELSE
+                 IF JN-TYPE(WS-E) NOT = JT-ARRAY OR JN-COUNT(WS-E) < 1 OR JN-COUNT(WS-E) > 12
+                     MOVE 1 TO FD-BAD
+                 ELSE
+                     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
+                         CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-OK
+                         COMPUTE WS-CHILD = FD-MD-COUNT + 1
+                         CALL "FD-MD-NODE" USING JSON-DOC WS-OK
+                         MOVE WS-CHILD TO MD-P(WS-ROW, WS-I + 1)
+                         ADD 1 TO MD-B(WS-ROW)
+                     END-PERFORM
+*>                   MD-A the last row of the alternatives (the next modifier of the list is the row after it)
+                     MOVE FD-MD-COUNT TO MD-A(WS-ROW)
+                 END-IF
+             END-IF
          WHEN 15
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-X WS-E
              CALL "FD-J-IP" USING JSON-DOC WS-E WS-P4 WS-OK
@@ -1900,6 +1924,16 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 50
+*>           template (feat-template.cob): unsupported when a template file, a weight or a rotation is missing or the processors cannot be compiled
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-TEMPLATE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE
