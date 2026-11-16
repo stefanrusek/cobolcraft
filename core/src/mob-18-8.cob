@@ -750,6 +750,8 @@
              CALL "PANDA-BRED" USING L-A L-B WS-BABY
          WHEN "wolf"
              CALL "WOLF-BRED" USING L-A L-B WS-BABY WS-COIN
+         WHEN "cat"
+             CALL "CAT-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "sheep"
              COMPUTE WS-COLOR-A = FUNCTION MOD(EN-WOOL(L-A), 16)
              COMPUTE WS-COLOR-B = FUNCTION MOD(EN-WOOL(L-B), 16)
