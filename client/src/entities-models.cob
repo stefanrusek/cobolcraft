@@ -98,6 +98,7 @@
  01 WS-NEW                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-EM                  BINARY-LONG.
+ 01 WS-TEX                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -109,15 +110,17 @@
              IF EN-BABY(WS-R) = 1 AND CL-MD-BABY(WS-EM) > 0
                  MOVE CL-MD-BABY(WS-EM) TO WS-EM
              END-IF
+             CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
              MOVE 0 TO WS-FOUND
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                 IF EA-MT-MODEL(WS-S) = WS-EM
+                 IF EA-MT-MODEL(WS-S) = WS-EM AND EA-MT-TEX(WS-S) = WS-TEX
                      MOVE 1 TO WS-FOUND
                  END-IF
              END-PERFORM
              IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                  ADD 1 TO EA-MT-COUNT
                  MOVE WS-EM TO EA-MT-MODEL(EA-MT-COUNT)
+                 MOVE WS-TEX TO EA-MT-TEX(EA-MT-COUNT)
                  MOVE 1 TO WS-NEW
              END-IF
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
@@ -132,6 +135,7 @@
                  IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                      ADD 1 TO EA-MT-COUNT
                      MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
+                     MOVE 0 TO EA-MT-TEX(EA-MT-COUNT)
                      MOVE 1 TO WS-NEW
                  END-IF
              END-IF
@@ -157,6 +161,7 @@
  01 WS-HAVE-TABLE.
     05 WS-HAVE             PIC 9 OCCURS 160 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-TEXC                BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -318,8 +323,9 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
      MOVE L-ROW TO WS-ROW
      MOVE 0 TO WS-SLOT
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TEXC
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-         IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-ROW)
+         IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-ROW) AND EA-MT-TEX(WS-S) = WS-TEXC
              MOVE WS-S TO WS-SLOT
          END-IF
      END-PERFORM

@@ -691,6 +691,13 @@
           15 EN-SW-TYPE      BINARY-LONG.
           15 EN-SW-ANIM      FLOAT-LONG.
           15 EN-AGE          FLOAT-LONG.    *> ageInTicks: client ticks since the entity was added (34-2: arm bob and sway)
+*>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
+*>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
+*>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the
+*>        pufferfish puff state; for a villager its type, profession and level (VAR, VAR2, VAR3). -1 until the server sent it.
+          15 EN-VAR          BINARY-LONG.
+          15 EN-VAR2         BINARY-LONG.
+          15 EN-VAR3         BINARY-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -973,6 +980,7 @@
        10 EA-MT-COUNT        BINARY-LONG.
        10 EA-MT OCCURS 64 TIMES.
           15 EA-MT-MODEL     BINARY-LONG.
+          15 EA-MT-TEX       BINARY-LONG.    *> texture code of the slot (ENTITY-TEX-CODE; 0 the row's own image)
           15 EA-MT-X         BINARY-LONG.
           15 EA-MT-Y         BINARY-LONG.
           15 EA-MT-W         BINARY-LONG.

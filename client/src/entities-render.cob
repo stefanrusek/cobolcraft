@@ -48,6 +48,9 @@
        10 WS-S-PATH          PIC X(56).
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-VPATH               PIC X(64).
+ 01 WS-VFULL               PIC X(256).
+ 01 WS-VLEN                BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
  01 WS-IMAGES.
     05 WS-IMAGE            PIC X(1048576) OCCURS 3 TIMES.
@@ -106,7 +109,21 @@
              END-IF
          END-IF
          MOVE 0 TO WS-FOUND
-         IF WS-PATH-LENGTH > 0
+*>       A model slot with a variant texture (ENTITY-TEX-PATH) asks the pack stack for it first and falls back to the row's own image.
+         IF WS-K > 3 AND EA-MT-TEX(WS-M) > 0
+             MOVE SPACES TO WS-VPATH
+             CALL "ENTITY-TEX-PATH" USING CL-MD-KEY(WS-MD) EA-MT-TEX(WS-M) WS-VPATH
+             IF WS-VPATH NOT = SPACES
+                 MOVE SPACES TO WS-VFULL
+                 MOVE 1 TO WS-PTR
+                 STRING "assets/minecraft/" DELIMITED BY SIZE FUNCTION TRIM(WS-VPATH) DELIMITED BY SIZE
+                     INTO WS-VFULL WITH POINTER WS-PTR
+                 COMPUTE WS-VLEN = WS-PTR - 1
+                 CALL "PACK-IMAGE" USING CLIENT-STATE WS-VFULL WS-VLEN B-IMG WS-CAPACITY
+                     WS-W WS-H WS-FOUND
+             END-IF
+         END-IF
+         IF WS-FOUND = 0 AND WS-PATH-LENGTH > 0
              CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH B-IMG WS-CAPACITY
                  WS-W WS-H WS-FOUND
          END-IF
