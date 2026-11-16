@@ -4756,6 +4756,7 @@ Not done by mobsa2 (recorded; flight exists now (T7406) but pickup, flower searc
 ## Phase mobsa3: species leftovers of documents 18, 19, 20 and 44 (lane 002-lane-mobsa3, T8200 to T8299)
 
 - [x] T8200 [US15-core] Slime chunk alternative (20 section 10 (b), 54 section 8.1): `STDMOB-SLIME-RULE` now also passes when the position's chunk is a slime chunk on `CW-SEED` (`M44-SLIME-CHUNK`), a fresh nextInt(10) = 0 from the passed state, y below 40 and a floor. The 64 bit wrap of the seed sum already behaves as Java (test vectors for Long.MAX_VALUE and Long.MIN_VALUE overflow added). Test `core/tests/test_mob_20_10_chunk.cob` (red: `scratchpad/mobsa3/red_chunk.txt`). The zombie reinforcement spawn-light reasons: no doc section exists (54 section 8 says so), left as stated.
+- [x] T8201 [US15-core] Update interval pairing (18 section 9.2): `ENTITY-ADD-BUILD` puts a standard mob that has sent a position (EN-SENT-AGE above 0) at its last sent position, pitch and yaw (head yaw too), so the next delta a viewer gets is against the position it was added at; simulation values stay for a mob that has not sent yet and for players and items. Test `test_mob_18_9_interval.cob` (red: `scratchpad/mobsa3/red_interval.txt`); 2324 cases of the mob 18, entity and mob 19_1x programs pass.
 
 ## Lane 002-lane-nethperf (T6300+; T6200 to T6230 are the poses lane's)
 

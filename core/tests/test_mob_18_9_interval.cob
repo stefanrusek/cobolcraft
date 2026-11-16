@@ -40,6 +40,10 @@
  01 WS-ON                 BINARY-LONG VALUE 1.
  01 WS-P1                 FLOAT-SHORT VALUE 0.
  01 WS-TIME               BINARY-LONG.
+ 01 WS-PID                BINARY-LONG.
+ 01 WS-A                  BINARY-LONG.
+ 01 WS-UUID               PIC X(16).
+ 01 WS-D                  FLOAT-LONG.
 
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
@@ -102,6 +106,20 @@
      MOVE EN-SENT-AGE(WS-ROW) TO WS-O
      MOVE 1 TO WS-E
      PERFORM CHECK-N
+*>   A viewer who pairs between sends gets the last sent position in Add Entity (the next delta is against it), not the simulation position.
+     COMPUTE EN-X(WS-ROW) = WS-FX + 3
+     CALL "PB-INIT" USING TP-BUFFER WS-CAPACITY
+     CALL "ENTITY-ADD-BUILD" USING WS-ROW TP-BUFFER
+     CALL "PB-GET-VARINT" USING TP-BUFFER WS-PID
+     CALL "PB-GET-VARINT" USING TP-BUFFER WS-A
+     CALL "PB-GET-UUID" USING TP-BUFFER WS-UUID
+     CALL "PB-GET-VARINT" USING TP-BUFFER WS-A
+     CALL "PB-GET-DOUBLE" USING TP-BUFFER WS-D
+     MOVE "acceptance US15 18§9.2 Update interval: Add Entity carries the last sent x, not the simulation x" TO WS-CASE
+     COMPUTE WS-O ROUNDED = (WS-D - WS-FX) * 1000
+     MOVE 1010 TO WS-E
+     PERFORM CHECK-N
+     CALL "PB-FREE" USING TP-BUFFER
      STOP RUN.
 
  CHECK-N.
