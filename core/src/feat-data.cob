@@ -1877,6 +1877,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 29
+*>           replace blobs (feat-blob.cob): unsupported when the state, target or radius is not compiled whole
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-RBLOB-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 4
 *>           blue ice (feat-ice.cob): unsupported when the block table lacks packed_ice, ice or blue_ice
              MOVE FD-BAD TO LS-SAVED-BAD

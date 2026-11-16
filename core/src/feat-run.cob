@@ -1168,6 +1168,8 @@
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 29
+             CALL "FR-RBLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 4
              CALL "FR-ICE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 10
