@@ -468,8 +468,8 @@ static void create_pipeline(int p, VkShaderModule vert, VkShaderModule frag) {
     VkPipelineRasterizationStateCreateInfo raster = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VK_CULL_MODE_NONE,
-        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .cullMode = p == CC_PIPE_TRANSLUCENT_CULL ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE,
+        .frontFace = VK_FRONT_FACE_CLOCKWISE,
         .depthBiasEnable = p == CC_PIPE_CRUMBLING,
         .depthBiasConstantFactor = -10.0f,
         .depthBiasSlopeFactor = -1.0f,
@@ -533,6 +533,7 @@ static void create_pipelines(void) {
     create_pipeline(CC_PIPE_OPAQUE, world_vert, world_frag);
     create_pipeline(CC_PIPE_TRANSLUCENT, world_vert, world_frag);
     create_pipeline(CC_PIPE_UI, ui_vert, ui_frag);
+    create_pipeline(CC_PIPE_TRANSLUCENT_CULL, world_vert, world_frag);
     create_pipeline(CC_PIPE_CRUMBLING, world_vert, crumble_frag);
     vkDestroyShaderModule(cc_vk_state.device, crumble_frag, NULL);
     vkDestroyShaderModule(cc_vk_state.device, world_vert, NULL);
@@ -878,7 +879,7 @@ int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
 }
 
 void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16]) {
-    if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || pipeline < CC_PIPE_OPAQUE || pipeline > CC_PIPE_CRUMBLING ||
+    if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || pipeline < CC_PIPE_OPAQUE || pipeline > CC_PIPE_TRANSLUCENT_CULL ||
         tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_PARTICLES || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
     mesh_t *m = &cc_vk_state.meshes[slot];
     if (m->count == 0) return;
@@ -1022,7 +1023,7 @@ void cc_vk_shutdown(void) {
     free(cc_vk_state.garbage);
     destroy_swapchain_images();
     vkDestroySwapchainKHR(cc_vk_state.device, cc_vk_state.swapchain, NULL);
-    for (int p = CC_PIPE_OPAQUE; p <= CC_PIPE_CRUMBLING; p++) vkDestroyPipeline(cc_vk_state.device, cc_vk_state.pipelines[p], NULL);
+    for (int p = CC_PIPE_OPAQUE; p <= CC_PIPE_TRANSLUCENT_CULL; p++) vkDestroyPipeline(cc_vk_state.device, cc_vk_state.pipelines[p], NULL);
     vkDestroyPipelineLayout(cc_vk_state.device, cc_vk_state.layout, NULL);
     vkDestroyDescriptorPool(cc_vk_state.device, cc_vk_state.pool, NULL);
     vkDestroyDescriptorSetLayout(cc_vk_state.device, cc_vk_state.set_layout, NULL);

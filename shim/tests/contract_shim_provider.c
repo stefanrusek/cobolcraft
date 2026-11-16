@@ -470,9 +470,9 @@ static void vulkan(void) {
         cc_vk_fog(no_fog);
         tl_int("contract shim cc_vk_fog takes a pointer to 8 floats and returns", 1, 1);
     }
-    static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling"};
+    static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling", "translucent-cull"};
     const float clear[4] = {0, 0, 0, 1};
-    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_CRUMBLING; p++) {
+    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_TRANSLUCENT_CULL; p++) {
         rc = cc_vk_frame_begin(clear);
         snprintf(name, sizeof name, "contract shim cc_vk_frame_begin returns 0 (%s frame)", pipes[p]);
         tl_int(name, 0, rc);

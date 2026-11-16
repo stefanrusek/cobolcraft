@@ -114,6 +114,12 @@
  01 WS-TB                  FLOAT-SHORT.
  01 WS-CH                  BINARY-DOUBLE.
  01 WS-F                   BINARY-LONG.
+ 01 WS-FPASS               BINARY-LONG.
+ 01 WS-FNPASS              BINARY-LONG.
+ 01 WS-SRC                 BINARY-LONG.
+ 01 WS-REV-DATA            PIC X(4) VALUE "1432".
+ 01 WS-REV-R REDEFINES WS-REV-DATA.
+    05 WS-REV              PIC 9 OCCURS 4 TIMES.
  01 WS-C                   BINARY-LONG.
  01 WS-SPR                 BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
@@ -447,22 +453,34 @@
              IF WS-SPR = 0
                  MOVE 1 TO WS-SPR
              END-IF
-             ADD 1 TO FO-COUNT
-             MOVE AT-TRANSLUCENT(WS-SPR) TO FO-TRANSLUCENT(FO-COUNT)
-             COMPUTE FO-BRIGHT(FO-COUNT) = FUNCTION MAX(WS-FACTOR(WS-F) * WS-BLOCK / 15, 0.1)
-             COMPUTE FO-SKY(FO-COUNT) = WS-FACTOR(WS-F) * WS-SKY / 15
-             MOVE WS-TR TO FO-R(FO-COUNT)
-             MOVE WS-TG TO FO-G(FO-COUNT)
-             MOVE WS-TB TO FO-B(FO-COUNT)
-             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
-                 COMPUTE FO-X(FO-COUNT, WS-C) = L-X + WS-PX(WS-C)
-                 COMPUTE FO-Y(FO-COUNT, WS-C) = L-LY + WS-PY(WS-C)
-                 COMPUTE FO-Z(FO-COUNT, WS-C) = L-Z + WS-PZ(WS-C)
-                 MOVE WS-PU(WS-C) TO WS-U16
-                 MOVE WS-PV(WS-C) TO WS-V16
-                 CALL "ATLAS-UV" USING CLIENT-STATE WS-SPR WS-U16 WS-V16 WS-UOUT WS-VOUT
-                 MOVE WS-UOUT TO FO-U(FO-COUNT, WS-C)
-                 MOVE WS-VOUT TO FO-V(FO-COUNT, WS-C)
+*>           The top is also made backward (corners reversed) as the renderer does (FluidRenderer: the backward up face): the translucent sections are
+*>           drawn with the back faces culled, and the surface is seen from under the water.
+             MOVE 1 TO WS-FNPASS
+             IF WS-F = 1
+                 MOVE 2 TO WS-FNPASS
+             END-IF
+             PERFORM VARYING WS-FPASS FROM 1 BY 1 UNTIL WS-FPASS > WS-FNPASS
+                 ADD 1 TO FO-COUNT
+                 MOVE AT-TRANSLUCENT(WS-SPR) TO FO-TRANSLUCENT(FO-COUNT)
+                 COMPUTE FO-BRIGHT(FO-COUNT) = FUNCTION MAX(WS-FACTOR(WS-F) * WS-BLOCK / 15, 0.1)
+                 COMPUTE FO-SKY(FO-COUNT) = WS-FACTOR(WS-F) * WS-SKY / 15
+                 MOVE WS-TR TO FO-R(FO-COUNT)
+                 MOVE WS-TG TO FO-G(FO-COUNT)
+                 MOVE WS-TB TO FO-B(FO-COUNT)
+                 PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                     MOVE WS-C TO WS-SRC
+                     IF WS-FPASS = 2
+                         MOVE WS-REV(WS-C) TO WS-SRC
+                     END-IF
+                     COMPUTE FO-X(FO-COUNT, WS-C) = L-X + WS-PX(WS-SRC)
+                     COMPUTE FO-Y(FO-COUNT, WS-C) = L-LY + WS-PY(WS-SRC)
+                     COMPUTE FO-Z(FO-COUNT, WS-C) = L-Z + WS-PZ(WS-SRC)
+                     MOVE WS-PU(WS-SRC) TO WS-U16
+                     MOVE WS-PV(WS-SRC) TO WS-V16
+                     CALL "ATLAS-UV" USING CLIENT-STATE WS-SPR WS-U16 WS-V16 WS-UOUT WS-VOUT
+                     MOVE WS-UOUT TO FO-U(FO-COUNT, WS-C)
+                     MOVE WS-VOUT TO FO-V(FO-COUNT, WS-C)
+                 END-PERFORM
              END-PERFORM
          END-IF
      END-PERFORM

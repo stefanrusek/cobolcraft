@@ -23,6 +23,7 @@
  78 CC-PIPE-TRANSLUCENT     VALUE 1.
  78 CC-PIPE-UI              VALUE 2.
  78 CC-PIPE-CRUMBLING       VALUE 3.
+ 78 CC-PIPE-TRANSLUCENT-CULL VALUE 4.
 
 *> Texture ids (§9).
  78 CC-TEX-BLOCKS           VALUE 0.   *> block and item atlas

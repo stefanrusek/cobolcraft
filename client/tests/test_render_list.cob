@@ -11,6 +11,7 @@
  COPY CLSTATE.
  COPY CLCONST.
  COPY CLTINT.
+ COPY CCSHIM.
  COPY CELLS.
  COPY PROTO.
  COPY TESTLIB.
@@ -151,6 +152,10 @@
      MOVE SPACES TO WS-PIPES
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
          MOVE RL-D-PIPELINE(WS-I) TO WS-K
+*>       The sections' translucent meshes take the culling pipeline (4): a translucent draw here as the other (1).
+         IF WS-K = CC-PIPE-TRANSLUCENT-CULL
+             MOVE CC-PIPE-TRANSLUCENT TO WS-K
+         END-IF
          MOVE FUNCTION CHAR(WS-K + 49) TO WS-PIPES(WS-I:1)
      END-PERFORM
      MOVE "render list opaque draws, then three translucent draws, the UI draw last on texture 2"
@@ -175,7 +180,7 @@
      MOVE RL-UPLOAD-COUNT TO TL-OBSERVED-N
      MOVE 0 TO WS-K
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
-         IF RL-D-PIPELINE(WS-I) = 1
+         IF RL-D-PIPELINE(WS-I) = 1 OR CC-PIPE-TRANSLUCENT-CULL
              ADD 1 TO WS-K
          END-IF
      END-PERFORM
