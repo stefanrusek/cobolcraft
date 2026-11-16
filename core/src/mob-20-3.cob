@@ -373,6 +373,13 @@
                  MOVE 16 TO WS-INDEX
                  MOVE MD-MDS-BYTE TO WS-SERIALIZER
                  MOVE EN-VARIANT(L-ROW) TO WS-VALUE
+             WHEN "vindicator" WHEN "evoker" WHEN "pillager" WHEN "ravager" WHEN "witch" WHEN "illusioner"
+*>               The raiders' celebrating flag (20 section 13): index 16 BOOLEAN, EN-VARIANT 1 true, 2 false (sent after a celebration).
+                 MOVE 16 TO WS-INDEX
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+                 IF EN-VARIANT(L-ROW) = 1
+                     MOVE 1 TO WS-VALUE
+                 END-IF
              WHEN "zombie"
              WHEN "zombie_villager"
              WHEN "husk"
