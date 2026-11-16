@@ -420,7 +420,7 @@
      MOVE 1 TO WS-HOOK-X WS-HOOK-Y
 *>   The setupAnim program of the row; an armor row (code A) is posed as the mob that wears it (its own row, or the baby row of a baby).
      MOVE CL-MD-ANIM(EN-MODEL(WS-ROW)) TO WS-ANIM
-     IF WS-ANIM = "A"
+     IF WS-ANIM = "A" OR "E"
          MOVE EN-KEY(WS-ROW) TO WS-FK
          CALL "ENTITY-MODEL-FIND" USING WS-FK WS-FM
          IF WS-FM > 0 AND EN-BABY(WS-ROW) = 1 AND CL-MD-BABY(WS-FM) > 0
@@ -433,7 +433,7 @@
      END-IF
 *>   The key the pose program picks the mob by: the row's own, or the wearer's for an armor row.
      MOVE CL-MD-KEY(EN-MODEL(WS-ROW)) TO WS-POSE-KEY
-     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "A" AND WS-FM > 0
+     IF (CL-MD-ANIM(EN-MODEL(WS-ROW)) = "A" OR "E") AND WS-FM > 0
          MOVE CL-MD-KEY(WS-FM) TO WS-POSE-KEY
      END-IF
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
@@ -452,7 +452,7 @@
 *>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
 *>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
 *>   6.7); the opaque entity mesh has no such test, so the layer is enlarged by 0.3 percent about the entity origin to lie just outside the body.
-     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y" OR "E"
          MOVE 1.003 TO WS-HOOK-X WS-HOOK-Y
          MOVE 1 TO WS-LIGHT
      END-IF
@@ -876,7 +876,7 @@
                          COMPUTE WS-QV(WS-K) = (EA-MT-Y(WS-SLOT) + WS-UO(2) * EA-MT-H(WS-SLOT)) / EA-H
                      END-PERFORM
                      COMPUTE WS-BRIGHT = FUNCTION MAX(WS-FACTOR(WS-F + 1) * WS-LIGHT, 0.1)
-                     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
+                     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y" OR "E"
                          MOVE 1 TO WS-BRIGHT
                      END-IF
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6

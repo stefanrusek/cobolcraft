@@ -12,7 +12,7 @@
 *>   CL-MD-ANIM   the setupAnim program run before drawing, with the state the replica has (head pitch, head yaw relative to the body;
 *>                walk animation and age in ticks are not tracked and are 0): Q quadruped (EF4-COW-ANIM, EF4-QUAD-POSE of 34-4 2.2), C creeper
 *>                (EF6-CREEPER-ANIM), Z zombie and K skeleton (EMD-ANIM variants 1 and 2), D drowned, P piglin, G zombified piglin (variants 5, 3, 4), Y an eyes layer (the
-*>                posed model again, full bright, 34-1 8.5), - none: the model is drawn in its rest pose;
+*>                posed model again, full bright, 34-1 8.5), E the same for the eyes layers posed as the mob that has them (phantom_eyes, breeze_eyes: the pose program of the entity's own row), - none: the model is drawn in its rest pose;
 *>   CL-MD-PATH   the texture image in the pack stack, relative to assets/minecraft/, from the renderer facts of the documents
 *>                (EF6-CREEPER-TEXTURE, EMD-RENDERER, EF7-BLAZE-TEXTURE, EF8-SQUID-TEXTURE, EF6-SPIDER-TEXTURE); spaces for a type whose texture
 *>                the replica cannot choose (the cow, pig and wolf textures come from a variant registry entry that the replica does not hold; a
@@ -24,7 +24,7 @@
 *>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 189.
+ 78 CL-MODEL-COUNT           VALUE 191.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -735,7 +735,7 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "V".
     05 FILLER PIC X(64) VALUE "textures/entity/phantom/phantom.png".
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 190.
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "guardian".
     05 FILLER PIC 9 VALUE 6.
@@ -780,7 +780,7 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "W".
     05 FILLER PIC X(64) VALUE "textures/entity/breeze/breeze.png".
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 191.
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "ghast".
     05 FILLER PIC 9 VALUE 7.
@@ -1039,7 +1039,7 @@
     05 FILLER PIC X(24) VALUE "COPPER_GOLEM".
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC 999 VALUE 64.
-    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X VALUE "W".
     05 FILLER PIC X(64) VALUE "textures/entity/copper_golem/copper_golem.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
@@ -1727,8 +1727,26 @@
     05 FILLER PIC X(64) VALUE "textures/entity/equipment/nautilus_body/iron.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "phantom_eyes".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "PHANTOM".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "E".
+    05 FILLER PIC X(64) VALUE "textures/entity/phantom/phantom_eyes.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "breeze_eyes".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "BREEZE_EYES".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "E".
+    05 FILLER PIC X(64) VALUE "textures/entity/breeze/breeze_eyes.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 189 TIMES.
+    05 CL-MD OCCURS 191 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).
