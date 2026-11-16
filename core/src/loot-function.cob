@@ -95,7 +95,7 @@
  01 WS-KIND-LENGTH         BINARY-LONG.
  01 WS-NAME                PIC X(64).
  01 WS-VALUE               PIC X(64).
- 01 WS-ITEM-NAME           BINARY-LONG VALUE 5.
+ 01 WS-ITEM-NAME           BINARY-LONG VALUE 9.
  01 WS-BYTES               BINARY-LONG.
  LINKAGE SECTION.
  01 L-SLOT                 BINARY-LONG.
