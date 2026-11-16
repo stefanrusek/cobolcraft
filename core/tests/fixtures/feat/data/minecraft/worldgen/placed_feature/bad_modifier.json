@@ -2,7 +2,7 @@
  "feature": "minecraft:poppy",
  "placement": [
   {
-   "type": "minecraft:fixed_placement",
+   "type": "minecraft:bogus_modifier",
    "positions": [
     [
      0,

@@ -7,6 +7,8 @@
 *> Entry points:
 *>   END-GATEWAY-IDS                                    the ids of end_gateway and bedrock, resolved again when CB-EPOCH changes
 *>   END-GATEWAY-FIND USING dim, x, y, z, row out       the entity at a position (0 when the block there is not an end_gateway; it is created on first use)
+*>   END-GATEWAY-SET USING dim, x, y, z, flags (1 exit present, 2 exact), exit x, y, z: the entity of a gateway the generator placed (feature end_gateway with an exit, 35-7 10.4): the row
+*>                                                      is found or made without reading the block and given the exit and the flag (setExitPosition)
 *>   END-GATEWAY-EXIT USING row, x, y, z out (FLOAT-LONG)   getPortalPosition: the bottom centre of the exit (exact), else of findExitPosition (4.4)
 *>   END-GATEWAY-TICK                                   portalTick of every entity: age, cooldown, the attention interval 2400
 *>   END-GATEWAY-PLAYER USING player row                a player's box inside a gateway block: the cooldown, the teleport
@@ -73,6 +75,56 @@
      END-IF
      GOBACK.
  END PROGRAM END-GATEWAY-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-GATEWAY-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ENDGATEWAY.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ 01 L-EX                   BINARY-LONG.
+ 01 L-EY                   BINARY-LONG.
+ 01 L-EZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FLAGS L-EX L-EY L-EZ.
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EG-COUNT
+         IF EG-DIM(WS-I) = L-DIM AND EG-X(WS-I) = L-X AND EG-Y(WS-I) = L-Y AND EG-Z(WS-I) = L-Z
+             MOVE WS-I TO WS-ROW
+         END-IF
+     END-PERFORM
+     IF WS-ROW = 0 AND EG-COUNT < EG-MAX
+         ADD 1 TO EG-COUNT
+         MOVE EG-COUNT TO WS-ROW
+         INITIALIZE EG-ROW(WS-ROW)
+         MOVE L-DIM TO EG-DIM(WS-ROW)
+         MOVE L-X TO EG-X(WS-ROW)
+         MOVE L-Y TO EG-Y(WS-ROW)
+         MOVE L-Z TO EG-Z(WS-ROW)
+     END-IF
+     IF WS-ROW > 0
+         IF FUNCTION MOD(L-FLAGS, 2) = 1
+             MOVE 1 TO EG-HAS-EXIT(WS-ROW)
+             MOVE L-EX TO EG-EXIT-X(WS-ROW)
+             MOVE L-EY TO EG-EXIT-Y(WS-ROW)
+             MOVE L-EZ TO EG-EXIT-Z(WS-ROW)
+         ELSE
+             MOVE 0 TO EG-HAS-EXIT(WS-ROW)
+         END-IF
+         IF L-FLAGS >= 2
+             MOVE 1 TO EG-EXACT(WS-ROW)
+         ELSE
+             MOVE 0 TO EG-EXACT(WS-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM END-GATEWAY-SET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. END-GATEWAY-EXIT.

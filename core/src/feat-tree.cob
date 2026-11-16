@@ -47,6 +47,95 @@
  END PROGRAM FD-TREE-STATE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FD-TREE-LEAFPROV.
+*> USING doc, node, feature row, ok out: a weighted foliage provider {"type": "minecraft:weighted", "entries": [{"data": state, "weight": n}, ...]} (35-2 section 4): the pairs (state, weight)
+*> go to the pool (TR-LP-START, TR-LP-N, TR-LP-TOTAL); TR-LEAF-STATE and TR-LEAF-BLOCK are those of the first entry. A data is a block id string or a state object; the leaves of all entries must have
+*> the same number of states (the distance arithmetic of the commit is shared).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FEATDATA.
+ COPY FDKEYS.
+ COPY CBLOCKS.
+ 01 WS-TEXT                PIC X(120).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY48               PIC X(48).
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-WOK                 BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-ROW L-OK.
+     MOVE 0 TO L-OK
+     CALL "FD-J-STRING" USING JSON-DOC FK-TYPE L-NODE WS-TEXT WS-LEN
+     IF FUNCTION TRIM(WS-TEXT) NOT = "minecraft:weighted" AND FUNCTION TRIM(WS-TEXT) NOT = "weighted"
+         GOBACK
+     END-IF
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-ENTRIES WS-E
+     IF WS-E = 0
+         GOBACK
+     END-IF
+     IF JN-TYPE(WS-E) NOT = JT-ARRAY OR JN-COUNT(WS-E) < 1 OR JN-COUNT(WS-E) > 16
+         GOBACK
+     END-IF
+     MOVE 1 TO L-OK
+     COMPUTE TR-LP-START(L-ROW) = FD-POOL-COUNT + 1
+     MOVE 0 TO TR-LP-N(L-ROW) TR-LP-TOTAL(L-ROW) WS-FIRST
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= JN-COUNT(WS-E)
+         CALL "JSON-ELEMENT" USING JSON-DOC WS-E WS-I WS-N
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-N FK-DATA WS-D
+         MOVE 0 TO WS-STATE WS-BLOCK
+         IF WS-D > 0
+             IF JN-TYPE(WS-D) = JT-STRING
+                 MOVE SPACES TO WS-TEXT
+                 CALL "JSON-STRING" USING JSON-DOC WS-D WS-TEXT 120 WS-LEN
+                 CALL "FD-KEY" USING WS-TEXT WS-KEY
+                 MOVE WS-KEY TO WS-KEY48
+                 CALL "FD-BLOCK-INDEX" USING WS-KEY48 WS-BLOCK
+                 IF WS-BLOCK > 0
+                     CALL "GEN-BLOCK-STATE" USING WS-KEY48 WS-STATE
+                 END-IF
+             ELSE
+                 CALL "FD-TREE-STATE" USING JSON-DOC WS-D WS-STATE WS-BLOCK WS-WOK
+             END-IF
+         END-IF
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-N FK-WEIGHT WS-D
+         CALL "FD-J-INT" USING JSON-DOC WS-D WS-W WS-WOK
+         IF WS-BLOCK < 1 OR WS-WOK = 0 OR WS-W < 0
+             MOVE 0 TO L-OK
+         ELSE
+             IF WS-FIRST = 0
+                 MOVE WS-STATE TO TR-LEAF-STATE(L-ROW)
+                 MOVE WS-BLOCK TO TR-LEAF-BLOCK(L-ROW)
+                 MOVE WS-BLOCK TO WS-FIRST
+             ELSE
+                 IF CB-STATES(WS-BLOCK) NOT = CB-STATES(WS-FIRST)
+                     MOVE 0 TO L-OK
+                 END-IF
+             END-IF
+             CALL "FD-POOL-ADD" USING WS-STATE WS-IDX
+             CALL "FD-POOL-ADD" USING WS-W WS-IDX
+             ADD 1 TO TR-LP-N(L-ROW)
+             ADD WS-W TO TR-LP-TOTAL(L-ROW)
+         END-IF
+     END-PERFORM
+     IF TR-LP-TOTAL(L-ROW) < 1
+         MOVE 0 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM FD-TREE-LEAFPROV.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-TREE-IP.
 *> USING doc, object node, member key (PIC X(40)), provider out (4 integers like FR-INT-SAMPLE): the int provider member; an absent member is the constant 0.
  DATA DIVISION.
@@ -156,10 +245,17 @@
      END-IF
 *>   the soil under the trunk
      CALL "FD-J-STRING" USING JSON-DOC WS-K-BELOW L-NODE WS-TEXT WS-LEN
-     IF FUNCTION TRIM(WS-TEXT) NOT = "minecraft:soil_beneath_tree"
-         MOVE 1 TO FD-BAD
-     END-IF
      CALL "GEN-BLOCK-STATE" USING WS-DIRT TR-SOIL-STATE(WS-ROW)
+     IF FUNCTION TRIM(WS-TEXT) NOT = "minecraft:soil_beneath_tree"
+*>       a plain state object (the azalea tree's rooted_dirt): placeBelowTrunkBlock sets that state whatever is below the trunk
+         CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-BELOW WS-E
+         CALL "FD-TREE-STATE" USING JSON-DOC WS-E TR-SOIL-STATE(WS-ROW) WS-BLOCK WS-OK
+         IF WS-OK = 0
+             MOVE 1 TO FD-BAD
+         ELSE
+             MOVE 1 TO TR-SOIL-ALWAYS(WS-ROW)
+         END-IF
+     END-IF
 *>   the trunk placer
      CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-TRUNK-PLACER WS-E
      CALL "FD-J-STRING" USING JSON-DOC FK-TYPE WS-E WS-TEXT WS-LEN
@@ -205,6 +301,9 @@
      END-IF
      CALL "FD-J-MEMBER" USING JSON-DOC L-NODE WS-K-FOLIAGE-PROVIDER WS-E
      CALL "FD-TREE-STATE" USING JSON-DOC WS-E TR-LEAF-STATE(WS-ROW) TR-LEAF-BLOCK(WS-ROW) WS-OK
+     IF WS-OK = 0
+         CALL "FD-TREE-LEAFPROV" USING JSON-DOC WS-E WS-ROW WS-OK
+     END-IF
      IF WS-OK = 0
          MOVE 1 TO FD-BAD
      END-IF
@@ -360,21 +459,31 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-TREE-LEAF.
-*> USING x, y, z (absolute): tryPlaceLeaf (section 5.1): not on a log of this tree, and the position is valid tree space in the level; the leaf is recorded once.
+*> USING x, y, z (absolute), state (the random source): tryPlaceLeaf (section 5.1): not on a log of this tree, and the position is valid tree space in the level; the leaf is recorded once.
+*> With a weighted foliage provider every valid attempt draws the provider (nextInt(total weight), then the entry whose running weight exceeds it): a cell hit again holds a leaf, which is
+*> replaceable, so it draws again and the last draw gives its state.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY TREEWORK.
  COPY CELLS.
+ COPY FEATDATA.
  01 WS-CELL                BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-SUM                 BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-PICK                BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- PROCEDURE DIVISION USING L-X L-Y L-Z.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-STATE.
      CALL "FR-TREE-CELL" USING L-X L-Y L-Z WS-CELL
      IF WS-CELL > 0
+         MOVE 0 TO WS-OK
          IF TW-GRID(WS-CELL) = 0
              CALL "FL-GET-STATE" USING L-X L-Y L-Z WS-STATE
              CALL "FR-TREE-OK" USING TW-REPL-START TW-REPL-N WS-STATE WS-OK
@@ -383,8 +492,28 @@
                  MOVE L-X TO TW-LEAF-X(TW-NLEAF)
                  MOVE L-Y TO TW-LEAF-Y(TW-NLEAF)
                  MOVE L-Z TO TW-LEAF-Z(TW-NLEAF)
+                 MOVE TW-LEAF-STATE0 TO TW-LEAF-S(TW-NLEAF)
+                 MOVE TW-NLEAF TO TW-LEAFAT(WS-CELL)
                  MOVE 2 TO TW-GRID(WS-CELL)
+                 MOVE TW-NLEAF TO WS-IDX
              END-IF
+         ELSE
+             IF TW-GRID(WS-CELL) = 2
+                 MOVE 1 TO WS-OK
+                 MOVE TW-LEAFAT(WS-CELL) TO WS-IDX
+             END-IF
+         END-IF
+         IF WS-OK = 1 AND TW-LP-N > 0
+             CALL "FR-NEXT-INT" USING L-STATE TW-LP-TOTAL WS-DRAW
+             MOVE 0 TO WS-SUM WS-PICK
+             PERFORM VARYING WS-E FROM 0 BY 1 UNTIL WS-E >= TW-LP-N OR WS-PICK = 1
+                 COMPUTE WS-STATE = TW-LP-START + WS-E * 2
+                 ADD FD-POOL(WS-STATE + 1) TO WS-SUM
+                 IF WS-DRAW < WS-SUM
+                     MOVE FD-POOL(WS-STATE) TO TW-LEAF-S(WS-IDX)
+                     MOVE 1 TO WS-PICK
+                 END-IF
+             END-PERFORM
          END-IF
      END-IF
      GOBACK.
@@ -475,10 +604,10 @@
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TW-NLEAF
          CALL "FR-TREE-CELL" USING TW-LEAF-X(WS-I) TW-LEAF-Y(WS-I) TW-LEAF-Z(WS-I) WS-CELL
-         MOVE TR-LEAF-STATE(L-ROW) TO WS-STATE
+         MOVE TW-LEAF-S(WS-I) TO WS-STATE
          IF WS-STRIDE > 0
              COMPUTE WS-STEP = 7 - TW-DIST(WS-CELL)
-             COMPUTE WS-STATE = TR-LEAF-STATE(L-ROW) - WS-STEP * WS-STRIDE
+             COMPUTE WS-STATE = TW-LEAF-S(WS-I) - WS-STEP * WS-STRIDE
          END-IF
 *>       a leaf the crown replaced by a log (poplar, 5.5) is no leaf any more
          IF TW-GRID(WS-CELL) = 2
@@ -642,6 +771,10 @@
      MOVE TR-LVS-N(WS-ROW) TO TW-LVS-N
      MOVE TR-CGT-START(WS-ROW) TO TW-CGT-START
      MOVE TR-CGT-N(WS-ROW) TO TW-CGT-N
+     MOVE TR-LEAF-STATE(WS-ROW) TO TW-LEAF-STATE0
+     MOVE TR-LP-START(WS-ROW) TO TW-LP-START
+     MOVE TR-LP-N(WS-ROW) TO TW-LP-N
+     MOVE TR-LP-TOTAL(WS-ROW) TO TW-LP-TOTAL
      MOVE ALL "0" TO TW-GRIDS
 *>   2.2 step 8 and section 4: the soil, the logs and the attachments; step 9 and section 5: the foliage of each attachment in list order
      CALL "FR-TRUNK" USING L-STATE WS-ROW L-X WS-OY L-Z WS-FREE

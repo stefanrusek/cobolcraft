@@ -385,7 +385,7 @@
              IF WS-SKIP = 0
                  COMPUTE WS-PX = L-X + WS-DX
                  COMPUTE WS-PZ = L-Z + WS-DZ
-                 CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ
+                 CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ L-STATE
              END-IF
          END-PERFORM
      END-PERFORM
@@ -424,7 +424,7 @@
          IF WS-F <= WS-P
              CALL "FR-TREE-CELL" USING L-X L-Y L-Z WS-CELL
              MOVE TW-NLEAF TO WS-BEFORE
-             CALL "FR-TREE-LEAF" USING L-X L-Y L-Z
+             CALL "FR-TREE-LEAF" USING L-X L-Y L-Z L-STATE
              IF TW-NLEAF > WS-BEFORE
                  MOVE 1 TO L-OK
              END-IF
@@ -586,7 +586,7 @@
          CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-RB WS-A
          CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-RB WS-B
          COMPUTE WS-PZ = TW-ATT-Z(L-ATT) + WS-A - WS-B
-         CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ
+         CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ L-STATE
      END-PERFORM
      GOBACK.
  END PROGRAM FR-SPREAD.

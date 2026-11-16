@@ -93,8 +93,11 @@
      MOVE "minecraft:classic_vines_cave_feature" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: the cave vines stay off" TO TL-CASE
      PERFORM CHECK-GATE-ZERO
-     MOVE "minecraft:fossil_upper" TO WS-GATE-KEY
-     MOVE "acceptance US12 vegetation gate: an unsupported family (fossil) stays off" TO TL-CASE
+     MOVE "minecraft:patch_firefly_bush_near_water" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: the firefly bush patch is admitted" TO TL-CASE
+     PERFORM CHECK-GATE-ONE
+     MOVE "minecraft:end_platform" TO WS-GATE-KEY
+     MOVE "acceptance US12 vegetation gate: a family the End driver runs itself (end_platform) stays off" TO TL-CASE
      PERFORM CHECK-GATE-ZERO
      MOVE "minecraft:ore_coal_upper" TO WS-GATE-KEY
      MOVE "acceptance US12 vegetation gate: an ore placed feature stays off" TO TL-CASE

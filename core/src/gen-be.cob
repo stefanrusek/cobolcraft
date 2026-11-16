@@ -3,7 +3,7 @@
 *> to the installed chunk by WORLD-CHUNK-LOAD, through BE-BLOCK-SET (the path of a block a player places).
 *>
 *> Entry points:
-*>   GBE-ADD USING x, y, z, kind (1 chest with a loot table, 2 spawner), loot table key (PIC X(48)), seed (BINARY-DOUBLE), text (PIC X(32), the spawner's entity id): appends a request
+*>   GBE-ADD USING x, y, z, kind (1 chest with a loot table, 2 spawner, 3 end gateway: the seed carries the flags 1 exit present and 2 exact, the text the exit as three signed numbers of 10 characters), loot table key (PIC X(48)), seed (BINARY-DOUBLE), text (PIC X(32), the spawner's entity id): appends a request
 *>     to GEN-BE-LEVEL (at most GB-MAX; GBL-LOST counts the rest)
 *>   GBE-KEEP USING job: appends the level's requests to the job's list (GJ-BE, bounded) and empties the level's list
 *>   GBE-APPLY USING dimension row, chunk row: for each request of GEN-BE (GB-DATA) the entity of the block now at the position is made (a position that holds no block with an entity
@@ -82,6 +82,13 @@
  01 WS-TEXT                PIC X(160).
  01 WS-PTR                 BINARY-LONG.
  01 WS-CODE                PIC X.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-EX                  BINARY-LONG.
+ 01 WS-EY                  BINARY-LONG.
+ 01 WS-EZ                  BINARY-LONG.
+ 01 WS-GNUMS.
+    05 WS-GNUM             PIC S9(9) SIGN LEADING SEPARATE OCCURS 3 TIMES.
+    05 FILLER              PIC X(2).
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -91,8 +98,20 @@
          COMPUTE WS-CELL = (GB-Y(WS-I) - DM-MIN-Y(L-DIM)) * 256 + (GB-Z(WS-I) - CK-Z(L-ROW) * 16) * 16
              + GB-X(WS-I) - CK-X(L-ROW) * 16 + 1
          MOVE CE-STATE(WS-CELL) TO WS-STATE
-         CALL "BE-BLOCK-SET" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-AIR WS-STATE
-         CALL "BE-FIND" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-INDEX
+         IF GB-KIND(WS-I) = 3
+*>           kind 3: an end gateway the generator placed: GB-SEED the flags (1 exit present, 2 exact), GB-TEXT the exit as three 10-character signed numbers; the entity is of the
+*>           gateway table (end-gateway.cob), not of the chunk
+             MOVE GB-TEXT(WS-I) TO WS-GNUMS
+             MOVE GB-SEED(WS-I) TO WS-FLAGS
+             MOVE WS-GNUM(1) TO WS-EX
+             MOVE WS-GNUM(2) TO WS-EY
+             MOVE WS-GNUM(3) TO WS-EZ
+             CALL "END-GATEWAY-SET" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-FLAGS WS-EX WS-EY WS-EZ
+             MOVE 0 TO WS-INDEX
+         ELSE
+             CALL "BE-BLOCK-SET" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-AIR WS-STATE
+             CALL "BE-FIND" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-INDEX
+         END-IF
          IF WS-INDEX > 0
              IF GB-KIND(WS-I) = 1
                  MOVE GB-LOOT(WS-I) TO BE-LOOT(WS-INDEX)

@@ -195,6 +195,12 @@
           15 TD-F2          FLOAT-LONG.
           15 TD-F3          FLOAT-LONG.
           15 TD-FT          BINARY-LONG.
+*>     batch 7 (azalea): TR-SOIL-ALWAYS 1 when below_trunk_provider is a plain state (the state TR-SOIL-STATE goes under the trunk whatever is there); TR-LP-START, TR-LP-N and TR-LP-TOTAL the weighted
+*>     foliage provider: N pairs (state, weight) from the pool entry START, the total weight (N 0: the single state TR-LEAF-STATE)
+       10 TR-SOIL-ALWAYS    BINARY-LONG.
+       10 TR-LP-START       BINARY-LONG.
+       10 TR-LP-N           BINARY-LONG.
+       10 TR-LP-TOTAL       BINARY-LONG.
 *>  block columns (type 2; core/src/feat-column.cob FR-BLOCK-COLUMN, docs/protocol/35-worldgen-features-4 section 5): FT-A of the feature is the row. BC-DIR 1 up or -1 down, BC-TIP prioritize_tip, BC-PR the
 *>  allowed_placement predicate, BC-N layers (at most 4), each with the four integers of its height int provider and the provider index.
     05 FD-BC OCCURS 128 TIMES.

@@ -229,7 +229,7 @@
                  IF WS-INSIDE = 1
                      COMPUTE WS-PX = L-CX + WS-X
                      COMPUTE WS-PZ = L-CZ + WS-Z
-                     CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ
+                     CALL "FR-TREE-LEAF" USING WS-PX WS-PY WS-PZ L-STATE
                  END-IF
              END-IF
          END-PERFORM

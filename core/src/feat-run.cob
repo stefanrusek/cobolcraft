@@ -67,6 +67,16 @@
                      IF WS-A < WS-B
                          MOVE FD-POOL(WS-BOUND) TO L-VALUE
                          MOVE 1 TO WS-SIDE
+*>                       a uniform entry (see FD-J-IP): the entry is sampled after the pick, one nextInt(range)
+                         IF L-VALUE >= 1000000000
+                             COMPUTE WS-RANGE = L-VALUE - 1000000000
+                             DIVIDE WS-RANGE BY 20000 GIVING WS-SLOPE REMAINDER WS-B
+                             COMPUTE WS-SLOPE = WS-SLOPE - 10000
+                             COMPUTE WS-B = WS-B - 10000
+                             COMPUTE WS-BOUND = WS-B - WS-SLOPE + 1
+                             CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
+                             COMPUTE L-VALUE = WS-SLOPE + WS-A
+                         END-IF
                      END-IF
                  END-PERFORM
              END-IF
@@ -734,7 +744,7 @@
  PROGRAM-ID. FR-MODIFY IS RECURSIVE.
 *> USING state, modifier index, top placed feature (0 none), x, y, z, count out, positions out (4096 x 3 BINARY-LONG): one placement modifier of the compiled
 *> data (35-1 section 7) over the level; the kinds are those of FEATDATA.cpy (0 block_predicate_filter ... 15 offset); the noise counts (7, 8) are the biome info noise of feat-noise.cob; randomly_selected
-*> (16) and fixed_placement (17) are not compiled.
+*> (16) and fixed_placement (17, up to four positions) are compiled.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -1012,6 +1022,20 @@
              COMPUTE L-OX(1) = L-X + WS-DX
              MOVE L-Y TO L-OY(1)
              COMPUTE L-OZ(1) = L-Z + WS-DZ
+         WHEN 17
+*>           fixed_placement (35-1 7.18): the listed positions in the chunk of the input, in list order (no draw)
+             COMPUTE WS-DX = FUNCTION INTEGER(L-X / 16)
+             COMPUTE WS-DZ = FUNCTION INTEGER(L-Z / 16)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MD-B(L-MD)
+                 COMPUTE WS-A = FUNCTION INTEGER(MD-P(L-MD, WS-I * 3 - 2) / 16)
+                 COMPUTE WS-EXT = FUNCTION INTEGER(MD-P(L-MD, WS-I * 3) / 16)
+                 IF WS-A = WS-DX AND WS-EXT = WS-DZ
+                     ADD 1 TO L-COUNT
+                     MOVE MD-P(L-MD, WS-I * 3 - 2) TO L-OX(L-COUNT)
+                     MOVE MD-P(L-MD, WS-I * 3 - 1) TO L-OY(L-COUNT)
+                     MOVE MD-P(L-MD, WS-I * 3) TO L-OZ(L-COUNT)
+                 END-IF
+             END-PERFORM
          WHEN 15
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
                  MOVE MD-P(L-MD, WS-I) TO WS-Q(WS-I)
@@ -1267,8 +1291,9 @@
          WHEN 12
          WHEN 13
          WHEN 11
+         WHEN 14
          WHEN 55
-             CALL "FR-END" USING L-STATE FT-TYPE(L-FT) L-X L-Y L-Z L-RESULT
+             CALL "FR-END" USING L-STATE FT-TYPE(L-FT) L-X L-Y L-Z L-RESULT L-FT
          WHEN 38
              CALL "FR-ROOTSYS" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 18
