@@ -200,6 +200,31 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A full atlas (64 slots of models no longer on screen) is released for the mobs now on screen instead of leaving them undrawn.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 64
+         MOVE WS-S TO EA-MT-MODEL(WS-S)
+         MOVE 0 TO EA-MT-TEX(WS-S)
+     END-PERFORM
+     MOVE 64 TO EA-MT-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         EVALUATE WS-I
+             WHEN 1 MOVE "dolphin" TO WS-KEY
+             WHEN 2 MOVE "cod" TO WS-KEY
+             WHEN OTHER MOVE "salmon" TO WS-KEY
+         END-EVALUATE
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+         MOVE WS-I TO WS-ID
+         CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     END-PERFORM
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance variants a full atlas is released for the three mobs on screen" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-EN-COUNT >= 108 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0 AND EA-MT-COUNT = 3
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-VARIANTS.
 

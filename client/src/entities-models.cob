@@ -99,10 +99,11 @@
  01 WS-X                   BINARY-LONG.
  01 WS-EM                  BINARY-LONG.
  01 WS-TEX                 BINARY-LONG.
+ 01 WS-RESET               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO WS-NEW
+     MOVE 0 TO WS-NEW WS-RESET
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
@@ -117,6 +118,12 @@
                      MOVE 1 TO WS-FOUND
                  END-IF
              END-PERFORM
+*>           The atlas is full (64 images): once a call, every slot is released and the pass starts again with the rows on screen, so the images that
+*>           are no longer needed make room instead of the newest mobs not being drawn.
+             IF WS-FOUND = 0 AND EA-MT-COUNT >= 64 AND WS-RESET = 0
+                 MOVE 0 TO EA-MT-COUNT WS-R
+                 MOVE 1 TO WS-RESET WS-NEW
+             END-IF
              IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                  ADD 1 TO EA-MT-COUNT
                  MOVE WS-EM TO EA-MT-MODEL(EA-MT-COUNT)
