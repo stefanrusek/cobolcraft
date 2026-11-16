@@ -552,3 +552,26 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-MODEL-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BABY-INDEX.
+*> USING entity type key (X(24)), index out (BINARY-LONG): the Set Entity Data entry that holds the baby flag (BOOLEAN) of the type (21 Appendix A): 16 for the ageable mobs and the
+*> zombies, 17 for the piglin, 0 (none) for the types whose entry 16 is something else (allay dancing, bogged sheared, the fish's from_bucket, creaking, guardians moving, the
+*> illagers and the witch celebrating, ghast charging, the piglin brute's immunity, the skeleton's conversion, the tadpole's from_bucket).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-INDEX.
+     EVALUATE L-KEY
+         WHEN "piglin"
+             MOVE 17 TO L-INDEX
+         WHEN "allay" WHEN "bogged" WHEN "cod" WHEN "salmon" WHEN "tropical_fish" WHEN "pufferfish" WHEN "tadpole"
+         WHEN "creaking" WHEN "guardian" WHEN "elder_guardian" WHEN "evoker" WHEN "illusioner" WHEN "pillager"
+         WHEN "vindicator" WHEN "ravager" WHEN "witch" WHEN "ghast" WHEN "piglin_brute" WHEN "skeleton"
+             MOVE 0 TO L-INDEX
+         WHEN OTHER
+             MOVE 16 TO L-INDEX
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM ENTITY-BABY-INDEX.

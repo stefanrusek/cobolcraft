@@ -136,6 +136,7 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROWS                BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
+ 01 WS-BABY-INDEX          BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-R                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -311,9 +312,11 @@
                  IF WS-ROW > 0 AND MD-MD-INDEX = 15 AND MD-MD-SERIALIZER = PB-MDS-BYTE
                      MOVE MD-MD-INT TO EN-MOB-FLAGS(WS-ROW)
                  END-IF
-                 IF WS-ROW > 0 AND MD-MD-INDEX = 16 AND MD-MD-SERIALIZER = PB-MDS-BOOLEAN
-                         AND EN-KEY(WS-ROW) NOT = "guardian" AND EN-KEY(WS-ROW) NOT = "elder_guardian"
-                     MOVE MD-MD-INT TO EN-BABY(WS-ROW)
+                 IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-BOOLEAN
+                     CALL "ENTITY-BABY-INDEX" USING EN-KEY(WS-ROW) WS-BABY-INDEX
+                     IF MD-MD-INDEX = WS-BABY-INDEX
+                         MOVE MD-MD-INT TO EN-BABY(WS-ROW)
+                     END-IF
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
                      IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
