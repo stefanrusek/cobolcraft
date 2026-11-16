@@ -1,5 +1,5 @@
 *> The throwing of items by players and the tick of the thrown entities of lane 002-lane-mobsb6 (17 section 3.15, 44 part 8 sections 6.1 and 6.5).
-*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob). The projectile
+*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob) and ender_eye (EYE-ITEM-USE, thrown-44g.cob). The projectile
 *> starts at (x, eye y - 0.1, z) of the player, moves along (-sin(yaw) cos(pitch), -sin(pitch + offset), cos(yaw) cos(pitch)) normalised and scaled by the speed; a survival
 *> player's stack loses one. Gaps: the inaccuracy (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled;
 *> a thrown potion has the contents of the thrown stack's potion_contents (POTION-LOAD, potion-load.cob; a stack without it is a water bottle).
@@ -104,6 +104,8 @@
              MOVE 1.5 TO WS-SPEED
          WHEN "fishing_rod"
              MOVE 5 TO WS-KIND
+         WHEN "ender_eye"
+             MOVE 6 TO WS-KIND
      END-EVALUATE
      IF WS-KIND = 0
          GOBACK
@@ -113,6 +115,12 @@
          MOVE PSB-YAW TO WS-YAW
          MOVE PSB-PITCH TO WS-PITCH
          CALL "BOBBER-USE" USING L-ID WS-YAW WS-PITCH
+         GOBACK
+     END-IF
+     IF WS-KIND = 6
+         MOVE PSB-YAW TO WS-YAW
+         MOVE PSB-PITCH TO WS-PITCH
+         CALL "EYE-ITEM-USE" USING L-ID WS-YAW WS-PITCH L-DONE
          GOBACK
      END-IF
      MOVE PL-DIM(WS-ROW) TO WS-DIM
