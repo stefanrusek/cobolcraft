@@ -261,6 +261,10 @@
  01 WS-LOCAL               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-EIGHT               BINARY-LONG VALUE 8.
+ 01 WS-TEN                 BINARY-LONG VALUE 10.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-SLIME               BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-TIME                BINARY-DOUBLE.
  LINKAGE SECTION.
@@ -295,6 +299,18 @@
          CALL "XORO-NEXT-INT" USING L-STATE WS-EIGHT WS-LEVEL
          IF WS-D * 1000 < WS-CHANCE AND WS-LOCAL <= WS-LEVEL AND WS-KIND = 1
              MOVE 1 TO L-OK
+         END-IF
+     END-IF
+*>   (b) the slime-chunk alternative (20 section 10, 54 section 8.1): the chunk test on the world seed, a fresh nextInt(10) = 0, y below 40 and a floor.
+     IF L-OK = 0
+         COMPUTE WS-CX = FUNCTION INTEGER(L-X / 16)
+         COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
+         CALL "M44-SLIME-CHUNK" USING WS-CX WS-CZ CW-SEED WS-SLIME
+         IF WS-SLIME = 1
+             CALL "XORO-NEXT-INT" USING L-STATE WS-TEN WS-LEVEL
+             IF WS-LEVEL = 0 AND L-Y < 40 AND WS-KIND = 1
+                 MOVE 1 TO L-OK
+             END-IF
          END-IF
      END-IF
      GOBACK.
