@@ -562,108 +562,31 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SP-ENCHANT-LEVEL.
 *> USING handle, enchantment id, level out: the level of the enchantment in the enchantments component (13: VarInt count,
-*> then VarInt enchantment id and VarInt level pairs), 0 when the stack does not have it.
+*> then VarInt enchantment id and VarInt level pairs), 0 when the stack does not have it (SC-ENCH-LEVEL of stack-comp.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-TYPE                BINARY-LONG VALUE 13.
- 01 WS-VALUE               PIC X(64).
- 01 WS-LENGTH              BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
- 01 WS-POS                 BINARY-LONG.
- 01 WS-COUNT               BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-ID                  BINARY-LONG.
- 01 WS-LEVEL               BINARY-LONG.
  LINKAGE SECTION.
  01 L-HANDLE               BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
  PROCEDURE DIVISION USING L-HANDLE L-ID L-LEVEL.
-     MOVE 0 TO L-LEVEL
-     CALL "SP-GET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH WS-FOUND
-     IF WS-FOUND = 1
-         MOVE 1 TO WS-POS
-         CALL "SP-VARINT-GET" USING WS-VALUE WS-POS WS-COUNT
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR WS-POS > 63
-             CALL "SP-VARINT-GET" USING WS-VALUE WS-POS WS-ID
-             CALL "SP-VARINT-GET" USING WS-VALUE WS-POS WS-LEVEL
-             IF WS-ID = L-ID
-                 MOVE WS-LEVEL TO L-LEVEL
-             END-IF
-         END-PERFORM
-     END-IF
+     CALL "SC-ENCH-LEVEL" USING L-HANDLE WS-TYPE L-ID L-LEVEL
      GOBACK.
  END PROGRAM SP-ENCHANT-LEVEL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SP-ADD-ENCHANT.
 *> USING handle (in and out), enchantment id, level (1 or more): the enchantments component with the enchantment at that
-*> level (replacing its level), the pairs in ascending id order; the new handle replaces the old one. At most 20 pairs
-*> of the old component are read, so the new one fits SP-VALUE-MAX bytes.
+*> level (replacing its level), the pairs in ascending id order; the new handle replaces the old one (SC-ENCH-ADD of stack-comp.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-TYPE                BINARY-LONG VALUE 13.
- 01 WS-OLD                 PIC X(64).
- 01 WS-NEW                 PIC X(64).
- 01 WS-LENGTH              BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
- 01 WS-POS                 BINARY-LONG.
- 01 WS-OUT                 BINARY-LONG.
- 01 WS-COUNT               BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-N                   BINARY-LONG.
- 01 WS-PAIRS.
-    05 WS-PAIR OCCURS 40 TIMES.
-       10 WS-ID            BINARY-LONG.
-       10 WS-LEVEL         BINARY-LONG.
- 01 WS-AT                  BINARY-LONG.
- 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-HANDLE               BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
  PROCEDURE DIVISION USING L-HANDLE L-ID L-LEVEL.
-     MOVE 0 TO WS-N
-     CALL "SP-GET-COMPONENT" USING L-HANDLE WS-TYPE WS-OLD WS-LENGTH WS-FOUND
-     IF WS-FOUND = 1
-         MOVE 1 TO WS-POS
-         CALL "SP-VARINT-GET" USING WS-OLD WS-POS WS-COUNT
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR WS-POS > 63 OR WS-N >= 20
-             ADD 1 TO WS-N
-             CALL "SP-VARINT-GET" USING WS-OLD WS-POS WS-ID(WS-N)
-             CALL "SP-VARINT-GET" USING WS-OLD WS-POS WS-LEVEL(WS-N)
-         END-PERFORM
-     END-IF
-     MOVE 0 TO WS-AT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-         IF WS-ID(WS-I) = L-ID
-             MOVE WS-I TO WS-AT
-         END-IF
-     END-PERFORM
-     IF WS-AT = 0
-         ADD 1 TO WS-N
-         MOVE L-ID TO WS-ID(WS-N)
-         MOVE WS-N TO WS-AT
-     END-IF
-     MOVE L-LEVEL TO WS-LEVEL(WS-AT)
-*>   Ascending id order (a selection sort of at most 33 pairs).
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-N
-         PERFORM VARYING WS-J FROM WS-I BY 1 UNTIL WS-J > WS-N
-             IF WS-ID(WS-J) < WS-ID(WS-I)
-                 MOVE WS-PAIR(WS-I) TO WS-PAIR(40)
-                 MOVE WS-PAIR(WS-J) TO WS-PAIR(WS-I)
-                 MOVE WS-PAIR(40) TO WS-PAIR(WS-J)
-             END-IF
-         END-PERFORM
-     END-PERFORM
-     MOVE SPACES TO WS-NEW
-     MOVE 1 TO WS-OUT
-     CALL "SP-VARINT-PUT" USING WS-NEW WS-OUT WS-N
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-         CALL "SP-VARINT-PUT" USING WS-NEW WS-OUT WS-ID(WS-I)
-         CALL "SP-VARINT-PUT" USING WS-NEW WS-OUT WS-LEVEL(WS-I)
-     END-PERFORM
-     SUBTRACT 1 FROM WS-OUT
-     CALL "SP-SET-COMPONENT" USING L-HANDLE WS-TYPE WS-NEW WS-OUT
+     CALL "SC-ENCH-ADD" USING L-HANDLE WS-TYPE L-ID L-LEVEL
      GOBACK.
  END PROGRAM SP-ADD-ENCHANT.
