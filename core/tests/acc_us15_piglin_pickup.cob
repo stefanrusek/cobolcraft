@@ -33,6 +33,8 @@
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-ONE2                BINARY-LONG VALUE 1.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  01 WS-E3                  PIC -(9)9.
@@ -61,7 +63,7 @@
      CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PROW
      MOVE "T" TO TL-MODE
 *>   A stick lies there: not loved, stays.
-     CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-STICK WS-ONE WS-ZERO WS-ZERO WS-DROP
+     CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-STICK WS-ONE WS-ZERO WS-ZERO2 WS-DROP
      CALL "PIGLIN-TICK" USING WS-PROW
      PERFORM COUNT-ITEMS
      MOVE "acceptance US15 44§3.2 an item that is not loved is left alone" TO TL-CASE
@@ -70,7 +72,7 @@
      MOVE EN-ADMIRE(WS-PROW) TO WS-E2
      PERFORM CHECK-2
 *>   A gold ingot with a pick-up delay is not taken yet.
-     CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-INGOT WS-ONE WS-ZERO WS-ONE WS-DROP
+     CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-INGOT WS-ONE WS-ZERO WS-ONE2 WS-DROP
      MOVE 40 TO EN-DELAY(WS-DROP)
      CALL "PIGLIN-TICK" USING WS-PROW
      MOVE "acceptance US15 44§3.2 an item with a pick-up delay is not taken" TO TL-CASE
@@ -103,7 +105,7 @@
      END-IF
      PERFORM CHECK
 *>   A golden apple is admired and kept: no throw.
-     CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-APPLE WS-ONE WS-ZERO WS-ZERO WS-DROP
+     CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-APPLE WS-ONE WS-ZERO WS-ZERO2 WS-DROP
      CALL "PIGLIN-TICK" USING WS-PROW
      MOVE EN-USED(WS-DROP) TO WS-E1
      MOVE EN-ADMIRE(WS-PROW) TO WS-A
