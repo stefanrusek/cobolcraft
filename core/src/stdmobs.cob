@@ -1073,6 +1073,9 @@
      IF SM-KEY(WS-M) = "fox"
          CALL "FOX-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
+     IF SM-KEY(WS-M) = "piglin"
+         CALL "PIGLIN-TICK" USING WS-ROW
+     END-IF
      IF SM-KEY(WS-M) = "panda"
          CALL "PANDA-TICK" USING WS-ROW
          IF EN-TARGET(WS-ROW) > 0

@@ -401,6 +401,11 @@
        10 EN-ARMA-SCAN       BINARY-LONG.        *> armadillo: ticks since the last danger scan (every 80)
        10 EN-DANGER          BINARY-LONG.        *> armadillo: ticks left of danger_detected_recently (80)
        10 EN-SCUTE           BINARY-LONG.        *> armadillo: scuteTime, ticks to the next scute
+*>     --- 002-lane-mobsb: piglin (core/src/mob-21-piglin.cob; 21 section 5.5.1) ---
+       10 EN-ADMIRE          BINARY-LONG.        *> piglin: ticks of admiring left (119 after a gold ingot), 0 = not admiring
+       10 EN-ADMIRE-OFF      BINARY-LONG.        *> piglin: ticks left of ADMIRING_DISABLED (400 after a cancelled admiring)
+       10 EN-ADMIRE-PL       BINARY-LONG.        *> piglin: the player row that gave the ingot
+       10 EN-ZOMBIFY         BINARY-LONG.        *> piglin: timeInOverworld, ticks spent where piglins_zombify is true (converts above 300)
 *>     --- 002-lane-mobsfull-h21: tadpole, frog, panda, fox, allay, sniffer, llama, camel (core/src/mob-19-7.cob to mob-19-15.cob) ---
        10 EN-TAD-AGE          BINARY-LONG.        *> tadpole: age in ticks (24000 = frog); locked with EN-LOCKED
        10 EN-TONGUE           BINARY-LONG.        *> frog: tongue state 0 none, 1 moving to the target, 2 catch animation, 3 eat animation

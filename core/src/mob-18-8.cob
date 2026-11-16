@@ -1446,6 +1446,8 @@
              CALL "MOB-PARROT-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "cat" OR "ocelot"
              CALL "MOB-CAT-USE" USING WS-ROW WS-ENTITY
+         WHEN WS-KEY = "piglin"
+             CALL "PIGLIN-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
          WHEN WS-KEY = "iron_golem" AND WS-HELD = "iron_ingot"
              CALL "MOB-GOLEM-USE" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "tadpole"
