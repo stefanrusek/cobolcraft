@@ -90,7 +90,7 @@
 *> zombie of its own type. Up to 50 attempts offset the call by nextInt(7..40) x nextInt(-1..1) on each axis from its block; a spot is taken when the
 *> chunk is generated, a two-cell standable place (STDMOB-STANDABLE, which also refuses liquid) and no living player of the dimension within 7 blocks. The
 *> new mob is finalized, targets that player, and the caller and the callee each have their chance lowered by 0.05 (500, never below 0). The spawn reason
-*> rules of the monster check (light) are not modelled: docs/protocol/20 does not list which reasons skip them (open item).
+*> reason REINFORCEMENT does not skip the dark check (54 section 12.1): in the Overworld a spot also needs the check of DARK-CHECK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -126,6 +126,16 @@
  01 WS-NEW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
+ 01 WS-BOUND-SKY           BINARY-LONG VALUE 32.
+ 01 WS-BOUND-BRIGHT        BINARY-LONG VALUE 8.
+ 01 WS-SAMPLE              BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-DARK                BINARY-LONG.
+ 01 WS-BRIGHT              BINARY-LONG.
+ 01 WS-RULE-MONSTERS       PIC X(40) VALUE "spawn_monsters".
+ 01 WS-RULE-MOBS           PIC X(40) VALUE "spawn_mobs".
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -141,6 +151,14 @@
      END-IF
      CALL "BR-WORLD-READY"
      IF BW-DIFFICULTY NOT = 3 OR CS-HOSTILE-MOBS NOT = 1 OR EN-REINF(L-ROW) <= 0
+         GOBACK
+     END-IF
+     CALL "BR-RULE-GET" USING WS-RULE-MONSTERS WS-RULE-VALUE
+     IF WS-RULE-VALUE = 0
+         GOBACK
+     END-IF
+     CALL "BR-RULE-GET" USING WS-RULE-MOBS WS-RULE-VALUE
+     IF WS-RULE-VALUE = 0
          GOBACK
      END-IF
      MOVE EN-TARGET(L-ROW) TO WS-WHO
@@ -191,6 +209,9 @@
                  END-IF
              END-PERFORM
          END-IF
+         IF WS-OK = 1 AND WS-DIM = CW-DIM(1)
+             PERFORM DARK-CHECK
+         END-IF
          IF WS-OK = 1
              MOVE 1 TO WS-DONE
              COMPUTE WS-X = WS-CELL-X + 0.5
@@ -207,4 +228,24 @@
          END-IF
      END-PERFORM
      GOBACK.
+
+*> The monster dark check of the Overworld for the spot (20 section 3.3, 54 section 12.1: the reason REINFORCEMENT does not skip it): sky light (less the night
+*> darkening) not above a fresh nextInt(32), no block light, and the brightness (a flat 10 in a thunderstorm) not above one nextInt(8) sample.
+ DARK-CHECK.
+     CALL "STDMOB-LIGHTS" USING WS-DIM WS-CELL-X WS-CELL-Y WS-CELL-Z WS-SKY WS-BLOCK
+     CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
+     COMPUTE WS-SKY = FUNCTION MAX(0, WS-SKY - WS-DARK)
+     CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-SKY WS-SAMPLE
+     IF WS-SKY > WS-SAMPLE OR WS-BLOCK > 0
+         MOVE 0 TO WS-OK
+     ELSE
+         COMPUTE WS-BRIGHT = FUNCTION MAX(WS-SKY, WS-BLOCK)
+         IF CW-THUNDERING = 1
+             MOVE 10 TO WS-BRIGHT
+         END-IF
+         CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-BRIGHT WS-SAMPLE
+         IF WS-BRIGHT > WS-SAMPLE
+             MOVE 0 TO WS-OK
+         END-IF
+     END-IF.
  END PROGRAM STDMOB-REINFORCE.

@@ -32,6 +32,10 @@
  01 WS-SPEED               FLOAT-LONG.
  01 WS-CASE                PIC X(100).
  01 WS-EXP                 BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40).
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
+ 01 WS-RULE-ROUND          BINARY-LONG.
  01 WS-OBS                 BINARY-LONG.
  01 WS-HARD-HANDS          BINARY-LONG.
  01 WS-NORMAL-HANDS        BINARY-LONG.
@@ -198,6 +202,8 @@
      COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) - 32
      CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FLOOR-SIZE WS-FY WS-FLOOR-KIND
      MOVE 3 TO BW-DIFFICULTY
+*>   Reinforcements pass the monster dark check of 20 section 3.3 (54 section 12.1): night, so that the lit open ground darkens enough.
+     MOVE 18000 TO CW-TIME
      COMPUTE WS-X0 = WS-X + 3
      CALL "MOB-SPAWN" USING WS-DIM WS-ZOMBIE-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-ROW
      MOVE 10000 TO EN-REINF(WS-ROW)
@@ -316,6 +322,68 @@
          MOVE 1 TO WS-OBS
      END-IF
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   In full daylight no spot passes the dark check (sky light 15 against nextInt(32), brightness against the 0..7 sample): no reinforcement (54 s12.1).
+     MOVE 6000 TO CW-TIME
+     PERFORM COUNT-ZOMBIES
+     MOVE WS-COUNT TO WS-BEFORE
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 60
+         MOVE 10000 TO EN-REINF(WS-ROW)
+         MOVE 20 TO EN-HEALTH(WS-ROW)
+         MOVE 0 TO EN-HURT(WS-ROW)
+         ADD 1 TO CW-TICKS
+         CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-DAMAGE WS-CAUSE WS-PLAYER
+     END-PERFORM
+     PERFORM COUNT-ZOMBIES
+     MOVE "acceptance US15 20§4.1 Zombie: in full daylight no reinforcement (dark check, 54 s12.1)" TO WS-CASE
+     MOVE WS-BEFORE TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 18000 TO CW-TIME
+*>   In a thunderstorm the brightness is a flat 10, above every 0..7 sample: no reinforcement even at night.
+     MOVE 1 TO CW-THUNDERING
+     PERFORM COUNT-ZOMBIES
+     MOVE WS-COUNT TO WS-BEFORE
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 60
+         MOVE 10000 TO EN-REINF(WS-ROW)
+         MOVE 20 TO EN-HEALTH(WS-ROW)
+         MOVE 0 TO EN-HURT(WS-ROW)
+         ADD 1 TO CW-TICKS
+         CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-DAMAGE WS-CAUSE WS-PLAYER
+     END-PERFORM
+     MOVE 0 TO CW-THUNDERING
+     PERFORM COUNT-ZOMBIES
+     MOVE "acceptance US15 20§4.1 Zombie: in a thunderstorm no reinforcement (flat brightness 10)" TO WS-CASE
+     MOVE WS-BEFORE TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   The rules spawn_mobs and spawn_monsters gate reinforcements (ServerLevel.isSpawningMonsters, 20 section 4.1).
+     PERFORM VARYING WS-RULE-ROUND FROM 1 BY 1 UNTIL WS-RULE-ROUND > 2
+         IF WS-RULE-ROUND = 1
+             MOVE "spawn_monsters" TO WS-RULE-NAME
+         ELSE
+             MOVE "spawn_mobs" TO WS-RULE-NAME
+         END-IF
+         CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+         MOVE 0 TO WS-RULE-VALUE
+         CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+         PERFORM COUNT-ZOMBIES
+         MOVE WS-COUNT TO WS-BEFORE
+         PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 30
+             MOVE 10000 TO EN-REINF(WS-ROW)
+             MOVE 20 TO EN-HEALTH(WS-ROW)
+             MOVE 0 TO EN-HURT(WS-ROW)
+             ADD 1 TO CW-TICKS
+             CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-DAMAGE WS-CAUSE WS-PLAYER
+         END-PERFORM
+         MOVE 1 TO WS-RULE-VALUE
+         CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+         PERFORM COUNT-ZOMBIES
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance US15 20§4.1 Zombie: with the rule " FUNCTION TRIM(WS-RULE-NAME) " off no reinforcement is called" DELIMITED BY SIZE INTO WS-CASE
+         MOVE WS-BEFORE TO WS-EXP
+         MOVE WS-COUNT TO WS-OBS
+         CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     END-PERFORM
 *>   A pig and a row that is no table mob call nobody.
      MOVE "minecraft:pig" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-TYPE WS-ENTITY-ROW WS-STATUS
