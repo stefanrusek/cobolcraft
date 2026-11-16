@@ -485,6 +485,7 @@
  01 WS-RX                  FLOAT-LONG.
  01 WS-RZ                  FLOAT-LONG.
  01 WS-SIDE                FLOAT-LONG.
+ 01 WS-LOOSE               BINARY-LONG.
  01 WS-LIGHT               FLOAT-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
@@ -514,7 +515,16 @@
      COMPUTE WS-RX = - FUNCTION COS(PL-YAW * FUNCTION PI / 180)
      COMPUTE WS-RZ = - FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-TYPE(WS-R) = ET-LOOSE-ITEM AND EN-STACK-COUNT(WS-R) > 0
+*>       The item entity of a cobolcraft world is the stand-in type ET-LOOSE-ITEM; of the standard set the registry entry `item`
+*>       (EN-VANILLA 1, whose type id 1 is a boat).
+         MOVE 0 TO WS-LOOSE
+         IF EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = ET-LOOSE-ITEM
+             MOVE 1 TO WS-LOOSE
+         END-IF
+         IF EN-VANILLA(WS-R) = 1 AND EN-KEY(WS-R) = "item"
+             MOVE 1 TO WS-LOOSE
+         END-IF
+         IF EN-USED(WS-R) = 1 AND WS-LOOSE = 1 AND EN-STACK-COUNT(WS-R) > 0
                  AND RL-GI-COUNT + 6 <= CL-MAX-GI-VERTICES
              CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-SPRITE
              MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE

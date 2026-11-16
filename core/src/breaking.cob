@@ -257,6 +257,8 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-EXHAUST             FLOAT-LONG.
+ 01 WS-DROP-Y              BINARY-LONG.
+ 01 WS-DROP-STATE          BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
@@ -268,7 +270,10 @@
      MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
      CALL "BLOCK-BREAK-END" USING L-ROW
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-VOID
-     CALL "BLOCK-DROPS" USING L-DIM L-X L-Y L-Z WS-STATE WS-BLOCK L-ROW
+*>   A door or tall plant loses both halves and drops once, from its lower half.
+     CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z WS-STATE WS-DROP-Y WS-DROP-STATE
+     MOVE CB-S-BLOCK(WS-DROP-STATE + 1) TO WS-BLOCK
+     CALL "BLOCK-DROPS" USING L-DIM L-X WS-DROP-Y L-Z WS-DROP-STATE WS-BLOCK L-ROW
      CALL "STDMOB-INFESTED-BREAK" USING L-DIM L-X L-Y L-Z WS-BLOCK
      COMPUTE WS-EXHAUST = RULE-EXHAUST-BREAK-MILLI / 1000
      CALL "HUNGER-EXHAUST" USING L-ROW WS-EXHAUST
@@ -347,6 +352,8 @@
  01 WS-STEP                FLOAT-LONG.
  01 WS-P32                 FLOAT-SHORT.
  01 WS-NO-TICKS            BINARY-LONG VALUE 0.
+ 01 WS-DROP-Y              BINARY-LONG.
+ 01 WS-DROP-STATE          BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -362,10 +369,16 @@
      EVALUATE TRUE
          WHEN PSB-ACTION = 2
              CALL "BLOCK-BREAK-END" USING WS-ROW
-         WHEN WS-HARDNESS <= 0
+*>       The void and an unbreakable block (hardness below 0) are never broken; a hardness of 0 (torch, mushroom, grass, flower,
+*>       sugar cane) is not unbreakable: its progress per tick is infinite (13 section 2.1), so Start breaks it at once.
+         WHEN WS-STATE = 0 OR WS-HARDNESS < 0
              CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
          WHEN PSB-ACTION = 0 AND PL-MODE(WS-ROW) = 1
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
+             CALL "DOUBLE-BREAK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE WS-DROP-Y WS-DROP-STATE
+         WHEN PSB-ACTION = 0 AND WS-HARDNESS = 0
+             CALL "BLOCK-BREAK-END" USING WS-ROW
+             CALL "BREAK-FINISH" USING WS-ROW WS-DIM PSB-BX PSB-BY PSB-BZ
          WHEN PSB-ACTION = 0
              CALL "BLOCK-BREAK-END" USING WS-ROW
              MOVE 0 TO WS-ITEM

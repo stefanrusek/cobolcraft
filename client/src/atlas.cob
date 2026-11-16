@@ -295,16 +295,38 @@
              COMPUTE WS-V = ((AT-Y(WS-S) + AT-SH(WS-S) + WS-K - 1) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
              MOVE B-ATLAS(WS-I:WS-BYTES) TO B-ATLAS(WS-V:WS-BYTES)
          END-PERFORM
-*>       Translucent when any pixel has alpha below 255 (08 §5.3).
-         PERFORM VARYING WS-I FROM 4 BY 4 UNTIL WS-I > AT-SW(WS-S) * AT-SH(WS-S) * 4
-             IF WS-IMAGE(WS-I:1) NOT = X"FF"
-                 MOVE 1 TO AT-TRANSLUCENT(WS-S)
-             END-IF
-         END-PERFORM
+*>       Translucent only when a pixel has an alpha that is neither 0 nor 255 (08 §5.3: a sprite with alpha 0 pixels only is
+*>       cut out and is drawn in the opaque layer, where the shader drops its clear texels).
+         COMPUTE WS-BYTES = AT-SW(WS-S) * AT-SH(WS-S)
+         CALL "ATLAS-TRANSLUCENT" USING WS-IMAGE WS-BYTES AT-TRANSLUCENT(WS-S)
      END-PERFORM
      MOVE 1 TO AT-UPLOAD(1)
      GOBACK.
  END PROGRAM ATLAS-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-TRANSLUCENT.
+*> USING RGBA bytes (the first byte of the image), pixel count, translucent out (PIC 9): 1 when some pixel has an alpha that is neither
+*> 0 nor 255 (08 section 5.3, SpriteContents.computeTransparency: opaque, cut out (alpha 0 pixels) or translucent), else 0. Cut-out
+*> sprites (leaves, doors, trapdoors, panes, plants) are drawn in the opaque layer with the clear texels discarded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-IMAGE                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-IMAGE                PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-TRANSLUCENT          PIC 9.
+ PROCEDURE DIVISION USING L-IMAGE L-COUNT L-TRANSLUCENT.
+     MOVE 0 TO L-TRANSLUCENT
+     SET ADDRESS OF B-IMAGE TO ADDRESS OF L-IMAGE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         IF B-IMAGE(WS-I * 4:1) NOT = X"FF" AND B-IMAGE(WS-I * 4:1) NOT = X"00"
+             MOVE 1 TO L-TRANSLUCENT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ATLAS-TRANSLUCENT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-DIRECTORY-MATCH.
