@@ -922,6 +922,7 @@
  01 WS-PET-WALK            BINARY-LONG.
  01 WS-EVK-CAST            BINARY-LONG.
  01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-RV-STILL            BINARY-LONG.
  01 WS-VS-HX               FLOAT-LONG.
  01 WS-VS-HZ               FLOAT-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
@@ -1108,6 +1109,12 @@
          CALL "VEX-STEP" USING WS-ROW
      END-IF
      CALL "RAID-RAIDER-STEP" USING WS-ROW
+     IF SM-KEY(WS-M) = "ravager"
+         CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL
+         IF WS-RV-STILL = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
      IF SM-KEY(WS-M) = "wandering_trader"
          CALL "TRADER-STEP" USING WS-ROW
          IF EN-USED(WS-ROW) = 0
