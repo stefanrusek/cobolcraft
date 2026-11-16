@@ -1,7 +1,7 @@
 *> Variant entities of the animals with registry variants (002-lane-mobsa2; docs/protocol/19-mobs-land-friendly-and-neutral.md sections 1.3 and 1.6; 00 section 13.2).
 *> The variant number of a row (EN-WOOL: wolf 0 pale, 1 ashen, 2 black, 3 chestnut, 4 rusty, 5 snowy, 6 spotted, 7 striped, 8 woods; frog, pig, cow and chicken 0 temperate, 1 cold, 2 warm)
 *> is sent as a registry id: the position of the variant's file in the registry as loaded (the registry order is the loader's, so an id is looked up by the key, never fixed). A key the registry
-*> lacks gives 0 (the built-in set holds one placeholder entry). Entries: wolf 23 (serializer 25), frog 18 (27), pig 19 (28), cow 18 (23), chicken 18 (30), all VarInt ids.
+*> lacks gives 0 (the built-in set holds one placeholder entry). Sound variants (classic): wolf 24 (26), cat 24 (22), pig 20 (29), cow 19 (24), chicken 19 (31). Entries: wolf 23 (serializer 25), frog 18 (27), pig 19 (28), cow 18 (23), chicken 18 (30), all VarInt ids.
 *>
 *> Entry points:
 *>   M44-VARIANT-KEY USING species key (PIC X(24)), variant number, bare variant key out (PIC X(48), spaces for a species without)
@@ -146,6 +146,37 @@
      END-EVALUATE
      IF WS-REG NOT = SPACES
          CALL "M44-VARIANT-KEY" USING WS-SPECIES EN-WOOL(L-ROW) WS-KEY
+         CALL "M44-VARIANT-ID" USING WS-REG WS-KEY WS-ID
+         MOVE WS-ID TO VD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER VD-METADATA-ENTRY-X
+     END-IF
+*>   The sound variant (54 section 5): no doc gives the choice of one, so every row sends the classic one (the key is looked up in the loaded registry).
+     MOVE SPACES TO WS-REG
+     INITIALIZE VD-METADATA-ENTRY-X
+     EVALUATE WS-SPECIES
+         WHEN "wolf"
+             MOVE "wolf_sound_variant" TO WS-REG
+             MOVE 24 TO VD-MX-INDEX
+             MOVE 26 TO VD-MX-SERIALIZER
+         WHEN "cat"
+             MOVE "cat_sound_variant" TO WS-REG
+             MOVE 24 TO VD-MX-INDEX
+             MOVE 22 TO VD-MX-SERIALIZER
+         WHEN "pig"
+             MOVE "pig_sound_variant" TO WS-REG
+             MOVE 20 TO VD-MX-INDEX
+             MOVE 29 TO VD-MX-SERIALIZER
+         WHEN "cow"
+             MOVE "cow_sound_variant" TO WS-REG
+             MOVE 19 TO VD-MX-INDEX
+             MOVE 24 TO VD-MX-SERIALIZER
+         WHEN "chicken"
+             MOVE "chicken_sound_variant" TO WS-REG
+             MOVE 19 TO VD-MX-INDEX
+             MOVE 31 TO VD-MX-SERIALIZER
+     END-EVALUATE
+     IF WS-REG NOT = SPACES
+         MOVE "classic" TO WS-KEY
          CALL "M44-VARIANT-ID" USING WS-REG WS-KEY WS-ID
          MOVE WS-ID TO VD-MX-INT
          CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER VD-METADATA-ENTRY-X

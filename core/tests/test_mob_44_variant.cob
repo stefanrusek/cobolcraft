@@ -125,13 +125,13 @@
      CALL "PB-INIT" USING TP-BUFFER WS-CAPACITY
      CALL "MOB-DATA-BUILD" USING WS-ROW TP-BUFFER
 *>   Packet id (1 byte), entity id (1 or 2), baby entry 3, variant entry 3, end 1.
-     MOVE 8 TO WS-EXPECT-LEN
+     MOVE 11 TO WS-EXPECT-LEN
      IF EN-ID(WS-ROW) < 128
          ADD 1 TO WS-EXPECT-LEN
      ELSE
          ADD 2 TO WS-EXPECT-LEN
      END-IF
-     MOVE "acceptance US15 19§1.3 Variant entry: a wild wolf sends baby (3), variant 23 (3) and the end marker" TO WS-CASE
+     MOVE "acceptance US15 19§1.3 Variant entry: a wild wolf sends baby (3), variant 23 (3), sound variant 24 (3) and the end marker" TO WS-CASE
      MOVE TP-LENGTH TO WS-O
      MOVE WS-EXPECT-LEN TO WS-E
      PERFORM CHECK-N
@@ -141,8 +141,8 @@
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-ROW
      CALL "PB-INIT" USING TP-BUFFER WS-CAPACITY
      CALL "MOB-DATA-BUILD" USING WS-ROW TP-BUFFER
-     MOVE "acceptance US15 19§1.3 Variant entry: a cow sends the same three parts (variant 18)" TO WS-CASE
-     MOVE 8 TO WS-EXPECT-LEN
+     MOVE "acceptance US15 19§1.3 Variant entry: a cow sends baby, variant 18, sound variant 19 and the end marker" TO WS-CASE
+     MOVE 11 TO WS-EXPECT-LEN
      IF EN-ID(WS-ROW) < 128
          ADD 1 TO WS-EXPECT-LEN
      ELSE
@@ -152,6 +152,27 @@
      MOVE WS-EXPECT-LEN TO WS-E
      PERFORM CHECK-N
      CALL "PB-FREE" USING TP-BUFFER
+*>   Pig, chicken, frog and cat rows build their entries too (each adds the variant, the sound variant for all but the frog, and the cat only the sound one).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         EVALUATE WS-I
+             WHEN 1 MOVE "minecraft:pig" TO WS-EKEY
+             WHEN 2 MOVE "minecraft:chicken" TO WS-EKEY
+             WHEN 3 MOVE "minecraft:frog" TO WS-EKEY
+             WHEN OTHER MOVE "minecraft:cat" TO WS-EKEY
+         END-EVALUATE
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-EKEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-ROW
+         CALL "PB-INIT" USING TP-BUFFER WS-CAPACITY
+         CALL "MOB-DATA-BUILD" USING WS-ROW TP-BUFFER
+         MOVE "acceptance US15 19§1.3 Variant entry: pig, chicken, frog and cat rows send more than the baby entry and the end marker" TO WS-CASE
+         MOVE 0 TO WS-O
+         IF TP-LENGTH >= 9
+             MOVE 1 TO WS-O
+         END-IF
+         MOVE 1 TO WS-E
+         PERFORM CHECK-N
+         CALL "PB-FREE" USING TP-BUFFER
+     END-PERFORM
      STOP RUN.
 
  CHECK-N.

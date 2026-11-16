@@ -929,6 +929,7 @@
  01 WS-PET-HX              FLOAT-LONG.
  01 WS-PET-HZ              FLOAT-LONG.
  01 WS-RIDE-DONE           BINARY-LONG.
+ 01 WS-FLIER               BINARY-LONG.
  01 WS-TAD-GONE            BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -1240,6 +1241,14 @@
          COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.91
      END-IF
      MOVE EN-Y(WS-ROW) TO WS-FALL-Y
+*>   A bee, allay or parrot flies by the flying move control (no gravity, no fall damage).
+     MOVE 0 TO WS-FLIER
+     IF EN-RIDER(WS-ROW) = 0
+         CALL "M44-FLY-TICK" USING WS-ROW WS-YAW WS-FLIER
+     END-IF
+     IF WS-FLIER = 1
+         GOBACK
+     END-IF
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
 *>   The distance fallen and the landing: fall damage, and a creeper's swell by that distance (18 section 3.2, 20 section 6.1).
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y

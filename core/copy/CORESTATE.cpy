@@ -485,6 +485,11 @@
        10 EN-SENT-Z           FLOAT-LONG.
        10 EN-SENT-YAW         FLOAT-SHORT.
        10 EN-SENT-PITCH       FLOAT-SHORT.
+       10 EN-FLY-ON           BINARY-LONG.        *> a flier: 1 while it has a wanted point (EN-FLY-X/Y/Z, core/src/mob-44-f.cob)
+       10 EN-FLY-X            FLOAT-LONG.
+       10 EN-FLY-Y            FLOAT-LONG.
+       10 EN-FLY-Z            FLOAT-LONG.
+       10 EN-FLY-MOD          FLOAT-LONG.         *> the speed modifier of the wanted point (0 = 1.0)
        10 EN-SENT-AGE         BINARY-LONG.        *> ticks since the last absolute position sent (a full sync every 400)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
