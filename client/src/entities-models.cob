@@ -355,6 +355,10 @@
          COMPUTE WS-HOOK-X = (1 + WS-C4 * 0.4) * WS-FSW
          COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
      END-IF
+*>   The size of a slime or magma cube (Set Entity Data entry 18, 34-6 section 7: the scale (r x n, n / r, r x n) with squish 0 is n on every axis).
+     IF (EN-KEY(WS-ROW) = "slime" OR "magma_cube") AND EN-VAR(WS-ROW) > 0
+         MOVE EN-VAR(WS-ROW) TO WS-HOOK-X WS-HOOK-Y
+     END-IF
 *>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
 *>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
 *>   6.7); the opaque entity mesh has no such test, so the layer is enlarged by 0.3 percent about the entity origin to lie just outside the body.

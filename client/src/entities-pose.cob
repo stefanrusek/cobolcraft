@@ -20,6 +20,8 @@
  01 WS-WPOS                FLOAT-LONG.
  01 WS-WSPEED              FLOAT-LONG.
  01 WS-J                   BINARY-LONG.
+ 01 WS-M                   FLOAT-LONG.
+ 01 WS-Q                   FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-KEY                  PIC X(20).
@@ -230,6 +232,42 @@
              IF WS-BABY = 0
                  CALL "EF8-AXOLOTL-ANIM" USING EMM-MODEL L-IN
              END-IF
+*>       The squid's tentacles (34-8 section 2, in water): the movement runs 0.15 a tick (the document's 0.1 to 0.2) and wraps at 2 pi,
+*>       the angle is sin(p x p x pi) x pi x 0.25 in the first half, p = movement / pi, and 0 in the second.
+         WHEN "squid" WHEN "glow_squid"
+             COMPUTE WS-M = FUNCTION MOD(L-AGE * 0.15, 6.2831855)
+             MOVE 0 TO L-I(1)
+             IF WS-M < 3.1415927
+                 COMPUTE WS-Q = WS-M / 3.1415927
+                 COMPUTE L-I(1) = FUNCTION SIN(WS-Q * WS-Q * 3.1415927) * 3.1415927 * 0.25
+             END-IF
+             CALL "EF8-SQUID-ANIM" USING EMM-MODEL L-IN
+         WHEN "chicken"
+             CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL L-IN
+*>       The guardian swims with its spikes out and its tail wagging with its age.
+         WHEN "guardian" WHEN "elder_guardian"
+             MOVE 1 TO L-I(3)
+             MOVE L-AGE TO L-I(4) L-I(5)
+             CALL "EF6-GUARDIAN-ANIM" USING EMM-MODEL L-IN
+         WHEN "wither"
+             MOVE L-AGE TO L-I(3)
+             CALL "EF7-WITHER-ANIM" USING EMM-MODEL L-IN
+         WHEN "end_crystal"
+             MOVE L-AGE TO L-I(1)
+             MOVE 1 TO L-I(2)
+             CALL "EF7-CRYSTAL-ANIM" USING EMM-MODEL L-IN
+         WHEN "creaking"
+             MOVE L-AGE TO L-I(5)
+             MOVE 1 TO L-I(6)
+             PERFORM VARYING WS-J FROM 7 BY 1 UNTIL WS-J > 9
+                 MOVE WS-STOP TO L-I(WS-J)
+             END-PERFORM
+             CALL "EM3-CREAKING-ANIM" USING EMM-MODEL L-IN
+         WHEN "zombie_villager"
+             MOVE WS-BABY TO L-I(1)
+             MOVE 1 TO L-I(2)
+             MOVE 0 TO L-I(3) L-I(4)
+             CALL "EM3-ZV-ARMS" USING EMM-MODEL L-IN
          WHEN OTHER
              CONTINUE
      END-EVALUATE
