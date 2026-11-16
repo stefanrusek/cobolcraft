@@ -2085,3 +2085,308 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM DTX-CHECK-ONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-COMPUTE.
+*> compute [default | block <computePos> | entity <computeTarget>] (float <provider> [<scale>] | integer <provider>) (16 §10.9, 54 §13, level 2): the provider is
+*> a number (a constant), an identifier of the registry context_float_provider or context_int_provider (minecraft: added when it has no namespace; a missing one is
+*> argument.resource_or_id.no_such_element [id, registry]) or an inline definition (not decoded here: argument.resource_or_id.failed_to_parse). The context has the
+*> executor's position as origin. integer: the value is the result, told by command.compute.result.named.exact (provider id, value) or .unnamed.exact. float: a non-finite
+*> value is the invalid message; else the result is floor(value x scale) and the message is exact when that int equals the value, else rounded (id, value, result).
+*> An evaluation error is command.compute.result.named.invalid [id, message] or .unnamed.invalid [message] and a command error (the message is "/ by zero" for an int
+*> and "Infinity" for a float: the engine does not tell the exception apart). The seed is none (an unseeded random).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ COPY LOOTSTATE.
+ COPY LOOTCTX.
+ 01 WS-NAME-INTEGER        PIC X(32) VALUE "integer".
+ 01 WS-NAME-PROVIDER       PIC X(32) VALUE "provider".
+ 01 WS-NAME-SCALE          PIC X(32) VALUE "scale".
+ 01 WS-NAME-POS            PIC X(32) VALUE "computePos".
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "computeTarget".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INT-LIT             BINARY-LONG.
+ 01 WS-PROV                BINARY-LONG.
+ 01 WS-SCALE-ARG           BINARY-LONG.
+ 01 WS-POS-ARG             BINARY-LONG.
+ 01 WS-TARGET-ARG          BINARY-LONG.
+ 01 WS-REGISTRY-INT        PIC X(48) VALUE "context_int_provider".
+ 01 WS-REGISTRY-FLOAT      PIC X(48) VALUE "context_float_provider".
+ 01 WS-REGISTRY            PIC X(48).
+ 01 WS-REG-KEY             PIC X(64).
+ 01 WS-REG-KEY-LENGTH      BINARY-LONG.
+ 01 WS-RAW                 PIC X(112).
+ 01 WS-RAW-LENGTH          BINARY-LONG.
+ 01 WS-ID                  PIC X(112).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-COLONS              BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG VALUE 1.
+ 01 WS-SEQUENCE            PIC X(112) VALUE SPACES.
+ 01 WS-NAMED               BINARY-LONG.
+ 01 WS-INLINE              BINARY-LONG.
+ 01 WS-I-VALUE             BINARY-LONG.
+ 01 WS-F-VALUE             FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG.
+ 01 WS-PRODUCT             FLOAT-LONG.
+ 01 WS-R                   BINARY-DOUBLE.
+ 01 WS-R-LONG              BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-EDIT                PIC -(9)9.9(6).
+ 01 WS-INT-EDIT            PIC -(9)9.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-A1                  PIC X(112).
+ 01 WS-A2                  PIC X(112).
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-INVALID             BINARY-LONG.
+ 01 WS-CH                  PIC X.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> WS-TEXT, WS-TEXT-LENGTH: WS-F-VALUE with its decimals, trailing zeros cut but one (Float.toString).
+ FLOAT-TEXT.
+     COMPUTE WS-EDIT ROUNDED = WS-F-VALUE
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO WS-TEXT-LENGTH
+     PERFORM UNTIL WS-TEXT-LENGTH < 3 OR WS-TEXT(WS-TEXT-LENGTH:1) NOT = "0"
+             OR WS-TEXT(WS-TEXT-LENGTH - 1:1) = "."
+         SUBTRACT 1 FROM WS-TEXT-LENGTH
+     END-PERFORM.
+
+ RAISE-1.
+     MOVE 1 TO WS-N-ARGS
+     MOVE SPACES TO WS-A2
+     MOVE 0 TO WS-L2
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+ RAISE-2.
+     MOVE 2 TO WS-N-ARGS
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+*> The invalid message with WS-A2 (the exception text, length WS-L2): named adds the provider id.
+ RAISE-INVALID.
+     IF WS-NAMED = 1
+         MOVE "command.compute.result.named.invalid" TO WS-KEY
+         MOVE WS-ID TO WS-A1
+         MOVE WS-ID-LENGTH TO WS-L1
+         PERFORM RAISE-2
+     ELSE
+         MOVE "command.compute.result.unnamed.invalid" TO WS-KEY
+         MOVE WS-A2 TO WS-A1
+         MOVE WS-L2 TO WS-L1
+         PERFORM RAISE-1
+     END-IF.
+
+*> The message WS-KEY: the id when named, then WS-TEXT (WS-TEXT-LENGTH) twice for rounded (value, result) else once.
+ TELL-NUMBER.
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     IF WS-NAMED = 1
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
+     END-IF
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH.
+
+*> The provider argument as a text: WS-RAW, a number (WS-INLINE 0, WS-NAMED 0), an identifier (WS-NAMED 1, WS-ID with the namespace) or an inline definition (WS-INLINE 1).
+ READ-PROVIDER.
+     MOVE 0 TO WS-NAMED WS-INLINE
+     COMPUTE WS-RAW-LENGTH = BA-END(WS-PROV) - BA-START(WS-PROV)
+     MOVE SPACES TO WS-RAW
+     IF WS-RAW-LENGTH > 112
+         MOVE 112 TO WS-RAW-LENGTH
+     END-IF
+     MOVE BR-R-LINE(BA-START(WS-PROV) + 1:WS-RAW-LENGTH) TO WS-RAW
+     MOVE WS-RAW(1:1) TO WS-CH
+     EVALUATE TRUE
+         WHEN WS-CH = "{"
+             MOVE 1 TO WS-INLINE
+         WHEN WS-CH = "-" OR WS-CH = "." OR (WS-CH >= "0" AND WS-CH <= "9")
+             CONTINUE
+         WHEN OTHER
+             MOVE 1 TO WS-NAMED
+             MOVE 0 TO WS-COLONS
+             INSPECT WS-RAW(1:WS-RAW-LENGTH) TALLYING WS-COLONS FOR ALL ":"
+             MOVE SPACES TO WS-ID
+             IF WS-COLONS = 0
+                 STRING "minecraft:" WS-RAW(1:WS-RAW-LENGTH) DELIMITED BY SIZE INTO WS-ID
+                 COMPUTE WS-ID-LENGTH = WS-RAW-LENGTH + 10
+             ELSE
+                 MOVE WS-RAW(1:WS-RAW-LENGTH) TO WS-ID
+                 MOVE WS-RAW-LENGTH TO WS-ID-LENGTH
+             END-IF
+     END-EVALUATE.
+
+*> The slot of the named provider in WS-REGISTRY, or the no_such_element failure (WS-SLOT 0).
+ FIND-PROVIDER.
+     CALL "LOOT-DOC-GET" USING WS-REGISTRY WS-ID WS-SLOT
+     IF WS-SLOT = 0
+         MOVE "argument.resource_or_id.no_such_element" TO WS-KEY
+         MOVE WS-ID TO WS-A1
+         MOVE WS-ID-LENGTH TO WS-L1
+         MOVE SPACES TO WS-A2
+         STRING "minecraft:" FUNCTION TRIM(WS-REGISTRY) DELIMITED BY SIZE INTO WS-A2
+         COMPUTE WS-L2 = FUNCTION LENGTH(FUNCTION TRIM(WS-REGISTRY)) + 10
+         PERFORM RAISE-2
+     END-IF.
+
+ DO-INTEGER.
+     MOVE 0 TO WS-INVALID
+     IF WS-NAMED = 1
+         MOVE WS-REGISTRY-INT TO WS-REGISTRY
+         PERFORM FIND-PROVIDER
+         IF BR-R-FAILED = 0
+             CALL "LOOT-INT-EVAL" USING WS-SLOT WS-NODE WS-I-VALUE
+             IF LW-ERR NOT = 0
+                 MOVE "/ by zero" TO WS-A2
+                 MOVE 9 TO WS-L2
+                 PERFORM RAISE-INVALID
+             END-IF
+         END-IF
+     ELSE
+         COMPUTE WS-I-VALUE = FUNCTION INTEGER-PART(FUNCTION NUMVAL(WS-RAW(1:WS-RAW-LENGTH)))
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE WS-I-VALUE TO WS-EDIT
+         MOVE WS-I-VALUE TO WS-R
+         PERFORM TELL-EXACT
+         MOVE WS-I-VALUE TO BR-R-RESULT
+     END-IF.
+
+*> The exact message with WS-R as the value.
+ TELL-EXACT.
+     IF WS-NAMED = 1
+         MOVE "command.compute.result.named.exact" TO WS-KEY
+     ELSE
+         MOVE "command.compute.result.unnamed.exact" TO WS-KEY
+     END-IF
+     MOVE SPACES TO WS-TEXT
+     MOVE WS-R TO WS-R-LONG
+     MOVE WS-R-LONG TO WS-INT-EDIT
+     MOVE FUNCTION TRIM(WS-INT-EDIT) TO WS-TEXT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO WS-TEXT-LENGTH
+     PERFORM TELL-NUMBER
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
+
+ DO-FLOAT.
+     MOVE 1 TO WS-SCALE
+     IF WS-SCALE-ARG > 0
+         MOVE BA-DVAL(WS-SCALE-ARG) TO WS-SCALE
+     END-IF
+     IF WS-NAMED = 1
+         MOVE WS-REGISTRY-FLOAT TO WS-REGISTRY
+         PERFORM FIND-PROVIDER
+         IF BR-R-FAILED = 0
+             CALL "LOOT-FLOAT-EVAL" USING WS-SLOT WS-NODE WS-F-VALUE
+             IF LW-ERR NOT = 0
+                 MOVE "Infinity" TO WS-A2
+                 MOVE 8 TO WS-L2
+                 PERFORM RAISE-INVALID
+             END-IF
+         END-IF
+     ELSE
+         COMPUTE WS-F-VALUE = FUNCTION NUMVAL(WS-RAW(1:WS-RAW-LENGTH))
+     END-IF
+     IF BR-R-FAILED = 0
+         COMPUTE WS-PRODUCT = WS-F-VALUE * WS-SCALE
+         COMPUTE WS-R = FUNCTION INTEGER(WS-PRODUCT)
+         IF FUNCTION ABS(WS-R - WS-F-VALUE) < 0.0000001
+             PERFORM TELL-EXACT
+         ELSE
+             IF WS-NAMED = 1
+                 MOVE "command.compute.result.named.rounded" TO WS-KEY
+             ELSE
+                 MOVE "command.compute.result.unnamed.rounded" TO WS-KEY
+             END-IF
+             PERFORM FLOAT-TEXT
+             PERFORM TELL-NUMBER
+             MOVE WS-R TO WS-R-LONG
+             MOVE WS-R-LONG TO WS-INT-EDIT
+             MOVE FUNCTION TRIM(WS-INT-EDIT) TO WS-TEXT
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO WS-TEXT-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         END-IF
+         MOVE WS-R TO BR-R-RESULT
+     END-IF.
+
+ MAIN-LINE.
+     CALL "BX-LIT" USING WS-NAME-INTEGER WS-INT-LIT
+     CALL "BX-FIND" USING WS-NAME-PROVIDER WS-PROV
+     CALL "BX-FIND" USING WS-NAME-SCALE WS-SCALE-ARG
+     CALL "BX-FIND" USING WS-NAME-POS WS-POS-ARG
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-TARGET-ARG
+     IF WS-POS-ARG > 0
+         CALL "BX-POSITION" USING WS-POS-ARG WS-X WS-Y WS-Z
+     END-IF
+     IF WS-TARGET-ARG > 0
+         CALL "BX-RESOLVE" USING WS-TARGET-ARG WS-ROWS
+     END-IF
+     IF BR-R-FAILED = 0
+         INITIALIZE LOOT-CONTEXT
+         MOVE 1 TO LC-ORIGIN-SET
+         MOVE BS-X TO LC-X
+         MOVE BS-Y TO LC-Y
+         MOVE BS-Z TO LC-Z
+         CALL "LOOT-ENTER" USING LOOT-CONTEXT WS-SEQUENCE
+         PERFORM READ-PROVIDER
+         IF WS-INLINE = 1
+             MOVE "argument.resource_or_id.failed_to_parse" TO WS-KEY
+             MOVE "inline definitions are not supported" TO WS-A1
+             MOVE 36 TO WS-L1
+             PERFORM RAISE-1
+         ELSE
+             IF WS-INT-LIT > 0
+                 PERFORM DO-INTEGER
+             ELSE
+                 PERFORM DO-FLOAT
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-COMPUTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-COMPUTE.
+*> The forms of compute (16 §10.9, 54 §13.1): the provider part under the sources none, default, block and entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-COMPUTE.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-PREFIXES.
+    05 FILLER               PIC X(48) VALUE "compute".
+    05 FILLER               PIC X(48) VALUE "compute default".
+    05 FILLER               PIC X(48) VALUE "compute block <computePos:pos>".
+    05 FILLER               PIC X(48) VALUE "compute entity <computeTarget:entity>".
+ 01 WS-PREFIX-TABLE REDEFINES WS-PREFIXES.
+    05 WS-PREFIX            PIC X(48) OCCURS 4 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE SPACES TO WS-PATH
+         STRING FUNCTION TRIM(WS-PREFIX(WS-I)) " float <provider:ctxfloat>" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         MOVE SPACES TO WS-PATH
+         STRING FUNCTION TRIM(WS-PREFIX(WS-I)) " float <provider:ctxfloat> <scale:float>" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         MOVE SPACES TO WS-PATH
+         STRING FUNCTION TRIM(WS-PREFIX(WS-I)) " integer <provider:ctxint>" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-COMPUTE.
