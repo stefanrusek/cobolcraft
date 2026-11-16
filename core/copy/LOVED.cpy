@@ -1,6 +1,9 @@
-*> piglin_loved item keys (the members of the block tag gold_ores are not listed in the documents: gap, not guessed).
- 78 LV-COUNT VALUE 25.
+*> piglin_loved item keys (26 members of 54 section 4.4, the three gold_ores first).
+ 78 LV-COUNT VALUE 28.
  01 LOVED-DATA.
+    05 FILLER PIC X(32) VALUE "gold_ore".
+    05 FILLER PIC X(32) VALUE "nether_gold_ore".
+    05 FILLER PIC X(32) VALUE "deepslate_gold_ore".
     05 FILLER PIC X(32) VALUE "gold_block".
     05 FILLER PIC X(32) VALUE "gilded_blackstone".
     05 FILLER PIC X(32) VALUE "light_weighted_pressure_plate".

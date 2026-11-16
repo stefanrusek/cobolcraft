@@ -41,6 +41,7 @@
          CALL "MOB-TAKE" USING L-ROW
          MOVE 119 TO EN-ADMIRE(L-ENTITY)
          MOVE L-ROW TO EN-ADMIRE-PL(L-ENTITY)
+         MOVE 1 TO EN-ADMIRE-CUR(L-ENTITY)
          MOVE 1 TO L-USED
      END-IF
      GOBACK.
@@ -142,12 +143,13 @@
      IF WS-DONE = 1
          GOBACK
      END-IF
+     CALL "PIGLIN-PICKUP" USING L-ENTITY
      IF EN-ADMIRE-OFF(L-ENTITY) > 0
          SUBTRACT 1 FROM EN-ADMIRE-OFF(L-ENTITY)
      END-IF
      IF EN-ADMIRE(L-ENTITY) > 0
          SUBTRACT 1 FROM EN-ADMIRE(L-ENTITY)
-         IF EN-ADMIRE(L-ENTITY) = 0
+         IF EN-ADMIRE(L-ENTITY) = 0 AND EN-ADMIRE-CUR(L-ENTITY) = 1
              CALL "XP-RANDOM" USING WS-SALT-ROLL WS-TOTAL WS-DRAW
              CALL "PIGLIN-BARTER" USING WS-DRAW WS-KEY WS-LO WS-HI WS-MOD
              COMPUTE WS-SPAN = WS-HI - WS-LO + 1
@@ -219,3 +221,59 @@
      END-IF
      GOBACK.
  END PROGRAM PIGLIN-THROW-VEC.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PIGLIN-PICKUP.
+*> USING entity row: an adult piglin that is not admiring and not disabled takes one loved item lying within reach (44 section 3.2: StartAdmiringItemIfSeen and the pick-up
+*> path; the reach is the box of 1 block around it, 1.5 up and down) and admires it for 119 ticks; a gold ingot barters at the end (EN-ADMIRE-CUR), any other loved item is kept.
+*> Gaps: no walking to the item (GoToWantedItem), gold nuggets, food and equipment are not taken, no line of sight test.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-E                    BINARY-LONG.
+ 01 WS-DX                   FLOAT-LONG.
+ 01 WS-DY                   FLOAT-LONG.
+ 01 WS-DZ                   FLOAT-LONG.
+ 01 WS-KEY                  PIC X(48).
+ 01 WS-KEY32                PIC X(32).
+ 01 WS-LOVED                BINARY-LONG.
+ 01 WS-DONE                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ENTITY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY.
+     IF EN-MOBAGE(L-ENTITY) < 0 OR EN-ADMIRE(L-ENTITY) > 0 OR EN-ADMIRE-OFF(L-ENTITY) > 0
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-DONE
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-DONE = 1
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = CR-LOOSE-ITEM AND EN-DIM(WS-E) = EN-DIM(L-ENTITY)
+                 AND EN-DELAY(WS-E) <= 0 AND EN-ITEM-COUNT(WS-E) > 0
+             COMPUTE WS-DX = EN-X(WS-E) - EN-X(L-ENTITY)
+             COMPUTE WS-DY = EN-Y(WS-E) - EN-Y(L-ENTITY)
+             COMPUTE WS-DZ = EN-Z(WS-E) - EN-Z(L-ENTITY)
+             IF FUNCTION ABS(WS-DX) <= 1 AND FUNCTION ABS(WS-DZ) <= 1 AND WS-DY >= -1.5 AND WS-DY <= 1.5
+                 MOVE IT-KEY(EN-ITEM(WS-E) + 1) TO WS-KEY
+                 IF WS-KEY(1:10) = "minecraft:"
+                     MOVE WS-KEY(11:32) TO WS-KEY32
+                 ELSE
+                     MOVE WS-KEY(1:32) TO WS-KEY32
+                 END-IF
+                 CALL "PIGLIN-LOVED" USING WS-KEY32 WS-LOVED
+                 IF WS-LOVED = 1
+                     MOVE 1 TO WS-DONE
+                     MOVE 119 TO EN-ADMIRE(L-ENTITY)
+                     MOVE 0 TO EN-ADMIRE-PL(L-ENTITY) EN-ADMIRE-CUR(L-ENTITY)
+                     IF WS-KEY32 = "gold_ingot"
+                         MOVE 1 TO EN-ADMIRE-CUR(L-ENTITY)
+                     END-IF
+                     SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
+                     IF EN-ITEM-COUNT(WS-E) = 0
+                         CALL "ENTITY-REMOVE" USING WS-E
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PIGLIN-PICKUP.

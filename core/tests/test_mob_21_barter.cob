@@ -82,6 +82,24 @@
      MOVE 1 TO WS-E
      MOVE "acceptance US15 21§5.5.1 a clock is loved" TO WS-NAME
      PERFORM CHECK-N
+     MOVE "gold_ore" TO WS-KEY
+     MOVE WS-KEY TO WS-KEY32
+     CALL "PIGLIN-LOVED" USING WS-KEY32 WS-O
+     MOVE 1 TO WS-E
+     MOVE "acceptance US15 54§4.4 gold_ore (tag gold_ores) is loved" TO WS-NAME
+     PERFORM CHECK-N
+     MOVE "nether_gold_ore" TO WS-KEY
+     MOVE WS-KEY TO WS-KEY32
+     CALL "PIGLIN-LOVED" USING WS-KEY32 WS-O
+     MOVE 1 TO WS-E
+     MOVE "acceptance US15 54§4.4 nether_gold_ore (tag gold_ores) is loved" TO WS-NAME
+     PERFORM CHECK-N
+     MOVE "deepslate_gold_ore" TO WS-KEY
+     MOVE WS-KEY TO WS-KEY32
+     CALL "PIGLIN-LOVED" USING WS-KEY32 WS-O
+     MOVE 1 TO WS-E
+     MOVE "acceptance US15 54§4.4 deepslate_gold_ore (tag gold_ores) is loved" TO WS-NAME
+     PERFORM CHECK-N
      MOVE "stone" TO WS-KEY
      MOVE WS-KEY TO WS-KEY32
      CALL "PIGLIN-LOVED" USING WS-KEY32 WS-O

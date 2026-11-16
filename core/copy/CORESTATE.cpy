@@ -406,6 +406,7 @@
        10 EN-ADMIRE-OFF      BINARY-LONG.        *> piglin: ticks left of ADMIRING_DISABLED (400 after a cancelled admiring)
        10 EN-ADMIRE-PL       BINARY-LONG.        *> piglin: the player row that gave the ingot
        10 EN-ZOMBIFY         BINARY-LONG.        *> piglin: timeInOverworld, ticks spent where piglins_zombify is true (converts above 300)
+       10 EN-ADMIRE-CUR      BINARY-LONG.        *> piglin: 1 when the admired item is barter currency (it barters when the admiring ends), 0 a kept loved item
 *>     --- 002-lane-mobsfull-h21: tadpole, frog, panda, fox, allay, sniffer, llama, camel (core/src/mob-19-7.cob to mob-19-15.cob) ---
        10 EN-TAD-AGE          BINARY-LONG.        *> tadpole: age in ticks (24000 = frog); locked with EN-LOCKED
        10 EN-TONGUE           BINARY-LONG.        *> frog: tongue state 0 none, 1 moving to the target, 2 catch animation, 3 eat animation

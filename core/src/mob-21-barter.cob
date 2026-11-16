@@ -2,7 +2,7 @@
 *>
 *>   PIGLIN-BARTER USING draw (0 to 468), item key out (X(24)), count low out, count high out, modifier out   the row of the barter table a draw falls in
 *>   PIGLIN-CURRENCY USING item key (X(24)), yes out                                                       the barter currency is gold_ingot
-*>   PIGLIN-LOVED USING item key (X(24)), yes out                                                          piglin_loved (without the gold_ores tag members: gap)
+*>   PIGLIN-LOVED USING item key (X(24)), yes out                                                          piglin_loved
 *>   PIGLIN-SAFE-ARMOR USING item key (X(24)), yes out                                                     piglin_safe_armor: the four golden armor pieces
 *>   PIGLIN-ADMIRE USING adult, admiring, admiring disabled, yes out                                         mobInteract accepts an ingot only from an adult not admiring and not disabled
 
@@ -64,7 +64,7 @@
  WORKING-STORAGE SECTION.
  COPY LOVED.
  01 WS-LV REDEFINES LOVED-DATA.
-    05 WS-L                 PIC X(32) OCCURS 25 TIMES.
+    05 WS-L                 PIC X(32) OCCURS 28 TIMES.
  01 WS-I                    BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                   PIC X(32).

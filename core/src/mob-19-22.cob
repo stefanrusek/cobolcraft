@@ -569,3 +569,91 @@
      END-IF
      GOBACK.
  END PROGRAM VIL-PRICE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ENCH-PICK.
+*> USING salt, enchantment key out (X(24)), level out, extra price out, max level out, doubled out (54 section 4.1): one enchantment of the tag tradeable drawn uniformly, a level
+*> uniform from 1 to its max level, E = 2 + nextInt(5 + 10 L) + 3 L (doubled for double_trade_price).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ENCHTRADE.
+ 01 WS-ET REDEFINES ENCHTRADE-DATA.
+    05 WS-E OCCURS 40 TIMES.
+       10 WS-KEY               PIC X(24).
+       10 WS-MAX               BINARY-LONG.
+       10 WS-DBL               BINARY-LONG.
+ 01 WS-SALT-A               BINARY-LONG.
+ 01 WS-SALT-B               BINARY-LONG.
+ 01 WS-SALT-C               BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG VALUE 40.
+ 01 WS-R                    BINARY-LONG.
+ 01 WS-IDX                  BINARY-LONG.
+ 01 WS-SPAN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-KEY                   PIC X(24).
+ 01 L-LEVEL                 BINARY-LONG.
+ 01 L-EXTRA                 BINARY-LONG.
+ 01 L-MAX                   BINARY-LONG.
+ 01 L-DOUBLE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SALT L-KEY L-LEVEL L-EXTRA L-MAX L-DOUBLE.
+     COMPUTE WS-SALT-A = L-SALT * 3 + 1
+     COMPUTE WS-SALT-B = L-SALT * 3 + 2
+     COMPUTE WS-SALT-C = L-SALT * 3 + 3
+     CALL "XP-RANDOM" USING WS-SALT-A WS-COUNT WS-R
+     COMPUTE WS-IDX = WS-R + 1
+     MOVE WS-KEY(WS-IDX) TO L-KEY
+     MOVE WS-MAX(WS-IDX) TO L-MAX
+     MOVE WS-DBL(WS-IDX) TO L-DOUBLE
+     CALL "XP-RANDOM" USING WS-SALT-B L-MAX WS-R
+     COMPUTE L-LEVEL = WS-R + 1
+     COMPUTE WS-SPAN = 5 + 10 * L-LEVEL
+     CALL "XP-RANDOM" USING WS-SALT-C WS-SPAN WS-R
+     COMPUTE L-EXTRA = 2 + WS-R + 3 * L-LEVEL
+     IF L-DOUBLE = 1
+         COMPUTE L-EXTRA = L-EXTRA * 2
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-ENCH-PICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ROW-EXTRA.
+*> USING trade row, salt, extra out (54 section 4.1 and 4.3): the extra price of a trade by its modifier: 1 enchanted book the E of VIL-ENCH-PICK, 2 equipment enchanted at 5 to 19
+*> levels E = V, anything else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WANT                 PIC X(32).
+ 01 WS-EXT                  PIC X(32).
+ 01 WS-GIVE                 PIC X(32).
+ 01 WS-WC                   BINARY-LONG.
+ 01 WS-EC                   BINARY-LONG.
+ 01 WS-GC                   BINARY-LONG.
+ 01 WS-MU                   BINARY-LONG.
+ 01 WS-XPV                  BINARY-LONG.
+ 01 WS-MULT                 BINARY-LONG.
+ 01 WS-MASK                 BINARY-LONG.
+ 01 WS-MOD                  BINARY-LONG.
+ 01 WS-KEY                  PIC X(24).
+ 01 WS-LEVEL                BINARY-LONG.
+ 01 WS-MAXL                 BINARY-LONG.
+ 01 WS-DOUBLE               BINARY-LONG.
+ 01 WS-SALT2                BINARY-LONG.
+ 01 WS-SPAN                 BINARY-LONG VALUE 15.
+ 01 WS-R                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-EXTRA                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SALT L-EXTRA.
+     MOVE 0 TO L-EXTRA
+     CALL "VIL-TRADE-ROW" USING L-ROW WS-WANT WS-WC WS-EXT WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     EVALUATE WS-MOD
+         WHEN 1
+             CALL "VIL-ENCH-PICK" USING L-SALT WS-KEY WS-LEVEL L-EXTRA WS-MAXL WS-DOUBLE
+         WHEN 2
+             COMPUTE WS-SALT2 = L-SALT * 5 + 11
+             CALL "XP-RANDOM" USING WS-SALT2 WS-SPAN WS-R
+             COMPUTE L-EXTRA = 5 + WS-R
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-ROW-EXTRA.
