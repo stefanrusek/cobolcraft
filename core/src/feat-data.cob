@@ -2015,6 +2015,16 @@
          WHEN 13
          WHEN 55
              CONTINUE
+         WHEN 38
+*>           root_system (feat-root.cob): unsupported when a number is out of range or a block, provider or predicate is unsupported; its tree may be unsupported
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-ROOTSYS-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 18
 *>           fossil (feat-fossil.cob): unsupported when a template file or a processor list is missing or the lists differ in length
              MOVE FD-BAD TO LS-SAVED-BAD

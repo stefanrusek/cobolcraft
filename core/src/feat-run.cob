@@ -1269,6 +1269,8 @@
          WHEN 11
          WHEN 55
              CALL "FR-END" USING L-STATE FT-TYPE(L-FT) L-X L-Y L-Z L-RESULT
+         WHEN 38
+             CALL "FR-ROOTSYS" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 18
              CALL "FR-FOSSIL" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 50
