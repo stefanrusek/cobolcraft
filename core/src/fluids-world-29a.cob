@@ -60,6 +60,8 @@
  01 WS-LAVA-FIRST          BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
  01 L-FLUID                BINARY-LONG.
@@ -77,6 +79,14 @@
      IF WS-LAVA >= 0 AND WS-BLOCK = WS-LAVA
          MOVE 2 TO L-FLUID
          COMPUTE WS-LEVEL = L-STATE - WS-LAVA-FIRST
+     END-IF
+*>   Kelp, seagrass, the bubble column and a waterlogged block hold the water source (29a section 5).
+     IF L-FLUID = 0
+         CALL "FLUID-CONTAINER" USING L-STATE WS-CLASS WS-FULL
+         IF WS-FULL = 1
+             MOVE 1 TO L-FLUID
+             MOVE 0 TO WS-LEVEL
+         END-IF
      END-IF
      IF L-FLUID > 0
          CALL "FL-FROM-LEVEL" USING L-FLUID WS-LEVEL L-KIND L-AMOUNT L-FALLING
@@ -144,6 +154,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -165,6 +177,11 @@
      END-IF
      IF L-SOLID = 0
          MOVE 1 TO L-HOLDS
+     END-IF
+*>   Water plants and waterlogged-capable blocks accept no flowing water (canPlaceLiquid takes the source fluid only; 29a section 5), so spreading stops at them.
+     CALL "FLUID-CONTAINER" USING L-STATE WS-CLASS WS-FULL
+     IF WS-CLASS > 0
+         MOVE 0 TO L-HOLDS
      END-IF
      GOBACK.
  END PROGRAM FLUID-CELL.
@@ -396,7 +413,7 @@
  PROGRAM-ID. FLUID-SPREAD-TO.
 *> USING dimension row, x, y, z (the target cell), direction (0 down, others horizontal), fluid, code, amount, falling (the new state) (BINARY-LONG):
 *> spreadTo (2.8): lava falling onto water that is a liquid block makes stone when the table has "minecraft:stone"; otherwise the new state is written
-*> (flags 3, which schedules its tick through onPlace). The block it replaces drops nothing in this core.
+*> (flags 3, which schedules its tick through onPlace). Water that washes a block away drops its resources (2.8 beforeDestroyingBlock; lava drops nothing).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
@@ -435,6 +452,9 @@
              CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STONE WS-FLAGS WS-BUDGET WS-RESULT
          END-IF
          GOBACK
+     END-IF
+     IF L-FLUID = 1 AND WS-F = 0 AND WS-STATE > 0
+         CALL "BLOCK-DROPS-NO-TOOL" USING L-DIM L-X L-Y L-Z WS-STATE
      END-IF
      CALL "FLUID-PUT" USING L-DIM L-X L-Y L-Z L-FLUID L-CODE L-AMOUNT L-FALLING
      GOBACK.
