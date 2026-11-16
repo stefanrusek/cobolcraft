@@ -383,6 +383,10 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  01 WS-THROW               BINARY-LONG VALUE 1.
+ 01 WS-KEEP-RULE           PIC X(40) VALUE "keep_inventory".
+ 01 WS-KEEP-INVENTORY      BINARY-DOUBLE.
+ 01 WS-SHOW-RULE           PIC X(40) VALUE "show_death_messages".
+ 01 WS-SHOW-MESSAGES       BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-CAUSE                BINARY-LONG.
@@ -405,42 +409,50 @@
      CALL "HUNGER-CANCEL" USING WS-ROW
      MOVE 0 TO PL-SPRINTING(WS-ROW)
      CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
-     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
-         CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
-             PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
-     ELSE
-         CALL "DEATH-TEXT-STD" USING WS-ROW PL-DEATH-CAUSE(WS-ROW) PB-TEXT
-     END-IF
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "SYSTEM-CHAT-BUILD" USING PB-TEXT PB-BUFFER
-     PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
-         IF CN-USED(WS-ID) = 1 AND CN-PHASE(WS-ID) = PH-PLAY AND CN-PLAYER(WS-ID) > 0
-             CALL "CORE-SEND" USING WS-ID PB-BUFFER
+*>   show_death_messages (33 section 6): the chat broadcast and the console line only with the rule on.
+     CALL "BR-RULE-GET" USING WS-SHOW-RULE WS-SHOW-MESSAGES
+     IF WS-SHOW-MESSAGES NOT = 0
+         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+             CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
+                 PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
+         ELSE
+             CALL "DEATH-TEXT-STD" USING WS-ROW PL-DEATH-CAUSE(WS-ROW) PB-TEXT
          END-IF
-     END-PERFORM
-     CALL "PB-FREE" USING PB-BUFFER
-     CALL "CONSOLE-TEXT" USING PB-TEXT
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "SYSTEM-CHAT-BUILD" USING PB-TEXT PB-BUFFER
+         PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
+             IF CN-USED(WS-ID) = 1 AND CN-PHASE(WS-ID) = PH-PLAY AND CN-PLAYER(WS-ID) > 0
+                 CALL "CORE-SEND" USING WS-ID PB-BUFFER
+             END-IF
+         END-PERFORM
+         CALL "PB-FREE" USING PB-BUFFER
+         CALL "CONSOLE-TEXT" USING PB-TEXT
+     END-IF
 *>   Inventory.dropAll (41 section 2.4): every non-empty slot (main 0 to 35, armor and off-hand 36 to 40) in index order is
 *>   dropped with the circle motion of the player's own random source, pickup delay 40, no thrower; the patch handle goes with it.
-     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 40
-         MOVE 0 TO WS-COUNT
-         IF WS-S < 36
-             MOVE PL-SLOT-ITEM(WS-ROW, WS-S + 1) TO WS-ITEM
-             MOVE PL-SLOT-COUNT(WS-ROW, WS-S + 1) TO WS-COUNT
-             MOVE PL-SLOT-VAR(WS-ROW, WS-S + 1) TO WS-VAR
-             MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1) PL-SLOT-VAR(WS-ROW, WS-S + 1)
-         ELSE
-             MOVE MN-EQUIP-ITEM(WS-ROW, WS-S - 35) TO WS-ITEM
-             MOVE MN-EQUIP-COUNT(WS-ROW, WS-S - 35) TO WS-COUNT
-             MOVE MN-EQUIP-VAR(WS-ROW, WS-S - 35) TO WS-VAR
-             MOVE 0 TO MN-EQUIP-ITEM(WS-ROW, WS-S - 35) MN-EQUIP-COUNT(WS-ROW, WS-S - 35)
-                 MN-EQUIP-VAR(WS-ROW, WS-S - 35)
-         END-IF
-         IF WS-COUNT > 0
-             CALL "GI-DEATH-DROP" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
-         END-IF
-     END-PERFORM
-     CALL "XP-DEATH" USING WS-ROW
+*>   keep_inventory (33 section 6): no drop and no experience loss; the respawned player keeps both.
+     CALL "BR-RULE-GET" USING WS-KEEP-RULE WS-KEEP-INVENTORY
+     IF WS-KEEP-INVENTORY = 0
+         PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 40
+             MOVE 0 TO WS-COUNT
+             IF WS-S < 36
+                 MOVE PL-SLOT-ITEM(WS-ROW, WS-S + 1) TO WS-ITEM
+                 MOVE PL-SLOT-COUNT(WS-ROW, WS-S + 1) TO WS-COUNT
+                 MOVE PL-SLOT-VAR(WS-ROW, WS-S + 1) TO WS-VAR
+                 MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1) PL-SLOT-VAR(WS-ROW, WS-S + 1)
+             ELSE
+                 MOVE MN-EQUIP-ITEM(WS-ROW, WS-S - 35) TO WS-ITEM
+                 MOVE MN-EQUIP-COUNT(WS-ROW, WS-S - 35) TO WS-COUNT
+                 MOVE MN-EQUIP-VAR(WS-ROW, WS-S - 35) TO WS-VAR
+                 MOVE 0 TO MN-EQUIP-ITEM(WS-ROW, WS-S - 35) MN-EQUIP-COUNT(WS-ROW, WS-S - 35)
+                     MN-EQUIP-VAR(WS-ROW, WS-S - 35)
+             END-IF
+             IF WS-COUNT > 0
+                 CALL "GI-DEATH-DROP" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
+             END-IF
+         END-PERFORM
+         CALL "XP-DEATH" USING WS-ROW
+     END-IF
      CALL "MENU-RELEASE" USING WS-ROW WS-THROW
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY

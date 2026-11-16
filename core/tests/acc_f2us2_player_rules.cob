@@ -1,0 +1,166 @@
+*> Acceptance test, feature 002 (task T4806; docs/protocol/33 section 6): the game rules fall_damage, drowning_damage,
+*> fire_damage and pvp make a player immune while false (mobs are unaffected); keep_inventory false/true decides
+*> whether a death drops the inventory; show_death_messages false sends no death chat line.
+*> Alice and Bob are survival players.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-F2US2-PLAYER-RULES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY RULES.
+ 01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
+ 01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
+ 01 WS-LENGTH-5            BINARY-LONG VALUE 5.
+ 01 WS-LENGTH-3            BINARY-LONG VALUE 3.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-RULE-NAME           PIC X(40).
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
+ 01 WS-AMOUNT              BINARY-LONG VALUE 3.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-CAUSE-D            PIC 99.
+ 01 WS-BLOCKED          BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NOBODY              BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     MOVE CN-PLAYER(WS-ALICE) TO WS-A
+     MOVE CN-PLAYER(WS-BOB) TO WS-B
+     MOVE 17 TO PL-FOOD(WS-A) PL-FOOD(WS-B)
+     MOVE 0 TO PL-SATURATION(WS-A) PL-SATURATION(WS-B)
+
+*>   Each damaging cause with its rule false, then true.
+     MOVE "fall_damage" TO WS-RULE-NAME
+     MOVE CAUSE-FALL TO WS-CAUSE
+     PERFORM RULE-PAIR
+     MOVE "drowning_damage" TO WS-RULE-NAME
+     MOVE CAUSE-DROWN TO WS-CAUSE
+     PERFORM RULE-PAIR
+*>   Players take no fire damage yet (HEALTH-HURT has no fire cause): the rule check itself is tested.
+     MOVE "fire_damage" TO WS-RULE-NAME
+     MOVE 0 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     MOVE CAUSE-ON-FIRE TO WS-CAUSE
+     CALL "HURT-RULE-BLOCKED" USING WS-CAUSE WS-NOBODY WS-BLOCKED
+     MOVE "acceptance rule fire_damage false: on-fire damage is blocked" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-BLOCKED TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE CAUSE-LAVA TO WS-CAUSE
+     CALL "HURT-RULE-BLOCKED" USING WS-CAUSE WS-NOBODY WS-BLOCKED
+     MOVE "acceptance rule fire_damage false: lava damage is blocked" TO TL-CASE
+     MOVE WS-BLOCKED TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE 1 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     CALL "HURT-RULE-BLOCKED" USING WS-CAUSE WS-NOBODY WS-BLOCKED
+     MOVE "acceptance rule fire_damage true: lava damage is not blocked" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BLOCKED TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE "pvp" TO WS-RULE-NAME
+     MOVE CAUSE-PLAYER TO WS-CAUSE
+     MOVE 0 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     MOVE 20 TO PL-HEALTH(WS-A)
+     CALL "HEALTH-DAMAGE" USING WS-A WS-AMOUNT WS-CAUSE PL-ENTITY-ID(WS-B) WS-B
+     MOVE "acceptance rule pvp false: a player's hit does no damage" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-A) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE 1 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-A)
+     CALL "HEALTH-DAMAGE" USING WS-A WS-AMOUNT WS-CAUSE PL-ENTITY-ID(WS-B) WS-B
+     MOVE "acceptance rule pvp true: a player's hit does damage" TO TL-CASE
+     MOVE 17 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-A) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+
+*>   keep_inventory and show_death_messages.
+     MOVE 0 TO WS-RULE-VALUE
+     MOVE "show_death_messages" TO WS-RULE-NAME
+     PERFORM SET-RULE
+     MOVE 5 TO PL-SLOT-ITEM(WS-A, 1)
+     MOVE 7 TO PL-SLOT-COUNT(WS-A, 1)
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+     MOVE CAUSE-FALL TO WS-CAUSE
+     MOVE 0 TO PL-HEALTH(WS-A)
+     CALL "HEALTH-DIE" USING WS-A WS-CAUSE WS-NOBODY
+     MOVE "acceptance rule show_death_messages false: no death line to the others" TO TL-CASE
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance rule keep_inventory false: death drops the inventory" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-SLOT-COUNT(WS-A, 1) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+
+     MOVE 1 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     MOVE "keep_inventory" TO WS-RULE-NAME
+     PERFORM SET-RULE
+     MOVE PS-ALIVE TO PL-STATE(WS-B)
+     MOVE 5 TO PL-SLOT-ITEM(WS-B, 1)
+     MOVE 7 TO PL-SLOT-COUNT(WS-B, 1)
+     MOVE 9 TO PL-XP-LEVEL(WS-B)
+     MOVE 0 TO PL-HEALTH(WS-B)
+     CALL "HEALTH-DIE" USING WS-B WS-CAUSE WS-NOBODY
+     MOVE "acceptance rule keep_inventory true: the stack stays" TO TL-CASE
+     MOVE 7 TO TL-EXPECTED-N
+     MOVE PL-SLOT-COUNT(WS-B, 1) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE "acceptance rule keep_inventory true: the experience level stays" TO TL-CASE
+     MOVE 9 TO TL-EXPECTED-N
+     MOVE PL-XP-LEVEL(WS-B) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     STOP RUN.
+
+ RULE-PAIR.
+     MOVE 0 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     MOVE 20 TO PL-HEALTH(WS-A)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-A)
+     MOVE WS-CAUSE TO WS-CAUSE-D
+     CALL "HEALTH-DAMAGE" USING WS-A WS-AMOUNT WS-CAUSE WS-NONE WS-NOBODY
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance rule " DELIMITED BY SIZE WS-RULE-NAME DELIMITED BY SPACE " false cause " DELIMITED BY SIZE WS-CAUSE-D
+         " : no damage" DELIMITED BY SIZE INTO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-A) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE 1 TO WS-RULE-VALUE
+     PERFORM SET-RULE
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-A)
+     CALL "HEALTH-DAMAGE" USING WS-A WS-AMOUNT WS-CAUSE WS-NONE WS-NOBODY
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance rule " DELIMITED BY SIZE WS-RULE-NAME DELIMITED BY SPACE " true cause " DELIMITED BY SIZE WS-CAUSE-D
+         " : damage" DELIMITED BY SIZE INTO TL-CASE
+     MOVE 17 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-A) TO TL-OBSERVED-N
+     PERFORM CHECK-N.
+
+ SET-RULE.
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-F2US2-PLAYER-RULES.
+
+ COPY CORETEST.
