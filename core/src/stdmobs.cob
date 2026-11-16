@@ -1094,6 +1094,7 @@
      END-IF
      IF SM-KEY(WS-M) = "piglin"
          CALL "PIGLIN-TICK" USING WS-ROW
+         CALL "PIGLIN-HUNT-STEP" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
