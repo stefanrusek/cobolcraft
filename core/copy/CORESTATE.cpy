@@ -492,6 +492,15 @@
        10 EN-FLY-MOD          FLOAT-LONG.         *> the speed modifier of the wanted point (0 = 1.0)
        10 EN-SENT-AGE         BINARY-LONG.        *> ticks since the last absolute position sent (a full sync every 400)
        10 EN-CAT-RELAX        BINARY-LONG.        *> tame cat: 1 while it relaxes on its sleeping owner, 2 once the owner has slept 100 ticks (CatRelaxOnOwnerGoal)
+*>     --- 002-lane-mobsa4: allay items and the liked note block (core/src/mob-44-j.cob) ---
+       10 EN-ALLAY-COUNT      BINARY-LONG.        *> allay: items of the held kind in its inventory (EN-ALLAY-ITEM is the main hand copy)
+       10 EN-ALLAY-CD         BINARY-LONG.        *> allay: item pickup cooldown ticks (ITEM_PICKUP_COOLDOWN_TICKS)
+       10 EN-ALLAY-NB-CD      BINARY-LONG.        *> allay: liked note block cooldown ticks (LIKED_NOTEBLOCK_COOLDOWN_TICKS)
+       10 EN-ALLAY-NB-ON      BINARY-LONG.        *> allay: 1 while a liked note block position is stored
+       10 EN-ALLAY-NB-DIM     BINARY-LONG.
+       10 EN-ALLAY-NB-X       BINARY-LONG.
+       10 EN-ALLAY-NB-Y       BINARY-LONG.
+       10 EN-ALLAY-NB-Z       BINARY-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
