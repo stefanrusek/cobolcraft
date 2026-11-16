@@ -713,6 +713,15 @@
 *>        Guardian (34-6 11.4, ENTITIES-ANIM-TICK; the squid fields are reused: EN-TS tail speed, EN-TM tail animation, EN-TA spikes animation, EN-RS attack time; EN-X1 the
 *>        moving flag, entry 16): the active attack target's entity id (entry 17, 0 none).
           15 EN-TGT          BINARY-LONG.
+*>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
+*>        and angle in degrees, and 1 when the boat is under water.
+          15 EN-BHT          FLOAT-LONG.
+          15 EN-BHD          BINARY-LONG.
+          15 EN-BDM          FLOAT-LONG.
+          15 EN-BBT          BINARY-LONG.
+          15 EN-BBM          FLOAT-LONG.
+          15 EN-BBA          FLOAT-LONG.
+          15 EN-BUW          PIC 9.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the

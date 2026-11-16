@@ -134,3 +134,57 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITY-FANGS-SEQUENCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BOAT-SEQUENCE.
+*> USING CLIENT-STATE, replica row of a boat or raft, ops out (64 FLOAT-LONG): 34-8 7.4: translate (0, 0.375, 0), rotate Y by 180 - yaw, when hurtTime > 0 rotate X by
+*> sin(hurtTime) x hurtTime x damageTime / 10 x hurtDir (hurtTime and damageTime at partial tick 1: the values less 1, the damage not below 0), when not under water and the
+*> bubble angle is not about 0 (1.0E-5) a rotation by the angle about the axis (1, 0, 1) (op code 8, the axis normalised), scale (-1, -1, 1), rotate Y by 90.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-HT                  FLOAT-LONG.
+ 01 WS-DT                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OPS.
+    05 L-OP                FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-OPS.
+     MOVE 1 TO L-OP(2)
+     MOVE 0 TO L-OP(3) L-OP(5)
+     MOVE 0.375 TO L-OP(4)
+     MOVE 3 TO L-OP(6)
+     COMPUTE L-OP(7) = 180 - EN-YAW(L-ROW)
+     MOVE 0 TO L-OP(8) L-OP(9)
+     MOVE 2 TO WS-N
+     COMPUTE WS-HT = EN-BHT(L-ROW) - 1
+     IF WS-HT > 0
+         COMPUTE WS-DT = FUNCTION MAX(EN-BDM(L-ROW) - 1, 0)
+         ADD 1 TO WS-N
+         COMPUTE WS-K = WS-N * 4 - 2
+         MOVE 5 TO L-OP(WS-K)
+         COMPUTE L-OP(WS-K + 1) = FUNCTION SIN(WS-HT) * WS-HT * WS-DT / 10 * EN-BHD(L-ROW)
+         MOVE 0 TO L-OP(WS-K + 2) L-OP(WS-K + 3)
+     END-IF
+     IF EN-BUW(L-ROW) = 0 AND (EN-BBA(L-ROW) > 0.00001 OR EN-BBA(L-ROW) < -0.00001)
+         ADD 1 TO WS-N
+         COMPUTE WS-K = WS-N * 4 - 2
+         MOVE 8 TO L-OP(WS-K)
+         MOVE EN-BBA(L-ROW) TO L-OP(WS-K + 1)
+         MOVE 0 TO L-OP(WS-K + 2) L-OP(WS-K + 3)
+     END-IF
+     ADD 1 TO WS-N
+     COMPUTE WS-K = WS-N * 4 - 2
+     MOVE 2 TO L-OP(WS-K)
+     MOVE -1 TO L-OP(WS-K + 1) L-OP(WS-K + 2)
+     MOVE 1 TO L-OP(WS-K + 3)
+     ADD 1 TO WS-N
+     COMPUTE WS-K = WS-N * 4 - 2
+     MOVE 3 TO L-OP(WS-K)
+     MOVE 90 TO L-OP(WS-K + 1)
+     MOVE 0 TO L-OP(WS-K + 2) L-OP(WS-K + 3)
+     MOVE WS-N TO L-OP(1)
+     GOBACK.
+ END PROGRAM ENTITY-BOAT-SEQUENCE.

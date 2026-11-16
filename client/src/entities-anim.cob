@@ -23,6 +23,12 @@
  01 WS-SCALE               FLOAT-LONG.
  01 WS-VY                  FLOAT-LONG.
  01 WS-WET                 BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-BS                  BINARY-LONG.
+ 01 WS-BK                  BINARY-LONG.
+ 01 WS-BL                  BINARY-LONG.
  01 WS-CI.
     05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
  01 WS-CO.
@@ -113,6 +119,33 @@
                  MOVE 0 TO EN-DRY(WS-R)
                  IF WS-WET = 0 AND EN-ON-GROUND(WS-R) = 1
                      MOVE 1 TO EN-DRY(WS-R)
+                 END-IF
+             END-IF
+*>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
+*>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).
+             IF EN-MODEL(WS-R) > 0
+                 IF CL-MD-ANIM(EN-MODEL(WS-R)) = "B"
+                     IF EN-BHT(WS-R) > 0
+                         SUBTRACT 1 FROM EN-BHT(WS-R)
+                     END-IF
+                     IF EN-BDM(WS-R) > 0
+                         COMPUTE EN-BDM(WS-R) = FUNCTION MAX(EN-BDM(WS-R) - 1, 0)
+                     END-IF
+                     IF EN-BBT(WS-R) > 0
+                         COMPUTE EN-BBM(WS-R) = FUNCTION MIN(EN-BBM(WS-R) + 0.05, 1)
+                     ELSE
+                         COMPUTE EN-BBM(WS-R) = FUNCTION MAX(EN-BBM(WS-R) - 0.1, 0)
+                     END-IF
+                     COMPUTE EN-BBA(WS-R) = 10 * FUNCTION SIN(0.5 * EN-AGE(WS-R)) * EN-BBM(WS-R)
+                     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-R))
+                     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-R) + EN-BOX-HEIGHT(WS-R))
+                     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-R))
+                     CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+                     CALL "WORLD-CELL" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-BS WS-BK WS-BL
+                     MOVE 0 TO EN-BUW(WS-R)
+                     IF ST-FLUID(WS-BS + 1) = 1
+                         MOVE 1 TO EN-BUW(WS-R)
+                     END-IF
                  END-IF
              END-IF
 *>           The guardian (34-6 11.4 Guardian.aiStep on the client): tail speed and tail animation, spikes animation (a pseudo-random float out of water, the draw of
@@ -373,3 +406,37 @@
      MOVE WS-COV(1) TO L-P
      GOBACK.
  END PROGRAM ENTITY-FANGS-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BOAT-SET.
+*> USING CLIENT-STATE, replica row, entry index, serializer, int value, float value: the boat's hurt metadata (21 8.8): entry 8 hurt time and 9 hurt direction (VarInt), 10 damage
+*> (FLOAT), 13 bubble time (VarInt) of a row drawn by the boat model (code B). Another entry or another mob changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLMODELS.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SERIALIZER           BINARY-LONG.
+ 01 L-INT                  BINARY-LONG.
+ 01 L-FLOAT                FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-INT L-FLOAT.
+     IF EN-MODEL(L-ROW) > 0
+         IF CL-MD-ANIM(EN-MODEL(L-ROW)) = "B"
+             EVALUATE TRUE
+                 WHEN L-INDEX = 8 AND L-SERIALIZER = 1
+                     MOVE L-INT TO EN-BHT(L-ROW)
+                 WHEN L-INDEX = 9 AND L-SERIALIZER = 1
+                     MOVE L-INT TO EN-BHD(L-ROW)
+                 WHEN L-INDEX = 10 AND L-SERIALIZER = 3
+                     MOVE L-FLOAT TO EN-BDM(L-ROW)
+                 WHEN L-INDEX = 13 AND L-SERIALIZER = 1
+                     MOVE L-INT TO EN-BBT(L-ROW)
+                 WHEN OTHER
+                     CONTINUE
+             END-EVALUATE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-BOAT-SET.

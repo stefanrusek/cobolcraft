@@ -385,6 +385,8 @@
  01 WS-HA.
     05 WS-HAV               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-FP                  FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
@@ -493,6 +495,9 @@
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
      COMPUTE WS-KN(28) = EN-FL(WS-ROW) * 2 + EN-FA(WS-ROW)
+     COMPUTE WS-KN(30) = EN-BHT(WS-ROW) * 3 + EN-BHD(WS-ROW)
+     MOVE EN-BDM(WS-ROW) TO WS-KN(31)
+     COMPUTE WS-KN(32) = EN-BBA(WS-ROW) + EN-BUW(WS-ROW) * 100
 *>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
 *>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
 *>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
@@ -719,7 +724,7 @@
      MOVE EN-YAW(WS-ROW) TO WS-SRI(3)
      EVALUATE TRUE
          WHEN WS-ANIM = "B"
-             CALL "EF8-BOAT-SEQUENCE" USING WS-SR-IN WS-SR-OUT
+             CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "evoker_fangs"
              CALL "ENTITY-FANGS-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "squid" OR "glow_squid"
@@ -863,6 +868,14 @@
                                  COMPUTE WS-T = WS-Y * WS-OP-COS(WS-J) - WS-Z * WS-OP-SIN(WS-J)
                                  COMPUTE WS-Z = WS-Y * WS-OP-SIN(WS-J) + WS-Z * WS-OP-COS(WS-J)
                                  MOVE WS-T TO WS-Y
+                             WHEN 8
+*>                               rotation by the listed degrees about the axis (1, 0, 1) / sqrt 2 (Rodrigues' formula)
+                                 COMPUTE WS-DOT = 0.70710678 * (WS-X + WS-Z)
+                                 COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) - 0.70710678 * WS-Y * WS-OP-SIN(WS-J) + 0.70710678 * WS-DOT * (1 - WS-OP-COS(WS-J))
+                                 COMPUTE WS-DY = WS-Y * WS-OP-COS(WS-J) + 0.70710678 * (WS-X - WS-Z) * WS-OP-SIN(WS-J)
+                                 COMPUTE WS-Z = WS-Z * WS-OP-COS(WS-J) + 0.70710678 * WS-Y * WS-OP-SIN(WS-J) + 0.70710678 * WS-DOT * (1 - WS-OP-COS(WS-J))
+                                 MOVE WS-T TO WS-X
+                                 MOVE WS-DY TO WS-Y
                              WHEN 7
 *>                               rotation about Z by the listed degrees
                                  COMPUTE WS-T = WS-X * WS-OP-COS(WS-J) - WS-Y * WS-OP-SIN(WS-J)
