@@ -445,6 +445,7 @@
      MOVE EN-X(L-ROW) TO WS-X
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
+     CALL "WITHER-BAR-END" USING L-ROW WS-SLOT
      CALL "PJ-DROP" USING L-ROW
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      CALL "DECOR-DROP" USING WS-DIM WS-X WS-Y WS-Z WS-ITEM
@@ -666,6 +667,7 @@
          GOBACK
      END-IF
      ADD 1 TO PJ-TICK(WS-SLOT)
+     CALL "WITHER-BAR" USING L-ROW WS-SLOT
      IF PJ-I1(WS-SLOT) > 0
          COMPUTE WS-N = PJ-I1(WS-SLOT) - 1
          IF WS-N <= 0
@@ -753,3 +755,154 @@
      CALL "THROWN-SYNC" USING L-ROW
      GOBACK.
  END PROGRAM WITHER-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WITHER-BAR-PACKET.
+*> USING wither entity id, operation (0 ADD, 1 REMOVE, 2 UPDATE_PROGRESS), progress (thousandths), player row: Boss Event 0x09 (05a) to one player; the bar's uuid is 12 zero bytes and the entity id;
+*> title the translation entity.minecraft.wither, purple (5), progress overlay (0), flag darken screen (0x01) (21 section 7.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ID                  BINARY-LONG VALUE 9.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-PROGRESS            FLOAT-SHORT.
+ 01 WS-COLOR               BINARY-LONG VALUE 5.
+ 01 WS-STYLE               BINARY-LONG VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-OP                   BINARY-LONG.
+ 01 L-PROGRESS             BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY L-OP L-PROGRESS L-PLAYER.
+     MOVE LOW-VALUES TO WS-UUID
+     MOVE L-ENTITY TO WS-Q
+     COMPUTE WS-B = FUNCTION MOD(WS-Q, 256)
+     MOVE FUNCTION CHAR(WS-B + 1) TO WS-UUID(16:1)
+     COMPUTE WS-Q = WS-Q / 256
+     COMPUTE WS-B = FUNCTION MOD(WS-Q, 256)
+     MOVE FUNCTION CHAR(WS-B + 1) TO WS-UUID(15:1)
+     COMPUTE WS-Q = WS-Q / 256
+     COMPUTE WS-B = FUNCTION MOD(WS-Q, 256)
+     MOVE FUNCTION CHAR(WS-B + 1) TO WS-UUID(14:1)
+     COMPUTE WS-PROGRESS = L-PROGRESS / 1000
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-OP
+     IF L-OP = 0
+         INITIALIZE PB-TEXT
+         MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+         MOVE "entity.minecraft.wither" TO PB-TX-VALUE
+         MOVE 23 TO PB-TX-LENGTH
+         CALL "PB-PUT-TEXT" USING PB-BUFFER PB-TEXT
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PROGRESS
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COLOR
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-STYLE
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-FLAGS
+     END-IF
+     IF L-OP = 2
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PROGRESS
+     END-IF
+     CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM WITHER-BAR-PACKET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WITHER-BAR.
+*> USING wither row, slot: the bar's members (PJ-V-ENT, player rows: alive players of the dimension within 160 blocks), ADD and REMOVE as they come and go, and UPDATE_PROGRESS when the progress
+*> (1 - (remaining - 1) / 220 while spawning, else health / 300; PJ-I8 holds the last sent + 1) changed. Gaps: the bar's name follows no custom name, the wither's tracking range (160) stands for
+*> startSeenByPlayer and stopSeenByPlayer.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-FREE                BINARY-LONG.
+ 01 WS-PROG                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-OP-ADD              BINARY-LONG VALUE 0.
+ 01 WS-OP-REMOVE           BINARY-LONG VALUE 1.
+ 01 WS-OP-PROGRESS         BINARY-LONG VALUE 2.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT.
+     IF PJ-I1(L-SLOT) > 0
+         COMPUTE WS-N = PJ-I1(L-SLOT) - 1
+         COMPUTE WS-PROG = (220 - WS-N) * 1000 / 220
+     ELSE
+         COMPUTE WS-PROG = EN-HEALTH(L-ROW) * 1000 / 300
+     END-IF
+     COMPUTE WS-PROG = FUNCTION MAX(0, FUNCTION MIN(1000, WS-PROG))
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0
+             MOVE 0 TO WS-VALID
+             IF PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+                 IF (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2 <= 25600
+                     MOVE 1 TO WS-VALID
+                 END-IF
+             END-IF
+             MOVE 0 TO WS-IN WS-FREE
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 16
+                 IF PJ-V-ENT(L-SLOT, WS-J) = WS-P
+                     MOVE WS-J TO WS-IN
+                 END-IF
+                 IF PJ-V-ENT(L-SLOT, WS-J) = 0 AND WS-FREE = 0
+                     MOVE WS-J TO WS-FREE
+                 END-IF
+             END-PERFORM
+             IF WS-VALID = 1 AND WS-IN = 0 AND WS-FREE > 0
+                 MOVE WS-P TO PJ-V-ENT(L-SLOT, WS-FREE)
+                 CALL "WITHER-BAR-PACKET" USING EN-ID(L-ROW) WS-OP-ADD WS-PROG WS-P
+             END-IF
+             IF WS-VALID = 0 AND WS-IN > 0
+                 MOVE 0 TO PJ-V-ENT(L-SLOT, WS-IN)
+                 CALL "WITHER-BAR-PACKET" USING EN-ID(L-ROW) WS-OP-REMOVE WS-PROG WS-P
+             END-IF
+         END-IF
+     END-PERFORM
+     IF PJ-I8(L-SLOT) NOT = WS-PROG + 1
+         MOVE WS-PROG TO WS-N
+         COMPUTE PJ-I8(L-SLOT) = WS-PROG + 1
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 16
+             IF PJ-V-ENT(L-SLOT, WS-J) > 0
+                 CALL "WITHER-BAR-PACKET" USING EN-ID(L-ROW) WS-OP-PROGRESS WS-N PJ-V-ENT(L-SLOT, WS-J)
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM WITHER-BAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WITHER-BAR-END.
+*> USING wither row, slot: REMOVE to every member of the bar and the member list is cleared.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-OP-REMOVE           BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-P                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 16
+         IF PJ-V-ENT(L-SLOT, WS-J) > 0
+             MOVE PJ-V-ENT(L-SLOT, WS-J) TO WS-P
+             CALL "WITHER-BAR-PACKET" USING EN-ID(L-ROW) WS-OP-REMOVE WS-ZERO WS-P
+             MOVE 0 TO PJ-V-ENT(L-SLOT, WS-J)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WITHER-BAR-END.
