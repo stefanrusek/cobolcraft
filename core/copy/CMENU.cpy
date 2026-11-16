@@ -49,6 +49,8 @@
        10 MN-WSENT           BINARY-LONG OCCURS 10 TIMES.   *> the data slot values as last sent
        10 MN-WSOUND          BINARY-LONG.            *> the game tick of the last take sound
        10 MN-WLIST           BINARY-LONG.            *> the input item of the list last sent to the client (stonecutter), -1 none sent
+       10 MN-WNAME           PIC X(64).              *> the anvil: the name the client typed (filtered), MN-WNAME-LEN bytes
+       10 MN-WNAME-LEN       BINARY-LONG.
        10 MN-DRAG-ACTIVE     PIC 9.
        10 MN-DRAG-TYPE       BINARY-LONG.
        10 MN-DRAG-COUNT      BINARY-LONG.

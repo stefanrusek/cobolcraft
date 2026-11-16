@@ -1135,6 +1135,13 @@
          MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
          GOBACK
      END-IF
+*>   The anvil's result slot cannot be taken without the levels (40-3 section 3.4, mayPickup).
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 24 AND L-SLOT = MN-WRES(L-ROW)
+         CALL "MENU-ANVIL-MAYTAKE" USING L-ROW WS-MAY
+         IF WS-MAY = 0
+             GOBACK
+         END-IF
+     END-IF
      EVALUATE TRUE
          WHEN (L-TYPE = 0 OR L-TYPE = 1) AND L-BUTTON >= 0 AND L-BUTTON <= 1
              CALL "MENU-CLICK-PICK" USING L-ROW L-SLOT L-BUTTON L-TYPE

@@ -6,7 +6,7 @@
 *> and ENCH- programs of menu-40-2.cob to menu-enchanting.cob; this file reads the live state, calls them and applies what they decide.
 *>
 *> Station kinds: 1 stonecutter, 2 grindstone, 3 smithing table, 4 anvil, 5 loom, 6 cartography table, 7 enchanting table, 8 brewing stand. MENU-STATION-KIND
-*> names only the stations that are built (the stonecutter and the smithing table): a block of another kind does not open a menu yet.
+*> names only the stations that are built (the stonecutter, the smithing table and the anvil): a block of another kind does not open a menu yet.
 *>
 *> Opening (Use Item On on the block, BLOCK-USE-ON, not sneaking with an item held): the menu already open is closed first, the container id is the next
 *> of the cycle, Open Screen carries the menu type and the translatable title (container.stonecutter ...), Container Set Content and the data slots follow.
@@ -49,6 +49,12 @@
              MOVE 1 TO L-KIND
          WHEN "smithing_table"
              MOVE 3 TO L-KIND
+         WHEN "anvil"
+             MOVE 4 TO L-KIND
+         WHEN "chipped_anvil"
+             MOVE 4 TO L-KIND
+         WHEN "damaged_anvil"
+             MOVE 4 TO L-KIND
      END-EVALUATE
      GOBACK.
  END PROGRAM MENU-STATION-KIND.
@@ -248,6 +254,8 @@
          MOVE 0 TO MN-WDATA(WS-ROW, WS-I) MN-WSENT(WS-ROW, WS-I)
      END-PERFORM
      MOVE -1 TO MN-WSEL(WS-ROW)
+     MOVE 0 TO MN-WNAME-LEN(WS-ROW)
+     MOVE SPACES TO MN-WNAME(WS-ROW)
      MOVE 0 TO MN-WKEEP(WS-ROW) MN-WSOUND(WS-ROW)
      MOVE -1 TO MN-WLIST(WS-ROW)
      MOVE 0 TO MN-RESULT-ITEM(WS-ROW) MN-RESULT-COUNT(WS-ROW) MN-RESULT-VAR(WS-ROW)
@@ -524,6 +532,9 @@
              MOVE 1 TO MN-WDATA(L-ROW, 1)
          END-IF
      END-IF
+     IF MN-CFAMILY(L-ROW) = 24
+         CALL "MENU-ANVIL-UPDATE" USING L-ROW
+     END-IF
      IF MN-CFAMILY(L-ROW) = 21
          MOVE 0 TO WS-ITEM
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
@@ -571,6 +582,9 @@
  PROCEDURE DIVISION USING L-ROW.
      IF MN-CFAMILY(L-ROW) = 29
          CALL "MERCHANT-TAKEN" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 24
+         CALL "MENU-ANVIL-TAKEN" USING L-ROW
      END-IF
 *>   The smithing table (40-3 section 5.4): one item of each of the three inputs is used up, then the result is made again.
      IF MN-CFAMILY(L-ROW) = 23
@@ -665,6 +679,8 @@
  01 WS-REV                 BINARY-LONG.
  01 WS-ONQ                 BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -679,6 +695,11 @@
      END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
      IF WS-COUNT = 0
+         GOBACK
+     END-IF
+*>   The anvil is an item combiner (40-3 section 3.6): the result is slot 2, the inputs take any stack.
+     IF MN-CFAMILY(L-ROW) = 24
+         CALL "MENU-STATION-COMBINER-QUICK" USING L-ROW L-SLOT WS-TWO WS-ONE L-RET-ITEM L-RET-COUNT
          GOBACK
      END-IF
      IF MN-CFAMILY(L-ROW) = 21
