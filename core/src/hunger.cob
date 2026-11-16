@@ -145,6 +145,8 @@
  01 WS-ENOUGH              FLOAT-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-REGEN-RULE          PIC X(40) VALUE "natural_health_regeneration".
+ 01 WS-REGEN               BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -193,9 +195,11 @@
          END-IF
      END-IF
 *>   Natural regeneration and starvation.
+*>   The rule natural_health_regeneration (33 section 6) gates both regeneration branches only.
+     CALL "BR-RULE-GET" USING WS-REGEN-RULE WS-REGEN
      COMPUTE WS-ENOUGH = RULE-REGEN-SATURATION-CAP
      EVALUATE TRUE
-         WHEN PL-SATURATION(WS-ROW) > 0 AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
+         WHEN WS-REGEN NOT = 0 AND PL-SATURATION(WS-ROW) > 0 AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
                  AND PL-FOOD(WS-ROW) >= RULE-MAX-FOOD
              ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
              IF PL-RECOVER-TICKS(WS-ROW) >= RULE-REGEN-FAST-TICKS
@@ -207,7 +211,8 @@
                  MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
                  MOVE 1 TO WS-CHANGED
              END-IF
-         WHEN PL-FOOD(WS-ROW) >= RULE-HEAL-FOOD AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
+         WHEN WS-REGEN NOT = 0 AND PL-FOOD(WS-ROW) >= RULE-HEAL-FOOD
+                 AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
              ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
              IF PL-RECOVER-TICKS(WS-ROW) >= RULE-REGEN-TICKS
                  COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MIN(RULE-MAX-HEALTH,
