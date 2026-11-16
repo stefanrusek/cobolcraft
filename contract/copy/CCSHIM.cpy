@@ -31,6 +31,7 @@
  78 CC-TEX-UI               VALUE 2.   *> font and UI atlas
  78 CC-TEX-ENVIRONMENT      VALUE 3.   *> environment atlas
  78 CC-TEX-PARTICLES        VALUE 4.   *> particle atlas
+ 78 CC-TEX-GLINT            VALUE 5.   *> enchantment glint texture (repeat wrap)
 
 *> Texture wrap modes of cc_vk_texture_wrap (§9).
  78 CC-WRAP-CLAMP           VALUE 0.   *> clamp-to-edge (the default)
@@ -165,6 +166,7 @@
 *>     CALL STATIC "cc_vk_texture_update_begin"  and  CALL STATIC "cc_vk_texture_update_end"   (updates between them wait for the GPU once)
 *>   Daylight:       CALL STATIC "cc_vk_daylight" USING BY REFERENCE factor (FLOAT-SHORT, 0 to 1)
 *>   Fog:            CALL STATIC "cc_vk_fog" USING BY REFERENCE fog (13 FLOAT-SHORT: r g b strength start end p00 p11 up-x up-y up-z render-distance-start render-distance-end; strength 0 = none)
+*>   Glint offset:   CALL STATIC "cc_vk_glint_offset" USING BY REFERENCE uv (2 FLOAT-SHORT: u v added to the texture coordinates of CC-PIPE-GLINT draws)
 *>   Depth clear:    CALL STATIC "cc_vk_clear_depth"
 *>   Screenshot:     CALL STATIC "cc_vk_screenshot" USING BY REFERENCE PATH-Z RETURNING RC   (CC-AGAIN: one still waiting)
 *>                   CALL STATIC "cc_vk_screenshot_result" RETURNING RC   (CC-AGAIN waiting, 0 written, CC-FAILED)

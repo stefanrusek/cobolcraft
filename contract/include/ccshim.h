@@ -66,6 +66,7 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_TEX_UI          2 /* font and UI atlas */
 #define CC_TEX_ENVIRONMENT 3 /* environment atlas */
 #define CC_TEX_PARTICLES   4 /* particle atlas */
+#define CC_TEX_GLINT       5 /* the enchantment glint texture (128 x 128, repeat wrap, 54 section 19); drawn with CC_PIPE_GLINT */
 
 /* Texture wrap modes of cc_vk_texture_wrap (§9). */
 #define CC_WRAP_CLAMP  0 /* clamp-to-edge (the default) */
@@ -219,6 +220,11 @@ void cc_vk_daylight(const float *daylight);
  * start and end: the fog value is the larger of the spherical value and the cylindrical one (distance max(horizontal, |vertical|), 12 section 3.3)
  * between those (default start 1e9: none). Applies to the world and entity pipelines (not the UI). */
 void cc_vk_fog(const float *fog);
+
+/* §9 addition: the texture coordinate offset of the CC_PIPE_GLINT draws that follow, read through a pointer to 2 floats (u, v; default 0, 0). The
+ * vertex shader adds it to every vertex's texture coordinate (the scrolling translation of the glint texture matrix, 54 section 19.4; the scale
+ * and rotation are in the vertex coordinates). The draws of the other pipelines are not shifted. */
+void cc_vk_glint_offset(const float *uv);
 
 /* §9 addition: clears the depth attachment between the world pass and the hand pass (US20). */
 void cc_vk_clear_depth(void);

@@ -4,8 +4,9 @@
 // arrive as push constants. The brightness the fragment shader gets is max(brightness, sky x daylight).
 // The fog (cc_vk_fog) shares the push constant block with the fragment stage: colour rgb and strength, the environment start and end,
 // the focal terms of the projection (from which the camera-relative position is recovered out of the clip coordinates), the world up
-// direction in view space and the render-distance start and end (12 section 3.3).
-layout(push_constant) uniform Push { mat4 matrix; float daylight; float fog_r; float fog_g; float fog_b; float fog_a; float fog_start; float fog_end; float p00; float p11; float up_x; float up_y; float up_z; float rd_start; float rd_end; } push;
+// direction in view space and the render-distance start and end (12 section 3.3), then the texture coordinate offset (cc_vk_glint_offset:
+// non-zero only in the glint draws, 54 section 19.4).
+layout(push_constant) uniform Push { mat4 matrix; float daylight; float fog_r; float fog_g; float fog_b; float fog_a; float fog_start; float fog_end; float p00; float p11; float up_x; float up_y; float up_z; float rd_start; float rd_end; float uv_x; float uv_y; } push;
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
 layout(location = 2) in float in_brightness;
@@ -25,7 +26,7 @@ void main() {
     float vx = gl_Position.x / push.p00;
     float vy = gl_Position.y / push.p11;
     out_view = vec3(vx, vy, gl_Position.w);
-    out_uv = in_uv;
+    out_uv = in_uv + vec2(push.uv_x, push.uv_y);
     out_brightness = max(in_brightness, in_sky * push.daylight);
     out_alpha = in_alpha;
     out_tint = in_tint;

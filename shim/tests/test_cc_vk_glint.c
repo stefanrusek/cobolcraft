@@ -1,7 +1,9 @@
 /* Implementation test of CC_PIPE_GLINT (54 section 19.3, the enchantment glint pass) against the real GPU. An opaque quad (texture 0:
  * colour 100, 200, 50) is drawn, then a glint quad over it at the same depth. The blend is additive, result.rgb = src.rgb * src.rgb +
  * dst.rgb (factors SRC_COLOR and ONE), result.a = dst.a (factors ZERO and ONE): a texel of 128 adds 128/255 squared = 64 to each channel
- * (164, 255 clamped, 114). A glint quad behind the opaque one fails the depth test (the pixel stays). */
+ * (164, 255 clamped, 114). A glint quad behind the opaque one fails the depth test (the pixel stays). The glint has its own texture id
+ * (CC_TEX_GLINT, repeat wrap) and cc_vk_glint_offset shifts the texture coordinates of CC_PIPE_GLINT draws only (the scrolling of 54 section
+ * 19.4 without rebuilding the mesh): the textures here are 2 x 2 with a left column and a right column, the quads sample u 0 to 0.4. */
 #include <stdio.h>
 #include <string.h>
 
@@ -69,8 +71,8 @@ static void centre_pixel(char out[9]) {
 
 static void quad(float z, float *out) {
     static const float base[6][11] = {
-        {-0.5f, -0.5f, 0, 0, 0, 1, 1, 0, 1, 1, 1}, {0.5f, -0.5f, 0, 1, 0, 1, 1, 0, 1, 1, 1}, {0.5f, 0.5f, 0, 1, 1, 1, 1, 0, 1, 1, 1},
-        {-0.5f, -0.5f, 0, 0, 0, 1, 1, 0, 1, 1, 1}, {0.5f, 0.5f, 0, 1, 1, 1, 1, 0, 1, 1, 1}, {-0.5f, 0.5f, 0, 0, 1, 1, 1, 0, 1, 1, 1},
+        {-0.5f, -0.5f, 0, 0, 0, 1, 1, 0, 1, 1, 1}, {0.5f, -0.5f, 0, 0.4f, 0, 1, 1, 0, 1, 1, 1}, {0.5f, 0.5f, 0, 0.4f, 0.4f, 1, 1, 0, 1, 1, 1},
+        {-0.5f, -0.5f, 0, 0, 0, 1, 1, 0, 1, 1, 1}, {0.5f, 0.5f, 0, 0.4f, 0.4f, 1, 1, 0, 1, 1, 1}, {-0.5f, 0.5f, 0, 0, 0.4f, 1, 1, 0, 1, 1, 1},
     };
     for (int i = 0; i < 6; i++) {
         memcpy(out + i * 11, base[i], sizeof base[i]);
@@ -78,15 +80,15 @@ static void quad(float z, float *out) {
     }
 }
 
-/* One frame: the opaque quad (z 0.5), then the glint quad at depth z; the centre pixel. */
-static void frame(float z, char out[9]) {
+/* One frame: the opaque quad (z 0.5), then the glint quad at depth z with the given texture; the centre pixel. */
+static void frame(float z, int tex, char out[9]) {
     float glint[6 * 11];
     quad(z, glint);
     cc_vk_mesh(2, glint, 6);
     const float clear[4] = {0, 0, 0, 1};
     cc_vk_frame_begin(clear);
     cc_vk_draw(1, CC_PIPE_OPAQUE, CC_TEX_BLOCKS, IDENTITY);
-    cc_vk_draw(2, CC_PIPE_GLINT, CC_TEX_ENTITIES, IDENTITY);
+    cc_vk_draw(2, CC_PIPE_GLINT, tex, IDENTITY);
     cc_vk_submit();
     centre_pixel(out);
     cc_vk_present();
@@ -97,18 +99,34 @@ int main(void) {
     cc_vk_init();
     tl_int("test cc_vk swapchain format is 8-bit UNORM (pixel values are compared exactly)", 1,
            S.format.format == VK_FORMAT_B8G8R8A8_UNORM || S.format.format == VK_FORMAT_R8G8B8A8_UNORM);
-    static const uint8_t ground[2 * 2 * 4] = {100, 200, 50, 255, 100, 200, 50, 255, 100, 200, 50, 255, 100, 200, 50, 255};
-    static const uint8_t shine[2 * 2 * 4] = {128, 128, 128, 255, 128, 128, 128, 255, 128, 128, 128, 255, 128, 128, 128, 255};
+    static const uint8_t ground[2 * 2 * 4] = {100, 200, 50, 255, 10, 20, 30, 255, 100, 200, 50, 255, 10, 20, 30, 255};
+    static const uint8_t shine[2 * 2 * 4] = {128, 128, 128, 255, 0, 0, 0, 255, 128, 128, 128, 255, 0, 0, 0, 255};
     float opaque[6 * 11];
     quad(0.5f, opaque);
     cc_vk_mesh(1, opaque, 6);
     cc_vk_texture(CC_TEX_BLOCKS, 2, 2, ground);
     cc_vk_texture(CC_TEX_ENTITIES, 2, 2, shine);
     char pixel[9];
-    frame(0.5f, pixel);
+    frame(0.5f, CC_TEX_ENTITIES, pixel);
     tl_str("test cc_vk glint quad at the same depth adds src x src (128 -> +64: 164, 255, 114)", "A4FF72FF", pixel);
-    frame(0.9f, pixel);
+    frame(0.9f, CC_TEX_ENTITIES, pixel);
     tl_str("test cc_vk glint quad behind the opaque quad fails the depth test (pixel stays)", "64C832FF", pixel);
+    cc_vk_texture_wrap(CC_TEX_GLINT, CC_WRAP_REPEAT);
+    cc_vk_texture(CC_TEX_GLINT, 2, 2, shine);
+    frame(0.5f, CC_TEX_GLINT, pixel);
+    tl_str("test cc_vk the glint texture id CC_TEX_GLINT draws like any texture", "A4FF72FF", pixel);
+    float off[2] = {0.5f, 0};
+    cc_vk_glint_offset(off);
+    frame(0.5f, CC_TEX_GLINT, pixel);
+    tl_str("test cc_vk glint offset 0.5 moves the sample to the dark column (no addition) and leaves the opaque pipeline unshifted", "64C832FF", pixel);
+    off[0] = 1.0f;
+    cc_vk_glint_offset(off);
+    frame(0.5f, CC_TEX_GLINT, pixel);
+    tl_str("test cc_vk glint offset 1.0 wraps (repeat) back to the bright column", "A4FF72FF", pixel);
+    off[0] = 0;
+    cc_vk_glint_offset(off);
+    frame(0.5f, CC_TEX_GLINT, pixel);
+    tl_str("test cc_vk glint offset 0 again restores the unshifted sample", "A4FF72FF", pixel);
     cc_vk_shutdown();
     cc_win_close();
     return 0;
