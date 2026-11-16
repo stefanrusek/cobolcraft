@@ -164,7 +164,7 @@
  PROGRAM-ID. EFFECT-PERIODIC.
 *> USING player row, effect id, amplifier, duration (BINARY-LONG each): the periodic action of an effect that is ticked this tick (docs/protocol/17
 *> section 4.9a), run before the duration step with the duration the instance had at the start of the tick (an infinite duration, -1, uses the tick
-*> count). poison (18): n = 25 >> amplifier; wither (19): 40 >> amplifier; regeneration (7): 50 >> amplifier; the action fires when n <= 0 or
+*> count). poison (18): n = 25 >> amplifier; wither (19): 40 >> amplifier; regeneration (9): 50 >> amplifier; the action fires when n <= 0 or
 *> d mod n = 0: poison hurts 1.0 while the health is above 1.0, wither hurts 1.0 (and can kill), regeneration heals 1.0 below 20. Hunger (16)
 *> adds 0.005 x (amplifier + 1) exhaustion every tick. The hurt goes through HEALTH-HURT with the generic cause (CAUSE-COMMAND: the cobolcraft
 *> set has no magic or wither damage type; it bypasses armor, adds no exhaustion).
@@ -199,7 +199,7 @@
              MOVE 25 TO WS-BASE
          WHEN 19
              MOVE 40 TO WS-BASE
-         WHEN 7
+         WHEN 9
              MOVE 50 TO WS-BASE
      END-EVALUATE
      IF WS-BASE = 0
