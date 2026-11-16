@@ -17,6 +17,10 @@
        10 VL-FOOD            BINARY-LONG.
        10 VL-LAST-DECAY      BINARY-LONG.
        10 VL-NEXT-SCAN       BINARY-LONG.
+       10 VL-GIFT-CD         BINARY-LONG.        *> GiveGiftToHero: cooldown left + 1 (0 = not started: 600), T8104
+       10 VL-GIFT-ACT        BINARY-LONG.        *> 1 while a gift is on its way
+       10 VL-GIFT-AGE        BINARY-LONG.        *> ticks since the start
+       10 VL-GIFT-PL         BINARY-LONG.        *> the hero's player row
        10 VL-O-N             BINARY-LONG.
        10 VL-OFFER           OCCURS 16 TIMES.
           15 VL-O-ROW        BINARY-LONG.

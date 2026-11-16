@@ -169,8 +169,8 @@
      MOVE 1 TO WS-EXP
      MOVE WS-COUNT TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
-*>   A species without a mob row (villager) does nothing and the egg stays.
-     MOVE "minecraft:villager_spawn_egg" TO WS-KEY
+*>   A species without a mob row (warden; the villager has a row since T7102) does nothing and the egg stays.
+     MOVE "minecraft:warden_spawn_egg" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD + 1)
      MOVE 0 TO PL-MODE(WS-PLAYER)
