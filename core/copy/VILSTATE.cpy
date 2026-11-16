@@ -31,6 +31,9 @@
        10 VL-LOVE-AT         BINARY-LONG.        *> the tick of the birth
        10 VL-GOLEM-UNTIL     BINARY-LONG.        *> golem_detected_recently: the tick it expires (0 none), T8801
        10 VL-LAST-GOSSIP     BINARY-LONG.        *> lastGossipTime
+       10 VL-DESPAWN         BINARY-LONG.        *> wandering trader: ticks to despawn (48000 from the spawner, 0 none), T8802
+       10 VL-LLAMA-A         BINARY-LONG.        *> wandering trader: entity ids of its two trader llamas
+       10 VL-LLAMA-B         BINARY-LONG.
        10 VL-O-N             BINARY-LONG.
        10 VL-OFFER           OCCURS 16 TIMES.
           15 VL-O-ROW        BINARY-LONG.
