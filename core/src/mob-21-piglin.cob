@@ -46,12 +46,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PIGLIN-ZOMBIFY.
-*> The Nausea of 200 ticks of the converted mob and the cancelling of the admiring (the held items) are not done: open items of T7103.
+*> Piglins and hoglins (zoglin, 21 section 5.6) share the rule. The Nausea of 200 ticks of the converted mob and the cancelling of the admiring (the held items) are not done: open items of T7103.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY BRWORLD.
  COPY DIMENSIONS.
+ 01 WS-SPECIES              PIC X(24).
  01 WS-KEY                  PIC X(112).
  01 WS-ENTITY-ROW           PIC X(66).
  01 WS-STATUS               BINARY-LONG.
@@ -72,7 +73,11 @@
      END-IF
      ADD 1 TO EN-ZOMBIFY(L-ENTITY)
      IF EN-ZOMBIFY(L-ENTITY) > 300 AND BW-DIFFICULTY > 0
+         CALL "MOB-SPECIES-KEY" USING L-ENTITY WS-SPECIES
          MOVE "zombified_piglin" TO WS-KEY
+         IF WS-SPECIES = "hoglin"
+             MOVE "zoglin" TO WS-KEY
+         END-IF
          CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
          MOVE EN-X(L-ENTITY) TO WS-X
          MOVE EN-Y(L-ENTITY) TO WS-Y

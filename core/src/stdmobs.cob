@@ -1076,6 +1076,12 @@
      IF SM-KEY(WS-M) = "piglin"
          CALL "PIGLIN-TICK" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "hoglin"
+         CALL "PIGLIN-ZOMBIFY" USING WS-ROW WS-STOP
+         IF WS-STOP = 1
+             GOBACK
+         END-IF
+     END-IF
      IF SM-KEY(WS-M) = "panda"
          CALL "PANDA-TICK" USING WS-ROW
          IF EN-TARGET(WS-ROW) > 0
