@@ -48,6 +48,9 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-E1                  PIC -(9)9.
+ 01 WS-OTYPE               BINARY-LONG.
+ 01 WS-OI                  BINARY-LONG.
+ 01 WS-OVAL                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-HOSTILE-MOBS
@@ -130,6 +133,23 @@
      MOVE "acceptance US15 19§22.5 a day later the values decay: R = 44" TO TL-CASE
      MOVE "44" TO TL-EXPECTED
      PERFORM CHECK-REP
+*>   A trade that levels the villager up adds 5 to the orb: 8 to 11.
+     CALL "XP-ORB-TYPE" USING WS-OTYPE
+     MOVE 1 TO WS-T
+     CALL "VL-TRADE-ORB" USING WS-VID WS-T
+     MOVE 0 TO WS-OVAL
+     PERFORM VARYING WS-OI FROM 1 BY 1 UNTIL WS-OI > EN-COUNT
+         IF EN-USED(WS-OI) = 1 AND EN-TYPE(WS-OI) = WS-OTYPE
+             MOVE EN-ITEM(WS-OI) TO WS-OVAL
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§22.2 a levelling trade adds 5 to the xp orb (8 to 11)" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE "0" TO TL-OBSERVED
+     IF WS-OVAL >= 8 AND WS-OVAL <= 11
+         MOVE "1" TO TL-OBSERVED
+     END-IF
+     PERFORM CHECK
 *>   Removing the villager forgets its gossip.
      CALL "VL-REMOVE" USING WS-VID
      CALL "VG-REP" USING WS-VID WS-PID WS-REP

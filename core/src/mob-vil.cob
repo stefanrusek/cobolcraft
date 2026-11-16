@@ -294,3 +294,39 @@
      CALL "VIL-PRICE" USING WS-BASE VL-O-DEMAND(L-SLOT, L-OFFER) WS-MULT L-SPECIAL WS-STACK L-COUNT
      GOBACK.
  END PROGRAM VL-OFFER-COST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-TRADE-ORB.
+*> USING villager entity id, levelled up (0/1): rewardTradeXp (19 section 22.2): an experience orb of 3 + nextInt(4) (+5 when the villager levelled up) at the villager, y + 0.5.
+*> Every offer is taken to reward experience (the rewardExp default true; no document names a trade with the flag off).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SALT                 BINARY-LONG VALUE 71.
+ 01 WS-FOUR                 BINARY-LONG VALUE 4.
+ 01 WS-R                    BINARY-LONG.
+ 01 WS-VALUE                BINARY-LONG.
+ 01 WS-ROW                  BINARY-LONG.
+ 01 WS-ORB                  BINARY-LONG.
+ 01 WS-X                    FLOAT-LONG.
+ 01 WS-Y                    FLOAT-LONG.
+ 01 WS-Z                    FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                    BINARY-LONG.
+ 01 L-LEVELLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-LEVELLED.
+     CALL "MERCHANT-ENTITY" USING L-ID WS-ROW
+     IF WS-ROW = 0
+         GOBACK
+     END-IF
+     CALL "XP-RANDOM" USING WS-SALT WS-FOUR WS-R
+     COMPUTE WS-VALUE = 3 + WS-R
+     IF L-LEVELLED = 1
+         ADD 5 TO WS-VALUE
+     END-IF
+     MOVE EN-X(WS-ROW) TO WS-X
+     COMPUTE WS-Y = EN-Y(WS-ROW) + 0.5
+     MOVE EN-Z(WS-ROW) TO WS-Z
+     CALL "XP-ORB-SPAWN" USING EN-DIM(WS-ROW) WS-X WS-Y WS-Z WS-VALUE WS-ORB
+     GOBACK.
+ END PROGRAM VL-TRADE-ORB.
