@@ -31,6 +31,7 @@
  01 WS-HAT                 BINARY-LONG.
  01 WS-PROF-HAT            BINARY-LONG.
  01 WS-TYPE-HAT            BINARY-LONG.
+ 01 WS-DYE                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -206,6 +207,16 @@
          MOVE L-CODE TO EN-OVL(L-ROW)
          CALL "ENTITY-TINT" USING CLIENT-STATE L-ROW EN-MODEL(L-ROW) L-RED L-GREEN L-BLUE
          MOVE WS-NOW TO EN-OVL(L-ROW)
+*>       Worn leather (code 6001, layers 5 to 8): the dyed colour of the piece's stack when it is not 0, else the undyed brown A06540 (54 section 17, 43 section 7.2).
+         IF L-CODE = 6001 AND L-N >= 5 AND L-N <= 8
+             COMPUTE WS-DYE = EN-EQ-DYE(L-ROW, 7 - WS-WANT)
+             IF WS-DYE <= 0
+                 MOVE 10511680 TO WS-DYE
+             END-IF
+             COMPUTE L-RED = FUNCTION INTEGER(WS-DYE / 65536) / 255
+             COMPUTE L-GREEN = FUNCTION MOD(FUNCTION INTEGER(WS-DYE / 256), 256) / 255
+             COMPUTE L-BLUE = FUNCTION MOD(WS-DYE, 256) / 255
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM ENTITY-OVERLAY.

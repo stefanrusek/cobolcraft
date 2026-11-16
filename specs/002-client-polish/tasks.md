@@ -4807,7 +4807,7 @@ Operator report on try5: entering the Nether through a portal printed "went to m
 ## Lane models5 (client rendering from the cr5 docs, T9900-T9999)
 
 - [x] T9900 proto decodes trim (58), banner_patterns (74) and dye (46) in PB-GET-ITEM-STACK; the replica keeps dyed_color, trim holders, glint decision and hand banner layers per equipment slot (CLSTATE EN-EQX, EN-HB; ENTITY-EQ-COMPONENTS; tests proto/tests/test_item_stack.cob, client/tests/test_entity_eqcomp.cob). Inline trim holders read as no trim (gap: their palette is not a registry id).
-- [ ] T9901 leather dye tint and overlay layer on worn armor (54 section 17)
+- [x] T9901 leather dye tint on worn armor (ENTITY-OVERLAY, client/tests/test_entity_armor_tint.cob). PARTIAL-NOTE: the second (overlay) leather layer is not drawn: no document names its texture file (43 section 7.2 says only "the second layer, always white"); gap recorded.
 - [ ] T9902 armor trims: palette recolouring, material and pattern layers, `_darker` overrides (54 section 18)
 - [ ] T9903 enchantment glint additive pass and shim additive pipeline; creeper charge and dragon passes (54 section 19)
 - [ ] T9904 baby and zombie villager armor; banner and shield layers (54 section 22.3)
