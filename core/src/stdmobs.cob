@@ -945,6 +945,9 @@
  01 WS-TEMPT-HZ            FLOAT-LONG.
  01 WS-TEMPT-YAW           FLOAT-SHORT.
  01 WS-WAS-GROUND          BINARY-LONG.
+ 01 WS-RAID-HX             FLOAT-LONG.
+ 01 WS-RAID-HZ             FLOAT-LONG.
+ 01 WS-RAID-WALK           BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1168,7 +1171,13 @@
          END-IF
      END-IF
      CALL "RAID-RAIDER-STEP" USING WS-ROW
-     CALL "RAID-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+*>   RAID-WALK sets its outputs for every mob (0 for a non-raider), so it gets its own fields: a walk the pet, golem, bee, frog, turtle or fox ticks above chose stays.
+     CALL "RAID-WALK" USING WS-ROW WS-RAID-HX WS-RAID-HZ WS-RAID-WALK
+     IF WS-RAID-WALK > 0 AND WS-PET-WALK = 0
+         MOVE WS-RAID-HX TO WS-PET-HX
+         MOVE WS-RAID-HZ TO WS-PET-HZ
+         MOVE WS-RAID-WALK TO WS-PET-WALK
+     END-IF
      IF SM-KEY(WS-M) = "ravager"
          CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL
          IF WS-RV-STILL = 1
