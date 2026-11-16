@@ -41,3 +41,4 @@
           15 VL-O-DEMAND     BINARY-LONG.
           15 VL-O-SPECIAL    BINARY-LONG.
           15 VL-O-EXTRA      BINARY-LONG.
+          15 VL-O-VAR        BINARY-LONG.        *> the patch handle of the result (an enchanted book's stored_enchantments), 0 none

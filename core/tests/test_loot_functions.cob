@@ -219,7 +219,7 @@
          CALL "SP-ADD-ENCHANT" USING WS-HANDLE WS-ID WS-LEVEL
      END-IF.
 
-*> "item count damage efficiency-level name": the name is - without one, a custom name as is, an item_name (component 5) as item:text.
+*> "item count damage efficiency-level name": the name is - without one, a custom name as is, an item_name (component 9) as item:text.
  DESCRIBE-STACK.
      CALL "SP-GET-DAMAGE" USING WS-ITEM WS-HANDLE WS-DAMAGE
      MOVE 0 TO WS-ID
@@ -229,7 +229,7 @@
      IF WS-NAME-LENGTH > 0
          MOVE WS-NAME-OUT(1:WS-NAME-LENGTH) TO WS-NAME-TEXT
      END-IF
-     MOVE 5 TO WS-TYPE
+     MOVE 9 TO WS-TYPE
      CALL "SP-GET-COMPONENT" USING WS-HANDLE WS-TYPE WS-VALUE WS-LENGTH WS-FOUND2
      IF WS-FOUND2 = 1
          COMPUTE WS-NAME-LENGTH = FUNCTION ORD(WS-VALUE(3:1)) - 1

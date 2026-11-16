@@ -155,3 +155,37 @@
      CALL "SP-SET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH
      GOBACK.
  END PROGRAM LOOT-COPY-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LOOT-SET-POTION.
+*> USING slot, function node, handle (in and out): set_potion (26 section 7.3): potion_contents (53) holds the potion of "id" (a key with or without minecraft:), the custom effects, colour and name of
+*> an existing component kept as they are; a key that names no potion leaves the stack alone.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N-ID                PIC X(32) VALUE "id".
+ 01 WS-MEMBER              BINARY-LONG.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-KEY                 PIC X(32).
+ 01 WS-POTION              BINARY-LONG.
+ COPY POTREC.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-NODE L-HANDLE.
+     CALL "LOOT-J-MEMBER" USING L-SLOT L-NODE WS-N-ID WS-MEMBER
+     CALL "LOOT-J-TEXT" USING L-SLOT WS-MEMBER WS-TEXT WS-LENGTH
+     IF WS-LENGTH = 0 OR WS-LENGTH > 32
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-KEY
+     MOVE WS-TEXT(1:WS-LENGTH) TO WS-KEY
+     CALL "SC-POTION-ID" USING WS-KEY WS-POTION
+     IF WS-POTION >= 0
+         CALL "SC-POTION-READ" USING L-HANDLE PR-REC
+         MOVE WS-POTION TO PR-POTION
+         CALL "SC-POTION-WRITE" USING L-HANDLE PR-REC
+     END-IF
+     GOBACK.
+ END PROGRAM LOOT-SET-POTION.

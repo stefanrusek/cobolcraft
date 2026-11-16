@@ -5,6 +5,10 @@
 *>   PIGLIN-LOVED USING item key (X(24)), yes out                                                          piglin_loved
 *>   PIGLIN-SAFE-ARMOR USING item key (X(24)), yes out                                                     piglin_safe_armor: the four golden armor pieces
 *>   PIGLIN-ADMIRE USING adult, admiring, admiring disabled, yes out                                         mobInteract accepts an ingot only from an adult not admiring and not disabled
+*>   PIGLIN-STACK USING item key (X(24)), modifier, item id out (-1 unknown), patch handle out               the stack of a barter row with its modifier applied (T9604): 1 enchant randomly with soul_speed (a book
+*>                                                                                                             becomes an enchanted_book with stored_enchantments, boots get enchantments; level 1 to 3), 2 and 3 the potion
+*>                                                                                                             fire_resistance and water in potion_contents
+*>   PIGLIN-DROP USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), item key, modifier, count                       PIGLIN-STACK, then the item entity with the patch (pickup delay 10)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PIGLIN-BARTER.
@@ -108,3 +112,83 @@
      END-IF
      GOBACK.
  END PROGRAM PIGLIN-ADMIRE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PIGLIN-STACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SALT-LEVEL          BINARY-LONG VALUE 63.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-KEY32               PIC X(32).
+ 01 WS-ENCH                PIC X(112) VALUE "soul_speed".
+ 01 WS-SOUL                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-POTION-KEY          PIC X(32).
+ 01 WS-POTION              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-MOD                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-MOD L-ITEM L-HANDLE.
+     MOVE 0 TO L-HANDLE
+     MOVE SPACES TO WS-KEY32
+     MOVE L-KEY TO WS-KEY32
+     IF L-MOD = 1 AND L-KEY = "book"
+         MOVE "enchanted_book" TO WS-KEY32
+     END-IF
+     CALL "MERCHANT-ITEM-ID" USING WS-KEY32 L-ITEM
+     IF L-ITEM < 0
+         GOBACK
+     END-IF
+     EVALUATE L-MOD
+         WHEN 1
+             CALL "LOOT-ENCH-ID" USING WS-ENCH WS-SOUL
+             CALL "XP-RANDOM" USING WS-SALT-LEVEL WS-THREE WS-DRAW
+             COMPUTE WS-LEVEL = WS-DRAW + 1
+             IF L-KEY = "book"
+                 MOVE 45 TO WS-TYPE
+             ELSE
+                 MOVE 13 TO WS-TYPE
+             END-IF
+             CALL "SC-ENCH-ADD" USING L-HANDLE WS-TYPE WS-SOUL WS-LEVEL
+         WHEN 2
+             MOVE "fire_resistance" TO WS-POTION-KEY
+             CALL "SC-POTION-ID" USING WS-POTION-KEY WS-POTION
+             CALL "SC-POTION-SET" USING L-HANDLE WS-POTION
+         WHEN 3
+             MOVE "water" TO WS-POTION-KEY
+             CALL "SC-POTION-ID" USING WS-POTION-KEY WS-POTION
+             CALL "SC-POTION-SET" USING L-HANDLE WS-POTION
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PIGLIN-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PIGLIN-DROP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DELAY               BINARY-LONG VALUE 10.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-KEY                  PIC X(24).
+ 01 L-MOD                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-KEY L-MOD L-COUNT.
+     CALL "PIGLIN-STACK" USING L-KEY L-MOD WS-ITEM WS-HANDLE
+     IF WS-ITEM >= 0
+         CALL "GI-SPAWN-X" USING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ WS-ITEM L-COUNT WS-DELAY WS-ROW WS-HANDLE
+     END-IF
+     GOBACK.
+ END PROGRAM PIGLIN-DROP.

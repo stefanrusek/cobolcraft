@@ -1,8 +1,8 @@
 *> The throwing of items by players and the tick of the thrown entities of lane 002-lane-mobsb6 (17 section 3.15, 44 part 8 sections 6.1 and 6.5).
 *> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob). The projectile
 *> starts at (x, eye y - 0.1, z) of the player, moves along (-sin(yaw) cos(pitch), -sin(pitch + offset), cos(yaw) cos(pitch)) normalised and scaled by the speed; a survival
-*> player's stack loses one. Gaps: the inaccuracy (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled; item stacks carry no
-*> components, so a thrown potion has no contents (a water bottle) until the caller adds effects.
+*> player's stack loses one. Gaps: the inaccuracy (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled;
+*> a thrown potion has the contents of the thrown stack's potion_contents (POTION-LOAD, potion-load.cob; a stack without it is a water bottle).
 *>
 *>   THROWN-DIRECTION USING yaw, pitch, offset (degrees, FLOAT-LONG), speed (FLOAT-LONG), vx vy vz out (FLOAT-LONG)
 *>   THROWN-ITEM-USE USING connection id, PLAY-SERVERBOUND, done out
@@ -125,6 +125,9 @@
      EVALUATE WS-KIND
          WHEN 1
              CALL "POTION-SPAWN" USING WS-LINGER WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+             IF WS-NEW > 0
+                 CALL "POTION-LOAD" USING WS-NEW PL-SLOT-VAR(WS-ROW, WS-SLOT) WS-LINGER
+             END-IF
          WHEN 2
              MOVE 4 TO WS-PJ
              MOVE "minecraft:ender_pearl" TO WS-EKEY
