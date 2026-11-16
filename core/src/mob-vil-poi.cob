@@ -99,6 +99,7 @@
  01 WS-STATE                BINARY-LONG.
  01 WS-OWNER                BINARY-LONG.
  01 WS-KEY                  PIC X(32).
+ 01 WS-KEY48                PIC X(48).
  01 WS-PROF                 PIC X(16).
  01 WS-D2                   FLOAT-LONG.
  01 WS-FX                   FLOAT-LONG.
@@ -162,9 +163,11 @@
          CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
          IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
              MOVE SPACES TO WS-KEY
-             MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY
-             IF WS-KEY(1:10) = "minecraft:"
-                 MOVE WS-KEY(11:22) TO WS-KEY
+             MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY48
+             IF WS-KEY48(1:10) = "minecraft:"
+                 MOVE WS-KEY48(11:32) TO WS-KEY
+             ELSE
+                 MOVE WS-KEY48(1:32) TO WS-KEY
              END-IF
              CALL "VIL-PROFESSION" USING WS-KEY WS-PROF
              IF WS-PROF NOT = "none"
