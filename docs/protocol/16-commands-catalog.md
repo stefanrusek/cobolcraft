@@ -1714,6 +1714,8 @@ The sequence generator algorithm and the meaning of the seed flags are inside `M
 
 ### 10.9 `compute`
 
+Grammar (context-source nodes `default`, `block <pos>`, `entity <target>`), provider ids, contexts and result rules: 54 §13.
+
 Level 2. Evaluates number providers (`data/minecraft/context_float_provider`, `context_int_provider`; 4 and 26 files).
 
 ```

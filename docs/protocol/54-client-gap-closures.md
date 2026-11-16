@@ -418,6 +418,54 @@ Not read: the exact argument order of the random position lookup (marked inferre
 
 ---
 
+## 13. `/compute`: grammar, context sources, provider ids, results
+
+**Gap closed:** what T1832 / T1833 lacked: the context-source nodes, the provider argument grammar, the provider ids, evaluation and result rules (16 §10.9 gave only message keys). Source: `ComputeCommand`, `LootContextSources` and its `ContextDecorator`, `ResourceOrIdArgument`, `LootContextParamSets`, the 4 + 26 data files. The provider JSON forms and arithmetic are in 26 §9 and 25-1 §9; this section only adds what the command does with them.
+
+### 13.1 Tree
+
+Level 2 on the `compute` root only. The provider part is the same under four prefixes:
+
+```
+compute                         (float <provider> [<scale:float>] | integer <provider>)
+compute default                 (same)
+compute block <pos:block_pos>   (same)
+compute entity <target:entity>  (same)
+```
+
+`compute ...` without a source is the same context as `compute default ...`. `<scale>` is any float (no bounds) and defaults to 1.0 (inferred: the no-scale handler passes the constant 1). Argument names: `provider`, `scale`, `computePos`, `computeTarget`.
+
+### 13.2 Context built for the evaluation
+
+All start with the source's level, the optional parameter `this_entity` = the executing entity (absent when the source has none) and `origin` = the source's position (a Vec3, possibly fractional). The parameter sets are those of 26 §3.2:
+
+| Form | Set | Extra parameters |
+|---|---|---|
+| none / `default` | `command_compute_default` | none |
+| `block <pos>` | `command_compute_position` | the position must be loaded (the loaded-block-position getter; an unloaded position gives the usual unloaded-position error, inferred from the getter); `block_state` = the state at `<pos>` in the source's level; `block_entity` = the block entity there, optional |
+| `entity <target>` | `command_compute_entity` | `target_entity` = the one entity selected (the usual single-entity selector rules) |
+
+The loot context is created without a seed (a fresh random source: any random provider is unseeded).
+
+### 13.3 Provider argument
+
+The argument is parsed by `ResourceOrIdArgument`: either an **identifier** naming an entry of the registry the node needs (`context_float_provider` after `float`, `context_int_provider` after `integer`), or an inline SNBT value decoded with the provider's codec (a plain number is a constant provider; `{...}` a compound form of 26 §9). A missing identifier fails with `argument.resource_or_id.no_such_element` (argument: the id); an inline value the codec rejects fails with `argument.resource_or_id.failed_to_parse`. Suggestions: the registry entry ids. Examples listed by the argument: `foo`, `foo:bar`, `012`, `{}`, `true`.
+
+Provider ids (the pack's entries, count read from the jar):
+- `context_float_provider` (4): `brewing/speed_default`, `cooking/fast_speed_multiplier`, `cooking/normal_speed_multiplier`, `cooking/speed_default`.
+- `context_int_provider` (26): `brewing/uses_default`; `compostable/always_add_one`, `compostable/low`, `compostable/low_medium`, `compostable/medium`, `compostable/medium_high`; `cooking/fast_burn_time_reduction_factor`, `cooking/normal_burn_time_reduction_factor`; `cooking/time_bamboo`, `time_blaze_rod`, `time_boats`, `time_coal`, `time_coal_block`, `time_dried_kelp_block`, `time_dry_plants`, `time_hanging_signs`, `time_lava_bucket`, `time_roots`, `time_wood_blocks`, `time_wood_items_extra_small`, `time_wood_items_large`, `time_wood_items_small`, `time_wood_slabs`, `time_wool`, `time_wool_carpets`, `time_wool_slabs` (each under the `cooking/` prefix, namespace `minecraft`). Values: 25-1 §9.
+
+### 13.4 Evaluation and result
+
+- **integer:** the provider is evaluated with `getIntUnsafe` (arithmetic problems throw, such as a division by zero). Result = that int. Message: `command.compute.result.named.exact` (provider id, value) when the provider was given by an id, else `command.compute.result.unnamed.exact` (value). Both are sent as success feedback (broadcast to ops allowed: inferred).
+- **float:** evaluated with `getFloatUnsafe` to v. If v is not finite (NaN, infinite), the command fails with the invalid-value message (below) carrying `Float.toString(v)` (`NaN`, `Infinity`, `-Infinity`). Otherwise result r = floor(v x scale) as an int. Message: when `(float) r` equals v, the **exact** message with r; else the **rounded** message `command.compute.result.named.rounded` (id, v, r) / `.unnamed.rounded` (v, r). (The comparison is against the unscaled v, as read; so with scale 1 the exact message appears only for whole values, and `compute float 0.5 2` prints rounded with v 0.5 and r 1.)
+- **Invalid:** an arithmetic exception while evaluating fails with `command.compute.result.named.invalid` (id, exception message) when named, `command.compute.result.unnamed.invalid` (message) when inline. These are command errors, so the result is 0 and there is no success output.
+- The named forms print the provider id as a translation-style argument built from the identifier (rendered as the id text when no translation exists: inferred).
+
+Worked examples: `compute integer cooking/time_coal` prints "<id> returned value N" with N the provider's value (25-1 §9) and returns N; `compute float 2.5` prints "Number provider returned value 2.5 (rounded to 2)" and returns 2; `compute float 3` prints "Number provider returned value 3" (the exact message carries the int r) and returns 3; `compute float 0.5 2` prints "... returned value 0.5 (rounded to 1)" and returns 1.
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
