@@ -381,6 +381,43 @@ Worked examples: food 10, saturation 0: `/effect give @s saturation` (a = 0): af
 
 ---
 
+## 12. Spawn-reason light rules (zombie reinforcements) and sniffer dig cadence
+
+**Gap closed:** the "reasons that ignore light requirements" that 20 §3.3 left unread, and the timings of the sniffer's dig cycle that 19 §14 lacked. Source: `EntitySpawnReason`, `Monster.checkMonsterSpawnRules`, `Sniffer`, `SnifferAi` and its nested behaviours.
+
+### 12.1 Spawn reasons and light
+
+`EntitySpawnReason` declares 19 reasons, in this order (ordinals 0 to 18, inferred from declaration order): NATURAL, CHUNK_GENERATION, SPAWNER, STRUCTURE, BREEDING, MOB_SUMMONED, JOCKEY, EVENT, CONVERSION, REINFORCEMENT, TRIGGERED, BUCKET, SPAWN_ITEM_USE, COMMAND, DISPENSER, PATROL, TRIAL_SPAWNER, LOAD, DIMENSION_TRAVEL.
+
+| Predicate | True for |
+|---|---|
+| `ignoresLightRequirements` | **TRIAL_SPAWNER only** |
+| `isSpawner` | SPAWNER and TRIAL_SPAWNER |
+
+`checkMonsterSpawnRules` runs the dark check of 20 §3.3 for every reason except TRIAL_SPAWNER, then the standard mob rule. So a **REINFORCEMENT** spawn (zombie reinforcements, 20 §3 "Reinforcements") must pass the full dark check at its chosen position: sky light <= a fresh nextInt(32), block light 0 in the Overworld, and the raw brightness <= one 0..7 sample (flat 10 in a thunderstorm). A SPAWNER (classic spawner block) is not exempt from the dark check by this predicate; it is exempt only from the sky-access test of `checkSurfaceMonstersSpawnRules` (20 §3.3) through `isSpawner`. The random calls of the dark check are drawn from the spawning level's random source.
+
+### 12.2 Sniffer dig cycle (extends 19 §14)
+
+Activities in priority order DIG, SNIFF, IDLE (`setActiveActivityToFirstValid`, evaluated by `updateActivity` every server tick after the brain tick). Definitions:
+
+| Piece | Rule |
+|---|---|
+| `canSniff` | false when tempted, panicking, in water, in love, off the ground, a passenger or leashed |
+| Sniffing behaviour (idle activity, 40 to 80 ticks run time, per 19 §14 "Sniffing(40, 80)") | start: not a baby, `canSniff`, no walk target, no sniffing target, no sniff cooldown; start moves to state SNIFFING (3); when it ends **by timing out** the state returns to IDLING and `calculateDigPosition` chooses a spot (up to 5 attempts of a random land position near the sniffer, horizontal radius 10, vertical 2 (inferred reading of the constants), first one whose block below passes the dig test of 19 §14 and is not in the explored list); the sniffing-target memory is set to it and a walk target to it with speed 1.25 |
+| Searching behaviour (activity SNIFF) | needs a walk target, a sniffing target and not panicking; max run time 600 ticks; start: state SEARCHING (4); keeps running while `canSniff` and the walk target equals the sniffing target; on stop, if `canDig` and `canSniff`: set the digging memory, erase the walk target and the sniffing target |
+| Digging behaviour (activity DIG) | needs the digging memory, no walk target, no sniff cooldown, not panicking; run time 160 to 180 ticks (random between); keeps going while the digging memory is present, `canDig` and not in love; start: state DIGGING (5) (seed tick = `tickCount + 120`, entity event 63; the sniffer then emits digging particles and the seed drops per 19 §14 when `tickCount` reaches the stored value, with the drop sound, from the head block) |
+| End of Digging | **timed out** (ran its full 160 to 180 ticks): the sniff cooldown memory is set for **9600 ticks** (8 minutes) and the digging memory stays; **interrupted**: `resetSniffing` (erase the digging and sniffing-target memories and go to state IDLING; no cooldown) |
+| FinishedDigging behaviour | needs the digging memory and the sniff cooldown both present, no walk target, not panicking; run time 40 ticks; start: state RISING (6); stop: if it timed out, state IDLING; then `onDiggingComplete` (stores the dug position in the explored list, 19 §14), erase the digging memory and set the happy memory (the FEELING_HAPPY idle behaviour then plays) |
+| Cooldown effect | the Sniffing behaviour cannot start while the sniff cooldown exists, so a completed dig is followed by at least 9600 ticks without a new sniff, search or dig; a dig interrupted before its end leaves no cooldown |
+
+Cycle length for a successful dig: sniff 40 to 80 ticks, walk to the target (path length dependent, searching limited to 600 ticks), dig 160 to 180 ticks (seed at 120 ticks into it), rise 40 ticks, then 9600 ticks cooldown.
+
+Worked example: a sniffer starts Sniffing at tick 0 and times out at tick 60: IDLING, a target is chosen 7 blocks away and walked to at speed 1.25 (about 35 ticks): Searching stops, digging memory set at about tick 95; Digging runs 170 ticks (ends tick 265), the seed dropped at tick 215; sniff cooldown until tick 9865; FinishedDigging 40 ticks to tick 305, RISING then IDLING.
+
+Not read: the exact argument order of the random position lookup (marked inferred), `FeelingHappy` and `Scenting` internals beyond the 19 §14 figures (40 to 100 and 40 to 80 ticks).
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
