@@ -52,7 +52,7 @@
  01 WS-IMAGES.
     05 WS-IMAGE            PIC X(1048576) OCCURS 3 TIMES.
  01 WS-MODEL-IMAGES.
-    05 WS-MIMAGE           PIC X(262144) OCCURS 24 TIMES.
+    05 WS-MIMAGE           PIC X(262144) OCCURS 32 TIMES.
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-M                   BINARY-LONG.
@@ -70,7 +70,7 @@
  01 WS-TO                  BINARY-LONG.
  01 WS-ROW-BYTES           BINARY-LONG.
  01 WS-RECT.
-    05 WS-RC OCCURS 27 TIMES.
+    05 WS-RC OCCURS 35 TIMES.
        10 WS-RC-Y          BINARY-LONG.
        10 WS-RC-W          BINARY-LONG.
        10 WS-RC-H          BINARY-LONG.
