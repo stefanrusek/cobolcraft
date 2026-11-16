@@ -920,6 +920,7 @@
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-EVK-CAST            BINARY-LONG.
  01 WS-LEAP-ROLL           BINARY-LONG.
  01 WS-AVOID               BINARY-LONG.
  01 WS-AHX                 FLOAT-LONG.
@@ -1088,6 +1089,16 @@
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "evoker"
+         CALL "EVK-STEP" USING WS-ROW
+         CALL "EVK-IS-CASTING" USING WS-ROW WS-EVK-CAST
+         IF WS-EVK-CAST = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "vex"
+         CALL "VEX-STEP" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "wandering_trader"
          CALL "TRADER-STEP" USING WS-ROW
@@ -1591,6 +1602,7 @@
      CALL "STDMOB-REST-TICK"
      CALL "STDMOB-PHANTOM-SPAWNER"
      CALL "TRADER-TICK"
+     CALL "EVK-FANG-TICK"
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
 
