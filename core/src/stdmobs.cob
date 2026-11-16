@@ -1100,6 +1100,7 @@
      IF SM-KEY(WS-M) = "vex"
          CALL "VEX-STEP" USING WS-ROW
      END-IF
+     CALL "RAID-RAIDER-STEP" USING WS-ROW
      IF SM-KEY(WS-M) = "wandering_trader"
          CALL "TRADER-STEP" USING WS-ROW
          IF EN-USED(WS-ROW) = 0

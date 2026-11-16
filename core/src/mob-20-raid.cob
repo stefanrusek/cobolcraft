@@ -310,6 +310,86 @@
  END PROGRAM RAID-CREATE-OR-EXTEND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-AT.
+*> USING dim, x, y, z, slot out (0 none): getRaidAt (44 section 5): the ongoing raid whose centre is nearest to the position, below squared distance 9216 (96 blocks).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-D2                   FLOAT-LONG.
+ 01 WS-BEST                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                   BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ 01 L-SLOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-SLOT.
+     MOVE 0 TO L-SLOT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         IF RD-USED(WS-I) = 1 AND RD-STATUS(WS-I) = 1 AND RD-DIM(WS-I) = L-DIM
+             COMPUTE WS-D2 = (RD-CX(WS-I) - L-X) ** 2 + (RD-CY(WS-I) - L-Y) ** 2 + (RD-CZ(WS-I) - L-Z) ** 2
+             IF WS-D2 < 9216 AND (L-SLOT = 0 OR WS-D2 < WS-BEST)
+                 MOVE WS-D2 TO WS-BEST
+                 MOVE WS-I TO L-SLOT
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-RAIDER-STEP.
+*> USING entity row: Raider.aiStep (20 section 14.2) for a raider species (vindicator, evoker, pillager, ravager, witch, illusioner): without a raid, on a game tick that is a
+*> multiple of 20, the raider joins the raid at its position at wave groups + 1 (the no-action time of canJoinRaid is not kept).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ COPY RAIDSTATE.
+ 01 WS-M                    BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-X                    BINARY-LONG.
+ 01 WS-Y                    BINARY-LONG.
+ 01 WS-Z                    BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-WAVE                 BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-MEMBER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF FUNCTION MOD(CW-TICKS, 20) NOT = 0
+         GOBACK
+     END-IF
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     IF NOT (SM-KEY(WS-M) = "vindicator" OR "evoker" OR "pillager" OR "ravager" OR "witch" OR "illusioner")
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-MEMBER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) = EN-ID(L-ROW)
+             MOVE 1 TO WS-MEMBER
+         END-IF
+     END-PERFORM
+     IF WS-MEMBER = 1
+         GOBACK
+     END-IF
+     COMPUTE WS-X = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-Y = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-Z = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "RAID-AT" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-SLOT
+     IF WS-SLOT > 0
+         COMPUTE WS-WAVE = RD-GROUPS(WS-SLOT) + 1
+         CALL "RAID-JOIN" USING WS-SLOT WS-WAVE L-ROW WS-ZERO
+     END-IF
+     GOBACK.
+ END PROGRAM RAID-RAIDER-STEP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-PLAYER-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -342,12 +422,12 @@
          IF WS-YES = 1
 *>           A raid at the position that already has the maximum omen level leaves the effect alone.
              MOVE 0 TO WS-HIT
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
-                 IF RD-USED(WS-I) = 1 AND RD-STATUS(WS-I) = 1 AND RD-DIM(WS-I) = PL-DIM(L-PLAYER) AND RD-OMEN(WS-I) >= 5
-                         AND FUNCTION ABS(RD-CX(WS-I) - WS-X) <= 64 AND FUNCTION ABS(RD-CZ(WS-I) - WS-Z) <= 64
+             CALL "RAID-AT" USING PL-DIM(L-PLAYER) WS-X WS-Y WS-Z WS-SLOT
+             IF WS-SLOT > 0
+                 IF RD-OMEN(WS-SLOT) >= 5
                      MOVE 1 TO WS-HIT
                  END-IF
-             END-PERFORM
+             END-IF
              IF WS-HIT = 0
                  COMPUTE WS-AMP = WS-LEVEL - 1
                  CALL "EFFECT-ADD" USING L-PLAYER WS-ROMEN WS-AMP WS-DUR WS-FLAGS
@@ -803,8 +883,8 @@
              CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
              IF WS-ALIVE >= 1 AND WS-ALIVE <= 2
                  MOVE WS-ALIVE TO WS-DIGIT
-                 STRING "Raid - " WS-DIGIT " raiders remaining" DELIMITED BY SIZE INTO L-TEXT
-                 MOVE 26 TO L-LEN
+                 STRING "Raid - Raiders Remaining: " WS-DIGIT DELIMITED BY SIZE INTO L-TEXT
+                 MOVE 27 TO L-LEN
              END-IF
      END-EVALUATE
      GOBACK.
