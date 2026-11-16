@@ -174,6 +174,58 @@ Result modifiers: `enchant_with_levels` with `levels` = uniform 5 to 19 (integer
 - Each variant's biome or spawn condition and texture are data of the entries themselves (04 §6 schemas, 48); the order above does not depend on them.
 - `painting_variant` (51 entries) is ordered the same way (rule only; its names are not needed for metadata and are not listed here).
 
+## 6. Camel dash and sit pose cadence
+
+**Gap closed:** the rider's jump-input charge, the dash formula and cooldown, and the sit and stand cadence. Extends 19 §3.8 (which gives the constants) and 44-7 §10.4 (the nautilus, which shares the jumpable-vehicle protocol). Read from `Camel`, `AbstractHorse`, `PlayerRideableJumping`, `CamelAi$RandomSitting`, `LocalPlayer.aiStep`/`sendRidingJump`.
+
+### 6.1 Client charge (the riding player's `LocalPlayer`, every client tick while riding a vehicle that can jump)
+
+State: `jumpRidingTicks` (int, starts 0) and `jumpRidingScale` (float). The vehicle must be a jumpable (`canJump`: the camel needs to be saddled and not sitting or transitioning, 19 §3.8) and its `getJumpCooldown()` (the dash cooldown) must be 0; otherwise the scale is forced to 0 each tick. With the jump key states "was" (the key state at the start of `aiStep`, before this tick's input update) and "now" (after it) (the order is inferred from the position of the reads):
+
+| Condition (checked in this order) | Effect |
+|---|---|
+| (first, always) `jumpRidingTicks` < 0 | increment it; when it becomes 0, scale = 0 |
+| was pressed and now released | `jumpRidingTicks` = -10; call `onPlayerJump(floor(scale x 100))` on the vehicle; send Player Command `START_RIDING_JUMP` (05c) with data = `floor(scale x 100)` |
+| was not pressed and now pressed | `jumpRidingTicks` = 0, scale = 0 |
+| was pressed and still pressed (held) | `jumpRidingTicks` += 1, then scale = 0.1 x ticks while ticks < 10, else 0.8 + (2 / (ticks - 9)) x 0.1 |
+
+So the charge climbs by 0.1 per tick to 0.9 at tick 9, reaches 1.0 at tick 10, then falls toward 0.8 (0.9 at tick 11, 0.8667 at 12, 0.85 at 13). After a release the -10 lockout means a new charge cannot start for 10 ticks (a re-press during the lockout is ignored by the second row only once ticks reach 0).
+
+### 6.2 Strength to scale
+
+`onPlayerJump(strength)` with strength 0 to 100 (`AbstractHorse` and the camel override): ignored unless saddled, the dash cooldown is 0 and the camel is on the ground; then (a negative strength is treated as 0; the base class also calls its stand-if-possible routine for strength >= 0, an animal-rearing helper whose camel effect was not traced) `playerJumpPendingScale` = 1.0 when strength >= 90, else 0.4 + 0.4 x strength / 90. Examples: strength 0 gives 0.4; 45 gives 0.6; 89 gives 0.7956; 90 and above give 1.0.
+
+### 6.3 The dash
+
+- The pending scale is consumed by `AbstractHorse.tickRidden` on the instance that is authoritative (the controlling client): if the camel is on the ground, the pending scale > 0 and it is not already jumping, `executeRidersJump(scale)` runs and the pending scale resets to 0.
+- `executeRidersJump(scale)`: velocity += (normalize(look.x, 0, look.z) x (22.2222 x scale x movement_speed x blockSpeedFactor), 0 vertical) + (0, 1.4285 x scale x J, 0 horizontal), where J = `getJumpPower()` = `jump_strength` attribute x blockJumpFactor + Jump Boost bonus (the attribute-based `getJumpPower(1.0)`; the camel's attribute is 0.42, 19 §3.8). Then `dashCooldown` = 55, metadata DASH (slot 19) = true, and a sync is requested. Example: movement_speed 0.09, scale 1.0, block factor 1: horizontal impulse length 22.2222 x 0.09 = 2.0; vertical 1.4285 x 0.42 = 0.6.
+- Server: on `START_RIDING_JUMP` with data > 0 and `canJump`, `handleStartJump` plays the dash sound (`camel.dash`), emits game event `ENTITY_ACTION` and sets DASH true; `STOP_RIDING_JUMP` does nothing. The server does not apply the impulse itself.
+- `onSyncedDataUpdated(DASH)` (not on the first tick): `dashCooldown` = 55 if it is 0, else unchanged, so the server and every client start the cooldown when the flag changes.
+- `tick` (both sides): if DASH is true, `dashCooldown` < 50 and (on the ground, or in a liquid, or a passenger), DASH = false (so the flag lasts at least the first 6 ticks: cooldown 55 down to 50). If `dashCooldown` > 0, decrement it; on reaching 0 play `camel.dash_ready` (volume 1, pitch 1, source NEUTRAL, at the camel's block position, heard by all near). On the client `setupAnimationStates` runs each tick.
+- Ridden speed (`getRiddenSpeed`): `movement_speed` + 0.1 when the rider is sprinting and the dash cooldown is 0, else + 0. The camel can always sprint.
+- Sounds: dash `camel.dash`, dash ready `camel.dash_ready`, sit `camel.sit`, stand `camel.stand` (the sound event ids of `SoundEvents.CAMEL_*`; their registry ids are in 46).
+
+### 6.4 Sit pose cadence
+
+Metadata slot 20 (LONG, `LAST_POSE_CHANGE_TICK`) L; game time T. Definitions: sitting = L < 0; `poseTime` = T - |L|.
+
+| Operation | Effect |
+|---|---|
+| `sitDown` | no-op if already sitting; else sound `camel.sit`, pose SITTING, game event `ENTITY_ACTION`, L = -T |
+| `standUp` | no-op if not sitting; else sound `camel.stand`, pose STANDING, game event, L = T |
+| `standUpInstantly` | pose STANDING, game event, L = max(0, T - 52 - 1) (so the transition is already over) |
+| `isInPoseTransition` | poseTime < (40 if sitting else 52) |
+| `isVisuallySittingDown` | sitting and 0 <= poseTime < 40 |
+| `isCamelVisuallySitting` | (poseTime < 0) is not equal to sitting (normally equals sitting; differs when a client's clock lags) |
+| `refuseToMove` | sitting or in transition: the camel does not walk (movement input zero, horizontal velocity zeroed on the ground, head clamped to the body) |
+| `canCamelChangePose` | the camel would not suffocate in the other pose (the test uses the other pose's dimensions; the sitting box is the standing box lowered by `SITTING_HEIGHT_DIFFERENCE` 1.43 (inferred)) |
+
+So sitting down takes 40 ticks and standing up takes 52 ticks, measured from L. In `tick`: a sitting camel in water stands up instantly; a rider pressing forward (`zza` > 0) while the camel is sitting and not in transition makes it `standUp`.
+
+**Random sitting (server, brain idle activity):** `RandomSitting(20)` has minimal pose time 20 x 20 = 400 ticks (20 seconds). It can start when: not in water, `poseTime` >= 400, not leashed, on the ground, no controlling passenger, and `canCamelChangePose`. On start: sitting camel stands up; a standing one sits down unless it is panicking. It is one entry (weight 1) of a RunOne list with stroll, walk-to-look-target and a 30 to 60 tick do-nothing (19 §3.8), so a standing camel that satisfies the conditions sits down within a few brain selections.
+
+**Client animation states (`setupAnimationStates`, each client tick):** the idle animation restarts whenever its timeout reaches 0 (the timeout is then set to 80 + nextInt(40) ticks, else it decrements by 1; it runs whether sitting or not). If visually sitting: the stand-up and dash animations stop; while `isVisuallySittingDown` the sit animation starts if stopped and the sit-pose animation stops; once the 40 ticks have passed the sit animation stops and the sit-pose (held) animation starts if stopped. If not visually sitting: sit and sit-pose animations stop; the dash animation runs while DASH is true; the stand-up animation runs while in a pose transition with poseTime >= 0 (that is, during the 52 ticks after standing up). The model animations (key frames) are in 34-4.
+
 ---
 
 ## Open questions
