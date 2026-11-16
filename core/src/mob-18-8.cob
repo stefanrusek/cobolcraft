@@ -604,6 +604,8 @@
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
          WHEN "llama"
              CALL "LLAMA-BORN" USING L-ROW
+         WHEN "horse"
+             CALL "M44-HORSE-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
          WHEN "turtle"

@@ -477,6 +477,19 @@
        10 EN-SPIT-TGT         BINARY-LONG.        *> llama: player row it spits at (0 none)
        10 EN-SPIT-CD          BINARY-LONG.        *> llama: attackTime of the ranged attack goal (-1 not started)
        10 EN-SPIT-AGE         BINARY-LONG.        *> llama: the last EN-KILLER-AGE seen (a rise is a new hit)
+*>     --- 002-lane-mobsa5: fox melee, sleep, faceplant, berries and item search (core/src/mob-44-q.cob) ---
+       10 EN-FOX-ATK          BINARY-LONG.        *> fox: ticks until the melee attack may hit again
+       10 EN-FOX-SLP          BINARY-LONG.        *> fox: the sleep countdown + 1 (0 = not rolled yet)
+       10 EN-FOX-FP           BINARY-LONG.        *> fox: faceplant countdown (0 = not started)
+       10 EN-FOX-BON          BINARY-LONG.        *> fox: 1 while a berry bush is the target
+       10 EN-FOX-BX           BINARY-LONG.        *> fox: the berry bush block
+       10 EN-FOX-BY           BINARY-LONG.
+       10 EN-FOX-BZ           BINARY-LONG.
+       10 EN-FOX-BT           BINARY-LONG.        *> fox: ticks waited at the bush
+       10 EN-FOX-BCD          BINARY-LONG.        *> fox: ticks until the next bush search
+       10 EN-FOX-ITEM         BINARY-LONG.        *> fox: entity id of the ground item it walks to (0 none)
+*>     --- 002-lane-mobsa5: riding jump (core/src/mob-44-r.cob) ---
+       10 EN-HORSE-JUMP        FLOAT-LONG.         *> horse: the jump strength attribute (0.4 to 1.0, drawn at spawn; 0 = not drawn: a loaded horse)
        10 EN-LLAMA-SPIT       BINARY-LONG.        *> llama: didSpit
        10 EN-LLAMA-SPEED      FLOAT-LONG.         *> llama: the caravan follow speed (2.1 at the start)
        10 EN-LLAMA-DIST       BINARY-LONG.        *> llama: the caravan distance counter

@@ -159,6 +159,13 @@
  01 L-WALK                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
      MOVE 0 TO L-HX L-HZ L-WALK WS-BEST
+*>   A sleeping or faceplanted fox stands still (44 part 4 section 4: SleepGoal, FaceplantGoal).
+     IF FUNCTION MOD(EN-FOX-FLAGS(L-ROW), 128) >= 32
+         CALL "M44-FOX-IDLE" USING L-ROW L-HX L-HZ L-WALK
+         IF L-WALK = 2
+             GOBACK
+         END-IF
+     END-IF
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
          IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND PL-SNEAKING(WS-P) = 0
                  AND PL-MODE(WS-P) NOT = 1 AND PL-MODE(WS-P) NOT = 3
@@ -172,6 +179,9 @@
      END-PERFORM
      IF WS-BEST = 0
          CALL "M44-FOX-HUNT" USING L-ROW L-HX L-HZ L-WALK
+         IF L-WALK = 0 AND EN-FOE(L-ROW) = 0
+             CALL "M44-FOX-IDLE" USING L-ROW L-HX L-HZ L-WALK
+         END-IF
      END-IF
      IF WS-BEST > 0
          MOVE 1 TO L-WALK

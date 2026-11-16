@@ -177,6 +177,7 @@
  01 WS-CONT                BINARY-LONG.
  01 WS-STARTED             BINARY-LONG.
  01 WS-CLEAR               BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -241,6 +242,12 @@
              COMPUTE L-HX = WS-DX / WS-H * 0.3
              COMPUTE L-HZ = WS-DZ / WS-H * 0.3
          END-IF
+     END-IF
+*>   FoxMeleeAttack (44 part 4 section 4): the prey in reach is bitten. The melee goal's own walk (1.2) never starts here: the stalk keeps the fox crouched and still within 6 blocks until the pounce, which
+*>   brings it into reach (a gap of the stalk model: the priorities 5 and 6 of the doc hold the MOVE flag).
+     CALL "M44-FOX-MELEE" USING L-ROW WS-HIT
+     IF EN-HEALTH(EN-FOE(L-ROW)) = 0
+         MOVE 0 TO EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM M44-FOX-HUNT.
