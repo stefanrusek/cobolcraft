@@ -1,0 +1,1 @@
+{"type": "minecraft:geode", "crack": {"generate_crack_chance": 0.95}, "invalid_blocks_threshold": 1, "layers": {}, "outer_wall_distance": {"type": "minecraft:uniform", "max_inclusive": 6, "min_inclusive": 4}, "use_alternate_layer0_chance": 0.083}
