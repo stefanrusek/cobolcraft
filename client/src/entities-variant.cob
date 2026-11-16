@@ -202,6 +202,7 @@
  01 WS-DIRNAME             PIC X(24).
  01 WS-STATE               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
+ 01 WS-TRIM                PIC X(10).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(20).
  01 L-CODE                 BINARY-LONG.
@@ -227,6 +228,17 @@
 *>       The overlay layers of ENTITY-OVERLAY (kind 1 villager type, 2 profession, 3 level, 4 horse markings, 5 collar; WS-CD is the value).
          COMPUTE WS-CD = FUNCTION MOD(L-CODE, 1000)
          EVALUATE TRUE
+*>           An armor trim (code 100000 + palette * 100 + pattern, ENTITY-OVERLAY): the pattern texture of the piece's layer type (54 section 18.4 rule 3).
+             WHEN L-CODE >= 100000 AND FUNCTION MOD(L-CODE, 100) >= 1 AND FUNCTION MOD(L-CODE, 100) <= 18
+                     AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
+                 MOVE "humanoid" TO WS-NAME
+                 IF WS-BASE = "armor_legs"
+                     MOVE "humanoid_leggings" TO WS-NAME
+                 END-IF
+                 COMPUTE WS-I = FUNCTION MOD(L-CODE, 100)
+                 CALL "TRIM-PATTERN-NAME" USING WS-I WS-TRIM
+                 STRING "textures/trims/entity/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-TRIM) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 1 AND WS-CD >= 1 AND WS-CD <= 7 AND (WS-BASE = "villager" OR "zombie_villager")
                  MOVE "type" TO WS-NAME
                  IF WS-BABY NOT = SPACES

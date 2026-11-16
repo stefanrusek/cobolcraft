@@ -167,7 +167,7 @@
                  CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 8
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
                  IF WS-TEX > 0 AND WS-OVM = 0
                      CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
@@ -471,6 +471,11 @@
      IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) <= 4
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * EN-OVN(WS-ROW))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
+     END-IF
+*>   The trim layers (9 to 12) lie over the armor piece (layers 5 to 8): the same enlargement by the layer's distance from the piece's own.
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 9
+         COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
      END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
