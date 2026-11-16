@@ -384,7 +384,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BIOMES-OPEN.
 *> No parameters: fills CORE-BIOMES (CBLOCKS.cpy) from the biome registry of the open set: each entry's key and the climate of its
-*> network NBT payload (BIOME-CLIMATE).
+*> payload: network NBT (BIOME-CLIMATE; the cobolcraft set) or the entry's strict JSON, which begins with "{" (BIOME-CLIMATE-JSON;
+*> a standard set; the entries are some 6000 bytes, so the area holds 64 KiB).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -392,13 +393,13 @@
  COPY PROTO.
  01 WS-REGISTRY            PIC X(112) VALUE "minecraft:worldgen/biome".
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
- 01 WS-FULL                BINARY-LONG VALUE 4096.
+ 01 WS-FULL                BINARY-LONG VALUE 65536.
  01 WS-STATUS              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-KEY                 PIC X(112).
  01 WS-KEY-LENGTH          BINARY-LONG.
- 01 WS-PAYLOAD             PIC X(4096).
+ 01 WS-PAYLOAD             PIC X(65536).
  01 WS-LENGTH              BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE 0 TO CBI-COUNT
@@ -412,11 +413,15 @@
          MOVE WS-KEY-LENGTH TO CBI-KEY-LENGTH(CBI-COUNT)
          MOVE 0 TO CBI-PRECIPITATION(CBI-COUNT) CBI-TEMPERATURE(CBI-COUNT) CBI-FROZEN(CBI-COUNT)
          CALL "PB-RESET" USING PB-BUFFER
-         IF WS-LENGTH > 0
-             CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
-             CALL "BIOME-CLIMATE" USING PB-BUFFER CBI-PRECIPITATION(CBI-COUNT) CBI-TEMPERATURE(CBI-COUNT)
-                 CBI-FROZEN(CBI-COUNT)
-         END-IF
+         EVALUATE TRUE
+             WHEN WS-LENGTH > 0 AND WS-STATUS = 0 AND WS-PAYLOAD(1:1) = "{"
+                 CALL "BIOME-CLIMATE-JSON" USING WS-PAYLOAD WS-LENGTH CBI-PRECIPITATION(CBI-COUNT)
+                     CBI-TEMPERATURE(CBI-COUNT) CBI-FROZEN(CBI-COUNT)
+             WHEN WS-LENGTH > 0 AND WS-STATUS = 0
+                 CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
+                 CALL "BIOME-CLIMATE" USING PB-BUFFER CBI-PRECIPITATION(CBI-COUNT) CBI-TEMPERATURE(CBI-COUNT)
+                     CBI-FROZEN(CBI-COUNT)
+         END-EVALUATE
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.

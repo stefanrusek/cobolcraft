@@ -71,6 +71,10 @@
  01 WS-VALUE               BINARY-DOUBLE.
  01 WS-FOUND               BINARY-LONG.
  01 WS-MARKER              PIC X(20).
+ 01 WS-COMPONENTS          PIC X(160).
+ 01 WS-BLOCK-KEY           PIC X(112).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-BLOCK-STATUS        BINARY-LONG.
  01 WS-TEXT                PIC X(160).
  01 WS-HITS                BINARY-LONG.
  PROCEDURE DIVISION.
@@ -87,16 +91,27 @@
              MOVE FUNCTION TRIM(CT-IR-KEY) TO IT-KEY(WS-INDEX)
              MOVE FUNCTION LENGTH(FUNCTION TRIM(CT-IR-KEY)) TO IT-KEY-LENGTH(WS-INDEX)
              MOVE -1 TO IT-PLACES-STATE(WS-INDEX)
-             IF CT-IR-BLOCK NOT = SPACES
+*>           The generated rows link an item to the block of the same key: only a block item places it (the item wheat is no block item;
+*>           its crop block wheat belongs to wheat_seeds), and the block items whose block has another name are named by ITEM-PLACED-BLOCK.
+             IF CT-IR-BLOCK NOT = SPACES AND CT-IR-CLASS NOT = "Item"
                  COMPUTE WS-BLOCK = FUNCTION NUMVAL(CT-IR-BLOCK)
                  MOVE CB-DEFAULT-STATE(WS-BLOCK + 1) TO IT-PLACES-STATE(WS-INDEX)
+             END-IF
+             IF CT-IR-BLOCK = SPACES AND CT-IR-CLASS = "BlockItem"
+                 CALL "ITEM-PLACED-BLOCK" USING IT-KEY(WS-INDEX) WS-BLOCK-KEY
+                 IF WS-BLOCK-KEY NOT = SPACES
+                     CALL "CONTENT-BLOCK-BY-KEY" USING WS-BLOCK-KEY WS-BLOCK WS-BLOCK-ROW WS-BLOCK-STATUS
+                     IF WS-BLOCK-STATUS = 0
+                         MOVE CB-DEFAULT-STATE(WS-BLOCK + 1) TO IT-PLACES-STATE(WS-INDEX)
+                     END-IF
+                 END-IF
              END-IF
              MOVE 0 TO IT-MAX-STACK(WS-INDEX)
              IF CT-IR-STACK-SIZE NOT = SPACES
                  COMPUTE IT-MAX-STACK(WS-INDEX) = FUNCTION NUMVAL(CT-IR-STACK-SIZE)
              END-IF
              MOVE CT-IR-COMPONENTS(1:160) TO WS-TEXT
-             MOVE 0 TO IT-TOOL-CLASS(WS-INDEX) IT-FOOD(WS-INDEX)
+             MOVE 0 TO IT-TOOL-CLASS(WS-INDEX) IT-FOOD(WS-INDEX) IT-FOOD-SAT(WS-INDEX) IT-FOOD-ALWAYS(WS-INDEX) IT-FOOD-TICKS(WS-INDEX)
              MOVE 1 TO IT-ATTACK(WS-INDEX)
              MOVE 0 TO WS-HITS
              INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "tool #minecraft:mineable/pickaxe"
@@ -120,11 +135,9 @@
                  END-IF
                  CALL "ITEM-TOOL-TIER" USING IT-KEY(WS-INDEX) IT-TOOL-TIER(WS-INDEX)
              END-IF
-             MOVE "food " TO WS-MARKER
-             CALL "TABLES-NUMBER-AFTER" USING WS-TEXT WS-MARKER WS-VALUE WS-FOUND
-             IF WS-FOUND = 1
-                 COMPUTE IT-FOOD(WS-INDEX) = WS-VALUE / 1000
-             END-IF
+             MOVE CT-IR-COMPONENTS TO WS-COMPONENTS
+             CALL "CONTENT-FOOD" USING WS-COMPONENTS IT-FOOD(WS-INDEX) IT-FOOD-SAT(WS-INDEX)
+                 IT-FOOD-ALWAYS(WS-INDEX) IT-FOOD-TICKS(WS-INDEX)
              MOVE "attack_damage " TO WS-MARKER
              CALL "TABLES-NUMBER-AFTER" USING WS-TEXT WS-MARKER WS-VALUE WS-FOUND
              IF WS-FOUND = 1
@@ -277,3 +290,50 @@
      CALL "RECIPES-OPEN"
      GOBACK.
  END PROGRAM CORE-TABLES-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-PLACED-BLOCK.
+*> USING item key (PIC X(48)), block key out (PIC X(112), spaces for none): the block that a block item places when the block has another name than the
+*> item (25 parts 1 to 8: seeds and crops plant the crop block, string the tripwire, redstone the wire). The standard set's keys have no namespace.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PAIRS.
+    05 FILLER PIC X(48) VALUE "wheat_seeds".
+    05 FILLER PIC X(48) VALUE "wheat".
+    05 FILLER PIC X(48) VALUE "carrot".
+    05 FILLER PIC X(48) VALUE "carrots".
+    05 FILLER PIC X(48) VALUE "potato".
+    05 FILLER PIC X(48) VALUE "potatoes".
+    05 FILLER PIC X(48) VALUE "beetroot_seeds".
+    05 FILLER PIC X(48) VALUE "beetroots".
+    05 FILLER PIC X(48) VALUE "melon_seeds".
+    05 FILLER PIC X(48) VALUE "melon_stem".
+    05 FILLER PIC X(48) VALUE "pumpkin_seeds".
+    05 FILLER PIC X(48) VALUE "pumpkin_stem".
+    05 FILLER PIC X(48) VALUE "torchflower_seeds".
+    05 FILLER PIC X(48) VALUE "torchflower_crop".
+    05 FILLER PIC X(48) VALUE "pitcher_pod".
+    05 FILLER PIC X(48) VALUE "pitcher_crop".
+    05 FILLER PIC X(48) VALUE "cocoa_beans".
+    05 FILLER PIC X(48) VALUE "cocoa".
+    05 FILLER PIC X(48) VALUE "string".
+    05 FILLER PIC X(48) VALUE "tripwire".
+    05 FILLER PIC X(48) VALUE "redstone".
+    05 FILLER PIC X(48) VALUE "redstone_wire".
+ 01 WS-TABLE REDEFINES WS-PAIRS.
+    05 WS-PAIR OCCURS 11 TIMES.
+       10 WS-ITEM            PIC X(48).
+       10 WS-BLOCK           PIC X(48).
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ITEM                 PIC X(48).
+ 01 L-BLOCK                PIC X(112).
+ PROCEDURE DIVISION USING L-ITEM L-BLOCK.
+     MOVE SPACES TO L-BLOCK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         IF WS-ITEM(WS-I) = L-ITEM
+             MOVE WS-BLOCK(WS-I) TO L-BLOCK
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ITEM-PLACED-BLOCK.

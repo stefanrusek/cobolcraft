@@ -4,7 +4,7 @@
 *>
 *> Items (content-api: CONTENT-ITEM-BY-ID rows): IT-PLACES-STATE the default state of the block a block item places
 *> (-1 for none), IT-MAX-STACK the stack size column, IT-TOOL-CLASS 1 for a tool rule over #minecraft:mineable/pickaxe
-*> and 2 over #minecraft:mineable/shovel (0 none), IT-FOOD the "food" nutrition of the default components, IT-ATTACK
+*> and 2 over #minecraft:mineable/shovel (0 none), IT-FOOD the "food" nutrition of the default components (CONTENT-FOOD: IT-FOOD-SAT the saturation in thousandths, IT-FOOD-ALWAYS 1 when it is eaten at food 20, IT-FOOD-TICKS the use time, 0 the rule's default), IT-ATTACK
 *> 1 + the "attack_damage" modifier (1 for an item without one).
 *> IT-TOOL-SPEED the speed in thousandths that follows the class tag in the tool rule (4.0 gives 4000; 0 for no tool rule),
 *> IT-TOOL-TIER the tier of 13 section 2.1: 0 wooden, golden or none, 1 stone or copper, 2 iron, 3 diamond, netherite and every other tool.
@@ -31,6 +31,9 @@
        10 IT-ATTACK          BINARY-LONG.
        10 IT-TOOL-SPEED      BINARY-LONG.
        10 IT-TOOL-TIER       BINARY-LONG.
+       10 IT-FOOD-SAT        BINARY-LONG.
+       10 IT-FOOD-ALWAYS     BINARY-LONG.
+       10 IT-FOOD-TICKS      BINARY-LONG.
  01 CORE-ENTITY-TYPES EXTERNAL.
     05 ET-COUNT               BINARY-LONG.
     05 ET-ENTRY OCCURS 200 TIMES.
