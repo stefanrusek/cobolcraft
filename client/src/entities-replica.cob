@@ -240,6 +240,9 @@
                  MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
                  MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)
+                 MOVE 0 TO EN-X1(WS-ROW) EN-OVL(WS-ROW) EN-OVN(WS-ROW)
+                 MOVE 14 TO EN-X2(WS-ROW)
+                 MOVE -1 TO EN-X3(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
                  IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
@@ -267,7 +270,7 @@
                  MOVE MD-MX-IS-ITEM TO MD-MD-IS-ITEM
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END AND WS-ROW > 0
                      CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE WS-ROW MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT
-                         MD-MX-INT-2 MD-MX-INT-3
+                         MD-MX-INT-2 MD-MX-INT-3 MD-MX-LONG
                  END-IF
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END
                      CALL "HUD-ENTITY-DATA" USING CLIENT-STATE WS-ID MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT

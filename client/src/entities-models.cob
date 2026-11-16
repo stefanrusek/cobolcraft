@@ -86,65 +86,92 @@
  END PROGRAM CREEPER-SWELL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-SLOT-ENSURE.
+*> USING CLIENT-STATE, model row, texture code, new out (BINARY-LONG, set to 1 when a slot's image changed; never reset here): the atlas slot of the pair gets the
+*> stamp of this pass; a pair that has none takes a free slot, or when the 64 are in use the slot least recently used (the lowest index of equal age) that no mob
+*> drew in this pass; when every slot was drawn in this pass the pair is not given one (its mob is not drawn).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-OLD                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-MODEL                BINARY-LONG.
+ 01 L-TEX                  BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-MODEL L-TEX L-NEW.
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-S) = L-MODEL AND EA-MT-TEX(WS-S) = L-TEX
+             MOVE WS-S TO WS-FOUND
+         END-IF
+     END-PERFORM
+     IF WS-FOUND > 0
+         MOVE EA-MT-STAMP TO EA-MT-USED(WS-FOUND)
+         GOBACK
+     END-IF
+     IF EA-MT-COUNT < 64
+         ADD 1 TO EA-MT-COUNT
+         MOVE EA-MT-COUNT TO WS-FOUND
+     ELSE
+         MOVE 0 TO WS-OLD
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 64
+             IF EA-MT-USED(WS-S) < EA-MT-STAMP AND (WS-OLD = 0 OR EA-MT-USED(WS-S) < EA-MT-USED(WS-OLD))
+                 MOVE WS-S TO WS-OLD
+             END-IF
+         END-PERFORM
+         MOVE WS-OLD TO WS-FOUND
+     END-IF
+     IF WS-FOUND > 0
+         MOVE L-MODEL TO EA-MT-MODEL(WS-FOUND)
+         MOVE L-TEX TO EA-MT-TEX(WS-FOUND)
+         MOVE EA-MT-STAMP TO EA-MT-USED(WS-FOUND)
+         MOVE 1 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-SLOT-ENSURE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-MODEL-SLOTS.
-*> USING CLIENT-STATE: every used replica row with a model gets an atlas slot (EA-MT, at most 32: a model beyond them is not
-*> drawn); the atlas is rebuilt once when a slot was added.
+*> USING CLIENT-STATE: every used replica row with a model gets an atlas slot for its model and texture code, for its extra layer and for each overlay layer
+*> (EA-MT, at most 64: ENTITY-SLOT-ENSURE); the atlas is rebuilt once when a slot's image changed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLMODELS.
  01 WS-R                   BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-EM                  BINARY-LONG.
  01 WS-TEX                 BINARY-LONG.
- 01 WS-RESET               BINARY-LONG.
- 01 WS-TEX2                BINARY-LONG.
+ 01 WS-OV                  BINARY-LONG.
+ 01 WS-OVR                 FLOAT-LONG.
+ 01 WS-OVG                 FLOAT-LONG.
+ 01 WS-OVB                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO WS-NEW WS-RESET
+     MOVE 0 TO WS-NEW
+     ADD 1 TO EA-MT-STAMP
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
-             MOVE 0 TO WS-FOUND
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                 IF EA-MT-MODEL(WS-S) = WS-EM AND EA-MT-TEX(WS-S) = WS-TEX
-                     MOVE 1 TO WS-FOUND
-                 END-IF
-             END-PERFORM
-*>           The atlas is full (64 images): once a call, every slot is released and the pass starts again with the rows on screen, so the images that
-*>           are no longer needed make room instead of the newest mobs not being drawn.
-             IF WS-FOUND = 0 AND EA-MT-COUNT >= 64 AND WS-RESET = 0
-                 MOVE 0 TO EA-MT-COUNT WS-R
-                 MOVE 1 TO WS-RESET WS-NEW
-             END-IF
-             IF WS-FOUND = 0 AND EA-MT-COUNT < 64
-                 ADD 1 TO EA-MT-COUNT
-                 MOVE WS-EM TO EA-MT-MODEL(EA-MT-COUNT)
-                 MOVE WS-TEX TO EA-MT-TEX(EA-MT-COUNT)
-                 MOVE 1 TO WS-NEW
-             END-IF
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
              MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0
-                 CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-X WS-TEX2
-                 MOVE 0 TO WS-FOUND
-                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                     IF EA-MT-MODEL(WS-S) = WS-X
-                         MOVE 1 TO WS-FOUND
-                     END-IF
-                 END-PERFORM
-                 IF WS-FOUND = 0 AND EA-MT-COUNT < 64
-                     ADD 1 TO EA-MT-COUNT
-                     MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
-                     MOVE WS-TEX2 TO EA-MT-TEX(EA-MT-COUNT)
-                     MOVE 1 TO WS-NEW
-                 END-IF
+                 CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-X WS-TEX
+                 CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
+*>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 4
+                 CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB
+                 IF WS-TEX > 0
+                     CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+                 END-IF
+             END-PERFORM
          END-IF
      END-PERFORM
      IF WS-NEW = 1
@@ -374,6 +401,12 @@
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y"
          MOVE 1.003 TO WS-HOOK-X WS-HOOK-Y
          MOVE 1 TO WS-LIGHT
+     END-IF
+*>   An overlay layer (ENTITY-OVERLAY, EN-OVL > 0): the model of the mob again, enlarged by 0.3 percent about the entity origin for each layer so that it
+*>   lies over the body and the layers before it.
+     IF EN-OVL(WS-ROW) > 0
+         COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * EN-OVN(WS-ROW))
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
      END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)

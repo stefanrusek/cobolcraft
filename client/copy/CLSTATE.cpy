@@ -698,6 +698,13 @@
           15 EN-VAR          BINARY-LONG.
           15 EN-VAR2         BINARY-LONG.
           15 EN-VAR3         BINARY-LONG.
+*>        More metadata of the overlay layers (ENTITY-VARIANT-SET): X1 the tamable flags byte of a wolf and cat (bit 4 tame) or the fox flags (bit 32 sleeping), X2 the
+*>        collar dye id (default 14, red), X3 the wolf's anger end time; EN-OVL the texture code of the overlay layer being drawn (0 none) and EN-OVN its index (1 to 4).
+          15 EN-X1           BINARY-LONG.
+          15 EN-X2           BINARY-LONG.
+          15 EN-X3           BINARY-DOUBLE.
+          15 EN-OVL          BINARY-LONG.
+          15 EN-OVN          BINARY-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -985,6 +992,8 @@
           15 EA-MT-Y         BINARY-LONG.
           15 EA-MT-W         BINARY-LONG.
           15 EA-MT-H         BINARY-LONG.
+          15 EA-MT-USED      BINARY-LONG.    *> the value of EA-MT-STAMP when a mob last drew the slot (least recently used goes first when the atlas is full)
+       10 EA-MT-STAMP        BINARY-LONG.    *> the number of ENTITY-MODEL-SLOTS passes so far
 *>     Environment atlas (texture 3, repeat wrapping; 08 §10.11; weather-render.cob): row k
 *>     (1 drizzle, 2 hailstorm) is its image's columns (left column, size); the image is repeated
 *>     down its columns over the whole atlas height.

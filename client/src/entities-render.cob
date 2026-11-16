@@ -227,6 +227,11 @@
     05 WS-RECT-Y           BINARY-LONG.
     05 WS-RECT-W           BINARY-LONG.
     05 WS-RECT-H           BINARY-LONG.
+ 01 WS-OV                  BINARY-LONG.
+ 01 WS-OV-CODE             BINARY-LONG.
+ 01 WS-OV-R                FLOAT-LONG.
+ 01 WS-OV-G                FLOAT-LONG.
+ 01 WS-OV-B                FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -274,6 +279,16 @@
                  CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
+*>           The overlay layers (ENTITY-OVERLAY: villager type, profession and level, horse markings, collars): the model again with the layer's texture.
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 4
+                 CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-OV-CODE WS-OV-R WS-OV-G WS-OV-B
+                 IF WS-OV-CODE > 0 AND CL-MD-FAMILY(EN-MODEL(WS-R)) > 0
+                     MOVE WS-OV-CODE TO EN-OVL(WS-R)
+                     MOVE WS-OV TO EN-OVN(WS-R)
+                     CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                     MOVE 0 TO EN-OVL(WS-R) EN-OVN(WS-R)
+                 END-IF
+             END-PERFORM
          END-IF
          MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8

@@ -5,7 +5,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-VARIANT-SET.
-*> USING CLIENT-STATE, replica row, entry index, serializer, value, second and third value (VILLAGER_DATA).
+*> USING CLIENT-STATE, replica row, entry index, serializer, value, second and third value (VILLAGER_DATA), long value (the wolf's anger end time).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WANT                BINARY-LONG.
@@ -17,7 +17,8 @@
  01 L-INT                  BINARY-LONG.
  01 L-INT2                 BINARY-LONG.
  01 L-INT3                 BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-INT L-INT2 L-INT3.
+ 01 L-LONG                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-INT L-INT2 L-INT3 L-LONG.
      MOVE -1 TO WS-WANT
      EVALUATE EN-KEY(L-ROW)
          WHEN "pig"
@@ -57,6 +58,22 @@
          MOVE L-INT2 TO EN-VAR2(L-ROW)
          MOVE L-INT3 TO EN-VAR3(L-ROW)
      END-IF
+*>   The tamable flags (wolf and cat entry 18, bit 4 tame), the collar colour (wolf 21, cat 23), the wolf's anger end time (22, a LONG) and the fox's flags (19,
+*>   bit 32 sleeping): the metadata of the overlay layers and of the wolf and fox textures (34-5 2.5, 3, 4; 19 section 1.3).
+     EVALUATE TRUE
+         WHEN (EN-KEY(L-ROW) = "wolf" OR "cat") AND L-INDEX = 18 AND L-SERIALIZER = 0
+             MOVE L-INT TO EN-X1(L-ROW)
+         WHEN EN-KEY(L-ROW) = "wolf" AND L-INDEX = 21 AND L-SERIALIZER = 1
+             MOVE L-INT TO EN-X2(L-ROW)
+         WHEN EN-KEY(L-ROW) = "cat" AND L-INDEX = 23 AND L-SERIALIZER = 1
+             MOVE L-INT TO EN-X2(L-ROW)
+         WHEN EN-KEY(L-ROW) = "wolf" AND L-INDEX = 22 AND L-SERIALIZER = 2
+             MOVE L-LONG TO EN-X3(L-ROW)
+         WHEN EN-KEY(L-ROW) = "fox" AND L-INDEX = 19 AND L-SERIALIZER = 0
+             MOVE L-INT TO EN-X1(L-ROW)
+         WHEN OTHER
+             CONTINUE
+     END-EVALUATE
      GOBACK.
  END PROGRAM ENTITY-VARIANT-SET.
 
@@ -76,6 +93,11 @@
  01 L-CODE                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-MODEL L-CODE.
      MOVE 0 TO L-CODE
+*>   An overlay layer being drawn (ENTITY-OVERLAY) has the code of the layer.
+     IF EN-OVL(L-ROW) > 0
+         MOVE EN-OVL(L-ROW) TO L-CODE
+         GOBACK
+     END-IF
      MOVE SPACES TO WS-BASE WS-TAIL
      UNSTRING CL-MD-KEY(L-MODEL) DELIMITED BY "~" INTO WS-BASE WS-TAIL
 *>   An extra layer (the sheep's wool, the slime's outer layer) keeps its own image.
@@ -90,6 +112,20 @@
                  COMPUTE L-CODE = EN-VAR(L-ROW) + 1
                  IF EN-VAR(L-ROW) = 99
                      MOVE 8 TO L-CODE
+                 END-IF
+*>               A wolf's texture by state (34-5 2.5: tame wins over angry): +100 tame, +200 angry (anger end time above the clock); a sleeping fox (flags bit 32): +100.
+                 IF EN-KEY(L-ROW) = "wolf"
+                     EVALUATE TRUE
+                         WHEN FUNCTION MOD(FUNCTION INTEGER(EN-X1(L-ROW) / 4), 2) = 1
+                             ADD 100 TO L-CODE
+                         WHEN EN-X3(L-ROW) > PL-DAY-TICKS
+                             ADD 200 TO L-CODE
+                         WHEN OTHER
+                             CONTINUE
+                     END-EVALUATE
+                 END-IF
+                 IF EN-KEY(L-ROW) = "fox" AND FUNCTION MOD(FUNCTION INTEGER(EN-X1(L-ROW) / 32), 2) = 1
+                     ADD 100 TO L-CODE
                  END-IF
              WHEN "horse"
                  COMPUTE L-CODE = FUNCTION MOD(EN-VAR(L-ROW), 256) + 1
@@ -124,6 +160,17 @@
     05 FILLER PIC X(90) VALUE "red_blue          blue              green             yellow_blue       grey              ".
  01 WS-NAMES REDEFINES WS-NAMES-DATA.
     05 WS-NM                PIC X(18) OCCURS 51 TIMES.
+*> The overlay layers (ENTITY-OVERLAY): villager types 1 to 7, professions 8 to 21, levels 22 to 26, markings 27 to 30.
+ 01 WS-OVL-DATA.
+    05 FILLER PIC X(98) VALUE "desert        jungle        plains        savanna       snow          swamp         taiga         ".
+    05 FILLER PIC X(196) VALUE "armorer       butcher       cartographer  cleric        farmer        fisherman     fletcher      leatherworker librarian     mason         nitwit        shepherd      toolsmith     weaponsmith   ".
+    05 FILLER PIC X(70) VALUE "stone         iron          gold          emerald       diamond       ".
+    05 FILLER PIC X(56) VALUE "white         whitefield    whitedots     blackdots     ".
+ 01 WS-OVL REDEFINES WS-OVL-DATA.
+    05 WS-OV                PIC X(14) OCCURS 30 TIMES.
+ 01 WS-CD                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(20).
  01 L-CODE                 BINARY-LONG.
@@ -135,16 +182,49 @@
      IF WS-TAIL = "b"
          MOVE "_baby" TO WS-BABY
      END-IF
-     IF L-CODE > 0
+     COMPUTE WS-KIND = FUNCTION INTEGER(L-CODE / 1000)
+     COMPUTE WS-CD = FUNCTION MOD(L-CODE, 100)
+     COMPUTE WS-STATE = FUNCTION MOD(FUNCTION INTEGER(L-CODE / 100), 10)
+     IF WS-KIND > 0
+*>       The overlay layers of ENTITY-OVERLAY (kind 1 villager type, 2 profession, 3 level, 4 horse markings, 5 collar; WS-CD is the value).
+         COMPUTE WS-CD = FUNCTION MOD(L-CODE, 1000)
+         EVALUATE TRUE
+             WHEN WS-KIND = 1 AND WS-CD >= 1 AND WS-CD <= 7 AND (WS-BASE = "villager" OR "zombie_villager")
+                 MOVE "type" TO WS-NAME
+                 IF WS-BABY NOT = SPACES
+                     MOVE "baby" TO WS-NAME
+                 END-IF
+                 STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-CD)) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 2 AND WS-CD >= 1 AND WS-CD <= 14 AND (WS-BASE = "villager" OR "zombie_villager")
+                 COMPUTE WS-I = 7 + WS-CD
+                 STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/profession/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 3 AND WS-CD >= 1 AND WS-CD <= 5 AND (WS-BASE = "villager" OR "zombie_villager")
+                 COMPUTE WS-I = 21 + WS-CD
+                 STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/profession_level/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 4 AND WS-CD >= 1 AND WS-CD <= 4 AND WS-BASE = "horse"
+                 COMPUTE WS-I = 26 + WS-CD
+                 STRING "textures/entity/horse/horse_markings_" FUNCTION TRIM(WS-OV(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 5 AND (WS-BASE = "wolf" OR "cat")
+                 STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/" FUNCTION TRIM(WS-BASE) "_collar" FUNCTION TRIM(WS-BABY) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
+             WHEN OTHER
+                 CONTINUE
+         END-EVALUATE
+     END-IF
+     IF L-CODE > 0 AND WS-KIND = 0
          EVALUATE WS-BASE
              WHEN "cow" WHEN "pig" WHEN "chicken" WHEN "frog"
-                 IF L-CODE <= 3
-                     STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/" FUNCTION TRIM(WS-BASE) "_" FUNCTION TRIM(WS-NM(L-CODE))
+                 IF WS-CD <= 3
+                     STRING "textures/entity/" FUNCTION TRIM(WS-BASE) "/" FUNCTION TRIM(WS-BASE) "_" FUNCTION TRIM(WS-NM(WS-CD))
                          FUNCTION TRIM(WS-BABY) ".png" DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "mooshroom"
-                 IF L-CODE <= 2
-                     IF L-CODE = 1
+                 IF WS-CD <= 2
+                     IF WS-CD = 1
                          MOVE "red" TO WS-NAME
                      ELSE
                          MOVE "brown" TO WS-NAME
@@ -153,56 +233,65 @@
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "wolf"
-                 IF L-CODE <= 9
-                     COMPUTE WS-I = 3 + L-CODE
+*>               State 1 tame, 2 angry (34-5 2.5): wolf_<variant>_<state>[_baby], the pale variant has no variant part.
+                 IF WS-CD >= 1 AND WS-CD <= 9
+                     COMPUTE WS-I = 3 + WS-CD
+                     MOVE SPACES TO WS-NAME
+                     IF WS-STATE = 1
+                         MOVE "_tame" TO WS-NAME
+                     END-IF
+                     IF WS-STATE = 2
+                         MOVE "_angry" TO WS-NAME
+                     END-IF
                      IF WS-NM(WS-I) = "pale"
-                         STRING "textures/entity/wolf/wolf" FUNCTION TRIM(WS-BABY) ".png" DELIMITED BY SIZE INTO L-PATH
-                     ELSE
-                         STRING "textures/entity/wolf/wolf_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
+                         STRING "textures/entity/wolf/wolf" FUNCTION TRIM(WS-NAME) FUNCTION TRIM(WS-BABY) ".png"
                              DELIMITED BY SIZE INTO L-PATH
+                     ELSE
+                         STRING "textures/entity/wolf/wolf_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-NAME) FUNCTION TRIM(WS-BABY)
+                             ".png" DELIMITED BY SIZE INTO L-PATH
                      END-IF
                  END-IF
              WHEN "cat"
-                 IF L-CODE <= 11
-                     COMPUTE WS-I = 12 + L-CODE
+                 IF WS-CD <= 11
+                     COMPUTE WS-I = 12 + WS-CD
                      STRING "textures/entity/cat/cat_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "horse"
-                 IF L-CODE <= 7
-                     COMPUTE WS-I = 23 + L-CODE
+                 IF WS-CD <= 7
+                     COMPUTE WS-I = 23 + WS-CD
                      STRING "textures/entity/horse/horse_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "llama" WHEN "trader_llama"
-                 IF L-CODE <= 4
-                     COMPUTE WS-I = 30 + L-CODE
+                 IF WS-CD <= 4
+                     COMPUTE WS-I = 30 + WS-CD
                      STRING "textures/entity/llama/llama_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "rabbit"
-                 IF L-CODE <= 8
-                     COMPUTE WS-I = 34 + L-CODE
-                     IF L-CODE = 8
+                 IF WS-CD <= 8
+                     COMPUTE WS-I = 34 + WS-CD
+                     IF WS-CD = 8
                          MOVE 41 TO WS-I
                      END-IF
                      STRING "textures/entity/rabbit/" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "axolotl"
-                 IF L-CODE <= 5
-                     COMPUTE WS-I = 41 + L-CODE
+                 IF WS-CD <= 5
+                     COMPUTE WS-I = 41 + WS-CD
                      STRING "textures/entity/axolotl/axolotl_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "parrot"
-                 IF L-CODE <= 5
-                     COMPUTE WS-I = 46 + L-CODE
+                 IF WS-CD <= 5
+                     COMPUTE WS-I = 46 + WS-CD
                      STRING "textures/entity/parrot/parrot_" FUNCTION TRIM(WS-NM(WS-I)) ".png" DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "tropical_pattern"
-                 IF L-CODE <= 6
-                     MOVE L-CODE TO WS-DIGIT
+                 IF WS-CD <= 6
+                     MOVE WS-CD TO WS-DIGIT
                      MOVE "a" TO WS-NAME
                      IF WS-TAIL = "l"
                          MOVE "b" TO WS-NAME
@@ -211,11 +300,18 @@
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "fox"
-                 IF L-CODE = 2
+*>               Sleeping (state 1): fox_sleep and fox_snow_sleep, a baby fox_sleep_baby.
+                 IF WS-CD = 2 AND WS-STATE = 0
                      STRING "textures/entity/fox/fox_snow" FUNCTION TRIM(WS-BABY) ".png" DELIMITED BY SIZE INTO L-PATH
                  END-IF
+                 IF WS-CD = 1 AND WS-STATE = 1
+                     STRING "textures/entity/fox/fox_sleep" FUNCTION TRIM(WS-BABY) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
+                 IF WS-CD = 2 AND WS-STATE = 1
+                     STRING "textures/entity/fox/fox_snow_sleep" FUNCTION TRIM(WS-BABY) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
              WHEN "panda"
-                 EVALUATE L-CODE
+                 EVALUATE WS-CD
                      WHEN 2 MOVE "lazy" TO WS-NAME
                      WHEN 3 MOVE "worried" TO WS-NAME
                      WHEN 4 MOVE "playful" TO WS-NAME
@@ -242,7 +338,7 @@
 *> USING CLIENT-STATE, replica row, model row drawn, red, green, blue out (FLOAT-LONG 0 to 1, the colour the model's texture is multiplied by): the wool of a sheep in
 *> the colour of its dye (34-4 section 5: white 0xE6E6E6, else each channel of the dye's diffuse colour x 0.75 rounded down), the base layer of a tropical fish in its
 *> base colour and the pattern layer in its pattern colour (34-8 section 5.4: the packed variant EN-VAR, base colour bits 16 to 23, pattern colour bits 24 to 31, dye
-*> diffuse colours of the same table); 1 for everything else.
+*> diffuse colours of the same table), the collar layer of a wolf or cat in its dye (the diffuse colour); 1 for everything else.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLMODELS.
@@ -305,6 +401,11 @@
          WHEN OTHER
              CONTINUE
      END-EVALUATE
+*>   The collar layer of a wolf or cat (code 5000 + n of ENTITY-OVERLAY): the dye's diffuse colour of EN-X2 (34-5 1.4).
+     IF EN-OVL(L-ROW) >= 5000 AND EN-OVL(L-ROW) < 6000
+         MOVE 2 TO WS-MODE
+         COMPUTE WS-DYE = FUNCTION MOD(EN-X2(L-ROW), 16)
+     END-IF
      IF WS-MODE > 0
          MOVE WS-DF(WS-DYE + 1) TO WS-RGB
          COMPUTE WS-R = FUNCTION INTEGER(WS-RGB / 65536)
