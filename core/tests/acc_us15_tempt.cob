@@ -352,7 +352,9 @@
      COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
      COMPUTE WS-FY = WS-FLOOR + 1
      COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
-     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E
+*>   The goat's ram goal (44 part 4) takes a player 4 to 7 blocks away at once and holds the goat still: its cooldown runs here so the case tests the tempt goal.
+     MOVE 100000 TO EN-RAM-CD(WS-E).
 
  FIND-TYPE.
      MOVE SPACES TO WS-KEY
