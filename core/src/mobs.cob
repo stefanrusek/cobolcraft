@@ -620,6 +620,8 @@
  01 WS-DEEP                BINARY-LONG.
  01 WS-DEEP-Y              FLOAT-LONG.
  01 WS-LEGACY              BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-SINKS               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -635,11 +637,18 @@
 *>   1. and 2. Gravity, vertical drag, the move along Y. A mob whose box touches water (18 section 3.2 travelInWater, the FloatGoal): no gravity, the
 *>   vertical speed is (speed + 0.04 when the water is deeper than 0.4) x 0.8, less 0.005 while it is not rising; its horizontal step is halved.
      CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-Y WS-Z WS-WET
+     CALL "MOB-INDEX" USING WS-TYPE WS-LEGACY
+*>   An undead land mob without a float goal (MOB-SINKS: zombie, skeleton and the like) never asks for the jump in water: it only sinks (20 section 4).
+     MOVE 0 TO WS-SINKS
+     IF WS-WET = 1 AND WS-LEGACY = 0
+         CALL "MOB-SPECIES-KEY" USING WS-ROW WS-KEY
+         CALL "MOB-SINKS" USING WS-KEY WS-TYPE WS-SINKS
+     END-IF
      IF WS-WET = 1
          COMPUTE WS-DEEP-Y = WS-Y + 0.4
          CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-DEEP-Y WS-Z WS-DEEP
          MOVE EN-VY(WS-ROW) TO WS-VY
-         IF WS-DEEP = 1
+         IF WS-DEEP = 1 AND WS-SINKS = 0
              ADD 0.04 TO WS-VY
          END-IF
          COMPUTE WS-VY = WS-VY * 0.8
@@ -651,7 +660,6 @@
      ELSE
 *>       A cobolcraft-set mob keeps the stand-in rule (standin 12.2: gravity, drag, then the move). A standard mob moves by the velocity it has and then
 *>       gravity 0.08 and the vertical drag 0.98 are applied (18 section 3.2 travelInAir), below after the move.
-         CALL "MOB-INDEX" USING WS-TYPE WS-LEGACY
          IF WS-LEGACY > 0
              COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
          ELSE

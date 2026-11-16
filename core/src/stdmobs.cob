@@ -1016,6 +1016,7 @@
      END-IF
 *>   Fire, lava, drowning, in-wall damage and cramming (18 section 2.5); a mob that dies of them is not stepped any further.
      CALL "M182-ENV-TICK" USING WS-ROW
+     CALL "STDMOB-FIRE-SYNC" USING WS-ROW
      IF EN-HEALTH(WS-ROW) = 0
          GOBACK
      END-IF

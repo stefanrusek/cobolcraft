@@ -184,6 +184,7 @@
  PROGRAM-ID. MEF-INSTANT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  01 WS-KEY                  PIC X(24).
  01 WS-UNDEAD               BINARY-LONG.
  01 WS-HEAL                 BINARY-LONG.
@@ -197,13 +198,7 @@
          GOBACK
      END-IF
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     MOVE 0 TO WS-UNDEAD
-     EVALUATE WS-KEY
-         WHEN "skeleton" WHEN "stray" WHEN "wither_skeleton" WHEN "skeleton_horse" WHEN "bogged" WHEN "parched"
-         WHEN "zombie_horse" WHEN "camel_husk" WHEN "zombie" WHEN "zombie_villager" WHEN "zombified_piglin"
-         WHEN "zoglin" WHEN "drowned" WHEN "husk" WHEN "wither" WHEN "phantom"
-             MOVE 1 TO WS-UNDEAD
-     END-EVALUATE
+     CALL "MOB-UNDEAD" USING WS-KEY EN-TYPE(L-ROW) WS-UNDEAD
      MOVE 0 TO WS-HEAL
      IF (L-EFFECT = 5 AND WS-UNDEAD = 0) OR (L-EFFECT = 6 AND WS-UNDEAD = 1)
          MOVE 1 TO WS-HEAL
@@ -232,6 +227,8 @@
  01 WS-D                    BINARY-LONG.
  01 WS-FIRE                 BINARY-LONG.
  01 WS-ONE                  BINARY-LONG VALUE 1.
+ 01 WS-KEY                  PIC X(24).
+ 01 WS-UNDEAD               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-EFFECT                BINARY-LONG.
@@ -249,6 +246,14 @@
      END-EVALUATE
      IF WS-BASE = 0
          GOBACK
+     END-IF
+*>   The undead ignore poison and regeneration (21 section 3.6, tag ignores_poison_and_regen).
+     IF L-EFFECT = 18 OR L-EFFECT = 9
+         CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+         CALL "MOB-UNDEAD" USING WS-KEY EN-TYPE(L-ROW) WS-UNDEAD
+         IF WS-UNDEAD = 1
+             GOBACK
+         END-IF
      END-IF
      MOVE L-DURATION TO WS-D
      IF L-DURATION = -1
