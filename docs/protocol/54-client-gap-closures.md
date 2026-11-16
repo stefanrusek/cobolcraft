@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23); food, consumable, remainder, cooldown, stew (§24) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -872,7 +872,7 @@ Gap closed: 17 §1.3 and 25-1 §7.3 give the behaviour; this section gives the p
 | `max_damage` (2) | VarInt | Int | 1 or more (a positive-int codec; 0 or negative fails) | absent except on durability items (`durability(n)` sets it) | An item with this component must have `max_stack_size` 1 (23.2). Enchantments such as unbreaking do not change it. |
 | `damage` (3) | VarInt | Int | 0 or more (non-negative-int codec) | 0 on durability items' prototypes; absent elsewhere | Reading and writing through the stack clamps it to 0 to `max_damage` (17 §1.3). Marked `ignoreSwapAnimation`: a change of only this component does not play the re-equip (swap) animation of the held item, unlike every other component change. A stack whose damage reaches `max_damage` after a hurt breaks (17 §5.1). |
 | `repair_cost` (19) | VarInt | Int | 0 or more | 0 in the common prototype | The anvil surcharge (40-3 gives how it grows); equality is by value, so two items with different repair costs do not merge. |
-| `unbreakable` (4) | none (Unit) | empty compound | any compound accepted | absent | Presence makes `isDamageableItem` false (17 §1.3), so the item never loses durability and the durability bar is hidden. Its tooltip line ("Unbreakable") is shown unless hidden by `tooltip_display` (15.4). |
+| `unbreakable` (4) | none (Unit) | empty compound | any compound accepted | absent | Presence makes `isDamageableItem` false (17 §1.3), so the item never loses durability and the durability bar is hidden. Its tooltip line is shown unless hidden by `tooltip_display` (15.4; the line text was not read). |
 
 ### 23.1 Stacking and equality
 
@@ -883,9 +883,66 @@ A merge (13 §3.7) needs the same item and equal component maps. For durability 
 A stack is rejected (a decode error for NBT through the strict codec; a decode failure for packets that use the validated stream codec) when either rule fails:
 
 1. The stack's components contain `max_damage` and its effective `max_stack_size` (default 1 when absent in the map, read with `getOrDefault(max_stack_size, 1)`) is greater than 1.
-2. The stack has one of the three container-like components `container` (§25), `bundle_contents` (§25) or `charged_projectiles` (§25), and any stack inside it has a count greater than that stack's own maximum stack size (the check is applied recursively through `validateStrict` of the contained stack).
+2. The stack has one of the three container-like components `container` (§25), `bundle_contents` (§25) or `charged_projectiles` (§25), the three read in `validateComponents`, and any stack inside it has a count greater than that stack's own maximum stack size (the check is applied recursively through `validateStrict` of the contained stack).
 
 An empty stack passes. The validated codec leaves the bytes unchanged (00 §12.1).
+
+---
+
+## 24. `food` (23), `consumable` (24), `use_remainder` (25), `use_cooldown` (26), consume effect payloads and `suspicious_stew_effects` (55)
+
+Gap closed: 25-1 §7.2, 25-5 §4 (consume pipeline, the `Consumables` table with golden apple, rotten flesh, honey bottle and the rest) and 25-6 (chorus fruit) have the behaviour and values; this section adds the exact network and NBT field layouts (so that the component store can read and write them) and the stew entry record. Behaviour and numbers stay where they are; the effect values asked for in the task are re-listed in 24.5 for convenience (all re-read from `Consumables` in this round; no difference).
+
+### 24.1 Layouts
+
+| Component | Network | NBT | Defaults / limits |
+|---|---|---|---|
+| `food` (23), `FoodProperties` | VarInt nutrition, Float saturation, Boolean can_always_eat | `{nutrition: Int, saturation: Float, can_always_eat: Boolean}` | `nutrition` required, 0 or more; `saturation` required (no range check); `can_always_eat` default false. In a patch the value is the direct form (no holder). |
+| `consumable` (24), `Consumable` | Float consume_seconds, VarInt animation (`ItemUseAnimation` id, 25-1 §7.2), sound (Holder of `sound_event`: 0 + inline `Identifier` and Optional Float range, or n + 1 for registry position n), Boolean has_consume_particles, VarInt count then count consume effects (24.2) | `{consume_seconds: Float, animation: String, sound: <id or {sound_id, range?}>, has_consume_particles: Boolean, on_consume_effects: List of compounds}` | `consume_seconds` default 1.6 and 0 or more; `animation` default `eat` (names `none`, `eat`, `drink`, `block`, `bow`, `trident`, `crossbow`, `spyglass`, `toot_horn`, `brush`, `bundle`, `spear`); `sound` default `entity.generic.eat`; `has_consume_particles` default true; `on_consume_effects` default empty. All five keys optional. |
+| `use_remainder` (25), `UseRemainder` (one `ItemStackTemplate`) | RegistryId of `item` (VarInt), VarInt count, DataComponentPatch (00 §12.2) | `{id: <item id>, count: Int 1..99 (default 1), components: <patch> (default empty)}`, or a bare item id String (shorthand, count 1, no components) | The template must be a non-empty stack ("Item must be non-empty"). A template is a stack without the "empty" form: there is no count 0. |
+| `use_cooldown` (26), `UseCooldown` | Float seconds, Optional Identifier cooldown_group (Boolean + String) | `{seconds: Float, cooldown_group: String (optional)}` | `seconds` required and positive (greater than 0; 0 fails the decode); no default group (the item's own registry key is used when absent, 17 §1.3); the cooldown lasts `seconds * 20` ticks. |
+
+All four are `cacheEncoding` types (a server-side memoisation, not visible in the bytes). `food` and `consumable` are both read by the consume pipeline; either may exist alone (a `consumable` without `food` is a drink or a bucket; a `food` without `consumable` cannot be eaten).
+
+### 24.2 Consume effect (list element of `on_consume_effects`, `death_protection` of §25 and so on)
+
+Network: VarInt type id (`consume_effect_type`, 46 §8.2: 0 `apply_effects`, 1 `remove_effects`, 2 `clear_all_effects`, 3 `teleport_randomly`, 4 `play_sound`), then the type's payload:
+
+| Id | Type | Network payload | NBT keys (the compound also carries the type name under key `type`, inferred from the dispatch codec's default key; the fields below sit in the same compound) | Defaults and limits |
+|---|---|---|---|---|
+| 0 | `apply_effects` | VarInt count, count mob effect instances (§16.2), Float probability | `effects` List of mob effect instances (§16.2), `probability` Float | `probability` default 1.0 and must be in 0.0 to 1.0; the effects apply when `nextFloat() < probability` (25-5 §4.4) |
+| 1 | `remove_effects` | HolderSet of `mob_effect` (00 §10.3) | `effects` HolderSet: a String id, a String tag `#id`, or a list of ids | no default; required |
+| 2 | `clear_all_effects` | nothing | no extra keys | |
+| 3 | `teleport_randomly` | Float diameter, Boolean directional_particles | `diameter` Float, `directional_particles` Boolean | `diameter` default 16.0 and positive; `directional_particles` default **true** for the no-argument constructor used by chorus fruit (25-6; the NBT default of the key was not separately read). Behaviour: 25-6. |
+| 4 | `play_sound` | sound (Holder of `sound_event`, as in `consumable`) | `sound` (id or inline) | required |
+
+### 24.3 `suspicious_stew_effects` (55), `SuspiciousStewEffects`
+
+| Aspect | Value |
+|---|---|
+| Network | VarInt count, then count entries; entry = RegistryId of `mob_effect` (VarInt), VarInt duration (ticks) |
+| NBT | List of `{id: <effect id>, duration: Int}`; `duration` is optional and read leniently (a wrong-typed value is replaced by the default) with default **160** ticks (8 s) |
+| Default | the `suspicious_stew` item prototype has an empty list (25-6); a flower-bearing recipe fills it (27) |
+| Entry to instance | `new MobEffectInstance(effect, duration)`: amplifier 0, not ambient, particles and icon shown (16.2) |
+| On consume (`ConsumableListener`) | each entry's instance is applied to the eater with `addEffect`, in list order, at the end of the `food` handling of 25-5 §4.3 step 3c |
+| Source of the entries | the flower's stew effect: `(effect, seconds)` of 24-2 §3 rows 140 to 154; the stored duration is `seconds * 20` ticks (inferred from the 160-tick default being 8 s; `0.35` s for the saturation of dandelion and golden dandelion is 7 ticks). A brown mooshroom stores the same entry list (19). |
+| Equality | ordered list equality of (effect, duration) |
+
+### 24.4 `death_protection` and other consume-effect lists
+
+`death_protection` (36) is a record holding one list of consume effects: network = VarInt count then elements as in 24.2; NBT = `{death_effects: List of consume effects}`, the key optional with default empty list (read). The totem item's list (what it grants when it saves the player) is 17.
+
+### 24.5 Effect values asked for (from 25-5 §4.5, re-read)
+
+| Food or drink | Effect applied on consume |
+|---|---|
+| golden apple | `regeneration` 100 ticks amplifier 1, `absorption` 2400 ticks amplifier 0 (both, probability 1.0) |
+| enchanted golden apple | `regeneration` 400/1, `resistance` 6000/0, `fire_resistance` 6000/0, `absorption` 2400/3 |
+| rotten flesh | `hunger` 600 ticks amplifier 0 with probability 0.8 |
+| chorus fruit | `teleport_randomly` (diameter 16.0, directional particles on), plus `use_cooldown` 1.0 s (25-6) |
+| honey bottle | `remove_effects` `poison`; consume 2.0 s, drink animation |
+| suspicious stew | the stew entries of 24.3 |
+| pufferfish | `poison` 1200/1, `hunger` 300/2, `nausea` 300/0 (together, probability 1.0) |
 
 ---
 
