@@ -462,3 +462,137 @@
      CALL "MENU-STACK-PUT" USING CLIENT-STATE L-B WS-COUNT-A WS-ITEM-A WS-DAMAGE-A
      GOBACK.
  END PROGRAM CX-SWAP-PREDICT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAG-PREVIEW-COUNT.
+*> USING CLIENT-STATE, widget argument (-1 for the stack on the cursor), count out, limited out: the drag preview of 40-1 5.2 and 5.4 while a drag with
+*> two or more slots is held. For a slot of the set: the carried item's share (count / n, one, or a full stack, the clone type) plus the slot's own count,
+*> limited to the item's maximum (limited 1 when the limit cut it, the count text is then yellow); count -1 when the argument is not in the set. For the
+*> cursor: what remains of the carried count after every slot took its share (0 when nothing remains: the yellow "0").
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-PLACE               BINARY-LONG.
+ 01 WS-PLACED              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-REMAINING           BINARY-LONG.
+ 01 WS-UNCLAMPED           BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-LIMITED              BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-COUNT L-LIMITED.
+     MOVE -1 TO L-COUNT
+     MOVE 0 TO L-LIMITED
+     IF CX-DRAG-ON = 1 AND CX-DRAG-N >= 2 AND PL-CARRIED-COUNT > 0
+         CALL "ITEM-MAX-STACK" USING PL-CARRIED-ITEM WS-MAX
+         EVALUATE CX-DRAG-BUTTON
+             WHEN 0
+                 COMPUTE WS-PLACE = PL-CARRIED-COUNT / CX-DRAG-N
+             WHEN 1
+                 MOVE 1 TO WS-PLACE
+             WHEN OTHER
+                 MOVE WS-MAX TO WS-PLACE
+         END-EVALUATE
+         MOVE PL-CARRIED-COUNT TO WS-REMAINING
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CX-DRAG-N
+             CALL "MENU-STACK-GET" USING CLIENT-STATE CX-DRAG-ARG(WS-I) WS-COUNT WS-ITEM WS-DAMAGE
+             COMPUTE WS-UNCLAMPED = WS-PLACE + WS-COUNT
+             COMPUTE WS-PLACED = FUNCTION MIN(WS-UNCLAMPED, WS-MAX)
+             COMPUTE WS-REMAINING = WS-REMAINING - (WS-PLACED - WS-COUNT)
+             IF CX-DRAG-ARG(WS-I) = L-ARG
+                 MOVE WS-PLACED TO L-COUNT
+                 IF WS-UNCLAMPED > WS-MAX
+                     MOVE 1 TO L-LIMITED
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF L-ARG = -1
+             COMPUTE L-COUNT = FUNCTION MAX(WS-REMAINING, 0)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DRAG-PREVIEW-COUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAG-PREVIEW-SLOT.
+*> USING CLIENT-STATE, widget argument, x, y (the corner of the slot widget just added, 18 x 18): when the slot is in the held drag set (two or more
+*> slots), its own widget loses its count text and the 16 x 16 rectangle #80ffffff (state 503: alpha 0.502) and a widget showing the carried item with
+*> the shared count (yellow when the limit cut it) follow it (40-1 5.4 item 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-LIMITED             BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE WK-OVERLAY.
+ 01 WS-ACTION              BINARY-LONG VALUE ACT-NONE.
+ 01 WS-SWATCH              BINARY-LONG VALUE SW-WHITE.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-16                  BINARY-LONG VALUE 16.
+ 01 WS-16H                 BINARY-LONG VALUE 16.
+ 01 WS-STATE               BINARY-LONG VALUE 503.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG VALUE 0.
+ 01 WS-CURSOR              BINARY-LONG VALUE 36.
+ 01 WS-EDIT                PIC Z(9)9.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-X L-Y.
+     CALL "DRAG-PREVIEW-COUNT" USING CLIENT-STATE L-ARG WS-COUNT WS-LIMITED
+     IF WS-COUNT >= 0
+         MOVE 0 TO SM-W-LENGTH(SM-WIDGET-COUNT)
+         COMPUTE WS-OX = L-X + 1
+         COMPUTE WS-OY = L-Y + 1
+         MOVE SPACES TO WS-TEXT
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-OX WS-OY WS-16 WS-16H
+             WS-TEXT WS-LENGTH WS-STATE
+         CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-CURSOR L-X L-Y WS-ACTION
+         MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+         MOVE 0 TO SM-W-LENGTH(SM-WIDGET-COUNT)
+         IF WS-COUNT > 1
+             MOVE WS-COUNT TO WS-EDIT
+             MOVE FUNCTION TRIM(WS-EDIT) TO SM-W-TEXT(SM-WIDGET-COUNT)
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO SM-W-LENGTH(SM-WIDGET-COUNT)
+         END-IF
+         IF WS-LIMITED = 1
+             MOVE 16777045 TO SM-W-COLOUR(SM-WIDGET-COUNT)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DRAG-PREVIEW-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DRAG-PREVIEW-CURSOR.
+*> USING CLIENT-STATE: after the stack on the cursor was added as the last widget, a held drag of two or more slots shows the remainder as its count
+*> (40-1 5.2 item 2); yellow "0" when nothing remains.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-LIMITED             BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE -1.
+ 01 WS-EDIT                PIC Z(9)9.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     CALL "DRAG-PREVIEW-COUNT" USING CLIENT-STATE WS-NONE WS-COUNT WS-LIMITED
+     IF WS-COUNT >= 0
+         MOVE 0 TO SM-W-LENGTH(SM-WIDGET-COUNT)
+         IF WS-COUNT > 1 OR WS-COUNT = 0
+             MOVE WS-COUNT TO WS-EDIT
+             MOVE FUNCTION TRIM(WS-EDIT) TO SM-W-TEXT(SM-WIDGET-COUNT)
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO SM-W-LENGTH(SM-WIDGET-COUNT)
+         END-IF
+         IF WS-COUNT = 0
+             MOVE 16777045 TO SM-W-COLOUR(SM-WIDGET-COUNT)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DRAG-PREVIEW-CURSOR.

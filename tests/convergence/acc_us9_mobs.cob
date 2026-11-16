@@ -1,9 +1,10 @@
 *> Convergence acceptance test of US9-1 to US9-5 (spec.md US9; standin-content §12 mobs, §10.4
 *> attacks, §3 entity types): two survival Players in one single-player world (the host's
 *> in-process core, the second client over a further memory connection), hostile mobs on. Mobs are
-*> brought in with the spawn-mob command (conjure) from the host's chat line; everything else goes
-*> through the clients: their entity replicas (type, position), render lists, health, the attack
-*> control (left button aimed at the mob, the pry bar held with key 9).
+*> brought in with the standard summon command (cobolcraft:sodgrazer and cobolcraft:abend, the two
+*> mobs of the cobolcraft world on the shared mob engines) from the host's chat line; everything
+*> else goes through the clients: their entity replicas (type, position), render lists, health
+*> (20, vanilla damage), the attack control (left button aimed at the mob, the pry bar held with key 9).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US9-MOBS.
  DATA DIVISION.
@@ -75,14 +76,14 @@
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
      CALL "CV-ATTACH" USING CONVH WS-BOBBY
      CALL "CV-UNTIL-PLAY" USING CONVH WS-BOBBY WS-JOINED
-     MOVE "/clock 1000" TO WS-LINE
-     MOVE 11 TO WS-LINE-LENGTH
+     MOVE "/time set 18000" TO WS-LINE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
 
 *>   US9-1: a sodgrazer brought in 3 blocks above the ground east of the spawn point falls, rests
 *>   and is drawn by both clients.
-     MOVE "/conjure sodgrazer 10 58 8" TO WS-LINE
-     MOVE 26 TO WS-LINE-LENGTH
+     MOVE "/summon cobolcraft:sodgrazer 10 58 8" TO WS-LINE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE 40 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -149,7 +150,7 @@
      COMPUTE WS-E1 = FUNCTION INTEGER(WS-X) + 1
      COMPUTE WS-E2 = FUNCTION INTEGER(WS-Y) + 1
      COMPUTE WS-E3 = FUNCTION INTEGER(WS-Z)
-     STRING "/relocate Bobby at " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " "
+     STRING "/tp Bobby " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " "
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-LINE
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
@@ -159,7 +160,7 @@
      CALL "U9-POS" USING CLIENT-STATE WS-GRAZER WS-X WS-Y WS-Z WS-FOUND
      MOVE "acceptance US9-3 given a passive mob when the Player approaches it (within 2 blocks for "
          & "100 ticks) then it does not attack: their health stays full" TO TL-CASE
-     MOVE "near 1 health 30.0" TO TL-EXPECTED
+     MOVE "near 1 health 20.0" TO TL-EXPECTED
      MOVE 0 TO WS-E1
      IF FUNCTION ABS(WS-X - PL-X) < 4 AND FUNCTION ABS(WS-Z - PL-Z) < 4
          MOVE 1 TO WS-E1
@@ -173,8 +174,8 @@
 *>   US9-4 and US9-5: Bobby steps away (16 blocks south, where US9-2 needs him); Alice, moved
 *>   beside the sodgrazer, holds the pry bar (key 9: hotbar slot 8, 4 damage) and attacks with the
 *>   left button, once per hurt cooldown (12 ticks), until it is defeated (8 health).
-     MOVE "/relocate Bobby at 4 56 24" TO WS-LINE
-     MOVE 26 TO WS-LINE-LENGTH
+     MOVE "/tp Bobby 4 56 24" TO WS-LINE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      CALL "U9-POS" USING CLIENT-STATE WS-GRAZER WS-X WS-Y WS-Z WS-FOUND
@@ -182,7 +183,7 @@
      COMPUTE WS-E1 = FUNCTION INTEGER(WS-X) - 2
      COMPUTE WS-E2 = FUNCTION INTEGER(WS-Y) + 1
      COMPUTE WS-E3 = FUNCTION INTEGER(WS-Z)
-     STRING "/relocate Alice at " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " "
+     STRING "/tp Alice " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " "
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-LINE
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
@@ -229,13 +230,13 @@
 
 *>   US9-2 and US9-5: Bobby is 16 blocks south; an abend appears 4 blocks from him, notices him
 *>   (the nearest survival player), pursues and attacks.
-     MOVE "/relocate Alice at 4 56 4" TO WS-LINE
-     MOVE 25 TO WS-LINE-LENGTH
+     MOVE "/tp Alice 4 56 4" TO WS-LINE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE 20 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
-     MOVE "/conjure abend 4 56 28" TO WS-LINE
-     MOVE 22 TO WS-LINE-LENGTH
+     MOVE "/summon cobolcraft:abend 4 56 28" TO WS-LINE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE 3 TO WS-TYPE
      MOVE 4 TO WS-TX
@@ -257,14 +258,14 @@
      END-PERFORM
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE "acceptance US9-2 given a hostile abend and a survival Player within its notice range "
-         & "when it notices them then it moves toward them and attacks: the first hit takes 3"
+         & "when it notices them then it moves toward them and attacks: the first hit takes 3 (less the regeneration of its tick)"
          TO TL-CASE
      MOVE "found 1 close 1 hurt 1" TO TL-EXPECTED
      MOVE 0 TO WS-E1 WS-E2
      IF FUNCTION ABS(WS-BX - PL-X) < 2 AND FUNCTION ABS(WS-BZ - PL-Z) < 2
          MOVE 1 TO WS-E1
      END-IF
-     IF WS-FIRST-HURT = WS-HEALTH - 3
+     IF WS-HEALTH - WS-FIRST-HURT >= 2.5 AND WS-HEALTH - WS-FIRST-HURT <= 3
          MOVE 1 TO WS-E2
      END-IF
      MOVE WS-FOUND-B TO WS-E3

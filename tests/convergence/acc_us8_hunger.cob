@@ -1,11 +1,11 @@
-*> Convergence acceptance test of US8-1 to US8-6 through the client (spec.md US8; standin-content
-*> §11): two survival Players, the host of a single-player world (Alice, an operator) and a second
-*> client on a further memory connection of the same core (Bobby). The HUD shows food beside
-*> health; standing and walking 150 ticks cost no food point while running (Left Control with W)
-*> 150 ticks does; holding the eat control with a grazer flank (value 3) for the eating time eats
-*> one; with full food nothing is eaten; at food 0 starvation costs 1 health per 60 ticks; in
-*> creative the food level neither changes nor shows. The host sets up states with commands typed
-*> in chat (ration, empty, supply, mode).
+*> Convergence acceptance test of US8-1 to US8-6 through the client (spec.md US8; docs/protocol 18
+*> hunger, 17 health): two survival Players, the host of a single-player world (Alice, an operator)
+*> and a second client on a further memory connection of the same core (Bobby). The HUD shows the
+*> food meter beside the hearts (20 each); standing and walking 150 ticks cost no food while the
+*> saturation of a new player absorbs the exhaustion of running; the hunger effect (typed by Alice)
+*> drains the food; holding the use control with a grazer flank for the eating time eats it (food
+*> rises by 3, one flank leaves); with full food nothing is eaten; at food 0 starvation
+*> costs health; in creative the food level neither changes nor shows. Standard commands only.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US8-HUNGER.
  DATA DIVISION.
@@ -35,6 +35,12 @@
  01 WS-F1                  BINARY-LONG.
  01 WS-F2                  BINARY-LONG.
  01 WS-H0                  BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-HEARTS              BINARY-LONG.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-FOOD-2              BINARY-LONG.
  01 WS-Z0                  FLOAT-LONG.
  01 WS-KEY                 BINARY-LONG.
  01 WS-KEY-2               BINARY-LONG.
@@ -63,10 +69,13 @@
      MOVE 10 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
 
-*>   US8-1: food beside health on the survival HUD.
-     CALL "CV-TEXTS" USING CONVH WS-ALICE WS-TEXTS
-     MOVE "Health 30/30|Food 24/24" TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
+*>   US8-1: the food meter beside the hearts on the survival HUD.
+     CALL "METER-SHOWN" USING CONVH WS-ALICE WS-ONE WS-HEARTS
+     CALL "METER-SHOWN" USING CONVH WS-ALICE WS-TWO WS-FOOD
+     MOVE 0 TO WS-FOUND
+     IF WS-HEARTS = 20 AND WS-FOOD = 20
+         MOVE 1 TO WS-FOUND
+     END-IF
      MOVE "acceptance US8-1 given a survival Player in the world then their food level is shown "
          & "on screen beside their health" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -74,7 +83,8 @@
      COMPUTE TL-OBSERVED-N = WS-JOINED-A * 100 + WS-JOINED-B * 10 + WS-FOUND
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US8-2: Bobby faces +Z (flat turf); 150 ticks standing, 150 walking, 150 running.
+*>   US8-2: Bobby faces +Z; 150 ticks standing, 150 walking, 150 running: the food stays 20 (a new
+*>   player's saturation absorbs the exhaustion of running).
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE 0 TO PL-YAW PL-PITCH
      MOVE 150 TO WS-N
@@ -91,7 +101,7 @@
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE PL-FOOD TO WS-F1
-     COMPUTE WS-E4 = PL-Z - WS-Z0
+     COMPUTE WS-MOVED = PL-Z - WS-Z0
      MOVE CC-KEY-LEFT-CONTROL TO WS-KEY-2
      CALL "CV-KEY-SET" USING CONVH WS-BOBBY WS-KEY-2 WS-DOWN
      CALL "CV-KEY-SET" USING CONVH WS-BOBBY WS-KEY WS-DOWN
@@ -103,31 +113,28 @@
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE PL-FOOD TO WS-F2
-     CALL "CV-TEXTS" USING CONVH WS-BOBBY WS-TEXTS
-     MOVE "Food 23/24" TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
-     MOVE "acceptance US8-2 given a survival Player when time passes and they stand, walk 29 "
-         & "blocks, then run 42 then the food level falls by one only once running adds its "
-         & "exhaustion" TO TL-CASE
+     MOVE "acceptance US8-2 given a survival Player when time passes and they stand, walk, then "
+         & "run then the food level stays 20 (saturation absorbs the exhaustion) and they moved"
+         TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "standing 24 walking 24 walked 29 running 23 shown 1" TO TL-EXPECTED
+     MOVE "standing 20 walking 20 running 20 moved 1" TO TL-EXPECTED
      MOVE WS-F0 TO WS-E1
      MOVE WS-F1 TO WS-E2
      MOVE WS-F2 TO WS-E3
-     MOVE WS-FOUND TO WS-E5
+     MOVE 0 TO WS-E5
+     IF WS-MOVED > 20
+         MOVE 1 TO WS-E5
+     END-IF
      MOVE SPACES TO TL-OBSERVED
-     STRING "standing " FUNCTION TRIM(WS-E1) " walking " FUNCTION TRIM(WS-E2) " walked "
-         FUNCTION TRIM(WS-E4) " running " FUNCTION TRIM(WS-E3) " shown " FUNCTION TRIM(WS-E5)
+     STRING "standing " FUNCTION TRIM(WS-E1) " walking " FUNCTION TRIM(WS-E2) " running "
+         FUNCTION TRIM(WS-E3) " moved " FUNCTION TRIM(WS-E5)
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US8-3: a grazer flank (food value 3) in the held slot, food 10, the eat control held for longer
-*>   than the eating time (30 ticks), looking up (no block aimed at).
-     MOVE "/empty Bobby" TO WS-LINE
+*>   US8-4: full food: with a grazer flank held (4 of them) nothing is eaten.
+     MOVE "/clear Bobby" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     MOVE "/supply Bobby grazer_flank 3" TO WS-LINE
-     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     MOVE "/ration Bobby 10" TO WS-LINE
+     MOVE "/give Bobby cobolcraft:grazer_flank 4" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE -90 TO PL-PITCH
@@ -135,92 +142,98 @@
      CALL "CV-KEY" USING CONVH WS-BOBBY WS-KEY
      CALL "EAT" USING CONVH WS-BOBBY
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     MOVE "acceptance US8-4 given a survival Player whose food level is full when they try to eat "
+         & "then nothing is eaten" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "food 20 slot 4" TO TL-EXPECTED
+     MOVE PL-FOOD TO WS-E1
+     MOVE PL-SLOT-COUNT(1) TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING "food " FUNCTION TRIM(WS-E1) " slot " FUNCTION TRIM(WS-E2)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   US8-3: the hunger effect drains the food (the level before below 20 after), then a grazer flank in the held
+*>   slot is eaten by holding the use control for the eating time, looking up (no block aimed at).
+     MOVE "/effect give Bobby minecraft:hunger 3 255" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
+     MOVE 80 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     MOVE "/effect clear Bobby" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     MOVE PL-FOOD TO WS-F0
+     CALL "EAT" USING CONVH WS-BOBBY
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     MOVE PL-FOOD TO WS-F1
      MOVE "acceptance US8-3 given a survival Player holding a food item below full food when they "
          & "use the eat control for the eating time then one item leaves and food rises by its "
          & "value" TO TL-CASE
-     MOVE "food 13 slot 2x12" TO TL-EXPECTED
-     PERFORM OBSERVE-EATING
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-
-*>   US8-4: full food: nothing is eaten.
-     MOVE "/ration Bobby full" TO WS-LINE
-     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     CALL "EAT" USING CONVH WS-BOBBY
-     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     MOVE "acceptance US8-4 given a survival Player whose food level is full when they try to eat "
-         & "then nothing is eaten" TO TL-CASE
-     MOVE "food 24 slot 2x12" TO TL-EXPECTED
-     PERFORM OBSERVE-EATING
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-
-*>   US8-5: food 0: 1 starvation damage per 60 ticks, 2 in 125 ticks.
-     MOVE "/ration Bobby zero" TO WS-LINE
-     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     COMPUTE WS-H0 = PL-HEALTH
-     MOVE 125 TO WS-N
-     CALL "CV-STEPS" USING CONVH WS-N
-     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     CALL "CV-TEXTS" USING CONVH WS-BOBBY WS-TEXTS
-     MOVE "Health 28/30|Food 0/24" TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
-     MOVE "acceptance US8-5 given a survival Player whose food level is zero when time passes then "
-         & "they take starvation damage, 1 per 60 ticks" TO TL-CASE
-     MOVE "before 30 after 28 shown 1" TO TL-EXPECTED
-     MOVE WS-H0 TO WS-E1
-     COMPUTE WS-E2 = PL-HEALTH
-     MOVE WS-FOUND TO WS-E3
+     MOVE "T" TO TL-MODE
+     MOVE "drained 1 food rose 3 slot 3" TO TL-EXPECTED
+     MOVE 0 TO WS-E1
+     IF WS-F0 < 20
+         MOVE 1 TO WS-E1
+     END-IF
+     COMPUTE WS-E2 = WS-F1 - WS-F0
+     MOVE PL-SLOT-COUNT(1) TO WS-E3
      MOVE SPACES TO TL-OBSERVED
-     STRING "before " FUNCTION TRIM(WS-E1) " after " FUNCTION TRIM(WS-E2) " shown "
+     STRING "drained " FUNCTION TRIM(WS-E1) " food rose " FUNCTION TRIM(WS-E2) " slot "
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US8-6: in creative, running 150 ticks leaves food unchanged and it is not shown; back in
-*>   survival it shows the same value.
-     MOVE "/ration Bobby 15" TO WS-LINE
+*>   US8-5: the hunger effect again until food 0, regeneration off; starvation then costs health.
+     MOVE "/gamerule natural_health_regeneration false" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     MOVE "/mode Bobby creative" TO WS-LINE
+     MOVE "/effect give Bobby minecraft:hunger 20 255" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     MOVE 0 TO PL-PITCH
-     MOVE CC-KEY-W TO WS-KEY
-     CALL "CV-KEY-SET" USING CONVH WS-BOBBY WS-KEY-2 WS-DOWN
-     CALL "CV-KEY-SET" USING CONVH WS-BOBBY WS-KEY WS-DOWN
-     MOVE 149 TO WS-N
+     MOVE 120 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
-     CALL "CV-KEY-SET" USING CONVH WS-BOBBY WS-KEY WS-UP
-     CALL "CV-KEY-SET" USING CONVH WS-BOBBY WS-KEY-2 WS-UP
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     MOVE PL-FOOD TO WS-F0
+     COMPUTE WS-H0 = PL-HEALTH
+     MOVE 250 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     MOVE "acceptance US8-5 given a survival Player whose food level is zero when time passes then "
+         & "they take starvation damage" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "food 0 health fell 1" TO TL-EXPECTED
+     MOVE WS-F0 TO WS-E1
+     MOVE 0 TO WS-E2
+     IF PL-HEALTH < WS-H0
+         MOVE 1 TO WS-E2
+     END-IF
+     MOVE SPACES TO TL-OBSERVED
+     STRING "food " FUNCTION TRIM(WS-E1) " health fell " FUNCTION TRIM(WS-E2)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   US8-6: in creative the food meter is not shown; back in survival it shows again.
+     MOVE "/effect clear Bobby" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
+     MOVE "/gamemode creative Bobby" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      MOVE 5 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
-     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     MOVE PL-FOOD TO WS-F1
-     CALL "CV-TEXTS" USING CONVH WS-BOBBY WS-TEXTS
-     MOVE "Food " TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
-     MOVE "/mode Bobby survival" TO WS-LINE
+     CALL "METER-SHOWN" USING CONVH WS-BOBBY WS-TWO WS-FOOD
+     MOVE "/gamemode survival Bobby" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     CALL "CV-TEXTS" USING CONVH WS-BOBBY WS-TEXTS
-     MOVE "Food 15/24" TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND-2
-     MOVE "acceptance US8-6 given a creative Player when time passes and they run then their food "
-         & "level does not change and is not shown" TO TL-CASE
-     MOVE "food 15 shown 0 survival again shows 1" TO TL-EXPECTED
-     MOVE WS-F1 TO WS-E1
-     MOVE WS-FOUND TO WS-E2
-     MOVE WS-FOUND-2 TO WS-E3
+     CALL "METER-SHOWN" USING CONVH WS-BOBBY WS-TWO WS-FOOD-2
+     MOVE "acceptance US8-6 given a creative Player then their food level is not shown, and it "
+         & "shows again in survival" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "creative shown -1 survival shown 1" TO TL-EXPECTED
+     MOVE WS-FOOD TO WS-E1
+     MOVE 0 TO WS-E2
+     IF WS-FOOD-2 >= 0
+         MOVE 1 TO WS-E2
+     END-IF
      MOVE SPACES TO TL-OBSERVED
-     STRING "food " FUNCTION TRIM(WS-E1) " shown " FUNCTION TRIM(WS-E2)
-         " survival again shows " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING "creative shown " FUNCTION TRIM(WS-E1) " survival shown " FUNCTION TRIM(WS-E2)
+         DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
-
- OBSERVE-EATING.
-     MOVE PL-FOOD TO WS-E1
-     MOVE PL-SLOT-COUNT(1) TO WS-E2
-     MOVE PL-SLOT-ITEM(1) TO WS-E3
-     MOVE SPACES TO TL-OBSERVED
-     STRING "food " FUNCTION TRIM(WS-E1) " slot " FUNCTION TRIM(WS-E2) "x" FUNCTION TRIM(WS-E3)
-         DELIMITED BY SIZE INTO TL-OBSERVED.
  END PROGRAM ACC-US8-HUNGER.
 
 *> EAT USING CONVH, client: the right mouse button held for 40 frames (2 s, longer than the eating
@@ -295,3 +308,28 @@
      GOBACK.
  END PROGRAM TEXT-HAS.
 
+
+*> METER-SHOWN USING CONVH, client, kind (1 hearts, 2 food), shown out: the state of the HUD's meter
+*> widget of that kind (12 5.4), -1 when the screen holds none (test infrastructure).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. METER-SHOWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CONVH.
+ COPY CLSTATE.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-SHOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING CONVH L-INDEX L-KIND L-SHOWN.
+     MOVE -1 TO L-SHOWN
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(L-INDEX)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-METER AND SM-W-ARG(WS-I) = L-KIND
+             MOVE SM-W-STATE(WS-I) TO L-SHOWN
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM METER-SHOWN.

@@ -47,7 +47,7 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
-     MOVE "acceptance US13 /teleport teleport Alice to a location: whol" & "e numbers centre x and z" TO TL-CASE
+     MOVE "acceptance US13 /tp teleport Alice to a location: whol" & "e numbers centre x and z" TO TL-CASE
      MOVE "tp Alice 10 70 20" TO WS-LINE
      MOVE "commands.teleport.success.location.single(Alice,10.500000,70" & ".000000,20.500000)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT

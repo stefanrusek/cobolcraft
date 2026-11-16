@@ -61,6 +61,10 @@
                  MOVE 0 TO WS-LENGTH
              WHEN SM-W-KIND(WS-W) = WK-OVERLAY
                  MOVE SM-W-ARG(WS-W) TO WS-SWATCH
+*>               An overlay's state above 0 is its alpha in thousandths plus 1 (the drag preview rectangle, 40-1 5.4).
+                 IF SM-W-STATE(WS-W) > 0
+                     COMPUTE RL-UI-FADE = 1 - (SM-W-STATE(WS-W) - 1) / 1000
+                 END-IF
              WHEN SM-W-KIND(WS-W) = WK-ICON
                  CALL "UI-ICON-QUAD" USING CLIENT-STATE WS-W
              WHEN SM-W-KIND(WS-W) = WK-SPRITE
@@ -126,6 +130,9 @@
              END-IF
          END-IF
          MOVE 0 TO RL-UI-TINT
+         IF SM-W-KIND(WS-W) = WK-OVERLAY
+             MOVE 0 TO RL-UI-FADE
+         END-IF
          MOVE SM-W-X(WS-W) TO WS-X
          MOVE SM-W-Y(WS-W) TO WS-Y
          IF SM-W-KIND(WS-W) NOT = WK-LABEL
