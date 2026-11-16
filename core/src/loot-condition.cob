@@ -547,9 +547,104 @@
  END PROGRAM LOOT-TARGET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. LOOT-ENT-COMPONENTS.
+*> USING slot, "minecraft:components" object node, result out: every member holds. Only sheep/color is known (the colour name of the dye id of this_entity when it is a sheep); any other
+*> component is false (lane bugsw T10304: the data's entity predicates name the sheep colour this way, docs 26 section 10.8).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY LOOTSTATE.
+ 01 WS-CHILD               BINARY-LONG.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-WANT                PIC X(32).
+ 01 WS-NAMES.
+    05 FILLER              PIC X(32) VALUE "minecraft:white".
+    05 FILLER              PIC X(32) VALUE "minecraft:orange".
+    05 FILLER              PIC X(32) VALUE "minecraft:magenta".
+    05 FILLER              PIC X(32) VALUE "minecraft:light_blue".
+    05 FILLER              PIC X(32) VALUE "minecraft:yellow".
+    05 FILLER              PIC X(32) VALUE "minecraft:lime".
+    05 FILLER              PIC X(32) VALUE "minecraft:pink".
+    05 FILLER              PIC X(32) VALUE "minecraft:gray".
+    05 FILLER              PIC X(32) VALUE "minecraft:light_gray".
+    05 FILLER              PIC X(32) VALUE "minecraft:cyan".
+    05 FILLER              PIC X(32) VALUE "minecraft:purple".
+    05 FILLER              PIC X(32) VALUE "minecraft:blue".
+    05 FILLER              PIC X(32) VALUE "minecraft:brown".
+    05 FILLER              PIC X(32) VALUE "minecraft:green".
+    05 FILLER              PIC X(32) VALUE "minecraft:red".
+    05 FILLER              PIC X(32) VALUE "minecraft:black".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(32) OCCURS 16 TIMES.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-NODE L-RESULT.
+     MOVE 1 TO L-RESULT
+     MOVE LDS-JN-FIRST(L-SLOT, L-NODE) TO WS-CHILD
+     PERFORM UNTIL WS-CHILD = 0 OR L-RESULT = 0
+         CALL "LOOT-J-KEY" USING L-SLOT WS-CHILD WS-KEY WS-KEY-LENGTH
+         MOVE 0 TO L-RESULT
+         IF WS-KEY = "minecraft:sheep/color" AND LW-C-THIS-SHEEP = 1
+             MOVE SPACES TO WS-TEXT
+             CALL "LOOT-J-TEXT" USING L-SLOT WS-CHILD WS-TEXT WS-LENGTH
+             MOVE WS-NAME(LW-C-THIS-COLOR + 1) TO WS-WANT
+             IF WS-LENGTH > 0 AND (WS-TEXT = WS-WANT OR WS-TEXT = WS-WANT(11:22))
+                 MOVE 1 TO L-RESULT
+             END-IF
+         END-IF
+         MOVE LDS-JN-NEXT(L-SLOT, WS-CHILD) TO WS-CHILD
+     END-PERFORM
+     GOBACK.
+ END PROGRAM LOOT-ENT-COMPONENTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LOOT-ENT-BOOLS.
+*> USING slot, object node, kind (1 type_specific/sheep: member sheared, 2 flags: any flag), result out: every member of the object is a boolean that equals the entity's state: the sheared
+*> flag of this_entity (false when it is no sheep); the flags (is_on_fire, is_baby, ...) are all false because the context holds no entity state for them (the term then holds when it asks for false).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY LOOTSTATE.
+ 01 WS-CHILD               BINARY-LONG.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-ACTUAL              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-NODE L-KIND L-RESULT.
+     MOVE 1 TO L-RESULT
+     MOVE LDS-JN-FIRST(L-SLOT, L-NODE) TO WS-CHILD
+     PERFORM UNTIL WS-CHILD = 0 OR L-RESULT = 0
+         CALL "LOOT-J-KEY" USING L-SLOT WS-CHILD WS-KEY WS-KEY-LENGTH
+         CALL "LOOT-J-TRUE" USING L-SLOT WS-CHILD WS-FLAG
+         MOVE 0 TO WS-ACTUAL
+         IF L-KIND = 1
+             IF WS-KEY = "sheared"
+                 MOVE LW-C-THIS-SHEARED TO WS-ACTUAL
+             ELSE
+                 MOVE -1 TO WS-ACTUAL
+             END-IF
+         END-IF
+         IF WS-ACTUAL NOT = WS-FLAG
+             MOVE 0 TO L-RESULT
+         END-IF
+         MOVE LDS-JN-NEXT(L-SLOT, WS-CHILD) TO WS-CHILD
+     END-PERFORM
+     GOBACK.
+ END PROGRAM LOOT-ENT-BOOLS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. LOOT-ENTITY-MATCH.
-*> USING slot, entity predicate node, entity type (PIC X(48)), result out: the predicate's "type" (an id or a list of ids) holds
-*> for the entity; every other member of the predicate is not evaluated (false).
+*> USING slot, entity predicate node, entity type (PIC X(48)), result out: every member of the predicate holds for the entity: "type" and "minecraft:entity_type" (an id or a list of ids; a #tag
+*> never equals), "minecraft:components" (the sheep colour), "minecraft:type_specific/sheep" (sheared) and "minecraft:flags" (all false); every other member (equipment, vehicle,
+*> other type-specific parts) is not evaluated (false).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY LOOTSTATE.
@@ -560,6 +655,7 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-ELEMENT             BINARY-LONG.
  01 WS-WANT                PIC X(112).
+ 01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  01 L-SLOT                 BINARY-LONG.
  01 L-NODE                 BINARY-LONG.
@@ -571,23 +667,35 @@
      PERFORM UNTIL WS-CHILD = 0 OR L-RESULT = 0
          CALL "LOOT-J-KEY" USING L-SLOT WS-CHILD WS-KEY WS-KEY-LENGTH
          MOVE 0 TO L-RESULT
-         IF WS-KEY = "type"
-             CALL "LOOT-J-TEXT" USING L-SLOT WS-CHILD WS-TEXT WS-LENGTH
-             IF WS-LENGTH > 0
-                 IF L-TYPE NOT = SPACES AND WS-TEXT(1:48) = L-TYPE
-                     MOVE 1 TO L-RESULT
-                 END-IF
-             ELSE
-                 MOVE LDS-JN-FIRST(L-SLOT, WS-CHILD) TO WS-ELEMENT
-                 PERFORM UNTIL WS-ELEMENT = 0 OR L-RESULT = 1
-                     CALL "LOOT-J-TEXT" USING L-SLOT WS-ELEMENT WS-TEXT WS-LENGTH
+         EVALUATE TRUE
+             WHEN WS-KEY = "type" OR WS-KEY = "minecraft:entity_type"
+                 CALL "LOOT-J-TEXT" USING L-SLOT WS-CHILD WS-TEXT WS-LENGTH
+                 IF WS-LENGTH > 0
                      IF L-TYPE NOT = SPACES AND WS-TEXT(1:48) = L-TYPE
                          MOVE 1 TO L-RESULT
                      END-IF
-                     MOVE LDS-JN-NEXT(L-SLOT, WS-ELEMENT) TO WS-ELEMENT
-                 END-PERFORM
-             END-IF
-         END-IF
+                 ELSE
+                     MOVE LDS-JN-FIRST(L-SLOT, WS-CHILD) TO WS-ELEMENT
+                     PERFORM UNTIL WS-ELEMENT = 0 OR L-RESULT = 1
+                         CALL "LOOT-J-TEXT" USING L-SLOT WS-ELEMENT WS-TEXT WS-LENGTH
+                         IF L-TYPE NOT = SPACES AND WS-TEXT(1:48) = L-TYPE
+                             MOVE 1 TO L-RESULT
+                         END-IF
+                         MOVE LDS-JN-NEXT(L-SLOT, WS-ELEMENT) TO WS-ELEMENT
+                     END-PERFORM
+                 END-IF
+             WHEN WS-KEY = "minecraft:components"
+                 CALL "LOOT-ENT-COMPONENTS" USING L-SLOT WS-CHILD L-RESULT
+             WHEN WS-KEY = "minecraft:type_specific/sheep"
+                 MOVE 1 TO WS-KIND
+                 CALL "LOOT-ENT-BOOLS" USING L-SLOT WS-CHILD WS-KIND L-RESULT
+                 IF LW-C-THIS-SHEEP = 0
+                     MOVE 0 TO L-RESULT
+                 END-IF
+             WHEN WS-KEY = "minecraft:flags"
+                 MOVE 2 TO WS-KIND
+                 CALL "LOOT-ENT-BOOLS" USING L-SLOT WS-CHILD WS-KIND L-RESULT
+         END-EVALUATE
          MOVE LDS-JN-NEXT(L-SLOT, WS-CHILD) TO WS-CHILD
      END-PERFORM
      GOBACK.
