@@ -602,8 +602,178 @@
          END-IF
      END-PERFORM
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE
+     CALL "ENTITY-FIRE-MESH" USING CLIENT-STATE L-EYE-TABLE
      GOBACK.
  END PROGRAM GROUND-ITEMS-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-FIRE-MESH.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG): appends the flames of the burning entities to RL-GI-VERTEX (the block atlas, texture 0, after the ground items;
+*> 34 part 1 section 7.4). An entity whose shared flags byte (EN-FLAGS, entry 0) has bit 0 set, and the local player's own figure in a third-person view (PL-ON-FIRE
+*> from Set Entity Data of its own id), shows two layers of the block atlas sprites fire_0 and fire_1 (a pack without one shows the other in both layers; without
+*> either nothing is drawn): the box of the entity (EN-BOX-HALF, EN-BOX-HEIGHT; 0.6 x 1.8 where the row has none) gives the quads of EM7-FIRE. The animation is the
+*> atlas's own (ANIM-TICK writes the frame of the sprite into its cell). Where a first-person overlay of the flames would be drawn the documents say nothing (recorded
+*> in tasks T11107).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-S0                  BINARY-LONG.
+ 01 WS-S1                  BINARY-LONG.
+ 01 WS-ID                  PIC X(80).
+ 01 WS-LEN                 BINARY-LONG VALUE 22.
+ 01 WS-W                   FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
+     MOVE SPACES TO WS-ID
+     MOVE "minecraft:block/fire_0" TO WS-ID
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-LEN WS-S0
+     MOVE "minecraft:block/fire_1" TO WS-ID
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-LEN WS-S1
+     IF WS-S0 = 0 AND WS-S1 = 0
+         GOBACK
+     END-IF
+     IF WS-S0 = 0
+         MOVE WS-S1 TO WS-S0
+     END-IF
+     IF WS-S1 = 0
+         MOVE WS-S0 TO WS-S1
+     END-IF
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND FUNCTION MOD(EN-FLAGS(WS-R), 2) = 1
+             MOVE 0.6 TO WS-W
+             MOVE 1.8 TO WS-H
+             IF EN-BOX-HEIGHT(WS-R) > 0
+                 COMPUTE WS-W = EN-BOX-HALF(WS-R) * 2
+                 MOVE EN-BOX-HEIGHT(WS-R) TO WS-H
+             END-IF
+             CALL "ENTITY-FIRE-EMIT" USING CLIENT-STATE L-EYE-TABLE EN-X(WS-R) EN-Y(WS-R) EN-Z(WS-R) WS-W WS-H WS-S0 WS-S1
+         END-IF
+     END-PERFORM
+     IF CL-CAMERA > 0 AND PL-ON-FIRE = 1
+         MOVE 0.6 TO WS-W
+         MOVE 1.8 TO WS-H
+         CALL "ENTITY-FIRE-EMIT" USING CLIENT-STATE L-EYE-TABLE PL-X PL-Y PL-Z WS-W WS-H WS-S0 WS-S1
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-FIRE-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-FIRE-EMIT.
+*> USING CLIENT-STATE, eye, entity position x y z (feet), width, height (FLOAT-LONG), sprite of fire_0, sprite of fire_1: the flame quads of one entity (EM7-FIRE) appended to
+*> RL-GI-VERTEX unless they no longer fit. Quad k: half width w x s, bottom edge s x rise above the feet and top edge 1.4 s above that, centred on the entity and moved
+*> s x (z translate + zs) along the camera's horizontal look direction (yaw Y looks along (-sin Y, 0, cos Y); the model x axis is the camera's left, (cos Y, 0, sin Y)). Corners
+*> top-left (+x), top-right (-x), bottom-right, bottom-left, the six vertices 1, 2, 3, 1, 3, 4; the layer is fire_0 or fire_1 as EM7-FIRE says, u mirrored when it says so;
+*> full brightness, alpha 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-IN.
+    05 WS-I                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-OUT.
+    05 WS-O                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-I6                  BINARY-LONG.
+ 01 WS-SPRITE              BINARY-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-CY                  FLOAT-LONG.
+ 01 WS-SY                  FLOAT-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-BOTTOM              FLOAT-LONG.
+ 01 WS-ZOFF                FLOAT-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-U16                 FLOAT-SHORT.
+ 01 WS-V16                 FLOAT-SHORT.
+ 01 WS-MIRROR              BINARY-LONG.
+ 01 WS-CORNERS.
+    05 WS-CO OCCURS 4 TIMES.
+       10 WS-C-X           FLOAT-SHORT.
+       10 WS-C-Y           FLOAT-SHORT.
+       10 WS-C-Z           FLOAT-SHORT.
+       10 WS-C-U           FLOAT-SHORT.
+       10 WS-C-V           FLOAT-SHORT.
+ 01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
+ 01 WS-ORDER REDEFINES WS-ORDER-DATA.
+    05 WS-ORD              PIC 9 OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-WIDTH                FLOAT-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
+ 01 L-SPRITE0              BINARY-LONG.
+ 01 L-SPRITE1              BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE L-X L-Y L-Z L-WIDTH L-HEIGHT L-SPRITE0 L-SPRITE1.
+     MOVE L-WIDTH TO WS-I(1)
+     MOVE L-HEIGHT TO WS-I(2)
+     CALL "EM7-FIRE" USING WS-IN WS-OUT
+     COMPUTE WS-N = FUNCTION INTEGER(WS-O(1))
+     IF RL-GI-COUNT + WS-N * 6 > CL-MAX-GI-VERTICES
+         GOBACK
+     END-IF
+     MOVE WS-O(2) TO WS-S
+     COMPUTE WS-CY = FUNCTION COS(PL-YAW * FUNCTION PI / 180)
+     COMPUTE WS-SY = FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= WS-N
+         COMPUTE WS-BASE = 5 + WS-K * 5
+         COMPUTE WS-HALF = WS-O(WS-BASE) * WS-S
+         COMPUTE WS-BOTTOM = L-Y - L-EYE(2) + WS-O(WS-BASE + 1) * WS-S
+         COMPUTE WS-ZOFF = (WS-O(4) + WS-O(WS-BASE + 2)) * WS-S
+         COMPUTE WS-CX = L-X - L-EYE(1) - WS-SY * WS-ZOFF
+         COMPUTE WS-CZ = L-Z - L-EYE(3) + WS-CY * WS-ZOFF
+         MOVE L-SPRITE0 TO WS-SPRITE
+         IF WS-O(WS-BASE + 4) = 1
+             MOVE L-SPRITE1 TO WS-SPRITE
+         END-IF
+         COMPUTE WS-MIRROR = FUNCTION INTEGER(WS-O(WS-BASE + 3))
+         PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+*>           Corners 1 and 4 are on the +x side (the camera's left), 2 and 3 on the -x side; 1 and 2 are the top.
+             MOVE WS-HALF TO WS-SIDE
+             MOVE 0 TO WS-U16
+             IF WS-C = 2 OR WS-C = 3
+                 COMPUTE WS-SIDE = 0 - WS-HALF
+                 MOVE 16 TO WS-U16
+             END-IF
+             IF WS-MIRROR = 1
+                 COMPUTE WS-U16 = 16 - WS-U16
+             END-IF
+             COMPUTE WS-C-X(WS-C) = WS-CX + WS-SIDE * WS-CY
+             COMPUTE WS-C-Z(WS-C) = WS-CZ + WS-SIDE * WS-SY
+             MOVE 0 TO WS-V16
+             COMPUTE WS-C-Y(WS-C) = WS-BOTTOM + 1.4 * WS-S
+             IF WS-C >= 3
+                 MOVE WS-BOTTOM TO WS-C-Y(WS-C)
+                 MOVE 16 TO WS-V16
+             END-IF
+             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16 WS-V16 WS-C-U(WS-C) WS-C-V(WS-C)
+         END-PERFORM
+         PERFORM VARYING WS-I6 FROM 1 BY 1 UNTIL WS-I6 > 6
+             MOVE WS-ORD(WS-I6) TO WS-C
+             ADD 1 TO RL-GI-COUNT
+             MOVE WS-C-X(WS-C) TO RL-GI-X(RL-GI-COUNT)
+             MOVE WS-C-Y(WS-C) TO RL-GI-Y(RL-GI-COUNT)
+             MOVE WS-C-Z(WS-C) TO RL-GI-Z(RL-GI-COUNT)
+             MOVE WS-C-U(WS-C) TO RL-GI-U(RL-GI-COUNT)
+             MOVE WS-C-V(WS-C) TO RL-GI-V(RL-GI-COUNT)
+             MOVE 1 TO RL-GI-B(RL-GI-COUNT)
+             MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+             MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+             MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-FIRE-EMIT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VANILLA-ITEMS-MESH.

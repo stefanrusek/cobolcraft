@@ -161,7 +161,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUD-ENTITY-DATA.
-*> USING CLIENT-STATE, entity id, slot, serializer, integer value, float value: one Set Entity Data entry: slot 1 (an Int, the air supply) and slot 7
+*> USING CLIENT-STATE, entity id, slot, serializer, integer value, float value: one Set Entity Data entry: slot 0 (a Byte, the shared flags: bit 0 on fire) and slot 1 (an Int, the air supply) and slot 7
 *> (an Int, ticks frozen) of the local player; slot 9 (a Float, health) of the vehicle ridden, kept as ceil(health) for the mount row.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -177,6 +177,8 @@
      EVALUATE TRUE
          WHEN L-ENTITY = PL-ENTITY-ID AND L-SLOT = 1 AND L-SERIALIZER = 1
              MOVE L-INT TO PL-AIR
+         WHEN L-ENTITY = PL-ENTITY-ID AND L-SLOT = 0 AND L-SERIALIZER = 0
+             COMPUTE PL-ON-FIRE = FUNCTION MOD(L-INT, 2)
          WHEN L-ENTITY = PL-ENTITY-ID AND L-SLOT = 7 AND L-SERIALIZER = 1
              MOVE L-INT TO PL-TICKS-FROZEN
          WHEN L-ENTITY = PL-VEHICLE AND L-SLOT = 9 AND L-SERIALIZER = 3

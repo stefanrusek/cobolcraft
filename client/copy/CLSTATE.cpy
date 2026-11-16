@@ -555,6 +555,7 @@
        10 PL-ARMOR           BINARY-LONG.    *> armor attribute value
        10 PL-ABSORPTION      FLOAT-SHORT.
        10 PL-AIR             BINARY-LONG.
+       10 PL-ON-FIRE         PIC 9.          *> the on-fire bit (entry 0 bit 0 of Set Entity Data for the local player's entity id, 18 section 1.4): flames in the third-person view
        10 PL-MAX-AIR         BINARY-LONG.
        10 PL-EYES-WATER      PIC 9.
        10 PL-TICKS-FROZEN    BINARY-LONG.
