@@ -1237,7 +1237,8 @@
 *>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.
      COMPUTE WS-HX = WS-HX + EN-VX(WS-ROW)
      COMPUTE WS-HZ = WS-HZ + EN-VZ(WS-ROW)
-     IF EN-ON-GROUND(WS-ROW) = 1
+*>   A frog in a long jump has no friction (discard friction, 44 part 4 section 1.1).
+     IF EN-ON-GROUND(WS-ROW) = 1 AND EN-FROG-JS(WS-ROW) NOT = 3
          COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.546
          COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.546
      ELSE

@@ -39,6 +39,8 @@
  01 WS-BUDGET              BINARY-LONG VALUE 512.
  01 WS-RESULT              BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
+ 01 WS-ID2                 BINARY-LONG.
+ 01 WS-NB                  BINARY-LONG.
  01 WS-OUT                 BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
@@ -171,7 +173,7 @@
      MOVE 0 TO WS-ID
      PERFORM COUNT-TADPOLES
      MOVE WS-N TO WS-A
-     CALL "BU-HOOK" USING WS-SEVEN WS-DIM WS-X WS-Y WS-Z WS-STATE WS-ID WS-ID WS-OUT
+     CALL "BU-HOOK" USING WS-SEVEN WS-DIM WS-X WS-Y WS-Z WS-STATE WS-ID WS-ID2 WS-OUT
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      PERFORM COUNT-TADPOLES
      MOVE "acceptance US15 29b-7§5 Frogspawn: the scheduled tick removes it and 2 to 5 tadpoles are born" TO TL-CASE
@@ -199,16 +201,39 @@
 *>   No water below: the tick destroys it without tadpoles, and the shape update turns it to air at once.
      COMPUTE WS-Z = WS-Z0 + 22
      COMPUTE WS-Y = WS-FLOOR + 1
-     CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SPAWN WS-FLAGS WS-BUDGET WS-RESULT
-     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
-     MOVE "acceptance US15 29b-7§5 Frogspawn: on stone (no water below) the placing shape update turns it into air" TO TL-CASE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SPAWN
+     MOVE WS-SPAWN TO WS-OUT
+     CALL "BU-HOOK" USING WS-FOUR WS-DIM WS-X WS-Y WS-Z WS-SPAWN WS-ID WS-NB WS-OUT
+     MOVE "acceptance US15 29b-7§5 Frogspawn: on stone (no water below) the shape update turns it into air" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
-     MOVE WS-STATE TO TL-OBSERVED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-Y = WS-FLOOR + 1
+     COMPUTE WS-X = WS-X0 + 20
+     COMPUTE WS-Z = WS-Z0 + 20
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SPAWN
+     MOVE WS-SPAWN TO WS-OUT
+     CALL "BU-HOOK" USING WS-FOUR WS-DIM WS-X WS-Y WS-Z WS-SPAWN WS-ID WS-NB WS-OUT
+     MOVE "acceptance US15 29b-7§5 Frogspawn: on a water source the shape update keeps it" TO TL-CASE
+     MOVE WS-SPAWN TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-A = WS-Y + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-A WS-Z WS-WATER
+     MOVE WS-SPAWN TO WS-OUT
+     CALL "BU-HOOK" USING WS-FOUR WS-DIM WS-X WS-Y WS-Z WS-SPAWN WS-ID WS-NB WS-OUT
+     MOVE "acceptance US15 29b-7§5 Frogspawn: water above it (the fluid above must be empty) turns it into air" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-A WS-Z WS-AIR
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-AIR
+     COMPUTE WS-X = WS-X0 + 20
+     COMPUTE WS-Z = WS-Z0 + 22
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SPAWN
      PERFORM COUNT-TADPOLES
      MOVE WS-N TO WS-A
-     CALL "BU-HOOK" USING WS-SEVEN WS-DIM WS-X WS-Y WS-Z WS-SPAWN WS-ID WS-ID WS-OUT
+     CALL "BU-HOOK" USING WS-SEVEN WS-DIM WS-X WS-Y WS-Z WS-SPAWN WS-ID WS-ID2 WS-OUT
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      PERFORM COUNT-TADPOLES
      MOVE "acceptance US15 29b-7§5 Frogspawn: a tick without water below destroys it and no tadpole is born" TO TL-CASE

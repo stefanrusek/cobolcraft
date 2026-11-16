@@ -5,7 +5,7 @@
 *> - Frog tongue (ShootTongue): a slime or magma cube of size 1 (a cube of any other size is never food) within TONGUE-RANGE blocks becomes the tongue target (metadata 19, entity id + 1);
 *>   the frog walks to it at its walk speed; below 1.75 blocks the target is pulled toward the frog (speed 0.75) and the 6-tick catch animation starts; after it the frog eats the target
 *>   (10 damage, the attack damage of the frog) and the animation ends when its timer reaches 10; the target is dropped when it is gone or dead.
-*> Open items: the range of the frog's attackable sensor (the docs give none; the follow range 16 stands in), the unreachable-target memory, variants by biome, the long jump, croaking,
+*> Open items: the range of the frog's attackable sensor (the docs give none; the follow range 16 stands in), the unreachable-target memory, variants by biome, croaking,
 *>   frogspawn laying and hatching, the froglight loot rule (the loot context has no frog attacker), the bucket, the tadpole's brain (it strolls like the other water animals).
 *>
 *> Entry points:
@@ -126,6 +126,12 @@
  PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
      MOVE 0 TO L-HX L-HZ L-WALK
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+*>   The long jump (core/src/mob-44-m.cob): a preparing or jumping frog stands still.
+     CALL "M44-FROG-JUMP" USING L-ROW
+     IF EN-FROG-JS(L-ROW) NOT = 0
+         MOVE 2 TO L-WALK
+         GOBACK
+     END-IF
 *>   No tongue target yet: the nearest slime or magma cube of size 1 within 16 blocks.
      IF EN-TONGUE(L-ROW) = 0
          MOVE 256 TO WS-BEST
