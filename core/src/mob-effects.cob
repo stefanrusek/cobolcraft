@@ -180,6 +180,28 @@
      GOBACK.
  END PROGRAM MEF-HEAL.
 
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MEF-UNDEAD.
+*> USING tracker row, undead out (1 when the species heals from instant damage and is hurt by instant health, 17 section 4.9a).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                  PIC X(24).
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-UNDEAD                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-UNDEAD.
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     MOVE 0 TO L-UNDEAD
+     EVALUATE WS-KEY
+         WHEN "skeleton" WHEN "stray" WHEN "wither_skeleton" WHEN "skeleton_horse" WHEN "bogged" WHEN "parched"
+         WHEN "zombie_horse" WHEN "camel_husk" WHEN "zombie" WHEN "zombie_villager" WHEN "zombified_piglin"
+         WHEN "zoglin" WHEN "drowned" WHEN "husk" WHEN "wither" WHEN "phantom"
+             MOVE 1 TO L-UNDEAD
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM MEF-UNDEAD.
+
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MEF-INSTANT.
 *> USING tracker row, effect, amplifier: the instant effect at full intensity (MEF-INSTANT-T with t = 1000; t is the splash intensity in thousandths: the amount is
@@ -200,7 +222,6 @@
  PROGRAM-ID. MEF-INSTANT-T.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-KEY                  PIC X(24).
  01 WS-UNDEAD               BINARY-LONG.
  01 WS-HEAL                 BINARY-LONG.
  01 WS-AMOUNT               BINARY-LONG.
@@ -213,14 +234,7 @@
      IF L-EFFECT NOT = 5 AND L-EFFECT NOT = 6
          GOBACK
      END-IF
-     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     MOVE 0 TO WS-UNDEAD
-     EVALUATE WS-KEY
-         WHEN "skeleton" WHEN "stray" WHEN "wither_skeleton" WHEN "skeleton_horse" WHEN "bogged" WHEN "parched"
-         WHEN "zombie_horse" WHEN "camel_husk" WHEN "zombie" WHEN "zombie_villager" WHEN "zombified_piglin"
-         WHEN "zoglin" WHEN "drowned" WHEN "husk" WHEN "wither" WHEN "phantom"
-             MOVE 1 TO WS-UNDEAD
-     END-EVALUATE
+     CALL "MEF-UNDEAD" USING L-ROW WS-UNDEAD
      MOVE 0 TO WS-HEAL
      IF (L-EFFECT = 5 AND WS-UNDEAD = 0) OR (L-EFFECT = 6 AND WS-UNDEAD = 1)
          MOVE 1 TO WS-HEAL

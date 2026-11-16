@@ -1,0 +1,278 @@
+*> Acceptance test, the ender pearl, the egg and the snowball thrown by a player (docs/protocol/17 section 3.15, 44 part 8 sections 6.5, 10 and 10.4; lane 002-lane-mobsb6, T9002):
+*> speed 1.5, gravity 0.03; a pearl that lands teleports its living owner to the impact point, resets the fall distance and costs 5.0 (an endermite on a roll under 50 of 1000 when monsters
+*> spawn); a dead owner is not moved; an egg hatches 1 baby chicken on nextInt(8) = 0, 4 on nextInt(32) = 0 as well; a thrown snowball is the projectile of the snow golem.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US16-PEARL-EGG.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY PLAYPKT.
+ COPY PROJSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-PEARL-ITEM          BINARY-LONG.
+ 01 WS-EGG-ITEM            BINARY-LONG.
+ 01 WS-SNOW-ITEM           BINARY-LONG.
+ 01 WS-PEARL-TYPE          BINARY-LONG.
+ 01 WS-MITE-TYPE           BINARY-LONG.
+ 01 WS-CHICKEN-TYPE        BINARY-LONG.
+ 01 WS-SNOW-TYPE           BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG VALUE 96.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-HEALTH              FLOAT-SHORT.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-R8                  BINARY-LONG.
+ 01 WS-R32                 BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-ROWNO               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-Y0 = FUNCTION INTEGER(PL-Y(WS-PLAYER))
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FX = WS-X0 - 48
+     COMPUTE WS-FZ = WS-Z0 - 48
+     COMPUTE WS-GY = WS-Y0 - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-SIZE WS-GY WS-KIND
+     MOVE 0 TO WS-CONN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-CONNS
+         IF CN-PLAYER(WS-I) = WS-PLAYER
+             MOVE WS-I TO WS-CONN
+         END-IF
+     END-PERFORM
+     MOVE "minecraft:ender_pearl" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-PEARL-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PEARL-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:egg" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-EGG-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:snowball" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SNOW-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-SNOW-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:endermite" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-MITE-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:chicken" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-CHICKEN-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-SLOT = PL-HELD(WS-PLAYER) + 1
+*>   A thrown pearl: speed 1.5 along the look direction, kind 4.
+     MOVE WS-PEARL-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-SLOT)
+     MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, WS-SLOT)
+     MOVE 0 TO PSB-HAND PSB-YAW
+     MOVE -20 TO PSB-PITCH
+     CALL "THROWN-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-PEARL-TYPE
+             MOVE WS-I TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 an ender pearl item is thrown (kind 4) and the stack loses one" TO TL-CASE
+     MOVE 141 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-ROW > 0
+         CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-FOUND
+         COMPUTE TL-OBSERVED-N = WS-DONE * 100 + PJ-KIND(WS-FOUND) * 10 + PL-SLOT-COUNT(WS-PLAYER, WS-SLOT)
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 17 3.15 the speed is 1.5 (squared, thousandths: 2250)" TO TL-CASE
+     MOVE 2250 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = (EN-VX(WS-ROW) * EN-VX(WS-ROW) + EN-VY(WS-ROW) * EN-VY(WS-ROW) + EN-VZ(WS-ROW) * EN-VZ(WS-ROW)) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   It flies, lands and teleports the owner there for 5 damage.
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE 0 TO WS-I
+     PERFORM UNTIL WS-I >= 100 OR EN-USED(WS-ROW) = 0
+         CALL "THROWN-TICK"
+         ADD 1 TO WS-I
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 the pearl lands within 100 ticks and is gone" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-USED(WS-ROW) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 17 3.15 the owner was moved forward by more than 5 blocks" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF PL-Z(WS-PLAYER) > WS-Z + 5
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 17 3.15 the owner pays 5 health points" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-HEALTH - PL-HEALTH(WS-PLAYER)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 17 3.15 the fall distance starts again at the landing" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = FUNCTION INTEGER(PL-Y(WS-PLAYER) * 1000)
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(PL-FALL-START(WS-PLAYER) * 1000)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   PEARL-ARRIVE: the endermite roll (under 50 of 1000) with monsters spawning, and a dead owner.
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE 49 TO WS-ROLL
+     CALL "PEARL-ARRIVE" USING WS-PLAYER WS-DIM WS-X WS-Y WS-Z WS-ROLL
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-MITE-TYPE
+             ADD 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 a roll of 49 spawns an endermite" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 50 TO WS-ROLL
+     CALL "PEARL-ARRIVE" USING WS-PLAYER WS-DIM WS-X WS-Y WS-Z WS-ROLL
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-MITE-TYPE
+             ADD 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 a roll of 50 spawns none more" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     MOVE PS-DEAD TO PL-STATE(WS-PLAYER)
+     MOVE 1 TO WS-ROLL
+     CALL "PEARL-ARRIVE" USING WS-PLAYER WS-DIM WS-X WS-Y WS-Z WS-ROLL
+     MOVE PS-ALIVE TO PL-STATE(WS-PLAYER)
+     MOVE "acceptance US16 17 3.15 a dead owner takes no damage and no endermite appears" TO TL-CASE
+     MOVE 1000 TO TL-EXPECTED-N
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-MITE-TYPE
+             ADD 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     COMPUTE TL-OBSERVED-N = (WS-HEALTH - PL-HEALTH(WS-PLAYER)) * 1000 + WS-FOUND * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The egg: 1 baby chicken, 4, or none.
+     MOVE 0 TO WS-R8
+     MOVE 1 TO WS-R32
+     CALL "EGG-HATCH" USING WS-DIM WS-X WS-Y WS-Z WS-R8 WS-R32
+     MOVE 0 TO WS-BABIES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-CHICKEN-TYPE AND EN-MOBAGE(WS-I) = -24000 AND EN-VARIANT(WS-I) = 1
+             ADD 1 TO WS-BABIES
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 44-8 10.4 nextInt(8) = 0 hatches one baby chicken (age -24000)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-BABIES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-R32
+     CALL "EGG-HATCH" USING WS-DIM WS-X WS-Y WS-Z WS-R8 WS-R32
+     MOVE 0 TO WS-BABIES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-CHICKEN-TYPE
+             ADD 1 TO WS-BABIES
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 44-8 10.4 nextInt(32) = 0 as well hatches four more" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-BABIES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-R8
+     CALL "EGG-HATCH" USING WS-DIM WS-X WS-Y WS-Z WS-R8 WS-R32
+     MOVE 0 TO WS-BABIES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-CHICKEN-TYPE
+             ADD 1 TO WS-BABIES
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 44-8 10.4 any other roll hatches none" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-BABIES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An egg item flies and breaks on the floor (kind 6, removed on its hit).
+     MOVE WS-EGG-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-SLOT)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-SLOT)
+     MOVE 40 TO PSB-PITCH
+     CALL "THROWN-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PJ-MAX
+         IF PJ-KIND(WS-I) = 6
+             MOVE PJ-ENT(WS-I) TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 an egg item makes an egg entity (kind 6)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-ROW > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-I
+     PERFORM UNTIL WS-I >= 60 OR WS-ROW = 0
+         CALL "THROWN-TICK"
+         ADD 1 TO WS-I
+         MOVE 0 TO WS-FOUND
+         PERFORM VARYING WS-ROWNO FROM 1 BY 1 UNTIL WS-ROWNO > PJ-MAX
+             IF PJ-KIND(WS-ROWNO) = 6
+                 MOVE 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+         IF WS-FOUND = 0
+             MOVE 0 TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 the egg breaks on the floor within 60 ticks" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     IF WS-I < 60
+         MOVE 1 TO TL-OBSERVED-N
+     ELSE
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A snowball item is the snow golem's projectile with the owner the thrower.
+     MOVE WS-SNOW-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-SLOT)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-SLOT)
+     MOVE 0 TO PSB-PITCH
+     CALL "THROWN-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-SNOW-TYPE
+             MOVE WS-I TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16 17 3.15 a snowball item throws a snowball owned by the player" TO TL-CASE
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-ROW > 0
+         MOVE EN-TARGET-ID(WS-ROW) TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 17 3.15 the snowball flies at speed 1.5 (vz in thousandths)" TO TL-CASE
+     MOVE 1500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VZ(WS-ROW) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US16-PEARL-EGG.
+ COPY CORETEST.
+ COPY MOBSPTEST.
