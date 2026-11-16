@@ -62,6 +62,7 @@
  01 WS-MD                  BINARY-LONG.
  01 WS-DW                  BINARY-LONG.
  01 WS-DH                  BINARY-LONG.
+ 01 WS-PAL                 BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
@@ -122,6 +123,11 @@
                  COMPUTE WS-VLEN = WS-PTR - 1
                  CALL "PACK-IMAGE" USING CLIENT-STATE WS-VFULL WS-VLEN B-IMG WS-CAPACITY
                      WS-W WS-H WS-FOUND
+*>               An armor trim texture is recoloured with its palette (code 100000 + palette * 100 + pattern, 54 section 18.4 rule 4).
+                 IF WS-FOUND = 1 AND EA-MT-TEX(WS-M) >= 100000
+                     COMPUTE WS-PAL = FUNCTION MOD(FUNCTION INTEGER(EA-MT-TEX(WS-M) / 100), 1000)
+                     CALL "TRIM-RECOLOUR" USING B-IMG WS-W WS-H WS-PAL
+                 END-IF
              END-IF
          END-IF
          IF WS-FOUND = 0 AND WS-PATH-LENGTH > 0
@@ -283,7 +289,7 @@
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
 *>           The overlay layers (ENTITY-OVERLAY: villager type, profession and level, horse markings, collars): the model again with the layer's texture.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 8
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-OV-CODE WS-OV-R WS-OV-G WS-OV-B WS-OV-M
                  IF WS-OV-CODE > 0 AND CL-MD-FAMILY(EN-MODEL(WS-R)) > 0
                      MOVE WS-OV-CODE TO EN-OVL(WS-R)

@@ -167,7 +167,7 @@
                  CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 8
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
                  IF WS-TEX > 0 AND WS-OVM = 0
                      CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
@@ -305,7 +305,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 32 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 36 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
@@ -349,7 +349,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 32 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 36 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -472,6 +472,11 @@
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * EN-OVN(WS-ROW))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
      END-IF
+*>   The trim layers (9 to 12) lie over the armor piece (layers 5 to 8): the same enlargement by the layer's distance from the piece's own.
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 9
+         COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
+     END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
      MOVE WS-SLOT TO WS-KN(2)
@@ -491,6 +496,12 @@
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
      COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
      MOVE EN-TM(WS-ROW) TO WS-KN(29)
+     COMPUTE WS-KN(34) = EN-CARRY(WS-ROW) * 10 + EN-CREEPY(WS-ROW)
+     COMPUTE WS-KN(35) = EN-ATK(WS-ROW) * 1000 + EN-FLW(WS-ROW)
+     MOVE 0 TO WS-KN(33)
+     IF EN-KEY(WS-ROW) = "ender_dragon"
+         MOVE EN-DR-HEAD TO WS-KN(33)
+     END-IF
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
@@ -639,6 +650,8 @@
      MOVE EN-TA(WS-ROW) TO WS-I(16)
      MOVE EN-DRY(WS-ROW) TO WS-I(15)
      MOVE EN-TM(WS-ROW) TO WS-I(14)
+     MOVE EN-ATK(WS-ROW) TO WS-I(13)
+     MOVE EN-FLW(WS-ROW) TO WS-I(12)
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
@@ -700,6 +713,11 @@
                      CALL "EF5-WOLF-ANIM" USING EMM-MODEL WS-IN
                  WHEN "chicken"
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+*>               The ender dragon: flap time, the flight history at partial tick 1; not landing, not sitting.
+                 WHEN "ender_dragon"
+                     MOVE EN-TM(WS-ROW) TO WS-I(1)
+                     MOVE 1 TO WS-I(2)
+                     CALL "EF7-DRAGON-ANIM" USING EMM-MODEL EN-DR-HIST WS-IN
                  WHEN "evoker_fangs"
                      CALL "ENTITY-FANGS-PROGRESS" USING CLIENT-STATE WS-ROW WS-FP
                      MOVE WS-FP TO WS-I(1)
@@ -713,7 +731,11 @@
                      CALL "EF7-BLAZE-ANIM" USING EMM-MODEL WS-IN
                  WHEN "enderman"
                  WHEN "enderman_eyes"
-                     MOVE 0 TO WS-CARRIED WS-CREEPY
+                     MOVE 0 TO WS-CARRIED
+                     IF EN-CARRY(WS-ROW) > 0
+                         MOVE 1 TO WS-CARRIED
+                     END-IF
+                     MOVE EN-CREEPY(WS-ROW) TO WS-CREEPY
                      CALL "EF6-ENDERMAN-ANIM" USING EMM-MODEL WS-STATE WS-CARRIED WS-CREEPY
                  WHEN OTHER
                      CONTINUE
@@ -725,6 +747,8 @@
      EVALUATE TRUE
          WHEN WS-ANIM = "B"
              CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN EN-KEY(WS-ROW) = "ender_dragon"
+             CALL "ENTITY-DRAGON-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "evoker_fangs"
              CALL "ENTITY-FANGS-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "squid" OR "glow_squid"

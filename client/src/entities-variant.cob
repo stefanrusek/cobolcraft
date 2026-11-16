@@ -81,6 +81,11 @@
              MOVE L-INT TO EN-X2(L-ROW)
          WHEN EN-KEY(L-ROW) = "panda" AND L-INDEX = 22 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
+*>   An enderman's carried block (entry 16, OPTIONAL_BLOCK_STATE: the raw VarInt, 0 none) and creepy flag (entry 17, BOOLEAN).
+         WHEN EN-KEY(L-ROW) = "enderman" AND L-INDEX = 16 AND L-SERIALIZER = 15
+             MOVE L-INT TO EN-CARRY(L-ROW)
+         WHEN EN-KEY(L-ROW) = "enderman" AND L-INDEX = 17 AND L-SERIALIZER = 8
+             MOVE L-INT TO EN-CREEPY(L-ROW)
 *>   A guardian's moving flag (entry 16, BOOLEAN) in EN-X1 and its active attack target (entry 17, VarInt): a new target restarts the attack time (EN-RS).
          WHEN (EN-KEY(L-ROW) = "guardian" OR "elder_guardian") AND L-INDEX = 16 AND L-SERIALIZER = 8
              MOVE L-INT TO EN-X1(L-ROW)
@@ -197,6 +202,7 @@
  01 WS-DIRNAME             PIC X(24).
  01 WS-STATE               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
+ 01 WS-TRIM                PIC X(10).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(20).
  01 L-CODE                 BINARY-LONG.
@@ -222,6 +228,17 @@
 *>       The overlay layers of ENTITY-OVERLAY (kind 1 villager type, 2 profession, 3 level, 4 horse markings, 5 collar; WS-CD is the value).
          COMPUTE WS-CD = FUNCTION MOD(L-CODE, 1000)
          EVALUATE TRUE
+*>           An armor trim (code 100000 + palette * 100 + pattern, ENTITY-OVERLAY): the pattern texture of the piece's layer type (54 section 18.4 rule 3).
+             WHEN L-CODE >= 100000 AND FUNCTION MOD(L-CODE, 100) >= 1 AND FUNCTION MOD(L-CODE, 100) <= 18
+                     AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
+                 MOVE "humanoid" TO WS-NAME
+                 IF WS-BASE = "armor_legs"
+                     MOVE "humanoid_leggings" TO WS-NAME
+                 END-IF
+                 COMPUTE WS-I = FUNCTION MOD(L-CODE, 100)
+                 CALL "TRIM-PATTERN-NAME" USING WS-I WS-TRIM
+                 STRING "textures/trims/entity/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-TRIM) ".png"
+                     DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 1 AND WS-CD >= 1 AND WS-CD <= 7 AND (WS-BASE = "villager" OR "zombie_villager")
                  MOVE "type" TO WS-NAME
                  IF WS-BABY NOT = SPACES
@@ -547,3 +564,26 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-MODEL-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BABY-INDEX.
+*> USING entity type key (X(24)), index out (BINARY-LONG): the Set Entity Data entry that holds the baby flag (BOOLEAN) of the type (21 Appendix A): 16 for the ageable mobs and the
+*> zombies, 17 for the piglin, 0 (none) for the types whose entry 16 is something else (allay dancing, bogged sheared, the fish's from_bucket, creaking, guardians moving, the
+*> illagers and the witch celebrating, ghast charging, the piglin brute's immunity, the skeleton's conversion, the tadpole's from_bucket).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-INDEX.
+     EVALUATE L-KEY
+         WHEN "piglin"
+             MOVE 17 TO L-INDEX
+         WHEN "allay" WHEN "bogged" WHEN "cod" WHEN "salmon" WHEN "tropical_fish" WHEN "pufferfish" WHEN "tadpole"
+         WHEN "creaking" WHEN "guardian" WHEN "elder_guardian" WHEN "evoker" WHEN "illusioner" WHEN "pillager"
+         WHEN "vindicator" WHEN "ravager" WHEN "witch" WHEN "ghast" WHEN "piglin_brute" WHEN "skeleton"
+             MOVE 0 TO L-INDEX
+         WHEN OTHER
+             MOVE 16 TO L-INDEX
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM ENTITY-BABY-INDEX.

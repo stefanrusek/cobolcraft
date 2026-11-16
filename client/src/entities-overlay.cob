@@ -8,7 +8,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-OVERLAY.
-*> USING CLIENT-STATE, replica row, layer number 1 to 8, code out (BINARY-LONG, 0 when the row has no such layer), red, green, blue out (FLOAT-LONG: the tint of the layer),
+*> USING CLIENT-STATE, replica row, layer number 1 to 12, code out (BINARY-LONG, 0 when the row has no such layer), red, green, blue out (FLOAT-LONG: the tint of the layer),
 *> model row out (0: the row's own model; the armor pieces of layers 5 to 8 have their own).
 *> Villager and zombie villager: 1 type (known data only), 2 profession (not for a baby, id 1 to 14), 3 level (not for a baby, a nitwit or no profession; clamped to 1 to 5).
 *> Zombie, husk, drowned, skeletons, piglins (adults): 5 chest, 6 legs, 7 feet, 8 head armor piece (code 6000 + asset of ENTITY-ARMOR-ASSET) with the model row armor_<slot>.
@@ -31,6 +31,9 @@
  01 WS-HAT                 BINARY-LONG.
  01 WS-PROF-HAT            BINARY-LONG.
  01 WS-TYPE-HAT            BINARY-LONG.
+ 01 WS-DYE                 BINARY-LONG.
+ 01 WS-LAYER               BINARY-LONG.
+ 01 WS-PALETTE             BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -80,8 +83,13 @@
          WHEN "zombie" WHEN "husk" WHEN "drowned" WHEN "skeleton" WHEN "stray" WHEN "bogged" WHEN "parched" WHEN "wither_skeleton"
          WHEN "zombified_piglin" WHEN "piglin" WHEN "piglin_brute"
 *>           The armor pieces of an adult (34-2 1.5), in the order chest, legs, feet, head: layers 5 to 8, each with the model row of its slot.
-             IF L-N >= 5 AND L-N <= 8 AND EN-BABY(L-ROW) = 0
-                 EVALUATE L-N
+             IF L-N >= 5 AND L-N <= 12 AND EN-BABY(L-ROW) = 0
+*>               Layers 9 to 12 are the trims of the pieces of layers 5 to 8 (54 section 18).
+                 COMPUTE WS-LAYER = L-N
+                 IF L-N > 8
+                     SUBTRACT 4 FROM WS-LAYER
+                 END-IF
+                 EVALUATE WS-LAYER
                      WHEN 5 MOVE 2 TO WS-WANT
                      WHEN 6 MOVE 3 TO WS-WANT
                      WHEN 7 MOVE 4 TO WS-WANT
@@ -91,15 +99,18 @@
                  COMPUTE WS-ITEM = EN-EQ(L-ROW, 7 - WS-WANT)
                  IF WS-ITEM > 0
                      CALL "ENTITY-ARMOR-ASSET" USING CLIENT-STATE WS-ITEM WS-SLOT WS-ASSET
-                     IF WS-SLOT = WS-WANT
+                     IF WS-SLOT = WS-WANT AND L-N > 8
+*>                       The trim: the palette of the material (darker for the armor's own material) and the pattern, code 100000 + palette * 100 + pattern.
+                         IF EN-EQ-TRIM-MAT(L-ROW, 7 - WS-WANT) >= 1 AND EN-EQ-TRIM-MAT(L-ROW, 7 - WS-WANT) <= 11
+                                 AND EN-EQ-TRIM-PAT(L-ROW, 7 - WS-WANT) >= 1 AND EN-EQ-TRIM-PAT(L-ROW, 7 - WS-WANT) <= 18
+                             CALL "TRIM-PALETTE-FOR" USING WS-ASSET EN-EQ-TRIM-MAT(L-ROW, 7 - WS-WANT) WS-PALETTE
+                             COMPUTE L-CODE = 100000 + WS-PALETTE * 100 + EN-EQ-TRIM-PAT(L-ROW, 7 - WS-WANT)
+                             PERFORM ARMOR-MODEL-ROW
+                         END-IF
+                     END-IF
+                     IF WS-SLOT = WS-WANT AND L-N <= 8
                          COMPUTE L-CODE = 6000 + WS-ASSET
-                         EVALUATE WS-WANT
-                             WHEN 1 MOVE "armor_head" TO WS-FK
-                             WHEN 2 MOVE "armor_chest" TO WS-FK
-                             WHEN 3 MOVE "armor_legs" TO WS-FK
-                             WHEN OTHER MOVE "armor_feet" TO WS-FK
-                         END-EVALUATE
-                         CALL "ENTITY-MODEL-FIND" USING WS-FK L-MODEL
+                         PERFORM ARMOR-MODEL-ROW
                      END-IF
                  END-IF
              END-IF
@@ -166,6 +177,16 @@
      END-IF
      GO TO TINT.
 
+*> The model row of the armor piece of the slot WS-WANT.
+ ARMOR-MODEL-ROW.
+     EVALUATE WS-WANT
+         WHEN 1 MOVE "armor_head" TO WS-FK
+         WHEN 2 MOVE "armor_chest" TO WS-FK
+         WHEN 3 MOVE "armor_legs" TO WS-FK
+         WHEN OTHER MOVE "armor_feet" TO WS-FK
+     END-EVALUATE
+     CALL "ENTITY-MODEL-FIND" USING WS-FK L-MODEL.
+
 *> The type layer draws the head unless the profession texture's hat covers it (34-3 1.5): the no-hat model (rows villager_nohat, zvillager_nohat and their babies) when
 *> the profession's hat is full, or partial with a type texture whose hat is full. The hat of each is the `villager.hat` of the .mcmeta of the type texture (folder type
 *> also for a baby) and of the profession texture (VILLAGER-HAT).
@@ -206,6 +227,16 @@
          MOVE L-CODE TO EN-OVL(L-ROW)
          CALL "ENTITY-TINT" USING CLIENT-STATE L-ROW EN-MODEL(L-ROW) L-RED L-GREEN L-BLUE
          MOVE WS-NOW TO EN-OVL(L-ROW)
+*>       Worn leather (code 6001, layers 5 to 8): the dyed colour of the piece's stack when it is not 0, else the undyed brown A06540 (54 section 17, 43 section 7.2).
+         IF L-CODE = 6001 AND L-N >= 5 AND L-N <= 8
+             COMPUTE WS-DYE = EN-EQ-DYE(L-ROW, 7 - WS-WANT)
+             IF WS-DYE <= 0
+                 MOVE 10511680 TO WS-DYE
+             END-IF
+             COMPUTE L-RED = FUNCTION INTEGER(WS-DYE / 65536) / 255
+             COMPUTE L-GREEN = FUNCTION MOD(FUNCTION INTEGER(WS-DYE / 256), 256) / 255
+             COMPUTE L-BLUE = FUNCTION MOD(WS-DYE, 256) / 255
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM ENTITY-OVERLAY.

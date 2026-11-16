@@ -188,3 +188,41 @@
      MOVE WS-N TO L-OP(1)
      GOBACK.
  END PROGRAM ENTITY-BOAT-SEQUENCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-DRAGON-SEQUENCE.
+*> USING CLIENT-STATE, replica row of the ender dragon, ops out (64 FLOAT-LONG): 34-7 8.5: rotate Y by -yaw(7), rotate X by (y(5) - y(10)) x 10, translate (0, 0, 1), scale
+*> (-1, -1, 1), translate (0, -1.501, 0), P(n) = the history at partial tick 1 (EF7-DRAGON-POSE-OPS; its code 6 (rotate X) is 5 here).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I.
+    05 WS-IV               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-O.
+    05 WS-OV               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-T                   FLOAT-LONG VALUE 1.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OPS.
+    05 L-OP                FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-OPS.
+     MOVE 7 TO WS-N
+     CALL "EF7-HIST-GETI" USING EN-DR-HIST WS-N WS-T WS-Y WS-R
+     MOVE WS-R TO WS-IV(1)
+     MOVE 5 TO WS-N
+     CALL "EF7-HIST-GETI" USING EN-DR-HIST WS-N WS-T WS-Y WS-R
+     MOVE WS-Y TO WS-IV(2)
+     MOVE 10 TO WS-N
+     CALL "EF7-HIST-GETI" USING EN-DR-HIST WS-N WS-T WS-Y WS-R
+     MOVE WS-Y TO WS-IV(3)
+     CALL "EF7-DRAGON-POSE-OPS" USING WS-I WS-O
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 21
+         MOVE WS-OV(WS-K) TO L-OP(WS-K)
+     END-PERFORM
+     MOVE 5 TO L-OP(6)
+     GOBACK.
+ END PROGRAM ENTITY-DRAGON-SEQUENCE.

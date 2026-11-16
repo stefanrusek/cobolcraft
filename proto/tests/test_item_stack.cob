@@ -173,6 +173,12 @@
      MOVE "test item-stack get of dyed_color (47) is an Int" TO TL-CASE
      MOVE "c1 i1 +47=00ff0000 pos 9 error 0" TO TL-EXPECTED
      PERFORM CHECK-GET
+     MOVE "01 01 01 00 2e 05" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of dye (46) is a VarInt" TO TL-CASE
+     MOVE "c1 i1 +46=05 pos 6 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
      MOVE "01 01 01 00 41 03" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X

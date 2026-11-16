@@ -633,6 +633,13 @@
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.
        10 EN-COUNT           BINARY-LONG.    *> rows ever used
+*>        The ender dragon's flight history (34-7 8.1; one dragon per world): the entity id that owns it (0 none), the head index and 64 samples of y and yaw in degrees (the group
+*>        layout of EF7-HIST-*).
+       10 EN-DR-ID           BINARY-LONG.
+       10 EN-DR-HIST.
+          15 EN-DR-HEAD      BINARY-LONG.
+          15 EN-DR-HY        FLOAT-LONG OCCURS 64 TIMES.
+          15 EN-DR-HR        FLOAT-LONG OCCURS 64 TIMES.
        10 EN-ENTITY OCCURS 256 TIMES.
           15 EN-USED         PIC 9.
           15 EN-ID           BINARY-LONG.
@@ -724,6 +731,12 @@
           15 EN-BBM          FLOAT-LONG.
           15 EN-BBA          FLOAT-LONG.
           15 EN-BUW          PIC 9.
+*>        Held-item poses: the enderman's carried block state (entry 16, 0 none) and creepy flag (17); the iron golem's attack tick (Entity Event 4: 10) and offer-flower
+*>        tick (event 11: 400, event 34: 0), both falling by 1 a tick.
+          15 EN-CARRY        BINARY-LONG.
+          15 EN-CREEPY       PIC 9.
+          15 EN-ATK          BINARY-LONG.
+          15 EN-FLW          BINARY-LONG.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the
@@ -745,6 +758,20 @@
           15 EN-HAND OCCURS 2 TIMES.
              20 EN-HAND-OK    BINARY-LONG.
              20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
+*>        The item components of the equipment that the models draw (54 sections 17 to 19 and 22; ENTITY-EQ-COMPONENTS, per slot like EN-EQ): EN-EQ-DYE the
+*>        dyed_color RGB (low 24 bits, -1 none), EN-EQ-TRIM-MAT and -PAT the trim's material and pattern holders (registry position + 1, 0 none or an inline holder),
+*>        EN-EQ-FOIL 1 when the stack has the glint (the override, else a non-empty enchantments component). EN-HB, per hand (1 main, 2 off): the base_color dye
+*>        (-1 none), the number of banner_patterns layers (at most 16 kept) and the pattern holder (0 inline) and dye id of each.
+          15 EN-EQX OCCURS 8 TIMES.
+             20 EN-EQ-DYE      BINARY-LONG.
+             20 EN-EQ-TRIM-MAT BINARY-LONG.
+             20 EN-EQ-TRIM-PAT BINARY-LONG.
+             20 EN-EQ-FOIL     BINARY-LONG.
+          15 EN-HB OCCURS 2 TIMES.
+             20 EN-HB-BASE     BINARY-LONG.
+             20 EN-HB-COUNT    BINARY-LONG.
+             20 EN-HB-PAT      BINARY-LONG OCCURS 16 TIMES.
+             20 EN-HB-DYE      BINARY-LONG OCCURS 16 TIMES.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
