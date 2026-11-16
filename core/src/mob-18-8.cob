@@ -518,6 +518,15 @@
  01 WS-SALT-V              BINARY-LONG VALUE 57.
  01 WS-BOUND-V             BINARY-LONG VALUE 2.
  01 WS-DRAW-V              BINARY-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-BRIGHT              FLOAT-LONG.
+ 01 WS-SLIME-CH            FLOAT-LONG.
+ 01 WS-MOONFLAG            BINARY-LONG.
+ 01 WS-HUTFLAG             BINARY-LONG VALUE 0.
+ 01 WS-SALT-CAT            BINARY-LONG VALUE 58.
+ 01 WS-BOUND-CAT           BINARY-LONG VALUE 110.
+ 01 WS-DRAW-CAT            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -579,6 +588,16 @@
                  CALL "XP-RANDOM" USING WS-SALT-GC WS-BOUND-GC WS-DRAW-G
                  COMPUTE EN-WOOL(L-ROW) = EN-WOOL(L-ROW) + 2 + 2 * WS-DRAW-G
              END-IF
+         WHEN "cat"
+*>           The cat variant (19 section 1.6): the moon brightness of the overworld clock decides whether all_black joins the pool (the swamp hut structure test is not known here).
+             COMPUTE WS-TOTAL = FUNCTION MOD(CW-TIME, 192000)
+             CALL "WC-MOON" USING WS-TOTAL WS-PHASE WS-BRIGHT WS-SLIME-CH
+             MOVE 0 TO WS-MOONFLAG
+             IF WS-BRIGHT >= 0.9
+                 MOVE 1 TO WS-MOONFLAG
+             END-IF
+             CALL "XP-RANDOM" USING WS-SALT-CAT WS-BOUND-CAT WS-DRAW-CAT
+             CALL "M44-CAT-VARIANT" USING WS-MOONFLAG WS-HUTFLAG WS-DRAW-CAT EN-WOOL(L-ROW)
          WHEN "armadillo"
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
