@@ -25,8 +25,9 @@
      MOVE 12 TO EN-Y(1)
      MOVE 4.5 TO EN-Z(1)
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE
-     MOVE "T6601 a dropped item of the standard set (key item, id 72) is drawn as one quad of 6 vertices" TO TL-CASE
-     MOVE 6 TO TL-EXPECTED-N
+*>   A stack of 3 is 2 copies of the flat model, both faces, 12 vertices each (34-9 section 9.1, VANILLA-ITEMS-MESH of lane misc2).
+     MOVE "T6601 a dropped item of the standard set (key item, id 72, a stack of 3) is drawn in 2 copies of 12 vertices" TO TL-CASE
+     MOVE 24 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The stand-in type id 1 of a standard set is a boat: no ground item.

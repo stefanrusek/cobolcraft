@@ -569,13 +569,10 @@
      COMPUTE WS-RX = - FUNCTION COS(PL-YAW * FUNCTION PI / 180)
      COMPUTE WS-RZ = - FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-*>       The item entity of a cobolcraft world is the stand-in type ET-LOOSE-ITEM; of the standard set the registry entry `item`
-*>       (EN-VANILLA 1, whose type id 1 is a boat).
+*>       The item entity of a cobolcraft world is the stand-in type ET-LOOSE-ITEM (EN-VANILLA 0; type id 1 of a standard set is a boat, so
+*>       a standard row is never one). The dropped item of a standard set (EN-VANILLA 1, key `item`) is drawn by VANILLA-ITEMS-MESH below.
          MOVE 0 TO WS-LOOSE
          IF EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = ET-LOOSE-ITEM
-             MOVE 1 TO WS-LOOSE
-         END-IF
-         IF EN-VANILLA(WS-R) = 1 AND EN-KEY(WS-R) = "item"
              MOVE 1 TO WS-LOOSE
          END-IF
          IF EN-USED(WS-R) = 1 AND WS-LOOSE = 1 AND EN-STACK-COUNT(WS-R) > 0
