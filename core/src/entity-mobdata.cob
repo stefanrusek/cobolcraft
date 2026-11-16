@@ -32,6 +32,7 @@
  01 WS-NS-LENGTH           BINARY-LONG.
  01 WS-DIRECTION           BINARY-LONG VALUE 0.
  01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
  01 WS-INTS.
     05 WS-INT              BINARY-LONG OCCURS 4 TIMES.
@@ -218,6 +219,14 @@
          CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-INTS
          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      END-IF
+*>   held by a fence knot: the knot's block position as an Int Array of 3 (45 section 10.1); the knot itself is not saved.
+     IF EN-LEASH-KNOT(L-ROW) > 0
+         MOVE "leash" TO WN MOVE 5 TO WL
+         COMPUTE WS-INT(1) = FUNCTION INTEGER(EN-X(EN-LEASH-KNOT(L-ROW)))
+         COMPUTE WS-INT(2) = FUNCTION INTEGER(EN-Y(EN-LEASH-KNOT(L-ROW)))
+         COMPUTE WS-INT(3) = FUNCTION INTEGER(EN-Z(EN-LEASH-KNOT(L-ROW)))
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-INTS
+     END-IF
      GOBACK.
  END PROGRAM MOB-NBT-WRITE.
 
@@ -232,6 +241,11 @@
  01 WS-TO-UUID             BINARY-LONG VALUE 1.
  01 WS-INT-CAPACITY        BINARY-LONG VALUE 4.
  01 WS-INT-COUNT           BINARY-LONG.
+ 01 WS-KM.
+    05 WS-KM-MARK          PIC X(4).
+    05 WS-KM-X             BINARY-LONG.
+    05 WS-KM-Y             BINARY-LONG.
+    05 WS-KM-Z             BINARY-LONG.
  01 WS-INTS.
     05 WS-INT              BINARY-LONG OCCURS 4 TIMES.
  01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 48.
@@ -315,6 +329,16 @@
              END-IF
              MOVE WS-START TO PB-POS
              CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
+         WHEN L-NAME = "leash" AND L-TYPE = 11
+*>           The block position of a fence knot: kept in MQ-LEASH as "KNOT" and the three ints (MOB-LEASH-RESTORE).
+             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT WS-INTS
+             IF WS-INT-COUNT = 3
+                 MOVE "KNOT" TO WS-KM-MARK
+                 MOVE WS-INT(1) TO WS-KM-X
+                 MOVE WS-INT(2) TO WS-KM-Y
+                 MOVE WS-INT(3) TO WS-KM-Z
+                 MOVE WS-KM TO MQ-LEASH
+             END-IF
          WHEN L-NAME = "equipment" AND L-TYPE = 10
 *>           The saddle slot (present: saddled) and the body slot (an item id and its damage component); the other slots are not modelled.
              MOVE "saddle" TO WS-PATH
@@ -506,9 +530,24 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-P                   BINARY-LONG.
+ 01 WS-KM.
+    05 WS-KM-MARK          PIC X(4).
+    05 WS-KM-X             BINARY-LONG.
+    05 WS-KM-Y             BINARY-LONG.
+    05 WS-KM-Z             BINARY-LONG.
+ 01 WS-KNOT                BINARY-LONG.
+ 01 WS-CREATED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   A fence knot ("KNOT" and the block position, see MOB-NBT-APPLY): the knot is found or made there.
+     MOVE EN-LEASH-UUID(L-ROW) TO WS-KM
+     IF WS-KM-MARK = "KNOT"
+         CALL "MOB-KNOT-GET" USING EN-DIM(L-ROW) WS-KM-X WS-KM-Y WS-KM-Z WS-KNOT WS-CREATED
+         MOVE WS-KNOT TO EN-LEASH-KNOT(L-ROW)
+         MOVE SPACES TO EN-LEASH-UUID(L-ROW)
+         CALL "MOB-LEASH-LINK" USING L-ROW EN-ID(WS-KNOT)
+     END-IF
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
          IF PL-USED(WS-P) = 1 AND PL-UUID(WS-P) = EN-LEASH-UUID(L-ROW) AND PL-DIM(WS-P) = EN-DIM(L-ROW)
              MOVE WS-P TO EN-LEASH(L-ROW)

@@ -379,7 +379,8 @@
        10 EN-RIDER           BINARY-LONG.        *> player row riding this mob (0 none)
        10 EN-VEHICLE         BINARY-LONG.        *> on a player's entity: the tracker row of the mob it rides (0 none)
        10 EN-TEMPER          BINARY-LONG.        *> horse family: temper 0 to 100 (19 section 3.4)
-       10 EN-LEASH           BINARY-LONG.        *> player row holding a lead on this mob (0 none; a fence knot is an open item)
+       10 EN-LEASH           BINARY-LONG.        *> player row holding a lead on this mob (0 none; a fence knot holder is EN-LEASH-KNOT)
+       10 EN-LEASH-KNOT      BINARY-LONG.        *> entity row of the leash_knot entity holding a lead on this mob (0 none; EN-LEASH is then 0)
 *>     --- 002-lane-mobsfull-h15: surroundings and memory of a standard mob (core/src/mob-18-2.cob; 18 sections 2.5, 2.8) ---
        10 EN-AIR-LOST        BINARY-LONG.        *> air supply lost: the air is 300 less this (0 = full); 320 = air -20, drowning damage and back to 300
        10 EN-KILLER-AGE      BINARY-LONG.        *> ticks left of lastHurtByPlayerMemoryTime (100 after a hit by a player); at 0 EN-KILLER is cleared (0 = not counting)

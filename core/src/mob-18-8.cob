@@ -1434,6 +1434,7 @@
  01 WS-KEY48               PIC X(48).
  01 WS-HELD                PIC X(24).
  01 WS-USED                BINARY-LONG.
+ 01 WS-SNEAK               BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -1446,6 +1447,18 @@
          END-IF
      END-PERFORM
      IF WS-ENTITY = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE OR PSB-HAND NOT = 0
+         GOBACK
+     END-IF
+*>   A leash knot (21 section 8.15): within 6 blocks of the player's eyes.
+     CALL "MOB-KNOT-TYPE" USING WS-TYPE
+     IF EN-TYPE(WS-ENTITY) = WS-TYPE AND EN-DIM(WS-ENTITY) = PL-DIM(WS-ROW)
+         COMPUTE WS-DX = EN-X(WS-ENTITY) - PL-X(WS-ROW)
+         COMPUTE WS-DY = EN-Y(WS-ENTITY) - (PL-Y(WS-ROW) + RULE-ATTACK-EYE-MILLI / 1000)
+         COMPUTE WS-DZ = EN-Z(WS-ENTITY) - PL-Z(WS-ROW)
+         IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ <= 36
+             MOVE PL-SNEAKING(WS-ROW) TO WS-SNEAK
+             CALL "MOB-KNOT-INTERACT" USING WS-ROW WS-ENTITY WS-SNEAK WS-USED
+         END-IF
          GOBACK
      END-IF
      IF EN-PLAYER(WS-ENTITY) > 0 OR EN-DIM(WS-ENTITY) NOT = PL-DIM(WS-ROW) OR EN-HEALTH(WS-ENTITY) = 0
