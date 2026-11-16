@@ -414,6 +414,20 @@
          MOVE 1 TO WS-VALUE
          MOVE 0 TO WS-CONVERT
      END-IF
+*>   The immunity to zombification (T8804): metadata 16 of a piglin or brute, 18 of a hoglin, BOOLEAN true, when it is the only entry.
+     IF WS-INDEX = 0 AND WS-M > 0 AND EN-PIG-IMMUNE(L-ROW) = 1
+         EVALUATE SM-KEY(WS-M)
+             WHEN "piglin"
+             WHEN "piglin_brute"
+                 MOVE 16 TO WS-INDEX
+             WHEN "hoglin"
+                 MOVE 18 TO WS-INDEX
+         END-EVALUATE
+         IF WS-INDEX > 0
+             MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+             MOVE 1 TO WS-VALUE
+         END-IF
+     END-IF
 *>   An ignited creeper (metadata 18 BOOLEAN true, 6.1) follows the powered entry, or is the only one.
      IF WS-M > 0 AND SM-KEY(WS-M) = "creeper" AND EN-IGNITED(L-ROW) = 1
          IF WS-INDEX = 0
