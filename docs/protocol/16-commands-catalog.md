@@ -516,7 +516,7 @@ teleport <targets> <location> facing entity <facingEntity:entity> [<facingAnchor
 teleport <targets> <destination:entity>
 ```
 
-**Dimension and relative coordinates (54 §9, supersedes the wording below):** the location forms move every target into the **executor's** level (the one `execute in` sets), the entity-destination forms into the destination entity's level, so a teleport can cross dimensions; `~` and `^` are resolved once against the executor, not against each target.
+**Dimension and relative coordinates (54 §9, supersedes the wording below):** the location forms move every target into the **executor's** level (the one `execute in` sets), the entity-destination forms into the destination entity's level, so a teleport can cross dimensions; `~` and `^` are resolved once against the executor, not against each target. A refused move (the routine returns false) is still counted (54 §9.2), contrary to the "not counted" below.
 
 Behaviour (read): tracker-style counting, one tracked entry per entity successfully teleported; with zero entries tracked the usual selector error applies upstream.
 

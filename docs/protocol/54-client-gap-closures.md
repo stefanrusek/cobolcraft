@@ -338,7 +338,7 @@ Each target is handed to `Entity.teleport` with a transition naming the destinat
 - equal: same-dimension move (passengers are moved by their own transitions first; the position is set; players are sent the position update);
 - different: cross-dimension move: passengers are ejected and each teleported by its own transition; a **new entity of the same type** is created in the destination level (spawn reason `DIMENSION_TRAVEL`), state is copied from the old one (`restoreFrom`), the old one is removed, and the new one is positioned and added to the destination level. For players the usual dimension-change path (Respawn, chunk and state resend: 05a/05b, 17 §4.10) is expected (the `ServerPlayer` override was not read; inferred).
 
-Targets in different dimensions from each other are independent: each goes to the one destination level. A target whose `teleportTo` returns false (removed entity) is skipped entirely: no facing, no side effects, not tracked, and the loop goes on. The result is the number of targets tracked.
+Targets in different dimensions from each other are independent: each goes to the one destination level. A target whose `teleportTo` returns false (removed entity) gets no facing step and none of the step-5 side effects, but it **is still counted**: the move routine returns nothing and the loop tracks every target unconditionally (corrected in review; 16 §5.2's older "not counted" wording is superseded). The result is therefore the number of targets selected, and the success message reports that count.
 
 ### 9.3 Relative and local coordinates (refines 5.2)
 
@@ -473,7 +473,7 @@ Worked examples: `compute integer cooking/time_coal` prints "<id> returned value
 ### 14.1 Request handling
 
 1. The handler keeps the request's transaction id and passes the text to the player's `ServerCommandSuggestionsProvider`. Each player has one provider and one slot for the **latest unprocessed request**.
-2. A new request replaces the slot's content. A replaced request that was not yet processed is **dropped without any answer** (its id is never echoed; inferred from the slot replacement, no cancel call is read). Only the newest request is answered.
+2. A new request replaces the slot's content. A replaced request that was not yet processed is **dropped without any answer** (its id is never echoed: its pending answer is simply never completed, no cancel call exists). Only the newest request is answered. The same applies to a request being parsed: after the parse, if the slot has been refilled by a newer request, the current one is abandoned unanswered and the newer one is handled on a later tick.
 3. Once per server tick (the budget is refilled every tick: the minimum interval is 1 tick) the provider takes the slot, so **at most one request per player is processed per tick**; a request arriving with budget available is scheduled on the server thread at once (executed at the next server task run), otherwise it waits for the next tick.
 4. Processing: if the text starts with `/` that one character is skipped (the reader keeps the full text, so every range stays counted in the original text **including the slash**, as 09 says); the text is parsed by the command dispatcher with the player's own command source (so requirement predicates and permission levels filter what can be suggested: 15 framework); completion suggestions are then asked from the parse result at the end of the text (15a §6).
 5. The result is capped at **1000** suggestions (the first 1000 of the sorted list; the range is kept). The text of each entry is the suggestion text; the tooltip is present only when the suggestion carries one.
@@ -483,7 +483,7 @@ Worked example: text `/gamemode s`, one request, budget available: range start 1
 
 ### 14.2 When the Commands tree is sent
 
-Commands (0x10) is built per player: the dispatcher's root is copied keeping only the nodes the player's command source may use (requirement predicates evaluated for that player; children of a hidden node are hidden with it), then serialised (15 framework, 05a 0x10). It is sent: when the player joins (`placeNewPlayer`), after a respawn (`respawn`), and whenever the permission level is re-sent (`op`, `deop`, and the public `sendPlayerPermissionLevel`). No other trigger was found in `PlayerList`.
+Commands (0x10) is built per player: the dispatcher's root is copied keeping only the nodes the player's command source may use (requirement predicates evaluated for that player; children of a hidden node are hidden with it), then serialised (15 framework, 05a 0x10). It is sent: when the player joins (`placeNewPlayer`), after a respawn (`respawn`), and whenever the permission level is re-sent (`op`, `deop`, and the public `sendPlayerPermissionLevel`). Within the permission re-send the order is: when the player has a connection, an Entity Event (0x22 in 05a) on the player with status 24 + permission level (24 to 28, level 0 to 4) is sent first, then Commands. Before the player's first server tick the provider has no budget, so a request that early waits for that tick. No other trigger was found: among the classes of `net.minecraft.server.players`, `net.minecraft.commands` and the top-level `net.minecraft.server` / `server.commands` classes, only `PlayerList` calls `Commands.sendCommands` (a `/reload` path that re-sends the tree through the public permission re-send was not traced; see Open questions).
 
 ---
 
@@ -492,6 +492,6 @@ Commands (0x10) is built per player: the dispatcher's root is copied keeping onl
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
 2. The ram-run-up distance ordering (7.1, "squared distance") and the camel `standUpInstantly` constant (6.4) remain as marked.
 
-3. (cr4) Not read: the `ServerPlayer` cross-dimension override (9.2); the argument order of the sniffer dig-position lookup (12.2); `FeelingHappy` and `Scenting` internals (12.2); how a float provider's value is printed (Java float text assumed, 13.4); the message of integer arithmetic exceptions (13.4); `/test`, `/dialog show`, `/raid` failure keys and `/perf` report format (not traced; `/jfr` is a JVM profiler and not applicable).
+3. (cr4) Not read: the `ServerPlayer` cross-dimension override (9.2); the argument order of the sniffer dig-position lookup (12.2); `FeelingHappy` and `Scenting` internals (12.2); how a float provider's value is printed (Java float text assumed, 13.4); the message of integer arithmetic exceptions (13.4); whether `/reload` re-sends the Commands tree (14.2); `/test`, `/dialog show`, `/raid` failure keys and `/perf` report format (not traced; `/jfr` is a JVM profiler and not applicable).
 
 Closed in review: the horizontal plane order is north, east, south, west (read from the plane's static initialiser; also in 24); the camel sitting dimensions are in 6.4.
