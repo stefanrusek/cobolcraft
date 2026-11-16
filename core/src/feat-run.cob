@@ -488,6 +488,14 @@
  01 WS-TEST                BINARY-LONG.
  01 WS-P4.
     05 WS-Q                BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-BOUND6              BINARY-LONG.
+ 01 WS-ROT                 BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FACE-NAME           PIC X(40).
+ 01 WS-AXIS-NAME           PIC X(40).
+ 01 WS-AXIS-KEY            PIC X(40) VALUE "axis".
+ 01 WS-FACING-KEY          PIC X(40) VALUE "facing".
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-PV                   BINARY-LONG.
@@ -549,6 +557,43 @@
              IF WS-RUN >= 0 AND WS-RUN < PV-N(L-PV)
                  MOVE FD-POOL(PV-POOL(L-PV) + WS-RUN) TO L-STATE-OUT
                  MOVE 1 TO L-OK
+             END-IF
+*>       rotated (35-2 section 4.3): the direction (a draw when the data names none) comes first, then the inner provider's state; axis takes the axis of the direction and facing the direction
+*>       (a block without the property, or without that value, keeps its state; the properties are found by name: the document's identity rule for the two axis and three facing
+*>       properties is not modelled, the data uses rotated only on hay_block and the wall fans)
+         WHEN 9
+             MOVE PV-N(L-PV) TO WS-DIR
+             IF WS-DIR < 0
+                 MOVE 6 TO WS-BOUND6
+                 CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-BOUND6 WS-DIR
+             END-IF
+             MOVE PV-A(L-PV) TO WS-PV
+             CALL "FR-PROV-STATE" USING L-STATE WS-PV L-X L-Y L-Z L-STATE-OUT L-OK
+             IF L-OK = 1
+                 EVALUATE WS-DIR
+                     WHEN 0
+                         MOVE "down" TO WS-FACE-NAME
+                         MOVE "y" TO WS-AXIS-NAME
+                     WHEN 1
+                         MOVE "up" TO WS-FACE-NAME
+                         MOVE "y" TO WS-AXIS-NAME
+                     WHEN 2
+                         MOVE "north" TO WS-FACE-NAME
+                         MOVE "z" TO WS-AXIS-NAME
+                     WHEN 3
+                         MOVE "south" TO WS-FACE-NAME
+                         MOVE "z" TO WS-AXIS-NAME
+                     WHEN 4
+                         MOVE "west" TO WS-FACE-NAME
+                         MOVE "x" TO WS-AXIS-NAME
+                     WHEN OTHER
+                         MOVE "east" TO WS-FACE-NAME
+                         MOVE "x" TO WS-AXIS-NAME
+                 END-EVALUATE
+                 MOVE L-STATE-OUT TO WS-ROT
+                 CALL "FD-STATE-SET" USING WS-ROT WS-AXIS-KEY WS-AXIS-NAME L-STATE-OUT WS-FOUND
+                 MOVE L-STATE-OUT TO WS-ROT
+                 CALL "FD-STATE-SET" USING WS-ROT WS-FACING-KEY WS-FACE-NAME L-STATE-OUT WS-FOUND
              END-IF
 *>       the noise providers (feat-prov-noise.cob)
          WHEN 6
@@ -1168,6 +1213,10 @@
              CALL "FR-FALLEN" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL "FR-BLOB" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 8
+             CALL "FR-CORAL-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
+         WHEN 7
+             CALL "FR-CORAL-CLAW" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 24
              CALL "FR-ICEBERG" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 47
@@ -1228,6 +1277,15 @@
              PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT) OR L-RESULT = 0
                  COMPUTE LS-CH = FT-A(L-FT) + LS-I
                  CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CH) LS-ZERO L-X L-Y L-Z L-RESULT
+             END-PERFORM
+         WHEN 32
+*>           overlay (35-5 section 1.3): every member from the same position, the result the OR of theirs (a failing member does not stop the others)
+             PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT)
+                 COMPUTE LS-CH = FT-A(L-FT) + LS-I
+                 CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CH) LS-ZERO L-X L-Y L-Z LS-OK
+                 IF LS-OK = 1
+                     MOVE 1 TO L-RESULT
+                 END-IF
              END-PERFORM
          WHEN 42
              CALL "FR-PROV-STATE" USING L-STATE FT-A(L-FT) L-X L-Y L-Z LS-STATE LS-OK

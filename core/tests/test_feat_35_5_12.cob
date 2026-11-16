@@ -109,6 +109,16 @@
  01 WS-B-MELON             BINARY-LONG.
  01 WS-B-PATH              BINARY-LONG.
  01 WS-S-MELON             BINARY-LONG.
+ 01 WS-S-HAY-X             BINARY-LONG.
+ 01 WS-S-HAY-Y             BINARY-LONG.
+ 01 WS-S-HAY-Z             BINARY-LONG.
+ 01 WS-FT-MELON            BINARY-LONG.
+ 01 WS-FT-HAY              BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-HAY                 BINARY-LONG VALUE 0.
+ 01 WS-HDIR                BINARY-LONG.
+ 01 WS-B6                  BINARY-LONG VALUE 6.
+ 01 WS-N-DIRS              BINARY-LONG VALUE 0.
  01 WS-BELOW-B             BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
@@ -122,6 +132,7 @@
  01 WS-SAVE-TABLE.
     05 WS-OS               BINARY-LONG OCCURS 1024 TIMES.
  01 WS-B2                  BINARY-LONG VALUE 2.
+ 01 WS-I                   BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
@@ -146,6 +157,52 @@
      MOVE FT-TYPE(WS-FT) TO WS-OBS
      MOVE 3 TO WS-EXP
      PERFORM ASSERT-N
+     MOVE WS-FT TO WS-FT-MELON
+     MOVE "hay_block" TO WS-KEY
+     MOVE "axis=x" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-S-HAY-X
+     MOVE "axis=y" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-S-HAY-Y
+     MOVE "axis=z" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-S-HAY-Z
+     MOVE "minecraft:pile_hay" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT-HAY
+     CALL "FD-ENSURE-FT" USING WS-FT-HAY
+     MOVE "35-5§12: pile_hay (a rotated provider without a direction) compiles as a block_pile (3)" TO WS-CASE
+     MOVE FT-TYPE(WS-FT-HAY) TO WS-OBS
+     MOVE 3 TO WS-EXP
+     PERFORM ASSERT-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         MOVE SPACES TO WS-FTKEY
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE "minecraft:pile_hay_down" TO WS-FTKEY
+             WHEN 2
+                 MOVE "minecraft:pile_hay_up" TO WS-FTKEY
+             WHEN 3
+                 MOVE "minecraft:pile_hay_north" TO WS-FTKEY
+             WHEN 4
+                 MOVE "minecraft:pile_hay_south" TO WS-FTKEY
+             WHEN 5
+                 MOVE "minecraft:pile_hay_west" TO WS-FTKEY
+             WHEN OTHER
+                 MOVE "minecraft:pile_hay_east" TO WS-FTKEY
+         END-EVALUATE
+         CALL "FD-GET-FT" USING WS-FTKEY WS-FT2
+         CALL "FD-ENSURE-FT" USING WS-FT2
+         MOVE SPACES TO WS-CASE
+         STRING "35-5§12: a rotated provider with the direction " WS-FTKEY(11:20) " compiles" DELIMITED BY SIZE INTO WS-CASE
+         MOVE FT-TYPE(WS-FT2) TO WS-OBS
+         MOVE 3 TO WS-EXP
+         PERFORM ASSERT-N
+     END-PERFORM
+     MOVE "minecraft:pile_hay_bad" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT2
+     CALL "FD-ENSURE-FT" USING WS-FT2
+     MOVE "35-5§12: a rotated provider with an unknown direction is unsupported" TO WS-CASE
+     MOVE FT-TYPE(WS-FT2) TO WS-OBS
+     MOVE -1 TO WS-EXP
+     PERFORM ASSERT-N
      MOVE "minecraft:pile_pumpkin" TO WS-FTKEY
      CALL "FD-GET-FT" USING WS-FTKEY WS-FT2
      CALL "FD-ENSURE-FT" USING WS-FT2
@@ -154,16 +211,23 @@
      MOVE 3 TO WS-EXP
      PERFORM ASSERT-N
 
-     PERFORM VARYING WS-SEEDNO FROM 1 BY 1 UNTIL WS-SEEDNO > 12
+     PERFORM VARYING WS-SEEDNO FROM 1 BY 1 UNTIL WS-SEEDNO > 24
          COMPUTE WS-SEED = WS-SEEDNO * 3571
          MOVE WS-SEEDNO TO WS-SEEDTXT
+         IF WS-SEEDNO > 12
+             MOVE 1 TO WS-HAY
+             MOVE WS-FT-HAY TO WS-CUR
+         ELSE
+             MOVE 0 TO WS-HAY
+             MOVE WS-FT-MELON TO WS-CUR
+         END-IF
          PERFORM NEW-WORLD
          MOVE 24 TO WS-X
          MOVE 64 TO WS-Y
          MOVE 40 TO WS-Z
          PERFORM SAVE-WORLD
          PERFORM MODEL-RUN
-         CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-X WS-Y WS-Z WS-RESULT
+         CALL "FR-PLACE-FT" USING XR-STATE WS-CUR WS-X WS-Y WS-Z WS-RESULT
          PERFORM COMPARE-WORLD
          MOVE SPACES TO WS-CASE
          STRING "35-5§12: seed " WS-SEEDTXT " the cells equal the model" DELIMITED BY SIZE INTO WS-CASE
@@ -180,9 +244,9 @@
          PERFORM ASSERT-N
          ADD WS-PLACED-NOW TO WS-PLACED
      END-PERFORM
-     MOVE "35-5§12: the 12 piles placed more than 60 blocks in all" TO WS-CASE
+     MOVE "35-5§12: the 24 piles placed more than 120 blocks in all" TO WS-CASE
      MOVE 0 TO WS-OBS
-     IF WS-PLACED > 60
+     IF WS-PLACED > 120
          MOVE 1 TO WS-OBS
      END-IF
      MOVE 1 TO WS-EXP
@@ -204,12 +268,12 @@
      MOVE "35-5§12: and makes no draw" TO WS-CASE
      PERFORM ASSERT-N
 
-     MOVE "minecraft:pile_hay" TO WS-FTKEY
-     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
-     CALL "FD-ENSURE-FT" USING WS-FT
-     MOVE "35-5§12: a rotated provider is not compiled: unsupported" TO WS-CASE
-     MOVE FT-TYPE(WS-FT) TO WS-OBS
-     MOVE -1 TO WS-EXP
+     MOVE "35-5§12: the hay piles drew a direction for every cell" TO WS-CASE
+     MOVE 0 TO WS-OBS
+     IF WS-N-DIRS > 60
+         MOVE 1 TO WS-OBS
+     END-IF
+     MOVE 1 TO WS-EXP
      PERFORM ASSERT-N
      MOVE "minecraft:pile_noprov" TO WS-FTKEY
      CALL "FD-GET-FT" USING WS-FTKEY WS-FT
@@ -333,6 +397,21 @@
          IF WS-OK-PLACE = 1
              COMPUTE WS-MIDX = (WS-QY - 63) * 256 + (WS-QZ - 32) * 16 + (WS-QX - 16) + 1
              MOVE WS-S-MELON TO WS-OS(WS-MIDX)
+             IF WS-HAY = 1
+*>               the rotated provider: nextInt(6) is the direction (down, up, north, south, west, east), its axis the hay's
+                 CALL "WGR-NEXT-INT-BOUND" USING XR2-STATE WS-B6 WS-HDIR
+                 EVALUATE WS-HDIR
+                     WHEN 0
+                     WHEN 1
+                         MOVE WS-S-HAY-Y TO WS-OS(WS-MIDX)
+                     WHEN 2
+                     WHEN 3
+                         MOVE WS-S-HAY-Z TO WS-OS(WS-MIDX)
+                     WHEN OTHER
+                         MOVE WS-S-HAY-X TO WS-OS(WS-MIDX)
+                 END-EVALUATE
+                 ADD 1 TO WS-N-DIRS
+             END-IF
              ADD 1 TO WS-PLACED-NOW
          END-IF
      END-IF

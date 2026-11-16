@@ -953,6 +953,7 @@
  COPY FDCONST.
  COPY FEATDATA.
  COPY FDKEYS.
+ 01 WS-K-ROT-DIRECTION      PIC X(40) VALUE "direction".
  LOCAL-STORAGE SECTION.
  01 WS-TEXT                PIC X(120).
  01 WS-LEN                 BINARY-LONG.
@@ -1074,6 +1075,32 @@
              WHEN "noise_threshold"
                  MOVE 8 TO WS-D
                  CALL "FD-PROV-NOISE" USING JSON-DOC L-NODE WS-ROW WS-D
+             WHEN "minecraft:rotated"
+             WHEN "rotated"
+*>               rotated (35-2 section 4.3): PV-A the inner provider, PV-N the direction (0 down, 1 up, 2 north, 3 south, 4 west, 5 east; -1 when the data names none, then one draw)
+                 MOVE 9 TO PV-TYPE(WS-ROW)
+                 MOVE -1 TO PV-N(WS-ROW)
+                 CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-STATE WS-E
+                 CALL "FD-PROV-NODE" USING JSON-DOC WS-E PV-A(WS-ROW)
+                 CALL "FD-J-STRING" USING JSON-DOC WS-K-ROT-DIRECTION L-NODE WS-TEXT WS-LEN
+                 IF WS-LEN > 0
+                     EVALUATE FUNCTION TRIM(WS-TEXT)
+                         WHEN "down"
+                             MOVE 0 TO PV-N(WS-ROW)
+                         WHEN "up"
+                             MOVE 1 TO PV-N(WS-ROW)
+                         WHEN "north"
+                             MOVE 2 TO PV-N(WS-ROW)
+                         WHEN "south"
+                             MOVE 3 TO PV-N(WS-ROW)
+                         WHEN "west"
+                             MOVE 4 TO PV-N(WS-ROW)
+                         WHEN "east"
+                             MOVE 5 TO PV-N(WS-ROW)
+                         WHEN OTHER
+                             MOVE 1 TO FD-BAD
+                     END-EVALUATE
+                 END-IF
              WHEN "minecraft:random_block"
              WHEN "random_block"
                  MOVE 3 TO PV-TYPE(WS-ROW)
@@ -1806,6 +1833,7 @@
              CALL "FD-PFREF-NODE" USING JSON-DOC LS-E FT-C(LS-ROW)
          WHEN 43
          WHEN 41
+         WHEN 32
              CALL "FD-J-MEMBER" USING JSON-DOC L-NODE FK-FEATURES LS-E
              IF LS-E > 0
                  IF JN-TYPE(LS-E) = JT-ARRAY
@@ -1872,6 +1900,17 @@
              MOVE FD-BAD TO LS-SAVED-BAD
              MOVE 0 TO FD-BAD
              CALL "FD-BAMBOO-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
+         WHEN 8
+         WHEN 7
+*>           coral_tree and coral_claw (feat-coral.cob): unsupported when the placed feature is missing
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-CORAL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
              IF FD-BAD = 1
                  MOVE -1 TO FT-TYPE(LS-ROW)
              ELSE
@@ -2072,7 +2111,7 @@
              MOVE -1 TO FT-TYPE(LS-ROW)
              MOVE 1 TO FD-BAD
      END-EVALUATE
-     IF FT-TYPE(LS-ROW) = 36 OR FT-TYPE(LS-ROW) = 43 OR FT-TYPE(LS-ROW) = 41 OR FT-TYPE(LS-ROW) = 34 OR FT-TYPE(LS-ROW) = 57
+     IF FT-TYPE(LS-ROW) = 36 OR FT-TYPE(LS-ROW) = 43 OR FT-TYPE(LS-ROW) = 41 OR FT-TYPE(LS-ROW) = 34 OR FT-TYPE(LS-ROW) = 57 OR FT-TYPE(LS-ROW) = 32
          COMPUTE FT-A(LS-ROW) = FD-CH-COUNT + 1
          MOVE LS-NC TO FT-B(LS-ROW)
          PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > LS-NC
