@@ -185,3 +185,63 @@
      END-IF
      GOBACK.
  END PROGRAM WOLF-BRED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WOLF-WET-STEP.
+*> USING row, in water (0 or 1: in water or rain), walking (1 when it follows a path): the wet shake of 19 section 6.1. Being in water latches EN-WOLF-WET and cancels a running
+*> shake (Entity Event 56); out of water a wet wolf that is not shaking, not walking and on the ground starts to shake (Entity Event 8); a shake grows 0.05 a tick
+*> and ends at 2.0 (40 ticks after its start), clearing the wet state.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-WALKING              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WATER L-WALKING.
+     MOVE 0 TO WS-EVENT
+     EVALUATE TRUE
+         WHEN L-WATER = 1
+             MOVE 1 TO EN-WOLF-WET(L-ROW)
+             IF EN-WOLF-SHAKE(L-ROW) > 0
+                 MOVE 0 TO EN-WOLF-SHAKE(L-ROW)
+                 MOVE 56 TO WS-EVENT
+             END-IF
+         WHEN EN-WOLF-SHAKE(L-ROW) > 0
+             ADD 1 TO EN-WOLF-SHAKE(L-ROW)
+             IF EN-WOLF-SHAKE(L-ROW) > 40
+                 MOVE 0 TO EN-WOLF-SHAKE(L-ROW) EN-WOLF-WET(L-ROW)
+             END-IF
+         WHEN EN-WOLF-WET(L-ROW) = 1 AND L-WALKING = 0 AND EN-ON-GROUND(L-ROW) = 1
+             MOVE 1 TO EN-WOLF-SHAKE(L-ROW)
+             MOVE 8 TO WS-EVENT
+     END-EVALUATE
+     IF WS-EVENT > 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM WOLF-WET-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WOLF-WET-TICK.
+*> USING row, walking: WOLF-WET-STEP with the water test of the cell the wolf stands in (rain is an open item).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-HEIGHT              FLOAT-LONG VALUE 0.85.
+ 01 WS-KIND-WATER          BINARY-LONG VALUE 1.
+ 01 WS-WATER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WALKING              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WALKING.
+     CALL "M182-FLUID" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-HEIGHT WS-KIND-WATER WS-WATER
+     CALL "WOLF-WET-STEP" USING L-ROW WS-WATER L-WALKING
+     GOBACK.
+ END PROGRAM WOLF-WET-TICK.

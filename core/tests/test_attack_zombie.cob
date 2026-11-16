@@ -59,14 +59,14 @@
      MOVE "N" TO TL-MODE
 
      CALL "TEST-ATTACK" USING WS-CONN WS-ID
-     MOVE "test attack zombie: a bare-hand hit on a zombie 1.5 blocks away takes 1 health (20 to 19)" TO TL-CASE
-     MOVE 19 TO TL-EXPECTED-N
+     MOVE "test attack zombie: a bare-hand hit on a zombie 1.5 blocks away takes 0.984 (armor 2): the carry holds it, health stays 20" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
      MOVE EN-HEALTH(WS-ZOMBIE) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-ATTACK" USING WS-CONN WS-ID
      MOVE "test attack zombie: a second hit inside the hurt window adds nothing" TO TL-CASE
-     MOVE 19 TO TL-EXPECTED-N
+     MOVE 20 TO TL-EXPECTED-N
      MOVE EN-HEALTH(WS-ZOMBIE) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -82,8 +82,8 @@
      CALL "TEST-TICKS" USING WS-TICKS
      PERFORM PLACE-ZOMBIE
      CALL "TEST-ATTACK" USING WS-CONN WS-ID
-     MOVE "test attack zombie: a hit after the window and the cooldown hurts again" TO TL-CASE
-     MOVE 18 TO TL-EXPECTED-N
+     MOVE "test attack zombie: a hit after the window and the cooldown hurts again (2 x 0.984 = 1.968: 19 left)" TO TL-CASE
+     MOVE 19 TO TL-EXPECTED-N
      MOVE EN-HEALTH(WS-ZOMBIE) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
