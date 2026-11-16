@@ -290,6 +290,7 @@
              MOVE PL-ANIM-SPEED TO EN-WALK-SPEED(WS-R)
              MOVE PL-ANIM-POS TO EN-WALK-POS(WS-R)
              MOVE 1 TO EN-WALK-SCALE(WS-R)
+             MOVE PL-ANIM-AGE TO EN-AGE(WS-R)
              MOVE 0 TO EN-MOB-FLAGS(WS-R) EN-SW-ACTIVE(WS-R)
              MOVE SPACES TO EN-KEY(WS-R)
              MOVE "player" TO EN-KEY(WS-R)

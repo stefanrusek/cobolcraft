@@ -516,6 +516,7 @@
        10 PL-ANIM-OX         FLOAT-LONG.
        10 PL-ANIM-OY         FLOAT-LONG.
        10 PL-ANIM-OZ         FLOAT-LONG.
+       10 PL-ANIM-AGE        FLOAT-LONG.
        10 PL-SWIMMING        PIC 9.          *> the swimming flag (53 section 4): sprinting in water, entered with the eyes under water
        10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
        10 PL-FOV-MOD         FLOAT-LONG.     *> the camera's field of view modifier (53 section 8: 1, 1.15 while sprinting; 0 = not set)
@@ -689,6 +690,7 @@
           15 EN-SW-HAND      BINARY-LONG.
           15 EN-SW-TYPE      BINARY-LONG.
           15 EN-SW-ANIM      FLOAT-LONG.
+          15 EN-AGE          FLOAT-LONG.    *> ageInTicks: client ticks since the entity was added (34-2: arm bob and sway)
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

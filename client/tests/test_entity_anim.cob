@@ -456,6 +456,32 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO EN-USED(9)
 
+*>   Age in ticks (54 section 1 / 34-2: ageInTicks drives the arm bob and sway of the humanoids): one a tick, kept for the row and for the local figure.
+     MOVE 0 TO EN-AGE(1) PL-ANIM-AGE
+     PERFORM 5 TIMES
+         CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     MOVE "entity anim the age of a replica row counts client ticks" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE EN-AGE(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "entity anim the age of the local figure counts client ticks" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE PL-ANIM-AGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-ROW
+     MOVE 0 TO EN-AGE(1)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-REST
+     MOVE 40 TO EN-AGE(1)
+     CALL "EAN-SUM" USING CLIENT-STATE WS-ROW WS-EYE-TABLE WS-SUM-NOW
+     MOVE "entity anim a zombie's arms sway with its age (age 40 differs from age 0)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SUM-NOW NOT = WS-SUM-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Models of the codes -: spider, cave spider, wolf and chicken walk (rows 9 to 12: the player's row 9 is free again), and the spider's eyes layer is posed like its body.
      MOVE 9 TO WS-ID
      MOVE "spider" TO WS-KEY

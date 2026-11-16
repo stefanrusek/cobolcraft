@@ -292,6 +292,7 @@
  01 WS-WPOS                FLOAT-LONG.
  01 WS-WSPEED              FLOAT-LONG.
  01 WS-SWP                 FLOAT-LONG.
+ 01 WS-AGE                 FLOAT-LONG.
  01 WS-SWT                 BINARY-LONG.
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
@@ -365,12 +366,16 @@
 *>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
 *>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
 *>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
-     MOVE 0 TO WS-WPOS WS-WSPEED WS-SWP
+     MOVE 0 TO WS-WPOS WS-WSPEED WS-SWP WS-AGE
      MOVE 0 TO WS-SWT WS-SWARM WS-AGG
      MOVE 1 TO WS-MAINARM
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
+*>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
+         IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+             MOVE EN-AGE(WS-ROW) TO WS-AGE
+         END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
          IF FUNCTION MOD(WS-OB, 2) = 1
              MOVE 1 TO WS-AGG
@@ -392,6 +397,7 @@
      MOVE WS-WPOS TO WS-KN(17)
      MOVE WS-WSPEED TO WS-KN(18)
      MOVE WS-SWP TO WS-KN(19)
+     MOVE WS-AGE TO WS-KN(22)
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
 *>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
@@ -437,6 +443,7 @@
      MOVE WS-WPOS TO WS-I(3) WS-ST(3)
      MOVE WS-WSPEED TO WS-I(4) WS-ST(4)
      MOVE WS-SWP TO WS-ST(7)
+     MOVE WS-AGE TO WS-ST(6)
      MOVE WS-SWT TO WS-ST(20)
      MOVE WS-SWARM TO WS-ST(21)
      MOVE WS-AGG TO WS-ST(18)

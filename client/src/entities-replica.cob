@@ -238,7 +238,7 @@
                  MOVE WS-Z TO EN-OZ(WS-ROW)
                  MOVE 0 TO EN-MOB-FLAGS(WS-ROW) EN-BABY(WS-ROW)
                  MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
-                 MOVE 0 TO EN-SW-ANIM(WS-ROW)
+                 MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
                  IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
