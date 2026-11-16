@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -766,6 +766,30 @@ Gap closed: 12 §8.3 states the texture transform and fade constants and describ
 | Added colour | `rgb += (GlintAlpha * sample.rgb)^2` per channel, before fog |
 | SPECIAL coordinate scale | `1/128` |
 | `MAX_ENCHANTMENT_GLINT_SPEED_MILLIS` | 8.0 (the factor applied to the speed option in the formula above) |
+
+---
+
+## 20. `custom_name` (6), `item_name` (9), `lore` (11), `rarity` (12)
+
+Gap closed: the four naming components had no layout section; 25-1 §7.2 has the `Rarity` enumeration without colours.
+
+| Component | Network | NBT | Default / prototype | Limits and notes |
+|---|---|---|---|---|
+| `custom_name` (6) | TextComponent (00 §9.1, the network NBT form) | A text component in its save form (String for plain text, else compound or list) | absent | None on the codec. The anvil rename and the name tag limits are in 40-3 and 19. Equality: component value equality (tree of content, style and siblings). |
+| `item_name` (9) | TextComponent (as above) | text component | set in every prototype to a translatable component keyed by the item's description id (25-1 §6.2: `item.minecraft.<key>` or `block.minecraft.<key>`) | A stack patch may replace it (renamed loot, books); it is not italic when displayed. |
+| `lore` (11) | VarInt count (at most 256), then TextComponent per line | List of text components, at most 256 elements (a longer list fails the decode of the component) | common prototype: empty list (25-1 §7.1) | The network list codec has the same bound of 256. Every line is a separate component; a line is not split on newlines. |
+| `rarity` (12) | VarInt, the enum id (0 `common`, 1 `uncommon`, 2 `rare`, 3 `epic`) | String: `common`, `uncommon`, `rare`, `epic` | `common` in the common prototype | Unknown name fails the decode. |
+
+**Rarity colours** (the chat formatting colour each constant carries, read in `Rarity.<clinit>`): `common` white, `uncommon` yellow, `rare` aqua, `epic` light purple. Their RGB values (read in `TextColor.<clinit>`, the legacy-format colour table): white `FFFFFF` (16777215), yellow `FFFF55` (16777045), aqua `55FFFF` (5636095), light purple `FF55FF` (16733695). The lore base colour dark purple is `AA00AA` (11141290).
+
+**Display rules** (`ItemStack`):
+
+1. Hover name (`getHoverName`): the `custom_name` when present, otherwise the item's own name, which is the stack's `item_name` (25-1 §6: default empty text if absent).
+2. Styled hover name (tooltip title and chat hover): the hover name, in the colour of the stack's effective rarity, and italic when (and only when) the stack has `custom_name`. Effective rarity = the `rarity` component (default `common`) raised by the enchantment rule of 19.2 item 4.
+3. Display name (the bracketed form used in chat messages that show an item): `[` hover name `]`, italic when `custom_name` is present, and, unless the name is empty, coloured with the rarity colour; the item hover event is attached for the tooltip.
+4. Lore lines (`ItemLore.styledLines`): every line is shown with the base style dark purple and italic, merged under the line's own style (a line that sets its own colour or italic keeps it). `lines()` gives the raw lines without that style.
+5. `ItemLore.withLineAdded` appends a line (the 256 cap applies when the new list is built; the constructor rejects a list longer than 256).
+6. Equality of each component is value equality; stacks with different lore or names do not merge.
 
 ---
 
