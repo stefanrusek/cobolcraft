@@ -30,7 +30,7 @@ Four floats per living entity: `speedOld` (0), `speed` (0), `position` (0), `pos
 
 ### 1.2 Per-tick driver (`LivingEntity.calculateEntityAnimation(flag)`)
 
-Runs **on the client only**, every client tick of every living entity other than the local player (the call sits in `LivingEntity.aiStep`, guarded by "level is client side"; `RemotePlayer.tick` calls it with flag false after the base tick). The server never runs it, and no packet carries walk state: the client derives it from the entity's position change.
+Runs **on the client only**, every client tick of every living entity **including the local player** (the call sits unconditionally in the client-side branch of `LivingEntity.aiStep`, after movement; `RemotePlayer.tick` additionally calls it with flag false after the base tick, as read; the local player's own value is therefore also derived from its position change). The server never runs it, and no packet carries walk state: the client derives it from the entity's position change.
 
 1. d = length of (x - xo, dy, z - zo), where xo, yo, zo are the position at the previous tick and dy = (y - yo) only when `flag` is true, else 0. `flag` = the entity's `omnidirectionalAirMover()`: false by default; true for the bee, the parrot, and the sulfur cube when it has a body item (checked: `Entity` false, `Bee` true, `Parrot` true, `SulfurCube` = has body item). Remote players use false.
 2. If the entity is a passenger or not alive: `stop()`. Otherwise `updateWalkAnimation(d)`.
@@ -78,7 +78,17 @@ If the entity is not a passenger and is alive: `walkAnimationPos` = `position(pt
 ### 2.3 Aggressive flag
 
 - Mob metadata slot 15 (BYTE, 18 §1.4): bit 1 no AI, bit 2 left-handed, **bit 4 aggressive** (set with `value | 4`, cleared with `value & ~4`; the other bits are untouched). It is replicated like any metadata, so the client reads it from Set Entity Data.
-- The server sets it from goals: the zombie attack goal raises it when its raise-arm counter reaches 5 ticks and clears it on stop (18, ZombieAttackGoal); the ranged bow goal sets it while running; other goal-driven setters exist in the raider hold-ground goal, the illagers, the piglins and the pandas (classes that call `setAggressive` were listed, their conditions were not read; Open question 3).
+- The server sets it from goals: the zombie attack goal raises it when its raise-arm counter reaches 5 ticks and clears it on stop (18, ZombieAttackGoal); the ranged bow goal sets it while running; the other writers were enumerated by a scan of every class that calls `setAggressive` (the pandas are not among them):
+
+| Writer | Rule |
+|---|---|
+| melee attack goal (`MeleeAttackGoal`, 18) and the skeleton's melee goal | set on start, cleared on stop |
+| zombie attack goal | as above (raise-arm counter) |
+| bow and crossbow attack goals, spear-use goal and spear behaviours, the drowned trident goal | set while running (start), cleared on stop (the crossbow goal and the raider hold-ground goal clear it on stop; hold-ground also sets it in its tick) |
+| brains of the hoglin, piglin and piglin brute | each `updateActivity` pass: aggressive = the brain holds an attack target |
+| zoglin | in its `updateActivity` (same attack-target pattern, not traced further) |
+
+Open question 3 is closed apart from the zoglin and hold-ground conditions.
 - **Readers (client):** extraction copies `isAggressive` into the render state of: zombie, husk, drowned, zombie villager, zombified piglin (not the giant: flag stays false), skeleton family (stray, bogged, wither skeleton), illagers (pillager, vindicator, illusioner; evoker and others use `armPose`), and the piglin and piglin brute (via their arm pose). The pose formulas are 34-2 §4.3 (zombie arms, -2.0943952 aggressive and -1.3962634 otherwise), 34-2 §4.5 (skeleton), 34-2 §4.6 (piglin) and 34-3 §4.3 (illagers); this section adds only the drivers.
 
 ## 3. `teleport` / `tp` permission of the location forms
@@ -180,7 +190,7 @@ Result modifiers: `enchant_with_levels` with `levels` = uniform 5 to 19 (integer
 
 ### 6.1 Client charge (the riding player's `LocalPlayer`, every client tick while riding a vehicle that can jump)
 
-State: `jumpRidingTicks` (int, starts 0) and `jumpRidingScale` (float). The vehicle must be a jumpable (`canJump`: the camel needs to be saddled and not sitting or transitioning, 19 §3.8) and its `getJumpCooldown()` (the dash cooldown) must be 0; otherwise the scale is forced to 0 each tick. With the jump key states "was" (the key state at the start of `aiStep`, before this tick's input update) and "now" (after it) (the order is inferred from the position of the reads):
+State: `jumpRidingTicks` (int, starts 0) and `jumpRidingScale` (float). The vehicle must be a jumpable (`canJump`: the camel needs to be saddled and not sitting or transitioning, 19 §3.8) and its `getJumpCooldown()` (the dash cooldown) must be 0; otherwise the scale is forced to 0 each tick. With the jump key states "was" (the key state captured at the start of `aiStep`, before this tick's input update; read) and "now" (after the update). The four rows form an if / else-if chain after the first row:
 
 | Condition (checked in this order) | Effect |
 |---|---|
@@ -218,7 +228,7 @@ Metadata slot 20 (LONG, `LAST_POSE_CHANGE_TICK`) L; game time T. Definitions: si
 | `isVisuallySittingDown` | sitting and 0 <= poseTime < 40 |
 | `isCamelVisuallySitting` | (poseTime < 0) is not equal to sitting (normally equals sitting; differs when a client's clock lags) |
 | `refuseToMove` | sitting or in transition: the camel does not walk (movement input zero, horizontal velocity zeroed on the ground, head clamped to the body) |
-| `canCamelChangePose` | the camel would not suffocate in the other pose (the test uses the other pose's dimensions; the sitting box is the standing box lowered by `SITTING_HEIGHT_DIFFERENCE` 1.43 (inferred)) |
+| `canCamelChangePose` | the camel would not suffocate in the other pose (the test uses the other pose's dimensions; the sitting dimensions are fixed boxes, not a lowering of the standing box: adult sitting = the camel type's width x **1.43** height, eye height 0.845; baby sitting 0.95 x 0.425, eye 0.41; baby standing 0.95 x 1.4, eye 1.38 (read from the static initialiser; the adult standing box is the entity-type box, 19 §3.8)) |
 
 So sitting down takes 40 ticks and standing up takes 52 ticks, measured from L. In `tick`: a sitting camel in water stands up instantly; a rider pressing forward (`zza` > 0) while the camel is sitting and not in transition makes it `standUp`.
 
@@ -235,7 +245,7 @@ So sitting down takes 40 ticks and standing up takes 52 ticks, measured from L. 
 - **Runs when** (memories): no `RAM_COOLDOWN_TICKS`, no `RAM_TARGET`, no tempting player, no breed target, and `NEAREST_VISIBLE_LIVING_ENTITIES` present. Time-out 160 ticks. Parameters (19): minimum run-up distance 4, maximum 7, walk speed 1.25, prepare time 20 ticks, targeting conditions `RAM_TARGET_CONDITIONS`.
 - **Targeting conditions:** the combat targeting conditions plus a selector that rejects other goats, rejects armor stands unless mob griefing is on, and requires the candidate's bounding box to lie within the world border (19).
 - **start:** among the goat's nearest visible living entities, the closest one that passes `RAM_TARGET_CONDITIONS` becomes the target and a run-up is chosen (below); if none passes, nothing is chosen.
-- **Choosing the run-up (`chooseRamPosition`):** clear the "reached" timestamp. The target's block position T must be a *walkable block* (the goat's navigation says it is a stable destination, and the path-type malus of that block for the goat is exactly 0), otherwise there is no candidate. For each of the four horizontal directions (the order of `Direction.Plane.HORIZONTAL`), start at T and step one block at a time up to 7 steps; stop (stepping back one block) at the first block that is not walkable. Keep the end position when its Manhattan distance to T is at least 4. Sort the kept positions by distance to the goat's own block position (closest first; squared distance, inferred) and take the first one for which the navigation can create a path to it (distance parameter 0) that reaches it. That position S with the target's block T and the target entity form the candidate; if none qualifies, there is no candidate.
+- **Choosing the run-up (`chooseRamPosition`):** clear the "reached" timestamp. The target's block position T must be a *walkable block* (the goat's navigation says it is a stable destination, and the path-type malus of that block for the goat is exactly 0), otherwise there is no candidate. For each of the four horizontal directions (the order of `Direction.Plane.HORIZONTAL`: north, east, south, west), start at T and step one block at a time up to 7 steps; stop (stepping back one block) at the first block that is not walkable. Keep the end position when its Manhattan distance to T is at least 4. Sort the kept positions by distance to the goat's own block position (closest first; squared distance, inferred) and take the first one for which the navigation can create a path to it (distance parameter 0) that reaches it. That position S with the target's block T and the target entity form the candidate; if none qualifies, there is no candidate.
 - **tick (every tick while running; with no candidate nothing happens):** set `WALK_TARGET` = S at speed 1.25 (completion range 0) and `LOOK_TARGET` = the target entity. Then:
   1. If the target's block position is no longer T: broadcast Entity Event **59** (stop lowering the head), stop the navigation, and choose a new run-up for the target (this also clears the reached timestamp).
   2. Else if the goat's block position equals S: broadcast Entity Event **58** (lower the head); on the first such tick record the current game time as the reached timestamp; when game time minus the timestamp is at least 20: set `RAM_TARGET` = the **far edge of T as seen from the goat**: the bottom centre of T plus (0.5 x sign(T.x - goatBlock.x), 0, 0.5 x sign(T.z - goatBlock.z)) (the sign of zero is 0), play the prepare sound (below) at the goat with volume 1 and the goat's voice pitch, and drop the candidate.
@@ -309,6 +319,7 @@ The remaining Phase 49 task remarks were checked and are either already answered
 
 ## Open questions
 
-1. The order in which `Direction.Plane.HORIZONTAL` iterates (7.1) was assumed to be the plane constant's order (north, east, south, west) and not read.
-2. The camel's sitting dimensions (6.4) were not read.
-3. The set of mobs that set the aggressive flag from a goal (2.3), beyond the zombie attack goal and ranged bow goal of 18, was not enumerated; only the client readers were.
+1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
+2. The ram-run-up distance ordering (7.1, "squared distance") and the camel `standUpInstantly` constant (6.4) remain as marked.
+
+Closed in review: the horizontal plane order is north, east, south, west (read from the plane's static initialiser; also in 24); the camel sitting dimensions are in 6.4.
