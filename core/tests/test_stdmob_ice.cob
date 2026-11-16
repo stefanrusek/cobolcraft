@@ -83,6 +83,8 @@
      MOVE 0 TO EN-TARGET(WS-SPIDER)
      MOVE WS-X0 TO EN-X(WS-SPIDER)
      MOVE WS-Y TO EN-Y(WS-SPIDER)
+*>   A standard mob moves by its velocity first and then falls (18 section 3.2), so a mob put on the floor is on the ground after its second step.
+     CALL "MOB-STEP" USING WS-SPIDER
      CALL "MOB-STEP" USING WS-SPIDER
      MOVE "test stdmob ice: the mob stands on the floor" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
