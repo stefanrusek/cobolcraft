@@ -58,7 +58,8 @@
              UNSTRING L-TEXT(WS-POS:) DELIMITED BY "," OR SPACE INTO WS-TOKEN
              MOVE FUNCTION LOWER-CASE(WS-TOKEN) TO WS-KEY
              IF WS-KEY(1:6) = "foods."
-                 MOVE WS-KEY(7:) TO WS-KEY
+                 MOVE WS-KEY(7:) TO WS-TOKEN
+                 MOVE WS-TOKEN TO WS-KEY
              END-IF
              CALL "CONTENT-FOOD-NAMED" USING WS-KEY L-NUTRITION L-SATURATION L-ALWAYS L-TICKS
      END-EVALUATE
