@@ -97,6 +97,56 @@ Read from `TeleportCommand.register`: exactly two `requires` predicates exist in
 
 So every form, including the one-argument location form that moves the source itself, needs level 2 (game master); there are no level-0 or level-1 forms. A source below level 2 does not see the `teleport` and `tp` nodes in the command tree sent to it (15 framework: requirement filtering), so the literal is also unknown for completion. The `<targets>` selector's own rule (selectors that name other entities need level 2) is already met when the root is.
 
+## 4. Villager trades: enchantment data and tag members
+
+**Gap closed:** the level ranges and extra price of enchanted-book and enchanted-equipment trades (19 §24 lacked them), and the tag members named in the task lines. Read from `data/minecraft/villager_trade/**`, `data/minecraft/tags/{enchantment,block,item,point_of_interest_type}/` and `data/minecraft/enchantment/*.json`. The offer-building steps themselves (19 §24, "Offer construction") are unchanged; this section supplies the data they read.
+
+### 4.1 Enchanted-book trades (librarian levels 1 to 4)
+
+Each trade's result is a plain `enchanted_book`; the result modifiers are `enchant_randomly` (`only_compatible` false, `include_additional_cost_component` true, `options` = tag `tradeable`), then a filter that discards the offer when the book has no stored enchantments. The trade also lists `double_trade_price_enchantments` = tag `double_trade_price`.
+
+- **Which enchantment:** one drawn from the tag `tradeable`, with no compatibility restriction (a book accepts anything).
+- **Level:** uniform from 1 (`Enchantment.getMinLevel` returns 1 for every enchantment) to the enchantment's `max_level`, inclusive. The table lists the max levels.
+- **Extra price E** for the drawn level L: 2 + nextInt(5 + 10 x L) + 3 x L (nextInt(n) is uniform in 0 to n-1). If the book's stored enchantment is in `double_trade_price`, E is doubled. The first price is `emerald` with count 0 raised by E (so E emeralds), the second price is one `book`.
+- **Range of E before doubling:** L = 1: 2 + [0,14] + 3 = 5 to 19; L = 2: 2 + [0,24] + 6 = 8 to 32; L = 3: 2 + [0,34] + 9 = 11 to 45; L = 4: 2 + [0,44] + 12 = 14 to 58; L = 5: 2 + [0,54] + 15 = 17 to 71. Doubled values apply to the treasure group below.
+
+| Max level | Enchantments in `tradeable` that have it |
+|---|---|
+| 1 | aqua_affinity, binding_curse, channeling, flame, infinity, mending, multishot, silk_touch, vanishing_curse |
+| 2 | fire_aspect, frost_walker, knockback, punch |
+| 3 | depth_strider, fortune, looting, loyalty, luck_of_the_sea, lunge, lure, quick_charge, respiration, riptide, sweeping_edge, thorns, unbreaking |
+| 4 | blast_protection, breach, feather_falling, fire_protection, piercing, projectile_protection, protection |
+| 5 | bane_of_arthropods, density, efficiency, impaling, power, sharpness, smite |
+
+(Not in `tradeable`: swift_sneak, soul_speed, wind_burst, which are treasure-only; they never come from a villager.)
+
+### 4.2 Enchantment tags used by trades
+
+| Tag | Members |
+|---|---|
+| `tradeable` | tag `non_treasure`, plus binding_curse, vanishing_curse, frost_walker, mending |
+| `non_treasure` (36) | protection, fire_protection, feather_falling, blast_protection, projectile_protection, respiration, aqua_affinity, thorns, depth_strider, sharpness, smite, bane_of_arthropods, knockback, fire_aspect, looting, sweeping_edge, efficiency, silk_touch, unbreaking, fortune, power, punch, flame, infinity, luck_of_the_sea, lure, loyalty, impaling, riptide, channeling, multishot, quick_charge, piercing, density, breach, lunge |
+| `treasure` (7) | binding_curse, vanishing_curse, swift_sneak, soul_speed, frost_walker, mending, wind_burst |
+| `double_trade_price` | tag `treasure` (members above) |
+| `on_traded_equipment` | tag `non_treasure` |
+
+So the doubled book prices apply to: binding_curse, vanishing_curse, frost_walker, mending (the treasure members that are also tradeable).
+
+### 4.3 Enchanted-equipment trades
+
+Result modifiers: `enchant_with_levels` with `levels` = uniform 5 to 19 (integer provider, inclusive), `options` = tag `on_traded_equipment` (= `non_treasure`), `include_additional_cost_component` true, then a filter that discards the offer unless the item has at least one enchantment. The levels value V is the "level" input of the enchanting-table selection of 26 (`enchant_with_levels` row): the pool is `non_treasure` filtered by item compatibility, so no treasure or curse enchantment appears on traded gear. Extra price E = V (when V > 0 and the result is non-empty); the first price count = base count + V, where the base count is the trade's `wants` (the value printed per trade in 19 §24). Range of the first price = base + 5 to base + 19. Examples: armorer diamond leggings (base 14): 19 to 33 emeralds; bow (fletcher level 4, base 2): 7 to 21; wandering trader iron pickaxe (base 1): 6 to 20. Every such trade has max uses 3 (wandering trader 1).
+
+### 4.4 Tags named in the task lines
+
+| Tag | Registry | Members |
+|---|---|---|
+| `acquirable_job_site` | **point_of_interest_type** (not a block tag) | armorer, butcher, cartographer, cleric, farmer, fisherman, fletcher, leatherworker, librarian, mason, shepherd, toolsmith, weaponsmith |
+| `villagers_can_sleep_on_bed` (block tag) | block | tag `beds` |
+| `beds` | block | the sixteen colour beds: white, orange, magenta, light_blue, yellow, lime, pink, gray, light_gray, cyan, purple, blue, brown, green, red, black (each `<colour>_bed`) |
+| `villager_babies_can_jump_on_bed` | block | tag `beds` |
+| `gold_ores` | block and item (same three members) | gold_ore, nether_gold_ore, deepslate_gold_ore |
+| `piglin_loved` (item tag, 26 members) | item | tag `gold_ores`, gold_block, gilded_blackstone, light_weighted_pressure_plate, gold_ingot, bell, clock, golden_carrot, glistering_melon_slice, golden_apple, enchanted_golden_apple, golden_helmet, golden_chestplate, golden_leggings, golden_boots, golden_horse_armor, golden_nautilus_armor, golden_sword, golden_spear, golden_pickaxe, golden_shovel, golden_axe, golden_hoe, raw_gold, raw_gold_block, golden_dandelion |
+
 ---
 
 ## Open questions
