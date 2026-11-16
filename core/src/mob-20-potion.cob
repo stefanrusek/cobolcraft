@@ -2,7 +2,7 @@
 *>   WITCH-THROW-PICK USING raider target (0/1), target health (whole), distance, has slowness, has poison, has weakness, roll (thousandths), potion out
 *>   POTION-SPEED USING distance, speed out        0.45 within 2 blocks, else 0.75
 *>   POTION-AIM USING dx, dy, dz, distance, speed, vx out, vy out, vz out    the direction with y raised by distance x 0.2, scaled to the speed
-*>   POTION-SPLASH USING dim, x, y, z, potion, owner entity id    the shatter: living entities within the box inflated by (4, 2, 4) and within distance 4 get intensity t = 1 - distance / 4
+*>   WITCH-POTION-SPLASH USING dim, x, y, z, potion, owner entity id    the shatter: living entities within the box inflated by (4, 2, 4) and within distance 4 get intensity t = 1 - distance / 4
 *>   POTION-LAUNCH USING dim, x, y, z, vx, vy, vz, potion, owner  adds a potion to the flight table (with a visible entity)
 *>   POTIONS-TICK                                  one tick of every potion in flight (STDMOB-SPAWN-TICK): position += v, v x 0.99, vy -= 0.05; it shatters on a block or an entity
 *>   WITCH-THROW USING witch row                   the ranged attack: the choice, the aim at the target's position, speed, inaccuracy 8, timer 60
@@ -127,7 +127,7 @@
  END PROGRAM POTION-EFFECT-OF.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. POTION-SPLASH.
+ PROGRAM-ID. WITCH-POTION-SPLASH.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -221,7 +221,7 @@
          END-IF
      END-PERFORM
      GOBACK.
- END PROGRAM POTION-SPLASH.
+ END PROGRAM WITCH-POTION-SPLASH.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. POTION-LAUNCH.
@@ -310,7 +310,7 @@
                  END-IF
              END-PERFORM
              IF WS-HIT = 1
-                 CALL "POTION-SPLASH" USING PZ-DIM(WS-I) PZ-X(WS-I) PZ-Y(WS-I) PZ-Z(WS-I) PZ-KIND(WS-I) PZ-OWNER(WS-I)
+                 CALL "WITCH-POTION-SPLASH" USING PZ-DIM(WS-I) PZ-X(WS-I) PZ-Y(WS-I) PZ-Z(WS-I) PZ-KIND(WS-I) PZ-OWNER(WS-I)
                  IF PZ-ROW(WS-I) > 0
                      CALL "ENTITY-REMOVE" USING PZ-ROW(WS-I)
                  END-IF

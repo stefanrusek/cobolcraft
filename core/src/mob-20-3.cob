@@ -507,7 +507,7 @@
  END PROGRAM STDMOB-XP-POINTS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STDMOB-FINALIZE.
+ PROGRAM-ID. STDMOB-FINALIZE RECURSIVE.
 *> USING xoro state, tracker row: finalizeSpawn of a freshly spawned standard mob (4.1, 3.6). A zombie, zombie villager or husk is a baby with probability
 *> 0.05 (EN-VARIANT 1), rolls its armour (STDMOB-EQUIP-ROLL with the special multiplier of the effective difficulty; EN-EQUIP), gets the reinforcement
 *> chance nextDouble x 0.1 (EN-REINF, ten-thousandths) and with probability 0.05 x special is a leader: +0.5 + nextDouble x 0.25 chance and the maximum
@@ -545,6 +545,7 @@
              CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
              IF WS-D < 0.05
                  MOVE 1 TO EN-VARIANT(L-ROW)
+                 CALL "MOB-JOCKEY-ZOMBIE" USING L-STATE L-ROW
              END-IF
              CALL "STDMOB-EQUIP-ROLL" USING L-STATE BW-DIFFICULTY WS-SPECIAL WS-TIER WS-SLOTS
              IF WS-SLOTS > 0
@@ -592,6 +593,9 @@
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M
          WHEN "spider"
          WHEN "cave_spider"
+             IF SM-KEY(WS-M) = "spider"
+                 CALL "MOB-JOCKEY-SPIDER" USING L-STATE L-ROW
+             END-IF
              CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
          WHEN "phantom"
 *>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).

@@ -1024,6 +1024,18 @@
          CALL "GHAST-TICK" USING WS-ROW WS-M
          GOBACK
      END-IF
+     IF EN-MOUNT(WS-ROW) > 0
+         CALL "MOB-MOUNT-STEP" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
+     END-IF
+     IF EN-PASS(WS-ROW) > 0
+         CALL "MOB-MOUNT-DRIVE" USING WS-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
+         END-IF
+     END-IF
      IF EN-RIDER(WS-ROW) > 0
          CALL "MOB-RIDE-TICK" USING WS-ROW WS-RIDE-DONE
          IF WS-RIDE-DONE = 1

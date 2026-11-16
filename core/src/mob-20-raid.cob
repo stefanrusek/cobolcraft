@@ -567,7 +567,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-SPAWN-GROUP.
 *> USING raid slot, bonus group (0/1): spawnGroup (20 section 14.3): vindicators, evokers, pillagers, witches, ravagers at the wave spawn position, one leader per call among
-*> the raiders that can lead, the riders of the ravagers (spawned beside the ravager: mobs cannot ride mobs here), then groupsSpawned + 1.
+*> the raiders that can lead, the riders of the ravagers (they ride it: MOB-MOUNT), then groupsSpawned + 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -594,6 +594,7 @@
  01 WS-ROW                  BINARY-LONG.
  01 WS-RIDER-TYPE           BINARY-LONG.
  01 WS-RIDER                BINARY-LONG.
+ 01 WS-MOUNTED              BINARY-LONG.
  01 WS-X                    FLOAT-LONG.
  01 WS-Y                    FLOAT-LONG.
  01 WS-Z                    FLOAT-LONG.
@@ -640,6 +641,7 @@
                      MOVE 0 TO WS-LEAD
                      CALL "MOB-SPAWN" USING RD-DIM(L-SLOT) WS-RIDER-TYPE WS-X WS-Y WS-Z WS-YAW WS-RIDER
                      CALL "RAID-JOIN" USING L-SLOT WS-WAVE WS-RIDER WS-LEAD
+                     CALL "MOB-MOUNT" USING WS-RIDER WS-ROW WS-MOUNTED
                  END-IF
              END-IF
          END-PERFORM
