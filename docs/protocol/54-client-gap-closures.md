@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23); food, consumable, remainder, cooldown, stew (§24) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23); food, consumable, remainder, cooldown, stew (§24); containers and blobs (§25) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -943,6 +943,75 @@ Network: VarInt type id (`consume_effect_type`, 46 §8.2: 0 `apply_effects`, 1 `
 | honey bottle | `remove_effects` `poison`; consume 2.0 s, drink animation |
 | suspicious stew | the stew entries of 24.3 |
 | pufferfish | `poison` 1200/1, `hunger` 300/2, `nausea` 300/0 (together, probability 1.0) |
+
+---
+
+## 25. Stack-holding and blob components: `container` (77), `bundle_contents` (52), `charged_projectiles` (51), `custom_data` (0), `bucket_entity_data` (61), `entity_data` (60), `block_entity_data` (62), `block_state` (78)
+
+Gap closed: item stacks that live inside a component are an `ItemStackTemplate` in 26.3, not an `ItemStack`; the layouts below make the component store writable. Behaviour of bundles is 25-5 §7 (weights), of shulker and container items 31-1, of crossbows 25-7.
+
+### 25.1 The item stack template (`ItemStackTemplate`, used by `use_remainder`, `container`, `bundle_contents`, `charged_projectiles`)
+
+| Form | Layout |
+|---|---|
+| Network | RegistryId of `item` (VarInt), VarInt count, DataComponentPatch (00 §12.2). **Not** the stack form of 00 §12.1: there is no "count 0 means empty" shortcut, and the count and item order is item then count (the stack form has count first). |
+| NBT | `{id: <item id>, count: Int 1..99 (default 1), components: <patch compound> (default empty)}`; a bare item id String is accepted as the shorthand. |
+| Validity | The item must not be `air` and the count must be at least 1 ("Item must be non-empty", "Stack must be non-empty"). An empty slot is never a template; where a slot can be empty, the holder uses an absent value (25.2). |
+
+### 25.2 `container` (77), `ItemContainerContents`
+
+| Aspect | Value |
+|---|---|
+| Value | An ordered list of at most **256** slots; each slot is empty or an item stack template. Trailing empty slots are not stored (the list ends at the last non-empty slot when built from a container). |
+| Network | VarInt count (at most 256), then count x Optional (Boolean present flag, then an ItemStackTemplate, 25.1). An empty slot is `00`. (The Optional wrapper is inferred from the list element type `Optional<template>`; the 256 bound is read.) |
+| NBT | List of at most 256 compounds `{slot: Int 0..255, item: <template compound>}`, one per **non-empty** slot, in any order; on load the slot list is sized to the highest slot index plus one with the rest empty. Duplicate slot indices: the later entry wins (inferred). A slot number over 255 or a list of more than 256 entries fails the decode. |
+| Default | `EMPTY` (no slots). Present in the prototype of the shulker box items (31-1). |
+| Equality | Slot-by-slot list equality including trailing structure: `[A]` and `[A, empty]` are different lists, but the builders never produce the second. |
+| Behaviour | Destroying a block item entity empties the component and drops the contents (25-1 §6); the tooltip shows the first few non-empty items plus a "more items" line (translation keys `item.container.item_count` and `item.container.more_items`). |
+
+### 25.3 `bundle_contents` (52), `BundleContents`
+
+Network: VarInt count then count ItemStackTemplates (no bound, no Optional). NBT: List of template compounds (no bound). The selected-slot index is transient: it is not on the wire and not saved. Weights, the capacity, the "bundle in a bundle" and beehive weights and the "excessive total bundle weight" rejection are in 25-5 (the decode of an over-capacity list fails with that message). Default `EMPTY`. Equality: ordered list of templates (the selected index does not take part, inferred from it being transient).
+
+### 25.4 `charged_projectiles` (51), `ChargedProjectiles`
+
+Network: VarInt count (at most **1024**) then count ItemStackTemplates. NBT: List of template compounds, at most 1024. On load, empty entries are dropped and the list is cut to 1024 with a logged message "Tried to load invalid items as charged projectiles" when anything was dropped. Default `EMPTY` (the loaded crossbow prototype has none). Tooltip keys `item.minecraft.crossbow.projectile.single` and `.multiple`. Strict validation of the contained counts: 23.2 rule 2.
+
+### 25.5 `custom_data` (0) and `bucket_entity_data` (61)
+
+Both are `CustomData`, a wrapper of one NBT compound.
+
+| Aspect | Value |
+|---|---|
+| Network | Network NBT, compound only (00 §8: type byte 10, no root name, then the compound payload; an End root or a non-compound root fails). Not length-prefixed, not Boolean-prefixed. |
+| NBT | A compound (the data as it is), **or** a String in the SNBT syntax which is parsed into a compound ("flattened" alternative; the writer always writes the compound). |
+| Default | `EMPTY` (an empty compound). `bucket_entity_data` is in the prototype of every mob bucket as empty (25-5 §3); `custom_data` is absent by default. |
+| Equality | NBT compound equality (key sets and values; list order matters). |
+| Use | `custom_data` is free-form (commands, data packs, the `custom_data` predicate of 26 §10). `bucket_entity_data` holds the creature data of a mob bucket (25-5): the keys the bucket copies into and out of the entity. |
+| Size | No limit in the codec; the network accounter limit of 00 §8 applies to the whole packet. |
+
+### 25.6 `entity_data` (60) and `block_entity_data` (62), `TypedEntityData`
+
+| Aspect | `entity_data` | `block_entity_data` |
+|---|---|---|
+| Type key | RegistryId of `entity_type` | RegistryId of `block_entity_type` |
+| Network | the type id (VarInt), then network NBT compound (00 §8) of the data **without** the `id` key (order: type first, compound second; the order follows the composite codec's argument order and is inferred) | same, with the block entity type id |
+| NBT | one compound: key `id` (String, the type identifier; required) plus the data keys at the same level | same |
+| Stored form | the compound is held without `id`; reading the saved form strips `id` into the type, writing puts it back (`stripId`) | same |
+| Apply | `loadInto(entity)`: the entity's current save data (without id) is merged under the component's compound (the component keys win), then loaded; used by spawn eggs and the like (25-6 §5). Spawner use: the compound gets `id` put back and is merged into the spawn data. | `loadInto(block entity)`: the block entity's custom save data is merged under the compound, then loaded; on failure the previous data is restored ("rollback") and a message "Failed to apply custom data to block entity" is logged. Operators-only types: 31-1 (six types, `OP_ONLY_CUSTOM_DATA`). |
+| Default | absent | absent |
+| Equality | the type and the compound | same |
+| Tooltip | for `entity_data` of a spawn-egg style item on a peaceful world the key `item.spawn_egg.peaceful` is used (text only) | none read |
+
+### 25.7 `block_state` (78), `BlockItemStateProperties`
+
+| Aspect | Value |
+|---|---|
+| Value | A map from property name String to value String; only listed properties override the block's default state when the block item is placed (25-1 §6, step 6: unknown names or illegal values are ignored by the application). |
+| Network | VarInt count, then count x (String(32767) name, String(32767) value). |
+| NBT | A compound whose values are all Strings (`{"facing": "north", "waterlogged": "true"}`); a non-string value fails the decode. Booleans and numbers are therefore written as their state-name strings. |
+| Default | `EMPTY` (no properties); the component is absent on ordinary block items. |
+| Equality | map equality. |
 
 ---
 
