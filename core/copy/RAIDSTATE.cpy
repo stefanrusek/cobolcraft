@@ -37,6 +37,7 @@
        10 RR-RAID            BINARY-LONG.
        10 RR-WAVE            BINARY-LONG.
        10 RR-OUTSIDE         BINARY-LONG.
+       10 RR-LEADER          BINARY-LONG.
  01 RP-STATE EXTERNAL.
     05 RP-ENTRY              OCCURS 64 TIMES.
        10 RP-SET             BINARY-LONG.

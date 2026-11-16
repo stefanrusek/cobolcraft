@@ -367,17 +367,523 @@
      GOBACK.
  END PROGRAM RAID-PLAYER-TICK.
 
+
  IDENTIFICATION DIVISION.
- PROGRAM-ID. RAID-WORLD-TICK.
-*> The per-tick raid work (STDMOB-SPAWN-TICK): the omen effects of every player.
+ PROGRAM-ID. RAID-SPAWN-POS.
+*> USING raid slot, found out: getValidSpawnPos / findRandomSpawnPos(8) (20 section 14.2): up to 8 attempts on the ring of RAID-SPAWN-OFFSET; the position is kept in RD-SX/SY/SZ.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RAIDSTATE.
+ 01 WS-A                    BINARY-LONG.
+ 01 WS-N                    BINARY-LONG.
+ 01 WS-START                FLOAT-LONG.
+ 01 WS-DRAW-X               BINARY-LONG.
+ 01 WS-DRAW-Z               BINARY-LONG.
+ 01 WS-OX                   BINARY-LONG.
+ 01 WS-OZ                   BINARY-LONG.
+ 01 WS-X                    BINARY-LONG.
+ 01 WS-Z                    BINARY-LONG.
+ 01 WS-Y                    BINARY-LONG.
+ 01 WS-GROUND               BINARY-LONG.
+ 01 WS-YES                  BINARY-LONG.
+ 01 WS-SALT                 BINARY-LONG VALUE 74.
+ 01 WS-BOUND                BINARY-LONG.
+ 01 WS-R                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-FOUND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-FOUND.
+     MOVE 0 TO L-FOUND
+     COMPUTE WS-N = RD-COOLDOWN(L-SLOT) / 20
+     MOVE 6283 TO WS-BOUND
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R
+     COMPUTE WS-START = WS-R / 1000
+     PERFORM VARYING WS-A FROM 0 BY 1 UNTIL WS-A > 7 OR L-FOUND = 1
+         MOVE 3 TO WS-BOUND
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW-X
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW-Z
+         CALL "RAID-SPAWN-OFFSET" USING RD-COOLDOWN(L-SLOT) WS-START WS-A WS-DRAW-X WS-DRAW-Z WS-OX WS-OZ
+         COMPUTE WS-X = RD-CX(L-SLOT) + WS-OX
+         COMPUTE WS-Z = RD-CZ(L-SLOT) + WS-OZ
+         CALL "TRADER-GROUND" USING RD-DIM(L-SLOT) WS-X WS-Z RD-CY(L-SLOT) WS-GROUND WS-Y
+         IF WS-GROUND = 1
+             IF FUNCTION ABS(WS-Y - RD-CY(L-SLOT)) <= 96
+                 MOVE 0 TO WS-YES
+                 IF WS-N > 7
+                     CALL "RAID-IS-VILLAGE" USING RD-DIM(L-SLOT) WS-X WS-Y WS-Z WS-YES
+                 END-IF
+                 IF WS-YES = 0
+                     MOVE WS-X TO RD-SX(L-SLOT)
+                     MOVE WS-Y TO RD-SY(L-SLOT)
+                     MOVE WS-Z TO RD-SZ(L-SLOT)
+                     MOVE 1 TO RD-SPAWN-SET(L-SLOT)
+                     MOVE 1 TO L-FOUND
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-SPAWN-POS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-JOIN.
+*> USING raid slot, wave, entity row, leader (0/1): the raider becomes a member; its health joins the total.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-DONE                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-WAVE                  BINARY-LONG.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-LEADER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-WAVE L-ROW L-LEADER.
+     MOVE 0 TO WS-DONE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX OR WS-DONE = 1
+         IF RR-ID(WS-I) = 0
+             INITIALIZE RR-ENTRY(WS-I)
+             MOVE EN-ID(L-ROW) TO RR-ID(WS-I)
+             MOVE L-SLOT TO RR-RAID(WS-I)
+             MOVE L-WAVE TO RR-WAVE(WS-I)
+             MOVE L-LEADER TO RR-LEADER(WS-I)
+             IF L-LEADER = 1
+                 MOVE EN-ID(L-ROW) TO RD-LEADER(L-SLOT)
+             END-IF
+             COMPUTE RD-TOTAL(L-SLOT) = RD-TOTAL(L-SLOT) + EN-HEALTH(L-ROW) * 1000
+             MOVE 1 TO WS-DONE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-ALIVE.
+*> USING raid slot, count out: the members that are alive entities.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-E                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-COUNT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) > 0 AND RR-RAID(WS-I) = L-SLOT
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+                 IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = RR-ID(WS-I) AND EN-HEALTH(WS-E) > 0
+                     ADD 1 TO L-COUNT
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-ALIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-SPAWN-GROUP.
+*> USING raid slot, bonus group (0/1): spawnGroup (20 section 14.3): vindicators, evokers, pillagers, witches, ravagers at the wave spawn position, one leader per call among
+*> the raiders that can lead, the riders of the ravagers (spawned beside the ravager: mobs cannot ride mobs here), then groupsSpawned + 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY RAIDSTATE.
+ 01 WS-KEYS.
+    05 FILLER               PIC X(112) VALUE "minecraft:vindicator".
+    05 FILLER               PIC X(112) VALUE "minecraft:evoker".
+    05 FILLER               PIC X(112) VALUE "minecraft:pillager".
+    05 FILLER               PIC X(112) VALUE "minecraft:witch".
+    05 FILLER               PIC X(112) VALUE "minecraft:ravager".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY               PIC X(112) OCCURS 5 TIMES.
+ 01 WS-ENTITY-ROW           PIC X(66).
+ 01 WS-STATUS               BINARY-LONG.
+ 01 WS-TYPE                 BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-WAVE                 BINARY-LONG.
+ 01 WS-T                    BINARY-LONG.
+ 01 WS-K                    BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG.
+ 01 WS-LEADER-DONE          BINARY-LONG.
+ 01 WS-LEAD                 BINARY-LONG.
+ 01 WS-RAVAGERS             BINARY-LONG.
+ 01 WS-ROW                  BINARY-LONG.
+ 01 WS-RIDER-TYPE           BINARY-LONG.
+ 01 WS-RIDER                BINARY-LONG.
+ 01 WS-X                    FLOAT-LONG.
+ 01 WS-Y                    FLOAT-LONG.
+ 01 WS-Z                    FLOAT-LONG.
+ 01 WS-YAW                  FLOAT-SHORT VALUE 0.
+ 01 WS-DIFF                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-BONUS                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-BONUS.
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 5
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY(WS-T) WS-TYPE(WS-T) WS-ENTITY-ROW WS-STATUS
+     END-PERFORM
+     MOVE 0 TO RD-TOTAL(L-SLOT)
+     COMPUTE WS-WAVE = RD-GROUPS(L-SLOT) + 1
+     MOVE BW-DIFFICULTY TO WS-DIFF
+     COMPUTE WS-X = RD-SX(L-SLOT) + 0.5
+     COMPUTE WS-Y = RD-SY(L-SLOT)
+     COMPUTE WS-Z = RD-SZ(L-SLOT) + 0.5
+     MOVE 0 TO WS-LEADER-DONE WS-RAVAGERS
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 5
+         CALL "RAID-WAVE-COUNT" USING WS-T WS-WAVE WS-DIFF L-BONUS WS-COUNT
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-COUNT
+             CALL "MOB-SPAWN" USING RD-DIM(L-SLOT) WS-TYPE(WS-T) WS-X WS-Y WS-Z WS-YAW WS-ROW
+             MOVE 0 TO WS-LEAD
+             IF WS-LEADER-DONE = 0 AND WS-T < 4
+                 MOVE 1 TO WS-LEAD
+                 MOVE 1 TO WS-LEADER-DONE
+             END-IF
+             CALL "RAID-JOIN" USING L-SLOT WS-WAVE WS-ROW WS-LEAD
+             IF WS-T = 5
+                 MOVE 0 TO WS-RIDER-TYPE
+                 IF WS-WAVE = 5
+                     MOVE WS-TYPE(3) TO WS-RIDER-TYPE
+                 END-IF
+                 IF WS-WAVE >= 7
+                     IF WS-RAVAGERS = 0
+                         MOVE WS-TYPE(2) TO WS-RIDER-TYPE
+                     ELSE
+                         MOVE WS-TYPE(1) TO WS-RIDER-TYPE
+                     END-IF
+                 END-IF
+                 ADD 1 TO WS-RAVAGERS
+                 IF WS-RIDER-TYPE > 0
+                     MOVE 0 TO WS-LEAD
+                     CALL "MOB-SPAWN" USING RD-DIM(L-SLOT) WS-RIDER-TYPE WS-X WS-Y WS-Z WS-YAW WS-RIDER
+                     CALL "RAID-JOIN" USING L-SLOT WS-WAVE WS-RIDER WS-LEAD
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO RD-SPAWN-SET(L-SLOT)
+     ADD 1 TO RD-GROUPS(L-SLOT)
+     GOBACK.
+ END PROGRAM RAID-SPAWN-GROUP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-DROP.
+*> USING raid slot: removes the raid and the memberships of its raiders.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) > 0 AND RR-RAID(WS-I) = L-SLOT
+             INITIALIZE RR-ENTRY(WS-I)
+         END-IF
+     END-PERFORM
+     MOVE 0 TO RD-USED(L-SLOT)
+     GOBACK.
+ END PROGRAM RAID-DROP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-REFRESH.
+*> USING raid slot: updateRaiders (20 section 14.2), every 20 ticks: a member that is gone, in another dimension or 112 blocks (squared 12544) from the centre leaves the raid.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-E                    BINARY-LONG.
+ 01 WS-ROW                  BINARY-LONG.
+ 01 WS-GONE                 BINARY-LONG.
+ 01 WS-D2                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) > 0 AND RR-RAID(WS-I) = L-SLOT
+             MOVE 0 TO WS-ROW
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+                 IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = RR-ID(WS-I)
+                     MOVE WS-E TO WS-ROW
+                 END-IF
+             END-PERFORM
+             MOVE 0 TO WS-GONE
+             IF WS-ROW = 0
+                 MOVE 1 TO WS-GONE
+             ELSE
+                 COMPUTE WS-D2 = (EN-X(WS-ROW) - RD-CX(L-SLOT)) ** 2 + (EN-Z(WS-ROW) - RD-CZ(L-SLOT)) ** 2
+                 IF EN-DIM(WS-ROW) NOT = RD-DIM(L-SLOT) OR WS-D2 >= 12544
+                     MOVE 1 TO WS-GONE
+                 END-IF
+             END-IF
+             IF WS-GONE = 1
+                 IF RR-LEADER(WS-I) = 1
+                     MOVE 0 TO RD-LEADER(L-SLOT)
+                 END-IF
+                 INITIALIZE RR-ENTRY(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-REFRESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-RAIDER-DIED.
+*> USING entity row, killer player row (0 none): Raider.die (20 section 14.2): a killing player becomes a hero of the village, a dead leader clears the wave's leader, the raider
+*> leaves the raid.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-H                    BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-HAS                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-KILLER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KILLER.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         IF RR-ID(WS-I) > 0 AND RR-ID(WS-I) = EN-ID(L-ROW)
+             MOVE RR-RAID(WS-I) TO WS-SLOT
+             IF RR-LEADER(WS-I) = 1
+                 MOVE 0 TO RD-LEADER(WS-SLOT)
+             END-IF
+             IF L-KILLER > 0
+                 MOVE 0 TO WS-HAS
+                 PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 8
+                     IF RD-HERO(WS-SLOT, WS-H) = PL-ENTITY-ID(L-KILLER)
+                         MOVE 1 TO WS-HAS
+                     END-IF
+                 END-PERFORM
+                 IF WS-HAS = 0
+                     PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 8 OR WS-HAS = 1
+                         IF RD-HERO(WS-SLOT, WS-H) = 0
+                             MOVE PL-ENTITY-ID(L-KILLER) TO RD-HERO(WS-SLOT, WS-H)
+                             MOVE 1 TO WS-HAS
+                         END-IF
+                     END-PERFORM
+                 END-IF
+             END-IF
+             INITIALIZE RR-ENTRY(WS-I)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RAID-RAIDER-DIED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-MOVE-CENTER.
+*> USING raid slot: moveRaidCenterToNearbyVillageSection: the village point section within 2 sections of the centre's whose section centre is nearest becomes the centre.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY VILPOIX.
+ COPY RAIDSTATE.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-SX                   BINARY-LONG.
+ 01 WS-SY                   BINARY-LONG.
+ 01 WS-SZ                   BINARY-LONG.
+ 01 WS-PX                   BINARY-LONG.
+ 01 WS-PY                   BINARY-LONG.
+ 01 WS-PZ                   BINARY-LONG.
+ 01 WS-D2                   FLOAT-LONG.
+ 01 WS-BEST                 FLOAT-LONG.
+ 01 WS-HAVE                 BINARY-LONG.
+ 01 WS-NX                   BINARY-LONG.
+ 01 WS-NY                   BINARY-LONG.
+ 01 WS-NZ                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT.
+     COMPUTE WS-SX = FUNCTION INTEGER(RD-CX(L-SLOT) / 16)
+     COMPUTE WS-SY = FUNCTION INTEGER(RD-CY(L-SLOT) / 16)
+     COMPUTE WS-SZ = FUNCTION INTEGER(RD-CZ(L-SLOT) / 16)
+     MOVE 0 TO WS-HAVE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PX-MAX
+         IF PX-KIND(WS-I) > 0 AND PX-DIM(WS-I) = RD-DIM(L-SLOT)
+             COMPUTE WS-PX = FUNCTION INTEGER(PX-X(WS-I) / 16)
+             COMPUTE WS-PY = FUNCTION INTEGER(PX-Y(WS-I) / 16)
+             COMPUTE WS-PZ = FUNCTION INTEGER(PX-Z(WS-I) / 16)
+             IF FUNCTION ABS(WS-PX - WS-SX) <= 2 AND FUNCTION ABS(WS-PY - WS-SY) <= 2 AND FUNCTION ABS(WS-PZ - WS-SZ) <= 2
+                 COMPUTE WS-D2 = (WS-PX * 16 + 8 - RD-CX(L-SLOT)) ** 2 + (WS-PY * 16 + 8 - RD-CY(L-SLOT)) ** 2
+                     + (WS-PZ * 16 + 8 - RD-CZ(L-SLOT)) ** 2
+                 IF WS-HAVE = 0 OR WS-D2 < WS-BEST
+                     MOVE WS-D2 TO WS-BEST
+                     MOVE 1 TO WS-HAVE
+                     COMPUTE WS-NX = WS-PX * 16 + 8
+                     COMPUTE WS-NY = WS-PY * 16 + 8
+                     COMPUTE WS-NZ = WS-PZ * 16 + 8
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-HAVE = 1
+         MOVE WS-NX TO RD-CX(L-SLOT)
+         MOVE WS-NY TO RD-CY(L-SLOT)
+         MOVE WS-NZ TO RD-CZ(L-SLOT)
+     END-IF
+     GOBACK.
+ END PROGRAM RAID-MOVE-CENTER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-TICK.
+*> USING raid slot: Raid.tick (20 section 14.2) in the order of the document. Not modelled: the active flag (a loaded centre chunk), the boss bar, the horn, the 600 tick raider
+*> grace and the outside-village counter of the raiders (no no-action time is kept).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY RAIDSTATE.
+ 01 WS-VILLAGE              BINARY-LONG.
+ 01 WS-ALIVE                BINARY-LONG.
+ 01 WS-N                    BINARY-LONG.
+ 01 WS-BONUS                BINARY-LONG.
+ 01 WS-MORE                 BINARY-LONG.
+ 01 WS-FOUND                BINARY-LONG.
+ 01 WS-FAILS                BINARY-LONG.
+ 01 WS-GO                   BINARY-LONG.
+ 01 WS-H                    BINARY-LONG.
  01 WS-P                    BINARY-LONG.
+ 01 WS-AMP                  BINARY-LONG.
+ 01 WS-DUR                  BINARY-LONG VALUE 48000.
+ 01 WS-FLAGS                BINARY-LONG VALUE 4.
+ 01 WS-HERO                 BINARY-LONG VALUE 31.
+ 01 WS-BONUS-GROUP          BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT.
+     IF RD-USED(L-SLOT) = 0
+         GOBACK
+     END-IF
+     IF RD-STATUS(L-SLOT) = 2 OR RD-STATUS(L-SLOT) = 3
+         ADD 1 TO RD-CELEB(L-SLOT)
+         IF RD-CELEB(L-SLOT) >= 600
+             CALL "RAID-DROP" USING L-SLOT
+         END-IF
+         GOBACK
+     END-IF
+     IF BW-DIFFICULTY = 0
+         CALL "RAID-DROP" USING L-SLOT
+         GOBACK
+     END-IF
+     CALL "RAID-IS-VILLAGE" USING RD-DIM(L-SLOT) RD-CX(L-SLOT) RD-CY(L-SLOT) RD-CZ(L-SLOT) WS-VILLAGE
+     IF WS-VILLAGE = 0
+         CALL "RAID-MOVE-CENTER" USING L-SLOT
+         CALL "RAID-IS-VILLAGE" USING RD-DIM(L-SLOT) RD-CX(L-SLOT) RD-CY(L-SLOT) RD-CZ(L-SLOT) WS-VILLAGE
+         IF WS-VILLAGE = 0
+             IF RD-GROUPS(L-SLOT) > 0
+                 MOVE 3 TO RD-STATUS(L-SLOT)
+             ELSE
+                 CALL "RAID-DROP" USING L-SLOT
+             END-IF
+             GOBACK
+         END-IF
+     END-IF
+     ADD 1 TO RD-TICKS(L-SLOT)
+     IF RD-TICKS(L-SLOT) >= 48000
+         CALL "RAID-DROP" USING L-SLOT
+         GOBACK
+     END-IF
+     CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
+     CALL "RAID-NUM-GROUPS" USING BW-DIFFICULTY WS-N
+     MOVE 0 TO WS-BONUS
+     IF RD-OMEN(L-SLOT) > 1
+         MOVE 1 TO WS-BONUS
+     END-IF
+     MOVE 0 TO WS-MORE
+     IF RD-GROUPS(L-SLOT) < WS-N + WS-BONUS
+         MOVE 1 TO WS-MORE
+     END-IF
+     IF WS-ALIVE = 0 AND WS-MORE = 1
+         IF RD-COOLDOWN(L-SLOT) > 0
+             IF RD-SPAWN-SET(L-SLOT) = 0 AND FUNCTION MOD(RD-COOLDOWN(L-SLOT), 5) = 0
+                 CALL "RAID-SPAWN-POS" USING L-SLOT WS-FOUND
+             END-IF
+             SUBTRACT 1 FROM RD-COOLDOWN(L-SLOT)
+         ELSE
+             IF RD-GROUPS(L-SLOT) > 0
+                 MOVE 300 TO RD-COOLDOWN(L-SLOT)
+                 GOBACK
+             END-IF
+         END-IF
+     END-IF
+     IF FUNCTION MOD(RD-TICKS(L-SLOT), 20) = 0
+         CALL "RAID-REFRESH" USING L-SLOT
+         CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
+     END-IF
+*>   Wave spawning: while the cooldown is 0, no raider lives and a wave (or the bonus wave) remains.
+     MOVE 0 TO WS-FAILS
+     MOVE 1 TO WS-GO
+     PERFORM UNTIL WS-GO = 0
+         MOVE 0 TO WS-GO
+         IF RD-COOLDOWN(L-SLOT) = 0 AND WS-ALIVE = 0
+             MOVE 0 TO WS-BONUS-GROUP
+             IF RD-GROUPS(L-SLOT) = WS-N AND WS-BONUS = 1
+                 MOVE 1 TO WS-BONUS-GROUP
+             END-IF
+             IF RD-GROUPS(L-SLOT) < WS-N OR WS-BONUS-GROUP = 1
+                 IF RD-SPAWN-SET(L-SLOT) = 1
+                     MOVE 1 TO WS-FOUND
+                 ELSE
+                     CALL "RAID-SPAWN-POS" USING L-SLOT WS-FOUND
+                 END-IF
+                 IF WS-FOUND = 1
+                     MOVE 1 TO RD-STARTED(L-SLOT)
+                     CALL "RAID-SPAWN-GROUP" USING L-SLOT WS-BONUS-GROUP
+                     CALL "RAID-ALIVE" USING L-SLOT WS-ALIVE
+                 ELSE
+                     ADD 1 TO WS-FAILS
+                     IF WS-FAILS > 5
+                         CALL "RAID-DROP" USING L-SLOT
+                         GOBACK
+                     END-IF
+                     MOVE 1 TO WS-GO
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+*>   Victory after the last wave: 40 ticks without raiders, then the heroes are rewarded.
+     IF RD-STARTED(L-SLOT) = 1 AND WS-MORE = 0 AND WS-ALIVE = 0
+         IF RD-POST(L-SLOT) < 40
+             ADD 1 TO RD-POST(L-SLOT)
+         ELSE
+             MOVE 2 TO RD-STATUS(L-SLOT)
+             COMPUTE WS-AMP = RD-OMEN(L-SLOT) - 1
+             PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 8
+                 IF RD-HERO(L-SLOT, WS-H) > 0
+                     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
+                         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ID(WS-P) = RD-HERO(L-SLOT, WS-H) AND PL-MODE(WS-P) NOT = 3
+                             CALL "EFFECT-ADD" USING WS-P WS-HERO WS-AMP WS-DUR WS-FLAGS
+                         END-IF
+                     END-PERFORM
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM RAID-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RAID-WORLD-TICK.
+*> The per-tick raid work (STDMOB-SPAWN-TICK): the omen effects of every player and every raid.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RAIDSTATE.
+ 01 WS-P                    BINARY-LONG.
+ 01 WS-R                    BINARY-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
          IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0
              CALL "RAID-PLAYER-TICK" USING WS-P
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > RD-MAX
+         IF RD-USED(WS-R) = 1
+             CALL "RAID-TICK" USING WS-R
          END-IF
      END-PERFORM
      GOBACK.
