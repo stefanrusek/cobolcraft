@@ -48,11 +48,14 @@
        10 WS-S-PATH          PIC X(56).
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-VPATH               PIC X(64).
+ 01 WS-VFULL               PIC X(256).
+ 01 WS-VLEN                BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
  01 WS-IMAGES.
     05 WS-IMAGE            PIC X(1048576) OCCURS 3 TIMES.
  01 WS-MODEL-IMAGES.
-    05 WS-MIMAGE           PIC X(262144) OCCURS 32 TIMES.
+    05 WS-MIMAGE           PIC X(262144) OCCURS 64 TIMES.
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-M                   BINARY-LONG.
@@ -70,12 +73,12 @@
  01 WS-TO                  BINARY-LONG.
  01 WS-ROW-BYTES           BINARY-LONG.
  01 WS-RECT.
-    05 WS-RC OCCURS 35 TIMES.
+    05 WS-RC OCCURS 67 TIMES.
        10 WS-RC-Y          BINARY-LONG.
        10 WS-RC-W          BINARY-LONG.
        10 WS-RC-H          BINARY-LONG.
  01 B-IMG                  PIC X(1048576) BASED.
- 01 B-ATLAS                PIC X(4194304) BASED.
+ 01 B-ATLAS                PIC X(16777216) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -106,7 +109,21 @@
              END-IF
          END-IF
          MOVE 0 TO WS-FOUND
-         IF WS-PATH-LENGTH > 0
+*>       A model slot with a variant texture (ENTITY-TEX-PATH) asks the pack stack for it first and falls back to the row's own image.
+         IF WS-K > 3 AND EA-MT-TEX(WS-M) > 0
+             MOVE SPACES TO WS-VPATH
+             CALL "ENTITY-TEX-PATH" USING CL-MD-KEY(WS-MD) EA-MT-TEX(WS-M) WS-VPATH
+             IF WS-VPATH NOT = SPACES
+                 MOVE SPACES TO WS-VFULL
+                 MOVE 1 TO WS-PTR
+                 STRING "assets/minecraft/" DELIMITED BY SIZE FUNCTION TRIM(WS-VPATH) DELIMITED BY SIZE
+                     INTO WS-VFULL WITH POINTER WS-PTR
+                 COMPUTE WS-VLEN = WS-PTR - 1
+                 CALL "PACK-IMAGE" USING CLIENT-STATE WS-VFULL WS-VLEN B-IMG WS-CAPACITY
+                     WS-W WS-H WS-FOUND
+             END-IF
+         END-IF
+         IF WS-FOUND = 0 AND WS-PATH-LENGTH > 0
              CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH B-IMG WS-CAPACITY
                  WS-W WS-H WS-FOUND
          END-IF
@@ -191,6 +208,7 @@
  01 WS-T                   BINARY-LONG.
  01 WS-SAVED               PIC X(1024).
  01 WS-SAVED-MODEL         BINARY-LONG.
+ 01 WS-ADULT-MODEL         BINARY-LONG.
  01 WS-SEEN                BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-DX                  FLOAT-LONG.
@@ -234,6 +252,12 @@
                  END-IF
              END-PERFORM
          END-IF
+         MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND EN-BABY(WS-R) = 1
+             IF CL-MD-BABY(EN-MODEL(WS-R)) > 0
+                 MOVE CL-MD-BABY(EN-MODEL(WS-R)) TO EN-MODEL(WS-R)
+             END-IF
+         END-IF
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
@@ -245,12 +269,15 @@
              END-EVALUATE
 *>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
              MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
+*>           A sheared sheep (entry 18 bit 16) draws no wool.
              IF CL-MD-EXTRA(WS-SAVED-MODEL) > 0
+                     AND NOT (EN-KEY(WS-R) = "sheep" AND EN-VAR(WS-R) >= 16 AND FUNCTION MOD(FUNCTION INTEGER(EN-VAR(WS-R) / 16), 2) = 1)
                  MOVE CL-MD-EXTRA(WS-SAVED-MODEL) TO EN-MODEL(WS-R)
                  CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
          END-IF
+         MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
              IF EN-USED(WS-R) = 1 AND WS-SEEN = 1 AND EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
                      AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES

@@ -53,6 +53,8 @@
      EVALUATE CL-MD-FAMILY(L-ROW)
          WHEN 2
              CALL "EMD-LAYER" USING EMM-MODEL WS-LAYER L-OK
+         WHEN 3
+             CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER L-OK
          WHEN 4
              CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER L-OK
          WHEN 5
@@ -95,25 +97,41 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
+ 01 WS-EM                  BINARY-LONG.
+ 01 WS-TEX                 BINARY-LONG.
+ 01 WS-RESET               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO WS-NEW
+     MOVE 0 TO WS-NEW WS-RESET
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+*>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
+             MOVE EN-MODEL(WS-R) TO WS-EM
+             IF EN-BABY(WS-R) = 1 AND CL-MD-BABY(WS-EM) > 0
+                 MOVE CL-MD-BABY(WS-EM) TO WS-EM
+             END-IF
+             CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
              MOVE 0 TO WS-FOUND
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                 IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-R)
+                 IF EA-MT-MODEL(WS-S) = WS-EM AND EA-MT-TEX(WS-S) = WS-TEX
                      MOVE 1 TO WS-FOUND
                  END-IF
              END-PERFORM
-             IF WS-FOUND = 0 AND EA-MT-COUNT < 32
+*>           The atlas is full (64 images): once a call, every slot is released and the pass starts again with the rows on screen, so the images that
+*>           are no longer needed make room instead of the newest mobs not being drawn.
+             IF WS-FOUND = 0 AND EA-MT-COUNT >= 64 AND WS-RESET = 0
+                 MOVE 0 TO EA-MT-COUNT WS-R
+                 MOVE 1 TO WS-RESET WS-NEW
+             END-IF
+             IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                  ADD 1 TO EA-MT-COUNT
-                 MOVE EN-MODEL(WS-R) TO EA-MT-MODEL(EA-MT-COUNT)
+                 MOVE WS-EM TO EA-MT-MODEL(EA-MT-COUNT)
+                 MOVE WS-TEX TO EA-MT-TEX(EA-MT-COUNT)
                  MOVE 1 TO WS-NEW
              END-IF
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
-             MOVE CL-MD-EXTRA(EN-MODEL(WS-R)) TO WS-X
+             MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0
                  MOVE 0 TO WS-FOUND
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
@@ -121,9 +139,10 @@
                          MOVE 1 TO WS-FOUND
                      END-IF
                  END-PERFORM
-                 IF WS-FOUND = 0 AND EA-MT-COUNT < 32
+                 IF WS-FOUND = 0 AND EA-MT-COUNT < 64
                      ADD 1 TO EA-MT-COUNT
                      MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
+                     MOVE 0 TO EA-MT-TEX(EA-MT-COUNT)
                      MOVE 1 TO WS-NEW
                  END-IF
              END-IF
@@ -145,10 +164,14 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 32 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 160 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 32 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 160 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-TEXC                BINARY-LONG.
+ 01 WS-TR                  FLOAT-LONG.
+ 01 WS-TG                  FLOAT-LONG.
+ 01 WS-TB                  FLOAT-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -310,8 +333,9 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
      MOVE L-ROW TO WS-ROW
      MOVE 0 TO WS-SLOT
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TEXC
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-         IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-ROW)
+         IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-ROW) AND EA-MT-TEX(WS-S) = WS-TEXC
              MOVE WS-S TO WS-SLOT
          END-IF
      END-PERFORM
@@ -340,6 +364,10 @@
          COMPUTE WS-C4 = WS-C4 * WS-C4 * WS-C4 * WS-C4
          COMPUTE WS-HOOK-X = (1 + WS-C4 * 0.4) * WS-FSW
          COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
+     END-IF
+*>   The size of a slime or magma cube (Set Entity Data entry 18, 34-6 section 7: the scale (r x n, n / r, r x n) with squish 0 is n on every axis).
+     IF (EN-KEY(WS-ROW) = "slime" OR "magma_cube") AND EN-VAR(WS-ROW) > 0
+         MOVE EN-VAR(WS-ROW) TO WS-HOOK-X WS-HOOK-Y
      END-IF
 *>   An eyes layer (CL-MD-ANIM "Y": spider, cave spider and enderman eyes, 34-1 8.5): the posed model of its entity drawn once more with the eyes
 *>   texture, full bright (brightness 1, no face shading). The eyes pipeline draws over its own body (depth GREATER_THAN_OR_EQUAL, no depth write, 34-1
@@ -374,10 +402,12 @@
      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
              OR "blaze" OR "enderman" OR "enderman_eyes"
+             OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "W" OR "V"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
          IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
                  OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
+                 OR CL-MD-ANIM(EN-MODEL(WS-ROW)) = "V"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -475,6 +505,9 @@
              MOVE 4 TO WS-VARIANT
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       A player (the humanoid, variant 0): crouching in the pose 5 (53 section 1; 12 section 7.5 offsets).
+         WHEN "W"
+         WHEN "V"
+             CALL "ENTITY-POSE-MORE" USING EMM-MODEL CL-MD-KEY(WS-K) WS-IN WS-AGE
          WHEN "H"
              MOVE 0 TO WS-VARIANT
              IF EN-POSE(WS-ROW) = 5
@@ -705,6 +738,7 @@
      COMPUTE WS-OX = EN-X(WS-ROW) - L-EYE(1)
      COMPUTE WS-OY = EN-Y(WS-ROW) - L-EYE(2)
      COMPUTE WS-OZ = EN-Z(WS-ROW) - L-EYE(3)
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TR WS-TG WS-TB
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR RL-EN-COUNT + 36 > CL-MAX-ENTITY-VERTICES
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
              COMPUTE WS-ECX(WS-K) = WS-BK-CX(WS-E, WS-C, WS-K) + WS-OX
@@ -719,6 +753,9 @@
              MOVE WS-ECX(WS-J) TO RL-EN-X(RL-EN-COUNT)
              MOVE WS-ECY(WS-J) TO RL-EN-Y(RL-EN-COUNT)
              MOVE WS-ECZ(WS-J) TO RL-EN-Z(RL-EN-COUNT)
+             MOVE WS-TR TO RL-EN-R(RL-EN-COUNT)
+             MOVE WS-TG TO RL-EN-G(RL-EN-COUNT)
+             MOVE WS-TB TO RL-EN-BLUE(RL-EN-COUNT)
              ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM

@@ -1,9 +1,12 @@
 *> The entity model table of the real render path (client/src/entities-models.cob, entities-render.cob): which spawned vanilla
 *> entity types are drawn as which model of the entity model library (docs/protocol/34-entity-models-1..8). One row per entity
 *> type key (the standard set's entity_type key without namespace, content/copy/gen/entities.cpy; the replica keeps it in EN-KEY):
-*>   CL-MD-KEY    entity type key; CL-MD-FAMILY the library that builds the layer: 2 EMD-LAYER (34-2 humanoids), 4 EF4-LAYER (34-4),
+*>   CL-MD-KEY    entity type key; CL-MD-FAMILY the library that builds the layer: 2 EMD-LAYER (34-2 humanoids), 3 EM3-LAYER (34-3 villagers, illagers,
+*>                golems, allay), 4 EF4-LAYER (34-4),
 *>                5 EF5-LAYER (34-5), 6 EF6-LAYER (34-6), 7 EF7-LAYER (34-7), 8 EF8-LAYER (34-8); CL-MD-LAYER the ModelLayers name
 *>                of the adult model (the renderer table of each document: 34-4 1.5 EF4-REGISTRY, 34-2 5.2 EMD-RENDERER, ...);
+*>                W and V the walk and idle poses of entities-pose.cob ENTITY-POSE-MORE (V also takes ageInTicks into the bake key: flying and
+*>                wiggling mobs), Z and K giants and bogged/parched too;
 *>   CL-MD-TEXW, CL-MD-TEXH  the layer's texture size in texels (what the model's MM-TEXW and MM-TEXH hold: the texture image of any
 *>                other size is sampled by the same fractions, 34-7 1.3), also the size of the missing-texture image;
 *>   CL-MD-ANIM   the setupAnim program run before drawing, with the state the replica has (head pitch, head yaw relative to the body;
@@ -14,7 +17,12 @@
 *>                (EF6-CREEPER-TEXTURE, EMD-RENDERER, EF7-BLAZE-TEXTURE, EF8-SQUID-TEXTURE, EF6-SPIDER-TEXTURE); spaces for a type whose texture
 *>                the replica cannot choose (the cow, pig and wolf textures come from a variant registry entry that the replica does not hold; a
 *>                null variant is the missing texture, 34-4 2.1): it is drawn with the missing-texture image.
- 78 CL-MODEL-COUNT           VALUE 28.
+*>   CL-MD-BABY   the row of the baby model of the type (0 none: the adult model is drawn for a baby); rows whose key ends in ~b are baby rows and no
+*>                entity type. Babies are drawn from that row with its own atlas slot (EN-BABY, entities-render.cob ENTITIES-MESH); the variant
+*>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
+*>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; nautilus and boats are not in the table yet.
+*>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
+ 78 CL-MODEL-COUNT           VALUE 139.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -23,7 +31,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "Q".
     05 FILLER PIC X(64) VALUE "textures/entity/cow/cow_temperate.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 118.
     05 FILLER PIC X(20) VALUE "pig".
     05 FILLER PIC 9 VALUE 4.
     05 FILLER PIC X(24) VALUE "PIG".
@@ -31,15 +40,17 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "Q".
     05 FILLER PIC X(64) VALUE "textures/entity/pig/pig_temperate.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 119.
     05 FILLER PIC X(20) VALUE "wolf".
     05 FILLER PIC 9 VALUE 5.
     05 FILLER PIC X(24) VALUE "WOLF".
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
-    05 FILLER PIC X(64) VALUE SPACES.
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC X(64) VALUE "textures/entity/wolf/wolf.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 124.
     05 FILLER PIC X(20) VALUE "creeper".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "CREEPER".
@@ -47,7 +58,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "C".
     05 FILLER PIC X(64) VALUE "textures/entity/creeper/creeper.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "spider".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "SPIDER".
@@ -55,7 +67,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/spider/spider.png".
-    05 FILLER PIC 99 VALUE 17.
+    05 FILLER PIC 999 VALUE 17.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "zombie".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ZOMBIE".
@@ -63,7 +76,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "Z".
     05 FILLER PIC X(64) VALUE "textures/entity/zombie/zombie.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 125.
     05 FILLER PIC X(20) VALUE "skeleton".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "SKELETON".
@@ -71,7 +85,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "K".
     05 FILLER PIC X(64) VALUE "textures/entity/skeleton/skeleton.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "blaze".
     05 FILLER PIC 9 VALUE 7.
     05 FILLER PIC X(24) VALUE "BLAZE".
@@ -79,15 +94,17 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/blaze/blaze.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "squid".
     05 FILLER PIC 9 VALUE 8.
     05 FILLER PIC X(24) VALUE "SQUID".
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC 999 VALUE 32.
-    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X VALUE "V".
     05 FILLER PIC X(64) VALUE "textures/entity/squid/squid.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 130.
     05 FILLER PIC X(20) VALUE "chicken".
     05 FILLER PIC 9 VALUE 4.
     05 FILLER PIC X(24) VALUE "CHICKEN".
@@ -95,7 +112,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/chicken/chicken_temperate.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 122.
     05 FILLER PIC X(20) VALUE "sheep".
     05 FILLER PIC 9 VALUE 4.
     05 FILLER PIC X(24) VALUE "SHEEP".
@@ -103,7 +121,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "Q".
     05 FILLER PIC X(64) VALUE "textures/entity/sheep/sheep.png".
-    05 FILLER PIC 99 VALUE 12.
+    05 FILLER PIC 999 VALUE 12.
+    05 FILLER PIC 999 VALUE 121.
     05 FILLER PIC X(20) VALUE "sheep_wool".
     05 FILLER PIC 9 VALUE 4.
     05 FILLER PIC X(24) VALUE "SHEEP_WOOL".
@@ -111,7 +130,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "Q".
     05 FILLER PIC X(64) VALUE "textures/entity/sheep/sheep_wool.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "mooshroom".
     05 FILLER PIC 9 VALUE 4.
     05 FILLER PIC X(24) VALUE "MOOSHROOM".
@@ -119,7 +139,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "Q".
     05 FILLER PIC X(64) VALUE "textures/entity/cow/mooshroom_red.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 123.
     05 FILLER PIC X(20) VALUE "experience_orb".
     05 FILLER PIC 9 VALUE 0.
     05 FILLER PIC X(24) VALUE " ".
@@ -127,7 +148,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "O".
     05 FILLER PIC X(64) VALUE "textures/entity/experience/experience_orb.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "arrow".
     05 FILLER PIC 9 VALUE 0.
     05 FILLER PIC X(24) VALUE " ".
@@ -135,7 +157,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "A".
     05 FILLER PIC X(64) VALUE "textures/entity/projectiles/arrow.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "player".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ZOMBIE".
@@ -143,7 +166,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "H".
     05 FILLER PIC X(64) VALUE "textures/entity/player/wide/steve.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "spider_eyes".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "SPIDER".
@@ -151,7 +175,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "Y".
     05 FILLER PIC X(64) VALUE "textures/entity/spider/spider_eyes.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "cave_spider".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "CAVE_SPIDER".
@@ -159,7 +184,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/spider/cave_spider.png".
-    05 FILLER PIC 99 VALUE 19.
+    05 FILLER PIC 999 VALUE 19.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "cave_spider_eyes".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "CAVE_SPIDER".
@@ -167,7 +193,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "Y".
     05 FILLER PIC X(64) VALUE "textures/entity/spider/spider_eyes.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "enderman".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "ENDERMAN".
@@ -175,7 +202,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/enderman/enderman.png".
-    05 FILLER PIC 99 VALUE 21.
+    05 FILLER PIC 999 VALUE 21.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "enderman_eyes".
     05 FILLER PIC 9 VALUE 6.
     05 FILLER PIC X(24) VALUE "ENDERMAN".
@@ -183,7 +211,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "Y".
     05 FILLER PIC X(64) VALUE "textures/entity/enderman/enderman_eyes.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "husk".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "HUSK".
@@ -191,7 +220,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "Z".
     05 FILLER PIC X(64) VALUE "textures/entity/zombie/husk.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 126.
     05 FILLER PIC X(20) VALUE "drowned".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "DROWNED".
@@ -199,7 +229,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "D".
     05 FILLER PIC X(64) VALUE "textures/entity/zombie/drowned.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 127.
     05 FILLER PIC X(20) VALUE "stray".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "STRAY".
@@ -207,7 +238,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "K".
     05 FILLER PIC X(64) VALUE "textures/entity/skeleton/stray.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "wither_skeleton".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "WITHER_SKELETON".
@@ -215,7 +247,8 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "K".
     05 FILLER PIC X(64) VALUE "textures/entity/skeleton/wither_skeleton.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "piglin".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "PIGLIN".
@@ -223,7 +256,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "P".
     05 FILLER PIC X(64) VALUE "textures/entity/piglin/piglin.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 128.
     05 FILLER PIC X(20) VALUE "piglin_brute".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "PIGLIN_BRUTE".
@@ -231,7 +265,8 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "P".
     05 FILLER PIC X(64) VALUE "textures/entity/piglin/piglin_brute.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "zombified_piglin".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ZOMBIFIED_PIGLIN".
@@ -239,14 +274,1015 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "G".
     05 FILLER PIC X(64) VALUE "textures/entity/piglin/zombified_piglin.png".
-    05 FILLER PIC 99 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 129.
+    05 FILLER PIC X(20) VALUE "horse".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "HORSE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/horse_chestnut.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 30.
+    05 FILLER PIC X(20) VALUE "horse~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "HORSE_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/horse_chestnut_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "donkey".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "DONKEY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/donkey.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X(20) VALUE "donkey~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "DONKEY_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/donkey_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "mule".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "MULE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/mule.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 34.
+    05 FILLER PIC X(20) VALUE "mule~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "MULE_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/mule_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "skeleton_horse".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "SKELETON_HORSE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/horse_skeleton.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 36.
+    05 FILLER PIC X(20) VALUE "skeleton_horse~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "SKELETON_HORSE_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/horse_skeleton_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zombie_horse".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_HORSE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/horse_zombie.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 38.
+    05 FILLER PIC X(20) VALUE "zombie_horse~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_HORSE_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/horse/horse_zombie_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "llama".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "LLAMA".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/llama/llama_creamy.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 40.
+    05 FILLER PIC X(20) VALUE "llama~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "LLAMA_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/llama/llama_creamy_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "trader_llama".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "TRADER_LLAMA".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/llama/llama_creamy.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 42.
+    05 FILLER PIC X(20) VALUE "trader_llama~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "TRADER_LLAMA_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/llama/llama_creamy_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "rabbit".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "RABBIT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/brown.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 44.
+    05 FILLER PIC X(20) VALUE "rabbit~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "RABBIT_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/brown_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "goat".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "GOAT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/goat/goat.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 46.
+    05 FILLER PIC X(20) VALUE "goat~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "GOAT_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/goat/goat_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "camel".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "CAMEL".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/camel/camel.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 48.
+    05 FILLER PIC X(20) VALUE "camel~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "CAMEL_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/camel/camel_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "camel_husk".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "CAMEL".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/camel/camel_husk.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "happy_ghast".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "HAPPY_GHAST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/ghast/happy_ghast.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 51.
+    05 FILLER PIC X(20) VALUE "happy_ghast~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "HAPPY_GHAST_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/ghast/happy_ghast_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "ocelot".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "OCELOT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/cat/ocelot.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 53.
+    05 FILLER PIC X(20) VALUE "ocelot~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "OCELOT_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/cat/ocelot_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "cat".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "CAT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/cat/cat_tabby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 55.
+    05 FILLER PIC X(20) VALUE "cat~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "CAT_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/cat/cat_tabby_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "fox".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "FOX".
+    05 FILLER PIC 999 VALUE 48.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/fox/fox.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 57.
+    05 FILLER PIC X(20) VALUE "fox~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "FOX_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/fox/fox_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "PANDA".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/panda/panda.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 59.
+    05 FILLER PIC X(20) VALUE "panda~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "PANDA_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/panda/panda_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "polar_bear".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "POLAR_BEAR".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/bear/polarbear.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 61.
+    05 FILLER PIC X(20) VALUE "polar_bear~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "POLAR_BEAR_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/bear/polarbear_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "parrot".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "PARROT".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/parrot/parrot_red_blue.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "bat".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "BAT".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/bat/bat.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "bee".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "BEE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/bee/bee.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 65.
+    05 FILLER PIC X(20) VALUE "bee~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "BEE_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/bee/bee_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armadillo".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "ARMADILLO".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/armadillo/armadillo.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 67.
+    05 FILLER PIC X(20) VALUE "armadillo~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "ARMADILLO_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/armadillo/armadillo_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "frog".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "FROG".
+    05 FILLER PIC 999 VALUE 48.
+    05 FILLER PIC 999 VALUE 48.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/frog/frog_temperate.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tadpole".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "TADPOLE".
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/tadpole/tadpole.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "turtle".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "TURTLE".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/turtle/turtle.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 71.
+    05 FILLER PIC X(20) VALUE "turtle~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "TURTLE_BABY".
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/turtle/turtle_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "sniffer".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "SNIFFER".
+    05 FILLER PIC 999 VALUE 192.
+    05 FILLER PIC 999 VALUE 192.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/sniffer/sniffer.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 73.
+    05 FILLER PIC X(20) VALUE "sniffer~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "SNIFFER_BABY".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/sniffer/snifflet.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "endermite".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "ENDERMITE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/endermite/endermite.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "silverfish".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "SILVERFISH".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/silverfish/silverfish.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "slime_outer".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "SLIME_OUTER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/slime/slime.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "slime".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "SLIME".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/slime/slime.png".
+    05 FILLER PIC 999 VALUE 76.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "magma_cube".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "MAGMA_CUBE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/slime/magmacube.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "phantom".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "PHANTOM".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/phantom/phantom.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "guardian".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "GUARDIAN".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/guardian/guardian.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "elder_guardian".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "ELDER_GUARDIAN".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/guardian/guardian_elder.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "shulker".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "SHULKER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/shulker/shulker.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "warden".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "WARDEN".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/warden/warden.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "breeze".
+    05 FILLER PIC 9 VALUE 6.
+    05 FILLER PIC X(24) VALUE "BREEZE".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/breeze/breeze.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "ghast".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "GHAST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/ghast/ghast.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "strider".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "STRIDER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/strider/strider.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 87.
+    05 FILLER PIC X(20) VALUE "strider~b".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "STRIDER_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/strider/strider_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "hoglin".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "HOGLIN".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/hoglin/hoglin.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 89.
+    05 FILLER PIC X(20) VALUE "hoglin~b".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "HOGLIN_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/hoglin/hoglin_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zoglin".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "ZOGLIN".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/hoglin/zoglin.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 91.
+    05 FILLER PIC X(20) VALUE "zoglin~b".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "ZOGLIN_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/hoglin/zoglin_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "wither".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "WITHER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/wither/wither.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "end_crystal".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "END_CRYSTAL".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/end_crystal/end_crystal.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "ender_dragon".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "ENDER_DRAGON".
+    05 FILLER PIC 999 VALUE 256.
+    05 FILLER PIC 999 VALUE 256.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/enderdragon/dragon.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "glow_squid".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "GLOW_SQUID".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/squid/glow_squid.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 96.
+    05 FILLER PIC X(20) VALUE "glow_squid~b".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "GLOW_SQUID_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/squid/glow_squid_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "villager".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "VILLAGER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/villager/villager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 98.
+    05 FILLER PIC X(20) VALUE "villager~b".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "VILLAGER_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/villager/villager_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "wandering_trader".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "WANDERING_TRADER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/wandering_trader/wandering_trader.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zombie_villager".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_VILLAGER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie_villager/zombie_villager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 101.
+    05 FILLER PIC X(20) VALUE "zombie_villager~b".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_VILLAGER_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie_villager/zombie_villager_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "witch".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "WITCH".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/witch/witch.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pillager".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "PILLAGER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/pillager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "vindicator".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "VINDICATOR".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/vindicator.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "evoker".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "EVOKER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/evoker.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "illusioner".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "ILLUSIONER".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/illusioner.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "ravager".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "RAVAGER".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/ravager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "vex".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "VEX".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/vex.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "iron_golem".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "IRON_GOLEM".
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC 999 VALUE 128.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/iron_golem/iron_golem.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "snow_golem".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "SNOW_GOLEM".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/snow_golem/snow_golem.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "allay".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "ALLAY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/allay/allay.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "creaking".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "CREAKING".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/creaking/creaking.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "copper_golem".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "COPPER_GOLEM".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/copper_golem/copper_golem.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "evoker_fangs".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "EVOKER_FANGS".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/illager/evoker_fangs.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "giant".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "GIANT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "Z".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie/zombie.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "bogged".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "BOGGED".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "K".
+    05 FILLER PIC X(64) VALUE "textures/entity/skeleton/bogged.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "parched".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PARCHED".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "K".
+    05 FILLER PIC X(64) VALUE "textures/entity/skeleton/parched.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "cow~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "COW_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "Q".
+    05 FILLER PIC X(64) VALUE "textures/entity/cow/cow_temperate_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pig~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "PIG_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "Q".
+    05 FILLER PIC X(64) VALUE "textures/entity/pig/pig_temperate_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "sheep_wool~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "SHEEP_BABY_WOOL".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/sheep/sheep_wool.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "sheep~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "SHEEP_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "Q".
+    05 FILLER PIC X(64) VALUE "textures/entity/sheep/sheep_baby.png".
+    05 FILLER PIC 999 VALUE 120.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "chicken~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "CHICKEN_BABY".
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/chicken/chicken_temperate_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "mooshroom~b".
+    05 FILLER PIC 9 VALUE 4.
+    05 FILLER PIC X(24) VALUE "MOOSHROOM_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "Q".
+    05 FILLER PIC X(64) VALUE "textures/entity/cow/mooshroom_red_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "wolf~b".
+    05 FILLER PIC 9 VALUE 5.
+    05 FILLER PIC X(24) VALUE "WOLF_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(64) VALUE "textures/entity/wolf/wolf_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zombie~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "Z".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie/zombie.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "husk~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "HUSK_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "Z".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie/husk.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "drowned~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "DROWNED_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "D".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie/drowned.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "piglin~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "P".
+    05 FILLER PIC X(64) VALUE "textures/entity/piglin/piglin.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zombified_piglin~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ZOMBIFIED_PIGLIN_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "G".
+    05 FILLER PIC X(64) VALUE "textures/entity/piglin/zombified_piglin.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "squid~b".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "SQUID_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/squid/squid_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "dolphin".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "DOLPHIN".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/dolphin/dolphin.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 132.
+    05 FILLER PIC X(20) VALUE "dolphin~b".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "DOLPHIN_BABY".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/dolphin/dolphin_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "axolotl".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "AXOLOTL".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/axolotl/axolotl_lucy.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 134.
+    05 FILLER PIC X(20) VALUE "axolotl~b".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "AXOLOTL_BABY".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/axolotl/axolotl_lucy_baby.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "cod".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "COD".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/cod.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "salmon".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "SALMON".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/salmon.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "pufferfish".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "PUFFERFISH_SMALL".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/pufferfish.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tropical_pattern".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "TROPICAL_SMALL_PATTERN".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_a_pattern_1.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "tropical_fish".
+    05 FILLER PIC 9 VALUE 8.
+    05 FILLER PIC X(24) VALUE "TROPICAL_SMALL".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(64) VALUE "textures/entity/fish/tropical_a.png".
+    05 FILLER PIC 999 VALUE 138.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 28 TIMES.
-       10 CL-MD-KEY         PIC X(20).
-       10 CL-MD-FAMILY      PIC 9.
-       10 CL-MD-LAYER       PIC X(24).
-       10 CL-MD-TEXW        PIC 999.
-       10 CL-MD-TEXH        PIC 999.
-       10 CL-MD-ANIM        PIC X.
-       10 CL-MD-PATH        PIC X(64).
-       10 CL-MD-EXTRA       PIC 99.
+    05 CL-MD OCCURS 139 TIMES.
+       10 CL-MD-KEY      PIC X(20).
+       10 CL-MD-FAMILY   PIC 9.
+       10 CL-MD-LAYER    PIC X(24).
+       10 CL-MD-TEXW     PIC 999.
+       10 CL-MD-TEXH     PIC 999.
+       10 CL-MD-ANIM     PIC X.
+       10 CL-MD-PATH     PIC X(64).
+       10 CL-MD-EXTRA    PIC 999.
+       10 CL-MD-BABY     PIC 999.
