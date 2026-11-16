@@ -113,7 +113,7 @@
              WHEN 3
                  MOVE "minecraft:podium_bad" TO WS-FTKEY
                  MOVE -1 TO WS-EXP
-                 MOVE "an end_podium with a string active (unsupported)" TO WS-NAME
+                 MOVE "a podium with a string active (unsupported)" TO WS-NAME
              WHEN 4
                  MOVE "minecraft:gate_exit" TO WS-FTKEY
                  MOVE 11 TO WS-EXP
@@ -121,7 +121,7 @@
              WHEN OTHER
                  MOVE "minecraft:gate_badexit" TO WS-FTKEY
                  MOVE -1 TO WS-EXP
-                 MOVE "an end_gateway with a two-element exit (unsupported)" TO WS-NAME
+                 MOVE "a gateway with a 2-element exit (unsupported)" TO WS-NAME
          END-EVALUATE
          CALL "FD-GET-FT" USING WS-FTKEY WS-FT
          CALL "FD-ENSURE-FT" USING WS-FT
