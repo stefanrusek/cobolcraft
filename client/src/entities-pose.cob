@@ -7,7 +7,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-POSE-MORE.
 *> USING model (EMM-MODEL), row key (X(20)), state (16 FLOAT-LONG: 1 pitch, 2 head yaw relative to the body, 3 walk position, 4 walk speed; 15 1 when an aquatic mob is out
-*> of water (a turtle: on land), 16 a squid's tentacle angle; the rest 0), age in ticks.
+*> of water (a turtle: on land), 16 a squid's tentacle angle or a guardian's spikes animation, 14 a guardian's tail animation; the rest 0), age in ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STOP                FLOAT-LONG VALUE -2147483648.
@@ -25,6 +25,7 @@
  01 WS-Q                   FLOAT-LONG.
  01 WS-DRY                 FLOAT-LONG.
  01 WS-TANGLE              FLOAT-LONG.
+ 01 WS-TMOVE               FLOAT-LONG.
  01 WS-WET                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
@@ -46,6 +47,7 @@
      MOVE L-I(4) TO WS-WSPEED
      MOVE L-I(15) TO WS-DRY
      MOVE L-I(16) TO WS-TANGLE
+     MOVE L-I(14) TO WS-TMOVE
      COMPUTE WS-WET = 1 - WS-DRY
      PERFORM VARYING WS-J FROM 5 BY 1 UNTIL WS-J > 16
          MOVE 0 TO L-I(WS-J)
@@ -245,10 +247,11 @@
              CALL "EF8-SQUID-ANIM" USING EMM-MODEL L-IN
          WHEN "chicken"
              CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL L-IN
-*>       The guardian swims with its spikes out and its tail wagging with its age.
+*>       The guardian: the replica's spikes animation (L-I(16)) and tail animation (L-I(14)); no look target (the eye stays centred).
          WHEN "guardian" WHEN "elder_guardian"
-             MOVE 1 TO L-I(3)
-             MOVE L-AGE TO L-I(4) L-I(5)
+             MOVE WS-TANGLE TO L-I(3)
+             MOVE L-AGE TO L-I(4)
+             MOVE WS-TMOVE TO L-I(5)
              CALL "EF6-GUARDIAN-ANIM" USING EMM-MODEL L-IN
          WHEN "wither"
              MOVE L-AGE TO L-I(3)

@@ -245,6 +245,7 @@
 *>               The squid's tentacle speed, 0.1 to 0.2 (21 section 4.5 draws it at random; the client keeps a value from the entity id).
                  COMPUTE EN-TS(WS-ROW) = 0.1 + FUNCTION MOD(WS-ID * 37, 100) / 1000
                  MOVE 0 TO EN-FA(WS-ROW)
+                 MOVE 0 TO EN-TGT(WS-ROW)
                  MOVE 22 TO EN-FL(WS-ROW)
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)
                  MOVE 0 TO EN-X1(WS-ROW) EN-OVL(WS-ROW) EN-OVN(WS-ROW)

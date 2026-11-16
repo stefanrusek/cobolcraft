@@ -103,6 +103,7 @@
              END-IF
 *>           The aquatic mobs: whether the middle of the box is in water (34-8 5: a fish out of water lies on its side).
              IF EN-KEY(WS-R) = "squid" OR "glow_squid" OR "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
+                     OR "guardian" OR "elder_guardian"
                  CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
                  COMPUTE EN-DRY(WS-R) = 1 - WS-WET
              END-IF
@@ -113,6 +114,31 @@
                  IF WS-WET = 0 AND EN-ON-GROUND(WS-R) = 1
                      MOVE 1 TO EN-DRY(WS-R)
                  END-IF
+             END-IF
+*>           The guardian (34-6 11.4 Guardian.aiStep on the client): tail speed and tail animation, spikes animation (a pseudo-random float out of water, the draw of
+*>           the client's random source is not reproducible), the attack time while a target is active (duration 80, elder 60).
+             IF EN-KEY(WS-R) = "guardian" OR "elder_guardian"
+                 COMPUTE WS-CIV(1) = 1 - EN-DRY(WS-R)
+                 MOVE EN-X1(WS-R) TO WS-CIV(2)
+                 MOVE EN-TS(WS-R) TO WS-CIV(3)
+                 MOVE EN-TM(WS-R) TO WS-CIV(4)
+                 MOVE EN-TA(WS-R) TO WS-CIV(5)
+                 COMPUTE WS-CIV(6) = FUNCTION MOD(EN-AGE(WS-R) * 0.61803399 + EN-ID(WS-R) * 0.3819660, 1)
+                 CALL "EF6-GUARDIAN-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(2) TO EN-TM(WS-R)
+                 MOVE WS-COV(3) TO EN-TS(WS-R)
+                 MOVE WS-COV(5) TO EN-TA(WS-R)
+                 MOVE EN-RS(WS-R) TO WS-CIV(1)
+                 MOVE 0 TO WS-CIV(2)
+                 IF EN-TGT(WS-R) NOT = 0
+                     MOVE 1 TO WS-CIV(2)
+                 END-IF
+                 MOVE 80 TO WS-CIV(3)
+                 IF EN-KEY(WS-R) = "elder_guardian"
+                     MOVE 60 TO WS-CIV(3)
+                 END-IF
+                 CALL "EF6-GUARDIAN-ATTACK-TICK" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-RS(WS-R)
              END-IF
 *>           The squid (34-8 2, Squid.aiStep on the client: steps 2 to 4 with the position change as the delta movement): tentacle movement, angle and rotate speed,
 *>           then the body rotations. yBodyRot is the replica's yaw (the server sends it).

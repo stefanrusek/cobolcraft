@@ -488,6 +488,7 @@
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
      COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
+     MOVE EN-TM(WS-ROW) TO WS-KN(29)
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
@@ -632,6 +633,7 @@
 *>   Extra inputs of ENTITY-POSE-MORE: 16 the squid's tentacle angle, 15 the dry flag of an aquatic mob.
      MOVE EN-TA(WS-ROW) TO WS-I(16)
      MOVE EN-DRY(WS-ROW) TO WS-I(15)
+     MOVE EN-TM(WS-ROW) TO WS-I(14)
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN

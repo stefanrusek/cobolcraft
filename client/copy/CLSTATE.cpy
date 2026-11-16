@@ -710,6 +710,9 @@
 *>        Evoker fangs (34-3 4.8): the bite has started (Entity Event 4) and lifeTicks (22 at spawn, falling by 1 a tick once started).
           15 EN-FA           PIC 9.
           15 EN-FL           BINARY-LONG.
+*>        Guardian (34-6 11.4, ENTITIES-ANIM-TICK; the squid fields are reused: EN-TS tail speed, EN-TM tail animation, EN-TA spikes animation, EN-RS attack time; EN-X1 the
+*>        moving flag, entry 16): the active attack target's entity id (entry 17, 0 none).
+          15 EN-TGT          BINARY-LONG.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the
