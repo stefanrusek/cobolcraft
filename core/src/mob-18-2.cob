@@ -301,7 +301,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M182-FALL-ADJUST.
-*> USING species key (PIC X(24)), damage (BINARY-LONG, in and out): the species' own change to the fall damage int: a goat takes 10 less (GOAT_FALL_DAMAGE_REDUCTION, 19 section 10), never below 0.
+*> USING species key (PIC X(24)), damage (BINARY-LONG, in and out): the species' own change to the fall damage int: a goat takes 10 less (GOAT_FALL_DAMAGE_REDUCTION, 19 section 10) and a frog 5 less (FROG_FALL_DAMAGE_REDUCTION, 19 section 11.1), never below 0.
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(24).
@@ -309,6 +309,9 @@
  PROCEDURE DIVISION USING L-KEY L-DAMAGE.
      IF L-KEY = "goat"
          COMPUTE L-DAMAGE = FUNCTION MAX(0, L-DAMAGE - 10)
+     END-IF
+     IF L-KEY = "frog"
+         COMPUTE L-DAMAGE = FUNCTION MAX(0, L-DAMAGE - 5)
      END-IF
      GOBACK.
  END PROGRAM M182-FALL-ADJUST.
