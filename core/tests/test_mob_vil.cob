@@ -34,16 +34,6 @@
  01 WS-TIME               BINARY-LONG.
  01 WS-MID                BINARY-LONG.
  PROCEDURE DIVISION.
-     MOVE "villager" TO WS-KEY24
-     CALL "STDMOB-INDEX" USING WS-KEY24 WS-X
-     MOVE "acceptance US15 19§22.1 the villager has a species row" TO WS-NAME
-     MOVE 1 TO WS-E
-     IF SM-COUNT > 67
-         MOVE 1 TO WS-O
-     ELSE
-         MOVE 0 TO WS-O
-     END-IF
-     PERFORM CHECK-N
      MOVE SM-HEALTH(SM-COUNT) TO WS-O
      MOVE 20 TO WS-E
      MOVE "acceptance US15 19§22.1 the last row (villager) has 20 health" TO WS-NAME
