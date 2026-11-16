@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 356.
+ 78 BI-LANG-COUNT           VALUE 358.
  01 BI-LANG-DATA.
     05 FILLER PIC X(80) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -453,6 +453,10 @@
     05 FILLER PIC X(128) VALUE "World type: %s".
     05 FILLER PIC X(80) VALUE "cobolcraft.screen.world_list.type".
     05 FILLER PIC X(128) VALUE "Type: %s".
+    05 FILLER PIC X(80) VALUE "cobolcraft.screen.create_world.seed".
+    05 FILLER PIC X(128) VALUE "Seed (optional)".
+    05 FILLER PIC X(80) VALUE "cobolcraft.screen.create_world.seed_hint".
+    05 FILLER PIC X(128) VALUE "Leave empty for a random seed".
     05 FILLER PIC X(80) VALUE "cobolcraft.screen.packs.open_folder".
     05 FILLER PIC X(128) VALUE "Open Pack Folder".
     05 FILLER PIC X(80) VALUE "cobolcraft.screen.packs.open_failed".
@@ -728,6 +732,6 @@
     05 FILLER PIC X(80) VALUE "test_instance.description.failed".
     05 FILLER PIC X(128) VALUE "Failed: %s".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 356 TIMES.
+    05 BI-LANG OCCURS 358 TIMES.
        10 BI-LANG-KEY        PIC X(80).
        10 BI-LANG-TEXT       PIC X(128).

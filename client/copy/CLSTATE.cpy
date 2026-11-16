@@ -130,6 +130,8 @@
        10 SM-EDIT-NAME-LENGTH BINARY-LONG.
        10 SM-EDIT-ADDR       PIC X(256).
        10 SM-EDIT-ADDR-LENGTH BINARY-LONG.
+       10 SM-EDIT-SEED       PIC X(64).      *> create-world: the optional seed text (UTF-8, max 64 bytes; empty = random seed); SM-FOCUS 1 name, 2 seed
+       10 SM-EDIT-SEED-LENGTH BINARY-LONG.
        10 SM-CONNECT-ADDR    PIC X(256).     *> connecting screen: the address joined
        10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
        10 SM-LOAD-CELLS      PIC X(1225).    *> the loading screen grid (docs/protocol/50 section 2.5): 35 x 35 cells, row by row, each one byte holding status code + 1 (GEN-LOAD-GRID)

@@ -70,7 +70,10 @@
          CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
          MOVE WS-TEXT(1:64) TO SM-EDIT-NAME
          MOVE FUNCTION MIN(WS-LENGTH, 64) TO SM-EDIT-NAME-LENGTH
-         MOVE 0 TO SP-CREATE-MODE SP-CREATE-TYPE SP-CREATE-REFUSED
+         MOVE 0 TO SP-CREATE-MODE SP-CREATE-TYPE SP-CREATE-REFUSED SM-EDIT-SEED-LENGTH
+         MOVE SPACES TO SM-EDIT-SEED
+*>       The name field has the focus (1); the seed field is the second (2).
+         MOVE 1 TO SM-FOCUS
 *>       Without good packs a standard world cannot be made: the control starts at cobolcraft (WT-24).
          IF CL-PACKS-STATUS NOT = 0
              MOVE 1 TO SP-CREATE-TYPE
@@ -410,6 +413,7 @@
          WHEN ACT-FIELD-NAME
              MOVE 1 TO SM-FOCUS
          WHEN ACT-FIELD-ADDRESS
+*>           (create-world: ACT-FIELD-SEED, the same value, focuses its second field)
              MOVE 2 TO SM-FOCUS
          WHEN ACT-JOIN
              IF SM-SELECTED > 0
