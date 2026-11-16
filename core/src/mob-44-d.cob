@@ -31,6 +31,21 @@
                  WHEN 8 MOVE "woods" TO L-KEY
                  WHEN OTHER MOVE "pale" TO L-KEY
              END-EVALUATE
+         WHEN L-SPECIES = "cat"
+*>           The cat_variant files (19 section 5.1): 0 black (the default), then in the order of the table's rows.
+             EVALUATE L-VARIANT
+                 WHEN 1 MOVE "all_black" TO L-KEY
+                 WHEN 2 MOVE "british_shorthair" TO L-KEY
+                 WHEN 3 MOVE "calico" TO L-KEY
+                 WHEN 4 MOVE "jellie" TO L-KEY
+                 WHEN 5 MOVE "persian" TO L-KEY
+                 WHEN 6 MOVE "ragdoll" TO L-KEY
+                 WHEN 7 MOVE "red" TO L-KEY
+                 WHEN 8 MOVE "siamese" TO L-KEY
+                 WHEN 9 MOVE "tabby" TO L-KEY
+                 WHEN 10 MOVE "white" TO L-KEY
+                 WHEN OTHER MOVE "black" TO L-KEY
+             END-EVALUATE
          WHEN L-SPECIES = "frog" OR "pig" OR "cow" OR "chicken"
              EVALUATE L-VARIANT
                  WHEN 1 MOVE "cold" TO L-KEY
@@ -40,6 +55,41 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM M44-VARIANT-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M44-CAT-VARIANT.
+*> USING moon (1 when the moon brightness is 0.9 or more), hut (1 inside a swamp hut), draw (non-negative), variant out (0 to 10, M44-VARIANT-KEY): 19 section 1.6 for the cat_variant
+*> selectors: all_black has priority 1 in a swamp hut (it wins alone) and priority 0 at a moon brightness of 0.9 or more; black and the nine others have priority 0. The pool of priority 0 is
+*> black, british_shorthair to white (10) and all_black last when the moon holds; the draw is taken modulo the pool.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-MOON                 BINARY-LONG.
+ 01 L-HUT                  BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-VARIANT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-MOON L-HUT L-DRAW L-VARIANT.
+     IF L-HUT = 1
+         MOVE 1 TO L-VARIANT
+         GOBACK
+     END-IF
+     MOVE 10 TO WS-N
+     IF L-MOON = 1
+         MOVE 11 TO WS-N
+     END-IF
+     COMPUTE WS-I = FUNCTION MOD(L-DRAW, WS-N)
+     EVALUATE TRUE
+         WHEN WS-I = 0
+             MOVE 0 TO L-VARIANT
+         WHEN WS-I = 10
+             MOVE 1 TO L-VARIANT
+         WHEN OTHER
+             COMPUTE L-VARIANT = WS-I + 1
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM M44-CAT-VARIANT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M44-VARIANT-INDEX.
@@ -143,6 +193,10 @@
              MOVE "chicken_variant" TO WS-REG
              MOVE 18 TO VD-MX-INDEX
              MOVE 30 TO VD-MX-SERIALIZER
+         WHEN "cat"
+             MOVE "cat_variant" TO WS-REG
+             MOVE 20 TO VD-MX-INDEX
+             MOVE 21 TO VD-MX-SERIALIZER
      END-EVALUATE
      IF WS-REG NOT = SPACES
          CALL "M44-VARIANT-KEY" USING WS-SPECIES EN-WOOL(L-ROW) WS-KEY

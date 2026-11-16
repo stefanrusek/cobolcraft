@@ -79,6 +79,12 @@
  01 WS-OTHER               PIC X(24).
  01 WS-UNDEAD              BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
+ 01 WS-AROUND              BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PEEK-SALT           BINARY-LONG VALUE 54.
+ 01 WS-PEEK-BOUND          BINARY-LONG VALUE 301.
+ COPY PROTO.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-WALK                 BINARY-LONG.
@@ -135,7 +141,9 @@
              END-IF
          END-PERFORM
      END-IF
-*>   The state machine: idle rolls up on danger; rolling (10 ticks) becomes scared; scared unrolls when the memory is gone; unrolling (30 ticks) becomes idle.
+*>   The state machine (44 part 4 section 12, ArmadilloBallUp): idle rolls up on danger; rolling (10 ticks) becomes scared. While the memory lasts, a scared armadillo counts its peek
+*>   timer down, re-rolls it to 50 + U(100, 400) whenever danger around (remaining above 75) flips, peeks (event 64) at timer 0 on the ground with danger around, starts unrolling when
+*>   the remaining memory is below 30 and goes back to scared above 30. With the memory gone a scared one unrolls (the rolling-out one-shot); unrolling (30 ticks) becomes idle.
      EVALUATE EN-ARMA(L-ROW)
          WHEN 0
              IF EN-DANGER(L-ROW) > 0
@@ -151,11 +159,17 @@
              IF EN-DANGER(L-ROW) = 0
                  MOVE 3 TO EN-ARMA(L-ROW)
                  MOVE 30 TO EN-ARMA-T(L-ROW)
+             ELSE
+                 PERFORM BALL-UP-SCARED
              END-IF
          WHEN 3
-             SUBTRACT 1 FROM EN-ARMA-T(L-ROW)
-             IF EN-ARMA-T(L-ROW) = 0
-                 MOVE 0 TO EN-ARMA(L-ROW)
+             IF EN-DANGER(L-ROW) > 30
+                 MOVE 2 TO EN-ARMA(L-ROW)
+             ELSE
+                 SUBTRACT 1 FROM EN-ARMA-T(L-ROW)
+                 IF EN-ARMA-T(L-ROW) = 0
+                     MOVE 0 TO EN-ARMA(L-ROW)
+                 END-IF
              END-IF
      END-EVALUATE
      IF EN-ARMA(L-ROW) NOT = WS-OLD
@@ -165,4 +179,55 @@
          MOVE 2 TO L-WALK
      END-IF
      GOBACK.
+
+ BALL-UP-SCARED.
+     IF EN-ARMA-PEEK(L-ROW) > 0
+         SUBTRACT 1 FROM EN-ARMA-PEEK(L-ROW)
+     END-IF
+     MOVE 0 TO WS-AROUND
+     IF EN-DANGER(L-ROW) > 75
+         MOVE 1 TO WS-AROUND
+     END-IF
+     IF WS-AROUND NOT = EN-ARMA-AROUND(L-ROW)
+         PERFORM PEEK-ROLL
+         MOVE WS-AROUND TO EN-ARMA-AROUND(L-ROW)
+     END-IF
+     IF EN-ARMA-PEEK(L-ROW) = 0 AND EN-ON-GROUND(L-ROW) = 1 AND WS-AROUND = 1
+         MOVE 64 TO WS-EVENT
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+         PERFORM PEEK-ROLL
+     END-IF
+     IF EN-DANGER(L-ROW) < 30
+         MOVE 3 TO EN-ARMA(L-ROW)
+         MOVE 30 TO EN-ARMA-T(L-ROW)
+     END-IF.
+
+ PEEK-ROLL.
+     CALL "XP-RANDOM" USING WS-PEEK-SALT WS-PEEK-BOUND WS-DRAW
+     COMPUTE EN-ARMA-PEEK(L-ROW) = 150 + WS-DRAW.
  END PROGRAM ARMADILLO-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-ARMADILLO-BRUSH.
+*> USING player row, entity row (an armadillo): a brush in the main hand on a non-baby armadillo that is not scared (44 part 4 section 12, 19 section 13): one armadillo scute
+*> drops (the table ARMADILLO_BRUSH is not in the docs: the one scute of the shed table stands in), the brush loses 16 durability. A baby or a rolled-up armadillo fails (nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(24) VALUE "armadillo_scute".
+ 01 WS-COUNT               BINARY-LONG VALUE 1.
+ 01 WS-COST                BINARY-LONG VALUE 16.
+ 01 WS-BROKE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY.
+     IF EN-VARIANT(L-ENTITY) = 0 AND EN-MOBAGE(L-ENTITY) >= 0 AND EN-ARMA(L-ENTITY) = 0
+         CALL "MOB-DROP-ITEMS" USING L-ENTITY WS-KEY WS-COUNT
+         CALL "TOOL-HURT-STACK" USING PL-CONN(L-ROW) PL-HELD(L-ROW) WS-COST WS-BROKE
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-ARMADILLO-BRUSH.

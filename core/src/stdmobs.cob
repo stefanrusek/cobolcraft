@@ -1080,6 +1080,9 @@
      END-IF
      IF SM-KEY(WS-M) = "bee"
          CALL "BEE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "turtle"
          CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
@@ -1094,6 +1097,7 @@
          CALL "ALLAY-TICK" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "sniffer"
+         CALL "M44-SNIF-BRAIN" USING WS-ROW
          CALL "SNIFFER-TICK" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "fox"
@@ -1101,6 +1105,7 @@
      END-IF
      IF SM-KEY(WS-M) = "camel"
          CALL "M44-CAMEL-TICK" USING WS-ROW
+         CALL "M44-CAMEL-BRAIN" USING WS-ROW
      END-IF
      IF SM-KEY(WS-M) = "goat"
          CALL "M44-GOAT-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
@@ -1277,7 +1282,8 @@
      IF EN-ON-GROUND(WS-ROW) = 1
          CALL "STDMOB-FRICTION" USING EN-DIM(WS-ROW) EN-X(WS-ROW) EN-Y(WS-ROW) EN-Z(WS-ROW) WS-FRICTION
      END-IF
-     IF EN-ON-GROUND(WS-ROW) = 1 AND WS-FRICTION > 0.6
+*>   A frog in a long jump has no friction (discard friction, 44 part 4 section 1.1).
+     IF EN-ON-GROUND(WS-ROW) = 1 AND EN-FROG-JS(WS-ROW) NOT = 3 AND WS-FRICTION > 0.6
          COMPUTE WS-ICE-SCALE = 0.454 * 0.21600002 / (WS-FRICTION ** 3)
          COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) + WS-HX * WS-ICE-SCALE
          COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) + WS-HZ * WS-ICE-SCALE
@@ -1288,7 +1294,7 @@
      ELSE
          COMPUTE WS-HX = WS-HX + EN-VX(WS-ROW)
          COMPUTE WS-HZ = WS-HZ + EN-VZ(WS-ROW)
-         IF EN-ON-GROUND(WS-ROW) = 1
+         IF EN-ON-GROUND(WS-ROW) = 1 AND EN-FROG-JS(WS-ROW) NOT = 3
              COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.546
              COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.546
          ELSE

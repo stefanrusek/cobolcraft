@@ -21,6 +21,8 @@
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-KEY                 PIC X(24).
+ 01 WS-CATKEY              PIC X(48).
+ 01 WS-CV                  BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
@@ -114,6 +116,14 @@
          IF EN-WOOL(L-ROW) = 1 AND WS-KEY = "mooshroom"
              MOVE "brown" TO WS-TEXT
          END-IF
+         COMPUTE WS-TEXT-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT))
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
+     END-IF
+     IF WS-KEY = "cat"
+         MOVE "variant" TO WN MOVE 7 TO WL
+         CALL "M44-VARIANT-KEY" USING WS-KEY EN-WOOL(L-ROW) WS-CATKEY
+         MOVE SPACES TO WS-TEXT
+         STRING "minecraft:" FUNCTION TRIM(WS-CATKEY) DELIMITED BY SIZE INTO WS-TEXT
          COMPUTE WS-TEXT-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT))
          CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
      END-IF
@@ -353,6 +363,8 @@
  COPY CORESTATE.
  COPY STDMOBS.
  01 WS-KEY                 PIC X(24).
+ 01 WS-CATKEY              PIC X(48).
+ 01 WS-CV                  BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-BARE                PIC X(48).
@@ -411,6 +423,17 @@
          IF MQ-COLLAR NOT = 14
              COMPUTE EN-COLLAR(L-ROW) = MQ-COLLAR + 1
          END-IF
+     END-IF
+     IF WS-KEY = "cat" AND MQ-VARIANT-NAME NOT = SPACES
+         MOVE MQ-VARIANT-NAME TO WS-LOCAL
+         CALL "KEY-BARE" USING WS-LOCAL WS-BARE
+         MOVE 0 TO EN-WOOL(L-ROW)
+         PERFORM VARYING WS-CV FROM 1 BY 1 UNTIL WS-CV > 10
+             CALL "M44-VARIANT-KEY" USING WS-KEY WS-CV WS-CATKEY
+             IF WS-CATKEY = WS-BARE
+                 MOVE WS-CV TO EN-WOOL(L-ROW)
+             END-IF
+         END-PERFORM
      END-IF
      IF WS-KEY = "sheep"
          COMPUTE EN-WOOL(L-ROW) = FUNCTION MOD(MQ-COLOR, 16) + 16 * MQ-SHEARED

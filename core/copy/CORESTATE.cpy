@@ -499,6 +499,49 @@
        10 EN-FLY-Z            FLOAT-LONG.
        10 EN-FLY-MOD          FLOAT-LONG.         *> the speed modifier of the wanted point (0 = 1.0)
        10 EN-SENT-AGE         BINARY-LONG.        *> ticks since the last absolute position sent (a full sync every 400)
+       10 EN-CAT-RELAX        BINARY-LONG.        *> tame cat: 1 while it relaxes on its sleeping owner, 2 once the owner has slept 100 ticks (CatRelaxOnOwnerGoal)
+*>     --- 002-lane-mobsa4: allay items and the liked note block (core/src/mob-44-j.cob) ---
+       10 EN-ALLAY-COUNT      BINARY-LONG.        *> allay: items of the held kind in its inventory (EN-ALLAY-ITEM is the main hand copy)
+       10 EN-ALLAY-CD         BINARY-LONG.        *> allay: item pickup cooldown ticks (ITEM_PICKUP_COOLDOWN_TICKS)
+       10 EN-ALLAY-NB-CD      BINARY-LONG.        *> allay: liked note block cooldown ticks (LIKED_NOTEBLOCK_COOLDOWN_TICKS)
+       10 EN-ALLAY-NB-ON      BINARY-LONG.        *> allay: 1 while a liked note block position is stored
+       10 EN-ALLAY-NB-DIM     BINARY-LONG.
+       10 EN-ALLAY-NB-X       BINARY-LONG.
+       10 EN-ALLAY-NB-Y       BINARY-LONG.
+       10 EN-ALLAY-NB-Z       BINARY-LONG.
+*>     --- 002-lane-mobsa4: bee flowers and hive trips (core/src/mob-44-k.cob) ---
+       10 EN-BEE-FL-ON         BINARY-LONG.        *> bee: 1 while a flower position is remembered
+       10 EN-BEE-FL-X          BINARY-LONG.
+       10 EN-BEE-FL-Y          BINARY-LONG.
+       10 EN-BEE-FL-Z          BINARY-LONG.
+       10 EN-BEE-HV-ON         BINARY-LONG.        *> bee: 1 while a hive position is remembered
+       10 EN-BEE-HV-X          BINARY-LONG.
+       10 EN-BEE-HV-Y          BINARY-LONG.
+       10 EN-BEE-HV-Z          BINARY-LONG.
+       10 EN-BEE-STAY          BINARY-LONG.        *> bee: stayOutOfHiveCountdown
+       10 EN-BEE-NONECT        BINARY-LONG.        *> bee: ticks since the last pollination
+       10 EN-BEE-VAL           BINARY-LONG.        *> bee: ticks until the flower and hive are validated again
+       10 EN-BEE-LOC           BINARY-LONG.        *> bee: ticks until it looks for a hive again
+       10 EN-BEE-TRIP          BINARY-LONG.        *> bee: ticks travelled toward the hive (given up after 2400)
+       10 EN-BEE-HOX           FLOAT-LONG.         *> bee: the hover offset above a flower
+       10 EN-BEE-HOZ           FLOAT-LONG.
+*>     --- 002-lane-mobsa4: frog long jump (core/src/mob-44-m.cob) ---
+       10 EN-FROG-JS           BINARY-LONG.        *> frog: 0 no jump behaviour, 1 preparing, 3 mid-jump
+       10 EN-FROG-CH           BINARY-LONG.        *> frog: 1 once a jump is chosen
+       10 EN-FROG-JT           BINARY-LONG.        *> frog: ticks since the jump was chosen
+       10 EN-FROG-TRIES        BINARY-LONG.        *> frog: tries left (20 at the start)
+       10 EN-FROG-LIFE         BINARY-LONG.        *> frog: ticks the behaviour has run (time-out 200)
+       10 EN-FROG-PREF         BINARY-LONG.        *> frog: 1 when it wants a preferred block (chance 0.5)
+       10 EN-FROG-SX           BINARY-LONG.        *> frog: the start block of the behaviour
+       10 EN-FROG-SY           BINARY-LONG.
+       10 EN-FROG-SZ           BINARY-LONG.
+       10 EN-FROG-TX           BINARY-LONG.        *> frog: the chosen target block
+       10 EN-FROG-TY           BINARY-LONG.
+       10 EN-FROG-TZ           BINARY-LONG.
+       10 EN-FROG-MIDT         BINARY-LONG.        *> frog: ticks of the mid-jump
+       10 EN-FROG-JVX          FLOAT-LONG.         *> frog: the launch vector
+       10 EN-FROG-JVY          FLOAT-LONG.
+       10 EN-FROG-JVZ          FLOAT-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

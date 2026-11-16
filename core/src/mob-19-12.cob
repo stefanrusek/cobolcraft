@@ -1,8 +1,8 @@
 *> Turtle (002-lane-mobsfull-h20; docs/protocol/19-mobs-land-friendly-and-neutral.md section 12): its home is the block it spawned in (MOB-BORN), seagrass is its food, two turtles make an egg
 *> instead of a baby (MOB-BREED: hasEgg, metadata 18), a baby that grows up drops one scute (TURTLE-GROWN, the table gameplay/turtle_grow), and a turtle with an egg and its home within 9 blocks
-*> walks home and digs there (TURTLE-TICK): layEggCounter counts up (layingEgg, metadata 19, while it is above 0) and beyond 200 ticks it puts a turtle egg block of 1 + nextInt(4) eggs on its
+*> walks home and digs there (TURTLE-TICK; the egg block hatches by core/src/mob-44-l.cob): layEggCounter counts up (layingEgg, metadata 19, while it is above 0) and beyond 200 ticks it puts a turtle egg block of 1 + nextInt(4) eggs on its
 *> home block when that is air, clears the egg and the laying and gets love time 600. Open items: TurtleGoToWater, TurtleGoHome beyond 9 blocks, TurtleTravel (the docs give no numbers),
-*> the lay sound and the dig particles, the egg's hatching (block of doc 24), a home saved in the world, the choice of another laying spot.
+*> the lay sound and the dig particles, a home saved in the world, the choice of another laying spot.
 *>
 *> Entry points:
 *>   TURTLE-TICK USING row, hx out, hz out, walk out    walk 1: hx and hz are the walk of this tick (to the home); walk 2: the turtle stands (digging)
@@ -57,6 +57,9 @@
  01 WS-PAIRS               PIC X(160).
  01 WS-STATE               BINARY-LONG.
  01 WS-HERE                BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 3.
+ 01 WS-BUDGET              BINARY-LONG VALUE 512.
+ 01 WS-SET                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -95,7 +98,8 @@
              MOVE SPACES TO WS-PAIRS
              STRING "eggs=" WS-EGGS ",hatch=0" DELIMITED BY SIZE INTO WS-PAIRS
              CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
-             CALL "WORLD-SET-BLOCK" USING EN-DIM(L-ROW) EN-HOME-X(L-ROW) EN-HOME-Y(L-ROW) EN-HOME-Z(L-ROW) WS-STATE
+*>           LEVEL-SET-BLOCK runs the onPlace hook of the egg (the sand particles, core/src/mob-44-l.cob).
+             CALL "LEVEL-SET-BLOCK" USING EN-DIM(L-ROW) EN-HOME-X(L-ROW) EN-HOME-Y(L-ROW) EN-HOME-Z(L-ROW) WS-STATE WS-FLAGS WS-BUDGET WS-SET
          END-IF
          MOVE 0 TO EN-TURTLE-EGG(L-ROW) EN-TURTLE-LAY(L-ROW)
          MOVE 600 TO EN-LOVE(L-ROW)

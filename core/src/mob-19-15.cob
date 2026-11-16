@@ -4,7 +4,8 @@
 *> - Duplication: an amethyst shard (duplicates_allays) on a dancing allay whose cooldown is 0 (canDuplicate): a second allay appears at the same place, both get the cooldown 6000 ticks (EN-ALLAY-DUP, counted
 *>   down by 1 a tick), Entity Event 18 (hearts) goes to the viewers and the shard is used up. Metadata 16 is dancing, 17 canDuplicate (sent when false).
 *> - Regeneration: 1 HP every 10 ticks up to the max health of the row. The liked player's hits do nothing (ALLAY-LIKES, called by HEALTH-MOB-DAMAGE).
-*> Open items: flight, picking up and delivering items (GoToWantedItem, GoAndGiveItemsToTarget), staying close to the liked player, dancing (the jukebox and note block triggers; EN-ALLAY-DANCE is set by
+*> Item pickup and delivery are in core/src/mob-44-j.cob (M44-ALLAY-BRAIN, called at the end of ALLAY-TICK; 002-lane-mobsa4).
+*> Open items: staying close to the liked player, dancing (the jukebox and note block triggers; EN-ALLAY-DANCE is set by
 *>   nothing yet), the small inventory (the held item is the only one), the held item in Set Equipment, the liked noteblock, panic.
 *>
 *> Entry points:
@@ -53,6 +54,7 @@
              ADD 1 TO EN-HEALTH(L-ROW)
          END-IF
      END-IF
+     CALL "M44-ALLAY-BRAIN" USING L-ROW
      GOBACK.
  END PROGRAM ALLAY-TICK.
 
@@ -75,6 +77,9 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-COPY                BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-NOPATCH             BINARY-LONG VALUE 0.
+ 01 WS-DROPPED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -103,6 +108,11 @@
              PERFORM VARYING WS-SLOT FROM 0 BY 1 UNTIL WS-SLOT > 35
                  CALL "INV-SLOT-SEND" USING PL-CONN(L-ROW) WS-SLOT
              END-PERFORM
+             IF EN-ALLAY-COUNT(L-ENTITY) > 0
+                 CALL "IP-AT-LOCATION" USING EN-DIM(L-ENTITY) EN-X(L-ENTITY) EN-Y(L-ENTITY) EN-Z(L-ENTITY) WS-HALF
+                     EN-ALLAY-ITEM(L-ENTITY) EN-ALLAY-COUNT(L-ENTITY) WS-NOPATCH WS-DROPPED
+                 MOVE 0 TO EN-ALLAY-COUNT(L-ENTITY)
+             END-IF
              MOVE 0 TO EN-ALLAY-ITEM(L-ENTITY)
              MOVE SPACES TO EN-ALLAY-LIKED(L-ENTITY)
          WHEN WS-COUNT > 0 AND EN-ALLAY-ITEM(L-ENTITY) = 0

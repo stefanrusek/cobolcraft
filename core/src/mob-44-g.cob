@@ -1,7 +1,7 @@
 *> Slime chunks and the sniffer's diggable blocks (002-lane-mobsa2; docs/protocol/54-client-gap-closures.md section 8).
 *> M44-SLIME-SEED USING chunk x, chunk z (BINARY-LONG), world seed (BINARY-DOUBLE), seed out (BINARY-DOUBLE): (S + T1 + T2 + T3 + T4) xor 987234911 with
 *>   T1 = int32(int32(a x a) x 4987142), T2 = int32(a x 5947611), T3 = int32(b x b) x 4392871 (64 bit), T4 = int32(b x 389711); a = chunk x, b = chunk z. The 64 bit wrap of the sum is
-*>   not reproduced: the sum must stay inside a signed 64 bit word.
+*>   wraps as Java does (test_mob_20_10_chunk).
 *> M44-SLIME-CHUNK USING chunk x, chunk z, world seed, slime out: the first nextInt(10) of the Java generator seeded with that seed is 0.
 *> M44-SNIFFER-DIGGABLE USING bare block key (PIC X(48)), diggable out: the block tag sniffer_diggable_block: dirt, coarse_dirt, rooted_dirt, mud, muddy_mangrove_roots, moss_block,
 *>   pale_moss_block, grass_block, podzol.
