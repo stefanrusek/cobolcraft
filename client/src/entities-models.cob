@@ -304,6 +304,8 @@
           15 WS-BK-KF          FLOAT-LONG OCCURS 24 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
+       10 WS-BK-HR            BINARY-LONG VALUE 0.
+       10 WS-BK-HL            BINARY-LONG VALUE 0.
        10 WS-BK-CORNER OCCURS 40 TIMES.
           15 WS-BK-CP OCCURS 8 TIMES.
              20 WS-BK-CX      FLOAT-SHORT.
@@ -348,6 +350,12 @@
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
  01 WS-MAINARM             BINARY-LONG.
+ 01 WS-HK                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-HP.
+    05 WS-HPV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-HA.
+    05 WS-HAV               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
@@ -484,6 +492,7 @@
      END-EVALUATE
      IF WS-HIT = 0
          MOVE 0 TO WS-BN WS-NC
+         MOVE 0 TO WS-BK-HR(WS-E) WS-BK-HL(WS-E)
 *>   The model: built once per row of the table, then copied.
      MOVE EN-MODEL(WS-ROW) TO WS-K
      IF WS-HAVE(WS-K) = 0
@@ -727,6 +736,16 @@
                      MOVE WS-WY(WS-K) TO WS-BK-CY(WS-E, WS-NC, WS-K)
                      MOVE WS-WZ(WS-K) TO WS-BK-CZ(WS-E, WS-NC, WS-K)
                  END-PERFORM
+*>               The cuboid of an arm (the first of a part named right_arm, left_arm, or the crossed arms, kept as a negative index): where the held item goes.
+                 IF MM-NAME(WS-P) = "right_arm" AND WS-BK-HR(WS-E) = 0
+                     MOVE WS-NC TO WS-BK-HR(WS-E)
+                 END-IF
+                 IF MM-NAME(WS-P) = "left_arm" AND WS-BK-HL(WS-E) = 0
+                     MOVE WS-NC TO WS-BK-HL(WS-E)
+                 END-IF
+                 IF MM-NAME(WS-P) = "arms" AND WS-BK-HR(WS-E) = 0
+                     COMPUTE WS-BK-HR(WS-E) = 0 - WS-NC
+                 END-IF
 *>               The six faces: down, up, west, north, east, south.
                  PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 5
                      MOVE WS-F TO WS-FI(1)
@@ -791,6 +810,29 @@
              ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM
+*>   The hands of a mob that holds an item (the base model only): where GROUND-ITEMS-MESH draws what the mob holds (ENTITY-HAND-FIND).
+     IF EN-OVL(WS-ROW) = 0 AND (EN-EQ(WS-ROW, 1) > 0 OR EN-EQ(WS-ROW, 2) > 0)
+         IF WS-BK-HR(WS-E) NOT = 0
+             MOVE 1 TO WS-HK
+             MOVE WS-BK-HR(WS-E) TO WS-HI
+             IF WS-HI < 0
+                 MOVE 2 TO WS-HK
+                 COMPUTE WS-HI = 0 - WS-HI
+             END-IF
+             CALL "ENTITY-HAND-FIND" USING WS-BK-CORNER(WS-E, WS-HI) WS-HK WS-HP WS-HA EN-HAND-OK(WS-ROW, 1)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                 MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K)
+                 MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K + 3)
+             END-PERFORM
+         END-IF
+         IF WS-BK-HL(WS-E) > 0
+             CALL "ENTITY-HAND-FIND" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) 1 WS-HP WS-HA EN-HAND-OK(WS-ROW, 2)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                 MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K)
+                 MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K + 3)
+             END-PERFORM
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM ENTITY-MODEL-EMIT.
 

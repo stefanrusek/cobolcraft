@@ -324,7 +324,7 @@
              CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CZ
          WHEN WS-PHASE = PH-PLAY AND (L-ID = 1 OR L-ID = 54 OR L-ID = 55 OR L-ID = 57
                  OR L-ID = 70 OR L-ID = 71 OR L-ID = 78 OR L-ID = 85 OR L-ID = 101
-                 OR L-ID = 103 OR L-ID = 123 OR L-ID = 127 OR L-ID = 128)
+                 OR L-ID = 103 OR L-ID = 104 OR L-ID = 123 OR L-ID = 127 OR L-ID = 128)
              CALL "ENTITY-PACKET" USING CLIENT-STATE L-PACKET L-ID
          WHEN WS-PHASE = PH-PLAY AND L-ID = 124
 *>           System Chat (09 §1: the overlay flag is always false): into the chat history.

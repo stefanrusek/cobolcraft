@@ -258,6 +258,7 @@
              END-PERFORM
          END-IF
          MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
+         MOVE 0 TO EN-HAND-OK(WS-R, 1) EN-HAND-OK(WS-R, 2)
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R EN-MODEL(WS-R)
          END-IF
@@ -526,6 +527,8 @@
  01 WS-K                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-RX                  FLOAT-LONG.
  01 WS-RZ                  FLOAT-LONG.
@@ -601,6 +604,21 @@
                  MOVE 1 TO RL-GI-A(RL-GI-COUNT)
                  MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
                  MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+*>   The items in the hands of the mobs drawn this frame (ENTITY-MODEL-EMIT found their hands): the main hand is the right arm's, a left-handed mob (mob flags bit 2)
+*>   holds it in the left.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1
+             PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 2
+                 COMPUTE WS-SLOT = WS-H
+                 IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(WS-R) / 2), 2) = 1
+                     COMPUTE WS-SLOT = 3 - WS-H
+                 END-IF
+                 IF EN-HAND-OK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-SLOT) > 0
+                     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
+                 END-IF
              END-PERFORM
          END-IF
      END-PERFORM

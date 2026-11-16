@@ -705,6 +705,13 @@
           15 EN-X3           BINARY-DOUBLE.
           15 EN-OVL          BINARY-LONG.
           15 EN-OVN          BINARY-LONG.
+*>        Equipment (Set Equipment 0x68, slot ordinals 0 main hand, 1 off hand, 2 feet, 3 legs, 4 chest, 5 head, 6 body, 7 saddle; EN-EQ(row, slot + 1) the item registry id,
+*>        0 empty) and the hands of the model drawn this frame (ENTITY-MODEL-EMIT: 1 right arm, 2 left arm; OK 1 when found, the point of the hand and the direction from
+*>        the shoulder to the hand relative to the entity, ENTITY-HAND-FIND), where GROUND-ITEMS-MESH draws the held items.
+          15 EN-EQ           BINARY-LONG OCCURS 8 TIMES.
+          15 EN-HAND OCCURS 2 TIMES.
+             20 EN-HAND-OK    BINARY-LONG.
+             20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

@@ -59,7 +59,7 @@
          MOVE L-INT3 TO EN-VAR3(L-ROW)
      END-IF
 *>   The tamable flags (wolf and cat entry 18, bit 4 tame), the collar colour (wolf 21, cat 23), the wolf's anger end time (22, a LONG) and the fox's flags (19,
-*>   bit 32 sleeping): the metadata of the overlay layers and of the wolf and fox textures (34-5 2.5, 3, 4; 19 section 1.3).
+*>   bit 32 sleeping), the panda's hidden gene (22): the metadata of the overlay layers and of the wolf and fox textures (34-5 2.5, 3, 4; 19 section 1.3).
      EVALUATE TRUE
          WHEN (EN-KEY(L-ROW) = "wolf" OR "cat") AND L-INDEX = 18 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
@@ -70,6 +70,8 @@
          WHEN EN-KEY(L-ROW) = "wolf" AND L-INDEX = 22 AND L-SERIALIZER = 2
              MOVE L-LONG TO EN-X3(L-ROW)
          WHEN EN-KEY(L-ROW) = "fox" AND L-INDEX = 19 AND L-SERIALIZER = 0
+             MOVE L-INT TO EN-X1(L-ROW)
+         WHEN EN-KEY(L-ROW) = "panda" AND L-INDEX = 22 AND L-SERIALIZER = 0
              MOVE L-INT TO EN-X1(L-ROW)
          WHEN OTHER
              CONTINUE
@@ -123,6 +125,10 @@
                          WHEN OTHER
                              CONTINUE
                      END-EVALUATE
+                 END-IF
+*>               A panda shows a recessive main gene (brown 4, weak 5) only when its hidden gene (EN-X1) is the same, else it is a normal panda (19 section 8).
+                 IF EN-KEY(L-ROW) = "panda" AND (EN-VAR(L-ROW) = 4 OR 5) AND EN-X1(L-ROW) NOT = EN-VAR(L-ROW)
+                     MOVE 1 TO L-CODE
                  END-IF
                  IF EN-KEY(L-ROW) = "fox" AND FUNCTION MOD(FUNCTION INTEGER(EN-X1(L-ROW) / 32), 2) = 1
                      ADD 100 TO L-CODE
