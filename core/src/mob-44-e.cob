@@ -3,7 +3,8 @@
 *>   20 + draw (U(20, 60)). Every tick counts pollinatingTicks and successfulPollinatingTicks (EN-BEE-SUCC); at 600 ticks, or when the flower goes, the goal stops: more than 400 successful
 *>   ticks give nectar (EN-BEE-NECTAR 1), the retry cooldown is 200 and the counters are cleared.
 *> - RandomSitting(20): a camel on the ground, not leashed and without a rider changes pose (standing to sitting and back) once the pose time (now - EN-CAMEL-POSE-T) is at least 400.
-*> - Dash: a dash starts when the cooldown (EN-CAMEL-DASH) is 0 and sets 55; the cooldown counts down by 1 a call while it runs.
+*> - Dash: a dash starts when the cooldown (EN-CAMEL-DASH) is 0 and sets 55; M44-CAMEL-TICK counts it down by 1 a tick. M44-CAMEL-REFUSE (sitting or in a pose transition) and
+*>   M44-CAMEL-IMPULSE (the dash velocity, 54 section 6.3) complete the cadence of 54 sections 6.3 and 6.4.
 *> Open items: finding flowers, hive trips and the hover movement of a bee; the camel's dash motion (1.4285 vertical, 22.2222 horizontal), sit and stand animations, the suffocation test of a pose change.
 *>
 *> Entry points:
@@ -100,8 +101,69 @@
      IF EN-CAMEL-DASH(L-ROW) = 0
          MOVE 1 TO L-STARTED
          MOVE 55 TO EN-CAMEL-DASH(L-ROW)
-     ELSE
-         SUBTRACT 1 FROM EN-CAMEL-DASH(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM M44-CAMEL-DASH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M44-CAMEL-TICK.
+*> USING row: the dash cooldown counts down by 1 a tick (54 section 6.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-CAMEL-DASH(L-ROW) > 0
+         SUBTRACT 1 FROM EN-CAMEL-DASH(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM M44-CAMEL-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M44-CAMEL-REFUSE.
+*> USING row, now, refuse out: a sitting camel or one in a pose transition (poseTime below 40 sitting, 52 standing) does not walk (54 section 6.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-NOW                  BINARY-LONG.
+ 01 L-REFUSE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-NOW L-REFUSE.
+     MOVE 0 TO L-REFUSE
+     IF EN-CAMEL-POSE(L-ROW) = 1
+         MOVE 1 TO L-REFUSE
+     ELSE
+         IF L-NOW - EN-CAMEL-POSE-T(L-ROW) < 52
+             MOVE 1 TO L-REFUSE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM M44-CAMEL-REFUSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M44-CAMEL-IMPULSE.
+*> USING look x, look z, scale, movement speed, jump strength, impulse x, y, z out (54 section 6.3): horizontal 22.2222 x scale x speed along the normalised look, vertical 1.4285 x scale x jump strength.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-H                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-LX                   FLOAT-LONG.
+ 01 L-LZ                   FLOAT-LONG.
+ 01 L-SCALE                FLOAT-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ 01 L-JUMP                 FLOAT-LONG.
+ 01 L-IX                   FLOAT-LONG.
+ 01 L-IY                   FLOAT-LONG.
+ 01 L-IZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-LX L-LZ L-SCALE L-SPEED L-JUMP L-IX L-IY L-IZ.
+     MOVE 0 TO L-IX L-IZ
+     COMPUTE WS-H = FUNCTION SQRT(L-LX * L-LX + L-LZ * L-LZ)
+     IF WS-H > 0
+         COMPUTE L-IX = L-LX / WS-H * 22.2222 * L-SCALE * L-SPEED
+         COMPUTE L-IZ = L-LZ / WS-H * 22.2222 * L-SCALE * L-SPEED
+     END-IF
+     COMPUTE L-IY = 1.4285 * L-SCALE * L-JUMP
+     GOBACK.
+ END PROGRAM M44-CAMEL-IMPULSE.

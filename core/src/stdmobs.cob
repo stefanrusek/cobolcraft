@@ -1076,6 +1076,9 @@
      IF SM-KEY(WS-M) = "fox"
          CALL "FOX-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
+     IF SM-KEY(WS-M) = "camel"
+         CALL "M44-CAMEL-TICK" USING WS-ROW
+     END-IF
      IF SM-KEY(WS-M) = "goat"
          CALL "M44-GOAT-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF

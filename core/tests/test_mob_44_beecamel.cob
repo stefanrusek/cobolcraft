@@ -41,6 +41,15 @@
  01 WS-NOW                BINARY-LONG.
  01 WS-LEASHED            BINARY-LONG.
  01 WS-RIDER              BINARY-LONG.
+ 01 WS-LX                 FLOAT-LONG.
+ 01 WS-LZ                 FLOAT-LONG.
+ 01 WS-SCALE              FLOAT-LONG.
+ 01 WS-SPEED              FLOAT-LONG.
+ 01 WS-JUMP               FLOAT-LONG.
+ 01 WS-IX                 FLOAT-LONG.
+ 01 WS-IY                 FLOAT-LONG.
+ 01 WS-IZ                 FLOAT-LONG.
+ 01 WS-REFUSE             BINARY-LONG.
  01 WS-DONE2              BINARY-LONG.
 
  PROCEDURE DIVISION.
@@ -164,9 +173,57 @@
      MOVE 1055 TO WS-E
      PERFORM CHECK-N
      CALL "M44-CAMEL-DASH" USING WS-CAMEL WS-STARTED2
-     MOVE "acceptance US15 44§2.3 Camel dash: a second dash during the cooldown is refused and the counter runs down" TO WS-CASE
+     MOVE "acceptance US15 54§6.3 Camel dash: a second dash during the cooldown is refused" TO WS-CASE
      COMPUTE WS-O = WS-STARTED2 * 1000 + EN-CAMEL-DASH(WS-CAMEL)
+     MOVE 55 TO WS-E
+     PERFORM CHECK-N
+     CALL "M44-CAMEL-TICK" USING WS-CAMEL
+     MOVE "acceptance US15 54§6.3 Camel dash: the cooldown counts down by 1 a tick" TO WS-CASE
+     MOVE EN-CAMEL-DASH(WS-CAMEL) TO WS-O
      MOVE 54 TO WS-E
+     PERFORM CHECK-N
+     MOVE 0 TO EN-CAMEL-DASH(WS-CAMEL)
+     CALL "M44-CAMEL-TICK" USING WS-CAMEL
+     MOVE "acceptance US15 54§6.3 Camel dash: at 0 it stays 0" TO WS-CASE
+     MOVE EN-CAMEL-DASH(WS-CAMEL) TO WS-O
+     MOVE 0 TO WS-E
+     PERFORM CHECK-N
+*>   The dash impulse: horizontal 22.2222 x scale x speed along the look, vertical 1.4285 x scale x jump strength 0.42.
+     MOVE 0 TO WS-LX
+     MOVE 1 TO WS-LZ
+     MOVE 1 TO WS-SCALE
+     MOVE 0.09 TO WS-SPEED
+     MOVE 0.42 TO WS-JUMP
+     CALL "M44-CAMEL-IMPULSE" USING WS-LX WS-LZ WS-SCALE WS-SPEED WS-JUMP WS-IX WS-IY WS-IZ
+     MOVE "acceptance US15 54§6.3 Camel dash impulse: speed 0.09, scale 1: horizontal 2.0 along +z (hundredths)" TO WS-CASE
+     COMPUTE WS-O ROUNDED = WS-IZ * 100
+     MOVE 200 TO WS-E
+     PERFORM CHECK-N
+     MOVE "acceptance US15 54§6.3 Camel dash impulse: vertical 1.4285 x 0.42 = 0.6 (thousandths) and no x part" TO WS-CASE
+     COMPUTE WS-O ROUNDED = WS-IY * 1000 + WS-IX * 100000
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+*>   Pose transitions: sitting down takes 40 ticks, standing up 52; the camel does not walk meanwhile or while sitting.
+     MOVE 1 TO EN-CAMEL-POSE(WS-CAMEL)
+     MOVE 1000 TO EN-CAMEL-POSE-T(WS-CAMEL)
+     MOVE 1030 TO WS-NOW
+     CALL "M44-CAMEL-REFUSE" USING WS-CAMEL WS-NOW WS-REFUSE
+     MOVE "acceptance US15 54§6.4 Camel pose: a sitting camel refuses to move" TO WS-CASE
+     MOVE WS-REFUSE TO WS-O
+     MOVE 1 TO WS-E
+     PERFORM CHECK-N
+     MOVE 0 TO EN-CAMEL-POSE(WS-CAMEL)
+     MOVE 1051 TO WS-NOW
+     CALL "M44-CAMEL-REFUSE" USING WS-CAMEL WS-NOW WS-REFUSE
+     MOVE "acceptance US15 54§6.4 Camel pose: 51 ticks after standing up it is still in the transition" TO WS-CASE
+     MOVE WS-REFUSE TO WS-O
+     MOVE 1 TO WS-E
+     PERFORM CHECK-N
+     MOVE 1052 TO WS-NOW
+     CALL "M44-CAMEL-REFUSE" USING WS-CAMEL WS-NOW WS-REFUSE
+     MOVE "acceptance US15 54§6.4 Camel pose: after 52 ticks it walks again" TO WS-CASE
+     MOVE WS-REFUSE TO WS-O
+     MOVE 0 TO WS-E
      PERFORM CHECK-N
      STOP RUN.
 

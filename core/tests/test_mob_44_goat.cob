@@ -44,6 +44,7 @@
  01 WS-HIT                BINARY-LONG.
  01 WS-GOAT               BINARY-LONG.
  01 WS-GZ                 FLOAT-LONG.
+ 01 WS-TEXT               PIC X(1024).
  01 WS-WALK2              BINARY-LONG.
  01 WS-HEALTH0            FLOAT-LONG.
 
@@ -130,10 +131,11 @@
      PERFORM CHECK-N
      MOVE 9 TO WS-DZ
      CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     MOVE "acceptance US15 44§9 Goat ram: a target that moved beyond 7 blocks cancels the preparation" TO WS-CASE
-     MOVE EN-RAM-STATE(WS-ROW) TO WS-O
-     MOVE 0 TO WS-E
+     MOVE "acceptance US15 44§9 Goat ram: a target that moved beyond 7 blocks cancels the preparation; the minimum cooldown 600 follows" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-ROW) * 10000 + EN-RAM-CD(WS-ROW)
+     MOVE 600 TO WS-E
      PERFORM CHECK-N
+     MOVE 0 TO EN-RAM-CD(WS-ROW)
      MOVE 5 TO WS-DZ
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21
          CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
@@ -147,9 +149,15 @@
      COMPUTE WS-O ROUNDED = WS-HZ * 1000
      MOVE 600 TO WS-E
      PERFORM CHECK-N
-     MOVE 1 TO WS-DZ
+     MOVE 0.8 TO WS-DZ
      CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     MOVE "acceptance US15 44§9 Goat ram: a target within 1.2 blocks is hit; the ram ends with the cooldown 600" TO WS-CASE
+     MOVE "acceptance US15 44§9 Goat ram: a target 0.8 away is not hit yet (the boxes of goat 0.9 and player 0.6 overlap within 0.75)" TO WS-CASE
+     COMPUTE WS-O = WS-HIT * 10000 + EN-RAM-STATE(WS-ROW) * 1000
+     MOVE 2000 TO WS-E
+     PERFORM CHECK-N
+     MOVE 0.7 TO WS-DZ
+     CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
+     MOVE "acceptance US15 44§9 Goat ram: a target within 0.75 is hit; the ram ends with the cooldown 600" TO WS-CASE
      COMPUTE WS-O = WS-HIT * 10000 + EN-RAM-STATE(WS-ROW) * 1000 + EN-RAM-CD(WS-ROW)
      MOVE 10600 TO WS-E
      PERFORM CHECK-N
@@ -178,7 +186,13 @@
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-GZ WS-YAW WS-GOAT
      MOVE 1 TO EN-ON-GROUND(WS-GOAT)
      MOVE 0 TO EN-RAM-CD(WS-GOAT)
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
+     MOVE "acceptance US15 44§7.1 Goat ram: starting the run-up broadcasts one Entity Event (58, lower the head; packet 34)" TO WS-CASE
+     MOVE WS-TEXT(1:2) TO WS-O
+     MOVE 34 TO WS-E
+     PERFORM CHECK-N
      MOVE "acceptance US15 44§9 Goat ram tick: a player 5 blocks away: the goat prepares and stands still (walk 2)" TO WS-CASE
      MOVE WS-WALK2 TO WS-O
      MOVE 2 TO WS-E
@@ -192,8 +206,14 @@
      MOVE 10600 TO WS-E
      PERFORM CHECK-N
      MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH0
-     COMPUTE EN-Z(WS-GOAT) = WS-FZ - 1
+     COMPUTE EN-Z(WS-GOAT) = WS-FZ - 0.5
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
+     MOVE "acceptance US15 44§7.2 Goat ram: finishing the ram broadcasts Entity Event 59 (packet 34)" TO WS-CASE
+     MOVE WS-TEXT(1:2) TO WS-O
+     MOVE 34 TO WS-E
+     PERFORM CHECK-N
      MOVE "acceptance US15 44§9 Goat ram tick: the hit hurts the player and ends the ram" TO WS-CASE
      MOVE 0 TO WS-O
      IF PL-HEALTH(WS-PLAYER) < WS-HEALTH0

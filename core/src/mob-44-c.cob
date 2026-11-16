@@ -1,7 +1,7 @@
 *> Goat ram (002-lane-mobsa2; docs/protocol/44-residual-mob-questions-4-land-animals.md section 9; 19 section 10).
 *> - Preparation (PrepareRamNearestTarget): a target 4 to 7 blocks away (squared distance 16 to 49) and no ram cooldown start 20 ticks of standing still facing it (EN-RAM-STATE 1); a target that leaves
-*>   that range cancels it. After the 20 ticks the goat rams (state 2): the direction is the normalised horizontal vector to the target, the ram point is the target's place at that moment.
-*> - The charge walks at 3.0 x the goat's speed (0.2): 0.6 a tick. A target within 1.2 blocks horizontally (the goat's box stands in) is hit; the ram then ends. It also ends within 0.25 of
+*>   that range cancels it and sets the minimum cooldown 600 (100 screaming; 54 section 7.1). After the 20 ticks the goat rams (state 2): the direction is the normalised horizontal vector to the target, the ram point is the target's place at that moment.
+*> - The charge walks at 3.0 x the goat's speed (0.2): 0.6 a tick. A target within 0.75 blocks horizontally (the boxes of a goat 0.9 and a player 0.6 overlap) is hit; the ram then ends. It also ends within 0.25 of
 *>   the ram point and after 200 ticks (the time-out). The cooldown after a ram is U(600, 6000), U(100, 300) for a screaming goat; it counts down by 1 a tick.
 *> - Knockback of a hit: S = clamp(speed x 1.65, 0.2, 3.0) (no Speed or Slowness effect), x 0.5 when a shield blocked, x the force 2.5 (adult) or 1.0 (baby).
 *> Open items: the horn-break block test and dropping the horn (the content of the drop is a random instrument: no instrument data), the knockback packet to the player, target selection by mobs
@@ -95,6 +95,8 @@
          WHEN 1
              IF WS-D2 < 16 OR WS-D2 > 49
                  MOVE 0 TO EN-RAM-STATE(L-ROW)
+                 MOVE FUNCTION MOD(EN-WOOL(L-ROW), 2) TO WS-SCREAM
+                 COMPUTE EN-RAM-CD(L-ROW) = 600 - 500 * WS-SCREAM
              ELSE
                  ADD 1 TO EN-RAM-T(L-ROW)
                  IF EN-RAM-T(L-ROW) >= 20
@@ -112,7 +114,7 @@
              COMPUTE WS-DX = EN-RAM-PX(L-ROW) - EN-X(L-ROW)
              COMPUTE WS-DZ = EN-RAM-PZ(L-ROW) - EN-Z(L-ROW)
              EVALUATE TRUE
-                 WHEN WS-D2 < 1.44
+                 WHEN WS-D2 < 0.5625
                      MOVE 1 TO L-HIT WS-END
                  WHEN WS-DX * WS-DX + WS-DZ * WS-DZ < 0.0625 OR EN-RAM-T(L-ROW) > 200
                      MOVE 1 TO WS-END
@@ -150,6 +152,10 @@
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
  01 WS-R                   BINARY-DOUBLE.
  01 WS-DRAW                BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ COPY PROTO.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -157,6 +163,7 @@
  01 L-WALK                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
      MOVE 0 TO L-HX L-HZ L-WALK WS-BEST
+     MOVE EN-RAM-STATE(L-ROW) TO WS-BEFORE
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
          IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND (PL-MODE(WS-P) = 0 OR PL-MODE(WS-P) = 2)
              COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
@@ -183,6 +190,20 @@
          GOBACK
      END-IF
      CALL "M44-RAM-TICK" USING L-ROW WS-DX WS-DZ WS-DRAW L-HX L-HZ WS-HIT
+*>   Entity Event 58 lowers the head when the run-up starts, 59 raises it when the ram ends (54 sections 7.1 to 7.3).
+     MOVE 0 TO WS-EVENT
+     IF WS-BEFORE = 0 AND EN-RAM-STATE(L-ROW) = 1
+         MOVE 58 TO WS-EVENT
+     END-IF
+     IF WS-BEFORE > 0 AND EN-RAM-STATE(L-ROW) = 0
+         MOVE 59 TO WS-EVENT
+     END-IF
+     IF WS-EVENT > 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
      IF EN-RAM-STATE(L-ROW) = 1
          MOVE 2 TO L-WALK
      END-IF
