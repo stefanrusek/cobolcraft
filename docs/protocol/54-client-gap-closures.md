@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22) |
+| Covers | Gaps recorded on task lines of `specs/002-client-polish/tasks.md` and in lane reports: the walk animation update and its feeds (§1), the swing and aggressive-pose drivers (§2), `/tp` location-form permission (§3), villager trade enchantment data and tag members (§4), registry order of metadata variants (§5), camel dash and sit (§6), goat ram (§7), remaining item and tag lists (§8); round cr4: teleport dimension and coordinates (§9), playsound range (§10), saturation instance (§11), spawn-reason light and sniffer dig cadence (§12), `/compute` (§13), tab-completion server side (§14); round cr5, data component wire and NBT layouts: persistence table and enchantments (§15); potion_contents and effect instances (§16); dyed_color (§17); trim (§18); glint and foil (§19); names, lore, rarity (§20); fireworks (§21); banners, omen bottle (§22); durability and stack components (§23) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3 (the artifact recorded in README) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution; clean-room round "cr3" (reader only; a reviewer follows) |
 | Extends | 12 §6.4 (swing state), 18 (mob flags), 34-1 §8 (render state), 34-2 §4 (humanoid models), 05a (Animate), 05b (Swing Animation) |
@@ -859,6 +859,33 @@ Inputs: base colour, the ordered layer list, a flag "is shield". Sprites come fr
 3. The render type of the pattern layers is the banner-pattern type (52 §1 table; translucent in the sense that the sprite alpha selects where the dye shows). The wind animation parameter of the flag is the same for the base and the layers.
 4. **Shield.** A shield stack is "patterned" when its `banner_patterns` (default `EMPTY`) is non-empty **or** it has a `base_color`. A patterned shield draws the `shield_base` sprite (white shield with the pattern area), otherwise the plain `shield_base_nopattern` sprite. For a patterned shield, the pattern layers of rule 1 and 2 are drawn on top with `is shield` set; the base colour is `base_color`, or white when absent. When the stack has the foil (19), the plain-shield part is drawn with the solid-entity glint type and, if patterned, one extra glint pass (`patterned_shield_glint`, 19.3) is added over the pattern layers.
 5. Block-entity banners use the same layer function with the `patterns` of the block entity and the block's own colour as base (52 §6.3; wall and standing transforms, the swing from `(game time + position hash) mod 100`).
+
+---
+
+## 23. `damage` (3), `max_damage` (2), `max_stack_size` (1), `repair_cost` (19), `unbreakable` (4) and stack validation
+
+Gap closed: 17 §1.3 and 25-1 §7.3 give the behaviour; this section gives the persistence ranges, the network layouts, the "equality and stacking" consequences and the strict validation that rejects a stack.
+
+| Component | Network | NBT | Range (NBT decode) | Default / prototype | Notes |
+|---|---|---|---|---|---|
+| `max_stack_size` (1) | VarInt | Int | 1 to 99 inclusive (`intRange(1, 99)`); the wire value is not range-checked | 64 in the common prototype (25-1 §7.1); 1 for every item built with `durability(n)` | Absolute cap 99. A stack's count above its effective max is rejected by 23.2. |
+| `max_damage` (2) | VarInt | Int | 1 or more (a positive-int codec; 0 or negative fails) | absent except on durability items (`durability(n)` sets it) | An item with this component must have `max_stack_size` 1 (23.2). Enchantments such as unbreaking do not change it. |
+| `damage` (3) | VarInt | Int | 0 or more (non-negative-int codec) | 0 on durability items' prototypes; absent elsewhere | Reading and writing through the stack clamps it to 0 to `max_damage` (17 §1.3). Marked `ignoreSwapAnimation`: a change of only this component does not play the re-equip (swap) animation of the held item, unlike every other component change. A stack whose damage reaches `max_damage` after a hurt breaks (17 §5.1). |
+| `repair_cost` (19) | VarInt | Int | 0 or more | 0 in the common prototype | The anvil surcharge (40-3 gives how it grows); equality is by value, so two items with different repair costs do not merge. |
+| `unbreakable` (4) | none (Unit) | empty compound | any compound accepted | absent | Presence makes `isDamageableItem` false (17 §1.3), so the item never loses durability and the durability bar is hidden. Its tooltip line ("Unbreakable") is shown unless hidden by `tooltip_display` (15.4). |
+
+### 23.1 Stacking and equality
+
+A merge (13 §3.7) needs the same item and equal component maps. For durability items this makes two stacks with different `damage` unmergeable, and since they have max stack 1 they never merge anyway; the rule matters for unbreakable or renamed stackable items, where every component that differs (`custom_name`, `lore`, `repair_cost`, `enchantments`) blocks the merge.
+
+### 23.2 Strict validation (`ItemStack.validateStrict` and `validatedStreamCodec`)
+
+A stack is rejected (a decode error for NBT through the strict codec; a decode failure for packets that use the validated stream codec) when either rule fails:
+
+1. The stack's components contain `max_damage` and its effective `max_stack_size` (default 1 when absent in the map, read with `getOrDefault(max_stack_size, 1)`) is greater than 1.
+2. The stack has one of the three container-like components `container` (§25), `bundle_contents` (§25) or `charged_projectiles` (§25), and any stack inside it has a count greater than that stack's own maximum stack size (the check is applied recursively through `validateStrict` of the contained stack).
+
+An empty stack passes. The validated codec leaves the bytes unchanged (00 §12.1).
 
 ---
 
