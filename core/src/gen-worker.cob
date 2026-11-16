@@ -44,8 +44,8 @@
     05 WS-CHUNK            PIC X(304640).
     05 WS-OVERFLOW         PIC X(16392).
     05 WS-BE               PIC X(6664).
-    05 WS-ENT              PIC X(22088).
- 01 WS-LENGTH              BINARY-LONG VALUE 349788.
+    05 WS-ENT              PIC X(22704).
+ 01 WS-LENGTH              BINARY-LONG VALUE 350404.
  01 WS-RC                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-OUTCOME              BINARY-LONG.
@@ -59,7 +59,7 @@
 *>       the Nether's chunk is the dimension's own generator's (T6300), made over empty memory as WORLD-CHUNK-LOAD gives it; it has no overflow and no block entities
          MOVE LOW-VALUES TO WS-CHUNK
          CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
-         MOVE 0 TO GO-COUNT GB-COUNT GE-COUNT GE-LOST
+         MOVE 0 TO GO-COUNT GB-COUNT GE-COUNT GE-LOST GE-BOX-COUNT GE-BOX-LOST
      ELSE
          CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
      END-IF
@@ -319,7 +319,7 @@
  COPY GENOVER.
  COPY GENBE.
  COPY GENENT.
- 01 WS-ANSWER              PIC X(349788) BASED.
+ 01 WS-ANSWER              PIC X(350404) BASED.
  01 WS-DST                 PIC X(304640) BASED.
  01 WS-MARKER              BINARY-LONG BASED.
  LINKAGE SECTION.
@@ -339,7 +339,7 @@
              MOVE WS-ANSWER(5:304640) TO WS-DST
              MOVE WS-ANSWER(304645:16392) TO GO-DATA
              MOVE WS-ANSWER(321037:6664) TO GB-DATA
-             MOVE WS-ANSWER(327701:22088) TO GE-DATA
+             MOVE WS-ANSWER(327701:22704) TO GE-DATA
              MOVE WS-MARKER TO L-MARKER-Y
              MOVE 1 TO L-FLAG
          END-IF

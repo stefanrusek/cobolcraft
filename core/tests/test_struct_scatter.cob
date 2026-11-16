@@ -17,6 +17,7 @@
  COPY STRUCTDESERT.
  COPY STRUCTBLK.
  COPY GENBE.
+ COPY GENENT.
  COPY XORO REPLACING ==XR-STATE== BY ==WS-XR== LEADING ==XR-== BY ==WX-==.
  01 WS-PTR                 USAGE POINTER.
  01 WS-I                   BINARY-LONG.
@@ -200,8 +201,17 @@
          MOVE 0 TO WS-WCX WS-WCZ
          PERFORM MAKE-PIECE
          PERFORM OPEN-WINDOW
+         MOVE 0 TO GEL-COUNT GEL-LOST
          CALL "SCP-HUT-POST" USING WS-ROW
          PERFORM COUNT-WINDOW
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US12 36-4§5.4 Swamp hut: orientation " WS-DIRD " asks for one witch then one cat, 2 requests" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 0 TO TL-OBSERVED-N
+         IF GEL-COUNT = 2 AND GEL-NBT(1)(8:15) = "minecraft:witch" AND GEL-NBT(2)(8:13) = "minecraft:cat"
+             MOVE 1 TO TL-OBSERVED-N
+         END-IF
+         MOVE 1 TO TL-EXPECTED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
          MOVE SPACES TO TL-CASE
          STRING "acceptance US12 36-4§5.2 Swamp hut: orientation " WS-DIRD " writes 141 blocks" DELIMITED BY SIZE INTO TL-CASE
          MOVE 141 TO TL-EXPECTED-N

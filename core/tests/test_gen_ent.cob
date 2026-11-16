@@ -11,6 +11,7 @@
  COPY CONTENT.
  COPY GENENT.
  COPY VILSTATE.
+ COPY STRUCTOVR.
  COPY BRWORLD.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
@@ -44,6 +45,13 @@
  01 WS-BEFORE              BINARY-LONG.
  01 WS-COUNTED             BINARY-LONG.
  01 WS-OUTCOME             BINARY-LONG.
+  01 WS-BOXK               BINARY-LONG.
+ 01 WS-BX0                 BINARY-LONG.
+ 01 WS-BX1                 BINARY-LONG.
+ 01 WS-BY0                 BINARY-LONG VALUE 0.
+ 01 WS-BZ0                 BINARY-LONG VALUE 0.
+ 01 WS-BY1                 BINARY-LONG VALUE 1.
+ 01 WS-BZ1                 BINARY-LONG VALUE 1.
  01 WS-FLAG-A              BINARY-LONG.
  01 WS-FLAG-B              BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
@@ -114,6 +122,37 @@
      MOVE "test gen ent: kept into a job with room for one: 16 in the job, 2 lost and the level's list is empty" TO TL-CASE
      COMPUTE TL-OBSERVED-N = J-ENT-COUNT * 1000 + J-ENT-LOST * 100 + GEL-COUNT + GEL-LOST
      MOVE 16200 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   the boxes of the structures that override the spawn lists: bounded (24), kept by the job, registered by the apply
+     MOVE 0 TO GEL-BOX-COUNT GEL-BOX-LOST J-ENT-BOX-COUNT J-ENT-BOX-LOST
+     MOVE 4 TO WS-BOXK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 26
+         COMPUTE WS-BX0 = WS-I * 10
+         MOVE WS-BX0 TO WS-BX1
+         CALL "GENT-ADD-BOX" USING WS-BOXK WS-BX0 WS-BY0 WS-BZ0 WS-BX1 WS-BY1 WS-BZ1
+     END-PERFORM
+     MOVE "test gen ent: 26 boxes: 24 kept and 2 counted as lost, the 7th keeps its kind and minimum x" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = GEL-BOX-COUNT * 1000000 + GEL-BOX-LOST * 100000 + GEL-B-KIND(7) * 10000 + GEL-B-MIN-X(7)
+     MOVE 24240070 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 23 TO J-ENT-BOX-COUNT
+     CALL "GENT-KEEP" USING WS-JOB
+     MOVE "test gen ent: kept into a job with room for one box: 24 in the job, 25 lost, the level's boxes cleared" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = J-ENT-BOX-COUNT * 10000 + J-ENT-BOX-LOST * 100 + GEL-BOX-COUNT + GEL-BOX-LOST
+     MOVE 242500 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO SO-COUNT SO-NEXT GE-COUNT
+     MOVE 2 TO J-ENT-BOX-COUNT
+     MOVE J-ENT-BOX-COUNT TO GE-BOX-COUNT
+     MOVE J-ENT-BOX(1) TO GE-BOX(1)
+     MOVE J-ENT-BOX(2) TO GE-BOX(2)
+     MOVE 5 TO GE-B-MIN-X(1)
+     MOVE 6 TO GE-B-MIN-X(2)
+     CALL "GENT-APPLY" USING WS-DIM WS-ROW
+     MOVE "test gen ent: applying two boxes registers them with the chunk and clears the list" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SO-COUNT * 10 + GE-BOX-COUNT
+     MOVE 20 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   application: a witch (persistent) and a villager with VillagerData

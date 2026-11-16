@@ -7,7 +7,7 @@
 *> decorated first. Here the piece's height is the same for every pass: updateAverageGroundHeight takes the average over every column of the piece's box (vanilla counts only the columns inside
 *> the first decorated chunk's write box and then keeps the result), and the heightmap is the base height of the column (STRUCT-BASE-HEIGHT kind 0: stone or water from the noise terrain,
 *> without surface rules, carvers or features; MOTION_BLOCKING_NO_LEAVES differs only where a carver or an earlier feature changed the top, and leaves are not placed yet at this step).
-*> Deviations: the witch and the cat of the hut (5.4) and every entity are not made (no entity channel); fluid ticks and the shape-check marks of placeBlock are not made; the neighbour blocks
+*> Deviations: the witch and the cat of the hut (5.4) go to the entity channel (SCP-HUT-POST); fluid ticks and the shape-check marks of placeBlock are not made; the neighbour blocks
 *> that reorient (36-1 6.5) reads for a chest lie in the chunk window, a neighbour in another chunk reads as air.
 *>
 *> Entry points:

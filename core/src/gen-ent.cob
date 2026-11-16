@@ -7,10 +7,12 @@
 *>     most GE-MAX; GEL-LOST counts the rest; a compound longer than GE-NBT-MAX is counted as lost)
 *>   GENT-ADD-MOB USING x, y, z (FLOAT-LONG), id (PIC X(32), "minecraft:witch" or the bare key), persistent (BINARY-LONG): a request for a mob made by code (a marker): the compound is the id and
 *>     PersistenceRequired
+*>   GENT-ADD-BOX USING kind, min x, y, z, max x, y, z (BINARY-LONG): a box of a structure that overrides the natural spawn lists (STRUCTOVR.cpy) that intersects the chunk being generated; at most
+*>     GE-BOX-MAX per chunk (GEL-BOX-LOST counts the rest)
 *>   GENT-KEEP USING job: appends the level's requests to the job's list (GJ-ENT, bounded) and empties the level's list
 *>   GENT-APPLY USING dimension row, chunk row: each request of GEN-ENT (GE-DATA) is made by ENTITY-NBT-ONE (the loader of the entities/ files: the id, the keys the core models, the position
 *>     and the rotation the request names) unless the entity table is nearly full or an entity of the dimension already stands within a quarter block of the position (the chunk was generated
-*>     again while the entities of its first generation were kept); the list is emptied
+*>     again while the entities of its first generation were kept); the list is emptied. The boxes of GE-BOX are registered with the chunk (SO-REGISTER, struct-override.cob) first.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GENT-ADD.
@@ -78,6 +80,35 @@
  END PROGRAM GENT-ADD-MOB.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GENT-ADD-BOX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENENT.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-X0                   BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Z0                   BINARY-LONG.
+ 01 L-X1                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-Z1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-X0 L-Y0 L-Z0 L-X1 L-Y1 L-Z1.
+     IF GEL-BOX-COUNT >= GE-BOX-MAX
+         ADD 1 TO GEL-BOX-LOST
+         GOBACK
+     END-IF
+     ADD 1 TO GEL-BOX-COUNT
+     MOVE L-KIND TO GEL-B-KIND(GEL-BOX-COUNT)
+     MOVE L-X0 TO GEL-B-MIN-X(GEL-BOX-COUNT)
+     MOVE L-Y0 TO GEL-B-MIN-Y(GEL-BOX-COUNT)
+     MOVE L-Z0 TO GEL-B-MIN-Z(GEL-BOX-COUNT)
+     MOVE L-X1 TO GEL-B-MAX-X(GEL-BOX-COUNT)
+     MOVE L-Y1 TO GEL-B-MAX-Y(GEL-BOX-COUNT)
+     MOVE L-Z1 TO GEL-B-MAX-Z(GEL-BOX-COUNT)
+     GOBACK.
+ END PROGRAM GENT-ADD-BOX.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GENT-KEEP.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -96,7 +127,16 @@
              ADD 1 TO J-ENT-LOST
          END-IF
      END-PERFORM
-     MOVE 0 TO GEL-COUNT GEL-LOST
+     ADD GEL-BOX-LOST TO J-ENT-BOX-LOST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GEL-BOX-COUNT
+         IF J-ENT-BOX-COUNT < GE-BOX-MAX
+             ADD 1 TO J-ENT-BOX-COUNT
+             MOVE GEL-BOX(WS-I) TO J-ENT-BOX(J-ENT-BOX-COUNT)
+         ELSE
+             ADD 1 TO J-ENT-BOX-LOST
+         END-IF
+     END-PERFORM
+     MOVE 0 TO GEL-COUNT GEL-LOST GEL-BOX-COUNT GEL-BOX-LOST
      GOBACK.
  END PROGRAM GENT-KEEP.
 
@@ -132,6 +172,11 @@
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-ROW.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GE-BOX-COUNT
+         CALL "SO-REGISTER" USING L-DIM CK-X(L-ROW) CK-Z(L-ROW) GE-B-KIND(WS-I) GE-B-MIN-X(WS-I) GE-B-MIN-Y(WS-I) GE-B-MIN-Z(WS-I)
+             GE-B-MAX-X(WS-I) GE-B-MAX-Y(WS-I) GE-B-MAX-Z(WS-I)
+     END-PERFORM
+     MOVE 0 TO GE-BOX-COUNT GE-BOX-LOST
      IF GE-COUNT = 0
          MOVE 0 TO GE-LOST
          GOBACK

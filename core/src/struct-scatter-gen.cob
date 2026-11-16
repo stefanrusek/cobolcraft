@@ -5,9 +5,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCP-HUT-POST.
-*> postProcess of the swamp hut (5.2 steps 1 to 5; the witch and the cat of 5.4 are not made: no entity channel).
+*> postProcess of the swamp hut (5.2 steps 1 to 5, then 5.4 and 44-2 10.7): when the world position of local (2, 2, 5) is inside the write box, one persistent witch and one persistent cat are
+*> asked of the entity channel at the centre of that block (yaw 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY STRUCTPIECE.
  01 WS-OPS.
     05 FILLER              PIC X(100) VALUE "B 1 1 1 5 1 7 spruce_planks spruce_planks".
     05 FILLER              PIC X(100) VALUE "B 1 4 2 5 4 7 spruce_planks spruce_planks".
@@ -39,10 +41,32 @@
     05 FILLER              PIC X(100) VALUE "F oak_log 1 7 1 7 -1".
     05 FILLER              PIC X(100) VALUE "F oak_log 5 7 5 7 -1".
  01 WS-COUNT               BINARY-LONG VALUE 29.
+ 01 WS-LX                  BINARY-LONG VALUE 2.
+ 01 WS-LY                  BINARY-LONG VALUE 2.
+ 01 WS-LZ                  BINARY-LONG VALUE 5.
+ 01 WS-WX                  BINARY-LONG.
+ 01 WS-WY                  BINARY-LONG.
+ 01 WS-WZ                  BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-WITCH               PIC X(32) VALUE "minecraft:witch".
+ 01 WS-CAT                 PIC X(32) VALUE "minecraft:cat".
+ 01 WS-PERSISTENT          BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "SCP-RUN" USING L-ROW WS-OPS WS-COUNT
+     CALL "SPB-WORLD" USING L-ROW WS-LX WS-LY WS-LZ WS-WX WS-WY WS-WZ
+     CALL "SPB-BOX-INSIDE" USING SP-WBOX WS-WX WS-WY WS-WZ WS-IN
+     IF WS-IN = 1
+         COMPUTE WS-FX = WS-WX + 0.5
+         MOVE WS-WY TO WS-FY
+         COMPUTE WS-FZ = WS-WZ + 0.5
+         CALL "GENT-ADD-MOB" USING WS-FX WS-FY WS-FZ WS-WITCH WS-PERSISTENT
+         CALL "GENT-ADD-MOB" USING WS-FX WS-FY WS-FZ WS-CAT WS-PERSISTENT
+     END-IF
      GOBACK.
  END PROGRAM SCP-HUT-POST.
 

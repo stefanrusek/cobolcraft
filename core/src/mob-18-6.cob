@@ -917,6 +917,7 @@
  COPY CORESTATE.
  COPY MOBSPAWN.
  COPY STDMOBS.
+ COPY STRUCTOVR.
  01 WS-SIX                 BINARY-LONG VALUE 6.
  01 WS-KIND                BINARY-LONG.
  01 WS-DONE-ALL            BINARY-LONG.
@@ -951,6 +952,9 @@
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-STATUS              BINARY-LONG.
  01 WS-PN                  BINARY-LONG.
+ 01 WS-PICKED              BINARY-LONG.
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-OENTRY              BINARY-LONG.
  01 WS-POINTS.
     05 WS-PT               OCCURS 64 TIMES.
        10 WS-PT-X          FLOAT-LONG.
@@ -975,7 +979,7 @@
          GOBACK
      END-IF
      PERFORM VARYING WS-PACK FROM 1 BY 1 UNTIL WS-PACK > 3 OR WS-DONE-ALL = 1
-         MOVE 0 TO WS-IN-PACK WS-ENTRY WS-ROW WS-DONE-PACK WS-I
+         MOVE 0 TO WS-IN-PACK WS-ENTRY WS-ROW WS-DONE-PACK WS-I WS-PICKED
          MOVE L-PX TO WS-X
          MOVE L-PZ TO WS-Z
          CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-DBL
@@ -1003,13 +1007,26 @@
              IF WS-D2 <= 576 OR WS-D2 > 16384 OR WS-READY = 0
                  MOVE 0 TO WS-OK
              END-IF
-             IF WS-OK = 1 AND WS-ENTRY = 0
-                 CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
-                 IF WS-ENTRY > 0
-                     MOVE SPE-KEY(WS-ENTRY) TO WS-KEY24
-                     MOVE WS-KEY24 TO WS-KEY48
-                     CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
-                     CALL "MS6-PACK-SIZE" USING L-STATE WS-ENTRY WS-MAXPACK
+             IF WS-OK = 1 AND WS-PICKED = 0
+                 MOVE 1 TO WS-PICKED
+*>               a structure that overrides the lists at the position replaces the biome's list (44-2 8.1 step 2b); an empty list draws nothing
+                 CALL "SO-LOOKUP" USING L-DIM WS-X L-PY WS-Z L-CAT WS-LIST
+                 IF WS-LIST > 0
+                     CALL "SO-PICK" USING L-STATE WS-LIST WS-OENTRY
+                     IF WS-OENTRY > 0
+                         MOVE SO-E-KEY(WS-OENTRY) TO WS-KEY24
+                         MOVE WS-KEY24 TO WS-KEY48
+                         CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+                         CALL "SO-PACK-SIZE" USING L-STATE WS-OENTRY WS-MAXPACK
+                     END-IF
+                 ELSE
+                     CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
+                     IF WS-ENTRY > 0
+                         MOVE SPE-KEY(WS-ENTRY) TO WS-KEY24
+                         MOVE WS-KEY24 TO WS-KEY48
+                         CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+                         CALL "MS6-PACK-SIZE" USING L-STATE WS-ENTRY WS-MAXPACK
+                     END-IF
                  END-IF
                  IF WS-ROW = 0
                      MOVE 1 TO WS-DONE-PACK
