@@ -543,6 +543,7 @@
  01 WS-VILLAGE-SNOWY       PIC X(80) VALUE "minecraft:village_snowy".
  01 WS-VILLAGE-TAIGA       PIC X(80) VALUE "minecraft:village_taiga".
  01 WS-STRONGHOLD          PIC X(80) VALUE "minecraft:stronghold".
+ 01 WS-MANSION             PIC X(80) VALUE "minecraft:mansion".
  01 WS-PORTAL              PIC X(80) VALUE "minecraft:ruined_portal".
  01 WS-PORTAL-DESERT       PIC X(80) VALUE "minecraft:ruined_portal_desert".
  01 WS-PORTAL-JUNGLE       PIC X(80) VALUE "minecraft:ruined_portal_jungle".
@@ -585,6 +586,8 @@
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
 *>       the stronghold (struct-stronghold.cob, struct-sh-place.cob; the terrain adaptation is not done)
          CALL "STRUCT-GATE-ON" USING WS-STRONGHOLD
+*>       the woodland mansion (struct-mansion.cob, struct-man-place.cob, struct-man-start.cob; no mob markers)
+         CALL "STRUCT-GATE-ON" USING WS-MANSION
 *>       the ruined portals of the overworld (struct-portal.cob; the nether one needs the Nether pipeline and stays off)
          CALL "STRUCT-GATE-ON" USING WS-PORTAL
          CALL "STRUCT-GATE-ON" USING WS-PORTAL-DESERT
