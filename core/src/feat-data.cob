@@ -1999,6 +1999,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 18
+*>           fossil (feat-fossil.cob): unsupported when a template file or a processor list is missing or the lists differ in length
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-FOSSIL-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 50
 *>           template (feat-template.cob): unsupported when a template file, a weight or a rotation is missing or the processors cannot be compiled
              MOVE FD-BAD TO LS-SAVED-BAD
