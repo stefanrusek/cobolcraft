@@ -1,6 +1,6 @@
 *> Live gossip and the reputation price of villagers (docs/protocol/19 sections 22.4 and 22.5; lane 002-lane-mobsb2, T7102). The rules are VIL-GOSSIP-ADD, VIL-GOSSIP-DECAY,
 *> VIL-REPUTATION and VIL-SPECIAL of mob-19-22.cob; the state is VILGOSSIP.cpy. Gaps: the exchange of gossip between villagers, the VILLAGER_KILLED event to the villagers nearby,
-*> golems and villagers as targets, and the Hero of the Village discount (the effect store of mobs and players is not read here: hero = none).
+*> golems and villagers as targets, (the Hero of the Village discount is read from the player's effect, T8103).
 *>
 *>   VG-FIND USING villager id, target id, create (0/1), slot out     the entry of a pair (0 none)
 *>   VG-ADD USING villager id, target id, type (1 to 5), amount       adds to a gossip value (cap and drop rules of 22.5)
@@ -144,6 +144,8 @@
  01 WS-I                    BINARY-LONG.
  01 WS-REP                  BINARY-LONG.
  01 WS-HERO                 BINARY-LONG VALUE -1.
+ 01 WS-HERO-ID              BINARY-LONG VALUE 31.
+ 01 WS-HERO-TICKS           BINARY-LONG.
  01 WS-WANT                 PIC X(32).
  01 WS-EXTRA                PIC X(32).
  01 WS-GIVE                 PIC X(32).
@@ -161,6 +163,9 @@
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-SLOT L-ROW.
      CALL "VG-REP" USING VL-ID(L-SLOT) PL-ENTITY-ID(L-ROW) WS-REP
+*>   The Hero of the Village effect (id 31): the amplifier, -1 without it.
+     CALL "EFFECT-LEVEL" USING L-ROW WS-HERO-ID WS-HERO WS-HERO-TICKS
+     SUBTRACT 1 FROM WS-HERO
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VL-O-N(L-SLOT)
          CALL "VIL-TRADE-ROW" USING VL-O-ROW(L-SLOT, WS-I) WS-WANT WS-WC WS-EXTRA WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
          COMPUTE WS-BASE = WS-WC + VL-O-EXTRA(L-SLOT, WS-I)
