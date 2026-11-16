@@ -172,6 +172,8 @@
                          CALL "CLOUD-STEP" USING WS-ROW
                      WHEN 4
                          CALL "PEARL-STEP" USING WS-ROW
+                     WHEN 5
+                         CALL "EYE-STEP" USING WS-ROW
                      WHEN 6
                          CALL "EGG-STEP" USING WS-ROW
                  END-EVALUATE
