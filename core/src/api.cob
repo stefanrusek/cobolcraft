@@ -577,7 +577,7 @@
 *>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
          CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
          CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
-*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier, no feature elements: docs/design/world-types.md structures part 8)
+*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier; the feature elements run their placed feature, JIG-FEATURE)
          CALL "STRUCT-GATE-ON" USING WS-OUTPOST
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-PLAINS
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-DESERT
