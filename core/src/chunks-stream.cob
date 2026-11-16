@@ -464,7 +464,9 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DIMENSIONS.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-REACH               BINARY-LONG.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-SEEN                BINARY-LONG.
  LINKAGE SECTION.
@@ -474,11 +476,16 @@
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CK-COUNT
          IF CK-USED(WS-ROW) = 1
              MOVE 0 TO WS-SEEN
+*>           a sent Nether chunk's light needed the ring round the view loaded (WORLD-LIGHT-READY): it stays one chunk further out (T6301)
+             MOVE CS-VIEW-DISTANCE TO WS-REACH
+             IF DM-GENERATOR(CK-DIM(WS-ROW)) = DIM-GEN-NETHER
+                 ADD 1 TO WS-REACH
+             END-IF
              PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
                      OR WS-SEEN = 1
                  IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = CK-DIM(WS-ROW)
-                         AND FUNCTION ABS(CK-X(WS-ROW) - PL-CENTER-X(WS-PLAYER)) <= CS-VIEW-DISTANCE
-                         AND FUNCTION ABS(CK-Z(WS-ROW) - PL-CENTER-Z(WS-PLAYER)) <= CS-VIEW-DISTANCE
+                         AND FUNCTION ABS(CK-X(WS-ROW) - PL-CENTER-X(WS-PLAYER)) <= WS-REACH
+                         AND FUNCTION ABS(CK-Z(WS-ROW) - PL-CENTER-Z(WS-PLAYER)) <= WS-REACH
                      MOVE 1 TO WS-SEEN
                  END-IF
              END-PERFORM
