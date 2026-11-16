@@ -466,6 +466,27 @@ Worked examples: `compute integer cooking/time_coal` prints "<id> returned value
 
 ---
 
+## 14. Server side of tab completion (Commands and Command Suggestions)
+
+**Gap closed:** what the server does between a Command Suggestion request (05c 0x0F) and the Command Suggestions answer (05a 0x0F), and when it sends the Commands tree (T2014 fixtures). Source: `ServerGamePacketListenerImpl.handleCustomCommandSuggestions`, `ServerCommandSuggestionsProvider`, `ClientboundCommandSuggestionsPacket`, `PlayerList` (`placeNewPlayer`, `respawn`, `op`, `deop`, `sendPlayerPermissionLevel`), `Commands.sendCommands`.
+
+### 14.1 Request handling
+
+1. The handler keeps the request's transaction id and passes the text to the player's `ServerCommandSuggestionsProvider`. Each player has one provider and one slot for the **latest unprocessed request**.
+2. A new request replaces the slot's content. A replaced request that was not yet processed is **dropped without any answer** (its id is never echoed; inferred from the slot replacement, no cancel call is read). Only the newest request is answered.
+3. Once per server tick (the budget is refilled every tick: the minimum interval is 1 tick) the provider takes the slot, so **at most one request per player is processed per tick**; a request arriving with budget available is scheduled on the server thread at once (executed at the next server task run), otherwise it waits for the next tick.
+4. Processing: if the text starts with `/` that one character is skipped (the reader keeps the full text, so every range stays counted in the original text **including the slash**, as 09 says); the text is parsed by the command dispatcher with the player's own command source (so requirement predicates and permission levels filter what can be suggested: 15 framework); completion suggestions are then asked from the parse result at the end of the text (15a §6).
+5. The result is capped at **1000** suggestions (the first 1000 of the sorted list; the range is kept). The text of each entry is the suggestion text; the tooltip is present only when the suggestion carries one.
+6. The answer is Command Suggestions (0x0F) with the request's transaction id, Start and Length of the suggestions' range (`StringRange` start and length), and the entries in order. It is not sent when the connection no longer accepts messages (disconnected: the request is dropped). A parse or completion failure is logged and gives no answer.
+
+Worked example: text `/gamemode s`, one request, budget available: range start 10 length 1 (the `s`), entries `spectator`, `survival` in the library's sorted order, id echoed. Two requests `/g` (id 1) and `/ga` (id 2) arriving within the same tick before processing: only id 2 is answered (start 1 length 2).
+
+### 14.2 When the Commands tree is sent
+
+Commands (0x10) is built per player: the dispatcher's root is copied keeping only the nodes the player's command source may use (requirement predicates evaluated for that player; children of a hidden node are hidden with it), then serialised (15 framework, 05a 0x10). It is sent: when the player joins (`placeNewPlayer`), after a respawn (`respawn`), and whenever the permission level is re-sent (`op`, `deop`, and the public `sendPlayerPermissionLevel`). No other trigger was found in `PlayerList`.
+
+---
+
 ## Open questions
 
 1. The zoglin's and the raider hold-ground goal's exact aggressive conditions (2.3) were not traced.
