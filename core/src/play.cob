@@ -270,6 +270,9 @@
                  CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
              END-IF
              IF WS-WORN = 0
+                 CALL "POTION-DRINK-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
                  CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
              END-IF
          WHEN L-PACKET-ID = 39
