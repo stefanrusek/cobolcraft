@@ -2,11 +2,10 @@
 *> object with a "type", a string naming an entry of the registry item_modifier, or an array (a sequence, 7.1: the inline form
 *> of a list). A stack is (item id, count, patch handle of core/copy/CSTACK.cpy). Every function but discard and filtered has an
 *> optional condition: when it fails the stack is left alone.
-*> Evaluated (7.1 to 7.3): set_count, set_item, limit_count, explosion_decay, enchanted_count_increase, apply_bonus (uniform_bonus_count,
+*> Evaluated (7.1 to 7.3): enchant_with_levels (loot-function-data.cob), set_count, set_item, limit_count, explosion_decay, enchanted_count_increase, apply_bonus (uniform_bonus_count,
 *> ore_drops, binomial_with_bonus_count), discard (count 0), sequence, filtered, set_enchantments, set_damage, set_name (a text component {"text"};
 *> target custom_name or item_name). Left alone (the stack passes unchanged): the functions that
-*> need systems the core does not hold yet: furnace_smelt (smelting recipes), enchant_with_levels and enchant_randomly (the
-*> enchanting table selection), copy_name, copy_state, copy_components, set_components, set_custom_data, copy_custom_data,
+*> need systems the core does not hold yet: furnace_smelt (smelting recipes), enchant_randomly, copy_name, copy_state, copy_components, set_components, set_custom_data, copy_custom_data,
 *> set_attributes, the stew, instrument, dye, banner, book, firework, custom model data, tooltip, player head, map, container and
 *> loot table functions. Gaps inside the evaluated ones: set_enchantments does not convert a book to an enchanted book and a level
 *> of 0 does not remove an enchantment (loot-function-data.cob adds set_ominous_bottle_amplifier and copy_state); set_name does not resolve selector, score or NBT components.
@@ -428,6 +427,8 @@
              CALL "LOOT-COPY-STATE" USING LS-SLOT LS-NODE L-HANDLE
          WHEN "set_potion"
              CALL "LOOT-SET-POTION" USING LS-SLOT LS-NODE L-HANDLE
+         WHEN "enchant_with_levels"
+             CALL "LOOT-ENCH-LEVELS" USING LS-SLOT LS-NODE L-ITEM L-HANDLE
          WHEN OTHER
              CONTINUE
      END-EVALUATE

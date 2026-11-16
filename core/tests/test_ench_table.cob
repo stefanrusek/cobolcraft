@@ -61,6 +61,10 @@
  01 WS-COST                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-TEXT                PIC X(160).
+ 01 WS-POOLTAG             PIC X(112).
+ 01 WS-MODE                BINARY-LONG VALUE 0.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-EBOOK               BINARY-LONG.
  01 WS-LEV                BINARY-LONG.
  01 WS-PTR                BINARY-LONG.
  01 WS-OP                  BINARY-LONG.
@@ -88,6 +92,9 @@
      MOVE "book" TO WS-KEY
      PERFORM LOOKUP-ID
      MOVE WS-ID TO WS-BOOK
+     MOVE "enchanted_book" TO WS-KEY
+     PERFORM LOOKUP-ID
+     MOVE WS-ID TO WS-EBOOK
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
          MOVE SPACES TO WS-KEY64
          STRING "minecraft:" FUNCTION TRIM(WS-NAME(WS-I)) DELIMITED BY SIZE INTO WS-KEY64
@@ -124,6 +131,16 @@
      END-PERFORM
      MOVE 6 TO WS-N2
      MOVE "minecraft:in_enchanting_table" TO WS-TAGKEY
+     CALL "TAG-PUT" USING WS-REGI WS-TAGKEY WS-N2 WS-IDS WS-STATUS
+     MOVE WS-EN(1) TO WS-MEMBER(1)
+     MOVE WS-EN(2) TO WS-MEMBER(2)
+     MOVE WS-EN(5) TO WS-MEMBER(3)
+     MOVE 3 TO WS-N2
+     MOVE "minecraft:on_traded_equipment" TO WS-TAGKEY
+     CALL "TAG-PUT" USING WS-REGI WS-TAGKEY WS-N2 WS-IDS WS-STATUS
+     MOVE WS-EN(6) TO WS-MEMBER(4)
+     MOVE 4 TO WS-N2
+     MOVE "minecraft:test_pool_4" TO WS-TAGKEY
      CALL "TAG-PUT" USING WS-REGI WS-TAGKEY WS-N2 WS-IDS WS-STATUS
 
      MOVE "test ench table cost fields: sharpness costs 1 + 11 per level and 21 + 11, its primary items are its supported tag; looting has its own primary items; an unknown id is not found" TO TL-CASE
@@ -236,7 +253,96 @@
      MOVE "unbreaking:3 | smite:2" TO TL-EXPECTED
      PERFORM CHECK
 
+     MOVE "test ench table apply levels, a sword at 30 levels from the seed 12347: unbreaking 3, sharpness 3, looting 3 from the table pool; smite 3, looting 3 from the three-entry pool" TO TL-CASE
+     MOVE 12347 TO WS-SEED
+     MOVE 0 TO WS-MODE
+     MOVE "minecraft:in_enchanting_table" TO WS-POOLTAG
+     MOVE WS-SWORD TO WS-ITEM
+     MOVE 30 TO WS-COST
+     PERFORM APPLY
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "minecraft:on_traded_equipment" TO WS-POOLTAG
+     MOVE WS-SWORD TO WS-ITEM
+     PERFORM APPLY
+     PERFORM APPEND
+     MOVE "sharpness:3 looting:3 unbreaking:3 | smite:3 looting:3" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test ench table apply levels, a book at 19 levels from the seed 4242 becomes the enchanted book holding smite 2 in stored_enchantments" TO TL-CASE
+     MOVE 4242 TO WS-SEED
+     MOVE "minecraft:test_pool_4" TO WS-POOLTAG
+     MOVE WS-BOOK TO WS-ITEM
+     MOVE 19 TO WS-COST
+     PERFORM APPLY
+     MOVE WS-ITEM TO WS-E1
+     MOVE WS-EBOOK TO WS-E2
+     MOVE SPACES TO TL-OBSERVED TL-EXPECTED
+     STRING FUNCTION TRIM(WS-TEXT) " item " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING "smite:2 item " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test ench table apply levels, dirt (no enchantable component) gets nothing and stays dirt" TO TL-CASE
+     MOVE "dirt" TO WS-KEY
+     PERFORM LOOKUP-ID
+     MOVE WS-ID TO WS-ITEM
+     MOVE WS-ID TO WS-E2
+     PERFORM APPLY
+     MOVE WS-COUNT TO WS-E3
+     MOVE WS-ITEM TO WS-E1
+     MOVE SPACES TO TL-OBSERVED TL-EXPECTED
+     STRING FUNCTION TRIM(WS-E3) " item " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING "0 item " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test ench table apply levels with no pool tag: every enchantment of the registry is in the pool and a sword at 30 levels gets at least one" TO TL-CASE
+     MOVE 777 TO WS-SEED
+     MOVE SPACES TO WS-POOLTAG
+     MOVE WS-SWORD TO WS-ITEM
+     MOVE 30 TO WS-COST
+     PERFORM APPLY
+     MOVE 0 TO WS-E1
+     IF WS-COUNT >= 1
+         MOVE 1 TO WS-E1
+     END-IF
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test ench table without the pool tag (the tags of the enchantment registry removed) nothing is offered" TO TL-CASE
+     CALL "TAGS-REMOVE-REGISTRY" USING WS-REGI
+     MOVE WS-SWORD TO WS-ITEM
+     MOVE 12345 TO WS-SEED
+     MOVE 2 TO WS-SLOT
+     MOVE 30 TO WS-COST
+     MOVE 14 TO WS-N
+     PERFORM OFFER
+     MOVE WS-COUNT TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
+
+*> ENCH-APPLY-LEVELS on a fresh patch: the random seeded with WS-SEED, WS-TEXT lists the enchantments of the result's component 13 or 45 by name.
+ APPLY.
+     CALL "ENCH-STATE-SEED" USING WS-SEED WS-ST
+     MOVE 0 TO WS-HANDLE
+     CALL "ENCH-APPLY-LEVELS" USING WS-ST WS-MODE WS-POOLTAG WS-ITEM WS-HANDLE WS-COST WS-COUNT
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-OP
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
+         MOVE 13 TO WS-TYPE
+         IF WS-ITEM = WS-EBOOK
+             MOVE 45 TO WS-TYPE
+         END-IF
+         CALL "SC-ENCH-LEVEL" USING WS-HANDLE WS-TYPE WS-EN(WS-J) WS-LEV
+         IF WS-LEV > 0
+             MOVE WS-LEV TO WS-LV
+             IF WS-OP > 1
+                 STRING " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-OP
+             END-IF
+             STRING FUNCTION TRIM(WS-NAME(WS-J)) ":" WS-LV DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-OP
+         END-IF
+     END-PERFORM.
 
 *> The offer of option WS-SLOT for the item WS-ITEM: WS-TEXT "name:level ...".
  OFFER.

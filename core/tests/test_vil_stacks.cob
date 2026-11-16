@@ -51,6 +51,20 @@
  01 WS-X4                  FLOAT-LONG VALUE 0.
  01 WS-X5                  FLOAT-LONG VALUE 0.
  01 WS-X6                  FLOAT-LONG VALUE 0.
+ 01 WS-KEY112              PIC X(112).
+ 01 WS-ROWTXT              PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-REGI                PIC X(48).
+ 01 WS-TAGKEY              PIC X(112).
+ 01 WS-TIDS.
+    05 WS-MEMBER           BINARY-LONG OCCURS 2 TIMES.
+ 01 WS-N2                  BINARY-LONG.
+ 01 WS-UNB                 BINARY-LONG.
+ 01 WS-MAXL                BINARY-LONG.
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-TAGLEN              BINARY-LONG.
+ 01 WS-KEY64               PIC X(64).
+ 01 WS-KEYLEN              BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  01 WS-E3                  PIC -(9)9.
@@ -160,6 +174,39 @@
      MOVE SP-LIVE(WS-A) TO WS-E2
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An equipment trade: the pool on_traded_equipment holds unbreaking, whose supported items (durability) hold the traded item; V is 5 to 19.
+     CALL "VIL-TRADE-ROW" USING WS-GEAR-ROW WS-WANT WS-WC WS-EXT WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     MOVE SPACES TO WS-KEY112
+     STRING "minecraft:" FUNCTION TRIM(WS-GIVE) DELIMITED BY SIZE INTO WS-KEY112
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY112 WS-ID WS-ROWTXT WS-STATUS
+     MOVE "item" TO WS-REGI
+     MOVE WS-ID TO WS-MEMBER(1)
+     MOVE 1 TO WS-N2
+     MOVE "minecraft:enchantable/durability" TO WS-TAGKEY
+     CALL "TAG-PUT" USING WS-REGI WS-TAGKEY WS-N2 WS-TIDS WS-STATUS
+     MOVE "minecraft:unbreaking" TO WS-KEY64
+     MOVE 20 TO WS-KEYLEN
+     CALL "CXB-ENCH-DEF" USING WS-KEY64 WS-KEYLEN WS-UNB WS-MAXL WS-TAG WS-TAGLEN
+     MOVE "enchantment" TO WS-REGI
+     MOVE WS-UNB TO WS-MEMBER(1)
+     MOVE "minecraft:on_traded_equipment" TO WS-TAGKEY
+     CALL "TAG-PUT" USING WS-REGI WS-TAGKEY WS-N2 WS-TIDS WS-STATUS
+     MOVE "test vil stacks 100 draws of an equipment trade: V is 5 to 19 so the extra price is V, the result carries unbreaking of level 1 to 3 in enchantments (13) alone" TO TL-CASE
+     MOVE 0 TO WS-GOOD WS-BAD
+     PERFORM VARYING WS-SALT FROM 1 BY 1 UNTIL WS-SALT > 100
+         MOVE 0 TO WS-HANDLE
+         CALL "VIL-ROW-STACK" USING WS-GEAR-ROW WS-SALT WS-EXTRA WS-HANDLE
+         CALL "SC-ENCH-COUNT" USING WS-HANDLE WS-T13 WS-N
+         CALL "SC-ENCH-LEVEL" USING WS-HANDLE WS-T13 WS-UNB WS-LEVEL
+         IF WS-EXTRA < 5 OR WS-EXTRA > 19 OR WS-N NOT = 1 OR WS-LEVEL < 1 OR WS-LEVEL > 3
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-VIL-STACKS.

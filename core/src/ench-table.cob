@@ -4,8 +4,12 @@
 *> cc_f64 shim (every operation rounded to a 32-bit float).
 *>   ENCH-COST-DEF USING enchantment id, min base, min per level, max base, max per level, primary items out (PIC X(112), the tag without #; the supported tag when the entry has none), found out
 *>   ENCH-ENCHANTABILITY USING item, handle, enchantability out, ok out (the item has an enchantable component and no enchantments: 2.4 step 1)
-*>   ENCH-SELECT USING random state, item, level, enchantability, count out, list out   selectEnchantment (17 6.5 "Selection")
+*>   ENCH-SELECT USING random state, mode (0 the java.util.Random state, 1 the loot context's random), pool tag (PIC X(112), spaces: every enchantment of the registry), item, level,
+*>     enchantability, count out, list out   selectEnchantment (17 6.5 "Selection"); enchantability 0 or less gives an empty list before any draw
 *>   ENCH-OFFER USING enchantment seed, slot index, item, enchantability, cost, random state out, count out, list out   getEnchantmentList (2.5)
+*>   ENCH-ITEM-N USING item, enchantability out (0 for none)   the enchantable component of the item
+*>   ENCH-APPLY-LEVELS USING random state, mode, pool tag, item (in, out), handle (in, out), levels, count out   enchantItem (26 7, enchant_with_levels): the selection, a book becomes an
+*>     enchanted book, the pairs are added to enchantments (13) or stored_enchantments (45)
 *>   ENCH-SHELVES USING dim, x, y, z, bookshelf count out   the valid bookshelf offsets around the table (17 6.5)
 *> Gaps: an enchantable component of a stack's own patch is not read (the item's default only); a supported_items or primary_items entry that is a single key and not a tag is read as a tag.
 
@@ -103,13 +107,37 @@
  END PROGRAM ENCH-COST-DEF.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. ENCH-ENCHANTABILITY.
+ PROGRAM-ID. ENCH-ITEM-N.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
  01 WS-NAME                PIC X(32) VALUE "enchantable".
  01 WS-TEXT                PIC X(100).
  01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-N                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ITEM L-N.
+     MOVE 0 TO L-N
+     IF L-ITEM <= 0 OR L-ITEM >= IT-COUNT
+         GOBACK
+     END-IF
+     CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-TEXT WS-STATUS
+     IF WS-STATUS = 0
+         COMPUTE L-N = FUNCTION NUMVAL(WS-TEXT)
+     ELSE
+*>       The book's enchantability is 1 (25 item table, row `book`).
+         IF IT-KEY(L-ITEM + 1) = "minecraft:book" OR IT-KEY(L-ITEM + 1) = "book"
+             MOVE 1 TO L-N
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENCH-ITEM-N.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENCH-ENCHANTABILITY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
  01 WS-TYPE                BINARY-LONG VALUE 13.
  01 WS-COUNT               BINARY-LONG.
  LINKAGE SECTION.
@@ -118,21 +146,10 @@
  01 L-N                    BINARY-LONG.
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ITEM L-HANDLE L-N L-OK.
-     MOVE 0 TO L-N L-OK
-     IF L-ITEM <= 0 OR L-ITEM >= IT-COUNT
-         GOBACK
-     END-IF
-     CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-TEXT WS-STATUS
-     IF WS-STATUS = 0
-         COMPUTE L-N = FUNCTION NUMVAL(WS-TEXT)
+     MOVE 0 TO L-OK
+     CALL "ENCH-ITEM-N" USING L-ITEM L-N
+     IF L-N > 0
          MOVE 1 TO L-OK
-     ELSE
-*>       The book's enchantability is 1 (25 item table, row `book`).
-         IF IT-KEY(L-ITEM + 1) = "minecraft:book" OR IT-KEY(L-ITEM + 1) = "book"
-             MOVE 1 TO L-N L-OK
-         END-IF
-     END-IF
-     IF L-OK = 1
          CALL "SC-ENCH-COUNT" USING L-HANDLE WS-TYPE WS-COUNT
          IF WS-COUNT > 0
              MOVE 0 TO L-OK
@@ -151,14 +168,14 @@
  COPY CITEMS.
  01 WS-ENCH-REG            PIC X(48) VALUE "enchantment".
  01 WS-ITEM-REG            PIC X(48) VALUE "item".
- 01 WS-POOL-TAG            PIC X(112) VALUE "minecraft:in_enchanting_table".
+ 01 WS-REGISTRY-NAME       PIC X(112) VALUE "enchantment".
  01 WS-POOL.
-    05 WS-POOL-ID          BINARY-LONG OCCURS 64 TIMES.
+    05 WS-POOL-ID          BINARY-LONG OCCURS 128 TIMES.
  01 WS-POOL-N              BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-CAP                 BINARY-LONG VALUE 64.
+ 01 WS-CAP                 BINARY-LONG VALUE 128.
  01 WS-CAND.
-    05 WS-C OCCURS 64 TIMES.
+    05 WS-C OCCURS 128 TIMES.
        10 WS-C-ID          BINARY-LONG.
        10 WS-C-LEVEL       BINARY-LONG.
        10 WS-C-WEIGHT      BINARY-LONG.
@@ -208,8 +225,11 @@
  01 WS-KEEP                BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG VALUE 50.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-REG-COUNT           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ST                   BINARY-DOUBLE UNSIGNED.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-POOL-TAG             PIC X(112).
  01 L-ITEM                 BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
  01 L-N                    BINARY-LONG.
@@ -218,11 +238,14 @@
     05 L-E OCCURS 16 TIMES.
        10 L-EID            BINARY-LONG.
        10 L-ELV            BINARY-LONG.
- PROCEDURE DIVISION USING L-ST L-ITEM L-LEVEL L-N L-COUNT L-LIST.
+ PROCEDURE DIVISION USING L-ST L-MODE L-POOL-TAG L-ITEM L-LEVEL L-N L-COUNT L-LIST.
      MOVE 0 TO L-COUNT WS-NC
+     IF L-N <= 0
+         GOBACK
+     END-IF
      COMPUTE WS-Q = L-N / 4 + 1
-     CALL "JRAND-NEXT-INT-BOUND" USING L-ST WS-Q WS-D1
-     CALL "JRAND-NEXT-INT-BOUND" USING L-ST WS-Q WS-D2
+     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-Q WS-D1
+     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-Q WS-D2
      COMPUTE WS-M = L-LEVEL + 1 + WS-D1 + WS-D2
      PERFORM SCALE-M
      MOVE 0 TO WS-BOOK
@@ -231,9 +254,17 @@
              MOVE 1 TO WS-BOOK
          END-IF
      END-IF
-     CALL "CONTENT-TAG-MEMBERS" USING WS-ENCH-REG WS-POOL-TAG WS-POOL-N WS-POOL WS-CAP WS-STATUS
-     IF WS-STATUS NOT = 0
-         MOVE 0 TO WS-POOL-N
+     IF L-POOL-TAG = SPACES
+         CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY-NAME WS-REG-COUNT WS-STATUS
+         MOVE FUNCTION MIN(WS-REG-COUNT, WS-CAP) TO WS-POOL-N
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-POOL-N
+             COMPUTE WS-POOL-ID(WS-I) = WS-I - 1
+         END-PERFORM
+     ELSE
+         CALL "CONTENT-TAG-MEMBERS" USING WS-ENCH-REG L-POOL-TAG WS-POOL-N WS-POOL WS-CAP WS-STATUS
+         IF WS-STATUS NOT = 0
+             MOVE 0 TO WS-POOL-N
+         END-IF
      END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-POOL-N
          PERFORM ADD-CANDIDATE
@@ -242,7 +273,7 @@
          PERFORM PICK-ONE
          MOVE 0 TO WS-DONE
          PERFORM UNTIL WS-DONE = 1
-             CALL "JRAND-NEXT-INT-BOUND" USING L-ST WS-LIMIT WS-DRAW
+             CALL "ENCH-RND-INT" USING L-ST L-MODE WS-LIMIT WS-DRAW
              IF WS-DRAW > WS-M
                  MOVE 1 TO WS-DONE
              ELSE
@@ -260,8 +291,8 @@
 
 *> m = clamp(round(m + m x f), 1, 2147483647) with f = (a + b - 1) x 0.15 in float arithmetic.
  SCALE-M.
-     CALL "JRAND-NEXT-FLOAT" USING L-ST WS-A
-     CALL "JRAND-NEXT-FLOAT" USING L-ST WS-B
+     CALL "ENCH-RND-FLOAT" USING L-ST L-MODE WS-A
+     CALL "ENCH-RND-FLOAT" USING L-ST L-MODE WS-B
      CALL STATIC "cc_f64_add" USING BY REFERENCE WS-A WS-B WS-S
      CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-S WS-S2
      CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-S2 WS-ONE WS-S
@@ -293,7 +324,7 @@
              PERFORM VARYING WS-LV FROM WS-MAX BY -1 UNTIL WS-LV < 1
                  COMPUTE WS-LO = WS-MINB + WS-MINP * (WS-LV - 1)
                  COMPUTE WS-HI = WS-MAXB + WS-MAXP * (WS-LV - 1)
-                 IF WS-M >= WS-LO AND WS-M <= WS-HI AND WS-NC < 64
+                 IF WS-M >= WS-LO AND WS-M <= WS-HI AND WS-NC < 128
                      ADD 1 TO WS-NC
                      MOVE WS-POOL-ID(WS-I) TO WS-C-ID(WS-NC)
                      MOVE WS-LV TO WS-C-LEVEL(WS-NC)
@@ -310,7 +341,7 @@
      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NC
          ADD WS-C-WEIGHT(WS-J) TO WS-TOTAL
      END-PERFORM
-     CALL "JRAND-NEXT-INT-BOUND" USING L-ST WS-TOTAL WS-DRAW
+     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-TOTAL WS-DRAW
      MOVE 0 TO WS-PICKED
      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NC OR WS-PICKED > 0
          SUBTRACT WS-C-WEIGHT(WS-J) FROM WS-DRAW
@@ -346,6 +377,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
+ 01 WS-MODE                BINARY-LONG VALUE 0.
+ 01 WS-TABLE-TAG           PIC X(112) VALUE "minecraft:in_enchanting_table".
  01 WS-LSEED               BINARY-LONG.
  01 WS-BOOK                BINARY-LONG.
  01 WS-IDX                 BINARY-LONG.
@@ -365,7 +398,7 @@
  PROCEDURE DIVISION USING L-SEED L-SLOT L-ITEM L-N L-COST L-ST L-COUNT L-LIST.
      CALL "ENCH-LIST-SEED" USING L-SEED L-SLOT WS-LSEED
      CALL "ENCH-STATE-SEED" USING WS-LSEED L-ST
-     CALL "ENCH-SELECT" USING L-ST L-ITEM L-COST L-N L-COUNT L-LIST
+     CALL "ENCH-SELECT" USING L-ST WS-MODE WS-TABLE-TAG L-ITEM L-COST L-N L-COUNT L-LIST
      MOVE 0 TO WS-BOOK
      IF L-ITEM > 0 AND L-ITEM < IT-COUNT
          IF IT-KEY(L-ITEM + 1) = "minecraft:book" OR IT-KEY(L-ITEM + 1) = "book"
@@ -381,6 +414,81 @@
      END-IF
      GOBACK.
  END PROGRAM ENCH-OFFER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENCH-RND-INT.
+*> USING random state, mode (0 the java.util.Random state, 1 the loot context's random, which keeps its own state), bound, result out: nextInt(bound).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ST                   BINARY-DOUBLE UNSIGNED.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-BOUND                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ST L-MODE L-BOUND L-RESULT.
+     IF L-MODE = 1
+         CALL "LOOT-RNG-INT" USING L-BOUND L-RESULT
+     ELSE
+         CALL "JRAND-NEXT-INT-BOUND" USING L-ST L-BOUND L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM ENCH-RND-INT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENCH-RND-FLOAT.
+*> USING random state, mode, result out (FLOAT-LONG): nextFloat().
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ST                   BINARY-DOUBLE UNSIGNED.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ST L-MODE L-RESULT.
+     IF L-MODE = 1
+         CALL "LOOT-RNG-FLOAT" USING L-RESULT
+     ELSE
+         CALL "JRAND-NEXT-FLOAT" USING L-ST L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM ENCH-RND-FLOAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENCH-APPLY-LEVELS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-LIST.
+    05 WS-E OCCURS 16 TIMES.
+       10 WS-EID           BINARY-LONG.
+       10 WS-ELV           BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BOOK                BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:enchanted_book".
+ 01 WS-ROWTXT              PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ST                   BINARY-DOUBLE UNSIGNED.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-POOL-TAG             PIC X(112).
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-LEVELS               BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ST L-MODE L-POOL-TAG L-ITEM L-HANDLE L-LEVELS L-COUNT.
+     CALL "ENCH-ITEM-N" USING L-ITEM WS-N
+     CALL "ENCH-SELECT" USING L-ST L-MODE L-POOL-TAG L-ITEM L-LEVELS WS-N L-COUNT WS-LIST
+     MOVE 13 TO WS-TYPE
+     CALL "ENCH-IS-BOOK" USING L-ITEM WS-BOOK
+     IF WS-BOOK = 1 AND L-COUNT > 0
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ROWTXT WS-STATUS
+         MOVE WS-ITEM TO L-ITEM
+         MOVE 45 TO WS-TYPE
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         CALL "SC-ENCH-ADD" USING L-HANDLE WS-TYPE WS-EID(WS-I) WS-ELV(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENCH-APPLY-LEVELS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENCH-SHELVES.
