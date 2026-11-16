@@ -510,6 +510,12 @@
        10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
        10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
+       10 PL-ANIM-INIT       PIC 9.          *> the own figure's walk animation (54 section 1): set once the previous position is known
+       10 PL-ANIM-SPEED      FLOAT-LONG.
+       10 PL-ANIM-POS        FLOAT-LONG.
+       10 PL-ANIM-OX         FLOAT-LONG.
+       10 PL-ANIM-OY         FLOAT-LONG.
+       10 PL-ANIM-OZ         FLOAT-LONG.
        10 PL-SWIMMING        PIC 9.          *> the swimming flag (53 section 4): sprinting in water, entered with the eyes under water
        10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
        10 PL-FOV-MOD         FLOAT-LONG.     *> the camera's field of view modifier (53 section 8: 1, 1.15 while sprinting; 0 = not set)
@@ -664,6 +670,25 @@
           15 EN-FLAGS        BINARY-LONG.
           15 EN-POSE         BINARY-LONG.
           15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
+*>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
+*>        baby, else 1) and the position at the previous client tick (ENTITIES-ANIM-TICK). EN-MOB-FLAGS is the mob flags byte (Set Entity Data entry 15: 1 no AI,
+*>        2 left-handed, 4 aggressive), EN-BABY the ageable mob's baby flag (entry 16, BOOLEAN). The swing (54 section 2.1, 12 section 6.4): active, ticks, duration,
+*>        the hand (0 main, 1 off), the animation type (0 none, 1 whack, 2 stab) and the animation value 0 to 1.
+          15 EN-WALK-SPEED-OLD FLOAT-LONG.
+          15 EN-WALK-SPEED   FLOAT-LONG.
+          15 EN-WALK-POS     FLOAT-LONG.
+          15 EN-WALK-SCALE   FLOAT-LONG.
+          15 EN-OX           FLOAT-LONG.
+          15 EN-OY           FLOAT-LONG.
+          15 EN-OZ           FLOAT-LONG.
+          15 EN-MOB-FLAGS    BINARY-LONG.
+          15 EN-BABY         PIC 9.
+          15 EN-SW-ACTIVE    PIC 9.
+          15 EN-SW-TICKS     BINARY-LONG.
+          15 EN-SW-DUR       BINARY-LONG.
+          15 EN-SW-HAND      BINARY-LONG.
+          15 EN-SW-TYPE      BINARY-LONG.
+          15 EN-SW-ANIM      FLOAT-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

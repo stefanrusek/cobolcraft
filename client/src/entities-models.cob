@@ -5,8 +5,7 @@
 *> shows a slot in the entity atlas (EA-MT, entities-render.cob ENTITY-ATLAS-BUILD) before the frame's vertices are made.
 *> ENTITY-MODEL-EMIT appends the model of one replica row to RL-EN-VERTEX, eye-relative, 36 vertices (6 faces x 2 triangles) per
 *> cuboid: the cached rest model is copied, the row's setupAnim program runs on the state the replica has (head pitch EN-PITCH,
-*> head yaw relative to the body EN-HEAD-YAW - EN-YAW wrapped to -180..180; walk position and speed, age and every other state
-*> are 0), then every visible part (itself and all its ancestors visible) with cuboids is drawn: a corner of a cuboid (EF7-BOX-CORNERS
+*> head yaw relative to the body EN-HEAD-YAW - EN-YAW wrapped to -180..180; age and every other state are 0; the walk position and speed, the swing and the aggressive flag are the replica's, 54 sections 1 and 2), then every visible part (itself and all its ancestors visible) with cuboids is drawn: a corner of a cuboid (EF7-BOX-CORNERS
 *> of 34-7 1.2: origin, size, grow, mirror) is carried up the part chain (scale, rotate X then Y then Z, translate by the part's
 *> current pose, each ancestor in turn, then / 16: 34-7 1.1) and through the render sequence of 34-7 1.6 as EF7-SETUP-ROTATIONS lists
 *> it (rotate about Y by 180 - body yaw degrees, scale (-1, -1, 1), translate (0, -1.501, 0); the last listed acts first), then moved
@@ -248,13 +247,12 @@
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 6 TIMES.
  01 WS-N                   BINARY-LONG.
-*> The baked mesh of each replica row, entity-relative (the model pose and light do not change while a mob stands or walks: 34-7 1.6 gives no
-*> walk animation to the replica), kept with the key it was baked for: the cost of a frame is then a copy of the vertices with the offset to the eye
+*> The baked mesh of each replica row, entity-relative (the pose changes with the walk state, the swing and the aggressive flag, which are in the key), kept with the key it was baked for: the cost of a frame is then a copy of the vertices with the offset to the eye
 *> (lane resume T5820: baking 70 mobs each frame took 340 ms in a debug build).
  01 WS-BAKED.
     05 WS-BK OCCURS 512 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 16 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 24 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-CORNER OCCURS 40 TIMES.
@@ -276,7 +274,7 @@
           15 WS-BK-G          FLOAT-SHORT VALUE 1.
           15 WS-BK-BLUE       FLOAT-SHORT VALUE 1.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 16 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 24 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -291,6 +289,13 @@
        10 WS-ECX           FLOAT-SHORT.
        10 WS-ECY           FLOAT-SHORT.
        10 WS-ECZ           FLOAT-SHORT.
+ 01 WS-WPOS                FLOAT-LONG.
+ 01 WS-WSPEED              FLOAT-LONG.
+ 01 WS-SWP                 FLOAT-LONG.
+ 01 WS-SWT                 BINARY-LONG.
+ 01 WS-SWARM               BINARY-LONG.
+ 01 WS-AGG                 BINARY-LONG.
+ 01 WS-MAINARM             BINARY-LONG.
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
@@ -357,6 +362,37 @@
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
+*>   The walk animation, the swing and the aggressive pose of the models that read them (54 sections 1 and 2; the animation programs of the
+*>   table's codes Q, C, Z, K, D, P, G and H): the walk position and speed as the renderer reads them, the swing progress, its type and arm, the
+*>   aggressive flag (bit 4 of the mob flags) and the main arm (bit 2: left-handed). Models of another code do not depend on them.
+     MOVE 0 TO WS-WPOS WS-WSPEED WS-SWP
+     MOVE 0 TO WS-SWT WS-SWARM WS-AGG
+     MOVE 1 TO WS-MAINARM
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
+         CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
+         DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
+         IF FUNCTION MOD(WS-OB, 2) = 1
+             MOVE 1 TO WS-AGG
+         END-IF
+         DIVIDE EN-MOB-FLAGS(WS-ROW) BY 2 GIVING WS-OB
+         IF FUNCTION MOD(WS-OB, 2) = 1
+             MOVE 2 TO WS-MAINARM
+         END-IF
+         IF EN-SW-ACTIVE(WS-ROW) = 1 AND EN-SW-TYPE(WS-ROW) > 0 AND EN-SW-ANIM(WS-ROW) > 0
+             MOVE EN-SW-ANIM(WS-ROW) TO WS-SWP
+             MOVE EN-SW-TYPE(WS-ROW) TO WS-SWT
+             IF EN-SW-HAND(WS-ROW) = 0
+                 MOVE WS-MAINARM TO WS-SWARM
+             ELSE
+                 COMPUTE WS-SWARM = 3 - WS-MAINARM
+             END-IF
+         END-IF
+     END-IF
+     MOVE WS-WPOS TO WS-KN(17)
+     MOVE WS-WSPEED TO WS-KN(18)
+     MOVE WS-SWP TO WS-KN(19)
+     COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
+     COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
 *>   Two baked meshes are kept per row: a row that also draws an extra layer (CL-MD-EXTRA, the second model of the same entity) alternates
 *>   between its models within a frame; the first entry whose key is the key, else the one of the same model or the free one, is the one used.
      MOVE 0 TO WS-HIT
@@ -397,6 +433,13 @@
      MOVE EN-PITCH(WS-ROW) TO WS-I(1) WS-ST(1)
      MOVE WS-D TO WS-I(2) WS-ST(2)
      MOVE 1 TO WS-ST(5) WS-ST(12) WS-ST(13) WS-ST(22)
+     MOVE WS-WPOS TO WS-I(3) WS-ST(3)
+     MOVE WS-WSPEED TO WS-I(4) WS-ST(4)
+     MOVE WS-SWP TO WS-ST(7)
+     MOVE WS-SWT TO WS-ST(20)
+     MOVE WS-SWARM TO WS-ST(21)
+     MOVE WS-AGG TO WS-ST(18)
+     MOVE WS-MAINARM TO WS-ST(13)
      EVALUATE CL-MD-ANIM(WS-K)
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
@@ -959,3 +1002,19 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITIES-SWIM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-WALK-VALUES.
+*> USING CLIENT-STATE, replica row, position out, speed out (FLOAT-LONG): what the renderer reads of the walk animation at the end of the tick (partial tick 1;
+*> 54 section 1.4): position x positionScale and the speed limited to 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-POS                  FLOAT-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-POS L-SPEED.
+     COMPUTE L-POS = EN-WALK-POS(L-ROW) * EN-WALK-SCALE(L-ROW)
+     COMPUTE L-SPEED = FUNCTION MIN(EN-WALK-SPEED(L-ROW), 1)
+     GOBACK.
+ END PROGRAM ENTITY-WALK-VALUES.
