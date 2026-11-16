@@ -368,7 +368,8 @@
              IF SM-KEY(WS-M) = "allay" AND (EN-ALLAY-DUP(L-ROW) > 0 OR EN-ALLAY-DANCE(L-ROW) = 1)
                  MOVE 1 TO L-NEEDED
              END-IF
-             IF SM-KEY(WS-M) = "fox" AND (EN-WOOL(L-ROW) > 0 OR EN-FOX-TRUST-A(L-ROW) NOT = SPACES OR EN-FOX-TRUST-B(L-ROW) NOT = SPACES)
+             IF SM-KEY(WS-M) = "fox" AND (EN-WOOL(L-ROW) > 0 OR EN-FOX-TRUST-A(L-ROW) NOT = SPACES OR EN-FOX-TRUST-B(L-ROW) NOT = SPACES
+                     OR EN-FOX-FLAGS(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
              IF SM-KEY(WS-M) = "panda" AND (EN-GENE-MAIN(L-ROW) > 0 OR EN-GENE-HIDDEN(L-ROW) > 0 OR EN-PANDA-SNEEZE(L-ROW) > 0)

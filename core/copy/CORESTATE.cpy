@@ -450,6 +450,40 @@
 *>     --- 002-lane-mobsfull-h25: saved mob state (core/src/entity-mobdata.cob) ---
        10 EN-LEASH-UUID      PIC X(16).          *> a mob loaded leashed: the UUID of the holder until that player is in the dimension (MOB-LEASH-RESTORE); spaces: none
        10 EN-RIDER2          BINARY-LONG.        *> a camel: the player row of its second rider, the rear seat (0 none; EN-RIDER is the first)
+*>     --- 002-lane-mobsa2: species leftovers of documents 19 and 44 part 4 (core/src/mob-44-*.cob) ---
+       10 EN-FOX-FLAGS        BINARY-LONG.        *> fox: metadata 19 flags byte (4 crouching, 8 interested, 16 pouncing, 32 sleeping, 64 faceplanted, 128 defending)
+       10 EN-FOX-CROUCH       BINARY-LONG.        *> fox: ticks crouched, 0 to 25 (crouch amount 0.2 a tick up to 5.0)
+       10 EN-PANDA-FLAGS      BINARY-LONG.        *> panda: metadata 23 flags byte, the sneeze bit 2 excluded (4 rolling, 8 sitting, 16 on back)
+       10 EN-PANDA-EAT        BINARY-LONG.        *> panda: eating counter (metadata 20)
+       10 EN-PANDA-T          BINARY-LONG.        *> panda: ticks of the current roll or lie on the back
+       10 EN-PANDA-HAND       BINARY-LONG.        *> panda: item id held in the mouth (0 none)
+       10 EN-RAM-STATE        BINARY-LONG.        *> goat: 0 none, 1 preparing to ram, 2 ramming
+       10 EN-RAM-T            BINARY-LONG.        *> goat: ticks of the prepare phase
+       10 EN-RAM-CD           BINARY-LONG.        *> goat: ticks until it may ram again
+       10 EN-RAM-DX           FLOAT-LONG.         *> goat: the ram direction (unit, horizontal)
+       10 EN-RAM-DZ           FLOAT-LONG.
+       10 EN-ARMA-PEEK        BINARY-LONG.        *> armadillo: peek timer (ArmadilloBallUp)
+       10 EN-ARMA-AROUND      BINARY-LONG.        *> armadillo: the stored danger-around flag
+       10 EN-BEE-POLL         BINARY-LONG.        *> bee: ticks of the current pollination (pollinatingTicks)
+       10 EN-BEE-SUCC         BINARY-LONG.        *> bee: successfulPollinatingTicks
+       10 EN-BEE-CD           BINARY-LONG.        *> bee: ticks until it looks for a flower again
+       10 EN-BEE-CROPS        BINARY-LONG.        *> bee: crops grown since the last pollination
+       10 EN-LLAMA-HEAD       BINARY-LONG.        *> llama: tracker row of the llama in front in a caravan (0 none)
+       10 EN-LLAMA-TAIL       BINARY-LONG.        *> llama: tracker row of the llama behind it (0 none)
+       10 EN-LLAMA-SPIT       BINARY-LONG.        *> llama: didSpit
+       10 EN-LLAMA-SPEED      FLOAT-LONG.         *> llama: the caravan follow speed (2.1 at the start)
+       10 EN-LLAMA-DIST       BINARY-LONG.        *> llama: the caravan distance counter
+       10 EN-CAMEL-DASH       BINARY-LONG.        *> camel: ticks of the dash cooldown left
+       10 EN-CAMEL-POSE       BINARY-LONG.        *> camel: 0 standing, 1 sitting
+       10 EN-CAMEL-POSE-T     BINARY-LONG.        *> camel: game tick of the last pose change
+       10 EN-FROG-CD          BINARY-LONG.        *> frog: ticks until the next long jump
+       10 EN-SNIF-CD          BINARY-LONG.        *> sniffer: ticks of the sniff cooldown left (9600 after a dig)
+       10 EN-SENT-X           FLOAT-LONG.         *> the position last sent to the viewers (18 section 9.2)
+       10 EN-SENT-Y           FLOAT-LONG.
+       10 EN-SENT-Z           FLOAT-LONG.
+       10 EN-SENT-YAW         FLOAT-SHORT.
+       10 EN-SENT-PITCH       FLOAT-SHORT.
+       10 EN-SENT-AGE         BINARY-LONG.        *> ticks since the last absolute position sent (a full sync every 400)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
