@@ -112,8 +112,9 @@
      MOVE EN-HEALTH(WS-Z) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "RAVAGER-STEP" USING WS-R WS-FLAG
-     MOVE "acceptance US15 20§13.6 the roar hurts a zombie for 6" TO TL-CASE
-     MOVE 6 TO TL-EXPECTED-N
+*>   The roar is 6 mob-attack damage; the zombie's armour 2 (mobsa) takes it to 5.9, and health is whole points.
+     MOVE "acceptance US15 20§13.6 the roar hurts a zombie for 6 less its armour (5)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-H0 - EN-HEALTH(WS-Z)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US15 20§13.6 and throws it east by 4 / 2 = 2 (thousandths)" TO TL-CASE
