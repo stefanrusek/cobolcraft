@@ -25,6 +25,12 @@
  01 WS-SLOT                BINARY-LONG.
  01 WS-ASSET               BINARY-LONG.
  01 WS-FK                  PIC X(24).
+ 01 WS-FK2                 PIC X(20).
+ 01 WS-VPATH               PIC X(64).
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-HAT                 BINARY-LONG.
+ 01 WS-PROF-HAT            BINARY-LONG.
+ 01 WS-TYPE-HAT            BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -44,6 +50,7 @@
                      WHEN 1
                          IF EN-VAR(L-ROW) <= 6
                              COMPUTE L-CODE = 1001 + EN-VAR(L-ROW)
+                             PERFORM HAT-MODEL
                          END-IF
                      WHEN 2
                          IF EN-BABY(L-ROW) = 0 AND EN-VAR2(L-ROW) >= 1 AND EN-VAR2(L-ROW) <= 14
@@ -157,6 +164,41 @@
              MOVE CL-MD-BABY(L-MODEL) TO L-MODEL
          END-IF
      END-IF
+     GO TO TINT.
+
+*> The type layer draws the head unless the profession texture's hat covers it (34-3 1.5): the no-hat model (rows villager_nohat, zvillager_nohat and their babies) when
+*> the profession's hat is full, or partial with a type texture whose hat is full. The hat of each is the `villager.hat` of the .mcmeta of the type texture (folder type
+*> also for a baby) and of the profession texture (VILLAGER-HAT).
+ HAT-MODEL.
+     MOVE 0 TO WS-PROF-HAT WS-TYPE-HAT
+     IF EN-VAR2(L-ROW) >= 1 AND EN-VAR2(L-ROW) <= 14
+         COMPUTE WS-N = 2000 + EN-VAR2(L-ROW)
+         PERFORM HAT-OF
+         MOVE WS-HAT TO WS-PROF-HAT
+         COMPUTE WS-N = 1001 + EN-VAR(L-ROW)
+         PERFORM HAT-OF
+         MOVE WS-HAT TO WS-TYPE-HAT
+         IF WS-PROF-HAT = 2 OR (WS-PROF-HAT = 1 AND WS-TYPE-HAT = 2)
+             MOVE SPACES TO WS-FK
+             STRING FUNCTION TRIM(EN-KEY(L-ROW)) "_nohat" DELIMITED BY SIZE INTO WS-FK
+             IF EN-KEY(L-ROW) = "zombie_villager"
+                 MOVE "zvillager_nohat" TO WS-FK
+             END-IF
+             IF EN-BABY(L-ROW) = 1
+                 STRING FUNCTION TRIM(WS-FK) "~b" DELIMITED BY SIZE INTO WS-FK
+             END-IF
+             CALL "ENTITY-MODEL-FIND" USING WS-FK L-MODEL
+         END-IF
+     END-IF.
+
+ HAT-OF.
+*>   The texture path of the code WS-N of the villager's key (the type texture of a baby is in the type folder here), then its hat value.
+     MOVE EN-KEY(L-ROW) TO WS-FK2
+     MOVE SPACES TO WS-VPATH
+     CALL "ENTITY-TEX-PATH" USING WS-FK2 WS-N WS-VPATH
+     CALL "VILLAGER-HAT" USING CLIENT-STATE WS-VPATH WS-HAT.
+
+ TINT.
 *>   The tint of the layer: ENTITY-TINT reads the layer in EN-OVL.
      MOVE 1 TO L-RED L-GREEN L-BLUE
      IF L-CODE > 0
@@ -312,3 +354,83 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-BODY-ASSET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VILLAGER-HAT.
+*> USING CLIENT-STATE, texture path (X(64), relative to assets/minecraft/), hat out (BINARY-LONG: 0 none, 1 partial, 2 full): the `villager.hat` of the texture's
+*> .mcmeta in the pack stack (34-3 1.5); a missing file, section or field, another value or text that is no JSON is none. Results are cached per path (64 entries,
+*> replaced in turn); VILLAGER-HAT-RESET empties the cache (the pack stack changed).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY JSONDOC.
+ 01 WS-CACHE.
+    05 WS-CE OCCURS 64 TIMES.
+       10 WS-CE-PATH       PIC X(64) VALUE SPACES.
+       10 WS-CE-HAT        BINARY-LONG VALUE 0.
+ 01 WS-NEXT                BINARY-LONG VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FULL                PIC X(256).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-CAP                 BINARY-LONG VALUE 4096.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-QUERY               PIC X(16).
+ 01 WS-QUERY-LENGTH        BINARY-LONG.
+ 01 WS-VALUE               PIC X(16).
+ 01 WS-VALUE-CAP           BINARY-LONG VALUE 16.
+ 01 WS-VALUE-LENGTH        BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-PATH                 PIC X(64).
+ 01 L-HAT                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PATH L-HAT.
+     MOVE 0 TO L-HAT WS-HIT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         IF WS-CE-PATH(WS-I) = L-PATH AND WS-HIT = 0
+             MOVE WS-CE-HAT(WS-I) TO L-HAT
+             MOVE 1 TO WS-HIT
+         END-IF
+     END-PERFORM
+     IF WS-HIT = 1
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-FULL
+     MOVE 1 TO WS-PTR
+     STRING "assets/minecraft/" DELIMITED BY SIZE FUNCTION TRIM(L-PATH) DELIMITED BY SIZE ".mcmeta" DELIMITED BY SIZE
+         INTO WS-FULL WITH POINTER WS-PTR
+     COMPUTE WS-LENGTH = WS-PTR - 1
+     CALL "PACK-READ" USING CLIENT-STATE WS-FULL WS-LENGTH WS-TEXT WS-CAP WS-TEXT-LENGTH WS-FOUND
+     IF WS-FOUND = 1
+         CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-TEXT-LENGTH
+         IF JD-ERROR = 0
+             MOVE "villager.hat" TO WS-QUERY
+             MOVE 12 TO WS-QUERY-LENGTH
+             CALL "JSON-FIND" USING JSON-DOC WS-QUERY WS-QUERY-LENGTH WS-NODE
+             MOVE SPACES TO WS-VALUE
+             MOVE 0 TO WS-VALUE-LENGTH
+             CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-VALUE WS-VALUE-CAP WS-VALUE-LENGTH
+             EVALUATE WS-VALUE
+                 WHEN "partial" MOVE 1 TO L-HAT
+                 WHEN "full" MOVE 2 TO L-HAT
+                 WHEN OTHER MOVE 0 TO L-HAT
+             END-EVALUATE
+         END-IF
+     END-IF
+     ADD 1 TO WS-NEXT
+     IF WS-NEXT > 64
+         MOVE 1 TO WS-NEXT
+     END-IF
+     MOVE L-PATH TO WS-CE-PATH(WS-NEXT)
+     MOVE L-HAT TO WS-CE-HAT(WS-NEXT)
+     GOBACK.
+
+     ENTRY "VILLAGER-HAT-RESET".
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         MOVE SPACES TO WS-CE-PATH(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VILLAGER-HAT.

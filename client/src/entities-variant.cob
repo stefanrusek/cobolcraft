@@ -128,7 +128,7 @@
                      EVALUATE TRUE
                          WHEN FUNCTION MOD(FUNCTION INTEGER(EN-X1(L-ROW) / 4), 2) = 1
                              ADD 100 TO L-CODE
-                         WHEN EN-X3(L-ROW) > PL-DAY-TICKS
+                         WHEN EN-X3(L-ROW) > PL-GAME-TIME
                              ADD 200 TO L-CODE
                          WHEN OTHER
                              CONTINUE
@@ -199,6 +199,13 @@
      UNSTRING L-KEY DELIMITED BY "~" INTO WS-BASE WS-TAIL
      IF WS-TAIL = "b"
          MOVE "_baby" TO WS-BABY
+     END-IF
+*>   The no-hat rows stand in for the type layer of the villagers: their textures are those of the villager and the zombie villager.
+     IF WS-BASE = "villager_nohat"
+         MOVE "villager" TO WS-BASE
+     END-IF
+     IF WS-BASE = "zvillager_nohat"
+         MOVE "zombie_villager" TO WS-BASE
      END-IF
      COMPUTE WS-KIND = FUNCTION INTEGER(L-CODE / 1000)
      COMPUTE WS-CD = FUNCTION MOD(L-CODE, 100)

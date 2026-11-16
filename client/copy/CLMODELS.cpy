@@ -20,11 +20,12 @@
 *>   CL-MD-BABY   the row of the baby model of the type (0 none: the adult model is drawn for a baby); rows whose key ends in ~b are baby rows and no
 *>                entity type. Babies are drawn from that row with its own atlas slot (EN-BABY, entities-render.cob ENTITIES-MESH); the variant
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
+*>                No-hat villager rows (villager_nohat, villager_nohat~b, zvillager_nohat, zvillager_nohat~b, code A: the villager without head cuboids, posed as the villager) are the type layer when the profession texture's hat covers the head (34-3 1.5).
 *>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
 *>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 191.
+ 78 CL-MODEL-COUNT           VALUE 195.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -780,7 +781,7 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "W".
     05 FILLER PIC X(64) VALUE "textures/entity/breeze/breeze.png".
-    05 FILLER PIC 999 VALUE 191.
+    05 FILLER PIC 999 VALUE 195.
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "ghast".
     05 FILLER PIC 9 VALUE 7.
@@ -1745,8 +1746,44 @@
     05 FILLER PIC X(64) VALUE "textures/entity/breeze/breeze_eyes.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "villager_nohat".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "VILLAGER_NO_HAT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/villager/villager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "villager_nohat~b".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "VILLAGER_BABY_NO_HAT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/villager/villager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zvillager_nohat".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "ZOMBIE_VILLAGER_NO_HAT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie_villager/zombie_villager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zvillager_nohat~b".
+    05 FILLER PIC 9 VALUE 3.
+    05 FILLER PIC X(24) VALUE "ZV_BABY_NO_HAT".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/zombie_villager/zombie_villager.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 191 TIMES.
+    05 CL-MD OCCURS 195 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

@@ -275,6 +275,7 @@
          WHEN WS-PHASE = PH-PLAY AND L-ID = 115
 *>           Set Time: the daylight clock's total ticks (else the game time) modulo the day.
              CALL "PB-GET-LONG" USING L-PACKET PL-TIME
+             MOVE PL-TIME TO PL-GAME-TIME
              CALL "PB-GET-VARINT" USING L-PACKET WS-COUNT
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
                  CALL "PB-GET-VARINT" USING L-PACKET WS-ID

@@ -347,7 +347,7 @@
 *>   Wolf textures: tamed (flag 4) the tame texture, angry (end time above the clock) the angry one, tame wins; the collar layer only when tamed, tinted by the dye
 *>   (3 light blue: 0x3AB3DA of the diffuse table), its code 5001.
      MOVE 0 TO EN-VAR(1)
-     MOVE 1000 TO PL-DAY-TICKS
+     MOVE 1000 TO PL-GAME-TIME
      CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE 1 WS-MODEL
      CALL "ENTITY-TEX-CODE" USING CLIENT-STATE 1 WS-MODEL WS-CODE
      MOVE "acceptance overlays a tame wolf of variant 0 has the tame texture code 101" TO TL-CASE
@@ -377,7 +377,7 @@
      MOVE 201 TO TL-EXPECTED-N
      MOVE WS-CODE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 500 TO PL-DAY-TICKS
+     MOVE 500 TO PL-GAME-TIME
      MOVE 5000 TO EN-X3(1)
      MOVE 4 TO EN-X1(1)
      CALL "ENTITY-TEX-CODE" USING CLIENT-STATE 1 WS-MODEL WS-CODE
@@ -386,7 +386,7 @@
      MOVE WS-CODE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO EN-X1(1)
-     MOVE 9000 TO PL-DAY-TICKS
+     MOVE 9000 TO PL-GAME-TIME
      CALL "ENTITY-TEX-CODE" USING CLIENT-STATE 1 WS-MODEL WS-CODE
      MOVE "acceptance overlays an expired anger is the wild texture" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
