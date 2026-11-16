@@ -7,7 +7,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-POSE-MORE.
 *> USING model (EMM-MODEL), row key (X(20)), state (16 FLOAT-LONG: 1 pitch, 2 head yaw relative to the body, 3 walk position, 4 walk speed; 15 1 when an aquatic mob is out
-*> of water, 16 a squid's tentacle angle; the rest 0), age in ticks.
+*> of water (a turtle: on land), 16 a squid's tentacle angle; the rest 0), age in ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STOP                FLOAT-LONG VALUE -2147483648.
@@ -128,7 +128,7 @@
              MOVE L-AGE TO L-I(2)
              CALL "EF5-TADPOLE-ANIM" USING EMM-MODEL L-IN
          WHEN "turtle"
-             MOVE 1 TO L-I(5)
+             MOVE WS-DRY TO L-I(5)
              MOVE WS-BABY TO L-I(8)
              CALL "EF5-TURTLE-ANIM" USING EMM-MODEL L-IN
          WHEN "sniffer"

@@ -298,6 +298,42 @@
      MOVE "acceptance cod drawn out of water" TO TL-CASE
      COMPUTE WS-DIFF = WS-SUM2 - WS-SUM1
      PERFORM CHECK-OTHER
+*>   A turtle: EN-DRY is isOnLand (not in water and on the ground, 34-5 14), drawn with the land gait.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "turtle" TO WS-KEY
+     PERFORM SPAWN-ONE
+     MOVE 80 TO EN-Y(1) EN-OY(1)
+     MOVE 1 TO EN-ON-GROUND(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance turtle in the air on the ground is on land" TO TL-CASE
+     MOVE EN-DRY(1) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 0 TO EN-ON-GROUND(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance turtle in the air off the ground is not on land" TO TL-CASE
+     MOVE EN-DRY(1) TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 1 TO EN-ON-GROUND(1)
+     MOVE 10.5 TO EN-X(1) EN-OX(1)
+     MOVE 10.5 TO EN-Z(1) EN-OZ(1)
+     MOVE 64 TO EN-Y(1) EN-OY(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance turtle in water is not on land" TO TL-CASE
+     MOVE EN-DRY(1) TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 1 TO EN-WALK-SPEED(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM SUM-MESH
+     MOVE WS-SUM2 TO WS-SUM1
+     MOVE 1 TO EN-DRY(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM SUM-MESH
+     MOVE "acceptance turtle drawn on land" TO TL-CASE
+     COMPUTE WS-DIFF = WS-SUM2 - WS-SUM1
+     PERFORM CHECK-OTHER
      STOP RUN.
  SPAWN-ONE.
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS

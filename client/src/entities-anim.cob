@@ -99,6 +99,14 @@
                  CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
                  COMPUTE EN-DRY(WS-R) = 1 - WS-WET
              END-IF
+*>           A turtle's flag is isOnLand (34-5 14: not in water and on the ground).
+             IF EN-KEY(WS-R) = "turtle"
+                 CALL "ENTITY-IN-WATER" USING CLIENT-STATE WS-R WS-WET
+                 MOVE 0 TO EN-DRY(WS-R)
+                 IF WS-WET = 0 AND EN-ON-GROUND(WS-R) = 1
+                     MOVE 1 TO EN-DRY(WS-R)
+                 END-IF
+             END-IF
 *>           The squid (34-8 2, Squid.aiStep on the client: steps 2 to 4 with the position change as the delta movement): tentacle movement, angle and rotate speed,
 *>           then the body rotations. yBodyRot is the replica's yaw (the server sends it).
              IF EN-KEY(WS-R) = "squid" OR "glow_squid"
