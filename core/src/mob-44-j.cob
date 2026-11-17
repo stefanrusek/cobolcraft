@@ -133,123 +133,108 @@
          SUBTRACT 1 FROM EN-ALLAY-NB-CD(L-ROW)
      END-IF
      IF EN-ALLAY-NB-ON(L-ROW) = 1
-         PERFORM CHECK-NOTE-BLOCK
+         MOVE 0 TO WS-LENGTH
+         IF EN-ALLAY-NB-CD(L-ROW) > 0 AND EN-ALLAY-NB-DIM(L-ROW) = EN-DIM(L-ROW)
+             CALL "IP-BLOCK-KEY" USING EN-DIM(L-ROW) EN-ALLAY-NB-X(L-ROW) EN-ALLAY-NB-Y(L-ROW) EN-ALLAY-NB-Z(L-ROW) WS-KEY WS-LENGTH
+         END-IF
+         IF NOT (WS-LENGTH = 20 AND WS-KEY(1:20) = "minecraft:note_block")
+             MOVE 0 TO EN-ALLAY-NB-ON(L-ROW)
+         END-IF
      END-IF
      IF EN-ALLAY-ITEM(L-ROW) > 0 AND EN-ALLAY-CD(L-ROW) = 0 AND EN-ALLAY-COUNT(L-ROW) < 64
-         PERFORM FIND-ITEM
+         MOVE 0 TO WS-BEST
+         MOVE 1025 TO WS-BEST-D2
+         COMPUTE WS-ROOM = 64 - EN-ALLAY-COUNT(L-ROW)
+         PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+             IF EN-USED(WS-E) = 1 AND EN-PLAYER(WS-E) = 0 AND EN-ITEM(WS-E) = EN-ALLAY-ITEM(L-ROW) AND EN-ITEM-COUNT(WS-E) > 0
+                     AND EN-DIM(WS-E) = EN-DIM(L-ROW)
+                 COMPUTE WS-D2 = (EN-X(WS-E) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-E) - EN-Y(L-ROW)) ** 2
+                     + (EN-Z(WS-E) - EN-Z(L-ROW)) ** 2
+                 IF WS-D2 <= 1024 AND WS-D2 < WS-BEST-D2
+                     MOVE WS-D2 TO WS-BEST-D2
+                     MOVE WS-E TO WS-BEST
+                 END-IF
+             END-IF
+         END-PERFORM
          IF WS-BEST > 0
-             PERFORM GO-TO-ITEM
+             MOVE EN-X(WS-BEST) TO EN-FLY-X(L-ROW)
+             MOVE EN-Y(WS-BEST) TO EN-FLY-Y(L-ROW)
+             MOVE EN-Z(WS-BEST) TO EN-FLY-Z(L-ROW)
+             MOVE 1.75 TO EN-FLY-MOD(L-ROW)
+             MOVE 1 TO EN-FLY-ON(L-ROW)
+             IF FUNCTION ABS(EN-X(WS-BEST) - EN-X(L-ROW)) <= 1 AND FUNCTION ABS(EN-Z(WS-BEST) - EN-Z(L-ROW)) <= 1
+                     AND FUNCTION ABS(EN-Y(WS-BEST) - EN-Y(L-ROW)) <= 1.5
+                 MOVE EN-ITEM-COUNT(WS-BEST) TO WS-TAKE
+                 IF WS-TAKE > WS-ROOM
+                     MOVE WS-ROOM TO WS-TAKE
+                 END-IF
+                 ADD WS-TAKE TO EN-ALLAY-COUNT(L-ROW)
+                 MOVE EN-ID(WS-BEST) TO WS-ID-ITEM
+                 MOVE EN-ID(L-ROW) TO WS-ID-ME
+                 CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                 CALL "TAKE-ITEM-ENTITY-BUILD" USING WS-ID-ITEM WS-ID-ME WS-TAKE PB-BUFFER
+                 CALL "GI-VIEWERS-SEND" USING WS-BEST PB-BUFFER
+                 CALL "PB-FREE" USING PB-BUFFER
+                 SUBTRACT WS-TAKE FROM EN-ITEM-COUNT(WS-BEST)
+                 IF EN-ITEM-COUNT(WS-BEST) <= 0
+                     CALL "ENTITY-REMOVE" USING WS-BEST
+                 END-IF
+             END-IF
              GOBACK
          END-IF
      END-IF
      IF EN-ALLAY-COUNT(L-ROW) > 0
-         PERFORM FIND-TARGET
+         MOVE 0 TO WS-HAS-TARGET
+         IF EN-ALLAY-NB-ON(L-ROW) = 1
+             COMPUTE WS-TX = EN-ALLAY-NB-X(L-ROW) + 0.5
+             COMPUTE WS-TY = EN-ALLAY-NB-Y(L-ROW) + 0.5
+             COMPUTE WS-TZ = EN-ALLAY-NB-Z(L-ROW) + 0.5
+             MOVE 1 TO WS-HAS-TARGET
+         ELSE
+             IF EN-ALLAY-LIKED(L-ROW) NOT = SPACES
+                 PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR WS-HAS-TARGET = 1
+                     IF PL-USED(WS-P) = 1 AND PL-UUID(WS-P) = EN-ALLAY-LIKED(L-ROW) AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+                             AND PL-MODE(WS-P) < 2
+                         COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
+                             + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+                         IF WS-D2 < 4096
+                             MOVE PL-X(WS-P) TO WS-TX
+                             MOVE PL-Y(WS-P) TO WS-TY
+                             MOVE PL-Z(WS-P) TO WS-TZ
+                             MOVE 1 TO WS-HAS-TARGET
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-IF
          IF WS-HAS-TARGET = 1
-             PERFORM GO-AND-GIVE
+             MOVE EN-X(L-ROW) TO WS-OX
+             COMPUTE WS-OY = EN-Y(L-ROW) + 0.36
+             MOVE EN-Z(L-ROW) TO WS-OZ
+             COMPUTE WS-D2 = (WS-TX - WS-OX) ** 2 + (WS-TY - WS-OY) ** 2 + (WS-TZ - WS-OZ) ** 2
+             IF WS-D2 < 9
+                 COMPUTE WS-DX = WS-TX - WS-OX
+                 COMPUTE WS-DY = WS-TY + 1 - WS-OY
+                 COMPUTE WS-DZ = WS-TZ - WS-OZ
+                 COMPUTE WS-LEN = FUNCTION SQRT(WS-DX ** 2 + WS-DY ** 2 + WS-DZ ** 2)
+                 MOVE 0 TO WS-VX WS-VY WS-VZ
+                 IF WS-LEN > 0
+                     COMPUTE WS-VX = WS-DX / WS-LEN * 0.2
+                     COMPUTE WS-VY = WS-DY / WS-LEN * 0.3
+                     COMPUTE WS-VZ = WS-DZ / WS-LEN * 0.2
+                 END-IF
+                 CALL "GI-SPAWN" USING EN-DIM(L-ROW) WS-OX WS-OY WS-OZ WS-VX WS-VY WS-VZ EN-ALLAY-ITEM(L-ROW) EN-ALLAY-COUNT(L-ROW)
+                     WS-DELAY WS-NEW
+                 MOVE 0 TO EN-ALLAY-COUNT(L-ROW)
+                 MOVE 60 TO EN-ALLAY-CD(L-ROW)
+             ELSE
+                 MOVE WS-TX TO EN-FLY-X(L-ROW)
+                 MOVE WS-TY TO EN-FLY-Y(L-ROW)
+                 MOVE WS-TZ TO EN-FLY-Z(L-ROW)
+                 MOVE 2.25 TO EN-FLY-MOD(L-ROW)
+                 MOVE 1 TO EN-FLY-ON(L-ROW)
+             END-IF
          END-IF
      END-IF
      GOBACK.
-
- CHECK-NOTE-BLOCK.
-     MOVE 0 TO WS-LENGTH
-     IF EN-ALLAY-NB-CD(L-ROW) > 0 AND EN-ALLAY-NB-DIM(L-ROW) = EN-DIM(L-ROW)
-         CALL "IP-BLOCK-KEY" USING EN-DIM(L-ROW) EN-ALLAY-NB-X(L-ROW) EN-ALLAY-NB-Y(L-ROW) EN-ALLAY-NB-Z(L-ROW) WS-KEY WS-LENGTH
-     END-IF
-     IF NOT (WS-LENGTH = 20 AND WS-KEY(1:20) = "minecraft:note_block")
-         MOVE 0 TO EN-ALLAY-NB-ON(L-ROW)
-     END-IF.
-
- FIND-ITEM.
-     MOVE 0 TO WS-BEST
-     MOVE 1025 TO WS-BEST-D2
-     COMPUTE WS-ROOM = 64 - EN-ALLAY-COUNT(L-ROW)
-     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-PLAYER(WS-E) = 0 AND EN-ITEM(WS-E) = EN-ALLAY-ITEM(L-ROW) AND EN-ITEM-COUNT(WS-E) > 0
-                 AND EN-DIM(WS-E) = EN-DIM(L-ROW)
-             COMPUTE WS-D2 = (EN-X(WS-E) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-E) - EN-Y(L-ROW)) ** 2
-                 + (EN-Z(WS-E) - EN-Z(L-ROW)) ** 2
-             IF WS-D2 <= 1024 AND WS-D2 < WS-BEST-D2
-                 MOVE WS-D2 TO WS-BEST-D2
-                 MOVE WS-E TO WS-BEST
-             END-IF
-         END-IF
-     END-PERFORM.
-
- GO-TO-ITEM.
-     MOVE EN-X(WS-BEST) TO EN-FLY-X(L-ROW)
-     MOVE EN-Y(WS-BEST) TO EN-FLY-Y(L-ROW)
-     MOVE EN-Z(WS-BEST) TO EN-FLY-Z(L-ROW)
-     MOVE 1.75 TO EN-FLY-MOD(L-ROW)
-     MOVE 1 TO EN-FLY-ON(L-ROW)
-     IF FUNCTION ABS(EN-X(WS-BEST) - EN-X(L-ROW)) <= 1 AND FUNCTION ABS(EN-Z(WS-BEST) - EN-Z(L-ROW)) <= 1
-             AND FUNCTION ABS(EN-Y(WS-BEST) - EN-Y(L-ROW)) <= 1.5
-         MOVE EN-ITEM-COUNT(WS-BEST) TO WS-TAKE
-         IF WS-TAKE > WS-ROOM
-             MOVE WS-ROOM TO WS-TAKE
-         END-IF
-         ADD WS-TAKE TO EN-ALLAY-COUNT(L-ROW)
-         MOVE EN-ID(WS-BEST) TO WS-ID-ITEM
-         MOVE EN-ID(L-ROW) TO WS-ID-ME
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         CALL "TAKE-ITEM-ENTITY-BUILD" USING WS-ID-ITEM WS-ID-ME WS-TAKE PB-BUFFER
-         CALL "GI-VIEWERS-SEND" USING WS-BEST PB-BUFFER
-         CALL "PB-FREE" USING PB-BUFFER
-         SUBTRACT WS-TAKE FROM EN-ITEM-COUNT(WS-BEST)
-         IF EN-ITEM-COUNT(WS-BEST) <= 0
-             CALL "ENTITY-REMOVE" USING WS-BEST
-         END-IF
-     END-IF.
-
- FIND-TARGET.
-     MOVE 0 TO WS-HAS-TARGET
-     IF EN-ALLAY-NB-ON(L-ROW) = 1
-         COMPUTE WS-TX = EN-ALLAY-NB-X(L-ROW) + 0.5
-         COMPUTE WS-TY = EN-ALLAY-NB-Y(L-ROW) + 0.5
-         COMPUTE WS-TZ = EN-ALLAY-NB-Z(L-ROW) + 0.5
-         MOVE 1 TO WS-HAS-TARGET
-     ELSE
-         IF EN-ALLAY-LIKED(L-ROW) NOT = SPACES
-             PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR WS-HAS-TARGET = 1
-                 IF PL-USED(WS-P) = 1 AND PL-UUID(WS-P) = EN-ALLAY-LIKED(L-ROW) AND PL-DIM(WS-P) = EN-DIM(L-ROW)
-                         AND PL-MODE(WS-P) < 2
-                     COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
-                         + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
-                     IF WS-D2 < 4096
-                         MOVE PL-X(WS-P) TO WS-TX
-                         MOVE PL-Y(WS-P) TO WS-TY
-                         MOVE PL-Z(WS-P) TO WS-TZ
-                         MOVE 1 TO WS-HAS-TARGET
-                     END-IF
-                 END-IF
-             END-PERFORM
-         END-IF
-     END-IF.
-
- GO-AND-GIVE.
-     MOVE EN-X(L-ROW) TO WS-OX
-     COMPUTE WS-OY = EN-Y(L-ROW) + 0.36
-     MOVE EN-Z(L-ROW) TO WS-OZ
-     COMPUTE WS-D2 = (WS-TX - WS-OX) ** 2 + (WS-TY - WS-OY) ** 2 + (WS-TZ - WS-OZ) ** 2
-     IF WS-D2 < 9
-         COMPUTE WS-DX = WS-TX - WS-OX
-         COMPUTE WS-DY = WS-TY + 1 - WS-OY
-         COMPUTE WS-DZ = WS-TZ - WS-OZ
-         COMPUTE WS-LEN = FUNCTION SQRT(WS-DX ** 2 + WS-DY ** 2 + WS-DZ ** 2)
-         MOVE 0 TO WS-VX WS-VY WS-VZ
-         IF WS-LEN > 0
-             COMPUTE WS-VX = WS-DX / WS-LEN * 0.2
-             COMPUTE WS-VY = WS-DY / WS-LEN * 0.3
-             COMPUTE WS-VZ = WS-DZ / WS-LEN * 0.2
-         END-IF
-         CALL "GI-SPAWN" USING EN-DIM(L-ROW) WS-OX WS-OY WS-OZ WS-VX WS-VY WS-VZ EN-ALLAY-ITEM(L-ROW) EN-ALLAY-COUNT(L-ROW)
-             WS-DELAY WS-NEW
-         MOVE 0 TO EN-ALLAY-COUNT(L-ROW)
-         MOVE 60 TO EN-ALLAY-CD(L-ROW)
-     ELSE
-         MOVE WS-TX TO EN-FLY-X(L-ROW)
-         MOVE WS-TY TO EN-FLY-Y(L-ROW)
-         MOVE WS-TZ TO EN-FLY-Z(L-ROW)
-         MOVE 2.25 TO EN-FLY-MOD(L-ROW)
-         MOVE 1 TO EN-FLY-ON(L-ROW)
-     END-IF.
  END PROGRAM M44-ALLAY-BRAIN.

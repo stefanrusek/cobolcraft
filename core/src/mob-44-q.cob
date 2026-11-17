@@ -442,7 +442,22 @@
              MOVE 0 TO WS-DRAW
          END-IF
          IF WS-DRAW = 0
-             PERFORM FIND-ITEM
+             *>   The item it walks to already (EN-FOX-ITEM) stays the one; else the first listed allowed item in the box.
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-FOUND > 0
+                 IF EN-USED(WS-E) = 1 AND EN-PLAYER(WS-E) = 0 AND EN-ITEM-COUNT(WS-E) > 0 AND EN-DELAY(WS-E) = 0
+                         AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-ITEM(WS-E) > 0
+                         AND FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW)) <= 8 AND FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW)) <= 8
+                         AND FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW)) <= 8
+                     MOVE WS-E TO WS-FOUND
+                 END-IF
+             END-PERFORM
+             IF WS-FOUND = 0 AND EN-FOX-ITEM(L-ROW) > 0
+                 PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-FOUND > 0
+                     IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = EN-FOX-ITEM(L-ROW) AND EN-ITEM-COUNT(WS-E) > 0
+                         MOVE WS-E TO WS-FOUND
+                     END-IF
+                 END-PERFORM
+             END-IF
          END-IF
          IF WS-FOUND = 0
              MOVE 0 TO EN-FOX-ITEM(L-ROW)
@@ -451,7 +466,22 @@
              COMPUTE WS-DX = EN-X(WS-FOUND) - EN-X(L-ROW)
              COMPUTE WS-DZ = EN-Z(WS-FOUND) - EN-Z(L-ROW)
              IF FUNCTION ABS(WS-DX) <= 1 AND FUNCTION ABS(WS-DZ) <= 1 AND FUNCTION ABS(EN-Y(WS-FOUND) - EN-Y(L-ROW)) <= 1.5
-                 PERFORM TAKE
+                 *>   One item goes into the hand, the rest of the stack is dropped again; Take Item Entity for the viewers.
+                 MOVE EN-ITEM(WS-FOUND) TO WS-ITEM
+                 MOVE EN-ITEM-COUNT(WS-FOUND) TO WS-COUNT
+                 MOVE EN-ID(WS-FOUND) TO WS-ID-ITEM
+                 MOVE EN-ID(L-ROW) TO WS-ID-ME
+                 CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                 CALL "TAKE-ITEM-ENTITY-BUILD" USING WS-ID-ITEM WS-ID-ME WS-TAKE PB-BUFFER
+                 CALL "GI-VIEWERS-SEND" USING WS-FOUND PB-BUFFER
+                 CALL "PB-FREE" USING PB-BUFFER
+                 CALL "ENTITY-REMOVE" USING WS-FOUND
+                 MOVE WS-ITEM TO EN-FOX-HELD(L-ROW)
+                 MOVE 0 TO EN-FOX-ITEM(L-ROW)
+                 SUBTRACT 1 FROM WS-COUNT
+                 IF WS-COUNT > 0
+                     CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WS-ITEM WS-COUNT WS-PATCH WS-DROPPED
+                 END-IF
              ELSE
                  MOVE 1 TO L-WALK
                  COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
@@ -463,42 +493,6 @@
          END-IF
      END-IF
      GOBACK.
-
- FIND-ITEM.
-*>   The item it walks to already (EN-FOX-ITEM) stays the one; else the first listed allowed item in the box.
-     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-FOUND > 0
-         IF EN-USED(WS-E) = 1 AND EN-PLAYER(WS-E) = 0 AND EN-ITEM-COUNT(WS-E) > 0 AND EN-DELAY(WS-E) = 0
-                 AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-ITEM(WS-E) > 0
-                 AND FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW)) <= 8 AND FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW)) <= 8
-                 AND FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW)) <= 8
-             MOVE WS-E TO WS-FOUND
-         END-IF
-     END-PERFORM
-     IF WS-FOUND = 0 AND EN-FOX-ITEM(L-ROW) > 0
-         PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-FOUND > 0
-             IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = EN-FOX-ITEM(L-ROW) AND EN-ITEM-COUNT(WS-E) > 0
-                 MOVE WS-E TO WS-FOUND
-             END-IF
-         END-PERFORM
-     END-IF.
-
- TAKE.
-*>   One item goes into the hand, the rest of the stack is dropped again; Take Item Entity for the viewers.
-     MOVE EN-ITEM(WS-FOUND) TO WS-ITEM
-     MOVE EN-ITEM-COUNT(WS-FOUND) TO WS-COUNT
-     MOVE EN-ID(WS-FOUND) TO WS-ID-ITEM
-     MOVE EN-ID(L-ROW) TO WS-ID-ME
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "TAKE-ITEM-ENTITY-BUILD" USING WS-ID-ITEM WS-ID-ME WS-TAKE PB-BUFFER
-     CALL "GI-VIEWERS-SEND" USING WS-FOUND PB-BUFFER
-     CALL "PB-FREE" USING PB-BUFFER
-     CALL "ENTITY-REMOVE" USING WS-FOUND
-     MOVE WS-ITEM TO EN-FOX-HELD(L-ROW)
-     MOVE 0 TO EN-FOX-ITEM(L-ROW)
-     SUBTRACT 1 FROM WS-COUNT
-     IF WS-COUNT > 0
-         CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WS-ITEM WS-COUNT WS-PATCH WS-DROPPED
-     END-IF.
  END PROGRAM M44-FOX-ITEMS.
 
  IDENTIFICATION DIVISION.

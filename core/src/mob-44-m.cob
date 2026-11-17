@@ -161,7 +161,21 @@
              COMPUTE WS-QX = L-PX + WS-T * WS-COSPHI
              COMPUTE WS-QY = L-PY + WS-Y
              COMPUTE WS-QZ = L-PZ + WS-T * WS-SINPHI
-             PERFORM CHECK-TRANSITION
+             COMPUTE WS-SEG = FUNCTION SQRT((WS-QX - WS-FX) ** 2 + (WS-QY - WS-FY) ** 2 + (WS-QZ - WS-FZ) ** 2)
+             COMPUTE WS-STEPS = FUNCTION INTEGER-PART(WS-SEG / 0.5 + 0.999999)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-STEPS OR WS-OK = 0
+                 COMPUTE WS-S = 0.45 * WS-K
+                 IF WS-K = WS-STEPS OR WS-S > WS-SEG
+                     MOVE WS-SEG TO WS-S
+                 END-IF
+                 COMPUTE WS-DX = WS-FX + (WS-QX - WS-FX) * WS-S / WS-SEG
+                 COMPUTE WS-DEN = WS-FY + (WS-QY - WS-FY) * WS-S / WS-SEG
+                 COMPUTE WS-DZ = WS-FZ + (WS-QZ - WS-FZ) * WS-S / WS-SEG
+                 CALL "M44-JUMP-CLEAR" USING L-DIM WS-DX WS-DEN WS-DZ WS-CLEAR
+                 IF WS-CLEAR = 0
+                     MOVE 0 TO WS-OK
+                 END-IF
+             END-PERFORM
              MOVE WS-QX TO WS-FX
              MOVE WS-QY TO WS-FY
              MOVE WS-QZ TO WS-FZ
@@ -174,23 +188,6 @@
          COMPUTE L-VZ = 0.95 * WS-VH * WS-SINPHI
      END-IF
      GOBACK.
-
- CHECK-TRANSITION.
-     COMPUTE WS-SEG = FUNCTION SQRT((WS-QX - WS-FX) ** 2 + (WS-QY - WS-FY) ** 2 + (WS-QZ - WS-FZ) ** 2)
-     COMPUTE WS-STEPS = FUNCTION INTEGER-PART(WS-SEG / 0.5 + 0.999999)
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-STEPS OR WS-OK = 0
-         COMPUTE WS-S = 0.45 * WS-K
-         IF WS-K = WS-STEPS OR WS-S > WS-SEG
-             MOVE WS-SEG TO WS-S
-         END-IF
-         COMPUTE WS-DX = WS-FX + (WS-QX - WS-FX) * WS-S / WS-SEG
-         COMPUTE WS-DEN = WS-FY + (WS-QY - WS-FY) * WS-S / WS-SEG
-         COMPUTE WS-DZ = WS-FZ + (WS-QZ - WS-FZ) * WS-S / WS-SEG
-         CALL "M44-JUMP-CLEAR" USING L-DIM WS-DX WS-DEN WS-DZ WS-CLEAR
-         IF WS-CLEAR = 0
-             MOVE 0 TO WS-OK
-         END-IF
-     END-PERFORM.
  END PROGRAM M44-JUMP-VECTOR.
 
  IDENTIFICATION DIVISION.

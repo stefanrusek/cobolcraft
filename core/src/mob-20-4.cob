@@ -214,7 +214,24 @@
              END-PERFORM
          END-IF
          IF WS-OK = 1 AND WS-DIM = CW-DIM(1)
-             PERFORM DARK-CHECK
+             *> The monster dark check of the Overworld for the spot (20 section 3.3, 54 section 12.1: the reason REINFORCEMENT does not skip it): sky light (less the night
+             *> darkening) not above a fresh nextInt(32), no block light, and the brightness (a flat 10 in a thunderstorm) not above one nextInt(8) sample.
+             CALL "STDMOB-LIGHTS" USING WS-DIM WS-CELL-X WS-CELL-Y WS-CELL-Z WS-SKY WS-BLOCK
+             CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
+             COMPUTE WS-SKY = FUNCTION MAX(0, WS-SKY - WS-DARK)
+             CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-SKY WS-SAMPLE
+             IF WS-SKY > WS-SAMPLE OR WS-BLOCK > 0
+                 MOVE 0 TO WS-OK
+             ELSE
+                 COMPUTE WS-BRIGHT = FUNCTION MAX(WS-SKY, WS-BLOCK)
+                 IF CW-THUNDERING = 1
+                     MOVE 10 TO WS-BRIGHT
+                 END-IF
+                 CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-BRIGHT WS-SAMPLE
+                 IF WS-BRIGHT > WS-SAMPLE
+                     MOVE 0 TO WS-OK
+                 END-IF
+             END-IF
          END-IF
          IF WS-OK = 1
              MOVE 1 TO WS-DONE
@@ -232,24 +249,4 @@
          END-IF
      END-PERFORM
      GOBACK.
-
-*> The monster dark check of the Overworld for the spot (20 section 3.3, 54 section 12.1: the reason REINFORCEMENT does not skip it): sky light (less the night
-*> darkening) not above a fresh nextInt(32), no block light, and the brightness (a flat 10 in a thunderstorm) not above one nextInt(8) sample.
- DARK-CHECK.
-     CALL "STDMOB-LIGHTS" USING WS-DIM WS-CELL-X WS-CELL-Y WS-CELL-Z WS-SKY WS-BLOCK
-     CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
-     COMPUTE WS-SKY = FUNCTION MAX(0, WS-SKY - WS-DARK)
-     CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-SKY WS-SAMPLE
-     IF WS-SKY > WS-SAMPLE OR WS-BLOCK > 0
-         MOVE 0 TO WS-OK
-     ELSE
-         COMPUTE WS-BRIGHT = FUNCTION MAX(WS-SKY, WS-BLOCK)
-         IF CW-THUNDERING = 1
-             MOVE 10 TO WS-BRIGHT
-         END-IF
-         CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-BRIGHT WS-SAMPLE
-         IF WS-BRIGHT > WS-SAMPLE
-             MOVE 0 TO WS-OK
-         END-IF
-     END-IF.
  END PROGRAM STDMOB-REINFORCE.

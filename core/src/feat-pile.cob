@@ -122,34 +122,32 @@
                      END-IF
                  END-IF
                  IF WS-TRY = 1
-                     PERFORM TRY-PLACE
+                     CALL "FL-GET-STATE" USING WS-X WS-Y WS-Z WS-STATE
+                     CALL "FL-CLASS" USING WS-STATE WS-CLASS
+                     IF WS-CLASS = 1
+                         COMPUTE WS-NEW = WS-Y - 1
+                         CALL "FL-GET-STATE" USING WS-X WS-NEW WS-Z WS-STATE
+                         CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
+                         MOVE 0 TO WS-PLACE
+                         IF WS-BLOCK > 0 AND WS-BLOCK = WA-I(WS-ROW, 1)
+                             CALL "F351-NEXT-BOOLEAN" USING L-STATE WS-PLACE
+                         ELSE
+                             IF WS-BLOCK > 0
+                                 MOVE CB-OPAQUE(WS-BLOCK) TO WS-PLACE
+                             END-IF
+                         END-IF
+                         IF WS-PLACE = 1
+                             CALL "FR-PROV-STATE" USING L-STATE WA-PV(WS-ROW, 1) WS-X WS-Y WS-Z WS-NEW WS-OK
+                             IF WS-OK = 1
+                                 CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-NEW WS-FLAGS WS-WRITTEN
+                             END-IF
+                         END-IF
+                     END-IF
+     
                  END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
      MOVE 1 TO L-RESULT
      GOBACK.
- TRY-PLACE.
-     CALL "FL-GET-STATE" USING WS-X WS-Y WS-Z WS-STATE
-     CALL "FL-CLASS" USING WS-STATE WS-CLASS
-     IF WS-CLASS = 1
-         COMPUTE WS-NEW = WS-Y - 1
-         CALL "FL-GET-STATE" USING WS-X WS-NEW WS-Z WS-STATE
-         CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
-         MOVE 0 TO WS-PLACE
-         IF WS-BLOCK > 0 AND WS-BLOCK = WA-I(WS-ROW, 1)
-             CALL "F351-NEXT-BOOLEAN" USING L-STATE WS-PLACE
-         ELSE
-             IF WS-BLOCK > 0
-                 MOVE CB-OPAQUE(WS-BLOCK) TO WS-PLACE
-             END-IF
-         END-IF
-         IF WS-PLACE = 1
-             CALL "FR-PROV-STATE" USING L-STATE WA-PV(WS-ROW, 1) WS-X WS-Y WS-Z WS-NEW WS-OK
-             IF WS-OK = 1
-                 CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-NEW WS-FLAGS WS-WRITTEN
-             END-IF
-         END-IF
-     END-IF
-     .
  END PROGRAM FR-PILE.
