@@ -239,7 +239,17 @@
                          COMPUTE WS-BX = WS-PX + WS-DX
                          COMPUTE WS-BY = WS-PY + WS-DY
                          COMPUTE WS-BZ = WS-PZ + WS-DZ
-                         PERFORM CANDIDATE
+                         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
+                         IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
+                             MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY48
+                             COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY48))
+                             IF WS-KEY48 = "minecraft:iron_bars" OR (WS-LEN > 4 AND WS-KEY48(WS-LEN - 3:4) = "_bed")
+                                 CALL "XP-RANDOM" USING WS-SALT2 WS-TEN WS-R
+                                 IF WS-R < 3
+                                     ADD 1 TO WS-COUNT
+                                 END-IF
+                             END-IF
+                         END-IF
                      END-IF
                  END-PERFORM
              END-PERFORM
@@ -254,18 +264,6 @@
      END-IF
      GOBACK.
 
- CANDIDATE.
-     CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
-     IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
-         MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY48
-         COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY48))
-         IF WS-KEY48 = "minecraft:iron_bars" OR (WS-LEN > 4 AND WS-KEY48(WS-LEN - 3:4) = "_bed")
-             CALL "XP-RANDOM" USING WS-SALT2 WS-TEN WS-R
-             IF WS-R < 3
-                 ADD 1 TO WS-COUNT
-             END-IF
-         END-IF
-     END-IF.
  END PROGRAM ZV-TICK.
 
  IDENTIFICATION DIVISION.
@@ -359,6 +357,30 @@
  01 WS-TIER                 BINARY-LONG.
  01 WS-I                    BINARY-LONG.
  01 WS-KEY40                PIC X(40).
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-EQUIP(L-ROW) > 0
+         COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
+         COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
+             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
+             CALL "ZV-DROP-KEY" USING L-ROW WS-KEY40
+         END-PERFORM
+     END-IF
+     IF EN-HAND(L-ROW) > 0
+         CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-KEY40
+         CALL "ZV-DROP-KEY" USING L-ROW WS-KEY40
+     END-IF
+     GOBACK.
+ END PROGRAM ZV-DROP-EQUIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ZV-DROP-KEY.
+*> USING entity row, item key (PIC X(40)): the item of that key (a "minecraft:" key) drops at the entity's position as a ground item.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  01 WS-KEY32                PIC X(32).
  01 WS-ITEM                 BINARY-LONG.
  01 WS-ONE                  BINARY-LONG VALUE 1.
@@ -370,31 +392,18 @@
  01 WS-Z                    FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
+ 01 L-KEY40                 PIC X(40).
+ PROCEDURE DIVISION USING L-ROW L-KEY40.
      MOVE EN-X(L-ROW) TO WS-X
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
-     IF EN-EQUIP(L-ROW) > 0
-         COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
-         COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
-             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
-             PERFORM DROP-KEY
-         END-PERFORM
-     END-IF
-     IF EN-HAND(L-ROW) > 0
-         CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-KEY40
-         PERFORM DROP-KEY
-     END-IF
-     GOBACK.
-
- DROP-KEY.
      MOVE SPACES TO WS-KEY32
-     IF WS-KEY40(1:10) = "minecraft:"
-         MOVE WS-KEY40(11:30) TO WS-KEY32
+     IF L-KEY40(1:10) = "minecraft:"
+         MOVE L-KEY40(11:30) TO WS-KEY32
      END-IF
      CALL "MERCHANT-ITEM-ID" USING WS-KEY32 WS-ITEM
      IF WS-ITEM >= 0
          CALL "GI-SPAWN-RANDOM" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-ITEM WS-ONE WS-ZERO WS-DELAY WS-DROP
-     END-IF.
- END PROGRAM ZV-DROP-EQUIP.
+     END-IF
+     GOBACK.
+ END PROGRAM ZV-DROP-KEY.
