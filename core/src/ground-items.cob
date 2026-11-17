@@ -242,6 +242,7 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-YIELD-BLOCKS        BINARY-LONG VALUE 12.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -249,7 +250,11 @@
  01 L-Z                    BINARY-LONG.
  01 L-BLOCK                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-BLOCK.
-     CALL "GI-POP-RESOURCE" USING L-DIM L-X L-Y L-Z RULE-YIELD-ITEM(L-BLOCK + 1) WS-ONE WS-NONE WS-ROW
+*>   The table holds the stand-in set's 12 blocks (RULES.cpy): a block beyond it has no yield and drops nothing (water washing a block of a
+*>   standard set, or a block a test installed, away reaches here through BLOCK-DROPS-NO-TOOL).
+     IF L-BLOCK >= 0 AND L-BLOCK < WS-YIELD-BLOCKS
+         CALL "GI-POP-RESOURCE" USING L-DIM L-X L-Y L-Z RULE-YIELD-ITEM(L-BLOCK + 1) WS-ONE WS-NONE WS-ROW
+     END-IF
      GOBACK.
  END PROGRAM GI-BLOCK-YIELD.
 
