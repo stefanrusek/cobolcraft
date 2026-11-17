@@ -1106,9 +1106,6 @@
      END-IF
      IF SM-KEY(WS-M) = "bee"
          CALL "BEE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
-         IF EN-USED(WS-ROW) = 0
-             GOBACK
-         END-IF
      END-IF
      IF SM-KEY(WS-M) = "turtle"
          CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
