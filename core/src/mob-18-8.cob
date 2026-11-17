@@ -1509,7 +1509,7 @@
      IF WS-M = 0
          GOBACK
      END-IF
-     IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0 AND SM-KEY(WS-M) NOT = "zombie_villager"
+     IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0 AND SM-KEY(WS-M) NOT = "zombie_villager" AND SM-KEY(WS-M) NOT = "piglin"
          GOBACK
      END-IF
      COMPUTE WS-TYPE = EN-TYPE(WS-ENTITY) + 1
