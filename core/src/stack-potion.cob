@@ -371,30 +371,37 @@
              MOVE WS-FX-ID(PR-POTION + 1, WS-I) TO WS-ID
              MOVE WS-FX-AMP(PR-POTION + 1, WS-I) TO WS-AMP
              MOVE WS-FX-DUR(PR-POTION + 1, WS-I) TO WS-DUR
-             PERFORM EMIT
+*>           The table's durations are at least 1 (instant effects 1), so they are always scaled.
+             IF L-COUNT < 8
+                 ADD 1 TO L-COUNT
+                 MOVE WS-ID TO L-FX-ID(L-COUNT)
+                 MOVE WS-AMP TO L-FX-AMP(L-COUNT)
+                 COMPUTE WS-OUT = FUNCTION INTEGER(WS-DUR * L-SCALE / 1000)
+                 IF WS-OUT < 1
+                     MOVE 1 TO WS-OUT
+                 END-IF
+                 MOVE WS-OUT TO L-FX-DUR(L-COUNT)
+             END-IF
          END-PERFORM
      END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PR-N
          MOVE PR-FX-ID(WS-I) TO WS-ID
          MOVE PR-FX-AMP(WS-I) TO WS-AMP
          MOVE PR-FX-DUR(WS-I) TO WS-DUR
-         PERFORM EMIT
+         IF L-COUNT < 8
+             ADD 1 TO L-COUNT
+             MOVE WS-ID TO L-FX-ID(L-COUNT)
+             MOVE WS-AMP TO L-FX-AMP(L-COUNT)
+             IF WS-DUR > 0
+                 COMPUTE WS-OUT = FUNCTION INTEGER(WS-DUR * L-SCALE / 1000)
+                 IF WS-OUT < 1
+                     MOVE 1 TO WS-OUT
+                 END-IF
+                 MOVE WS-OUT TO L-FX-DUR(L-COUNT)
+             ELSE
+                 MOVE WS-DUR TO L-FX-DUR(L-COUNT)
+             END-IF
+         END-IF
      END-PERFORM
      GOBACK.
-
- EMIT.
-     IF L-COUNT < 8
-         ADD 1 TO L-COUNT
-         MOVE WS-ID TO L-FX-ID(L-COUNT)
-         MOVE WS-AMP TO L-FX-AMP(L-COUNT)
-         IF WS-DUR > 0
-             COMPUTE WS-OUT = FUNCTION INTEGER(WS-DUR * L-SCALE / 1000)
-             IF WS-OUT < 1
-                 MOVE 1 TO WS-OUT
-             END-IF
-             MOVE WS-OUT TO L-FX-DUR(L-COUNT)
-         ELSE
-             MOVE WS-DUR TO L-FX-DUR(L-COUNT)
-         END-IF
-     END-IF.
  END PROGRAM SC-POTION-RESOLVE.
