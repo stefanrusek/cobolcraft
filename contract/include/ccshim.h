@@ -57,6 +57,7 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_PIPE_OPAQUE      0 /* depth test and write, no blend */
 #define CC_PIPE_TRANSLUCENT 1 /* depth test, no write, alpha blend */
 #define CC_PIPE_UI          2 /* no depth, alpha blend */
+#define CC_PIPE_TRANSLUCENT_CULL 5 /* as CC_PIPE_TRANSLUCENT with the back faces culled (front face: clockwise in the y-down framebuffer, the winding of the block meshes) */
 #define CC_PIPE_CRUMBLING   3 /* depth test (less or equal, biased), no write, rgb = 2 x src x dst, alpha = src, texels under alpha 0.1 discarded */
 #define CC_PIPE_GLINT       4 /* depth test (less or equal, biased), no write, additive: rgb = src x src + dst, alpha = dst (54 section 19) */
 

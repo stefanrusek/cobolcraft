@@ -356,7 +356,7 @@
                      IF WS-CD = 8
                          MOVE 41 TO WS-I
                      END-IF
-                     STRING "textures/entity/rabbit/" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
+                     STRING "textures/entity/rabbit/rabbit_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "axolotl"

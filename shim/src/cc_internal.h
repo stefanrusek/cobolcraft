@@ -78,7 +78,7 @@ struct cc_vk_state {
     VkDescriptorSetLayout set_layout;
     VkDescriptorPool pool;
     VkPipelineLayout layout;
-    VkPipeline pipelines[5];
+    VkPipeline pipelines[6];
     float daylight;           /* cc_vk_daylight: pushed with every draw (default 1) */
     float fog[13];            /* cc_vk_fog: colour rgb, strength, start, end, p00, p11, up xyz, render-distance start, end (strength 0, p00 = p11 = 1, up (0, 1, 0), start 1e9 until set) */
     VkSampler sampler;        /* clamp-to-edge */

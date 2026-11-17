@@ -824,7 +824,10 @@
 *> ticks from the clock; bobOffs is a random phase of the client's own, taken as entity id mod 64 / 64 x 2 pi). Copies by stack size (1, 2, 3, 4, 5 at 1,
 *> 2 to 16, 17 to 32, 33 to 48, 49 up); flat stacking: step = zs x 1.5 = 0.046875, the first copy at z = -(step (n - 1)) / 2, copy k at z + k step, copies
 *> after the first moved by ((r1 x 2 - 1) x 0.075, (r2 x 2 - 1) x 0.075) with r from the Java LCG seeded with the item id (damage value 0), restarted
-*> for each item. Both sides of the quad are drawn (12 vertices a copy).
+*> for each item. Both sides of the quad are drawn (12 vertices a copy). A block item (the item's model has faces, ITEM-FACE-SPRITE) is a thick model: the cube of its
+*> model with the ground display of block/block (scale 0.25, translate (0, 3, 0) / 16: the cube spans y 0.0625 to 0.3125, so base = -minY + 0.0625 = 0), each face its own
+*> sprite, drawn once (copies by stack size, the others moved by ((r1 x 2 - 1) x 0.15, (r2 x 2 - 1) x 0.15, (r3 x 2 - 1) x 0.15), spun with the pose), shaded by the face
+*> direction (up 1, down 0.5, north and south 0.8, west and east 0.6; tint: none, a gap of the item tint sources).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -870,6 +873,40 @@
        10 WS-C-U             FLOAT-SHORT.
        10 WS-C-V             FLOAT-SHORT.
 *> The twelve vertices of a copy: the front triangles 1 2 3, 1 3 4 and the back triangles 1 3 2, 1 4 3.
+ 01 WS-CUBE                BINARY-LONG.
+ 01 WS-FS                  BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-DIRECTION           BINARY-LONG.
+ 01 WS-PCK                 BINARY-LONG.
+ 01 WS-CPX                 FLOAT-LONG.
+ 01 WS-CPY                 FLOAT-LONG.
+ 01 WS-CPZ                 FLOAT-LONG.
+ 01 WS-R3                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
+ 01 WS-CORNER-DATA.
+    05 FILLER PIC X(12) VALUE "011111101001".
+    05 FILLER PIC X(12) VALUE "110010000100".
+    05 FILLER PIC X(12) VALUE "111110100101".
+    05 FILLER PIC X(12) VALUE "010011001000".
+    05 FILLER PIC X(12) VALUE "010110111011".
+    05 FILLER PIC X(12) VALUE "100000001101".
+ 01 WS-CORNER-TABLE REDEFINES WS-CORNER-DATA.
+    05 WS-FACE OCCURS 6 TIMES.
+       10 WS-PICK            PIC 9 OCCURS 12 TIMES.
+*> The direction of each face of the corner table (south, north, east, west, up, down) and its shade.
+ 01 WS-DIR-DATA            PIC X(6) VALUE "436521".
+ 01 WS-DIR-TABLE REDEFINES WS-DIR-DATA.
+    05 WS-FACE-DIR         PIC 9 OCCURS 6 TIMES.
+ 01 WS-SHADE-DATA.
+    05 FILLER PIC 9V9 VALUE 0.8.
+    05 FILLER PIC 9V9 VALUE 0.8.
+    05 FILLER PIC 9V9 VALUE 0.6.
+    05 FILLER PIC 9V9 VALUE 0.6.
+    05 FILLER PIC 9V9 VALUE 1.0.
+    05 FILLER PIC 9V9 VALUE 0.5.
+ 01 WS-SHADE-TABLE REDEFINES WS-SHADE-DATA.
+    05 WS-SHADE            PIC 9V9 OCCURS 6 TIMES.
  01 WS-ORDER-DATA          PIC X(12) VALUE "123134132143".
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 12 TIMES.
@@ -896,6 +933,12 @@
              IF RL-GI-COUNT + 12 * WS-COPIES <= CL-MAX-GI-VERTICES
                  CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-SPRITE
                  MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
+                 MOVE 0 TO WS-FS WS-CUBE
+                 MOVE DIR-UP TO WS-DIRECTION
+                 CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-DIRECTION WS-FS
+                 IF WS-FS > 0 AND RL-GI-COUNT + 36 * WS-COPIES <= CL-MAX-GI-VERTICES
+                     MOVE 1 TO WS-CUBE
+                 END-IF
                  COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-R))
                  COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-R))
                  COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-R))
@@ -908,53 +951,112 @@
                  COMPUTE WS-Z0 = 0 - 0.046875 * (WS-COPIES - 1) / 2
                  MOVE EN-STACK-ITEM(WS-R) TO WS-SEED
                  CALL "JRAND-SET-SEED" USING WS-STATE WS-SEED
-                 PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N >= WS-COPIES
-                     MOVE 0 TO WS-OX WS-OY
-                     IF WS-N > 0
-                         CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R1
-                         CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R2
-                         COMPUTE WS-OX = (WS-R1 * 2 - 1) * 0.075
-                         COMPUTE WS-OY = (WS-R2 * 2 - 1) * 0.075
-                     END-IF
-                     COMPUTE WS-LZ = WS-Z0 + 0.046875 * WS-N
-                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-                         MOVE -0.25 TO WS-SIDE
-                         MOVE 0 TO WS-U16
-                         IF WS-K = 2 OR WS-K = 3
-                             MOVE 0.25 TO WS-SIDE
-                             MOVE 16 TO WS-U16
+                 IF WS-CUBE = 1
+                     PERFORM CUBE-COPIES
+                 ELSE
+                     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N >= WS-COPIES
+                         MOVE 0 TO WS-OX WS-OY
+                         IF WS-N > 0
+                             CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R1
+                             CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R2
+                             COMPUTE WS-OX = (WS-R1 * 2 - 1) * 0.075
+                             COMPUTE WS-OY = (WS-R2 * 2 - 1) * 0.075
                          END-IF
-                         MOVE 0.375 TO WS-TOP
-                         MOVE 0 TO WS-V16
-                         IF WS-K >= 3
-                             MOVE -0.125 TO WS-TOP
-                             MOVE 16 TO WS-V16
-                         END-IF
-                         COMPUTE WS-LX = WS-SIDE + WS-OX
-                         COMPUTE WS-LY = WS-TOP + WS-OY
-                         COMPUTE WS-SX = WS-LX * WS-SPIN-COS + WS-LZ * WS-SPIN-SIN
-                         COMPUTE WS-SZ = WS-LZ * WS-SPIN-COS - WS-LX * WS-SPIN-SIN
-                         COMPUTE WS-C-X(WS-K) = EN-X(WS-R) - L-EYE(1) + WS-SX
-                         COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2) + WS-BOB + WS-LY
-                         COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SZ
-                         CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16 WS-V16 WS-C-U(WS-K) WS-C-V(WS-K)
+                         COMPUTE WS-LZ = WS-Z0 + 0.046875 * WS-N
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                             MOVE -0.25 TO WS-SIDE
+                             MOVE 0 TO WS-U16
+                             IF WS-K = 2 OR WS-K = 3
+                                 MOVE 0.25 TO WS-SIDE
+                                 MOVE 16 TO WS-U16
+                             END-IF
+                             MOVE 0.375 TO WS-TOP
+                             MOVE 0 TO WS-V16
+                             IF WS-K >= 3
+                                 MOVE -0.125 TO WS-TOP
+                                 MOVE 16 TO WS-V16
+                             END-IF
+                             COMPUTE WS-LX = WS-SIDE + WS-OX
+                             COMPUTE WS-LY = WS-TOP + WS-OY
+                             COMPUTE WS-SX = WS-LX * WS-SPIN-COS + WS-LZ * WS-SPIN-SIN
+                             COMPUTE WS-SZ = WS-LZ * WS-SPIN-COS - WS-LX * WS-SPIN-SIN
+                             COMPUTE WS-C-X(WS-K) = EN-X(WS-R) - L-EYE(1) + WS-SX
+                             COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2) + WS-BOB + WS-LY
+                             COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SZ
+                             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16 WS-V16 WS-C-U(WS-K) WS-C-V(WS-K)
+                         END-PERFORM
+                         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+                             MOVE WS-ORD(WS-I) TO WS-K
+                             ADD 1 TO RL-GI-COUNT
+                             MOVE WS-C-X(WS-K) TO RL-GI-X(RL-GI-COUNT)
+                             MOVE WS-C-Y(WS-K) TO RL-GI-Y(RL-GI-COUNT)
+                             MOVE WS-C-Z(WS-K) TO RL-GI-Z(RL-GI-COUNT)
+                             MOVE WS-C-U(WS-K) TO RL-GI-U(RL-GI-COUNT)
+                             MOVE WS-C-V(WS-K) TO RL-GI-V(RL-GI-COUNT)
+                             MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
+                             MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                             MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                             MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+                         END-PERFORM
                      END-PERFORM
-                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
-                         MOVE WS-ORD(WS-I) TO WS-K
-                         ADD 1 TO RL-GI-COUNT
-                         MOVE WS-C-X(WS-K) TO RL-GI-X(RL-GI-COUNT)
-                         MOVE WS-C-Y(WS-K) TO RL-GI-Y(RL-GI-COUNT)
-                         MOVE WS-C-Z(WS-K) TO RL-GI-Z(RL-GI-COUNT)
-                         MOVE WS-C-U(WS-K) TO RL-GI-U(RL-GI-COUNT)
-                         MOVE WS-C-V(WS-K) TO RL-GI-V(RL-GI-COUNT)
-                         MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
-                         MOVE 1 TO RL-GI-A(RL-GI-COUNT)
-                         MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
-                         MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
-                     END-PERFORM
-                 END-PERFORM
+                 END-IF
              END-IF
          END-IF
      END-PERFORM
      GOBACK.
+
+*> The copies of a block item (see the header): the cube of the model, 36 vertices a copy.
+ CUBE-COPIES.
+     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N >= WS-COPIES
+         MOVE 0 TO WS-OX WS-OY WS-OZ
+         IF WS-N > 0
+             CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R1
+             CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R2
+             CALL "JRAND-NEXT-FLOAT" USING WS-STATE WS-R3
+             COMPUTE WS-OX = (WS-R1 * 2 - 1) * 0.15
+             COMPUTE WS-OY = (WS-R2 * 2 - 1) * 0.15
+             COMPUTE WS-OZ = (WS-R3 * 2 - 1) * 0.15
+         END-IF
+         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
+             MOVE WS-SPRITE TO WS-FS
+             MOVE WS-FACE-DIR(WS-F) TO WS-DIRECTION
+             CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-DIRECTION WS-FS
+             IF WS-FS = 0
+                 MOVE WS-SPRITE TO WS-FS
+             END-IF
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 MOVE 0 TO WS-U16
+                 IF WS-K = 2 OR WS-K = 3
+                     MOVE 16 TO WS-U16
+                 END-IF
+                 MOVE 0 TO WS-V16
+                 IF WS-K >= 3
+                     MOVE 16 TO WS-V16
+                 END-IF
+                 COMPUTE WS-A = (WS-K - 1) * 3
+                 COMPUTE WS-CPX = (WS-PICK(WS-F, WS-A + 1) - 0.5) * 0.25 + WS-OX
+                 COMPUTE WS-CPY = (WS-PICK(WS-F, WS-A + 2) - 0.5) * 0.25
+                 COMPUTE WS-CPZ = (WS-PICK(WS-F, WS-A + 3) - 0.5) * 0.25 + WS-OZ
+                 COMPUTE WS-SX = WS-CPX * WS-SPIN-COS + WS-CPZ * WS-SPIN-SIN
+                 COMPUTE WS-SZ = WS-CPZ * WS-SPIN-COS - WS-CPX * WS-SPIN-SIN
+                 COMPUTE WS-C-X(WS-K) = EN-X(WS-R) - L-EYE(1) + WS-SX
+                 COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2) + WS-BOB + WS-CPY + WS-OY
+                 COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SZ
+                 CALL "ATLAS-UV" USING CLIENT-STATE WS-FS WS-U16 WS-V16 WS-C-U(WS-K) WS-C-V(WS-K)
+             END-PERFORM
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+                 MOVE WS-ORD(WS-I) TO WS-K
+                 ADD 1 TO RL-GI-COUNT
+                 MOVE WS-C-X(WS-K) TO RL-GI-X(RL-GI-COUNT)
+                 MOVE WS-C-Y(WS-K) TO RL-GI-Y(RL-GI-COUNT)
+                 MOVE WS-C-Z(WS-K) TO RL-GI-Z(RL-GI-COUNT)
+                 MOVE WS-C-U(WS-K) TO RL-GI-U(RL-GI-COUNT)
+                 MOVE WS-C-V(WS-K) TO RL-GI-V(RL-GI-COUNT)
+                 COMPUTE RL-GI-B(RL-GI-COUNT) = FUNCTION MAX(WS-SHADE(WS-F) * WS-LIGHT, 0.1)
+                 MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                 MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM.
  END PROGRAM VANILLA-ITEMS-MESH.

@@ -72,10 +72,10 @@
     05 FILLER PIC X(64) VALUE "textures/entity/llama/llama_gray.png".
     05 FILLER PIC X(20) VALUE "rabbit".
     05 FILLER PIC 99 VALUE 4.
-    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/white_splotched.png".
+    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/rabbit_white_splotched.png".
     05 FILLER PIC X(20) VALUE "rabbit".
     05 FILLER PIC 99 VALUE 8.
-    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/caerbannog.png".
+    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/rabbit_caerbannog.png".
     05 FILLER PIC X(20) VALUE "axolotl".
     05 FILLER PIC 99 VALUE 5.
     05 FILLER PIC X(64) VALUE "textures/entity/axolotl/axolotl_blue.png".
