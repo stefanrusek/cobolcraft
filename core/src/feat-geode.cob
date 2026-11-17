@@ -213,7 +213,7 @@
          CALL "FD-J-IP" USING JSON-DOC WS-E WA-IP(WS-ROW, 3) WS-OK
          PERFORM CHECK-OK
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
  CHECK-OK.
      IF WS-OK = 0
          MOVE 1 TO FD-BAD
@@ -254,6 +254,8 @@
          PERFORM CHECK-OK
      END-IF
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FD-GEODE-NODE.
 
  IDENTIFICATION DIVISION.
@@ -579,7 +581,7 @@
          END-PERFORM
      END-PERFORM
      MOVE 1 TO L-RESULT
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> OPEN-NOISE: the shape noise of the world seed (4.2): NormalNoise.createParity(-4, [1.0]) is the legacy noise of octave -4 whose two layer amplitudes are 5/6 as a float32
  OPEN-NOISE.
      IF WS-HANDLE > 0 AND WS-HANDLE <= NZ-NOISE-COUNT AND WS-HSEED = CV-SEED
@@ -753,4 +755,6 @@
      END-IF
      PERFORM PROVIDER-SET
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FR-GEODE.

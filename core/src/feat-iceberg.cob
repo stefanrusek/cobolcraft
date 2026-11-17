@@ -340,7 +340,7 @@
      IF WS-GT = 1
          PERFORM CUT-OUT
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> NEXT-DOUBLE-GT: WS-GT 1 when nextDouble() > WS-THRESH (the sign of the IEEE difference)
  NEXT-DOUBLE-GT.
      CALL "WGR-NEXT-DOUBLE" USING L-STATE WS-U1
@@ -803,4 +803,6 @@
          END-PERFORM
      END-PERFORM
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FR-ICEBERG.
