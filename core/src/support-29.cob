@@ -298,6 +298,7 @@
  01 WS-HALF                PIC X(24) VALUE "half".
  01 WS-FACING              PIC X(24) VALUE "facing".
  01 WS-FACE                PIC X(24) VALUE "face".
+ 01 WS-FACE-FOUND          BINARY-LONG.
  01 WS-ABOVE-STATE         BINARY-LONG.
  01 WS-SEA-OK              BINARY-LONG.
  01 WS-SIDE-TABLE.
@@ -463,35 +464,30 @@
 *>       hangs on the solid block behind it
          WHEN 15
              CALL "SUP-FACING" USING L-STATE WS-FACING WS-DX WS-DZ WS-DY WS-FOUND
-             IF WS-FOUND = 0
+             COMPUTE WS-X = L-X - WS-DX
+             COMPUTE WS-Z = L-Z - WS-DZ
+             CALL "SUP-SOLID-AT" USING L-DIM WS-X L-Y WS-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+*>           every block of rule 15 has a facing property; one without it would stay (nothing to hang on)
+             IF WS-OTHER-SOLID = 1 OR WS-FOUND = 0
                  MOVE 1 TO L-OK
-             ELSE
-                 COMPUTE WS-X = L-X - WS-DX
-                 COMPUTE WS-Z = L-Z - WS-DZ
-                 CALL "SUP-SOLID-AT" USING L-DIM WS-X L-Y WS-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
-                 IF WS-OTHER-SOLID = 1
-                     MOVE 1 TO L-OK
-                 END-IF
              END-IF
 *>       a button or lever: floor below, ceiling above, wall behind
          WHEN 16
              CALL "SUP-FACING" USING L-STATE WS-FACE WS-DX WS-DZ WS-DY WS-FOUND
-             IF WS-FOUND = 0
+             MOVE WS-FOUND TO WS-FACE-FOUND
+             MOVE L-X TO WS-X
+             MOVE L-Z TO WS-Z
+             COMPUTE WS-Y = L-Y + WS-DY
+             IF WS-DY = 0
+                 CALL "SUP-FACING" USING L-STATE WS-FACING WS-DX WS-DZ WS-DY WS-FOUND
+                 COMPUTE WS-X = L-X - WS-DX
+                 COMPUTE WS-Z = L-Z - WS-DZ
+                 MOVE L-Y TO WS-Y
+             END-IF
+             CALL "SUP-SOLID-AT" USING L-DIM WS-X WS-Y WS-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+*>           every button and lever has a face property; one without it would stay
+             IF WS-OTHER-SOLID = 1 OR WS-FACE-FOUND = 0
                  MOVE 1 TO L-OK
-             ELSE
-                 MOVE L-X TO WS-X
-                 MOVE L-Z TO WS-Z
-                 COMPUTE WS-Y = L-Y + WS-DY
-                 IF WS-DY = 0
-                     CALL "SUP-FACING" USING L-STATE WS-FACING WS-DX WS-DZ WS-DY WS-FOUND
-                     COMPUTE WS-X = L-X - WS-DX
-                     COMPUTE WS-Z = L-Z - WS-DZ
-                     MOVE L-Y TO WS-Y
-                 END-IF
-                 CALL "SUP-SOLID-AT" USING L-DIM WS-X WS-Y WS-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
-                 IF WS-OTHER-SOLID = 1
-                     MOVE 1 TO L-OK
-                 END-IF
              END-IF
 *>       a door: its lower half stands on a solid block, its upper half on the lower half of the same door
          WHEN 17
@@ -506,8 +502,6 @@
                      MOVE 1 TO L-OK
                  END-IF
              END-IF
-         WHEN OTHER
-             MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
  END PROGRAM SUP-SURVIVES.

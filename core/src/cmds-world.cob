@@ -2401,7 +2401,6 @@
  COPY BRRUN.
  COPY PROTO.
  01 WS-WANT-ID             PIC X(80).
- 01 WS-COLONS              BINARY-LONG.
  01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
  01 WS-NAME-BIOME          PIC X(32) VALUE "biome".
  01 WS-NAME-POI            PIC X(32) VALUE "poi".
@@ -2533,13 +2532,8 @@
              IF WS-KIND = 2
                  MOVE WS-TAG TO WS-WANT-ID
              ELSE
-                 MOVE 0 TO WS-COLONS
-                 INSPECT WS-TEXT(1:WS-TEXT-LENGTH) TALLYING WS-COLONS FOR ALL ":"
-                 IF WS-COLONS > 0
-                     MOVE WS-TEXT TO WS-WANT-ID
-                 ELSE
-                     STRING "minecraft:" WS-TEXT(1:WS-TEXT-LENGTH) DELIMITED BY SIZE INTO WS-WANT-ID
-                 END-IF
+*>               CXC-ID-TEXT already put minecraft: in front of an identifier typed without a namespace.
+                 MOVE WS-TEXT TO WS-WANT-ID
              END-IF
              COMPUTE WS-SX = FUNCTION INTEGER(BS-X)
              COMPUTE WS-SZ = FUNCTION INTEGER(BS-Z)
