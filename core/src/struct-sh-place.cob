@@ -256,16 +256,24 @@
                      MOVE FUNCTION TRIM(WS-SIDE) TO WS-VAL
                  WHEN "north"
                      MOVE "N" TO WS-LETTER
-                     PERFORM SIDE-KEY
+                     CALL "SHP-DIRNAME" USING L-ROW WS-LETTER WS-SIDE
+                     MOVE SPACES TO WS-PK
+                     MOVE FUNCTION TRIM(WS-SIDE) TO WS-PK
                  WHEN "south"
                      MOVE "S" TO WS-LETTER
-                     PERFORM SIDE-KEY
+                     CALL "SHP-DIRNAME" USING L-ROW WS-LETTER WS-SIDE
+                     MOVE SPACES TO WS-PK
+                     MOVE FUNCTION TRIM(WS-SIDE) TO WS-PK
                  WHEN "east"
                      MOVE "E" TO WS-LETTER
-                     PERFORM SIDE-KEY
+                     CALL "SHP-DIRNAME" USING L-ROW WS-LETTER WS-SIDE
+                     MOVE SPACES TO WS-PK
+                     MOVE FUNCTION TRIM(WS-SIDE) TO WS-PK
                  WHEN "west"
                      MOVE "W" TO WS-LETTER
-                     PERFORM SIDE-KEY
+                     CALL "SHP-DIRNAME" USING L-ROW WS-LETTER WS-SIDE
+                     MOVE SPACES TO WS-PK
+                     MOVE FUNCTION TRIM(WS-SIDE) TO WS-PK
                  WHEN "hinge"
                      IF SP-ORIENT(L-ROW) = 0 OR SP-ORIENT(L-ROW) = 1
                          IF FUNCTION TRIM(WS-PV) = "left"
@@ -283,10 +291,6 @@
      END-IF
      CALL "STRUCT-TPL-STATE" USING WS-KEY WS-PAIRS L-STATE
      GOBACK.
- SIDE-KEY.
-     CALL "SHP-DIRNAME" USING L-ROW WS-LETTER WS-SIDE
-     MOVE SPACES TO WS-PK
-     MOVE FUNCTION TRIM(WS-SIDE) TO WS-PK.
  END PROGRAM SHP-RESOLVE.
 
  IDENTIFICATION DIVISION.
@@ -390,7 +394,10 @@
          ELSE
 *>           no unique solid neighbour: while the cell in front is solid turn (opposite, clockwise, opposite)
              PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 3
-                 PERFORM FRONT-SOLID
+                 COMPUTE WS-X = WS-WX + WS-DX(WS-D)
+                 COMPUTE WS-Z = WS-WZ + WS-DZ(WS-D)
+                 CALL "FL-GET-STATE" USING WS-X WS-WY WS-Z WS-NB
+                 CALL "MSP-FULL" USING WS-NB WS-FULL
                  IF WS-FULL = 1
                      EVALUATE WS-STEP
                          WHEN 2
@@ -409,11 +416,6 @@
      CALL "MSP-RNG-LONG" USING WS-SEED
      CALL "GBE-ADD" USING WS-WX WS-WY WS-WZ WS-KIND L-LOOT WS-SEED WS-TEXT
      GOBACK.
- FRONT-SOLID.
-     COMPUTE WS-X = WS-WX + WS-DX(WS-D)
-     COMPUTE WS-Z = WS-WZ + WS-DZ(WS-D)
-     CALL "FL-GET-STATE" USING WS-X WS-WY WS-Z WS-NB
-     CALL "MSP-FULL" USING WS-NB WS-FULL.
  END PROGRAM SHP-CHEST.
 
  IDENTIFICATION DIVISION.
@@ -442,9 +444,6 @@
  01 LS-ARG                 PIC X(58).
  01 LS-LOOT                PIC X(48).
  01 LS-FACE                PIC X(58).
- 01 LS-OX                  BINARY-LONG.
- 01 LS-OY                  BINARY-LONG.
- 01 LS-OZ                  BINARY-LONG.
  01 LS-EYE-TEXT            PIC X(5).
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -512,13 +511,13 @@
                  WHEN "D"
                      MOVE "DO0" TO LS-SEG
                      COMPUTE LS-FLAG = SP-F1(L-ROW)
-                     PERFORM DOOR-SEGMENT
+                     CALL "SHP-DOOR" USING L-ROW LS-C LS-FLAG
                  WHEN "O"
                      MOVE 0 TO LS-FLAG
-                     PERFORM DOOR-SEGMENT
+                     CALL "SHP-DOOR" USING L-ROW LS-C LS-FLAG
                  WHEN "G"
                      MOVE 2 TO LS-FLAG
-                     PERFORM DOOR-SEGMENT
+                     CALL "SHP-DOOR" USING L-ROW LS-C LS-FLAG
                  WHEN "C"
                      MOVE SPACES TO LS-LOOT
                      MOVE LS-ARG TO LS-LOOT
@@ -538,15 +537,31 @@
          END-IF
      END-PERFORM
      GOBACK.
- DOOR-SEGMENT.
-*>  generateSmallDoor (3.5): the door script of the type (0 opening, 1 wood, 2 grates, 3 iron) at the door position
-     MOVE LS-V(1) TO LS-OX
-     MOVE LS-V(2) TO LS-OY
-     MOVE LS-V(3) TO LS-OZ
-     MOVE "DO0" TO LS-SEG
-     MOVE FUNCTION CHAR(LS-FLAG + 49) TO LS-SEG(3:1)
-     CALL "SHP-RUN" USING L-ROW LS-SEG LS-OX LS-OY LS-OZ.
  END PROGRAM SHP-RUN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SHP-DOOR.
+*> USING row, local box (six BINARY-LONG), door type (0 opening, 1 wood, 2 grates, 3 iron): generateSmallDoor (3.5), the door script of the type at the door position (the box's first corner).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SEG                 PIC X(3).
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-C.
+    05 L-V                 BINARY-LONG OCCURS 6 TIMES.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-C L-FLAG.
+     MOVE L-V(1) TO WS-OX
+     MOVE L-V(2) TO WS-OY
+     MOVE L-V(3) TO WS-OZ
+     MOVE "DO0" TO WS-SEG
+     MOVE FUNCTION CHAR(L-FLAG + 49) TO WS-SEG(3:1)
+     CALL "SHP-RUN" USING L-ROW WS-SEG WS-OX WS-OY WS-OZ
+     GOBACK.
+ END PROGRAM SHP-DOOR.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SH-POST-PORTAL.
@@ -575,7 +590,12 @@
  01 WS-FISH                PIC X(32) VALUE "minecraft:silverfish".
  01 WS-S0                  PIC X(3) VALUE "PR0".
  01 WS-SF                  PIC X(3) VALUE "PFR".
- 01 WS-SQ                  PIC X(3) VALUE "PQ0".
+ 01 WS-SQ                  PIC X(3).
+ 01 WS-SQ-NAMES.
+    05 FILLER              PIC X(3) VALUE "PQX".
+    05 FILLER              PIC X(3) VALUE "PQ0".
+ 01 WS-SQ-TAB REDEFINES WS-SQ-NAMES.
+    05 WS-SQ-NAME          PIC X(3) OCCURS 2 TIMES.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -596,9 +616,9 @@
      END-PERFORM
      MOVE 0 TO SH-EYE-IDX
      CALL "SHP-RUN" USING L-ROW WS-SF WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
-     IF WS-ALL = 1
-         CALL "SHP-RUN" USING L-ROW WS-SQ WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
-     END-IF
+*>   Every eye set (the drawn flags: probability 0.1 ^ 12) puts the nine portal blocks; otherwise the segment PQX, which has no script line, runs.
+     MOVE WS-SQ-NAME(WS-ALL + 1) TO WS-SQ
+     CALL "SHP-RUN" USING L-ROW WS-SQ WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
      CALL "SPB-WORLD" USING L-ROW WS-LX WS-LY WS-LZ WS-WX WS-WY WS-WZ
      CALL "SPB-BOX-INSIDE" USING SP-WBOX WS-WX WS-WY WS-WZ WS-IN
      IF WS-IN = 1
@@ -628,20 +648,20 @@
      EVALUATE SP-TYPE(L-ROW)
          WHEN 30
              MOVE "ST0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF SP-F2(L-ROW) = 1
                  MOVE "STL" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
              IF SP-F3(L-ROW) = 1
                  MOVE "STR" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
          WHEN 19
              MOVE "CC0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              MOVE "CC1" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 20
              MOVE "FC0" TO WS-SEG
              PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z >= SP-F2(L-ROW)
@@ -649,83 +669,81 @@
              END-PERFORM
          WHEN 22
              MOVE "TU0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF WS-NE = 1
                  MOVE "TUL" TO WS-SEG
              ELSE
                  MOVE "TUR" TO WS-SEG
              END-IF
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 26
              MOVE "TU0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF WS-NE = 1
                  MOVE "TUR" TO WS-SEG
              ELSE
                  MOVE "TUL" TO WS-SEG
              END-IF
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 27
              MOVE "RC0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF SP-F2(L-ROW) < 3
                  MOVE "RC1" TO WS-SEG
                  MOVE FUNCTION CHAR(SP-F2(L-ROW) + 50) TO WS-SEG(3:1)
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
          WHEN 21
              MOVE "F50" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF SP-F2(L-ROW) = 1
                  MOVE "F5A" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
              IF SP-F4(L-ROW) = 1
                  MOVE "F5B" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
              IF SP-F3(L-ROW) = 1
                  MOVE "F5C" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
              IF SP-MST(L-ROW) = 1
                  MOVE "F5D" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
              MOVE "F5E" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 25
              MOVE "PH0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 31
              MOVE "SS0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 28 WHEN 29
              MOVE "SD0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
          WHEN 23
              IF SP-F2(L-ROW) = 1
                  MOVE "LT0" TO WS-SEG
              ELSE
                  MOVE "LS0" TO WS-SEG
              END-IF
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              MOVE "LC0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF SP-F2(L-ROW) = 1
                  MOVE "LD0" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
              MOVE "LE0" TO WS-SEG
-             PERFORM RUN-SEG
+             CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              IF SP-F2(L-ROW) = 1
                  MOVE "LE1" TO WS-SEG
-                 PERFORM RUN-SEG
+                 CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO
              END-IF
          WHEN 24
              CALL "SH-POST-PORTAL" USING L-ROW
      END-EVALUATE
      GOBACK.
- RUN-SEG.
-     CALL "SHP-RUN" USING L-ROW WS-SEG WS-ZERO BY CONTENT WS-ZERO BY CONTENT WS-ZERO.
  END PROGRAM SH-POST.
