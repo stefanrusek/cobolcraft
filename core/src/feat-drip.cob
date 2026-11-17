@@ -492,12 +492,7 @@
      CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-HA WS-HB WS-D1
      CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-D1 WS-HC WS-D2
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-OSCALE(WS-S) WS-D2 WS-HV
-     MOVE WS-HV TO WS-D1
-     MOVE WS-C-ZERO TO WS-D2
-     PERFORM SIGN-OF-DIFF
-     IF WS-SG < 0
-         MOVE WS-C-ZERO TO WS-HV
-     END-IF
+*>   the formula is positive for every distance a column cell can have (x = d / r * 0.384 is at most 0.55): no clamp at 0 is needed
      CALL STATIC "cc_f64_div" USING BY REFERENCE WS-HV WS-C0384 WS-D1
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D1 WS-HRADIUS WS-D2
      CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-D2 WS-HOUT
