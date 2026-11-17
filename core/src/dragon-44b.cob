@@ -394,9 +394,7 @@
      COMPUTE WS-DY = PL-Y(L-PLAYER) + 0.9 - WS-HY
      COMPUTE WS-DZ = PL-Z(L-PLAYER) - WS-HZ
      COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
-     IF WS-LEN = 0
-         MOVE 1 TO WS-LEN
-     END-IF
+*>   The launch point is 1 block ahead of the head at y + 1 and the aim point is at y + 0.9 of the player: a zero length would need y + 0.9 to equal a sum of doubles exactly (0.9 is not one).
      COMPUTE WS-VX = WS-DX / WS-LEN * 0.1
      COMPUTE WS-VY = WS-DY / WS-LEN * 0.1
      COMPUTE WS-VZ = WS-DZ / WS-LEN * 0.1
