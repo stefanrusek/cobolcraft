@@ -606,7 +606,32 @@
                  END-IF
              WHEN 74
                  IF L-SLOT < 2
-                     PERFORM READ-LAYERS
+                     *>   A count of 128 or more is a two-byte VarInt: keep the first 16 of whatever follows is not read (the count reads as 16 and the layers are not walked).
+                     IF WS-B1 >= 128
+                         MOVE 16 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+                     ELSE
+                         MOVE 0 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+                         MOVE 2 TO WS-P
+                         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-B1 OR WS-N > 16 OR WS-P > WS-LEN
+                             COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+                             ADD 1 TO WS-P
+                             MOVE WS-B2 TO EN-HB-PAT(L-ROW, L-SLOT + 1, WS-N)
+                             IF WS-B2 = 0
+                            *>           An inline pattern: two Strings (a one-byte length each), skipped.
+                                 PERFORM 2 TIMES
+                                     IF WS-P <= WS-LEN
+                                         COMPUTE WS-L = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+                                         COMPUTE WS-P = WS-P + 1 + WS-L
+                                     END-IF
+                                 END-PERFORM
+                             END-IF
+                             IF WS-P <= WS-LEN
+                                 COMPUTE EN-HB-DYE(L-ROW, L-SLOT + 1, WS-N) = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
+                                 ADD 1 TO WS-P
+                                 ADD 1 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
+                             END-IF
+                         END-PERFORM
+                     END-IF
                  END-IF
              WHEN OTHER
                  CONTINUE
@@ -618,32 +643,4 @@
          MOVE WS-ENCHANTED TO EN-EQ-FOIL(L-ROW, L-SLOT + 1)
      END-IF
      GOBACK.
-
- READ-LAYERS.
-*>   A count of 128 or more is a two-byte VarInt: keep the first 16 of whatever follows is not read (the count reads as 16 and the layers are not walked).
-     IF WS-B1 >= 128
-         MOVE 16 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
-         EXIT PARAGRAPH
-     END-IF
-     MOVE 0 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
-     MOVE 2 TO WS-P
-     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-B1 OR WS-N > 16 OR WS-P > WS-LEN
-         COMPUTE WS-B2 = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
-         ADD 1 TO WS-P
-         MOVE WS-B2 TO EN-HB-PAT(L-ROW, L-SLOT + 1, WS-N)
-         IF WS-B2 = 0
-*>           An inline pattern: two Strings (a one-byte length each), skipped.
-             PERFORM 2 TIMES
-                 IF WS-P <= WS-LEN
-                     COMPUTE WS-L = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
-                     COMPUTE WS-P = WS-P + 1 + WS-L
-                 END-IF
-             END-PERFORM
-         END-IF
-         IF WS-P <= WS-LEN
-             COMPUTE EN-HB-DYE(L-ROW, L-SLOT + 1, WS-N) = FUNCTION ORD(PB-ISX-VALUE(WS-K)(WS-P:1)) - 1
-             ADD 1 TO WS-P
-             ADD 1 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
-         END-IF
-     END-PERFORM.
  END PROGRAM ENTITY-EQ-COMPONENTS.

@@ -37,6 +37,9 @@
  01 WS-A.
     05 WS-AV                FLOAT-LONG OCCURS 3 TIMES.
  01 WS-OBS                 PIC 9.
+ 01 WS-ROW-N               BINARY-LONG.
+ 01 WS-HAND-N              BINARY-LONG.
+ 01 WS-ITEM-N              BINARY-LONG.
  01 WS-EYE-TABLE.
     05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION.
@@ -125,6 +128,68 @@
          ELSE
              MOVE -1000 TO TL-EXPECTED-N
              COMPUTE TL-OBSERVED-N ROUNDED = WS-AV(2) * 1000
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   The same arms with the corner order reversed (corner 1 at the hand end): the hand and the direction are the same, whichever corner comes first.
+*>   Case 1 a hanging arm whose corner 1 is the lower end, case 2 a raised arm whose corner 1 is the far end.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
+             IF FUNCTION MOD(WS-K, 2) = 0
+                 MOVE 0.5 TO WS-CX(WS-K)
+             ELSE
+                 MOVE 0.25 TO WS-CX(WS-K)
+             END-IF
+             IF WS-I = 1
+                 MOVE 1.0 TO WS-CY(WS-K)
+                 MOVE 0 TO WS-CZ(WS-K)
+                 IF WS-K > 4
+                     COMPUTE WS-CY(WS-K) = WS-CY(WS-K) + 0.375
+                 ELSE
+                     COMPUTE WS-CY(WS-K) = WS-CY(WS-K) - 0.375
+                 END-IF
+                 IF FUNCTION MOD(FUNCTION INTEGER((WS-K - 1) / 2), 2) = 1
+                     COMPUTE WS-CZ(WS-K) = WS-CZ(WS-K) + 0.125
+                 ELSE
+                     COMPUTE WS-CZ(WS-K) = WS-CZ(WS-K) - 0.125
+                 END-IF
+             ELSE
+                 MOVE 1.2 TO WS-CY(WS-K)
+                 MOVE 0.4 TO WS-CZ(WS-K)
+                 IF WS-K > 4
+                     COMPUTE WS-CZ(WS-K) = WS-CZ(WS-K) - 0.375
+                 ELSE
+                     COMPUTE WS-CZ(WS-K) = WS-CZ(WS-K) + 0.375
+                 END-IF
+                 IF FUNCTION MOD(FUNCTION INTEGER((WS-K - 1) / 2), 2) = 1
+                     COMPUTE WS-CY(WS-K) = WS-CY(WS-K) + 0.125
+                 ELSE
+                     COMPUTE WS-CY(WS-K) = WS-CY(WS-K) - 0.125
+                 END-IF
+             END-IF
+         END-PERFORM
+         MOVE 1 TO WS-KIND
+         CALL "ENTITY-HAND-FIND" USING WS-CORNERS WS-KIND WS-P WS-A WS-OK
+         MOVE "N" TO TL-MODE
+         MOVE WS-I TO WS-OBS
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance hands reversed corners of case " WS-OBS " give the same hand" DELIMITED BY SIZE INTO TL-CASE
+         IF WS-I = 1
+             MOVE 625 TO TL-EXPECTED-N
+             COMPUTE TL-OBSERVED-N ROUNDED = WS-PV(2) * 1000
+         ELSE
+             MOVE 775 TO TL-EXPECTED-N
+             COMPUTE TL-OBSERVED-N ROUNDED = WS-PV(3) * 1000
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance hands reversed corners of case " WS-OBS " give the same direction" DELIMITED BY SIZE INTO TL-CASE
+         IF WS-I = 1
+             MOVE -1000 TO TL-EXPECTED-N
+             COMPUTE TL-OBSERVED-N ROUNDED = WS-AV(2) * 1000
+         ELSE
+             MOVE 1000 TO TL-EXPECTED-N
+             COMPUTE TL-OBSERVED-N ROUNDED = WS-AV(3) * 1000
          END-IF
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
@@ -217,6 +282,22 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE "acceptance hands both hands hold an item: four quads" TO TL-CASE
      MOVE 24 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A full vertex budget: the held item is skipped when its 12 vertices no longer fit, and drawn when they just fit.
+     COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 11
+     MOVE 1 TO WS-ROW-N
+     MOVE 1 TO WS-HAND-N
+     MOVE 3 TO WS-ITEM-N
+     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-ROW-N WS-HAND-N WS-ITEM-N WS-EYE-TABLE
+     MOVE "acceptance hands an item that does not fit the vertex budget is skipped" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CL-MAX-GI-VERTICES - 11
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 12
+     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-ROW-N WS-HAND-N WS-ITEM-N WS-EYE-TABLE
+     MOVE "acceptance hands an item that just fits the vertex budget is drawn" TO TL-CASE
+     MOVE CL-MAX-GI-VERTICES TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A mob without arms in its model (a cow) holds nothing visible.

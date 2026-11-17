@@ -33,6 +33,7 @@
  01 WS-K20                 PIC X(20).
  01 WS-PATH                PIC X(64).
  01 WS-TCODE               BINARY-LONG.
+ 01 WS-HAT                 BINARY-LONG.
  01 WS-CASES-DATA.
 *>   kind (1 villager, 2 zombie villager), baby, type, profession, expected model row key
     05 FILLER PIC X(40) VALUE "1 0 2 1 villager_nohat".
@@ -142,6 +143,25 @@
      MOVE "acceptance villager hat plains butcher: villager 11 + no-hat type layer 7 + profession 11 + level 11 cuboids" TO TL-CASE
      MOVE 1440 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The metadata cache holds 64 paths and then replaces the oldest: 70 paths without a file wrap it, and the plains (full) and desert (partial) types are still read right.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 70
+         MOVE WS-I TO WS-I-D
+         MOVE SPACES TO WS-PATH
+         STRING "textures/entity/villager/type/none" WS-I-D ".png" DELIMITED BY SIZE INTO WS-PATH
+         CALL "VILLAGER-HAT" USING CLIENT-STATE WS-PATH WS-HAT
+     END-PERFORM
+     MOVE "textures/entity/villager/type/plains.png" TO WS-PATH
+     CALL "VILLAGER-HAT" USING CLIENT-STATE WS-PATH WS-HAT
+     MOVE "acceptance villager hat plains is full after the cache wrapped" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-HAT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "textures/entity/villager/type/desert.png" TO WS-PATH
+     CALL "VILLAGER-HAT" USING CLIENT-STATE WS-PATH WS-HAT
+     MOVE "acceptance villager hat desert is partial after the cache wrapped" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HAT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-VILLAGER-HAT.

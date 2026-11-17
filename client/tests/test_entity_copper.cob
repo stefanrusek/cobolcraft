@@ -78,6 +78,14 @@
      MOVE "acceptance copper golem standing keeps the rest pose" TO TL-CASE
      COMPUTE WS-DIFF = MM-CXROT(WS-RA) + MM-CXROT(WS-LA) + MM-CXROT(WS-HEAD)
      PERFORM CHECK-SMALL
+*>   A key with no pose program (a row of another code) leaves the model as it is, even with a walk state.
+     MOVE 0.5 TO MM-CXROT(WS-RA)
+     MOVE "sodgrazer" TO WS-KEY20
+     MOVE 1 TO WS-IV(4)
+     CALL "ENTITY-POSE-MORE" USING EMM-MODEL WS-KEY20 WS-IN WS-AGE
+     MOVE "acceptance pose of a key without a program leaves the model unchanged" TO TL-CASE
+     COMPUTE WS-DIFF = MM-CXROT(WS-RA) - 0.5
+     PERFORM CHECK-SMALL
 *>   Drawn: the walk state of the replica changes the vertices.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE 0 TO EA-MT-COUNT

@@ -148,6 +148,17 @@
      MOVE EN-FLW(1) TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
      PERFORM CHECK-N
+*>   An event the golem does not use (2) changes neither counter.
+     MOVE 7 TO EN-ATK(1)
+     MOVE 9 TO EN-FLW(1)
+     MOVE 2 TO WS-EV
+     CALL "ENTITY-EVENT" USING CLIENT-STATE WS-ID WS-EV
+     MOVE "acceptance iron golem ignores event 2" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = EN-ATK(1) * 100 + EN-FLW(1)
+     MOVE 709 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 0 TO EN-ATK(1) EN-FLW(1)
+     MOVE 0 TO TL-EXPECTED-N
 *>   Idle ticks keep the counters at 0.
      CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
      MOVE "acceptance iron golem counters stay at 0" TO TL-CASE
