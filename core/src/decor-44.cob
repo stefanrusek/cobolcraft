@@ -96,6 +96,10 @@
          IF WS-TAIL = "_helmet"
              MOVE 4 TO L-SLOT
          END-IF
+     END-IF
+     IF WS-LEN >= 6
+         COMPUTE WS-START = WS-LEN - 5
+         MOVE WS-KEY(WS-START:6) TO WS-TAIL
          IF WS-TAIL = "_boots"
              MOVE 1 TO L-SLOT
          END-IF
