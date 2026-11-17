@@ -107,6 +107,19 @@
  01 L-Z                    BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-FT L-X L-Y L-Z L-RESULT.
+     GO TO MAIN-LINE.
+*> CHECK-OPAQUE: WS-VALID 0 unless the block of WS-STATE is opaque (a full face)
+ CHECK-OPAQUE.
+     CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
+     IF WS-BLOCK = 0
+         MOVE 0 TO WS-VALID
+     ELSE
+         IF CB-OPAQUE(WS-BLOCK) = 0
+             MOVE 0 TO WS-VALID
+         END-IF
+     END-IF
+     .
+ MAIN-LINE.
      MOVE 0 TO L-RESULT
      MOVE FT-A(L-FT) TO WS-ROW
      MOVE WA-I(WS-ROW, 1) TO WS-RANGE
@@ -166,16 +179,5 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM
-     GOBACK.
-*> CHECK-OPAQUE: WS-VALID 0 unless the block of WS-STATE is opaque (a full face)
- CHECK-OPAQUE.
-     CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
-     IF WS-BLOCK = 0
-         MOVE 0 TO WS-VALID
-     ELSE
-         IF CB-OPAQUE(WS-BLOCK) = 0
-             MOVE 0 TO WS-VALID
-         END-IF
-     END-IF
-     .
+     CONTINUE.
  END PROGRAM FR-MAGMA.

@@ -1,0 +1,38 @@
+*> Implementation test (coverage lane A; core/src/play.cob PLAY-PACKET and PLAY-DECODE): a Select Trade packet (0x34, one VarInt) from a player who has no merchant screen open is read and
+*> handled without a disconnect: the player stays in the game.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVA-PLAY52.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-E                   BINARY-DOUBLE.
+ 01 WS-O                   BINARY-DOUBLE.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 52.
+ 01 WS-INDEX               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-INDEX
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE "test cova play52 a select trade packet without a merchant screen keeps the player in the game" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE PL-USED(WS-PLAYER) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+     STOP RUN.
+ END PROGRAM TEST-COVA-PLAY52.
+ COPY CORETEST.
+ COPY COVATEST.

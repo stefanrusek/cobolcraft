@@ -305,41 +305,7 @@
  01 L-HZ                   FLOAT-LONG.
  01 L-WALK                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
-     MOVE 0 TO L-HX L-HZ L-WALK
-     IF EN-FOX-BON(L-ROW) = 0
-         IF EN-FOX-BCD(L-ROW) > 0
-             SUBTRACT 1 FROM EN-FOX-BCD(L-ROW)
-         ELSE
-             MOVE 100 TO EN-FOX-BCD(L-ROW)
-             PERFORM SEARCH-BUSH
-         END-IF
-     END-IF
-     IF EN-FOX-BON(L-ROW) = 1
-         MOVE EN-FOX-BX(L-ROW) TO WS-X
-         MOVE EN-FOX-BY(L-ROW) TO WS-Y
-         MOVE EN-FOX-BZ(L-ROW) TO WS-Z
-         PERFORM READ-BUSH
-         IF WS-FOUND = 0
-             MOVE 0 TO EN-FOX-BON(L-ROW) EN-FOX-BT(L-ROW)
-         ELSE
-             COMPUTE WS-HOR2 = (EN-X(L-ROW) - (WS-X + 0.5)) ** 2 + (EN-Z(L-ROW) - (WS-Z + 0.5)) ** 2
-             IF WS-HOR2 <= 4 AND FUNCTION ABS(EN-Y(L-ROW) - WS-Y) <= 2
-                 MOVE 1 TO L-WALK
-                 ADD 1 TO EN-FOX-BT(L-ROW)
-                 IF EN-FOX-BT(L-ROW) >= 40
-                     PERFORM PICK
-                 END-IF
-             ELSE
-                 MOVE 1 TO L-WALK
-                 CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-                 CALL "STDMOB-HEAD" USING L-ROW WS-M WS-X WS-Y WS-Z L-HX L-HZ WS-ARRIVED
-                 COMPUTE L-HX = L-HX * 1.2
-                 COMPUTE L-HZ = L-HZ * 1.2
-             END-IF
-         END-IF
-     END-IF
-     GOBACK.
-
+     GO TO MAIN-LINE.
  READ-BUSH.
 *>   WS-FOUND 1 when the cell holds a sweet berry bush of age 2 or more; WS-AGE its age, WS-STATE its state.
      MOVE 0 TO WS-FOUND WS-AGE
@@ -402,6 +368,41 @@
          END-IF
      END-IF
      MOVE 0 TO EN-FOX-BON(L-ROW) EN-FOX-BT(L-ROW).
+ MAIN-LINE.
+     MOVE 0 TO L-HX L-HZ L-WALK
+     IF EN-FOX-BON(L-ROW) = 0
+         IF EN-FOX-BCD(L-ROW) > 0
+             SUBTRACT 1 FROM EN-FOX-BCD(L-ROW)
+         ELSE
+             MOVE 100 TO EN-FOX-BCD(L-ROW)
+             PERFORM SEARCH-BUSH
+         END-IF
+     END-IF
+     IF EN-FOX-BON(L-ROW) = 1
+         MOVE EN-FOX-BX(L-ROW) TO WS-X
+         MOVE EN-FOX-BY(L-ROW) TO WS-Y
+         MOVE EN-FOX-BZ(L-ROW) TO WS-Z
+         PERFORM READ-BUSH
+         IF WS-FOUND = 0
+             MOVE 0 TO EN-FOX-BON(L-ROW) EN-FOX-BT(L-ROW)
+         ELSE
+             COMPUTE WS-HOR2 = (EN-X(L-ROW) - (WS-X + 0.5)) ** 2 + (EN-Z(L-ROW) - (WS-Z + 0.5)) ** 2
+             IF WS-HOR2 <= 4 AND FUNCTION ABS(EN-Y(L-ROW) - WS-Y) <= 2
+                 MOVE 1 TO L-WALK
+                 ADD 1 TO EN-FOX-BT(L-ROW)
+                 IF EN-FOX-BT(L-ROW) >= 40
+                     PERFORM PICK
+                 END-IF
+             ELSE
+                 MOVE 1 TO L-WALK
+                 CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+                 CALL "STDMOB-HEAD" USING L-ROW WS-M WS-X WS-Y WS-Z L-HX L-HZ WS-ARRIVED
+                 COMPUTE L-HX = L-HX * 1.2
+                 COMPUTE L-HZ = L-HZ * 1.2
+             END-IF
+         END-IF
+     END-IF
+     CONTINUE.
  END PROGRAM M44-FOX-BERRIES.
 
  IDENTIFICATION DIVISION.

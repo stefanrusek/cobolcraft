@@ -127,32 +127,7 @@
  01 L-RESULT-ITEM          BINARY-LONG.
  01 L-RESULT-VAR           BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-ITEMS L-VARS L-MATCHED L-RESULT-ITEM L-RESULT-VAR.
-     MOVE 0 TO L-MATCHED L-RESULT-ITEM L-RESULT-VAR WS-N
-     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 9
-         IF L-ITEM(WS-S) NOT = 0
-             ADD 1 TO WS-N
-         END-IF
-     END-PERFORM
-     EVALUATE RR-SERIALIZER(L-ROW)
-         WHEN 2
-             PERFORM DYE-RULE
-         WHEN 3
-             PERFORM IMBUE-RULE
-         WHEN 8
-             PERFORM ROCKET-RULE
-         WHEN 9
-             PERFORM STAR-RULE
-         WHEN 10
-             PERFORM FADE-RULE
-         WHEN 11
-             PERFORM BANNER-RULE
-         WHEN 12
-             PERFORM SHIELD-RULE
-         WHEN 13
-             PERFORM REPAIR-RULE
-     END-EVALUATE
-     GOBACK.
-
+     GO TO MAIN-LINE.
 *> 27 2.5: one target, at least one dye (an item "<colour>_dye" that passes the dye ingredient); the target's dyed_color is mixed with the dyes.
  DYE-RULE.
      MOVE 0 TO WS-TARGETS WS-DYE-COUNT WS-BAD WS-TARGET-SLOT
@@ -448,4 +423,30 @@
              END-IF
          END-IF
      END-IF.
+ MAIN-LINE.
+     MOVE 0 TO L-MATCHED L-RESULT-ITEM L-RESULT-VAR WS-N
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 9
+         IF L-ITEM(WS-S) NOT = 0
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     EVALUATE RR-SERIALIZER(L-ROW)
+         WHEN 2
+             PERFORM DYE-RULE
+         WHEN 3
+             PERFORM IMBUE-RULE
+         WHEN 8
+             PERFORM ROCKET-RULE
+         WHEN 9
+             PERFORM STAR-RULE
+         WHEN 10
+             PERFORM FADE-RULE
+         WHEN 11
+             PERFORM BANNER-RULE
+         WHEN 12
+             PERFORM SHIELD-RULE
+         WHEN 13
+             PERFORM REPAIR-RULE
+     END-EVALUATE
+     CONTINUE.
  END PROGRAM CRAFT-SPECIAL.

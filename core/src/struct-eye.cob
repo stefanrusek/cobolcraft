@@ -43,10 +43,8 @@
      END-IF
 *>   the ring list for the seed (built when absent or stale)
      CALL "STRUCT-RING-HAS" USING L-SET L-SEED L-CX L-CZ WS-DUMMY
+*>   STRUCT-RINGS-BUILD always gives the set a ring row (at least 1).
      MOVE SS-RING-ROW(L-SET) TO WS-ROW
-     IF WS-ROW = 0
-         GOBACK
-     END-IF
      MOVE 9223372036854775807 TO WS-BEST
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW)
          COMPUTE WS-DX = SR-X(WS-ROW, WS-I) * 16 + 8 - L-OX

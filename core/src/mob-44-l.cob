@@ -218,40 +218,7 @@
  01 L-B                    BINARY-LONG.
  01 L-OUT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT.
-     CALL "IP-BLOCK-KEY" USING L-DIM L-X L-Y L-Z WS-KEY WS-LENGTH
-     COMPUTE WS-Y-BELOW = L-Y - 1
-     COMPUTE WS-Y-ABOVE = L-Y + 1
-     IF WS-KEY = "minecraft:turtle_egg"
-         EVALUATE L-KIND
-             WHEN 1
-                 CALL "EGG-IS-SAND" USING L-DIM L-X WS-Y-BELOW L-Z WS-SAND
-                 IF WS-SAND = 1
-                     MOVE 2012 TO WS-EVENT-ID
-                     MOVE 15 TO WS-DATA
-                     CALL "LEVEL-EVENT" USING L-DIM WS-EVENT-ID L-X L-Y L-Z WS-DATA WS-NO-PLAYER
-                 END-IF
-             WHEN 8
-                 PERFORM EGG-RANDOM-TICK
-         END-EVALUATE
-     END-IF
-     IF WS-KEY = "minecraft:frogspawn"
-         EVALUATE L-KIND
-             WHEN 1
-                 CALL "LEVEL-RANDOM-INT" USING WS-BOUND-D WS-DRAW-D
-                 CALL "GC7-FROG-DELAY" USING WS-DRAW-D WS-DELAY
-                 MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
-                 CALL "BT-SCHEDULE" USING L-DIM WS-TYPE-BLOCK WS-BLOCK L-X L-Y L-Z WS-DELAY WS-PRIORITY WS-RESULT
-             WHEN 4
-                 PERFORM FROG-SURVIVES
-                 IF WS-SUPPORT = 0
-                     MOVE 0 TO L-OUT
-                 END-IF
-             WHEN 7
-                 PERFORM FROG-TICK
-         END-EVALUATE
-     END-IF
-     GOBACK.
-
+     GO TO MAIN-LINE.
  EGG-RANDOM-TICK.
      COMPUTE WS-DAYTICK = FUNCTION MOD(CW-TIME, 24000)
      CALL "GC7-EGG-ATTR" USING WS-DAYTICK WS-CHANCE
@@ -322,6 +289,40 @@
              CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-PX WS-PY WS-PZ WS-YAW WS-ROW
          END-PERFORM
      END-IF.
+ MAIN-LINE.
+     CALL "IP-BLOCK-KEY" USING L-DIM L-X L-Y L-Z WS-KEY WS-LENGTH
+     COMPUTE WS-Y-BELOW = L-Y - 1
+     COMPUTE WS-Y-ABOVE = L-Y + 1
+     IF WS-KEY = "minecraft:turtle_egg"
+         EVALUATE L-KIND
+             WHEN 1
+                 CALL "EGG-IS-SAND" USING L-DIM L-X WS-Y-BELOW L-Z WS-SAND
+                 IF WS-SAND = 1
+                     MOVE 2012 TO WS-EVENT-ID
+                     MOVE 15 TO WS-DATA
+                     CALL "LEVEL-EVENT" USING L-DIM WS-EVENT-ID L-X L-Y L-Z WS-DATA WS-NO-PLAYER
+                 END-IF
+             WHEN 8
+                 PERFORM EGG-RANDOM-TICK
+         END-EVALUATE
+     END-IF
+     IF WS-KEY = "minecraft:frogspawn"
+         EVALUATE L-KIND
+             WHEN 1
+                 CALL "LEVEL-RANDOM-INT" USING WS-BOUND-D WS-DRAW-D
+                 CALL "GC7-FROG-DELAY" USING WS-DRAW-D WS-DELAY
+                 MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
+                 CALL "BT-SCHEDULE" USING L-DIM WS-TYPE-BLOCK WS-BLOCK L-X L-Y L-Z WS-DELAY WS-PRIORITY WS-RESULT
+             WHEN 4
+                 PERFORM FROG-SURVIVES
+                 IF WS-SUPPORT = 0
+                     MOVE 0 TO L-OUT
+                 END-IF
+             WHEN 7
+                 PERFORM FROG-TICK
+         END-EVALUATE
+     END-IF
+     CONTINUE.
  END PROGRAM EGG-BLOCK-HOOK.
 
  IDENTIFICATION DIVISION.

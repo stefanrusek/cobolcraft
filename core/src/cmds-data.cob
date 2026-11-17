@@ -2179,19 +2179,12 @@
      CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
      MOVE 1 TO BR-R-FAILED.
 
-*> The invalid message with WS-A2 (the exception text, length WS-L2): named adds the provider id.
+*> The invalid message with WS-A2 (the exception text, length WS-L2) of a named provider (only a named provider is evaluated by a provider: a number cannot fail, an inline definition is refused).
  RAISE-INVALID.
-     IF WS-NAMED = 1
-         MOVE "command.compute.result.named.invalid" TO WS-KEY
-         MOVE WS-ID TO WS-A1
-         MOVE WS-ID-LENGTH TO WS-L1
-         PERFORM RAISE-2
-     ELSE
-         MOVE "command.compute.result.unnamed.invalid" TO WS-KEY
-         MOVE WS-A2 TO WS-A1
-         MOVE WS-L2 TO WS-L1
-         PERFORM RAISE-1
-     END-IF.
+     MOVE "command.compute.result.named.invalid" TO WS-KEY
+     MOVE WS-ID TO WS-A1
+     MOVE WS-ID-LENGTH TO WS-L1
+     PERFORM RAISE-2.
 
 *> The message WS-KEY: the id when named, then WS-TEXT (WS-TEXT-LENGTH) twice for rounded (value, result) else once.
  TELL-NUMBER.

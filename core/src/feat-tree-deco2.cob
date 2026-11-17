@@ -326,6 +326,36 @@
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-ROW L-SLOT.
+     GO TO MAIN-LINE.
+ CIRCLE.
+     PERFORM VARYING WS-DX FROM -2 BY 1 UNTIL WS-DX > 2
+         PERFORM VARYING WS-DZ FROM -2 BY 1 UNTIL WS-DZ > 2
+             IF NOT ((WS-DX = 2 OR WS-DX = -2) AND (WS-DZ = 2 OR WS-DZ = -2))
+                 COMPUTE WS-QX = WS-CX + WS-DX
+                 COMPUTE WS-QZ = WS-CZ + WS-DZ
+                 PERFORM GROUND-COLUMN
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     .
+ GROUND-COLUMN.
+     MOVE 0 TO WS-STOP
+     PERFORM VARYING WS-DY FROM 2 BY -1 UNTIL WS-DY < -3 OR WS-STOP = 1
+         COMPUTE WS-TY = TW-LL-Y(WS-I) + WS-DY
+         CALL "FR-PROV-STATE" USING L-STATE TD-PV(L-ROW, L-SLOT) WS-QX WS-TY WS-QZ WS-NEW WS-OK
+         IF WS-OK = 1
+             CALL "FL-SET-STATE" USING WS-QX WS-TY WS-QZ WS-NEW WS-FLAGS WS-OK
+             MOVE 1 TO WS-STOP
+         ELSE
+             CALL "FL-GET-STATE" USING WS-QX WS-TY WS-QZ WS-STATE
+             CALL "FL-CLASS" USING WS-STATE WS-CLASS
+             IF WS-CLASS NOT = 1 AND WS-DY < 0
+                 MOVE 1 TO WS-STOP
+             END-IF
+         END-IF
+     END-PERFORM
+     .
+ MAIN-LINE.
      CALL "FR-DEC-LOWEST"
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TW-NLL
          PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
@@ -356,35 +386,7 @@
              END-IF
          END-PERFORM
      END-PERFORM
-     GOBACK.
- CIRCLE.
-     PERFORM VARYING WS-DX FROM -2 BY 1 UNTIL WS-DX > 2
-         PERFORM VARYING WS-DZ FROM -2 BY 1 UNTIL WS-DZ > 2
-             IF NOT ((WS-DX = 2 OR WS-DX = -2) AND (WS-DZ = 2 OR WS-DZ = -2))
-                 COMPUTE WS-QX = WS-CX + WS-DX
-                 COMPUTE WS-QZ = WS-CZ + WS-DZ
-                 PERFORM GROUND-COLUMN
-             END-IF
-         END-PERFORM
-     END-PERFORM
-     .
- GROUND-COLUMN.
-     MOVE 0 TO WS-STOP
-     PERFORM VARYING WS-DY FROM 2 BY -1 UNTIL WS-DY < -3 OR WS-STOP = 1
-         COMPUTE WS-TY = TW-LL-Y(WS-I) + WS-DY
-         CALL "FR-PROV-STATE" USING L-STATE TD-PV(L-ROW, L-SLOT) WS-QX WS-TY WS-QZ WS-NEW WS-OK
-         IF WS-OK = 1
-             CALL "FL-SET-STATE" USING WS-QX WS-TY WS-QZ WS-NEW WS-FLAGS WS-OK
-             MOVE 1 TO WS-STOP
-         ELSE
-             CALL "FL-GET-STATE" USING WS-QX WS-TY WS-QZ WS-STATE
-             CALL "FL-CLASS" USING WS-STATE WS-CLASS
-             IF WS-CLASS NOT = 1 AND WS-DY < 0
-                 MOVE 1 TO WS-STOP
-             END-IF
-         END-IF
-     END-PERFORM
-     .
+     CONTINUE.
  END PROGRAM FR-DEC-ALTER.
 
  IDENTIFICATION DIVISION.
@@ -628,6 +630,48 @@
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-ROW L-SLOT.
+     GO TO MAIN-LINE.
+ TRY-PLACE.
+     MOVE 0 TO WS-OK
+     CALL "FR-DEC-SHELF-OK" USING WS-PX TW-LOG-Y(WS-K) WS-PZ WS-GOOD
+     IF WS-GOOD = 1
+         MOVE 0 TO WS-BAD
+         IF WS-FALLEN = 0
+             COMPUTE WS-BELOW = TW-LOG-Y(WS-K) - 1
+             CALL "FR-DEC-SHELF-AT" USING WS-PX WS-BELOW WS-PZ WS-BAD
+         ELSE
+             PERFORM VARYING WS-M FROM 0 BY 1 UNTIL WS-M > 3
+                 CALL "FR-DEC-HDIR" USING WS-M WS-NX WS-NZ
+                 COMPUTE WS-NX = WS-PX + WS-NX
+                 COMPUTE WS-NZ = WS-PZ + WS-NZ
+                 CALL "FR-DEC-SHELF-AT" USING WS-NX TW-LOG-Y(WS-K) WS-NZ WS-HIT
+                 IF WS-HIT = 1
+                     MOVE 1 TO WS-BAD
+                 END-IF
+                 CALL "FR-DEC-HDIR" USING WS-M WS-NX WS-NZ
+                 COMPUTE WS-NX = TW-LOG-X(WS-K) + WS-NX
+                 COMPUTE WS-NZ = TW-LOG-Z(WS-K) + WS-NZ
+                 CALL "FR-DEC-SHELF-AT" USING WS-NX TW-LOG-Y(WS-K) WS-NZ WS-HIT
+                 IF WS-HIT = 1
+                     MOVE 1 TO WS-BAD
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-BAD = 0
+             CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-TWO WS-AGE
+             MOVE WS-AGE TO WS-AGE-TEXT
+             MOVE SPACES TO WS-PAIRS
+             MOVE WS-FACE-N(WS-D + 1) TO WS-FN
+             STRING "age=" WS-AGE-TEXT ",facing=" FUNCTION TRIM(WS-FN) DELIMITED BY SIZE INTO WS-PAIRS
+             CALL "FR-DEC-STATE" USING WS-KEY WS-PAIRS WS-STATE
+             IF WS-STATE > 0
+                 CALL "FL-SET-STATE" USING WS-PX TW-LOG-Y(WS-K) WS-PZ WS-STATE WS-FLAGS WS-HIT
+             END-IF
+             MOVE 1 TO WS-OK
+         END-IF
+     END-IF
+     .
+ MAIN-LINE.
      MOVE TD-PROB(L-ROW, L-SLOT) TO WS-P
      CALL "FR-F32" USING WS-P
      CALL "WGR-NEXT-FLOAT" USING L-STATE WS-F
@@ -673,47 +717,7 @@
              END-PERFORM
          END-IF
      END-PERFORM
-     GOBACK.
- TRY-PLACE.
-     MOVE 0 TO WS-OK
-     CALL "FR-DEC-SHELF-OK" USING WS-PX TW-LOG-Y(WS-K) WS-PZ WS-GOOD
-     IF WS-GOOD = 1
-         MOVE 0 TO WS-BAD
-         IF WS-FALLEN = 0
-             COMPUTE WS-BELOW = TW-LOG-Y(WS-K) - 1
-             CALL "FR-DEC-SHELF-AT" USING WS-PX WS-BELOW WS-PZ WS-BAD
-         ELSE
-             PERFORM VARYING WS-M FROM 0 BY 1 UNTIL WS-M > 3
-                 CALL "FR-DEC-HDIR" USING WS-M WS-NX WS-NZ
-                 COMPUTE WS-NX = WS-PX + WS-NX
-                 COMPUTE WS-NZ = WS-PZ + WS-NZ
-                 CALL "FR-DEC-SHELF-AT" USING WS-NX TW-LOG-Y(WS-K) WS-NZ WS-HIT
-                 IF WS-HIT = 1
-                     MOVE 1 TO WS-BAD
-                 END-IF
-                 CALL "FR-DEC-HDIR" USING WS-M WS-NX WS-NZ
-                 COMPUTE WS-NX = TW-LOG-X(WS-K) + WS-NX
-                 COMPUTE WS-NZ = TW-LOG-Z(WS-K) + WS-NZ
-                 CALL "FR-DEC-SHELF-AT" USING WS-NX TW-LOG-Y(WS-K) WS-NZ WS-HIT
-                 IF WS-HIT = 1
-                     MOVE 1 TO WS-BAD
-                 END-IF
-             END-PERFORM
-         END-IF
-         IF WS-BAD = 0
-             CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-TWO WS-AGE
-             MOVE WS-AGE TO WS-AGE-TEXT
-             MOVE SPACES TO WS-PAIRS
-             MOVE WS-FACE-N(WS-D + 1) TO WS-FN
-             STRING "age=" WS-AGE-TEXT ",facing=" FUNCTION TRIM(WS-FN) DELIMITED BY SIZE INTO WS-PAIRS
-             CALL "FR-DEC-STATE" USING WS-KEY WS-PAIRS WS-STATE
-             IF WS-STATE > 0
-                 CALL "FL-SET-STATE" USING WS-PX TW-LOG-Y(WS-K) WS-PZ WS-STATE WS-FLAGS WS-HIT
-             END-IF
-             MOVE 1 TO WS-OK
-         END-IF
-     END-IF
-     .
+     MOVE 0 TO WS-DONE.
  END PROGRAM FR-DEC-SHELF.
 
  IDENTIFICATION DIVISION.
