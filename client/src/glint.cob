@@ -236,7 +236,7 @@
              END-IF
          END-PERFORM
      END-PERFORM
-     GOBACK.
+     GO TO MAIN-EXIT.
 
 *> WS-OPAQUE 1 when the texel (WS-PX, WS-PY) of the sprite has alpha 26 or more.
  TEXEL-OPAQUE.
@@ -274,4 +274,6 @@
              MOVE 1 TO RL-GC-A(RL-GC-COUNT) RL-GC-R(RL-GC-COUNT) RL-GC-G(RL-GC-COUNT) RL-GC-BLUE(RL-GC-COUNT)
          END-PERFORM
      END-IF.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM GLINT-ICON.

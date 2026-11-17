@@ -392,7 +392,7 @@
          CALL "ENTITY-BOX" USING CLIENT-STATE WS-R L-EYE-TABLE WS-BOX WS-SKIN
          MOVE WS-SAVED TO EN-ENTITY(WS-R)
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 
 *> The vertices the glint layer just appended to RL-EN-VERTEX (from WS-G0 + 1) move to the glint mesh: the model-space texture coordinate of the layer's atlas slot
 *> through GLINT-UV at the armour scale 0.5, brightness the glint strength, alpha 1, no sky term, no tint (54 section 19.3).
@@ -421,6 +421,8 @@
          END-IF
      END-PERFORM
      MOVE WS-G0 TO RL-EN-COUNT.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM ENTITIES-MESH.
 
  IDENTIFICATION DIVISION.
@@ -1054,7 +1056,7 @@
              END-IF
          END-IF
      END-PERFORM
-     GOBACK.
+     GO TO MAIN-EXIT.
 
 *> The copies of a block item (see the header): the cube of the model, 36 vertices a copy.
  CUBE-COPIES.
@@ -1072,9 +1074,6 @@
              MOVE WS-SPRITE TO WS-FS
              MOVE WS-FACE-DIR(WS-F) TO WS-DIRECTION
              CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-DIRECTION WS-FS
-             IF WS-FS = 0
-                 MOVE WS-SPRITE TO WS-FS
-             END-IF
              PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
                  MOVE 0 TO WS-U16
                  IF WS-K = 2 OR WS-K = 3
@@ -1110,4 +1109,6 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM VANILLA-ITEMS-MESH.

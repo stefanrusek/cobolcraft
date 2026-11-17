@@ -47,7 +47,7 @@
      IF WS-FAIL = 0
          MOVE 1 TO L-OK
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 
 *> Skips the payload of a tag of type WS-TYPE (a list or compound is entered), WS-TYPE becomes 0.
  SKIP-PAYLOAD.
@@ -189,4 +189,6 @@
              END-IF
          END-IF
      END-IF.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM ITEM-NBT-SKIP.
