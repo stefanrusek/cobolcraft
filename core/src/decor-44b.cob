@@ -394,17 +394,12 @@
          COMPUTE WS-CT = L-Z + 0.5 + WS-OFF-W * WS-TZ
      END-IF
      COMPUTE WS-T0 = FUNCTION INTEGER(WS-CT - WS-HALF + 0.0000001)
+*>   The 1e-7 keeps an edge that lies on a cell boundary out of the last cell: CT + HALF is a multiple of 0.5, so CT + HALF - 1e-7 is never a whole number.
      COMPUTE WS-T1 = FUNCTION INTEGER(WS-CT + WS-HALF - 0.0000001)
-     IF WS-CT + WS-HALF - 0.0000001 = WS-T1
-         SUBTRACT 1 FROM WS-T1
-     END-IF
      COMPUTE WS-CYC = L-Y + 0.5 + WS-OFF-H
      COMPUTE WS-HALF = L-H / 2
      COMPUTE WS-Y0 = FUNCTION INTEGER(WS-CYC - WS-HALF + 0.0000001)
      COMPUTE WS-Y1 = FUNCTION INTEGER(WS-CYC + WS-HALF - 0.0000001)
-     IF WS-CYC + WS-HALF - 0.0000001 = WS-Y1
-         SUBTRACT 1 FROM WS-Y1
-     END-IF
      PERFORM VARYING WS-T FROM WS-T0 BY 1 UNTIL WS-T > WS-T1
          PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1
              IF WS-TX NOT = 0
