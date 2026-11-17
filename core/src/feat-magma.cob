@@ -63,6 +63,7 @@
  COPY FEATLEVEL.
  01 WS-ROW                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-OPAQUE              BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-CLASS               BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
@@ -111,12 +112,12 @@
 *> CHECK-OPAQUE: WS-VALID 0 unless the block of WS-STATE is opaque (a full face)
  CHECK-OPAQUE.
      CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
-     IF WS-BLOCK = 0
+     MOVE 0 TO WS-OPAQUE
+     IF WS-BLOCK > 0
+         MOVE CB-OPAQUE(WS-BLOCK) TO WS-OPAQUE
+     END-IF
+     IF WS-OPAQUE = 0
          MOVE 0 TO WS-VALID
-     ELSE
-         IF CB-OPAQUE(WS-BLOCK) = 0
-             MOVE 0 TO WS-VALID
-         END-IF
      END-IF
      .
  MAIN-LINE.

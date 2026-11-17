@@ -59,6 +59,33 @@
          MOVE FT-TYPE(WS-IDX) TO WS-O
          CALL "CA-N" USING WS-CASE WS-E WS-O
      END-PERFORM
+*>   Replace blobs without a state are unsupported.
+     MOVE '{"type": "minecraft:netherrack_replace_blobs"}' TO WS-TEXT
+     PERFORM COMPILE-FEATURE
+     MOVE "test cova feat nodes replace blobs without members are unsupported" TO WS-CASE
+     MOVE -1 TO WS-E
+     MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+*>   A complete forest rock compiles as type 1; one whose state is no object is unsupported.
+     MOVE '{"type": "minecraft:block_blob", "state": {"id": "minecraft:mossy_cobblestone"}, "can_place_on": {"type": "minecraft:matching_blocks", "blocks": "minecraft:dirt"}}' TO WS-TEXT
+     PERFORM COMPILE-FEATURE
+     MOVE "test cova feat nodes a complete forest rock compiles as block_blob (1)" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+     MOVE '{"type": "minecraft:block_blob", "state": 5, "can_place_on": {"type": "minecraft:matching_blocks", "blocks": "minecraft:dirt"}}' TO WS-TEXT
+     PERFORM COMPILE-FEATURE
+     MOVE "test cova feat nodes a forest rock whose state is no object is unsupported" TO WS-CASE
+     MOVE -1 TO WS-E
+     MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+*>   A forest rock whose state names no block is unsupported.
+     MOVE '{"type": "minecraft:block_blob", "state": {"id": "minecraft:no_such_block"}}' TO WS-TEXT
+     PERFORM COMPILE-FEATURE
+     MOVE "test cova feat nodes a forest rock whose state names no block is unsupported" TO WS-CASE
+     MOVE -1 TO WS-E
+     MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
 *>   A bonus chest while chest is absent, then torch, then with the work-area table full.
      MOVE "minecraft:chest" TO WS-KEY
      PERFORM HIDE-BLOCK

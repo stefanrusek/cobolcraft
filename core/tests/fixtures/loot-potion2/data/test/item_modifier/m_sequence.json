@@ -1,0 +1,13 @@
+{
+ "type": "minecraft:sequence",
+ "functions": [
+  {
+   "type": "minecraft:set_count",
+   "count": 2
+  },
+  {
+   "type": "minecraft:set_item",
+   "item": "cobolcraft:trowel"
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:add",
+ "inputs": [
+  0.25,
+  0.5
+ ]
+}

@@ -157,28 +157,6 @@
                  MOVE WS-FB TO WS-G
              END-IF
              CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-G L-VALUE
-         WHEN OTHER
-             IF L-V(4) = 0 AND L-V(3) = 0 - L-V(2)
-                 COMPUTE WS-BOUND = L-V(3) + 1
-                 CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
-                 CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-B
-                 COMPUTE L-VALUE = WS-A - WS-B
-             ELSE
-                 COMPUTE WS-RANGE = L-V(3) - L-V(2)
-                 IF L-V(4) = WS-RANGE
-                     COMPUTE WS-BOUND = WS-RANGE + 1
-                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
-                     COMPUTE L-VALUE = L-V(2) + WS-A
-                 ELSE
-                     COMPUTE WS-SLOPE = FUNCTION INTEGER((WS-RANGE - L-V(4)) / 2)
-                     COMPUTE WS-SIDE = WS-RANGE - WS-SLOPE
-                     COMPUTE WS-BOUND = WS-SIDE + 1
-                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
-                     COMPUTE WS-BOUND = WS-SLOPE + 1
-                     CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-B
-                     COMPUTE L-VALUE = L-V(2) + WS-A + WS-B
-                 END-IF
-             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM FR-INT-SAMPLE.

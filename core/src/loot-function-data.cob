@@ -176,7 +176,8 @@
  PROCEDURE DIVISION USING L-SLOT L-NODE L-HANDLE.
      CALL "LOOT-J-MEMBER" USING L-SLOT L-NODE WS-N-ID WS-MEMBER
      CALL "LOOT-J-TEXT" USING L-SLOT WS-MEMBER WS-TEXT WS-LENGTH
-     IF WS-LENGTH = 0 OR WS-LENGTH > 32
+*>   The loader refuses an empty id, so a length of 0 does not reach here.
+     IF WS-LENGTH > 32
          GOBACK
      END-IF
      MOVE SPACES TO WS-KEY

@@ -1,0 +1,6 @@
+{
+ "type": "minecraft:set_enchantments",
+ "enchantments": {
+  "minecraft:fortune": 3
+ }
+}

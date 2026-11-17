@@ -1,0 +1,18 @@
+{
+ "type": "minecraft:generic",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:tag",
+     "items": [
+      "cobolcraft:loam",
+      "cobolcraft:grit"
+     ],
+     "expand": true
+    }
+   ]
+  }
+ ]
+}

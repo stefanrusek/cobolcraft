@@ -1,0 +1,5 @@
+{
+ "type": "minecraft:float_value_check",
+ "value": 0.5,
+ "range": 0.5
+}

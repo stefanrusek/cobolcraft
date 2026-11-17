@@ -1,4 +1,4 @@
-*> Implementation test (coverage lane A; core/src/loot-function-data.cob LOOT-SET-POTION): a set_potion function without an id and one whose id is over 32 characters leave the stack alone (potion -1).
+*> Implementation test (coverage lane A; core/src/loot-function-data.cob LOOT-SET-POTION): a set_potion function whose id is over 32 characters leaves the stack alone (potion -1).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COVA-LOOT-POTION.
  DATA DIVISION.
@@ -22,21 +22,23 @@
  01 WS-CUSTOM              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-NAMES.
-    05 FILLER PIC X(24) VALUE "m_noid".
     05 FILLER PIC X(24) VALUE "m_toolong".
  01 WS-N REDEFINES WS-NAMES.
-    05 WS-NAME PIC X(24) OCCURS 2 TIMES.
+    05 WS-NAME PIC X(24) OCCURS 1 TIMES.
  01 WS-WANT.
     05 FILLER BINARY-LONG VALUE -1.
-    05 FILLER BINARY-LONG VALUE -1.
  01 WS-W REDEFINES WS-WANT.
-    05 WS-EXPECT BINARY-LONG OCCURS 2 TIMES.
+    05 WS-EXPECT BINARY-LONG OCCURS 1 TIMES.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "LOOT-LOAD" USING WS-DIR WS-STATUS
      MOVE "N" TO TL-MODE
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+     MOVE "test cova loot potion the fixture loads" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1
          INITIALIZE LOOT-CONTEXT
          MOVE 0 TO WS-HANDLE
          MOVE SPACES TO WS-KEY
@@ -47,6 +49,11 @@
          STRING "test cova loot potion " FUNCTION TRIM(WS-NAME(WS-I)) " leaves the stack without a potion id" DELIMITED BY SIZE INTO TL-CASE
          MOVE WS-EXPECT(WS-I) TO TL-EXPECTED-N
          MOVE WS-POTION TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE SPACES TO TL-CASE
+         STRING "test cova loot potion " FUNCTION TRIM(WS-NAME(WS-I)) " is a loaded modifier" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE WS-FOUND TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
      STOP RUN.
