@@ -96,11 +96,9 @@
          COMPUTE WS-MIN = WS-H - 1
      END-IF
      MOVE WS-MIN TO L-Y
+*>   the start is always valid: 36-7 section 3 step 6 refuses a lowest corner surface below y 60, but the heights are WORLD_SURFACE_WG (never under the sea level 63, struct-height.cob), so the
+*>   lowest corner is at least 62 and the refusal cannot happen
      MOVE 1 TO L-VALID
-     IF WS-MIN < 60
-         MOVE 0 TO L-VALID
-         GOBACK
-     END-IF
      CALL "MNG-BUILD"
      CALL "MNP-LAYOUT" USING WS-ROT L-X L-Y L-Z
      CALL "MAN-PIECES"

@@ -789,7 +789,25 @@
              WHEN WN = "nbt" AND WS-TYPE = 10
                  MOVE 1 TO WS-HAVE
                  MOVE PB-POS TO WS-START
-                 PERFORM READ-COMPOUND
+*>   the entity's compound is walked (so that its End tag is consumed): only Rotation is read, as the yaw of the stored entity
+                 PERFORM UNTIL PB-ERROR = 1
+                     MOVE SPACES TO WN
+                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER WN WS-NAME-CAPACITY WL
+                     IF WS-INNER = 0
+                         EXIT PERFORM
+                     END-IF
+                     IF WN = "Rotation" AND WS-INNER = 9
+                         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-LIST-TYPE WS-LIST-COUNT
+                         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
+                             CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
+                             IF WS-I = 1
+                                 MOVE WS-FLOAT TO WS-YAW
+                             END-IF
+                         END-PERFORM
+                     ELSE
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER
+                     END-IF
+                 END-PERFORM
                  MOVE PB-POS TO WS-END
              WHEN OTHER
                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
@@ -819,27 +837,6 @@
      SET ADDRESS OF B-SLICE TO WS-POINTER
      MOVE B-SLICE(1:WS-SIZE) TO TE-DATA(TE-USED)(1:WS-SIZE)
      GOBACK.
-
- READ-COMPOUND.
-*>   the entity's compound is walked (so that its End tag is consumed): only Rotation is read, as the yaw of the stored entity
-     PERFORM UNTIL PB-ERROR = 1
-         MOVE SPACES TO WN
-         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER WN WS-NAME-CAPACITY WL
-         IF WS-INNER = 0
-             EXIT PERFORM
-         END-IF
-         IF WN = "Rotation" AND WS-INNER = 9
-             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-LIST-TYPE WS-LIST-COUNT
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
-                 CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
-                 IF WS-I = 1
-                     MOVE WS-FLOAT TO WS-YAW
-                 END-IF
-             END-PERFORM
-         ELSE
-             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER
-         END-IF
-     END-PERFORM.
  END PROGRAM STRUCT-TPL-ENTITY.
 
  IDENTIFICATION DIVISION.
