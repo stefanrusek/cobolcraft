@@ -216,7 +216,7 @@
     05 FILLER PIC X(600) VALUE "O item_filter;f on_pass=loot_fn;F on_fail=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "enchant_with_levels".
-    05 FILLER PIC X(600) VALUE "P levels=loot_int;H options=enchantment;b include_additional_cost_component;r " &
+    05 FILLER PIC X(600) VALUE "P levels=loot_int;h options=enchantment;b include_additional_cost_component;r " &
         "condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "enchant_randomly".

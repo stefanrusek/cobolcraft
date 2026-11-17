@@ -190,3 +190,40 @@
      END-IF
      GOBACK.
  END PROGRAM LOOT-SET-POTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LOOT-ENCH-LEVELS.
+*> USING slot, function node, item, handle (item and handle in and out): enchant_with_levels (26 section 7.3, 17 section 6.5): the selection of the enchanting table at "levels" (an int provider)
+*> over the pool "options" (a tag with its #; every enchantment of the registry without it) with the loot context's random; a book becomes an enchanted book, the pairs join the stack's
+*> enchantments (13) or stored_enchantments (45). Gaps: options as a single key or a list of keys is read as every enchantment; additional_trade_cost is not set.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N-LEVELS            PIC X(32) VALUE "levels".
+ 01 WS-N-OPTIONS           PIC X(32) VALUE "options".
+ 01 WS-MEMBER              BINARY-LONG.
+ 01 WS-LEVELS              BINARY-LONG.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-POOL                PIC X(112).
+ 01 WS-ST                  BINARY-DOUBLE UNSIGNED VALUE 0.
+ 01 WS-MODE                BINARY-LONG VALUE 1.
+ 01 WS-COUNT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-NODE L-ITEM L-HANDLE.
+     CALL "LOOT-J-MEMBER" USING L-SLOT L-NODE WS-N-LEVELS WS-MEMBER
+     CALL "LOOT-INT-GET" USING L-SLOT WS-MEMBER WS-LEVELS
+     MOVE SPACES TO WS-POOL
+     CALL "LOOT-J-MEMBER" USING L-SLOT L-NODE WS-N-OPTIONS WS-MEMBER
+     IF WS-MEMBER > 0
+         CALL "LOOT-J-TEXT" USING L-SLOT WS-MEMBER WS-TEXT WS-LENGTH
+         IF WS-LENGTH > 1 AND WS-TEXT(1:1) = "#"
+             MOVE WS-TEXT(2:111) TO WS-POOL
+         END-IF
+     END-IF
+     CALL "ENCH-APPLY-LEVELS" USING WS-ST WS-MODE WS-POOL L-ITEM L-HANDLE WS-LEVELS WS-COUNT
+     GOBACK.
+ END PROGRAM LOOT-ENCH-LEVELS.

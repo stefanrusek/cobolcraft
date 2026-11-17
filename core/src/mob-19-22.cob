@@ -620,7 +620,7 @@
  PROGRAM-ID. VIL-ROW-STACK.
 *> USING trade row, salt, extra out, patch handle out (54 section 4.1 and 4.3; lane itemcomp T9610): the extra price of a trade by its modifier (1 enchanted book the E of VIL-ENCH-PICK,
 *> 2 equipment enchanted at 5 to 19 levels E = V, anything else 0) and the patch of the result: a book's stored_enchantments (45) holds the drawn enchantment at the drawn level (a key
-*> the registry does not know leaves the patch 0). Equipment keeps no patch (the enchanting-table selection is not in the core): the enchanted equipment is a gap.
+*> the registry does not know leaves the patch 0). Equipment is enchanted by ENCH-APPLY-LEVELS (itemcomp3, T10603) over the pool on_traded_equipment; the filter that drops an offer without an enchantment is a gap.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WANT                 PIC X(32).
@@ -644,6 +644,13 @@
  01 WS-R                    BINARY-LONG.
  01 WS-ID                   BINARY-LONG.
  01 WS-STORED               BINARY-LONG VALUE 45.
+ 01 WS-ROWTXT               PIC X(270).
+ 01 WS-STATUS               BINARY-LONG.
+ 01 WS-SEED                 BINARY-LONG.
+ 01 WS-RST                  BINARY-DOUBLE UNSIGNED.
+ 01 WS-RMODE                BINARY-LONG VALUE 0.
+ 01 WS-POOL                 PIC X(112) VALUE "minecraft:on_traded_equipment".
+ 01 WS-N                    BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-SALT                  BINARY-LONG.
@@ -665,6 +672,15 @@
              COMPUTE WS-SALT2 = L-SALT * 5 + 11
              CALL "XP-RANDOM" USING WS-SALT2 WS-SPAN WS-R
              COMPUTE L-EXTRA = 5 + WS-R
+*>           The result is enchanted at V levels from the pool on_traded_equipment (54 section 4.3): a random seeded by the salt.
+             MOVE SPACES TO WS-KEY112
+             STRING "minecraft:" FUNCTION TRIM(WS-GIVE) DELIMITED BY SIZE INTO WS-KEY112
+             CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY112 WS-ID WS-ROWTXT WS-STATUS
+             IF WS-STATUS = 0
+                 COMPUTE WS-SEED = L-SALT * 7919 + 13
+                 CALL "ENCH-STATE-SEED" USING WS-SEED WS-RST
+                 CALL "ENCH-APPLY-LEVELS" USING WS-RST WS-RMODE WS-POOL WS-ID L-HANDLE L-EXTRA WS-N
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM VIL-ROW-STACK.

@@ -410,6 +410,8 @@ US7 to US10 and US16 to US20 (controls and screens) next; US11 to US15 (the stan
 - [Phase 96: item components (lane itemcomp, ids T9600 to T9699)](tasks/shared/phase-96.md)
 - [Phase 101: item components continued (lane itemcomp2, ids T10100 to T10199)](tasks/shared/phase-101.md)
 
+- [Phase 102: item components 3 (lane itemcomp3, ids T10600 to T10699)](tasks/shared/phase-102.md)
+
 ## Lane lists
 
 Every file in [tasks/lanes/](tasks/lanes/) is one lane's own task list. A new lane adds its own file there

@@ -6,7 +6,7 @@
 *> and ENCH- programs of menu-40-2.cob to menu-enchanting.cob; this file reads the live state, calls them and applies what they decide.
 *>
 *> Station kinds: 1 stonecutter, 2 grindstone, 3 smithing table, 4 anvil, 5 loom, 6 cartography table, 7 enchanting table, 8 brewing stand. MENU-STATION-KIND
-*> names only the stations that are built (the stonecutter and the smithing table): a block of another kind does not open a menu yet.
+*> names only the stations that are built (the stonecutter, the smithing table and the anvil): a block of another kind does not open a menu yet.
 *>
 *> Opening (Use Item On on the block, BLOCK-USE-ON, not sneaking with an item held): the menu already open is closed first, the container id is the next
 *> of the cycle, Open Screen carries the menu type and the translatable title (container.stonecutter ...), Container Set Content and the data slots follow.
@@ -49,6 +49,16 @@
              MOVE 1 TO L-KIND
          WHEN "smithing_table"
              MOVE 3 TO L-KIND
+         WHEN "enchanting_table"
+             MOVE 7 TO L-KIND
+         WHEN "grindstone"
+             MOVE 2 TO L-KIND
+         WHEN "anvil"
+             MOVE 4 TO L-KIND
+         WHEN "chipped_anvil"
+             MOVE 4 TO L-KIND
+         WHEN "damaged_anvil"
+             MOVE 4 TO L-KIND
      END-EVALUATE
      GOBACK.
  END PROGRAM MENU-STATION-KIND.
@@ -248,9 +258,14 @@
          MOVE 0 TO MN-WDATA(WS-ROW, WS-I) MN-WSENT(WS-ROW, WS-I)
      END-PERFORM
      MOVE -1 TO MN-WSEL(WS-ROW)
+     MOVE 0 TO MN-WNAME-LEN(WS-ROW)
+     MOVE SPACES TO MN-WNAME(WS-ROW)
      MOVE 0 TO MN-WKEEP(WS-ROW) MN-WSOUND(WS-ROW)
      MOVE -1 TO MN-WLIST(WS-ROW)
      MOVE 0 TO MN-RESULT-ITEM(WS-ROW) MN-RESULT-COUNT(WS-ROW) MN-RESULT-VAR(WS-ROW)
+     IF L-KIND = 7
+         CALL "MENU-ENCH-OPEN" USING WS-ROW
+     END-IF
      INITIALIZE PB-TEXT
      MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
      MOVE WS-TITLE TO PB-TX-VALUE
@@ -311,16 +326,31 @@
  WORKING-STORAGE SECTION.
  COPY CMENU.
  01 WS-SET                 BINARY-LONG.
+ 01 WS-LAPIS               BINARY-LONG.
+ 01 WS-DAMAGEABLE          BINARY-LONG.
+ 01 WS-ENCHANTED           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-RESULT.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-HANDLE L-RESULT.
      MOVE 1 TO L-RESULT
      IF MN-CFAMILY(L-ROW) = 23
          COMPUTE WS-SET = L-SLOT + 1
          CALL "MENU-SMITH-SET" USING WS-SET L-ITEM L-RESULT
+     END-IF
+*>   The grindstone's inputs take a damageable stack or one with enchantments (40-3 section 4.1).
+     IF MN-CFAMILY(L-ROW) = 22 AND L-SLOT < 2
+         CALL "GRIND-DAMAGEABLE" USING L-ITEM L-HANDLE WS-DAMAGEABLE
+         CALL "GRIND-HAS-ENCH" USING L-HANDLE WS-ENCHANTED
+         CALL "MN3-GRIND-MAYPLACE" USING WS-DAMAGEABLE WS-ENCHANTED L-RESULT
+     END-IF
+*>   The enchanting table's lapis slot takes only lapis lazuli (40-4 section 2.2).
+     IF MN-CFAMILY(L-ROW) = 27
+         CALL "ENCH-IS-LAPIS" USING L-ITEM WS-LAPIS
+         CALL "ENCH-MAYPLACE" USING L-SLOT WS-LAPIS L-RESULT
      END-IF
      GOBACK.
  END PROGRAM MENU-STATION-MAYPLACE.
@@ -398,6 +428,9 @@
  01 WS-KEY                 PIC X(112).
  01 WS-ROW-X               PIC X(270).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-BASE-I              BINARY-LONG.
+ 01 WS-BASE-V              BINARY-LONG.
+ 01 WS-ADD-I               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
@@ -406,7 +439,7 @@
  PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-VAR.
      MOVE 0 TO L-ITEM L-COUNT L-VAR
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT OR L-ITEM > 0
-         IF RR-SERIALIZER(WS-K) = 19
+         IF RR-SERIALIZER(WS-K) = 19 OR RR-SERIALIZER(WS-K) = 21
              MOVE 1 TO WS-OK
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 3
                  IF RR-ING(WS-K, WS-S) = SPACES
@@ -424,7 +457,20 @@
                      END-IF
                  END-IF
              END-PERFORM
-             IF WS-OK = 1
+             IF WS-OK = 1 AND RR-SERIALIZER(WS-K) = 21
+*>               smithing_trim (27 section 3.3, 54 section 18.6): one copy of the base with the trim of the pattern and the addition's material.
+                 MOVE MN-WSLOT-ITEM(L-ROW, 2) TO WS-BASE-I
+                 MOVE MN-WSLOT-VAR(L-ROW, 2) TO WS-BASE-V
+                 MOVE MN-WSLOT-ITEM(L-ROW, 3) TO WS-ADD-I
+                 CALL "SMITH-TRIM-RESULT" USING RR-EXTRA(WS-K) WS-BASE-I WS-BASE-V WS-ADD-I L-VAR WS-STATUS
+                 IF WS-STATUS = 1
+                     MOVE MN-WSLOT-ITEM(L-ROW, 2) TO L-ITEM
+                     MOVE 1 TO L-COUNT
+                 ELSE
+                     MOVE 0 TO L-VAR
+                 END-IF
+             END-IF
+             IF WS-OK = 1 AND RR-SERIALIZER(WS-K) = 19
                  MOVE RR-RESULT-ID(WS-K) TO WS-KEY
                  CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY L-ITEM WS-ROW-X WS-STATUS
                  IF WS-STATUS = CT-OK
@@ -524,6 +570,15 @@
              MOVE 1 TO MN-WDATA(L-ROW, 1)
          END-IF
      END-IF
+     IF MN-CFAMILY(L-ROW) = 24
+         CALL "MENU-ANVIL-UPDATE" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 27
+         CALL "MENU-ENCH-UPDATE" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 22
+         CALL "MENU-GRIND-UPDATE" USING L-ROW
+     END-IF
      IF MN-CFAMILY(L-ROW) = 21
          MOVE 0 TO WS-ITEM
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
@@ -571,6 +626,12 @@
  PROCEDURE DIVISION USING L-ROW.
      IF MN-CFAMILY(L-ROW) = 29
          CALL "MERCHANT-TAKEN" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 24
+         CALL "MENU-ANVIL-TAKEN" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 22
+         CALL "MENU-GRIND-TAKEN" USING L-ROW
      END-IF
 *>   The smithing table (40-3 section 5.4): one item of each of the three inputs is used up, then the result is made again.
      IF MN-CFAMILY(L-ROW) = 23
@@ -665,6 +726,8 @@
  01 WS-REV                 BINARY-LONG.
  01 WS-ONQ                 BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -672,6 +735,16 @@
  01 L-RET-COUNT            BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT.
      MOVE 0 TO L-RET-ITEM L-RET-COUNT
+*>   The grindstone's rules are 40-3 section 4.5.
+     IF MN-CFAMILY(L-ROW) = 22
+         CALL "MENU-GRIND-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
+*>   The enchanting table's rules are 40-4 section 2.7.
+     IF MN-CFAMILY(L-ROW) = 27
+         CALL "MENU-ENCH-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
 *>   The smithing table is its own program (the item combiner rules, 40-3 section 2.5).
      IF MN-CFAMILY(L-ROW) = 23
          CALL "MENU-SMITH-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
@@ -679,6 +752,11 @@
      END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
      IF WS-COUNT = 0
+         GOBACK
+     END-IF
+*>   The anvil is an item combiner (40-3 section 3.6): the result is slot 2, the inputs take any stack.
+     IF MN-CFAMILY(L-ROW) = 24
+         CALL "MENU-STATION-COMBINER-QUICK" USING L-ROW L-SLOT WS-TWO WS-ONE L-RET-ITEM L-RET-COUNT
          GOBACK
      END-IF
      IF MN-CFAMILY(L-ROW) = 21
@@ -750,6 +828,7 @@
  01 WS-PACKET-ID           BINARY-LONG VALUE 19.
  01 WS-I                   BINARY-LONG.
  01 WS-PROPERTY            BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -768,10 +847,18 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
          IF MN-WDATA(L-ROW, WS-I) NOT = MN-WSENT(L-ROW, WS-I)
              MOVE MN-WDATA(L-ROW, WS-I) TO MN-WSENT(L-ROW, WS-I)
+             MOVE MN-WDATA(L-ROW, WS-I) TO WS-VALUE
+*>           The enchanting table's seed (data slot 3) travels as a short: its low 16 bits, signed (40-4 section 2.3).
+             IF MN-CFAMILY(L-ROW) = 27 AND WS-I = 4
+                 COMPUTE WS-VALUE = FUNCTION MOD(WS-VALUE, 65536)
+                 IF WS-VALUE >= 32768
+                     SUBTRACT 65536 FROM WS-VALUE
+                 END-IF
+             END-IF
              COMPUTE WS-PROPERTY = WS-I - 1
              CALL "PB-RESET" USING PB-BUFFER
              CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-             CALL "PB-PUT-CONTAINER-SET-DATA" USING PB-BUFFER MN-WINDOW(L-ROW) WS-PROPERTY MN-WDATA(L-ROW, WS-I)
+             CALL "PB-PUT-CONTAINER-SET-DATA" USING PB-BUFFER MN-WINDOW(L-ROW) WS-PROPERTY WS-VALUE
              CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
          END-IF
      END-PERFORM
@@ -794,6 +881,9 @@
  01 L-RETURNED             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-BUTTON L-RETURNED.
      MOVE 0 TO L-RETURNED
+     IF MN-CFAMILY(L-ROW) = 27
+         CALL "MENU-ENCH-BUTTON" USING L-ROW L-BUTTON L-RETURNED
+     END-IF
      IF MN-CFAMILY(L-ROW) = 21
          MOVE 0 TO WS-SIZE
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
