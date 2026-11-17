@@ -47,6 +47,29 @@
  01 L-PRIMARY              PIC X(112).
  01 L-FOUND                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-MIN-BASE L-MIN-PER L-MAX-BASE L-MAX-PER L-PRIMARY L-FOUND.
+     GO TO MAIN-LINE.
+
+*> The cost object of WS-NODE: base in WS-SUB, per_level_above_first in WS-COUNT.
+ READ-COST.
+     MOVE 0 TO WS-SUB WS-COUNT
+     IF WS-NODE > 0
+         MOVE WS-NODE TO WS-ROOT
+         MOVE "base" TO WS-JNAME
+         MOVE 4 TO WS-JNAME-LENGTH
+         CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-JNAME WS-JNAME-LENGTH WS-NODE
+         IF WS-NODE > 0
+             MOVE JN-NUM(WS-NODE) TO WS-SUB
+         END-IF
+         MOVE "per_level_above_first" TO WS-JNAME
+         MOVE 21 TO WS-JNAME-LENGTH
+         CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-JNAME WS-JNAME-LENGTH WS-NODE
+         IF WS-NODE > 0
+             MOVE JN-NUM(WS-NODE) TO WS-COUNT
+         END-IF
+         MOVE 1 TO WS-ROOT
+     END-IF.
+
+ MAIN-LINE.
      MOVE 0 TO L-MIN-BASE L-MIN-PER L-MAX-BASE L-MAX-PER
      CALL "ENCH-DEF" USING L-ID WS-MAX WS-ANVIL WS-WEIGHT WS-TAG WS-EXCLUSIVE L-FOUND
      MOVE WS-TAG TO L-PRIMARY
@@ -84,26 +107,6 @@
          END-IF
      END-IF
      GOBACK.
-
-*> The cost object of WS-NODE: base in WS-SUB, per_level_above_first in WS-COUNT.
- READ-COST.
-     MOVE 0 TO WS-SUB WS-COUNT
-     IF WS-NODE > 0
-         MOVE WS-NODE TO WS-ROOT
-         MOVE "base" TO WS-JNAME
-         MOVE 4 TO WS-JNAME-LENGTH
-         CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-JNAME WS-JNAME-LENGTH WS-NODE
-         IF WS-NODE > 0
-             MOVE JN-NUM(WS-NODE) TO WS-SUB
-         END-IF
-         MOVE "per_level_above_first" TO WS-JNAME
-         MOVE 21 TO WS-JNAME-LENGTH
-         CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-JNAME WS-JNAME-LENGTH WS-NODE
-         IF WS-NODE > 0
-             MOVE JN-NUM(WS-NODE) TO WS-COUNT
-         END-IF
-         MOVE 1 TO WS-ROOT
-     END-IF.
  END PROGRAM ENCH-COST-DEF.
 
  IDENTIFICATION DIVISION.
@@ -123,13 +126,9 @@
          GOBACK
      END-IF
      CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-TEXT WS-STATUS
+*>   The book's enchantability 1 (25 item table, row `book`) is its enchantable component; the built-in set has no book.
      IF WS-STATUS = 0
          COMPUTE L-N = FUNCTION NUMVAL(WS-TEXT)
-     ELSE
-*>       The book's enchantability is 1 (25 item table, row `book`).
-         IF IT-KEY(L-ITEM + 1) = "minecraft:book" OR IT-KEY(L-ITEM + 1) = "book"
-             MOVE 1 TO L-N
-         END-IF
      END-IF
      GOBACK.
  END PROGRAM ENCH-ITEM-N.
@@ -239,55 +238,7 @@
        10 L-EID            BINARY-LONG.
        10 L-ELV            BINARY-LONG.
  PROCEDURE DIVISION USING L-ST L-MODE L-POOL-TAG L-ITEM L-LEVEL L-N L-COUNT L-LIST.
-     MOVE 0 TO L-COUNT WS-NC
-     IF L-N <= 0
-         GOBACK
-     END-IF
-     COMPUTE WS-Q = L-N / 4 + 1
-     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-Q WS-D1
-     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-Q WS-D2
-     COMPUTE WS-M = L-LEVEL + 1 + WS-D1 + WS-D2
-     PERFORM SCALE-M
-     MOVE 0 TO WS-BOOK
-     IF L-ITEM > 0 AND L-ITEM < IT-COUNT
-         IF IT-KEY(L-ITEM + 1) = "minecraft:book" OR IT-KEY(L-ITEM + 1) = "book"
-             MOVE 1 TO WS-BOOK
-         END-IF
-     END-IF
-     IF L-POOL-TAG = SPACES
-         CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY-NAME WS-REG-COUNT WS-STATUS
-         MOVE FUNCTION MIN(WS-REG-COUNT, WS-CAP) TO WS-POOL-N
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-POOL-N
-             COMPUTE WS-POOL-ID(WS-I) = WS-I - 1
-         END-PERFORM
-     ELSE
-         CALL "CONTENT-TAG-MEMBERS" USING WS-ENCH-REG L-POOL-TAG WS-POOL-N WS-POOL WS-CAP WS-STATUS
-         IF WS-STATUS NOT = 0
-             MOVE 0 TO WS-POOL-N
-         END-IF
-     END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-POOL-N
-         PERFORM ADD-CANDIDATE
-     END-PERFORM
-     IF WS-NC > 0
-         PERFORM PICK-ONE
-         MOVE 0 TO WS-DONE
-         PERFORM UNTIL WS-DONE = 1
-             CALL "ENCH-RND-INT" USING L-ST L-MODE WS-LIMIT WS-DRAW
-             IF WS-DRAW > WS-M
-                 MOVE 1 TO WS-DONE
-             ELSE
-                 PERFORM DROP-INCOMPATIBLE
-                 IF WS-NC = 0
-                     MOVE 1 TO WS-DONE
-                 ELSE
-                     PERFORM PICK-ONE
-                     COMPUTE WS-M = WS-M / 2
-                 END-IF
-             END-IF
-         END-PERFORM
-     END-IF
-     GOBACK.
+     GO TO MAIN-LINE.
 
 *> m = clamp(round(m + m x f), 1, 2147483647) with f = (a + b - 1) x 0.15 in float arithmetic.
  SCALE-M.
@@ -370,6 +321,57 @@
          END-IF
      END-PERFORM
      MOVE WS-KEEP TO WS-NC.
+
+ MAIN-LINE.
+     MOVE 0 TO L-COUNT WS-NC
+     IF L-N <= 0
+         GOBACK
+     END-IF
+     COMPUTE WS-Q = L-N / 4 + 1
+     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-Q WS-D1
+     CALL "ENCH-RND-INT" USING L-ST L-MODE WS-Q WS-D2
+     COMPUTE WS-M = L-LEVEL + 1 + WS-D1 + WS-D2
+     PERFORM SCALE-M
+     MOVE 0 TO WS-BOOK
+     IF L-ITEM > 0 AND L-ITEM < IT-COUNT
+         IF IT-KEY(L-ITEM + 1) = "minecraft:book" OR IT-KEY(L-ITEM + 1) = "book"
+             MOVE 1 TO WS-BOOK
+         END-IF
+     END-IF
+     IF L-POOL-TAG = SPACES
+         CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY-NAME WS-REG-COUNT WS-STATUS
+         MOVE FUNCTION MIN(WS-REG-COUNT, WS-CAP) TO WS-POOL-N
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-POOL-N
+             COMPUTE WS-POOL-ID(WS-I) = WS-I - 1
+         END-PERFORM
+     ELSE
+         CALL "CONTENT-TAG-MEMBERS" USING WS-ENCH-REG L-POOL-TAG WS-POOL-N WS-POOL WS-CAP WS-STATUS
+         IF WS-STATUS NOT = 0
+             MOVE 0 TO WS-POOL-N
+         END-IF
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-POOL-N
+         PERFORM ADD-CANDIDATE
+     END-PERFORM
+     IF WS-NC > 0
+         PERFORM PICK-ONE
+         MOVE 0 TO WS-DONE
+         PERFORM UNTIL WS-DONE = 1
+             CALL "ENCH-RND-INT" USING L-ST L-MODE WS-LIMIT WS-DRAW
+             IF WS-DRAW > WS-M
+                 MOVE 1 TO WS-DONE
+             ELSE
+                 PERFORM DROP-INCOMPATIBLE
+                 IF WS-NC = 0
+                     MOVE 1 TO WS-DONE
+                 ELSE
+                     PERFORM PICK-ONE
+                     COMPUTE WS-M = WS-M / 2
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
  END PROGRAM ENCH-SELECT.
 
  IDENTIFICATION DIVISION.
@@ -520,6 +522,16 @@
  01 L-Z                    BINARY-LONG.
  01 L-B                    BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-B.
+     GO TO MAIN-LINE.
+
+*> The registry id of the block of the state WS-STATE (-1 outside the state table).
+ STATE-BLOCK.
+     MOVE -1 TO WS-BLOCK
+     IF WS-STATE >= 0 AND WS-STATE < CB-STATE-COUNT
+         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
+     END-IF.
+
+ MAIN-LINE.
      MOVE 0 TO L-B
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 32
          CALL "ENCH-OFFSET" USING WS-I WS-DX WS-DY WS-DZ WS-TX WS-TY WS-TZ
@@ -542,11 +554,4 @@
          CALL "ENCH-POWER-ADD" USING WS-PREV WS-PROV WS-TRANS L-B
      END-PERFORM
      GOBACK.
-
-*> The registry id of the block of the state WS-STATE (-1 outside the state table).
- STATE-BLOCK.
-     MOVE -1 TO WS-BLOCK
-     IF WS-STATE >= 0 AND WS-STATE < CB-STATE-COUNT
-         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
-     END-IF.
  END PROGRAM ENCH-SHELVES.

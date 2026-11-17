@@ -187,41 +187,7 @@
  01 L-OC                   BINARY-LONG.
  01 L-OV                   BINARY-LONG.
  PROCEDURE DIVISION USING L-AI L-AC L-AV L-BI L-BC L-BV L-OI L-OC L-OV.
-     MOVE 0 TO L-OI L-OC L-OV
-     MOVE 0 TO WS-AE WS-BE
-     IF L-AC = 0
-         MOVE 1 TO WS-AE
-     END-IF
-     IF L-BC = 0
-         MOVE 1 TO WS-BE
-     END-IF
-     MOVE 0 TO WS-SEN WS-SAME
-*>   The single item has enchantments (item-independent, 4.1); the two items are the same item.
-     IF WS-AE = 0 AND WS-BE = 1
-         CALL "GRIND-HAS-ENCH" USING L-AV WS-SEN
-     END-IF
-     IF WS-AE = 1 AND WS-BE = 0
-         CALL "GRIND-HAS-ENCH" USING L-BV WS-SEN
-     END-IF
-     IF L-AI = L-BI
-         MOVE 1 TO WS-SAME
-     END-IF
-     CALL "MN3-GRIND-COMPUTE" USING WS-AE WS-BE L-AC L-BC WS-SEN WS-SAME WS-OUT
-     EVALUATE WS-OUT
-         WHEN 1
-             IF WS-AE = 0
-                 MOVE L-AI TO L-OI
-                 MOVE L-AV TO L-OV
-             ELSE
-                 MOVE L-BI TO L-OI
-                 MOVE L-BV TO L-OV
-             END-IF
-             MOVE 1 TO L-OC
-             CALL "GRIND-STRIP" USING L-OI L-OV
-         WHEN 2
-             PERFORM MERGE-ITEMS
-     END-EVALUATE
-     GOBACK.
+     GO TO MAIN-LINE.
 
 *> mergeItems (4.3): the damage and count of the merge, the enchantments of the second added to the first, then removeNonCurses.
  MERGE-ITEMS.
@@ -261,6 +227,43 @@
          END-PERFORM
          CALL "GRIND-STRIP" USING L-OI L-OV
      END-IF.
+
+ MAIN-LINE.
+     MOVE 0 TO L-OI L-OC L-OV
+     MOVE 0 TO WS-AE WS-BE
+     IF L-AC = 0
+         MOVE 1 TO WS-AE
+     END-IF
+     IF L-BC = 0
+         MOVE 1 TO WS-BE
+     END-IF
+     MOVE 0 TO WS-SEN WS-SAME
+*>   The single item has enchantments (item-independent, 4.1); the two items are the same item.
+     IF WS-AE = 0 AND WS-BE = 1
+         CALL "GRIND-HAS-ENCH" USING L-AV WS-SEN
+     END-IF
+     IF WS-AE = 1 AND WS-BE = 0
+         CALL "GRIND-HAS-ENCH" USING L-BV WS-SEN
+     END-IF
+     IF L-AI = L-BI
+         MOVE 1 TO WS-SAME
+     END-IF
+     CALL "MN3-GRIND-COMPUTE" USING WS-AE WS-BE L-AC L-BC WS-SEN WS-SAME WS-OUT
+     EVALUATE WS-OUT
+         WHEN 1
+             IF WS-AE = 0
+                 MOVE L-AI TO L-OI
+                 MOVE L-AV TO L-OV
+             ELSE
+                 MOVE L-BI TO L-OI
+                 MOVE L-BV TO L-OV
+             END-IF
+             MOVE 1 TO L-OC
+             CALL "GRIND-STRIP" USING L-OI L-OV
+         WHEN 2
+             PERFORM MERGE-ITEMS
+     END-EVALUATE
+     GOBACK.
  END PROGRAM GRIND-RESULT.
 
  IDENTIFICATION DIVISION.
