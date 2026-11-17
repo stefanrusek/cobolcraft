@@ -326,7 +326,7 @@ def trim_pixel(x, y):
     return (0, 0, 0, 0)
 
 
-PACKS["trimtex"] = ("folder", {
+PACKS["trimkey"] = ("folder", {
     "pack.mcmeta": new_style("Trim pattern texture"),
     "assets/minecraft/textures/trims/entity/humanoid/wild.png": png(64, 32, trim_pixel),
 })

@@ -10,10 +10,10 @@
  COPY CONTENT.
  COPY CLMODELS.
  COPY TESTLIB.
- 01 WS-DIR                 PIC X(64) VALUE "build/client-test-trimtex".
+ 01 WS-DIR                 PIC X(64) VALUE "build/client-test-trimkey".
  01 WS-DIR-LENGTH          BINARY-LONG VALUE 25.
- 01 WS-NAMES               PIC X(256) VALUE "trimtex".
- 01 WS-IDS                 PIC X(256) VALUE "file/trimtex".
+ 01 WS-NAMES               PIC X(256) VALUE "trimkey".
+ 01 WS-IDS                 PIC X(256) VALUE "file/trimkey".
  01 WS-KEY                 PIC X(112).
  01 WS-ROW-AREA            PIC X(66).
  01 WS-ITEM-ROW            PIC X(270).
