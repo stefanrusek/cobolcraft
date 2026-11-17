@@ -7,6 +7,7 @@
 *>   STRUCT-TPL-ORDER USING template row, palette number (1-based): sorts the palette's scratch records into the placement order of section 1.3 and appends them to the pool.
 *>   STRUCT-TPL-LOAD USING root folder (PIC X(1100): the folder that holds data/), template id (PIC X(96), "path" or "namespace:path"), row out (BINARY-LONG: the cache row, whose
 *>     TP-STATUS says loaded, absent or unsupported; 0 when the cache is full): the cache's get (2.3): a template is read once, an absent one stays absent. The file is <root>/data/<namespace>/structure/<path>.nbt (2.1).
+*>   STRUCT-TPL-ENTITY USING PB-BUFFER (at one entity record), template row, counted out: reads an entity record and keeps its position, block position, yaw and compound in STRUCT-TPL-ENT (1.4).
 *>   STRUCT-TPL-NBT USING PB-BUFFER (at the payload of a record's nbt compound), index out: keeps the kind and the keys of a block entity tag in the table of STRUCTTPL.cpy (1.4, 1.5);
 *>     PB-ERROR is set when the table is full (the template is unsupported).
 *>   STRUCT-BLOCK-TEXT USING text (PIC X(160)), state out, ok out: the block state text parser of 15 section 9.1 with the NBT switch on ("id[name=value,...]{nbt}"); a syntax
@@ -24,6 +25,7 @@
      MOVE 0 TO TP-COUNT
      MOVE 0 TO TP-USED
      MOVE 1 TO TN-USED
+     MOVE 0 TO TE-USED TE-LOST
      MOVE 0 TO TN-KIND(1) TN-JOINT(1) TN-PRIO-PLACE(1) TN-PRIO-SELECT(1)
      MOVE SPACES TO TN-LOOT(1) TN-NAME(1) TN-POOL(1) TN-TARGET(1) TN-TEXT(1)
      GOBACK.
@@ -643,6 +645,8 @@
      MOVE 3 TO TP-STATUS(WS-ROW)
      MOVE 0 TO WS-SIZE(1) WS-SIZE(2) WS-SIZE(3)
      MOVE 0 TO WS-MULTI WS-ENTITIES TW-BLOCK-COUNT TW-PAL-COUNT
+     MOVE TE-USED TO TP-ENT-BASE(WS-ROW)
+     MOVE 0 TO TP-ENT-N(WS-ROW)
      CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
      PERFORM UNTIL PB-ERROR = 1
          MOVE SPACES TO WN
@@ -681,18 +685,7 @@
              WHEN WN = "entities" AND WS-TYPE = 9
                  CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-COUNT OR PB-ERROR = 1
-                     MOVE 0 TO WS-NBT-IN-ENTITY
-                     PERFORM UNTIL PB-ERROR = 1
-                         MOVE SPACES TO WN
-                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER WN WS-NAME-CAPACITY WL
-                         IF WS-INNER = 0
-                             EXIT PERFORM
-                         END-IF
-                         IF WN = "nbt" AND WS-INNER = 10
-                             MOVE 1 TO WS-NBT-IN-ENTITY
-                         END-IF
-                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER
-                     END-PERFORM
+                     CALL "STRUCT-TPL-ENTITY" USING PB-BUFFER WS-ROW WS-NBT-IN-ENTITY
                      ADD WS-NBT-IN-ENTITY TO WS-ENTITIES
                  END-PERFORM
              WHEN OTHER
@@ -734,6 +727,120 @@
      MOVE 1 TO TP-STATUS(WS-ROW)
      GOBACK.
  END PROGRAM STRUCT-TPL-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-TPL-ENTITY.
+*> USING PB-BUFFER (at the compound of one entity record of the list `entities`), template row (BINARY-LONG), counted out (BINARY-LONG): reads the record (1.4): pos (3 doubles, a missing
+*> element reads 0.0), blockPos (3 ints) and the nbt compound; the record with no nbt is dropped (counted out 0). A record with nbt is counted (1) and, when its compound is TE-NBT bytes or fewer and
+*> the table has room, kept as the next record of STRUCT-TPL-ENT with the yaw of its Rotation list (0 when it has none) and the compound's bytes (the payload with its End tag); otherwise TE-LOST rises.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTTPL.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER               BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-LIST-TYPE           BINARY-LONG.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-POS                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-BLOCK               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-HAVE                BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-DOUBLE              FLOAT-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-POINTER             USAGE POINTER.
+ 01 B-SLICE                PIC X(1344) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-COUNTED              BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ROW L-COUNTED.
+     MOVE 0 TO L-COUNTED WS-HAVE WS-START WS-END WS-YAW
+     MOVE 0 TO WS-POS(1) WS-POS(2) WS-POS(3) WS-BLOCK(1) WS-BLOCK(2) WS-BLOCK(3)
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN WN = "pos" AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-LIST-TYPE WS-LIST-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
+                     CALL "PB-GET-DOUBLE" USING PB-BUFFER WS-DOUBLE
+                     IF WS-I <= 3
+                         MOVE WS-DOUBLE TO WS-POS(WS-I)
+                     END-IF
+                 END-PERFORM
+             WHEN WN = "blockPos" AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-LIST-TYPE WS-LIST-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
+                     CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                     IF WS-I <= 3
+                         MOVE WS-INT TO WS-BLOCK(WS-I)
+                     END-IF
+                 END-PERFORM
+             WHEN WN = "nbt" AND WS-TYPE = 10
+                 MOVE 1 TO WS-HAVE
+                 MOVE PB-POS TO WS-START
+                 PERFORM READ-COMPOUND
+                 MOVE PB-POS TO WS-END
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     IF WS-HAVE = 0 OR PB-ERROR = 1
+         GOBACK
+     END-IF
+     MOVE 1 TO L-COUNTED
+     COMPUTE WS-SIZE = WS-END - WS-START
+     IF WS-SIZE > TE-NBT OR TE-USED >= TE-MAX
+         ADD 1 TO TE-LOST
+         GOBACK
+     END-IF
+     ADD 1 TO TE-USED
+     ADD 1 TO TP-ENT-N(L-ROW)
+     MOVE WS-POS(1) TO TE-PX(TE-USED)
+     MOVE WS-POS(2) TO TE-PY(TE-USED)
+     MOVE WS-POS(3) TO TE-PZ(TE-USED)
+     MOVE WS-BLOCK(1) TO TE-BX(TE-USED)
+     MOVE WS-BLOCK(2) TO TE-BY(TE-USED)
+     MOVE WS-BLOCK(3) TO TE-BZ(TE-USED)
+     MOVE WS-YAW TO TE-YAW(TE-USED)
+     MOVE WS-SIZE TO TE-LEN(TE-USED)
+     SET WS-POINTER TO PB-ADDR
+     SET WS-POINTER UP BY WS-START
+     SET ADDRESS OF B-SLICE TO WS-POINTER
+     MOVE B-SLICE(1:WS-SIZE) TO TE-DATA(TE-USED)(1:WS-SIZE)
+     GOBACK.
+
+ READ-COMPOUND.
+*>   the entity's compound is walked (so that its End tag is consumed): only Rotation is read, as the yaw of the stored entity
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER WN WS-NAME-CAPACITY WL
+         IF WS-INNER = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "Rotation" AND WS-INNER = 9
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-LIST-TYPE WS-LIST-COUNT
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIST-COUNT OR PB-ERROR = 1
+                 CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
+                 IF WS-I = 1
+                     MOVE WS-FLOAT TO WS-YAW
+                 END-IF
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER
+         END-IF
+     END-PERFORM.
+ END PROGRAM STRUCT-TPL-ENTITY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BLOCK-TEXT.

@@ -29,3 +29,6 @@
     05 MQ-POWERED          BINARY-LONG.
     05 MQ-SIZE             BINARY-LONG.
     05 MQ-LEASH            PIC X(16).
+    05 MQ-PERSIST          BINARY-LONG.
+    05 MQ-PROF             PIC X(16).
+    05 MQ-VLEVEL           BINARY-LONG.

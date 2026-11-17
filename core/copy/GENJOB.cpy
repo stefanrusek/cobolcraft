@@ -79,3 +79,24 @@
           15 GJ-BE-SEED     BINARY-DOUBLE.
           15 GJ-BE-LOOT     PIC X(48).
           15 GJ-BE-TEXT     PIC X(32).
+*>  the entity requests of the structures placed in the chunk (GENENT.cpy, gen-ent.cob): at most 16, GJ-ENT-LOST counts the rest
+    05 GJ-ENT.
+       10 GJ-ENT-COUNT      BINARY-LONG.
+       10 GJ-ENT-LOST       BINARY-LONG.
+       10 GJ-ENT-ENTRY OCCURS 16 TIMES.
+          15 GJ-ENT-X       FLOAT-LONG.
+          15 GJ-ENT-Y       FLOAT-LONG.
+          15 GJ-ENT-Z       FLOAT-LONG.
+          15 GJ-ENT-YAW     FLOAT-SHORT.
+          15 GJ-ENT-LEN     BINARY-LONG.
+          15 GJ-ENT-NBT     PIC X(1344).
+       10 GJ-ENT-BOX-COUNT  BINARY-LONG.
+       10 GJ-ENT-BOX-LOST   BINARY-LONG.
+       10 GJ-ENT-BOX OCCURS 24 TIMES.
+          15 GJ-ENT-B-KIND  BINARY-LONG.
+          15 GJ-ENT-B-MIN-X BINARY-LONG.
+          15 GJ-ENT-B-MIN-Y BINARY-LONG.
+          15 GJ-ENT-B-MIN-Z BINARY-LONG.
+          15 GJ-ENT-B-MAX-X BINARY-LONG.
+          15 GJ-ENT-B-MAX-Y BINARY-LONG.
+          15 GJ-ENT-B-MAX-Z BINARY-LONG.

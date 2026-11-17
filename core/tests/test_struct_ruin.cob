@@ -16,6 +16,7 @@
  COPY STRUCTTPL.
  COPY STRUCTPROC.
  COPY STRUCTPLACE.
+ COPY GENENT.
  COPY STRUCTCUR.
  COPY STRUCTSET.
  COPY CBLOCKS.
@@ -717,7 +718,14 @@
      MOVE "drowned" TO WS-META
      MOVE 64 TO WS-Y
      PERFORM RESET-RANDOM
+     MOVE 0 TO GEL-COUNT GEL-LOST
      CALL "STRUCT-DATA-MARKER" USING WS-ONE WS-META WS-X WS-Y WS-Z
+     MOVE "test struct ruin given a drowned marker when it is handled then one persistent drowned is requested from the entity channel at the block centre" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF GEL-COUNT = 1 AND GEL-NBT(1)(8:17) = "minecraft:drowned" AND GEL-Y(1) = 64
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
      MOVE "test struct ruin given a drowned marker above the sea level when it is handled then there is air and no draw and no request" TO TL-CASE
      PERFORM MARKER-BLOCK-FLAG
      IF WS-KEY = "air" AND GBL-COUNT = 0

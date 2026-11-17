@@ -12,6 +12,7 @@
  COPY STRUCTPIECE.
  COPY CELLS.
  COPY FEATLEVEL.
+ COPY GENENT.
  01 WS-PTR                 USAGE POINTER.
  01 WS-BOX.
     COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==A-==.
@@ -165,6 +166,7 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO GEL-COUNT GEL-LOST
      PERFORM VARYING WS-Y1 FROM 1 BY 1 UNTIL WS-Y1 > 3
          MOVE 8 TO WS-X
          MOVE 66 TO WS-Y
@@ -185,6 +187,24 @@
          MOVE WS-STATE TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+*>   the mobs: an evoker, a vindicator, then 1 to 3 allays, all asked of the entity channel at the centre of the marker block
+     MOVE "acceptance US12 36-7§7.1 the three mob markers ask for an evoker, a vindicator and 1 to 3 allays (3 to 5 requests)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     IF GEL-COUNT >= 3 AND GEL-COUNT <= 5
+         MOVE 1 TO TL-EXPECTED-N
+     END-IF
+     MOVE 1 TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 36-7§7.1 the first two requests are the evoker and the vindicator at (8.5, 66, z + 0.5), the third an allay" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     IF GEL-NBT(1)(8:16) = "minecraft:evoker" AND GEL-NBT(2)(8:20) = "minecraft:vindicator" AND GEL-NBT(3)(8:15) = "minecraft:allay"
+             AND GEL-X(1) = 8.5 AND GEL-Y(1) = 66
+         MOVE "ok" TO TL-OBSERVED
+     END-IF
+     MOVE "ok" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
      MOVE WS-STONE TO WS-STATE
      CALL "FL-SET-STATE" USING WS-X WS-Y WS-Z WS-STATE WS-FLAGS WS-OK
      MOVE "Golem" TO WS-META

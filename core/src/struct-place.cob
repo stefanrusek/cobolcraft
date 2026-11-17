@@ -599,6 +599,8 @@
  01 WS-VALID               BINARY-LONG.
  01 WS-BOX.
     COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==B-==.
+ 01 WS-OBOX.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==O-==.
  01 WS-REACH               BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
@@ -675,12 +677,15 @@
                      CALL "STRUCT-FIND-POINT" USING WS-R WS-SEED WS-SX WS-SZ WS-X WS-Y WS-Z WS-VALID
                      IF SP-COUNT > 0
                          CALL "SPB-UNION-ALL" USING WS-BOX
+                         MOVE WS-BOX TO WS-OBOX
                          IF SDT-ADAPT(WS-R) NOT = 0
                              CALL "SPB-BOX-INFLATE" USING WS-BOX WS-INFLATE
                          END-IF
                          CALL "SPB-BOX-INTERSECTS-XZ" USING WS-BOX SP-WBOX WS-CHUNK
                          IF WS-CHUNK = 1
                              CALL "STRUCT-PLACE-START"
+*>                           the boxes of a structure that overrides the spawn lists, once the pieces have their final heights (struct-override.cob)
+                             CALL "STRUCT-OVR-NOTE" USING SDT-KEY(WS-R) J-CX J-CZ WS-OBOX
                          END-IF
                      END-IF
                  END-IF
@@ -690,5 +695,6 @@
      MOVE 0 TO FL-OV-COUNT FL-OV-LOST
      CALL "FL-CLOSE"
      CALL "GBE-KEEP" USING L-JOB
+     CALL "GENT-KEEP" USING L-JOB
      GOBACK.
  END PROGRAM STRUCT-DECORATE.

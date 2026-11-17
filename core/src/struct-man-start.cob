@@ -2,7 +2,7 @@
 *> layout of struct-man-place.cob, the data markers of its pieces (chests with the woodland_mansion loot, the mob markers) and the foundation under the lowest layer.
 *> Entry points: MAN-FIND-POINT USING seed, chunk x, chunk z, x out, y out, z out, valid out (builds the pieces in the builder, template kind 5); MAN-PIECES (the layout to pieces);
 *> MAN-MARKER USING row, metadata (PIC X(96)), x, y, z (7.1); MAN-AFTER (afterPlace, 8: once per placement pass after the pieces).
-*> Deviations: the mobs of the markers (evoker, vindicator, allays) are not made (no entity channel in the generation window): the marker is turned to air as the doc does after the mobs; the
+*> The mobs of the markers (evoker, vindicator, allays) are asked of the entity channel (gen-ent.cob) and the marker is turned to air; the
 *> start-biome pre-test (couldValidBiomeExistInTerrainColumn) is the stub's biome test of the caller; template pieces keep the pivot (0, 0, 0).
 
  IDENTIFICATION DIVISION.
@@ -130,6 +130,15 @@
  01 WS-NOTHING             PIC X(32) VALUE SPACES.
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-SET                 BINARY-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-MOB                 PIC X(32).
+ 01 WS-PERSISTENT          BINARY-LONG VALUE 1.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-META                 PIC X(96).
@@ -177,7 +186,26 @@
                  CALL "GBE-ADD" USING L-X L-Y L-Z WS-KIND WS-LOOT WS-SEED WS-NOTHING
              END-IF
          WHEN L-META = "Mage" OR L-META = "Warrior" OR L-META = "Group of Allays"
-*>           the mob is not made; the marker position becomes air
+*>           the mobs (44-2 10.4) are asked of the entity channel at the centre of the marker block, persistent, and the marker position becomes air: a Mage one evoker, a Warrior one
+*>           vindicator, a Group of Allays 1 + nextInt(3) allays (drawn from the level's own random, which has no source here: the Mth.getSeed(pos) source of the marker block, so the count is a
+*>           function of the position)
+             COMPUTE WS-FX = L-X + 0.5
+             MOVE L-Y TO WS-FY
+             COMPUTE WS-FZ = L-Z + 0.5
+             MOVE 1 TO WS-N
+             EVALUATE L-META
+                 WHEN "Mage"
+                     MOVE "minecraft:evoker" TO WS-MOB
+                 WHEN "Warrior"
+                     MOVE "minecraft:vindicator" TO WS-MOB
+                 WHEN OTHER
+                     MOVE "minecraft:allay" TO WS-MOB
+                     CALL "STRUCT-PALETTE-PICK" USING WS-THREE L-X L-Y L-Z WS-DRAW
+                     COMPUTE WS-N = 1 + WS-DRAW
+             END-EVALUATE
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+                 CALL "GENT-ADD-MOB" USING WS-FX WS-FY WS-FZ WS-MOB WS-PERSISTENT
+             END-PERFORM
              CALL "FL-SET-STATE" USING L-X L-Y L-Z WS-AIR WS-FLAGS WS-OK
          WHEN OTHER
              CONTINUE

@@ -6,6 +6,7 @@
 *>   STRUCT-TX-VEC USING x, y, z (FLOAT-LONG), mirror, rotation, pivot x, pivot z (BINARY-LONG), x out, y out, z out (FLOAT-LONG): 3.2
 *>   STRUCT-FILTER-BLOCKS USING row, origin x, y, z, settings, block key (PIC X(48), with or without minecraft:), relative (BINARY-LONG): 3.5 filterBlocks into SF-REC (STRUCT-FILTER)
 *>   STRUCT-PLACE USING row, origin x, y, z, anchor x, y, z, settings, flags, result out (1 when the placement ran, 0 for an early exit): 5.1 to 5.5
+*>   STRUCT-PLACE-ENTITIES USING row, origin x, y, z, settings: 5.6, the entity records of the template as requests of the entity channel (GENT-ADD)
 *>   STRUCT-FLUID-OF USING state, fluid out (0 none, 2 water, 3 lava), source out (1 when the fluid state is a source): the fluid state of a block state
 *>   (STRUCT-PROCESS, processBlockInfos, is in struct-proc.cob)
 *>   STRUCT-PLACE-BE USING x, y, z, state, tag: the block entity of 5.3 step 7 (a record with nbt was written): the loot seed draw and the request to the worldgen block entity channel
@@ -13,8 +14,7 @@
 *>   STRUCT-SHAPE-STATE USING x, y, z, direction (BinaryLong ordinal of 29 section 3: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east), neighbour state, state, state out: the
 *>     updateShape hook of 5.5 (29 section 3.2). The per-block rules are written for the live world (blockupd-29.cob) and are not wired to the generation level, so this
 *>     stub returns the state unchanged and records the call while SHT-ON is 1 (then it also maps SHT-FROM to SHT-TO, a test aid).
-*> Not here: the entities of 5.6 (the cache keeps no entity records and the generator has no entity channel; STRUCT-PLACE still counts a template of entities only as placed,
-*> 5.1 step 3), the barrier write of 5.3 step 4 (unobservable in the window), the fluid tick of
+*> The entities of 5.6 are asked of the entity channel (STRUCT-PLACE-ENTITIES, gen-ent.cob). Not here: the barrier write of 5.3 step 4 (unobservable in the window), the fluid tick of
 *> placeLiquid and Level.updateNeighborsAt of 5.5 step 2a (no ticking or neighbour updates in the generation window).
 
  IDENTIFICATION DIVISION.
@@ -636,6 +636,74 @@
  END PROGRAM STRUCT-PLACE-SHAPES.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-PLACE-ENTITIES.
+*> USING row, origin x, y, z, settings: 5.6 for the template's entity records (kept by STRUCT-TPL-ENTITY) unless the settings ignore entities: the block position of each record is transformed
+*> (mirror, rotation, pivot) and moved by the origin, and a record whose block is outside the settings' box is skipped (so the one pass whose box holds the block asks for it); the position is
+*> transformed the same way (3.2); the yaw is the stored one turned by the rotation (0, 90, 180, 270 degrees) with the mirror applied to the stored yaw (left-right: 180 - yaw, front-back: -yaw,
+*> from the geometry of the block transform: the document leaves Entity.rotate and Entity.mirror to 44 and 45, Open question 5). The compound goes to the entity channel (GENT-ADD) as stored:
+*> the reader replaces Pos and Rotation and ignores UUID (a fresh one is assigned), which is step 3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTTPL.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-D                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ COPY STRUCTSET.
+ PROCEDURE DIVISION USING L-ROW L-OX L-OY L-OZ STRUCT-SETTINGS.
+     IF PS-IGNORE-ENTITIES = 1
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TP-ENT-N(L-ROW)
+         COMPUTE WS-R = TP-ENT-BASE(L-ROW) + WS-I
+         CALL "STRUCT-TX-POS" USING TE-BX(WS-R) TE-BY(WS-R) TE-BZ(WS-R) PS-MIRROR PS-ROTATION PS-PIVOT-X PS-PIVOT-Z WS-BX WS-BY WS-BZ
+         COMPUTE WS-BX = WS-BX + L-OX
+         COMPUTE WS-BY = WS-BY + L-OY
+         COMPUTE WS-BZ = WS-BZ + L-OZ
+         CALL "STRUCT-IN-BOX" USING WS-BX WS-BY WS-BZ STRUCT-SETTINGS WS-IN
+         IF WS-IN = 1
+             MOVE TE-PX(WS-R) TO WS-X
+             MOVE TE-PY(WS-R) TO WS-Y
+             MOVE TE-PZ(WS-R) TO WS-Z
+             CALL "STRUCT-TX-VEC" USING WS-X WS-Y WS-Z PS-MIRROR PS-ROTATION PS-PIVOT-X PS-PIVOT-Z WS-TX WS-TY WS-TZ
+             COMPUTE WS-TX = WS-TX + L-OX
+             COMPUTE WS-TY = WS-TY + L-OY
+             COMPUTE WS-TZ = WS-TZ + L-OZ
+             MOVE TE-YAW(WS-R) TO WS-D
+             EVALUATE PS-MIRROR
+                 WHEN 1
+                     COMPUTE WS-D = 180 - WS-D
+                 WHEN 2
+                     COMPUTE WS-D = 0 - WS-D
+             END-EVALUATE
+             COMPUTE WS-D = WS-D + 90 * PS-ROTATION
+             COMPUTE WS-D = FUNCTION MOD(WS-D, 360)
+             IF WS-D >= 180
+                 COMPUTE WS-D = WS-D - 360
+             END-IF
+             MOVE WS-D TO WS-YAW
+             CALL "GENT-ADD" USING WS-TX WS-TY WS-TZ WS-YAW TE-LEN(WS-R) TE-DATA(WS-R)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-PLACE-ENTITIES.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PLACE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -673,6 +741,7 @@
      CALL "STRUCT-PLACE-WRITE" USING STRUCT-SETTINGS L-FLAGS
      CALL "STRUCT-PLACE-WATER" USING STRUCT-SETTINGS
      CALL "STRUCT-PLACE-SHAPES" USING STRUCT-SETTINGS L-FLAGS
+     CALL "STRUCT-PLACE-ENTITIES" USING L-ROW L-OX L-OY L-OZ STRUCT-SETTINGS
      MOVE 1 TO L-RESULT
      GOBACK.
  END PROGRAM STRUCT-PLACE.

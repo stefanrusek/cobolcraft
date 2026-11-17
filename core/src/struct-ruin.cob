@@ -467,6 +467,11 @@
  01 WS-SEED                BINARY-DOUBLE.
  01 WS-KIND                BINARY-LONG VALUE 1.
  01 WS-NOTHING             PIC X(32) VALUE SPACES.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-DROWNED             PIC X(32) VALUE "minecraft:drowned".
+ 01 WS-PERSISTENT          BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-META                 PIC X(96).
@@ -492,7 +497,11 @@
              CALL "MSP-RNG-LONG" USING WS-SEED
              CALL "GBE-ADD" USING L-X L-Y L-Z WS-KIND WS-LOOT WS-SEED WS-NOTHING
          WHEN "drowned"
-*>           the drowned is not made (no entity channel); the block is air above the sea level, else water
+*>           one persistent drowned is asked of the entity channel at the centre of the marker block (44-2 10.9); the block is air above the sea level, else water
+             COMPUTE WS-FX = L-X + 0.5
+             MOVE L-Y TO WS-FY
+             COMPUTE WS-FZ = L-Z + 0.5
+             CALL "GENT-ADD-MOB" USING WS-FX WS-FY WS-FZ WS-DROWNED WS-PERSISTENT
              MOVE 0 TO WS-STATE
              IF L-Y <= FL-SEA
                  CALL "GEN-BLOCK-STATE" USING WS-WATER-KEY WS-STATE
