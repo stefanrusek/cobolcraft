@@ -181,16 +181,10 @@
  01 WS-HOLDS               BINARY-LONG.
  01 WS-SAME                BINARY-LONG.
  01 WS-WET-CELL            BINARY-LONG.
- 01 WS-HITS                BINARY-LONG.
- 01 WS-BUBBLE              BINARY-LONG.
- 01 WS-KEY                 PIC X(112) VALUE "bubble_column".
- 01 WS-BUBBLE-COUNT        BINARY-LONG VALUE -1.
- 01 WS-PROPS               PIC X(160).
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-TOP                 FLOAT-LONG.
  01 WS-HIGH                FLOAT-LONG.
  01 WS-LOW                 FLOAT-LONG.
- COPY CBLOCKS.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -199,11 +193,6 @@
  01 L-WET                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-WET.
      MOVE 0 TO L-WET
-*>   The block id of the bubble column, looked up again only when the block tables changed (their size).
-     IF WS-BUBBLE-COUNT NOT = CB-BLOCK-COUNT
-         CALL "BLOCKS-ID-OF" USING WS-KEY WS-BUBBLE
-         MOVE CB-BLOCK-COUNT TO WS-BUBBLE-COUNT
-     END-IF
      COMPUTE WS-LOW = L-X - 0.299
      COMPUTE WS-X0 = FUNCTION INTEGER(WS-LOW)
      COMPUTE WS-HIGH = L-X + 0.299
@@ -220,19 +209,7 @@
              PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1 OR L-WET = 1
                  CALL "FLUID-CELL" USING L-DIM WS-X WS-Y WS-Z WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
                  MOVE WS-FLUID TO WS-WET-CELL
-*>               A waterlogged block holds a water source; a bubble column is water.
-                 IF WS-STATE NOT = 0 AND WS-FLUID = 0
-                     MOVE 0 TO WS-HITS
-                     IF CB-S-BLOCK(WS-STATE + 1) = WS-BUBBLE
-                         MOVE 1 TO WS-HITS
-                     END-IF
-                     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
-                     INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "waterlogged=true"
-                     IF WS-HITS > 0
-                         MOVE 1 TO WS-WET-CELL
-                         MOVE 8 TO WS-AMOUNT
-                     END-IF
-                 END-IF
+*>               A waterlogged block and a bubble column hold a water source: FLUID-OF-STATE (via FLUID-CELL) reports them as water.
                  IF WS-WET-CELL = 1
                      COMPUTE WS-YA = WS-Y + 1
                      CALL "FLUID-CELL" USING L-DIM WS-X WS-YA WS-Z WS-A-STATE WS-A-FLUID WS-A-KIND WS-A-AMOUNT WS-A-FALLING
