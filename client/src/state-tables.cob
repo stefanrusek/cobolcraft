@@ -97,6 +97,15 @@
              IF WS-OPAQUE = 0 AND BSH-READY = 1 AND BSH-OUT(WS-S) = 1
                  MOVE 1 TO ST-LIKE(WS-S)
              END-IF
+*>           HalfTransparentBlock.skipRendering hides a face against the same block whatever the outline (honey's is smaller than the cube).
+             IF WS-OPAQUE = 0 AND BSH-READY = 1
+                 MOVE WS-ROW TO CT-BLOCK-ROW
+                 MOVE 0 TO WS-HITS
+                 INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "HoneyBlock"
+                 IF WS-HITS > 0
+                     MOVE 1 TO ST-LIKE(WS-S)
+                 END-IF
+             END-IF
              IF WS-OPAQUE = 1 AND BSH-READY = 1 AND BSH-OUT(WS-S) NOT = 1
                  MOVE 0 TO WS-OPAQUE
              END-IF
@@ -217,6 +226,8 @@
 *>   A trapdoor (class TrapDoorBlock) is no door: it occludes by its shape, as slabs, stairs, carpets and snow layers do.
      MOVE 0 TO WS-TRAP
      INSPECT CT-BR-CLASS TALLYING WS-TRAP FOR ALL "TrapDoor"
+*>   HalfTransparentBlock (blue ice, ice, slime, honey, stained glass) is no TransparentBlock: it occludes unless its flags say noOcclusion.
+     INSPECT CT-BR-CLASS TALLYING WS-TRAP FOR ALL "HalfTransparent"
      SUBTRACT WS-TRAP FROM WS-HITS
      MOVE 1 TO L-OPAQUE
      IF WS-HITS > 0
