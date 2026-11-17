@@ -236,7 +236,7 @@
                  CALL "HEALTH-SEND" USING L-ROW
              END-IF
      END-EVALUATE
-     GOBACK.
+     GO TO MAIN-EXIT.
 
 *>   saturation (22; 54 section 11): one application is eat(amplifier + 1, 1.0): food + a + 1 up to the maximum, saturation + (a + 1) x 2
 *>   up to the food level; an instant effect applies on each tick it is held (the duration step is EFFECTS-TICK's).
@@ -244,6 +244,8 @@
      COMPUTE PL-FOOD(L-ROW) = FUNCTION MIN(RULE-MAX-FOOD, PL-FOOD(L-ROW) + L-AMPLIFIER + 1)
      COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-FOOD(L-ROW), PL-SATURATION(L-ROW) + (L-AMPLIFIER + 1) * 2)
      CALL "HEALTH-SEND" USING L-ROW.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM EFFECT-PERIODIC.
 
  IDENTIFICATION DIVISION.
