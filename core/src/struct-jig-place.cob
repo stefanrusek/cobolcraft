@@ -165,6 +165,41 @@
  END PROGRAM JIG-PLACE-ONE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. JIG-FEATURE.
+*> USING piece row, element row: the feature pool element's place (36-3 5.5, 36-9 8.1): the placed feature of the element runs once at the piece position (the jigsaw cell, SP-T-X..Z), after the
+*> template blocks. Its result is not used (a failing tree is not retried). Deviation: the feature random is derived from the position (the positional random of the level seed), not the stream
+*> shared by the pieces of the pass, so the passes of neighbouring chunks agree on one tree whose blocks each pass writes inside its own chunk.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTJIG.
+ COPY STRUCTPIECE.
+ COPY XORO REPLACING ==XR-STATE== BY ==WS-XR== LEADING ==XR-== BY ==WX-==.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-PF                  BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-USEED               BINARY-DOUBLE UNSIGNED.
+ 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-RESULT              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EL                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EL.
+     MOVE JE-FEATURE(L-EL) TO WS-KEY
+     CALL "FD-GET-PF" USING WS-KEY WS-PF
+     IF WS-PF = 0
+         GOBACK
+     END-IF
+     CALL "FD-ENSURE-PF" USING WS-PF
+     CALL "XORO-GET-SEED" USING SP-T-X(L-ROW) SP-T-Y(L-ROW) SP-T-Z(L-ROW) WS-SEED
+     COMPUTE WS-USEED = FUNCTION MOD(WS-SEED + WS-M64, WS-M64)
+     CALL "WGR-SET-SEED" USING WS-XR WS-USEED
+     MOVE WS-PF TO WS-TOP
+     CALL "FR-PLACE-PF" USING WS-XR WS-PF WS-TOP SP-T-X(L-ROW) SP-T-Y(L-ROW) SP-T-Z(L-ROW) WS-RESULT
+     GOBACK.
+ END PROGRAM JIG-FEATURE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. JIG-POST.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -191,6 +226,8 @@
                      CALL "JIG-PLACE-ONE" USING L-ROW WS-SUB WS-RESULT
                  END-IF
              END-PERFORM
+         WHEN 4
+             CALL "JIG-FEATURE" USING L-ROW WS-EL
      END-EVALUATE
      GOBACK.
  END PROGRAM JIG-POST.

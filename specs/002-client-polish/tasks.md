@@ -393,6 +393,7 @@ US7 to US10 and US16 to US20 (controls and screens) next; US11 to US15 (the stan
 
 
 
+- [Phase 46 (lane featsb8): structures after the stronghold (T10500 to T10599)](tasks/phase-46.md)
 
 
 

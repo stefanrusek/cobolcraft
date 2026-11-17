@@ -545,6 +545,7 @@
  01 WS-VILLAGE-SNOWY       PIC X(80) VALUE "minecraft:village_snowy".
  01 WS-VILLAGE-TAIGA       PIC X(80) VALUE "minecraft:village_taiga".
  01 WS-STRONGHOLD          PIC X(80) VALUE "minecraft:stronghold".
+ 01 WS-MANSION             PIC X(80) VALUE "minecraft:mansion".
  01 WS-PORTAL              PIC X(80) VALUE "minecraft:ruined_portal".
  01 WS-PORTAL-DESERT       PIC X(80) VALUE "minecraft:ruined_portal_desert".
  01 WS-PORTAL-JUNGLE       PIC X(80) VALUE "minecraft:ruined_portal_jungle".
@@ -578,7 +579,7 @@
 *>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
          CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
          CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
-*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier, no feature elements: docs/design/world-types.md structures part 8)
+*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier; the feature elements run their placed feature, JIG-FEATURE)
          CALL "STRUCT-GATE-ON" USING WS-OUTPOST
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-PLAINS
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-DESERT
@@ -587,6 +588,8 @@
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
 *>       the stronghold (struct-stronghold.cob, struct-sh-place.cob; the terrain adaptation is not done)
          CALL "STRUCT-GATE-ON" USING WS-STRONGHOLD
+*>       the woodland mansion (struct-mansion.cob, struct-man-place.cob, struct-man-start.cob; no mob markers)
+         CALL "STRUCT-GATE-ON" USING WS-MANSION
 *>       the ruined portals of the overworld (struct-portal.cob; the nether one needs the Nether pipeline and stays off)
          CALL "STRUCT-GATE-ON" USING WS-PORTAL
          CALL "STRUCT-GATE-ON" USING WS-PORTAL-DESERT
