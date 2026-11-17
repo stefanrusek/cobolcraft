@@ -2,10 +2,19 @@
 # PKG, LIBNAME, SRC (production sources, the coverage set), TESTS (test program sources), INCLUDES,
 # DEPLIBS (the dependency packages' lib outputs, dependents first) and LDLIBS, then includes this.
 #
-# Targets: lib (archive of every SRC object except src/main.cob), tests (one program per TESTS
+# Targets: lib (archive of every SRC object except src/main.cob), shlib (the same objects as a shared
+# library, linked against the dependency packages' shared libraries), tests (one program per TESTS
 # source), lint. Variables from the caller: BUILD (output root, default <repo>/build) and COVERAGE
 # (1 = instrument with --coverage). Recipes run with the package directory as working directory, so
 # gcov resolves the relative source paths from there (tools/coverage.py).
+#
+# The programs (bin) link the archives. The test programs link the shared libraries: a test program
+# then holds only its own code, and a changed production source rebuilds its object and the shared
+# library, never the test programs.
+#
+# Dependencies: every compile writes a dependency file next to its output (cobc -MF, clang -MMD) that
+# names the copybooks or headers it read, in any package; the files are included below. A source is
+# rebuilt when it or one of those files changed.
 
 REPO     := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))..)
 BUILD    ?= $(REPO)/build
@@ -43,16 +52,19 @@ TEST_PROGS  := $(patsubst tests/%,$(TOUT)/%,$(basename $(TESTS)))
 GENDIR      := $(BUILD)/gen/$(PKG)/tests
 GEN_PROGS   := $(patsubst $(GENDIR)/%,$(TOUT)/%,$(basename $(wildcard $(GENDIR)/*.cob)))
 TESTASSERT  := $(TOUT)/testassert.o
-COPYBOOKS   := $(wildcard $(REPO)/contract/copy/*.cpy copy/*.cpy)
-TESTCOPY    := $(wildcard tests/*.cpy)
-HEADERS     := $(wildcard $(REPO)/contract/include/*.h)
+# The shared library of the package and those of the packages it links (DEPLIBS, dependents first).
+SHLIB       := $(LIB:.a=.dylib)
+DEPSHLIBS    = $(DEPLIBS:.a=.dylib)
+COBLIBS     := $(shell cob-config --libs)
 
-.PHONY: lib tests lint
+.PHONY: lib shlib tests lint
 .DEFAULT_GOAL := lib
 
 lib: $(LIB)
 
-tests: $(LIB) $(TEST_PROGS) $(GEN_PROGS)
+shlib: $(SHLIB)
+
+tests: $(SHLIB) $(TEST_PROGS) $(GEN_PROGS)
 
 lint:
 	python3 $(REPO)/tools/lint.py -I $(TESTLIB) $(addprefix -I ,$(filter-out -I,$(INCLUDES))) $(LINT_FILES)
@@ -63,26 +75,46 @@ $(LIB): $(OBJS)
 	rm -f $@
 	$(if $(OBJS),ar rcs $@ $(OBJS),printf '!<arch>\n' > $@)
 
-$(OBJ)/%.o: src/%.cob $(COPYBOOKS)
+# Every object, with the dependency packages' shared libraries; its install name is its own path, so a
+# test program finds it without any environment. The dependency libraries are order-only: a changed
+# one is found again when the program starts.
+# -flat_namespace and -interposable keep what linking the archive gives a test program that defines a
+# program name of the library itself (a test seam such as core/tests/JIGSEAM.cpy): the library's own
+# calls of that name reach the test program's definition.
+$(SHLIB): $(OBJS) | $(DEPSHLIBS)
 	@mkdir -p $(dir $@)
-	cobc -c $(COBFLAGS) -o $@ $<
+	clang -dynamiclib -Wl,-flat_namespace -Wl,-interposable -install_name $@ -o $@ $(OBJS) $(DEPSHLIBS) $(LDLIBS) $(COBLIBS) $(LDCOV)
 
-$(OBJ)/%.o: src/%.c $(HEADERS)
+# A new object makes the counts of its earlier runs (.gcda) unreadable: they go with it.
+$(OBJ)/%.o: src/%.cob
 	@mkdir -p $(dir $@)
-	clang -c $(CFLAGS) -o $@ $<
+	@rm -f $(@:.o=.gcda)
+	cobc -c $(COBFLAGS) -MF $(@:.o=.d) -MT $@ -o $@ $<
 
-$(TESTASSERT): $(TESTLIB)/testassert.cob $(TESTLIB)/TESTLIB.cpy
+$(OBJ)/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	cobc -c $(COBFLAGS) -I $(TESTLIB) -o $@ $<
+	@rm -f $(@:.o=.gcda)
+	clang -c $(CFLAGS) -MMD -MF $(@:.o=.d) -o $@ $<
 
-$(TOUT)/%: tests/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
+$(TESTASSERT): $(TESTLIB)/testassert.cob
 	@mkdir -p $(dir $@)
-	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
+	cobc -c $(COBFLAGS) -I $(TESTLIB) -MF $(@:.o=.d) -MT $@ -o $@ $<
 
-$(TOUT)/%: $(GENDIR)/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
+$(TOUT)/%: tests/%.cob $(TESTASSERT) | $(SHLIB) $(DEPSHLIBS)
 	@mkdir -p $(dir $@)
-	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
+	cobc -x $(COBFLAGS) -I $(TESTLIB) -MF $@.d -MT $@ -o $@ $< $(TESTASSERT) $(SHLIB) $(DEPSHLIBS) $(LDLIBS)
 
-$(TOUT)/%: tests/%.c $(TESTLIB)/testlib.h $(LIB) $(DEPLIBS) $(HEADERS)
+$(TOUT)/%: $(GENDIR)/%.cob $(TESTASSERT) | $(SHLIB) $(DEPSHLIBS)
 	@mkdir -p $(dir $@)
-	clang $(CFLAGS) -I $(TESTLIB) -o $@ $< $(LIB) $(DEPLIBS) $(LDLIBS) $(LDCOV)
+	cobc -x $(COBFLAGS) -I $(TESTLIB) -MF $@.d -MT $@ -o $@ $< $(TESTASSERT) $(SHLIB) $(DEPSHLIBS) $(LDLIBS)
+
+$(TOUT)/%: tests/%.c | $(SHLIB) $(DEPSHLIBS)
+	@mkdir -p $(dir $@)
+	clang $(CFLAGS) -I $(TESTLIB) -MMD -MF $@.d -o $@ $< $(SHLIB) $(DEPSHLIBS) $(LDLIBS) $(LDCOV)
+
+# The dependency files of earlier compiles. A copybook or header that was deleted since is no error:
+# the source that named it is rebuilt (and fails there if it still names it).
+-include $(OBJS:.o=.d) $(TESTASSERT:.o=.d) $(addsuffix .d,$(TEST_PROGS) $(GEN_PROGS))
+%.cpy: ;
+%.CPY: ;
+%.h: ;

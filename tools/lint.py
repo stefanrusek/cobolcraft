@@ -13,6 +13,7 @@ every file that fails, then `lint: <n> files, <m> failed`; exits 1 if any failed
 Any other file type fails.
 """
 import argparse
+import concurrent.futures
 import os
 import subprocess
 import sys
@@ -80,8 +81,12 @@ def main(argv):
     parser.add_argument("files", nargs="*")
     arguments = parser.parse_args(argv)
     failed = 0
-    for path in arguments.files:
-        ok, output = lint_file(path, arguments.include_dirs)
+    # JOBS files at a time (default: every processor); the report keeps the order of the arguments.
+    jobs = os.environ.get("JOBS", "")
+    jobs = int(jobs) if jobs.isdigit() and int(jobs) > 0 else os.cpu_count() or 1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
+        outcomes = list(pool.map(lambda path: lint_file(path, arguments.include_dirs), arguments.files))
+    for path, (ok, output) in zip(arguments.files, outcomes):
         if not ok:
             failed += 1
             sys.stdout.write(output)

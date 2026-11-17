@@ -147,8 +147,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `TEST-DRAIN-HUNGER` (Set Health, Entity Event and Container Set Slot, `|`-separated), `TEST-PLACE-RECIPE`,
   `TEST-DRAIN-CRAFT` (Recipe Book Add as `book <n> craftable <ids> replace <r>` and Container Set Slot,
   `|`-separated), `TEST-DRAIN-WEATHER` (weather Game Events 1, 2, 7, 8 as `<event> <value>`,
-  `|`-separated), fixture loading and comparison. Test copybooks are not make dependencies: touch the test or delete
-  `build/coverage/core` after changing one.
+  `|`-separated), fixture loading and comparison. Copybooks are make dependencies (see Gates): a changed test
+  copybook rebuilds the tests that COPY it.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
 - **Recipe Book Add follows every inventory change** (standin §13; `CRAFT-REFRESH-ALL` runs after each
   play packet and each tick). `TEST-DRAIN-BLOCKS` and `TEST-DRAIN-ENTITIES` leave it out (like Set Time);
@@ -301,8 +301,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.
 
-- **Client tests** (client/tests/CLTEST.cpy, COPY it after the test program; touch the tests
-  after changing it): `TEST-LOAD-HEX`, `TEST-SAME-AS-FIXTURE`, `TEST-HEX-OF`, `TEST-FEED` (a fixture
+- **Client tests** (client/tests/CLTEST.cpy, COPY it after the test program): `TEST-LOAD-HEX`, `TEST-SAME-AS-FIXTURE`, `TEST-HEX-OF`, `TEST-FEED` (a fixture
   packet into `PROTO-PACKET` on a connection), `TEST-SENT` / `TEST-SENT-IDS` / `TEST-CLEAR-SENT`
   (what the client queued in `CN-OUT`, decoded as id + body),
   `TEST-LOOPBACK` (a real loopback connection for a client connection), `TEST-SERVE`,
@@ -375,4 +374,32 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 
 - Each package has a gate: `make gate-<pkg>` (shim, proto, core, server, client), `make gate-contract` and
   `make gate-tools`, plus `make gate` for everything. A gate runs lint, the tests and coverage.
+- Builds are incremental and parallel (`tools/package.mk`, `tools/runtests.py`). Every compile records the
+  copybooks and headers it read, in any package, so a changed copybook rebuilds exactly the sources that COPY
+  it: no command needs a clean `build/` first. `JOBS=<n>` sets how many compiles and test programs run at a
+  time (default: every processor).
+- Test programs link each package's shared library (`build/<pkg>/lib<pkg>.dylib`), not the archive; the
+  programs (`bin`) link the archives. A test program that defines a program name of the library (a seam such
+  as `core/tests/JIGSEAM.cpy`) still replaces it for the library's own calls.
+- With more than one job each running test program works in a sandbox (`<build>/sandbox/<n>`: copy-on-write
+  copies of the package, contract, tools and tests folders, its own `build/`, no `.git`), so tests may keep
+  using fixed scratch names under `build/` and may change copied fixtures. Two tests must not share anything
+  outside the repository (a fixed port, a file in `/tmp`).
+- A test program with a failing case in the parallel pass is run once more afterwards, alone in the
+  repository root (`RERUN <test source>`), and only that run counts: cases that measure time are judged on a
+  quiet machine.
+- `make cover-changed SINCE=<ref> [ONLY="<pattern> ..."]` is a branch's own coverage check: it runs the ONLY
+  test programs (default: all tests of the packages whose production sources changed) instrumented and fails
+  on every production line changed since the branch left `<ref>` that the run never executed. It is an
+  intermediate check, never a gate.
 - Check a command's exit status directly, not through a pipe.
+
+## Task lists
+
+- A feature whose task list was split (`tools/tasks.py split`) has `specs/<feature>/tasks.md` as the index and
+  one file per phase under `specs/<feature>/tasks/` (`<package>/phase-<id>.md`); read the index and the files
+  of the phases you work on, not the whole list. A lane keeps its own list in
+  `specs/<feature>/tasks/lanes/<lane>.md` and adds nothing to the index.
+- `python3 tools/tasks.py status specs/<feature> --open` lists the files with open tasks;
+  `python3 tools/tasks.py absorb specs/<feature> <ref>` brings in the task changes of a branch that still has
+  the one-file layout (run it with `MERGE_HEAD` when a merge stops on `tasks.md`).
