@@ -809,6 +809,7 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-OPEN-SKY            BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
+ 01 WS-RAW                 BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-DIM                  BINARY-LONG.
@@ -827,7 +828,9 @@
          CALL "MS6-WATER-RULE" USING L-DIM L-ROW L-X L-Y L-Z L-OK
          GOBACK
      END-IF
-     CALL "STDMOB-LIGHTS" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK
+*>   LIGHT-RAW, not STDMOB-LIGHTS: the stored sky light is 0 at and below a column's topmost non-void block, so a cell holding grass or a flower, or lying
+*>   under leaves or glass, would read dark in full daylight; LIGHT-RAW lights such a cell by the sky when no opaque block is above it.
+     CALL "LIGHT-RAW" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK WS-RAW
      COMPUTE WS-BELOW = L-Y - 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-BELOW L-Z WS-KIND
      MOVE 0 TO WS-VALID WS-BRIGHT WS-DARK WS-PEACEFUL
@@ -944,6 +947,9 @@
  01 WS-FY                  FLOAT-LONG.
  01 WS-FZ                  FLOAT-LONG.
  01 WS-D2                  FLOAT-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SY                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-KEY48               PIC X(48).
  01 WS-KEY24               PIC X(24).
@@ -1003,6 +1009,15 @@
              MOVE 1 TO WS-OK
              IF WS-D2 <= 576 OR WS-D2 > 16384 OR WS-READY = 0
                  MOVE 0 TO WS-OK
+             END-IF
+*>           Not within 24 blocks of the level's respawn position when that is in this dimension (6.5 step 2, closerToCenterThan: the block centre).
+             IF L-DIM = CW-DIM(1)
+                 COMPUTE WS-SX = WS-FX - (FUNCTION INTEGER(CW-SPAWN-X) + 0.5)
+                 COMPUTE WS-SY = WS-FY - (FUNCTION INTEGER(CW-SPAWN-Y) + 0.5)
+                 COMPUTE WS-SZ = WS-FZ - (FUNCTION INTEGER(CW-SPAWN-Z) + 0.5)
+                 IF WS-SX * WS-SX + WS-SY * WS-SY + WS-SZ * WS-SZ < 576
+                     MOVE 0 TO WS-OK
+                 END-IF
              END-IF
              IF WS-OK = 1 AND WS-ENTRY = 0
                  CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
