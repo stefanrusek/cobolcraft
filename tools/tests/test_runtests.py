@@ -379,6 +379,25 @@ class ParallelRuns(unittest.TestCase):
         self.assertEqual(seen, {self.repo})
         self.assertFalse(os.path.exists(self.root))
 
+    def test_programs_start_slowest_first_and_unknown_ones_before_them(self):
+        started = []
+
+        def run(program, source, directory):
+            started.append(source)
+            return [runtests.Result(source, True, "", "")]
+
+        known = {"core/tests/test_1.cob": 2.0, "core/tests/test_2.cob": 90.0, "core/tests/test_3.cob": 30.0}
+        results, times = runtests.run_all(self.programs[:5], self.repo, self.root, 1, run, known)
+        self.assertEqual([s[len("core/tests/test_")] for s in started], ["0", "4", "2", "3", "1"])
+        self.assertEqual([r.case for r in results], [source for source, _ in self.programs[:5]])
+        self.assertEqual([source for _, source in times], [source for source, _ in self.programs[:5]])
+
+    def test_times_are_read_back(self):
+        path = os.path.join(self.repo, "times.txt")
+        runtests.write_times(path, [(0.5, "core/tests/test_a.cob"), (12.25, "core/tests/test_b.cob")])
+        self.assertEqual(runtests.read_times(path), {"core/tests/test_a.cob": 0.5, "core/tests/test_b.cob": 12.25})
+        self.assertEqual(runtests.read_times(os.path.join(self.repo, "absent.txt")), {})
+
     def test_times_are_written_slowest_first(self):
         path = os.path.join(self.repo, "times.txt")
         runtests.write_times(path, [(0.5, "core/tests/test_a.cob"), (12.25, "core/tests/test_b.cob")])

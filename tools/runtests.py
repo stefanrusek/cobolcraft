@@ -46,7 +46,10 @@ the repository root, and only that second run counts for it (a `RERUN <test sour
 that measures time, or shares something outside `build/` with another program, is judged as `--jobs 1`
 judges it.
 
-`--times FILE` writes one line `<seconds> <test source>` per test program, slowest first.
+`--times FILE` writes one line `<seconds> <test source>` per test program, slowest first. The same lines are
+kept in `<build>/test-times.txt` from run to run (a program that did not run keeps its line), and the programs
+start in the order of that file, slowest first and unknown ones before them, so the longest programs run
+beside the others and not after them. The order of the report does not change.
 """
 import argparse
 import collections
@@ -267,11 +270,28 @@ def prepare_shared(repo):
     return returncode == 0
 
 
-def run_all(programs, repo, sandbox_root, jobs, run=None):
+def read_times(path):
+    """{test source: seconds} of a file `write_times` wrote; empty when there is none."""
+    known = {}
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                seconds, _, source = line.strip().partition(" ")
+                try:
+                    known[source] = float(seconds)
+                except ValueError:
+                    pass
+    return known
+
+
+def run_all(programs, repo, sandbox_root, jobs, run=None, known=None):
     """Run the (source, program) pairs, `jobs` at a time; return ([Result] in the order of `programs`,
     [(seconds, source)]). With one job every program runs in `repo`; with more, each runs in a sandbox
-    that no other running program uses."""
+    that no other running program uses. They start slowest first by `known` ({source: seconds} of an
+    earlier run), the ones it does not name before the others."""
     run = run or run_program
+    known = known or {}
+    order = sorted(range(len(programs)), key=lambda n: (programs[n][0] in known, -known.get(programs[n][0], 0.0), n))
     if jobs <= 1:
         directories = None
     else:
@@ -294,7 +314,10 @@ def run_all(programs, repo, sandbox_root, jobs, run=None):
                 directories.put(directory)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(jobs, 1)) as pool:
-        outcomes = list(pool.map(one, programs))
+        started_first = list(pool.map(one, [programs[n] for n in order]))
+    outcomes = [None] * len(programs)
+    for n, outcome in zip(order, started_first):
+        outcomes[n] = outcome
     if directories is not None:
         for index, ((source, program), (found, seconds)) in enumerate(zip(programs, outcomes)):
             if not all(result.passed for result in found):
@@ -368,7 +391,11 @@ def main(argv):
     if jobs > 1 and not prepare_shared(REPO):
         return 1
     programs = [pair for package in selected for pair in chosen[package]]
-    results, times = run_all(programs, REPO, os.path.join(build, "sandbox"), jobs)
+    kept = os.path.join(build, "test-times.txt")
+    known = read_times(kept)
+    results, times = run_all(programs, REPO, os.path.join(build, "sandbox"), jobs, known=known)
+    known.update({source: seconds for seconds, source in times})
+    write_times(kept, [(seconds, source) for source, seconds in known.items()])
     if arguments.times:
         write_times(arguments.times, times)
     for line in report(results):
