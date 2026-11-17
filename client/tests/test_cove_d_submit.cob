@@ -1,0 +1,47 @@
+*> Coverage of SUBMIT-FRAME's armour glint upload with a mip chain: an armour glint of 8 x 8 or more goes up with four mip levels and the upload mark clears.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVE-D-SUBMIT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY TESTLIB.
+ 01 WS-TITLE               PIC X(16) VALUE Z"cove_d_submit".
+ 01 WS-W                   BINARY-LONG VALUE 320.
+ 01 WS-H                   BINARY-LONG VALUE 240.
+ 01 WS-HIDDEN              BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PRESENTED           BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "SYSTEM" USING "rm -rf build/client-test-cove-d-submit"
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE "build/client-test-cove-d-submit" TO CL-GAME-DIR
+     MOVE 31 TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     CALL STATIC "cc_win_open" USING BY VALUE WS-W BY VALUE WS-H BY REFERENCE WS-TITLE
+         BY VALUE WS-HIDDEN RETURNING WS-RC
+     CALL STATIC "cc_vk_init" RETURNING WS-RC
+     MOVE SCR-WORLD TO SM-SCREEN
+     ALLOCATE 256 CHARACTERS INITIALIZED RETURNING GT-ARMOR-ADDR
+     MOVE 8 TO GT-ARMOR-W GT-ARMOR-H
+     MOVE 1 TO AT-UPLOAD(7)
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "N" TO TL-MODE
+     MOVE "cove-d submit: an 8 x 8 armour glint is uploaded with a mip chain (mark cleared)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE AT-UPLOAD(7) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "cove-d submit: the frame is presented" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-PRESENTED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     FREE GT-ARMOR-ADDR
+     MOVE 0 TO GT-ARMOR-W
+     CALL STATIC "cc_vk_shutdown"
+     CALL STATIC "cc_win_close"
+     MOVE 0 TO RETURN-CODE
+     STOP RUN.
+ END PROGRAM TEST-COVE-D-SUBMIT.
