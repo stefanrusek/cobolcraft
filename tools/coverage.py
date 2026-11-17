@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Line coverage check (research R9; constitution 4.2). Test infrastructure, stdlib only.
 
-usage: coverage.py [--build DIR] [PACKAGE ...]
+usage: coverage.py [--build DIR] [--changed-since REF [--list-packages]] [PACKAGE ...]
 
 Run after an instrumented test run (`runtests.py --coverage`, which builds with `cobc --coverage` /
 `clang --coverage`). For every object file under `<build>/<package>/obj` of the selected packages it
@@ -15,9 +15,18 @@ Production sources: shim/src/*.c, proto/src/*.cob, core/src/*.cob, core/copy/*.c
 formats/src/*.cob, formats/copy/*.cpy, content/src/*.cob, content/copy/*.cpy (not copy/gen/), extract/src/*.cob,
 server/src/*.cob, client/src/**/*.cob. Everything else (tests, tools, specs, contract, generated C,
 system headers) is ignored.
+
+`--changed-since REF` is the check of a branch's own work after a run of only its own test programs
+(`make cover-changed`): only the production lines that the working tree changed or added since it left REF
+(the merge base of REF and HEAD, plus uncommitted and untracked files) are reported, as `UNCOVERED
+<file>:<line>`, and the exit status is 1 if there is one. Lines that other test programs cover do not count
+against it; it never satisfies a gate. With `--list-packages` it runs nothing and prints the packages that
+have changed production sources, on one line.
 """
 import argparse
+import concurrent.futures
 import os
+import re
 import subprocess
 import sys
 
@@ -102,6 +111,54 @@ def objects(build, package):
     return sorted(found)
 
 
+HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+
+def parse_diff(text):
+    """{path: {line numbers}} of the lines a `git diff -U0` text adds or changes (new numbering)."""
+    changed = {}
+    path = None
+    for line in text.splitlines():
+        if line.startswith("+++ "):
+            path = line[6:] if line.startswith("+++ b/") else None
+            continue
+        match = HUNK.match(line)
+        if match and path is not None:
+            start, count = int(match.group(1)), int(match.group(2) or "1")
+            if count:
+                changed.setdefault(path, set()).update(range(start, start + count))
+    return changed
+
+
+def changed_lines(repo, reference):
+    """{path: {line numbers}, or None for every line} of what the working tree of `repo` changed since it
+    left `reference`: the diff against their merge base, and every untracked file as a whole."""
+
+    def git(*arguments):
+        return subprocess.run(["git", "-C", repo, *arguments], check=True, stdout=subprocess.PIPE, text=True).stdout
+
+    base = git("merge-base", reference, "HEAD").strip()
+    changed = parse_diff(git("diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", base))
+    for path in git("ls-files", "--others", "--exclude-standard").splitlines():
+        changed[path] = None
+    return changed
+
+
+def restrict(uncovered, changed):
+    """The `file:line` entries of `uncovered` that are changed lines."""
+    kept = []
+    for entry in uncovered:
+        path, _, number = entry.rpartition(":")
+        if path in changed and (changed[path] is None or int(number) in changed[path]):
+            kept.append(entry)
+    return kept
+
+
+def changed_packages(changed):
+    """The packages with a changed production source, in PACKAGES order."""
+    return [p for p in PACKAGES if any(is_production(path, [p]) for path in changed)]
+
+
 def gcov_output(package_dir, obj):
     completed = subprocess.run(
         ["gcov", "-t", "-o", obj, obj], cwd=package_dir, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
@@ -112,6 +169,9 @@ def gcov_output(package_dir, obj):
 def parse_arguments(argv):
     parser = argparse.ArgumentParser(description="Fail on never-executed production lines.")
     parser.add_argument("--build", default=os.path.join(REPO, "build", "coverage"), help="instrumented build root")
+    parser.add_argument("--changed-since", metavar="REF", help="report only the lines changed since the tree left REF")
+    parser.add_argument("--list-packages", action="store_true", help="with --changed-since: print the changed packages")
+    parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1, metavar="N", help="run N gcov at a time")
     parser.add_argument("packages", nargs="*", choices=PACKAGES, metavar="PACKAGE", help=" ".join(PACKAGES))
     return parser.parse_args(argv)
 
@@ -120,14 +180,22 @@ def main(argv):
     arguments = parse_arguments(argv)
     packages = [p for p in PACKAGES if not arguments.packages or p in arguments.packages]
     build = os.path.abspath(arguments.build)
-    outputs = []
-    for package in packages:
-        package_dir = os.path.join(REPO, package)
-        outputs.extend((package_dir, gcov_output(package_dir, obj)) for obj in objects(build, package))
+    changed = changed_lines(REPO, arguments.changed_since) if arguments.changed_since else None
+    if arguments.list_packages:
+        print(" ".join(changed_packages(changed or {})))
+        return 0
+    work = [(os.path.join(REPO, package), obj) for package in packages for obj in objects(build, package)]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(arguments.jobs, 1)) as pool:
+        outputs = list(zip((d for d, _ in work), pool.map(lambda item: gcov_output(*item), work)))
     uncovered = collect(outputs, REPO, packages)
+    if changed is not None:
+        uncovered = restrict(uncovered, changed)
     for line in uncovered:
         print("UNCOVERED " + line)
-    print("coverage: %d objects, %d uncovered lines" % (len(outputs), len(uncovered)))
+    if changed is None:
+        print("coverage: %d objects, %d uncovered lines" % (len(outputs), len(uncovered)))
+    else:
+        print("coverage: %d objects, %d uncovered changed lines" % (len(outputs), len(uncovered)))
     return 1 if uncovered else 0
 
 

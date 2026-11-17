@@ -6,6 +6,8 @@ import shutil
 import stat
 import sys
 import tempfile
+import threading
+import time
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -140,6 +142,10 @@ class ProgramRuns(unittest.TestCase):
         program = self.program('import os\nprint("TEST cwd " + ("PASS" if os.path.isdir("core") else "FAIL expected=core observed=none"))\n')
         self.assertEqual(self.run_it(program), [runtests.Result("cwd", True, "", "")])
 
+    def test_PWD_names_the_directory_the_program_runs_in(self):
+        program = self.program('import os\nprint("TEST pwd " + ("PASS" if os.environ["PWD"] == os.getcwd() else "FAIL expected=cwd observed=" + os.environ["PWD"]))\n')
+        self.assertEqual(runtests.run_program(program, self.source, os.path.realpath(self.repo)), [runtests.Result("pwd", True, "", "")])
+
     def test_stdin_file_is_fed(self):
         self.sibling(".stdin", "hello\n")
         program = self.program('line = sys.stdin.readline().strip()\nprint("TEST stdin FAIL expected=hello observed=" + line if line != "hello" else "TEST stdin PASS")\n')
@@ -214,6 +220,170 @@ class ProgramRuns(unittest.TestCase):
         self.sibling(".expect", "2\n")
         program = self.program("sys.exit(2)\n")
         self.assertEqual(self.run_it(program), [runtests.Result("core/tests/test_x", True, "", "")])
+
+
+class Jobs(unittest.TestCase):
+    def test_default_is_the_JOBS_variable(self):
+        self.assertEqual(runtests.default_jobs({"JOBS": "3"}), 3)
+
+    def test_default_without_a_usable_JOBS_is_the_processor_count(self):
+        for environment in ({}, {"JOBS": ""}, {"JOBS": "0"}, {"JOBS": "many"}):
+            self.assertEqual(runtests.default_jobs(environment), os.cpu_count())
+
+    def test_jobs_argument(self):
+        self.assertEqual(runtests.parse_arguments(["--jobs", "5"]).jobs, 5)
+
+
+class Sandboxes(unittest.TestCase):
+    def setUp(self):
+        self.repo = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.repo)
+        for directory in ("core/tests", "build/coverage", "build/testsrv", "build/core-test-world"):
+            os.makedirs(os.path.join(self.repo, directory))
+        open(os.path.join(self.repo, "Makefile"), "w").close()
+        self.root = os.path.join(self.repo, "build", "coverage", "sandbox")
+
+    def test_repository_entries_are_links_and_build_is_its_own(self):
+        os.makedirs(os.path.join(self.repo, "docs", "protocol"))
+        os.makedirs(os.path.join(self.repo, ".git"))
+        sandbox = runtests.make_sandbox(self.repo, self.root, 2)
+        self.assertEqual(sandbox, os.path.join(self.root, "2"))
+        self.assertTrue(os.path.islink(os.path.join(sandbox, "Makefile")))
+        # a folder that is not a package: real, with its entries linked
+        self.assertFalse(os.path.islink(os.path.join(sandbox, "docs")))
+        self.assertTrue(os.path.islink(os.path.join(sandbox, "docs", "protocol")))
+        self.assertFalse(os.path.islink(os.path.join(sandbox, "build")))
+        self.assertFalse(os.path.lexists(os.path.join(sandbox, ".git")))
+
+    def test_package_folders_are_copies(self):
+        fixtures = os.path.join(self.repo, "core", "tests", "fixtures")
+        os.makedirs(fixtures)
+        with open(os.path.join(fixtures, "a.hex"), "w") as handle:
+            handle.write("00")
+        sandbox = runtests.make_sandbox(self.repo, self.root, 0)
+        inside = os.path.join(sandbox, "core", "tests", "fixtures")
+        self.assertFalse(os.path.islink(inside))
+        self.assertFalse(os.path.islink(os.path.join(inside, "a.hex")))
+        with open(os.path.join(inside, "a.hex")) as handle:
+            self.assertEqual(handle.read(), "00")
+        # leaving a package folder with .. stays in the sandbox
+        self.assertEqual(
+            os.path.realpath(os.path.join(inside, "..", "..", "..", "build")), os.path.realpath(os.path.join(sandbox, "build"))
+        )
+        # what a program writes or changes there stays out of the repository
+        open(os.path.join(inside, "made.txt"), "w").close()
+        with open(os.path.join(inside, "a.hex"), "w") as handle:
+            handle.write("ff")
+        os.chmod(os.path.join(inside, "a.hex"), 0)
+        self.assertFalse(os.path.exists(os.path.join(fixtures, "made.txt")))
+        with open(os.path.join(fixtures, "a.hex")) as handle:
+            self.assertEqual(handle.read(), "00")
+        os.chmod(os.path.join(inside, "a.hex"), 0o644)
+
+    def test_build_outputs_are_shared_and_scratch_is_not(self):
+        sandbox = runtests.make_sandbox(self.repo, self.root, 0)
+        self.assertEqual(sorted(os.listdir(os.path.join(sandbox, "build"))), sorted(runtests.SHARED_BUILD_ENTRIES))
+        self.assertTrue(os.path.islink(os.path.join(sandbox, "build", "testsrv")))
+        self.assertNotIn("core-test-world", os.listdir(os.path.join(sandbox, "build")))
+
+    def test_a_shared_folder_a_test_program_may_build_into_exists(self):
+        sandbox = runtests.make_sandbox(self.repo, self.root, 0)
+        self.assertTrue(os.path.isdir(os.path.join(self.repo, "build", "bin")))
+        self.assertEqual(os.path.realpath(os.path.join(sandbox, "build", "bin")), os.path.realpath(os.path.join(self.repo, "build", "bin")))
+
+    def test_a_sandbox_is_emptied_when_made_again(self):
+        sandbox = runtests.make_sandbox(self.repo, self.root, 0)
+        os.makedirs(os.path.join(sandbox, "build", "core-test-world"))
+        runtests.make_sandbox(self.repo, self.root, 0)
+        self.assertFalse(os.path.exists(os.path.join(sandbox, "build", "core-test-world")))
+        # the real folders the links pointed at are untouched
+        self.assertTrue(os.path.isdir(os.path.join(self.repo, "build", "testsrv")))
+        self.assertTrue(os.path.isdir(os.path.join(self.repo, "core", "tests")))
+
+
+class ParallelRuns(unittest.TestCase):
+    def setUp(self):
+        self.repo = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.repo)
+        os.makedirs(os.path.join(self.repo, "core", "tests"))
+        self.root = os.path.join(self.repo, "build", "sandbox")
+        self.programs = [("core/tests/test_%d.cob" % n, "/programs/test_%d" % n) for n in range(8)]
+
+    def test_results_keep_the_order_of_the_programs(self):
+        def run(program, source, directory):
+            time.sleep(0.05 if source.endswith("_0.cob") else 0)  # the first one finishes last
+            return [runtests.Result(source, True, "", "")]
+
+        results, times = runtests.run_all(self.programs, self.repo, self.root, 4, run)
+        self.assertEqual([r.case for r in results], [source for source, _ in self.programs])
+        self.assertEqual([source for _, source in times], [source for source, _ in self.programs])
+
+    def test_no_two_running_programs_share_a_directory(self):
+        lock = threading.Lock()
+        busy, seen, clashes = set(), set(), []
+
+        def run(program, source, directory):
+            with lock:
+                if directory in busy:
+                    clashes.append(directory)
+                busy.add(directory)
+                seen.add(directory)
+            time.sleep(0.02)
+            with lock:
+                busy.discard(directory)
+            return []
+
+        runtests.run_all(self.programs, self.repo, self.root, 3, run)
+        self.assertEqual(clashes, [])
+        self.assertEqual(seen, {os.path.join(self.root, str(n)) for n in range(3)})
+
+    def test_a_program_that_failed_is_run_again_alone_in_the_repository_root(self):
+        calls = []
+
+        def run(program, source, directory):
+            calls.append((source, directory))
+            flaky = source.endswith("_3.cob") and directory != self.repo
+            broken = source.endswith("_5.cob")
+            return [runtests.Result(source, not (flaky or broken), "1", "0")]
+
+        printed = io.StringIO()
+        with contextlib.redirect_stdout(printed):
+            results, _ = runtests.run_all(self.programs, self.repo, self.root, 4, run)
+        self.assertEqual(printed.getvalue(), "RERUN core/tests/test_3.cob\nRERUN core/tests/test_5.cob\n")
+        self.assertEqual([r.case for r in results if not r.passed], ["core/tests/test_5.cob"])
+        self.assertEqual(len(results), len(self.programs))
+        self.assertEqual(calls[-2:], [("core/tests/test_3.cob", self.repo), ("core/tests/test_5.cob", self.repo)])
+
+    def test_one_job_runs_nothing_twice(self):
+        calls = []
+
+        def run(program, source, directory):
+            calls.append(source)
+            return [runtests.Result(source, False, "1", "0")]
+
+        runtests.run_all(self.programs, self.repo, self.root, 1, run)
+        self.assertEqual(len(calls), len(self.programs))
+
+    def test_no_more_sandboxes_than_programs(self):
+        runtests.run_all(self.programs[:2], self.repo, self.root, 6, lambda program, source, directory: [])
+        self.assertEqual(sorted(os.listdir(self.root)), ["0", "1"])
+
+    def test_one_job_runs_in_the_repository_root(self):
+        seen = set()
+
+        def run(program, source, directory):
+            seen.add(directory)
+            return []
+
+        runtests.run_all(self.programs, self.repo, self.root, 1, run)
+        self.assertEqual(seen, {self.repo})
+        self.assertFalse(os.path.exists(self.root))
+
+    def test_times_are_written_slowest_first(self):
+        path = os.path.join(self.repo, "times.txt")
+        runtests.write_times(path, [(0.5, "core/tests/test_a.cob"), (12.25, "core/tests/test_b.cob")])
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), "12.25 core/tests/test_b.cob\n0.50 core/tests/test_a.cob\n")
 
 
 class Reporting(unittest.TestCase):

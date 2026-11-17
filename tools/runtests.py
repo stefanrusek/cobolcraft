@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Test runner (research R9; contracts/test-harness.md §1, §3). Test infrastructure, stdlib only.
 
-usage: runtests.py [--build DIR] [--coverage] [--only NAME ...] [PACKAGE ...]
+usage: runtests.py [--build DIR] [--coverage] [--only NAME ...] [--jobs N] [--times FILE] [PACKAGE ...]
 
 For the selected packages (default: all, in dependency order) it builds their libraries and the
-libraries they depend on (`make lib`), builds each package's test programs (`make tests`), runs every test program
-from the repository root and reads its `TEST <case> PASS` / `TEST <case> FAIL expected=<x>
+libraries they depend on (`make lib shlib`), builds each package's test programs (`make tests`), runs every test program
+from the repository root (or a sandbox of it, see below) and reads its `TEST <case> PASS` / `TEST <case> FAIL expected=<x>
 observed=<y>` lines. It prints every failing case as `FAIL <case> expected=<x> observed=<y>`, then
 `passed <n> failed <m>`, and exits 1 if any case failed.
 
@@ -27,13 +27,37 @@ start and run with their package's tests; their programs are `<build>/<package>/
 selects test programs instead of whole packages: only the matching programs are built and run, with the
 libraries they depend on. It is an intermediate check: it never satisfies a gate, and the coverage step
 (tools/coverage.py) is not run for it by the make targets that use it.
+
+`--jobs N` (default: the environment variable JOBS, else the number of processors) builds with `make -j N`
+and runs N test programs at a time. Results are reported in the same order whatever N is. With N > 1 every
+running test program has a sandbox of its own as working directory: `<build>/sandbox/<n>`, a stand-in for
+the repository root. The package, contract, tools and tests folders (COPIED_ENTRIES) are copies in it
+(`cp -c`: copy-on-write clones, which take no room until a file is changed), so a program may `cd` into one,
+come back out with `..`, copy a fixture folder and change the copy, and never reach the repository's own
+files. Every other folder is a real folder with a link for each of its entries, and every file a link.
+Two entries are left out: `.git` (git commands then find the real repository) and `build`. The sandbox's `build` is a real folder that links only the build
+outputs of the real `build` (SHARED_BUILD_ENTRIES), so the scratch files and folders that test programs make
+under `build/` (such as `build/core-test-world`) are never shared by two programs running at once. Programs
+that run one after another in one sandbox see each other's leftovers, as they do in the repository root with
+`--jobs 1`. The sandboxes are made again at every start, no more of them than there are programs to run.
+
+A test program with a failing case in that parallel pass is run once more when the pass is over, alone and in
+the repository root, and only that second run counts for it (a `RERUN <test source>` line names it): a case
+that measures time, or shares something outside `build/` with another program, is judged as `--jobs 1`
+judges it.
+
+`--times FILE` writes one line `<seconds> <test source>` per test program, slowest first.
 """
 import argparse
 import collections
+import concurrent.futures
 import fnmatch
 import os
+import queue
+import shutil
 import subprocess
 import sys
+import time
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PACKAGES = ["shim", "formats", "proto", "content", "extract", "core", "server", "client"]
@@ -52,6 +76,11 @@ DEPENDENCIES = {
 }
 TEST_PREFIXES = ("acc_", "contract_", "test_")
 TEST_EXTENSIONS = (".cob", ".c")
+# Entries of <repo>/build that every sandbox shares (linked, not copied): the build outputs and the test
+# certificate authority. Everything else under build/ is a test program's own scratch.
+SHARED_BUILD_ENTRIES = PACKAGES + [CONVERGENCE, "bin", "coverage", "gen", "release", "shaders", "testsrv"]
+# Entries of the repository root that a sandbox holds as copies; of the others it holds links.
+COPIED_ENTRIES = PACKAGES + ["contract", "tests", "tools"]
 
 Result = collections.namedtuple("Result", "case passed expected observed")
 
@@ -157,7 +186,8 @@ def run_program(program, source, cwd):
     expect_path = os.path.join(cwd, name + ".expect")
     stdin = open(stdin_path, "rb") if os.path.isfile(stdin_path) else subprocess.DEVNULL
     try:
-        completed = subprocess.run([program], cwd=cwd, stdin=stdin, capture_output=True)
+        # PWD names the working directory, as it does for a program started from a shell there.
+        completed = subprocess.run([program], cwd=cwd, stdin=stdin, capture_output=True, env=dict(os.environ, PWD=cwd))
     finally:
         if stdin is not subprocess.DEVNULL:
             stdin.close()
@@ -191,8 +221,99 @@ def report(results):
     return lines
 
 
-def make(package, target, build, coverage):
-    command = ["make", "-C", os.path.join(REPO, package_directory(package))] + target.split() + ["BUILD=" + build, "COVERAGE=" + ("1" if coverage else "0")]
+def default_jobs(environment):
+    """The number of jobs when --jobs is not given: JOBS of the environment, else the processor count."""
+    value = environment.get("JOBS", "")
+    return int(value) if value.isdigit() and int(value) > 0 else os.cpu_count() or 1
+
+
+def make_sandbox(repo, root, index):
+    """Create sandbox `index` under `root` for the repository `repo` and return its path (see the module text)."""
+    sandbox = os.path.join(root, str(index))
+    if os.path.lexists(sandbox):
+        shutil.rmtree(sandbox)
+    os.makedirs(os.path.join(sandbox, "build"))
+    for name in os.listdir(repo):
+        source = os.path.join(repo, name)
+        if name in ("build", ".git"):
+            continue
+        if name in COPIED_ENTRIES and os.path.isdir(source) and not os.path.islink(source):
+            subprocess.run(["cp", "-cR", source, os.path.join(sandbox, name)], check=True)
+        elif os.path.isdir(source):
+            os.mkdir(os.path.join(sandbox, name))
+            for entry in os.listdir(source):
+                os.symlink(os.path.join(source, entry), os.path.join(sandbox, name, entry))
+        else:
+            os.symlink(source, os.path.join(sandbox, name))
+    for name in SHARED_BUILD_ENTRIES:
+        # made when absent: a test program may build into one (`make -C extract bin` writes build/bin)
+        os.makedirs(os.path.join(repo, "build", name), exist_ok=True)
+        os.symlink(os.path.join(repo, "build", name), os.path.join(sandbox, "build", name))
+    return sandbox
+
+
+def prepare_shared(repo):
+    """Make what test programs would otherwise make on first use in the shared part of build/, where two
+    programs starting at once would both make it: the test certificate authority (tools/testsrv/make-ca.sh).
+    True when it exists afterwards."""
+    directory = os.path.join(repo, "build", "testsrv")
+    os.makedirs(directory, exist_ok=True)
+    if os.path.isfile(os.path.join(directory, "ca.pem")):
+        return True
+    script = os.path.join(repo, "tools", "testsrv", "make-ca.sh")
+    returncode = subprocess.run(["sh", script], stdout=subprocess.DEVNULL).returncode
+    if returncode != 0:
+        print("ERROR prepare: %s exited %d" % (script, returncode))
+    return returncode == 0
+
+
+def run_all(programs, repo, sandbox_root, jobs, run=None):
+    """Run the (source, program) pairs, `jobs` at a time; return ([Result] in the order of `programs`,
+    [(seconds, source)]). With one job every program runs in `repo`; with more, each runs in a sandbox
+    that no other running program uses."""
+    run = run or run_program
+    if jobs <= 1:
+        directories = None
+    else:
+        directories = queue.Queue()
+        if os.path.isdir(sandbox_root):
+            shutil.rmtree(sandbox_root)
+        count = min(jobs, len(programs))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(count, 1)) as pool:
+            for sandbox in pool.map(lambda index: make_sandbox(repo, sandbox_root, index), range(count)):
+                directories.put(sandbox)
+
+    def one(pair):
+        source, program = pair
+        directory = repo if directories is None else directories.get()
+        started = time.monotonic()
+        try:
+            return run(program, source, directory), time.monotonic() - started
+        finally:
+            if directories is not None:
+                directories.put(directory)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(jobs, 1)) as pool:
+        outcomes = list(pool.map(one, programs))
+    if directories is not None:
+        for index, ((source, program), (found, seconds)) in enumerate(zip(programs, outcomes)):
+            if not all(result.passed for result in found):
+                print("RERUN " + source)
+                started = time.monotonic()
+                outcomes[index] = (run(program, source, repo), seconds + time.monotonic() - started)
+    results = [result for found, _ in outcomes for result in found]
+    times = [(seconds, pair[0]) for pair, (_, seconds) in zip(programs, outcomes)]
+    return results, times
+
+
+def write_times(path, times):
+    with open(path, "w", encoding="utf-8") as handle:
+        for seconds, source in sorted(times, key=lambda item: (-item[0], item[1])):
+            handle.write("%.2f %s\n" % (seconds, source))
+
+
+def make(package, target, build, coverage, jobs=1):
+    command = ["make", "-j", str(jobs), "-C", os.path.join(REPO, package_directory(package))] + target.split() + ["BUILD=" + build, "COVERAGE=" + ("1" if coverage else "0")]
     returncode = subprocess.run(command).returncode
     if returncode != 0:
         print("ERROR build: %s exited %d" % (" ".join(command), returncode))
@@ -204,6 +325,8 @@ def parse_arguments(argv):
     parser.add_argument("--build", default=os.path.join(REPO, "build"), help="build output root")
     parser.add_argument("--coverage", action="store_true", help="build with coverage instrumentation")
     parser.add_argument("--only", action="append", default=[], metavar="NAME", help="run only the test programs with this name or pattern")
+    parser.add_argument("--jobs", type=int, default=default_jobs(os.environ), metavar="N", help="build and run N at a time")
+    parser.add_argument("--times", metavar="FILE", help="write the run time of every test program to FILE")
     parser.add_argument(
         "packages", nargs="*", choices=PACKAGES + [CONVERGENCE], metavar="PACKAGE", help=" ".join(PACKAGES + [CONVERGENCE])
     )
@@ -229,8 +352,9 @@ def main(argv):
         if not selected:
             print("ERROR --only: no test program matches " + " ".join(arguments.only))
             return 1
+    jobs = max(arguments.jobs, 1)
     for package in build_order(selected):
-        if not make(package, "lib", build, arguments.coverage):
+        if not make(package, "lib shlib", build, arguments.coverage, jobs):
             return 1
     for package in selected:
         if arguments.only:
@@ -239,12 +363,14 @@ def main(argv):
             target = " ".join(program for _, program in chosen[package])
         else:
             target = "tests"
-        if not make(package, target, build, arguments.coverage):
+        if not make(package, target, build, arguments.coverage, jobs):
             return 1
-    results = []
-    for package in selected:
-        for source, program in chosen[package]:
-            results.extend(run_program(program, source, REPO))
+    if jobs > 1 and not prepare_shared(REPO):
+        return 1
+    programs = [pair for package in selected for pair in chosen[package]]
+    results, times = run_all(programs, REPO, os.path.join(build, "sandbox"), jobs)
+    if arguments.times:
+        write_times(arguments.times, times)
     for line in report(results):
         print(line)
     return 0 if all(r.passed for r in results) else 1

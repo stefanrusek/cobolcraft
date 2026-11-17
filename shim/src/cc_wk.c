@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <mach-o/dyld.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -17,6 +18,7 @@
 #include "ccshim.h"
 
 #define WK_SLOTS 8
+#define WK_MAX_DUMPS 32
 
 typedef struct {
     pid_t pid; /* 0 = free */
@@ -163,10 +165,30 @@ int32_t cc_wk_child_write(const uint8_t *buf, int32_t n) {
 }
 
 void cc_wk_child_exit(void) {
-    /* Present when the program is built with --coverage: _exit skips the dump of the child's counters. */
-    void (*dump)(void) = (void (*)(void))dlsym(RTLD_DEFAULT, "__gcov_dump");
-    if (dump != NULL) {
-        dump();
+    /* Present when the program is built with --coverage: _exit skips the dump of the child's counters. Every loaded image
+     * built that way (the program, and each shared library of a test build) has a dump of its own, and a lookup in an image
+     * also finds the dumps of the images it links, so each distinct one is called once. The dump of the image this function
+     * is in comes last: nothing it counts after its own dump is kept. */
+    void (*seen[WK_MAX_DUMPS])(void);
+    Dl_info self;
+    void *home = dladdr((void *)cc_wk_child_exit, &self) != 0 ? dlopen(self.dli_fname, RTLD_NOLOAD | RTLD_LAZY) : NULL;
+    void (*own)(void) = home == NULL ? NULL : (void (*)(void))dlsym(home, "__gcov_dump");
+    int count = 1;
+    seen[0] = own;
+    for (uint32_t i = 0; i < _dyld_image_count(); i++) {
+        void *image = dlopen(_dyld_get_image_name(i), RTLD_NOLOAD | RTLD_LAZY);
+        void (*dump)(void) = image == NULL ? NULL : (void (*)(void))dlsym(image, "__gcov_dump");
+        int fresh = dump != NULL && count < WK_MAX_DUMPS;
+        for (int k = 0; k < count; k++) {
+            fresh = fresh && seen[k] != dump;
+        }
+        if (fresh) {
+            seen[count++] = dump;
+            dump();
+        }
+    }
+    if (own != NULL) {
+        own();
     }
     _exit(0);
 }

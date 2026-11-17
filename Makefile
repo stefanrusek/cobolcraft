@@ -8,6 +8,11 @@
 #   make coverage        instrumented test run, then fail on any never-executed production line
 #   make gate            lint + build + coverage (with the Convergence tests), plus the tools package's tests
 #   make gate-<pkg>      the same scoped to shim, formats, proto, content, extract, core, server, client or tools
+#   make cover-changed SINCE=<ref> [ONLY="<test name or pattern> ..."]
+#                        a branch's check of its own work (intermediate, never a gate): an instrumented run of
+#                        the ONLY test programs (default: every test of the packages with changed production
+#                        sources), then fail on any production line changed since the tree left <ref> that the
+#                        run never executed
 #   make gate-tables     generated registry copybooks match the generator (tools/gen/gen_tables.py --check)
 #   make contract-wire   generated contract tests of the wire seams only (intermediate: no coverage, never a gate)
 #   make contract-play   generated contract tests of the play to core hooks (intermediate, as contract-wire)
@@ -15,6 +20,9 @@
 #   make contract-affected   the seams whose paths changed against BASE (default HEAD) and untracked files
 #   make gate-contract   wire fixtures parse, contract probes, lint of contract/
 #   make clean           remove build/
+#
+# JOBS (default: the number of processors) is how many compiles and test programs run at a time; builds are
+# incremental (tools/package.mk), so no command needs a clean build/ first.
 
 PYTHON   := python3
 BUILD    := $(CURDIR)/build
@@ -25,6 +33,8 @@ BUILD    := $(CURDIR)/build/release
 endif
 COVBUILD := $(BUILD)/coverage
 PKGS     := shim formats proto content extract core server client
+JOBS     ?= $(shell sysctl -n hw.ncpu)
+export JOBS
 
 # Packages each package links against, and each package's build targets.
 DEPS_shim   :=
@@ -44,11 +54,11 @@ TARGETS_core   := lib
 TARGETS_server := lib bin
 TARGETS_client := lib bin
 
-.PHONY: build bootstrap test lint coverage gate gate-tools gate-contract gate-tables clean contract-wire contract-play contract-content contract-affected $(addprefix gate-,$(PKGS))
+.PHONY: build bootstrap test lint coverage gate gate-tools gate-contract gate-tables clean contract-wire contract-play contract-content contract-affected cover-changed $(addprefix gate-,$(PKGS))
 .DEFAULT_GOAL := build
 
 build:
-	$(foreach p,$(PKGS),$(MAKE) -C $(p) $(TARGETS_$(p)) BUILD=$(BUILD) &&) true
+	$(foreach p,$(PKGS),$(MAKE) -j $(JOBS) -C $(p) $(TARGETS_$(p)) BUILD=$(BUILD) &&) true
 
 bootstrap:
 	sh tools/bootstrap.sh
@@ -81,8 +91,8 @@ gate:
 define GATE_RULE
 gate-$(1):
 	$$(MAKE) -C $(1) lint
-	$$(foreach d,$$(DEPS_$(1)),$$(MAKE) -C $$(d) lib BUILD=$$(BUILD) &&) true
-	$$(MAKE) -C $(1) $$(TARGETS_$(1)) BUILD=$$(BUILD)
+	$$(foreach d,$$(DEPS_$(1)),$$(MAKE) -j $$(JOBS) -C $$(d) lib BUILD=$$(BUILD) &&) true
+	$$(MAKE) -j $$(JOBS) -C $(1) $$(TARGETS_$(1)) BUILD=$$(BUILD)
 	if [ -d $$(COVBUILD)/$(1) ]; then find $$(COVBUILD)/$(1) -name '*.gcda' -delete; fi
 	find $(1) -maxdepth 1 -name '*.gcda' -delete
 	$$(PYTHON) tools/runtests.py --coverage --build $$(COVBUILD) $(1)
@@ -121,6 +131,20 @@ AFFECTED_ARGS = $(shell $(PYTHON) tools/gen/gen_contract.py --affected-args --ba
 contract-affected:
 	$(PYTHON) tools/gen/gen_contract.py --check
 	$(if $(AFFECTED_ARGS),$(PYTHON) tools/runtests.py --build $(BUILD) $(AFFECTED_ARGS),@echo "contract-affected: no seam affected by the changes against $(BASE)")
+
+# cover-changed: see the head of this file. The instrumented build is the gates' (build/coverage), kept
+# between runs; the counts of earlier runs are cleared first, as the gates do. Both steps always run; the
+# target fails when either does.
+CHANGED_PKGS = $(shell $(PYTHON) tools/coverage.py --changed-since $(SINCE) --list-packages)
+cover-changed:
+	@test -n "$(SINCE)" || { echo "cover-changed: set SINCE=<ref>, the branch this work started from"; exit 2; }
+	@test -n "$(CHANGED_PKGS)" || { echo "cover-changed: no production source changed since $(SINCE)"; exit 2; }
+	if [ -d $(COVBUILD) ]; then find $(COVBUILD) -name '*.gcda' -delete; fi
+	find $(PKGS) -maxdepth 1 -name '*.gcda' -delete
+	status=0; \
+	$(PYTHON) tools/runtests.py --coverage --build $(COVBUILD) $(if $(ONLY),$(addprefix --only ,$(ONLY)),$(CHANGED_PKGS)) || status=1; \
+	$(PYTHON) tools/coverage.py --build $(COVBUILD) --changed-since $(SINCE) $(CHANGED_PKGS) || status=1; \
+	exit $$status
 
 # Foundational gate: every wire fixture parses, every contract header and copybook compiles in a
 # probe program (tools/probe, once it exists), and the contract headers lint.
