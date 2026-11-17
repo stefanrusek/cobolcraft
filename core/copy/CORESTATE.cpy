@@ -283,6 +283,7 @@
        10 EN-TARGET-ID       BINARY-LONG.
        10 EN-COOLDOWN        BINARY-LONG.
        10 EN-BURN            BINARY-LONG.        *> ticks left on fire (a daylight-burning standard mob: 160, 1 damage every 20)
+       10 EN-FIRE-SENT       BINARY-LONG.        *> 1 when the viewers were last sent the on-fire flag (metadata 0 bit 0) set (STDMOB-FIRE-SYNC)
        10 EN-WAY-X           FLOAT-LONG.         *> the next path waypoint (cell centre) of a walking standard mob (core/src/stdmobs.cob STDMOB-HEAD)
        10 EN-WAY-Z           FLOAT-LONG.
        10 EN-DEST-X          BINARY-LONG.        *> the cell a stroll is walking to (EN-COOLDOWN ticks left)

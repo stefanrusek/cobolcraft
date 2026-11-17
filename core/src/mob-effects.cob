@@ -186,19 +186,15 @@
 *> USING tracker row, undead out (1 when the species heals from instant damage and is hurt by instant health, 17 section 4.9a).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  01 WS-KEY                  PIC X(24).
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-UNDEAD                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-UNDEAD.
+*>   The undead tag is MOB-UNDEAD's (core/src/mob-undead.cob: the tag minecraft:undead of the entity types, else its list), shared with the rest of the core.
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     MOVE 0 TO L-UNDEAD
-     EVALUATE WS-KEY
-         WHEN "skeleton" WHEN "stray" WHEN "wither_skeleton" WHEN "skeleton_horse" WHEN "bogged" WHEN "parched"
-         WHEN "zombie_horse" WHEN "camel_husk" WHEN "zombie" WHEN "zombie_villager" WHEN "zombified_piglin"
-         WHEN "zoglin" WHEN "drowned" WHEN "husk" WHEN "wither" WHEN "phantom"
-             MOVE 1 TO L-UNDEAD
-     END-EVALUATE
+     CALL "MOB-UNDEAD" USING WS-KEY EN-TYPE(L-ROW) L-UNDEAD
      GOBACK.
  END PROGRAM MEF-UNDEAD.
 
@@ -264,6 +260,8 @@
  01 WS-D                    BINARY-LONG.
  01 WS-FIRE                 BINARY-LONG.
  01 WS-ONE                  BINARY-LONG VALUE 1.
+ 01 WS-KEY                  PIC X(24).
+ 01 WS-UNDEAD               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-EFFECT                BINARY-LONG.
@@ -281,6 +279,14 @@
      END-EVALUATE
      IF WS-BASE = 0
          GOBACK
+     END-IF
+*>   The undead ignore poison and regeneration (21 section 3.6, tag ignores_poison_and_regen).
+     IF L-EFFECT = 18 OR L-EFFECT = 9
+         CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+         CALL "MOB-UNDEAD" USING WS-KEY EN-TYPE(L-ROW) WS-UNDEAD
+         IF WS-UNDEAD = 1
+             GOBACK
+         END-IF
      END-IF
      MOVE L-DURATION TO WS-D
      IF L-DURATION = -1
