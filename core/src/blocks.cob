@@ -286,6 +286,14 @@
  01 WS-BLOCK               BINARY-LONG.
  01 WS-REPLACEABLE         BINARY-LONG.
  01 WS-FITS                BINARY-LONG.
+ 01 WS-FOUND-STATE         BINARY-LONG.
+ 01 WS-OLD-FLUID           BINARY-LONG.
+ 01 WS-OLD-KIND            BINARY-LONG.
+ 01 WS-OLD-AMOUNT          BINARY-LONG.
+ 01 WS-OLD-FALLING         BINARY-LONG.
+ 01 WS-WL-NAME             PIC X(24) VALUE "waterlogged".
+ 01 WS-WL-TEXT             PIC X(32).
+ 01 WS-WL-MODE             BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -338,6 +346,17 @@
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
+*>   A block with the waterlogged property placed into a water source is waterlogged, and in anything else it is not (29a 5.1: FluidState.is(WATER), a source only).
+     MOVE 0 TO WS-OLD-KIND
+     IF WS-OLD > 0
+         CALL "FLUID-OF-STATE" USING WS-OLD WS-OLD-FLUID WS-OLD-KIND WS-OLD-AMOUNT WS-OLD-FALLING
+     END-IF
+     MOVE "false" TO WS-WL-TEXT
+     IF WS-OLD-KIND = 2
+         MOVE "true" TO WS-WL-TEXT
+     END-IF
+     CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-FOUND-STATE
+     MOVE WS-FOUND-STATE TO WS-STATE
      CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
