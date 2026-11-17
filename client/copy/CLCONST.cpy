@@ -65,6 +65,7 @@
  78 ACT-CANCEL              VALUE 10.
  78 ACT-FIELD-NAME          VALUE 11.  *> focus the name field
  78 ACT-FIELD-ADDRESS       VALUE 12.  *> focus the address field
+ 78 ACT-FIELD-SEED          VALUE 12.  *> create-world: focus the seed field (the second field, as the address is on edit-server)
  78 ACT-RESUME              VALUE 13.
  78 ACT-DISCONNECT          VALUE 14.
  78 ACT-SLOT                VALUE 15.  *> inventory slot click; the widget's argument is the slot

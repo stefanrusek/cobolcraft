@@ -2,7 +2,7 @@
 *> at every GUI scale from 1 to 8, at the smallest supported window (320 x 240: the GUI is never smaller than
 *> that, so scale 1) and below it (the layout stays that of 320 x 240) have no clipped element (every widget,
 *> a label as wide as its text, lies inside the GUI area) and no two widgets overlap (icons and overlays sit on
-*> their entry by design). The GUI scale is the largest whole number the window allows, 1 to 8.
+*> their entry by design, and the hint of an empty text field sits in the field). The GUI scale is the largest whole number the window allows, 1 to 8.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-F2US6-LAYOUT.
  DATA DIVISION.
@@ -135,6 +135,10 @@
                  IF WS-BKIND(WS-J) NOT = WK-OVERLAY AND WS-BKIND(WS-J) NOT = WK-ICON
                          AND WS-BX0(WS-I) < WS-BX1(WS-J) AND WS-BX0(WS-J) < WS-BX1(WS-I)
                          AND WS-BY0(WS-I) < WS-BY1(WS-J) AND WS-BY0(WS-J) < WS-BY1(WS-I)
+*>                   The hint of an empty field (the seed field's) is a label inside the field by design.
+                         AND NOT (WS-BKIND(WS-I) = WK-LABEL AND WS-BKIND(WS-J) = WK-FIELD
+                             AND WS-BX0(WS-I) >= WS-BX0(WS-J) AND WS-BX1(WS-I) <= WS-BX1(WS-J)
+                             AND WS-BY0(WS-I) >= WS-BY0(WS-J) AND WS-BY1(WS-I) <= WS-BY1(WS-J))
                      ADD 1 TO WS-BAD
                      PERFORM NOTE
                  END-IF

@@ -84,6 +84,11 @@
      MOVE SPACES TO CS-GAME-DIR
      MOVE CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) TO CS-GAME-DIR
      MOVE SPACES TO CS-GENERATED-DIR CS-SEED-TEXT
+*>   The seed text of the create-world screen (empty = random, 11 section 12.1); a world opened from the list
+*>   has none (its seed is in its level data and is never edited).
+     IF SM-SCREEN = SCR-CREATE-WORLD AND SM-EDIT-SEED-LENGTH > 0
+         MOVE SM-EDIT-SEED(1:SM-EDIT-SEED-LENGTH) TO CS-SEED-TEXT
+     END-IF
      MOVE CL-GENERATED-DIR(1:CL-GENERATED-DIR-LENGTH) TO CS-GENERATED-DIR
      EVALUATE SP-CREATE-TYPE
          WHEN CT-TYPE-STANDARD
