@@ -13,7 +13,7 @@ Layout after `split` (FEATURE_DIR is a spec folder such as specs/002-client-poli
   tasks/phase-<id>.md            a phase of the feature outside the package lanes (`## Phase <number>: ...`)
   tasks/<package>/phase-<id>.md  a phase of a package lane (`#### Phase <number>: ...` under `### Lane: <package>`)
   tasks/lanes/<lane>.md          a lane's own list (`## Lane <name> ...`, `### Lane <name> ...`, or a phase named
-                                 after a lane, `## Phase <name>: ...`); the index does not list these: a new lane
+                                 after a lane, `## Phase <name> ...`); the index does not list these: a new lane
                                  adds its file and changes nothing else
 
 A file holds its heading line and everything up to the next phase, lane or heading of the same or a higher
@@ -38,7 +38,7 @@ FOLDER = "tasks"
 PACKAGE_LANE = re.compile(r"^### Lane: (\S+)")
 TOP_PHASE = re.compile(r"^## Phase (\d+[a-z]*)\b")
 LANE_PHASE = re.compile(r"^#### Phase (\d+[a-z]*)\b")
-LEDGER = re.compile(r"^(##|###) Lane ([^\s:]+)(?=\s|$)|^(##) Phase ([a-z][^\s:]*):")
+LEDGER = re.compile(r"^(##|###) Lane ([^\s:]+)(?=\s|$)|^(##) Phase ([a-z][^\s:]*)(?=[\s:]|$)")
 HEADING = re.compile(r"^(#{1,6}) ")
 OPEN = re.compile(r"^\s*- \[ \] ")
 DONE = re.compile(r"^\s*- \[[xX]\] ")

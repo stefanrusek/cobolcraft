@@ -151,6 +151,11 @@ Lane text.
         self.assertEqual(files["lanes/a.md"], "## Lane a (T1+)\n- [x] T1 one\n\n## Lane a (T1+)\n- [x] T1 one\n- [ ] T2 two\n")
         self.assertEqual(repeated, ["lanes/a.md"])
 
+    def test_a_phase_named_after_a_lane_needs_no_colon(self):
+        files, index, _ = tasks.split_text("# T\n\n## Phase undead (lane 002-lane-undead, T11000-T11019)\n\n- [x] T11000 one\n")
+        self.assertEqual(list(files), ["lanes/undead.md"])
+        self.assertEqual(index, "# T\n\n")
+
     def test_no_task_is_lost(self):
         kept = tasks.counts(self.index)[0] + sum(tasks.counts(body)[0] for body in self.files.values())
         self.assertEqual(kept, tasks.counts(ONE_FILE)[0])
