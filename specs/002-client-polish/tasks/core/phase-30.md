@@ -1,0 +1,4 @@
+#### Phase 30: US7-core — survival abilities
+
+- [x] T0363 [US7-core] Write acceptance test `core/tests/acc_f2us7_abilities.cob` (US7-2): `PLAY-ABILITIES-BUILD` grants the flight flags only in creative and spectator and never in survival or adventure (`docs/protocol/13` §1.4); a client request to start flying in survival is ignored and the next Player Abilities states not flying. If the client lane's US7 reproduction finds a core cause of the survival climb (P-client-5) this phase escalates to multi-package: stop and return to the orchestrator [FR-016, FR-017; SC-004] (done as `core/tests/acc_f2us7_abilities.cob` with T3660: the test did not exist; spectator flags 0x07 were added to PLAY-ABILITIES-BUILD; passed in the T3661 gate)
+- [ ] T0364 [US7-core] Gate: run `make gate-core` and record the command and real output

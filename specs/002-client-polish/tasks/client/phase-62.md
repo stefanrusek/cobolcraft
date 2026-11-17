@@ -1,0 +1,8 @@
+#### Phase 62: US7-client — flight only in creative
+
+- [x] T3004 [US7-client] Write acceptance test `client/tests/acc_f2us7_survival_climb.cob` first, reproducing the first run's survival climb (P-client-5): in survival, double Space in the air and Space held in the air never rises above one jump height from the ground and never starts flying; record the failing observation [FR-016, FR-017; SC-004]
+- [x] T3005 [US7-client] Write acceptance test `client/tests/acc_f2us7_creative_flight.cob` (US7-1, SC-004): in creative double Space toggles flying 20 of 20 times; in survival 0 of 20; spectator follows `docs/protocol/13` §1.4 [FR-016, FR-017]
+- [x] T3006 [US7-client] Fix the jump and flight rules in `client/src/physics.cob` (jump only while on ground; flight toggle only when the abilities grant it) so both tests pass. If the cause is a core acceptance of `on-ground`, stop and escalate to multi-package
+- [x] T3007 [US7-client] Escalation path (constitution 3.6 plan-return): if `acc_f2us7_survival_climb` still fails after the client fix because the core accepts the client's `on-ground` claim, record the finding with the failing observation in the phase evidence, stop the lane's US7 slice and return to the orchestrator for a multi-package re-plan (a core slice and a Convergence test); otherwise mark this task done with the note `no core cause found`
+- [x] T3008 [US7-client] Write test case in `client/tests/test_physics.cob` for held Space on the ground in survival: repeats jumps as before, never exceeds one jump height in the air (edge case)
+- [x] T3009 [US7-client] Gate: run `make gate-client` and record the command and real output
