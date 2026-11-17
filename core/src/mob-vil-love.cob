@@ -255,7 +255,7 @@
          PERFORM BIRTH
          MOVE 0 TO VL-LOVE(WS-SA) VL-LOVE(WS-SB)
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 
  BIRTH.
 *>   takeVacantBed: an unclaimed bed within 48 blocks; none: angry particles on both and no child.
@@ -288,6 +288,8 @@
          CALL "MOB-DATA-SEND" USING WS-BABY
          CALL "VL-EVENT-SEND" USING WS-BABY WS-EV-HAPPY
      END-IF.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM VL-LOVE-TICK.
 
  IDENTIFICATION DIVISION.

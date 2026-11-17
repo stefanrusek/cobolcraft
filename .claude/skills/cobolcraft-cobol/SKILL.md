@@ -31,6 +31,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   exclusions.
 - **Keep production logic inline.** Trailing performed paragraphs make gcov report the `END PROGRAM`
   line as uncovered. Prefer several small programs (one `PROGRAM-ID` each) to paragraphs.
+  When a program must keep performed paragraphs after its main flow, end the main flow with `GO TO MAIN-EXIT.` instead of `GOBACK.` and put
+  `MAIN-EXIT.` + `CONTINUE.` as the last paragraph before `END PROGRAM`: the run then falls off the end and the `END PROGRAM` line counts as executed.
 - Write a failure branch on its own line(s), so coverage actually shows whether it ran.
 - Several programs may share one source file (`END PROGRAM` after each). Under `-Wall`, calls between
   programs in one file are size-checked: the argument sizes must match.

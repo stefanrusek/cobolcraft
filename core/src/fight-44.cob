@@ -235,7 +235,7 @@
                  CALL "WORLD-GET-BLOCK" USING L-DIM WS-ZERO WS-Y WS-ZERO2 WS-STATE
                  IF WS-STATE NOT = 0
                      MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY
-                     IF WS-KEY = "minecraft:bedrock"
+                     IF WS-KEY = "bedrock"
                          SUBTRACT 1 FROM WS-Y
                          MOVE 0 TO WS-DONE
                      END-IF
@@ -476,7 +476,7 @@
                  CALL "WORLD-GET-BLOCK" USING L-DIM WS-CX WS-CY WS-CZ WS-STATE
                  IF WS-STATE NOT = 0
                      MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY
-                     IF WS-KEY = "minecraft:bedrock" OR WS-KEY = "minecraft:end_portal"
+                     IF WS-KEY = "bedrock" OR WS-KEY = "end_portal"
                          CALL "BLOCK-CHANGE" USING L-DIM WS-CX WS-CY WS-CZ WS-STONE
                      END-IF
                  END-IF
@@ -845,7 +845,7 @@
          CALL "WORLD-GET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-STATE
          IF WS-STATE NOT = 0
              MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY
-             IF WS-KEY = "minecraft:end_portal"
+             IF WS-KEY = "end_portal"
                  MOVE 1 TO WS-ACTIVE
              END-IF
          END-IF

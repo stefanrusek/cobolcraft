@@ -116,7 +116,6 @@
  COPY CORESTATE.
  COPY CBLOCKS.
  01 WS-STATE               BINARY-LONG.
- 01 WS-KEY                 PIC X(48).
  01 WS-PATH                PIC X(48).
  01 WS-Y1                  BINARY-LONG.
  01 WS-Y2                  BINARY-LONG.
@@ -137,12 +136,7 @@
  PROCEDURE DIVISION USING L-PLAYER L-X L-Y L-Z L-PLACED.
      MOVE 0 TO L-PLACED
      CALL "WORLD-GET-BLOCK" USING PL-DIM(L-PLAYER) L-X L-Y L-Z WS-STATE
-     MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY
-     IF WS-KEY(1:10) = "minecraft:"
-         MOVE WS-KEY(11:38) TO WS-PATH
-     ELSE
-         MOVE WS-KEY TO WS-PATH
-     END-IF
+     MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-PATH
      IF WS-PATH NOT = "obsidian" AND WS-PATH NOT = "bedrock"
          GOBACK
      END-IF

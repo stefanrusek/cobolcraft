@@ -131,7 +131,7 @@
      ELSE
          PERFORM FOLLOW
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 
  JOIN-SEARCH.
      MOVE 0 TO WS-BEST
@@ -223,6 +223,8 @@
          COMPUTE L-HX = WS-DX * 0.000001
          COMPUTE L-HZ = WS-DZ * 0.000001
      END-IF.
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM M44-LLAMA-CARAVAN.
 
  IDENTIFICATION DIVISION.
@@ -284,7 +286,7 @@
              END-IF
          END-IF
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 
  SPIT.
 *>   Spawned at (x - (width + 1) x 0.5 x sin(body yaw), eye - 0.1, z + (width + 1) x 0.5 x cos(body yaw)), width 0.9, eye 1.7765.
@@ -301,6 +303,8 @@
 *>   didSpit: the hurt-by goal ends once, the target is given up.
      MOVE 0 TO EN-SPIT-TGT(L-ROW)
      MOVE 40 TO EN-SPIT-CD(L-ROW).
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM M44-LLAMA-SPIT.
 
  IDENTIFICATION DIVISION.

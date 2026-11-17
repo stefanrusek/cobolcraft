@@ -194,7 +194,7 @@
          END-IF
      END-PERFORM
      MOVE 1 TO L-RESULT
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> PLACE-MUSHROOM-BLOCK: WS-CAP at (WS-CELL-X, WS-CELL-Y, WS-CELL-Z) when the block there is air or in replaceable_by_mushrooms (flags 3)
  PLACE-MUSHROOM-BLOCK.
      CALL "FL-GET-STATE" USING WS-CELL-X WS-CELL-Y WS-CELL-Z WS-STATE
@@ -379,4 +379,6 @@
          ADD 1 TO WS-LAYER
      END-PERFORM
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FR-MUSH.

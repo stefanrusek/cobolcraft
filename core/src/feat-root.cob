@@ -213,7 +213,7 @@
      IF WS-PLACED = 1
          PERFORM PLACE-ROOTS
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> spaceForTree at (L-X, WS-CY, L-Z): WS-SPACE 1 or 0
  SPACE-FOR-TREE.
      MOVE 1 TO WS-SPACE
@@ -310,4 +310,6 @@
          END-IF
      END-PERFORM
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FR-ROOTSYS.

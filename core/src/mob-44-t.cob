@@ -3,7 +3,7 @@
 *>   the block under the feet (the cell of y - 0.2) is a turtle egg: the chance is 100 for a step (not when sneaking) and 3 for a landing (not for a zombie); with canDestroyEgg (a turtle or bat never; a
 *>   player outside spawn protection, which is not modelled (gap); another living entity with mob_griefing) and the draw nextInt(chance) = 0 one egg goes (eggs - 1, the block when it was the last).
 *>   Gaps: the break sound and level event 2001 and the game events are not sent.
-*> - M44-EGG-STEP USING mob row, was on ground: the mob's own call (STDMOB-STEP, after its physics, on the ground): a landing is a fallOn, otherwise a stepOn.
+*> - M44-EGG-STEP USING mob row, was on ground (a bat is no standard mob row, so only turtles and other living mobs arrive): the mob's own call (STDMOB-STEP, after its physics, on the ground): a landing is a fallOn, otherwise a stepOn.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M44-EGG-TRAMPLE.
@@ -106,9 +106,6 @@
      MOVE 4 TO WS-KIND
      IF WS-KEY = "turtle"
          MOVE 1 TO WS-KIND
-     END-IF
-     IF WS-KEY = "bat"
-         MOVE 2 TO WS-KIND
      END-IF
      MOVE 0 TO WS-ZOMBIE
      IF WS-KEY = "zombie" OR "husk" OR "drowned" OR "zombie_villager" OR "zombified_piglin"

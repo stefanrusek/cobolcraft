@@ -109,7 +109,7 @@
      IF WS-OK = 0
          MOVE 1 TO FD-BAD
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> FLOAT-PROVIDER-n: the float provider of node WS-E into WA-I(4 + n) and WA-G(2 n - 1 .. 2 n); only constants and uniform providers are kept
  FLOAT-PROVIDER-1.
      MOVE 5 TO WS-I
@@ -138,6 +138,8 @@
      MOVE WS-VAL(1) TO WA-G(WS-ROW, WS-E)
      MOVE WS-VAL(2) TO WA-G(WS-ROW, WS-E + 1)
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FD-DRIP-NODE.
 
  IDENTIFICATION DIVISION.
@@ -415,7 +417,7 @@
          PERFORM PLACE-BLOCKS
      END-IF
      MOVE 1 TO L-RESULT
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> IS-BASE-OR-LAVA: WS-FLAG 1 when WS-STATE is dripstone_block, in the replaceable set or lava
  IS-BASE-OR-LAVA.
      CALL "FL-CLASS" USING WS-STATE WS-CLASS
@@ -490,12 +492,7 @@
      CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-HA WS-HB WS-D1
      CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-D1 WS-HC WS-D2
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-OSCALE(WS-S) WS-D2 WS-HV
-     MOVE WS-HV TO WS-D1
-     MOVE WS-C-ZERO TO WS-D2
-     PERFORM SIGN-OF-DIFF
-     IF WS-SG < 0
-         MOVE WS-C-ZERO TO WS-HV
-     END-IF
+*>   the formula is positive for every distance a column cell can have (x = d / r * 0.384 is at most 0.55): no clamp at 0 is needed
      CALL STATIC "cc_f64_div" USING BY REFERENCE WS-HV WS-C0384 WS-D1
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D1 WS-HRADIUS WS-D2
      CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-D2 WS-HOUT
@@ -699,4 +696,6 @@
          END-IF
      END-PERFORM
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FR-DRIP.

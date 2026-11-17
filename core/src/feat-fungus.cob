@@ -223,7 +223,7 @@
      PERFORM PLACE-STEM
      PERFORM PLACE-HAT
      MOVE 1 TO L-RESULT
-     GOBACK.
+     GO TO MAIN-EXIT.
 *> INIT-CONSTANTS: the float constants of the document rounded to single precision
  INIT-CONSTANTS.
      MOVE 0.06 TO WS-C006
@@ -491,4 +491,6 @@
          SUBTRACT 1 FROM WS-VY
      END-PERFORM
      .
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM FR-FUNGUS.
