@@ -113,6 +113,7 @@
  01 WS-I                    BINARY-LONG.
  01 WS-WANT                 PIC X(16).
  01 WS-FIRST                BINARY-LONG.
+ 01 WS-PASS                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-PROF                  PIC X(16).
  01 L-BABY                  BINARY-LONG.
@@ -125,27 +126,29 @@
      IF L-BABY = 1
          MOVE "baby" TO WS-WANT
      END-IF
-     PERFORM FIND-ROWS
-     IF L-COUNT = 0
-         MOVE "unemployed" TO WS-WANT
-         PERFORM FIND-ROWS
-     END-IF
+     MOVE 1 TO WS-PASS
+     PERFORM UNTIL WS-PASS = 0
+         MOVE 0 TO WS-FIRST L-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 47
+             IF WS-PROF(WS-I) = WS-WANT
+                 IF L-COUNT = 0
+                     MOVE WS-I TO WS-FIRST
+                 END-IF
+                 ADD 1 TO L-COUNT
+             END-IF
+         END-PERFORM
+         IF L-COUNT = 0 AND WS-PASS = 1
+             MOVE "unemployed" TO WS-WANT
+             MOVE 2 TO WS-PASS
+         ELSE
+             MOVE 0 TO WS-PASS
+         END-IF
+     END-PERFORM
      IF L-INDEX >= 0 AND L-INDEX < L-COUNT
          COMPUTE WS-I = WS-FIRST + L-INDEX
          MOVE WS-KEY(WS-I) TO L-KEY
      END-IF
      GOBACK.
-
- FIND-ROWS.
-     MOVE 0 TO WS-FIRST L-COUNT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 47
-         IF WS-PROF(WS-I) = WS-WANT
-             IF L-COUNT = 0
-                 MOVE WS-I TO WS-FIRST
-             END-IF
-             ADD 1 TO L-COUNT
-         END-IF
-     END-PERFORM.
  END PROGRAM VIL-GIFT-TABLE.
 
  IDENTIFICATION DIVISION.

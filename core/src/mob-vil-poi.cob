@@ -144,7 +144,34 @@
                  COMPUTE WS-BX = WS-PX + WS-DX
                  COMPUTE WS-BY = WS-PY + WS-DY
                  COMPUTE WS-BZ = WS-PZ + WS-DZ
-                 PERFORM CANDIDATE
+                 COMPUTE WS-FX = WS-BX + 0.5 - EN-X(L-ROW)
+                 COMPUTE WS-FY = WS-BY + 0.5 - EN-Y(L-ROW)
+                 COMPUTE WS-FZ = WS-BZ + 0.5 - EN-Z(L-ROW)
+                 COMPUTE WS-D2 = WS-FX * WS-FX + WS-FY * WS-FY + WS-FZ * WS-FZ
+                 IF WS-D2 <= 4 AND WS-D2 < WS-BEST
+                     CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
+                     IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
+                         MOVE SPACES TO WS-KEY
+                         MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY48
+                         IF WS-KEY48(1:10) = "minecraft:"
+                             MOVE WS-KEY48(11:32) TO WS-KEY
+                         ELSE
+                             MOVE WS-KEY48(1:32) TO WS-KEY
+                         END-IF
+                         CALL "VIL-PROFESSION" USING WS-KEY WS-PROF
+                         IF WS-PROF NOT = "none"
+                             CALL "VP-OWNER" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-OWNER
+                             IF WS-OWNER = 0
+                                 MOVE 1 TO WS-HIT
+                                 MOVE WS-D2 TO WS-BEST
+                                 MOVE WS-BX TO WS-HX
+                                 MOVE WS-BY TO WS-HY
+                                 MOVE WS-BZ TO WS-HZ
+                                 MOVE WS-KEY TO WS-HKEY
+                             END-IF
+                         END-IF
+                     END-IF
+                 END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
@@ -153,34 +180,4 @@
          CALL "VL-CLAIM" USING WS-SLOT WS-HKEY WS-CHANGED
      END-IF
      GOBACK.
-
- CANDIDATE.
-     COMPUTE WS-FX = WS-BX + 0.5 - EN-X(L-ROW)
-     COMPUTE WS-FY = WS-BY + 0.5 - EN-Y(L-ROW)
-     COMPUTE WS-FZ = WS-BZ + 0.5 - EN-Z(L-ROW)
-     COMPUTE WS-D2 = WS-FX * WS-FX + WS-FY * WS-FY + WS-FZ * WS-FZ
-     IF WS-D2 <= 4 AND WS-D2 < WS-BEST
-         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
-         IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
-             MOVE SPACES TO WS-KEY
-             MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY48
-             IF WS-KEY48(1:10) = "minecraft:"
-                 MOVE WS-KEY48(11:32) TO WS-KEY
-             ELSE
-                 MOVE WS-KEY48(1:32) TO WS-KEY
-             END-IF
-             CALL "VIL-PROFESSION" USING WS-KEY WS-PROF
-             IF WS-PROF NOT = "none"
-                 CALL "VP-OWNER" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-OWNER
-                 IF WS-OWNER = 0
-                     MOVE 1 TO WS-HIT
-                     MOVE WS-D2 TO WS-BEST
-                     MOVE WS-BX TO WS-HX
-                     MOVE WS-BY TO WS-HY
-                     MOVE WS-BZ TO WS-HZ
-                     MOVE WS-KEY TO WS-HKEY
-                 END-IF
-             END-IF
-         END-IF
-     END-IF.
  END PROGRAM VL-SCAN.
