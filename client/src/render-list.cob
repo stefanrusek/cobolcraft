@@ -337,7 +337,7 @@
 *>   The entity figures (eye-relative, so drawn with projection x view alone), after the opaque
 *>   sections; the slot is uploaded while it has vertices and once more when it no longer has
 *>   (freed).
-     MOVE 0 TO RL-EN-COUNT
+     MOVE 0 TO RL-EN-COUNT RL-GL-COUNT
      IF WS-WORLD = 1
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-IF
@@ -357,6 +357,16 @@
              MOVE WS-PV(WS-I) TO RL-D-MATRIX(RL-DRAW-COUNT, WS-I)
          END-PERFORM
      END-IF
+*>   The armour glint over them (54 section 19.3): the glint layers of ENTITIES-MESH, additive, eye-relative, with the armour glint texture; with no such texture
+*>   in the pack stack nothing is drawn.
+     IF GT-ARMOR-W = 0
+         MOVE 0 TO RL-GL-COUNT
+     END-IF
+     MOVE MESH-SLOT-GLINT TO WS-SLOT
+     MOVE CC-PIPE-GLINT TO WS-PIPE
+     MOVE CC-TEX-GLINT-ARMOR TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-GL-VERTEX(1) RL-GL-COUNT RL-GL-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   Translucent sections back to front (insertion sort, farthest first).
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > WS-TCOUNT
          MOVE WS-TSLOT(WS-I) TO WS-SWAP-SLOT
@@ -481,6 +491,16 @@
      MOVE CC-TEX-BLOCKS TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-IC-VERTEX(1) RL-IC-COUNT RL-IC-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
+*>   The glint of the icons (54 section 19.3) over them; with no item glint texture in the pack stack nothing is drawn.
+     IF GT-ITEM-W = 0
+         MOVE 0 TO RL-GC-COUNT
+     END-IF
+     MOVE MESH-SLOT-GLINT-ICONS TO WS-SLOT
+     MOVE CC-PIPE-GLINT TO WS-PIPE
+     MOVE CC-TEX-GLINT TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-GC-VERTEX(1) RL-GC-COUNT RL-GC-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
+     MOVE CC-PIPE-UI TO WS-PIPE
      MOVE MESH-SLOT-UI-TOP TO WS-SLOT
      MOVE CC-TEX-UI TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-UT-VERTEX(1) RL-UT-COUNT RL-UT-UPLOADED

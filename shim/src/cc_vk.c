@@ -393,7 +393,7 @@ static void create_layouts(void) {
         .pBindings = &binding,
     };
     check(vkCreateDescriptorSetLayout(cc_vk_state.device, &set_info, NULL, &cc_vk_state.set_layout), "cc_vk_init: vkCreateDescriptorSetLayout failed");
-    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 30 * sizeof(float)}; /* matrix, daylight, the 13 floats of the fog */
+    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 32 * sizeof(float)}; /* matrix, daylight, the 13 floats of the fog, the glint offset */
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
@@ -566,6 +566,7 @@ int32_t cc_vk_init(void) {
     cc_vk_state.fog[12] = 2e9f;
     cc_vk_state.fog[4] = 1e9f;
     cc_vk_state.fog[5] = 2e9f;
+    cc_vk_state.glint_uv[0] = cc_vk_state.glint_uv[1] = 0.0f;
     create_instance();
     create_device();
     create_render_pass();
@@ -675,7 +676,7 @@ int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)
 }
 
 int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels) {
-    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_PARTICLES || w <= 0 || h <= 0) cc_fatal("cc_vk_texture: invalid texture");
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || w <= 0 || h <= 0) cc_fatal("cc_vk_texture: invalid texture");
     int32_t longest = w > h ? w : h, most = 1;
     while ((longest >> most) > 0) most++;
     if (mip_levels < 1 || mip_levels > most) cc_fatal("cc_vk_texture_ex: invalid mip level count");
@@ -763,7 +764,7 @@ void cc_vk_texture_update_end(void) {
 }
 
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba) {
-    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_PARTICLES || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
     texture_t *t = &cc_vk_state.textures[tex_id];
     if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > t->width || y + h > t->height) cc_fatal("cc_vk_texture_update: invalid rectangle");
     init_lut();
@@ -834,7 +835,7 @@ int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, in
 
 /* The wrap mode of texture `tex_id` for its next cc_vk_texture upload (§9). */
 int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap) {
-    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_PARTICLES || wrap < CC_WRAP_CLAMP || wrap > CC_WRAP_REPEAT) cc_fatal("cc_vk_texture_wrap: invalid texture or mode");
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || wrap < CC_WRAP_CLAMP || wrap > CC_WRAP_REPEAT) cc_fatal("cc_vk_texture_wrap: invalid texture or mode");
     cc_vk_state.wrap[tex_id] = wrap;
     return 0;
 }
@@ -881,7 +882,7 @@ int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
 
 void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16]) {
     if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || pipeline < CC_PIPE_OPAQUE || pipeline > CC_PIPE_TRANSLUCENT_CULL ||
-        tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_PARTICLES || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
+        tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
     mesh_t *m = &cc_vk_state.meshes[slot];
     if (m->count == 0) return;
     VkDeviceSize offset = 0;
@@ -892,6 +893,8 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
     vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 0, 16 * sizeof(float), matrix);
     vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 16 * sizeof(float), sizeof(float), &cc_vk_state.daylight);
     vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 17 * sizeof(float), 13 * sizeof(float), cc_vk_state.fog);
+    static const float no_offset[2] = {0, 0};
+    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 30 * sizeof(float), 2 * sizeof(float), pipeline == CC_PIPE_GLINT ? cc_vk_state.glint_uv : no_offset);
     vkCmdDraw(cc_vk_state.cmd, m->count, 1, 0, 0);
 }
 
@@ -903,6 +906,11 @@ void cc_vk_daylight(const float *daylight) {
 /* The fog of the draws that follow (shim-abi §9). */
 void cc_vk_fog(const float *fog) {
     memcpy(cc_vk_state.fog, fog, sizeof cc_vk_state.fog);
+}
+
+/* The texture coordinate offset of the glint draws that follow (shim-abi §9). */
+void cc_vk_glint_offset(const float *uv) {
+    memcpy(cc_vk_state.glint_uv, uv, sizeof cc_vk_state.glint_uv);
 }
 
 /* Clears the depth attachment inside the open render pass (the hand pass of 12 §6 draws over the world). */
@@ -1014,7 +1022,7 @@ void cc_vk_frame_end(void) {
 void cc_vk_shutdown(void) {
     check(vkDeviceWaitIdle(cc_vk_state.device), "cc_vk_shutdown: vkDeviceWaitIdle failed");
     for (int32_t slot = CC_MESH_SLOT_MIN; slot <= CC_MESH_SLOT_MAX; slot++) cc_vk_mesh(slot, NULL, 0);
-    for (int i = CC_TEX_BLOCKS; i <= CC_TEX_PARTICLES; i++) {
+    for (int i = CC_TEX_BLOCKS; i <= CC_TEX_GLINT_ARMOR; i++) {
         texture_t *t = &cc_vk_state.textures[i];
         discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set});
         free(t->pixels);

@@ -304,6 +304,34 @@ PACKS["weather2"] = ("folder", {
 })
 
 
+# The enchantment glint textures (54 section 19.3): the item glint 8 x 8 and the armour glint 4 x 4 (the real ones are 128 x 128).
+MISC = "assets/minecraft/textures/misc/"
+PACKS["glint"] = ("folder", {
+    "pack.mcmeta": new_style("Glint textures"),
+    MISC + "enchanted_glint_item.png": png(8, 8, lambda x, y: (x * 30, y * 30, 90, 255)),
+    MISC + "enchanted_glint_armor.png": png(4, 4, lambda x, y: (200, x * 40, y * 40, 255)),
+})
+
+
+# A trim pattern texture (54 section 18.4): the key greys A0A0A0 and 606060 at (0, 0) and (1, 0), a clear texel at (2, 0), a colour outside the key at (3, 0).
+def trim_pixel(x, y):
+    if y == 0 and x == 0:
+        return (0xA0, 0xA0, 0xA0, 255)
+    if y == 0 and x == 1:
+        return (0x60, 0x60, 0x60, 255)
+    if y == 0 and x == 2:
+        return (0xA0, 0xA0, 0xA0, 0)
+    if y == 0 and x == 3:
+        return (0x12, 0x34, 0x56, 255)
+    return (0, 0, 0, 0)
+
+
+PACKS["trimtex"] = ("folder", {
+    "pack.mcmeta": new_style("Trim pattern texture"),
+    "assets/minecraft/textures/trims/entity/humanoid/wild.png": png(64, 32, trim_pixel),
+})
+
+
 def zip_bytes(files):
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:

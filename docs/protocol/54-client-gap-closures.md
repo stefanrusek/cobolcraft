@@ -712,7 +712,7 @@ Entries: `bolt`, `coast`, `dune`, `eye`, `flow`, `host`, `raiser`, `rib`, `sentr
 | redstone | E62008 | BD2008 | 971607 | 781101 | 650B01 | 520D06 | 360803 | 1D0502 |
 | resin | FFC354 | F69F3B | F0852A | EC7214 | DB5F10 | C7490A | A53B11 | 802A1A |
 
-All pixels opaque. Worked example: a pixel `A0A0A0` (key index 3) of a `wild` texture on a gold trim over diamond armour becomes `DEB12D` (gold palette index 3); on gold armour with a gold trim it becomes `A35F14` (`gold_darker` index 3); a `606060` pixel (index 5) becomes `803503` on gold and `712D00` on gold_darker.
+All pixels opaque. Worked example: a pixel `A0A0A0` (key index 3) of a `wild` texture on a gold trim over diamond armour becomes `DEB12D` (gold palette index 3); on gold armour with a gold trim it becomes `A35F14` (`gold_darker` index 3); a `606060` pixel (index 5, counting from 1 as the table columns do) becomes `A0450A` on gold and `803503` on gold_darker (column 5 of each row).
 
 ### 18.6 Apply rules (where they live)
 

@@ -81,18 +81,19 @@ struct cc_vk_state {
     VkPipeline pipelines[6];
     float daylight;           /* cc_vk_daylight: pushed with every draw (default 1) */
     float fog[13];            /* cc_vk_fog: colour rgb, strength, start, end, p00, p11, up xyz, render-distance start, end (strength 0, p00 = p11 = 1, up (0, 1, 0), start 1e9 until set) */
+    float glint_uv[2];        /* cc_vk_glint_offset: pushed with the CC_PIPE_GLINT draws (0 for the others) */
     VkSampler sampler;        /* clamp-to-edge */
     VkSampler repeat_sampler; /* repeat (cc_vk_texture_wrap) */
     VkSampler mip_sampler;        /* linear through the mip chain, clamp-to-edge */
     VkSampler mip_repeat_sampler; /* the same with repeat */
-    int32_t wrap[4];          /* per texture id: CC_WRAP_CLAMP or CC_WRAP_REPEAT */
+    int32_t wrap[7];          /* per texture id: CC_WRAP_CLAMP or CC_WRAP_REPEAT */
     VkCommandPool commands;
     VkCommandBuffer cmd;
     VkSemaphore acquired;
     VkFence done;
     uint32_t image_index;
     int stale;
-    texture_t textures[5];
+    texture_t textures[7];
     mesh_t meshes[CC_MESH_SLOT_MAX + 1];
     garbage_t *garbage;
     size_t garbage_count, garbage_cap;

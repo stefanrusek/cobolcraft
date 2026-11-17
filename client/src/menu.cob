@@ -118,6 +118,26 @@
  END PROGRAM MENU-STACK-GET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-STACK-FOIL.
+*> USING CLIENT-STATE, widget argument, foil out: 1 when the stack of a player slot (0 to 35) or the off hand (37) has the glint (the decision of the item stack last
+*> set into it, 54 section 19.2; a stack moved locally keeps it until the server's slot update), else 0.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-FOIL                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-FOIL.
+     MOVE 0 TO L-FOIL
+     IF L-ARG >= 0 AND L-ARG <= 35
+         MOVE PL-SLOT-FOIL(L-ARG + 1) TO L-FOIL
+     END-IF
+     IF L-ARG = 37
+         MOVE PL-OFFHAND-FOIL TO L-FOIL
+     END-IF
+     GOBACK.
+ END PROGRAM MENU-STACK-FOIL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-STACK-PUT.
 *> USING CLIENT-STATE, widget argument, count, item, damage: an argument with no stack changes nothing; a count of 0 or less
 *> empties the stack (item and damage 0).
@@ -146,6 +166,9 @@
              MOVE WS-COUNT TO PL-SLOT-COUNT(L-ARG + 1)
              MOVE WS-ITEM TO PL-SLOT-ITEM(L-ARG + 1)
              MOVE WS-DAMAGE TO PL-SLOT-DAMAGE(L-ARG + 1)
+             IF WS-COUNT = 0
+                 MOVE 0 TO PL-SLOT-FOIL(L-ARG + 1)
+             END-IF
          WHEN L-ARG = 36
              MOVE WS-COUNT TO PL-CARRIED-COUNT
              MOVE WS-ITEM TO PL-CARRIED-ITEM
@@ -283,16 +306,18 @@
          MOVE L-COUNT TO PL-SLOT-COUNT(L-ARG + 1)
          MOVE L-ITEM TO PL-SLOT-ITEM(L-ARG + 1)
          MOVE L-DAMAGE TO PL-SLOT-DAMAGE(L-ARG + 1)
+         MOVE PL-STACK-FOIL TO PL-SLOT-FOIL(L-ARG + 1)
          IF L-COUNT <= 0
-             MOVE 0 TO PL-SLOT-COUNT(L-ARG + 1) PL-SLOT-ITEM(L-ARG + 1) PL-SLOT-DAMAGE(L-ARG + 1)
+             MOVE 0 TO PL-SLOT-COUNT(L-ARG + 1) PL-SLOT-ITEM(L-ARG + 1) PL-SLOT-DAMAGE(L-ARG + 1) PL-SLOT-FOIL(L-ARG + 1)
          END-IF
      END-IF
      IF L-ARG = 37
          MOVE L-COUNT TO PL-OFFHAND-COUNT
          MOVE L-ITEM TO PL-OFFHAND-ITEM
          MOVE L-DAMAGE TO PL-OFFHAND-DAMAGE
+         MOVE PL-STACK-FOIL TO PL-OFFHAND-FOIL
          IF L-COUNT <= 0
-             MOVE 0 TO PL-OFFHAND-COUNT PL-OFFHAND-ITEM PL-OFFHAND-DAMAGE
+             MOVE 0 TO PL-OFFHAND-COUNT PL-OFFHAND-ITEM PL-OFFHAND-DAMAGE PL-OFFHAND-FOIL
          END-IF
      END-IF
      GOBACK.
