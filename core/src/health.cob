@@ -266,6 +266,12 @@
                      MOVE "death.attack.genericKill" TO WS-KEY
                  WHEN CAUSE-VOID
                      MOVE "death.attack.outOfWorld" TO WS-KEY
+                 WHEN CAUSE-ON-FIRE
+                     MOVE "death.attack.onFire" TO WS-KEY
+                 WHEN CAUSE-LAVA
+                     MOVE "death.attack.lava" TO WS-KEY
+                 WHEN CAUSE-IN-FIRE
+                     MOVE "death.attack.inFire" TO WS-KEY
                  WHEN OTHER
                      MOVE "death.attack.generic" TO WS-KEY
              END-EVALUATE
@@ -350,13 +356,20 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CONTENT.
+ COPY RULES.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(L-ROW) PL-NAME(L-ROW) PL-NAME-LENGTH(L-ROW)
-         PL-KILLER-NAME(L-ROW) PL-KILLER-LENGTH(L-ROW) PB-TEXT
+*>   The causes only the fire adds (on_fire, lava, in_fire: 002-lane-fire) have no row of the DTS table: a standard set names them by DEATH-TEXT-STD.
+     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND PL-DEATH-CAUSE(L-ROW) > CAUSE-COUNT
+         CALL "DEATH-TEXT-STD" USING L-ROW PL-DEATH-CAUSE(L-ROW) PB-TEXT
+     ELSE
+         CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(L-ROW) PL-NAME(L-ROW) PL-NAME-LENGTH(L-ROW)
+             PL-KILLER-NAME(L-ROW) PL-KILLER-LENGTH(L-ROW) PB-TEXT
+     END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "COMBAT-KILL-BUILD" USING PL-ENTITY-ID(L-ROW) PB-TEXT PB-BUFFER
      CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
@@ -395,6 +408,11 @@
      MOVE L-ROW TO WS-ROW
      CALL "EFFECT-CLEAR-ALL" USING WS-ROW
      MOVE PS-DEAD TO PL-STATE(WS-ROW)
+*>   Player.die clears the fire (17 section 4.13.1; 44 section 4.3): the flames go out for the viewers too.
+     IF PL-ENTITY-ROW(WS-ROW) > 0
+         MOVE 0 TO EN-BURN(PL-ENTITY-ROW(WS-ROW))
+         CALL "PLAYER-FIRE-SYNC" USING WS-ROW
+     END-IF
      MOVE 0 TO PL-REST(WS-ROW)
      MOVE L-CAUSE TO PL-DEATH-CAUSE(WS-ROW)
      IF L-CAUSE NOT = CAUSE-MOB AND L-CAUSE NOT = CAUSE-EXPLOSION AND L-CAUSE NOT = CAUSE-ARROW
@@ -537,6 +555,8 @@
              MOVE "minecraft:arrow" TO WS-WANTED
          WHEN CAUSE-ON-FIRE
              MOVE "minecraft:on_fire" TO WS-WANTED
+         WHEN CAUSE-IN-FIRE
+             MOVE "minecraft:in_fire" TO WS-WANTED
          WHEN CAUSE-LAVA
              MOVE "minecraft:lava" TO WS-WANTED
          WHEN CAUSE-IN-WALL
@@ -961,6 +981,7 @@
          IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
              CALL "WEATHER-HAIL-PLAYER" USING WS-ROW
              CALL "BREATH-TICK" USING WS-ROW
+             CALL "PLAYER-FIRE-TICK" USING WS-ROW
          END-IF
      END-PERFORM
      CALL "EFFECTS-TICK"

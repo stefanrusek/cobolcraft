@@ -489,7 +489,10 @@
          CALL "SP-GET-NAME" USING WS-HANDLE WS-WEAPON PL-KILLER-ITEM-LENGTH(WS-ROW)
          MOVE WS-WEAPON TO PL-KILLER-ITEM(WS-ROW)
      END-IF
-     COMPUTE WS-EXHAUST = RULE-CAUSE-EXHAUST(WS-CAUSE) / 1000
+     MOVE 0 TO WS-EXHAUST
+     IF WS-CAUSE <= CAUSE-COUNT
+         COMPUTE WS-EXHAUST = RULE-CAUSE-EXHAUST(WS-CAUSE) / 1000
+     END-IF
      CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
      COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MAX(0, PL-HEALTH(WS-ROW) - WS-TAKEN / 1000)
      IF L-ATTACKER > 0 AND WS-CAUSE = CAUSE-PLAYER
@@ -917,6 +920,8 @@
      IF WS-RESULT = 0
          GOBACK
      END-IF
+*>   Fire Aspect of the held item sets the victim alight (28 ignite: 4 seconds a level).
+     CALL "COMBAT-FIRE-ASPECT" USING L-ROW L-ENTITY WS-TARGET WS-HANDLE
 *>   Knockback of a fresh hit on a player: 0.4 away from the attacker, then (attack_knockback + Knockback level) / 2, plus 0.5 sprinting.
      IF WS-TARGET > 0 AND WS-RESULT = 1 AND PL-STATE(WS-TARGET) = PS-ALIVE
          MOVE "minecraft:knockback" TO WS-COMPONENT

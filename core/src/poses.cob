@@ -110,6 +110,10 @@
      IF PL-SWIMMING(L-ROW) = 1
          ADD 16 TO PL-POSE-FLAGS(L-ROW)
      END-IF
+*>   The on-fire flag (entry 0 bit 0, 18 section 1.4) while the tracker row burns (PLAYER-FIRE-TICK).
+     IF PL-ENTITY-ROW(L-ROW) > 0 AND EN-BURN(PL-ENTITY-ROW(L-ROW)) > 0
+         ADD 1 TO PL-POSE-FLAGS(L-ROW)
+     END-IF
      COMPUTE WS-STATE = 1 + PL-POSE(L-ROW) * 256 + PL-POSE-FLAGS(L-ROW)
      MOVE PL-POSE-SENT(L-ROW) TO WS-OLD
      IF WS-OLD = 0
