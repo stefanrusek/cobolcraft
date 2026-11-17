@@ -1,0 +1,209 @@
+*> Implementation test (coverage lane D2; core/src/stdmobs.cob STDMOB-STEP): a standard mob that dies of its own status effect or that is removed by its own step ends the step at once.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVD2-STDMOBS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY EVKSTATE.
+ COPY RAIDSTATE.
+ COPY VILSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-Z0                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG VALUE 60.
+ 01 WS-KIND1               BINARY-LONG VALUE 1.
+ 01 WS-WITHER              BINARY-LONG VALUE 19.
+ 01 WS-AMP                 BINARY-LONG VALUE 0.
+ 01 WS-DUR                 BINARY-LONG VALUE 80.
+ 01 WS-FLAGS               BINARY-LONG VALUE 6.
+ 01 WS-ROW2                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-WAVE                BINARY-LONG VALUE 1.
+ 01 WS-XB                  FLOAT-LONG.
+ 01 WS-D0                  FLOAT-LONG.
+ 01 WS-D1                  FLOAT-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-X(WS-PLAYER) TO WS-X0
+     MOVE PL-Z(WS-PLAYER) TO WS-Z0
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X0) - 30
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z0) - 30
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-BX WS-BZ WS-SIZE WS-BY WS-KIND1
+     MOVE 6000 TO CW-TIME
+*>   A villager with 1 health and Wither dies in the tick of the effect.
+     MOVE "minecraft:villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 + 5
+     MOVE WS-Z0 TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 1 TO EN-HEALTH(WS-ROW)
+     CALL "MEF-ADD" USING EN-ID(WS-ROW) WS-WITHER WS-AMP WS-DUR WS-FLAGS
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a villager killed by Wither has no health after its step" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Raiders walk to the raid centre when they are not busy with a player (a creative player is nobody's target).
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     MOVE "minecraft:pillager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 - 10
+     COMPUTE WS-Z = WS-Z0 - 10
+     MOVE 1 TO RD-USED(1)
+     MOVE 9 TO RD-ID(1)
+     MOVE 1 TO RD-STATUS(1)
+     MOVE WS-DIM TO RD-DIM(1)
+     COMPUTE RD-CX(1) = FUNCTION INTEGER(WS-X) + 40
+     COMPUTE RD-CY(1) = FUNCTION INTEGER(WS-Y)
+     COMPUTE RD-CZ(1) = FUNCTION INTEGER(WS-Z)
+     MOVE 1 TO RD-GROUPS(1)
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     CALL "RAID-JOIN" USING WS-ONE WS-WAVE WS-ROW WS-ZERO
+     MOVE 0 TO EN-TARGET(WS-ROW)
+     MOVE EN-X(WS-ROW) TO WS-XB
+     PERFORM 3 TIMES
+         CALL "STDMOB-STEP" USING WS-ROW
+     END-PERFORM
+     MOVE "test covd2 stdmobs a pillager of a raid walks east toward the raid centre" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-X(WS-ROW) > WS-XB
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO RD-USED(1)
+     CALL "ENTITY-REMOVE" USING WS-ROW
+*>   A ravager that is stunned stands still.
+     MOVE "minecraft:ravager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 + 10
+     COMPUTE WS-Z = WS-Z0 - 10
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     CALL "EVK-RV-FIND" USING EN-ID(WS-ROW) WS-ONE WS-SLOT
+     MOVE 30 TO RV-STUN(WS-SLOT)
+     MOVE 0 TO EN-TARGET(WS-ROW)
+     MOVE EN-X(WS-ROW) TO WS-XB
+     MOVE EN-Z(WS-ROW) TO WS-D0
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a stunned ravager has 29 stun ticks left" TO TL-CASE
+     MOVE 29 TO TL-EXPECTED-N
+     MOVE RV-STUN(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test covd2 stdmobs a stunned ravager does not move" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = (EN-X(WS-ROW) - WS-XB) * 1000 + (EN-Z(WS-ROW) - WS-D0) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-ROW
+*>   A wandering trader whose despawn countdown ends is gone.
+     MOVE "minecraft:wandering_trader" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 + 10
+     COMPUTE WS-Z = WS-Z0 + 10
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     CALL "VL-FIND" USING EN-ID(WS-ROW) WS-ONE WS-SLOT
+     MOVE 1 TO VL-DESPAWN(WS-SLOT)
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a wandering trader whose countdown ends is removed" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A hoglin in the Overworld that has been there 300 ticks is converted to a zoglin: its row is gone.
+     MOVE "minecraft:hoglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 - 10
+     COMPUTE WS-Z = WS-Z0 + 10
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 0 TO EN-PIG-IMMUNE(WS-ROW)
+     MOVE 300 TO EN-ZOMBIFY(WS-ROW)
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a hoglin that turns into a zoglin ends its step with its row freed" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An evoker in the middle of a spell stands still and faces its target.
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE "minecraft:evoker" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 + 8
+     MOVE WS-Z0 TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     CALL "EVK-FIND" USING EN-ID(WS-ROW) WS-ONE WS-SLOT
+     MOVE 1 TO EV-SPELL(WS-SLOT)
+     MOVE 40 TO EV-CAST(WS-SLOT)
+     MOVE 20 TO EV-WARM(WS-SLOT)
+     MOVE WS-PLAYER TO EN-TARGET(WS-ROW)
+     MOVE EN-X(WS-ROW) TO WS-XB
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a casting evoker does not move" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = (EN-X(WS-ROW) - WS-XB) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-ROW
+*>   A zombie with no player in reach walks to a villager 6 blocks away: it turns toward it.
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     MOVE "minecraft:villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 - 12
+     COMPUTE WS-Z = WS-Z0 + 15
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW2
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 - 6
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE EN-X(WS-ROW) TO WS-XB
+     MOVE 0 TO EN-TARGET(WS-ROW)
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a zombie walks toward a villager out of reach (west)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-X(WS-ROW) < WS-XB
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-ROW
+     CALL "ENTITY-REMOVE" USING WS-ROW2
+*>   A zombie within reach of a villager (no walk vector) hits it.
+     MOVE "minecraft:villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 - 12
+     COMPUTE WS-Z = WS-Z0 - 15
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW2
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-X0 - 12.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE EN-HEALTH(WS-ROW2) TO WS-D0
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "test covd2 stdmobs a zombie beside a villager hits it" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-HEALTH(WS-ROW2) < WS-D0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-COVD2-STDMOBS.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.
