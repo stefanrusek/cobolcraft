@@ -9,7 +9,7 @@
 *>   STDMOB-PANIC USING entity type id, panic milli out     the panic speed (blocks per tick x 1000), 0 for no row
 *>   STDMOB-DIE USING tracker row                           death: loot, Entity Event 3, dying for 20 ticks
 *>   STDMOB-VANISH USING tracker row                        Entity Event 60 and removal
-*>   STDMOB-DROPS USING dim, x, y, z, type, killer row    the loot table of the type on the ground (18 section 7.5, 7.6)
+*>   STDMOB-DROPS USING dim, x, y, z, type, killer row, sheep byte   the loot table of the type on the ground (18 section 7.5, 7.6)
 *>   STDMOB-STEP USING tracker row                          one tick of one mob: stroll or panic, then the physics
 *>   STDMOB-NAME USING entity type id, name out (PIC X(16)), length out   the display name of the type ("Zombie")
 *>   STDMOB-SPAWN-RULE USING dim, x, z, top, r              one natural pack of animals on the block at (x, top)
@@ -111,7 +111,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DROPS.
-*> USING dim, x, y, z (FLOAT-LONG), entity type (BINARY-LONG), the player row that killed it (BINARY-LONG, 0 none): the loot table of the type,
+*> USING dim, x, y, z (FLOAT-LONG), entity type (BINARY-LONG), the player row that killed it (BINARY-LONG, 0 none), the sheep byte (colour + 16 when sheared, -1 for a mob that is no sheep): the loot table of the type,
 *> minecraft:entities/<key> (18 sections 7.5 and 7.6, rolled by LOOT-ROLL of docs 26), with this_entity the mob's type key and
 *> last_damage_player set when a player killed it; every stack it yields lands on the ground at the mob's position as
 *> Entity.spawnAtLocation does (IP-AT-LOCATION). A set without the table drops nothing. The type must be a table mob (the caller, STDMOB-DIE, has checked).
@@ -132,7 +132,8 @@
  01 L-Z                    FLOAT-LONG.
  01 L-TYPE                 BINARY-LONG.
  01 L-KILLER               BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER.
+ 01 L-WOOL                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER L-WOOL.
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
      MOVE SPACES TO WS-KEY
      STRING "minecraft:entities/" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO WS-KEY
@@ -142,6 +143,11 @@
      MOVE L-Y TO LC-Y
      MOVE L-Z TO LC-Z
      STRING "minecraft:" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO LC-THIS-TYPE
+     IF L-WOOL >= 0
+         MOVE 1 TO LC-THIS-SHEEP
+         COMPUTE LC-THIS-COLOR = FUNCTION MOD(L-WOOL, 16)
+         COMPUTE LC-THIS-SHEARED = (L-WOOL - LC-THIS-COLOR) / 16
+     END-IF
      MOVE 0 TO LC-KILLER
      IF L-KILLER > 0
          MOVE 1 TO LC-KILLER
@@ -245,6 +251,7 @@
  01 WS-M                   BINARY-LONG.
  01 WS-RULE-NAME           PIC X(40) VALUE "mob_drops".
  01 WS-RULE                BINARY-DOUBLE.
+ 01 WS-WOOL                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -266,7 +273,11 @@
          CALL "STDMOB-SLIME-DIE" USING L-ROW WS-KILLED
      ELSE
          IF WS-RULE = 1
-             CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
+             MOVE -1 TO WS-WOOL
+             IF SM-KEY(WS-M) = "sheep"
+                 MOVE EN-WOOL(L-ROW) TO WS-WOOL
+             END-IF
+             CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED WS-WOOL
              CALL "FOX-DROP-HELD" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
              CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW)

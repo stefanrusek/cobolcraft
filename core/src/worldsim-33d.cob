@@ -187,6 +187,11 @@
      MOVE DM-MIN-Y(L-DIM) TO WS-MIN-Y
      CALL "WORLDSIM-COLUMN-TOP" USING L-DIM L-X L-Z WS-TOP
      COMPUTE WS-BELOW = WS-TOP - 1
+*>   Without rain only a water source below the top can change anything (the freeze), so a dry attempt on any other ground stops before the biome and the temperature are looked up.
+     CALL "FLUID-CELL" USING L-DIM L-X WS-BELOW L-Z WS-STATE WS-F WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
+     IF L-RAINING = 0 AND NOT (WS-F = 1 AND WS-KIND = 2)
+         GOBACK
+     END-IF
      COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
      COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
      CALL "WORLDGEN-BIOMES" USING WS-CX WS-CZ WS-BIOMES

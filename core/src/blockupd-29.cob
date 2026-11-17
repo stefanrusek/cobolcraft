@@ -456,6 +456,10 @@
          END-IF
      END-PERFORM
      CALL "PORTAL-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+*>   A block that needs support (support-29.cob) becomes air when its neighbour change took the support away (the update engine destroys it with its drops).
+     IF L-KIND = 4 AND L-OUT = L-STATE
+         CALL "SUP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-OUT
+     END-IF
      GOBACK.
  END PROGRAM BU-HOOK.
 
@@ -1113,7 +1117,7 @@
  PROGRAM-ID. LEVEL-DESTROY-BLOCK RECURSIVE.
 *> USING dimension row, x, y, z, drop, budget, result out (BINARY-LONG): Level.destroyBlock (29 sections 2.2 and 10.6): air
 *> returns 0; otherwise the destroy effect (level event 2001 with the old state's id, nobody excluded), the drops when asked
-*> (the loot and item entities are the later sections 10.4 and 10.5; the argument is accepted), then the position becomes air
+*> (BLOCK-DROPS-NO-TOOL), then the position becomes air (or water, SUP-DESTROY-STATE)
 *> with flags 3 and the given budget; the result is that write's.
  DATA DIVISION.
  LOCAL-STORAGE SECTION.
@@ -1139,8 +1143,12 @@
      MOVE 2001 TO LS-EVENT
      MOVE 0 TO LS-NONE
      CALL "LEVEL-EVENT" USING L-DIM LS-EVENT L-X L-Y L-Z LS-OLD LS-NONE
+*>   The drops (the loot table of the block rolled without a tool, as Block.dropResources does for a destroyed block), then the state the block leaves: water for a water plant.
+     IF L-DROP = 1
+         CALL "BLOCK-DROPS-NO-TOOL" USING L-DIM L-X L-Y L-Z LS-OLD
+     END-IF
      MOVE 3 TO LS-FLAGS
-     MOVE 0 TO LS-AIR
+     CALL "SUP-DESTROY-STATE" USING LS-OLD LS-AIR
      CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-AIR LS-FLAGS L-BUDGET L-RESULT
      GOBACK.
  END PROGRAM LEVEL-DESTROY-BLOCK.
