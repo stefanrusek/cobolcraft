@@ -49,8 +49,6 @@
              MOVE 1 TO L-CLASS
          WHEN "soul_sand" WHEN "soul_soil"
              MOVE 2 TO L-CLASS
-         WHEN "air"
-             MOVE 3 TO L-CLASS
      END-EVALUATE
      GOBACK.
  END PROGRAM WITHER-CLASS.
