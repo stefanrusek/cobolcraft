@@ -1,9 +1,6 @@
 *> Entity models part 8, boats and rafts (docs/protocol/34-entity-models-8-aquatic-nautilus-boats.md section 7): EF8-M-BOAT, EF8-M-BOAT-CHEST, EF8-M-RAFT and EF8-M-RAFT-CHEST
 *> USING model build the layers of 7.1 (the ten wood layers of a kind are the same mesh, only the texture differs; the water patch is a depth-only mask and is not drawn),
-*> EF8-BOAT-ANIM USING model, state (16 FLOAT-LONG: 3 rowing time left, 4 rowing time right) the paddle animation of 7.2, EF8-BOAT-SEQUENCE USING in (3 yaw degrees), out the
-*> render sequence of 7.4 in the order of EF7-SETUP-ROTATIONS (count in out(1), then 4 values an operation from out(2): 1 translate, 2 scale, 3 rotate about Y in degrees; the
-*> last listed acts first): translate (0, 0.375, 0), rotate Y by 180 - yaw, scale (-1, -1, 1), rotate Y by 90. The hurt tilt and the bubble column wobble of 7.4 steps 3 and 4 are
-*> not drawn (the replica holds no hurt time or bubble angle).
+*> EF8-BOAT-ANIM USING model, state (16 FLOAT-LONG: 3 rowing time left, 4 rowing time right) the paddle animation of 7.2 (the render sequence of 7.4 is ENTITY-BOAT-SEQUENCE, entities-sequence.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EF8-M-BOAT.
@@ -187,29 +184,3 @@
      END-PERFORM
      GOBACK.
  END PROGRAM EF8-BOAT-ANIM.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. EF8-BOAT-SEQUENCE.
-*> USING in (16 FLOAT-LONG: 3 body yaw in degrees), out (64 FLOAT-LONG): the render sequence of 7.4, see the top of this file.
- DATA DIVISION.
- LINKAGE SECTION.
- 01 L-IN.
-    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
- 01 L-OUT.
-    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
- PROCEDURE DIVISION USING L-IN L-OUT.
-     MOVE 4 TO L-O(1)
-     MOVE 1 TO L-O(2)
-     MOVE 0 TO L-O(3) L-O(5)
-     MOVE 0.375 TO L-O(4)
-     MOVE 3 TO L-O(6)
-     COMPUTE L-O(7) = 180 - L-I(3)
-     MOVE 0 TO L-O(8) L-O(9)
-     MOVE 2 TO L-O(10)
-     MOVE -1 TO L-O(11) L-O(12)
-     MOVE 1 TO L-O(13)
-     MOVE 3 TO L-O(14)
-     MOVE 90 TO L-O(15)
-     MOVE 0 TO L-O(16) L-O(17)
-     GOBACK.
- END PROGRAM EF8-BOAT-SEQUENCE.

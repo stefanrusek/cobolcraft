@@ -103,8 +103,26 @@
     05 FILLER PIC X(20) VALUE "zombie".
     05 FILLER PIC 99 VALUE 3.
     05 FILLER PIC X(64) VALUE SPACES.
+    05 FILLER PIC X(20) VALUE "mooshroom".
+    05 FILLER PIC 99 VALUE 1.
+    05 FILLER PIC X(64) VALUE "textures/entity/cow/mooshroom_red.png".
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC 99 VALUE 4.
+    05 FILLER PIC X(64) VALUE "textures/entity/panda/panda_playful.png".
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC 99 VALUE 5.
+    05 FILLER PIC X(64) VALUE "textures/entity/panda/panda_brown.png".
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC 99 VALUE 6.
+    05 FILLER PIC X(64) VALUE "textures/entity/panda/panda_weak.png".
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC 99 VALUE 7.
+    05 FILLER PIC X(64) VALUE "textures/entity/panda/panda_aggressive.png".
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC 99 VALUE 1.
+    05 FILLER PIC X(64) VALUE SPACES.
  01 WS-CASES REDEFINES WS-CASES-DATA.
-    05 WS-C OCCURS 23 TIMES.
+    05 WS-C OCCURS 29 TIMES.
        10 WS-C-KEY         PIC X(20).
        10 WS-C-CODE        PIC 99.
        10 WS-C-PATH        PIC X(64).
@@ -121,7 +139,7 @@
      MOVE 64 TO WS-EYE(2)
      MOVE 1 TO CT-OPEN
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 23
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 29
          MOVE SPACES TO WS-PATH
          MOVE WS-C-CODE(WS-I) TO WS-CODE-L
          CALL "ENTITY-TEX-PATH" USING WS-C-KEY(WS-I) WS-CODE-L WS-PATH
@@ -168,6 +186,33 @@
      MOVE "acceptance variants villager data is type, profession and level" TO TL-CASE
      MOVE 243 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = EN-VAR(1) * 100 + EN-VAR2(1) * 10 + EN-VAR3(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A pufferfish keeps its puff state (entry 17, VarInt) and a rabbit of variant 99 (the killer bunny) has texture code 8.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "pufferfish" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE 17 TO WS-INDEX
+     MOVE 1 TO WS-SERIAL
+     MOVE 2 TO WS-INT
+     MOVE 0 TO WS-INT2 WS-INT3 WS-LONG
+     CALL "ENTITY-VARIANT-SET" USING CLIENT-STATE 1 WS-INDEX WS-SERIAL WS-INT WS-INT2 WS-INT3 WS-LONG
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance variants pufferfish entry 17 is the puff state" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE EN-VAR(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "rabbit" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE 99 TO EN-VAR(1)
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE 1 EN-MODEL(1) WS-CODE-L
+     MOVE "acceptance variants the killer bunny (rabbit 99) is texture code 8" TO TL-CASE
+     MOVE 8 TO TL-EXPECTED-N
+     MOVE WS-CODE-L TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Slots: a cow of variant warm and a cow of variant cold draw from two slots with their texture codes.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
@@ -253,8 +298,8 @@
      COMPUTE TL-OBSERVED-N ROUNDED = RL-EN-R(RL-EN-COUNT) * 255
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Fish models by variant (34-8 section 5): a large tropical fish (pattern base 1, pattern index 3) draws the large body and its pattern layer with pattern
-*>   texture code 4, a puff state 2 pufferfish the big model, a salmon of type 2 the large one and of type 0 the small one.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+*>   texture code 4, a puff state 1 pufferfish the mid model, a puff state 2 pufferfish the big model, a salmon of type 2 the large one and of type 0 the small one.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
          CALL "ENTITIES-CLEAR" USING CLIENT-STATE
          MOVE 0 TO EA-MT-COUNT
          EVALUATE WS-I
@@ -270,6 +315,10 @@
                  MOVE "salmon" TO WS-KEY
                  MOVE "salmon~l" TO WS-K20
                  MOVE 2 TO WS-INT
+             WHEN 4
+                 MOVE "pufferfish" TO WS-KEY
+                 MOVE "pufferfish~1" TO WS-K20
+                 MOVE 1 TO WS-INT
              WHEN OTHER
                  MOVE "salmon" TO WS-KEY
                  MOVE "salmon~s" TO WS-K20

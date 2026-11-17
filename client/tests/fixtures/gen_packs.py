@@ -108,6 +108,11 @@ PACKS = {
            ("assets/minecraft/textures/entity/zombie_villager/profession/butcher.png.mcmeta", json.dumps({"villager": {"hat": "full"}}).encode()),
            ("assets/minecraft/textures/entity/villager/profession/cleric.png.mcmeta", b"this is not json"),
            ("assets/minecraft/textures/entity/villager/profession/farmer.png.mcmeta", json.dumps({"other": 1}).encode())])),
+    # "trimtex": the armor trim pattern texture "wild" of the humanoid trims (54 section 18.4, 64 x 32), every texel A0A0A0 (the palette key's first colour).
+    "trimtex": ("folder", {
+        "pack.mcmeta": new_style("Trim texture pack"),
+        "assets/minecraft/textures/trims/entity/humanoid/wild.png": png(64, 32, lambda x, y: (160, 160, 160, 255)),
+    }),
     # "cracks": the ten break-stage images (12 section 4.1), stage N in the colour (20 N, 0, 255 - 20 N).
     "cracks": ("folder", dict(
         [("pack.mcmeta", new_style("Cracks pack"))]
