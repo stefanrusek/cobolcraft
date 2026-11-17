@@ -23,3 +23,4 @@ f46ad27d 109 featurepacks/minecart_improvements/pack.mcmeta
 9a47b507 103 featurepacks/trade_rebalance/pack.mcmeta
 3f258fa3 46 featurepacks/trade_rebalance/data/minecraft/tags/point_of_interest_type/acquirable_job_site.json
 b2665db8 43 vanilla-data/data/minecraft/tags/painting_variant/placeable.json
+cfad5ce4 53 vanilla-data/data/minecraft/wolf_variant/ashen.json
