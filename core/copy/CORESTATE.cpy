@@ -578,6 +578,21 @@
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 *>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
        10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
+*>     --- 002-lane-p46e: name tag, arrows of a bow or crossbow, thrown trident, mob bucket (core/src/ranged-*.cob, mob-18-8.cob; 17 sections 3.7 to 3.10, 3.8) ---
+       10 EN-CNAME           PIC X(64).          *> the custom name of a mob (the name tag, 17 section 3.7); spaces when EN-CNAME-LEN is 0
+       10 EN-CNAME-LEN       BINARY-LONG.        *> its length in bytes, 0 = no custom name
+       10 EN-ARR-CRIT        BINARY-LONG.        *> an arrow: 1 when it is a critical arrow (a bow at full power, every crossbow arrow)
+       10 EN-ARR-PIERCE      BINARY-LONG.        *> an arrow: the pierce level (it keeps flying until it has hit this many plus one entities)
+       10 EN-ARR-PUNCH       BINARY-LONG.        *> an arrow: the knockback level (Punch)
+       10 EN-ARR-PICKUP      BINARY-LONG.        *> an arrow or trident: 0 cannot be picked up, 1 can, 2 only by a player with infinite materials
+       10 EN-ARR-ITEM        BINARY-LONG.        *> an arrow: the item id it gives back when picked up (0 = arrow)
+       10 EN-ARR-NHIT        BINARY-LONG.        *> a piercing arrow: how many entities it has hit already
+       10 EN-ARR-HIT         BINARY-LONG OCCURS 8 TIMES.
+       10 EN-TR-VAR          BINARY-LONG.        *> a thrown trident: the patch handle of its stack (damage, enchantments)
+       10 EN-TR-LOYALTY      BINARY-LONG.        *> a thrown trident: the Loyalty level
+       10 EN-TR-DEALT        BINARY-LONG.        *> a thrown trident: 1 once it has hurt an entity (dealtDamage)
+       10 EN-TR-RETURN       BINARY-LONG.        *> a thrown trident: 1 once the return sound has played
+       10 EN-FROM-BUCKET     BINARY-LONG.        *> a mob released from a bucket (fromBucket)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
