@@ -13,3 +13,14 @@
        10 PN-CREEPY          BINARY-LONG.
        10 PN-STARED          BINARY-LONG.
        10 PN-STARE-WANT      BINARY-LONG.
+*> The warning_level of the last shriek of each sculk shrieker (44 part x2 section 2.3, core/src/mob-20-shriek.cob): PN-SH-USED 1, the block position and the level (the block entity's own
+*> key; kept here by position, not in the saved block entity). At most 64 shriekers hold one at a time; an entry is freed when its level goes back to 0.
+ 78 PN-SH-MAX             VALUE 64.
+ 01 PN-SHRIEK EXTERNAL.
+    05 PN-SH-ENTRY           OCCURS 64 TIMES.
+       10 PN-SH-USED         BINARY-LONG.
+       10 PN-SH-DIM          BINARY-LONG.
+       10 PN-SH-X            BINARY-LONG.
+       10 PN-SH-Y            BINARY-LONG.
+       10 PN-SH-Z            BINARY-LONG.
+       10 PN-SH-LEVEL        BINARY-LONG.

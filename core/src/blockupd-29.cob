@@ -456,6 +456,10 @@
          END-IF
      END-PERFORM
      CALL "PORTAL-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+*>   The scheduled tick of a sculk shrieker ends its shriek and answers it (44 part x2 section 2.3).
+     IF L-KIND = 7
+         CALL "SHRIEKER-HOOK" USING L-DIM L-X L-Y L-Z L-STATE
+     END-IF
 *>   A block that needs support (support-29.cob) becomes air when its neighbour change took the support away (the update engine destroys it with its drops).
      IF L-KIND = 4 AND L-OUT = L-STATE
          CALL "SUP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-OUT
