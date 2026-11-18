@@ -191,6 +191,8 @@
      MOVE 1 TO WS-EXP
      MOVE WS-LEVEL TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "WT-KNOWN" USING WS-PLAYER WS-K1
+     MOVE 0 TO KK-WARD-COOL(WS-K1)
      MOVE "Stranger" TO PL-UUID(WS-PLAYER2)(1:8)
      CALL "WARDEN-TRY-WARN" USING WS-DIM WS-FX WS-FY WS-BZ WS-PLAYER2 WS-LEVEL
      MOVE "acceptance US15 44x2§2.2 A trigger player with no tracker gives no level" TO WS-CASE
@@ -242,6 +244,17 @@
      COMPUTE WS-EXP = WS-HEALTH - 1
      MOVE EN-HEALTH(WS-GOLEM) TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-AIR
+*>   A snow golem with 1 health left dies of the water in its step.
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-WATER
+     MOVE 1 TO EN-HEALTH(WS-GOLEM)
+     MOVE 0 TO EN-HURT(WS-GOLEM)
+     CALL "MOB-STEP" USING WS-GOLEM
+     MOVE "acceptance US15 18§2.6 A snow golem with 1 health dies of the water in a step" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-HEALTH(WS-GOLEM) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 4 TO EN-HEALTH(WS-GOLEM)
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-AIR
 *>   Rain with the sky open also hurts a snow golem (the sky light of the test floor is 15 above it, or the case is dropped).
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-AIR
