@@ -7,7 +7,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  01 WS-STATES.
-    05 WS-ST OCCURS 70 TIMES.
+    05 WS-ST OCCURS 140 TIMES.
        10 WS-ST-LO         BINARY-DOUBLE UNSIGNED.
        10 WS-ST-HI         BINARY-DOUBLE UNSIGNED.
  01 WS-SEED-A              BINARY-DOUBLE UNSIGNED VALUE 5.
@@ -21,9 +21,9 @@
  01 WS-I                   BINARY-LONG.
  01 WS-BAD                 BINARY-LONG.
  01 WS-R1.
-    05 WS-R1-V             FLOAT-LONG OCCURS 70 TIMES.
+    05 WS-R1-V             FLOAT-LONG OCCURS 140 TIMES.
  01 WS-R2.
-    05 WS-R2-V             FLOAT-LONG OCCURS 70 TIMES.
+    05 WS-R2-V             FLOAT-LONG OCCURS 140 TIMES.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
 *>   references: the pairs of the two seeds, drawn alone
@@ -86,27 +86,27 @@
          MOVE 2 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   many states: 70 states each with a pending spare; the first draw of every state is the first of its own pair, also past the table's size
+*>   many states: 140 states each with a pending spare; the first draw of every state is the first of its own pair, also past the table's size
      CALL "F351-GAUSSIAN-RESET"
      MOVE 0 TO WS-BAD
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 70
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 140
          COMPUTE WS-SEED = 100 + WS-I
          CALL "WGR-SET-SEED" USING WS-ST(WS-I) WS-SEED
          CALL "F351-NEXT-GAUSSIAN" USING WS-ST(WS-I) WS-R1-V(WS-I)
      END-PERFORM
      CALL "F351-GAUSSIAN-RESET"
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 70
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 140
          COMPUTE WS-SEED = 100 + WS-I
          CALL "WGR-SET-SEED" USING WS-ST(WS-I) WS-SEED
          CALL "F351-NEXT-GAUSSIAN" USING WS-ST(WS-I) WS-R2-V(WS-I)
          CALL "F351-GAUSSIAN-RESET"
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 70
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 140
          IF WS-R1-V(WS-I) NOT = WS-R2-V(WS-I)
              ADD 1 TO WS-BAD
          END-IF
      END-PERFORM
-     MOVE "acceptance 35-1§5.3 70 states with pending spares: every first draw is the first of its own pair" TO TL-CASE
+     MOVE "acceptance 35-1§5.3 140 states with pending spares: every first draw is the first of its own pair" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
