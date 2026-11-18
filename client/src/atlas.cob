@@ -272,6 +272,14 @@
                          WS-W WS-H WS-FOUND
              END-EVALUATE
          END-IF
+*>       The sun, the moon phases and the end flash (the celestials atlas definition) are drawn additively by vanilla, the shim only alpha-blends: their
+*>       black background becomes clear pixels (ATLAS-ADDITIVE; a still image of a pack, never the missing texture or an animation strip).
+         IF AT-PACK(WS-S) > 0 AND AT-ANIM(WS-S) = 0
+             AND (AT-NAME(WS-S) = "minecraft:sun" OR AT-NAME(WS-S) = "minecraft:end_flash"
+                 OR AT-NAME(WS-S)(1:15) = "minecraft:moon/")
+             COMPUTE WS-BYTES = AT-SW(WS-S) * AT-SH(WS-S)
+             CALL "ATLAS-ADDITIVE" USING WS-IMAGE WS-BYTES
+         END-IF
          PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
              COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
              MOVE WS-IMAGE(WS-Y * AT-SW(WS-S) * 4 + 1:AT-SW(WS-S) * 4)
@@ -328,6 +336,47 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ATLAS-TRANSLUCENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-ADDITIVE.
+*> USING RGBA bytes (the first byte of the image), pixel count: turns the pixels of a celestial sprite (sun, moon phase, end flash) into straight-alpha
+*> pixels whose alpha blend (SRC_ALPHA, ONE_MINUS_SRC_ALPHA, the only blend the shim's sky draws have) approximates vanilla's additive OVERLAY blend
+*> (12 section 3.4c: SRC_ALPHA, ONE; black adds nothing). With m = max(r, g, b) a pixel becomes colour = c x 255 / m (rounded) and alpha = m x alpha / 255
+*> (rounded): the blend then adds the pixel's rgb x alpha and dims the sky under it by that brightness only, so the sprite's black background is
+*> clear (alpha 0) and the bright centre stays opaque. A pixel with m = 0 or alpha 0 gets alpha 0 (its colour is kept: a clear pixel adds nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 B-IMAGE                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-IMAGE                PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-IMAGE L-COUNT.
+     SET ADDRESS OF B-IMAGE TO ADDRESS OF L-IMAGE
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= L-COUNT
+         MOVE 0 TO WS-MAX
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+             COMPUTE WS-C = FUNCTION ORD(B-IMAGE(WS-I * 4 + WS-K:1)) - 1
+             MOVE FUNCTION MAX(WS-MAX, WS-C) TO WS-MAX
+         END-PERFORM
+         COMPUTE WS-A = FUNCTION ORD(B-IMAGE(WS-I * 4 + 4:1)) - 1
+         IF WS-MAX > 0
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                 COMPUTE WS-C = FUNCTION ORD(B-IMAGE(WS-I * 4 + WS-K:1)) - 1
+                 COMPUTE WS-V = (WS-C * 510 + WS-MAX) / (2 * WS-MAX)
+                 MOVE FUNCTION CHAR(WS-V + 1) TO B-IMAGE(WS-I * 4 + WS-K:1)
+             END-PERFORM
+         END-IF
+         COMPUTE WS-V = (WS-MAX * WS-A * 2 + 255) / 510
+         MOVE FUNCTION CHAR(WS-V + 1) TO B-IMAGE(WS-I * 4 + 4:1)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ATLAS-ADDITIVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-DIRECTORY-MATCH.
