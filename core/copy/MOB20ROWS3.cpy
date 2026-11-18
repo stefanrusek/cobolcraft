@@ -63,7 +63,7 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 2.              *> ranged kind
-       10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
+       10 FILLER BINARY-LONG VALUE 12.             *> natural spawn rule 12: the patrolling monster rule (36-9 section 11.3 item 2)
        10 FILLER BINARY-LONG VALUE 0.
     05 FILLER.
        10 FILLER PIC X(24) VALUE "evoker".
