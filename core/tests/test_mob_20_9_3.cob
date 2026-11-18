@@ -222,14 +222,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A silverfish that has a target does not merge (the goal needs no target and no cooldown).
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
      MOVE 1 TO EN-TARGET(WS-ROW)
-     MOVE WS-MERGES TO WS-J
      CALL "STDMOB-SILVERFISH-MERGE" USING WS-ROW
-     MOVE 0 TO EN-TARGET(WS-ROW)
      MOVE "acceptance US15 20§9.1 a silverfish with a target does not merge" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE EN-USED(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-ROW
 
 *>   Every direction of the merge goal: 200 tries with the +x neighbour left as air (no host there), the other five stone.
      MOVE 0 TO WS-MERGES
