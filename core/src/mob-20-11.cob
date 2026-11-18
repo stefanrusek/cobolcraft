@@ -8,8 +8,9 @@
 *>     (32, the default drink of 1.6 s) and the witch stands still (stop 1; the drinking modifier takes its speed 0.25 to 0); at the end Water Breathing,
 *>     Fire Resistance and Speed last 3600 ticks (EN-FX-WATER, -FIRE, -SPEED) and Healing heals 4 up to the maximum health. Not drinking, the four tests run with
 *>     random rolls and a hit takes the potion in hand; with a target within 10 blocks (radius 10.0 of the ranged goal) the witch stands (stop 1).
-*>   Open: the witch's thrown potions (no splash potion entity in the core), the eyes-in-water test (taken as false), the particle event 15, and the
-*>     0.15 resistance to magic damage (damage kinds are not tracked).
+*>   STDMOB-WITCH-SPARKLE USING roll (0 to 99999), hit out: nextFloat < 7.5E-4 (roll below 75): the witch broadcasts entity event 15 (witch particles) that tick; the tick draws the
+*>     roll with its own salt after the drinking logic. The eyes-in-water test reads the block at feet + 1.62 (a water block).
+*>   Open: the witch's thrown potions (no splash potion entity in the core), the 0.15 resistance to magic damage (damage kinds are not tracked), the raider goals.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-WITCH-PICK.
@@ -50,7 +51,19 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ COPY CBLOCKS.
  01 WS-SALT                BINARY-LONG VALUE 11.
+ 01 WS-SALT-EVENT          BINARY-LONG VALUE 12.
+ 01 WS-BOUND-EVENT         BINARY-LONG VALUE 100000.
+ 01 WS-ROLL-EVENT          BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 15.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-KEYBLOCK            BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  01 WS-BOUND               BINARY-LONG VALUE 1000.
  01 WS-R1                  BINARY-LONG.
  01 WS-R2                  BINARY-LONG.
@@ -68,6 +81,11 @@
  01 L-STOP                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M L-STOP.
      MOVE 0 TO L-STOP
+     CALL "XP-RANDOM" USING WS-SALT-EVENT WS-BOUND-EVENT WS-ROLL-EVENT
+     CALL "STDMOB-WITCH-SPARKLE" USING WS-ROLL-EVENT WS-HIT
+     IF WS-HIT = 1
+         CALL "MOB-ENTITY-EVENT" USING L-ROW WS-EVENT
+     END-IF
      MOVE EN-TARGET(L-ROW) TO WS-P
      MOVE 0 TO WS-D2
      IF WS-P > 0
@@ -99,7 +117,19 @@
      CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R2
      CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R3
      CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R4
-     MOVE 0 TO WS-FIRE WS-FAR
+     MOVE 0 TO WS-FIRE WS-FAR WS-WATER
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW) + 1.62)
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
+     IF WS-STATE > 0
+         COMPUTE WS-KEYBLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         MOVE 0 TO WS-N
+         INSPECT CB-KEY(WS-KEYBLOCK) TALLYING WS-N FOR ALL "water"
+         IF WS-N > 0
+             MOVE 1 TO WS-WATER
+         END-IF
+     END-IF
      IF EN-BURN(L-ROW) > 0
          MOVE 1 TO WS-FIRE
      END-IF
@@ -118,3 +148,36 @@
      END-IF
      GOBACK.
  END PROGRAM STDMOB-WITCH-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-WITCH-SPARKLE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-HIT.
+     MOVE 0 TO L-HIT
+     IF L-ROLL < 75
+         MOVE 1 TO L-HIT
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-WITCH-SPARKLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-ENTITY-EVENT.
+*> USING tracker row, event id: an Entity Event (0x22) to the players that see the mob.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EVENT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) L-EVENT PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM MOB-ENTITY-EVENT.

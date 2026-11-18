@@ -11,6 +11,7 @@
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-BLOCK               BINARY-LONG VALUE 5.
  01 WS-BEFORE              BINARY-LONG.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  01 WS-X                   BINARY-LONG VALUE 3.
  01 WS-Y                   BINARY-LONG VALUE 64.
  01 WS-Z                   BINARY-LONG VALUE 3.
@@ -19,7 +20,7 @@
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      MOVE "infested_stone" TO CB-KEY(WS-BLOCK + 1)
      MOVE EN-COUNT TO WS-BEFORE
-     CALL "STDMOB-INFESTED-BREAK" USING WS-DIM WS-X WS-Y WS-Z WS-BLOCK
+     CALL "STDMOB-INFESTED-BREAK" USING WS-DIM WS-X WS-Y WS-Z WS-BLOCK WS-NO-PLAYER
      MOVE "N" TO TL-MODE
      MOVE "acceptance US15 20§9.2 Infested blocks: no silverfish type, nothing comes out" TO TL-CASE
      MOVE WS-BEFORE TO TL-EXPECTED-N
