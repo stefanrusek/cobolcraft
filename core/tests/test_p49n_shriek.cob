@@ -216,7 +216,7 @@
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
      MOVE 0 TO BW-DIFFICULTY
      CALL "SHRIEKER-CAN-RESPOND" USING WS-SHRIEKER WS-OK
-     MOVE "acceptance US15 44x2§2.3 canRespond is false in Peaceful (SHRIEKER-CAN-RESPOND reads the world's difficulty)" TO WS-CASE
+     MOVE "acceptance US15 44x2§2.3 canRespond is false in Peaceful" TO WS-CASE
      MOVE 0 TO WS-EXP
      MOVE WS-OK TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS

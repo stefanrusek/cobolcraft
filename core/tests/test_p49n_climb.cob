@@ -128,7 +128,7 @@
      MOVE 0 TO EN-VY(WS-SPIDER)
      CALL "MOB-PHYSICS" USING WS-SPIDER WS-HX WS-HZ WS-YAW
      COMPUTE WS-MILLI ROUNDED = EN-VY(WS-SPIDER) * 10000
-     MOVE "acceptance US15 18§3.2 A climbing mob that collides gets vertical velocity 0.2 (then 0.1176 after gravity)" TO WS-CASE
+     MOVE "acceptance US15 18§3.2 A climbing mob that collides gets vy 0.2 (0.1176 after gravity)" TO WS-CASE
      MOVE 1176 TO WS-EXP
      MOVE WS-MILLI TO WS-OBS
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
@@ -137,7 +137,7 @@
          CALL "SPIDER-CLIMB-TICK" USING WS-SPIDER
          CALL "MOB-PHYSICS" USING WS-SPIDER WS-HX WS-HZ WS-YAW
      END-PERFORM
-     MOVE "acceptance US15 20§7.1 A spider pushing into a wall climbs it (y above start + 1 after 10 ticks: 0.1176 a tick)" TO WS-CASE
+     MOVE "acceptance US15 20§7.1 A spider pushing into a wall climbs it (above y + 1 in 10 ticks)" TO WS-CASE
      MOVE 1 TO WS-EXP
      MOVE 0 TO WS-OBS
      IF EN-Y(WS-SPIDER) > WS-BY + 1.0
