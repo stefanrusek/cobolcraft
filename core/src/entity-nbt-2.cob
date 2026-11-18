@@ -7,24 +7,27 @@
 *>   LIVING-NBT-APPLY USING row, LV-DATA     puts them into the new mob
 *>   MOB-EQUIP-WRITE USING row, species key, PB-BUFFER   the equipment compound: mainhand, head, chest, legs, feet, saddle and body (none when all empty)
 *>   MOB-EQUIP-READ USING PB-BUFFER, MQ-DATA   reads it (the tag payload at PB-POS)
-*> No state in the core: HurtTime and DeathTime (a mob dies at once), AbsorptionAmount, the attribute list (written empty: no permanent modifiers),
-*> Brain memories (written empty), FallFlying, sleeping_pos, current_explosion_impact_pos, ticks_since_last_hurt_by_mob, locator_bar_icon, drop_chances,
-*> home_*, DeathLootTable, NoAI: written at their defaults where the table says always, read and ignored.
+*> State in ENKEEP.cpy (lane 002-lane-p49m, entity-keep.cob): AbsorptionAmount, the impulse keys, attributes (the list kept as the file has it), the amplifier and
+*> flags and hidden effect of an effect, the other effects, FallFlying, sleeping_pos, the Brain memories, last_hurt_by_mob, locator_bar_icon. No state in the core: HurtTime
+*> and DeathTime (a mob dies at once) and the behaviour of the kept values (an attribute base, an amplifier, a hidden effect, a Brain memory change nothing the mob does).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LIVING-NBT-WRITE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY ENKEEP.
  COPY STDMOBS.
  01 WN                     PIC X(64).
  01 WL                     BINARY-LONG.
  01 WS-ELEMENT             BINARY-LONG VALUE -1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-FOUR                BINARY-LONG VALUE 4.
  01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
- 01 WS-FLOAT               FLOAT-SHORT VALUE 0.
+ 01 WS-T-LIST              BINARY-LONG VALUE 9.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
  01 WS-KEY                 PIC X(24).
  01 WS-COUNT               BINARY-LONG.
  01 WS-DURATION            BINARY-LONG.
@@ -33,6 +36,7 @@
     05 WS-DUR              BINARY-LONG OCCURS 6 TIMES.
  01 WS-ID                  PIC X(32).
  01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
  01 WS-DIRECTION           BINARY-LONG VALUE 0.
  01 WS-END                 BINARY-DOUBLE.
  01 WS-INTS.
@@ -46,18 +50,30 @@
      MOVE "DeathTime" TO WN MOVE 9 TO WL
      CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-ZERO
      MOVE "AbsorptionAmount" TO WN MOVE 16 TO WL
-     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL EK-ABSORB(L-ROW)
      MOVE "current_impulse_context_reset_grace_time" TO WN MOVE 40 TO WL
-     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-ZERO
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EK-GRACE(L-ROW)
+     IF EK-IMPACT-ON(L-ROW) = 1
+         MOVE "current_explosion_impact_pos" TO WN MOVE 28 TO WL
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EK-IMPACT-X(L-ROW)
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EK-IMPACT-Y(L-ROW)
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EK-IMPACT-Z(L-ROW)
+     END-IF
      MOVE "attributes" TO WN MOVE 10 TO WL
-     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
+     IF EK-ATTR-LEN(L-ROW) > 0
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-LIST WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-ATTR-RAW(L-ROW) EK-ATTR-LEN(L-ROW)
+     ELSE
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
+     END-IF
      MOVE EN-FX-SPEED(L-ROW) TO WS-DUR(1)
      MOVE EN-FX-STRENGTH(L-ROW) TO WS-DUR(2)
      MOVE EN-FX-REGEN(L-ROW) TO WS-DUR(3)
      MOVE EN-FX-INVIS(L-ROW) TO WS-DUR(4)
      MOVE EN-FX-FIRE(L-ROW) TO WS-DUR(5)
      MOVE EN-FX-WATER(L-ROW) TO WS-DUR(6)
-     MOVE 0 TO WS-COUNT
+     MOVE EK-FXO-COUNT(L-ROW) TO WS-COUNT
      PERFORM VARYING WS-FX FROM 1 BY 1 UNTIL WS-FX > 6
          IF WS-DUR(WS-FX) NOT = 0
              ADD 1 TO WS-COUNT
@@ -81,28 +97,54 @@
                  END-EVALUATE
                  CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-ID WS-ID-LENGTH
                  MOVE "amplifier" TO WN MOVE 9 TO WL
-                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ZERO
+                 MOVE EK-FX-AMP(L-ROW, WS-FX) TO WS-VALUE
+                 IF WS-VALUE > 127
+                     SUBTRACT 256 FROM WS-VALUE
+                 END-IF
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
                  MOVE "duration" TO WN MOVE 8 TO WL
                  CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-DURATION
                  MOVE "ambient" TO WN MOVE 7 TO WL
-                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ZERO
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EK-FX-AMBIENT(L-ROW, WS-FX)
                  MOVE "show_particles" TO WN MOVE 14 TO WL
-                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ONE
+                 COMPUTE WS-VALUE = 1 - EK-FX-NOPART(L-ROW, WS-FX)
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
                  MOVE "show_icon" TO WN MOVE 9 TO WL
-                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ONE
+                 COMPUTE WS-VALUE = 1 - EK-FX-NOICON(L-ROW, WS-FX)
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+                 IF EK-FX-HID-LEN(L-ROW, WS-FX) > 0
+                     MOVE "hidden_effect" TO WN MOVE 13 TO WL
+                     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+                     CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-FX-HID-RAW(L-ROW, WS-FX) EK-FX-HID-LEN(L-ROW, WS-FX)
+                 END-IF
                  CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
              END-IF
          END-PERFORM
+         IF EK-FXO-LEN(L-ROW) > 0
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-FXO-RAW(L-ROW) EK-FXO-LEN(L-ROW)
+         END-IF
          CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
      END-IF
      MOVE "FallFlying" TO WN MOVE 10 TO WL
-     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ZERO
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EK-FALLFLY(L-ROW)
+     IF EK-SLEEP-ON(L-ROW) = 1
+         MOVE "sleeping_pos" TO WN MOVE 12 TO WL
+         MOVE EK-SLEEP-X(L-ROW) TO WS-INT(1)
+         MOVE EK-SLEEP-Y(L-ROW) TO WS-INT(2)
+         MOVE EK-SLEEP-Z(L-ROW) TO WS-INT(3)
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-INTS
+     END-IF
      MOVE "Brain" TO WN MOVE 5 TO WL
-     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-     MOVE "memories" TO WN MOVE 8 TO WL
-     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     IF EK-BRAIN-LEN(L-ROW) > 0
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-BRAIN-RAW(L-ROW) EK-BRAIN-LEN(L-ROW)
+     ELSE
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         MOVE "memories" TO WN MOVE 8 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-IF
      IF EN-KILLER(L-ROW) > 0
          IF PL-USED(EN-KILLER(L-ROW)) = 1
              MOVE "last_hurt_by_player" TO WN MOVE 19 TO WL
@@ -111,6 +153,18 @@
              MOVE "last_hurt_by_player_memory_time" TO WN MOVE 31 TO WL
              CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-KILLER-AGE(L-ROW)
          END-IF
+     END-IF
+     IF EK-HURTMOB(L-ROW) NOT = SPACES
+         MOVE "last_hurt_by_mob" TO WN MOVE 16 TO WL
+         CALL "PERSIST-UUID-INTS" USING WS-DIRECTION EK-HURTMOB(L-ROW) WS-INTS
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-INTS
+         MOVE "ticks_since_last_hurt_by_mob" TO WN MOVE 28 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EK-HURTMOB-TICKS(L-ROW)
+     END-IF
+     IF EK-LOCATOR-LEN(L-ROW) > 0
+         MOVE "locator_bar_icon" TO WN MOVE 16 TO WL
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-LOCATOR-RAW(L-ROW) EK-LOCATOR-LEN(L-ROW)
      END-IF
 *>   NeutralMob: the end of the anger as game time, -1 when calm; the angry-at player while it lasts.
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
