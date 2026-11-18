@@ -104,6 +104,9 @@
      MOVE 1000000000 TO MB-BUDGET-US
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "SKY-UPDATE" USING CLIENT-STATE
+*>   The draws under test are the terrain's, in the order the list has them: the clear colour above is the day sky's, but the sky bodies and the clouds of a
+*>   dimension with sky light (their draws open and close the list) are the subject of test_sky_render and acc_sky_draws, so the frames here are of a dimension without.
+     MOVE 0 TO PL-HAS-SKY
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      CALL "UI-RENDER" USING CLIENT-STATE
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
