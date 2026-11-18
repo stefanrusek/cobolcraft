@@ -1,5 +1,5 @@
 *> The throwing of items by players and the tick of the thrown entities of lane 002-lane-mobsb6 (17 section 3.15, 44 part 8 sections 6.1 and 6.5).
-*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob) and ender_eye (EYE-ITEM-USE, thrown-44g.cob). The projectile
+*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob) and ender_eye (EYE-ITEM-USE, thrown-44g.cob) and experience_bottle (speed 0.7, offset -20, mob-21-8-13.cob). The projectile
 *> starts at (x, eye y - 0.1, z) of the player, moves along (-sin(yaw) cos(pitch), -sin(pitch + offset), cos(yaw) cos(pitch)) normalised and scaled by the speed; a survival
 *> player's stack loses one. Gaps: the inaccuracy (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled;
 *> a thrown potion has the contents of the thrown stack's potion_contents (POTION-LOAD, potion-load.cob; a stack without it is a water bottle).
@@ -106,6 +106,10 @@
              MOVE 5 TO WS-KIND
          WHEN "ender_eye"
              MOVE 6 TO WS-KIND
+         WHEN "experience_bottle"
+             MOVE 7 TO WS-KIND
+             MOVE -20 TO WS-OFFSET
+             MOVE 0.7 TO WS-SPEED
      END-EVALUATE
      IF WS-KIND = 0
          GOBACK
@@ -143,6 +147,11 @@
          WHEN 3
              MOVE 6 TO WS-PJ
              MOVE "minecraft:egg" TO WS-EKEY
+             CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+         WHEN 7
+*>           The experience bottle (21 section 8.13, 25-6 section 10.1): PJ-KIND 40, offset -20 degrees, power 0.7.
+             MOVE 40 TO WS-PJ
+             MOVE "minecraft:experience_bottle" TO WS-EKEY
              CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
          WHEN OTHER
 *>           The snowball is the projectile of mob-21-proj.cob (PROJ-SPAWN starts it at 1.6; the thrown speed is 1.5).
@@ -211,6 +220,8 @@
                          CALL "DRAGON-STEP" USING WS-ROW
                      WHEN 18
                          CALL "DFIRE-STEP" USING WS-ROW
+                     WHEN 40
+                         CALL "XP-BOTTLE-STEP" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF
