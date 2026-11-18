@@ -290,6 +290,16 @@
      MOVE 0 TO WS-E
      MOVE WS-PRESENT TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+*>   A farmer that is already walking somewhere does not pick a cell.
+     MOVE "farmer" TO VL-PROF(WS-S)
+     MOVE 0 TO VM-T(WS-S, TM-CELL-ON)
+     MOVE 3 TO WS-CLOSE
+     CALL "VL-WALK-SET" USING WS-V WS-S WS-DIM WS-X WS-Y WS-Z0 WS-SPEED WS-CLOSE
+     CALL "VL-FARM-START" USING WS-V WS-S VA-WORK
+     MOVE "test p49p more: a farmer with a walk target does not start on a cell" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE VM-T(WS-S, TM-CELL-ON) TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      STOP RUN.
  END PROGRAM TEST-P49P-MORE.
  COPY CORETEST.
