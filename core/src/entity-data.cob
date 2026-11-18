@@ -604,6 +604,8 @@
              WHEN WN = "PickupDelay" AND WS-TYPE = 2
                  CALL "PB-GET-SHORT" USING PB-BUFFER WS-DELAY
              WHEN WN = "Item" AND WS-TYPE = 10
+*>               ItemStack.CODEC: count is 1 when the stack holds none (45-8 section 2).
+                 MOVE 1 TO WS-ITEM-COUNT
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
                      CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-CAPACITY

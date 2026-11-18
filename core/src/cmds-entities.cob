@@ -265,8 +265,11 @@
 *> and is sent to the players who see it (MOB-SPAWN); in a standard world the mobs are the rows of STDMOBS.cpy (the key with or without minecraft:, which
 *> is its namespace); another type is entity.not_summonable [key]; a monster in Peaceful difficulty
 *> or with hostile mobs off is commands.summon.failed.peaceful; a position outside the spawnable bounds is
-*> commands.summon.invalidPosition; NBT other than {} is cobolcraft.entity.nbt_unsupported (BLOCKED); commands.summon.success
-*> [entity key] is broadcast; the result is 1. A summoned table mob is finalized like a spawned one (STDMOB-FINALIZE: variant, armour, weapon, size).
+*> commands.summon.invalidPosition; commands.summon.success [entity key] is broadcast; the result is 1. A summoned table mob is finalized like a spawned one (STDMOB-FINALIZE: variant, armour, weapon,
+*> size) in the two forms without NBT (16 section 5.8: the finalize flag is false when NBT is given). The NBT is applied by the entity loader for a mob and a ground item (SUMMON-LOAD, core/src/summon.cob) and by
+*> the spawn program of its family for every other entity type of a standard world (SUMMON-SPAWN: items, orbs, TNT, falling blocks, clouds, lightning, crystals, armor stands, frames, paintings, minecarts, boats,
+*> interaction, display, mannequin, cushion and marker entities, arrows, thrown items, fireballs, wind charges, potions, spawners, fireworks, eyes of ender); an entity the core cannot create is entity.not_summonable,
+*> an entity the loader refuses is commands.summon.failed, a UUID already in use commands.summon.failed.uuid (45-1 section 6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -295,6 +298,12 @@
  01 WS-STD-HOSTILE         BINARY-LONG.
  01 WS-FSEED               BINARY-DOUBLE UNSIGNED.
  COPY XORO.
+ COPY NBXTREE.
+ 01 WS-FAMILY              BINARY-LONG.
+ 01 WS-SUB                 BINARY-LONG.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-UUID-NODE           BINARY-LONG.
+ 01 WS-K-UUID              PIC X(16) VALUE "UUID".
  01 WS-BARE                PIC X(48).
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -346,7 +355,7 @@
              ADD 10 TO WS-ID-LENGTH
          END-IF
      END-IF
-     MOVE 0 TO WS-ET WS-MOB WS-STD WS-STD-HOSTILE
+     MOVE 0 TO WS-ET WS-MOB WS-STD WS-STD-HOSTILE WS-FAMILY WS-SUB
      MOVE WS-ID TO WS-BARE
      IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND WS-ID(1:10) = "minecraft:"
          MOVE WS-ID(11:38) TO WS-BARE
@@ -361,6 +370,7 @@
          COMPUTE WS-TYPE = WS-ET - 1
          CALL "STDMOB-INDEX" USING WS-TYPE WS-STD
          CALL "STDMOB-HOSTILE" USING WS-TYPE WS-STD-HOSTILE
+         CALL "SUMMON-FAMILY" USING WS-TYPE WS-FAMILY WS-SUB
      END-IF
      CALL "MOB-TABLE-COUNT" USING WS-MOB-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-MOB-COUNT
@@ -377,7 +387,7 @@
      CALL "BX-FIND" USING WS-NAME-NBT WS-NBT
      PERFORM FIND-TYPE
      EVALUATE TRUE
-         WHEN WS-MOB = 0 AND WS-STD = 0
+         WHEN WS-MOB = 0 AND WS-STD = 0 AND WS-FAMILY = 0
              MOVE "entity.not_summonable" TO WS-KEY
              MOVE 1 TO WS-N-ARGS
              MOVE SPACES TO WS-A1 WS-A2
@@ -386,9 +396,6 @@
              MOVE 0 TO WS-L2
              CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
              MOVE 1 TO BR-R-FAILED
-         WHEN WS-NBT > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2
-             MOVE "cobolcraft.entity.nbt_unsupported" TO WS-KEY
-             PERFORM FAIL-PLAIN
          WHEN WS-STD-HOSTILE = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
              MOVE "commands.summon.failed.peaceful" TO WS-KEY
              PERFORM FAIL-PLAIN
@@ -413,22 +420,49 @@
          END-IF
      END-IF
      IF BR-R-FAILED = 0
-         IF WS-STD > 0
+         IF WS-STD > 0 OR WS-FAMILY > 0
              COMPUTE WS-TYPE = WS-ET - 1
          ELSE
              MOVE MB-ENTITY-TYPE(WS-MOB) TO WS-TYPE
          END-IF
-         CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
-         IF WS-STD > 0
-             COMPUTE WS-FSEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
-             CALL "XORO-SEED" USING WS-FSEED XR-STATE
-             CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW
+         MOVE 0 TO WS-ROOT WS-NEW
+         IF WS-NBT > 0
+             CALL "NBX-PARSE" USING BR-R-LINE BA-START(WS-NBT) BA-END(WS-NBT) WS-ROOT
          END-IF
-         MOVE "commands.summon.success" TO WS-KEY
-         CALL "BX-KEY" USING PB-TEXT WS-KEY
-         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
-         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
-         MOVE 1 TO BR-R-RESULT
+         EVALUATE TRUE
+             WHEN WS-FAMILY > 0
+                 CALL "SUMMON-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-ROOT WS-NEW
+             WHEN WS-ROOT > 0
+                 CALL "SUMMON-LOAD" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-ROOT WS-NEW
+             WHEN OTHER
+                 CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+                 IF WS-STD > 0
+                     COMPUTE WS-FSEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
+                     CALL "XORO-SEED" USING WS-FSEED XR-STATE
+                     CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW
+                 END-IF
+         END-EVALUATE
+         IF WS-NEW = 0
+             MOVE 0 TO WS-UUID-NODE
+             IF WS-ROOT > 0
+                 CALL "NBX-FIND-N" USING WS-ROOT WS-K-UUID WS-UUID-NODE
+             END-IF
+             IF WS-UUID-NODE > 0
+                 MOVE "commands.summon.failed.uuid" TO WS-KEY
+             ELSE
+                 MOVE "commands.summon.failed" TO WS-KEY
+             END-IF
+             PERFORM FAIL-PLAIN
+         ELSE
+             MOVE "commands.summon.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 1 TO BR-R-RESULT
+         END-IF
+         IF WS-ROOT > 0
+             CALL "NBX-FREE" USING WS-ROOT
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM CX-SUMMON.
