@@ -45,6 +45,10 @@
  01 WS-START               BINARY-LONG.
  01 WS-FIRST-ROW           BINARY-LONG VALUE 0.
  01 WS-HEALTH              FLOAT-SHORT.
+ 01 WS-MOB2                BINARY-LONG.
+ 01 WS-CHARGE2             BINARY-LONG.
+ 01 WS-POWER0              BINARY-LONG VALUE 0.
+ 01 WS-NOBODY              BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -140,6 +144,28 @@
      MOVE "acceptance US15 20§16 Breeze charge damage is 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-HEALTH - PL-HEALTH(WS-PLAYER)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A charge in a chunk that is not loaded is removed by the projectile tick; the others are stepped.
+     CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-X WS-Y WS-Z WS-POWER0 WS-NOBODY WS-CHARGE2
+     COMPUTE EN-X(WS-CHARGE2) = 100000
+     CALL "PROJECTILES-TICK"
+     MOVE "acceptance US15 20§16 Breeze charge in an unloaded chunk is removed" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-CHARGE2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An inhale breaks off when the target leaves the 16-block range.
+     COMPUTE WS-X0 = WS-X - 6
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-MOB2
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5 OR EN-DRAW(WS-MOB2) = 1
+         CALL "MOB-STEP" USING WS-MOB2
+     END-PERFORM
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     CALL "MOB-STEP" USING WS-MOB2
+     MOVE "acceptance US15 20§16 Breeze stops inhaling when it loses its target" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-DRAW(WS-MOB2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-MOB-20-16.
