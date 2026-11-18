@@ -154,10 +154,18 @@
                      MOVE EN-ID(WS-R) TO EN-DR-ID
                      CALL "EF7-HIST-INIT" USING EN-DR-HIST
                  END-IF
-                 COMPUTE WS-D2 = 0.2 / (FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ) * 10 + 1) * 2 ** WS-VY
-                 COMPUTE EN-TM(WS-R) = EN-TM(WS-R) + WS-D2
-                 COMPUTE WS-YW = EN-YAW(WS-R) - 360 * FUNCTION INTEGER((EN-YAW(WS-R) + 180) / 360)
-                 CALL "EF7-HIST-RECORD" USING EN-DR-HIST EN-Y(WS-R) WS-YW
+                 IF EN-HP(WS-R) > 0
+                     COMPUTE WS-D2 = 0.2 / (FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ) * 10 + 1) * 2 ** WS-VY
+                     COMPUTE EN-TM(WS-R) = EN-TM(WS-R) + WS-D2
+                     COMPUTE WS-YW = EN-YAW(WS-R) - 360 * FUNCTION INTEGER((EN-YAW(WS-R) + 180) / 360)
+                     CALL "EF7-HIST-RECORD" USING EN-DR-HIST EN-Y(WS-R) WS-YW
+                     CALL "ENTITY-DRAGON-CRYSTAL" USING CLIENT-STATE WS-R
+                 ELSE
+*>                   A dying dragon (health 0 or less): dragonDeathTime counts up (to the 200 ticks of the death animation); flapTime, the history and the crystal stay (8.1, 8.8).
+                     IF EN-DD(WS-R) < 200
+                         ADD 1 TO EN-DD(WS-R)
+                     END-IF
+                 END-IF
              END-IF
 *>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
 *>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).

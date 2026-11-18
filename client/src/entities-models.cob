@@ -181,6 +181,24 @@
              END-PERFORM
          END-IF
      END-PERFORM
+*>   The image of the crystal beam (34-7 8.7) for a crystal with a beam target and a dragon with a nearest crystal.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND ((EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1) OR (EN-KEY(WS-R) = "ender_dragon" AND EN-NCI(WS-R) NOT = 0))
+             MOVE "end_crystal_beam" TO WS-PLAYER-KEY
+             CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
+             MOVE 0 TO WS-TEX
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         END-IF
+     END-PERFORM
+*>   The image of a guardian's beam (34-6 11.6, entities-beam.cob) for every guardian that has an attack target.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND (EN-KEY(WS-R) = "guardian" OR "elder_guardian") AND EN-TGT(WS-R) NOT = 0
+             MOVE "guardian_beam" TO WS-PLAYER-KEY
+             CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
+             MOVE 0 TO WS-TEX
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         END-IF
+     END-PERFORM
 *>   The first-person arm of an empty main hand (12 section 6.5, hand-arm.cob) wears the model row "player" with its own image: its slot, in a standard world on the world screen.
      IF CL-CAMERA = 0 AND SM-SCREEN = SCR-WORLD AND CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
          MOVE "player" TO WS-PLAYER-KEY
@@ -754,6 +772,7 @@
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
 *>               The ender dragon: flap time, the flight history at partial tick 1; not landing, not sitting.
                  WHEN "ender_dragon"
+                 WHEN "ender_dragon_eyes"
                      MOVE EN-TM(WS-ROW) TO WS-I(1)
                      MOVE 1 TO WS-I(2)
                      CALL "EF7-DRAGON-ANIM" USING EMM-MODEL EN-DR-HIST WS-IN

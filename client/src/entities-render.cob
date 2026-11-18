@@ -272,6 +272,9 @@
                  END-IF
              END-PERFORM
          END-IF
+         IF EN-USED(WS-R) = 1 AND EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1
+             MOVE 1 TO WS-SEEN
+         END-IF
          MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
          MOVE 0 TO EN-HAND-OK(WS-R, 1) EN-HAND-OK(WS-R, 2) EN-HAND-FOK(WS-R, 1) EN-HAND-FOK(WS-R, 2)
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
@@ -286,6 +289,10 @@
                  WHEN OTHER
                      CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
              END-EVALUATE
+*>           A guardian's beam to its attack target (34-6 11.6).
+             IF (EN-KEY(WS-R) = "guardian" OR "elder_guardian") AND EN-TGT(WS-R) NOT = 0
+                 CALL "ENTITY-BEAM-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             END-IF
 *>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
              MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
 *>           A sheared sheep (entry 18 bit 16) draws no wool.
@@ -324,6 +331,10 @@
                          MOVE 0 TO EN-OVL(WS-R) EN-OVN(WS-R)
                      END-IF
                  END-PERFORM
+             END-IF
+*>           The crystal beam of a crystal with a beam target and of a dragon with a nearest crystal (34-7 7.3, 8.5 pass 4, 8.7).
+             IF (EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1) OR (EN-KEY(WS-R) = "ender_dragon" AND EN-NCI(WS-R) NOT = 0)
+                 CALL "ENTITY-CRYSTAL-BEAM-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
              END-IF
          END-IF
          MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)

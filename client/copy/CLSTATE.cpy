@@ -785,6 +785,15 @@
 *>        and the tick count at which it started (AnimationState.startIfStopped).
           15 EN-AX-BS        BINARY-LONG.
           15 EN-AX-BT        BINARY-LONG.
+*>        The ender dragon and the end crystal (34-7 sections 7.3 and 8): EN-HP the health of entry 9 (FLOAT; 1 until told), EN-DD the death time dragonDeathTime (ticks while the health is 0 or less,
+*>        at most 200), EN-NCI the entity id of the nearest healing crystal (0 none, ENTITY-DRAGON-CRYSTAL); a crystal's beam target (entry 8, OPTIONAL_BLOCK_POS): EN-BP 1 when set, the block EN-BX, EN-BY, EN-BZ.
+          15 EN-HP           FLOAT-LONG.
+          15 EN-DD           BINARY-LONG.
+          15 EN-NCI          BINARY-LONG.
+          15 EN-BP           BINARY-LONG.
+          15 EN-BX           BINARY-LONG.
+          15 EN-BY           BINARY-LONG.
+          15 EN-BZ           BINARY-LONG.
 *>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
 *>        and angle in degrees, and 1 when the boat is under water.
           15 EN-BHT          FLOAT-LONG.
