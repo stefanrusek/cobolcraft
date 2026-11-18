@@ -132,6 +132,8 @@
              MOVE 7 TO L-FAMILY
          WHEN WS-KEY = "minecraft:furnace" OR WS-KEY = "minecraft:smoker" OR WS-KEY = "minecraft:blast_furnace"
              MOVE 8 TO L-FAMILY
+         WHEN WS-KEY = "minecraft:brewing_stand"
+             MOVE 9 TO L-FAMILY
          WHEN WS-KEY = "minecraft:hopper"
              MOVE 5 TO L-FAMILY
          WHEN WS-KEY = "minecraft:dispenser" OR WS-KEY = "minecraft:dropper"
@@ -194,6 +196,12 @@
              COMPUTE L-FLAG = 1 - WS-PICK
              COMPUTE WS-FACE = WS-INDEX / 2
              MOVE WS-DIRECTION(WS-FACE + 1) TO L-DIR
+*>       The brewing stand: has_bottle_0, has_bottle_1, has_bottle_2 (true first); the type out is the mask of the bottles that are there (bit i set when has_bottle_i).
+         WHEN 9
+             COMPUTE WS-FACE = WS-INDEX / 4
+             COMPUTE L-TYPE = 1 - WS-FACE
+             COMPUTE WS-FACE = WS-INDEX / 2
+             COMPUTE L-TYPE = L-TYPE + 2 * (1 - FUNCTION MOD(WS-FACE, 2)) + 4 * (1 - WS-PICK)
 *>       The chiseled bookshelf: facing[north/south/west/east] then slot_0_occupied .. slot_5_occupied (true first); the type out is the
 *>       occupancy mask (bit i set when slot i is occupied).
          WHEN 7
@@ -247,6 +255,12 @@
          WHEN 8
              MOVE WS-PROP(L-DIR + 1) TO WS-FACE
              COMPUTE WS-INDEX = WS-FACE * 2 + 1 - L-FLAG
+         WHEN 9
+             COMPUTE WS-BITS = FUNCTION MOD(L-TYPE, 2)
+             COMPUTE WS-FACE = L-TYPE / 2
+             COMPUTE WS-INDEX = 7 - 4 * WS-BITS - 2 * FUNCTION MOD(WS-FACE, 2)
+             COMPUTE WS-FACE = WS-FACE / 2
+             COMPUTE WS-INDEX = WS-INDEX - FUNCTION MOD(WS-FACE, 2)
          WHEN 7
              MOVE WS-PROP(L-DIR + 1) TO WS-FACE
              COMPUTE WS-INDEX = WS-FACE * 64 + 63

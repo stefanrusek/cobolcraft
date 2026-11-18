@@ -353,6 +353,14 @@
          MOVE 9 TO MN-CSIZE(WS-ROW)
          MOVE 6 TO WS-MENU-TYPE
      END-IF
+*>   The brewing stand (40-2 section 4.1): 5 slots, menu type 11, four data slots.
+     IF WS-FAMILY = 9
+         MOVE 5 TO MN-CSIZE(WS-ROW)
+         MOVE 11 TO WS-MENU-TYPE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE -1 TO MN-CDATA(WS-ROW, WS-I)
+         END-PERFORM
+     END-IF
 *>   The furnace family (40-2 section 2.1): furnace 14, blast furnace 10, smoker 22.
      IF WS-FAMILY = 8
          MOVE 3 TO MN-CSIZE(WS-ROW)
@@ -548,6 +556,10 @@
      MOVE 0 TO L-RET-ITEM L-RET-COUNT
      IF MN-CFAMILY(L-ROW) >= 20
          CALL "MENU-STATION-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 9
+         CALL "MENU-BREW-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
          GOBACK
      END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR

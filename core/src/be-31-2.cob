@@ -364,8 +364,9 @@
 
 *> Brewing stand (4), crafter (7): BE2-BREW-FACE USING face (0 down, 1 up, 2 side), slot list out (5 BINARY-LONG), count out                      4.1
 *>   BE2-BREW-TAKE USING slot, holds a glass bottle, allowed out; BE2-BREW-PLACE USING slot, brewing_fuel, has level, reagent accepted, potion input, slot empty, allowed out
-*>   BE2-BREW-LOOKUP USING bottle item, reagent item, recipe row out (0 none), result item out: the brewing rows of RC-STORE (serializer 20: RR-ING 1 the input item, RR-ING 2 the
-*>        reagent item, RR-RESULT-ID the output; the potion_contents condition is not evaluated)                                           4.4
+*>   BE2-BREW-LOOKUP USING bottle item, bottle patch handle, reagent item, recipe row out (0 none), result item out, result patch handle out: the first brewing row of RC-STORE (serializer 20:
+*>        RR-ING 1 the input item, RR-ING 2 the reagent item, RR-RESULT-ID the output, RR-EXTRA "<input potion> <output potion>") whose items match and whose input potion (when it has one) is the potion_contents
+*>        potion of the bottle; the result stack is the output item with its potion_contents potion and no other component                                                                          4.4
 *>   BE2-BREW-TICK USING index, the uses of the fuel's brewing_fuel component (0 none), its speed (FLOAT-LONG), brew done out (level event 1035), bottles changed out         4.5, 4.6
 *>   BE2-CRAFTER-CAN-DISABLE / -SET-STATE / -DISABLED / -CAN-PLACE / -SET-ITEM / -SIGNAL / -DATA / -TICK / -NEIGHBOR / -CRAFT / -PATH / -DROP          7
 *>   BE2-SAVE USING index, type, PB-BUFFER and BE2-LOAD-KEY USING index, name, tag, PB-BUFFER, handled out (BEX-SAVE and BEX-LOAD-KEY of be-31-3.cob); BE2-LOAD-DONE USING index
@@ -457,13 +458,29 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-R                   BINARY-LONG.
  01 WS-RESULT-ROW          PIC X(270).
+ 01 WS-IN-POTION           PIC X(32).
+ 01 WS-OUT-POTION          PIC X(32).
+ 01 WS-IN-ID               BINARY-LONG.
+ 01 WS-OUT-ID              BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-CUSTOM              BINARY-LONG.
+ 01 WS-BOTTLE-POTION       BINARY-LONG.
+ 01 WS-FITS                BINARY-LONG.
+ 01 WS-A48                 PIC X(48).
+ 01 WS-B48                 PIC X(48).
+ 01 WS-ING48               PIC X(48).
+ 01 WS-IN-BARE             PIC X(48).
+ 01 WS-RB48                PIC X(48).
  LINKAGE SECTION.
  01 L-BOTTLE               BINARY-LONG.
+ 01 L-BVAR                 BINARY-LONG.
  01 L-REAGENT              BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
- PROCEDURE DIVISION USING L-BOTTLE L-REAGENT L-ROW L-RESULT.
-     MOVE 0 TO L-ROW L-RESULT
+ 01 L-RVAR                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BOTTLE L-BVAR L-REAGENT L-ROW L-RESULT L-RVAR.
+     MOVE 0 TO L-ROW L-RESULT L-RVAR
      CALL "CONTENT-ITEM-BY-ID" USING L-BOTTLE WS-ROW WS-STATUS
      IF WS-STATUS NOT = CT-OK
          GOBACK
@@ -476,14 +493,41 @@
      END-IF
      MOVE SPACES TO WS-KEY-B
      MOVE WS-R-KEY TO WS-KEY-B
+     CALL "SC-POTION-GET" USING L-BVAR WS-BOTTLE-POTION WS-HAS WS-COLOR WS-CUSTOM
+*>   The keys compare without the namespace: the item rows and the recipe ingredients may spell it either way.
+     MOVE WS-KEY-A(1:48) TO WS-ING48
+     CALL "KEY-BARE" USING WS-ING48 WS-A48
+     MOVE WS-KEY-B(1:48) TO WS-ING48
+     CALL "KEY-BARE" USING WS-ING48 WS-B48
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > RC-COUNT OR L-ROW > 0
-         IF RR-SERIALIZER(WS-R) = 20 AND RR-ING(WS-R, 1) = WS-KEY-A AND RR-ING(WS-R, 2) = WS-KEY-B
-             MOVE WS-R TO L-ROW
+         MOVE RR-ING(WS-R, 1)(1:48) TO WS-ING48
+         CALL "KEY-BARE" USING WS-ING48 WS-IN-BARE
+         MOVE RR-ING(WS-R, 2)(1:48) TO WS-ING48
+         CALL "KEY-BARE" USING WS-ING48 WS-RB48
+         IF RR-SERIALIZER(WS-R) = 20 AND WS-IN-BARE = WS-A48 AND WS-RB48 = WS-B48
+             MOVE SPACES TO WS-IN-POTION WS-OUT-POTION
+             UNSTRING RR-EXTRA(WS-R) DELIMITED BY SPACE INTO WS-IN-POTION WS-OUT-POTION
+             MOVE 1 TO WS-FITS
+             IF WS-IN-POTION NOT = SPACES
+                 CALL "SC-POTION-ID" USING WS-IN-POTION WS-IN-ID
+                 IF WS-IN-ID NOT = WS-BOTTLE-POTION
+                     MOVE 0 TO WS-FITS
+                 END-IF
+             END-IF
+             IF WS-FITS = 1
+                 MOVE WS-R TO L-ROW
+             END-IF
          END-IF
      END-PERFORM
      IF L-ROW > 0
          MOVE RR-RESULT-ID(L-ROW) TO WS-TOKEN
          CALL "CONTENT-ITEM-BY-KEY" USING WS-TOKEN L-RESULT WS-RESULT-ROW WS-STATUS
+         MOVE SPACES TO WS-IN-POTION WS-OUT-POTION
+         UNSTRING RR-EXTRA(L-ROW) DELIMITED BY SPACE INTO WS-IN-POTION WS-OUT-POTION
+         IF WS-OUT-POTION NOT = SPACES
+             CALL "SC-POTION-ID" USING WS-OUT-POTION WS-OUT-ID
+             CALL "SC-POTION-SET" USING L-RVAR WS-OUT-ID
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM BE2-BREW-LOOKUP.
@@ -504,6 +548,8 @@
  01 WS-FLAG                BINARY-LONG.
  01 WS-BOTTLE              BINARY-LONG.
  01 WS-REAGENT             BINARY-LONG.
+ 01 WS-BVAR                BINARY-LONG.
+ 01 WS-RVAR                BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-USES                 BINARY-LONG.
@@ -525,8 +571,9 @@
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 3 OR WS-BREWABLE = 1
              IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
                  MOVE BE-SLOT-ITEM(L-INDEX, WS-S) TO WS-BOTTLE
+                 MOVE BE-SLOT-VAR(L-INDEX, WS-S) TO WS-BVAR
                  MOVE BE-SLOT-ITEM(L-INDEX, 4) TO WS-REAGENT
-                 CALL "BE2-BREW-LOOKUP" USING WS-BOTTLE WS-REAGENT WS-ROW WS-RESULT
+                 CALL "BE2-BREW-LOOKUP" USING WS-BOTTLE WS-BVAR WS-REAGENT WS-ROW WS-RESULT WS-RVAR
                  IF WS-ROW > 0
                      MOVE 1 TO WS-BREWABLE
                  END-IF
@@ -539,12 +586,13 @@
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 3
                  IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
                      MOVE BE-SLOT-ITEM(L-INDEX, WS-S) TO WS-BOTTLE
-                 MOVE BE-SLOT-ITEM(L-INDEX, 4) TO WS-REAGENT
-                 CALL "BE2-BREW-LOOKUP" USING WS-BOTTLE WS-REAGENT WS-ROW WS-RESULT
+                     MOVE BE-SLOT-VAR(L-INDEX, WS-S) TO WS-BVAR
+                     MOVE BE-SLOT-ITEM(L-INDEX, 4) TO WS-REAGENT
+                     CALL "BE2-BREW-LOOKUP" USING WS-BOTTLE WS-BVAR WS-REAGENT WS-ROW WS-RESULT WS-RVAR
                      IF WS-ROW > 0
                          MOVE WS-RESULT TO BE-SLOT-ITEM(L-INDEX, WS-S)
                          MOVE 1 TO BE-SLOT-COUNT(L-INDEX, WS-S)
-                         MOVE 0 TO BE-SLOT-VAR(L-INDEX, WS-S)
+                         MOVE WS-RVAR TO BE-SLOT-VAR(L-INDEX, WS-S)
                      END-IF
                  END-IF
              END-PERFORM
