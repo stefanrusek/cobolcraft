@@ -182,24 +182,8 @@
              CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-FLOAT WS-TWO
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-YAW(WS-ROW)
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-PITCH(WS-ROW)
-*>           The Entity base keys written every time (45 section 5), in the table order.
-             MOVE "fall_distance" TO WN MOVE 13 TO WL
-             MOVE 0 TO WS-DOUBLE
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WL WS-DOUBLE
-             MOVE "Fire" TO WN MOVE 4 TO WL
-             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-BURN(WS-ROW)
-             MOVE "Air" TO WN MOVE 3 TO WL
-             COMPUTE WS-AIR = 300 - EN-AIR-LOST(WS-ROW)
-             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-AIR
-             MOVE "OnGround" TO WN MOVE 8 TO WL
-             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-ON-GROUND(WS-ROW)
-             MOVE "Invulnerable" TO WN MOVE 12 TO WL
-             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-KIND-ZERO
-             MOVE "PortalCooldown" TO WN MOVE 14 TO WL
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-KIND-ZERO
-             MOVE "UUID" TO WN MOVE 4 TO WL
-             CALL "ENTITY-UUID-INTS" USING EN-UUID(WS-ROW) WS-UUID-INTS
-             CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-UUID-INTS
+*>           The Entity base keys (45 section 5, ENTITY-BASE-WRITE): the six written every time, then the conditional ones.
+             CALL "ENTITY-BASE-WRITE" USING WS-ROW PB-BUFFER
              IF EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
                  MOVE "Item" TO WN MOVE 4 TO WL
                  CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
@@ -344,11 +328,14 @@
  01 WS-UUID-INTS.
     05 WS-UUID-INT         BINARY-LONG OCCURS 4 TIMES.
  01 WS-UUID                PIC X(16).
+ 01 WS-VALID               BINARY-LONG.
  COPY ENMOBDATA.
+ COPY EBDATA.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM PB-BUFFER.
+     INITIALIZE EB-DATA
      MOVE -1 TO WS-ENTITY-TYPE
      MOVE 0 TO WS-ROW
      MOVE PB-POS TO WS-START
@@ -431,15 +418,20 @@
                      END-EVALUATE
                  END-PERFORM
              WHEN OTHER
-                 CALL "MOB-NBT-KEY" USING PB-BUFFER WS-TYPE WN MQ-DATA WS-HANDLED
+                 CALL "ENTITY-BASE-KEY" USING PB-BUFFER WS-TYPE WN EB-DATA WS-HANDLED
+                 IF WS-HANDLED = 0
+                     CALL "MOB-NBT-KEY" USING PB-BUFFER WS-TYPE WN MQ-DATA WS-HANDLED
+                 END-IF
                  IF WS-HANDLED = 0
                      CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                  END-IF
          END-EVALUATE
      END-PERFORM
      MOVE PB-POS TO WS-END
+*>   Pos is clamped, Motion limited and a NaN Pos or a non-finite Rotation skips the entity (45-1 sections 5 and 6).
+     CALL "ENTITY-VALIDATE" USING WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-YAW WS-PITCH WS-VALID
      EVALUATE TRUE
-         WHEN PB-ERROR = 1
+         WHEN PB-ERROR = 1 OR WS-VALID = 0
              CONTINUE
          WHEN WS-ENTITY-TYPE = CR-LOOSE-ITEM
              CALL "GI-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-ITEM-COUNT
@@ -451,7 +443,9 @@
              CALL "MOB-SPAWN" USING L-DIM WS-ENTITY-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
              COMPUTE EN-HEALTH(WS-ROW) ROUNDED = WS-HEALTH
              MOVE WS-PITCH TO EN-PITCH(WS-ROW)
+             MOVE WS-VX TO EN-VX(WS-ROW)
              MOVE WS-VY TO EN-VY(WS-ROW)
+             MOVE WS-VZ TO EN-VZ(WS-ROW)
              CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
              MOVE WS-GROUND-FLAG TO EN-ON-GROUND(WS-ROW)
              MOVE WS-FIRE TO EN-BURN(WS-ROW)
@@ -459,6 +453,9 @@
                  COMPUTE EN-AIR-LOST(WS-ROW) = 300 - WS-AIR
              END-IF
      END-EVALUATE
+     IF PB-ERROR = 0 AND WS-ROW > 0
+         CALL "ENTITY-BASE-APPLY" USING WS-ROW EB-DATA
+     END-IF
      IF PB-ERROR = 0 AND WS-ROW > 0 AND WS-UUID-SET = 1
          CALL "ENTITY-UUID-BYTES" USING WS-UUID-INTS WS-UUID
          MOVE WS-UUID TO EN-UUID(WS-ROW)
