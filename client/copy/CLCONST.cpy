@@ -313,6 +313,7 @@
 *> A survival Player sprints only with food above 6 (17 section 4.9).
  78 CL-SPRINT-FOOD          VALUE 6.
  78 CL-EAT-MS               VALUE 1500.
+ 78 CL-CROSSBOW-MS          VALUE 1250.  *> the charge time of a crossbow with no Quick Charge: floor(20 x 1.25) = 25 ticks (17 section 3.9)
  78 CL-BREAK-COOLDOWN-MS    VALUE 250.
 
 *> Entity types (standin-content §3).

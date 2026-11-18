@@ -676,7 +676,7 @@
  PROGRAM-ID. HAND-MESH.
 *> USING CLIENT-STATE: RL-HAND-VERTEX and RL-HAND-COUNT for this frame: the main hand's item, then the off hand's (HAND-BUILD each), under the view pose of HAND-PREFIX. The
 *> main arm is the right one unless the mainHand option is "left", the off hand's the other. While the player eats the main hand takes the eating pose (12 section 6.6;
-*> CL-EAT-MS is the use duration). Nothing swings and nothing changed since the last frame (the items, their sprites, the equip heights, the light, the view pose): the
+*> CL-EAT-MS is the use duration); a bow, crossbow, trident or shield in use, an auto spin attack and a loaded crossbow take theirs. Nothing swings and nothing changed since the last frame (the items, their sprites, the equip heights, the light, the view pose): the
 *> mesh built then is still in RL-HAND-VERTEX and in the GPU slot, so it is neither built nor uploaded again.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -700,10 +700,17 @@
  01 WS-ELAPSED             FLOAT-LONG.
  01 WS-DURATION            FLOAT-LONG.
  01 WS-SWING               BINARY-LONG.
- 01 WS-NOKIND              BINARY-LONG VALUE 0.
+ 01 WS-OKIND               BINARY-LONG.
  01 WS-NOSWING             BINARY-LONG VALUE 0.
- 01 WS-ZERO                FLOAT-LONG VALUE 0.
- 01 WS-ZERO2               FLOAT-LONG VALUE 0.
+ 01 WS-OELAPSED            FLOAT-LONG.
+ 01 WS-ODURATION           FLOAT-LONG.
+ 01 WS-UKIND               BINARY-LONG.
+ 01 WS-UELAPSED            FLOAT-LONG.
+ 01 WS-UDURATION           FLOAT-LONG.
+ 01 WS-HAND-NO             BINARY-LONG.
+ 01 WS-LOADED              BINARY-LONG.
+ 01 WS-ITEM-CLASS          BINARY-LONG.
+ 01 WS-P                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
  01 WS-EX                  BINARY-LONG.
  01 WS-EY                  BINARY-LONG.
@@ -761,19 +768,74 @@
      CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
      CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
-*>   The main hand: eating (the right button held on a food item) takes the eating pose and no swing; else a swing within its 300 ms.
-     MOVE 0 TO WS-KIND WS-SWING WS-ELAPSED WS-DURATION
+*>   The poses: eating (the right button held on a food item) takes the main hand's eating pose; a bow, crossbow, trident or shield in use (USE-ITEM-INPUT) poses the hand that uses it
+*>   (PL-USE-HAND); an auto spin attack (pose 4) poses the hand that holds a trident; else the main hand swings within its 300 ms, or holds a loaded crossbow at rest (kind 7).
+     MOVE 0 TO WS-KIND WS-SWING WS-ELAPSED WS-DURATION WS-OKIND WS-OELAPSED WS-ODURATION
      IF PL-EATING = 1 AND CL-NOW-MS >= PL-EAT-START
          MOVE 1 TO WS-KIND
          COMPUTE WS-ELAPSED = (CL-NOW-MS - PL-EAT-START) / 50
          COMPUTE WS-DURATION = CL-EAT-MS / 50
-     ELSE
+     END-IF
+     IF PL-USE-KIND > 0 AND CL-NOW-MS >= PL-USE-START
+         MOVE PL-USE-KIND TO WS-UKIND
+         MOVE 0 TO WS-HAND-NO
+         IF PL-USE-HAND = 1
+             MOVE 1 TO WS-HAND-NO
+         END-IF
+         CALL "USE-ITEM-LOADED" USING CLIENT-STATE WS-HAND-NO WS-LOADED
+*>       A loaded crossbow is not charging: it keeps the pose of a crossbow at rest.
+         IF WS-LOADED = 1
+             MOVE 0 TO WS-UKIND
+         END-IF
+         COMPUTE WS-UELAPSED = (CL-NOW-MS - PL-USE-START) / 50
+         COMPUTE WS-UDURATION = PL-USE-DURATION / 50
+         IF PL-USE-HAND = 0 AND WS-KIND = 0
+             MOVE WS-UKIND TO WS-KIND
+             MOVE WS-UELAPSED TO WS-ELAPSED
+             MOVE WS-UDURATION TO WS-DURATION
+         END-IF
+         IF PL-USE-HAND = 1
+             MOVE WS-UKIND TO WS-OKIND
+             MOVE WS-UELAPSED TO WS-OELAPSED
+             MOVE WS-UDURATION TO WS-ODURATION
+         END-IF
+     END-IF
+     IF PL-POSE = 4 AND WS-KIND = 0 AND WS-OKIND = 0
+         MOVE 0 TO WS-ITEM-CLASS
+         IF CL-HAND-ITEM > 0
+             COMPUTE WS-ITEM = CL-HAND-ITEM - 1
+             CALL "USE-ITEM-CLASS" USING CLIENT-STATE WS-ITEM WS-ITEM-CLASS
+         END-IF
+         IF WS-ITEM-CLASS = 4
+             MOVE 6 TO WS-KIND
+         ELSE
+             MOVE 0 TO WS-ITEM-CLASS
+             IF CL-OHAND-ITEM > 0
+                 COMPUTE WS-OITEM = CL-OHAND-ITEM - 1
+                 CALL "USE-ITEM-CLASS" USING CLIENT-STATE WS-OITEM WS-ITEM-CLASS
+             END-IF
+             IF WS-ITEM-CLASS = 4
+                 MOVE 6 TO WS-OKIND
+             END-IF
+         END-IF
+     END-IF
+*>   A loaded crossbow in the main hand that is not being swung (swing progress under 0.001, 12 section 6.6) is held at rest (kind 7).
+     IF WS-KIND = 0
+         MOVE 1 TO WS-P
          IF CL-SWING-AT > 0 AND CL-NOW-MS >= CL-SWING-AT AND CL-NOW-MS - CL-SWING-AT < CL-SWING-MS
              MOVE 1 TO WS-SWING
+             COMPUTE WS-P = (CL-NOW-MS - CL-SWING-AT) / CL-SWING-MS
+         END-IF
+         IF WS-SWING = 0 OR WS-P < 0.001
+             MOVE 0 TO WS-HAND-NO
+             CALL "USE-ITEM-LOADED" USING CLIENT-STATE WS-HAND-NO WS-LOADED
+             IF WS-LOADED = 1
+                 MOVE 7 TO WS-KIND
+             END-IF
          END-IF
      END-IF
      MOVE 1 TO WS-STILL
-     IF WS-SWING = 1 OR WS-KIND > 0
+     IF WS-SWING = 1 OR (WS-KIND > 0 AND WS-KIND NOT = 7 AND WS-KIND NOT = 8) OR (WS-OKIND > 0 AND WS-OKIND NOT = 7 AND WS-OKIND NOT = 8)
          MOVE 0 TO WS-STILL
      END-IF
 *>   A code-drawn model (present 2) draws nothing: the digest tells that change of the shown model apart from a still hand.
@@ -793,7 +855,7 @@
          MOVE 1 TO WS-OFOIL
      END-IF
      COMPUTE WS-DIGEST = WS-EO * 7.31 + CL-OHAND-ITEM * 131.7 + WS-OSPRITE * 0.37 + WS-HAVE * 1000.3 + WS-OHAVE * 3000.7
-         + WS-FOIL * 17.3 + WS-OFOIL * 29.9
+         + WS-FOIL * 17.3 + WS-OFOIL * 29.9 + WS-KIND * 53.1 + WS-OKIND * 61.7
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
          COMPUTE WS-DIGEST = WS-DIGEST + WS-MV(WS-I) * (WS-I + 1)
      END-PERFORM
@@ -812,7 +874,7 @@
          MOVE WS-DIGEST TO CL-HAND-KEY-P
      END-IF
      CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-SIDE CL-HAND-ITEM WS-E WS-KIND WS-ELAPSED WS-DURATION WS-SWING WS-LIGHT WS-FOIL
-     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-OSIDE CL-OHAND-ITEM WS-EO WS-NOKIND WS-ZERO WS-ZERO2 WS-NOSWING WS-LIGHT WS-OFOIL
+     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-OSIDE CL-OHAND-ITEM WS-EO WS-OKIND WS-OELAPSED WS-ODURATION WS-NOSWING WS-LIGHT WS-OFOIL
      IF WS-STILL = 1
          MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
          MOVE RL-HG-COUNT TO CL-HAND-KEY-GCOUNT

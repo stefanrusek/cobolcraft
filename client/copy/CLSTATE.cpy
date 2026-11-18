@@ -259,6 +259,9 @@
        10 PL-STACK-FOIL      BINARY-LONG.
        10 PL-OFFHAND-FOIL    BINARY-LONG.
        10 PL-SLOT-FOIL       BINARY-LONG OCCURS 36 TIMES.
+       10 PL-STACK-CHARGED   BINARY-LONG.    *> 1 when the item stack last decoded has charged_projectiles (51) that are not empty (a loaded crossbow), taken over by the slot it is set into like the foil
+       10 PL-OFFHAND-CHARGED BINARY-LONG.
+       10 PL-SLOT-CHARGED    BINARY-LONG OCCURS 36 TIMES.
        10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
        10 PL-OFFHAND-DAMAGE  BINARY-LONG.
 *>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
@@ -504,6 +507,14 @@
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING          PIC 9.
        10 PL-EAT-START       BINARY-DOUBLE.
+*>     The use of a bow, crossbow, trident or shield (use-item.cob; 12 section 6.6, 17 sections 3.6, 3.9, 3.10): PL-USE-KIND the HAND-ARM pose kind (0 none, 2 bow, 3 crossbow
+*>     charging, 4 trident, 8 shield), PL-USE-HAND the hand (0 main, 1 off), PL-USE-START the clock of the Use Item, PL-USE-DURATION the milliseconds the charge lasts (a crossbow),
+*>     PL-USE-SLOT the held slot it began in.
+       10 PL-USE-KIND         BINARY-LONG.
+       10 PL-USE-HAND         BINARY-LONG.
+       10 PL-USE-START        BINARY-DOUBLE.
+       10 PL-USE-DURATION     BINARY-LONG.
+       10 PL-USE-SLOT         BINARY-LONG.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
 *>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
        10 PL-RAIN            FLOAT-SHORT.

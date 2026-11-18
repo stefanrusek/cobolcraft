@@ -1,7 +1,7 @@
 *> The view pose and the arm poses of the first-person hand (12 section 6.1, 6.2, 6.6; 53 section 15). HAND-TICK runs one 50 ms client tick of the state the hand
 *> keeps (walk distance and bob amount 53 section 15.2, the lagging view angles 15.3, the attack strength ticker 17 section 4.1). HAND-PREFIX builds the pose stack's
 *> first frame: view bobbing (12 section 6.1 step 1, the bobView option) and hand sway (step 3). HAND-ATTACK-DELAY is the full-charge delay of an item. HAND-ARM
-*> applies the arm transform of 12 section 6.3 step 1 or, while an item is used, the pose of its use animation (6.6). HAND-DEATH-TICK keeps the death time. Not done: brush and spear poses (open question 6 of 12), the crossbow-charged pose.
+*> applies the arm transform of 12 section 6.3 step 1 or, while an item is used, the pose of its use animation (6.6). HAND-DEATH-TICK keeps the death time. Not done: brush and spear poses (open question 6 of 12).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-TICK.
@@ -214,7 +214,8 @@
  PROGRAM-ID. HAND-ARM.
 *> USING M, side (+1 right arm, -1 left), equip offset E, kind, elapsed use ticks el, use duration d (ticks, FLOAT-LONG): M = M x the arm transform of 12 section 6.3
 *> step 1 (translate (s 0.56, -0.52 - 0.6 E, -0.72)), preceded by the eating transform (kind 1) or followed by the pose of the use animation (6.6): kind 0 none,
-*> 1 eating or drinking, 2 bow, 3 crossbow charging (d the charge duration), 4 trident, 5 blocking with an item that is not a shield, 6 auto spin attack.
+*> 1 eating or drinking, 2 bow, 3 crossbow charging (d the charge duration), 4 trident, 5 blocking with an item that is not a shield, 6 auto spin attack, 7 a loaded
+*> crossbow held in the main hand and not swinging (translate (s -0.641864, 0, 0), rotate Y s 10).
 *> The use time of 6.6 is e = el - 1 (e = d - (u - f + 1) with u - f = d - el) and a = d - el + 1; B(h) is the bob of a drawn bow: with h above 0.1,
 *> translate (0, sin((e - 0.1) 1.3) (h - 0.1) 0.004, 0).
  DATA DIVISION.
@@ -326,6 +327,13 @@
              CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
              MOVE 3 TO WS-AXIS
              COMPUTE WS-DEG = L-SIDE * 78.05
+             CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
+         WHEN 7
+             COMPUTE WS-X = L-SIDE * -0.641864
+             MOVE 0 TO WS-Y WS-Z
+             CALL "HAND-M-TRANSLATE" USING L-M WS-X WS-Y WS-Z
+             MOVE 2 TO WS-AXIS
+             COMPUTE WS-DEG = L-SIDE * 10
              CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
          WHEN 6
              COMPUTE WS-X = L-SIDE * -0.4
