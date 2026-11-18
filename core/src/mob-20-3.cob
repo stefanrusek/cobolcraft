@@ -560,6 +560,92 @@
  END PROGRAM STDMOB-FLAGS-SEND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-HP-BUILD.
+*> USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the health, index 9 FLOAT (18 sections 1.4 and 9.3): the health of the row less the carried fraction
+*> of an armour-reduced hit. Nothing is written for the default 1.0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-MILLI               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     COMPUTE WS-MILLI = EN-HEALTH(L-ROW) * 1000 - EN-HEALTH-MILLI(L-ROW)
+     IF WS-MILLI NOT = 1000
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 9 TO MD-MD-INDEX
+         MOVE MD-MDS-FLOAT TO MD-MD-SERIALIZER
+         COMPUTE MD-MD-FLOAT = WS-MILLI / 1000
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         MOVE MD-MD-END TO MD-MD-INDEX
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-HP-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-HP-SYNC.
+*> USING tracker row: a standard mob whose health differs from the last one sent sends the new one to its viewers (the synced health slot, 18 section 9.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-MILLI               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-MILLI = EN-HEALTH(L-ROW) * 1000 - EN-HEALTH-MILLI(L-ROW)
+     IF WS-MILLI = EN-HP-SENT(L-ROW)
+         GOBACK
+     END-IF
+     MOVE WS-MILLI TO EN-HP-SENT(L-ROW)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-HP-BUILD" USING L-ROW PB-BUFFER
+     IF PB-LENGTH > 0
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STDMOB-HP-SYNC.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-HP-PAIR.
+*> USING tracker row: the pairing of a standard mob sends its health (metadata 9, a value that differs from the default) to the viewers and remembers it as sent.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     COMPUTE EN-HP-SENT(L-ROW) = EN-HEALTH(L-ROW) * 1000 - EN-HEALTH-MILLI(L-ROW)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-HP-BUILD" USING L-ROW PB-BUFFER
+     IF PB-LENGTH > 0
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STDMOB-HP-PAIR.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-FINALIZE-BASE.
 *> USING tracker row: the first two steps of Mob.finalizeSpawn for every mob (18 section 7.1, 44 x1 section 3): the random_spawn_bonus modifier of follow_range
 *> (amount triangle(0, 0.11485) = 0.11485 x (nextDouble - nextDouble), stored in millionths in EN-FOLLOW-BONUS, only while none is there) and left-handedness (nextFloat < 0.05,
