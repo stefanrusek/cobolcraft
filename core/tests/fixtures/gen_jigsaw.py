@@ -33,6 +33,41 @@ def start_random(seed, cx, cz):
 
 def surface(x, z): return 68 + ((x // 4) + (z // 4)) % 5
 
+def s32(v): v &= (1 << 32) - 1; return v - (1 << 32) if v >= 1 << 31 else v
+def get_seed(x, y, z):
+    """Mth.getSeed (10 section 2.4)"""
+    l = s32(x * 3129871) ^ s64(z * 116129781) ^ y
+    l = s64(l * l * 42317861 + l * 11)
+    return l >> 16
+
+def pick_weighted(r, entries):
+    """WeightedList.getRandomOrThrow: nextInt(total), then the first entry whose weight exceeds the rest"""
+    n = r.next_int(sum(e["weight"] for e in entries))
+    for e in entries:
+        if n < e["weight"]: return e
+        n -= e["weight"]
+
+def resolve_alias(b, r, out):
+    """forEachResolved (36-3 7.1); the map rejects a duplicate alias"""
+    t = b["type"].split(":")[1]
+    def put(a, v):
+        a = a.split(":", 1)[-1]
+        if a in out: raise ValueError("duplicate alias " + a)
+        out[a] = v.split(":", 1)[-1]
+    if t == "direct": put(b["alias"], b["target"])
+    elif t == "random": put(b["alias"], pick_weighted(r, b["targets"])["data"])
+    else:
+        for sub in pick_weighted(r, b["groups"])["data"]: resolve_alias(sub, r, out)
+
+def alias_map(bindings, pos, seed):
+    """PoolAliasLookup.create (7.2): the positional random of a legacy generator over the world seed"""
+    out = {}
+    if not bindings: return out
+    factory = Lcg(seed).next_long()
+    r = Lcg(s64(get_seed(*pos) ^ factory))
+    for b in bindings: resolve_alias(b, r, out)
+    return out
+
 ROTS = [0, 1, 2, 3]
 # directions: 0 down 1 up 2 north 3 south 4 west 5 east
 STEP = {0: (0, -1, 0), 1: (0, 1, 0), 2: (0, 0, -1), 3: (0, 0, 1), 4: (-1, 0, 0), 5: (1, 0, 0)}
@@ -87,7 +122,10 @@ class World:
     def template(self, loc):
         k = self.key(loc)
         if k not in self.tpls:
-            t = read_nbt(self.path(k, "structure", ".nbt"))
+            try: t = read_nbt(self.path(k, "structure", ".nbt"))
+            except FileNotFoundError:
+                self.tpls[k] = ((0, 0, 0), [])   # a template the data lacks (ancient_city/walls/intact_horizontal_wall_stairs_5) is empty: no jigsaw, never attached
+                return self.tpls[k]
             pal = (t["palettes"][0] if "palettes" in t else t["palette"])
             jig = []
             for b in t["blocks"]:
@@ -177,24 +215,41 @@ def tdiv(a, b): return int(a / b)
 def assemble(w, gen_struct, seed, cx, cz):
     st = gen_struct
     r = start_random(seed, cx, cz)
-    pos = (cx * 16, st["start_height"], cz * 16)
+    sh = st["start_height"]
+    if isinstance(sh, tuple):
+        lo, hi = sh                                  # a uniform provider draws first (36-3 8.2 step 2)
+        ypos = lo if lo > hi else lo + r.next_int(hi - lo + 1)
+    else: ypos = sh
+    pos = (cx * 16, ypos, cz * 16)
+    amap = alias_map(st.get("aliases", []), pos, seed)
+    def alias(k): return amap.get(w.key(k), k)
     rotation = r.next_int(4)
-    pool = w.pool(st["start_pool"])
+    try: pool = w.pool(alias(st["start_pool"]))
+    except FileNotFoundError: pool = w.pool(st["start_pool"])
     if not pool["expanded"]: return None
     el = pool["expanded"][r.next_int(len(pool["expanded"]))]
     if el["kind"] == "empty": return None
-    box = w.box(el, pos, rotation)
+    origin = pos; off_y = 0
+    if st.get("start_name"):
+        anchor = next((j for j in w.jigsaws(el, pos, rotation, r) if j["name"] == st["start_name"]), None)
+        if anchor is None: return None
+        origin = (2 * pos[0] - anchor["pos"][0], 2 * pos[1] - anchor["pos"][1], 2 * pos[2] - anchor["pos"][2]); off_y = anchor["pos"][1] - pos[1]
+    box = w.box(el, origin, rotation)
     ccx, ccz = tdiv(box[3] + box[0], 2), tdiv(box[5] + box[2], 2)
-    y = pos[1] + surface(ccx, ccz) if st["project"] else pos[1]
+    y = pos[1] + surface(ccx, ccz) if st["project"] else origin[1]
     gy = box[1] + 1
-    start = dict(el=el, pos=(pos[0], pos[1] + y - gy, pos[2]), rot=rotation, box=moved(box, y - gy), ground=1, junctions=[], depth=0)
-    stub_y = y
+    start = dict(el=el, pos=(origin[0], origin[1] + y - gy, origin[2]), rot=rotation, box=moved(box, y - gy), ground=1, junctions=[], depth=0)
+    pad = st.get("padding")
+    if pad is not None and (start["box"][1] < -64 + pad[0] or start["box"][4] > 319 - pad[1]): return None
+    stub_y = y + off_y
+    start["stub"] = (ccx, stub_y, ccz)
     pieces = [start]
     events = []   # the junctions in creation order: (owner piece index, x, ground y, z, delta, projection)
     start['events'] = events
     if st["size"] <= 0: return pieces
     hor, ver = st["hor"], st["ver"]
-    limit = (ccx - hor, max(stub_y - ver, -64), ccz - hor, ccx + hor, min(stub_y + ver, 319), ccz + hor)
+    pb, pt = st.get("padding") or (0, 0)
+    limit = (ccx - hor, max(stub_y - ver, -64 + pb), ccz - hor, ccx + hor, min(stub_y + ver, 319 - pt), ccz + hor)
     holder0 = dict(limit=limit, removed=[start["box"]])
     queue = []   # (priority, seq, piece, holder, depth)
     seq = [0]
@@ -206,7 +261,7 @@ def assemble(w, gen_struct, seed, cx, cz):
             f = J["front"]; p = J["pos"]; t = (p[0] + STEP[f][0], p[1] + STEP[f][1], p[2] + STEP[f][2])
             rel = p[1] - y0
             surf = [None]
-            pk = J["pool"]
+            pk = alias(J["pool"])
             try: pl = w.pool(pk)
             except FileNotFoundError: continue          # 10.2 step 1: no such pool
             if not pl["expanded"] and pl["key"] != "empty": continue   # step 2
@@ -233,8 +288,10 @@ def assemble(w, gen_struct, seed, cx, cz):
                         for K in jigs:
                             fc = (K["pos"][0] + STEP[K["front"]][0], K["pos"][1] + STEP[K["front"]][1], K["pos"][2] + STEP[K["front"]][2])
                             if inside(box0, fc):
-                                kp = w.pool(K["pool"])
-                                h = max(h, w.max_size(K["pool"]), w.max_size(kp["fallback"]))
+                                try:
+                                    kp = w.pool(alias(K["pool"]))
+                                    h = max(h, w.max_size(alias(K["pool"])), w.max_size(kp["fallback"]))
+                                except FileNotFoundError: pass
                     for K in jigs:
                         if not can_attach(J, K): continue
                         q = K["pos"]; qy = q[1]
@@ -285,7 +342,29 @@ def structure(gen, name):
     j = json.load(open(os.path.join(gen, "vanilla-data/data/minecraft/worldgen/structure", name + ".json")))
     md = j["max_distance_from_center"]
     hor, ver = (md, md) if isinstance(md, int) else (md["horizontal"], md.get("vertical", 4064))
-    return dict(start_pool=j["start_pool"], size=j["size"], start_height=j["start_height"]["absolute"], project="project_start_to_heightmap" in j, hack=j["use_expansion_hack"], hor=hor, ver=ver)
+    sh = j["start_height"]
+    start_height = sh["absolute"] if "absolute" in sh else (sh["min_inclusive"]["absolute"], sh["max_inclusive"]["absolute"])
+    pad = j.get("dimension_padding")
+    if isinstance(pad, int): pad = (pad, pad)
+    elif pad is not None: pad = (pad.get("bottom", 0), pad.get("top", 0))
+    return dict(start_pool=j["start_pool"], size=j["size"], start_height=start_height, project="project_start_to_heightmap" in j, hack=j["use_expansion_hack"], hor=hor, ver=ver,
+                start_name=j.get("start_jigsaw_name"), aliases=j.get("pool_aliases", []), padding=pad)
+
+def digest(ps):
+    """the digest the test computes over the same fields: pieces (position, rotation, box, ground, projection), then junctions (owner, source, delta, projection)"""
+    M = 1000000007
+    h = 0
+    def add(v):
+        nonlocal h
+        h = (h * 31 + v % M) % M
+    for p in ps:
+        for v in p["pos"]: add(v)
+        add(p["rot"])
+        for v in p["box"]: add(v)
+        add(p["ground"]); add(0 if p["el"]["proj"] == "rigid" else 1)
+    for o, x, y, z, d, pr in ps[0]["events"]:
+        for v in (o + 1, x, y, z, d, 0 if pr == "rigid" else 1): add(v)
+    return h
 
 def describe(e):
     if e["kind"] == "single": return e["loc"].split(":", 1)[-1]
@@ -324,6 +403,14 @@ if __name__ == "__main__":
             r = cobol_rows(ps, name, cx, cz); out += r
         print("ROWS", len(out))
         for r in out: print('    05 FILLER PIC X(140) VALUE "%s".' % r)
+        sys.exit(0)
+    if sys.argv[2] == "--digest":
+        gen = sys.argv[1]; seed = int(sys.argv[3]); w = World(gen)
+        for spec in sys.argv[4:]:
+            name, cx, cz = spec.split(","); cx = int(cx); cz = int(cz)
+            ps = assemble(w, structure(gen, name), seed, cx, cz)
+            if ps is None: print(name, cx, cz, "none"); continue
+            print(name, cx, cz, len(ps), len(ps[0]["events"]), digest(ps), "|", ps[0]["stub"], ps[0]["pos"], ps[0]["box"], "|", " ".join(describe(p["el"]) for p in ps[:4]))
         sys.exit(0)
     if sys.argv[2] == "--synthetic":
         w = World(sys.argv[1]); st = dict(start_pool="test:start", size=3, start_height=70, project=False, hack=False, hor=20, ver=20)

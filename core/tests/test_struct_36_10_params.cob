@@ -4,7 +4,7 @@
 *> padding 10 and 10, ignore_waterlogging, encapsulate, step underground_structures = 3, set 34 / 12 / 94251327) and trail_ruins (pool tower, size 7, start height -15, heightmap WORLD_SURFACE_WG, distance 80,
 *> bury, step 3, set 34 / 8 / 83469867), the abandoned camps of the section 6 table (18 records, pool abandoned_camp/tent/<biome>, size 2, height 0 with WORLD_SURFACE_WG, distance 80, hack on,
 *> surface_structures = 4, beard_thin) and the record counts (52 structures, 28 of type jigsaw). Not read by the loader and so not checked: spawn_overrides (36-1 section 10 / struct-override.cob),
-*> start_jigsaw_name, pool_aliases and the uniform start height of the trial chambers (their SDT-JIG-OK is 0: the assembler does not build them yet).
+*> start_jigsaw_name, pool_aliases and the uniform start height of the trial chambers (read since 36-3 sections 7 and 9: test_struct_36_3_3, 36_3_7, 36_3_9).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-36-10-PARAMS.
  DATA DIVISION.
@@ -117,8 +117,8 @@
      MOVE 20083232 TO TL-EXPECTED-N
      MOVE SS-SALT(WS-SET) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-10§3 Ancient city: the start jigsaw name is not read, so the assembler does not build it yet (SDT-JIG-OK 0)" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "acceptance US12 36-10§3 Ancient city: the start jigsaw name is read (city_anchor) and the assembler builds it (SDT-JIG-OK 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
      MOVE SDT-JIG-OK(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -146,8 +146,8 @@
      MOVE 94251327 TO TL-EXPECTED-N
      MOVE SS-SALT(WS-SET) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-10§4 Trial chambers: the pool aliases and the uniform start height are not built yet (SDT-JIG-OK 0)" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "acceptance US12 36-10§4 Trial chambers: the pool aliases and the uniform start height are read and the assembler builds it (SDT-JIG-OK 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
      MOVE SDT-JIG-OK(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
