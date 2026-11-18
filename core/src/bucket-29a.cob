@@ -4,7 +4,7 @@
 *> bucket is empty and it is a source (SOURCE_ONLY), which it then picks up (the cell becomes air, the bucket the filled one; a stack of empty buckets
 *> gives one and the filled bucket goes into the inventory). A filled bucket places a source (water or lava) in the cell before the hit (the ray passed it: air or a
 *> liquid, replaceable both) and becomes an empty bucket. A creative player keeps the stack. Not done:
-*> LiquidBlockContainer targets (waterlogging by bucket), evaporation in the Nether, mob buckets, powder snow, the sounds and game events, the
+*> LiquidBlockContainer targets (waterlogging by bucket), powder snow, the sounds and game events, the
 *> destroyed block's drops, spawn protection.
 
  IDENTIFICATION DIVISION.
@@ -58,6 +58,8 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-EVAPORATES          BINARY-LONG.
  01 WS-FLAG-CODE           BINARY-LONG VALUE 6.
+ 01 WS-MOB-KEY             PIC X(48).
+ 01 WS-MOB-FOUND           BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -74,6 +76,7 @@
          GOBACK
      END-IF
      CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT) WS-KEY
+     MOVE 0 TO WS-MOB-FOUND
      EVALUATE WS-KEY
          WHEN "bucket"
              MOVE 0 TO WS-MODE
@@ -82,7 +85,12 @@
          WHEN "lava_bucket"
              MOVE 2 TO WS-MODE
          WHEN OTHER
-             GOBACK
+*>           A mob bucket empties its water like a water bucket and releases its mob (ranged-bucket.cob).
+             CALL "BUCKET-MOB-SPECIES" USING WS-KEY WS-MOB-KEY WS-MOB-FOUND
+             IF WS-MOB-FOUND = 0
+                 GOBACK
+             END-IF
+             MOVE 1 TO WS-MODE
      END-EVALUATE
      MOVE 1 TO L-DONE
      MOVE PL-DIM(WS-ROW) TO WS-DIM
@@ -175,6 +183,9 @@
          CALL "NETHER-EVAPORATE" USING WS-DIM WS-LX WS-LY WS-LZ
      ELSE
          CALL "BLOCK-CHANGE" USING WS-DIM WS-LX WS-LY WS-LZ WS-NEW-STATE
+     END-IF
+     IF WS-MOB-FOUND = 1
+         CALL "BUCKET-MOB-RELEASE" USING WS-ROW WS-MOB-KEY WS-LX WS-LY WS-LZ WS-SLOT
      END-IF
      IF PL-MODE(WS-ROW) = 0
          CALL "CONTENT-ITEM-BY-KEY" USING WS-EMPTY-KEY WS-EMPTY-ID WS-ITEM-ROW WS-STATUS

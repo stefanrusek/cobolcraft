@@ -1451,7 +1451,7 @@
 *> USING connection id, PLAY-SERVERBOUND (a decoded Interact 0x1A): the main hand of an alive player on a standard passive mob of its dimension that is alive and whose box is
 *> within the attack reach: shears on a sheep (MOB-SHEAR-USE), an empty bucket on a cow or mooshroom (MOB-MILK-USE), shears or a bowl on a mooshroom (MOB-MOOSHROOM-USE),
 *> otherwise the held item as animal food (MOB-FEED-USE). A wolf: MOB-WOLF-USE; iron ingots on an iron golem: MOB-GOLEM-USE; flint and steel or a fire charge on a creeper:
-*> STDMOB-IGNITE (a creeper is the only monster that handles an interaction). A name_tag with a custom_name names any of these mobs (MOB-NAME-TAG-USE, ranged-name.cob). A golden apple on a zombie villager with Weakness: ZV-USE (T8102). Anything else, and the off hand, is not handled yet.
+*> STDMOB-IGNITE (a creeper is the only monster that handles an interaction). A name_tag with a custom_name names any of these mobs (MOB-NAME-TAG-USE, ranged-name.cob); a water_bucket on a fish, axolotl or tadpole takes it into a mob bucket (MOB-BUCKET-PICKUP, ranged-bucket.cob). A golden apple on a zombie villager with Weakness: ZV-USE (T8102). Anything else, and the off hand, is not handled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1574,6 +1574,8 @@
          GOBACK
      END-IF
      EVALUATE TRUE
+         WHEN WS-HELD = "water_bucket" AND (WS-KEY = "cod" OR "salmon" OR "pufferfish" OR "tropical_fish" OR "axolotl" OR "tadpole")
+             CALL "MOB-BUCKET-PICKUP" USING WS-ROW WS-ENTITY WS-USED
          WHEN WS-KEY = "sheep" AND WS-HELD = "shears"
              CALL "MOB-SHEAR-USE" USING WS-ROW WS-ENTITY
          WHEN (WS-KEY = "cow" OR "mooshroom" OR "goat") AND WS-HELD = "bucket"
