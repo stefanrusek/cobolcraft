@@ -922,4 +922,5 @@ None beyond those defined inline above. This file describes byte formats, not pa
 29. §10.4.10: whether `optionalFieldOf` / `lenientOptionalFieldOf` omit a member that equals its default on write (DFU behaviour) was not read; the same applies to every plain optional member in §10.4 (`Valid`, `free_tickets`, `spawn_delay`, `ticks_left` and similar).
 30. §10.4.11: which ticket types are saved to `chunk_tickets.dat` and which are transient was not traced.
 31. §10.4.5: the default values of the flat generator settings members `lakes` and `features` were not read, nor the element form of `layers`.
+    Answered by 56 §2.1/§2.2 (settings schema and defaults).
 32. §10.8 (answered by a real log): a `world_gen_settings.dat` without `dimensions` makes the game fall back to default settings with a random seed and then fail with "Overworld settings missing"; CobolCraft now writes the map. The overworld stem (noise generator, `minecraft:overworld` settings, multi_noise preset `minecraft:overworld`) is by analogy with the nether stem of a real file, not read.
