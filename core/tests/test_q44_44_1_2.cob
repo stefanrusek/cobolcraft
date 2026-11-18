@@ -143,7 +143,7 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-OUT-OF-RANGE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US15 44-1§2 Master index of the open items of documents 18 to 21: every status is one of the six values (here, pointer, part n, data, closed, n/a) or one of the four annotated ones (not answered, out of scope, xp here, each part labels)" TO TL-CASE
+     MOVE "acceptance US15 44-1§2 Master index of the open items of documents 18 to 21: every status is one of the six defined values or one of four annotated ones" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-STATUS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

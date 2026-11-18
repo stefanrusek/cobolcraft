@@ -37,6 +37,14 @@
  01 WS-L1                  BINARY-LONG VALUE 1.
  01 WS-L0                  BINARY-LONG VALUE 0.
  01 WS-L2                  BINARY-LONG VALUE 2.
+ 01 WS-L0B                 BINARY-LONG VALUE 0.
+ 01 WS-L0C                 BINARY-LONG VALUE 0.
+ 01 WS-L0D                 BINARY-LONG VALUE 0.
+ 01 WS-L0E                 BINARY-LONG VALUE 0.
+ 01 WS-L1B                 BINARY-LONG VALUE 1.
+ 01 WS-L1C                 BINARY-LONG VALUE 1.
+ 01 WS-L1D                 BINARY-LONG VALUE 1.
+ 01 WS-L1E                 BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
 *>   The attribute ranges and the modifier arithmetic.
      MOVE -0.699999988079071 TO WS-A
@@ -258,19 +266,19 @@
 *>   Gravity (check 13): on a server always, a client without the chunk uses -0.1 above the minimum Y, else 0.
      MOVE -0.2 TO WS-A
      MOVE 0.08 TO WS-B
-     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L0 WS-L0 WS-L0 WS-OUT
+     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L0 WS-L0B WS-L0C WS-OUT
      MOVE "on a server gravity always applies (no chunk test): -0.2 - 0.08 = -0.28" TO WS-CASE
      MOVE -280000 TO WS-E
      PERFORM CHECK-F
-     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L1 WS-L1 WS-L0 WS-OUT
+     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L1 WS-L1B WS-L0 WS-OUT
      MOVE "a client with its chunk loaded subtracts gravity" TO WS-CASE
      MOVE -280000 TO WS-E
      PERFORM CHECK-F
-     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L1 WS-L0 WS-L1 WS-OUT
+     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L1 WS-L0 WS-L1B WS-OUT
      MOVE "a client without the chunk above the minimum Y uses -0.1" TO WS-CASE
      MOVE -100000 TO WS-E
      PERFORM CHECK-F
-     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L1 WS-L0 WS-L0 WS-OUT
+     CALL "Q5-FALL-Y" USING WS-A WS-B WS-L1 WS-L0 WS-L0B WS-OUT
      MOVE "a client without the chunk at the minimum Y uses 0" TO WS-CASE
      MOVE 0 TO WS-E
      PERFORM CHECK-F
@@ -327,7 +335,7 @@
      MOVE -0.6 TO WS-REQ
      MOVE 0 TO WS-BB
 *>   A regular cube (bounciness 0.5) lands on stone: no block bounciness, the entity's 0.5 applies. r = 1.
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0 WS-L1 WS-L0 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0B WS-L1 WS-L0C WS-L0D WS-BB WS-L1B WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a regular cube (0.5) landing at speed 0.6: (r gravity - vy) x lerp(r, 1, drag) x 0.5 = (0.08 + 0.6) x 0.98 x 0.5 = 0.3332" TO WS-CASE
      MOVE WS-NY TO WS-OUT
@@ -344,7 +352,7 @@
 *>   Slow fall: the downward speed does not exceed gravity: no bounce, the vertical velocity is 0.
      MOVE -0.05 TO WS-VY
      MOVE -0.05 TO WS-REQ
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0 WS-L1 WS-L0 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0B WS-L1 WS-L0C WS-L0D WS-BB WS-L1B WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a landing no faster than gravity does not bounce: vy becomes 0" TO WS-CASE
      MOVE WS-NY TO WS-OUT
@@ -357,21 +365,21 @@
 *>   Sneaking: b = 0 whatever the attribute.
      MOVE -0.6 TO WS-VY
      MOVE -0.6 TO WS-REQ
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L1 WS-L1 WS-L1 WS-L1 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L1 WS-L1B WS-L1C WS-L1D WS-L0 WS-BB WS-L1E WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "sneaking: collided horizontal axes become -v x 0 = 0" TO WS-CASE
      MOVE WS-NX TO WS-OUT
      MOVE 0 TO WS-E
      PERFORM CHECK-F
 *>   The honey block (suppresses bounce) on a floor hit.
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0 WS-L1 WS-L0 WS-L1 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0B WS-L1 WS-L0C WS-L1B WS-BB WS-L1C WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "honey_block below: the vertical factor is 0, vy becomes 0" TO WS-CASE
      MOVE WS-NY TO WS-OUT
      MOVE 0 TO WS-E
      PERFORM CHECK-F
 *>   A horizontal collision of a bouncy entity reverses and scales the axis and flags the bounce.
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L1 WS-L0 WS-L0 WS-L0 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L1 WS-L0 WS-L0B WS-L0C WS-L0D WS-BB WS-L1B WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a horizontal collision of the regular cube: vx 0.2 becomes -0.1" TO WS-CASE
      MOVE WS-NX TO WS-OUT
@@ -389,14 +397,14 @@
      MOVE WS-NY TO WS-OUT
      MOVE -600000 TO WS-E
      PERFORM CHECK-F
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L1 WS-L0 WS-L0 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L1 WS-L0B WS-L0C WS-L0D WS-BB WS-L1B WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a z collision: vz 0.1 becomes -0.05" TO WS-CASE
      MOVE WS-NZ TO WS-OUT
      MOVE -50000 TO WS-E
      PERFORM CHECK-F
 *>   A ceiling hit: the factor is b with no block term.
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0 WS-L2 WS-L0 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0B WS-L2 WS-L0C WS-L0D WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a ceiling hit by the regular cube: (0.08 + 0.6) x 0.98 x 0.5" TO WS-CASE
      MOVE WS-NY TO WS-OUT
@@ -405,14 +413,14 @@
 *>   A non-living entity on a slime block: restitution 1.0 x 0.8.
      MOVE 0 TO WS-ATTR
      MOVE 1.0 TO WS-BB
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0 WS-L1 WS-L0 WS-L0 WS-BB WS-L0 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0B WS-L1 WS-L0C WS-L0D WS-BB WS-L0E WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a non-living entity on a slime block: factor 1.0 x 0.8: 0.68 x 0.98 x 0.8 = 0.53312" TO WS-CASE
      MOVE WS-NY TO WS-OUT
      MOVE 533120 TO WS-E
      PERFORM CHECK-F
 *>   A living entity with bounciness 0 on a slime block: max(b, 1.0).
-     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0 WS-L1 WS-L0 WS-L0 WS-BB WS-L1 WS-ATTR WS-GRAV WS-REQ WS-DRAG
+     CALL "Q5-BOUNCE" USING WS-VX WS-VY WS-VZ WS-L0 WS-L0B WS-L1 WS-L0C WS-L0D WS-BB WS-L1B WS-ATTR WS-GRAV WS-REQ WS-DRAG
          WS-NX WS-NY WS-NZ WS-BOUNCED
      MOVE "a living entity on a slime block: factor max(0, 1.0): 0.68 x 0.98 = 0.6664" TO WS-CASE
      MOVE WS-NY TO WS-OUT

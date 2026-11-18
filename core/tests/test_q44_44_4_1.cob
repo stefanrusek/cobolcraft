@@ -52,6 +52,12 @@
  01 WS-AIRS                PIC X(64) VALUE ALL "0".
  01 WS-DISTS.
     05 WS-DS               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-L0B                 BINARY-LONG VALUE 0.
+ 01 WS-L0C                 BINARY-LONG VALUE 0.
+ 01 WS-L0D                 BINARY-LONG VALUE 0.
+ 01 WS-L1B                 BINARY-LONG VALUE 1.
+ 01 WS-L1C                 BINARY-LONG VALUE 1.
+ 01 WS-L1D                 BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
 *>   1.1 and worked example 1: frog at (0, 64, 0), target block (4, 64, 0) so T = (4.5, 64.5, 0.5); jump_strength 0.42 x 3.5714288.
      MOVE 0 TO WS-PX
@@ -107,22 +113,22 @@
      PERFORM CHECK-N
 *>   Start conditions and the cooldowns (check 3).
      MOVE 61 TO WS-A
-     CALL "Q4-LJ-START" USING WS-L0 WS-L0 WS-L0 WS-A WS-B WS-C
+     CALL "Q4-LJ-START" USING WS-L0 WS-L0B WS-L0C WS-A WS-B WS-C
      MOVE "start condition failing (not on the ground): the cooldown is half the sample, integer division (61 gives 30)" TO WS-CASE
      MOVE 30 TO WS-E
      MOVE WS-C TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-START" USING WS-L1 WS-L0 WS-L1 WS-A WS-B WS-C
+     CALL "Q4-LJ-START" USING WS-L1 WS-L0 WS-L1B WS-A WS-B WS-C
      MOVE "start condition failing (standing in honey): not started" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-B TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-START" USING WS-L1 WS-L1 WS-L0 WS-A WS-B WS-C
+     CALL "Q4-LJ-START" USING WS-L1 WS-L1B WS-L0 WS-A WS-B WS-C
      MOVE "start condition failing (in water or lava): not started" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-B TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-START" USING WS-L1 WS-L0 WS-L0 WS-A WS-B WS-C
+     CALL "Q4-LJ-START" USING WS-L1 WS-L0 WS-L0B WS-A WS-B WS-C
      MOVE "start condition met: starts and the cooldown is not touched" TO WS-CASE
      MOVE 10 TO WS-E
      COMPUTE WS-O = WS-B * 10 + WS-C
@@ -142,33 +148,33 @@
      COMPUTE WS-O ROUNDED = WS-FC * 10000
      PERFORM CHECK-N
 *>   Continue and end.
-     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L0 WS-L0 WS-L1 WS-F
+     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L0 WS-L0B WS-L1B WS-F
      MOVE "continue: start unchanged, tries left, not in water, candidates remain" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-F TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L0 WS-L1 WS-L0 WS-F
+     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L0 WS-L1B WS-L0B WS-F
      MOVE "continue: a chosen jump keeps it going with no candidates left" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-F TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L0 WS-L0 WS-L0 WS-F
+     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L0 WS-L0B WS-L0C WS-F
      MOVE "continue: no jump chosen and no candidates left ends it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-F TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-CONTINUE" USING WS-L0 WS-A WS-L0 WS-L1 WS-L1 WS-F
+     CALL "Q4-LJ-CONTINUE" USING WS-L0 WS-A WS-L0B WS-L1 WS-L1B WS-F
      MOVE "continue: a changed start position ends it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-F TO WS-O
      PERFORM CHECK-N
      MOVE 0 TO WS-D
-     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-D WS-L0 WS-L1 WS-L1 WS-F
+     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-D WS-L0 WS-L1B WS-L1C WS-F
      MOVE "continue: no tries left ends it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-F TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L1 WS-L1 WS-L1 WS-F
+     CALL "Q4-LJ-CONTINUE" USING WS-L1 WS-A WS-L1B WS-L1C WS-L1D WS-F
      MOVE "continue: being in water ends it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-F TO WS-O
@@ -279,7 +285,7 @@
      MOVE 1170 TO WS-E
      COMPUTE WS-O = WS-C * 1000 + WS-D
      PERFORM CHECK-N
-     CALL "Q4-FINDER-START" USING WS-L0 WS-L0 WS-A
+     CALL "Q4-FINDER-START" USING WS-L0 WS-L0B WS-A
      MOVE "the finders need ATTACK_TARGET and WALK_TARGET absent: both absent starts" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
@@ -300,7 +306,7 @@
      MOVE 6101 TO WS-E
      COMPUTE WS-O ROUNDED = WS-A * 1000 + WS-FA * 100 + WS-B
      PERFORM CHECK-N
-     CALL "Q4-FINDER-PARAMS" USING WS-L1 WS-L1 WS-A WS-FA WS-B
+     CALL "Q4-FINDER-PARAMS" USING WS-L1 WS-L1B WS-A WS-FA WS-B
      MOVE "TryFindLand swim: radius 8, speed 1.5, completion range 1" TO WS-CASE
      MOVE 8151 TO WS-E
      COMPUTE WS-O ROUNDED = WS-A * 1000 + WS-FA * 100 + WS-B
@@ -317,7 +323,7 @@
      MOVE 0 TO WS-E
      MOVE WS-B TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-FINDER-RUNS" USING WS-L1 WS-L1 WS-A
+     CALL "Q4-FINDER-RUNS" USING WS-L1 WS-L1B WS-A
      MOVE "TryFindLand runs when the block fluid is in tag water" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
@@ -337,22 +343,22 @@
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LAND-OK" USING WS-L1 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q4-LAND-OK" USING WS-L1 WS-L1B WS-L1C WS-L1D WS-A
      MOVE "a land candidate differing horizontally, with empty fluid, free of collision and a sturdy block below is accepted" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LAND-OK" USING WS-L1 WS-L1 WS-L1 WS-L0 WS-A
+     CALL "Q4-LAND-OK" USING WS-L1 WS-L1B WS-L1C WS-L0 WS-A
      MOVE "a land candidate without a sturdy block below is rejected" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LAND-NEAR-OK" USING WS-L1 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q4-LAND-NEAR-OK" USING WS-L1 WS-L1B WS-L1C WS-L1D WS-A
      MOVE "a land-near-liquid candidate with a liquid-adjacent air neighbour is accepted" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-LAND-NEAR-OK" USING WS-L1 WS-L1 WS-L1 WS-L0 WS-A
+     CALL "Q4-LAND-NEAR-OK" USING WS-L1 WS-L1B WS-L1C WS-L0 WS-A
      MOVE "a land-near-liquid candidate without such a neighbour is rejected" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
@@ -387,12 +393,12 @@
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-CROAK-START" USING WS-L0 WS-L0 WS-A
+     CALL "Q4-CROAK-START" USING WS-L0 WS-L0B WS-A
      MOVE "croak does not start in another pose" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-CROAK-START" USING WS-L1 WS-L1 WS-A
+     CALL "Q4-CROAK-START" USING WS-L1 WS-L1B WS-A
      MOVE "croak needs WALK_TARGET absent" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
@@ -420,58 +426,58 @@
      MOVE WS-B TO WS-O
      PERFORM CHECK-N
 *>   1.4 the tongue.
-     CALL "Q4-FROG-CAN-EAT" USING WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q4-FROG-CAN-EAT" USING WS-L1 WS-L1B WS-L1C WS-A
      MOVE "canEat: a size-1 cube in frog_food is edible" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 2 TO WS-N
-     CALL "Q4-FROG-CAN-EAT" USING WS-L1 WS-N WS-L1 WS-A
+     CALL "Q4-FROG-CAN-EAT" USING WS-L1 WS-N WS-L1B WS-A
      MOVE "canEat: a cube of size 2 is never edible" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-FROG-CAN-EAT" USING WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q4-FROG-CAN-EAT" USING WS-L0 WS-L0B WS-L1 WS-A
      MOVE "canEat: a non-cube in the tag is edible" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-FROG-CAN-EAT" USING WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q4-FROG-CAN-EAT" USING WS-L0 WS-L0B WS-L0C WS-A
      MOVE "canEat: an entity outside the tag (a pig) is not edible" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0B WS-L1B WS-L0C WS-L1C WS-A
      MOVE "tongue start: no walk target, an attack target, not panicking, reachable, not croaking, edible" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L1 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L1B WS-L1C WS-L0B WS-L1D WS-A
      MOVE "tongue start: panicking stops it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0 WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0B WS-L0C WS-L0D WS-L1B WS-A
      MOVE "tongue start: an unreachable target stops it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0B WS-L1B WS-L1C WS-L1D WS-A
      MOVE "tongue start: a croaking frog does not start" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0 WS-L1 WS-L0 WS-L0 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L0 WS-L1 WS-L0B WS-L1B WS-L0C WS-L0D WS-A
      MOVE "tongue start: a target that cannot be eaten does not start" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L1 WS-L1 WS-L0 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L1 WS-L1B WS-L0 WS-L1C WS-L0B WS-L1D WS-A
      MOVE "tongue start: a walk target stops it" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-TONGUE-START" USING WS-L0 WS-L0 WS-L0 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-TONGUE-START" USING WS-L0 WS-L0B WS-L0C WS-L1 WS-L0D WS-L1B WS-A
      MOVE "tongue start: needs an attack target" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
@@ -534,7 +540,7 @@
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-MOB-SENSOR" USING WS-L1 WS-L1 WS-A
+     CALL "Q4-MOB-SENSOR" USING WS-L1 WS-L1B WS-A
      MOVE "MobSensor: ready and a matching entity: the memory is set true (for 80 ticks)" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O

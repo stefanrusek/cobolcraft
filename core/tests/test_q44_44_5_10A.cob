@@ -41,6 +41,12 @@
     05 FILLER              PIC X(24) VALUE "mangrove".
  01 WS-SET-TABLE REDEFINES WS-SETS.
     05 WS-SET              PIC X(24) OCCURS 18 TIMES.
+ 01 WS-L0B                 BINARY-LONG VALUE 0.
+ 01 WS-L0C                 BINARY-LONG VALUE 0.
+ 01 WS-L0D                 BINARY-LONG VALUE 0.
+ 01 WS-L1B                 BINARY-LONG VALUE 1.
+ 01 WS-L1C                 BINARY-LONG VALUE 1.
+ 01 WS-L1D                 BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
 *>   1. The special dates (month-day of the host's current date).
      MOVE 10 TO WS-M
@@ -105,22 +111,22 @@
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
 *>   2. canTriggerBlocks.
-     CALL "Q5-CAN-TRIGGER" USING WS-L1 WS-L0 WS-L0 WS-A
+     CALL "Q5-CAN-TRIGGER" USING WS-L1 WS-L0 WS-L0B WS-A
      MOVE "TRIGGER_BLOCK from a source that is not a breeze wind charge can trigger blocks" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-CAN-TRIGGER" USING WS-L1 WS-L1 WS-L0 WS-A
+     CALL "Q5-CAN-TRIGGER" USING WS-L1 WS-L1B WS-L0 WS-A
      MOVE "a breeze wind charge needs mob_griefing: off, no trigger" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-CAN-TRIGGER" USING WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q5-CAN-TRIGGER" USING WS-L1 WS-L1B WS-L1C WS-A
      MOVE "a breeze wind charge with mob_griefing on triggers blocks" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-CAN-TRIGGER" USING WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q5-CAN-TRIGGER" USING WS-L0 WS-L0B WS-L1 WS-A
      MOVE "another block interaction never triggers blocks" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
@@ -152,61 +158,61 @@
      PERFORM CHECK-N
 *>   4. The reactions (class, can trigger, powered, lower half, canOpenByWindCharge) -> action.
      MOVE 1 TO WS-K
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0B WS-L0C WS-A
      MOVE "a button that is not powered is pressed" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L1 WS-L0 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L1B WS-L0 WS-L0B WS-A
      MOVE "a powered button does nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L0 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L0 WS-L0B WS-L0C WS-L0D WS-A
      MOVE "an explosion that cannot trigger blocks does nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 2 TO WS-K
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L1 WS-L1 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L1B WS-L1C WS-A
      MOVE "the lower half of a wind-openable unpowered door toggles open" TO WS-CASE
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0B WS-L1B WS-A
      MOVE "the upper half of a door does nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L1 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L1B WS-L0B WS-A
      MOVE "an iron door (canOpenByWindCharge false) does nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L1B WS-L1C WS-L1D WS-A
      MOVE "a powered door does nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 3 TO WS-K
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0B WS-L1B WS-A
      MOVE "a wind-openable unpowered trapdoor toggles open" TO WS-CASE
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0B WS-L0C WS-A
      MOVE "an iron trapdoor does nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 4 TO WS-K
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0B WS-L0C WS-A
      MOVE "an unpowered fence gate toggles open" TO WS-CASE
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 5 TO WS-K
-     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-EXPLOSION-HIT" USING WS-K WS-L1 WS-L0 WS-L0B WS-L0C WS-A
      MOVE "a bell is rung" TO WS-CASE
      MOVE 3 TO WS-E
      MOVE WS-A TO WS-O

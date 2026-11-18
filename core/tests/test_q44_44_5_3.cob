@@ -26,6 +26,16 @@
  01 WS-L1                  BINARY-LONG VALUE 1.
  01 WS-L0                  BINARY-LONG VALUE 0.
  01 WS-DISP                PIC 9(4).
+ 01 WS-L0B                 BINARY-LONG VALUE 0.
+ 01 WS-L0C                 BINARY-LONG VALUE 0.
+ 01 WS-L0D                 BINARY-LONG VALUE 0.
+ 01 WS-L0E                 BINARY-LONG VALUE 0.
+ 01 WS-L0F                 BINARY-LONG VALUE 0.
+ 01 WS-L1B                 BINARY-LONG VALUE 1.
+ 01 WS-L1C                 BINARY-LONG VALUE 1.
+ 01 WS-L1D                 BINARY-LONG VALUE 1.
+ 01 WS-L1E                 BINARY-LONG VALUE 1.
+ 01 WS-L1F                 BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
 *>   Constants.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
@@ -61,40 +71,40 @@
      END-PERFORM
 *>   The activity pick: the first valid of EMERGE, DIG, ROAR, FIGHT, INVESTIGATE, SNIFF, IDLE.
 *>   (emerging, roar, dig cooldown, attack, disturbance, sniffing) -> activity
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-L1 WS-L1 WS-L1 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L1 WS-L1B WS-L1C WS-L1D WS-L1E WS-L1F WS-A
      MOVE "activity: is_emerging wins over everything" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 0 TO WS-I
      MOVE 0 TO WS-J
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-I WS-I WS-I WS-J WS-J WS-J WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L0 WS-L0B WS-L0C WS-L0D WS-L0E WS-L0F WS-A
      MOVE "activity: no roar target and no dig cooldown is DIG" TO WS-CASE
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 1 TO WS-B
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-I WS-B WS-I WS-I WS-I WS-I WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L0 WS-L1 WS-L0B WS-L0C WS-L0D WS-L0E WS-A
      MOVE "activity: a roar target (dig needs it absent) is ROAR" TO WS-CASE
      MOVE 3 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-I WS-I WS-B WS-B WS-B WS-B WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L0 WS-L0B WS-L1 WS-L1B WS-L1C WS-L1D WS-A
      MOVE "activity: a dig cooldown blocks DIG: the attack target gives FIGHT" TO WS-CASE
      MOVE 4 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-I WS-I WS-B WS-I WS-B WS-B WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L0 WS-L0B WS-L1 WS-L0C WS-L1B WS-L1C WS-A
      MOVE "activity: a disturbance location without attack target is INVESTIGATE" TO WS-CASE
      MOVE 5 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-I WS-I WS-B WS-I WS-I WS-B WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L0 WS-L0B WS-L1 WS-L0C WS-L0D WS-L1B WS-A
      MOVE "activity: is_sniffing alone is SNIFF" TO WS-CASE
      MOVE 6 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-WARDEN-ACTIVITY" USING WS-I WS-I WS-B WS-I WS-I WS-I WS-A
+     CALL "Q5-WARDEN-ACTIVITY" USING WS-L0 WS-L0B WS-L1 WS-L0C WS-L0D WS-L0E WS-A
      MOVE "activity: nothing else is IDLE" TO WS-CASE
      MOVE 7 TO WS-E
      MOVE WS-A TO WS-O
@@ -205,32 +215,32 @@
      MOVE WS-PRI TO WS-O
      PERFORM CHECK-N
 *>   TryToSniff (worked example 7).
-     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1 WS-L0 WS-L1 WS-L0 WS-A
+     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1B WS-L0 WS-L1C WS-L0B WS-A
      MOVE "TryToSniff starts with a nearest attackable, no disturbance and no cooldown" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1 WS-L1 WS-L1 WS-L0 WS-A
+     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1B WS-L1C WS-L1D WS-L0 WS-A
      MOVE "TryToSniff does not start while the sniff cooldown is present" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1B WS-L0 WS-L0B WS-L0C WS-A
      MOVE "TryToSniff needs a nearest attackable" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1 WS-L0 WS-L1 WS-L1 WS-A
+     CALL "Q5-SNIFF-START" USING WS-L1 WS-L1B WS-L0 WS-L1C WS-L1D WS-A
      MOVE "TryToSniff does not start with a disturbance location" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-SNIFF-START" USING WS-L0 WS-L1 WS-L0 WS-L1 WS-L0 WS-A
+     CALL "Q5-SNIFF-START" USING WS-L0 WS-L1 WS-L0B WS-L1B WS-L0C WS-A
      MOVE "TryToSniff needs is_sniffing registered" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-SNIFF-START" USING WS-L1 WS-L0 WS-L0 WS-L1 WS-L0 WS-A
+     CALL "Q5-SNIFF-START" USING WS-L1 WS-L0 WS-L0B WS-L1B WS-L0C WS-A
      MOVE "TryToSniff needs walk_target registered" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
@@ -257,7 +267,7 @@
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-DIG-START" USING WS-L0 WS-L0 WS-A
+     CALL "Q5-DIG-START" USING WS-L0 WS-L0B WS-A
      MOVE "Digging cannot start in the air" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
@@ -278,12 +288,12 @@
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EMERGE-START" USING WS-L1 WS-L1 WS-A
+     CALL "Q5-EMERGE-START" USING WS-L1 WS-L1B WS-A
      MOVE "Emerging does not start with a walk target" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-EMERGE-START" USING WS-L0 WS-L0 WS-A
+     CALL "Q5-EMERGE-START" USING WS-L0 WS-L0B WS-A
      MOVE "Emerging needs is_emerging" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O

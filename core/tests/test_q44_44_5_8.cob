@@ -22,6 +22,12 @@
  01 WS-L3                  BINARY-LONG VALUE 3.
  01 WS-L4                  BINARY-LONG VALUE 4.
  01 WS-L5                  BINARY-LONG VALUE 5.
+ 01 WS-L0B                 BINARY-LONG VALUE 0.
+ 01 WS-L0C                 BINARY-LONG VALUE 0.
+ 01 WS-L1B                 BINARY-LONG VALUE 1.
+ 01 WS-L1C                 BINARY-LONG VALUE 1.
+ 01 WS-L1D                 BINARY-LONG VALUE 1.
+ 01 WS-L1E                 BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
 *>   Comparator output.
      MOVE 0 TO WS-D
@@ -91,149 +97,149 @@
      MOVE 22 TO WS-E
      PERFORM CHECK-N
 *>   hasRequiredLogs.
-     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1B WS-L1C WS-L1D WS-L1E WS-A
      MOVE "both neighbours pale oak logs along the heart's axis: the required logs are there" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1 WS-L2 WS-L1 WS-L1 WS-A
+     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1B WS-L2 WS-L1C WS-L1D WS-A
      MOVE "a log with another axis does not count" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1B WS-L1C WS-L0 WS-L1D WS-A
      MOVE "a side that is no pale oak log does not count" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1 WS-L1 WS-L1 WS-L3 WS-A
+     CALL "Q5-HEART-LOGS" USING WS-L1 WS-L1B WS-L1C WS-L1D WS-L3 WS-A
      MOVE "the other side with another axis does not count either" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
 *>   State: UPROOTED / DORMANT / AWAKE.
-     CALL "Q5-HEART-STATE" USING WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q5-HEART-STATE" USING WS-L0 WS-L0B WS-L1 WS-A
      MOVE "no logs and no link: UPROOTED (0)" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-STATE" USING WS-L0 WS-L1 WS-L1 WS-A
+     CALL "Q5-HEART-STATE" USING WS-L0 WS-L1 WS-L1B WS-A
      MOVE "no logs but a link: AWAKE while creaking_active holds (2)" TO WS-CASE
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-STATE" USING WS-L1 WS-L0 WS-L0 WS-A
+     CALL "Q5-HEART-STATE" USING WS-L1 WS-L0 WS-L0B WS-A
      MOVE "logs and creaking_active false: DORMANT (1)" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
 *>   Protector removal.
      MOVE 34 TO WS-D
-     CALL "Q5-HEART-PROTECTOR" USING WS-L1 WS-L0 WS-D WS-L0 WS-A
+     CALL "Q5-HEART-PROTECTOR" USING WS-L1 WS-L0 WS-D WS-L0B WS-A
      MOVE "the protector is kept at 34 blocks" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 34.5 TO WS-D
-     CALL "Q5-HEART-PROTECTOR" USING WS-L1 WS-L0 WS-D WS-L0 WS-A
+     CALL "Q5-HEART-PROTECTOR" USING WS-L1 WS-L0 WS-D WS-L0B WS-A
      MOVE "the protector is removed beyond 34 blocks" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 5 TO WS-D
-     CALL "Q5-HEART-PROTECTOR" USING WS-L0 WS-L0 WS-D WS-L0 WS-A
+     CALL "Q5-HEART-PROTECTOR" USING WS-L0 WS-L0B WS-D WS-L0C WS-A
      MOVE "the protector is removed when the attribute is false and it needs no persistence" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-PROTECTOR" USING WS-L0 WS-L1 WS-D WS-L0 WS-A
+     CALL "Q5-HEART-PROTECTOR" USING WS-L0 WS-L1 WS-D WS-L0B WS-A
      MOVE "a persistent creaking is kept while the attribute is false" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-PROTECTOR" USING WS-L1 WS-L0 WS-D WS-L1 WS-A
+     CALL "Q5-HEART-PROTECTOR" USING WS-L1 WS-L0 WS-D WS-L1B WS-A
      MOVE "the protector is removed when a player is stuck in it" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
 *>   Spawning needs a non-spectator player within 32, monsters, not Peaceful, AWAKE, no link.
-     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L1 WS-L0B WS-L1B WS-A
      MOVE "an awake heart without a link spawns a protector with a player near" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-SPAWN" USING WS-L1 WS-L2 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q5-HEART-SPAWN" USING WS-L1 WS-L2 WS-L1B WS-L0 WS-L1C WS-A
      MOVE "a linked heart spawns nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L1 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L1 WS-L1B WS-L0B WS-L1C WS-A
      MOVE "a dormant heart spawns nothing" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L0B WS-L0C WS-L1 WS-A
      MOVE "monsters off: nothing spawns" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L1 WS-L1B WS-L1C WS-A
      MOVE "Peaceful: nothing spawns" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L1 WS-L0 WS-L0 WS-A
+     CALL "Q5-HEART-SPAWN" USING WS-L0 WS-L2 WS-L1 WS-L0B WS-L0C WS-A
      MOVE "no player within 32 blocks: nothing spawns" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
 *>   Link resolution.
-     CALL "Q5-HEART-LINK" USING WS-L1 WS-L0 WS-L0 WS-L0 WS-A
+     CALL "Q5-HEART-LINK" USING WS-L1 WS-L0 WS-L0B WS-L0C WS-A
      MOVE "a live reference is used while the entity is not removed" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q5-HEART-LINK" USING WS-L0 WS-L1 WS-L1 WS-L0 WS-A
+     CALL "Q5-HEART-LINK" USING WS-L0 WS-L1 WS-L1B WS-L0B WS-A
      MOVE "a UUID found in the level becomes the live link" TO WS-CASE
      MOVE 2 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 29 TO WS-B
-     CALL "Q5-HEART-LINK" USING WS-L0 WS-L1 WS-L0 WS-B WS-A
+     CALL "Q5-HEART-LINK" USING WS-L0 WS-L1 WS-L0B WS-B WS-A
      MOVE "a UUID not found within 30 ticks of existing is kept (grace period)" TO WS-CASE
      MOVE 3 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 30 TO WS-B
-     CALL "Q5-HEART-LINK" USING WS-L0 WS-L1 WS-L0 WS-B WS-A
+     CALL "Q5-HEART-LINK" USING WS-L0 WS-L1 WS-L0B WS-B WS-A
      MOVE "a UUID not found at ticksExisted 30 is cleared" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
 *>   Hurt.
-     CALL "Q5-HEART-HURT" USING WS-L1 WS-L0 WS-L0 WS-L1 WS-L3 WS-A WS-B WS-C
+     CALL "Q5-HEART-HURT" USING WS-L1 WS-L0 WS-L0B WS-L1B WS-L3 WS-A WS-B WS-C
      MOVE "hurt of an awake heart: 20 particles, 3 resin spreads (draw 3), emitter 100" TO WS-CASE
      MOVE 203100 TO WS-E
      COMPUTE WS-O = WS-A * 10000 + WS-B * 1000 + WS-C
      PERFORM CHECK-N
-     CALL "Q5-HEART-HURT" USING WS-L1 WS-L0 WS-L0 WS-L0 WS-L3 WS-A WS-B WS-C
+     CALL "Q5-HEART-HURT" USING WS-L1 WS-L0 WS-L0B WS-L0C WS-L3 WS-A WS-B WS-C
      MOVE "hurt of a dormant heart: particles and the emitter but no resin" TO WS-CASE
      MOVE 200100 TO WS-E
      COMPUTE WS-O = WS-A * 10000 + WS-B * 1000 + WS-C
      PERFORM CHECK-N
      MOVE 40 TO WS-EM
-     CALL "Q5-HEART-HURT" USING WS-L1 WS-L0 WS-EM WS-L1 WS-L2 WS-A WS-B WS-C
+     CALL "Q5-HEART-HURT" USING WS-L1 WS-L0 WS-EM WS-L1B WS-L2 WS-A WS-B WS-C
      MOVE "hurt while the emitter runs is ignored" TO WS-CASE
      MOVE 40 TO WS-E
      COMPUTE WS-O = WS-A + WS-B + WS-C
      PERFORM CHECK-N
      MOVE 0 TO WS-EM
-     CALL "Q5-HEART-HURT" USING WS-L0 WS-L0 WS-EM WS-L1 WS-L2 WS-A WS-B WS-C
+     CALL "Q5-HEART-HURT" USING WS-L0 WS-L0B WS-EM WS-L1 WS-L2 WS-A WS-B WS-C
      MOVE "hurt without a protector is ignored" TO WS-CASE
      MOVE 0 TO WS-E
      COMPUTE WS-O = WS-A + WS-B + WS-C
      PERFORM CHECK-N
-     CALL "Q5-HEART-HURT" USING WS-L1 WS-L1 WS-EM WS-L1 WS-L2 WS-A WS-B WS-C
+     CALL "Q5-HEART-HURT" USING WS-L1 WS-L1B WS-EM WS-L1C WS-L2 WS-A WS-B WS-C
      MOVE "hurt on a client is ignored" TO WS-CASE
      MOVE 0 TO WS-E
      COMPUTE WS-O = WS-A + WS-B + WS-C
@@ -267,7 +273,7 @@
      MOVE 104 TO WS-E
      COMPUTE WS-O = WS-A * 100 + WS-B
      PERFORM CHECK-N
-     CALL "Q5-RESIN-NEIGHBOUR" USING WS-L2 WS-L0 WS-L0 WS-A WS-B
+     CALL "Q5-RESIN-NEIGHBOUR" USING WS-L2 WS-L0 WS-L0B WS-A WS-B
      MOVE "resin: a water source gets a waterlogged clump with the face" TO WS-CASE
      MOVE 201 TO WS-E
      COMPUTE WS-O = WS-A * 100 + WS-B

@@ -26,6 +26,11 @@
  01 WS-SA                  BINARY-LONG.
  01 WS-SB                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-L0B                 BINARY-LONG VALUE 0.
+ 01 WS-L0C                 BINARY-LONG VALUE 0.
+ 01 WS-L0D                 BINARY-LONG VALUE 0.
+ 01 WS-L1B                 BINARY-LONG VALUE 1.
+ 01 WS-L1C                 BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
 *>   2.1 jump scale.
      MOVE 90 TO WS-P
@@ -134,7 +139,7 @@
      MOVE 412 TO WS-E
      COMPUTE WS-O = WS-A * 100 + WS-B
      PERFORM CHECK-N
-     CALL "Q4-LLAMA-SLOTS" USING WS-L0 WS-P WS-L0 WS-A WS-B
+     CALL "Q4-LLAMA-SLOTS" USING WS-L0 WS-P WS-L0B WS-A WS-B
      MOVE "llama inventory: without a chest no columns and no slots" TO WS-CASE
      MOVE 0 TO WS-E
      COMPUTE WS-O = WS-A * 100 + WS-B
@@ -151,7 +156,7 @@
      MOVE 515 TO WS-E
      COMPUTE WS-O = WS-A * 100 + WS-B
      PERFORM CHECK-N
-     CALL "Q4-LLAMA-SLOTS" USING WS-L1 WS-P WS-L1 WS-A WS-B
+     CALL "Q4-LLAMA-SLOTS" USING WS-L1 WS-P WS-L1B WS-A WS-B
      MOVE "donkey and mule: 5 columns, 15 slots" TO WS-CASE
      MOVE 515 TO WS-E
      COMPUTE WS-O = WS-A * 100 + WS-B
@@ -182,39 +187,39 @@
      MOVE WS-LAST TO WS-O
      PERFORM CHECK-N
      MOVE 400 TO WS-TIME
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0B WS-L1 WS-L0C WS-L1B WS-A
      MOVE "RandomSitting starts at pose time 400 on the ground, unleashed, with no controlling passenger and room to change" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 399 TO WS-TIME
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0B WS-L1 WS-L0C WS-L1B WS-A
      MOVE "RandomSitting does not start at pose time 399" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
      MOVE 400 TO WS-TIME
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L1 WS-TIME WS-L0 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L1 WS-TIME WS-L0 WS-L1B WS-L0B WS-L1C WS-A
      MOVE "RandomSitting does not start in water" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L1 WS-L1 WS-L0 WS-L1 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L1 WS-L1B WS-L0B WS-L1C WS-A
      MOVE "RandomSitting does not start when leashed" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0 WS-L0 WS-L0 WS-L1 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0B WS-L0C WS-L0D WS-L1 WS-A
      MOVE "RandomSitting does not start in the air" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0 WS-L1 WS-L1 WS-L1 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0B WS-L1 WS-L1B WS-L1C WS-A
      MOVE "RandomSitting does not start with a controlling passenger" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
      PERFORM CHECK-N
-     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0 WS-L1 WS-L0 WS-L0 WS-A
+     CALL "Q4-CAMEL-SIT-OK" USING WS-L0 WS-TIME WS-L0B WS-L1 WS-L0C WS-L0D WS-A
      MOVE "RandomSitting does not start when the pose change would suffocate" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-A TO WS-O
