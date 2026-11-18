@@ -649,6 +649,7 @@
  COPY NOISE.
  COPY GENSTAGE.
  COPY DMEMO.
+ COPY STRUCTBEARD.
  01 WS-COLUMNS.
     05 WS-COL-ENTRY OCCURS 65536 TIMES.
        10 WS-COL-STAMP     BINARY-LONG VALUE 0.
@@ -724,6 +725,7 @@
      MOVE L-Z TO LS-Z
      MOVE WG-LOAD-GEN TO LS-STAMP
      ADD NZ-GEN TO LS-STAMP
+     ADD SBD-GEN TO LS-STAMP
      ADD 1 TO LS-STAMP
 *>   A reference (its root already resolved) or blend_density node only passes its input's value (and flags) on: follow it
 *>   here instead of paying two evaluator calls and a memo entry per hop.
@@ -785,6 +787,7 @@
          WHEN 0
              MOVE WG-LOAD-GEN TO LS-STAMP
              ADD NZ-GEN TO LS-STAMP
+             ADD SBD-GEN TO LS-STAMP
              ADD 1 TO LS-STAMP
 *>           (the loop above follows a root already resolved: here it is looked up and remembered)
              MOVE WGN-TEXT-1(LS-NODE)(1:112) TO LS-KEY
@@ -985,9 +988,17 @@
                  END-IF
              END-PERFORM
              CALL "DENSITY-NODE" USING LS-COORD L-X L-Y L-Z L-RESULT
+         WHEN 35
+*>           the beardifier (36-1 section 9.3): the terrain adaptation of the stored starts around the chunk being generated (STRUCT-BEARD-PREPARE),
+*>           0 when there is none; the value depends on that chunk, so it is not memoised while it exists (DM-IMPURE, and SBD-GEN in the stamps)
+             IF SBD-ACTIVE = 1
+                 MOVE 1 TO DM-IMPURE
+                 CALL "STRUCT-BEARD-SAMPLE" USING L-X L-Y L-Z L-RESULT
+             ELSE
+                 MOVE WS-ZERO TO L-RESULT
+             END-IF
          WHEN OTHER
-*>           blend_offset and beardifier are 0 without blending data and structures; the types the overworld
-*>           terrain does not use (after 35) evaluate to 0 here.
+*>           blend_offset is 0 without blending data; the types the overworld terrain does not use (after 35) evaluate to 0 here.
              MOVE WS-ZERO TO L-RESULT
      END-EVALUATE
      IF LS-SLOT > 0 AND DM-IMPURE = 0 AND DM-USES-Y = 0
@@ -1106,6 +1117,7 @@
  COPY NOISE.
  COPY DENSITY.
  COPY DMEMO.
+ COPY STRUCTBEARD.
  01 DG-GRID BASED.
  COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
  01 WS-KIND                BINARY-LONG VALUE 1.
@@ -1153,6 +1165,7 @@
          WHEN 0
              MOVE WG-LOAD-GEN TO LS-STAMP
              ADD NZ-GEN TO LS-STAMP
+             ADD SBD-GEN TO LS-STAMP
              ADD 1 TO LS-STAMP
              IF DM-REF-STAMP(LS-N) = LS-STAMP
                  MOVE DM-REF(LS-N) TO LS-ROOT
@@ -1174,6 +1187,11 @@
              MOVE 0 TO L-LO L-HI
          WHEN 35
              MOVE 0 TO L-LO L-HI
+             IF SBD-ACTIVE = 1
+*>               the sum of at most SBD-RIGID-COUNT records of at most 0.8 and SBD-JUNC-COUNT junctions of at most 0.4 (the bury and beard terms are below 1)
+                 COMPUTE L-HI = SBD-RIGID-COUNT * 0.8 + SBD-JUNC-COUNT * 0.4 + 1
+                 COMPUTE L-LO = 0 - L-HI
+             END-IF
          WHEN 2 THRU 4
              CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1
              CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 2) L-CI L-CK L-CJ LS-L2 LS-H2

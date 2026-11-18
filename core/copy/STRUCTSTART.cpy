@@ -14,6 +14,9 @@
     05 SST-JUNC-COUNT       BINARY-LONG.
     05 SST-REF-COUNT        BINARY-LONG.
     05 SST-LOST             BINARY-LONG.
+*>  the world seed and the structure data epoch the stored starts belong to (STRUCT-STORE-SYNC empties the store when either changes)
+    05 SST-SEED             BINARY-DOUBLE UNSIGNED.
+    05 SST-EPOCH            BINARY-LONG.
     05 SST-START OCCURS 512 TIMES.
        10 SST-STRUCT        BINARY-LONG.
        10 SST-CX            BINARY-LONG.

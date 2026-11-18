@@ -40,6 +40,7 @@
  01 WS-D                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-G                   BINARY-LONG.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-NONE                BINARY-LONG VALUE -1.
  01 WS-TEXT                PIC X(80).
@@ -515,7 +516,7 @@
      CALL "STRUCT-REFS-CREATE" USING WS-CX WS-CZ.
 
  DO-REF-ADD.
-     CALL "STRUCT-REF-ADD" USING WS-ZERO WS-ZERO WS-S WS-X WS-Z.
+     CALL "STRUCT-REF-ADD" USING WS-ZERO WS-ZERO2 WS-S WS-X WS-Z.
 
  CHECK-TEXT.
      MOVE "A" TO TL-MODE

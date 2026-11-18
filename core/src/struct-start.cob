@@ -2,7 +2,7 @@
 *> Chunk coordinates of a block are the floor of the coordinate / 16. A start list is a group of up to 64 BINARY-LONG start rows (SST-LIST-MAX).
 *>
 *> Entry points:
-*>   STRUCT-STORE-RESET: empties the store
+*>   STRUCT-STORE-RESET: empties the store; STRUCT-STORE-SYNC: empties it when the world seed or the structure data epoch changed (the capture and the chunk NBT reader call it)
 *>   STRUCT-START-FIND USING structure row, chunk x, chunk z, start row out (0 none): the start of that structure held by the chunk
 *>   STRUCT-START-PUT USING structure row, chunk x, chunk z, references, start row out: finds or creates the start and drops its pieces (a full store is emptied first); only the start put last takes pieces
 *>   STRUCT-START-PIECE-ADD USING start row, type, orientation, depth, jigsaw kind (0, 1 rigid, 2 terrain_matching), ground level delta, x0, y0, z0, x1, y1, z1, piece row out (0 when it cannot be added)
@@ -26,6 +26,23 @@
      MOVE 0 TO SST-COUNT SST-PIECE-COUNT SST-JUNC-COUNT SST-REF-COUNT SST-LOST
      GOBACK.
  END PROGRAM STRUCT-STORE-RESET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-STORE-SYNC.
+*> empties the store when the world seed or the structure data epoch is not the one it was filled under (the starts are a function of both), then stamps it with the current ones
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTSTART.
+ COPY STRUCTDATA.
+ COPY CARVER.
+ PROCEDURE DIVISION.
+     IF SST-SEED NOT = CV-SEED OR SST-EPOCH NOT = SD-EPOCH
+         CALL "STRUCT-STORE-RESET"
+         MOVE CV-SEED TO SST-SEED
+         MOVE SD-EPOCH TO SST-EPOCH
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-STORE-SYNC.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-START-FIND.
@@ -492,3 +509,72 @@
      END-PERFORM
      GOBACK.
  END PROGRAM STRUCT-ALL-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-START-CAPTURE.
+*> USING structure row, chunk x, chunk z, start row out: stores the start whose pieces are in the builder (STRUCTPIECE.cpy, after STRUCT-FIND-POINT and the placement) as the start of that structure
+*> held by the chunk, once: a start already in the store is left as it is (its row is returned). A piece of the jigsaw assembler (builder type 60) is stored with the registry id of the jigsaw piece,
+*> its projection (SP-T-AUX: 0 rigid, 1 terrain_matching), ground level delta (SP-F2) and the junctions of STRUCTJIG.cpy that it owns; any other builder type keeps its own number.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTSTART.
+ COPY STRUCTPIECE.
+ COPY STRUCTJIG.
+ 01 WS-KIND                BINARY-LONG VALUE 3.
+ 01 WS-NAME                PIC X(40) VALUE "jigsaw".
+ 01 WS-JIGSAW              BINARY-LONG.
+ 01 WS-REFS                BINARY-LONG VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-JIG                 BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG.
+ 01 WS-PROW                BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
+ 01 WS-ORIENT              BINARY-LONG.
+ 01 WS-DEPTH               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STRUCT               BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STRUCT L-CX L-CZ L-ROW.
+     CALL "STRUCT-STORE-SYNC"
+     CALL "STRUCT-START-FIND" USING L-STRUCT L-CX L-CZ L-ROW
+     IF L-ROW > 0 OR SP-COUNT = 0
+         GOBACK
+     END-IF
+     CALL "STRUCT-ENUM-ID" USING WS-KIND WS-NAME WS-JIGSAW
+     CALL "STRUCT-START-PUT" USING L-STRUCT L-CX L-CZ WS-REFS L-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-COUNT
+         MOVE SP-TYPE(WS-I) TO WS-TYPE
+         MOVE 0 TO WS-JIG WS-GROUND
+         IF WS-TYPE = 60
+             MOVE WS-JIGSAW TO WS-TYPE
+             COMPUTE WS-JIG = SP-T-AUX(WS-I) + 1
+             MOVE SP-F2(WS-I) TO WS-GROUND
+         END-IF
+         MOVE SP-ORIENT(WS-I) TO WS-ORIENT
+         MOVE SP-DEPTH(WS-I) TO WS-DEPTH
+         MOVE SP-X0(WS-I) TO WS-X0
+         MOVE SP-Y0(WS-I) TO WS-Y0
+         MOVE SP-Z0(WS-I) TO WS-Z0
+         MOVE SP-X1(WS-I) TO WS-X1
+         MOVE SP-Y1(WS-I) TO WS-Y1
+         MOVE SP-Z1(WS-I) TO WS-Z1
+         CALL "STRUCT-START-PIECE-ADD" USING L-ROW WS-TYPE WS-ORIENT WS-DEPTH WS-JIG WS-GROUND WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-PROW
+         IF WS-JIG > 0 AND WS-PROW > 0
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > JJ-COUNT
+                 IF JJ-OWNER(WS-J) = WS-I
+                     CALL "STRUCT-START-JUNCTION-ADD" USING WS-PROW JJ-X(WS-J) JJ-Y(WS-J) JJ-Z(WS-J)
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-START-CAPTURE.
