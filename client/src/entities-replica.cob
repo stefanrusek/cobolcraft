@@ -269,6 +269,12 @@
                      IF WS-STATUS = CT-OK
                          MOVE WS-ER-KEY TO EN-KEY(WS-ROW)
                          CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-ROW) EN-MODEL(WS-ROW)
+*>                       A villager's data that never arrives is the default one (plains, no profession, level 1), which the layers draw (34-3 1.5).
+                         IF EN-KEY(WS-ROW) = "villager" OR "zombie_villager"
+                             MOVE 2 TO EN-VAR(WS-ROW)
+                             MOVE 0 TO EN-VAR2(WS-ROW)
+                             MOVE 1 TO EN-VAR3(WS-ROW)
+                         END-IF
                          CALL "ENTITY-ATTACK-BOX" USING CLIENT-STATE WS-ROW WS-ER-KEY WS-ER-SIZE WS-ER-CATEGORY
                      END-IF
                  END-IF

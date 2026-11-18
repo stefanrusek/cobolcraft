@@ -324,6 +324,9 @@
  COPY CORESTATE.
  COPY STDMOBS.
  01 WS-M                   BINARY-LONG.
+ 01 WS-VK-TYPE             BINARY-LONG.
+ 01 WS-VK-PROF             BINARY-LONG.
+ 01 WS-VK-LEVEL            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-BABY                 BINARY-LONG.
@@ -389,6 +392,14 @@
          END-IF
      END-IF
 *>   The tadpole is a water animal (kind 2): its lock is sent too (19 section 11.2).
+     IF WS-M > 0
+         IF SM-KEY(WS-M) = "villager"
+             CALL "VILLOOK-CODE" USING L-ROW WS-VK-TYPE WS-VK-PROF WS-VK-LEVEL
+             IF WS-VK-TYPE NOT = 2 OR WS-VK-PROF NOT = 0 OR WS-VK-LEVEL NOT = 1
+                 MOVE 1 TO L-NEEDED
+             END-IF
+         END-IF
+     END-IF
      IF WS-M > 0
          IF (SM-KEY(WS-M) = "tadpole" AND EN-LOCKED(L-ROW) = 1) OR (SM-KEY(WS-M) = "frog" AND EN-TONGUE(L-ROW) > 0)
              MOVE 1 TO L-NEEDED
@@ -471,6 +482,7 @@
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
      CALL "MOB-CARE-DATA" USING L-ROW PB-BUFFER
+     CALL "VILLOOK-DATA" USING L-ROW PB-BUFFER
      MOVE MD-MD-END TO MD-MD-INDEX
      CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      GOBACK.

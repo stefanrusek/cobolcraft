@@ -1155,6 +1155,9 @@
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
+         IF EN-USED(WS-ROW) = 1
+             CALL "VILLOOK-SYNC" USING WS-ROW
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "hoglin"
          CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK

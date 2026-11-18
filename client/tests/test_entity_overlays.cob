@@ -149,6 +149,19 @@
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
      MOVE 1 TO WS-ID
      CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+*>   No VILLAGER_DATA arrived (the server sends only a value that differs from the default): the default villager data is plains, no profession, level 1 (34-3 1.5, 19 section 22),
+*>   so the plains clothing is drawn and no profession or level layer.
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 1 WS-CODE WS-RED WS-GREEN WS-BLUE WS-OVM
+     MOVE "acceptance overlays a villager spawned without data wears the plains type layer" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1003 TO TL-EXPECTED-N
+     MOVE WS-CODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 2 WS-CODE WS-RED WS-GREEN WS-BLUE WS-OVM
+     MOVE "acceptance overlays a villager spawned without data has no profession layer" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-CODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO EN-VAR(1)
      MOVE 1 TO EN-VAR2(1)
      MOVE 3 TO EN-VAR3(1)
