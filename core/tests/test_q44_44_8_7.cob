@@ -1,0 +1,488 @@
+*> Acceptance test of docs/protocol/44-residual-mob-questions-8-vehicles-and-projectiles.md section 7, arrows (lane 002-lane-p49j-b, T24200 range): the pickup mode by owner (7.6), the
+*> water and air drag order and gravity (7.2), a critical hit (7.3 step 4), piercing (7.3 step 3, V12, 12.5), the knockback of Punch (7.4, V13, 12.5), sticking in a block (7.5 step 6), the
+*> despawn at 1200 (V17) and the pickup of a stuck arrow (7.6).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-Q44-44-8-7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRWORLD.
+ 01 WS-CASE                PIC X(160).
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-GOLEM-TYPE          BINARY-LONG.
+ 01 WS-ARROW-ITEM          BINARY-LONG.
+ 01 WS-ARROW               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AY                  FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-BASE                BINARY-LONG VALUE 2000.
+ 01 WS-OWNER               BINARY-LONG VALUE 0.
+ 01 WS-SIZE                BINARY-LONG VALUE 40.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-HP0                 BINARY-LONG.
+ 01 WS-LOSS                BINARY-LONG.
+ 01 WS-MIN                 BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-KX                  FLOAT-LONG.
+ 01 WS-KZ                  FLOAT-LONG.
+ 01 WS-RES                 BINARY-LONG.
+ 01 WS-TAKEN               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VX0                 FLOAT-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-FX = FUNCTION INTEGER(WS-X) - 20
+     COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) - 20
+     COMPUTE WS-FY = FUNCTION INTEGER(WS-Y) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-SIZE WS-FY WS-FKIND
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
+     MOVE "minecraft:water" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-WATER
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:iron_golem" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-GOLEM-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:arrow" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ARROW-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE 2 TO BW-DIFFICULTY
+     COMPUTE WS-AX = WS-X + 2
+     COMPUTE WS-AY = WS-Y + 0.5
+     MOVE 3 TO WS-VX
+     MOVE 0 TO WS-VY WS-VZ
+
+*>   7.6 the pickup mode: a player owner gives ALLOWED (1), a mob owner leaves DISALLOWED (0).
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-X WS-Y WS-Z WS-YAW WS-A
+     CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE PL-ENTITY-ID(WS-PLAYER) WS-ARROW
+     MOVE "acceptance US15 44-8§7.6 a player owner makes the pickup mode ALLOWED" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE EN-ARW-PICKUP(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+     CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE EN-ID(WS-A) WS-ARROW
+     MOVE "acceptance US15 44-8§7.6 a mob owner leaves the pickup mode DISALLOWED" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-ARW-PICKUP(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+     CALL "ENTITY-REMOVE" USING WS-A
+
+*>   7.2 in the air: the move uses the full velocity, then drag 0.99, then gravity 0.05.
+     MOVE 3 TO WS-VX
+     CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     CALL "ARROW-STEP" USING WS-ARROW
+     MOVE "acceptance US15 44-8§7.2 air: the arrow moved by the full velocity 3.0 (thousandths)" TO WS-CASE
+     MOVE 3000 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER((EN-X(WS-ARROW) - WS-AX) * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.2 air: vx x 0.99 = 2.97 (thousandths)" TO WS-CASE
+     MOVE 2970 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(EN-VX(WS-ARROW) * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.2 air: gravity 0.05 after the drag (vy = -0.05, thousandths)" TO WS-CASE
+     MOVE -50 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = EN-VY(WS-ARROW) * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+
+*>   7.2 in water: the velocity x 0.6 before the move, no air drag after it, then gravity.
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-AX)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-AY)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-WATER
+     COMPUTE WS-AX = WS-BX + 0.5
+     MOVE 1 TO WS-VX
+     CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     CALL "ARROW-STEP" USING WS-ARROW
+     MOVE "acceptance US15 44-8§7.2 water: vx x 0.6 and no air drag (thousandths)" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(EN-VX(WS-ARROW) * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.2 water: the arrow moved by the slowed 0.6 (thousandths)" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER((EN-X(WS-ARROW) - WS-AX) * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.2 water: gravity 0.05 as well (vy, thousandths)" TO WS-CASE
+     MOVE -50 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = EN-VY(WS-ARROW) * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+     MOVE 0 TO WS-STATUS
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATUS
+     COMPUTE WS-AX = WS-X + 2
+
+*>   7.3 step 4 a critical arrow adds nextInt(damage / 2 + 2): 7 to 11 for the 7 of 12.5, and the draws vary.
+     MOVE 3.15 TO WS-VX
+     MOVE 100 TO WS-MIN
+     MOVE 0 TO WS-MAX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         COMPUTE WS-AX = WS-X + 2
+         COMPUTE WS-Z = PL-Z(WS-PLAYER) + 3
+         COMPUTE WS-VZ = 0
+         CALL "MOB-SPAWN" USING WS-DIM WS-GOLEM-TYPE WS-X WS-Y WS-Z WS-YAW WS-A
+         MOVE EN-HEALTH(WS-A) TO WS-HP0
+         CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+         MOVE 1 TO EN-ARW-CRIT(WS-ARROW)
+         COMPUTE EN-X(WS-ARROW) = WS-X - 1.2
+         MOVE EN-X(WS-ARROW) TO EN-WAY-X(WS-ARROW)
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 3 OR EN-USED(WS-ARROW) = 0
+             CALL "ARROW-STEP" USING WS-ARROW
+         END-PERFORM
+         COMPUTE WS-LOSS = WS-HP0 - EN-HEALTH(WS-A)
+         IF WS-LOSS < WS-MIN
+             MOVE WS-LOSS TO WS-MIN
+         END-IF
+         IF WS-LOSS > WS-MAX
+             MOVE WS-LOSS TO WS-MAX
+         END-IF
+         CALL "ENTITY-REMOVE" USING WS-A
+         IF EN-USED(WS-ARROW) = 1
+             CALL "ENTITY-REMOVE" USING WS-ARROW
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.3 crit: never below the plain damage 7" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-MIN >= 7
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 crit: never above 7 + 4 = 11" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-MAX <= 11
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 crit: twelve arrows do not all do the same damage" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF WS-MAX > WS-MIN
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 a plain arrow does exactly 7 (ceil(3.15 x 2.0))" TO WS-CASE
+     MOVE 7 TO WS-EXP
+     CALL "MOB-SPAWN" USING WS-DIM WS-GOLEM-TYPE WS-X WS-Y WS-Z WS-YAW WS-A
+     MOVE EN-HEALTH(WS-A) TO WS-HP0
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     COMPUTE EN-X(WS-ARROW) = WS-X - 1.2
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 3 OR EN-USED(WS-ARROW) = 0
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     COMPUTE WS-OBS = WS-HP0 - EN-HEALTH(WS-A)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 step 8 a non-piercing arrow is discarded by its hit" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-A
+
+*>   7.3 step 3 piercing, level 2: three cows are damaged, the fourth hit attempt discards the arrow with no damage (V12, 12.5).
+     MOVE 3.15 TO WS-VX
+     COMPUTE WS-Z = PL-Z(WS-PLAYER) + 5
+     COMPUTE WS-AX = WS-X + 3
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-A
+     COMPUTE WS-AX = WS-X + 4.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-B
+     COMPUTE WS-AX = WS-X + 6
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-C
+     COMPUTE WS-AX = WS-X + 7.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-D
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 2 TO EN-ARW-PIERCE(WS-ARROW)
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 12 OR EN-USED(WS-ARROW) = 0
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.3 pierce 2: the first cow takes 7" TO WS-CASE
+     MOVE 3 TO WS-EXP
+     MOVE EN-HEALTH(WS-A) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 pierce 2: the second cow takes 7" TO WS-CASE
+     MOVE EN-HEALTH(WS-B) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 pierce 2: the third cow takes 7 (N + 1 entities)" TO WS-CASE
+     MOVE EN-HEALTH(WS-C) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 pierce 2: the fourth cow is not hurt" TO WS-CASE
+     MOVE 10 TO WS-EXP
+     MOVE EN-HEALTH(WS-D) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 pierce 2: the fourth hit attempt discards the arrow" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-A
+     CALL "ENTITY-REMOVE" USING WS-B
+     CALL "ENTITY-REMOVE" USING WS-C
+     CALL "ENTITY-REMOVE" USING WS-D
+
+*>   V12 pierce 1: the first two are damaged, the third hit attempt discards the arrow.
+     COMPUTE WS-AX = WS-X + 3
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-A
+     COMPUTE WS-AX = WS-X + 4.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-B
+     COMPUTE WS-AX = WS-X + 6
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-C
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 1 TO EN-ARW-PIERCE(WS-ARROW)
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 12 OR EN-USED(WS-ARROW) = 0
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.3 V12 pierce 1: cows A and B hurt, C untouched" TO WS-CASE
+     MOVE 3 TO WS-EXP
+     COMPUTE WS-OBS = EN-HEALTH(WS-A) + EN-HEALTH(WS-B) + EN-HEALTH(WS-C) - 10
+     COMPUTE WS-EXP = 3 + 3 + 10 - 10
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 V12 pierce 1: the arrow is gone" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-A
+     CALL "ENTITY-REMOVE" USING WS-B
+     CALL "ENTITY-REMOVE" USING WS-C
+
+*>   A piercing arrow that meets a player remembers the player too and flies on (the ignore set holds entity ids of players as well).
+     MOVE 1 TO WS-VX
+     COMPUTE WS-AX = PL-X(WS-PLAYER) - 2
+     COMPUTE WS-AY = PL-Y(WS-PLAYER) + 0.8
+     CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY PL-Z(WS-PLAYER) WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 1 TO EN-ARW-PIERCE(WS-ARROW)
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6 OR EN-ARW-IGN-N(WS-ARROW) > 0
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.3 a piercing arrow remembers the player it hit" TO WS-CASE
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO WS-EXP
+     MOVE EN-ARW-IGN(WS-ARROW, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.3 and is still flying" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+     MOVE 3 TO WS-VX
+     COMPUTE WS-Z = PL-Z(WS-PLAYER) + 5
+
+*>   7.4 / 12.5 Punch k = 1.0: push (0.6, 0.1, 0) against resistance 0, (0.3, 0.1, 0) against 0.5.
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 1000 TO EN-ARW-PUNCH(WS-ARROW)
+     MOVE 0 TO WS-RES
+     CALL "ARROW-KNOCKBACK" USING WS-ARROW WS-RES WS-KX WS-KZ
+     MOVE "acceptance US15 44-8§7.4 V13 k = 1, resistance 0: dir.x = 0.6 (thousandths)" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(WS-KX * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.4 the push has no z along +x" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(WS-KZ * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 500 TO WS-RES
+     CALL "ARROW-KNOCKBACK" USING WS-ARROW WS-RES WS-KX WS-KZ
+     MOVE "acceptance US15 44-8§7.4 12.5 resistance 0.5: dir.x = 0.3 (thousandths)" TO WS-CASE
+     MOVE 300 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(WS-KX * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1000 TO WS-RES
+     CALL "ARROW-KNOCKBACK" USING WS-ARROW WS-RES WS-KX WS-KZ
+     MOVE "acceptance US15 44-8§7.4 full resistance: no push" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(WS-KX * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO EN-ARW-PUNCH(WS-ARROW)
+     MOVE 0 TO WS-RES
+     CALL "ARROW-KNOCKBACK" USING WS-ARROW WS-RES WS-KX WS-KZ
+     MOVE "acceptance US15 44-8§7.4 without Punch k = 0: no push" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(WS-KX * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+*>   A Punch arrow that hits a cow pushes it by (0.6, 0.1, 0) on top of what it had.
+     COMPUTE WS-AX = WS-X + 3
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-AX WS-Y WS-Z WS-YAW WS-A
+     MOVE EN-VX(WS-A) TO WS-VX0
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 1000 TO EN-ARW-PUNCH(WS-ARROW)
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4 OR EN-USED(WS-ARROW) = 0
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.4 a Punch arrow adds 0.6 to the cow's x velocity (thousandths)" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER((EN-VX(WS-A) - WS-VX0) * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.4 and 0.1 to its y velocity (thousandths)" TO WS-CASE
+     MOVE 100 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(EN-VY(WS-A) * 1000 + 0.5)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-A
+
+*>   7.5 step 6 an arrow that hits a block sticks: no velocity, shake 7, not critical or piercing, ignore set cleared.
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X) + 5
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-AY)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE
+     MOVE 1 TO WS-VX
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE PL-ENTITY-ID(WS-PLAYER) WS-ARROW
+     MOVE 1 TO EN-ARW-CRIT(WS-ARROW)
+     MOVE 2 TO EN-ARW-PIERCE(WS-ARROW)
+     MOVE 1 TO EN-ARW-IGN-N(WS-ARROW)
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 8 OR EN-ON-GROUND(WS-ARROW) = 1
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.5 the arrow sticks in the block" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE EN-ON-GROUND(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.5 its velocity is 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION INTEGER(FUNCTION ABS(EN-VX(WS-ARROW)) * 1000)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.5 shakeTime is 7" TO WS-CASE
+     MOVE 7 TO WS-EXP
+     MOVE EN-ARW-SHAKE(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.5 it is no longer critical" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-ARW-CRIT(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.5 its pierce level is 0" TO WS-CASE
+     MOVE EN-ARW-PIERCE(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.5 its ignore set is empty" TO WS-CASE
+     MOVE EN-ARW-IGN-N(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   Shake counts down while it is stuck; a pickup is refused until it reaches 0.
+     CALL "ARROW-PICKUP" USING WS-ARROW WS-PLAYER WS-TAKEN
+     MOVE "acceptance US15 44-8§7.6 a stuck arrow is not taken while it shakes" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-TAKEN TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM 7 TIMES
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.5 shakeTime counts down to 0 in 7 ticks" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-ARW-SHAKE(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   7.6 the player owner made it ALLOWED: the pickup adds an arrow item and discards the arrow.
+     CALL "ARROW-PICKUP" USING WS-ARROW WS-PLAYER WS-TAKEN
+     MOVE "acceptance US15 44-8§7.6 ALLOWED: the pickup succeeds" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-TAKEN TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-8§7.6 the arrow entity is discarded" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         IF PL-SLOT-ITEM(WS-PLAYER, WS-I) = WS-ARROW-ITEM
+             ADD PL-SLOT-COUNT(WS-PLAYER, WS-I) TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.6 one arrow item is in the inventory" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   DISALLOWED (a mob's arrow) is never taken; CREATIVE_ONLY only by a creative player, without an item.
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 1 TO EN-ON-GROUND(WS-ARROW)
+     CALL "ARROW-PICKUP" USING WS-ARROW WS-PLAYER WS-TAKEN
+     MOVE "acceptance US15 44-8§7.6 DISALLOWED: refused" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-TAKEN TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 2 TO EN-ARW-PICKUP(WS-ARROW)
+     CALL "ARROW-PICKUP" USING WS-ARROW WS-PLAYER WS-TAKEN
+     MOVE "acceptance US15 44-8§7.6 CREATIVE_ONLY: a survival player is refused" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-TAKEN TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     CALL "ARROW-PICKUP" USING WS-ARROW WS-PLAYER WS-TAKEN
+     MOVE "acceptance US15 44-8§7.6 CREATIVE_ONLY: a creative player takes it" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-TAKEN TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         IF PL-SLOT-ITEM(WS-PLAYER, WS-I) = WS-ARROW-ITEM
+             ADD PL-SLOT-COUNT(WS-PLAYER, WS-I) TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.6 and adds no item (still one arrow)" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   V17 an arrow stuck for 1200 ticks is discarded.
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-AY WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ARROW
+     MOVE 1 TO EN-ON-GROUND(WS-ARROW)
+     PERFORM 1199 TIMES
+         CALL "ARROW-STEP" USING WS-ARROW
+     END-PERFORM
+     MOVE "acceptance US15 44-8§7.1 V17 stuck for 1199 ticks it is still there" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ARROW-STEP" USING WS-ARROW
+     MOVE "acceptance US15 44-8§7.1 V17 the 1200th tick discards it" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-ARROW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     STOP RUN.
+ END PROGRAM TEST-Q44-44-8-7.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(160).
+ 01 L-EXPECTED             BINARY-LONG.
+ 01 L-OBSERVED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CHK.
+ COPY CORETEST.
+ COPY MOBSPTEST.

@@ -303,6 +303,70 @@
  END PROGRAM BOAT-LEVEL-ABOVE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BOAT-FRICTION.
+*> USING row, friction out (FLOAT-LONG), cells out (BINARY-LONG): 44 part 8 section 3.3 getGroundFriction, the average block friction under the boat: the cells that the thin slab
+*> (minX, minY - 0.001, minZ) to (maxX, minY, maxZ) overlaps and whose block is solid. The margin cells of the doc's scan (one more column and row all round, corners left out) can never
+*> overlap the slab with a full-cell shape, so only the overlapped cells are visited; an empty count gives 0 (the status is then IN_AIR).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-MINX                BINARY-LONG.
+ 01 WS-MAXX                BINARY-LONG.
+ 01 WS-MINZ                BINARY-LONG.
+ 01 WS-MAXZ                BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-SUM                 FLOAT-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-LOW                 FLOAT-LONG.
+ 01 WS-HIGH                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-FRICTION             FLOAT-LONG.
+ 01 L-CELLS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-FRICTION L-CELLS.
+     MOVE 0 TO L-FRICTION L-CELLS WS-SUM
+     COMPUTE WS-LOW = EN-X(L-ROW) - 0.6875
+     COMPUTE WS-MINX = FUNCTION INTEGER(WS-LOW)
+     COMPUTE WS-HIGH = EN-X(L-ROW) + 0.6875
+     COMPUTE WS-MAXX = FUNCTION INTEGER(WS-HIGH)
+     IF WS-MAXX = WS-HIGH
+         SUBTRACT 1 FROM WS-MAXX
+     END-IF
+     COMPUTE WS-LOW = EN-Z(L-ROW) - 0.6875
+     COMPUTE WS-MINZ = FUNCTION INTEGER(WS-LOW)
+     COMPUTE WS-HIGH = EN-Z(L-ROW) + 0.6875
+     COMPUTE WS-MAXZ = FUNCTION INTEGER(WS-HIGH)
+     IF WS-MAXZ = WS-HIGH
+         SUBTRACT 1 FROM WS-MAXZ
+     END-IF
+     COMPUTE WS-PY = EN-Y(L-ROW) - 0.001
+     COMPUTE WS-CY = FUNCTION INTEGER(WS-PY)
+     COMPUTE WS-PY = WS-CY + 1
+     PERFORM VARYING WS-CZ FROM WS-MINZ BY 1 UNTIL WS-CZ > WS-MAXZ
+         PERFORM VARYING WS-CX FROM WS-MINX BY 1 UNTIL WS-CX > WS-MAXX
+             CALL "GI-SOLID-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-SOLID
+             IF WS-SOLID = 1
+                 COMPUTE WS-PX = WS-CX + 0.5
+                 COMPUTE WS-PZ = WS-CZ + 0.5
+                 CALL "IP-FRICTION" USING EN-DIM(L-ROW) WS-PX WS-PY WS-PZ WS-F
+                 ADD WS-F TO WS-SUM
+                 ADD 1 TO L-CELLS
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF L-CELLS > 0
+         COMPUTE L-FRICTION = WS-SUM / L-CELLS
+     END-IF
+     GOBACK.
+ END PROGRAM BOAT-FRICTION.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BOAT-FLOAT.
 *> USING row, old status, status (BINARY-LONG): floatBoat (3.4): the re-entry from the air (old status 4, status in water), else the drag, the gravity term and the buoyancy of the status.
  DATA DIVISION.
@@ -315,6 +379,7 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-CELLS               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-OLD                  BINARY-LONG.
@@ -344,7 +409,7 @@
              MOVE 0.01 TO WS-BUOYANCY
              MOVE 0.45 TO WS-DRAG
          WHEN 3
-             MOVE 0.6 TO WS-DRAG
+             CALL "BOAT-FRICTION" USING L-ROW WS-DRAG WS-CELLS
      END-EVALUATE
      COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * WS-DRAG
      COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * WS-DRAG

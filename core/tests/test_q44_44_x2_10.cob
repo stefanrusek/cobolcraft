@@ -1,0 +1,647 @@
+*> Acceptance test of docs/protocol/44-residual-mob-questions-x2-continuation.md section 10 as rule functions (lane 002-lane-p49j-b, T24400 range): the generic goals: SitWhenOrdered, the owner and non-tame target goals (worked example), trade with player, UseItem pitch, DoorInteract, MoveThroughVillage and PathfindToRaid residuals.
+
+*> The functions of core/src/q44-44-x2.cob are not called by a tick (no engine for them yet, see the lane task list).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-Q44-44-X2-10.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-CASE                PIC X(160).
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                  FLOAT-LONG.
+ 01 WS-B                  FLOAT-LONG.
+ 01 WS-C                  FLOAT-LONG.
+ 01 WS-D                  FLOAT-LONG.
+ 01 WS-E                  FLOAT-LONG.
+ 01 WS-F                  FLOAT-LONG.
+ 01 WS-G                  FLOAT-LONG.
+ 01 WS-H                  FLOAT-LONG.
+ 01 WS-J                  FLOAT-LONG.
+ 01 WS-K                  FLOAT-LONG.
+ 01 WS-N1                 BINARY-LONG.
+ 01 WS-N2                 BINARY-LONG.
+ 01 WS-N3                 BINARY-LONG.
+ 01 WS-N4                 BINARY-LONG.
+ 01 WS-N5                 BINARY-LONG.
+ 01 WS-N6                 BINARY-LONG.
+ 01 WS-N7                 BINARY-LONG.
+ 01 WS-N8                 BINARY-LONG.
+ 01 WS-N9                 BINARY-LONG.
+ 01 WS-N10                 BINARY-LONG.
+ 01 WS-N11                 BINARY-LONG.
+ 01 WS-N12                 BINARY-LONG.
+ 01 WS-CHAIN.
+    05 WS-LEVEL OCCURS 5 TIMES.
+       10 WS-AMP            BINARY-LONG.
+       10 WS-DUR            BINARY-LONG.
+       10 WS-ACTIVE         BINARY-LONG.
+ 01 WS-TAB.
+    05 WS-TN                BINARY-LONG.
+    05 WS-TC OCCURS 6 TIMES.
+       10 WS-TA             BINARY-LONG.
+       10 WS-TB             BINARY-LONG.
+       10 WS-TD             BINARY-LONG.
+ 01 WS-COL.
+    05 WS-CELL OCCURS 14 TIMES.
+       10 WS-CE             BINARY-LONG.
+       10 WS-CF             BINARY-LONG.
+ 01 WS-S1                  PIC X(32).
+ 01 WS-S2                  PIC X(32).
+ 01 WS-S3                  PIC X(32).
+ 01 WS-S4                  PIC X(32).
+ 01 WS-S5                  PIC X(32).
+ 01 WS-S6                  PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 a tame pet ordered to sit on dry ground sits" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 a wild animal not ordered to sit does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 not in water" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 not off the ground" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 0 TO WS-N5
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 an ownerless pet sits" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 143 TO WS-A
+     MOVE 1 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 a pet whose owner within 12 blocks was hurt by a mob stays up" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 144 TO WS-A
+     MOVE 1 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 at exactly 12 blocks (144) the rule no longer applies" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-N6
+     CALL "X2-SIT-CAN-USE" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6 WS-N7
+     MOVE "acceptance US15 44-x2§10 10.1 a wild animal ordered to sit passes check 1 and sits" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 worked example: the owner hurt at 500, the goal's stamp 0: the wolf targets" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 500 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 the same hit is not retargeted (stamps equal)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 101 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 a damage source older than 100 ticks does not count" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 100 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 a source of exactly 100 ticks still counts" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 a source tagged NO_WOLF_RETALIATION does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 0 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 no damage source does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 not tame does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 a sitting wolf does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 without an owner does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 0 TO WS-I
+     MOVE 1 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 canAttack false does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 10 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 0 TO WS-N7
+     MOVE 500 TO WS-N8
+     MOVE 1 TO WS-I
+     MOVE 0 TO WS-EXP
+     CALL "X2-OWNER-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8 WS-I WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.2 wantsToAttack false does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 1 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: a new last-hurt-mob stamp targets" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 300 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 1 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: the same stamp does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 1 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: a sitting animal does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 1 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: not tame does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 1 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: no owner does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 0 TO WS-N6
+     MOVE 1 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: canAttack false does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 300 TO WS-N5
+     MOVE 1 TO WS-N6
+     MOVE 0 TO WS-N7
+     CALL "X2-OWNER-HURT-TARGET" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6 WS-N7 WS-N8
+     MOVE "acceptance US15 44-x2§10 10.2 OwnerHurtTargetGoal: wantsToAttack false does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N8
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     CALL "X2-NONTAME-TARGET" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.2 NonTameRandomTargetGoal: not tame and the base canUse" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     CALL "X2-NONTAME-TARGET" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.2 a tame animal does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     CALL "X2-NONTAME-TARGET" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.2 the base canUse false does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 16 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 TradeWithPlayerGoal: alive, dry, grounded, calm, a trader within 4" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 16.5 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 not beyond 4 blocks (squared 16.5)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 4 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 not when dead" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 4 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 not in water" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 4 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 not off the ground" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 4 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 not when hurt recently" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 0 TO WS-N5
+     MOVE 4 TO WS-A
+     CALL "X2-TRADE-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-A WS-N6
+     MOVE "acceptance US15 44-x2§10 10.3 not without a trading player" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.5 TO WS-A
+     CALL "X2-USEITEM-PITCH" USING WS-A WS-B
+     MOVE "acceptance US15 44-x2§10 10.3 UseItemGoal finish sound pitch at draw 0.5: 1.0 (thousandths)" TO WS-CASE
+     MOVE 1000 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-B * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-A
+     CALL "X2-USEITEM-PITCH" USING WS-A WS-B
+     MOVE "acceptance US15 44-x2§10 10.3 pitch at draw 0: 0.9" TO WS-CASE
+     MOVE 900 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-B * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-D
+     CALL "X2-DOOR-PASSED" USING WS-A WS-B WS-C WS-D WS-N1
+     MOVE "acceptance US15 44-x2§10 10.4 the mob has not crossed the door plane (same side)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE -0.5 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-D
+     CALL "X2-DOOR-PASSED" USING WS-A WS-B WS-C WS-D WS-N1
+     MOVE "acceptance US15 44-x2§10 10.4 it has crossed (opposite side)" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-D
+     CALL "X2-DOOR-PASSED" USING WS-A WS-B WS-C WS-D WS-N1
+     MOVE "acceptance US15 44-x2§10 10.4 exactly on the plane (0) has not crossed" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 2.25 TO WS-A
+     CALL "X2-DOOR-NODE" USING WS-A WS-N1
+     MOVE "acceptance US15 44-x2§10 10.4 door node at squared distance 2.25: 1" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 2.26 TO WS-A
+     CALL "X2-DOOR-NODE" USING WS-A WS-N1
+     MOVE "acceptance US15 44-x2§10 10.4 door node at squared distance 2.26: 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 15 TO WS-N1
+     CALL "X2-VILLAGE-TRIM" USING WS-N1
+     MOVE "acceptance US15 44-x2§10 10.5 trim: 15 visited entries stay 15" TO WS-CASE
+     MOVE 15 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 16 TO WS-N1
+     CALL "X2-VILLAGE-TRIM" USING WS-N1
+     MOVE "acceptance US15 44-x2§10 10.5 trim: 16 entries lose the oldest one" TO WS-CASE
+     MOVE 15 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     CALL "X2-VILLAGE-STOP" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.5 stop: navigation done records the POI" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     CALL "X2-VILLAGE-STOP" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.5 stop: still walking but within distanceToPoi records it" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     CALL "X2-VILLAGE-STOP" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.5 stop: still walking and far records nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 6 TO WS-A
+     MOVE 0.6 TO WS-B
+     MOVE 5 TO WS-C
+     CALL "X2-VILLAGE-CONTINUE" USING WS-N1 WS-A WS-B WS-C WS-N2
+     MOVE "acceptance US15 44-x2§10 10.5 continue: walking, farther than bbWidth + distanceToPoi (5.6)" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 5.5 TO WS-A
+     MOVE 0.6 TO WS-B
+     MOVE 5 TO WS-C
+     CALL "X2-VILLAGE-CONTINUE" USING WS-N1 WS-A WS-B WS-C WS-N2
+     MOVE "acceptance US15 44-x2§10 10.5 continue stops within 5.6" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 20 TO WS-A
+     MOVE 0.6 TO WS-B
+     MOVE 5 TO WS-C
+     CALL "X2-VILLAGE-CONTINUE" USING WS-N1 WS-A WS-B WS-C WS-N2
+     MOVE "acceptance US15 44-x2§10 10.5 continue stops when the navigation is done" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N2
+     MOVE 21 TO WS-N1
+     CALL "X2-RAID-RECRUIT" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.6 recruitment: tickCount 21 above recruitmentTick 0 fires" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x2§10 10.6 and sets recruitmentTick = tickCount + 20 = 41" TO WS-CASE
+     MOVE 41 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 41 TO WS-N1
+     CALL "X2-RAID-RECRUIT" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x2§10 10.6 at tickCount 41 (not above 41) it does not fire" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     STOP RUN.
+ END PROGRAM TEST-Q44-44-X2-10.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(160).
+ 01 L-EXPECTED             BINARY-LONG.
+ 01 L-OBSERVED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CHK.
