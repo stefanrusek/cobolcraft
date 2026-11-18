@@ -159,7 +159,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Finalize a zombie on Hard late in the world: about 5 in 100 are babies, the reinforcement chance is 0 to 0.1 (leaders more).
      MOVE 3 TO BW-DIFFICULTY
-     MOVE 2000000 TO CW-TIME
+     MOVE 2000000 TO CW-GAME-TIME
      MOVE "minecraft:zombie" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE PL-X(WS-PLAYER) TO WS-X
