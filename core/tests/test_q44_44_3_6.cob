@@ -48,7 +48,7 @@
      CALL "VL-FIND" USING EN-ID(WS-ROW) WS-NO WS-SLOT
      MOVE "farmer" TO VL-PROF(WS-SLOT)
      MOVE 3 TO VL-LEVEL(WS-SLOT)
-     MOVE 4 TO VL-TYPE(WS-SLOT)
+     MOVE 3 TO VL-TYPE(WS-SLOT)
      MOVE 80 TO VL-XP(WS-SLOT)
      MOVE 2 TO VL-RESTOCKS(WS-SLOT)
      MOVE 12345 TO VL-LAST-RESTOCK(WS-SLOT)
@@ -63,7 +63,7 @@
      MOVE PB-POS TO WS-ROOT
      MOVE "Entities" TO WS-PATH
      CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
-     MOVE "VillagerData:{type:minecraft:snow,profession:minecraft:farmer,level:3},VillagerDataFinalized:1,FoodLevel:7,Xp:80," TO WS-WANT
+     MOVE "VillagerData:{type:minecraft:savanna,profession:minecraft:farmer,level:3},VillagerDataFinalized:1,FoodLevel:7,Xp:80," TO WS-WANT
      MOVE 0 TO WS-A
      INSPECT WS-TEXT TALLYING WS-A FOR ALL FUNCTION TRIM(WS-WANT)
      MOVE "acceptance US15 44-3§3.2 the villager's saved fields: VillagerData, VillagerDataFinalized, FoodLevel, Xp in the documented order" TO WS-CASE
@@ -106,8 +106,8 @@
      MOVE 3 TO WS-E
      MOVE VL-LEVEL(WS-SLOT) TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     MOVE "acceptance US15 44-3§3.2 the snow type (4) is read back" TO WS-CASE
-     MOVE 4 TO WS-E
+     MOVE "acceptance US15 44-3§3.2 the savanna type (3) is read back" TO WS-CASE
+     MOVE 3 TO WS-E
      MOVE VL-TYPE(WS-SLOT) TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      MOVE "acceptance US15 44-3§3.2 Xp 80 is read back" TO WS-CASE

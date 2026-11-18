@@ -15,15 +15,15 @@
  01 WS-NO                  BINARY-LONG VALUE 0.
  01 WS-SLOT                BINARY-LONG.
  01 WS-TYPES.
-    05 FILLER              PIC X(16) VALUE "minecraft:desert".
-    05 FILLER              PIC X(16) VALUE "minecraft:jungle".
-    05 FILLER              PIC X(16) VALUE "minecraft:plains".
-    05 FILLER              PIC X(16) VALUE "minecraft:savanna".
-    05 FILLER              PIC X(16) VALUE "minecraft:snow".
-    05 FILLER              PIC X(16) VALUE "minecraft:swamp".
-    05 FILLER              PIC X(16) VALUE "minecraft:taiga".
+    05 FILLER              PIC X(17) VALUE "minecraft:desert".
+    05 FILLER              PIC X(17) VALUE "minecraft:jungle".
+    05 FILLER              PIC X(17) VALUE "minecraft:plains".
+    05 FILLER              PIC X(17) VALUE "minecraft:savanna".
+    05 FILLER              PIC X(17) VALUE "minecraft:snow".
+    05 FILLER              PIC X(17) VALUE "minecraft:swamp".
+    05 FILLER              PIC X(17) VALUE "minecraft:taiga".
  01 WS-TYPE-TABLE REDEFINES WS-TYPES.
-    05 WS-TYPE-NAME        PIC X(16) OCCURS 7 TIMES.
+    05 WS-TYPE-NAME        PIC X(17) OCCURS 7 TIMES.
  01 WS-TEXT                PIC X(48).
  01 WS-LENGTH              BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
