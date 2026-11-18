@@ -108,6 +108,12 @@
      MOVE 0 TO WS-E
      MOVE WS-SKY TO WS-O
      PERFORM CHECK-N
+     MOVE 99 TO WS-DEPTH
+     PERFORM SPREAD-AT
+     MOVE "bugvillage spread: a depth above 7 is cut at 7 (the search grid is 15 cells wide)" TO WS-CASE
+     MOVE 12 TO WS-E
+     MOVE WS-SKY TO WS-O
+     PERFORM CHECK-N
      MOVE 7 TO WS-DEPTH
      PERFORM COUNT-PASSES
      MOVE "bugvillage 18§6.8 by day no zombie spawns under the eaves (3 steps from the open sky)" TO WS-CASE
