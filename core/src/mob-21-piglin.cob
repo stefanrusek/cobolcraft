@@ -226,13 +226,19 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PIGLIN-PICKUP.
-*> USING entity row: an adult piglin that is not admiring and not disabled takes one loved item lying within reach (44 section 3.2: StartAdmiringItemIfSeen and the pick-up
-*> path; the reach is the box of 1 block around it, 1.5 up and down) and admires it for 119 ticks; a gold ingot barters at the end (EN-ADMIRE-CUR), any other loved item is kept.
-*> Gaps: no walking to the item (GoToWantedItem), gold nuggets, food and equipment are not taken, no line of sight test.
+*> USING entity row: an adult piglin takes an item lying within reach (the box of 1 block around it, 1.5 up and down; 44 section 3.2 wantsToPickUp and pickUpItem), one per
+*> call, in the order of the entities: with the game rule mob_griefing off nothing; ADMIRING_DISABLED together with an attack target: nothing; a gold nugget: the whole stack
+*> (kept: the piglin has no inventory store); food (porkchop, cooked porkchop) when it has not eaten recently: one is eaten (ATE_RECENTLY 200 ticks, PG-ATE); a loved item
+*> when it is not admiring (no loved item in the off hand): one is held and admired for 119 ticks (a gold ingot barters at the end through EN-ADMIRE-CUR, any other loved item is
+*> kept). Gaps: no walking to the item for nuggets and food, no line of sight test, babies take nothing (their stopHolding differs, 3.4), armour and other equipment is not
+*> taken (canReplaceCurrentItem is Open question 2 of doc 44 part 6), the item tag piglin_repellents has no documented contents.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
+ COPY PGBRAIN.
+ 01 WS-RULE-NAME            PIC X(40) VALUE "mob_griefing".
+ 01 WS-RULE                 BINARY-DOUBLE.
  01 WS-E                    BINARY-LONG.
  01 WS-DX                   FLOAT-LONG.
  01 WS-DY                   FLOAT-LONG.
@@ -241,12 +247,19 @@
  01 WS-KEY32                PIC X(32).
  01 WS-LOVED                BINARY-LONG.
  01 WS-DONE                 BINARY-LONG.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-YES                  BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ENTITY                BINARY-LONG.
  PROCEDURE DIVISION USING L-ENTITY.
-     IF EN-MOBAGE(L-ENTITY) < 0 OR EN-ADMIRE(L-ENTITY) > 0 OR EN-ADMIRE-OFF(L-ENTITY) > 0
+     IF EN-MOBAGE(L-ENTITY) < 0
          GOBACK
      END-IF
+     CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
+     IF WS-RULE = 0
+         GOBACK
+     END-IF
+     CALL "PGB-SLOT" USING EN-ID(L-ENTITY) WS-YES WS-SLOT
      MOVE 0 TO WS-DONE
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR WS-DONE = 1
          IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = CR-LOOSE-ITEM AND EN-DIM(WS-E) = EN-DIM(L-ENTITY)
@@ -262,18 +275,34 @@
                      MOVE WS-KEY(1:32) TO WS-KEY32
                  END-IF
                  CALL "PIGLIN-LOVED" USING WS-KEY32 WS-LOVED
-                 IF WS-LOVED = 1
-                     MOVE 1 TO WS-DONE
-                     MOVE 119 TO EN-ADMIRE(L-ENTITY)
-                     MOVE 0 TO EN-ADMIRE-PL(L-ENTITY) EN-ADMIRE-CUR(L-ENTITY)
-                     IF WS-KEY32 = "gold_ingot"
-                         MOVE 1 TO EN-ADMIRE-CUR(L-ENTITY)
-                     END-IF
-                     SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
-                     IF EN-ITEM-COUNT(WS-E) = 0
+                 EVALUATE TRUE
+                     WHEN EN-ADMIRE-OFF(L-ENTITY) > 0 AND EN-TARGET(L-ENTITY) > 0
+                         CONTINUE
+                     WHEN WS-KEY32 = "gold_nugget"
+*>                       The whole stack goes into the inventory.
+                         MOVE 1 TO WS-DONE
+                         MOVE 0 TO EN-ITEM-COUNT(WS-E)
                          CALL "ENTITY-REMOVE" USING WS-E
-                     END-IF
-                 END-IF
+                     WHEN (WS-KEY32 = "porkchop" OR "cooked_porkchop") AND PG-ATE(WS-SLOT) = 0
+*>                       eat: one is consumed and ATE_RECENTLY lasts 200 ticks.
+                         MOVE 1 TO WS-DONE
+                         MOVE 200 TO PG-ATE(WS-SLOT)
+                         SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
+                         IF EN-ITEM-COUNT(WS-E) = 0
+                             CALL "ENTITY-REMOVE" USING WS-E
+                         END-IF
+                     WHEN WS-LOVED = 1 AND EN-ADMIRE(L-ENTITY) = 0
+                         MOVE 1 TO WS-DONE
+                         MOVE 119 TO EN-ADMIRE(L-ENTITY)
+                         MOVE 0 TO EN-ADMIRE-PL(L-ENTITY) EN-ADMIRE-CUR(L-ENTITY)
+                         IF WS-KEY32 = "gold_ingot"
+                             MOVE 1 TO EN-ADMIRE-CUR(L-ENTITY)
+                         END-IF
+                         SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
+                         IF EN-ITEM-COUNT(WS-E) = 0
+                             CALL "ENTITY-REMOVE" USING WS-E
+                         END-IF
+                 END-EVALUATE
              END-IF
          END-IF
      END-PERFORM
