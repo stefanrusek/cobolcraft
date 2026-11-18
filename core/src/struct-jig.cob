@@ -8,7 +8,8 @@
 *>
 *> The free volume of 13 is a holder: a limit box and a list of removed boxes (a cell is free when it is inside the limit and in none of the removed boxes; a box is accepted only when
 *> every one of its cells is free, 13.1). The global holder is the structure limit box minus the start piece, an interior jigsaw's holder the parent's own box (10.2 step 4, 10.5).
-*> Deviations: the start height provider is the absolute one or a uniform one of two absolute anchors (36-10 2.2 step 1; start_jigsaw_name and the pool aliases are in struct-jig-alias.cob) and the heightmap one of the two the column query knows (WORLD_SURFACE_WG, OCEAN_FLOOR_WG); couldStructureExistInColumn (9.4 step 2) is not
+*> Deviations: the start height provider is the absolute one or a uniform one of two absolute anchors, and the heightmap one of the two the column query knows (WORLD_SURFACE_WG,
+*> OCEAN_FLOOR_WG); pool aliases (struct-jig-alias.cob), start_jigsaw_name (9.3) and the dimension padding check (9.5) are built; couldStructureExistInColumn (9.4 step 2) is not
 *> asked on its own (the caller's biome test at the stub, which is in the column, implies it; the biome at the stub is asked here before the assembly so a start in the wrong biome
 *> costs nothing); the dimension is the overworld (min y -64, max y 319); the surface of a column is the base height (STRUCT-BASE-HEIGHT kind 0, the noise terrain, no beardifier).
 *>
@@ -26,8 +27,6 @@
  COPY STRUCTPIECE.
  COPY STRUCTJIG.
  COPY STRUCTTPL.
- COPY STRUCTALIAS.
- COPY STRUCTALIASMAP.
  78 H-MAX                  VALUE 400.
  78 R-MAX                  VALUE 4096.
  78 Q-MAX                  VALUE 1100.
@@ -39,19 +38,18 @@
  01 WS-MAX-Y               BINARY-LONG VALUE 319.
 *> the start
  01 WS-PX                  BINARY-LONG.
+ 01 WS-ORX                 BINARY-LONG.
+ 01 WS-ORY                 BINARY-LONG.
+ 01 WS-ORZ                 BINARY-LONG.
+ 01 WS-OFFY                BINARY-LONG.
+ 01 WS-AKEY                PIC X(80).
+ 01 WS-TAGROW              BINARY-LONG.
+ 01 WS-LO                  BINARY-LONG.
  01 WS-PY                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
  01 WS-ROT                 BINARY-LONG.
  01 WS-POOL                BINARY-LONG.
  01 WS-PKEY                PIC X(80).
- 01 WS-AKEY                PIC X(80).
- 01 WS-PPX                 BINARY-LONG.
- 01 WS-PPY                 BINARY-LONG.
- 01 WS-PPZ                 BINARY-LONG.
- 01 WS-OFFX                BINARY-LONG.
- 01 WS-OFFY                BINARY-LONG.
- 01 WS-OFFZ                BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
  01 WS-DRAW                BINARY-LONG.
  01 WS-BOUND               BINARY-LONG.
  01 WS-EL                  BINARY-LONG.
@@ -163,7 +161,7 @@
  01 WS-FX                  BINARY-LONG.
  01 WS-FY                  BINARY-LONG.
  01 WS-FZ                  BINARY-LONG.
- 01 WS-TAGKEY              PIC X(48).
+ 01 WS-TAGKEY              PIC X(80).
 *> the candidate's jigsaws
  01 WS-CJ-COUNT            BINARY-LONG.
  01 WS-CJ.
@@ -343,8 +341,7 @@
      IF PJ-TAG(WS-J) > 0
          MOVE TN-POOL(PJ-TAG(WS-J)) TO WS-PKEY
      END-IF
-*>   the pool field of a jigsaw block goes through the alias lookup (36-10 2.6; the identity without bindings)
-     CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-PKEY WS-AKEY
+     CALL "JIG-ALIAS-LOOKUP" USING WS-PKEY WS-AKEY
      MOVE WS-AKEY TO WS-PKEY
      CALL "JIG-POOL-FIND" USING WS-PKEY WS-POOLROW
      IF WS-POOLROW = 0
@@ -454,7 +451,7 @@
                  IF CJ-TAG(WS-K) > 0
                      MOVE TN-POOL(CJ-TAG(WS-K)) TO WS-PKEY
                  END-IF
-                 CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-PKEY WS-AKEY
+                 CALL "JIG-ALIAS-LOOKUP" USING WS-PKEY WS-AKEY
                  MOVE WS-AKEY TO WS-PKEY
                  CALL "JIG-POOL-FIND" USING WS-PKEY WS-MS
                  IF WS-MS > 0
@@ -610,20 +607,23 @@
      COMPUTE WS-PX = L-CX * 16
      MOVE SDT-JIG-Y(L-STRUCT) TO WS-PY
      COMPUTE WS-PZ = L-CZ * 16
-*>   36-10 2.2 step 1: a uniform start height draws once (a constant draws nothing); step 3: the alias lookup of this start
-     IF SDA-Y-KIND(L-STRUCT) = 1
-         COMPUTE WS-BOUND = SDA-Y-MAX(L-STRUCT) - SDA-Y-MIN(L-STRUCT) + 1
+*>   8.2 step 2: a uniform start height draws one value from the start random (lo + nextInt(hi - lo + 1); no draw when lo > hi), before the rotation
+     IF SDT-JIG-YKIND(L-STRUCT) = 1 AND SDT-JIG-Y2(L-STRUCT) > SDT-JIG-Y(L-STRUCT)
+         COMPUTE WS-BOUND = SDT-JIG-Y2(L-STRUCT) - SDT-JIG-Y(L-STRUCT) + 1
          CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-BOUND WS-DRAW
-         COMPUTE WS-PY = SDA-Y-MIN(L-STRUCT) + WS-DRAW
+         COMPUTE WS-PY = SDT-JIG-Y(L-STRUCT) + WS-DRAW
      END-IF
-     CALL "JIG-ALIAS-BUILD" USING L-STRUCT WS-PX WS-PY WS-PZ L-SEED JIG-ALIAS-MAP
-*>   9.1 and 9.2: the rotation, then the start element (one draw over the expanded list)
+*>   8.2 step 4 and 7.2: the pool alias map of this start
+     CALL "JIG-ALIAS-BUILD" USING L-STRUCT L-SEED WS-PX WS-PY WS-PZ
+     IF JM-DUP = 1
+         GOBACK
+     END-IF
+*>   9.1 and 9.2: the rotation, then the start element (one draw over the expanded list); the aliased start pool, else the structure's own
      MOVE 4 TO WS-BOUND
      CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-BOUND WS-ROT
-     CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP SDT-JIG-POOL(L-STRUCT) WS-PKEY
-     CALL "JIG-POOL-FIND" USING WS-PKEY WS-POOL
-*>   2.2 step 5: an aliased key that is not registered falls back to the declared pool
-     IF WS-POOL = 0 AND WS-PKEY NOT = SDT-JIG-POOL(L-STRUCT)
+     CALL "JIG-ALIAS-LOOKUP" USING SDT-JIG-POOL(L-STRUCT) WS-AKEY
+     CALL "JIG-POOL-FIND" USING WS-AKEY WS-POOL
+     IF WS-POOL = 0
          MOVE SDT-JIG-POOL(L-STRUCT) TO WS-PKEY
          CALL "JIG-POOL-FIND" USING WS-PKEY WS-POOL
      END-IF
@@ -639,33 +639,35 @@
      IF JE-KIND(WS-EL) = 5
          GOBACK
      END-IF
-*>   2.2 step 7 and 8: with a start jigsaw name the element's jigsaw of that name (in the shuffled order of 4.3) lands on the origin, so the piece position is the origin minus its offset
-     MOVE 0 TO WS-OFFX WS-OFFY WS-OFFZ
-     IF SDA-START(L-STRUCT) NOT = SPACES
+*>   9.3: the origin is pos, or pos minus the offset of the first jigsaw of the shuffled list that has the start jigsaw name (none: no structure)
+     MOVE WS-PX TO WS-ORX
+     MOVE WS-PY TO WS-ORY
+     MOVE WS-PZ TO WS-ORZ
+     MOVE 0 TO WS-OFFY
+     IF SDT-JIG-NAMED(L-STRUCT) = 1
          CALL "JIG-EL-JIGS" USING WS-EL WS-PX WS-PY WS-PZ WS-ROT
-         MOVE 0 TO WS-FOUND
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > JW-COUNT OR WS-FOUND > 0
-             IF JW-TAG(WS-I) > 0
-                 IF TN-NAME(JW-TAG(WS-I)) = SDA-START(L-STRUCT)
-                     MOVE WS-I TO WS-FOUND
+         MOVE 0 TO WS-LO
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > JW-COUNT OR WS-LO > 0
+             MOVE JW-TAG(WS-I) TO WS-TAGROW
+             IF WS-TAGROW > 0
+                 IF TN-NAME(WS-TAGROW) = SDT-JIG-NAME(L-STRUCT)
+                     MOVE WS-I TO WS-LO
                  END-IF
              END-IF
          END-PERFORM
-         IF WS-FOUND = 0
+         IF WS-LO = 0
              GOBACK
          END-IF
-         COMPUTE WS-OFFX = JW-X(WS-FOUND) - WS-PX
-         COMPUTE WS-OFFY = JW-Y(WS-FOUND) - WS-PY
-         COMPUTE WS-OFFZ = JW-Z(WS-FOUND) - WS-PZ
+         COMPUTE WS-ORX = WS-PX - (JW-X(WS-LO) - WS-PX)
+         COMPUTE WS-ORY = WS-PY - (JW-Y(WS-LO) - WS-PY)
+         COMPUTE WS-ORZ = WS-PZ - (JW-Z(WS-LO) - WS-PZ)
+         COMPUTE WS-OFFY = JW-Y(WS-LO) - WS-PY
      END-IF
-     COMPUTE WS-PPX = WS-PX - WS-OFFX
-     COMPUTE WS-PPY = WS-PY - WS-OFFY
-     COMPUTE WS-PPZ = WS-PZ - WS-OFFZ
-*>   9.3 and 9.4: the box at the piece position, its centre, the height of the heightmap (or the piece's) and the move that puts the ground layer on it
-     CALL "JIG-EL-BOX" USING WS-EL WS-PPX WS-PPY WS-PPZ WS-ROT WS-BOX
+*>   9.4: the box at the origin, its centre, the height of the heightmap (or the origin's) and the move that puts the ground layer on it
+     CALL "JIG-EL-BOX" USING WS-EL WS-ORX WS-ORY WS-ORZ WS-ROT WS-BOX
      COMPUTE WS-CCX = (WB(4) + WB(1)) / 2
      COMPUTE WS-CCZ = (WB(6) + WB(3)) / 2
-     MOVE WS-PPY TO WS-Y
+     MOVE WS-ORY TO WS-Y
      IF SDT-JIG-PROJ(L-STRUCT) >= 0
          MOVE SDT-JIG-PROJ(L-STRUCT) TO WS-KIND
          CALL "JIG-SURFACE" USING WS-CCX WS-CCZ WS-KIND WS-SURF
@@ -674,6 +676,13 @@
      COMPUTE WS-MOVE = WS-Y - (WB(2) + 1)
      ADD WS-MOVE TO WB(2)
      ADD WS-MOVE TO WB(5)
+*>   9.5: a decoded dimension padding rejects a piece that is too close to the vertical limits (an absent one is the shared zero and is not checked)
+     IF SDT-JIG-PADSET(L-STRUCT) = 1
+         IF WB(2) < WS-MIN-Y + SDT-JIG-PADB(L-STRUCT) OR WB(5) > WS-MAX-Y - SDT-JIG-PADT(L-STRUCT)
+             GOBACK
+         END-IF
+     END-IF
+*>   9.6: the stub is at the centre column and the height plus the jigsaw's offset
      MOVE WS-CCX TO L-X
      COMPUTE L-Y = WS-Y + WS-OFFY
      MOVE WS-CCZ TO L-Z
@@ -687,10 +696,10 @@
      END-IF
      MOVE 1 TO L-VALID
      MOVE WS-EL TO WS-CEL
-     COMPUTE WS-OY = WS-PPY + WS-MOVE
+     COMPUTE WS-OY = WS-ORY + WS-MOVE
      MOVE 1 TO WS-GROUND
-     MOVE WS-PPX TO WS-OX
-     MOVE WS-PPZ TO WS-OZ
+     MOVE WS-ORX TO WS-OX
+     MOVE WS-ORZ TO WS-OZ
      MOVE WS-ROT TO WS-CROT
      PERFORM ADD-PIECE
      MOVE WS-CHILD TO WS-P
@@ -907,16 +916,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-JIG-READ.
-*> USING JSON-DOC (the structure's file), structure row: the jigsaw fields of 3.1 into SDT-JIG-*: start_pool, size, start_height (the absolute provider), project_start_to_heightmap (-1 absent,
-*> 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), use_expansion_hack, max_distance_from_center (an int is a cube, an object has horizontal and vertical, the latter 4064 by default),
-*> dimension_padding (an int or bottom and top), liquid_settings, and through STRUCT-ALIAS-READ (struct-jig-alias.cob) the start_jigsaw_name, the uniform start height and the pool aliases.
-*> SDT-JIG-OK is 1 for a jigsaw structure the assembler can build; 0 for any other type and for a jigsaw structure with a start height of another provider, a malformed alias or a heightmap the
-*> column query does not know.
+*> USING JSON-DOC (the structure's file), structure row: the jigsaw fields of 3.1 into SDT-JIG-*: start_pool, start_jigsaw_name, size, start_height (the absolute provider or a uniform one of
+*> two absolute anchors), project_start_to_heightmap (-1 absent, 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), use_expansion_hack, max_distance_from_center (an int is a cube, an object has horizontal
+*> and vertical, the latter 4064 by default), pool_aliases (JIG-ALIAS-READ), dimension_padding (an int or bottom and top), liquid_settings. SDT-JIG-OK is 1 for a jigsaw structure the assembler
+*> can build; 0 for any other type and for a jigsaw structure with a start height of another provider, a malformed alias binding or a heightmap the column query does not know.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
- COPY STRUCTALIAS.
- 01 WS-AOK                 BINARY-LONG.
  01 WS-KIND-TYPE           BINARY-LONG VALUE 1.
  01 WS-NAME                PIC X(40).
  01 WS-TEXT                PIC X(120).
@@ -939,15 +945,24 @@
  01 K-BOTTOM               PIC X(40) VALUE "bottom".
  01 K-TOP                  PIC X(40) VALUE "top".
  01 K-LIQUID               PIC X(40) VALUE "liquid_settings".
- 01 K-ALIASES              PIC X(40) VALUE "pool_aliases".
  01 K-START-NAME           PIC X(40) VALUE "start_jigsaw_name".
+ 01 K-TYPE                 PIC X(40) VALUE "type".
+ 01 K-MIN                  PIC X(40) VALUE "min_inclusive".
+ 01 K-MAX                  PIC X(40) VALUE "max_inclusive".
+ 01 WS-ALIAS-OK            BINARY-LONG.
+ 01 WS-EXTRA               BINARY-LONG.
+ 01 WS-LO-NODE             BINARY-LONG.
+ 01 WS-HI-NODE             BINARY-LONG.
+ 01 WS-LO-OK               BINARY-LONG.
+ 01 WS-HI-OK               BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-ROW.
      MOVE SPACES TO SDT-JIG-POOL(L-ROW)
      MOVE 0 TO SDT-JIG-OK(L-ROW) SDT-JIG-SIZE(L-ROW) SDT-JIG-Y(L-ROW) SDT-JIG-HACK(L-ROW) SDT-JIG-HOR(L-ROW) SDT-JIG-PADB(L-ROW) SDT-JIG-PADT(L-ROW)
-         SDT-JIG-LIQ(L-ROW)
+         SDT-JIG-LIQ(L-ROW) SDT-JIG-NAMED(L-ROW) SDT-JIG-PADSET(L-ROW) SDT-JIG-YKIND(L-ROW) SDT-JIG-Y2(L-ROW) SDT-JIG-AL-FIRST(L-ROW) SDT-JIG-AL-N(L-ROW)
+     MOVE SPACES TO SDT-JIG-NAME(L-ROW)
      MOVE -1 TO SDT-JIG-PROJ(L-ROW)
      MOVE 4064 TO SDT-JIG-VER(L-ROW)
      CALL "STRUCT-ENUM-NAME" USING WS-KIND-TYPE SDT-TYPE(L-ROW) WS-NAME
@@ -966,14 +981,25 @@
          CALL "FD-J-MEMBER" USING JSON-DOC WS-NODE K-ABSOLUTE WS-INNER
      END-IF
      CALL "FD-J-INT" USING JSON-DOC WS-INNER SDT-JIG-Y(L-ROW) WS-OK
-*>   a uniform start height (36-10 2.1) is read by STRUCT-ALIAS-READ with the start jigsaw name and the pool aliases
-     CALL "STRUCT-ALIAS-READ" USING JSON-DOC L-ROW WS-AOK
-     IF SDA-Y-KIND(L-ROW) = 1
-         MOVE SDA-Y-MIN(L-ROW) TO SDT-JIG-Y(L-ROW)
-         MOVE 1 TO WS-OK
-     END-IF
-     IF WS-OK = 0 OR WS-AOK = 0
-         MOVE 0 TO SDT-JIG-OK(L-ROW)
+     IF WS-OK = 0
+*>       a uniform provider of two absolute anchors (11 section 4: lo + nextInt(hi - lo + 1))
+         MOVE 0 TO WS-LO-OK WS-HI-OK
+         IF WS-NODE > 0
+             CALL "FD-J-STRING" USING JSON-DOC K-TYPE WS-NODE WS-TEXT WS-LEN
+             IF FUNCTION TRIM(WS-TEXT) = "minecraft:uniform"
+                 CALL "FD-J-MEMBER" USING JSON-DOC WS-NODE K-MIN WS-INNER
+                 CALL "FD-J-MEMBER" USING JSON-DOC WS-INNER K-ABSOLUTE WS-LO-NODE
+                 CALL "FD-J-INT" USING JSON-DOC WS-LO-NODE SDT-JIG-Y(L-ROW) WS-LO-OK
+                 CALL "FD-J-MEMBER" USING JSON-DOC WS-NODE K-MAX WS-INNER
+                 CALL "FD-J-MEMBER" USING JSON-DOC WS-INNER K-ABSOLUTE WS-HI-NODE
+                 CALL "FD-J-INT" USING JSON-DOC WS-HI-NODE SDT-JIG-Y2(L-ROW) WS-HI-OK
+             END-IF
+         END-IF
+         IF WS-LO-OK = 1 AND WS-HI-OK = 1
+             MOVE 1 TO SDT-JIG-YKIND(L-ROW)
+         ELSE
+             MOVE 0 TO SDT-JIG-OK(L-ROW)
+         END-IF
      END-IF
      CALL "FD-J-STRING" USING JSON-DOC K-PROJECT 1 WS-TEXT WS-LEN
      EVALUATE FUNCTION TRIM(WS-TEXT)
@@ -1009,6 +1035,7 @@
      END-IF
      CALL "FD-J-MEMBER" USING JSON-DOC 1 K-PADDING WS-NODE
      IF WS-NODE > 0
+         MOVE 1 TO SDT-JIG-PADSET(L-ROW)
          IF JN-TYPE(WS-NODE) = JT-NUMBER
              CALL "FD-J-INT" USING JSON-DOC WS-NODE SDT-JIG-PADB(L-ROW) WS-OK
              MOVE SDT-JIG-PADB(L-ROW) TO SDT-JIG-PADT(L-ROW)
@@ -1022,6 +1049,24 @@
      CALL "FD-J-STRING" USING JSON-DOC K-LIQUID 1 WS-TEXT WS-LEN
      IF FUNCTION TRIM(WS-TEXT) = "ignore_waterlogging"
          MOVE 1 TO SDT-JIG-LIQ(L-ROW)
+     END-IF
+*>   the start jigsaw name (9.3) and the pool aliases (7)
+     CALL "FD-J-STRING" USING JSON-DOC K-START-NAME 1 WS-TEXT WS-LEN
+     IF WS-LEN > 0
+         MOVE 1 TO SDT-JIG-NAMED(L-ROW)
+         CALL "FD-KEY" USING WS-TEXT SDT-JIG-NAME(L-ROW)
+     END-IF
+     CALL "JIG-ALIAS-READ" USING JSON-DOC L-ROW WS-ALIAS-OK
+     IF WS-ALIAS-OK = 0
+         MOVE 0 TO SDT-JIG-OK(L-ROW)
+     END-IF
+*>   3.1 JigsawStructure.verifyRange: the horizontal distance plus 12 for any terrain adaptation must not exceed 128 (the structure is rejected)
+     MOVE 0 TO WS-EXTRA
+     IF SDT-ADAPT(L-ROW) NOT = 0
+         MOVE 12 TO WS-EXTRA
+     END-IF
+     IF SDT-JIG-HOR(L-ROW) + WS-EXTRA > 128
+         MOVE 0 TO SDT-JIG-OK(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM STRUCT-JIG-READ.

@@ -358,15 +358,16 @@
  01 WS-CAP16               BINARY-LONG VALUE 16.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-ID                  PIC X(48).
- 01 WS-LOOT                PIC X(48).
+ 01 WS-LOOT                PIC X(80).
  01 WS-SPAWN               PIC X(48).
  01 WS-MODE                PIC X(16).
  01 WS-JOINT               PIC X(16).
  01 WS-META                PIC X(96).
  01 WS-FINAL               PIC X(96).
- 01 WS-NAME                PIC X(48).
- 01 WS-POOL                PIC X(48).
- 01 WS-TARGET              PIC X(48).
+ 01 WS-NAME                PIC X(80).
+ 01 WS-POOL                PIC X(80).
+ 01 WS-TARGET              PIC X(80).
+ 01 WS-CAP80               BINARY-LONG VALUE 80.
  01 WS-PLACE               BINARY-LONG.
  01 WS-SELECT              BINARY-LONG.
  LINKAGE SECTION.
@@ -386,7 +387,7 @@
              WHEN WN = "id" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-ID WS-CAP48 WS-LENGTH
              WHEN WN = "LootTable" AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-LOOT WS-CAP48 WS-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-LOOT WS-CAP80 WS-LENGTH
              WHEN WN = "mode" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-MODE WS-CAP16 WS-LENGTH
              WHEN WN = "joint" AND WS-TYPE = 8
@@ -396,11 +397,11 @@
              WHEN WN = "final_state" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-FINAL WS-CAP96 WS-LENGTH
              WHEN WN = "name" AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-NAME WS-CAP48 WS-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-NAME WS-CAP80 WS-LENGTH
              WHEN WN = "pool" AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-POOL WS-CAP48 WS-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-POOL WS-CAP80 WS-LENGTH
              WHEN WN = "target" AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-TARGET WS-CAP48 WS-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-TARGET WS-CAP80 WS-LENGTH
              WHEN WN = "placement_priority" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER WS-PLACE
              WHEN WN = "selection_priority" AND WS-TYPE = 3

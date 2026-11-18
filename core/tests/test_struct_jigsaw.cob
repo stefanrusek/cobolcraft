@@ -1045,7 +1045,7 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE "test struct jigsaw given the trial_chambers data (pool aliases, a uniform start height) when it is read then it is ok (36-10 2.1)" TO TL-CASE
+     MOVE "test struct jigsaw given the trial_chambers data (pool aliases, a uniform start height) when it is read then it is ok" TO TL-CASE
      MOVE 0 TO WS-FLAG
      IF SDT-JIG-OK(WS-TRIAL) = 1
          MOVE 1 TO WS-FLAG

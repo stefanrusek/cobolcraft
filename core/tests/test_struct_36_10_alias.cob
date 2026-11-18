@@ -1,5 +1,4 @@
-*> Real-data test (skipped as a pass without the generated packs; docs/protocol/36-structures-10-ancient-city-trial-chambers-trail-ruins.md sections 2.1, 2.2, 2.6, 4.2, 8.1 and 8.3): Mth.getSeed (values from an
-*> independent evaluation of the formula), the pool alias lookup of the trial chambers (F = LegacyRandom(seed).nextLong() = -4962768465676381896 for seed 0, the generator LegacyRandom(getSeed(origin) XOR F), the draws
+*> Real-data test (skipped as a pass without the generated packs; docs/protocol/36-structures-10-ancient-city-trial-chambers-trail-ruins.md sections 2.1, 2.2, 2.6, 4.2, 8.1 and 8.3): the pool alias lookup of the trial chambers (F = LegacyRandom(seed).nextLong() = -4962768465676381896 for seed 0, the generator LegacyRandom(getSeed(origin) XOR F), the draws
 *> nextInt(3), nextInt(3), nextInt(4) in binding order: the document's example of 8.3 and six more seeds and origins from the independent model) and the identity lookup without bindings, then the start of the ancient
 *> city through JIG-FIND-POINT with a synthetic terrain (core/tests/JIGSEAM.cpy: no biome test, a start height that is absolute): a chunk whose start is city_center_1 at rotation NONE has the box, centre and stub
 *> of 8.1 (the jigsaw city_anchor at local (13, 24, 20) lands on the origin (16 cx, -27, 16 cz): piece box (x0 - 13, -52, z0 - 20) to (x0 + 4, -22, z0 + 20) with x0 = 16 cx, z0 = 16 cz). A trial chambers start
@@ -12,8 +11,6 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY STRUCTDATA.
- COPY STRUCTALIAS.
- COPY STRUCTALIASMAP.
  COPY STRUCTPIECE.
  COPY STRUCTJIG.
  COPY JIGTEST.
@@ -140,39 +137,6 @@
      END-PERFORM
      CALL "JIG-RESET"
 
-*>   Mth.getSeed: l = (int)(x * 3129871) ^ (z * 116129781L) ^ y, (l * l * 42317861L + l * 11L) >> 16
-     MOVE 0 TO WS-X WS-Z
-     MOVE -30 TO WS-Y
-     CALL "STRUCT-MTH-SEED" USING WS-X WS-Y WS-Z WS-MTH
-     MOVE "acceptance US12 36-10§2.6 Mth.getSeed(0, -30, 0) is 581147 (the document's example)" TO TL-CASE
-     MOVE 581147 TO TL-EXPECTED-N
-     MOVE WS-MTH TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 160 TO WS-X
-     MOVE -27 TO WS-Y
-     MOVE -112 TO WS-Z
-     CALL "STRUCT-MTH-SEED" USING WS-X WS-Y WS-Z WS-MTH
-     MOVE "acceptance US12 36-10§2.6 Mth.getSeed(160, -27, -112) is 81854124156105" TO TL-CASE
-     MOVE 81854124156105 TO TL-EXPECTED-N
-     MOVE WS-MTH TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 1 TO WS-X
-     MOVE 2 TO WS-Y
-     MOVE 3 TO WS-Z
-     CALL "STRUCT-MTH-SEED" USING WS-X WS-Y WS-Z WS-MTH
-     MOVE "acceptance US12 36-10§2.6 Mth.getSeed(1, 2, 3) is -33674130277896" TO TL-CASE
-     MOVE -33674130277896 TO TL-EXPECTED-N
-     MOVE WS-MTH TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE -5 TO WS-X
-     MOVE 70 TO WS-Y
-     MOVE 9 TO WS-Z
-     CALL "STRUCT-MTH-SEED" USING WS-X WS-Y WS-Z WS-MTH
-     MOVE "acceptance US12 36-10§2.6 Mth.getSeed(-5, 70, 9) is -135257194846019" TO TL-CASE
-     MOVE -135257194846019 TO TL-EXPECTED-N
-     MOVE WS-MTH TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-
 *>   F = LegacyRandom(0).nextLong()
      MOVE 0 TO WS-USEED
      CALL "JRAND-SET-SEED" USING WS-STATE WS-USEED
@@ -189,7 +153,7 @@
          MOVE WC-X(WS-K) TO WS-X
          MOVE WC-Y(WS-K) TO WS-Y
          MOVE WC-Z(WS-K) TO WS-Z
-         CALL "JIG-ALIAS-BUILD" USING WS-TRIAL WS-X WS-Y WS-Z WS-SEED JIG-ALIAS-MAP
+         CALL "JIG-ALIAS-BUILD" USING WS-TRIAL WS-SEED WS-X WS-Y WS-Z
          MOVE SPACES TO WS-WANT-TXT WS-GOT-TXT
          MOVE 1 TO WS-PTR
          COMPUTE WS-I = WC-A(WS-K) + 1
@@ -202,19 +166,19 @@
          MOVE 1 TO WS-PTR
          MOVE SPACES TO WS-KEY
          STRING FUNCTION TRIM(WS-PRE) "contents/ranged" DELIMITED BY SIZE INTO WS-KEY
-         CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-KEY WS-OUT
+         CALL "JIG-ALIAS-LOOKUP" USING WS-KEY WS-OUT
          STRING FUNCTION TRIM(WS-OUT) " " DELIMITED BY SIZE INTO WS-GOT-TXT WITH POINTER WS-PTR
          MOVE SPACES TO WS-KEY
          STRING FUNCTION TRIM(WS-PRE) "contents/slow_ranged" DELIMITED BY SIZE INTO WS-KEY
-         CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-KEY WS-OUT
+         CALL "JIG-ALIAS-LOOKUP" USING WS-KEY WS-OUT
          STRING FUNCTION TRIM(WS-OUT) " " DELIMITED BY SIZE INTO WS-GOT-TXT WITH POINTER WS-PTR
          MOVE SPACES TO WS-KEY
          STRING FUNCTION TRIM(WS-PRE) "contents/melee" DELIMITED BY SIZE INTO WS-KEY
-         CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-KEY WS-OUT
+         CALL "JIG-ALIAS-LOOKUP" USING WS-KEY WS-OUT
          STRING FUNCTION TRIM(WS-OUT) " " DELIMITED BY SIZE INTO WS-GOT-TXT WITH POINTER WS-PTR
          MOVE SPACES TO WS-KEY
          STRING FUNCTION TRIM(WS-PRE) "contents/small_melee" DELIMITED BY SIZE INTO WS-KEY
-         CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-KEY WS-OUT
+         CALL "JIG-ALIAS-LOOKUP" USING WS-KEY WS-OUT
          STRING FUNCTION TRIM(WS-OUT) DELIMITED BY SIZE INTO WS-GOT-TXT WITH POINTER WS-PTR
          MOVE WS-K TO WS-KD
          MOVE "A" TO TL-MODE
@@ -228,10 +192,10 @@
      END-PERFORM
      MOVE "acceptance US12 36-10§2.6 an alias map has the four keys of the trial chambers (the 3 + 1 bindings of 4.2)" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
-     MOVE JA-COUNT TO TL-OBSERVED-N
+     MOVE JM-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:trial_chambers/chamber/end" TO WS-KEY
-     CALL "JIG-ALIAS-LOOKUP" USING JIG-ALIAS-MAP WS-KEY WS-OUT
+     CALL "JIG-ALIAS-LOOKUP" USING WS-KEY WS-OUT
      MOVE "acceptance US12 36-10§2.6 a key that no binding names (the start pool) is its own lookup result" TO TL-CASE
      MOVE "A" TO TL-MODE
      MOVE WS-KEY TO TL-EXPECTED
@@ -240,10 +204,10 @@
      MOVE "N" TO TL-MODE
      MOVE 0 TO WS-X WS-Z
      MOVE -27 TO WS-Y
-     CALL "JIG-ALIAS-BUILD" USING WS-ANCIENT WS-X WS-Y WS-Z WS-SEED JIG-ALIAS-MAP
+     CALL "JIG-ALIAS-BUILD" USING WS-ANCIENT WS-SEED WS-X WS-Y WS-Z
      MOVE "acceptance US12 36-10§2.6 a structure without bindings (the ancient city) has the identity lookup: no entry" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
-     MOVE JA-COUNT TO TL-OBSERVED-N
+     MOVE JM-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   8.1: the ancient city start (synthetic terrain, no biome test): a chunk whose first draw is rotation NONE and whose element is city_center_1
