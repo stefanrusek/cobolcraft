@@ -43,4 +43,13 @@ Method: the axolotl, nautilus family, elder guardian, display, interaction, mark
 - [x] T24115 [US15-core] Write test `core/tests/test_q44_44_9_9.cob` (9.1 dried ghast schedule, 9.2 feeding growth) for T2832
 - [x] T24116 [US15-core] Implement 44-9 sections 9.1 and 9.2 as `Q9-DRIED-RANDOM`, `Q9-DRIED-TICK`, `Q9-FEED-SECONDS`, `Q9-AGE-UP` for T2833 (functions only)
 - [ ] T24190 [US15-core] CODE GAP 44-9: display, interaction, marker, cushion, mannequin, dried ghast block and happy ghast entities do not exist in the core (6.3 block/item/text subtypes, 8.1 cushion survival and placement, 8.2 mannequin entity, 9.1 hatch, 9.1.1 ambience, rest of 9 from 9.3 on); 5.1 and 5.2 survival check every 100 ticks, push and move kill, maps in frames
-- [ ] T24191 [US15-core] NOT REACHED (budget): 44-9 sections 9.3 onward of section 9, 10 (covered by acc_us16 44-9 10 cases), 11 (acc_us16 44-9 11.1 and 11.2 cases), 12 and 13 were not re-analysed in this lane (T2834 to T2841)
+- [x] T24192 [US15-core] Write test `core/tests/test_q44_44_9_9b.cob` (44-9 9.3 to 9.8: body slot, radius, heal period, cloud band, rider input, yaw step, collision, leash offsets) for T2832
+- [x] T24193 [US15-core] Implement 44-9 sections 9.3 to 9.8 as `Q9-GHAST-*`, `Q9-IN-CLOUDS` for T2833 (functions only: no happy ghast). Not built: harness items and equip, still timeout scan, baby brain, navigation, move and look controls
+- [x] T24194 [US15-core] Write test `core/tests/test_q44_44_9_10.cob` (10: boss event operations, makeInvulnerable) for T2834
+- [x] T24195 [US15-core] Implement 44-9 section 10 arithmetic as `Q9-BOSS-OP`, `Q9-WITHER-INVULN` for T2835 (the bar itself is in fight-44.cob and acc_us16)
+- [x] T24196 [US15-core] Write test `core/tests/test_q44_44_9_11.cob` (11.2: split, peek, physical peek, bullet constants) for T2836
+- [x] T24197 [US15-core] Implement 44-9 section 11.2 as `Q9-SHULKER-*`, `Q9-BULLET-*` for T2837. Not built: attachment engine, teleportSomewhere, the bullet's selectNextMoveDirection, 11.3 End city markers (acc_us16 covers 11.1 and part of 11.2)
+- [x] T24198 [US15-core] 44-9 section 12 is a pointer table (which parts own which rows): nothing to test or build (T2838, T2839)
+- [x] T24199 [US15-core] Write test `core/tests/test_q44_44_9_13.cob` (13: delays 10 / 40 / 0 and a real DECOR-DROP item with delay 10) for T2840; nothing to implement for T2841 (41 owns it)
+- [x] T24200 [US15-core] Write test `core/tests/test_q44_44_7_7w.cob` (red: the dolphin never jumped) and implement `AQUA-DOLPHIN-JUMP` (q44-44-7.cob, called by STDMOB-AQUATIC-STEP for a wet dolphin): the 44-7 section 7 goal starts on 1 tick in 5 with water and two air blocks at offsets 0, 1, 4 to 7 ahead. Running goal state (pitch, canContinue) not modelled
+- [ ] T24201 [US15-core] NOT WIRED: the remaining Q7 and Q9 functions have no mob or block to attach to (axolotl, nautilus, elder guardian, displays, cushion, mannequin, dried ghast, happy ghast)
