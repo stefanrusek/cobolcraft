@@ -112,6 +112,53 @@
  END PROGRAM STDMOB-STROLL-SCALE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-REINF-DARK.
+*> USING xoro state, dim, x, y, z (BINARY-LONG feet cell), ok out: the monster dark check of the Overworld for a reinforcement's spot (20 section 3.3, 54 section 12.1: the reason
+*> REINFORCEMENT does not skip it): sky light (less the night darkening) not above a fresh nextInt(32), no block light, and the brightness (a flat 10 in a thunderstorm) not above one
+*> nextInt(8) sample. ok 1 when the spot passes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-BOUND-SKY           BINARY-LONG VALUE 32.
+ 01 WS-BOUND-BRIGHT        BINARY-LONG VALUE 8.
+ 01 WS-SAMPLE              BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-DARK                BINARY-LONG.
+ 01 WS-BRIGHT              BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 7.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-DIM L-X L-Y L-Z L-OK.
+     MOVE 1 TO L-OK
+     CALL "STDMOB-LIGHTS" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK
+*>   The stored sky light has no sideways spreading (light.cob): under the eaves of a house it reads 0 where the sky engine has up to 14; LIGHT-SKY-SPREAD gives the engine's level (32 section 5.2) within 7 steps of open sky.
+     CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X L-Y L-Z WS-NEAR WS-SKY
+     CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
+     COMPUTE WS-SKY = FUNCTION MAX(0, WS-SKY - WS-DARK)
+     CALL "XORO-NEXT-INT" USING L-STATE WS-BOUND-SKY WS-SAMPLE
+     IF WS-SKY > WS-SAMPLE OR WS-BLOCK > 0
+         MOVE 0 TO L-OK
+     ELSE
+         COMPUTE WS-BRIGHT = FUNCTION MAX(WS-SKY, WS-BLOCK)
+         IF CW-THUNDERING = 1
+             MOVE 10 TO WS-BRIGHT
+         END-IF
+         CALL "XORO-NEXT-INT" USING L-STATE WS-BOUND-BRIGHT WS-SAMPLE
+         IF WS-BRIGHT > WS-SAMPLE
+             MOVE 0 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-REINF-DARK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-REINFORCE.
 *> USING tracker row of a mob that was just hurt, attacker player row (0 none): zombie reinforcements (4.1, hurtServer). Only a zombie, zombie villager or husk
 *> on Hard difficulty with hostile mobs on, whose target (else the attacker) is a living player: with probability EN-REINF (ten-thousandths) it calls a
@@ -154,13 +201,6 @@
  01 WS-NEW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
- 01 WS-BOUND-SKY           BINARY-LONG VALUE 32.
- 01 WS-BOUND-BRIGHT        BINARY-LONG VALUE 8.
- 01 WS-SAMPLE              BINARY-LONG.
- 01 WS-SKY                 BINARY-LONG.
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-DARK                BINARY-LONG.
- 01 WS-BRIGHT              BINARY-LONG.
  01 WS-RULE-MONSTERS       PIC X(40) VALUE "spawn_monsters".
  01 WS-RULE-MOBS           PIC X(40) VALUE "spawn_mobs".
  01 WS-RULE-VALUE          BINARY-DOUBLE.
@@ -238,24 +278,7 @@
              END-PERFORM
          END-IF
          IF WS-OK = 1 AND WS-DIM = CW-DIM(1)
-             *> The monster dark check of the Overworld for the spot (20 section 3.3, 54 section 12.1: the reason REINFORCEMENT does not skip it): sky light (less the night
-             *> darkening) not above a fresh nextInt(32), no block light, and the brightness (a flat 10 in a thunderstorm) not above one nextInt(8) sample.
-             CALL "STDMOB-LIGHTS" USING WS-DIM WS-CELL-X WS-CELL-Y WS-CELL-Z WS-SKY WS-BLOCK
-             CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
-             COMPUTE WS-SKY = FUNCTION MAX(0, WS-SKY - WS-DARK)
-             CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-SKY WS-SAMPLE
-             IF WS-SKY > WS-SAMPLE OR WS-BLOCK > 0
-                 MOVE 0 TO WS-OK
-             ELSE
-                 COMPUTE WS-BRIGHT = FUNCTION MAX(WS-SKY, WS-BLOCK)
-                 IF CW-THUNDERING = 1
-                     MOVE 10 TO WS-BRIGHT
-                 END-IF
-                 CALL "XORO-NEXT-INT" USING XR-STATE WS-BOUND-BRIGHT WS-SAMPLE
-                 IF WS-BRIGHT > WS-SAMPLE
-                     MOVE 0 TO WS-OK
-                 END-IF
-             END-IF
+             CALL "STDMOB-REINF-DARK" USING XR-STATE WS-DIM WS-CELL-X WS-CELL-Y WS-CELL-Z WS-OK
          END-IF
          IF WS-OK = 1
              MOVE 1 TO WS-DONE

@@ -258,6 +258,7 @@
  01 WS-D                   FLOAT-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 7.
  01 WS-DARKEN              BINARY-LONG.
  01 WS-LOCAL               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -295,6 +296,8 @@
          CALL "STDMOB-SLIME-MOON" USING WS-TIME WS-CHANCE
          CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
          CALL "STDMOB-LIGHTS" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK
+*>       The stored sky light has no sideways spreading (light.cob): under the eaves of a house it reads 0 where the sky engine has up to 14; LIGHT-SKY-SPREAD gives the engine's level (32 section 5.2) within 7 steps of open sky.
+         CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X L-Y L-Z WS-NEAR WS-SKY
          CALL "STDMOB-DARKEN" USING CW-TIME WS-DARKEN
          CALL "MS6-LOCAL-LIGHT" USING WS-SKY WS-BLOCK WS-DARKEN WS-ZERO WS-LOCAL
          CALL "XORO-NEXT-INT" USING L-STATE WS-EIGHT WS-LEVEL

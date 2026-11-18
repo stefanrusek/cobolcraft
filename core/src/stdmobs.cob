@@ -1585,6 +1585,7 @@
  01 WS-BLOCK               BINARY-LONG.
  01 WS-DARK                BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 7.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
@@ -1630,6 +1631,8 @@
      END-IF
      COMPUTE WS-Y = L-TOP + 1
      CALL "STDMOB-LIGHTS" USING L-DIM L-X WS-Y L-Z WS-SKY WS-BLOCK
+*>   The stored sky light has no sideways spreading (light.cob): under the eaves of a house it reads 0 where the sky engine has up to 14; LIGHT-SKY-SPREAD gives the engine's level (32 section 5.2) within 7 steps of open sky.
+     CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X WS-Y L-Z WS-NEAR WS-SKY
      IF L-MODE = 1
          COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY, WS-BLOCK)
          IF WS-LIGHT < SM-LIGHT-MIN
