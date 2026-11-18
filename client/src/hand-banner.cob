@@ -214,7 +214,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BANNER-DRAW.
 *> USING CLIENT-STATE, M (12 FLOAT-LONG: the pose through the display transform and the recentring of the item), layers (BINARY-LONG count, 16 holders, 16 dyes), dye of the banner's colour, light 0 to 1
-*> (FLOAT-LONG), mode (3 the hand mesh, 4 the ground item mesh): the banner's pole, bar, flag and layers (52 section 6.4, 54 section 22.3).
+*> (FLOAT-LONG), mode (3 the hand mesh, 4 the ground item mesh, 5 the entity mesh): the banner's pole, bar, flag and layers (52 section 6.4, 54 section 22.3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-KEY                 PIC X(24) VALUE "banner".

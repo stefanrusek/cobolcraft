@@ -305,6 +305,14 @@
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 7 AND WS-BASE = "shulker_box" AND WS-CD <= 16
+*>               A shulker box's texture (52 section 4.1): the code is the colour, 16 undyed (entity/shulker/shulker.png), else shulker_<colour>.png.
+                 IF WS-CD = 16
+                     MOVE "textures/entity/shulker/shulker.png" TO L-PATH
+                 ELSE
+                     COMPUTE WS-I = 40 + WS-CD
+                     STRING "textures/entity/shulker/shulker_" FUNCTION TRIM(WS-OV(WS-I)) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
              WHEN WS-KIND = 9 AND WS-BASE = "banner" AND WS-CD >= 1 AND WS-CD <= 43
 *>               A banner pattern sprite (54 section 22.3): the pattern's id under entity/banner.
                  CALL "BANNER-PATTERN-NAME" USING WS-CD WS-DIRNAME

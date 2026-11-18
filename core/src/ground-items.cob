@@ -151,15 +151,17 @@
  END PROGRAM GI-SOLID-CELL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. ENTITY-BOX-HITS.
-*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out,
-*> top out (BINARY-LONG): hit 1 when the collision box of that entity type (ENTITYTYPES.cpy, standin
-*> §3) at that position overlaps a solid cell (GI-SOLID-CELL) with positive volume, faces within
-*> 1e-7 block counting as touching; top is then the highest y among those cells. Ground items
-*> (GI-MOVE) and mobs (core/src/mobs.cob) move with it.
+ PROGRAM-ID. ENTITY-BOX-SURFACE.
+*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out (BINARY-LONG), top out (FLOAT-LONG): hit 1 when the collision box of that entity type
+*> (ENTITYTYPES.cpy, standin §3) at that position overlaps the collision shape of a cell (51 section 3: BSH-TOP, the shape moved by the block's model offset) with positive volume, faces
+*> within 1e-7 block counting as touching; top is then the highest y among the shape boxes it overlaps, the surface a body comes to rest on (a bottom slab 0.5 above its cell, a carpet 1/16),
+*> not the top of the cell. A cell of a chunk that is not loaded is a full cube (as GI-SOLID-CELL); the stand-in set has no shapes: its solid blocks are full cubes. Ground items
+*> (IP-ITEM-MOVE), mobs, carts and boats move with it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
+ COPY CBLOCKS.
+ COPY CONTENT.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -172,7 +174,21 @@
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
- 01 WS-SOLID               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-CELL-HIT            BINARY-LONG.
+ 01 WS-CELL-TOP            FLOAT-LONG.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-SBOX.
+    05 WS-SB               FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -180,9 +196,10 @@
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
- 01 L-TOP                  BINARY-LONG.
+ 01 L-TOP                  FLOAT-LONG.
  PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP.
      MOVE 0 TO L-HIT
+     MOVE 0 TO L-TOP
      COMPUTE WS-HALF = ET-WIDTH-MILLI(L-TYPE + 1) / 2000
      COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(L-TYPE + 1) / 1000
 *>   First cell floor(low edge + e), last cell ceil(high edge - e) - 1 (as MOVE-COLLIDES).
@@ -192,19 +209,60 @@
      COMPUTE WS-Y1 = - FUNCTION INTEGER(WS-EPSILON - (L-Y + WS-HEIGHT)) - 1
      COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - WS-HALF + WS-EPSILON)
      COMPUTE WS-Z1 = - FUNCTION INTEGER(WS-EPSILON - (L-Z + WS-HALF)) - 1
+     COMPUTE WS-B(1) = L-X - WS-HALF
+     MOVE L-Y TO WS-B(2)
+     COMPUTE WS-B(3) = L-Z - WS-HALF
+     COMPUTE WS-B(4) = L-X + WS-HALF
+     COMPUTE WS-B(5) = L-Y + WS-HEIGHT
+     COMPUTE WS-B(6) = L-Z + WS-HALF
      PERFORM VARYING WS-BY FROM WS-Y0 BY 1 UNTIL WS-BY > WS-Y1
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1
-                 CALL "GI-SOLID-CELL" USING L-DIM WS-BX WS-BY WS-BZ WS-SOLID
-                 IF WS-SOLID = 1
+                 COMPUTE WS-CX = (WS-BX - FUNCTION MOD(WS-BX, 16)) / 16
+                 COMPUTE WS-CZ = (WS-BZ - FUNCTION MOD(WS-BZ, 16)) / 16
+                 CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+                 MOVE 0 TO WS-CELL-HIT
+                 EVALUATE TRUE
+*>                   A chunk that is not loaded is solid, a full cube.
+                     WHEN WS-ROW = 0
+                         MOVE 1 TO WS-CELL-HIT
+                         COMPUTE WS-CELL-TOP = WS-BY + 1
+                     WHEN OTHER
+                         CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
+*>                       The stand-in set has no shapes: its states are full cubes or empty by CB-SOLID.
+                         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+                             MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+                             MOVE CB-SOLID(WS-BLK + 1) TO WS-SHAPE
+                             IF WS-SHAPE = 1
+                                 CALL "BSH-ENSURE-CUBE"
+                             END-IF
+                         ELSE
+                             CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+                         END-IF
+                         IF WS-SHAPE NOT = 0
+*>                           The shape of an offset block is moved by its model offset (51 section 1.4): the box moves the other way.
+                             CALL "BSH-OFFSET" USING WS-STATE WS-BX WS-BY WS-BZ WS-OX WS-OY WS-OZ
+                             COMPUTE WS-SB(1) = WS-B(1) - WS-OX
+                             COMPUTE WS-SB(2) = WS-B(2) - WS-OY
+                             COMPUTE WS-SB(3) = WS-B(3) - WS-OZ
+                             COMPUTE WS-SB(4) = WS-B(4) - WS-OX
+                             COMPUTE WS-SB(5) = WS-B(5) - WS-OY
+                             COMPUTE WS-SB(6) = WS-B(6) - WS-OZ
+                             CALL "BSH-TOP" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-SBOX WS-CELL-HIT WS-CELL-TOP
+                             COMPUTE WS-CELL-TOP = WS-CELL-TOP + WS-OY
+                         END-IF
+                 END-EVALUATE
+                 IF WS-CELL-HIT = 1
+                     IF L-HIT = 0 OR WS-CELL-TOP > L-TOP
+                         MOVE WS-CELL-TOP TO L-TOP
+                     END-IF
                      MOVE 1 TO L-HIT
-                     MOVE WS-BY TO L-TOP
                  END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
      GOBACK.
- END PROGRAM ENTITY-BOX-HITS.
+ END PROGRAM ENTITY-BOX-SURFACE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-SPAWN.

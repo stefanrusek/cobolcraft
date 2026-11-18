@@ -247,6 +247,9 @@
  01 WS-GV                  FLOAT-LONG.
  01 WS-GSCALE              FLOAT-LONG VALUE 0.5.
  01 WS-GSTR                FLOAT-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-HSLOT               BINARY-LONG.
+ 01 WS-HDYE                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -335,6 +338,19 @@
                      END-IF
                  END-PERFORM
              END-IF
+*>           The banner a mob holds (the entity atlas holds its sprites, so the entity pass draws it): the arm frames the model just found (ENTITY-HELD-POSED).
+             PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 2
+                 COMPUTE WS-HSLOT = WS-H
+                 IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(WS-R) / 2), 2) = 1
+                     COMPUTE WS-HSLOT = 3 - WS-H
+                 END-IF
+                 IF EN-HAND-FOK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-HSLOT) > 0
+                     CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE EN-EQ(WS-R, WS-HSLOT) WS-HDYE
+                     IF WS-HDYE >= 0
+                         CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-HSLOT) L-EYE-TABLE
+                     END-IF
+                 END-IF
+             END-PERFORM
 *>           The crystal beam of a crystal with a beam target and of a dragon with a nearest crystal (34-7 7.3, 8.5 pass 4, 8.7).
              IF (EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1) OR (EN-KEY(WS-R) = "ender_dragon" AND EN-NCI(WS-R) NOT = 0)
                  CALL "ENTITY-CRYSTAL-BEAM-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
@@ -359,6 +375,8 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   The shulker boxes of the loaded chunks (the block entity renderer of 52 section 4).
+     CALL "SHULKER-MESH" USING CLIENT-STATE L-EYE-TABLE
 *>   The local player's own model in the third-person modes (12 §7.3): the operator's boxes at the player's position and yaw, on the first free row.
      IF CL-CAMERA > 0 AND EN-COUNT < CL-MAX-ENTITIES AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
          COMPUTE WS-R = EN-COUNT + 1
@@ -613,6 +631,7 @@
  01 WS-RZ                  FLOAT-LONG.
  01 WS-SIDE                FLOAT-LONG.
  01 WS-LOOSE               BINARY-LONG.
+ 01 WS-BDYE                BINARY-LONG.
  01 WS-LIGHT               FLOAT-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
@@ -703,7 +722,11 @@
                      COMPUTE WS-SLOT = 3 - WS-H
                  END-IF
                  IF EN-HAND-OK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-SLOT) > 0
-                     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
+                     CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE EN-EQ(WS-R, WS-SLOT) WS-BDYE
+*>                   A banner is drawn by the entity pass (ENTITIES-MESH).
+                     IF WS-BDYE < 0
+                         CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
+                     END-IF
                  END-IF
              END-PERFORM
          END-IF

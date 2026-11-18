@@ -1,6 +1,6 @@
 *> The banner in the hand of a mob (54 section 22.3 rules 1, 2 and 5; 52 section 6.4 and 6.7: the item form with the thirdperson_righthand display of template_banner, rotation (0, 90, 0),
 *> translation (0, 2, 0.5), scale 0.375, the left hand mirrored): the replica keeps the layers of the stack in each hand (EN-HB), the entity atlas gets the sprites of the banners worn (banner_base, base and
-*> each pattern), and the pole, the bar, the flag, the base colour layer and one flag per pattern are cuboids in the ground item mesh at the arm's frame (rotate X -90, Y 180, translate (+-1, 2, -10) / 16).
+*> each pattern), and the pole, the bar, the flag, the base colour layer and one flag per pattern are cuboids in the entity mesh (the entity atlas) at the arm's frame (rotate X -90, Y 180, translate (+-1, 2, -10) / 16).
 *> Expected corners from an independent script (scratchpad/models/banner_hand3.py): the frame of the identity axes at (0.5, 1, 0.25) of an entity at (0.5, 0, 0.5) from the eye.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-ENTITY-BANNER.
@@ -277,6 +277,7 @@
  01 WS-K                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-SLOTS               BINARY-LONG.
+ 01 WS-BODY                BINARY-LONG.
  01 WS-FIRST               BINARY-LONG.
  01 WS-HITS                BINARY-LONG.
  01 WS-MAXD                FLOAT-LONG.
@@ -328,11 +329,13 @@
      MOVE "red_banner" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-RED WS-ITEM-ROW WS-STATUS
      MOVE "N" TO TL-MODE
-*>   A zombie with a red banner (stripe_bottom blue, border white) in its main hand: the atlas slots and the mesh.
+*>   A zombie with a red banner (stripe_bottom blue, border white) in its main hand: the entity pass draws it after the zombie (the entity atlas holds the sprites).
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE "zombie" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
      CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-EN-COUNT TO WS-BODY
      MOVE WS-RED TO EN-EQ(1, 1)
      MOVE 2 TO EN-HB-COUNT(1, 1)
      MOVE 32 TO EN-HB-PAT(1, 1, 1)
@@ -352,29 +355,32 @@
      MOVE 4 TO TL-EXPECTED-N
      MOVE WS-SLOTS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
-     MOVE "acceptance mob banner mesh: pole, bar, flag, base layer, two patterns: 6 cuboids of 36 vertices" TO TL-CASE
+     MOVE "acceptance mob banner mesh: pole, bar, flag, base layer, two patterns: 6 cuboids of 36 vertices in the entity mesh" TO TL-CASE
      MOVE 216 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-BODY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance mob banner is not in the ground item mesh (the block atlas)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   Without layers: pole, bar, flag and the base layer (the flag with the banner sprite, order 1 over it).
+*>   Without layers: pole, bar, flag and the base layer.
      MOVE 0 TO EN-HB-COUNT(1, 1)
-     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE "acceptance mob banner without patterns: 4 cuboids" TO TL-CASE
      MOVE 144 TO TL-EXPECTED-N
-     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-BODY
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A banner in the off hand of a left-handed mob (the main hand's stack is in the left arm): its own layers (EN-HB of the main slot).
+*>   A banner in the main hand of a left-handed mob is in the left arm with its own layers (EN-HB of the main slot).
      MOVE 2 TO EN-MOB-FLAGS(1)
      MOVE 1 TO EN-HB-COUNT(1, 1)
      MOVE 5 TO EN-HB-PAT(1, 1, 1)
      MOVE 3 TO EN-HB-DYE(1, 1, 1)
      MOVE 0 TO EN-HB-COUNT(1, 2)
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
-     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE "acceptance left-handed mob: the main hand's banner is in the left arm with its layers (5 cuboids)" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
-     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-BODY
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The pose chain on a frame set by hand: the identity axes at (0.5, 1, 0.25), both hands, two layers.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
@@ -399,11 +405,11 @@
          MOVE 1 TO EN-HAND-F(1, WS-HAND, 4) EN-HAND-F(1, WS-HAND, 8) EN-HAND-F(1, WS-HAND, 12)
      END-PERFORM
      PERFORM VARYING WS-HAND FROM 1 BY 1 UNTIL WS-HAND > 2
-         MOVE 0 TO RL-GI-COUNT
+         MOVE 0 TO RL-EN-COUNT
          CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-ID WS-HAND WS-RED WS-EYE-TABLE
          MOVE "acceptance banner held 6 cuboids of 36 vertices" TO TL-CASE
          MOVE 216 TO TL-EXPECTED-N
-         MOVE RL-GI-COUNT TO TL-OBSERVED-N
+         MOVE RL-EN-COUNT TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
          PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 5
              MOVE 0 TO WS-MAXD
@@ -414,8 +420,8 @@
                  COMPUTE WS-I = WS-FS(WS-C) + WS-V
                  MOVE 1000000 TO WS-MIND
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 8
-                     COMPUTE WS-DIST = FUNCTION ABS(RL-GI-X(WS-I) - WS-CX(WS-HAND, WS-C, WS-K, 1)) + FUNCTION ABS(RL-GI-Y(WS-I) - WS-CX(WS-HAND, WS-C, WS-K, 2))
-                         + FUNCTION ABS(RL-GI-Z(WS-I) - WS-CX(WS-HAND, WS-C, WS-K, 3))
+                     COMPUTE WS-DIST = FUNCTION ABS(RL-EN-X(WS-I) - WS-CX(WS-HAND, WS-C, WS-K, 1)) + FUNCTION ABS(RL-EN-Y(WS-I) - WS-CX(WS-HAND, WS-C, WS-K, 2))
+                         + FUNCTION ABS(RL-EN-Z(WS-I) - WS-CX(WS-HAND, WS-C, WS-K, 3))
                      IF WS-DIST < WS-MIND
                          MOVE WS-DIST TO WS-MIND
                      END-IF
@@ -449,20 +455,20 @@
          END-PERFORM
      END-PERFORM
 *>   The tint of the base colour layer (order 1): red, B02E26 (43 section 6.3); the pole is untinted.
-     MOVE 0 TO RL-GI-COUNT
+     MOVE 0 TO RL-EN-COUNT
      MOVE 1 TO WS-HAND
      CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-ID WS-HAND WS-RED WS-EYE-TABLE
      MOVE "acceptance banner tints: the pole is white" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF RL-GI-R(1) > 0.9999 AND RL-GI-G(1) > 0.9999 AND RL-GI-BLUE(1) > 0.9999
+     IF RL-EN-R(1) > 0.9999 AND RL-EN-G(1) > 0.9999 AND RL-EN-BLUE(1) > 0.9999
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance banner tints: the base layer is the red dye colour" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(RL-GI-R(109) - 0.6901961) < 0.001 AND FUNCTION ABS(RL-GI-G(109) - 0.1803922) < 0.001 AND FUNCTION ABS(RL-GI-BLUE(109) - 0.1490196) < 0.001
+     IF FUNCTION ABS(RL-EN-R(109) - 0.6901961) < 0.001 AND FUNCTION ABS(RL-EN-G(109) - 0.1803922) < 0.001 AND FUNCTION ABS(RL-EN-BLUE(109) - 0.1490196) < 0.001
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

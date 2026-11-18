@@ -272,11 +272,14 @@
          MOVE WS-NO(1) TO WS-NV(1)
          COMPUTE WS-NV(2) = WS-NO(2) * WS-COS - WS-NO(3) * WS-SIN
          COMPUTE WS-NV(3) = WS-NO(2) * WS-SIN + WS-NO(3) * WS-COS
-         IF L-MODE = 4
-             MOVE RL-GI-COUNT TO WS-BEFORE
-         ELSE
-             MOVE RL-HA-COUNT TO WS-BEFORE
-         END-IF
+         EVALUATE L-MODE
+             WHEN 4
+                 MOVE RL-GI-COUNT TO WS-BEFORE
+             WHEN 5
+                 MOVE RL-EN-COUNT TO WS-BEFORE
+             WHEN OTHER
+                 MOVE RL-HA-COUNT TO WS-BEFORE
+         END-EVALUATE
          CALL "HAND-QUAD" USING CLIENT-STATE L-M WS-CORNERS WS-UV WS-NORMAL L-LIGHT L-MODE
 *>       The tint of the six vertices of the quad just added (none when the mesh was full): the hand mesh (mode 3) or the ground item mesh (mode 4).
          IF L-MODE = 4 AND RL-GI-COUNT = WS-BEFORE + 6
@@ -287,7 +290,15 @@
                  MOVE L-T(3) TO RL-GI-BLUE(WS-J)
              END-PERFORM
          END-IF
-         IF L-MODE NOT = 4 AND RL-HA-COUNT = WS-BEFORE + 6
+         IF L-MODE = 5 AND RL-EN-COUNT = WS-BEFORE + 6
+             PERFORM VARYING WS-V FROM 0 BY 1 UNTIL WS-V > 5
+                 COMPUTE WS-J = RL-EN-COUNT - WS-V
+                 MOVE L-T(1) TO RL-EN-R(WS-J)
+                 MOVE L-T(2) TO RL-EN-G(WS-J)
+                 MOVE L-T(3) TO RL-EN-BLUE(WS-J)
+             END-PERFORM
+         END-IF
+         IF L-MODE NOT = 4 AND L-MODE NOT = 5 AND RL-HA-COUNT = WS-BEFORE + 6
              PERFORM VARYING WS-V FROM 0 BY 1 UNTIL WS-V > 5
                  COMPUTE WS-J = RL-HA-COUNT - WS-V
                  MOVE L-T(1) TO RL-HA-R(WS-J)

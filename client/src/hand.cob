@@ -208,10 +208,11 @@
 *> USING CLIENT-STATE, M (the model to view transform), corners (4 x, y, z, in model space, in the order of a texture: top-left, top-right, bottom-right,
 *> bottom-left), texture coordinates (4 u then 4 v, atlas), normal (model space), light 0 to 1: adds the six vertices of the quad (corners 1 2 3 1 3 4) to the
 *> hand, shaded by the two-light formula of 12 section 1.9 (min(1, (max(0, n.L0) + max(0, n.L1)) x 0.6 + 0.4), the lights of the level in view space)
-*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 3 the six vertices go to RL-HA-VERTEX (the empty hand's arm) and nowhere else; with glint 4 to RL-GI-VERTEX (an item held by a mob, shaded by its world direction, the pose chain in entity-relative world coordinates; the caller sees to the room). With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
+*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 5 the six vertices go to RL-EN-VERTEX (a banner held by a mob: the entity atlas and mesh, shaded as 4). With glint 3 the six vertices go to RL-HA-VERTEX (the empty hand's arm) and nowhere else; with glint 4 to RL-GI-VERTEX (an item held by a mob, shaded by its world direction, the pose chain in entity-relative world coordinates; the caller sees to the room). With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
 *> glint coordinates of the atlas coordinates through the item scale 8 (GLINT-UV) and the glint strength as brightness.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 6 TIMES.
@@ -243,7 +244,10 @@
  01 L-LIGHT                FLOAT-LONG.
  01 L-GLINT                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT L-GLINT.
-     IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4 AND RL-HAND-COUNT + 6 > 2048
+     IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4 AND L-GLINT NOT = 5 AND RL-HAND-COUNT + 6 > 2048
+         GOBACK
+     END-IF
+     IF L-GLINT = 5 AND RL-EN-COUNT + 6 > CL-MAX-ENTITY-VERTICES
          GOBACK
      END-IF
      IF (L-GLINT = 1 OR L-GLINT = 2) AND RL-HG-COUNT + 6 > 4096
@@ -266,7 +270,7 @@
      COMPUTE WS-D1 = FUNCTION MAX(0, -0.16169 * WS-N(1) + 0.808452 * WS-N(2) + 0.565916 * WS-N(3))
      COMPUTE WS-SHADE = FUNCTION MIN(1, (WS-D0 + WS-D1) * 0.6 + 0.4)
 *>   In the world (mode 4, the item a mob holds) the faces are shaded by their world direction as the entity models are: up 1, down 0.5, east and west 0.6, north and south 0.8.
-     IF L-GLINT = 4
+     IF L-GLINT = 4 OR L-GLINT = 5
          COMPUTE WS-SHADE = WS-N(1) * WS-N(1) * 0.6 + WS-N(3) * WS-N(3) * 0.8
          IF WS-N(2) >= 0
              COMPUTE WS-SHADE = WS-SHADE + WS-N(2) * WS-N(2)
@@ -308,7 +312,19 @@
              MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
              MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
          END-IF
-         IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4
+         IF L-GLINT = 5
+             ADD 1 TO RL-EN-COUNT
+             MOVE WS-P(WS-C + 1) TO RL-EN-X(RL-EN-COUNT)
+             MOVE WS-P(WS-C + 2) TO RL-EN-Y(RL-EN-COUNT)
+             MOVE WS-P(WS-C + 3) TO RL-EN-Z(RL-EN-COUNT)
+             MOVE L-U(WS-K) TO RL-EN-U(RL-EN-COUNT)
+             MOVE L-V(WS-K) TO RL-EN-V(RL-EN-COUNT)
+             COMPUTE RL-EN-B(RL-EN-COUNT) = FUNCTION MAX(WS-SHADE * L-LIGHT, 0.1)
+             MOVE 1 TO RL-EN-A(RL-EN-COUNT)
+             MOVE 0 TO RL-EN-SKY(RL-EN-COUNT)
+             MOVE 1 TO RL-EN-R(RL-EN-COUNT) RL-EN-G(RL-EN-COUNT) RL-EN-BLUE(RL-EN-COUNT)
+         END-IF
+         IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4 AND L-GLINT NOT = 5
              ADD 1 TO RL-HAND-COUNT
              MOVE WS-P(WS-C + 1) TO RL-HAND-X(RL-HAND-COUNT)
              MOVE WS-P(WS-C + 2) TO RL-HAND-Y(RL-HAND-COUNT)

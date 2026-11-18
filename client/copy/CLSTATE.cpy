@@ -858,6 +858,25 @@
           15 PI-UUID         PIC X(16).
           15 PI-NAME         PIC X(16).
           15 PI-NAME-LENGTH  BINARY-LONG.
+*>  ---- shulker boxes (52 section 4, 31-1 section 13; shulker-box.cob): SB-IS(block id + 1) 1 for a shulker box block and SB-DYE its colour (0 to 15, 16 undyed), built from the names of the
+*>       state tables (SB-READY); SB-BOX the boxes of the loaded chunks: SB-SID the state, SB-COLOUR, SB-FACE (the facing in the Direction order: 0 down, 1 up, 2 north, 3 south, 4 west,
+*>       5 east), SB-STATUS (0 closed, 1 opening, 2 opened, 3 closing) and the lid in tenths: SB-T ticks 0 to 10 and SB-TOLD a tick earlier; SB-COUNT the boxes in use ----
+    05 SB-DATA.
+       10 SB-READY           BINARY-LONG.
+       10 SB-IS              PIC 9 OCCURS 2048 TIMES.
+       10 SB-DYE             BINARY-LONG OCCURS 2048 TIMES.
+       10 SB-COUNT           BINARY-LONG.
+       10 SB-BOX OCCURS 64 TIMES.
+          15 SB-USED         BINARY-LONG.
+          15 SB-X            BINARY-LONG.
+          15 SB-Y            BINARY-LONG.
+          15 SB-Z            BINARY-LONG.
+          15 SB-SID          BINARY-LONG.
+          15 SB-COLOUR       BINARY-LONG.
+          15 SB-FACE         BINARY-LONG.
+          15 SB-STATUS       BINARY-LONG.
+          15 SB-T            BINARY-LONG.
+          15 SB-TOLD         BINARY-LONG.
 *>  ---- chat (US6; client-surface §4; screens/chat.cob, screens/hud.cob): the line being typed
 *>       (UTF-8), the messages scrolled back while chat is open, and the messages received this
 *>       session, oldest first (the clock when each arrived, its rendered text) ----

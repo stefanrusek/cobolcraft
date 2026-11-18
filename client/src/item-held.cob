@@ -74,7 +74,7 @@
  PROGRAM-ID. ENTITY-BANNER-HELD.
 *> USING CLIENT-STATE, placement (12 FLOAT-LONG: the arm's frame turned and translated as for any held item), replica row, hand (1 right arm, 2 left arm), dye of the banner's colour, eye (3 FLOAT-LONG):
 *> a banner in a mob's hand (52 section 6.7): the display of template_banner for thirdperson_righthand (translation (0, 2, 0.5) / 16, rotation (0, 90, 0), scale 0.375; the left hand takes it
-*> mirrored: rotation y negated), the recentring, then BANNER-DRAW into the ground item mesh with the layers of the stack in the hand (EN-HB of the main hand's slot, the off hand's: the main
+*> mirrored: rotation y negated), the recentring, then BANNER-DRAW into the entity mesh (the entity atlas holds the sprites; the entity pass draws it, ENTITIES-MESH) with the layers of the stack in the hand (EN-HB of the main hand's slot, the off hand's: the main
 *> hand is the left arm of a left-handed mob), lit by the light of the mob's cell.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -88,7 +88,7 @@
  01 WS-DEG                 FLOAT-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-N                   BINARY-LONG.
- 01 WS-MODE                BINARY-LONG VALUE 4.
+ 01 WS-MODE                BINARY-LONG VALUE 5.
  01 WS-LIGHT               FLOAT-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CY                  BINARY-LONG.

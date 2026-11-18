@@ -183,6 +183,8 @@
              END-PERFORM
          END-IF
      END-PERFORM
+*>   The images of the shulker boxes in the replica (shulker-box.cob).
+     CALL "SHULKER-SLOTS" USING CLIENT-STATE WS-NEW
 *>   The image of the crystal beam (34-7 8.7) for a crystal with a beam target and a dragon with a nearest crystal.
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND ((EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1) OR (EN-KEY(WS-R) = "ender_dragon" AND EN-NCI(WS-R) NOT = 0))
