@@ -213,6 +213,15 @@
  78 CL-MAX-GLINT-VERTICES   VALUE 8192.
 *> The glint of the item icons (one mesh, the UI's matrix, texture 5, glint pipeline).
  78 MESH-SLOT-GLINT-ICONS   VALUE 65010.
+*> The sky of the overworld (12 section 3.4c, 3.6; sky-render.cob): the sun, the moon, the stars and the clouds, one mesh each (the sun and the moon
+*> are drawn with the matrix of their own angle, the stars with the star angle; the clouds with the offset of the scrolled camera).
+ 78 MESH-SLOT-SUN           VALUE 65011.
+ 78 MESH-SLOT-MOON          VALUE 65012.
+ 78 MESH-SLOT-STARS         VALUE 65013.
+ 78 MESH-SLOT-CLOUDS        VALUE 65014.
+ 78 SKY-STAR-COUNT          VALUE 1500.     *> 12 section 3.4c: at most 1500 quads
+ 78 SKY-CLOUD-VERTICES      VALUE 120000.   *> the cloud mesh's capacity in vertices
+ 78 SKY-CLOUD-RADIUS-MAX    VALUE 32.       *> cells meshed at most (cloudRange 128 asks 171: see sky-render.cob)
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).

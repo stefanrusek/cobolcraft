@@ -114,12 +114,16 @@
          MOVE WS-GV TO WS-GLINT-UV(2)
          CALL STATIC "cc_vk_glint_offset" USING BY REFERENCE WS-GLINT-UV(1)
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
-             IF RL-D-SLOT(WS-I) < 0
-                 CALL STATIC "cc_vk_clear_depth"
-             ELSE
-                 CALL STATIC "cc_vk_draw" USING BY VALUE RL-D-SLOT(WS-I) BY VALUE RL-D-PIPELINE(WS-I)
-                     BY VALUE RL-D-TEX(WS-I) BY REFERENCE RL-D-MATRIX(WS-I, 1)
-             END-IF
+*>           Slot -1 is a depth clear, slot -2 sets the fog of the draws that follow from the record's first 13 matrix floats (the clouds' fog range).
+             EVALUATE TRUE
+                 WHEN RL-D-SLOT(WS-I) = -1
+                     CALL STATIC "cc_vk_clear_depth"
+                 WHEN RL-D-SLOT(WS-I) = -2
+                     CALL STATIC "cc_vk_fog" USING BY REFERENCE RL-D-MATRIX(WS-I, 1)
+                 WHEN OTHER
+                     CALL STATIC "cc_vk_draw" USING BY VALUE RL-D-SLOT(WS-I) BY VALUE RL-D-PIPELINE(WS-I)
+                         BY VALUE RL-D-TEX(WS-I) BY REFERENCE RL-D-MATRIX(WS-I, 1)
+             END-EVALUATE
          END-PERFORM
          CALL STATIC "cc_vk_frame_end"
          MOVE 1 TO L-PRESENTED

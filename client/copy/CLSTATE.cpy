@@ -1171,6 +1171,49 @@
        10 SK-R               FLOAT-SHORT.    *> clear colour
        10 SK-G               FLOAT-SHORT.
        10 SK-B               FLOAT-SHORT.
+*>     The sky bodies, stars and clouds (12 section 3.4c, 3.6; client/src/sky-render.cob): the attribute values SKY-ANGLES derives from the clock and the weather,
+*>     the sun and moon quads (SK-BV rows 1 to 6 and 7 to 12, 11 floats a vertex as the shim's), the star mesh (allocated on first use) and the cloud
+*>     image and mesh.
+       10 SK-SUN-ANGLE       FLOAT-LONG.     *> visual/sun_angle, degrees
+       10 SK-MOON-ANGLE      FLOAT-LONG.     *> visual/moon_angle
+       10 SK-STAR-ANGLE      FLOAT-LONG.     *> visual/star_angle
+       10 SK-STAR-BRIGHT     FLOAT-LONG.     *> visual/star_brightness after the weather
+       10 SK-MOON-PHASE      BINARY-LONG.    *> visual/moon_phase 0 to 7 (full_moon first)
+       10 SK-BODY-ALPHA      FLOAT-LONG.     *> 1 - the rain level: the modulator alpha of the sun and the moon
+       10 SK-CLOUD-COLOUR    FLOAT-LONG OCCURS 4 TIMES.   *> visual/cloud_color r g b a after the day track and the weather
+       10 SK-CLOUD-HEIGHT    FLOAT-LONG.     *> visual/cloud_height
+       10 SK-SUN-TEX         BINARY-LONG.    *> the texture of the sun draw: 0 the block atlas (the sprite), 2 the UI atlas (the flat fallback)
+       10 SK-MOON-TEX        BINARY-LONG.
+       10 SK-BV OCCURS 12 TIMES.
+          15 SK-BV-X         FLOAT-SHORT.
+          15 SK-BV-Y         FLOAT-SHORT.
+          15 SK-BV-Z         FLOAT-SHORT.
+          15 SK-BV-U         FLOAT-SHORT.
+          15 SK-BV-V         FLOAT-SHORT.
+          15 SK-BV-B         FLOAT-SHORT.
+          15 SK-BV-A         FLOAT-SHORT.
+          15 SK-BV-SKY       FLOAT-SHORT.
+          15 SK-BV-R         FLOAT-SHORT.
+          15 SK-BV-G         FLOAT-SHORT.
+          15 SK-BV-BLUE      FLOAT-SHORT.
+       10 SK-ST-ADDR         USAGE POINTER.  *> the star mesh (1500 quads at most, 6 vertices each)
+       10 SK-ST-COUNT        BINARY-LONG.
+       10 SK-ST-LEVEL        BINARY-LONG.    *> the brightness in 64ths (1 to 64) the star vertices carry, 0 when they are not made
+       10 SK-ST-UA-W         BINARY-LONG.    *> the UI atlas size their swatch coordinates were made for
+       10 SK-ST-UA-H         BINARY-LONG.
+       10 SK-ST-UPLOAD       BINARY-LONG.    *> 1 when the star mesh is not uploaded yet
+       10 SK-CI-W            BINARY-LONG.    *> the cloud image's cells (0 = not loaded)
+       10 SK-CI-H            BINARY-LONG.
+       10 SK-CI-CELLS        PIC X(262144).  *> one byte a cell, "1" solid, row by row
+       10 SK-CM-ADDR         USAGE POINTER.  *> the cloud mesh (allocated on first use)
+       10 SK-CM-COUNT        BINARY-LONG.
+       10 SK-CM-VALID        BINARY-LONG.    *> 1 when the mesh holds the cells around SK-CM-X, SK-CM-Z for SK-CM-REL and SK-CM-MODE
+       10 SK-CM-X            BINARY-LONG.    *> the camera's cloud cell of the last build
+       10 SK-CM-Z            BINARY-LONG.
+       10 SK-CM-REL          BINARY-LONG.    *> the camera against the layer: 1 below it, 0 inside, -1 above
+       10 SK-CM-MODE         BINARY-LONG.    *> 1 fast, 2 fancy
+       10 SK-CM-RADIUS       BINARY-LONG.    *> the meshed radius in cells
+       10 SK-CM-UPLOAD       BINARY-LONG.    *> 1 when the mesh is not uploaded yet
 *>  ---- dimension presentation (client/src/dimfx.cob; 39 section 9, 37-3 section 7, 38 section 11) ----
     05 DX-STATE.
        10 DX-PORTAL          FLOAT-LONG.     *> the portal overlay intensity 0 to 1 (rises 0.0125 a tick inside a nether portal, falls 0.05)

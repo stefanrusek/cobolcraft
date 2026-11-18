@@ -3,7 +3,10 @@
 *> world is drawn on the world screen and behind the pause menu: the camera is the local player's
 *> eye (1.6 above the feet, standin-content §3) turned by yaw (0 faces +Z, 90 faces -X) and pitch
 *> (positive looks down); the projection is a 70 degree vertical perspective into Vulkan clip space
-*> (y down, depth 0 to 1, near 0.05, far 512). Each section mesh is drawn with projection x view x
+*> (y down, depth 0 to 1, near 0.05, far 512). The draws start with the sun, the moon and the stars of a
+*> dimension with sky light (SKY-RENDER-BEHIND, UI pipeline, no depth); the clouds (SKY-RENDER-CLOUDS) come after the
+*> translucent meshes, between two fog records (draw slot -2: SUBMIT-FRAME sets the fog of the record's matrix floats).
+*> Each section mesh is drawn with projection x view x
 *> its offset from the eye (camera-relative, so float positions stay small): every opaque mesh,
 *> then the entity figures (texture 1, built eye-relative by ENTITIES-MESH), then the translucent
 *> meshes back to front by section centre, then the ground items (item-icon billboards built
@@ -229,6 +232,10 @@
      IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-PAUSE
          MOVE 1 TO WS-WORLD
      END-IF
+*>   The sky bodies first, before any terrain (12 section 3.4c; sky-render.cob): the sun, the moon and the stars, on the UI pipeline (no depth test).
+     IF WS-WORLD = 1
+         CALL "SKY-RENDER-BEHIND" USING CLIENT-STATE WS-PV-TABLE
+     END-IF
 *>   The four side planes of the view frustum as unit normals in the world (inside: the normal dotted with the offset from the
 *>   eye is not negative): left and right from the horizontal tangent, bottom and top from the vertical one. A chunk column
 *>   wholly outside one is not drawn (its sections are still uploaded); this keeps the draws, the matrices and the sort to
@@ -399,6 +406,10 @@
          MOVE WS-TSEC(WS-I) TO WS-S
          CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-TABLE WS-EYE-TABLE WS-R WS-S
      END-PERFORM
+*>   The clouds (12 section 3.6; sky-render.cob), translucent and depth tested, after the translucent sections.
+     IF WS-WORLD = 1
+         CALL "SKY-RENDER-CLOUDS" USING CLIENT-STATE WS-PV-TABLE WS-EYE-TABLE
+     END-IF
 *>   The ground items (item-icon billboards, eye-relative, texture 0), after the translucent
 *>   sections.
      MOVE 0 TO RL-GI-COUNT

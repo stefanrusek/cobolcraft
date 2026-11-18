@@ -24,6 +24,8 @@
  01 WS-UPLOADS             BINARY-LONG.
  01 WS-DRAWS               BINARY-LONG.
  01 WS-MARK1               PIC 9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PRES                PIC 9.
  01 WS-MARK2               PIC 9.
  PROCEDURE DIVISION.
      CALL "SYSTEM" USING "rm -rf build/client-test-submit"
@@ -109,6 +111,32 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      FREE GT-ITEM-ADDR GT-ARMOR-ADDR
      MOVE 0 TO GT-ITEM-W GT-ARMOR-W
+
+*>   The sky of a dimension with sky light at midnight (bug lane bugsky): the sun, the moon, the stars and the clouds (between two fog records, draw slot -2) go through the real
+*>   pipelines: the meshes are uploaded, the fog records set cc_vk_fog, and the frame is presented.
+     MOVE 1 TO PL-HAS-SKY
+     MOVE 18000 TO PL-TIME
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE 0 TO WS-DRAWS WS-UPLOADS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
+         IF RL-D-SLOT(WS-I) = -2
+             ADD 1 TO WS-DRAWS
+         END-IF
+         IF RL-D-SLOT(WS-I) >= MESH-SLOT-SUN AND RL-D-SLOT(WS-I) <= MESH-SLOT-CLOUDS
+             ADD 1 TO WS-UPLOADS
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "submit the sky of a dimension with sky light (sun, moon, stars, clouds between two fog records) is recorded and the frame is presented"
+         TO TL-CASE
+     MOVE "fog 2 sky 4 presented 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-DRAWS TO WS-MARK1
+     MOVE WS-UPLOADS TO WS-MARK2
+     MOVE WS-PRESENTED TO WS-PRES
+     STRING "fog " WS-MARK1 " sky " WS-MARK2 " presented " WS-PRES DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A draw entry with a negative slot is the depth clear before the hand (cc_vk_clear_depth): the frame is still presented.
      ADD 1 TO RL-DRAW-COUNT

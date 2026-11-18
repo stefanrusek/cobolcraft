@@ -181,6 +181,8 @@
      CALL "PARTICLE-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MODELS-BAKE" USING CLIENT-STATE
      CALL "ITEMDEFS-LOAD" USING CLIENT-STATE
+*>   The cloud image and the star texture coordinates come from the packs too.
+     CALL "SKY-RESET" USING CLIENT-STATE
      GOBACK.
  END PROGRAM PACKS-RELOAD.
 
