@@ -632,7 +632,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-DEFINE-STATE.
-*> USING state id 0 to 39999, emission, dampening, canOcclude, useShapeForLightOcclusion, then the six face occlusion shapes (DOWN, UP, NORTH,
+*> USING state id 0 to 40001, emission, dampening, canOcclude, useShapeForLightOcclusion, then the six face occlusion shapes (DOWN, UP, NORTH,
 *> SOUTH, WEST, EAST) as quadrant masks 0 to 15 (0 empty, 15 a full face; the block registry's shapes are in 24, 2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.

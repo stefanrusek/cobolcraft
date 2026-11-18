@@ -2,6 +2,8 @@
 *> The world is a sliding window of 4 x 4 chunk columns: chunk (x, z) lives in slot c = (z mod 4) * 4 + (x mod 4) + 1 (1 to 16; the
 *> default window, chunks -1 to 2, keeps c = (z + 1) * 4 + x + 2), and owns it while EN-OWN-X / EN-OWN-Z of the slot name it (L32-CLAIM-CHUNK
 *> moves a slot to another chunk and clears it; a cell of a chunk that does not own its slot is outside the window).
+*> Engine state ids 0 (air) and 1 (bedrock, the state of a cell outside the window) are presets; the registry's block state s is engine state s + 2
+*> (EN-ST index id + 1, loaded by L32-LOAD-REGISTRY) except the air states (EN-ISAIR index s + 1), which are engine state 0 (L32-ENGINE-STATE).
 *> A column has EN-NS block sections (section Y EN-MINSEC upwards; default 4 sections from 0, at most 24) and EN-NL = EN-NS + 2 light sections
 *> (section Y EN-LOWL = EN-MINSEC - 1 upwards), section id = (c - 1) * EN-NL + (section Y - EN-LOWL) + 1, at most 416 (L32-SET-DIMENSION sets them).
 *> EN-PAST-INIT is 1 for a chunk whose generation status is at or after INITIALIZE_LIGHT (8.1). Layer 1 is the block-light storage and layer 2 the sky-light storage (section 6), each with its own state bytes, working map,
@@ -15,12 +17,15 @@
     05 EN-MINY                 BINARY-LONG.
     05 EN-OWN-X                BINARY-LONG OCCURS 16 TIMES.
     05 EN-OWN-Z                BINARY-LONG OCCURS 16 TIMES.
-    05 EN-ST                   OCCURS 40000 TIMES.
-       10 EN-EMIT              BINARY-LONG.
-       10 EN-DAMP              BINARY-LONG.
-       10 EN-OCC               BINARY-LONG.
-       10 EN-USE               BINARY-LONG.
-       10 EN-FACE              BINARY-LONG OCCURS 6 TIMES.
+    05 EN-STATES.
+       10 EN-ST                OCCURS 40002 TIMES.
+          15 EN-EMIT           BINARY-LONG.
+          15 EN-DAMP           BINARY-LONG.
+          15 EN-OCC            BINARY-LONG.
+          15 EN-USE            BINARY-LONG.
+          15 EN-FACE           BINARY-LONG OCCURS 6 TIMES.
+    05 EN-AIRS.
+       10 EN-ISAIR             BINARY-CHAR UNSIGNED OCCURS 40000 TIMES.
     05 EN-AVAIL                BINARY-LONG OCCURS 16 TIMES.
     05 EN-PAST-INIT            BINARY-LONG OCCURS 16 TIMES.
     05 EN-LIGHT-CORRECT        BINARY-LONG OCCURS 16 TIMES.
