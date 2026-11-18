@@ -14,7 +14,8 @@
 *> Entry points:
 *>   ARROW-TYPE USING type id out                       the entity type id of arrow, 0 outside a standard world
 *>   ARROW-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), base damage (thousandths), owner entity id, row out
-*>   ARROW-STEP USING tracker row                       one tick of one arrow
+*>   ARROW-STEP USING tracker row                       one tick of one arrow or thrown trident (ranged-trident.cob)
+*>   ARROW-SEND USING tracker row                       Teleport Entity to the viewers when it moved
 *>   ARROW-PICKUP USING tracker row                     a stuck arrow touched by a player (ranged-pickup.cob)
 *>   ARROWS-TICK                                        every arrow (CORE-TICK)
 *>   STDMOB-SHOOT USING tracker row, table row, stop out   the bow goal of a skeleton (20 section 5)
@@ -131,6 +132,10 @@
  01 L-ENTITY               BINARY-LONG.
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-ARROW L-ENTITY L-PLAYER.
+     IF EN-IS-TRIDENT(L-ARROW) = 1
+         CALL "TRIDENT-HIT" USING L-ARROW L-ENTITY L-PLAYER
+         GOBACK
+     END-IF
      COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ARROW) * EN-VX(L-ARROW) + EN-VY(L-ARROW) * EN-VY(L-ARROW)
          + EN-VZ(L-ARROW) * EN-VZ(L-ARROW))
      COMPUTE WS-MILLI = FUNCTION INTEGER(WS-SPEED * EN-ITEM(L-ARROW) + 0.999)
@@ -259,6 +264,9 @@
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-ARROW L-X L-Y L-Z L-ENTITY L-PLAYER.
      MOVE 0 TO L-ENTITY L-PLAYER
+     IF EN-IS-TRIDENT(L-ARROW) = 1 AND EN-TR-DEALT(L-ARROW) = 1
+         GOBACK
+     END-IF
      COMPUTE WS-MARGIN = FUNCTION MAX(0, FUNCTION MIN(0.3, (EN-COOLDOWN(L-ARROW) - 2) / 20))
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR L-PLAYER > 0
          MOVE 0 TO WS-SEEN
@@ -306,9 +314,6 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO.
- 01 WS-READY               PIC 9 VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 128.
- 01 WS-STEP                FLOAT-LONG VALUE 0.000122.
  01 WS-SPEED               FLOAT-LONG.
  01 WS-STEPS               BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -331,13 +336,34 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   A trident flying home (Loyalty) has no physics (ranged-trident.cob).
+     IF EN-ON-GROUND(L-ROW) = 2
+         CALL "TRIDENT-RETURN" USING L-ROW
+         GOBACK
+     END-IF
      IF EN-ON-GROUND(L-ROW) = 1
          ADD 1 TO EN-AGE(L-ROW)
-         IF EN-AGE(L-ROW) >= 1200
-             CALL "ENTITY-REMOVE" USING L-ROW
-         ELSE
-             CALL "ARROW-PICKUP" USING L-ROW
-         END-IF
+         EVALUATE TRUE
+             WHEN EN-AGE(L-ROW) >= 1200
+                 CALL "ENTITY-REMOVE" USING L-ROW
+             WHEN EN-IS-TRIDENT(L-ROW) = 1
+*>               A trident stuck for more than 4 ticks has dealt its damage; with Loyalty it then flies home.
+                 IF EN-AGE(L-ROW) > 4
+                     MOVE 1 TO EN-TR-DEALT(L-ROW)
+                 END-IF
+                 IF EN-TR-LOYALTY(L-ROW) > 0 AND EN-TR-DEALT(L-ROW) = 1
+                     MOVE 2 TO EN-ON-GROUND(L-ROW)
+                 ELSE
+                     CALL "TRIDENT-PICKUP" USING L-ROW
+                 END-IF
+             WHEN OTHER
+                 CALL "ARROW-PICKUP" USING L-ROW
+         END-EVALUATE
+         GOBACK
+     END-IF
+*>   A flying trident that has dealt its damage and has Loyalty turns for home.
+     IF EN-IS-TRIDENT(L-ROW) = 1 AND EN-TR-DEALT(L-ROW) = 1 AND EN-TR-LOYALTY(L-ROW) > 0
+         MOVE 2 TO EN-ON-GROUND(L-ROW)
          GOBACK
      END-IF
      ADD 1 TO EN-COOLDOWN(L-ROW)
@@ -393,6 +419,23 @@
              MOVE WS-PITCH TO EN-PITCH(L-ROW)
          END-IF
      END-IF
+     CALL "ARROW-SEND" USING L-ROW
+     GOBACK.
+ END PROGRAM ARROW-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-SEND.
+*> USING tracker row: when the row moved by the wire resolution since the viewers were last told, they get Teleport Entity with its position, motion and angles.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-STEP                FLOAT-LONG VALUE 0.000122.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
      IF FUNCTION ABS(EN-X(L-ROW) - EN-WAY-X(L-ROW)) >= WS-STEP OR FUNCTION ABS(EN-Y(L-ROW) - EN-FLEE-X(L-ROW)) >= WS-STEP
              OR FUNCTION ABS(EN-Z(L-ROW) - EN-WAY-Z(L-ROW)) >= WS-STEP
          IF WS-READY = 0
@@ -409,11 +452,12 @@
          CALL "ENTITY-TRACK" USING L-ROW
      END-IF
      GOBACK.
- END PROGRAM ARROW-STEP.
+     GOBACK.
+ END PROGRAM ARROW-SEND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROWS-TICK.
-*> No parameters (CORE-TICK, after the orbs): ARROW-STEP for every arrow in a loaded chunk.
+*> No parameters (CORE-TICK, after the orbs): ARROW-STEP for every arrow and every thrown trident in a loaded chunk.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -428,7 +472,7 @@
          GOBACK
      END-IF
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = WS-TYPE
+         IF EN-USED(WS-E) = 1 AND (EN-TYPE(WS-E) = WS-TYPE OR EN-IS-TRIDENT(WS-E) = 1)
              COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-E) / 16)
              COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-E) / 16)
              CALL "WORLD-FIND" USING EN-DIM(WS-E) WS-CX WS-CZ WS-CHUNK

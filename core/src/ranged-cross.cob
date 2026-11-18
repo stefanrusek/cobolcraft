@@ -349,6 +349,9 @@
                      MOVE 0 TO TS-USE-START(WS-ROW) TS-USE-ITEM(WS-ROW)
                  END-IF
              END-IF
+             IF TS-SPIN-TICKS(WS-ROW) > 0
+                 CALL "RANGED-SPIN" USING WS-ROW
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

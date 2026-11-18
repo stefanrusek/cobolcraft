@@ -86,6 +86,13 @@
              CALL "SP-MARK" USING WS-MARKS WS-V
          END-IF
      END-PERFORM
+*>   The stack of a thrown trident (ranged-trident.cob).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-IS-TRIDENT(WS-I) = 1
+             MOVE EN-TR-VAR(WS-I) TO WS-V
+             CALL "SP-MARK" USING WS-MARKS WS-V
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 512
          IF WS-MARK(WS-I) = 0
              MOVE 0 TO SP-LIVE(WS-I)

@@ -15,4 +15,4 @@
        10 TS-USE-ITEM         BINARY-LONG.        *> the item id in use
        10 TS-GLIDE-TICKS      BINARY-LONG.        *> 0 not gliding, else 1 + the ticks glided (fallFlyTicks)
        10 TS-GLIDE-LAST-Y     FLOAT-LONG.         *> the y of the last gliding tick
-
+       10 TS-SPIN-TICKS        BINARY-LONG.        *> ticks left of a Riptide spin attack (20 at the launch), 0 none

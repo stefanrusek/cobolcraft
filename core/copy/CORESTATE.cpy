@@ -592,6 +592,7 @@
        10 EN-TR-LOYALTY      BINARY-LONG.        *> a thrown trident: the Loyalty level
        10 EN-TR-DEALT        BINARY-LONG.        *> a thrown trident: 1 once it has hurt an entity (dealtDamage)
        10 EN-TR-RETURN       BINARY-LONG.        *> a thrown trident: 1 once the return sound has played
+       10 EN-IS-TRIDENT      BINARY-LONG.        *> 1 on a thrown trident (an entity of the type trident that flies like an arrow, ranged-trident.cob)
        10 EN-FROM-BUCKET     BINARY-LONG.        *> a mob released from a bucket (fromBucket)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
