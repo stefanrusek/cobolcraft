@@ -189,6 +189,66 @@
  END PROGRAM EMD-ARMOR-SET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-ZV-ARMOR.
+*> USING EMM-MODEL, slot (1 head, 2 chest, 3 legs, 4 feet), inner, outer: the zombie villager's adult armor mesh of 34-3 section 2.4 for one slot (64 x 32): the humanoid
+*> mesh at the slot's grow g (outer for head, chest and feet, inner for the legs), then the head box 8 high (0, 0, origin -4 -10 -4), the body at g + 0.1 (tex 16, 16),
+*> the legs at g + 0.1 (tex 0, 16, pivots (-2, 12, 0) and (2, 12, 0)); the hat (grow g + 0.5) and the arms (grow g) are the humanoid's. The retained parts are those of
+*> EMD-ARMOR-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-YOFF                FLOAT-LONG VALUE 0.
+ 01 WS-GR.
+    05 WS-GV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-MODE                BINARY-LONG.
+ 01 WS-SET                 PIC X(120).
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -10 -4 8 8 8 g 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 16 16 -4 0 -2 8 12 4 g+0.1 0".
+    05 FILLER PIC X(100) VALUE "P right_leg root -2 12 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_leg 0 16 -2 0 -2 4 12 4 g+0.1 0".
+    05 FILLER PIC X(100) VALUE "P left_leg root 2 12 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_leg 0 16 -2 0 -2 4 12 4 g+0.1 1".
+ 01 WS-ROW-TABLE REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 8 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-INNER                FLOAT-LONG.
+ 01 L-OUTER                FLOAT-LONG.
+ PROCEDURE DIVISION USING EMM-MODEL L-SLOT L-INNER L-OUTER.
+     MOVE L-OUTER TO WS-G
+     IF L-SLOT = 3
+         MOVE L-INNER TO WS-G
+     END-IF
+     CALL "EMD-HUMANOID" USING EMM-MODEL WS-G WS-YOFF
+     MOVE WS-G TO WS-GV(1) WS-GV(2) WS-GV(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+         CALL "EMM-ROW" USING EMM-MODEL WS-ROW(WS-I) WS-GR
+     END-PERFORM
+     MOVE 32 TO MM-TEXH
+     EVALUATE L-SLOT
+         WHEN 1
+             MOVE 1 TO WS-MODE
+             MOVE "head" TO WS-SET
+         WHEN 2
+             MOVE 2 TO WS-MODE
+             MOVE "body|left_arm|right_arm" TO WS-SET
+         WHEN 3
+             MOVE 2 TO WS-MODE
+             MOVE "left_leg|right_leg|body" TO WS-SET
+         WHEN OTHER
+             MOVE 2 TO WS-MODE
+             MOVE "left_leg|right_leg" TO WS-SET
+     END-EVALUATE
+     CALL "EMD-RETAIN" USING EMM-MODEL WS-MODE WS-SET
+     GOBACK.
+ END PROGRAM EMD-ZV-ARMOR.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. EMD-BABY-ARMOR.
  DATA DIVISION.
  WORKING-STORAGE SECTION.

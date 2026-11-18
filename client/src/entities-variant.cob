@@ -221,6 +221,13 @@
      IF WS-BASE = "zvillager_nohat"
          MOVE "zombie_villager" TO WS-BASE
      END-IF
+*>   The zombie villager's armor rows take the textures of the humanoid armor rows.
+     EVALUATE WS-BASE
+         WHEN "zvil_armor_head" MOVE "armor_head" TO WS-BASE
+         WHEN "zvil_armor_chest" MOVE "armor_chest" TO WS-BASE
+         WHEN "zvil_armor_legs" MOVE "armor_legs" TO WS-BASE
+         WHEN "zvil_armor_feet" MOVE "armor_feet" TO WS-BASE
+     END-EVALUATE
      COMPUTE WS-KIND = FUNCTION INTEGER(L-CODE / 1000)
      COMPUTE WS-CD = FUNCTION MOD(L-CODE, 100)
      COMPUTE WS-STATE = FUNCTION MOD(FUNCTION INTEGER(L-CODE / 100), 10)
