@@ -43,6 +43,8 @@
  01 WS-MILLI               BINARY-LONG.
  01 WS-CHARGE              BINARY-LONG.
  01 WS-START               BINARY-LONG.
+ 01 WS-FIRST-ROW           BINARY-LONG VALUE 0.
+ 01 WS-HEALTH              FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -101,6 +103,7 @@
              ADD 1 TO WS-SHOTS
              IF WS-SHOTS = 1
                  MOVE WS-I TO WS-FIRST
+                 MOVE WS-CHARGE TO WS-FIRST-ROW
                  COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(WS-CHARGE) ** 2 + EN-VY(WS-CHARGE) ** 2 + EN-VZ(WS-CHARGE) ** 2)
                  COMPUTE WS-MILLI ROUNDED = WS-SPEED * 1000
              ELSE
@@ -119,6 +122,24 @@
      MOVE "acceptance US15 20§16 Breeze second charge 30 ticks later (recovery 4, cooldown 10)" TO TL-CASE
      MOVE 30 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-SECOND - WS-FIRST
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The charge flies straight at the player and hurts it for 1.0 (17 section 3.15); the charge is then removed.
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40 OR EN-USED(WS-FIRST-ROW) = 0
+         CALL "PROJ-STEP" USING WS-FIRST-ROW
+     END-PERFORM
+     MOVE "acceptance US15 20§16 Breeze charge hits the player and is removed" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-USED(WS-FIRST-ROW) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§16 Breeze charge damage is 1" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-HEALTH - PL-HEALTH(WS-PLAYER)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-MOB-20-16.
