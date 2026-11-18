@@ -1,7 +1,7 @@
 *> The single-player world list (US16-1; client-surface.md §2; 08 §10.8.6 world_list texts): the
 *> worlds of saves/ (WORLDS-LIST, read when the screen opens), each entry "<LevelName>
 *> (<folder>)  Type: <type>", selectable, at most 12 shown; Play, Create New World, Delete and Back.
-*> Play on a standard or debug world with the packs not ok (CL-PACKS-STATUS) opens nothing and the
+*> Play on a standard, superflat or debug world with the packs not ok (CL-PACKS-STATUS) opens nothing and the
 *> screen shows cobolcraft.world_type.standard.unavailable (world-types.md §8.2).
 
  IDENTIFICATION DIVISION.
@@ -86,6 +86,10 @@
              MOVE "cobolcraft.world_type.standard" TO WS-TYPE-KEY
              MOVE 30 TO WS-TYPE-KEY-LENGTH
          END-IF
+         IF WL-TYPE(WS-I) = "superflat"
+             MOVE "generator.minecraft.flat" TO WS-TYPE-KEY
+             MOVE 24 TO WS-TYPE-KEY-LENGTH
+         END-IF
          CALL "LANG-GET" USING CLIENT-STATE WS-TYPE-KEY WS-TYPE-KEY-LENGTH WS-TYPE-TEXT
              WS-TYPE-LENGTH
          MOVE 1 TO LA-COUNT
@@ -154,7 +158,7 @@
      MOVE 0 TO SP-CREATE-REFUSED
      IF SM-SELECTED > 0 AND SM-SELECTED <= WL-COUNT
          MOVE SM-SELECTED TO WS-I
-         IF (WL-TYPE(WS-I) = "standard" OR WL-TYPE(WS-I) = "debug")
+         IF (WL-TYPE(WS-I) = "standard" OR WL-TYPE(WS-I) = "debug" OR WL-TYPE(WS-I) = "superflat")
                  AND CL-PACKS-STATUS NOT = CT-PACKS-OK
              MOVE 1 TO SP-CREATE-REFUSED
              GOBACK
@@ -211,10 +215,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-TYPE-ID.
-*> USING world type text (PIC X(16), level.dat WorldType), type out (BINARY-LONG, CT-TYPE-*): standard,
-*> debug or, for any other text, cobolcraft.
+*> USING world type text (PIC X(16), level.dat WorldType), type out (BINARY-LONG, CT-TYPE-* or CL-TYPE-SUPERFLAT):
+*> standard, debug, superflat or, for any other text, cobolcraft.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  COPY CONTENT.
  LINKAGE SECTION.
  01 L-TEXT                 PIC X(16).
@@ -225,6 +230,8 @@
              MOVE CT-TYPE-STANDARD TO L-TYPE
          WHEN "debug"
              MOVE CT-TYPE-DEBUG TO L-TYPE
+         WHEN "superflat"
+             MOVE CL-TYPE-SUPERFLAT TO L-TYPE
          WHEN OTHER
              MOVE CT-TYPE-COBOLCRAFT TO L-TYPE
      END-EVALUATE

@@ -95,6 +95,8 @@
              MOVE "standard" TO CS-WORLD-TYPE
          WHEN CT-TYPE-DEBUG
              MOVE "debug" TO CS-WORLD-TYPE
+         WHEN CL-TYPE-SUPERFLAT
+             MOVE "superflat" TO CS-WORLD-TYPE
          WHEN OTHER
              MOVE "cobolcraft" TO CS-WORLD-TYPE
      END-EVALUATE

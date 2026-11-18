@@ -28,6 +28,12 @@
  78 SCR-CMDBLOCK            VALUE 24.
  78 SCR-FORM                VALUE 25.  *> the test block and jigsaw editors (screens/forms.cob)  *> the command block editor (screens/editblocks.cob)  *> the creative inventory (screens/creativescreen.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
+ 78 SCR-FLAT-EDIT           VALUE 26.  *> the superflat customization screen (56 6.2, minimal: layers, Presets, Done, Cancel; screens/flat-world.cob)
+ 78 SCR-FLAT-PRESETS        VALUE 27.  *> its preset screen (56 6.3; screens/flat-world.cob)
+
+*> The create-world screen's world type besides the CT-TYPE-* words of CONTENT.cpy: superflat is a standard-content world
+*> of its own type (world-types.md 12); SP-CREATE-TYPE only, never a content-set type.
+ 78 CL-TYPE-SUPERFLAT       VALUE 3.
 
 *> Widget kinds.
  78 WK-LABEL                VALUE 1.
@@ -149,6 +155,12 @@
  78 ACT-TI-SAVE              VALUE 93.
  78 ACT-TI-RUN               VALUE 94.
  78 ACT-TI-DONE              VALUE 95.
+ 78 ACT-FLAT-CUSTOMIZE       VALUE 96.   *> create-world: the Customize button (the flat editor, superflat only)
+ 78 ACT-FLAT-PRESETS         VALUE 97.   *> flat editor: the Presets button
+ 78 ACT-FLAT-DONE            VALUE 98.   *> flat editor: Done (keeps the working preset)
+ 78 ACT-FLAT-CANCEL          VALUE 99.   *> flat editor: Cancel
+ 78 ACT-FLAT-USE             VALUE 100.  *> preset screen: Use Preset (the selected row)
+ 78 ACT-FLAT-BACK            VALUE 101.  *> preset screen: Cancel (back to the editor)
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

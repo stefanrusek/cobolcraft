@@ -4,10 +4,11 @@
 *> editing; empty = random seed, a number is that seed, other text its Java string hash: 11 section 12.1,
 *> done by the core from the text; at most 64 bytes, the hint shows while it is empty; builtin-ui-art UI-24,
 *> world-types WT-19; the seed cannot be changed after creation), the game mode control (survival or creative, a click switches), the world type
-*> control (US2: standard, the default, or cobolcraft, a click cycles; a Ctrl-click selects the hidden
-*> debug type, which reads like the standard one: world-types.md §2.1), Create and Cancel.
+*> control (US2: standard, the default, superflat or cobolcraft, a click cycles in that order (world-types.md §12);
+*> a Ctrl-click selects the hidden debug type, which reads like the standard one: world-types.md §2.1), the
+*> Customize button below it (enabled for superflat only: the flat editor of flat-world.cob, 56 6.1), Create and Cancel.
 *> Create names the folder (WORLD-FOLDER-NAME, client-surface §2) and opens the new world (SP-OPEN).
-*> A standard or debug world with the packs not ok (CL-PACKS-STATUS) is not created: the screen shows
+*> A standard, superflat or debug world with the packs not ok (CL-PACKS-STATUS) is not created: the screen shows
 *> cobolcraft.world_type.standard.unavailable (world-types.md §8.2) and nothing else happens.
 
  IDENTIFICATION DIVISION.
@@ -81,12 +82,17 @@
      MOVE 90 TO WS-Y
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H WS-TEXT
          WS-LENGTH WS-Z4
-*>   The world type control: "World type: <type name>" (debug reads as the standard type).
+*>   The world type control: "World type: <type name>" (debug reads as the standard type; superflat is the
+*>   generator.minecraft.flat text of 56 6.5).
      MOVE "cobolcraft.world_type.standard" TO WS-KEY
      MOVE 30 TO WS-KEY-LENGTH
      IF SP-CREATE-TYPE = CT-TYPE-COBOLCRAFT
          MOVE "cobolcraft.world_type.cobolcraft" TO WS-KEY
          MOVE 32 TO WS-KEY-LENGTH
+     END-IF
+     IF SP-CREATE-TYPE = CL-TYPE-SUPERFLAT
+         MOVE "generator.minecraft.flat" TO WS-KEY
+         MOVE 24 TO WS-KEY-LENGTH
      END-IF
      CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
      MOVE 1 TO LA-COUNT
@@ -99,16 +105,29 @@
      MOVE 112 TO WS-Y
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H WS-TEXT
          WS-LENGTH WS-Z4
+*>   The Customize button (56 6.1): enabled while the type has an editor, which only superflat has here.
+     MOVE WK-BUTTON TO WS-KIND
+     MOVE 138 TO WS-Y
+     MOVE ACT-FLAT-CUSTOMIZE TO WS-ACTION
+     MOVE "selectWorld.customizeType" TO WS-KEY
+     MOVE 25 TO WS-KEY-LENGTH
+     MOVE 2 TO WS-STATE
+     IF SP-CREATE-TYPE = CL-TYPE-SUPERFLAT
+         MOVE 0 TO WS-STATE
+     END-IF
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H WS-TEXT
+         WS-LENGTH WS-STATE
 *>   The seed row: the label, the field (the second one) and, while it is empty, the hint over it.
      MOVE WK-LABEL TO WS-KIND
-     MOVE 138 TO WS-Y
+     MOVE 164 TO WS-Y
      MOVE ACT-NONE TO WS-ACTION
      MOVE "cobolcraft.screen.create_world.seed" TO WS-KEY
      MOVE 35 TO WS-KEY-LENGTH
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
          WS-KEY-LENGTH
      MOVE WK-FIELD TO WS-KIND
-     MOVE 148 TO WS-Y
+     MOVE 174 TO WS-Y
      MOVE ACT-FIELD-SEED TO WS-ACTION
      MOVE SM-EDIT-SEED TO WS-TEXT
      MOVE 0 TO WS-STATE
@@ -119,7 +138,7 @@
          SM-EDIT-SEED-LENGTH WS-STATE
      IF SM-EDIT-SEED-LENGTH = 0
          MOVE WK-LABEL TO WS-KIND
-         MOVE 154 TO WS-Y
+         MOVE 180 TO WS-Y
          ADD 4 TO WS-X
          MOVE "cobolcraft.screen.create_world.seed_hint" TO WS-KEY
          MOVE 40 TO WS-KEY-LENGTH
@@ -130,7 +149,7 @@
      END-IF
      MOVE WK-BUTTON TO WS-KIND
      MOVE 98 TO WS-W
-     MOVE 176 TO WS-Y
+     MOVE 202 TO WS-Y
      MOVE ACT-CREATE-WORLD TO WS-ACTION
      MOVE "cobolcraft.screen.create_world.create" TO WS-KEY
      MOVE 37 TO WS-KEY-LENGTH
@@ -145,7 +164,7 @@
      IF SP-CREATE-REFUSED = 1
          MOVE WK-LABEL TO WS-KIND
          COMPUTE WS-X = L-GW / 2 - 100
-         MOVE 202 TO WS-Y
+         MOVE 226 TO WS-Y
          MOVE "cobolcraft.world_type.standard.unavailable" TO WS-KEY
          MOVE 42 TO WS-KEY-LENGTH
          CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
@@ -206,7 +225,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATE-WORLD-CREATE.
-*> USING CLIENT-STATE: Create: a standard or debug world with the packs not ok is refused (the screen
+*> USING CLIENT-STATE: Create: a standard, superflat or debug world with the packs not ok is refused (the screen
 *> shows why); otherwise an empty name becomes the default name, the folder is named from the name and
 *> the world created and opened in the chosen mode and type.
  DATA DIVISION.
@@ -245,10 +264,11 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATE-WORLD-TYPE.
 *> USING CLIENT-STATE: a click on the world type control: with Ctrl held (CONTROLS-CTRL-DOWN) the
-*> hidden debug type; otherwise standard becomes cobolcraft and cobolcraft or debug becomes standard.
-*> A refusal shown by the last Create goes away.
+*> hidden debug type; otherwise standard becomes superflat, superflat becomes cobolcraft and cobolcraft or
+*> debug becomes standard (world-types.md §12). A refusal shown by the last Create goes away.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  COPY CONTENT.
  01 WS-CTRL                PIC 9.
  LINKAGE SECTION.
@@ -259,6 +279,8 @@
          WHEN WS-CTRL = 1
              MOVE CT-TYPE-DEBUG TO SP-CREATE-TYPE
          WHEN SP-CREATE-TYPE = CT-TYPE-STANDARD
+             MOVE CL-TYPE-SUPERFLAT TO SP-CREATE-TYPE
+         WHEN SP-CREATE-TYPE = CL-TYPE-SUPERFLAT
              MOVE CT-TYPE-COBOLCRAFT TO SP-CREATE-TYPE
          WHEN OTHER
              MOVE CT-TYPE-STANDARD TO SP-CREATE-TYPE

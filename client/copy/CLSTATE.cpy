@@ -190,6 +190,8 @@
        10 SP-CREATE-TYPE     BINARY-LONG.    *> create-world screen: world type, CT-TYPE-* (0 standard,
                                              *> the default; 1 cobolcraft; 2 the hidden debug type)
        10 SP-CREATE-REFUSED  PIC 9.          *> 1 = Create (or Play) was refused: the packs are not ok
+       10 SP-FLAT-PRESET     PIC X(24).      *> create-world, superflat: the chosen preset id (56 3.2, classic_flat by default); the world's layers follow from it
+       10 SP-FLAT-WORK       PIC X(24).      *> the flat editor's working preset id (Done copies it to SP-FLAT-PRESET, Cancel drops it)
 *>     Opening to others (US17; sp-host.cob, screens/open-to-others.cob): the screen's choices
 *>     (guest mode 0 survival or 1 creative; 1 = guests may use operator commands), the listener
 *>     (0 = not opened) and its port, the local addresses shown, and the guest connections: the
@@ -457,6 +459,7 @@
        10 PL-MIN-Y           BINARY-LONG.
        10 PL-HEIGHT          BINARY-LONG.
        10 PL-HAS-SKY         PIC 9.
+       10 PL-FLAT            PIC 9.          *> the spawn info's Is flat flag (05b; 56 5.3): 1 on a superflat world
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
        10 PL-GAME-TIME       BINARY-DOUBLE.  *> the world's game time: the first field of Set Time, plus 1 each client tick (the clock of entity timers such as the wolf's anger end time)
        10 PL-DAY-TICKS       BINARY-DOUBLE.  *> the clock's total ticks, never wrapped (the debug overlay's day count)

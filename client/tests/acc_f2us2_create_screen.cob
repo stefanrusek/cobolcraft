@@ -1,5 +1,5 @@
 *> Acceptance test US2-1, US2-2 (spec 002 FR-003; SC-011; docs/design/world-types.md §3.2, §8.2): the
-*> create-world screen offers the two world types on one control (a click cycles standard and cobolcraft;
+*> create-world screen offers the world types on one control (a click cycles standard, superflat and cobolcraft;
 *> standard is the default). With valid packs both create. With the packs not ok the standard choice stays
 *> selectable and Create is refused: the explanation text cobolcraft.world_type.standard.unavailable is shown,
 *> nothing is created (no world folder, no hosted world); the cobolcraft type creates. Create fills the
@@ -44,14 +44,23 @@
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE ZERO TO WS-HITS
-     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "World type: CobolCraft"
-     MOVE "acceptance US2-1 a click on the world type control switches to CobolCraft" TO TL-CASE
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "World type: Superflat"
+     MOVE "acceptance US2-1 a click on the world type control switches to Superflat, the entry after Standard "
+         & "(world-types.md 12)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ASSERT-HITS
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
-     MOVE "acceptance US2-1 a second click switches back to Standard" TO TL-CASE
+     MOVE ZERO TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "World type: CobolCraft"
+     MOVE "acceptance US2-1 a second click on the world type control switches to CobolCraft" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM ASSERT-HITS
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "acceptance US2-1 a third click switches back to Standard" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM COUNT-TYPE-STANDARD
      PERFORM ASSERT-HITS
@@ -89,6 +98,7 @@
 
 *>   The cobolcraft type creates and opens a world whatever the packs are; the settings carry its type.
      MOVE ACT-WORLD-TYPE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE ACT-CREATE-WORLD TO WS-ACTION

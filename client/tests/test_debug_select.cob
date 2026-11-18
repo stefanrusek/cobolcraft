@@ -1,6 +1,6 @@
 *> Implementation test of the hidden debug world selection (plan "Operator addition: debug world";
 *> docs/design/world-types.md §2.1): holding Ctrl while clicking the world-type button on the create-world
-*> screen selects the debug type; without Ctrl the button cycles only standard and cobolcraft. The word
+*> screen selects the debug type; without Ctrl the button cycles standard, superflat and cobolcraft only. The word
 *> "debug" appears nowhere in the screen's widgets or the built-in language. Create with debug selected is
 *> refused with the packs explanation when the packs are not ok, and uses the standard content (the
 *> settings carry CS-WORLD-TYPE debug) when they are.
@@ -39,13 +39,15 @@
      MOVE SP-CREATE-TYPE TO WS-E1
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      MOVE SP-CREATE-TYPE TO WS-E2
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE SP-CREATE-TYPE TO WS-E3
      CALL "TEST-STEP" USING CLIENT-STATE
-     MOVE "debug select without Ctrl the button cycles standard (0), cobolcraft (1), standard (0) and "
-         & "never debug" TO TL-CASE
+     MOVE "debug select without Ctrl the button cycles standard (0), superflat (3), cobolcraft (1), standard (0) "
+         & "and never debug" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "1 0" TO TL-EXPECTED
+     MOVE "3 1 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     STRING WS-E1 " " WS-E2 DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING WS-E1 " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   With Ctrl held a click selects debug; the button then reads like the standard type.

@@ -773,6 +773,39 @@ pause screen does not stop the simulation. Closing, changing the port, saving an
 
 ---
 
+## 12. The superflat world type in the client (002 operator decision)
+
+Operator decision (lane 002-lane-superflat-client): the world type value `superflat` (the core's other half is lane 002-lane-superflat-core;
+its generator, settings and wire flag are [56-superflat-world.md](../protocol/56-superflat-world.md)) is a **normal visible entry** of the
+create-world screen's World Type control, unlike the hidden `debug` type. It is a standard-content world (its layers are Minecraft blocks), so it
+needs the generated packs: Create and Play refuse it with the packs not ok exactly as for `standard`
+(`cobolcraft.world_type.standard.unavailable`, section 8.2).
+
+- **Where it sits in the cycle.** 56 6.1 lists Default then Superflat, so a click cycles **standard, superflat, cobolcraft, standard, ...**
+  (standard stays the default; the screen still starts at cobolcraft when the packs are not ok, WT-24). The label is the text of
+  `generator.minecraft.flat` ("Superflat", 56 6.5; the same key is the type text of a superflat world in the world list), shown as "World type: Superflat".
+  A Ctrl-click still selects `debug`, which reads as Standard and has no Customize button.
+- **Customize.** The button (`selectWorld.customizeType`, "Customize", 56 6.1) sits under the type control. It is enabled only while the type
+  has an editor, which here means superflat only (56 6.1: not a debug world and an editor exists: `flat` and `single_biome_surface`; this client has
+  no Single Biome type). Otherwise it is shown disabled.
+- **The editor is the minimal version of 56 6.6.** The flat editor lists the layers of the chosen preset top layer first (the block's name from the
+  language, `block.minecraft.<name>`, with a water layer shown as the water bucket and a lava layer as the lava bucket, as 56 6.2 says; a name the
+  language lacks shows as the registry name) with the height texts "Top - n", "n" and "Bottom - n" (a single layer: "Top - n"), then Presets,
+  Done and Cancel. The preset screen lists the nine presets of 56 3.1/3.2 in the tag order with Use Preset (enabled once a row is selected) and Cancel.
+  Not implemented, as 56 6.6 allows for a minimal client: Remove Layer, the preset text box with its share string (56 6.4) and the item icons of the rows
+  (so the layers can only come from a preset). Done keeps the working preset, Cancel drops it, as in 56 6.2.
+- **What the core is handed.** The type string `superflat` goes in `CS-WORLD-TYPE` (a `PIC X(10)`, nine characters). The chosen preset id
+  (`classic_flat` by default; the same text as the key suffix of `flat_world_preset.minecraft.<id>`) is the client-side field `SP-FLAT-PRESET`: the
+  core settings record has no field for it yet, so until `contract/copy/COREAPI.cpy` gains one (for example `CS-FLAT-PRESET PIC X(24)`) the core
+  generates the default flat settings (56 2.6) whatever the client chose.
+- **The flag.** The client keeps the Is flat flag of the spawn info of Login and Respawn (05b) in `PL-FLAT`. On a flat world the horizon height is the
+  dimension's minY (else 63) and the void darkness onset 1 (else 32), 56 5.3; the clear colour of a flat world is multiplied by (1 - v)^2 below
+  its minimum height. Non-flat worlds keep the colour they have (the void darkness of other overworlds is not implemented), and the dark disc
+  of 12 section 3.4d has no geometry in this client yet (the rule is `SKY-DARK-DISC`).
+- **Language.** The 24 keys of 56 6.5 the screens use (the editor and preset texts, the nine preset names and `???`, `generator.minecraft.flat`,
+  `selectWorld.customizeType`) are rows of the built-in language (`client/copy/CLLANG.cpy`), 383 keys in all (the built-in table held one more pair
+  than its count of 358, so its last pair `test_instance.description.failed` was never written: the count is now exact, 359 + 24).
+
 ## Open questions
 
 1. **22 §9.2 says the standard choice is disabled** while the packs are invalid; ui §7.2 keeps it selectable and explains on

@@ -450,10 +450,10 @@
      MOVE 33 TO WS-PATH-LENGTH
      CALL "BUILTIN-READ" USING WS-PATH WS-PATH-LENGTH WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
      CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LENGTH
-     MOVE "builtin lang/en_us.json is one object of the 358 keys of 08 10.8, 22 9.2, ui 7.2 and UI-24, options, recipe book and menus"
+     MOVE "builtin lang/en_us.json is one object of the 383 keys of 08 10.8, 22 9.2, ui 7.2 and UI-24, options, recipe book, menus and 56 6.5"
          TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 358 TO TL-EXPECTED-N
+     MOVE 383 TO TL-EXPECTED-N
      MOVE JN-COUNT(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

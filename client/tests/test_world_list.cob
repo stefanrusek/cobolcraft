@@ -74,7 +74,7 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "world list Create New World opens the create-world screen with the default name and "
          & "survival" TO TL-CASE
-     MOVE "14 Create New World|World name|New World|Game mode: Survival|World type: Standard|Seed (optional)||"
+     MOVE "14 Create New World|World name|New World|Game mode: Survival|World type: Standard|Customize|Seed (optional)||"
          & "Leave empty for a random seed|Create|Cancel" TO TL-EXPECTED
      MOVE SM-SCREEN TO WS-E1
      MOVE SPACES TO TL-OBSERVED

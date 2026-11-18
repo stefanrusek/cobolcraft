@@ -1,9 +1,11 @@
 *> English texts of the built-in pack (docs/protocol/08-resource-packs.md §10.8, every key of its
 *> tables 10.8.1 to 10.8.6, in table order), transcribed for assets/cobolcraft/lang/en_us.json of
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
+*> the 24 superflat keys of docs/protocol/56-superflat-world.md §6.5 (the last rows: the flat editor, preset screen, preset names,
+*> the generator.minecraft.flat type text and the Customize button; docs/design/world-types.md §12),
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 358.
+ 78 BI-LANG-COUNT           VALUE 383.
  01 BI-LANG-DATA.
     05 FILLER PIC X(80) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -731,7 +733,55 @@
     05 FILLER PIC X(128) VALUE "Invalid test ID".
     05 FILLER PIC X(80) VALUE "test_instance.description.failed".
     05 FILLER PIC X(128) VALUE "Failed: %s".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.title".
+    05 FILLER PIC X(128) VALUE "Superflat Customization".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.tile".
+    05 FILLER PIC X(128) VALUE "Layer Material".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.height".
+    05 FILLER PIC X(128) VALUE "Height".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.layer".
+    05 FILLER PIC X(128) VALUE "%s".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.layer.top".
+    05 FILLER PIC X(128) VALUE "Top - %s".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.layer.bottom".
+    05 FILLER PIC X(128) VALUE "Bottom - %s".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.flat.removeLayer".
+    05 FILLER PIC X(128) VALUE "Remove Layer".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.presets".
+    05 FILLER PIC X(128) VALUE "Presets".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.presets.title".
+    05 FILLER PIC X(128) VALUE "Select a Preset".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.presets.share".
+    05 FILLER PIC X(128) VALUE "Want to share your preset with someone? Use the box below!".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.presets.list".
+    05 FILLER PIC X(128) VALUE "Alternatively, here are some we made earlier!".
+    05 FILLER PIC X(80) VALUE "createWorld.customize.presets.select".
+    05 FILLER PIC X(128) VALUE "Use Preset".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.classic_flat".
+    05 FILLER PIC X(128) VALUE "Classic Flat".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.tunnelers_dream".
+    05 FILLER PIC X(128) VALUE "Tunnelers' Dream".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.water_world".
+    05 FILLER PIC X(128) VALUE "Water World".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.overworld".
+    05 FILLER PIC X(128) VALUE "Overworld".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.snowy_kingdom".
+    05 FILLER PIC X(128) VALUE "Snowy Kingdom".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.bottomless_pit".
+    05 FILLER PIC X(128) VALUE "Bottomless Pit".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.desert".
+    05 FILLER PIC X(128) VALUE "Desert".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.redstone_ready".
+    05 FILLER PIC X(128) VALUE "Redstone Ready".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.minecraft.the_void".
+    05 FILLER PIC X(128) VALUE "The Void".
+    05 FILLER PIC X(80) VALUE "flat_world_preset.unknown".
+    05 FILLER PIC X(128) VALUE "???".
+    05 FILLER PIC X(80) VALUE "generator.minecraft.flat".
+    05 FILLER PIC X(128) VALUE "Superflat".
+    05 FILLER PIC X(80) VALUE "selectWorld.customizeType".
+    05 FILLER PIC X(128) VALUE "Customize".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 358 TIMES.
+    05 BI-LANG OCCURS 383 TIMES.
        10 BI-LANG-KEY        PIC X(80).
        10 BI-LANG-TEXT       PIC X(128).
