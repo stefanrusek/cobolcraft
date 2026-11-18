@@ -28,6 +28,8 @@
  01 WS-CAUSE              BINARY-LONG VALUE 7.
  01 WS-ZERO               BINARY-LONG VALUE 0.
  01 WS-FZ                 FLOAT-LONG VALUE 0.
+ 01 WS-FZ2                FLOAT-LONG VALUE 0.
+ 01 WS-FZ3                FLOAT-LONG VALUE 0.
  01 WS-BASE               BINARY-LONG VALUE 2000.
  01 WS-ARROW              BINARY-LONG.
  01 WS-VIEW BASED.
@@ -99,8 +101,9 @@
      PERFORM CHECK-N
      CALL "PB-FREE" USING PB-BUFFER
 *>   A row that is no standard mob (an arrow) has no health slot to pair: nothing is remembered.
-     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-FZ WS-FZ WS-FZ WS-BASE WS-ZERO WS-ARROW
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-FZ WS-FZ2 WS-FZ3 WS-BASE WS-ZERO WS-ARROW
      CALL "STDMOB-HP-PAIR" USING WS-ARROW
+     CALL "STDMOB-HP-SYNC" USING WS-ARROW
      MOVE "acceptance US15 18§9.3 Metadata: a row that is no standard mob has no health slot to pair" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE EN-HP-SENT(WS-ARROW) TO WS-O

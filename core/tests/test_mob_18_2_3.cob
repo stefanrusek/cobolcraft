@@ -25,6 +25,7 @@
  01 WS-Z                  FLOAT-LONG.
  01 WS-V                  FLOAT-LONG VALUE 1.5.
  01 WS-ZERO               FLOAT-LONG VALUE 0.
+ 01 WS-ZERO2              FLOAT-LONG VALUE 0.
  01 WS-BASE               BINARY-LONG VALUE 2000.
  01 WS-OWNER              BINARY-LONG VALUE 0.
  01 WS-YAW                FLOAT-SHORT VALUE 0.
@@ -43,7 +44,7 @@
 
 *>   Three arrows hurt the pig (the hurt window cleared between them, as the arrow code does).
      PERFORM 3 TIMES
-         CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-V WS-ZERO WS-ZERO WS-BASE WS-OWNER WS-ARROW
+         CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-V WS-ZERO WS-ZERO2 WS-BASE WS-OWNER WS-ARROW
          CALL "ARROW-HIT" USING WS-ARROW WS-ROW WS-NO-ROW
      END-PERFORM
      MOVE "acceptance US15 18§2.3 LivingEntity.tick: three arrows that hurt leave three stuck arrows" TO WS-CASE
@@ -86,7 +87,7 @@
 *>   An arrow inside the hurt window does no damage and adds none.
      MOVE 0 TO EN-ARROWS(WS-ROW)
      MOVE 0 TO WS-V
-     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-V WS-ZERO WS-ZERO WS-BASE WS-OWNER WS-ARROW
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-V WS-ZERO WS-ZERO2 WS-BASE WS-OWNER WS-ARROW
      CALL "ARROW-HIT" USING WS-ARROW WS-ROW WS-NO-ROW
      MOVE "acceptance US15 18§2.3 LivingEntity.tick: an arrow that does no damage sticks nowhere" TO WS-CASE
      MOVE 0 TO WS-E
