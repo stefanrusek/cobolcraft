@@ -165,7 +165,7 @@
      COMPUTE WS-O = WS-WINS
      PERFORM CHECK-N
      MOVE 2 TO BW-DIFFICULTY
-     MOVE "bat" TO WS-KEY
+     MOVE "copper_golem" TO WS-KEY
      PERFORM TRY-SPAWNS
      MOVE "acceptance US15 18§6.12 Spawner block: an entity type without a mob row spawns nothing" TO WS-CASE
      COMPUTE WS-E = 0
@@ -215,7 +215,7 @@
          END-IF
      END-IF
      PERFORM CHECK-N
-     MOVE "bat" TO WS-KEY
+     MOVE "copper_golem" TO WS-KEY
      CALL "MS6-EGG-SPAWN" USING WS-DIM WS-KEY WS-FX WS-FY2 WS-FZ WS-ROW
      MOVE "acceptance US15 18§6.12 Spawn egg: a species without a mob row creates nothing (row 0)" TO WS-CASE
      COMPUTE WS-E = 0
