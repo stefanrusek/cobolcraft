@@ -146,6 +146,10 @@
              MOVE 1 TO WR-UPLOAD(L-ROW, WS-S)
          END-PERFORM
      END-IF
+*>   Whatever chunk the row held, none of its sections has been meshed for this one, and what the cells held is not known.
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+         MOVE 0 TO WR-MESHED(L-ROW, WS-S) WR-KIND(L-ROW, WS-S)
+     END-PERFORM
      MOVE 1 TO WR-USED(L-ROW)
      MOVE 0 TO WR-RELEASE(L-ROW)
      MOVE 0 TO WR-SURF-OK(L-ROW)
@@ -397,6 +401,7 @@
      IF WS-ROW > 0
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SECTIONS
              MOVE 1 TO WR-DIRTY(WS-ROW, WS-S)
+             MOVE 0 TO WR-KIND(WS-ROW, WS-S)
          END-PERFORM
      END-IF
      GOBACK.
@@ -469,6 +474,7 @@
      CALL "WORLD-SECTIONS" USING CLIENT-STATE WS-SECTIONS
      IF WS-ROW > 0 AND L-S >= 1 AND L-S <= WS-SECTIONS
          MOVE 1 TO WR-DIRTY(WS-ROW, L-S)
+         MOVE 0 TO WR-KIND(WS-ROW, L-S)
      END-IF
      GOBACK.
  END PROGRAM WORLD-SECTION-DIRTY.
