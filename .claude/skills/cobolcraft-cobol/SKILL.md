@@ -390,6 +390,11 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - Test programs link each package's shared library (`build/<pkg>/lib<pkg>.dylib`), not the archive; the
   programs (`bin`) link the archives. A test program that defines a program name of the library (a seam such
   as `core/tests/JIGSEAM.cpy`) still replaces it for the library's own calls.
+- A core test that opens a new standard world for its generation only (no `TEST-JOIN`, no use of the world
+  spawn) puts `COPY NOSPAWN.` before `COPY CORETEST.`: `core/tests/NOSPAWN.cpy` stands in for
+  `WORLDSIM-NEW-WORLD-SPAWN`, so opening the world runs no spawn search and generates no chunk; it does the
+  one-time setup the first generated chunk would have done (generator seed, climate points, possible
+  structure sets). A test of the spawn point or of a joining player keeps the real search.
 - With more than one job each running test program works in a sandbox (`<build>/sandbox/<n>`: copy-on-write
   copies of the package, contract, tools and tests folders, its own `build/`, no `.git`), so tests may keep
   using fixed scratch names under `build/` and may change copied fixtures. Two tests must not share anything

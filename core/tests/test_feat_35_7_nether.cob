@@ -860,4 +860,5 @@
 *> MSHUFFLE: Collections.shuffle of WS-LI(1 .. WS-NC): for i = size down to 2 swap(i - 1, nextInt(i))
  COPY FWTEST.
  END PROGRAM TEST-FEAT-35-7-NETHER.
+ COPY NOSPAWN.
  COPY CORETEST.

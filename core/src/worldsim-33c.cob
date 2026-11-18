@@ -311,27 +311,3 @@
      END-IF
      GOBACK.
  END PROGRAM GEN-SPAWN-TICK.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. WORLDSIM-NEW-WORLD-SPAWN.
-*> No parameters: CORE-WORLD-OPEN of a new world; a standard world gets the spawn search of 33 section 6.2: the asynchronous one (GEN-SPAWN-BEGIN) when generation
-*> workers serve the standard chunks (a host asked for them and the terrain data are loaded), else WORLDSIM-INITIAL-SPAWN; the cobolcraft world keeps the
-*> fixed spawn of standin-content.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY GENQUEUE.
- 01 WS-DEBUG               BINARY-LONG.
- 01 WS-READY               BINARY-LONG.
- PROCEDURE DIVISION.
-     IF CW-WORLD-TYPE = "standard"
-         CALL "WORLD-IS-DEBUG" USING WS-DEBUG
-         CALL "GEN-DATA-READY" USING WS-READY
-         IF GQ-WORKERS > 0 AND WS-DEBUG = 0 AND WS-READY = 1
-             CALL "GEN-SPAWN-BEGIN"
-         ELSE
-             CALL "WORLDSIM-INITIAL-SPAWN"
-         END-IF
-     END-IF
-     GOBACK.
- END PROGRAM WORLDSIM-NEW-WORLD-SPAWN.
