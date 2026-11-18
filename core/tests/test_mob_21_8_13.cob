@@ -327,7 +327,124 @@
      MOVE 1 TO WS-E
      MOVE WS-POSITIVE TO WS-O
      PERFORM CHECK-N
+*>   The face normal of a block hit: the axis whose cell boundary the last sample crosses first, against the movement; no crossing: the reverse of the velocity; no speed: up.
+     MOVE 40 TO WS-PJ
+     MOVE "minecraft:experience_bottle" TO WS-KEY
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 30
+     COMPUTE WS-Y = WS-FY + 40
+     COMPUTE WS-Z = PL-Z(WS-PLAYER)
+     MOVE 0 TO WS-VX WS-VY WS-VZ
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO WS-OWNER
+     CALL "THROWN-SPAWN" USING WS-PJ WS-KEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-OWNER WS-ROW
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 8
+         EVALUATE WS-J
+             WHEN 1
+                 MOVE 10.95 TO EN-X(WS-ROW)
+                 MOVE 10.5 TO EN-Y(WS-ROW) EN-Z(WS-ROW)
+                 MOVE 0.5 TO EN-VX(WS-ROW)
+                 MOVE 0 TO EN-VY(WS-ROW) EN-VZ(WS-ROW)
+                 MOVE "-1/0/0 moving +x" TO WS-IDS
+             WHEN 2
+                 MOVE 10.05 TO EN-X(WS-ROW)
+                 MOVE -0.5 TO EN-VX(WS-ROW)
+                 MOVE "1/0/0 moving -x" TO WS-IDS
+             WHEN 3
+                 MOVE 10.5 TO EN-X(WS-ROW)
+                 MOVE 10.95 TO EN-Y(WS-ROW)
+                 MOVE 0 TO EN-VX(WS-ROW)
+                 MOVE 0.5 TO EN-VY(WS-ROW)
+                 MOVE "0/-1/0 moving +y" TO WS-IDS
+             WHEN 4
+                 MOVE 10.05 TO EN-Y(WS-ROW)
+                 MOVE -0.5 TO EN-VY(WS-ROW)
+                 MOVE "0/1/0 moving -y" TO WS-IDS
+             WHEN 5
+                 MOVE 10.5 TO EN-Y(WS-ROW)
+                 MOVE 10.95 TO EN-Z(WS-ROW)
+                 MOVE 0 TO EN-VY(WS-ROW)
+                 MOVE 0.5 TO EN-VZ(WS-ROW)
+                 MOVE "0/0/-1 moving +z" TO WS-IDS
+             WHEN 6
+                 MOVE 10.05 TO EN-Z(WS-ROW)
+                 MOVE -0.5 TO EN-VZ(WS-ROW)
+                 MOVE "0/0/1 moving -z" TO WS-IDS
+             WHEN 7
+                 MOVE 10.5 TO EN-X(WS-ROW) EN-Y(WS-ROW) EN-Z(WS-ROW)
+                 MOVE 0.03 TO EN-VX(WS-ROW)
+                 MOVE 0.04 TO EN-VY(WS-ROW)
+                 MOVE 0 TO EN-VZ(WS-ROW)
+                 MOVE "-0.6/-0.8/0 no crossing" TO WS-IDS
+             WHEN OTHER
+                 MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
+                 MOVE "0/1/0 at rest" TO WS-IDS
+         END-EVALUATE
+         CALL "XP-BOTTLE-NORMAL" USING WS-ROW WS-NX WS-NY WS-NZ
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance US15 minecraft:experience_bottle 21§8.13 the normal of a hit: " FUNCTION TRIM(WS-IDS) DELIMITED BY SIZE INTO WS-CASE
+         MOVE WS-CASE TO TL-CASE
+         PERFORM CHECK-NORMAL
+     END-PERFORM
+     CALL "PJ-DROP" USING WS-ROW
+*>   A hit of an entity (hit 2) awards along the negated velocity.
+     CALL "THROWN-SPAWN" USING WS-PJ WS-KEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-OWNER WS-ROW
+     MOVE 0.3 TO EN-VX(WS-ROW)
+     MOVE 0 TO EN-VY(WS-ROW) EN-VZ(WS-ROW)
+     MOVE 2 TO WS-ORBS
+     CALL "XP-BOTTLE-HIT" USING WS-ROW WS-ORBS
+     MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 an entity hit removes the bottle" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE EN-USED(WS-ROW) TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
+
+ CHECK-NORMAL.
+*> The normal as "a/b/c" in tenths of a unit: WS-IDS holds the expected "a/b/c" (the case text after the colon is only a label).
+     COMPUTE WS-O ROUNDED = WS-NX * 10
+     MOVE WS-O TO WS-I
+     COMPUTE WS-O ROUNDED = WS-NY * 10
+     MOVE WS-O TO WS-DISTINCT
+     COMPUTE WS-O ROUNDED = WS-NZ * 10
+     MOVE WS-O TO WS-AMOUNT
+     MOVE WS-J TO WS-E
+     MOVE 0 TO WS-O
+     EVALUATE WS-J
+         WHEN 1
+             IF WS-I = -10 AND WS-DISTINCT = 0 AND WS-AMOUNT = 0
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN 2
+             IF WS-I = 10 AND WS-DISTINCT = 0 AND WS-AMOUNT = 0
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN 3
+             IF WS-I = 0 AND WS-DISTINCT = -10 AND WS-AMOUNT = 0
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN 4
+             IF WS-I = 0 AND WS-DISTINCT = 10 AND WS-AMOUNT = 0
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN 5
+             IF WS-I = 0 AND WS-DISTINCT = 0 AND WS-AMOUNT = -10
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN 6
+             IF WS-I = 0 AND WS-DISTINCT = 0 AND WS-AMOUNT = 10
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN 7
+             IF WS-I = -6 AND WS-DISTINCT = -8 AND WS-AMOUNT = 0
+                 MOVE WS-J TO WS-O
+             END-IF
+         WHEN OTHER
+             IF WS-I = 0 AND WS-DISTINCT = 10 AND WS-AMOUNT = 0
+                 MOVE WS-J TO WS-O
+             END-IF
+     END-EVALUATE
+     MOVE "N" TO TL-MODE
+     MOVE WS-E TO TL-EXPECTED-N
+     MOVE WS-O TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  CHECK-N.
      MOVE "N" TO TL-MODE

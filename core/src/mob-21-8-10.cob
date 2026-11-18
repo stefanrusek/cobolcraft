@@ -134,6 +134,8 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-NAME                PIC X(40).
+ 01 WS-LONG                PIC X(48).
+ 01 WS-BARE                PIC X(48).
  01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -151,12 +153,9 @@
      IF CB-SOLID(WS-BLOCK) NOT = 1
          GOBACK
      END-IF
-     MOVE SPACES TO WS-NAME
-     IF CB-KEY(WS-BLOCK)(1:10) = "minecraft:"
-         MOVE CB-KEY(WS-BLOCK)(11:38) TO WS-NAME
-     ELSE
-         MOVE CB-KEY(WS-BLOCK) TO WS-NAME
-     END-IF
+     MOVE CB-KEY(WS-BLOCK) TO WS-LONG
+     CALL "KEY-BARE" USING WS-LONG WS-BARE
+     MOVE WS-BARE TO WS-NAME
      CALL "RS1-CONDUCTOR-KIND" USING WS-NAME WS-KIND
      IF WS-KIND NOT = 1
          MOVE 1 TO L-CONDUCTOR

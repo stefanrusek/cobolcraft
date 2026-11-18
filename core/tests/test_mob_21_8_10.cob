@@ -54,6 +54,8 @@
  01 WS-REASON              BINARY-LONG VALUE 0.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TORCH               BINARY-LONG.
+ 01 WS-CY2                 BINARY-LONG.
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-SEED                BINARY-DOUBLE UNSIGNED VALUE 21008.
@@ -486,6 +488,84 @@
      MOVE "acceptance US15 minecraft:bat 21§8.10 with air above a flying bat never starts resting (2000 ticks)" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-HITS TO WS-O
+     PERFORM CHECK-N
+*>   A block that is neither air nor solid (a torch) is no conductor.
+     MOVE "minecraft:torch" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-TORCH
+     COMPUTE WS-BX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 8
+     COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-CY = WS-FY + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-CY WS-BZ WS-TORCH
+     CALL "BAT-CONDUCTOR" USING WS-DIM WS-BX WS-CY WS-BZ WS-COND
+     MOVE "acceptance US15 minecraft:bat 21§8.10 a torch above is not a conductor (not a solid block)" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-COND TO WS-O
+     PERFORM CHECK-N
+*>   The move stops the speed on an axis when the next cell is solid (x, then y, then z): stone beside, above and ahead of a bat in the air.
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 20
+     COMPUTE WS-CY = WS-FY + 30
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 20
+     COMPUTE WS-X = WS-CX + 0.9
+     COMPUTE WS-Y = WS-CY + 0.1
+     COMPUTE WS-Z = WS-CZ + 0.5
+     MOVE 0 TO WS-YAW
+     CALL "MOB-SPAWN" USING WS-DIM WS-BAT-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     COMPUTE WS-BX = WS-CX + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-CY WS-CZ WS-STONE
+     MOVE 0.5 TO EN-VX(WS-ROW)
+     MOVE 0 TO EN-VY(WS-ROW) EN-VZ(WS-ROW)
+     CALL "BAT-MOVE" USING WS-ROW
+     MOVE "acceptance US15 minecraft:bat 21§8.10 stone ahead on x stops the speed on x" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-VX(WS-ROW) * 1000
+     PERFORM CHECK-N
+     COMPUTE WS-X = WS-CX + 0.5
+     COMPUTE WS-Y = WS-CY + 0.5
+     MOVE WS-X TO EN-X(WS-ROW)
+     MOVE WS-Y TO EN-Y(WS-ROW)
+     COMPUTE WS-CY2 = WS-CY + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY2 WS-CZ WS-STONE
+     MOVE 0 TO EN-VX(WS-ROW) EN-VZ(WS-ROW)
+     MOVE 0.5 TO EN-VY(WS-ROW)
+     CALL "BAT-MOVE" USING WS-ROW
+     MOVE "acceptance US15 minecraft:bat 21§8.10 stone above stops the climb" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-VY(WS-ROW) * 1000
+     PERFORM CHECK-N
+     COMPUTE WS-Y = WS-CY + 0.1
+     COMPUTE WS-Z = WS-CZ + 0.9
+     MOVE WS-Y TO EN-Y(WS-ROW)
+     MOVE WS-Z TO EN-Z(WS-ROW)
+     COMPUTE WS-BZ = WS-CZ + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-STONE
+     MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW)
+     MOVE 0.5 TO EN-VZ(WS-ROW)
+     CALL "BAT-MOVE" USING WS-ROW
+     MOVE "acceptance US15 minecraft:bat 21§8.10 stone ahead on z stops the speed on z" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-VZ(WS-ROW) * 1000
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW
+*>   Steering: level with its target (dy 0), west of it, the yaw 170 turns the long way round (wrap by 360).
+     COMPUTE WS-Z = WS-CZ - 8 + 0.5
+     COMPUTE WS-X = WS-CX - 8 + 0.5
+     COMPUTE WS-Y = WS-FY + 40.1
+     CALL "MOB-SPAWN" USING WS-DIM WS-BAT-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 0 TO EN-PH-PHASE(WS-ROW)
+     MOVE 1 TO EN-PH-SET(WS-ROW)
+     COMPUTE EN-PH-TX(WS-ROW) = WS-CX - 8 + 5
+     COMPUTE EN-PH-TY(WS-ROW) = WS-FY + 40
+     COMPUTE EN-PH-TZ(WS-ROW) = WS-CZ - 8
+     MOVE 170 TO EN-YAW(WS-ROW)
+     MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
+     CALL "STDMOB-STEP" USING WS-ROW
+     MOVE "acceptance US15 minecraft:bat 21§8.10 steering level with the target keeps the climb at 0 (vy 0)" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-VY(WS-ROW) * 1000
+     PERFORM CHECK-N
+     MOVE "acceptance US15 minecraft:bat 21§8.10 the yaw 170 toward heading -90 turns +100 to 270 (tenths)" TO WS-CASE
+     MOVE 2700 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-YAW(WS-ROW) * 10
      PERFORM CHECK-N
      STOP RUN.
 
