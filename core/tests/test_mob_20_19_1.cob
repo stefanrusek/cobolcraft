@@ -53,11 +53,11 @@
     05 FILLER              PIC 999 VALUE 5.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -98,7 +98,7 @@
     05 FILLER              PIC 999 VALUE 5.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -139,7 +139,7 @@
     05 FILLER              PIC 999 VALUE 5.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -221,7 +221,7 @@
     05 FILLER              PIC 999 VALUE 2.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -262,7 +262,7 @@
     05 FILLER              PIC 999 VALUE 2.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 3.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -344,7 +344,7 @@
     05 FILLER              PIC 999 VALUE 95.
     05 FILLER              PIC 9 VALUE 4.
     05 FILLER              PIC 9 VALUE 4.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -385,7 +385,7 @@
     05 FILLER              PIC 999 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -426,7 +426,7 @@
     05 FILLER              PIC 999 VALUE 100.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -467,7 +467,7 @@
     05 FILLER              PIC 999 VALUE 80.
     05 FILLER              PIC 9 VALUE 4.
     05 FILLER              PIC 9 VALUE 4.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -545,11 +545,11 @@
     05 FILLER              PIC 999 VALUE 5.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
@@ -590,48 +590,48 @@
     05 FILLER              PIC 999 VALUE 5.
     05 FILLER              PIC 9 VALUE 1.
     05 FILLER              PIC 9 VALUE 1.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 99 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
-    05 FILLER              PIC X(16) VALUE "".
+    05 FILLER              PIC X(16) VALUE SPACES.
     05 FILLER              PIC 999 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.
     05 FILLER              PIC 9 VALUE 0.

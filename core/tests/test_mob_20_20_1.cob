@@ -1,6 +1,6 @@
 *> Acceptance test (002-lane-p49b; docs/protocol/20 section 20.1 and validation item 1): creeper blast damage to a player. The worked cases of the section for a
 *> normal creeper (power 3, 2R = 6) at 0, 1, 2, 3, 5 and 6 blocks, and a charged creeper (power 6) at 2 and 6 blocks, exposure 1, on Normal; beyond 2R nothing;
-*> the difficulty scaling of 3.1 (Easy and Hard) of the 2-block case. Damage in thousandths of a point, within 2 thousandths of the document's figure.
+*> the difficulty scaling of 3.1 (Easy, Hard and Peaceful) of the 2-block case. Damage in thousandths of a point, within 2 thousandths of the document's figure.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-MOB-20-20-1.
  DATA DIVISION.
@@ -41,8 +41,9 @@
     05 FILLER              PIC X(20) VALUE "3 2 1 013167".
     05 FILLER              PIC X(20) VALUE "3 2 3 036500".
     05 FILLER              PIC X(20) VALUE "3 7 2 000000".
+    05 FILLER              PIC X(20) VALUE "3 2 0 000000".
  01 WS-TABLE REDEFINES WS-DATA.
-    05 WS-LINE OCCURS 11 TIMES.
+    05 WS-LINE OCCURS 12 TIMES.
        10 WS-L-POWER       PIC 9.
        10 FILLER           PIC X.
        10 WS-L-DIST        PIC 9.
@@ -64,7 +65,7 @@
      MOVE "minecraft:creeper" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-CX WS-CY WS-CZ WS-YAW WS-CREEPER
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
          MOVE WS-L-POWER(WS-I) TO WS-POWER
          MOVE WS-L-DIFF(WS-I) TO BW-DIFFICULTY
          COMPUTE PL-X(WS-PLAYER) = WS-CX + WS-L-DIST(WS-I)
