@@ -412,10 +412,8 @@
      IF WS-MOVED = 0
          GOBACK
      END-IF
+*>   The result is one banner, so a move that took anything took all of it.
      IF L-SLOT = 3
-         IF WS-LEFT > 0
-             CALL "GI-THROW-STACK-X" USING L-ROW WS-ITEM WS-LEFT WS-VAR
-         END-IF
          CALL "MENU-SET-X" USING L-ROW L-SLOT WS-ITEM WS-ZERO WS-VAR
          CALL "MENU-STATION-TAKEN" USING L-ROW
          MOVE WS-ITEM TO L-RET-ITEM

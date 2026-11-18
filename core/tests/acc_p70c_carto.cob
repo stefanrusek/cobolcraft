@@ -49,6 +49,10 @@
  01 WS-D                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-A                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-OK2                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE-SLOT            BINARY-LONG VALUE 1.
  01 WS-C                   BINARY-LONG.
  01 WS-DIRT                BINARY-LONG.
  01 WS-IDS                 PIC X(1024).
@@ -299,7 +303,49 @@
      MOVE "results 0" TO TL-EXPECTED
      PERFORM CHECK
 
+     MOVE "acceptance p70c carto rules: the empty map and a glass pane fit the additional slot, the empty item is no additional item" TO TL-CASE
+     CALL "MENU-CARTO-MAYPLACE" USING WS-ONE-SLOT WS-EMPTY WS-ZERO WS-OK
+     CALL "MENU-CARTO-MAYPLACE" USING WS-ONE-SLOT WS-GLASS WS-ZERO WS-OK2
+     MOVE WS-OK TO WS-E1
+     MOVE WS-OK2 TO WS-E2
+     CALL "MENU-CARTO-MAYPLACE" USING WS-ONE-SLOT WS-ZERO WS-ZERO WS-OK
+     MOVE WS-OK TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING "map " FUNCTION TRIM(WS-E1) " glass " FUNCTION TRIM(WS-E2) " none " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "map 1 glass 1 none 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto quick with a full inventory: the map stays in its slot, an empty slot does nothing, a result of 2 maps merges 1 into a stack of 63 and throws 1" TO TL-CASE
+     PERFORM FILL-DIRT
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
+     MOVE 0 TO MN-WSLOT-COUNT(WS-ROW, 2) MN-RESULT-COUNT(WS-ROW)
+     MOVE 1 TO WS-TYPE
+     MOVE 0 TO WS-BUTTON
+     MOVE 0 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE 1 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E1
+     MOVE WS-MAP TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 63 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO PL-SLOT-VAR(WS-ROW, 1)
+     MOVE WS-EMPTY TO MN-WSLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 2)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     MOVE 2 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE PL-SLOT-COUNT(WS-ROW, 1) TO WS-E2
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING "stays " FUNCTION TRIM(WS-E1) " stack " FUNCTION TRIM(WS-E2) " table " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "stays 1 stack 64 table 0" TO TL-EXPECTED
+     PERFORM CHECK
+
      MOVE "acceptance p70c carto stale result: a result stays when its inputs change while it is set and both inputs remain" TO TL-CASE
+     PERFORM CLEAR-INVENTORY
      MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
      MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
      MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
@@ -338,6 +384,13 @@
      MOVE "maps 1 window 0" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
+
+ FILL-DIRT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE WS-DIRT TO PL-SLOT-ITEM(WS-ROW, WS-I)
+         MOVE 64 TO PL-SLOT-COUNT(WS-ROW, WS-I)
+         MOVE 0 TO PL-SLOT-VAR(WS-ROW, WS-I)
+     END-PERFORM.
 
  CLEAR-INVENTORY.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
