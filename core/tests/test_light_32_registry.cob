@@ -111,6 +111,12 @@
      MOVE "0 1 0 0 0 0 0 0 0 0 " TO TL-EXPECTED
      PERFORM SHOW-STATE
 
+     MOVE "minecraft:seagrass" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     MOVE "acceptance US12 32§7 seagrass: dampening 1 (its fluid is always water, 24 part 2 section 5.3), cannot occlude" TO TL-CASE
+     MOVE "0 1 0 0 0 0 0 0 0 0 " TO TL-EXPECTED
+     PERFORM SHOW-STATE
+
      MOVE "minecraft:air" TO WS-KEY
      MOVE SPACES TO WS-PAIRS
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
@@ -128,6 +134,16 @@
      STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      MOVE "0/2" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Without shape tables every occluding state is a full cube (faces 15, solidRender).
+     MOVE 0 TO BSH-READY
+     CALL "L32-LOAD-REGISTRY"
+     MOVE 1 TO BSH-READY
+     MOVE "minecraft:stone" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     MOVE "acceptance US12 32§2 no shape tables: stone is still a full cube (damp 15, faces 15)" TO TL-CASE
+     MOVE "0 15 1 0 15 15 15 15 15 15 " TO TL-EXPECTED
+     PERFORM SHOW-STATE
 
 *>   A reset for another dimension keeps the states: stone is still defined after L32-DIM-RESET and the dimension is sized.
      CALL "L32-DIM-RESET" USING WS-SKY WS-NS WS-MIN

@@ -11,6 +11,7 @@
  COPY COREAPI.
  COPY CELLS.
  COPY CBLOCKS.
+ COPY L32 REPLACING LEADING ==EN-== BY ==EL-==.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -30,6 +31,12 @@
  01 WS-Y                   BINARY-LONG VALUE 58.
  01 WS-Z                   BINARY-LONG VALUE 8.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-GOT                 BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
  01 WS-SHOW1               PIC -(9)9.
  01 WS-SHOW2               PIC -(9)9.
  01 WS-SHOW4               PIC -(9)9.
@@ -93,6 +100,38 @@
          STRING FUNCTION TRIM(WS-SHOW1) " not lucite" DELIMITED BY SIZE INTO TL-OBSERVED
      END-IF
      MOVE "9541 lucite 14 0 254 240" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A sky section the engine stores no layer for, below the column's top, reads as the bottom row of the next stored section above (6.7): light section 3 of chunk (0, 0) (slot 6,
+*>   section id (6 - 1) * 18 + 3 + 1 = 94) with its layer taken away and the column top set above it takes the nibbles of section 95's Y 0 row (index z * 16 + x) in every cell.
+     MOVE 0 TO LY-VP(2, 94)
+     MOVE 1 TO LY-VTOPSET(2, 6)
+     MOVE 14 TO LY-VTOP(2, 6)
+     CALL "L32-STORE-LIGHT" USING WS-ROW
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N > 4095
+         COMPUTE WS-M = FUNCTION MOD(WS-N, 256)
+         COMPUTE WS-B = WS-M / 2 + 1
+         IF FUNCTION MOD(WS-M, 2) = 0
+             COMPUTE WS-WANT = FUNCTION MOD(LY-VB(2, 95, WS-B), 16)
+         ELSE
+             COMPUTE WS-WANT = LY-VB(2, 95, WS-B) / 16
+         END-IF
+         COMPUTE WS-B = 3 * 2048 + WS-N / 2 + 1
+         IF FUNCTION MOD(WS-N, 2) = 0
+             COMPUTE WS-GOT = FUNCTION MOD(CE-SKY(WS-B), 16)
+         ELSE
+             COMPUTE WS-GOT = CE-SKY(WS-B) / 16
+         END-IF
+         IF WS-GOT NOT = WS-WANT
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 32§6.7 a sky section without a layer below the column top copies the next stored section's bottom row: no cell differs" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0
+     COMPUTE TL-OBSERVED-N = WS-BAD
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-LIGHT-32-CACHE.

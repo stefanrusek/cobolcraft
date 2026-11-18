@@ -223,8 +223,7 @@
              IF WS-CLASS = "LiquidBlock"
                  MOVE 1 TO WS-ALWAYS-WET
              END-IF
-             IF WS-KEY = "minecraft:seagrass" OR "minecraft:tall_seagrass" OR "minecraft:kelp"
-                     OR "minecraft:kelp_plant" OR "minecraft:bubble_column"
+             IF WS-KEY = "seagrass" OR "tall_seagrass" OR "kelp" OR "kelp_plant" OR "bubble_column"
                  MOVE 1 TO WS-ALWAYS-WET
              END-IF
              COMPUTE WS-LAST = WS-STATE + CB-STATES(WS-ID + 1) - 1
