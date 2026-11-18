@@ -1,7 +1,7 @@
 *> Aquatic mobs of document 21 section 4 (lane 002-lane-mobsfull-h10; with doc 44 part 7): the water animals cod, salmon, pufferfish, tropical fish (4.1 to 4.4), squid
 *> and glow squid (4.5) and dolphin (4.6). Their rows are core/copy/MOB21ROWS.cpy.
 *> Entry points:
-*>   MS6-ROW-CAT USING row, category out: the spawn category of a table row (18 section 1.2): kind 0 creature 2, 1 monster 1, 2 water creature 6, 3 water ambient 7, 4 underground 5.
+*>   MS6-ROW-CAT USING row, category out: the spawn category of a table row (18 section 1.2): kind 0 creature 2, 1 monster 1, 2 water creature 6, 3 water ambient 7, 4 underground 5, 5 axolotls 4, 6 aquatic monster 1.
 *>   STDMOB-AQUATIC-STEP USING tracker row, table row: one tick of a water animal that is alive and in a ready chunk (STDMOB-STEP calls it for SM-KIND 2 to 4).
 *>   STDMOB-AQUATIC-FINALIZE USING xoro state, tracker row, table row: the spawn variant of a salmon (4.2: small 30, medium 50, large 15) and of a tropical fish (4.4).
 *>   AQUA-STATE-SEND USING tracker row, value: Set Entity Data index 17 VarInt value to the viewers (the pufferfish's puff state).
@@ -24,6 +24,10 @@
              MOVE 6 TO L-CAT
          WHEN 3
              MOVE 7 TO L-CAT
+         WHEN 5
+             MOVE 4 TO L-CAT
+         WHEN 6
+             MOVE 1 TO L-CAT
          WHEN OTHER
              MOVE 5 TO L-CAT
      END-EVALUATE
@@ -207,11 +211,17 @@
  01 WS-CELL-Z              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
+ 01 WS-ODDS                FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      MOVE 0 TO WS-GO WS-DX WS-DY WS-DZ
+     MOVE 0.025 TO WS-ODDS
+     IF SM-KIND(L-M) = 6
+*>       RandomStrollGoal(1, 80) of the guardians (21 section 4.8): 1 / 80 a tick.
+         MOVE 0.0125 TO WS-ODDS
+     END-IF
      MOVE EN-YAW(L-ROW) TO WS-YAW
      COMPUTE WS-TARGET = SM-WALK-MILLI(L-M) / 1000
      IF EN-FLEE(L-ROW) > 0
@@ -230,7 +240,7 @@
          IF EN-COOLDOWN(L-ROW) = 0
              MOVE 1 TO WS-SALT
              CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
-             IF WS-R < 0.025
+             IF WS-R < WS-ODDS
                  COMPUTE WS-Q = WS-R * 1000000
                  COMPUTE EN-DEST-X(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
                  COMPUTE WS-Q = WS-Q / 21
@@ -266,6 +276,9 @@
      MOVE 0.01 TO WS-FACTOR
      IF SM-KEY(L-M) = "dolphin"
          MOVE 0.02 TO WS-FACTOR
+     END-IF
+     IF SM-KIND(L-M) = 6
+         MOVE 0.1 TO WS-FACTOR
      END-IF
      COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
      COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) - FUNCTION SIN(WS-RADIANS) * EN-SWIM-SPEED(L-ROW) * WS-FACTOR
@@ -510,12 +523,24 @@
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-DRAG                FLOAT-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-RESET               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      CALL "FLUID-TOUCHES-WATER" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-WET
      MOVE EN-YAW(L-ROW) TO WS-YAW
+*>   Air: a fish or squid 300 and 20 more (drown), the axolotl 6000 and 20 (dry out, 44 part 7 section 8.4), the guardian none (it breathes under water and flops on land, 21 section 4.8).
+     MOVE 320 TO WS-LIMIT
+     MOVE 300 TO WS-RESET
+     IF SM-KIND(L-M) = 5
+         MOVE 6020 TO WS-LIMIT
+         MOVE 6000 TO WS-RESET
+     END-IF
+     IF SM-KIND(L-M) = 6
+         MOVE 0 TO WS-LIMIT
+     END-IF
      IF WS-WET = 1
          MOVE 0 TO EN-DRY(L-ROW)
      ELSE
@@ -539,14 +564,28 @@
                  MOVE 0 TO EN-ON-GROUND(L-ROW)
              END-IF
          ELSE
-             IF EN-DRY(L-ROW) >= 320
-                 MOVE 300 TO EN-DRY(L-ROW)
+             IF WS-LIMIT > 0 AND EN-DRY(L-ROW) >= WS-LIMIT
+                 MOVE WS-RESET TO EN-DRY(L-ROW)
                  MOVE 2 TO WS-AMOUNT
                  CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-AMOUNT WS-CAUSE WS-NO-ATTACKER
              END-IF
          END-IF
          IF EN-HEALTH(L-ROW) = 0
              GOBACK
+         END-IF
+         IF SM-KIND(L-M) = 6 AND EN-ON-GROUND(L-ROW) = 1
+*>           The guardian out of water hops: velocity + ((nextFloat x 2 - 1) x 0.4, 0.5, (nextFloat x 2 - 1) x 0.4), a random yaw (21 section 4.8).
+             MOVE 13 TO WS-SALT
+             CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+             COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + (WS-R * 2 - 1) * 0.4
+             MOVE 14 TO WS-SALT
+             CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+             COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + (WS-R * 2 - 1) * 0.4
+             MOVE 15 TO WS-SALT
+             CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+             COMPUTE WS-YAW = WS-R * 360
+             COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + 0.5
+             MOVE 0 TO EN-ON-GROUND(L-ROW)
          END-IF
          IF SM-KIND(L-M) = 3 AND EN-ON-GROUND(L-ROW) = 1
              MOVE 11 TO WS-SALT
@@ -562,9 +601,14 @@
      IF SM-KEY(L-M) = "squid" OR "glow_squid"
          CALL "AQUA-SQUID" USING L-ROW WS-WET
      ELSE
-         IF WS-WET = 1
-             CALL "AQUA-SWIM" USING L-ROW L-M
-         END-IF
+         EVALUATE TRUE
+             WHEN SM-KIND(L-M) = 5
+                 CALL "AXOLOTL-TICK" USING L-ROW L-M WS-WET
+             WHEN SM-KIND(L-M) = 6
+                 CALL "GUARDIAN-TICK" USING L-ROW L-M WS-WET
+             WHEN WS-WET = 1
+                 CALL "AQUA-SWIM" USING L-ROW L-M
+         END-EVALUATE
      END-IF
      IF SM-KEY(L-M) = "pufferfish"
          CALL "AQUA-PUFFER" USING L-ROW
