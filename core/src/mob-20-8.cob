@@ -7,6 +7,8 @@
 *>   STDMOB-ENDER-TELEPORT USING tracker row, dest x, y, z (FLOAT-LONG), ok out                         randomTeleport: walk down to a floor and move
 *>   STDMOB-ENDER-TRY USING xoro state, tracker row, ok out                                             up to 64 random teleports
 *>   STDMOB-ENDER-AIM USING tracker row, table row                                                      the target of an enderman for this tick
+*>   STDMOB-ENDER-TICK USING tracker row, table row: water and rain damage, the stare and distance teleports of an enderman that holds a target
+*>   ENDER-HURT USING tracker row, cause, handled out: the damage reactions (arrow: ignored and up to 64 teleports; no living attacker: teleport with probability 1/10)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-ENDER-STARE.
@@ -117,7 +119,7 @@
 *> USING tracker row, destination x, y, z (FLOAT-LONG), ok out: randomTeleport (8.1): from the destination's block walk down while the block below is not
 *> solid (to the world's bottom); at the first stand-able cell (feet and head passable, no liquid in them, solid below: STDMOB-STANDABLE) the enderman moves
 *> to the centre of that column and Entity Event 46 goes to the viewers. Liquids below, fire and the other dangerous blocks refuse: a cell of type 2
-*> (water, lava, fire) in the feet, head or floor cell fails. The world border, loaded-chunk test and level event 2018 are open.
+*> (water, lava, fire) in the feet, head or floor cell fails. Level event 2018 goes out at both ends; a riding enderman (EN-MOUNT) never teleports. The world border and loaded-chunk test are open.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -140,6 +142,12 @@
  01 WS-PITCH               FLOAT-SHORT.
  01 WS-GROUND              BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-LEVEL-EVENT         BINARY-LONG VALUE 2018.
+ 01 WS-DATA                BINARY-LONG VALUE 0.
+ 01 WS-NO-ONE              BINARY-LONG VALUE 0.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -148,6 +156,10 @@
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-OK.
      MOVE 0 TO L-OK WS-DONE
+*>   A riding enderman never teleports (8.1).
+     IF EN-MOUNT(L-ROW) > 0
+         GOBACK
+     END-IF
      COMPUTE WS-BX = FUNCTION INTEGER(L-X)
      COMPUTE WS-BY = FUNCTION INTEGER(L-Y)
      COMPUTE WS-BZ = FUNCTION INTEGER(L-Z)
@@ -175,7 +187,12 @@
          COMPUTE WS-FZ = WS-BZ + 0.5
          MOVE EN-YAW(L-ROW) TO WS-YAW
          MOVE EN-PITCH(L-ROW) TO WS-PITCH
+         COMPUTE WS-OX = FUNCTION INTEGER(EN-X(L-ROW))
+         COMPUTE WS-OY = FUNCTION INTEGER(EN-Y(L-ROW))
+         COMPUTE WS-OZ = FUNCTION INTEGER(EN-Z(L-ROW))
+         CALL "LEVEL-EVENT" USING EN-DIM(L-ROW) WS-LEVEL-EVENT WS-OX WS-OY WS-OZ WS-DATA WS-NO-ONE
          CALL "ENTITY-MOVE" USING L-ROW WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-GROUND
+         CALL "LEVEL-EVENT" USING EN-DIM(L-ROW) WS-LEVEL-EVENT WS-BX WS-BY WS-BZ WS-DATA WS-NO-ONE
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
          CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
@@ -239,6 +256,10 @@
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      ADD 1 TO EN-ENDER-TICKS(L-ROW)
+     CALL "STDMOB-ENDER-TICK" USING L-ROW L-M
+     IF EN-USED(L-ROW) = 0 OR EN-HEALTH(L-ROW) = 0
+         GOBACK
+     END-IF
      IF EN-TARGET(L-ROW) > 0
          CALL "STDMOB-TARGET" USING L-ROW L-M
          GOBACK
@@ -270,3 +291,160 @@
      END-IF
      GOBACK.
  END PROGRAM STDMOB-ENDER-AIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-ENDER-TICK.
+*> USING tracker row, table row of an enderman: called by STDMOB-ENDER-AIM once a tick while it holds a target (8.1). Water-sensitive (18 section 2.6 step 12): standing in a water
+*> block, or in rain with the sky open, it takes 1 point (CAUSE-DROWN) every tick. The target's stare: staring (STDMOB-ENDER-STARE) within 4 blocks (squared distance below 16) it
+*> teleports (one random teleport); farther than 16 blocks (squared distance above 256) for 30 consecutive ticks (EN-STRAFE-TIME counts them, an enderman never strafes) it teleports towards
+*> the target. The random numbers are seeded from the entity id and the world tick.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY RULES.
+ COPY XORO.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-EYE                 BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-RAIN                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG VALUE 1.
+ 01 WS-CAUSE               BINARY-LONG VALUE CAUSE-DROWN.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-RAD-Y               FLOAT-LONG.
+ 01 WS-RAD-P               FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-WX                  FLOAT-LONG.
+ 01 WS-WY                  FLOAT-LONG.
+ 01 WS-WZ                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-DISGUISE            BINARY-LONG VALUE 0.
+ 01 WS-STARED              BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-EYE-Y               FLOAT-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-M                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-M.
+     MOVE 0 TO WS-WET
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-STATE
+     IF WS-STATE > 0
+         COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         MOVE 0 TO WS-N
+         INSPECT CB-KEY(WS-BLOCK) TALLYING WS-N FOR ALL "water"
+         IF WS-N > 0
+             MOVE 1 TO WS-WET
+         END-IF
+     END-IF
+     COMPUTE WS-EYE = WS-BY + 1
+     CALL "STDMOB-LIGHTS" USING EN-DIM(L-ROW) WS-BX WS-EYE WS-BZ WS-SKY WS-BLK
+     CALL "WEATHER-RAINING" USING EN-DIM(L-ROW) WS-RAIN
+     IF WS-RAIN = 1 AND WS-SKY >= 15
+         MOVE 1 TO WS-WET
+     END-IF
+     IF WS-WET = 1
+         MOVE 0 TO EN-HURT(L-ROW)
+         CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-AMOUNT WS-CAUSE WS-NONE
+         IF EN-USED(L-ROW) = 0 OR EN-HEALTH(L-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
+     MOVE EN-TARGET(L-ROW) TO WS-P
+     IF WS-P = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-SEED = EN-ID(L-ROW) * 1000003 + CW-TICKS
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     COMPUTE WS-WX = EN-X(L-ROW) - PL-X(WS-P)
+     COMPUTE WS-WY = EN-Y(L-ROW) + 2.55 - (PL-Y(WS-P) + 1.62)
+     COMPUTE WS-WZ = EN-Z(L-ROW) - PL-Z(WS-P)
+     COMPUTE WS-D2 = WS-WX * WS-WX + WS-WY * WS-WY + WS-WZ * WS-WZ
+     COMPUTE WS-RAD-Y = PL-YAW(WS-P) * FUNCTION PI / 180
+     COMPUTE WS-RAD-P = PL-PITCH(WS-P) * FUNCTION PI / 180
+     COMPUTE WS-VX = - FUNCTION SIN(WS-RAD-Y) * FUNCTION COS(WS-RAD-P)
+     COMPUTE WS-VY = - FUNCTION SIN(WS-RAD-P)
+     COMPUTE WS-VZ = FUNCTION COS(WS-RAD-Y) * FUNCTION COS(WS-RAD-P)
+     CALL "STDMOB-ENDER-STARE" USING WS-VX WS-VY WS-VZ WS-WX WS-WY WS-WZ WS-DISGUISE WS-STARED
+     IF WS-STARED = 1 AND WS-D2 < 16
+         CALL "STDMOB-ENDER-DEST-RANDOM" USING XR-STATE EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-DX WS-DY WS-DZ
+         CALL "STDMOB-ENDER-TELEPORT" USING L-ROW WS-DX WS-DY WS-DZ WS-OK
+     END-IF
+     IF WS-D2 > 256
+         ADD 1 TO EN-STRAFE-TIME(L-ROW)
+         IF EN-STRAFE-TIME(L-ROW) >= 30
+             COMPUTE WS-EYE-Y = PL-Y(WS-P) + 1.62
+             CALL "STDMOB-ENDER-DEST-TOWARD" USING XR-STATE EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) PL-X(WS-P) WS-EYE-Y
+                 PL-Z(WS-P) WS-DX WS-DY WS-DZ
+             CALL "STDMOB-ENDER-TELEPORT" USING L-ROW WS-DX WS-DY WS-DZ WS-OK
+             MOVE 0 TO EN-STRAFE-TIME(L-ROW)
+         END-IF
+     ELSE
+         MOVE 0 TO EN-STRAFE-TIME(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-ENDER-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENDER-HURT.
+*> USING tracker row, cause, handled out (1: the damage is ignored): hurtServer of an enderman (8.1). An arrow (CAUSE-ARROW, the damage tagged is_projectile; the other projectiles reach
+*> the core as CAUSE-MOB hits and are not told apart) is ignored after up to 64 teleports. Any cause whose attacker is no living entity (not CAUSE-PLAYER, CAUSE-MOB) teleports it with
+*> probability 1/10 and the damage then applies as usual.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY STDMOBS.
+ COPY XORO.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-TEN                 BINARY-LONG VALUE 10.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CAUSE                BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-CAUSE L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     IF SM-KEY(WS-M) NOT = "enderman"
+         GOBACK
+     END-IF
+     COMPUTE WS-SEED = EN-ID(L-ROW) * 1000003 + CW-TICKS
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     EVALUATE TRUE
+         WHEN L-CAUSE = CAUSE-ARROW
+             MOVE 1 TO L-HANDLED
+             CALL "STDMOB-ENDER-TRY" USING XR-STATE L-ROW WS-OK
+         WHEN L-CAUSE NOT = CAUSE-PLAYER AND L-CAUSE NOT = CAUSE-MOB
+             CALL "XORO-NEXT-INT" USING XR-STATE WS-TEN WS-ROLL
+             IF WS-ROLL = 0
+                 CALL "STDMOB-ENDER-DEST-RANDOM" USING XR-STATE EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-DX WS-DY WS-DZ
+                 CALL "STDMOB-ENDER-TELEPORT" USING L-ROW WS-DX WS-DY WS-DZ WS-OK
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM ENDER-HURT.
