@@ -4,7 +4,7 @@
 *> the whole list is built and kept as the reference; the row is made stale; STRUCT-RING-HAS is asked for every chunk of the 19 x 19 square around each
 *> position before its snap (so the chunks at 7, 8 and 9 from it too) and must say 1 exactly for the chunks of the reference; a chunk at 8 from a position
 *> snaps nothing and one at 7 snaps that position only; STRUCT-RINGS-ALL after some positions were snapped gives the reference list; STRUCT-NEAREST-RING on a
-*> stale row gives the nearest chunk of the reference.
+*> stale row gives the nearest chunk of the reference and snaps only the position that can be nearest (the origin is near one, the others are farther than 160 blocks beyond it).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-RING-DEMAND.
  DATA DIVISION.
@@ -245,9 +245,9 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM COUNT-DONE
      MOVE SPACES TO TL-CASE
-     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": the nearest ring chunk had the whole list snapped" DELIMITED BY SIZE INTO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": the nearest ring chunk snapped the one position that can be nearest, not the whole list (lane buglocate)" DELIMITED BY SIZE INTO TL-CASE
      MOVE WS-DONE TO TL-OBSERVED-N
-     MOVE WS-N TO TL-EXPECTED-N
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  COMPARE-LIST.
