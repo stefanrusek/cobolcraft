@@ -96,12 +96,24 @@
  01 WS-KSLOT               BINARY-LONG.
  01 WS-H0                  BINARY-LONG.
  01 WS-H1                  BINARY-LONG.
+ 01 WS-FLAT-WORLD          BINARY-LONG.
+ 01 WS-FLAT-ORDINAL        BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
  01 L-KIND                 BINARY-LONG.
  01 L-HEIGHT               BINARY-LONG.
  PROCEDURE DIVISION USING L-X L-Z L-KIND L-HEIGHT.
+*>   A superflat world has no noise terrain: the column's height is the flat generator's getBaseHeight (56 section 4.6), the same in every column.
+     CALL "WORLD-IS-FLAT" USING WS-FLAT-WORLD
+     IF WS-FLAT-WORLD = 1
+         MOVE 0 TO WS-FLAT-ORDINAL
+         IF L-KIND = 1
+             MOVE 2 TO WS-FLAT-ORDINAL
+         END-IF
+         CALL "FLAT-BASE-HEIGHT" USING WS-FLAT-ORDINAL L-HEIGHT
+         GOBACK
+     END-IF
 *>   the interpolated nodes of the final density, found again when the content or the noises change (their stamp)
      COMPUTE WS-LVL = WG-LOAD-GEN + NZ-GEN
 *>   a column asked before under this stamp is answered from the column cache (the query is a pure function of the stamp and the column)

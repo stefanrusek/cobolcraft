@@ -515,7 +515,7 @@
          PERFORM VARYING WS-DX FROM -28 BY 1 UNTIL WS-DX > 28
              COMPUTE WS-QX = WS-QX0 + WS-DX
              COMPUTE WS-QZ = WS-QZ0 + WS-DZ
-             CALL "CLIMATE-BIOME-AT" USING WS-QX WS-QY WS-QZ WS-INDEX WS-BIOME
+             CALL "STRUCT-BIOME-AT" USING WS-QX WS-QY WS-QZ WS-INDEX WS-BIOME
              MOVE 0 TO WS-HIT
              PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= SS-PREF-COUNT(L-SET)
                  IF SD-BIOME(SS-PREF-FIRST(L-SET) + WS-J) = WS-BIOME
@@ -642,13 +642,15 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-STALE               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-SET                  BINARY-LONG.
  01 L-SEED                 BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-SET L-SEED.
-     CALL "STRUCT-RING-STALE" USING L-SET L-SEED WS-STALE
+     CALL "STRUCT-RING-SEED" USING L-SEED WS-SEED
+     CALL "STRUCT-RING-STALE" USING L-SET WS-SEED WS-STALE
      IF WS-STALE = 1
-         CALL "STRUCT-RINGS-PREP" USING L-SET L-SEED
+         CALL "STRUCT-RINGS-PREP" USING L-SET WS-SEED
      END-IF
      MOVE SS-RING-ROW(L-SET) TO WS-ROW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW)
@@ -656,6 +658,24 @@
      END-PERFORM
      GOBACK.
  END PROGRAM STRUCT-RINGS-ALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RING-SEED.
+*> USING seed, ring seed out (BINARY-DOUBLE): the seed the stronghold rings are made from: the world's seed, but 0 in a superflat world (56 section 4.7,
+*> concentricRingsSeed): the strongholds are in the same places in every superflat world.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-RING-SEED            BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SEED L-RING-SEED.
+     MOVE L-SEED TO L-RING-SEED
+     IF CW-WORLD-TYPE = "superflat"
+         MOVE 0 TO L-RING-SEED
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-RING-SEED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-RING-STALE.
@@ -692,6 +712,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-DX                  BINARY-LONG.
  01 WS-DZ                  BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-SET                  BINARY-LONG.
  01 L-SEED                 BINARY-DOUBLE.
@@ -700,9 +721,10 @@
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-SET L-SEED L-CX L-CZ L-FLAG.
      MOVE 0 TO L-FLAG
-     CALL "STRUCT-RING-STALE" USING L-SET L-SEED WS-STALE
+     CALL "STRUCT-RING-SEED" USING L-SEED WS-SEED
+     CALL "STRUCT-RING-STALE" USING L-SET WS-SEED WS-STALE
      IF WS-STALE = 1
-         CALL "STRUCT-RINGS-PREP" USING L-SET L-SEED
+         CALL "STRUCT-RINGS-PREP" USING L-SET WS-SEED
      END-IF
      MOVE SS-RING-ROW(L-SET) TO WS-ROW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW) OR L-FLAG = 1
@@ -729,6 +751,33 @@
      COMPUTE L-Q = FUNCTION INTEGER(L-V / 4)
      GOBACK.
  END PROGRAM STRUCT-QUART.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-BIOME-AT.
+*> USING qx, qy, qz (quart cell), index out, biome out (PIC X(40)): the biome the structure code sees at the cell: that of the multi-noise source
+*> (CLIMATE-BIOME-AT), or in a superflat world the one biome of the flat settings everywhere (56 section 4.2: the fixed biome source).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY FLATSET.
+ LINKAGE SECTION.
+ 01 L-QX                   BINARY-LONG.
+ 01 L-QY                   BINARY-LONG.
+ 01 L-QZ                   BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-BIOME                PIC X(40).
+ PROCEDURE DIVISION USING L-QX L-QY L-QZ L-INDEX L-BIOME.
+     IF CW-WORLD-TYPE = "superflat"
+         IF FS-LOADED = 0
+             CALL "FLAT-SETTINGS-DEFAULT"
+         END-IF
+         MOVE 1 TO L-INDEX
+         MOVE FS-BIOME TO L-BIOME
+     ELSE
+         CALL "CLIMATE-BIOME-AT" USING L-QX L-QY L-QZ L-INDEX L-BIOME
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-BIOME-AT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BIOME-OK.
@@ -771,7 +820,7 @@
      CALL "STRUCT-QUART" USING L-X WS-QX
      CALL "STRUCT-QUART" USING L-Y WS-QY
      CALL "STRUCT-QUART" USING L-Z WS-QZ
-     CALL "CLIMATE-BIOME-AT" USING WS-QX WS-QY WS-QZ WS-INDEX WS-BIOME
+     CALL "STRUCT-BIOME-AT" USING WS-QX WS-QY WS-QZ WS-INDEX WS-BIOME
      CALL "STRUCT-BIOME-OK" USING L-STRUCT WS-BIOME L-FLAG
      GOBACK.
  END PROGRAM STRUCT-VALID-AT.
@@ -779,26 +828,40 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-POSSIBLE-BUILD.
 *> SS-POSSIBLE of every loaded set: 1 when at least one structure of the set has at least one biome that is one of the climate points' biomes (the biome source's possible set, 4.1).
+*> In a superflat world the possible biomes are the one of the flat settings (56 section 3.3: the biome test of the structure sets).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  COPY STRUCTDATA.
  COPY CLIMATE.
+ COPY FLATSET.
+ 01 WS-FLAT-BIOME          PIC X(40).
  01 WS-S                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-ST                  BINARY-LONG.
  PROCEDURE DIVISION.
+     MOVE SPACES TO WS-FLAT-BIOME
+     IF CW-WORLD-TYPE = "superflat"
+         IF FS-LOADED = 0
+             CALL "FLAT-SETTINGS-DEFAULT"
+         END-IF
+         MOVE FS-BIOME TO WS-FLAT-BIOME
+     END-IF
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
          MOVE 0 TO SS-POSSIBLE(WS-S)
          PERFORM VARYING WS-E FROM 0 BY 1 UNTIL WS-E >= SS-EN-COUNT(WS-S)
              MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-E) TO WS-ST
              PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= SDT-BIOME-COUNT(WS-ST)
                  PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CL-COUNT
-                     IF CL-BIOME(WS-P) = SD-BIOME(SDT-BIOME-FIRST(WS-ST) + WS-J)
+                     IF CL-BIOME(WS-P) = SD-BIOME(SDT-BIOME-FIRST(WS-ST) + WS-J) AND CW-WORLD-TYPE NOT = "superflat"
                          MOVE 1 TO SS-POSSIBLE(WS-S)
                      END-IF
                  END-PERFORM
+                 IF CW-WORLD-TYPE = "superflat" AND SD-BIOME(SDT-BIOME-FIRST(WS-ST) + WS-J) = WS-FLAT-BIOME
+                     MOVE 1 TO SS-POSSIBLE(WS-S)
+                 END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
@@ -937,6 +1000,7 @@
  01 WS-VALID               BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
  01 WS-ANY                 BINARY-LONG.
+ 01 WS-SET-OK              BINARY-LONG.
  01 WS-KEY                 PIC X(80).
  LINKAGE SECTION.
  01 L-SEED                 BINARY-DOUBLE.
@@ -947,6 +1011,8 @@
      MOVE 0 TO SD-START-COUNT
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
          MOVE 0 TO WS-ANY
+*>       a superflat world only generates the structure sets of its structure_overrides (56 section 2.3 and 4.7)
+         CALL "FLAT-STRUCT-SET-OK" USING SS-KEY(WS-S) WS-SET-OK
          PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(WS-S)
              MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-K) TO WS-ST
              MOVE SDT-KEY(WS-ST) TO WS-KEY
@@ -955,7 +1021,7 @@
                  MOVE 1 TO WS-ANY
              END-IF
          END-PERFORM
-         IF SS-POSSIBLE(WS-S) = 1 AND WS-ANY = 1
+         IF SS-POSSIBLE(WS-S) = 1 AND WS-ANY = 1 AND WS-SET-OK = 1
              CALL "STRUCT-IS-CHUNK" USING WS-S L-SEED L-CX L-CZ WS-FLAG
              IF WS-FLAG = 1
                  CALL "STRUCT-ENTRY-ORDER" USING WS-S L-SEED L-CX L-CZ WS-ORDER WS-N

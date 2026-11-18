@@ -166,7 +166,7 @@
  DESCRIBE.
      MOVE "cobolcraft:daylight" TO WS-CLOCK
      MOVE 19 TO WS-CLOCK-LENGTH
-     IF CW-WORLD-TYPE = "standard" OR CW-WORLD-TYPE = "debug"
+     IF CW-WORLD-TYPE = "standard" OR CW-WORLD-TYPE = "debug" OR CW-WORLD-TYPE = "superflat"
          MOVE "minecraft:overworld" TO WS-CLOCK
      END-IF
      MOVE SPACES TO WS-ARG

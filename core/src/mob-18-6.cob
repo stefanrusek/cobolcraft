@@ -1262,7 +1262,8 @@
  PROCEDURE DIVISION USING L-N.
      MOVE 0 TO L-N
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
-     IF CT-OPEN = 0 OR CT-SET-TYPE NOT = CT-TYPE-STANDARD
+*>   The flat generator creates no creatures at chunk generation (56 section 4.2 and 4.9).
+     IF CT-OPEN = 0 OR CT-SET-TYPE NOT = CT-TYPE-STANDARD OR CW-WORLD-TYPE = "superflat"
          GOBACK
      END-IF
      IF WS-SEEDED = 0

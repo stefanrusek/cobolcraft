@@ -620,12 +620,16 @@
  PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
 *> USING dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
 *> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2): dimension type id, dimension key,
-*> hashed seed 0, game mode, previous game mode absent, not debug, not flat, no last death location,
-*> portal cooldown 0, sea level.
+*> hashed seed 0, game mode, previous game mode absent, not debug, is flat (true in every dimension of a superflat world, 56 section 5.1;
+*> false otherwise), no last death location, portal cooldown 0, sea level (-63 in the overworld of a superflat world, 56 section 4.1 and 5.2; the
+*> dimension's own otherwise).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  COPY DIMENSIONS.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-FLAT                BINARY-LONG.
+ 01 WS-SEA                 BINARY-LONG.
  01 WS-SEED                BINARY-DOUBLE VALUE 0.
  01 WS-MODE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
@@ -641,11 +645,19 @@
      MOVE L-MODE TO WS-MODE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MODE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO WS-FLAT
+     MOVE DM-SEA-LEVEL(WS-DIM) TO WS-SEA
+     IF CW-WORLD-TYPE = "superflat"
+         MOVE 1 TO WS-FLAT
+         IF WS-DIM = DIM-STANDARD-OVERWORLD
+             MOVE -63 TO WS-SEA
+         END-IF
+     END-IF
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAT
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-VARINT" USING PB-BUFFER DM-SEA-LEVEL(WS-DIM)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SEA
      GOBACK.
  END PROGRAM PLAY-SPAWN-INFO-BUILD.
 
