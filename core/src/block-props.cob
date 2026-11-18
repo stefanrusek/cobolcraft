@@ -556,6 +556,14 @@
          END-IF
          CALL "L32-BLOCK-RULES" USING WS-CLASS WS-SOLID WS-PROP-DEFAULT WS-FLUID-EMPTY WS-WET WS-DOUBLE WS-EXTENDED
              WS-DAMP WS-PROPAGATES WS-USE
+*>       A block with no collision that holds no fluid lets the sky through (24 part 2 section 5.3: plants, flowers, mushrooms, torches, signs, rails, wheat, vines: 0).
+*>       The class overrides of L32-BLOCK-RULES list only the classes that declare them, not the plants that inherit VegetationBlock's (tall grass, ferns, dry grass,
+*>       crops, stems, hanging roots, vines, leaf litter) and whose outline is the full cube by the offset rule of 51: they come out 1 there. The cobweb (WebBlock:
+*>       outline a full cube, dampening 1 by the table), leaves and the liquids keep what the rules gave.
+         IF WS-DAMP = 1 AND CB-SOLID(WS-INDEX) = 0 AND WS-WET = 0
+             AND WS-CLASS NOT = "LeavesBlock" AND WS-CLASS NOT = "LiquidBlock" AND WS-CLASS NOT = "WebBlock"
+             MOVE 0 TO WS-DAMP
+         END-IF
          MOVE WS-DAMP TO CB-S-DAMP(WS-S + 1)
      END-PERFORM
      GOBACK.

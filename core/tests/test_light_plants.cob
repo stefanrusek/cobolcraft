@@ -70,8 +70,9 @@
     05 FILLER              PIC X(40) VALUE "minecraft:acacia_leaves".
     05 FILLER              PIC X(40) VALUE "minecraft:dark_oak_leaves".
     05 FILLER              PIC X(40) VALUE "minecraft:water".
+    05 FILLER              PIC X(40) VALUE "minecraft:leaf_litter".
  01 WS-NAME-TABLE REDEFINES WS-NAMES.
-    05 WS-NAME             PIC X(40) OCCURS 17 TIMES.
+    05 WS-NAME             PIC X(40) OCCURS 18 TIMES.
  01 WS-TOTALS.
     05 WS-CHECKED          BINARY-LONG OCCURS 5 TIMES.
     05 WS-WRONG            BINARY-LONG OCCURS 5 TIMES.
@@ -109,11 +110,11 @@
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      MOVE CW-DIM(1) TO WS-DIM
 *>   The block ids by name; kind 1 plant, 2 dirt path, 3 leaves, 4 water.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 17
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
          MOVE WS-NAME(WS-I) TO WS-KEY
          CALL "BLOCKS-ID-OF" USING WS-KEY WS-ID(WS-I)
          EVALUATE TRUE
-             WHEN WS-I <= 9 MOVE 1 TO WS-ID-KIND(WS-I)
+             WHEN WS-I <= 9 OR WS-I = 18 MOVE 1 TO WS-ID-KIND(WS-I)
              WHEN WS-I = 10 MOVE 2 TO WS-ID-KIND(WS-I)
              WHEN WS-I <= 16 MOVE 3 TO WS-ID-KIND(WS-I)
              WHEN OTHER MOVE 4 TO WS-ID-KIND(WS-I)
@@ -253,6 +254,28 @@
      COMPUTE WS-WX = WS-SX * 16 + 9
      MOVE 17 TO WS-I
      PERFORM PUT-BLOCK
+     COMPUTE WS-WX = WS-SX * 16 + 11
+     MOVE 8 TO WS-I
+     PERFORM PUT-BLOCK
+     COMPUTE WS-WY = WS-WY - 1
+     PERFORM PUT-BLOCK
+     COMPUTE WS-WY = WS-WY + 1
+     MOVE "test light plants the lower half of a built tall grass (two cells) in open sky reads 15" TO TL-CASE
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE -1 TO WS-N
+     PERFORM GET-SKY
+     MOVE WS-GOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-WX = WS-SX * 16 + 13
+     MOVE 18 TO WS-I
+     PERFORM PUT-BLOCK
+     MOVE "test light plants a built leaf litter cell in open sky reads 15" TO TL-CASE
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE 0 TO WS-N
+     PERFORM GET-SKY
+     MOVE WS-GOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-WX = WS-SX * 16 + 9
      MOVE "test light plants a built water cell in open sky reads 14" TO TL-CASE
      MOVE 14 TO TL-EXPECTED-N
      MOVE 0 TO WS-N
@@ -280,7 +303,7 @@
              MOVE 0 TO WS-KIND
              IF WS-STATE > 0
                  MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 17
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
                      IF WS-ID(WS-I) = WS-BLOCK
                          MOVE WS-ID-KIND(WS-I) TO WS-KIND
                      END-IF
