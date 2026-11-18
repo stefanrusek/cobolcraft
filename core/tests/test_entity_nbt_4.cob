@@ -260,6 +260,7 @@
 *>   a turtle with no home set writes its own block (chunk 14: x 228.5, y 55, z 37.25); an allay with nothing in its inventory writes an empty list (chunk 15)
      MOVE 14 TO WS-CX
      MOVE "turtle" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     MOVE 0 TO EN-HOME-SET(WS-MOB)
      PERFORM WRITE-CHUNK
      MOVE "acceptance US15 45-4 turtle without a home: home_pos is its own block" TO TL-CASE
      MOVE "home_pos:I[228,55,37],has_egg:0" TO TL-EXPECTED
