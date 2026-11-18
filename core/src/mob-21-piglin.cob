@@ -53,7 +53,6 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY BRWORLD.
  COPY DIMENSIONS.
  01 WS-SPECIES              PIC X(24).
  01 WS-KEY                  PIC X(112).
@@ -84,7 +83,8 @@
          GOBACK
      END-IF
      ADD 1 TO EN-ZOMBIFY(L-ENTITY)
-     IF EN-ZOMBIFY(L-ENTITY) > 300 AND BW-DIFFICULTY > 0
+*>   44-6 section 7: finishConversion runs whatever the difficulty (only the converted sound is gated by Peaceful; no sound is made here).
+     IF EN-ZOMBIFY(L-ENTITY) > 300
 *>       cancelAdmiring (44 section 3.4): the held ingot is dropped as an item.
          IF EN-ADMIRE(L-ENTITY) > 0
              MOVE 0 TO EN-ADMIRE(L-ENTITY)
