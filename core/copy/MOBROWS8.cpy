@@ -1,6 +1,7 @@
 *> Rows added by lane p49b (T15000 ff.), included by STDMOBS.cpy after MOB21ROWS3.cpy (the villager rows and the strider stay the last four). Columns as the rows there.
 *> The giant (20 section 18.1: max health 100, movement speed 0.5, attack damage 50, experience 5; no goals and no targets: SM-NEUTRAL 7 is the inert code of
 *> STDMOB-AGGRO and of the stroll; summon only: no natural spawn rule).
+*> The creaking (20 section 17: health 1, speed 0.4 at modifier 1.0, attack 3, follow 32, no experience; spawned by hearts and summons only).
 *> The warden (20 section 15: max health 500, movement speed 0.3 at the fighting modifier 1.2: (0.3 x 1.2) squared / 0.454 = 285, attack damage 30, follow range 24,
 *> experience 5; no biome spawn entry; the Darkness pulse is WARDEN-DARKNESS).
     05 FILLER.
@@ -30,6 +31,22 @@
        10 FILLER BINARY-LONG VALUE 0.              *> fire immune, does not burn
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 5.              *> experience points
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.              *> ranged kind
+       10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "creaking".
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 352.              *> 0.4 squared / 0.454 (walk modifier 1.0)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.              *> monster
+       10 FILLER BINARY-LONG VALUE 3.              *> attack damage 3
+       10 FILLER BINARY-LONG VALUE 32.              *> follow range
+       10 FILLER BINARY-LONG VALUE 0.              *> does not burn
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE -1.              *> no experience
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.              *> ranged kind
