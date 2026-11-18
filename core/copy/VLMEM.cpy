@@ -78,6 +78,11 @@
  78 TM-HURT-TICK          VALUE 42.
  78 TM-HURT-ID            VALUE 43.
  78 TM-HIDDEN-ON          VALUE 44.
+ 78 TM-CARROT             VALUE 45.
+ 78 TM-POTATO             VALUE 46.
+ 78 TM-BEET-SEEDS         VALUE 47.
+ 78 TM-BEETROOT           VALUE 48.
+ 78 TM-FARM-MODE          VALUE 49.
  01 VM-STATE EXTERNAL.
     05 VM-V                  OCCURS 256 TIMES.
        10 VM-ACT             BINARY-LONG.
