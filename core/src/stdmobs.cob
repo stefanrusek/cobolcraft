@@ -1020,6 +1020,7 @@
  01 WS-RAID-HX             FLOAT-LONG.
  01 WS-RAID-HZ             FLOAT-LONG.
  01 WS-RAID-WALK           BINARY-LONG.
+ 01 WS-EVAL                BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1417,13 +1418,16 @@
 *>           A golem does not stroll: the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN OTHER
-             IF EN-COOLDOWN(WS-ROW) = 0
+*>           The goal selector evaluates on the ticks where (tickCount + id) mod 2 = 0 (18 section 2.7), with the roll nextInt(60) of the stroll goal.
+             COMPUTE WS-Q = CW-TICKS + EN-ID(WS-ROW)
+             COMPUTE WS-EVAL = FUNCTION MOD(WS-Q, 2)
+             IF EN-COOLDOWN(WS-ROW) = 0 AND WS-EVAL = 0
                  MOVE EN-ID(WS-ROW) TO WS-ARG(1)
                  MOVE CW-TIME TO WS-ARG(2)
                  MOVE 7 TO WS-ARG(3)
                  CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
-                 IF FUNCTION MOD(WS-R, SM-STROLL-ODDS) = 0
-                     COMPUTE WS-Q = WS-R / SM-STROLL-ODDS
+                 IF FUNCTION MOD(WS-R, SM-STROLL-ROLL) = 0
+                     COMPUTE WS-Q = WS-R / SM-STROLL-ROLL
                      COMPUTE EN-DEST-X(WS-ROW) = FUNCTION INTEGER(EN-X(WS-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
                      COMPUTE WS-Q = WS-Q / 21
                      COMPUTE EN-DEST-Z(WS-ROW) = FUNCTION INTEGER(EN-Z(WS-ROW)) + FUNCTION MOD(WS-Q, 21) - 10

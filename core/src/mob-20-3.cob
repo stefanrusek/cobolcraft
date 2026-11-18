@@ -506,6 +506,92 @@
  END PROGRAM STDMOB-VARIANT-SEND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FLAGS-BUILD.
+*> USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the mob flags (index 15 BYTE: 1 no AI, 2 left-handed; 18 section 1.4): nothing is written while both are
+*> off (the default 0 is not sent at pairing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     IF EN-NO-AI(L-ROW) = 1 OR EN-LEFTY(L-ROW) = 1
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 15 TO MD-MD-INDEX
+         MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
+         COMPUTE MD-MD-INT = EN-NO-AI(L-ROW) + 2 * EN-LEFTY(L-ROW)
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         MOVE MD-MD-END TO MD-MD-INDEX
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-FLAGS-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FLAGS-SEND.
+*> USING tracker row: STDMOB-FLAGS-BUILD to the viewers of the row (nothing while no flag is set).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-FLAGS-BUILD" USING L-ROW PB-BUFFER
+     IF PB-LENGTH > 0
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STDMOB-FLAGS-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FINALIZE-BASE.
+*> USING tracker row: the first two steps of Mob.finalizeSpawn for every mob (18 section 7.1, 44 x1 section 3): the random_spawn_bonus modifier of follow_range
+*> (amount triangle(0, 0.11485) = 0.11485 x (nextDouble - nextDouble), stored in millionths in EN-FOLLOW-BONUS, only while none is there) and left-handedness (nextFloat < 0.05,
+*> EN-LEFTY). The draws are hashes of the entity id and the time, not the spawn's xoroshiro state, so the draws of the species' own finalize do not move. The mob flags go
+*> to the viewers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-COUNT               BINARY-LONG VALUE 3.
+ 01 WS-ARGS.
+    05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
+ 01 WS-R                   BINARY-DOUBLE.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE EN-ID(L-ROW) TO WS-ARG(1)
+     MOVE CW-TIME TO WS-ARG(2)
+     IF EN-FOLLOW-BONUS(L-ROW) = 0
+         MOVE 31 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+         COMPUTE WS-A = FUNCTION MOD(WS-R, 1000000)
+         MOVE 32 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+         COMPUTE WS-B = FUNCTION MOD(WS-R, 1000000)
+         COMPUTE EN-FOLLOW-BONUS(L-ROW) = (WS-A - WS-B) * 0.11485
+     END-IF
+     MOVE 33 TO WS-ARG(3)
+     CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+     IF FUNCTION MOD(WS-R, 1000) < 50
+         MOVE 1 TO EN-LEFTY(L-ROW)
+     ELSE
+         MOVE 0 TO EN-LEFTY(L-ROW)
+     END-IF
+     CALL "STDMOB-FLAGS-SEND" USING L-ROW
+     GOBACK.
+ END PROGRAM STDMOB-FINALIZE-BASE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-XP-POINTS.
 *> USING base reward, baby (BINARY-LONG, 1 baby), points out: the experience reward of a mob (3.6): a baby zombie multiplies it by 2.5, truncated.
  DATA DIVISION.
@@ -551,6 +637,7 @@
      IF WS-M = 0
          GOBACK
      END-IF
+     CALL "STDMOB-FINALIZE-BASE" USING L-ROW
      CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY CW-TIME WS-INHABITED WS-MOON WS-EFF
      CALL "STDMOB-SPECIAL" USING WS-EFF WS-SPECIAL
      EVALUATE SM-KEY(WS-M)

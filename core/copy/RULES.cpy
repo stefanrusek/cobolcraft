@@ -65,6 +65,11 @@
  78 CAUSE-GENERIC              VALUE 16.
 *> CAUSE-IN-FIRE (002-lane-fire, T11101): standing in a fire block (damage type in_fire, 1.0, soul fire 2.0; 17 section 4.11); no RULE-CAUSE row.
  78 CAUSE-IN-FIRE              VALUE 17.
+*> Block and cold causes of a mob (lane p49a, 18 sections 2.6 step 11 and 3.3): freeze (bypasses armor), cactus, hot_floor (magma block), sweet_berry_bush; no RULE-CAUSE row.
+ 78 CAUSE-FREEZE              VALUE 18.
+ 78 CAUSE-CACTUS              VALUE 19.
+ 78 CAUSE-HOT-FLOOR           VALUE 20.
+ 78 CAUSE-BERRY               VALUE 21.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

@@ -607,6 +607,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CITEMS.
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
@@ -627,6 +628,13 @@
  01 WS-LEGACY              BINARY-LONG.
  01 WS-KEY                 PIC X(24).
  01 WS-SINKS               BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-S-CACTUS            BINARY-LONG.
+ 01 WS-S-WEB               BINARY-LONG.
+ 01 WS-S-BERRY             BINARY-LONG.
+ 01 WS-S-MAGMA             BINARY-LONG.
+ 01 WS-S-POWDER            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -668,7 +676,22 @@
          IF WS-LEGACY > 0
              COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
          ELSE
+*>           LivingEntity.aiStep step 4: a velocity component of a mob below 0.003 in absolute value is set to 0.
              MOVE EN-VY(WS-ROW) TO WS-VY
+             IF FUNCTION ABS(WS-VY) < 0.003
+                 MOVE 0 TO WS-VY
+             END-IF
+         END-IF
+     END-IF
+*>   A cobweb in the box (3.3 makeStuckInBlock (0.25, 0.05, 0.25)) scales the move of a standard mob.
+     IF WS-LEGACY = 0
+         COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-TYPE + 1) / 2000
+         COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(WS-TYPE + 1) / 1000
+         CALL "M183-SCAN" USING WS-DIM WS-X WS-Y WS-Z WS-HALF WS-HEIGHT WS-S-CACTUS WS-S-WEB WS-S-BERRY WS-S-MAGMA WS-S-POWDER
+         IF WS-S-WEB = 1
+             COMPUTE WS-VY = WS-VY * 0.05
+             COMPUTE L-HX = L-HX * 0.25
+             COMPUTE L-HZ = L-HZ * 0.25
          END-IF
      END-IF
      COMPUTE WS-NEW = WS-Y + WS-VY
@@ -755,6 +778,10 @@
      END-IF
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
+     END-IF
+*>   A no-AI mob (18 section 2.10) has no goals and no travel.
+     IF EN-NO-AI(WS-ROW) = 1
+         GOBACK
      END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      CALL "MOB-AI" USING WS-ROW WS-HX WS-HZ WS-YAW
