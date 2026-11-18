@@ -1313,7 +1313,10 @@
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(WS-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
-             CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+*>           A cube turns by lookAt(target, 10, 10) in CUBE-HOP (20 section 10.1), not at once.
+             IF WS-CUBE = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             END-IF
              MOVE EN-ID(WS-ROW) TO WS-ARG(1)
              MOVE CW-TIME TO WS-ARG(2)
              MOVE 19 TO WS-ARG(3)

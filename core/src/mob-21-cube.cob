@@ -1,6 +1,6 @@
 *> The cube-mob move control of the slime and the magma cube (docs/protocol/20 section 10, 21 section 5.3, 44-residual-mob-questions-6-nether.md section 9.3, 18 sections 3.2.1 and 3.3 E;
 *> lane 002-lane-p49l made the jump, lane 002-lane-bugmobmove the hop's own motion). A cube moves only by hopping.
-*> CubeMobMoveControl: on the ground the cube sets no forward input between its jumps; it counts jumpDelay (EN-HOP) down and jumps when it reaches 0 (jump velocity 0.42, plus 0.1 x its
+*> CubeMobMoveControl: on the ground the cube sets no forward input between its jumps; it counts jumpDelay (EN-HOP) down and jumps when the count reaches 0 (the jump tick decrements too: d ticks apart) (jump velocity 0.42, plus 0.1 x its
 *> size for a magma cube, 21 section 5.3), then jumpDelay = getJumpDelay = nextInt(20) + 10 (x 4 for a magma cube), divided by 3 (integer) when the control is aggressive, which
 *> CubeMobAttackGoal sets from canDealDamage() while the cube has a target (a size 1 slime cannot deal damage; a magma cube always can).
 *> The hop's motion: the cube's speed is 0.2 + 0.1 x size (EN-VARIANT, 0 reads as 1) and its forward input is that speed, so the jump tick accelerates it along its yaw by speed x
@@ -56,6 +56,11 @@
          COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
          COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
          CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-WANT
+*>       lookAt(target, 10, 10) of the attack goal turns the cube by at most 10 degrees a tick (20 section 10.1); the move control then lerps to that yaw.
+         COMPUTE WS-TURN = WS-WANT - L-YAW
+         COMPUTE WS-TURN = WS-TURN - 360 * FUNCTION INTEGER((WS-TURN + 180) / 360)
+         COMPUTE WS-TURN = FUNCTION MAX(-10, FUNCTION MIN(10, WS-TURN))
+         COMPUTE WS-WANT = L-YAW + WS-TURN
          IF SM-KEY(L-M) = "magma_cube" OR WS-SIZE > 1
              MOVE 1 TO WS-AGGRESSIVE
          END-IF
@@ -91,7 +96,8 @@
          IF WS-FRICTION > 0.6
              COMPUTE WS-DRAG = WS-FRICTION * 0.91
          END-IF
-         IF EN-HOP(L-ROW) > 0
+*>       jumpDelay is decremented on the jump tick too: a drawn d gives the next jump d on-ground ticks later (20 section 10.1), so the tick that takes it from 1 to 0 jumps.
+         IF EN-HOP(L-ROW) > 1
              SUBTRACT 1 FROM EN-HOP(L-ROW)
          ELSE
              MOVE EN-ID(L-ROW) TO WS-ARG(1)
