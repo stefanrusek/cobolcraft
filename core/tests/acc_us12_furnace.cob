@@ -148,7 +148,7 @@
      PERFORM PREPARE-GROUND
      MOVE "T" TO TL-MODE
 
-     MOVE "acceptance US12 furnace provider shapes: coal burns 1600 in a furnace and 800 in a smoker (div over a conditional on fast_cooking), the speed "
+     MOVE "acceptance US12 31-2§3 Furnace: provider shapes: coal burns 1600 in a furnace and 800 in a smoker (div over a conditional on fast_cooking), the speed "
          & "is 1.0 and 2.0, an item without fuel burns 0" TO TL-CASE
      MOVE 0 TO WS-FAST
      CALL "FURN-FUEL" USING WS-COAL WS-FAST WS-BURN WS-SPEED
@@ -166,7 +166,7 @@
      MOVE "1600 10 800 20 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace provider scanner: a number alone, a conditional alone, a div whose left or right is missing or zero, and text that "
+     MOVE "acceptance US12 31-2§3 Furnace: provider scanner: a number alone, a conditional alone, a div whose left or right is missing or zero, and text that "
          & "is none of them" TO TL-CASE
      MOVE 1 TO WS-FAST
      MOVE SPACES TO WS-PAYLOAD
@@ -202,7 +202,7 @@
      MOVE "-35/1 20 0 0 blank 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace recipes: raw iron smelts to an iron ingot (200 ticks, 0.7), beef smokes to cooked beef, raw iron blasts in 100 "
+     MOVE "acceptance US12 31-2§3 Furnace: recipes: raw iron smelts to an iron ingot (200 ticks, 0.7), beef smokes to cooked beef, raw iron blasts in 100 "
          & "ticks, dirt has no recipe, a #tag ingredient matches by tag" TO TL-CASE
      MOVE 0 TO WS-TYPE
      CALL "FURN-RECIPE" USING WS-TYPE WS-RAW WS-ROWNO WS-RESULT WS-COUNT WS-TIME WS-XP
@@ -236,7 +236,7 @@
      MOVE 1 TO WS-FACE
      PERFORM USE-BLOCK
 
-     MOVE "acceptance US12 furnace given a placed furnace when it is used then Open Screen (menu type 14, 3 own slots) and the four Container Set Data "
+     MOVE "acceptance US12 31-2§3 Furnace: given a placed furnace when it is used then Open Screen (menu type 14, 3 own slots) and the four Container Set Data "
          & "packets (19) arrive" TO TL-CASE
      MOVE MN-TYPE(WS-ROW) TO WS-E1
      MOVE MN-CSIZE(WS-ROW) TO WS-E2
@@ -252,7 +252,7 @@
      MOVE "type 14 size 3 entity 0 data packets 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given raw iron and coal in the hotbar when each is shift-clicked then the iron goes to the input slot and the coal "
+     MOVE "acceptance US12 31-2§3 Furnace: given raw iron and coal in the hotbar when each is shift-clicked then the iron goes to the input slot and the coal "
          & "to the fuel slot, the input slot's cooking total becomes 200" TO TL-CASE
      MOVE WS-RAW TO PL-SLOT-ITEM(WS-ROW, 5)
      MOVE 3 TO PL-SLOT-COUNT(WS-ROW, 5)
@@ -274,7 +274,7 @@
      MOVE "input 3 fuel 2 total 200" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given the loaded furnace when one tick runs then the coal is burning (1600), one is used up, the cooking timer is 1 "
+     MOVE "acceptance US12 31-2§3 Furnace: given the loaded furnace when one tick runs then the coal is burning (1600), one is used up, the cooking timer is 1 "
          & "and the block's lit property is set" TO TL-CASE
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
@@ -290,7 +290,7 @@
      MOVE "lit 1600 coal 1 cook 1 flag 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given 199 more ticks then the first iron ingot is in the result slot, two raw iron are left, the timer restarts, and "
+     MOVE "acceptance US12 31-2§3 Furnace: given 199 more ticks then the first iron ingot is in the result slot, two raw iron are left, the timer restarts, and "
          & "Container Set Data went out" TO TL-CASE
      MOVE 199 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
@@ -313,7 +313,7 @@
      MOVE "result 1 input 2 cook 0 sent" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a held iron ingot when it is put on the result slot then it is refused; picking the result up by click "
+     MOVE "acceptance US12 31-2§3 Furnace: given a held iron ingot when it is put on the result slot then it is refused; picking the result up by click "
          & "works" TO TL-CASE
      MOVE WS-INGOT TO PL-CARRIED-ITEM(WS-ROW)
      MOVE 1 TO PL-CARRIED-COUNT(WS-ROW)
@@ -335,7 +335,7 @@
      PERFORM CHECK
      MOVE 0 TO PL-CARRIED-COUNT(WS-ROW)
 
-     MOVE "acceptance US12 furnace given a shift-click of the result slot and of the input and of a plain stack then the result and the input go "
+     MOVE "acceptance US12 31-2§3 Furnace: given a shift-click of the result slot and of the input and of a plain stack then the result and the input go "
          & "to the inventory, dirt moves between the hotbar and the main inventory" TO TL-CASE
      MOVE WS-INGOT TO BE-SLOT-ITEM(WS-BE, 3)
      MOVE 4 TO BE-SLOT-COUNT(WS-BE, 3)
@@ -367,7 +367,7 @@
      MOVE "result 0 input 0 dirt in main 5" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a furnace out of fuel with progress when ticks run then the flame goes out (lit false) and the progress "
+     MOVE "acceptance US12 31-2§3 Furnace: given a furnace out of fuel with progress when ticks run then the flame goes out (lit false) and the progress "
          & "decays by 2 a tick; a result slot holding another item stops cooking" TO TL-CASE
      CALL "TEST-BE-AT" USING WS-DIM WS-BX WS-BY WS-BZ WS-BE
      MOVE 0 TO BE-SLOT-COUNT(WS-BE, 1) BE-SLOT-COUNT(WS-BE, 2) BE-SLOT-COUNT(WS-BE, 3)
@@ -386,7 +386,7 @@
      MOVE "lit 0 cook 4 flag 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a blocked result, no recipe and a non-fuel in the fuel slot then nothing cooks: the timer is reset or stays" TO TL-CASE
+     MOVE "acceptance US12 31-2§3 Furnace: given a blocked result, no recipe and a non-fuel in the fuel slot then nothing cooks: the timer is reset or stays" TO TL-CASE
      MOVE WS-RAW TO BE-SLOT-ITEM(WS-BE, 1)
      MOVE 2 TO BE-SLOT-COUNT(WS-BE, 1)
      MOVE WS-COAL TO BE-SLOT-ITEM(WS-BE, 2)
@@ -415,7 +415,7 @@
      MOVE "blocked 0/0 norecipe 5 nofuel 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a smelt that is relit mid-way then the progress is rescaled to the new total, and a wet sponge with a bucket "
+     MOVE "acceptance US12 31-2§3 Furnace: given a smelt that is relit mid-way then the progress is rescaled to the new total, and a wet sponge with a bucket "
          & "in the fuel slot turns the bucket into a water bucket" TO TL-CASE
      MOVE 0 TO BE-SLOT-COUNT(WS-BE, 1) BE-SLOT-COUNT(WS-BE, 2) BE-SLOT-COUNT(WS-BE, 3)
      MOVE WS-RAW TO BE-SLOT-ITEM(WS-BE, 1)
@@ -448,7 +448,7 @@
      MOVE "cook 101/200 water bucket 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a furnace with state, when saved and loaded into another then the four ints, the speed and the recipes used "
+     MOVE "acceptance US12 31-2§3 Furnace: given a furnace with state, when saved and loaded into another then the four ints, the speed and the recipes used "
          & "are equal" TO TL-CASE
      MOVE 17 TO BE-F-COOK(WS-BE)
      MOVE 180 TO BE-F-COOK-TOTAL(WS-BE)
@@ -481,7 +481,7 @@
      MOVE "17 180 900 used 3 speed 10" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a smelt onto a stack of the same item then the result grows and the used count rises; the total rounds up; "
+     MOVE "acceptance US12 31-2§3 Furnace: given a smelt onto a stack of the same item then the result grows and the used count rises; the total rounds up; "
          & "an unknown item gives no recipe, a #tag ingredient gives a recipe of count 1" TO TL-CASE
      MOVE 0 TO BE-SLOT-COUNT(WS-BE, 1) BE-SLOT-COUNT(WS-BE, 2) BE-SLOT-COUNT(WS-BE, 3)
      MOVE WS-RAW TO BE-SLOT-ITEM(WS-BE, 1)
@@ -514,7 +514,7 @@
      MOVE "result 6 used 4 total 101 unknown 0 tag count 1 time 50" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given progress without fuel then it decays by 2 a tick down to 0 and never below, and above the total it is "
+     MOVE "acceptance US12 31-2§3 Furnace: given progress without fuel then it decays by 2 a tick down to 0 and never below, and above the total it is "
          & "clamped to the total" TO TL-CASE
      MOVE 0 TO BE-SLOT-COUNT(WS-BE, 1) BE-SLOT-COUNT(WS-BE, 2) BE-SLOT-COUNT(WS-BE, 3)
      MOVE 0 TO BE-F-LIT(WS-BE)
@@ -531,7 +531,7 @@
      MOVE "floor 0 clamp 5" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a smoker and a blast furnace with their inputs and coal when one tick runs then the smoker (menu 22) burns "
+     MOVE "acceptance US12 31-2§3 Furnace: given a smoker and a blast furnace with their inputs and coal when one tick runs then the smoker (menu 22) burns "
          & "the coal for 800 and cooks beef in 100, the blast furnace (menu 10) cooks raw iron in 50" TO TL-CASE
      COMPUTE WS-X = WS-BX + 1
      MOVE WS-SMOKER TO WS-ID
@@ -553,7 +553,7 @@
      MOVE "smoker 22 lit 800 total 100 cook 1 blast 10 total 50" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace the fuel slot takes coal and an empty bucket but not dirt, the result slot nothing, the input slot anything" TO TL-CASE
+     MOVE "acceptance US12 40-2§2 Menu: furnace the fuel slot takes coal and an empty bucket but not dirt, the result slot nothing, the input slot anything" TO TL-CASE
      COMPUTE WS-X = WS-BX + 2
      MOVE WS-BY TO WS-Y
      MOVE WS-BZ TO WS-Z
@@ -579,7 +579,7 @@
      MOVE "coal 1 bucket 1 dirt 0 result 0 input 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given dirt in a main inventory slot when it is shift-clicked then it goes to the hotbar" TO TL-CASE
+     MOVE "acceptance US12 40-2§2 Menu: furnace given dirt in a main inventory slot when it is shift-clicked then it goes to the hotbar" TO TL-CASE
      MOVE WS-DIRT TO PL-SLOT-ITEM(WS-ROW, 12)
      MOVE 3 TO PL-SLOT-COUNT(WS-ROW, 12)
      MOVE 0 TO PL-SLOT-VAR(WS-ROW, 12)
@@ -600,7 +600,7 @@
      MOVE "main 0 hotbar 3" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given a tag with unknown recipes, foreign tag types and a smaller RecipesUsed when it is loaded then the unknown "
+     MOVE "acceptance US12 31-2§3 Furnace: given a tag with unknown recipes, foreign tag types and a smaller RecipesUsed when it is loaded then the unknown "
          & "recipe and the other types are skipped and the known recipe's count is read" TO TL-CASE
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE "cooking_time_spent" TO WS-NM
@@ -644,7 +644,7 @@
      MOVE "cook 0 lit total 1 used 7 second 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 furnace given an unlit furnace one third through an item (1 of 3) when new fuel lights it then the progress keeps "
+     MOVE "acceptance US12 31-2§3 Furnace: given an unlit furnace one third through an item (1 of 3) when new fuel lights it then the progress keeps "
          & "its share of the new total of 50 (speed 4), rounded up (50 / 3 = 16.67: 17), and the tick adds one" TO TL-CASE
      MOVE WS-RAW TO BE-SLOT-ITEM(WS-BE, 1)
      MOVE 2 TO BE-SLOT-COUNT(WS-BE, 1)

@@ -25,206 +25,206 @@
      MOVE 8 TO WS-X
      MOVE 0 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 0, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 0, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 4 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 4, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 4, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 6 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 6, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 6, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 7 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 7, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 7, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 8 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 8, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 8, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 12 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 12, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 12, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 14 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 14, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 14, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 16 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 16, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 16, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 100 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 100, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 100, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 127 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 127, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 127, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 97 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 97, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 97, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 98 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 98, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 98, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 99 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 99, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 99, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 101 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 101, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 101, 5) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 10 TO WS-X
      MOVE 64 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (10, 64, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (10, 64, 5) of the split ring (cells left of the cut 1, right 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 5 TO WS-X
      MOVE 64 TO WS-Y
      MOVE 3 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (5, 64, 3) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (5, 64, 3) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 6 TO WS-X
      MOVE 3 TO WS-Y
      MOVE 2 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (6, 3, 2) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (6, 3, 2) of the split ring (cells left of the cut 1, right 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      PERFORM SET-RING-2
      MOVE 8 TO WS-X
      MOVE 0 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 0, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 0, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 4 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 4, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 4, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 6 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 6, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 6, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 7 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 7, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 7, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 8 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 8, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 8, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 12 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 12, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 12, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 14 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 14, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 14, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 16 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 16, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 16, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 100 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 100, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 100, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 8 TO WS-X
      MOVE 127 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (8, 127, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (8, 127, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 97 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 97, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 97, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 98 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 98, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 98, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 99 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 99, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 99, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 9 TO WS-X
      MOVE 101 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (9, 101, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (9, 101, 5) of the diagonal ring (1 + (row + column) mod 5): biome 5" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 10 TO WS-X
      MOVE 64 TO WS-Y
      MOVE 5 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (10, 64, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (10, 64, 5) of the diagonal ring (1 + (row + column) mod 5): biome 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 5 TO WS-X
      MOVE 64 TO WS-Y
      MOVE 3 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (5, 64, 3) of the diagonal ring (1 + (row + column) mod 5): biome 4" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (5, 64, 3) of the diagonal ring (1 + (row + column) mod 5): biome 4" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
      MOVE 6 TO WS-X
      MOVE 3 TO WS-Y
      MOVE 2 TO WS-Z
-     MOVE "acceptance US12-core 37-3§5.2 zoom at (6, 3, 2) of the diagonal ring (1 + (row + column) mod 5): biome 4" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.2 zoom at (6, 3, 2) of the diagonal ring (1 + (row + column) mod 5): biome 4" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      PERFORM ZOOM-AT
 *>   a ring of one biome: every probe gives it, whatever the fuzz
@@ -238,7 +238,7 @@
              ADD 1 TO WS-BIOME
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-3§5.1 a ring of one biome gives that biome at every y: 0 other answers" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.1 a ring of one biome gives that biome at every y: 0 other answers" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BIOME TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

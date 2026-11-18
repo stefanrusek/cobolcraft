@@ -56,27 +56,27 @@
  CHECK-DEFS.
      MOVE 1 TO WS-N
      PERFORM SHOW-BIOME
-     MOVE "acceptance US12-core 37-3§6 biome 1 nether_wastes: climate, fog colour, particle, mood and music, lists" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 biome 1 nether_wastes: climate, fog colour, particle, mood and music, lists" TO TL-CASE
      MOVE "nether_wastes|20 0 0 4159204|-13432824|none|6000 8 20 111 12000 24000|10 18" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-N
      PERFORM SHOW-BIOME
-     MOVE "acceptance US12-core 37-3§6 biome 2 soul_sand_valley: climate, fog colour, particle, mood and music, lists" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 biome 2 soul_sand_valley: climate, fog colour, particle, mood and music, lists" TO TL-CASE
      MOVE "soul_sand_valley|20 0 0 4159204|-14989499|ash 6250000|6000 8 20 111 12000 24000|10 17" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-N
      PERFORM SHOW-BIOME
-     MOVE "acceptance US12-core 37-3§6 biome 3 crimson_forest: climate, fog colour, particle, mood and music, lists" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 biome 3 crimson_forest: climate, fog colour, particle, mood and music, lists" TO TL-CASE
      MOVE "crimson_forest|20 0 0 4159204|-13434109|crimson_spore 25000000|6000 8 20 111 12000 24000|10 18" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-N
      PERFORM SHOW-BIOME
-     MOVE "acceptance US12-core 37-3§6 biome 4 warped_forest: climate, fog colour, particle, mood and music, lists" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 biome 4 warped_forest: climate, fog colour, particle, mood and music, lists" TO TL-CASE
      MOVE "warped_forest|20 0 0 4159204|-15071974|warped_spore 14280000|6000 8 20 111 12000 24000|10 20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-N
      PERFORM SHOW-BIOME
-     MOVE "acceptance US12-core 37-3§6 biome 5 basalt_deltas: climate, fog colour, particle, mood and music, lists" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 biome 5 basalt_deltas: climate, fog colour, particle, mood and music, lists" TO TL-CASE
      MOVE "basalt_deltas|20 0 0 4159204|-9937040|white_ash 118093334|6000 8 20 111 12000 24000|8 18" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
@@ -124,13 +124,13 @@
              ".additions;music.nether." D-NAME(1:D-NAME-LENGTH) ";" DELIMITED BY SIZE INTO TL-EXPECTED
          MOVE WS-N TO WS-A
          MOVE SPACES TO TL-CASE
-         STRING "acceptance US12-core 37-3§6.4 biome " FUNCTION TRIM(WS-A) " sound ids: loop, mood, additions, music" DELIMITED BY SIZE INTO TL-CASE
+         STRING "acceptance US12 37-3§6 6.4 biome " FUNCTION TRIM(WS-A) " sound ids: loop, mood, additions, music" DELIMITED BY SIZE INTO TL-CASE
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
      MOVE 3 TO WS-N
      MOVE 2 TO WS-I
      CALL "NETHER-BIOME-SOUND" USING WS-N WS-I WS-ID WS-LEN
-     MOVE "acceptance US12-core 37-3§6.4 crimson_forest mood sound is ambient.crimson_forest.mood (length 27)" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.4 crimson_forest mood sound is ambient.crimson_forest.mood (length 27)" TO TL-CASE
      MOVE "ambient.crimson_forest.mood" TO TL-EXPECTED
      MOVE WS-ID(1:WS-LEN) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
@@ -155,62 +155,62 @@
          PERFORM SPAWNS-OF
          MOVE WS-N TO WS-A
          MOVE SPACES TO TL-CASE
-         STRING "acceptance US12-core 37-3§6.6 biome " FUNCTION TRIM(WS-A) " creature list: strider 60, uniform 1 to 2" DELIMITED BY SIZE INTO TL-CASE
+         STRING "acceptance US12 37-3§6 6.6 biome " FUNCTION TRIM(WS-A) " creature list: strider 60, uniform 1 to 2" DELIMITED BY SIZE INTO TL-CASE
          MOVE "strider 60 1-2;" TO TL-EXPECTED
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
      MOVE 1 TO WS-CAT
      MOVE 1 TO WS-N
      PERFORM SPAWNS-OF
-     MOVE "acceptance US12-core 37-3§6.6 nether_wastes monsters" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 nether_wastes monsters" TO TL-CASE
      MOVE "ghast 50 4-4;zombified_piglin 100 4-4;magma_cube 2 4-4;enderman 1 4-4;piglin 15 4-4;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-N
      PERFORM SPAWNS-OF
-     MOVE "acceptance US12-core 37-3§6.6 soul_sand_valley monsters" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 soul_sand_valley monsters" TO TL-CASE
      MOVE "skeleton 20 5-5;ghast 50 4-4;enderman 1 4-4;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-N
      PERFORM SPAWNS-OF
-     MOVE "acceptance US12-core 37-3§6.6 crimson_forest monsters" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 crimson_forest monsters" TO TL-CASE
      MOVE "zombified_piglin 1 2-4;hoglin 9 3-4;piglin 5 3-4;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-N
      PERFORM SPAWNS-OF
-     MOVE "acceptance US12-core 37-3§6.6 warped_forest monsters" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 warped_forest monsters" TO TL-CASE
      MOVE "enderman 1 4-4;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-N
      PERFORM SPAWNS-OF
-     MOVE "acceptance US12-core 37-3§6.6 basalt_deltas monsters" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 basalt_deltas monsters" TO TL-CASE
      MOVE "ghast 40 1-1;magma_cube 100 2-5;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   costs: soul_sand_valley 0.7 / 0.15 for four entities, warped_forest enderman 1.0 / 0.12, nothing elsewhere
      MOVE 2 TO WS-N
      MOVE "skeleton" TO WS-ENT
      PERFORM COST-OF
-     MOVE "acceptance US12-core 37-3§6.6 soul_sand_valley skeleton cost: charge 0.7, budget 0.15" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 soul_sand_valley skeleton cost: charge 0.7, budget 0.15" TO TL-CASE
      MOVE "1 70 15" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "ghast" TO WS-ENT
      PERFORM COST-OF
-     MOVE "acceptance US12-core 37-3§6.6 soul_sand_valley ghast cost: charge 0.7, budget 0.15" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 soul_sand_valley ghast cost: charge 0.7, budget 0.15" TO TL-CASE
      MOVE "1 70 15" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "piglin" TO WS-ENT
      PERFORM COST-OF
-     MOVE "acceptance US12-core 37-3§6.6 soul_sand_valley piglin has no cost" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 soul_sand_valley piglin has no cost" TO TL-CASE
      MOVE "0 0 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-N
      MOVE "enderman" TO WS-ENT
      PERFORM COST-OF
-     MOVE "acceptance US12-core 37-3§6.6 warped_forest enderman cost: charge 1.0, budget 0.12" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 warped_forest enderman cost: charge 1.0, budget 0.12" TO TL-CASE
      MOVE "1 100 12" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-N
      PERFORM COST-OF
-     MOVE "acceptance US12-core 37-3§6.6 nether_wastes enderman has no cost" TO TL-CASE
+     MOVE "acceptance US12 37-3§6 6.6 nether_wastes enderman has no cost" TO TL-CASE
      MOVE "0 0 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 

@@ -39,7 +39,7 @@
      COMPUTE WS-E2 ROUNDED = DX-SOUND-VOLUME
      COMPUTE WS-E3 ROUNDED = DX-SOUND-PITCH
      MOVE DX-SOUND TO WS-N
-     MOVE "dimfx the first tick inside a portal: intensity 0.0125, PORTAL_TRIGGER once at volume 0.25 and pitch 1.0" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx the first tick inside a portal: intensity 0.0125, PORTAL_TRIGGER once at volume 0.25 and pitch 1.0" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING WS-E1 " " WS-E2 " " WS-E3 " " FUNCTION TRIM(WS-N) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "   0.0125    0.2500    1.0000 1" TO TL-EXPECTED
@@ -48,7 +48,7 @@
      COMPUTE WS-E1 ROUNDED = DX-PORTAL
      COMPUTE WS-E2 ROUNDED = DX-PORTAL-OLD
      MOVE DX-SOUND TO WS-N
-     MOVE "dimfx the second tick: 0.0250 after 0.0125, no new sound" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx the second tick: 0.0250 after 0.0125, no new sound" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING WS-E1 " " WS-E2 " " FUNCTION TRIM(WS-N) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "   0.0250    0.0125 0" TO TL-EXPECTED
@@ -56,7 +56,7 @@
      MOVE 0.5 TO WS-PARTIAL
      CALL "DIMFX-PORTAL-LEVEL" USING CLIENT-STATE WS-PARTIAL WS-LEVEL
      COMPUTE WS-E1 ROUNDED = WS-LEVEL
-     MOVE "dimfx the lerp at the partial tick 0.5 is halfway (0.01875)" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx the lerp at the partial tick 0.5 is halfway (0.01875)" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-E1 TO TL-OBSERVED
      MOVE "   0.0187" TO TL-EXPECTED
@@ -65,7 +65,7 @@
          CALL "DIMFX-PORTAL-TICK" USING CLIENT-STATE WS-INSIDE WS-RANDOM
      END-PERFORM
      COMPUTE WS-E1 ROUNDED = DX-PORTAL
-     MOVE "dimfx inside for 102 ticks the intensity is clamped at 1" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx inside for 102 ticks the intensity is clamped at 1" TO TL-CASE
      MOVE WS-E1 TO TL-OBSERVED
      MOVE "   1.0000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -74,7 +74,7 @@
          CALL "DIMFX-PORTAL-TICK" USING CLIENT-STATE WS-INSIDE WS-RANDOM
      END-PERFORM
      COMPUTE WS-E1 ROUNDED = DX-PORTAL
-     MOVE "dimfx outside for 10 ticks it falls by 0.05 a tick to 0.5" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx outside for 10 ticks it falls by 0.05 a tick to 0.5" TO TL-CASE
      MOVE WS-E1 TO TL-OBSERVED
      MOVE "   0.5000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -82,7 +82,7 @@
          CALL "DIMFX-PORTAL-TICK" USING CLIENT-STATE WS-INSIDE WS-RANDOM
      END-PERFORM
      COMPUTE WS-E1 ROUNDED = DX-PORTAL
-     MOVE "dimfx outside long enough the intensity stops at 0" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx outside long enough the intensity stops at 0" TO TL-CASE
      MOVE WS-E1 TO TL-OBSERVED
      MOVE "   0.0000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -98,14 +98,14 @@
      MOVE 5.5 TO PL-Z
      CALL "DIMFX-PORTAL-INSIDE" USING CLIENT-STATE WS-INSIDE
      MOVE WS-INSIDE TO WS-N
-     MOVE "dimfx standing in the portal cell the player is inside a portal" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx standing in the portal cell the player is inside a portal" TO TL-CASE
      MOVE FUNCTION TRIM(WS-N) TO TL-OBSERVED
      MOVE "1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 8.5 TO PL-X
      CALL "DIMFX-PORTAL-INSIDE" USING CLIENT-STATE WS-INSIDE
      MOVE WS-INSIDE TO WS-N
-     MOVE "dimfx three blocks away she is not" TO TL-CASE
+     MOVE "acceptance US12 39§9 Client presentation dimfx three blocks away she is not" TO TL-CASE
      MOVE FUNCTION TRIM(WS-N) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

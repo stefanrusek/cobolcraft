@@ -57,7 +57,7 @@
      MOVE 0 TO WS-X WS-Z
      CALL "NETHER-AT" USING NH-FS WS-X WS-ZERO WS-Z WS-STATE
      CALL "NETHER-RAND-DOUBLE" USING WS-STATE WS-F
-     MOVE "acceptance US12-core 37-4§9.4 R = P.at(0, 0, 0): first nextDouble 0.26044200501959935 (1e-15)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.4 R = P.at(0, 0, 0): first nextDouble 0.26044200501959935 (1e-15)" TO TL-CASE
      MOVE 260442005019599 TO TL-EXPECTED-N
      COMPUTE WS-SCALED = WS-F * 1000000000000000
      COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
@@ -66,7 +66,7 @@
      MOVE -3 TO WS-Z
      CALL "NETHER-AT" USING NH-FS WS-X WS-ZERO WS-Z WS-STATE
      CALL "NETHER-RAND-DOUBLE" USING WS-STATE WS-F
-     MOVE "acceptance US12-core 37-4§9.4 R = P.at(16, 0, -3): first nextDouble 0.3851230705401715 (1e-15)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.4 R = P.at(16, 0, -3): first nextDouble 0.3851230705401715 (1e-15)" TO TL-CASE
      MOVE 385123070540171 TO TL-EXPECTED-N
      COMPUTE WS-SCALED = WS-F * 1000000000000000
      COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
@@ -80,7 +80,7 @@
              ADD 1 TO WS-W
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-4§4.6 surface depth of 18 columns lies in -1 .. 7" TO TL-CASE
+     MOVE "acceptance US12 37-4§4 4.6 surface depth of 18 columns lies in -1 .. 7" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-W TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
@@ -98,7 +98,7 @@
      MOVE 0 TO WS-X WS-Z
      MOVE 1 TO WS-Y
      CALL "NETHER-GRADIENT-AT" USING WS-W WS-X WS-Y WS-Z WS-G
-     MOVE "acceptance US12-core 37-4§9.2 floor gradient at (0, 1, 0) is true (float 0.653 < 0.8): bedrock" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.2 floor gradient at (0, 1, 0) is true (float 0.653 < 0.8): bedrock" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-G TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -106,7 +106,7 @@
      MOVE 7 TO WS-Z
      MOVE 2 TO WS-Y
      CALL "NETHER-GRADIENT-AT" USING WS-W WS-X WS-Y WS-Z WS-G
-     MOVE "acceptance US12-core 37-4§9.2 floor gradient at (5, 2, 7) is true (float 0.542 < 0.6): bedrock" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.2 floor gradient at (5, 2, 7) is true (float 0.542 < 0.6): bedrock" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-G TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -114,7 +114,7 @@
      MOVE 0 TO WS-X WS-Z
      MOVE 125 TO WS-Y
      CALL "NETHER-GRADIENT-AT" USING WS-W WS-X WS-Y WS-Z WS-G
-     MOVE "acceptance US12-core 37-4§9.3 roof gradient at (0, 125, 0) is false (float 0.790 >= 0.4): bedrock" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.3 roof gradient at (0, 125, 0) is false (float 0.790 >= 0.4): bedrock" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-G TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -122,7 +122,7 @@
      MOVE 9 TO WS-Z
      MOVE 124 TO WS-Y
      CALL "NETHER-GRADIENT-AT" USING WS-W WS-X WS-Y WS-Z WS-G
-     MOVE "acceptance US12-core 37-4§9.3 roof gradient at (3, 124, 9) is true (float 0.484 < 0.6): not bedrock" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.3 roof gradient at (3, 124, 9) is true (float 0.484 < 0.6): not bedrock" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-G TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -178,7 +178,7 @@
      END-PERFORM
      MOVE WS-Y TO WS-ED
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12-core 37-2§12.5 bedrock row y " FUNCTION TRIM(WS-ED) " x 0 .. 7" DELIMITED BY SIZE INTO TL-CASE
+     STRING "acceptance US12 37-2§12 12.5 bedrock row y " FUNCTION TRIM(WS-ED) " x 0 .. 7" DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "N" TO TL-MODE.
@@ -231,12 +231,12 @@
      MOVE 3 TO WS-SD
      MOVE 0 TO WS-Y
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5.1 rule 1: y 0 is always bedrock" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 rule 1: y 0 is always bedrock" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 127 TO WS-Y
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5.1 rule 2: y 127 is always bedrock" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 rule 2: y 127 is always bedrock" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 3 TO WS-X
@@ -244,13 +244,13 @@
      MOVE 124 TO WS-Y
      MOVE 4 TO WS-BIOME
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.3 (3, 124, 9) is netherrack from rule 3, in the warped forest too" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.3 (3, 124, 9) is netherrack from rule 3, in the warped forest too" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 0 TO WS-X WS-Z
      MOVE 125 TO WS-Y
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.3 (0, 125, 0) is bedrock (gradient false)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.3 (0, 125, 0) is bedrock (gradient false)" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 1 TO WS-BIOME
@@ -274,25 +274,25 @@
      MOVE 33 TO WS-Y
      MOVE 1 TO WS-SDA
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.5 wastes soul sand: top block y 33, sda 1, sd 3: soul sand" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.5 wastes soul sand: top block y 33, sda 1, sd 3: soul sand" TO TL-CASE
      MOVE 105 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 30 TO WS-Y
      MOVE 4 TO WS-SDA
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.5 wastes soul sand: y 30, sda 4 (y + sda = 34): soul sand" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.5 wastes soul sand: y 30, sda 4 (y + sda = 34): soul sand" TO TL-CASE
      MOVE 105 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 29 TO WS-Y
      MOVE 5 TO WS-SDA
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.5 wastes soul sand: y 29, sda 5 is deeper than 1 + sd: netherrack" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.5 wastes soul sand: y 29, sda 5 is deeper than 1 + sd: netherrack" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 34 TO WS-Y
      MOVE 1 TO WS-SDA
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.5 wastes soul sand: top block at y 34 (y + sda = 35): netherrack" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.5 wastes soul sand: top block at y 34 (y + sda = 35): netherrack" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
 
@@ -310,20 +310,20 @@
      MOVE 1 TO WS-SDA
      MOVE 20 TO WS-SDB
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.6 wastes gravel: top block y 33, sd 3: gravel" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.6 wastes gravel: top block y 33, sd 3: gravel" TO TL-CASE
      MOVE 103 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 31 TO WS-Y
      MOVE 0 TO WS-SD
      PERFORM RULE-AT
 *>   (example 6 of the document calls this block netherrack but looks at rule 7 only: the top block at y 31 with sd 0 is caught by rule 6a first)
-     MOVE "acceptance US12-core 37-4§9.6 wastes y 31 with sd 0 (a hole): not gravel, lava by rule 6a" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.6 wastes y 31 with sd 0 (a hole): not gravel, lava by rule 6a" TO TL-CASE
      MOVE 102 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 31 TO WS-Y
      MOVE 2 TO WS-SD
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5.1 7b wastes y 31 with sd 2 (no hole): gravel" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 7b wastes y 31 with sd 2 (no hole): gravel" TO TL-CASE
      MOVE 103 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
 
@@ -334,12 +334,12 @@
      MOVE 1 TO WS-SDB
      MOVE -1 TO WS-SD
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5.1 6a: y 20, top block, a hole (sd -1) in the wastes: lava" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 6a: y 20, top block, a hole (sd -1) in the wastes: lava" TO TL-CASE
      MOVE 102 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 5 TO WS-BIOME
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5.1 6a: the same in basalt_deltas (sd < 0 skips 4b): lava" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 6a: the same in basalt_deltas (sd < 0 skips 4b): lava" TO TL-CASE
      MOVE 102 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
 
@@ -350,12 +350,12 @@
      MOVE 30 TO WS-SDB
      MOVE 0 TO WS-SD
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.7 crimson forest y 30 sd 0: lava" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.7 crimson forest y 30 sd 0: lava" TO TL-CASE
      MOVE 102 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 2 TO WS-SD
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.7 crimson forest y 30 sd 2: netherrack" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.7 crimson forest y 30 sd 2: netherrack" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
 *>   a column with netherrack noise below 0.54 and wart noise below 1.17: crimson nylium at y 31
@@ -369,12 +369,12 @@
      MOVE 3 TO WS-BIOME
      MOVE 31 TO WS-Y
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.7 crimson forest y 31 sd 2 (wart < 1.17): crimson nylium" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.7 crimson forest y 31 sd 2 (wart < 1.17): crimson nylium" TO TL-CASE
      MOVE 110 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 4 TO WS-BIOME
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5 6b warped forest y 31 sd 2 (wart < 1.17): warped nylium" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 6b warped forest y 31 sd 2 (wart < 1.17): warped nylium" TO TL-CASE
      MOVE 108 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
 *>   a column with netherrack noise below 0.54 and wart noise at least 1.17 (searched wider): wart block
@@ -388,12 +388,12 @@
      IF WS-FOUND = 1
          MOVE 3 TO WS-BIOME
          PERFORM RULE-AT
-         MOVE "acceptance US12-core 37-4§5 6c crimson forest with wart noise >= 1.17: nether wart block" TO TL-CASE
+         MOVE "acceptance US12 37-4§5 6c crimson forest with wart noise >= 1.17: nether wart block" TO TL-CASE
          MOVE 109 TO TL-EXPECTED-N
          PERFORM EXPECT-STATE
          MOVE 4 TO WS-BIOME
          PERFORM RULE-AT
-         MOVE "acceptance US12-core 37-4§5 6b warped forest with wart noise >= 1.17: warped wart block" TO TL-CASE
+         MOVE "acceptance US12 37-4§5 6b warped forest with wart noise >= 1.17: warped wart block" TO TL-CASE
          MOVE 107 TO TL-EXPECTED-N
          PERFORM EXPECT-STATE
      END-IF
@@ -406,7 +406,7 @@
      IF WS-FOUND = 1
          MOVE 3 TO WS-BIOME
          PERFORM RULE-AT
-         MOVE "acceptance US12-core 37-4§5 6c netherrack noise >= 0.54 excludes the nylium: netherrack" TO TL-CASE
+         MOVE "acceptance US12 37-4§5 6c netherrack noise >= 0.54 excludes the nylium: netherrack" TO TL-CASE
          MOVE 100 TO TL-EXPECTED-N
          PERFORM EXPECT-STATE
      END-IF
@@ -420,7 +420,7 @@
      MOVE 1 TO WS-SDB
      MOVE 3 TO WS-SD
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.8 basalt deltas bottom of an island (sdb 1): basalt" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.8 basalt deltas bottom of an island (sdb 1): basalt" TO TL-CASE
      MOVE 101 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 90 TO WS-Y
@@ -428,7 +428,7 @@
      MOVE 11 TO WS-SDB
      PERFORM RULE-AT
      CALL "NETHER-NOISE-GE" USING WS-N2-SEL WS-X WS-Z WS-KIND-SEL WS-G
-     MOVE "acceptance US12-core 37-4§9.8 basalt deltas top block y 90: basalt or blackstone by the selector noise" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.8 basalt deltas top block y 90: basalt or blackstone by the selector noise" TO TL-CASE
      IF WS-G = 1
          MOVE 101 TO TL-EXPECTED-N
      ELSE
@@ -463,20 +463,20 @@
      MOVE 2 TO WS-SDB
      MOVE 1 TO WS-Y
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.12 bottom of the world, basalt deltas: y 1 (sdb 2) basalt" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.12 bottom of the world, basalt deltas: y 1 (sdb 2) basalt" TO TL-CASE
      MOVE 101 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 3 TO WS-Y
      MOVE 4 TO WS-SDB
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.12 bottom of the world, basalt deltas: y 3 (sdb 4) basalt" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.12 bottom of the world, basalt deltas: y 3 (sdb 4) basalt" TO TL-CASE
      MOVE 101 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 4 TO WS-Y
      MOVE 5 TO WS-SDB
      MOVE 56 TO WS-SDA
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.12 bottom of the world, basalt deltas: y 4 (sdb 5) netherrack" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.12 bottom of the world, basalt deltas: y 4 (sdb 5) netherrack" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 1 TO WS-BIOME
@@ -484,14 +484,14 @@
      MOVE 4 TO WS-SDB
      MOVE 56 TO WS-SDA
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.12 bottom of the world, nether_wastes: y 3 stays netherrack" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.12 bottom of the world, nether_wastes: y 3 stays netherrack" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      PERFORM EXPECT-STATE
      MOVE 2 TO WS-BIOME
      MOVE 3 TO WS-Y
      PERFORM RULE-AT
      CALL "NETHER-NOISE-GE" USING WS-N2-SEL WS-X WS-Z WS-KIND-SEL WS-G
-     MOVE "acceptance US12-core 37-4§9.12 bottom of the world, soul_sand_valley: y 3 soul sand or soul soil" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.12 bottom of the world, soul_sand_valley: y 3 soul sand or soul soil" TO TL-CASE
      IF WS-G = 1
          MOVE 105 TO TL-EXPECTED-N
      ELSE

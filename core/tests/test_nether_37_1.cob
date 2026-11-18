@@ -40,223 +40,223 @@
      MOVE "N" TO TL-MODE
      MOVE 1 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar coordinate_scale 8.0 (x1000)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar coordinate_scale 8.0 (x1000)" TO TL-CASE
      MOVE 8000 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar has_skylight false" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar has_skylight false" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar has_ceiling true" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar has_ceiling true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar has_fixed_time true" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar has_fixed_time true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar has_ender_dragon_fight false" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar has_ender_dragon_fight false" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 6 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar min_y 0" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar min_y 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 7 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar height 256" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar height 256" TO TL-CASE
      MOVE 256 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 8 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar logical_height 128" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar logical_height 128" TO TL-CASE
      MOVE 128 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 9 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar ambient_light 0.1 (x1000)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar ambient_light 0.1 (x1000)" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 10 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar monster_spawn_light_level constant 7" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar monster_spawn_light_level constant 7" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 11 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar monster_spawn_block_light_limit 15" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar monster_spawn_block_light_limit 15" TO TL-CASE
      MOVE 15 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 12 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar fog_start_distance 10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar fog_start_distance 10" TO TL-CASE
      MOVE 10 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 13 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar fog_end_distance 96" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar fog_end_distance 96" TO TL-CASE
      MOVE 96 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 14 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar sky_light_level 4.0" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar sky_light_level 4.0" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 15 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar skyDarken (int)(15 - 4) = 11" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar skyDarken (int)(15 - 4) = 11" TO TL-CASE
      MOVE 11 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 16 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar sea level 32" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar sea level 32" TO TL-CASE
      MOVE 32 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 17 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar noise height 128" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar noise height 128" TO TL-CASE
      MOVE 128 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 18 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar noise min_y 0" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar noise min_y 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 19 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar ambient_light_color #302821" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar ambient_light_color #302821" TO TL-CASE
      MOVE 3156001 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 20 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar sky_light_color #7a7aff" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar sky_light_color #7a7aff" TO TL-CASE
      MOVE 8026879 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 21 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar sky_light_factor 0.0" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar sky_light_factor 0.0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 22 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar 15 attributes in the map" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar 15 attributes in the map" TO TL-CASE
      MOVE 15 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 23 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar legacy random source true" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar legacy random source true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 24 TO WS-CODE
      CALL "NETHER-DIM-SCALAR" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2 scalar an unknown code gives -1" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 scalar an unknown code gives -1" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.8 can_start_raid false" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.8 can_start_raid false" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.3 fast_lava true" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.3 fast_lava true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.7 piglins_zombify false" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.7 piglins_zombify false" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.6 respawn_anchor_works true" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.6 respawn_anchor_works true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.9 snow_golem_melts true" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.9 snow_golem_melts true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 6 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.1 water_evaporates true" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.1 water_evaporates true" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 7 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.2 nether_portal_spawns_piglin false (default)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.2 nether_portal_spawns_piglin false (default)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 8 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.4 increased_fire_burnout false (default)" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.4 increased_fire_burnout false (default)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 9 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.6 bed rule can_set_spawn never" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.6 bed rule can_set_spawn never" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 10 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.6 bed rule can_sleep never" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.6 bed rule can_sleep never" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 11 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§3.6 bed rule destroy_on_use: the bed explodes" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.6 bed rule destroy_on_use: the bed explodes" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 12 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§5.5 canHaveWeather false (V8)" TO TL-CASE
+     MOVE "acceptance US12 37-1§5 5.5 canHaveWeather false (V8)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 13 TO WS-CODE
      CALL "NETHER-DIM-FLAG" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.2 an unknown flag gives -1" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.2 an unknown flag gives -1" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -265,7 +265,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 1: minecraft:the_nether (length 20)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 1: minecraft:the_nether (length 20)" TO TL-CASE
      MOVE "minecraft:the_nether 20" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -275,7 +275,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 2: #minecraft:infiniburn_nether (length 28)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 2: #minecraft:infiniburn_nether (length 28)" TO TL-CASE
      MOVE "#minecraft:infiniburn_nether 28" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -285,7 +285,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 3: none (length 4)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 3: none (length 4)" TO TL-CASE
      MOVE "none 4" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -295,7 +295,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 4: nether (length 6)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 4: nether (length 6)" TO TL-CASE
      MOVE "nether 6" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -305,7 +305,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 5: #minecraft:in_nether (length 20)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 5: #minecraft:in_nether (length 20)" TO TL-CASE
      MOVE "#minecraft:in_nether 20" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -315,7 +315,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 6: minecraft:lava (length 14)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 6: minecraft:lava (length 14)" TO TL-CASE
      MOVE "minecraft:lava 14" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -325,7 +325,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 7: minecraft:netherrack (length 20)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 7: minecraft:netherrack (length 20)" TO TL-CASE
      MOVE "minecraft:netherrack 20" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -335,7 +335,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 8: minecraft:dripping_dripstone_lava (length 33)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 8: minecraft:dripping_dripstone_lava (length 33)" TO TL-CASE
      MOVE "minecraft:dripping_dripstone_lava 33" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -345,7 +345,7 @@
      MOVE WS-LEN TO WS-ED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-1§2 text 9: dimensions/minecraft/the_nether (length 31)" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 text 9: dimensions/minecraft/the_nether (length 31)" TO TL-CASE
      MOVE "dimensions/minecraft/the_nether 31" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -353,98 +353,98 @@
      MOVE 99 TO WS-CODE
      CALL "NETHER-DIM-TEXT" USING WS-CODE WS-TEXT WS-LEN
 
-     MOVE "acceptance US12-core 37-1§2 an unknown text code gives length 0" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 an unknown text code gives length 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-LEN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:netherrack" TO WS-KEY
      CALL "NETHER-INFINIBURN" USING WS-KEY WS-V
-     MOVE "acceptance US12-core 37-1§4.1 infiniburn_nether for minecraft:netherrack: 1" TO TL-CASE
+     MOVE "acceptance US12 37-1§4 4.1 infiniburn_nether for minecraft:netherrack: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:magma_block" TO WS-KEY
      CALL "NETHER-INFINIBURN" USING WS-KEY WS-V
-     MOVE "acceptance US12-core 37-1§4.1 infiniburn_nether for minecraft:magma_block: 1" TO TL-CASE
+     MOVE "acceptance US12 37-1§4 4.1 infiniburn_nether for minecraft:magma_block: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:bedrock" TO WS-KEY
      CALL "NETHER-INFINIBURN" USING WS-KEY WS-V
-     MOVE "acceptance US12-core 37-1§4.1 infiniburn_nether for minecraft:bedrock: 0" TO TL-CASE
+     MOVE "acceptance US12 37-1§4 4.1 infiniburn_nether for minecraft:bedrock: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-CODE
      CALL "NETHER-LAVA-FLOW" USING WS-CODE WS-DELAY WS-SLOPE WS-DROP
-     MOVE "acceptance US12-core 37-1§3.3 lava with fast lava 1: tick delay 10, slope distance 4, drop-off 1" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.3 lava with fast lava 1: tick delay 10, slope distance 4, drop-off 1" TO TL-CASE
      MOVE 1041 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-DELAY * 100 + WS-SLOPE * 10 + WS-DROP
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-CODE
      CALL "NETHER-LAVA-FLOW" USING WS-CODE WS-DELAY WS-SLOPE WS-DROP
-     MOVE "acceptance US12-core 37-1§3.3 lava with fast lava 0: tick delay 30, slope distance 2, drop-off 2" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.3 lava with fast lava 0: tick delay 30, slope distance 2, drop-off 2" TO TL-CASE
      MOVE 3022 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-DELAY * 100 + WS-SLOPE * 10 + WS-DROP
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-CODE
      CALL "NETHER-LAVA-CURRENT" USING WS-CODE WS-F
-     MOVE "acceptance US12-core 37-1§8.5 lava current 0.007 per tick with fast lava (millionths)" TO TL-CASE
+     MOVE "acceptance US12 37-1§8 8.5 lava current 0.007 per tick with fast lava (millionths)" TO TL-CASE
      MOVE 7000 TO TL-EXPECTED-N
      PERFORM EXPECT-FLOAT
      MOVE 0 TO WS-CODE
      CALL "NETHER-LAVA-CURRENT" USING WS-CODE WS-F
-     MOVE "acceptance US12-core 37-1§3.3 lava current 0.007 / 3 = 0.002333 without it (millionths)" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.3 lava current 0.007 / 3 = 0.002333 without it (millionths)" TO TL-CASE
      MOVE 2333 TO TL-EXPECTED-N
      PERFORM EXPECT-FLOAT
      MOVE 0 TO WS-CODE
      CALL "NETHER-BRIGHTNESS" USING WS-CODE WS-AMBIENT WS-F
-     MOVE "acceptance US12-core 37-1§3.5 brightness at block light 0: 0.1 (millionths)" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.5 brightness at block light 0: 0.1 (millionths)" TO TL-CASE
      MOVE 100000 TO TL-EXPECTED-N
      PERFORM EXPECT-FLOAT
      MOVE 15 TO WS-CODE
      CALL "NETHER-BRIGHTNESS" USING WS-CODE WS-AMBIENT WS-F
-     MOVE "acceptance US12-core 37-1§3.5 brightness at block light 15: 1.0 (millionths)" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.5 brightness at block light 15: 1.0 (millionths)" TO TL-CASE
      MOVE 1000000 TO TL-EXPECTED-N
      PERFORM EXPECT-FLOAT
      MOVE 7 TO WS-CODE
      CALL "NETHER-BRIGHTNESS" USING WS-CODE WS-AMBIENT WS-F
-     MOVE "acceptance US12-core 37-1§3.5 brightness at block light 7: 0.26154 (millionths)" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.5 brightness at block light 7: 0.26154 (millionths)" TO TL-CASE
      MOVE 261538 TO TL-EXPECTED-N
      PERFORM EXPECT-FLOAT
      MOVE 0 TO WS-CODE
      CALL "NETHER-FACE-SHADE" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.1 cardinal light nether, face 0: shade 9/10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.1 cardinal light nether, face 0: shade 9/10" TO TL-CASE
      MOVE 9 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-CODE
      CALL "NETHER-FACE-SHADE" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.1 cardinal light nether, face 1: shade 9/10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.1 cardinal light nether, face 1: shade 9/10" TO TL-CASE
      MOVE 9 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-CODE
      CALL "NETHER-FACE-SHADE" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.1 cardinal light nether, face 2: shade 8/10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.1 cardinal light nether, face 2: shade 8/10" TO TL-CASE
      MOVE 8 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-CODE
      CALL "NETHER-FACE-SHADE" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.1 cardinal light nether, face 3: shade 8/10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.1 cardinal light nether, face 3: shade 8/10" TO TL-CASE
      MOVE 8 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-CODE
      CALL "NETHER-FACE-SHADE" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.1 cardinal light nether, face 4: shade 6/10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.1 cardinal light nether, face 4: shade 6/10" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-CODE
      CALL "NETHER-FACE-SHADE" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-1§2.1 cardinal light nether, face 5: shade 6/10" TO TL-CASE
+     MOVE "acceptance US12 37-1§2 2.1 cardinal light nether, face 5: shade 6/10" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -453,7 +453,7 @@
      MOVE 0 TO WS-FROM
      MOVE 1 TO WS-TO
      CALL "NETHER-PORTAL-SCALE" USING WS-FROM WS-TO WS-X WS-Z WS-XO WS-ZO WS-OK
-     MOVE "acceptance US12-core 37-1§6.3 portal from 0 to 1 at (800, -160): (100, -20), ok 1" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.3 portal from 0 to 1 at (800, -160): (100, -20), ok 1" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "100 -20 1" TO TL-EXPECTED
      MOVE WS-XO TO WS-N1
@@ -468,7 +468,7 @@
      MOVE 1 TO WS-FROM
      MOVE 0 TO WS-TO
      CALL "NETHER-PORTAL-SCALE" USING WS-FROM WS-TO WS-X WS-Z WS-XO WS-ZO WS-OK
-     MOVE "acceptance US12-core 37-1§6.3 portal from 1 to 0 at (100, -20): (800, -160), ok 1" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.3 portal from 1 to 0 at (100, -20): (800, -160), ok 1" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "800 -160 1" TO TL-EXPECTED
      MOVE WS-XO TO WS-N1
@@ -483,7 +483,7 @@
      MOVE 0 TO WS-FROM
      MOVE 1 TO WS-TO
      CALL "NETHER-PORTAL-SCALE" USING WS-FROM WS-TO WS-X WS-Z WS-XO WS-ZO WS-OK
-     MOVE "acceptance US12-core 37-1§6.3 portal from 0 to 1 at (-1000, 400): (-125, 50), ok 1" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.3 portal from 0 to 1 at (-1000, 400): (-125, 50), ok 1" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "-125 50 1" TO TL-EXPECTED
      MOVE WS-XO TO WS-N1
@@ -498,7 +498,7 @@
      MOVE 0 TO WS-FROM
      MOVE 2 TO WS-TO
      CALL "NETHER-PORTAL-SCALE" USING WS-FROM WS-TO WS-X WS-Z WS-XO WS-ZO WS-OK
-     MOVE "acceptance US12-core 37-1§6.3 portal from 0 to 2 at (5, 5): (5, 5), ok 0" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.3 portal from 0 to 2 at (5, 5): (5, 5), ok 0" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "5 5 0" TO TL-EXPECTED
      MOVE WS-XO TO WS-N1
@@ -514,7 +514,7 @@
      MOVE 0 TO WS-I
      CALL "NETHER-SNOW-CELLS" USING WS-X WS-Y WS-Z WS-I WS-CX WS-CY WS-CZ
 
-     MOVE "acceptance US12-core 37-1§8.3 snow golem at (10.5, 70, 3.5), i = 0: the cell (10, 70, 3)" TO TL-CASE
+     MOVE "acceptance US12 37-1§8 8.3 snow golem at (10.5, 70, 3.5), i = 0: the cell (10, 70, 3)" TO TL-CASE
      MOVE 10070003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-CX * 1000000 + WS-CY * 1000 + WS-CZ
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -524,7 +524,7 @@
      MOVE 1 TO WS-I
      CALL "NETHER-SNOW-CELLS" USING WS-X WS-Y WS-Z WS-I WS-CX WS-CY WS-CZ
 
-     MOVE "acceptance US12-core 37-1§8.3 snow golem at (10.5, 70, 3.5), i = 1: the cell (10, 70, 3)" TO TL-CASE
+     MOVE "acceptance US12 37-1§8 8.3 snow golem at (10.5, 70, 3.5), i = 1: the cell (10, 70, 3)" TO TL-CASE
      MOVE 10070003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-CX * 1000000 + WS-CY * 1000 + WS-CZ
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -534,7 +534,7 @@
      MOVE 2 TO WS-I
      CALL "NETHER-SNOW-CELLS" USING WS-X WS-Y WS-Z WS-I WS-CX WS-CY WS-CZ
 
-     MOVE "acceptance US12-core 37-1§8.3 snow golem at (10.5, 70, 3.5), i = 2: the cell (10, 70, 3)" TO TL-CASE
+     MOVE "acceptance US12 37-1§8 8.3 snow golem at (10.5, 70, 3.5), i = 2: the cell (10, 70, 3)" TO TL-CASE
      MOVE 10070003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-CX * 1000000 + WS-CY * 1000 + WS-CZ
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -544,7 +544,7 @@
      MOVE 3 TO WS-I
      CALL "NETHER-SNOW-CELLS" USING WS-X WS-Y WS-Z WS-I WS-CX WS-CY WS-CZ
 
-     MOVE "acceptance US12-core 37-1§8.3 snow golem at (10.5, 70, 3.5), i = 3: the cell (10, 70, 3)" TO TL-CASE
+     MOVE "acceptance US12 37-1§8 8.3 snow golem at (10.5, 70, 3.5), i = 3: the cell (10, 70, 3)" TO TL-CASE
      MOVE 10070003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-CX * 1000000 + WS-CY * 1000 + WS-CZ
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -554,105 +554,105 @@
      MOVE 3 TO WS-I
      CALL "NETHER-SNOW-CELLS" USING WS-X WS-Y WS-Z WS-I WS-CX WS-CY WS-CZ
 
-     MOVE "acceptance US12-core 37-1§3.9 snow golem at (-2.1, 64, -0.3), i = 3 (+0.25, +0.25): the cell (-2, 64, -1), floors below zero" TO TL-CASE
+     MOVE "acceptance US12 37-1§3 3.9 snow golem at (-2.1, 64, -0.3), i = 3 (+0.25, +0.25): the cell (-2, 64, -1), floors below zero" TO TL-CASE
      MOVE -1936001 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-CX * 1000000 + WS-CY * 1000 + WS-CZ
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-A
      MOVE 0 TO WS-B
      CALL "NETHER-MAP-HALF" USING WS-A WS-B WS-V
-     MOVE "acceptance US12-core 37-1§6.4 map scale 0, ceiling 0: half extent 128" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 map scale 0, ceiling 0: half extent 128" TO TL-CASE
      MOVE 128 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-A
      MOVE 1 TO WS-B
      CALL "NETHER-MAP-HALF" USING WS-A WS-B WS-V
-     MOVE "acceptance US12-core 37-1§6.4 map scale 0, ceiling 1: half extent 64" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 map scale 0, ceiling 1: half extent 64" TO TL-CASE
      MOVE 64 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-A
      MOVE 1 TO WS-B
      CALL "NETHER-MAP-HALF" USING WS-A WS-B WS-V
-     MOVE "acceptance US12-core 37-1§6.4 map scale 1, ceiling 1: half extent 32" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 map scale 1, ceiling 1: half extent 32" TO TL-CASE
      MOVE 32 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-A
      MOVE 0 TO WS-B
      CALL "NETHER-MAP-HALF" USING WS-A WS-B WS-V
-     MOVE "acceptance US12-core 37-1§6.4 map scale 2, ceiling 0: half extent 32" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 map scale 2, ceiling 0: half extent 32" TO TL-CASE
      MOVE 32 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-A
      MOVE 1 TO WS-B
      CALL "NETHER-MAP-HALF" USING WS-A WS-B WS-V
-     MOVE "acceptance US12-core 37-1§6.4 map scale 3, ceiling 1: half extent 8" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 map scale 3, ceiling 1: half extent 8" TO TL-CASE
      MOVE 8 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-A
      MOVE 1 TO WS-B
      CALL "NETHER-MAP-HALF" USING WS-A WS-B WS-V
-     MOVE "acceptance US12-core 37-1§6.4 map scale 4, ceiling 1: half extent 4" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 map scale 4, ceiling 1: half extent 4" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      MOVE WS-V TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-A
      MOVE 0 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (0, 0): kind 1 weight 10" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (0, 0): kind 1 weight 10" TO TL-CASE
      MOVE 1010 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-A
      MOVE 0 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (1, 0): kind 2 weight 100" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (1, 0): kind 2 weight 100" TO TL-CASE
      MOVE 2100 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-A
      MOVE 7 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (5, 7): kind 2 weight 100" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (5, 7): kind 2 weight 100" TO TL-CASE
      MOVE 2100 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -3 TO WS-A
      MOVE 4 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (-3, 4): kind 2 weight 100" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (-3, 4): kind 2 weight 100" TO TL-CASE
      MOVE 2100 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 100 TO WS-A
      MOVE -100 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (100, -100): kind 2 weight 100" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (100, -100): kind 2 weight 100" TO TL-CASE
      MOVE 2100 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1000 TO WS-A
      MOVE 2000 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (1000, 2000): kind 2 weight 100" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (1000, 2000): kind 2 weight 100" TO TL-CASE
      MOVE 2100 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -64 TO WS-A
      MOVE -64 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (-64, -64): kind 1 weight 10" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (-64, -64): kind 1 weight 10" TO TL-CASE
      MOVE 1010 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 12 TO WS-A
      MOVE 99 TO WS-B
      CALL "NETHER-MAP-PIXEL" USING WS-A WS-B WS-V WS-W
-     MOVE "acceptance US12-core 37-1§6.4 ceiling pixel at loop (12, 99): kind 2 weight 100" TO TL-CASE
+     MOVE "acceptance US12 37-1§6 6.4 ceiling pixel at loop (12, 99): kind 2 weight 100" TO TL-CASE
      MOVE 2100 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1000 + WS-W
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

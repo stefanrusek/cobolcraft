@@ -41,7 +41,7 @@
      MOVE 0 TO WS-U
      CALL "JRAND-LARGE-FEATURE-SEED" USING WS-R WS-U WS-SX WS-SZ
      CALL "JRAND-NEXT-FLOAT" USING WS-R WS-F
-     MOVE "acceptance US12-core 37-4§9.9 start draw of (-2, -2) is 0.11626184 (1e-8)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 start draw of (-2, -2) is 0.11626184 (1e-8)" TO TL-CASE
      MOVE 11626184 TO TL-EXPECTED-N
      COMPUTE WS-SCALED = WS-F * 100000000
      COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
@@ -52,12 +52,12 @@
      CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-BOUND WS-B
      COMPUTE WS-BOUND = WS-B + 1
      CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-BOUND WS-C
-     MOVE "acceptance US12-core 37-4§9.9 count draws 6, 1, 1: count 1" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 count draws 6, 1, 1: count 1" TO TL-CASE
      MOVE 611 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-A * 100 + WS-B * 10 + WS-C
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "NETHER-CV-HEAD" USING WS-R WS-SX WS-SZ
-     MOVE "acceptance US12-core 37-4§9.9 cave at (-29, 78, -18), no room, one tunnel" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 cave at (-29, 78, -18), no room, one tunnel" TO TL-CASE
      COMPUTE TL-EXPECTED-N = -29 * 1000000 + 78 * 1000 + 18
      COMPUTE TL-OBSERVED-N = NC-CAVE-X * 1000000 + NC-CAVE-Y * 1000 - NC-CAVE-Z
      IF NC-CAVE-ROOM NOT = 0 OR NC-CAVE-TUNNELS NOT = 1
@@ -65,26 +65,26 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "NETHER-CV-TUNNEL" USING WS-R
-     MOVE "acceptance US12-core 37-4§9.9 tunnel yaw 2.4950655 (1e-7)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 tunnel yaw 2.4950655 (1e-7)" TO TL-CASE
      MOVE 24950655 TO TL-EXPECTED-N
      COMPUTE WS-SCALED = NC-TUN-YAW * 10000000
      COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
      PERFORM ALLOW-ONE
-     MOVE "acceptance US12-core 37-4§9.9 tunnel pitch 0.0546752 (1e-7)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 tunnel pitch 0.0546752 (1e-7)" TO TL-CASE
      MOVE 546752 TO TL-EXPECTED-N
      COMPUTE WS-SCALED = NC-TUN-PITCH * 10000000
      COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
      PERFORM ALLOW-ONE
-     MOVE "acceptance US12-core 37-4§9.9 tunnel thickness 2.2020168 (1e-7)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 tunnel thickness 2.2020168 (1e-7)" TO TL-CASE
      MOVE 22020168 TO TL-EXPECTED-N
      COMPUTE WS-SCALED = NC-TUN-THICK * 10000000
      COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALED
      PERFORM ALLOW-ONE
-     MOVE "acceptance US12-core 37-4§9.9 tunnel max steps 96" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 tunnel max steps 96" TO TL-CASE
      MOVE 96 TO TL-EXPECTED-N
      MOVE NC-TUN-STEPS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-4§9.9 walker seed -7856524665581999152" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.9 walker seed -7856524665581999152" TO TL-CASE
      MOVE -7856524665581999152 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = NC-TUN-SEED - 18446744073709551616
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -109,7 +109,7 @@
              MOVE WS-Y TO WS-LAST
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-4§9.10 column over the axis is marked 66..97 (flat floor at -0.7)" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.10 column over the axis is marked 66..97 (flat floor at -0.7)" TO TL-CASE
      MOVE 66097 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FIRST * 1000 + WS-LAST
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -128,22 +128,22 @@
      CALL "NETHER-CV-ELLIPSOID" USING WS-CX WS-CY WS-CZ WS-HR WS-VR
      MOVE 0 TO NC-CX NC-CZ
      CALL "NETHER-CARVE-APPLY-ONLY" USING WS-CHUNK
-     MOVE "acceptance US12-core 37-4§9.11 carved y 20 over the axis is lava" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.11 carved y 20 over the axis is lava" TO TL-CASE
      MOVE 102 TO TL-EXPECTED-N
      COMPUTE WS-CELL = 20 * 256 + 3 * 16 + 3 + 1
      MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-4§9.11 carved y 35 over the axis is air" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.11 carved y 35 over the axis is air" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE WS-CELL = 35 * 256 + 3 * 16 + 3 + 1
      MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-4§6.4 the marked bedrock block is kept" TO TL-CASE
+     MOVE "acceptance US12 37-4§6 6.4 the marked bedrock block is kept" TO TL-CASE
      MOVE NH-S-BEDROCK TO TL-EXPECTED-N
      COMPUTE WS-CELL = 3 * 256 + 3 * 16 + 3 + 1
      MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-4§6.4 y 1 is never carved (mask starts at y 1, lowest carved y 2)" TO TL-CASE
+     MOVE "acceptance US12 37-4§6 6.4 y 1 is never carved (mask starts at y 1, lowest carved y 2)" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      COMPUTE WS-CELL = 1 * 256 + 3 * 16 + 3 + 1
      MOVE CE-STATE(WS-CELL) TO TL-OBSERVED-N

@@ -84,13 +84,13 @@
      MOVE 0 TO WS-BIOME
      PERFORM NEW-CHUNK
      CALL "NETHER-GEN-FEATURES" USING WS-SEED WS-CX WS-CZ WS-A WS-PLACED
-     MOVE "acceptance US12-core 37-5§3 a nether_wastes chunk selects its 18 placed features (15 + 3, 2 §2)" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 a nether_wastes chunk selects its 18 placed features (15 + 3, 2 §2)" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE WS-PLACED TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM ORACLE-BOTH
      PERFORM COUNT-FIRES
-     MOVE "acceptance US12-core 37-5§4.1 patch_fire sets fire in air over netherrack (some, and no soul fire without soul soil)" TO TL-CASE
+     MOVE "acceptance US12 37-5§4 4.1 patch_fire sets fire in air over netherrack (some, and no soul fire without soul soil)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      IF WS-FIRES > 0 AND WS-SOULS = 0
          MOVE 1 TO TL-OBSERVED-N
@@ -98,9 +98,9 @@
          MOVE 0 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-5§3 the driver's chunk equals the hand run with seeds decorationSeed + 70004 and + 70005" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 the driver's chunk equals the hand run with seeds decorationSeed + 70004 and + 70005" TO TL-CASE
      PERFORM COMPARE
-     MOVE "acceptance US12-core 37-5§4.1 every fire stands on netherrack and replaced air" TO TL-CASE
+     MOVE "acceptance US12 37-5§4 4.1 every fire stands on netherrack and replaced air" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -110,7 +110,7 @@
      PERFORM NEW-CHUNK
      CALL "NETHER-GEN-FEATURES" USING WS-SEED WS-CX WS-CZ WS-A WS-PLACED
      PERFORM COUNT-FIRES
-     MOVE "acceptance US12-core 37-5§4.1 patch_soul_fire sets soul fire over soul soil, patch_fire none there" TO TL-CASE
+     MOVE "acceptance US12 37-5§4 4.1 patch_soul_fire sets soul fire over soul soil, patch_fire none there" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      IF WS-SOULS > 0 AND WS-FIRES = 0
          MOVE 1 TO TL-OBSERVED-N
@@ -119,7 +119,7 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM ORACLE-BOTH
-     MOVE "acceptance US12-core 37-5§3 the soul soil chunk equals the hand run too" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 the soul soil chunk equals the hand run too" TO TL-CASE
      PERFORM COMPARE
 
 *>   crimson_forest (id 2): patch_soul_fire is not in its lists: one placed feature, no soul fire although soul soil is there
@@ -127,7 +127,7 @@
      PERFORM NEW-CHUNK
      CALL "NETHER-GEN-FEATURES" USING WS-SEED WS-CX WS-CZ WS-A WS-PLACED
      PERFORM COUNT-FIRES
-     MOVE "acceptance US12-core 37-5§2 a crimson_forest chunk selects 18 placed features (12 + 6) and sets no soul fire" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 a crimson_forest chunk selects 18 placed features (12 + 6) and sets no soul fire" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      IF WS-PLACED = 18 AND WS-SOULS = 0
          MOVE 1 TO TL-OBSERVED-N
@@ -140,14 +140,14 @@
      MOVE 4 TO WS-BIOME
      PERFORM NEW-CHUNK
      CALL "NETHER-GEN-FEATURES" USING WS-SEED WS-CX WS-CZ WS-A WS-PLACED
-     MOVE "acceptance US12-core 37-5§2 a basalt_deltas chunk selects 18 placed features (3 + 15)" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 a basalt_deltas chunk selects 18 placed features (3 + 15)" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE WS-PLACED TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-BIOME
      PERFORM NEW-CHUNK
      CALL "NETHER-GEN-FEATURES" USING WS-SEED WS-CX WS-CZ WS-A WS-PLACED
-     MOVE "acceptance US12-core 37-5§2 a warped_forest chunk selects 20 placed features (13 + 7)" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 a warped_forest chunk selects 20 placed features (13 + 7)" TO TL-CASE
      MOVE 20 TO TL-EXPECTED-N
      MOVE WS-PLACED TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -159,7 +159,7 @@
      CALL "NETHER-GEN-FEATURES" USING WS-SEED WS-CX WS-CZ WS-A WS-PLACED
      COMPUTE WS-USEED = WS-NEG + 18446744073709551616
      PERFORM ORACLE-BOTH
-     MOVE "acceptance US12-core 37-5§3 world seed -1 decorates like the unsigned seed 2^64 - 1" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 world seed -1 decorates like the unsigned seed 2^64 - 1" TO TL-CASE
      PERFORM COMPARE
      GOBACK.
 
