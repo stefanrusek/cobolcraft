@@ -129,12 +129,12 @@
      MOVE "acceptance US12-4 live redstone 30-5 6.1 an arrow into the centre of the face gives the target power 15" TO WS-CASE
      MOVE "power=15" TO WS-EXP
      PERFORM ASSERT-PROPS
-     MOVE 15 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 12 TO WS-TICKS PERFORM RUN-TICKS
      PERFORM READ-PROPS
      MOVE "acceptance US12-4 live redstone 30-5 6 the power holds for the 20 ticks of an arrow" TO WS-CASE
      MOVE "power=15" TO WS-EXP
      PERFORM ASSERT-PROPS
-     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 9 TO WS-TICKS PERFORM RUN-TICKS
      PERFORM READ-PROPS
      MOVE "acceptance US12-4 live redstone 30-5 6 and the release tick sets it back to 0" TO WS-CASE
      MOVE "power=0" TO WS-EXP
@@ -162,6 +162,58 @@
      MOVE 101.5 TO WS-AY
      PERFORM SHOOT
      MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+*>   arrows from the other five sides reach the centre of the face they cross: 15 each (rows 8 to 16)
+     MOVE 8 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "target" TO WS-K PERFORM PUT-DEF
+     MOVE 6.5 TO WS-AX MOVE 101.5 TO WS-AY MOVE 8.5 TO WS-AZ
+     MOVE -3.0 TO WS-AVX MOVE 0 TO WS-AVY WS-AVZ
+     PERFORM SHOOT-V
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 6.1 an arrow from the east side (face on the X axis, high side) gives 15" TO WS-CASE
+     MOVE "power=15" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 10 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "target" TO WS-K PERFORM PUT-DEF
+     MOVE 3.5 TO WS-AX MOVE 104.5 TO WS-AY MOVE 10.5 TO WS-AZ
+     MOVE 0 TO WS-AVX WS-AVZ MOVE -3.0 TO WS-AVY
+     PERFORM SHOOT-V
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 6.1 an arrow falling on the top face (Y axis, high side) gives 15" TO WS-CASE
+     MOVE "power=15" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 12 TO WS-Z
+     MOVE 3 TO WS-X MOVE 103 TO WS-Y MOVE "target" TO WS-K PERFORM PUT-DEF
+     MOVE 3.5 TO WS-AX MOVE 101.2 TO WS-AY MOVE 12.5 TO WS-AZ
+     MOVE 0 TO WS-AVX WS-AVZ MOVE 3.0 TO WS-AVY
+     PERFORM SHOOT-V
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 6.1 an arrow rising into the bottom face (Y axis, low side) gives 15" TO WS-CASE
+     MOVE "power=15" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 101 TO WS-Y
+     MOVE 14 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "target" TO WS-K PERFORM PUT-DEF
+     MOVE 3.5 TO WS-AX MOVE 101.5 TO WS-AY MOVE 11.5 TO WS-AZ
+     MOVE 0 TO WS-AVX WS-AVY MOVE 3.0 TO WS-AVZ
+     PERFORM SHOOT-V
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 6.1 an arrow from the north (Z axis, low side) gives 15" TO WS-CASE
+     MOVE "power=15" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 16 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "target" TO WS-K PERFORM PUT-DEF
+     MOVE 3.5 TO WS-AX MOVE 101.5 TO WS-AY MOVE 19.5 TO WS-AZ
+     MOVE 0 TO WS-AVX WS-AVY MOVE -3.0 TO WS-AVZ
+     PERFORM SHOOT-V
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 6.1 an arrow from the south (Z axis, high side) gives 15" TO WS-CASE
+     MOVE "power=15" TO WS-EXP
+     PERFORM ASSERT-PROPS
 *>   a target placed with power and no tick pending is reset (z 6)
      MOVE 6 TO WS-Z
      MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "target" TO WS-K PERFORM MAKE-DEF
@@ -172,6 +224,9 @@
      MOVE "power=0" TO WS-EXP
      PERFORM ASSERT-PROPS
      STOP RUN.
+
+ SHOOT-V.
+     CALL "ARROW-SPAWN" USING WS-DIM WS-AX WS-AY WS-AZ WS-AVX WS-AVY WS-AVZ WS-BASE WS-OWNER WS-ARROW-ROW.
 
  SHOOT.
 *>   an arrow from (0.5, WS-AY, WS-Z + 0.5) at 3 blocks per tick east
