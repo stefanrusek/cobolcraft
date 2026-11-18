@@ -1092,6 +1092,15 @@
              GOBACK
          END-IF
      END-IF
+*>   A no-AI mob (18 section 2.10) has no goals, navigation, controls or travel: only the baseTick effects of the environment (not for the water animals,
+*>   whose step is all AI) and the death tick above run.
+     IF EN-NO-AI(WS-ROW) = 1
+         IF SM-KIND(WS-M) < 2
+             CALL "M182-ENV-TICK" USING WS-ROW
+             CALL "STDMOB-FIRE-SYNC" USING WS-ROW
+         END-IF
+         GOBACK
+     END-IF
      IF SM-KIND(WS-M) >= 2
          CALL "STDMOB-AQUATIC-STEP" USING WS-ROW WS-M
          GOBACK

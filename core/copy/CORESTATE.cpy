@@ -578,6 +578,8 @@
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 *>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
        10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
+*>     --- lane p49a: no-AI mobs (core/src/stdmobs.cob; 18 section 2.10) ---
+       10 EN-NO-AI           BINARY-LONG.        *> the no-AI flag (mob flag 1): 1 = no goals, navigation, controls or travel; baseTick effects and the death tick still run (not saved yet)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
