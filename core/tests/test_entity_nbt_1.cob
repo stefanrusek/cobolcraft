@@ -46,6 +46,9 @@
      MOVE 1 TO EN-ON-GROUND(WS-MOB)
      MOVE 40 TO EN-BURN(WS-MOB)
      MOVE 60 TO EN-AIR-LOST(WS-MOB)
+*>   A UUID with high bytes: the first and the fifth byte 0xFF, so two of the ints are negative.
+     MOVE FUNCTION CHAR(256) TO EN-UUID(WS-MOB)(1:1)
+     MOVE FUNCTION CHAR(256) TO EN-UUID(WS-MOB)(5:1)
      MOVE EN-UUID(WS-MOB) TO WS-UUID
      CALL "PB-RESET" USING PB-BUFFER
      CALL "ENTITY-NBT-WRITE" USING WS-DIM WS-CX WS-CZ PB-BUFFER
@@ -56,7 +59,7 @@
      MOVE "Entities" TO WS-PATH
      CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
      MOVE "acceptance US15 45-1§5 the base keys follow Rotation in the table order, the six always-written ones at their values" TO TL-CASE
-     MOVE "[{id:cobolcraft:sodgrazer,Pos:[20.500,55.000,37.250],Motion:[0.000,0.000,0.000],Rotation:[90.000,0.000],fall_distance:0.000,Fire:40,Air:240,OnGround:1,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0," TO TL-EXPECTED
+     MOVE "[{id:cobolcraft:sodgrazer,Pos:[20.500,55.000,37.250],Motion:[0.000,0.000,0.000],Rotation:[90.000,0.000],fall_distance:0.000,Fire:40,Air:240,OnGround:1,Invulnerable:0,PortalCooldown:0,UUID:I[" TO TL-EXPECTED
      MOVE WS-TEXT(1:FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Reading it back restores on-ground, fire, air lost and the UUID.
