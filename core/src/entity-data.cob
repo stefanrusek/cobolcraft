@@ -272,7 +272,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-NBT-ONE.
 *> USING dimension row, PB-BUFFER (an entity compound payload at PB-POS, 07 §9.3): a ground item
-*> (GI-SPAWN with its stack, position and motion, no pickup delay, then its Age and rotation) or a
+*> (GI-SPAWN with its stack, position and motion, no pickup delay, then its Age and rotation), an item
+*> frame or glow item frame (DECOR-SPAWN with its Facing, then the Item in it, 44 part 9 5.3) or a
 *> mob (MOB-SPAWN with its type, position and yaw, then its health, pitch and vertical motion). An
 *> entity of another type, or a malformed one, is not created.
  DATA DIVISION.
@@ -312,6 +313,13 @@
  01 WS-PITCH               FLOAT-SHORT.
  01 WS-HEALTH              FLOAT-SHORT.
  01 WS-HANDLED             BINARY-LONG.
+ 01 WS-FRAME-KIND          BINARY-LONG VALUE 12.
+ 01 WS-FRAME-KEY           PIC X(112) VALUE "minecraft:item_frame".
+ 01 WS-GLOW-KEY            PIC X(112) VALUE "minecraft:glow_item_frame".
+ 01 WS-FACING              BINARY-LONG.
+ 01 WS-IS-FRAME            BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ COPY PROJSTATE.
  COPY ENMOBDATA.
  LINKAGE SECTION.
  COPY PROTO.
@@ -321,7 +329,8 @@
      MOVE 0 TO WS-ROW
      MOVE PB-POS TO WS-START
      MOVE 0 TO WS-ITEM WS-ITEM-COUNT WS-AGE WS-DELAY WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ
-     MOVE 0 TO WS-YAW WS-PITCH WS-HEALTH
+     MOVE 0 TO WS-YAW WS-PITCH WS-HEALTH WS-IS-FRAME
+     MOVE 3 TO WS-FACING
      INITIALIZE MQ-DATA
      MOVE -1 TO MQ-VARIANT-INT MQ-EGG MQ-SIZE
      PERFORM UNTIL PB-ERROR = 1
@@ -336,6 +345,12 @@
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
                  CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
                  CALL "KEY-BARE" USING WS-LOCAL WS-BARE
+                 EVALUATE WS-BARE
+                     WHEN "item_frame"
+                         MOVE 1 TO WS-IS-FRAME
+                     WHEN "glow_item_frame"
+                         MOVE 2 TO WS-IS-FRAME
+                 END-EVALUATE
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
                      IF ET-KEY(WS-I) = WS-LOCAL OR ET-KEY(WS-I) = WS-BARE
                          COMPUTE WS-ENTITY-TYPE = WS-I - 1
@@ -355,6 +370,8 @@
                  CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-YAW
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-PITCH
+             WHEN WN = "Facing" AND WS-TYPE = 1
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-FACING
              WHEN WN = "Health" AND WS-TYPE = 5
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-HEALTH
              WHEN WN = "Age" AND WS-TYPE = 3
@@ -397,6 +414,25 @@
      EVALUATE TRUE
          WHEN PB-ERROR = 1
              CONTINUE
+         WHEN WS-IS-FRAME > 0 AND WS-FACING >= 2 AND WS-FACING <= 5
+             IF WS-IS-FRAME = 2
+                 CALL "DECOR-SPAWN" USING WS-FRAME-KIND WS-GLOW-KEY L-DIM WS-X WS-Y WS-Z WS-FACING WS-ROW
+             ELSE
+                 CALL "DECOR-SPAWN" USING WS-FRAME-KIND WS-FRAME-KEY L-DIM WS-X WS-Y WS-Z WS-FACING WS-ROW
+             END-IF
+*>           the frame's own state: the item in it (PJ-I2, 0 empty) and the glow flag (PJ-I4)
+             IF WS-ROW > 0
+                 CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+                 IF WS-ITEM > 0 AND WS-ITEM-COUNT > 0
+                     MOVE WS-ITEM TO PJ-I2(WS-SLOT)
+                 END-IF
+                 IF WS-IS-FRAME = 2
+                     MOVE 1 TO PJ-I4(WS-SLOT)
+                 END-IF
+             END-IF
+         WHEN WS-IS-FRAME > 0
+*>           a frame that does not face a wall direction is not made (never as a mob)
+             CONTINUE
          WHEN WS-ENTITY-TYPE = CR-LOOSE-ITEM
              CALL "GI-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-ITEM-COUNT
                  WS-DELAY WS-ROW
@@ -411,7 +447,7 @@
              CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
      END-EVALUATE
 *>   The keys of the file's compound that the core does not model are kept for the next save of a 26.3 world (07 section 10.7).
-     IF WS-ROW > 0
+     IF WS-ROW > 0 AND WS-IS-FRAME = 0
          CALL "EXTRA-CAPTURE" USING WS-KIND-ZERO WS-ROW PB-BUFFER WS-START WS-END
      END-IF
      GOBACK.

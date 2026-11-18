@@ -7,6 +7,9 @@
 *>     most GE-MAX; GEL-LOST counts the rest; a compound longer than GE-NBT-MAX is counted as lost)
 *>   GENT-ADD-MOB USING x, y, z (FLOAT-LONG), id (PIC X(32), "minecraft:witch" or the bare key), persistent (BINARY-LONG): a request for a mob made by code (a marker): the compound is the id and
 *>     PersistenceRequired
+*>   GENT-ADD-FRAME USING x, y, z (BINARY-LONG, the cell of the marker), direction (data value 2 north to 5 east: the way the frame faces), item key (PIC X(32), "minecraft:elytra"): a request for an
+*>     item frame holding one of the item (36-8 9.4 Elytra); the compound is {id: "minecraft:item_frame", Facing, Item: {id, count 1}} and the position the cell's centre moved 0.46875 against the facing
+*>     (the hanging entity's own rule, decor-44b.cob ITEM-FRAME-PLACE)
 *>   GENT-ADD-BOX USING kind, min x, y, z, max x, y, z (BINARY-LONG): a box of a structure that overrides the natural spawn lists (STRUCTOVR.cpy) that intersects the chunk being generated; at most
 *>     GE-BOX-MAX per chunk (GEL-BOX-LOST counts the rest)
 *>   GENT-KEEP USING job: appends the level's requests to the job's list (GJ-ENT, bounded) and empties the level's list
@@ -78,6 +81,48 @@
      CALL "GENT-ADD" USING L-X L-Y L-Z WS-YAW WS-LEN WS-NBT
      GOBACK.
  END PROGRAM GENT-ADD-MOB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GENT-ADD-FRAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NBT                 PIC X(1344).
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-CODE                PIC X.
+ 01 WS-FACING              PIC X.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-ITEM                 PIC X(32).
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-DIRECTION L-ITEM.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-ITEM)) TO WS-KEY-LENGTH
+     MOVE FUNCTION CHAR(WS-KEY-LENGTH + 1) TO WS-CODE
+     MOVE FUNCTION CHAR(L-DIRECTION + 1) TO WS-FACING
+     MOVE SPACES TO WS-NBT
+     MOVE 1 TO WS-POINTER
+*>   {id: "minecraft:item_frame", Facing: <d>b, Item: {id: "<key>", count: 1}} as the payload of a compound
+     STRING X"080002" "id" X"0014" "minecraft:item_frame" X"010006" "Facing" WS-FACING X"0A0004" "Item" X"080002" "id" X"00" WS-CODE
+         L-ITEM(1:WS-KEY-LENGTH) X"030005" "count" X"00000001" X"00" X"00"
+         DELIMITED BY SIZE INTO WS-NBT WITH POINTER WS-POINTER
+     COMPUTE WS-LEN = WS-POINTER - 1
+     CALL "DECOR-STEP" USING L-DIRECTION WS-DX WS-DY WS-DZ
+     COMPUTE WS-X = L-X + 0.5 - WS-DX * 0.46875
+     COMPUTE WS-Y = L-Y + 0.5
+     COMPUTE WS-Z = L-Z + 0.5 - WS-DZ * 0.46875
+     CALL "GENT-ADD" USING WS-X WS-Y WS-Z WS-YAW WS-LEN WS-NBT
+     GOBACK.
+ END PROGRAM GENT-ADD-FRAME.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GENT-ADD-BOX.
