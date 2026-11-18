@@ -277,7 +277,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-IS-LIVING.
 *> USING row, living out (BINARY-LONG): 2 for an armor stand (a LivingEntity and no Mob, 45-9 section 11), 0 for the entity types whose class is an Entity but no LivingEntity (45-8 sections 3, 4, 5 and 6: TNT, falling block, orb, cloud, end
-*> crystal, leash knot, painting, item frames, displays, marker, interaction, fangs, rocket, boats and rafts, minecarts, arrows, fireballs, charges and thrown items), else 1.
+*> crystal, leash knot, cushion (45-9 section 10), painting, item frames, displays, marker, interaction, fangs, rocket, boats and rafts, minecarts, arrows, fireballs, charges and thrown items), else 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
@@ -302,7 +302,7 @@
      EVALUATE TRUE
          WHEN WS-PATH = "armor_stand"
              MOVE 2 TO L-LIVING
-         WHEN WS-PATH = "tnt" OR "falling_block" OR "experience_orb" OR "area_effect_cloud" OR "end_crystal" OR "leash_knot"
+         WHEN WS-PATH = "tnt" OR "falling_block" OR "experience_orb" OR "area_effect_cloud" OR "end_crystal" OR "leash_knot" OR "cushion"
               OR "painting" OR "item_frame" OR "glow_item_frame" OR "block_display" OR "item_display" OR "text_display" OR "marker"
               OR "interaction" OR "evoker_fangs" OR "firework_rocket" OR "eye_of_ender" OR "llama_spit" OR "shulker_bullet"
               OR "wither_skull" OR "small_fireball" OR "fireball" OR "dragon_fireball" OR "wind_charge" OR "breeze_wind_charge"

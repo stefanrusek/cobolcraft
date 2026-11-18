@@ -1,5 +1,90 @@
 *> The commands of entities and movement (docs/protocol/16-commands-catalog.md §5): teleport (tp), and (added with their tests) kill,
-*> summon. The entities are the players (the mobs and ground items are not yet reachable by a selector: BLOCKED for BX-RESOLVE).
+*> summon. The entities are the players and the rows of CORE-ENTITIES (a selector gives a mob, a ground item or any entity /summon creates as the negated row).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-LOOK-ROW.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension out, x, y, z (FLOAT-LONG) out, yaw, pitch (FLOAT-SHORT) out: where the target of an entity command is.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-YAW L-PITCH.
+     IF L-ROW > 0
+         MOVE PL-DIM(L-ROW) TO L-DIM
+         MOVE PL-X(L-ROW) TO L-X
+         MOVE PL-Y(L-ROW) TO L-Y
+         MOVE PL-Z(L-ROW) TO L-Z
+         MOVE PL-YAW(L-ROW) TO L-YAW
+         MOVE PL-PITCH(L-ROW) TO L-PITCH
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         MOVE EN-DIM(WS-ENTITY) TO L-DIM
+         MOVE EN-X(WS-ENTITY) TO L-X
+         MOVE EN-Y(WS-ENTITY) TO L-Y
+         MOVE EN-Z(WS-ENTITY) TO L-Z
+         MOVE EN-YAW(WS-ENTITY) TO L-YAW
+         MOVE EN-PITCH(WS-ENTITY) TO L-PITCH
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-LOOK-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-PLACE-ROW.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT): the target goes there. A player takes the facing and is sent
+*> Player Position (CMD-MOVE-PLAYER). Any other entity in its own dimension is sent Teleport Entity at once (a standard mob would wait for its update interval in ENTITY-MOVE) and the
+*> entity tracker lets players who now see it hear of it and the others forget it; in another dimension it changes dimension (ENTITY-CHANGE-DIM: Remove to the old viewers, Add to the new).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO2               FLOAT-LONG VALUE 0.
+ 01 WS-ZERO3               FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-YAW L-PITCH.
+     IF L-ROW > 0
+         MOVE L-ROW TO WS-ROW
+         MOVE L-YAW TO PL-YAW(WS-ROW)
+         MOVE L-PITCH TO PL-PITCH(WS-ROW)
+         CALL "CMD-MOVE-PLAYER" USING WS-ROW L-DIM L-X L-Y L-Z
+         GOBACK
+     END-IF
+     COMPUTE WS-ENTITY = 0 - L-ROW
+     IF L-DIM NOT = EN-DIM(WS-ENTITY)
+         CALL "ENTITY-CHANGE-DIM" USING WS-ENTITY L-DIM L-X L-Y L-Z L-YAW L-PITCH EN-ON-GROUND(WS-ENTITY)
+         GOBACK
+     END-IF
+     MOVE L-X TO EN-X(WS-ENTITY) EN-SENT-X(WS-ENTITY)
+     MOVE L-Y TO EN-Y(WS-ENTITY) EN-SENT-Y(WS-ENTITY)
+     MOVE L-Z TO EN-Z(WS-ENTITY) EN-SENT-Z(WS-ENTITY)
+     MOVE L-YAW TO EN-YAW(WS-ENTITY) EN-SENT-YAW(WS-ENTITY)
+     MOVE L-PITCH TO EN-PITCH(WS-ENTITY) EN-SENT-PITCH(WS-ENTITY)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(WS-ENTITY) EN-X(WS-ENTITY) EN-Y(WS-ENTITY) EN-Z(WS-ENTITY)
+         WS-ZERO WS-ZERO2 WS-ZERO3 EN-YAW(WS-ENTITY) EN-PITCH(WS-ENTITY) EN-ON-GROUND(WS-ENTITY) PB-BUFFER
+     CALL "GI-VIEWERS-SEND" USING WS-ENTITY PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "ENTITY-TRACK" USING WS-ENTITY
+     GOBACK.
+ END PROGRAM CXB-PLACE-ROW.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-TELEPORT.
@@ -9,7 +94,7 @@
 *> or a point or entity to face turns it; the player is sent Player Position (CMD-MOVE-PLAYER); a location outside the spawnable
 *> bounds is commands.teleport.invalidPosition; commands.teleport.success.location.single [name, x, y, z] or .multiple [count, x, y, z]
 *> (six decimals) and .entity.single [name, destination] or .multiple [count, destination] are broadcast; the result is the number
-*> moved. The targets are the players the selector gives; none given means the source, which must be an entity.
+*> moved. The targets are the entities the selector gives (a player, or any other entity, which takes the place at once: CXB-PLACE-ROW); none given means the source, which must be an entity.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -50,8 +135,14 @@
  01 WS-PX                  FLOAT-LONG.
  01 WS-PY                  FLOAT-LONG.
  01 WS-PZ                  FLOAT-LONG.
+ 01 WS-PX2                 FLOAT-LONG.
+ 01 WS-PY2                 FLOAT-LONG.
+ 01 WS-PZ2                 FLOAT-LONG.
+ 01 WS-DIM2                BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-YAW2                FLOAT-SHORT.
+ 01 WS-PITCH2              FLOAT-SHORT.
  01 WS-W                   FLOAT-LONG.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -65,6 +156,8 @@
  01 WS-EDIT                PIC -(10)9.999999.
  01 WS-TEXT                PIC X(24).
  01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
  01 WS-BROADCAST           BINARY-LONG VALUE 1.
  01 WS-A1                  PIC X(64).
  01 WS-A2                  PIC X(64).
@@ -90,17 +183,10 @@
 
 *> The new position of the target WS-ROW (in WS-X, WS-Y, WS-Z) and its dimension WS-DIM, from the location or the destination.
  WORK-OUT-PLACE.
-     MOVE PL-DIM(WS-ROW) TO WS-DIM
+     CALL "CXB-LOOK-ROW" USING WS-ROW WS-DIM WS-PX2 WS-PY2 WS-PZ2 WS-YAW WS-PITCH
      IF WS-DEST > 0
-         MOVE PL-DIM(WS-DEST-ROW(1)) TO WS-DIM
-         MOVE PL-X(WS-DEST-ROW(1)) TO WS-X
-         MOVE PL-Y(WS-DEST-ROW(1)) TO WS-Y
-         MOVE PL-Z(WS-DEST-ROW(1)) TO WS-Z
-         MOVE PL-YAW(WS-DEST-ROW(1)) TO WS-YAW
-         MOVE PL-PITCH(WS-DEST-ROW(1)) TO WS-PITCH
+         CALL "CXB-LOOK-ROW" USING WS-DEST-ROW(1) WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
      ELSE
-         MOVE PL-YAW(WS-ROW) TO WS-YAW
-         MOVE PL-PITCH(WS-ROW) TO WS-PITCH
          MOVE BS-DIM TO WS-DIM
          MOVE WS-LOCAL-X TO WS-X
          MOVE WS-LOCAL-Y TO WS-Y
@@ -109,12 +195,14 @@
      IF WS-ROT > 0
          MOVE BA-NUM(WS-ROT, 1) TO WS-W
          IF BA-KIND(WS-ROT, 1) = 1
-             ADD PL-YAW(WS-ROW) TO WS-W
+             CALL "CXB-LOOK-ROW" USING WS-ROW WS-DIM2 WS-PX2 WS-PY2 WS-PZ2 WS-YAW2 WS-PITCH2
+             ADD WS-YAW2 TO WS-W
          END-IF
          COMPUTE WS-YAW = FUNCTION MOD(WS-W + 180, 360) - 180
          MOVE BA-NUM(WS-ROT, 2) TO WS-W
          IF BA-KIND(WS-ROT, 2) = 1
-             ADD PL-PITCH(WS-ROW) TO WS-W
+             CALL "CXB-LOOK-ROW" USING WS-ROW WS-DIM2 WS-PX2 WS-PY2 WS-PZ2 WS-YAW2 WS-PITCH2
+             ADD WS-PITCH2 TO WS-W
          END-IF
          IF WS-W < -90
              MOVE -90 TO WS-W
@@ -154,12 +242,14 @@
      END-IF
      CALL "BX-KEY" USING PB-TEXT WS-KEY
      IF WS-MOVED = 1
-         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST-ROW) PL-NAME-LENGTH(WS-LAST-ROW)
+         CALL "CXB-SHOWN" USING WS-LAST-ROW WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
      ELSE
          CALL "CMD-TEXT-INT" USING PB-TEXT WS-MOVED
      END-IF
      IF WS-DEST > 0
-         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-DEST-ROW(1)) PL-NAME-LENGTH(WS-DEST-ROW(1))
+         CALL "CXB-SHOWN" USING WS-DEST-ROW(1) WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
      ELSE
          MOVE WS-LAST-X TO WS-W
          PERFORM FIXED-TEXT
@@ -187,9 +277,7 @@
      IF BR-R-FAILED = 0 AND WS-FACING > 0
          CALL "BX-RESOLVE" USING WS-FACING WS-FACE-ROWS
          IF BR-R-FAILED = 0
-             MOVE PL-X(WS-FACE-ROW(1)) TO WS-PX
-             MOVE PL-Y(WS-FACE-ROW(1)) TO WS-PY
-             MOVE PL-Z(WS-FACE-ROW(1)) TO WS-PZ
+             CALL "CXB-LOOK-ROW" USING WS-FACE-ROW(1) WS-DIM2 WS-PX WS-PY WS-PZ WS-YAW2 WS-PITCH2
              IF WS-ANCHOR > 0 AND BA-IVAL(WS-ANCHOR) = 1
                  ADD 1.62 TO WS-PY
              END-IF
@@ -207,9 +295,7 @@
          PERFORM WORK-OUT-PLACE
          PERFORM CHECK-BOUNDS
          IF BR-R-FAILED = 0
-             MOVE WS-YAW TO PL-YAW(WS-ROW)
-             MOVE WS-PITCH TO PL-PITCH(WS-ROW)
-             CALL "CMD-MOVE-PLAYER" USING WS-ROW WS-DIM WS-X WS-Y WS-Z
+             CALL "CXB-PLACE-ROW" USING WS-ROW WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
              ADD 1 TO WS-MOVED
              MOVE WS-X TO WS-LAST-X
              MOVE WS-Y TO WS-LAST-Y
@@ -974,9 +1060,7 @@
              CALL "BX-LOOK" USING WS-X WS-Y WS-Z WS-PX WS-PY WS-PZ WS-YAW WS-PITCH
          END-IF
          IF WS-ROW > 0
-             MOVE WS-YAW TO PL-YAW(WS-ROW)
-             MOVE WS-PITCH TO PL-PITCH(WS-ROW)
-             CALL "CMD-MOVE-PLAYER" USING WS-ROW WS-DIM WS-X WS-Y WS-Z
+             CALL "CXB-PLACE-ROW" USING WS-ROW WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
          ELSE
              COMPUTE WS-ENTITY = 0 - WS-ROW
              MOVE WS-YAW TO EN-YAW(WS-ENTITY)

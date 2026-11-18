@@ -101,6 +101,7 @@
  01 WS-DEFAULT-NS          PIC X(10) VALUE "minecraft:".
  01 WS-ENTITY              BINARY-LONG.
  01 WS-ET                  BINARY-LONG.
+ 01 WS-LIVING              BINARY-LONG.
  01 WS-ET-FULL             PIC X(48).
  01 WS-ET-LENGTH           BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
@@ -358,7 +359,9 @@
 *> a name (an entity has none: a positive name fails), no team and no tag as for a player, the rotations.
  TEST-ENTITY.
      MOVE 1 TO WS-OK
-     IF EN-TYPE(WS-ENTITY) >= 0 AND EN-HEALTH(WS-ENTITY) <= 0 AND EN-TYPE(WS-ENTITY) NOT = CR-LOOSE-ITEM
+*>   A living entity at 0 health is dead; an entity that is no LivingEntity (45-8 section 1: TNT, an orb, an arrow, a lightning bolt ...) has no health to lose and is selected.
+     CALL "ENTITY-IS-LIVING" USING WS-ENTITY WS-LIVING
+     IF EN-TYPE(WS-ENTITY) >= 0 AND EN-HEALTH(WS-ENTITY) <= 0 AND EN-TYPE(WS-ENTITY) NOT = CR-LOOSE-ITEM AND WS-LIVING > 0
          MOVE 0 TO WS-OK
      END-IF
      COMPUTE WS-ET = EN-TYPE(WS-ENTITY) + 1

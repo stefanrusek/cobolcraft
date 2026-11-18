@@ -1748,6 +1748,7 @@
  01 WS-IT                  BINARY-LONG.
  01 WS-ZERO-D              FLOAT-LONG VALUE 0.
  01 WS-UUID                PIC X(16).
+ 01 WS-LIVING              BINARY-LONG.
  LINKAGE SECTION.
  01 L-CODE                 BINARY-LONG.
  01 L-ROOT                 BINARY-LONG.
@@ -1818,8 +1819,12 @@
              END-IF
          END-PERFORM
      END-IF
+*>   Health only for a LivingEntity (45-8 section 1): a boat, a minecart, a projectile, TNT and the like have none.
      IF WS-PLAYER = 0 AND EN-TYPE(WS-ROW) >= MOB-FIRST-TYPE
-         CALL "NBX-PUT-N" USING L-ROOT WS-K-HEALTH WS-T-FLOAT WS-INT WS-HEALTH WS-NODE
+         CALL "ENTITY-IS-LIVING" USING WS-ROW WS-LIVING
+         IF WS-LIVING > 0
+             CALL "NBX-PUT-N" USING L-ROOT WS-K-HEALTH WS-T-FLOAT WS-INT WS-HEALTH WS-NODE
+         END-IF
      END-IF
      IF WS-PLAYER = 0 AND EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
          MOVE 0 TO WS-INT
