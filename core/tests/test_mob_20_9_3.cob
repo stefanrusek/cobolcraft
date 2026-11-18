@@ -49,6 +49,8 @@
  01 WS-HOST                BINARY-LONG.
  01 WS-MADE                BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG VALUE 1.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-MERGES              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG VALUE 3.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
@@ -217,6 +219,38 @@
      MOVE "acceptance US15 20§9.1 merge with stone makes exactly one neighbour infested" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-MADE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Every direction of the merge goal: 200 tries with the +x neighbour left as air (no host there), the other five stone.
+     MOVE 0 TO WS-MERGES
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 200
+         COMPUTE WS-BX = WS-PX - 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-PY WS-PZ WS-STONE
+         COMPUTE WS-BX = WS-PX + 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-PY WS-PZ WS-AIR
+         COMPUTE WS-BZ = WS-PZ - 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-PX WS-PY WS-BZ WS-STONE
+         COMPUTE WS-BZ = WS-PZ + 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-PX WS-PY WS-BZ WS-STONE
+         COMPUTE WS-BY = WS-PY + 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-PX WS-BY WS-PZ WS-STONE
+         COMPUTE WS-BY = WS-PY - 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-PX WS-BY WS-PZ WS-STONE
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+         MOVE WS-J TO CW-TICKS
+         CALL "STDMOB-SILVERFISH-MERGE" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             ADD 1 TO WS-MERGES
+         ELSE
+             CALL "ENTITY-REMOVE" USING WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§9.1 merge with stone happens about one try in ten in each of the other directions" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-MERGES >= 8 AND WS-MERGES <= 40
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  CHECK-INFESTED.

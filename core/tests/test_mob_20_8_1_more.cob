@@ -50,6 +50,9 @@
  01 WS-NIGHT               BINARY-DOUBLE VALUE 18000.
  01 WS-DAYTIME             BINARY-DOUBLE VALUE 6000.
  01 WS-GONE                BINARY-LONG.
+ 01 WS-OKFLAG              BINARY-LONG.
+ 01 WS-HANDLED             BINARY-LONG.
+ 01 WS-DEST                FLOAT-LONG.
  01 WS-PASS                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
@@ -284,6 +287,48 @@
          END-EVALUATE
          CALL "ENTITY-REMOVE" USING WS-MOB
      END-PERFORM
+
+*>   A riding enderman never teleports (8.1).
+     COMPUTE WS-X0 = WS-X + 3
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-MOB
+     MOVE WS-MOB TO EN-MOUNT(WS-MOB)
+     COMPUTE WS-DEST = WS-X + 6
+     CALL "STDMOB-ENDER-TELEPORT" USING WS-MOB WS-DEST WS-Y WS-Z WS-OKFLAG
+     MOVE "acceptance US15 20§8.1 A riding enderman never teleports" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OKFLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-MOUNT(WS-MOB)
+     CALL "ENTITY-REMOVE" USING WS-MOB
+*>   ENDER-HURT leaves a row that is no enderman alone.
+     MOVE CAUSE-ARROW TO WS-CAUSE
+     MOVE 1 TO WS-HANDLED
+     CALL "ENDER-HURT" USING PL-ENTITY-ROW(WS-PLAYER) WS-CAUSE WS-HANDLED
+     MOVE "acceptance US15 20§8.1 The damage reactions concern endermen only" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HANDLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Rain under open sky: 1 health a tick (the dimension rains; the daylight spot above has an open sky).
+     MOVE 1 TO DM-WEATHER(WS-DIM)
+     MOVE 1 TO CW-RAIN-LEVEL(WS-DIM)
+     COMPUTE WS-X0 = WS-BX + 0.5
+     MOVE WS-DAYTIME TO CW-TIME
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-MOB
+     MOVE 0 TO EN-HURT(WS-MOB)
+     CALL "MOB-STEP" USING WS-MOB
+     MOVE "acceptance US15 20§8.1 Enderman in the rain loses 1 health a tick" TO TL-CASE
+     MOVE 39 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-MOB) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   And it dies of it: at 1 health the next tick of water or rain kills it.
+     MOVE 1 TO EN-HEALTH(WS-MOB)
+     MOVE 0 TO EN-HURT(WS-MOB)
+     CALL "MOB-STEP" USING WS-MOB
+     MOVE "acceptance US15 20§8.1 Enderman at 1 health dies in the rain" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-MOB) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CW-RAIN-LEVEL(WS-DIM)
      STOP RUN.
  END PROGRAM TEST-MOB-20-8-1-MORE.
  COPY CORETEST.

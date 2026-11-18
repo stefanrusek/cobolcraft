@@ -6,7 +6,7 @@
 *>   STDMOB-HOST-STATE USING block id (0-based), host state out: the default state of the host block of an infested block (infested_X to X), 0 for another block (9.2 map).
 *>   STDMOB-INFESTED-STATE USING block id (0-based), infested state out: the default state of the infested block of a host (stone, cobblestone, stone_bricks, mossy_stone_bricks,
 *>     cracked_stone_bricks, chiseled_stone_bricks, deepslate), 0 for another block. The axis of a rotated (deepslate) block is not copied (open).
-*>   STDMOB-SILVERFISH-MERGE USING tracker row: the merge-with-stone goal (9.1, priority 5): no target, EN-COOLDOWN 0 (the navigation is idle), mob_griefing true and nextInt(10) = 0
+*>   STDMOB-SILVERFISH-MERGE USING tracker row of a silverfish (STDMOB-SILVERFISH-WAKE calls it for silverfish rows only): the merge-with-stone goal (9.1, priority 5): no target, EN-COOLDOWN 0 (the navigation is idle), mob_griefing true and nextInt(10) = 0
 *>     a tick: a random direction of six; the block at (floor x, floor (y + 0.5), floor z) plus that direction, when it is a host block, becomes its infested block and the silverfish is discarded.
 *>   STDMOB-INFESTED-AT USING dim, x, y, z, found out: 1 when the cell holds an infested block.
 *>   STDMOB-SILVERFISH-HURT USING tracker row, attacker player row: a silverfish hurt by an attacker starts its wake-up-friends timer at 20 (9.1 hurtServer).
@@ -300,7 +300,6 @@
  COPY CORESTATE.
  COPY CBLOCKS.
  COPY STDMOBS.
- 01 WS-M                   BINARY-LONG.
  01 WS-RULE                PIC X(40) VALUE "mob_griefing".
  01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-COUNT               BINARY-LONG VALUE 3.
@@ -317,11 +316,7 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-     IF WS-M = 0
-         GOBACK
-     END-IF
-     IF SM-KEY(WS-M) NOT = "silverfish" OR EN-TARGET(L-ROW) > 0 OR EN-COOLDOWN(L-ROW) > 0
+     IF EN-TARGET(L-ROW) > 0 OR EN-COOLDOWN(L-ROW) > 0
          GOBACK
      END-IF
      CALL "BR-RULE-GET" USING WS-RULE WS-GRIEF
