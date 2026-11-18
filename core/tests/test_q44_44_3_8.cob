@@ -6,6 +6,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY VILSTATE.
+ COPY VILPOIX.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-CASE                PIC X(240).
  01 WS-E                   BINARY-LONG.
@@ -31,6 +32,11 @@
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-RANGE               BINARY-LONG VALUE 48.
+ 01 WS-PAIRS               PIC X(160).
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "minecraft:villager" TO WS-KEY
@@ -84,6 +90,34 @@
      MOVE "acceptance US15 44-3§2.9 a sleeping villager wakes when the activity is not REST" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE VL-SLEEP(WS-SLOT) TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+*>   A bed is one point of interest at its head block (44 section 1.2): the foot half is no kind for the index and no entry is noted for it.
+     INITIALIZE PX-STATE
+     MOVE "minecraft:red_bed" TO WS-KEY
+     MOVE "facing=north,occupied=false,part=foot" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-ROW))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-ROW)) + 2
+     CALL "WORLD-SET-BLOCK" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-STATE
+     CALL "PXI-KIND-OF" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-KIND
+     MOVE "acceptance US15 44-3§1.2 the index kind of a bed foot is none" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-KIND TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+     CALL "PXI-NOTE" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-STATE
+     CALL "PXI-NEAREST" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-ONE WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
+     MOVE "acceptance US15 44-3§1.2 noting a bed foot adds no bed to the index" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-FOUND TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+     MOVE "facing=north,occupied=false,part=head" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-STATE
+     CALL "PXI-NOTE" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-STATE
+     CALL "PXI-NEAREST" USING PL-DIM(WS-PLAYER) WS-BX WS-BY WS-BZ WS-ONE WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
+     MOVE "acceptance US15 44-3§1.2 noting the bed head adds the bed to the index" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE WS-FOUND TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      STOP RUN.
  END PROGRAM TEST-Q44-44-3-8.
