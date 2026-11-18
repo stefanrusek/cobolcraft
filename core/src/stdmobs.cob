@@ -880,6 +880,44 @@
  END PROGRAM STDMOB-SWELL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-SETTLED.
+*> USING tracker row, settled out: 1 for a villager asleep (VL-SLEEP) in the rest activity that is settled: on the ground, not pushed (EN-VX, EN-VZ 0), not burning, no fall distance, not riding or
+*> ridden, and whose feet rest on a solid cell (the box moved down by its vertical speed overlaps one whose top is the feet), checked every tick so that the ground going away starts the fall at once
+*> (19 section 22.8, 18 section 3.2). STDMOB-STEP then leaves out MOB-PHYSICS (it would only set the same numbers again), the friction, the fall and the egg checks, and runs the entity environment tick (fire,
+*> lava, drowning, in-wall, cramming: M182-ENV-TICK, which asks the world about about 20 cells) on one tick in 5, MOD(game tick + entity id, 5) = 0. Any other villager, awake or not settled: 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY VILSTATE.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-NEW                 FLOAT-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-FEET                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SETTLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SETTLED.
+     MOVE 0 TO L-SETTLED
+     IF EN-ON-GROUND(L-ROW) = 0 OR EN-BURN(L-ROW) > 0 OR EN-VX(L-ROW) NOT = 0 OR EN-VZ(L-ROW) NOT = 0 OR EN-FALL(L-ROW) > 0
+             OR EN-MOUNT(L-ROW) > 0 OR EN-PASS(L-ROW) > 0 OR EN-RIDER(L-ROW) > 0
+         GOBACK
+     END-IF
+     CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
+     IF WS-SLOT = 0 OR VL-SLEEP(WS-SLOT) = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-NEW = EN-Y(L-ROW) + EN-VY(L-ROW)
+     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) WS-NEW EN-Z(L-ROW) WS-HIT WS-TOP
+     COMPUTE WS-FEET = WS-TOP + 1
+     IF WS-HIT = 1 AND EN-VY(L-ROW) <= 0 AND EN-Y(L-ROW) = WS-FEET
+         MOVE 1 TO L-SETTLED
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-SETTLED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-STEP.
 *> USING tracker row: nothing for a row that is no standard mob. A hostile mob is removed while the difficulty is Peaceful or the hostile-mobs
 *> setting is off. A dying mob (health 0) counts its death ticks (EN-COOLDOWN) and vanishes at the 20th (STDMOB-VANISH). Nothing else happens in a
@@ -931,6 +969,7 @@
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
  01 WS-V-ASLEEP            BINARY-LONG.
+ 01 WS-SETTLED             BINARY-LONG.
  01 WS-LIFE-WALK           BINARY-LONG.
  01 WS-LIFE-HX             FLOAT-LONG.
  01 WS-LIFE-HZ             FLOAT-LONG.
@@ -1037,7 +1076,14 @@
          GOBACK
      END-IF
 *>   Fire, lava, drowning, in-wall damage and cramming (18 section 2.5); a mob that dies of them is not stepped any further.
-     CALL "M182-ENV-TICK" USING WS-ROW
+*>   A villager asleep and settled (STDMOB-SETTLED) has it on one tick in 5 and no physics step between.
+     MOVE 0 TO WS-SETTLED
+     IF SM-KEY(WS-M) = "villager"
+         CALL "STDMOB-SETTLED" USING WS-ROW WS-SETTLED
+     END-IF
+     IF WS-SETTLED = 0 OR FUNCTION MOD(CW-TICKS + EN-ID(WS-ROW), 5) = 0
+         CALL "M182-ENV-TICK" USING WS-ROW
+     END-IF
      CALL "STDMOB-FIRE-SYNC" USING WS-ROW
      IF EN-HEALTH(WS-ROW) = 0
          GOBACK
@@ -1381,6 +1427,10 @@
                  CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              END-IF
      END-EVALUATE
+*>   A settled sleeper stands where it is: the physics step, friction, the fall and the egg checks would set the numbers they already have.
+     IF WS-SETTLED = 1 AND WS-V-ASLEEP = 1
+         GOBACK
+     END-IF
 *>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.
 *>   Over a block of friction F above 0.6 (ice, 18 section 3.2) the walk only accelerates by 0.454 x 0.21600002 / F^3 of its step, and EN-VX, EN-VZ
 *>   carry the velocity with a decay of F x 0.91.
