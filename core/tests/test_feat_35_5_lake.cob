@@ -325,6 +325,66 @@
      MOVE 0 TO WS-EXP
      PERFORM ASSERT-N
 
+*>   a lake whose pool reaches the chunk border (the chunk is x 16 to 31; origin x 12 puts a quarter of the window outside): it is placed, cut at the border (cells of the
+*>   neighbour are neither tested nor written: no overflow entry, nothing discarded) and whole inside the chunk
+     MOVE "minecraft:lake_lava" TO WS-FTKEY
+     CALL "FD-GET-FT" USING WS-FTKEY WS-FT
+     MOVE 5 TO WS-SEED
+     PERFORM NEW-WORLD
+     MOVE 20 TO WS-X
+     CALL "WGR-SET-SEED" USING XR2-STATE WS-SEED
+     PERFORM REPLAY-MASK
+     MOVE WS-MASK2 TO WS-MASK
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 15
+             PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 7
+                 COMPUTE WS-INDEX = (WS-I * 16 + WS-K) * 8 + WS-J + 1
+                 IF WS-MASK(WS-INDEX:1) = "1"
+                     ADD 1 TO WS-N
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     MOVE "35-5§3.2 chunk border: the pool of the test has cells outside the chunk" TO WS-CASE
+     MOVE 1 TO WS-OBS
+     IF WS-N = 0
+         MOVE 0 TO WS-OBS
+     END-IF
+     MOVE 1 TO WS-EXP
+     PERFORM ASSERT-N
+     CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-X WS-Y WS-Z WS-RESULT
+     MOVE "35-5§3.2 chunk border: a lake that reaches the chunk border is placed" TO WS-CASE
+     MOVE WS-RESULT TO WS-OBS
+     MOVE 1 TO WS-EXP
+     PERFORM ASSERT-N
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 4 BY 1 UNTIL WS-I > 15
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 15
+             PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 7
+                 COMPUTE WS-INDEX = (WS-I * 16 + WS-K) * 8 + WS-J + 1
+                 COMPUTE WS-X = 12 + WS-I
+                 COMPUTE WS-Y = 66 + WS-J
+                 COMPUTE WS-Z = 32 + WS-K
+                 CALL "FL-GET-STATE" USING WS-X WS-Y WS-Z WS-STATE
+                 IF WS-MASK(WS-INDEX:1) = "1" AND WS-J < 4 AND WS-STATE NOT = WS-LAVA
+                     ADD 1 TO WS-BAD
+                 END-IF
+                 IF WS-MASK(WS-INDEX:1) = "1" AND WS-J >= 4 AND WS-STATE NOT = WS-CAVE
+                     ADD 1 TO WS-BAD
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     MOVE "35-5§3.2 chunk border: the pool is lava and cave air in every cell inside the chunk" TO WS-CASE
+     MOVE WS-BAD TO WS-OBS
+     MOVE 0 TO WS-EXP
+     PERFORM ASSERT-N
+     MOVE "35-5§3.2 chunk border: nothing was written outside the chunk (no overflow entry)" TO WS-CASE
+     MOVE FL-OV-COUNT TO WS-OBS
+     MOVE 0 TO WS-EXP
+     PERFORM ASSERT-N
+
 *>   an air barrier is not drawn and not written
      MOVE "minecraft:lake_air_barrier" TO WS-FTKEY
      CALL "FD-GET-FT" USING WS-FTKEY WS-FT

@@ -3,8 +3,8 @@
 *> cave_air), FR-LAKE places it: a lumpy pool of 4 to 7 ellipsoids in a 16 x 8 x 16 window whose lower four layers are the fluid and the upper four cave air, lined with the barrier.
 *> The blobs use the doubles of the document in the decimal arithmetic of the compiler (deterministic, as the fancy trunk); the per-axis squares of an ellipsoid are computed once per
 *> axis, and the sums are added in the order nx, ny, nz. Deviations: the cave_air tick and the post-processing marks of steps 6 and 7 are not made (the generator has no tick queue and
-*> no post-processing list); a cell outside the chunk reads as air and its writes are discarded (the write window is the chunk), so a lake whose blobs reach the chunk border fails its
-*> validity pass. The freeze pass of step 8 (water lakes only) is FR-LAKE-FREEZE: it tests the cells of layer 4 as the document says, and the temperature is FR-TEMPERATURE of
+*> no post-processing list); the window of the level is the chunk and the terrain of a neighbour is not known: the cells of the pool outside the chunk are not tested (the
+*> validity pass skips a border cell outside), not written and draw nothing in the barrier pass (the pool is cut at the chunk border, no overflow entry). The freeze pass of step 8 (water lakes only) is FR-LAKE-FREEZE: it tests the cells of layer 4 as the document says, and the temperature is FR-TEMPERATURE of
 *> core/src/feat-freeze.cob (WA-I(2) is the block index of ice, 0 when the block table has none: no freeze pass).
 *>
 *> Entry points: FD-LAKE-NODE USING doc, node, row out (FD-BAD set when the feature cannot be placed whole); FR-LAKE-MASK USING state, mask out (PIC X(2048): the digits 0 and 1, cell
@@ -172,6 +172,9 @@
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-FLAGS               BINARY-LONG VALUE 2.
  01 WS-FAIL                BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
  01 WS-SOLID               BINARY-LONG.
  01 WS-DIRS.
     05 FILLER BINARY-LONG VALUE -1.
@@ -247,10 +250,19 @@
          PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 15 OR WS-FAIL = 1
              PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 7 OR WS-FAIL = 1
                  COMPUTE WS-INDEX = (WS-X * 16 + WS-Z) * 8 + WS-Y + 1
+                 MOVE 0 TO WS-IN
                  IF WS-BORDER(WS-INDEX:1) = "1"
                      COMPUTE WS-PX = WS-OX + WS-X
                      COMPUTE WS-PY = WS-OY + WS-Y
                      COMPUTE WS-PZ = WS-OZ + WS-Z
+                     COMPUTE WS-LX = WS-PX - FL-CX * 16
+                     COMPUTE WS-LZ = WS-PZ - FL-CZ * 16
+                     IF WS-LX >= 0 AND WS-LX <= 15 AND WS-LZ >= 0 AND WS-LZ <= 15
+                         MOVE 1 TO WS-IN
+                     END-IF
+                 END-IF
+*>               a border cell outside the chunk is not known (the neighbour's terrain is not generated yet): it is not tested
+                 IF WS-IN = 1
                      CALL "FL-GET-STATE" USING WS-PX WS-PY WS-PZ WS-STATE
                      CALL "FL-CLASS" USING WS-STATE WS-CLASS
                      CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
@@ -283,10 +295,19 @@
          PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 15
              PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 7
                  COMPUTE WS-INDEX = (WS-X * 16 + WS-Z) * 8 + WS-Y + 1
+                 MOVE 0 TO WS-IN
                  IF WS-MASK(WS-INDEX:1) = "1"
                      COMPUTE WS-PX = WS-OX + WS-X
                      COMPUTE WS-PY = WS-OY + WS-Y
                      COMPUTE WS-PZ = WS-OZ + WS-Z
+                     COMPUTE WS-LX = WS-PX - FL-CX * 16
+                     COMPUTE WS-LZ = WS-PZ - FL-CZ * 16
+                     IF WS-LX >= 0 AND WS-LX <= 15 AND WS-LZ >= 0 AND WS-LZ <= 15
+                         MOVE 1 TO WS-IN
+                     END-IF
+                 END-IF
+*>               the pool is cut at the chunk border: the cells of the neighbour are left to its terrain
+                 IF WS-IN = 1
                      MOVE WA-PR(WS-ROW, 2) TO WS-K
                      CALL "FR-PRED-TEST" USING WS-K WS-PX WS-PY WS-PZ WS-TEST
                      IF WS-TEST = 1
@@ -313,10 +334,15 @@
                          IF WS-Y >= 4
                              CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-TWO WS-DRAW
                          END-IF
+                         COMPUTE WS-PX = WS-OX + WS-X
+                         COMPUTE WS-PZ = WS-OZ + WS-Z
+                         COMPUTE WS-LX = WS-PX - FL-CX * 16
+                         COMPUTE WS-LZ = WS-PZ - FL-CZ * 16
+                         IF WS-LX < 0 OR WS-LX > 15 OR WS-LZ < 0 OR WS-LZ > 15
+                             MOVE 0 TO WS-DRAW
+                         END-IF
                          IF WS-DRAW = 1
-                             COMPUTE WS-PX = WS-OX + WS-X
                              COMPUTE WS-PY = WS-OY + WS-Y
-                             COMPUTE WS-PZ = WS-OZ + WS-Z
                              CALL "FL-GET-STATE" USING WS-PX WS-PY WS-PZ WS-STATE
                              CALL "FL-CLASS" USING WS-STATE WS-CLASS
                              CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
