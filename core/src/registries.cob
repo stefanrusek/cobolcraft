@@ -26,7 +26,8 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-BIOME               PIC X(24) VALUE "minecraft:worldgen/biome".
- 01 WS-NBT-LENGTH          BINARY-LONG.
+ 01 WS-DIMENSION-TYPE     PIC X(24) VALUE "minecraft:dimension_type".
+ 01 WS-NBT-LENGTH         BINARY-LONG.
  01 WS-NBT-STATUS          BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
@@ -55,7 +56,12 @@
          IF WS-REGISTRY = WS-BIOME AND WS-LENGTH > 0 AND WS-PAYLOAD(1:1) = "{"
              CALL "BIOME-NBT" USING WS-PAYLOAD WS-LENGTH PB-BUFFER WS-NBT-STATUS
          ELSE
-             CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
+*>           the same for a dimension type (registry-dimension.cob)
+             IF WS-REGISTRY = WS-DIMENSION-TYPE AND WS-LENGTH > 0 AND WS-PAYLOAD(1:1) = "{"
+                 CALL "DIMENSION-TYPE-NBT" USING WS-PAYLOAD WS-LENGTH PB-BUFFER WS-NBT-STATUS
+             ELSE
+                 CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

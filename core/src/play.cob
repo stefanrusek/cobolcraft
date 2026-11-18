@@ -617,6 +617,47 @@
  END PROGRAM PLAY-RESPAWN-BUILD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. DIM-TYPE-ID.
+*> USING dimension row (BINARY-LONG), dimension type id out (BINARY-LONG): the id the client knows the row's dimension type by, which is the
+*> position of its key in the Registry Data of minecraft:dimension_type that the open content set sends (04 section 4: ids follow the order received;
+*> a standard set sends its files in the order the pack lists them, so the Nether's id is not the table's DM-TYPE-ID). A type the registry does not
+*> hold (a content set without that registry) keeps the table's DM-TYPE-ID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY DIMENSIONS.
+ 01 WS-REGISTRY            PIC X(112) VALUE "minecraft:dimension_type".
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-WANT                PIC X(112).
+ 01 WS-PAYLOAD             PIC X(65536).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-ID.
+     MOVE DM-TYPE-ID(L-DIM) TO L-ID
+     MOVE SPACES TO WS-WANT
+     MOVE DM-TYPE-KEY(L-DIM) TO WS-WANT
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
+     IF WS-STATUS NOT = CT-OK
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-ENTRY FROM 0 BY 1 UNTIL WS-ENTRY >= WS-COUNT
+         CALL "CONTENT-REGISTRY-ENTRY" USING WS-REGISTRY WS-ENTRY WS-KEY WS-KEY-LENGTH WS-PAYLOAD
+             WS-CAPACITY WS-LENGTH WS-STATUS
+         IF WS-KEY = WS-WANT
+             MOVE WS-ENTRY TO L-ID
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DIM-TYPE-ID.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
 *> USING dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
 *> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2): dimension type id, dimension key,
@@ -633,13 +674,15 @@
  01 WS-SEED                BINARY-DOUBLE VALUE 0.
  01 WS-MODE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
+ 01 WS-TYPE-ID             BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  01 L-MODE                 PIC 9.
  PROCEDURE DIVISION USING L-DIM L-MODE PB-BUFFER.
      MOVE L-DIM TO WS-DIM
-     CALL "PB-PUT-VARINT" USING PB-BUFFER DM-TYPE-ID(WS-DIM)
+     CALL "DIM-TYPE-ID" USING WS-DIM WS-TYPE-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE-ID
      CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DIM) DM-KEY-LENGTH(WS-DIM)
      CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
      MOVE L-MODE TO WS-MODE
