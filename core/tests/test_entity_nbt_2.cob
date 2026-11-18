@@ -105,7 +105,7 @@
      PERFORM WRITE-CHUNK
      UNSTRING WS-TEXT DELIMITED BY ",CanPickUpLoot" INTO WS-HEAD WS-TAIL
      MOVE "acceptance US15 45-2 zombie: Mob keys written every time, then IsBaby and the equipment slots" TO TL-CASE
-     MOVE ":0,PersistenceRequired:1,LeftHanded:0,IsBaby:0,equipment:{mainhand:{id:minecraft:iron_sword,count:1},head:{id:minecraft:iron_helmet,count:1,components:{minecraft:damage:7}},chest:{id:minecraft:iron_chestplate,count:1},legs:{id:minecraft:iron_leggings,count:1}}}]" TO TL-EXPECTED
+     MOVE ":0,PersistenceRequired:1,LeftHanded:0,IsBaby:0,CanBreakDoors:0,InWaterTime:-1,DrownedConversionTime:-1,equipment:{mainhand:{id:minecraft:iron_sword,count:1},head:{id:minecraft:iron_helmet,count:1,components:{minecraft:damage:7}},chest:{id:minecraft:iron_chestplate,count:1},legs:{id:minecraft:iron_leggings,count:1}}}]" TO TL-EXPECTED
      MOVE WS-TAIL(1:FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

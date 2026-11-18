@@ -183,6 +183,7 @@
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
      END-IF
      CALL "SPECIES4-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+     CALL "HOSTILE5-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
      CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
