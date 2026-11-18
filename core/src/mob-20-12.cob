@@ -14,6 +14,7 @@
 *>   STDMOB-PHANTOM-CIRCLE USING row, roll 1 (0 to 349), roll 2 (0 to 249), roll 3 (0 to 449), float roll (0 to 999), angle roll (0 to 999): the per-tick changes of the
 *>     circle goal (a to d of 20 section 12; the block tests e and f are open).
 *>   STDMOB-PHANTOM-MOVE USING row: the move control (steps 2 to 8; the horizontal-collision turn of step 1 is open).
+*>   STDMOB-PHANTOM-TRAVEL USING row: the flying travel (12.1): the move by the velocity, then the velocity times 0.91 (air), 0.8 (water) or 0.5 (lava).
 *>   STDMOB-PHANTOM-STOP USING row: the attack strategy stops (the target is gone): with the anchor set it becomes the column top (the MOTION_BLOCKING height, taken as one above the highest
 *>     block) at the anchor's x and z plus 10 + nextInt(20).
 *>   STDMOB-PHANTOM-TICK USING row, table row: one tick of a phantom: daylight burning, the target (scan every 60 ticks, highest player within 16, 64, 16), the attack
@@ -359,6 +360,53 @@
  END PROGRAM STDMOB-PHANTOM-MOVE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-PHANTOM-TRAVEL.
+*> USING row: the flying travel of 20 section 12.1 after the move control: the phantom moves by its velocity, then the velocity is multiplied by 0.91 in air, 0.8 in
+*> water (the box touches water) or 0.5 in lava, tested in the order water, lava, air (travelFlying(input, 0.2): the 0.2 is an input acceleration, and the input of a
+*> phantom is 0). The factors are the floats 0.91f and 0.8f widened. Blocks do not stop the move here (the collision and the turn on a horizontal collision are open).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-GROUND              BINARY-LONG VALUE 0.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-KIND-WATER          BINARY-LONG VALUE 1.
+ 01 WS-KIND-LAVA           BINARY-LONG VALUE 2.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-LAVA                BINARY-LONG.
+ 01 WS-FACTOR              FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     COMPUTE WS-X = EN-X(L-ROW) + EN-VX(L-ROW)
+     COMPUTE WS-Y = EN-Y(L-ROW) + EN-VY(L-ROW)
+     COMPUTE WS-Z = EN-Z(L-ROW) + EN-VZ(L-ROW)
+     MOVE EN-YAW(L-ROW) TO WS-YAW
+     MOVE EN-PITCH(L-ROW) TO WS-PITCH
+*>   The medium is that of the cell before the move (the box of 0.5 x (1 + 0.15 x size)).
+     COMPUTE WS-HEIGHT = 0.5 * (1 + 0.15 * EN-VARIANT(L-ROW))
+     CALL "M182-FLUID" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-HEIGHT WS-KIND-WATER WS-WET
+     CALL "M182-FLUID" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-HEIGHT WS-KIND-LAVA WS-LAVA
+     MOVE 0.9100000262260437 TO WS-FACTOR
+     IF WS-WET = 1
+         MOVE 0.800000011920929 TO WS-FACTOR
+     ELSE
+         IF WS-LAVA = 1
+             MOVE 0.5 TO WS-FACTOR
+         END-IF
+     END-IF
+     CALL "ENTITY-MOVE" USING L-ROW WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-GROUND
+     COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * WS-FACTOR
+     COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * WS-FACTOR
+     COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * WS-FACTOR
+     GOBACK.
+ END PROGRAM STDMOB-PHANTOM-TRAVEL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-PHANTOM-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -386,12 +434,6 @@
  01 WS-TX                  BINARY-LONG.
  01 WS-TY                  BINARY-LONG.
  01 WS-TZ                  BINARY-LONG.
- 01 WS-YAW                 FLOAT-SHORT.
- 01 WS-PITCH               FLOAT-SHORT.
- 01 WS-X                   FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-Z                   FLOAT-LONG.
- 01 WS-GROUND              BINARY-LONG VALUE 0.
  01 WS-SCALE               FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-E                   BINARY-LONG.
@@ -529,12 +571,7 @@
          CALL "STDMOB-PHANTOM-CIRCLE" USING L-ROW WS-R1 WS-R2 WS-R3 WS-RF WS-RA
      END-IF
      CALL "STDMOB-PHANTOM-MOVE" USING L-ROW
-     COMPUTE WS-X = EN-X(L-ROW) + EN-VX(L-ROW)
-     COMPUTE WS-Y = EN-Y(L-ROW) + EN-VY(L-ROW)
-     COMPUTE WS-Z = EN-Z(L-ROW) + EN-VZ(L-ROW)
-     MOVE EN-YAW(L-ROW) TO WS-YAW
-     MOVE EN-PITCH(L-ROW) TO WS-PITCH
-     CALL "ENTITY-MOVE" USING L-ROW WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-GROUND
+     CALL "STDMOB-PHANTOM-TRAVEL" USING L-ROW
      GOBACK.
  END PROGRAM STDMOB-PHANTOM-TICK.
 
