@@ -43,6 +43,7 @@
  01 WS-OUT                 PIC X(512).
  01 WS-OUT-LENGTH          BINARY-LONG.
  01 WS-BAD                 BINARY-LONG.
+ 01 WS-BLOCK               PIC X(16).
  01 WS-KEYC                BINARY-LONG.
  01 WS-KEYS.
     05 FILLER PIC X(80) VALUE "createWorld.customize.flat.title".
@@ -397,6 +398,24 @@
      MOVE SPACES TO TL-OBSERVED
      STRING WS-E1 " " WS-E2 " " WS-E3 " " WS-E4 DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "1 1 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A lava layer shows the lava bucket (56 6.2; no preset has one); an unknown working preset lists as the default.
+     MOVE "lava" TO WS-BLOCK
+     CALL "FLAT-LAYER-NAME" USING CLIENT-STATE WS-BLOCK WS-OUT WS-OUT-LENGTH
+     MOVE "superflat a lava layer shows as lava_bucket (no language text in the built-in language)" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "lava_bucket" TO TL-EXPECTED
+     MOVE WS-OUT(1:WS-OUT-LENGTH) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "bogus" TO SP-FLAT-WORK
+     MOVE SCR-FLAT-EDIT TO SM-SCREEN
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "superflat an unknown working preset id lists the default preset's layers" TO TL-CASE
+     MOVE "Superflat Customization|Layer Material|Height|grass_block|Top - 1|dirt|2|bedrock|Bottom - 1|Presets|Done|Cancel"
+         TO TL-EXPECTED
+     MOVE FUNCTION TRIM(WS-TEXT) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The language keys of 56 6.5 are in the built-in language with their English texts.
