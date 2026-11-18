@@ -294,6 +294,7 @@
  01 WS-WL-NAME             PIC X(24) VALUE "waterlogged".
  01 WS-WL-TEXT             PIC X(32).
  01 WS-WL-MODE             BINARY-LONG VALUE 2.
+ 01 WS-STACKED             BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -302,6 +303,12 @@
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND L-PLACED-STATE L-PLACED.
      MOVE 0 TO L-PLACED
      MOVE PL-DIM(CN-PLAYER(L-ID)) TO WS-DIM
+*>   A segmented block (petals, wildflowers, leaf litter) clicked with its own item gains a segment instead (segment-place.cob).
+     CALL "SEG-STACK" USING L-ID PLAY-SERVERBOUND L-PLACED-STATE WS-STACKED
+     IF WS-STACKED = 1
+         MOVE 1 TO L-PLACED
+         GOBACK
+     END-IF
 *>   Face offsets, each digit minus 1: down (0,-1,0), up (0,1,0), north (0,0,-1), south (0,0,1),
 *>   west (-1,0,0), east (1,0,0).
      COMPUTE WS-X = PSB-BX + WS-OFF-X(PSB-FACE + 1) - 1
@@ -318,6 +325,7 @@
                  MOVE CR-CARDSTACK-X TO WS-STATE
          END-EVALUATE
      END-IF
+     CALL "SEG-FACING" USING L-ID WS-STATE
      IF WS-Y < DM-MIN-Y(WS-DIM) OR WS-Y >= DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM)
          GOBACK
      END-IF
