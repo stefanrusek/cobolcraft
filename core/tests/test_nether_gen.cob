@@ -411,11 +411,11 @@
 
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-RESPAWN-BUILD" USING DIM-STANDARD-NETHER WS-MODE WS-KEEP PB-BUFFER
-     MOVE "test nether gen Respawn into the nether: type id 1, key length 20, sea level 32, data to keep 3" TO TL-CASE
+     MOVE "test nether gen Respawn into the nether: type id 3 (its place in the dimension_type registry the real data sends: overworld, overworld_caves, the_end, the_nether), key length 20, sea level 32, data to keep 3" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION HEX-OF(WS-BYTES(1:3)) TO TL-OBSERVED(1:6)
      MOVE FUNCTION HEX-OF(WS-BYTES(PB-LENGTH - 1:2)) TO TL-OBSERVED(8:4)
-     MOVE "540114 2003" TO TL-EXPECTED
+     MOVE "540314 2003" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "PB-RESET" USING PB-BUFFER

@@ -920,6 +920,8 @@
  01 WS-HZ                  FLOAT-LONG.
  01 WS-FRICTION            FLOAT-LONG.
  01 WS-ICE-SCALE           FLOAT-LONG.
+ 01 WS-STROLL-SCALE        FLOAT-LONG.
+ 01 WS-CUBE                BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
@@ -1273,6 +1275,10 @@
      IF SM-KEY(WS-M) = "snow_golem"
          CALL "SNOW-GOLEM-TICK" USING WS-ROW WS-M
      END-IF
+     MOVE 0 TO WS-CUBE
+     IF SM-KEY(WS-M) = "slime" OR "magma_cube"
+         MOVE 1 TO WS-CUBE
+     END-IF
      MOVE 0 TO WS-AVOID
      IF SM-FUSE(WS-M) > 0 AND WS-STOP = 0
          CALL "STDMOB-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
@@ -1315,7 +1321,7 @@
              COMPUTE WS-LEAP-ROLL = FUNCTION MOD(WS-R, 5)
              CALL "STDMOB-LEAP" USING WS-ROW WS-M WS-LEAP-ROLL WS-LEAPT
              COMPUTE WS-REACH = SM-REACH-MILLI / 1000
-             IF FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH
+             IF (FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH) AND WS-CUBE = 0
                  COMPUTE WS-GX = FUNCTION INTEGER(PL-X(WS-P))
                  COMPUTE WS-GY = FUNCTION INTEGER(PL-Y(WS-P))
                  COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
@@ -1380,6 +1386,9 @@
              MOVE WS-TEMPT-HZ TO WS-HZ
              MOVE WS-TEMPT-YAW TO WS-YAW
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN WS-CUBE = 1
+*>           A slime or magma cube never walks: it hops (STDMOB-CUBE-HOP below), at random or at its target.
+             CONTINUE
          WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem" OR "giant"
 *>           A golem does not stroll (nor does the giant, which has no goals): the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
@@ -1403,6 +1412,10 @@
                  COMPUTE WS-GY = FUNCTION INTEGER(EN-Y(WS-ROW))
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M EN-DEST-X(WS-ROW) WS-GY EN-DEST-Z(WS-ROW) WS-HX WS-HZ
                      WS-ARRIVED
+*>               The stroll goal's own speed modifier (the table speed is the chase or attack speed of modifier 1.0).
+                 CALL "STDMOB-STROLL-SCALE" USING SM-KEY(WS-M) WS-STROLL-SCALE
+                 COMPUTE WS-HX = WS-HX * WS-STROLL-SCALE
+                 COMPUTE WS-HZ = WS-HZ * WS-STROLL-SCALE
                  IF WS-ARRIVED = 1
                      MOVE 0 TO EN-COOLDOWN(WS-ROW)
                  END-IF
@@ -1444,6 +1457,10 @@
      END-IF
      IF WS-FLIER = 1
          GOBACK
+     END-IF
+*>   A slime or magma cube walks only in its jumps (CubeMobMoveControl, 44 part 6 section 9.3; 20 section 10: the hop's own motion).
+     IF WS-CUBE = 1
+         CALL "CUBE-HOP" USING WS-ROW WS-M WS-HX WS-HZ WS-YAW
      END-IF
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
