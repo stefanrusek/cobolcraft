@@ -2,8 +2,8 @@
     05 FILLER.
        10 FILLER PIC X(24) VALUE "villager".
        10 FILLER BINARY-LONG VALUE 20.  *> max health (the mob default)
-       10 FILLER BINARY-LONG VALUE 551.  *> speed x 1000 (0.5 squared / 0.454)
-       10 FILLER BINARY-LONG VALUE 1239.  *> panic speed (0.5 x 1.5 squared / 0.454)
+       10 FILLER BINARY-LONG VALUE 138.  *> speed x 1000: the brain's base speed modifier 0.5 x movement_speed 0.5 = 0.25, squared / 0.454 (19 sections 22.1 and 22.3)
+       10 FILLER BINARY-LONG VALUE 310.  *> panic speed: the panic activity's 0.5 x 1.5 x 0.5 = 0.375, squared / 0.454
        10 FILLER BINARY-LONG VALUE 0.  *> kind (0 passive)
        10 FILLER BINARY-LONG VALUE 0.  *> attack damage
        10 FILLER BINARY-LONG VALUE 16.  *> follow range
