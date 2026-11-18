@@ -247,6 +247,13 @@
                  COMPUTE EN-TS(WS-ROW) = 0.1 + FUNCTION MOD(WS-ID * 37, 100) / 1000
                  MOVE 0 TO EN-FA(WS-ROW)
                  MOVE 0 TO EN-TGT(WS-ROW)
+                 MOVE 0 TO EN-AX-PD(WS-ROW)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                     MOVE 0 TO EN-AX-T(WS-ROW, WS-I) EN-AX-O(WS-ROW, WS-I)
+                 END-PERFORM
+                 MOVE 0 TO EN-AX-BS(WS-ROW) EN-AX-BT(WS-ROW)
+                 MOVE WS-PITCH TO EN-AX-XR(WS-ROW)
+                 MOVE WS-YAW TO EN-AX-YR(WS-ROW)
                  MOVE 0 TO EN-BHT(WS-ROW) EN-BHD(WS-ROW) EN-BDM(WS-ROW) EN-BBT(WS-ROW) EN-BBM(WS-ROW) EN-BBA(WS-ROW) EN-BUW(WS-ROW)
                  MOVE 22 TO EN-FL(WS-ROW)
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)

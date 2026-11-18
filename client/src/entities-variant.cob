@@ -94,6 +94,9 @@
                  MOVE 0 TO EN-RS(L-ROW)
              END-IF
              MOVE L-INT TO EN-TGT(L-ROW)
+*>   An axolotl's playing-dead flag (entry 19, BOOLEAN, 19 section 18).
+         WHEN EN-KEY(L-ROW) = "axolotl" AND L-INDEX = 19 AND L-SERIALIZER = 8
+             MOVE L-INT TO EN-AX-PD(L-ROW)
          WHEN OTHER
              CONTINUE
      END-EVALUATE

@@ -253,6 +253,10 @@
          CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
          CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
          MOVE WS-L-BABY(WS-I) TO EN-BABY(1)
+*>       An axolotl that has been in the water for ten ticks (34-8 4.5: the in-water animator is full).
+         IF WS-NAME = "axolotl"
+             MOVE 10 TO EN-AX-T(1, 2) EN-AX-O(1, 2)
+         END-IF
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
          MOVE RL-EN-COUNT TO WS-N0
          CALL "POSE-SUM" USING CLIENT-STATE WS-REST

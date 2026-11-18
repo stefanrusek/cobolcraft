@@ -530,6 +530,8 @@
      IF EN-KEY(WS-ROW) = "ender_dragon"
          MOVE EN-DR-HEAD TO WS-KN(33)
      END-IF
+     COMPUTE WS-KN(36) = EN-AX-T(WS-ROW, 1) + EN-AX-T(WS-ROW, 2) * 11 + EN-AX-T(WS-ROW, 3) * 121 + EN-AX-T(WS-ROW, 4) * 1331
+         + EN-AX-BS(WS-ROW) * 20000 + EN-AX-BT(WS-ROW) * 200000
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
@@ -680,6 +682,15 @@
      MOVE EN-TM(WS-ROW) TO WS-I(14)
      MOVE EN-ATK(WS-ROW) TO WS-I(13)
      MOVE EN-FLW(WS-ROW) TO WS-I(12)
+*>   An axolotl's animator factors at the partial tick 1 (34-8 4.5): 8 playing dead, 9 in water, 10 on the ground, 11 moving.
+     IF EN-KEY(WS-ROW) = "axolotl"
+         MOVE EN-AX-BS(WS-ROW) TO WS-I(5)
+         MOVE EN-AX-BT(WS-ROW) TO WS-I(6)
+         MOVE 1 TO WS-FP
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
+             CALL "EF8-BINARY-FACTOR" USING EN-AX-T(WS-ROW, WS-J) EN-AX-O(WS-ROW, WS-J) WS-FP WS-I(WS-J + 7)
+         END-PERFORM
+     END-IF
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN

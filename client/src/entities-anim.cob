@@ -134,6 +134,10 @@
                      MOVE 1 TO EN-DRY(WS-R)
                  END-IF
              END-IF
+*>           The axolotl's four BinaryAnimators (34-8 4.5, baby and adult).
+             IF EN-KEY(WS-R) = "axolotl"
+                 CALL "ENTITY-AXOLOTL-TICK" USING CLIENT-STATE WS-R
+             END-IF
 *>           The iron golem's attack and offer-flower ticks fall by 1 a tick (34-3 7).
              IF EN-KEY(WS-R) = "iron_golem"
                  IF EN-ATK(WS-R) > 0
@@ -262,6 +266,65 @@
      MOVE PL-Z TO PL-ANIM-OZ
      GOBACK.
  END PROGRAM ENTITIES-ANIM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-AXOLOTL-TICK.
+*> USING CLIENT-STATE, replica row of an axolotl (a baby also chooses its animation state): Axolotl.baseTick on the client (34-8 4.5): the exclusive state by priority (playing dead, in water: the cell at the middle of the box holds water,
+*> on the ground) and the moving flag (the walk speed above 1.0E-5, or a rotation different from the previous tick's) tick the four animators (EN-AX-T, EN-AX-O: 1 playing dead,
+*> 2 in water, 3 on the ground, 4 moving; EF8-BINARY-TICK); the rotation of this tick is kept for the next. Called by ENTITIES-ANIM-TICK after the walk animation.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-STATE.
+    05 WS-ST               BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-FLAGS.
+    05 WS-FL               BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-NEW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW.
+     CALL "ENTITY-IN-WATER" USING CLIENT-STATE L-ROW WS-WET
+     MOVE EN-AX-PD(L-ROW) TO WS-ST(1)
+     MOVE WS-WET TO WS-ST(2)
+     MOVE EN-ON-GROUND(L-ROW) TO WS-ST(3)
+     MOVE 0 TO WS-ST(4)
+     IF EN-WALK-SPEED(L-ROW) > 0.00001 OR EN-PITCH(L-ROW) NOT = EN-AX-XR(L-ROW) OR EN-YAW(L-ROW) NOT = EN-AX-YR(L-ROW)
+         MOVE 1 TO WS-ST(4)
+     END-IF
+     CALL "EF8-AXOLOTL-STATE" USING WS-STATE WS-FLAGS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         CALL "EF8-BINARY-TICK" USING EN-AX-T(L-ROW, WS-I) EN-AX-O(L-ROW, WS-I) WS-FL(WS-I)
+     END-PERFORM
+*>   A baby has one animation state started with startIfStopped(tickCount) (4.5): playing dead; else moving: in water and off the ground swim, out of water on the ground walk, else
+*>   walk underwater; else resting: in water off the ground idle underwater, in water on the ground idle underwater on the ground, else idle on the ground. The tick count is EN-AGE.
+     IF EN-BABY(L-ROW) = 1
+         EVALUATE TRUE
+             WHEN EN-AX-PD(L-ROW) NOT = 0
+                 MOVE 7 TO WS-NEW
+             WHEN WS-ST(4) NOT = 0 AND WS-WET NOT = 0 AND EN-ON-GROUND(L-ROW) = 0
+                 MOVE 1 TO WS-NEW
+             WHEN WS-ST(4) NOT = 0 AND WS-WET = 0 AND EN-ON-GROUND(L-ROW) NOT = 0
+                 MOVE 2 TO WS-NEW
+             WHEN WS-ST(4) NOT = 0
+                 MOVE 3 TO WS-NEW
+             WHEN WS-WET NOT = 0 AND EN-ON-GROUND(L-ROW) = 0
+                 MOVE 4 TO WS-NEW
+             WHEN WS-WET NOT = 0
+                 MOVE 5 TO WS-NEW
+             WHEN OTHER
+                 MOVE 6 TO WS-NEW
+         END-EVALUATE
+         IF WS-NEW NOT = EN-AX-BS(L-ROW)
+             MOVE WS-NEW TO EN-AX-BS(L-ROW)
+             MOVE EN-AGE(L-ROW) TO EN-AX-BT(L-ROW)
+         END-IF
+     END-IF
+     MOVE EN-PITCH(L-ROW) TO EN-AX-XR(L-ROW)
+     MOVE EN-YAW(L-ROW) TO EN-AX-YR(L-ROW)
+     GOBACK.
+ END PROGRAM ENTITY-AXOLOTL-TICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-HURT.

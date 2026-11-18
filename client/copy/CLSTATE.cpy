@@ -774,6 +774,17 @@
 *>        Guardian (34-6 11.4, ENTITIES-ANIM-TICK; the squid fields are reused: EN-TS tail speed, EN-TM tail animation, EN-TA spikes animation, EN-RS attack time; EN-X1 the
 *>        moving flag, entry 16): the active attack target's entity id (entry 17, 0 none).
           15 EN-TGT          BINARY-LONG.
+*>        Axolotl (34-8 4.5, ENTITY-AXOLOTL-TICK): playing dead (entry 19, BOOLEAN), the ticks of the four BinaryAnimators (1 playing dead, 2 in water, 3 on the ground, 4 moving; 0 to 10)
+*>        and their value one tick earlier, and the rotation at the previous tick (the moving flag reads a change of it).
+          15 EN-AX-PD        BINARY-LONG.
+          15 EN-AX-T         BINARY-LONG OCCURS 4 TIMES.
+          15 EN-AX-O         BINARY-LONG OCCURS 4 TIMES.
+          15 EN-AX-XR        FLOAT-LONG.
+          15 EN-AX-YR        FLOAT-LONG.
+*>        A baby axolotl's animation state (4.5): 0 none (an adult), 1 swim, 2 walk, 3 walk underwater, 4 idle underwater, 5 idle underwater on the ground, 6 idle on the ground, 7 play dead,
+*>        and the tick count at which it started (AnimationState.startIfStopped).
+          15 EN-AX-BS        BINARY-LONG.
+          15 EN-AX-BT        BINARY-LONG.
 *>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
 *>        and angle in degrees, and 1 when the boat is under water.
           15 EN-BHT          FLOAT-LONG.
