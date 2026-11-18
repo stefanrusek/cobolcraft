@@ -276,7 +276,7 @@
      CALL "BLOCK-DROPS" USING L-DIM L-X WS-DROP-Y L-Z WS-DROP-STATE WS-BLOCK L-ROW
 *>   Ice that was broken leaves water (29b 7.1 playerDestroy).
      CALL "ICE-AFTER-BREAK" USING L-DIM L-X L-Y L-Z WS-STATE L-ROW
-     CALL "STDMOB-INFESTED-BREAK" USING L-DIM L-X L-Y L-Z WS-BLOCK
+     CALL "STDMOB-INFESTED-BREAK" USING L-DIM L-X L-Y L-Z WS-BLOCK L-ROW
      COMPUTE WS-EXHAUST = RULE-EXHAUST-BREAK-MILLI / 1000
      CALL "HUNGER-EXHAUST" USING L-ROW WS-EXHAUST
 *>   The held tool pays the durability of the broken block (17 section 5.1; tools-wire.cob).

@@ -14,6 +14,8 @@
 *>   STDMOB-PHANTOM-CIRCLE USING row, roll 1 (0 to 349), roll 2 (0 to 249), roll 3 (0 to 449), float roll (0 to 999), angle roll (0 to 999): the per-tick changes of the
 *>     circle goal (a to d of 20 section 12; the block tests e and f are open).
 *>   STDMOB-PHANTOM-MOVE USING row: the move control (steps 2 to 8; the horizontal-collision turn of step 1 is open).
+*>   STDMOB-PHANTOM-STOP USING row: the attack strategy stops (the target is gone): with the anchor set it becomes the column top (the MOTION_BLOCKING height, taken as one above the highest
+*>     block) at the anchor's x and z plus 10 + nextInt(20).
 *>   STDMOB-PHANTOM-TICK USING row, table row: one tick of a phantom: daylight burning, the target (scan every 60 ticks, highest player within 16, 64, 16), the attack
 *>     strategy (CIRCLE timer 10, SWOOP with a timer of (8 + nextInt(4)) x 20 and an anchor above the target), the circle goal, the swoop hit, the move control and the move.
 
@@ -392,6 +394,17 @@
  01 WS-GROUND              BINARY-LONG VALUE 0.
  01 WS-SCALE               FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-EM                  BINARY-LONG.
+ 01 WS-SCARED              BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-TALL                FLOAT-LONG.
+ 01 WS-EVENT-1039          BINARY-LONG VALUE 1039.
+ 01 WS-NO-ONE              BINARY-LONG VALUE 0.
+ 01 WS-DATA                BINARY-LONG VALUE 0.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -406,6 +419,7 @@
          IF PL-USED(WS-P) NOT = 1 OR PL-ENTITY-ID(WS-P) NOT = EN-TARGET-ID(L-ROW) OR PL-STATE(WS-P) NOT = PS-ALIVE
                  OR PL-DIM(WS-P) NOT = EN-DIM(L-ROW) OR PL-MODE(WS-P) = 1 OR PL-MODE(WS-P) = 3
              MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-PH-PHASE(L-ROW)
+             CALL "STDMOB-PHANTOM-STOP" USING L-ROW
          END-IF
      END-IF
      IF EN-TARGET(L-ROW) = 0
@@ -462,17 +476,49 @@
          END-IF
      END-IF
      IF WS-P > 0 AND EN-PH-PHASE(L-ROW) = 1
-*>       The sweep: toward the middle of the target; touching its box (the phantom's inflated by 0.2) hurts it.
-         MOVE PL-X(WS-P) TO EN-PH-TX(L-ROW)
-         COMPUTE EN-PH-TY(L-ROW) = PL-Y(WS-P) + 0.9
-         MOVE PL-Z(WS-P) TO EN-PH-TZ(L-ROW)
-         COMPUTE WS-DX = FUNCTION ABS(PL-X(WS-P) - EN-X(L-ROW))
-         COMPUTE WS-DZ = FUNCTION ABS(PL-Z(WS-P) - EN-Z(L-ROW))
-         IF WS-DX < 0.45 + 0.2 + 0.3 AND WS-DZ < 0.45 + 0.2 + 0.3
-                 AND EN-Y(L-ROW) + 0.5 + 0.2 > PL-Y(WS-P) AND EN-Y(L-ROW) - 0.2 < PL-Y(WS-P) + 1.8
-             CALL "STDMOB-ATTACK-DAMAGE" USING L-ROW L-M WS-DAMAGE
-             CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
-             MOVE 0 TO EN-PH-PHASE(L-ROW)
+*>       The sweep goal scans for cats every 20 ticks (box inflated by 16): a cat stops it, the target is cleared and the phase is CIRCLE.
+         MOVE 0 TO WS-SCARED
+         IF CW-TICKS > EN-WAKE(L-ROW)
+             COMPUTE EN-WAKE(L-ROW) = CW-TICKS + 20
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+                 IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-PLAYER(WS-E) = 0
+                     CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-EM
+                     IF WS-EM > 0
+                         IF SM-KEY(WS-EM) = "cat" AND FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW)) <= 16
+                                 AND FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW)) <= 16 AND FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW)) <= 16
+                             MOVE 1 TO WS-SCARED
+                         END-IF
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-SCARED = 1
+             MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-PH-PHASE(L-ROW)
+             CALL "STDMOB-PHANTOM-STOP" USING L-ROW
+         ELSE
+*>           Toward the middle of the target; touching its box (the phantom's 0.9 x 0.5 scaled by 1 + 0.15 x size, inflated by 0.2) hurts it.
+             MOVE PL-X(WS-P) TO EN-PH-TX(L-ROW)
+             COMPUTE EN-PH-TY(L-ROW) = PL-Y(WS-P) + 0.9
+             MOVE PL-Z(WS-P) TO EN-PH-TZ(L-ROW)
+             COMPUTE WS-SCALE = 1 + 0.15 * EN-VARIANT(L-ROW)
+             COMPUTE WS-HALF = 0.45 * WS-SCALE
+             COMPUTE WS-TALL = 0.5 * WS-SCALE
+             COMPUTE WS-DX = FUNCTION ABS(PL-X(WS-P) - EN-X(L-ROW))
+             COMPUTE WS-DZ = FUNCTION ABS(PL-Z(WS-P) - EN-Z(L-ROW))
+             IF WS-DX < WS-HALF + 0.2 + 0.3 AND WS-DZ < WS-HALF + 0.2 + 0.3
+                     AND EN-Y(L-ROW) + WS-TALL + 0.2 > PL-Y(WS-P) AND EN-Y(L-ROW) - 0.2 < PL-Y(WS-P) + 1.8
+                 CALL "STDMOB-ATTACK-DAMAGE" USING L-ROW L-M WS-DAMAGE
+                 CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
+                 COMPUTE WS-OX = FUNCTION INTEGER(EN-X(L-ROW))
+                 COMPUTE WS-OY = FUNCTION INTEGER(EN-Y(L-ROW))
+                 COMPUTE WS-OZ = FUNCTION INTEGER(EN-Z(L-ROW))
+                 CALL "LEVEL-EVENT" USING EN-DIM(L-ROW) WS-EVENT-1039 WS-OX WS-OY WS-OZ WS-DATA WS-NO-ONE
+                 MOVE 0 TO EN-PH-PHASE(L-ROW)
+             END-IF
+*>           A swoop also ends when it was hurt recently.
+             IF EN-HURT(L-ROW) > 0
+                 MOVE 0 TO EN-PH-PHASE(L-ROW)
+             END-IF
          END-IF
      ELSE
          CALL "XP-RANDOM" USING WS-SALT WS-B350 WS-R1
@@ -491,3 +537,28 @@
      CALL "ENTITY-MOVE" USING L-ROW WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-GROUND
      GOBACK.
  END PROGRAM STDMOB-PHANTOM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-PHANTOM-STOP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SALT                BINARY-LONG VALUE 47.
+ 01 WS-B20                 BINARY-LONG VALUE 20.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-AX                  BINARY-LONG.
+ 01 WS-AZ                  BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-PH-SET(L-ROW) = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-AX = FUNCTION INTEGER(EN-PH-AX(L-ROW))
+     COMPUTE WS-AZ = FUNCTION INTEGER(EN-PH-AZ(L-ROW))
+     CALL "WORLDSIM-COLUMN-TOP" USING EN-DIM(L-ROW) WS-AX WS-AZ WS-TOP
+     CALL "XP-RANDOM" USING WS-SALT WS-B20 WS-ROLL
+     COMPUTE EN-PH-AY(L-ROW) = WS-TOP + 10 + WS-ROLL
+     GOBACK.
+ END PROGRAM STDMOB-PHANTOM-STOP.
