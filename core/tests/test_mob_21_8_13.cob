@@ -10,7 +10,7 @@
  COPY CONTENT.
  COPY CITEMS.
  COPY PROJSTATE.
- 01 WS-CASE                PIC X(120).
+ 01 WS-CASE                PIC X(160).
  01 WS-E                   BINARY-DOUBLE.
  01 WS-O                   BINARY-DOUBLE.
  01 WS-PLAYER              BINARY-LONG.
@@ -227,7 +227,7 @@
      MOVE PL-ENTITY-ID(WS-PLAYER) TO WS-OWNER
      CALL "THROWN-SPAWN" USING WS-PJ WS-KEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-OWNER WS-ROW
      CALL "XP-BOTTLE-STEP" USING WS-ROW
-     MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 gravity 0.07 then drag 0.99: the first tick's vertical speed is -0.0693 (ten-thousandths)" TO WS-CASE
+     MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 gravity 0.07 then drag 0.99: first tick vertical speed -0.0693 (1e-4)" TO WS-CASE
      MOVE -693 TO WS-E
      COMPUTE WS-O = FUNCTION INTEGER(EN-VY(WS-ROW) * 10000 + 0.5)
      PERFORM CHECK-N

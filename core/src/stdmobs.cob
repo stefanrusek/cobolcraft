@@ -1049,6 +1049,10 @@
          CALL "BAT-TICK" USING WS-ROW
          GOBACK
      END-IF
+     IF SM-KEY(WS-M) = "happy_ghast"
+         CALL "HG-TICK" USING WS-ROW
+         GOBACK
+     END-IF
      IF SM-RANGED(WS-M) = 4
          CALL "GHAST-TICK" USING WS-ROW WS-M
          GOBACK
