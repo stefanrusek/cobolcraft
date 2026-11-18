@@ -755,7 +755,7 @@ inputs that depend on movement are the view bobbing (15.2) and the hand sway (15
 
 ### 15.2 View bobbing (`GameRenderer.bobView`, `ClientAvatarState`, `AbstractClientPlayer.updateBob`)
 
-12 §6.1 step 1 gives the transform; this chapter gives where w and b come from and corrects the range of b. It applies only when the camera entity is a player (a client player or a remote player being spectated) and the option View Bobbing is on. In `renderLevel` the bob (and the hurt tilt) is applied to the **world** projection with no camera-type test (read: none in that method), so it also shakes the world in third person (inferred from the absence of a test); in the hand pass it applies to the hand.
+12 §6.1 step 2 gives the transform; this chapter gives where w and b come from and corrects the range of b. It applies only when the camera entity is a player (a client player or a remote player being spectated) and the option View Bobbing is on. In `renderLevel` the bob (and the hurt tilt) is applied to the **world** projection with no camera-type test (read: none in that method), so it also shakes the world in third person (inferred from the absence of a test); in the hand pass it applies to the hand.
 
 **w, the walk distance.** The client keeps `walkDist` (float, starts 0) and `walkDistO` per avatar (`ClientAvatarState`). For the local player, every `LocalPlayer.move` adds **0.6 x the horizontal distance actually moved** (sqrt(dx^2 + dz^2) of the position change after collision, in blocks) to `walkDist`: any move mode, any pose; there is no sprint, crouch or swim factor. `walkDistO` takes the old value at the start of `AbstractClientPlayer.tick`. The value passed to `bobView` is w = -(`walkDist` + (`walkDist` - `walkDistO`) x partial) (the delta is extrapolated by the partial tick, then **negated**; the sign only flips the sway direction).
 (`RemotePlayer` was seen to call the bob update but no `addWalkedDistance` call was found for it: a spectated remote player's `walkDist` was not traced, Open question 13.)
@@ -775,7 +775,7 @@ So **b is between 0 and 0.1** (12 §6.1's "0..1" is a loose bound; the real maxi
 The amplitude of the sway is proportional to b, w advances with distance, so the bobbing frequency follows the speed in blocks; crouching bobs less and slower, crawling likewise; sprinting bobs at the same amplitude as walking but faster per second. No term in `bobView` reads the sprint or crouch state.
 
 Worked example (b = 0.1, walkDist 10, walkDistO 9.8, partial 0.5): w = -(10 + 0.2 x 0.5) = -10.1. sin(-10.1 pi) = -0.3090, cos(-10.1 pi) = 0.9511. Translate x = -0.3090 x 0.1 x 0.5 = -0.0155; y = -|0.9511 x 0.1| = -0.0951. Rotate Z = -0.3090 x 0.1 x 3 = -0.093 degrees. Rotate X = |cos(-10.1 pi - 0.2)| x 0.1 x 5 = 0.871 x 0.5 = 0.435 degrees.
-(The first rule of 12 §6.1 step 1, the order and the formulas, is unchanged.)
+(The first rule of 12 §6.1 step 2, the order and the formulas, is unchanged.)
 
 ### 15.3 Hand sway source (`LocalPlayer.aiStep`)
 
