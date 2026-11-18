@@ -87,6 +87,63 @@
  END PROGRAM VL-BRAIN-DIST.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-BRAIN-VALIDATE.
+*> USING entity row, claim kind (0 job site, 2 home, 3 meeting), block kind the claim needs (PXI-KIND-OF), released out: ValidateNearbyPoi (44 section 2.2) for one claim of the villager: it
+*> only looks while the villager is in the claim's dimension and within 16 blocks of it; a claim whose block is gone is released (the claim table holds the ticket).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-QD                   BINARY-LONG.
+ 01 WS-QX                   BINARY-LONG.
+ 01 WS-QY                   BINARY-LONG.
+ 01 WS-QZ                   BINARY-LONG.
+ 01 WS-FOUND                BINARY-LONG.
+ 01 WS-KIND                 BINARY-LONG.
+ 01 WS-D2                   FLOAT-LONG.
+ 01 WS-LIMIT                FLOAT-LONG VALUE 256.0.
+ 01 WS-SAME                 BINARY-LONG.
+ 01 WS-NEAR                 BINARY-LONG.
+ 01 WS-RECORD               BINARY-LONG.
+ 01 WS-HOME                 BINARY-LONG.
+ 01 WS-NOT                  BINARY-LONG VALUE 0.
+ 01 WS-ACTION               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-KIND                  BINARY-LONG.
+ 01 L-EXPECTED              BINARY-LONG.
+ 01 L-RELEASED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KIND L-EXPECTED L-RELEASED.
+     MOVE 0 TO L-RELEASED
+     CALL "VPX-OF" USING EN-ID(L-ROW) L-KIND WS-QD WS-QX WS-QY WS-QZ WS-FOUND
+     IF WS-FOUND = 0
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-SAME WS-NEAR
+     MOVE 1 TO WS-RECORD
+     IF WS-QD = EN-DIM(L-ROW)
+         MOVE 1 TO WS-SAME
+         CALL "VL-BRAIN-DIST" USING L-ROW WS-QX WS-QY WS-QZ WS-D2
+         IF WS-D2 < WS-LIMIT
+             MOVE 1 TO WS-NEAR
+             CALL "PXI-KIND-OF" USING WS-QD WS-QX WS-QY WS-QZ WS-KIND
+             IF WS-KIND NOT = L-EXPECTED
+                 MOVE 0 TO WS-RECORD
+             END-IF
+         END-IF
+     END-IF
+     MOVE 0 TO WS-HOME
+     IF L-KIND = 2
+         MOVE 1 TO WS-HOME
+     END-IF
+     CALL "Q3-VALIDATE-POI" USING WS-SAME WS-NEAR WS-RECORD WS-HOME WS-NOT WS-NOT WS-NOT WS-ACTION
+     IF WS-ACTION NOT = 0
+         CALL "VPX-RELEASE-KIND" USING EN-ID(L-ROW) L-KIND
+         MOVE 1 TO L-RELEASED
+     END-IF
+     GOBACK.
+ END PROGRAM VL-BRAIN-VALIDATE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-BRAIN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -125,6 +182,9 @@
  01 WS-PY                   BINARY-LONG.
  01 WS-PZ                   BINARY-LONG.
  01 WS-PD                   BINARY-LONG.
+ 01 WS-REL                  BINARY-LONG.
+ 01 WS-STOP                 BINARY-LONG.
+ 01 WS-REST                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -139,7 +199,12 @@
      COMPUTE WS-DAY = FUNCTION MOD(CW-TIME, 24000)
      CALL "VIL-DAY-ACT" USING WS-DAY WS-BABY WS-ACT
 *>   WakeUp (core): sleeping while REST is not the activity.
-     IF VL-SLEEP(WS-SLOT) = 1 AND WS-ACT NOT = 3
+     MOVE 0 TO WS-REST
+     IF WS-ACT = 3
+         MOVE 1 TO WS-REST
+     END-IF
+     CALL "Q3-WAKE" USING WS-REST VL-SLEEP(WS-SLOT) WS-STOP
+     IF WS-STOP = 1
          MOVE 0 TO VL-SLEEP(WS-SLOT)
          MOVE CW-TICKS TO VL-LAST-WOKEN(WS-SLOT)
      END-IF
@@ -165,28 +230,12 @@
      END-IF
      CALL "XP-RANDOM" USING WS-SALT WS-TWENTY WS-R
      COMPUTE VL-NEXT-BRAIN(WS-SLOT) = CW-TICKS + 20 + WS-R
-*>   ValidateNearbyPoi: a claim whose block is gone or of another kind is released.
-     CALL "VPX-OF" USING EN-ID(L-ROW) WS-HOME WS-QD WS-QX WS-QY WS-QZ WS-FOUND
-     IF WS-FOUND = 1
-         CALL "PXI-KIND-OF" USING WS-QD WS-QX WS-QY WS-QZ WS-KIND
-         IF WS-KIND NOT = WS-KIND-BED
-             CALL "VPX-RELEASE-KIND" USING EN-ID(L-ROW) WS-HOME
-         END-IF
-     END-IF
-     CALL "VPX-OF" USING EN-ID(L-ROW) WS-MEET WS-QD WS-QX WS-QY WS-QZ WS-FOUND
-     IF WS-FOUND = 1
-         CALL "PXI-KIND-OF" USING WS-QD WS-QX WS-QY WS-QZ WS-KIND
-         IF WS-KIND NOT = WS-KIND-BELL
-             CALL "VPX-RELEASE-KIND" USING EN-ID(L-ROW) WS-MEET
-         END-IF
-     END-IF
-     CALL "VPX-OF" USING EN-ID(L-ROW) WS-JOB WS-QD WS-QX WS-QY WS-QZ WS-FOUND
-     IF WS-FOUND = 1
-         CALL "PXI-KIND-OF" USING WS-QD WS-QX WS-QY WS-QZ WS-KIND
-         IF WS-KIND NOT = WS-KIND-JOB
-             CALL "VPX-RELEASE-KIND" USING EN-ID(L-ROW) WS-JOB
-             MOVE 0 TO VL-POT(WS-SLOT)
-         END-IF
+*>   ValidateNearbyPoi (44 section 2.2): a claim whose block is gone or of another kind is released once the villager is within 16 blocks of it.
+     CALL "VL-BRAIN-VALIDATE" USING L-ROW WS-HOME WS-KIND-BED WS-REL
+     CALL "VL-BRAIN-VALIDATE" USING L-ROW WS-MEET WS-KIND-BELL WS-REL
+     CALL "VL-BRAIN-VALIDATE" USING L-ROW WS-JOB WS-KIND-JOB WS-REL
+     IF WS-REL = 1
+         MOVE 0 TO VL-POT(WS-SLOT)
      END-IF
      COMPUTE WS-PX = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-PY = FUNCTION INTEGER(EN-Y(L-ROW))

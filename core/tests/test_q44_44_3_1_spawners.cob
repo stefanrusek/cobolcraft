@@ -360,6 +360,44 @@
      MOVE 0 TO WS-E
      COMPUTE WS-O = Q3-SG-SETUP + Q3-SG-ZOMBIES
      CALL "Q3-CHECK" USING WS-CASE WS-E WS-O
+*>   Step 3: an offset of 31 blocks puts the +-10 block corners beyond the loaded chunks (view distance 2): result 1.
+     MOVE 23 TO WS-XA
+     MOVE 0 TO WS-XN
+     MOVE 23 TO WS-ZA
+     MOVE 0 TO WS-ZN
+     MOVE PL-X(WS-PLAYER) TO WS-FX
+     COMPUTE PL-X(WS-PLAYER) = WS-FX + 4000
+     CALL "Q3-CAT-ATTEMPT" USING WS-PLAYER WS-XA WS-XN WS-ZA WS-ZN WS-RESULT
+     MOVE WS-FX TO PL-X(WS-PLAYER)
+     MOVE "acceptance US15 44-3§1 Villages 1.6 step 3: a player far from every loaded chunk, the chunks round the position that are not loaded end the attempt (result 1)" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE WS-RESULT TO WS-O
+     CALL "Q3-CHECK" USING WS-CASE WS-E WS-O
+*>   Step 2: no player in the world ends the attempt (the counter is still set to 1200).
+     MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-ROW
+     MOVE 0 TO PL-ENTITY-ROW(WS-PLAYER)
+     MOVE 1 TO Q3-CAT-NEXT
+     CALL "Q3-CAT-TICK"
+     MOVE WS-ROW TO PL-ENTITY-ROW(WS-PLAYER)
+     MOVE "acceptance US15 44-3§1 Villages 1.6 step 2: without a player the counter is still reset to 1200" TO WS-CASE
+     MOVE 1200 TO WS-E
+     MOVE Q3-CAT-NEXT TO WS-O
+     CALL "Q3-CHECK" USING WS-CASE WS-E WS-O
+*>   The world hook runs the cat spawner and, at day tick 18000, rolls the siege (nextInt(10)); at other ticks it passes no roll.
+     MOVE 5 TO Q3-CAT-NEXT
+     MOVE 18000 TO CW-TIME
+     INITIALIZE Q3-SG-STATE Q3-SG-SETUP Q3-SG-ZOMBIES Q3-SG-NEXT
+     CALL "Q3-SPAWNERS-TICK"
+     MOVE "acceptance US15 44-3§1 Villages 1.6 the hook counts the cat spawner down (4)" TO WS-CASE
+     MOVE 4 TO WS-E
+     MOVE Q3-CAT-NEXT TO WS-O
+     CALL "Q3-CHECK" USING WS-CASE WS-E WS-O
+     MOVE 6000 TO CW-TIME
+     CALL "Q3-SPAWNERS-TICK"
+     MOVE "acceptance US15 44-3§1 Villages 1.6 and again at another time of day (3)" TO WS-CASE
+     MOVE 3 TO WS-E
+     MOVE Q3-CAT-NEXT TO WS-O
+     CALL "Q3-CHECK" USING WS-CASE WS-E WS-O
      STOP RUN.
  END PROGRAM TEST-Q44-44-3-1-SPAWNERS.
  COPY CORETEST.

@@ -125,6 +125,7 @@
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  01 WS-KEY48                PIC X(48).
+ 01 WS-BARE                 PIC X(48).
  01 WS-KEY32                PIC X(32).
  01 WS-PROPS                PIC X(160).
  01 WS-HEAD                 BINARY-LONG.
@@ -140,12 +141,8 @@
          GOBACK
      END-IF
      MOVE CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) TO WS-KEY48
-     MOVE SPACES TO WS-KEY32
-     IF WS-KEY48(1:10) = "minecraft:"
-         MOVE WS-KEY48(11:32) TO WS-KEY32
-     ELSE
-         MOVE WS-KEY48(1:32) TO WS-KEY32
-     END-IF
+     CALL "KEY-BARE" USING WS-KEY48 WS-BARE
+     MOVE WS-BARE TO WS-KEY32
      CALL "BLOCKS-STATE-PROPS" USING L-STATE WS-PROPS
      MOVE 0 TO WS-COUNT
      INSPECT WS-PROPS TALLYING WS-COUNT FOR ALL "part=head"
@@ -493,6 +490,7 @@
  01 WS-OZ                   BINARY-LONG.
  01 WS-CX                   BINARY-LONG.
  01 WS-CZ                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-READY                BINARY-LONG.
  01 WS-PLACE                BINARY-LONG VALUE 1.
  01 WS-OK                   BINARY-LONG.
@@ -536,29 +534,16 @@
      COMPUTE WS-X = FUNCTION INTEGER(PL-X(L-PLAYER)) + WS-OX
      COMPUTE WS-Y = FUNCTION INTEGER(PL-Y(L-PLAYER))
      COMPUTE WS-Z = FUNCTION INTEGER(PL-Z(L-PLAYER)) + WS-OZ
-*>   The chunks within +-10 blocks of the position must be loaded (step 3).
+*>   The chunks within +-10 blocks of the position must be loaded (step 3): the four corners.
      MOVE 1 TO WS-READY
-     COMPUTE WS-CX = FUNCTION INTEGER((WS-X - 10) / 16)
-     COMPUTE WS-CZ = FUNCTION INTEGER((WS-Z - 10) / 16)
-     CALL "Q3-CHUNK-READY" USING PL-DIM(L-PLAYER) WS-CX WS-CZ WS-OK
-     IF WS-OK = 0
-         MOVE 0 TO WS-READY
-     END-IF
-     COMPUTE WS-CX = FUNCTION INTEGER((WS-X + 10) / 16)
-     CALL "Q3-CHUNK-READY" USING PL-DIM(L-PLAYER) WS-CX WS-CZ WS-OK
-     IF WS-OK = 0
-         MOVE 0 TO WS-READY
-     END-IF
-     COMPUTE WS-CZ = FUNCTION INTEGER((WS-Z + 10) / 16)
-     CALL "Q3-CHUNK-READY" USING PL-DIM(L-PLAYER) WS-CX WS-CZ WS-OK
-     IF WS-OK = 0
-         MOVE 0 TO WS-READY
-     END-IF
-     COMPUTE WS-CX = FUNCTION INTEGER((WS-X - 10) / 16)
-     CALL "Q3-CHUNK-READY" USING PL-DIM(L-PLAYER) WS-CX WS-CZ WS-OK
-     IF WS-OK = 0
-         MOVE 0 TO WS-READY
-     END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         COMPUTE WS-CX = FUNCTION INTEGER((WS-X - 10 + 20 * FUNCTION MOD(FUNCTION INTEGER(WS-K / 2), 2)) / 16)
+         COMPUTE WS-CZ = FUNCTION INTEGER((WS-Z - 10 + 20 * FUNCTION INTEGER((WS-K - 1) / 2)) / 16)
+         CALL "Q3-CHUNK-READY" USING PL-DIM(L-PLAYER) WS-CX WS-CZ WS-OK
+         IF WS-OK = 0
+             MOVE 0 TO WS-READY
+         END-IF
+     END-PERFORM
      IF WS-READY = 0
          MOVE 1 TO L-RESULT
          GOBACK
