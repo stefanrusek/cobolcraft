@@ -17,6 +17,19 @@
     05 EN-LOWL                 BINARY-LONG.
     05 EN-MINY                 BINARY-LONG.
     05 EN-SLOTMAP              BINARY-LONG OCCURS 36 TIMES.
+*>  L32-LOCATE's tables and memo: EN-TL16 the low four bits of a byte (the local coordinate of a coordinate's low byte), EN-T256 and EN-T16 the multiples of 256 and 16,
+*>  EN-SYTAB the section index (from the lowest light section) of a Y offset from the bottom of it, EN-LOWY / EN-NLY the Y of the bottom of the light sections and their height,
+*>  EN-M-* the last chunk column found (valid until a slot changes owner).
+    05 EN-TL16                 BINARY-LONG OCCURS 256 TIMES.
+    05 EN-T256                 BINARY-LONG OCCURS 16 TIMES.
+    05 EN-T16                  BINARY-LONG OCCURS 16 TIMES.
+    05 EN-SYTAB                BINARY-LONG OCCURS 416 TIMES.
+    05 EN-LOWY                 BINARY-LONG.
+    05 EN-NLY                  BINARY-LONG.
+    05 EN-M-VALID              BINARY-LONG.
+    05 EN-M-OX                 BINARY-LONG.
+    05 EN-M-OZ                 BINARY-LONG.
+    05 EN-M-COL                BINARY-LONG.
     05 EN-OWN-X                BINARY-LONG OCCURS 36 TIMES.
     05 EN-OWN-Z                BINARY-LONG OCCURS 36 TIMES.
     05 EN-STATES.

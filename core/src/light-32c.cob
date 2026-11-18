@@ -230,6 +230,14 @@
 *> has the from-empty-shape flag), store the new level and queue increaseSkipOneDirection (when above 1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-BIT-INIT            PIC 9 VALUE 0.
+ 01 WS-BIT-TABLE.
+    05 WS-BIT-ROW          OCCURS 64 TIMES.
+       10 WS-BIT-CELL      BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-II                  BINARY-LONG.
+ 01 WS-JJ                  BINARY-LONG.
+ 01 WS-VV                  BINARY-LONG.
+ 01 WS-BR                  BINARY-LONG.
  01 WS-FROM                BINARY-LONG.
  01 WS-BITS                BINARY-LONG.
  01 WS-FROM-EMPTY          BINARY-LONG.
@@ -272,11 +280,18 @@
      IF L-K = 2
          CALL "L32-EMPTY-BELOW" USING L-X L-Y L-Z WS-KE
      END-IF
-     MOVE 1 TO WS-POW
+     IF WS-BIT-INIT = 0
+         MOVE 1 TO WS-BIT-INIT
+         PERFORM VARYING WS-II FROM 0 BY 1 UNTIL WS-II > 63
+             MOVE WS-II TO WS-VV
+             PERFORM VARYING WS-JJ FROM 0 BY 1 UNTIL WS-JJ > 5
+                 DIVIDE WS-VV BY 2 GIVING WS-VV REMAINDER WS-BR
+                 MOVE WS-BR TO WS-BIT-CELL(WS-II + 1, WS-JJ + 1)
+             END-PERFORM
+         END-PERFORM
+     END-IF
      PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
-         DIVIDE WS-BITS BY WS-POW GIVING WS-T
-         DIVIDE WS-T BY 2 GIVING WS-Q REMAINDER WS-R
-         COMPUTE WS-POW = WS-POW * 2
+         MOVE WS-BIT-CELL(WS-BITS + 1, WS-D + 1) TO WS-R
          IF WS-R = 1
              CALL "L32-DIRECTION" USING WS-D WS-DX WS-DY WS-DZ WS-OPP
              COMPUTE WS-NX = L-X + WS-DX
@@ -324,6 +339,14 @@
 *> neighbour queues increaseOnlyOneDirection back toward this cell. The sky layer has no emission.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-BIT-INIT            PIC 9 VALUE 0.
+ 01 WS-BIT-TABLE.
+    05 WS-BIT-ROW          OCCURS 64 TIMES.
+       10 WS-BIT-CELL      BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-II                  BINARY-LONG.
+ 01 WS-JJ                  BINARY-LONG.
+ 01 WS-VV                  BINARY-LONG.
+ 01 WS-BR                  BINARY-LONG.
  01 WS-FROM                BINARY-LONG.
  01 WS-BITS                BINARY-LONG.
  01 WS-FROM-EMPTY          BINARY-LONG.
@@ -364,11 +387,18 @@
      IF L-K = 2
          CALL "L32-EMPTY-BELOW" USING L-X L-Y L-Z WS-KE
      END-IF
-     MOVE 1 TO WS-POW
+     IF WS-BIT-INIT = 0
+         MOVE 1 TO WS-BIT-INIT
+         PERFORM VARYING WS-II FROM 0 BY 1 UNTIL WS-II > 63
+             MOVE WS-II TO WS-VV
+             PERFORM VARYING WS-JJ FROM 0 BY 1 UNTIL WS-JJ > 5
+                 DIVIDE WS-VV BY 2 GIVING WS-VV REMAINDER WS-BR
+                 MOVE WS-BR TO WS-BIT-CELL(WS-II + 1, WS-JJ + 1)
+             END-PERFORM
+         END-PERFORM
+     END-IF
      PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
-         DIVIDE WS-BITS BY WS-POW GIVING WS-T
-         DIVIDE WS-T BY 2 GIVING WS-Q REMAINDER WS-R
-         COMPUTE WS-POW = WS-POW * 2
+         MOVE WS-BIT-CELL(WS-BITS + 1, WS-D + 1) TO WS-R
          IF WS-R = 1
              CALL "L32-DIRECTION" USING WS-D WS-DX WS-DY WS-DZ WS-OPP
              COMPUTE WS-NX = L-X + WS-DX

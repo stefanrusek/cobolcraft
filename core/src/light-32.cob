@@ -543,6 +543,18 @@
      MOVE 4 TO EN-NS
      MOVE 6 TO EN-NL
      MOVE -1 TO EN-LOWL
+     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 255
+         COMPUTE EN-TL16(WS-R + 1) = FUNCTION MOD(WS-R, 16)
+     END-PERFORM
+     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 15
+         COMPUTE EN-T256(WS-R + 1) = WS-R * 256
+         COMPUTE EN-T16(WS-R + 1) = WS-R * 16
+     END-PERFORM
+     MOVE -16 TO EN-LOWY
+     MOVE 96 TO EN-NLY
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 96
+         COMPUTE EN-SYTAB(WS-R) = (WS-R - 1) / 16
+     END-PERFORM
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 36
          MOVE 1073741823 TO EN-OWN-X(WS-R) EN-OWN-Z(WS-R)
      END-PERFORM
@@ -578,6 +590,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-NS                   BINARY-LONG.
  01 L-MIN                  BINARY-LONG.
@@ -587,6 +600,12 @@
      COMPUTE EN-NL = L-NS + 2
      COMPUTE EN-LOWL = L-MIN - 1
      COMPUTE EN-MINY = L-MIN * 16
+     COMPUTE EN-LOWY = EN-LOWL * 16
+     COMPUTE EN-NLY = EN-NL * 16
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EN-NLY
+         COMPUTE EN-SYTAB(WS-K) = (WS-K - 1) / 16
+     END-PERFORM
+     MOVE 0 TO EN-M-VALID
      GOBACK.
  END PROGRAM L32-SET-DIMENSION.
 
@@ -615,6 +634,7 @@
      COMPUTE WS-COL = EN-SLOTMAP(FUNCTION MOD(L-CZ + 1, 6) * 6 + FUNCTION MOD(L-CX + 1, 6) + 1)
      IF EN-OWN-X(WS-COL) NOT = L-CX OR EN-OWN-Z(WS-COL) NOT = L-CZ
          MOVE 1 TO L-CHANGED
+         MOVE 0 TO EN-M-VALID
          MOVE L-CX TO EN-OWN-X(WS-COL)
          MOVE L-CZ TO EN-OWN-Z(WS-COL)
          MOVE 0 TO EN-AVAIL(WS-COL) EN-PAST-INIT(WS-COL) EN-LIGHT-CORRECT(WS-COL)
@@ -832,39 +852,61 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-LOCATE.
-*> USING world x, y, z; gives the column 1 to 16 (0 when the chunk does not own its slot of the window), the section id (0 outside the light
-*> sections EN-LOWL to EN-LOWL + EN-NL - 1) and the nibble index of the cell in its section (1).
+*> USING world x, y, z; gives the column 1 to 36 (0 when the chunk does not own its slot of the window), the section id (0 outside the light
+*> sections EN-LOWL to EN-LOWL + EN-NL - 1) and the nibble index of the cell in its section (1). The local coordinate of each axis is read from the low
+*> byte of the coordinate (a binary integer's low four bits are its value mod 16, also for a negative one) through EN-TL16; the column of the chunk last found is kept (EN-M-*) so
+*> that the cells of one chunk need no division; the section comes from EN-SYTAB. No FUNCTION MOD or division on the common path (they are the slow operations of the arithmetic).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
  01 WS-LX                  BINARY-LONG.
  01 WS-LY                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
- 01 WS-SY                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
+ 01 L-X-R REDEFINES L-X.
+    05 L-XB                BINARY-CHAR UNSIGNED.
  01 L-Y                    BINARY-LONG.
+ 01 L-Y-R REDEFINES L-Y.
+    05 L-YB                BINARY-CHAR UNSIGNED.
  01 L-Z                    BINARY-LONG.
+ 01 L-Z-R REDEFINES L-Z.
+    05 L-ZB                BINARY-CHAR UNSIGNED.
  01 L-COL                  BINARY-LONG.
  01 L-SID                  BINARY-LONG.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-X L-Y L-Z L-COL L-SID L-INDEX.
      MOVE 0 TO L-COL L-SID L-INDEX
-     COMPUTE WS-LX = FUNCTION MOD(L-X, 16)
-     COMPUTE WS-LY = FUNCTION MOD(L-Y, 16)
-     COMPUTE WS-LZ = FUNCTION MOD(L-Z, 16)
-     COMPUTE WS-CX = (L-X - WS-LX) / 16
-     COMPUTE WS-CZ = (L-Z - WS-LZ) / 16
-     COMPUTE WS-SY = (L-Y - WS-LY) / 16
-     COMPUTE WS-SLOT = EN-SLOTMAP(FUNCTION MOD(WS-CZ + 1, 6) * 6 + FUNCTION MOD(WS-CX + 1, 6) + 1)
-     IF EN-OWN-X(WS-SLOT) = WS-CX AND EN-OWN-Z(WS-SLOT) = WS-CZ
-         MOVE WS-SLOT TO L-COL
-         IF WS-SY >= EN-LOWL AND WS-SY < EN-LOWL + EN-NL
-             COMPUTE L-SID = (L-COL - 1) * EN-NL + WS-SY - EN-LOWL + 1
-             COMPUTE L-INDEX = WS-LY * 256 + WS-LZ * 16 + WS-LX
+     MOVE EN-TL16(L-XB + 1) TO WS-LX
+     MOVE EN-TL16(L-YB + 1) TO WS-LY
+     MOVE EN-TL16(L-ZB + 1) TO WS-LZ
+     SUBTRACT WS-LX FROM L-X GIVING WS-OX
+     SUBTRACT WS-LZ FROM L-Z GIVING WS-OZ
+     IF EN-M-VALID = 1 AND WS-OX = EN-M-OX AND WS-OZ = EN-M-OZ
+         MOVE EN-M-COL TO L-COL
+     ELSE
+         COMPUTE WS-CX = WS-OX / 16
+         COMPUTE WS-CZ = WS-OZ / 16
+         COMPUTE WS-SLOT = EN-SLOTMAP(FUNCTION MOD(WS-CZ + 1, 6) * 6 + FUNCTION MOD(WS-CX + 1, 6) + 1)
+         IF EN-OWN-X(WS-SLOT) = WS-CX AND EN-OWN-Z(WS-SLOT) = WS-CZ
+             MOVE WS-SLOT TO L-COL
+         END-IF
+         MOVE 1 TO EN-M-VALID
+         MOVE WS-OX TO EN-M-OX
+         MOVE WS-OZ TO EN-M-OZ
+         MOVE L-COL TO EN-M-COL
+     END-IF
+     IF L-COL > 0
+         COMPUTE WS-K = L-Y - WS-LY - EN-LOWY + 1
+         IF WS-K >= 1 AND WS-K <= EN-NLY
+             COMPUTE L-SID = (L-COL - 1) * EN-NL + EN-SYTAB(WS-K) + 1
+             COMPUTE L-INDEX = EN-T256(WS-LY + 1) + EN-T16(WS-LZ + 1) + WS-LX
          END-IF
      END-IF
      GOBACK.
@@ -938,6 +980,7 @@
  01 WS-COL                 BINARY-LONG.
  01 WS-SID                 BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
+ 01 WS-REL                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -949,8 +992,9 @@
      IF WS-COL > 0
          IF EN-AVAIL(WS-COL) = 1
              MOVE 0 TO L-STATE
-             IF L-Y >= EN-MINY AND L-Y < EN-MINY + EN-NS * 16
-                 MOVE EN-BLK((WS-COL - 1) * EN-NS * 4096 + (L-Y - EN-MINY) * 256 + FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16) + 1) TO L-STATE
+             COMPUTE WS-REL = WS-SID - (WS-COL - 1) * EN-NL - 1
+             IF WS-SID > 0 AND WS-REL >= 1 AND WS-REL <= EN-NS
+                 MOVE EN-BLK((WS-COL - 1) * EN-NS * 4096 + (WS-REL - 1) * 4096 + WS-INDEX + 1) TO L-STATE
              END-IF
          END-IF
      END-IF
