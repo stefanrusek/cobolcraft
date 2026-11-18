@@ -542,7 +542,9 @@
  END PROGRAM STRUCT-RING-SNAP.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-RINGS-BUILD.
+ PROGRAM-ID. STRUCT-RINGS-PREP.
+*> USING set, seed: gives the set a ring row and fills it for the seed with the positions before the biome snap (STRUCT-RINGS-RAW) and their forked seeds; no
+*> position is snapped yet (SR-DONE 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
@@ -551,8 +553,6 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
  01 WS-RAW.
     05 WS-RAW-ROW OCCURS 256 TIMES.
        10 WS-RAW-X         BINARY-LONG.
@@ -572,19 +572,70 @@
      MOVE FUNCTION MIN(SS-RING-COUNT(L-SET), SD-MAX-RING-POS) TO WS-N
      CALL "STRUCT-RINGS-RAW" USING SS-DISTANCE(L-SET) SS-RING-SPREAD(L-SET) WS-N WS-SEED-U WS-RAW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-         CALL "STRUCT-RING-SNAP" USING WS-RAW-X(WS-I) WS-RAW-Z(WS-I) L-SET WS-RAW-FORK(WS-I) WS-CX WS-CZ
-         MOVE WS-CX TO SR-X(WS-ROW, WS-I)
-         MOVE WS-CZ TO SR-Z(WS-ROW, WS-I)
+         MOVE WS-RAW-X(WS-I) TO SR-RAW-X(WS-ROW, WS-I)
+         MOVE WS-RAW-Z(WS-I) TO SR-RAW-Z(WS-ROW, WS-I)
+         MOVE WS-RAW-FORK(WS-I) TO SR-FORK(WS-ROW, WS-I)
+         MOVE 0 TO SR-DONE(WS-ROW, WS-I)
      END-PERFORM
      MOVE WS-N TO SR-N(WS-ROW)
      MOVE L-SET TO SR-SET(WS-ROW)
      MOVE L-SEED TO SR-SEED(WS-ROW)
      GOBACK.
+ END PROGRAM STRUCT-RINGS-PREP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RING-READY.
+*> USING set, ring row, position: snaps the position to its biome (STRUCT-RING-SNAP) unless it is snapped already; SR-X and SR-Z of the position hold its chunk
+*> afterwards. Each position has its own forked seed, so the order in which positions are snapped does not change any of them.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
+ 01 WS-FORK                BINARY-DOUBLE UNSIGNED.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-I                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-ROW L-I.
+     IF SR-DONE(L-ROW, L-I) = 0
+         MOVE SR-RAW-X(L-ROW, L-I) TO WS-RX
+         MOVE SR-RAW-Z(L-ROW, L-I) TO WS-RZ
+         MOVE SR-FORK(L-ROW, L-I) TO WS-FORK
+         CALL "STRUCT-RING-SNAP" USING WS-RX WS-RZ L-SET WS-FORK WS-CX WS-CZ
+         MOVE WS-CX TO SR-X(L-ROW, L-I)
+         MOVE WS-CZ TO SR-Z(L-ROW, L-I)
+         MOVE 1 TO SR-DONE(L-ROW, L-I)
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-RING-READY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RINGS-BUILD.
+*> USING set, seed: builds the whole ring list of the set for the seed anew, every position snapped.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-SEED                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SET L-SEED.
+     CALL "STRUCT-RINGS-PREP" USING L-SET L-SEED
+     MOVE SS-RING-ROW(L-SET) TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW)
+         CALL "STRUCT-RING-READY" USING L-SET WS-ROW WS-I
+     END-PERFORM
+     GOBACK.
  END PROGRAM STRUCT-RINGS-BUILD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-RING-HAS.
-*> USING set, seed, chunk x, chunk z, flag out: 1 when the chunk is in the set's ring list for the seed (built when absent, or built for another seed or set).
+ PROGRAM-ID. STRUCT-RINGS-ALL.
+*> USING set, seed: the whole ring list of the set for the seed, every position snapped (for a reader of the list: the eye of ender). The row is filled when
+*> absent or filled for another seed; positions snapped already are kept.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
@@ -594,25 +645,74 @@
  LINKAGE SECTION.
  01 L-SET                  BINARY-LONG.
  01 L-SEED                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SET L-SEED.
+     CALL "STRUCT-RING-STALE" USING L-SET L-SEED WS-STALE
+     IF WS-STALE = 1
+         CALL "STRUCT-RINGS-PREP" USING L-SET L-SEED
+     END-IF
+     MOVE SS-RING-ROW(L-SET) TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW)
+         CALL "STRUCT-RING-READY" USING L-SET WS-ROW WS-I
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-RINGS-ALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RING-STALE.
+*> USING set, seed, flag out: 1 when the set has no ring row or its row was filled for another set or seed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-STALE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-SEED L-STALE.
+     MOVE SS-RING-ROW(L-SET) TO WS-ROW
+     MOVE 1 TO L-STALE
+     IF WS-ROW > 0
+         IF SR-SET(WS-ROW) = L-SET AND SR-SEED(WS-ROW) = L-SEED
+             MOVE 0 TO L-STALE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-RING-STALE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RING-HAS.
+*> USING set, seed, chunk x, chunk z, flag out: 1 when the chunk is in the set's ring list for the seed. The row is filled when absent or filled for another
+*> seed (STRUCT-RINGS-PREP). The biome snap moves a position by at most 7 chunks on each axis (STRUCT-RING-SNAP: the quart cells 4 rx - 26 to 4 rx + 30), so
+*> only the positions within 7 chunks of the chunk can be it: those are snapped when they are not yet (STRUCT-RING-READY) and compared; the others are left.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-STALE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-SEED                 BINARY-DOUBLE.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-SET L-SEED L-CX L-CZ L-FLAG.
      MOVE 0 TO L-FLAG
-     MOVE SS-RING-ROW(L-SET) TO WS-ROW
-     MOVE 1 TO WS-STALE
-     IF WS-ROW > 0
-         IF SR-SET(WS-ROW) = L-SET AND SR-SEED(WS-ROW) = L-SEED
-             MOVE 0 TO WS-STALE
-         END-IF
-     END-IF
+     CALL "STRUCT-RING-STALE" USING L-SET L-SEED WS-STALE
      IF WS-STALE = 1
-         CALL "STRUCT-RINGS-BUILD" USING L-SET L-SEED
-         MOVE SS-RING-ROW(L-SET) TO WS-ROW
+         CALL "STRUCT-RINGS-PREP" USING L-SET L-SEED
      END-IF
+     MOVE SS-RING-ROW(L-SET) TO WS-ROW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW) OR L-FLAG = 1
-         IF SR-X(WS-ROW, WS-I) = L-CX AND SR-Z(WS-ROW, WS-I) = L-CZ
-             MOVE 1 TO L-FLAG
+         COMPUTE WS-DX = FUNCTION ABS(SR-RAW-X(WS-ROW, WS-I) - L-CX)
+         COMPUTE WS-DZ = FUNCTION ABS(SR-RAW-Z(WS-ROW, WS-I) - L-CZ)
+         IF WS-DX <= 7 AND WS-DZ <= 7
+             CALL "STRUCT-RING-READY" USING L-SET WS-ROW WS-I
+             IF SR-X(WS-ROW, WS-I) = L-CX AND SR-Z(WS-ROW, WS-I) = L-CZ
+                 MOVE 1 TO L-FLAG
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

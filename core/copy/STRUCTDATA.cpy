@@ -88,13 +88,19 @@
        10 SDT-RP-FIRST       BINARY-LONG.
        10 SDT-RP-N           BINARY-LONG.
     05 SD-BIOME             PIC X(40) OCCURS 8192 TIMES.
-*>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N chunks SR-X, SR-Z
+*>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N positions. SR-RAW-X, SR-RAW-Z and
+*>  SR-FORK are a position before the biome snap and its forked seed (STRUCT-RINGS-RAW); SR-X, SR-Z its chunk after the snap, valid once SR-DONE is 1: a position
+*>  is snapped when a chunk within reach of it is asked for (STRUCT-RING-HAS) or the whole list is (STRUCT-RINGS-ALL, STRUCT-RINGS-BUILD).
     05 SD-RING OCCURS 4 TIMES.
        10 SR-SET            BINARY-LONG.
        10 SR-SEED           BINARY-DOUBLE.
        10 SR-N              BINARY-LONG.
        10 SR-X              BINARY-LONG OCCURS 256 TIMES.
        10 SR-Z              BINARY-LONG OCCURS 256 TIMES.
+       10 SR-RAW-X          BINARY-LONG OCCURS 256 TIMES.
+       10 SR-RAW-Z          BINARY-LONG OCCURS 256 TIMES.
+       10 SR-FORK           BINARY-DOUBLE UNSIGNED OCCURS 256 TIMES.
+       10 SR-DONE           BINARY-LONG OCCURS 256 TIMES.
 *>  the gate: structure ids that are on (STRUCT-GATE); empty after a reset, so no structure starts anything
     05 SD-GATE              PIC X(80) OCCURS 64 TIMES.
 *>  the starts of the chunk last asked (STRUCT-CHUNK-STARTS): the set and structure rows and the stub position
