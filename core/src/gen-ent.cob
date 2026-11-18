@@ -186,6 +186,53 @@
  END PROGRAM GENT-KEEP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-MOB-FINALIZE.
+*> USING xoro state, tracker row: finalizeSpawn with reason STRUCTURE of a mob that a structure's template stored (36 part 8 section 15.3), the draws in the order of the document: a piglin brute
+*> gets a golden axe in the main hand (EN-HAND 10; no draw); an adult piglin (the baby roll and the random weapon are not made for STRUCTURE) tries golden helmet, chestplate, leggings and
+*> boots in that order, one nextFloat each, wearing the piece for a draw below 0.1 (EN-PIG-GEAR bits 1, 2, 4, 8); a hoglin is a baby (EN-VARIANT 1, EN-MOBAGE -24000) when its nextFloat is
+*> below 0.2. Not made (see the lane notes): the memories (PiglinAi.initMemories, another lane's store), the enchantments of populateDefaultEquipmentEnchantments (36-8 Open question 5), the
+*> FOLLOW_RANGE bonus and left-handedness of the generic Mob.finalizeSpawn (core has no such attribute or flag). Any other mob is left as it is.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BIT                 BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-ROW.
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     EVALUATE SM-KEY(WS-M)
+         WHEN "piglin_brute"
+             MOVE 10 TO EN-HAND(L-ROW)
+         WHEN "piglin"
+             IF EN-MOBAGE(L-ROW) >= 0
+                 MOVE 1 TO WS-BIT
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                     CALL "XORO-NEXT-FLOAT" USING L-STATE WS-F
+                     IF WS-F < 0.1
+                         ADD WS-BIT TO EN-PIG-GEAR(L-ROW)
+                     END-IF
+                     COMPUTE WS-BIT = WS-BIT * 2
+                 END-PERFORM
+             END-IF
+         WHEN "hoglin"
+             CALL "XORO-NEXT-FLOAT" USING L-STATE WS-F
+             IF WS-F < 0.2
+                 MOVE 1 TO EN-VARIANT(L-ROW)
+                 MOVE -24000 TO EN-MOBAGE(L-ROW)
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM STRUCT-MOB-FINALIZE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GENT-APPLY.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -213,6 +260,10 @@
  01 WS-ROT-NAME            PIC X(8) VALUE "Rotation".
  01 WS-ROT-LENGTH          BINARY-LONG VALUE 8.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-FSEED               BINARY-DOUBLE UNSIGNED.
+ 01 WS-FIRST-NEW-ONE       BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ COPY XORO.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -262,7 +313,16 @@
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WS-ROT-NAME WS-ELEMENT WS-PITCH
              CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
              MOVE 0 TO PB-POS
+             MOVE CW-NEXT-ENTITY-ID TO WS-FIRST-NEW-ONE
              CALL "ENTITY-NBT-ONE" USING L-DIM PB-BUFFER
+*>           what the request made is finalized with reason STRUCTURE from a generator of its entity id and the tick (the way a summoned mob is, cmds-entities.cob)
+             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+                 IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-ID(WS-N) >= WS-FIRST-NEW-ONE
+                     COMPUTE WS-FSEED = EN-ID(WS-N) * 7919 + CW-TICKS
+                     CALL "XORO-SEED" USING WS-FSEED XR-STATE
+                     CALL "STRUCT-MOB-FINALIZE" USING XR-STATE WS-N
+                 END-IF
+             END-PERFORM
          END-IF
      END-PERFORM
      MOVE 0 TO GE-COUNT GE-LOST
