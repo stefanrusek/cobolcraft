@@ -1,7 +1,7 @@
 *> The eye of ender locate (docs/protocol/36-structures-5-mineshaft-stronghold.md section 3.10, 36-1 section 11 step 3): the answer for a concentric_rings set is the locate position (4.8) of the
 *> ring chunk whose centre (16 cx + 8, 32, 16 cz + 8) is nearest to the origin block position; a later chunk replaces the best only when strictly nearer, so the first of equal distances wins.
 *> Every ring chunk counts as a present start: the start check of getStructureGeneratingAt (a loaded start, a valid biome at its stub) is not made, which makes the answer the same for a world whose
-*> starts are not generated yet (the radius of the item is not used by this placement kind). The whole ring list is made (STRUCT-RINGS-ALL, the biome snap of 4.6.1) when absent or made for another seed.
+*> starts are not generated yet (the radius of the item is not used by this placement kind). The ring list is made (STRUCT-RINGS-PREP) when absent or made for another seed and its positions are snapped (the biome snap of 4.6.1) only as far as the answer needs (STRUCT-NEAREST-RING).
 *>
 *> Entry points:
 *>   STRUCT-NEAREST-RING USING set, seed (BINARY-DOUBLE), origin x, origin y, origin z, found out (0 for a set that is not concentric_rings or has no ring), chunk x out, chunk z out, locate x out, y out, z out
@@ -10,13 +10,25 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-NEAREST-RING.
+*> The ring list is snapped on demand (STRUCT-RING-READY; each position has its own forked seed, so the order of the snaps changes none of them): the biome snap moves a ring position by
+*> at most 7 chunks on each axis (STRUCT-RING-HAS), that is at most 112 blocks on each axis and 159 blocks apart, so a position whose raw centre is farther from the origin than the best answer so far
+*> plus 160 blocks cannot be nearer and is never snapped. Positions already snapped count with their chunk; the unsnapped one with the nearest raw centre is snapped next. The answer is the one
+*> of the whole list (the first of equal distances wins by its index) but a search from a spot near one of the 128 strongholds snaps a handful of the positions (one snap is 3249 biome lookups).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-STALE               BINARY-LONG.
  01 WS-BEST                BINARY-DOUBLE.
+ 01 WS-BEST-I              BINARY-LONG.
+ 01 WS-PICK                BINARY-LONG.
+ 01 WS-PICK-D              BINARY-DOUBLE.
+ 01 WS-STOP                BINARY-LONG.
  01 WS-D                   BINARY-DOUBLE.
+ 01 WS-H                   BINARY-DOUBLE.
+ 01 WS-LOW                 BINARY-DOUBLE.
  01 WS-DX                  BINARY-DOUBLE.
  01 WS-DY                  BINARY-DOUBLE.
  01 WS-DZ                  BINARY-DOUBLE.
@@ -40,24 +52,67 @@
      IF SS-KIND(L-SET) NOT = 0
          GOBACK
      END-IF
-*>   the whole ring list for the seed (filled when absent or stale, every position snapped)
-     CALL "STRUCT-RINGS-ALL" USING L-SET L-SEED
+*>   the ring list for the seed (filled when absent or stale; no position snapped by this)
+     CALL "STRUCT-RING-SEED" USING L-SEED WS-SEED
+     CALL "STRUCT-RING-STALE" USING L-SET WS-SEED WS-STALE
+     IF WS-STALE = 1
+         CALL "STRUCT-RINGS-PREP" USING L-SET WS-SEED
+     END-IF
 *>   STRUCT-RINGS-PREP always gives the set a ring row (at least 1).
      MOVE SS-RING-ROW(L-SET) TO WS-ROW
+     COMPUTE WS-DY = 32 - L-OY
      MOVE 9223372036854775807 TO WS-BEST
+     MOVE 0 TO WS-BEST-I
+*>   the positions snapped already: their chunk counts at once
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW)
-         COMPUTE WS-DX = SR-X(WS-ROW, WS-I) * 16 + 8 - L-OX
-         COMPUTE WS-DY = 32 - L-OY
-         COMPUTE WS-DZ = SR-Z(WS-ROW, WS-I) * 16 + 8 - L-OZ
-         COMPUTE WS-D = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
-         IF L-FOUND = 0 OR WS-D < WS-BEST
-             MOVE WS-D TO WS-BEST
-             MOVE 1 TO L-FOUND
-             MOVE SR-X(WS-ROW, WS-I) TO L-CX
-             MOVE SR-Z(WS-ROW, WS-I) TO L-CZ
+         IF SR-DONE(WS-ROW, WS-I) = 1
+             COMPUTE WS-DX = SR-X(WS-ROW, WS-I) * 16 + 8 - L-OX
+             COMPUTE WS-DZ = SR-Z(WS-ROW, WS-I) * 16 + 8 - L-OZ
+             COMPUTE WS-D = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+             IF WS-BEST-I = 0 OR WS-D < WS-BEST
+                 MOVE WS-D TO WS-BEST
+                 MOVE WS-I TO WS-BEST-I
+             END-IF
          END-IF
      END-PERFORM
-     IF L-FOUND = 1
+*>   then the unsnapped position with the nearest raw centre, until none can beat the best answer
+     MOVE 0 TO WS-STOP
+     PERFORM UNTIL WS-STOP = 1
+         MOVE 0 TO WS-PICK
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SR-N(WS-ROW)
+             IF SR-DONE(WS-ROW, WS-I) = 0
+                 COMPUTE WS-DX = SR-RAW-X(WS-ROW, WS-I) * 16 + 8 - L-OX
+                 COMPUTE WS-DZ = SR-RAW-Z(WS-ROW, WS-I) * 16 + 8 - L-OZ
+                 COMPUTE WS-D = WS-DX * WS-DX + WS-DZ * WS-DZ
+                 IF WS-PICK = 0 OR WS-D < WS-PICK-D
+                     MOVE WS-D TO WS-PICK-D
+                     MOVE WS-I TO WS-PICK
+                 END-IF
+             END-IF
+         END-PERFORM
+         MOVE 1 TO WS-STOP
+         IF WS-PICK > 0
+*>           the least distance a snapped position can have: the raw distance (rounded down) less 160 blocks
+             COMPUTE WS-H = FUNCTION INTEGER(FUNCTION SQRT(WS-PICK-D))
+             COMPUTE WS-LOW = WS-H - 160
+             COMPUTE WS-D = WS-LOW * WS-LOW + WS-DY * WS-DY
+             IF WS-BEST-I = 0 OR WS-LOW <= 0 OR WS-D <= WS-BEST
+                 CALL "STRUCT-RING-READY" USING L-SET WS-ROW WS-PICK
+                 COMPUTE WS-DX = SR-X(WS-ROW, WS-PICK) * 16 + 8 - L-OX
+                 COMPUTE WS-DZ = SR-Z(WS-ROW, WS-PICK) * 16 + 8 - L-OZ
+                 COMPUTE WS-D = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+                 IF WS-BEST-I = 0 OR WS-D < WS-BEST OR (WS-D = WS-BEST AND WS-PICK < WS-BEST-I)
+                     MOVE WS-D TO WS-BEST
+                     MOVE WS-PICK TO WS-BEST-I
+                 END-IF
+                 MOVE 0 TO WS-STOP
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-BEST-I > 0
+         MOVE 1 TO L-FOUND
+         MOVE SR-X(WS-ROW, WS-BEST-I) TO L-CX
+         MOVE SR-Z(WS-ROW, WS-BEST-I) TO L-CZ
          CALL "STRUCT-LOCATE-POS" USING L-SET L-CX L-CZ L-X L-Y L-Z
      END-IF
      GOBACK.
