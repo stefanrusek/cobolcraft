@@ -535,9 +535,9 @@
      MOVE 26200 TO WS-E
      PERFORM CHECK-F-4
 *>   The older tools programs (17 section 3.9) agree with the corrected rules.
-     MOVE 5 TO WS-I
+     MOVE 6 TO WS-I
      CALL "TOOL-CROSSBOW-CHARGE" USING WS-I WS-T
-     MOVE "TOOL-CROSSBOW-CHARGE at Quick Charge 5 is clamped to 0 ticks" TO WS-CASE
+     MOVE "TOOL-CROSSBOW-CHARGE at Quick Charge 6 (-5 ticks) is clamped to 0 ticks" TO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-T TO WS-O
      PERFORM CHECK-N

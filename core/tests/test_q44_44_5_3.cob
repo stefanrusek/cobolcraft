@@ -492,6 +492,83 @@
      MOVE 2200 TO WS-E
      COMPUTE WS-O = WS-C * 10 + AN-UUID-COUNT
      PERFORM CHECK-N
+*>   Entries in the middle of the maps: dropping the first of three live entries, a new entity above the cap, the UUID maps with several entries.
+     MOVE 1 TO WS-D
+     CALL "Q5-ANGER-INIT" USING Q5-ANGER WS-D
+     MOVE 1 TO WS-I
+     MOVE 1 TO WS-B
+     MOVE 10 TO WS-A
+     CALL "Q5-ANGER-INCREASE" USING Q5-ANGER WS-I WS-B WS-A WS-C
+     MOVE 2 TO WS-I
+     CALL "Q5-ANGER-INCREASE" USING Q5-ANGER WS-I WS-B WS-A WS-C
+     MOVE 3 TO WS-I
+     MOVE 200 TO WS-A
+     CALL "Q5-ANGER-INCREASE" USING Q5-ANGER WS-I WS-B WS-A WS-C
+     MOVE "a new entity with an increase of 200 is capped at 150" TO WS-CASE
+     MOVE 150 TO WS-E
+     MOVE WS-C TO WS-O
+     PERFORM CHECK-N
+     MOVE 1 TO WS-I
+     CALL "Q5-ANGER-CLEAR" USING Q5-ANGER WS-I
+     MOVE "clearing the first of three entries keeps the other two (2 and 3 shift down; two suspects)" TO WS-CASE
+     MOVE 2232 TO WS-E
+     COMPUTE WS-O = AN-LIVE-COUNT * 1000 + AN-L-ID(1) * 100 + AN-L-ID(2) * 10 + AN-SUSPECT-COUNT
+     PERFORM CHECK-N
+*>   Tick with three UUID entries: 5 (value 1) and 6 (value 9) found, 7 (value 5) not.
+     MOVE 1 TO WS-D
+     CALL "Q5-ANGER-INIT" USING Q5-ANGER WS-D
+     MOVE 3 TO AN-UUID-COUNT
+     MOVE 5 TO AN-U-ID(1)
+     MOVE 1 TO AN-U-PLAYER(1)
+     MOVE 1 TO AN-U-VALUE(1)
+     MOVE 6 TO AN-U-ID(2)
+     MOVE 0 TO AN-U-PLAYER(2)
+     MOVE 9 TO AN-U-VALUE(2)
+     MOVE 7 TO AN-U-ID(3)
+     MOVE 1 TO AN-U-PLAYER(3)
+     MOVE 5 TO AN-U-VALUE(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         MOVE 0 TO WS-ST(WS-I)
+     END-PERFORM
+     MOVE 1 TO WS-ST(5)
+     MOVE 1 TO WS-ST(6)
+     CALL "Q5-ANGER-TICK" USING Q5-ANGER WS-STATUS
+     MOVE "tick: the found entities 5 (value 1) and 6 (9) join the live map, 5 is then dropped for its value; 6 keeps 8; entity 7 stays in the UUID map with 4" TO WS-CASE
+     MOVE 1104 TO WS-E
+     COMPUTE WS-O = AN-LIVE-COUNT * 1000 + AN-UUID-COUNT * 100 + AN-U-VALUE(1)
+     PERFORM CHECK-N
+*>   A tick that drops the first of two UUID entries (value 1) while the entities are not found.
+     CALL "Q5-ANGER-INIT" USING Q5-ANGER WS-L1
+     MOVE 2 TO AN-UUID-COUNT
+     MOVE 5 TO AN-U-ID(1)
+     MOVE 1 TO AN-U-VALUE(1)
+     MOVE 6 TO AN-U-ID(2)
+     MOVE 9 TO AN-U-VALUE(2)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         MOVE 0 TO WS-ST(WS-I)
+     END-PERFORM
+     CALL "Q5-ANGER-TICK" USING Q5-ANGER WS-STATUS
+     MOVE "tick: the UUID entry of value 1 is dropped, the next one shifts down and loses 1 (entity 6 with 8)" TO WS-CASE
+     MOVE 168 TO WS-E
+     COMPUTE WS-O = AN-UUID-COUNT * 100 + AN-U-ID(1) * 10 + AN-U-VALUE(1)
+     PERFORM CHECK-N
+*>   A pending UUID entry that is not the last one is removed by an increase.
+     CALL "Q5-ANGER-INIT" USING Q5-ANGER WS-L1
+     MOVE 2 TO AN-UUID-COUNT
+     MOVE 8 TO AN-U-ID(1)
+     MOVE 1 TO AN-U-PLAYER(1)
+     MOVE 120 TO AN-U-VALUE(1)
+     MOVE 9 TO AN-U-ID(2)
+     MOVE 1 TO AN-U-PLAYER(2)
+     MOVE 30 TO AN-U-VALUE(2)
+     MOVE 8 TO WS-I
+     MOVE 1 TO WS-B
+     MOVE 10 TO WS-A
+     CALL "Q5-ANGER-INCREASE" USING Q5-ANGER WS-I WS-B WS-A WS-C
+     MOVE "increase of entity 8 with a pending 120: 10 + 120 = 130, and entity 9's pending entry shifts down" TO WS-CASE
+     MOVE 13019 TO WS-E
+     COMPUTE WS-O = WS-C * 100 + AN-UUID-COUNT * 10 + AN-U-ID(1)
+     PERFORM CHECK-N
      STOP RUN.
 
  CHECK-N.
