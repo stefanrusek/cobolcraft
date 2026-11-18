@@ -632,7 +632,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-XP-VARIANT.
 *> USING dim, x, y, z (FLOAT-LONG), type, killer player row, variant (EN-VARIANT): the experience of a defeated mob that has a variant: a baby zombie, zombie
-*> villager or husk gives the reward times 2.5 (3.6); any other variant (a powered creeper) gives the plain reward (STDMOB-XP).
+*> villager or husk gives the reward times 2.5 (3.6); any other variant (a powered creeper) gives the plain reward (STDMOB-XP-BONUS). The equipment bonus of the row
+*> (STDMOB-XP-GEAR, the last argument) is added to either reward after the multiplication.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STDMOBS.
@@ -647,7 +648,8 @@
  01 L-TYPE                 BINARY-LONG.
  01 L-KILLER               BINARY-LONG.
  01 L-VARIANT              BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER L-VARIANT.
+ 01 L-BONUS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER L-VARIANT L-BONUS.
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
      MOVE 0 TO WS-BABY
      IF L-VARIANT = 1 AND (SM-KEY(WS-M) = "zombie" OR SM-KEY(WS-M) = "zombie_villager" OR SM-KEY(WS-M) = "husk")
@@ -656,10 +658,11 @@
      IF WS-BABY = 1
          IF L-KILLER > 0
              CALL "STDMOB-XP-POINTS" USING SM-XP(WS-M) WS-BABY WS-POINTS
+             ADD L-BONUS TO WS-POINTS
              CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
          END-IF
      ELSE
-         CALL "STDMOB-XP" USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER
+         CALL "STDMOB-XP-BONUS" USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER L-BONUS
      END-IF
      GOBACK.
  END PROGRAM STDMOB-XP-VARIANT.

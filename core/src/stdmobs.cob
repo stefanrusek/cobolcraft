@@ -197,9 +197,66 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-XP.
-*> USING dim, x, y, z (FLOAT-LONG), type, killer player row (BINARY-LONG): the experience of a defeated standard mob (18 section 7.5 dropExperience):
-*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3); SM-XP -1: a golem, none) as orbs at its position (XP-AWARD). Equipment bonuses and
-*> the mob_drops game rule are not modelled yet.
+*> USING dim, x, y, z (FLOAT-LONG), type, killer player row (BINARY-LONG): the experience of a defeated standard mob with no equipment bonus (STDMOB-XP-BONUS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-KILLER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER.
+     CALL "STDMOB-XP-BONUS" USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER WS-NONE
+     GOBACK.
+ END PROGRAM STDMOB-XP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-XP-GEAR.
+*> USING tracker row, bonus out (BINARY-LONG): the experience the equipment of a mob adds (18 section 7.5, getBaseExperienceReward): when its reward is above 0, 1 + nextInt(3)
+*> for every worn slot whose drop chance is at most 1.0 (the default 0.085 for all of them): the armour pieces of EN-EQUIP (a broken helmet, EN-HEAD-WEAR -1, is empty) and
+*> the main-hand item EN-HAND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-SLOTS               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 5.
+ 01 WS-BOUND               BINARY-LONG VALUE 3.
+ 01 WS-ROLL                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-BONUS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-BONUS.
+     MOVE 0 TO L-BONUS WS-SLOTS
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M > 0 AND SM-XP(WS-M) > 0
+         IF EN-EQUIP(L-ROW) > 0
+             COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
+             IF EN-HEAD-WEAR(L-ROW) = -1 AND WS-SLOTS > 0
+                 SUBTRACT 1 FROM WS-SLOTS
+             END-IF
+         END-IF
+         IF EN-HAND(L-ROW) > 0
+             ADD 1 TO WS-SLOTS
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
+             CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-ROLL
+             COMPUTE L-BONUS = L-BONUS + 1 + WS-ROLL
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-XP-GEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-XP-BONUS.
+*> USING dim, x, y, z (FLOAT-LONG), type, killer player row, bonus (BINARY-LONG): the experience of a defeated standard mob (18 section 7.5 dropExperience):
+*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3); SM-XP -1: a golem, none) plus the bonus of its equipment (STDMOB-XP-GEAR) as orbs at
+*> its position (XP-AWARD). The mob_drops game rule is the caller's.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STDMOBS.
@@ -214,7 +271,8 @@
  01 L-Z                    FLOAT-LONG.
  01 L-TYPE                 BINARY-LONG.
  01 L-KILLER               BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER.
+ 01 L-BONUS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER L-BONUS.
      IF L-KILLER > 0
          CALL "STDMOB-INDEX" USING L-TYPE WS-M
          MOVE SM-XP(WS-M) TO WS-POINTS
@@ -223,11 +281,12 @@
              ADD 1 TO WS-POINTS
          END-IF
          IF WS-POINTS > 0
+             ADD L-BONUS TO WS-POINTS
              CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
          END-IF
      END-IF
      GOBACK.
- END PROGRAM STDMOB-XP.
+ END PROGRAM STDMOB-XP-BONUS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DIE.
@@ -252,6 +311,7 @@
  01 WS-RULE-NAME           PIC X(40) VALUE "mob_drops".
  01 WS-RULE                BINARY-DOUBLE.
  01 WS-WOOL                BINARY-LONG.
+ 01 WS-GEAR                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -280,7 +340,8 @@
              CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED WS-WOOL
              CALL "FOX-DROP-HELD" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
-             CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW)
+             CALL "STDMOB-XP-GEAR" USING L-ROW WS-GEAR
+             CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW) WS-GEAR
          END-IF
      END-IF
      GOBACK.
