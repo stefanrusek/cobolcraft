@@ -218,7 +218,7 @@
                  MOVE 21 TO RL-ANALOG(WS-I)
          END-EVALUATE
 *>       the decoded states of the signal blocks
-         IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 28)
+         IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 30)
              COMPUTE WS-LAST = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I) - 1
              PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-I) BY 1 UNTIL WS-S > WS-LAST
                  CALL "BLOCKS-STATE-PROPS" USING WS-S WS-TEXT
@@ -1860,6 +1860,15 @@
          WHEN 15
              IF L-KIND = 1 OR L-KIND = 3
                  CALL "RL-BULB-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 10
+             IF L-KIND = 1 OR L-KIND = 3
+                 CALL "RL-HOPPER-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 29
+         WHEN 30
+             IF L-KIND = 3 OR L-KIND = 7
+                 CALL "RL-DISP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
              END-IF
          WHEN 17
              CALL "RL-OBS-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
