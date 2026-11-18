@@ -495,6 +495,7 @@
        10 PL-FOOD            BINARY-LONG.
        10 PL-SATURATION      FLOAT-SHORT.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
+       10 PL-HURT-DIR        FLOAT-LONG.    *> the yaw of the last Hurt Animation of the local player (the direction the hit came from, degrees)
 *>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
 *>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
 *>     released or Entity Event 9 (eating finished) for the local player; the clock of that Use Item.

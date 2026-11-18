@@ -322,6 +322,12 @@
              IF L-ID = 25
                  CALL "ENTITY-HURT" USING CLIENT-STATE WS-ID
              END-IF
+             IF L-ID = 43
+                 CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
+                 IF WS-ID = PL-ENTITY-ID
+                     MOVE WS-FLOAT TO PL-HURT-DIR
+                 END-IF
+             END-IF
              IF WS-ID = PL-ENTITY-ID
                  COMPUTE PL-HURT-UNTIL = CL-NOW-MS + CL-HURT-MS
                  IF L-ID = 25

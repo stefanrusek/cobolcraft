@@ -44,6 +44,8 @@
  01 WS-ITEM-ROW            PIC X(270).
  01 WS-STATUS              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-HID                 BINARY-LONG.
+ 01 WS-HYAW                FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
@@ -386,6 +388,46 @@
      MOVE 0 TO WS-EXP(1) WS-EXP(2) WS-EXP(3) WS-EXP(4) WS-EXP(5) WS-EXP(7) WS-EXP(8) WS-EXP(9)
      MOVE 1 TO WS-EXP(6) WS-EXP(7)
      PERFORM CHECK-M
+*>   The hurt tilt: Hurt Animation (id 43) of the local player stores the yaw; half way through the 500 ms the pose is Y -dir, Z -k 14, Y +dir with
+*>   k = sin(0.5^4 pi) (rotation about the horizontal axis across the view, 2.731 degrees), and a hit on another entity changes nothing.
+     MOVE 3 TO WS-HID
+     MOVE 0 TO WS-HYAW
+     CALL "HP-HURT" USING CLIENT-STATE WS-HID WS-HYAW
+     MOVE "T5301 a Hurt Animation of another entity leaves the hurt direction" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-HURT-DIR TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE PL-ENTITY-ID TO WS-HID
+     MOVE 90 TO WS-HYAW
+     CALL "HP-HURT" USING CLIENT-STATE WS-HID WS-HYAW
+     MOVE "T5301 a Hurt Animation of the local player keeps its yaw" TO TL-CASE
+     MOVE 90 TO TL-EXPECTED-N
+     MOVE PL-HURT-DIR TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CL-BOB-INIT
+     MOVE 30 TO PL-HEALTH
+     MOVE 6000000 TO CL-NOW-MS
+     COMPUTE PL-HURT-UNTIL = CL-NOW-MS + 250
+     MOVE 0 TO WS-PART
+     CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
+     MOVE "T5301 half way through the hurt time the view is tilted by the hurt direction" TO WS-NAME
+     MOVE 0 TO WS-EXP(1) WS-EXP(2) WS-EXP(3) WS-EXP(4) WS-EXP(7) WS-EXP(8) WS-EXP(9)
+     MOVE -0.04765 TO WS-EXP(5)
+     MOVE 0.99886 TO WS-EXP(6)
+     MOVE 1 TO WS-EXP(7)
+     PERFORM CHECK-M
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "0.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
+     MOVE "T5301 damageTiltStrength 0 takes the tilt away" TO WS-NAME
+     MOVE 0 TO WS-EXP(5)
+     MOVE 1 TO WS-EXP(6)
+     PERFORM CHECK-M
+     MOVE "1.0" TO WS-OPT-VALUE
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE 0 TO PL-HURT-UNTIL
 *>   The tick state. The first tick only records the position and the angles; then a player on the ground at 0.2 blocks a tick moved 0.25 blocks.
      MOVE 0 TO CL-BOB-INIT CL-BOB CL-BOB-O CL-BOB-WALK CL-BOB-WALK-O CL-ATK-TICKER CL-ATK-LAST
      MOVE 5 TO PL-X
@@ -688,5 +730,32 @@
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-HAND-POSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HP-HURT.
+*> USING CLIENT-STATE, entity id, yaw (FLOAT-SHORT): hands PROTO-PACKET (connection 1) a Hurt Animation (0x2B).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG VALUE 43.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM HP-HURT.
 
  COPY CLTEST.
