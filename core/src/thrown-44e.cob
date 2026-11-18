@@ -214,6 +214,9 @@
      IF WS-SLOT = 0
          GOBACK
      END-IF
+     IF PJ-I1(WS-SLOT) = 2
+         CALL "LIGHTNING-FIRST" USING L-ROW
+     END-IF
      SUBTRACT 1 FROM PJ-I1(WS-SLOT)
      IF PJ-I1(WS-SLOT) < 0
          IF PJ-I2(WS-SLOT) = 0
