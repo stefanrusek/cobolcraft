@@ -16,7 +16,7 @@
 *>   STRUCT-IS-CHUNK USING set, seed, chunk x, chunk z, flag out: isStructureChunk (4.2), RECURSIVE through the exclusion zone
 *>   STRUCT-IN-RANGE USING set, seed, chunk x, chunk z, radius, flag out: hasStructureChunkInRange (4.1)
 *>   STRUCT-RINGS-RAW USING distance, spread, count, seed (BINARY-DOUBLE UNSIGNED), table (256 rows of x, z, fork seed): 4.6 positions before the biome snap
-*>   STRUCT-RING-SNAP USING ring x, ring z, set, fork seed, chunk x out, chunk z out: 4.6.1 the biome search of one position
+*>   STRUCT-RING-SNAP-ROWS USING ring x, ring z, set, fork seed, chunk x out, chunk z out, progress, rows, rows done out, done out: 4.6.1 the biome search of one position, a few rows of it at a time
 *>   STRUCT-RINGS-BUILD USING set, seed: builds the ring list of a rings set for the seed (SD-RING row of SS-RING-ROW); STRUCT-RING-HAS tests membership (building on demand)
 *>   STRUCT-ORIGIN USING chunk x out, chunk z out; STRUCT-LOCATE-POS USING set, chunk x, chunk z, x out, y out, z out (4.8)
 *>   STRUCT-POSSIBLE-BUILD: SS-POSSIBLE of every set from the climate points (4.1)
@@ -471,14 +471,15 @@
  END PROGRAM STRUCT-RINGS-RAW.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-RING-SNAP.
-*> USING ring x, ring z, set, fork seed (BINARY-DOUBLE UNSIGNED), chunk x out, chunk z out: findBiomeHorizontal at the block (rx * 16 + 8, 0, rz * 16 + 8) with radius 112
-*> (quart radius 28, every cell of the square, z outer) and the predicate "preferred_biomes has the biome": reservoir sampling with the forked source (the first
-*> qualifying cell draws nothing, each later one one nextInt(k + 1)); the result is the chunk of the chosen cell, the ring position itself when no cell qualifies.
+ PROGRAM-ID. STRUCT-RING-SNAP-ROWS.
+*> USING ring x, ring z, set, fork seed (BINARY-DOUBLE UNSIGNED, used when the search begins), chunk x out, chunk z out, progress (SR-PROG of STRUCTDATA: the search carried from call to call), rows (BINARY-LONG:
+*> the most rows of the square to search in this call, 0 all), rows done out, done out (1 when the whole square is searched): findBiomeHorizontal at the block (rx * 16 + 8, 0, rz * 16 + 8) with radius
+*> 112 (quart radius 28, every cell of the square, z outer: a row is one z) and the predicate "preferred_biomes has the biome": reservoir sampling with the forked source (the first qualifying cell draws nothing,
+*> each later one one nextInt(k + 1)); the result is the chunk of the chosen cell, the ring position itself when no cell qualifies. The progress holds the next row, the random, the count and the candidate, so
+*> the rows of a search may be done by several calls and the result is that of one call.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
- 01 WS-STATE               BINARY-DOUBLE UNSIGNED.
  01 WS-BLOCK-X             BINARY-LONG.
  01 WS-BLOCK-Z             BINARY-LONG.
  01 WS-QX0                 BINARY-LONG.
@@ -487,10 +488,8 @@
  01 WS-QZ                  BINARY-LONG.
  01 WS-QY                  BINARY-LONG VALUE 0.
  01 WS-DX                  BINARY-LONG.
- 01 WS-DZ                  BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-BIOME               PIC X(40).
- 01 WS-K                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-BOUND               BINARY-LONG.
@@ -502,19 +501,34 @@
  01 L-FORK                 BINARY-DOUBLE UNSIGNED.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
- PROCEDURE DIVISION USING L-RX L-RZ L-SET L-FORK L-CX L-CZ.
-     CALL "JRAND-SET-SEED" USING WS-STATE L-FORK
+ 01 L-PROG.
+    05 L-P-STARTED         BINARY-LONG.
+    05 L-P-DZ              BINARY-LONG.
+    05 L-P-K               BINARY-LONG.
+    05 L-P-CX              BINARY-LONG.
+    05 L-P-CZ              BINARY-LONG.
+    05 L-P-RNG             BINARY-DOUBLE UNSIGNED.
+ 01 L-ROWS                 BINARY-LONG.
+ 01 L-ROWS-DONE            BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-RX L-RZ L-SET L-FORK L-CX L-CZ L-PROG L-ROWS L-ROWS-DONE L-DONE.
+     IF L-P-STARTED = 0
+         CALL "JRAND-SET-SEED" USING L-P-RNG L-FORK
+         MOVE 1 TO L-P-STARTED
+         MOVE -28 TO L-P-DZ
+         MOVE 0 TO L-P-K
+         MOVE L-RX TO L-P-CX
+         MOVE L-RZ TO L-P-CZ
+     END-IF
      COMPUTE WS-BLOCK-X = L-RX * 16 + 8
      COMPUTE WS-BLOCK-Z = L-RZ * 16 + 8
      CALL "STRUCT-QUART" USING WS-BLOCK-X WS-QX0
      CALL "STRUCT-QUART" USING WS-BLOCK-Z WS-QZ0
-     MOVE 0 TO WS-K
-     MOVE L-RX TO L-CX
-     MOVE L-RZ TO L-CZ
-     PERFORM VARYING WS-DZ FROM -28 BY 1 UNTIL WS-DZ > 28
+     MOVE 0 TO L-ROWS-DONE
+     PERFORM UNTIL L-P-DZ > 28 OR (L-ROWS > 0 AND L-ROWS-DONE >= L-ROWS)
          PERFORM VARYING WS-DX FROM -28 BY 1 UNTIL WS-DX > 28
              COMPUTE WS-QX = WS-QX0 + WS-DX
-             COMPUTE WS-QZ = WS-QZ0 + WS-DZ
+             COMPUTE WS-QZ = WS-QZ0 + L-P-DZ
              CALL "STRUCT-BIOME-AT" USING WS-QX WS-QY WS-QZ WS-INDEX WS-BIOME
              MOVE 0 TO WS-HIT
              PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= SS-PREF-COUNT(L-SET)
@@ -523,23 +537,31 @@
                  END-IF
              END-PERFORM
              IF WS-HIT = 1
-                 IF WS-K = 0
-                     COMPUTE L-CX = FUNCTION INTEGER(WS-QX / 4)
-                     COMPUTE L-CZ = FUNCTION INTEGER(WS-QZ / 4)
+                 IF L-P-K = 0
+                     COMPUTE L-P-CX = FUNCTION INTEGER(WS-QX / 4)
+                     COMPUTE L-P-CZ = FUNCTION INTEGER(WS-QZ / 4)
                  ELSE
-                     COMPUTE WS-BOUND = WS-K + 1
-                     CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-BOUND WS-DRAW
+                     COMPUTE WS-BOUND = L-P-K + 1
+                     CALL "JRAND-NEXT-INT-BOUND" USING L-P-RNG WS-BOUND WS-DRAW
                      IF WS-DRAW = 0
-                         COMPUTE L-CX = FUNCTION INTEGER(WS-QX / 4)
-                         COMPUTE L-CZ = FUNCTION INTEGER(WS-QZ / 4)
+                         COMPUTE L-P-CX = FUNCTION INTEGER(WS-QX / 4)
+                         COMPUTE L-P-CZ = FUNCTION INTEGER(WS-QZ / 4)
                      END-IF
                  END-IF
-                 ADD 1 TO WS-K
+                 ADD 1 TO L-P-K
              END-IF
          END-PERFORM
+         ADD 1 TO L-P-DZ
+         ADD 1 TO L-ROWS-DONE
      END-PERFORM
+     MOVE L-P-CX TO L-CX
+     MOVE L-P-CZ TO L-CZ
+     MOVE 0 TO L-DONE
+     IF L-P-DZ > 28
+         MOVE 1 TO L-DONE
+     END-IF
      GOBACK.
- END PROGRAM STRUCT-RING-SNAP.
+ END PROGRAM STRUCT-RING-SNAP-ROWS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-RINGS-PREP.
@@ -576,6 +598,7 @@
          MOVE WS-RAW-Z(WS-I) TO SR-RAW-Z(WS-ROW, WS-I)
          MOVE WS-RAW-FORK(WS-I) TO SR-FORK(WS-ROW, WS-I)
          MOVE 0 TO SR-DONE(WS-ROW, WS-I)
+         MOVE 0 TO SR-P-STARTED(WS-ROW, WS-I)
      END-PERFORM
      MOVE WS-N TO SR-N(WS-ROW)
      MOVE L-SET TO SR-SET(WS-ROW)
@@ -584,9 +607,9 @@
  END PROGRAM STRUCT-RINGS-PREP.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-RING-READY.
-*> USING set, ring row, position: snaps the position to its biome (STRUCT-RING-SNAP) unless it is snapped already; SR-X and SR-Z of the position hold its chunk
-*> afterwards. Each position has its own forked seed, so the order in which positions are snapped does not change any of them.
+ PROGRAM-ID. STRUCT-RING-READY-ROWS.
+*> USING set, ring row, position, rows (the most rows of the biome search to do in this call, 0 all), rows done out, done out: carries the snap of the position on (STRUCT-RING-SNAP-ROWS with the progress SR-PROG
+*> of the position) unless it is snapped already; when the last row is done SR-X and SR-Z of the position hold its chunk and SR-DONE is 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
@@ -599,16 +622,41 @@
  01 L-SET                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  01 L-I                    BINARY-LONG.
- PROCEDURE DIVISION USING L-SET L-ROW L-I.
+ 01 L-ROWS                 BINARY-LONG.
+ 01 L-ROWS-DONE            BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-ROW L-I L-ROWS L-ROWS-DONE L-DONE.
+     MOVE 0 TO L-ROWS-DONE
+     MOVE 1 TO L-DONE
      IF SR-DONE(L-ROW, L-I) = 0
          MOVE SR-RAW-X(L-ROW, L-I) TO WS-RX
          MOVE SR-RAW-Z(L-ROW, L-I) TO WS-RZ
          MOVE SR-FORK(L-ROW, L-I) TO WS-FORK
-         CALL "STRUCT-RING-SNAP" USING WS-RX WS-RZ L-SET WS-FORK WS-CX WS-CZ
-         MOVE WS-CX TO SR-X(L-ROW, L-I)
-         MOVE WS-CZ TO SR-Z(L-ROW, L-I)
-         MOVE 1 TO SR-DONE(L-ROW, L-I)
+         CALL "STRUCT-RING-SNAP-ROWS" USING WS-RX WS-RZ L-SET WS-FORK WS-CX WS-CZ SR-PROG(L-ROW, L-I) L-ROWS L-ROWS-DONE L-DONE
+         IF L-DONE = 1
+             MOVE WS-CX TO SR-X(L-ROW, L-I)
+             MOVE WS-CZ TO SR-Z(L-ROW, L-I)
+             MOVE 1 TO SR-DONE(L-ROW, L-I)
+         END-IF
      END-IF
+     GOBACK.
+ END PROGRAM STRUCT-RING-READY-ROWS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RING-READY.
+*> USING set, ring row, position: snaps the position to its biome (STRUCT-RING-SNAP-ROWS, all its rows) unless it is snapped already; SR-X and SR-Z of the position hold its chunk
+*> afterwards. Each position has its own forked seed, so the order in which positions are snapped does not change any of them.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ALL                 BINARY-LONG VALUE 0.
+ 01 WS-ROWS-DONE           BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-I                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-ROW L-I.
+     CALL "STRUCT-RING-READY-ROWS" USING L-SET L-ROW L-I WS-ALL WS-ROWS-DONE WS-DONE
      GOBACK.
  END PROGRAM STRUCT-RING-READY.
 
@@ -702,7 +750,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-RING-HAS.
 *> USING set, seed, chunk x, chunk z, flag out: 1 when the chunk is in the set's ring list for the seed. The row is filled when absent or filled for another
-*> seed (STRUCT-RINGS-PREP). The biome snap moves a position by at most 7 chunks on each axis (STRUCT-RING-SNAP: the quart cells 4 rx - 26 to 4 rx + 30), so
+*> seed (STRUCT-RINGS-PREP). The biome snap moves a position by at most 7 chunks on each axis (STRUCT-RING-SNAP-ROWS: the quart cells 4 rx - 26 to 4 rx + 30), so
 *> only the positions within 7 chunks of the chunk can be it: those are snapped when they are not yet (STRUCT-RING-READY) and compared; the others are left.
  DATA DIVISION.
  WORKING-STORAGE SECTION.

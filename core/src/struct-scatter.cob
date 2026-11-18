@@ -549,6 +549,7 @@
  01 WS-BX1                 BINARY-LONG.
  01 WS-BY1                 BINARY-LONG.
  01 WS-BZ1                 BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
  01 WS-Y90                 BINARY-LONG VALUE 90.
  01 WS-X1                  BINARY-LONG.
  01 WS-Z1                  BINARY-LONG.
@@ -604,6 +605,14 @@
      CALL "STRUCT-BASE-HEIGHT" USING L-X L-Z WS-STUB-KIND WS-HEIGHT
      COMPUTE L-Y = WS-HEIGHT - 1
      MOVE 1 TO L-VALID
+*>   the stub only (STRUCT-STUB-OK): the biome at the stub first, so a chunk in the wrong biome costs one height and not the four corners
+     IF SD-STUB-ONLY = 1
+         CALL "STRUCT-VALID-AT" USING L-STRUCT L-X L-Y L-Z WS-FLAG
+         IF WS-FLAG = 0
+             MOVE 0 TO L-VALID
+             GOBACK
+         END-IF
+     END-IF
      COMPUTE WS-X0 = L-CX * 16
      COMPUTE WS-Z0 = L-CZ * 16
      IF WS-TYPE = 104
@@ -639,6 +648,9 @@
              MOVE 0 TO L-VALID
              GOBACK
          END-IF
+     END-IF
+     IF SD-STUB-ONLY = 1
+         GOBACK
      END-IF
      MOVE 4 TO WS-BOUND
      CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-BOUND WS-DRAW
