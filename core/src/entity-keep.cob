@@ -391,12 +391,16 @@
                  MOVE 1 TO KD-HOME-ON
              END-IF
          WHEN L-NAME = "home_pos" AND L-TYPE = 11
+*>           The turtle's own home_pos (45-4 section 9.4) has this name too: the species reader reads it again.
+             MOVE PB-POS TO WS-HOLD
              CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT WS-INTS
              IF WS-INT-COUNT = 3
                  MOVE WS-INT(1) TO KD-HOME-X
                  MOVE WS-INT(2) TO KD-HOME-Y
                  MOVE WS-INT(3) TO KD-HOME-Z
              END-IF
+             MOVE WS-HOLD TO PB-POS
+             MOVE 0 TO PB-ERROR L-HANDLED
          WHEN L-NAME = "DeathLootTable" AND L-TYPE = 8
              MOVE SPACES TO KD-LOOT
              CALL "NBT-READ-STRING" USING PB-BUFFER KD-LOOT WS-LOOT-CAPACITY KD-LOOT-LEN

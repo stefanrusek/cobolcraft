@@ -6,7 +6,7 @@
 *>   VILLAGER6-NBT-KEY USING PB-BUFFER, tag type, name, V6-DATA, handled   VillagerData, FoodLevel, Xp, LastRestock, LastGossipDecay, RestocksToday
 *>        (the piglin's IsImmuneToZombification and TimeInOverworld are read by HOSTILE5-NBT-KEY: ENTITY-NBT-ONE hands them to V6-IMMUNE and V6-TIME)
 *>   VILLAGER6-NBT-APPLY USING row, species key, V6-DATA   the villager's table entry (VILSTATE.cpy) and a piglin's immunity and time in the overworld
-*> No state in the core, written at the default: Inventory (the villager keeps food points only), Gossips, VillagerDataFinalized 1, SpellTicks 0, IsBaby 0, CannotHunt 0.
+*> No state in the core, written at the default: VillagerDataFinalized 1, SpellTicks 0, IsBaby 0, CannotHunt 0.
 *> Not modelled: Offers (the table of VILSTATE.cpy has the trade sets by level, no saved form here), the wandering trader (section 9), Johnny, the raid state (12.2), the piglin
 *> memories (13.2), the zombie villager.
 
@@ -43,8 +43,6 @@
  PROCEDURE DIVISION USING L-ROW L-KEY PB-BUFFER.
      IF L-KEY = "villager"
          CALL "VL-FIND" USING EN-ID(L-ROW) WS-ZERO WS-SLOT
-         MOVE "Inventory" TO WN MOVE 9 TO WL
-         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
          MOVE "VillagerData" TO WN MOVE 12 TO WL
          CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
          MOVE "type" TO WN MOVE 4 TO WL
@@ -81,8 +79,6 @@
              MOVE VL-FOOD(WS-SLOT) TO WS-VALUE
          END-IF
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
-         MOVE "Gossips" TO WN MOVE 7 TO WL
-         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
          MOVE "Xp" TO WN MOVE 2 TO WL
          MOVE 0 TO WS-VALUE
          IF WS-SLOT > 0
@@ -108,10 +104,6 @@
          END-IF
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
      END-IF
-     IF L-KEY = "pillager"
-         MOVE "Inventory" TO WN MOVE 9 TO WL
-         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
-     END-IF
      IF L-KEY = "evoker" OR "illusioner"
          MOVE "SpellTicks" TO WN MOVE 10 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-ZERO
@@ -127,8 +119,6 @@
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ZERO
          MOVE "CannotHunt" TO WN MOVE 10 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ZERO
-         MOVE "Inventory" TO WN MOVE 9 TO WL
-         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
      END-IF
      GOBACK.
  END PROGRAM VILLAGER6-NBT-WRITE.
