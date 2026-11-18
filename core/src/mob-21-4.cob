@@ -49,6 +49,8 @@
  01 WS-ABOVE               BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BAND-LOW            BINARY-LONG.
+ 01 WS-BAND-HIGH           BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -70,7 +72,14 @@
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-BELOW
      COMPUTE WS-Y = L-Y + 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-ABOVE
-     IF L-Y >= DM-SEA-LEVEL(L-DIM) - 13 AND L-Y <= DM-SEA-LEVEL(L-DIM) AND WS-BELOW = 2 AND WS-ABOVE = 2
+     MOVE 13 TO WS-BAND-LOW
+     MOVE 0 TO WS-BAND-HIGH
+     IF SM-SPAWN(L-ROW) = 15
+*>       The nautilus: y from sea level - 25 to sea level - 5 (21 section 3.2).
+         MOVE 25 TO WS-BAND-LOW
+         MOVE 5 TO WS-BAND-HIGH
+     END-IF
+     IF L-Y >= DM-SEA-LEVEL(L-DIM) - WS-BAND-LOW AND L-Y <= DM-SEA-LEVEL(L-DIM) - WS-BAND-HIGH AND WS-BELOW = 2 AND WS-ABOVE = 2
          MOVE 1 TO L-OK
      END-IF
      GOBACK.
