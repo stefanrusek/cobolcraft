@@ -879,7 +879,7 @@
 *> after the first moved by ((r1 x 2 - 1) x 0.075, (r2 x 2 - 1) x 0.075) with r from the Java LCG seeded with the item id (damage value 0), restarted
 *> for each item. Both sides of the quad are drawn (12 vertices a copy). A block item (the item's model has faces, ITEM-FACE-SPRITE) is a thick model: the cube of its
 *> model with the ground display of block/block (scale 0.25, translate (0, 3, 0) / 16: the cube spans y 0.0625 to 0.3125, so base = -minY + 0.0625 = 0), each face its own
-*> sprite, drawn once (copies by stack size, the others moved by ((r1 x 2 - 1) x 0.15, (r2 x 2 - 1) x 0.15, (r3 x 2 - 1) x 0.15), spun with the pose), shaded by the face
+*> sprite, drawn once (copies by stack size, the others moved by ((r1 x 2 - 1) x 0.15, (r2 x 2 - 1) x 0.15, (r3 x 2 - 1) x 0.15), spun with the pose; only the faces that face the camera are emitted, 6 vertices each, because the mesh is drawn without depth writes), shaded by the face
 *> direction (up 1, down 0.5, north and south 0.8, west and east 0.6; tint: none, a gap of the item tint sources).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -937,6 +937,13 @@
  01 WS-CPZ                 FLOAT-LONG.
  01 WS-R3                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
+ 01 WS-CAX                 FLOAT-LONG.
+ 01 WS-CAY                 FLOAT-LONG.
+ 01 WS-CAZ                 FLOAT-LONG.
+ 01 WS-CBX                 FLOAT-LONG.
+ 01 WS-CBY                 FLOAT-LONG.
+ 01 WS-CBZ                 FLOAT-LONG.
+ 01 WS-FACING              FLOAT-LONG.
  01 WS-CORNER-DATA.
     05 FILLER PIC X(12) VALUE "011111101001".
     05 FILLER PIC X(12) VALUE "110010000100".
@@ -1094,19 +1101,33 @@
                  COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SZ
                  CALL "ATLAS-UV" USING CLIENT-STATE WS-FS WS-U16 WS-V16 WS-C-U(WS-K) WS-C-V(WS-K)
              END-PERFORM
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
-                 MOVE WS-ORD(WS-I) TO WS-K
-                 ADD 1 TO RL-GI-COUNT
-                 MOVE WS-C-X(WS-K) TO RL-GI-X(RL-GI-COUNT)
-                 MOVE WS-C-Y(WS-K) TO RL-GI-Y(RL-GI-COUNT)
-                 MOVE WS-C-Z(WS-K) TO RL-GI-Z(RL-GI-COUNT)
-                 MOVE WS-C-U(WS-K) TO RL-GI-U(RL-GI-COUNT)
-                 MOVE WS-C-V(WS-K) TO RL-GI-V(RL-GI-COUNT)
-                 COMPUTE RL-GI-B(RL-GI-COUNT) = FUNCTION MAX(WS-SHADE(WS-F) * WS-LIGHT, 0.1)
-                 MOVE 1 TO RL-GI-A(RL-GI-COUNT)
-                 MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
-                 MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
-             END-PERFORM
+*>           This mesh is drawn without depth writes, so a face on the far side of the cube would be painted over the near ones: only a face that
+*>           faces the camera is emitted. The corners are clockwise seen from outside, so with the eye at the origin the face is seen from outside
+*>           when cross(c2 - c1, c3 - c2) . c1 is positive.
+             COMPUTE WS-CAX = WS-C-X(2) - WS-C-X(1)
+             COMPUTE WS-CAY = WS-C-Y(2) - WS-C-Y(1)
+             COMPUTE WS-CAZ = WS-C-Z(2) - WS-C-Z(1)
+             COMPUTE WS-CBX = WS-C-X(3) - WS-C-X(2)
+             COMPUTE WS-CBY = WS-C-Y(3) - WS-C-Y(2)
+             COMPUTE WS-CBZ = WS-C-Z(3) - WS-C-Z(2)
+             COMPUTE WS-FACING = (WS-CAY * WS-CBZ - WS-CAZ * WS-CBY) * WS-C-X(1)
+                 + (WS-CAZ * WS-CBX - WS-CAX * WS-CBZ) * WS-C-Y(1)
+                 + (WS-CAX * WS-CBY - WS-CAY * WS-CBX) * WS-C-Z(1)
+             IF WS-FACING > 0
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+                     MOVE WS-ORD(WS-I) TO WS-K
+                     ADD 1 TO RL-GI-COUNT
+                     MOVE WS-C-X(WS-K) TO RL-GI-X(RL-GI-COUNT)
+                     MOVE WS-C-Y(WS-K) TO RL-GI-Y(RL-GI-COUNT)
+                     MOVE WS-C-Z(WS-K) TO RL-GI-Z(RL-GI-COUNT)
+                     MOVE WS-C-U(WS-K) TO RL-GI-U(RL-GI-COUNT)
+                     MOVE WS-C-V(WS-K) TO RL-GI-V(RL-GI-COUNT)
+                     COMPUTE RL-GI-B(RL-GI-COUNT) = FUNCTION MAX(WS-SHADE(WS-F) * WS-LIGHT, 0.1)
+                     MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                     MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                     MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+                 END-PERFORM
+             END-IF
          END-PERFORM
      END-PERFORM.
  MAIN-EXIT.
