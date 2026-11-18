@@ -234,6 +234,35 @@
          MOVE WS-PATH TO TL-OBSERVED
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+*>   The adult piglin family's other pieces: chestplate, leggings and boots (layers 5, 6, 7) are on the rows piglin_armor_chest, _legs and _feet.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "piglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE "iron_chestplate" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 5)
+     MOVE "iron_leggings" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 4)
+     MOVE "iron_boots" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 3)
+     PERFORM VARYING WS-I FROM 5 BY 1 UNTIL WS-I > 7
+         CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 WS-I WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+         MOVE "T" TO TL-MODE
+         MOVE WS-I TO WS-D1
+         MOVE SPACES TO TL-CASE
+         STRING "baby armor an adult piglin's layer " WS-D1 " is a piglin armor row" DELIMITED BY SIZE INTO TL-CASE
+         EVALUATE WS-I
+             WHEN 5 MOVE "piglin_armor_chest" TO TL-EXPECTED
+             WHEN 6 MOVE "piglin_armor_legs" TO TL-EXPECTED
+             WHEN OTHER MOVE "piglin_armor_feet" TO TL-EXPECTED
+         END-EVALUATE
+         MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
 *>   A baby zombie's leggings are of the baby layer type, not humanoid_leggings, on the row armor_legs~b.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE "zombie" TO WS-KEY

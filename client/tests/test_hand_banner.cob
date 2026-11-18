@@ -367,6 +367,25 @@
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = RL-HA-COUNT + RL-HAND-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A held banner with no atlas slot for the banner model draws nothing.
+     MOVE 0 TO EA-MT-COUNT
+     COMPUTE CL-HAND-ITEM = WS-RED + 1
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28500 a banner whose sprites have no atlas slot draws nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A full glint mesh of the hand (4096 vertices) takes no more quad of a foil item.
+     MOVE 4092 TO RL-HG-COUNT
+     MOVE 0 TO RL-HAND-COUNT
+     MOVE 1 TO WS-MODE
+     CALL "HAND-M-IDENT" USING WS-M
+     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT WS-MODE
+     MOVE "T28500 a full glint mesh of the hand takes no more quad" TO TL-CASE
+     MOVE 4092 TO TL-EXPECTED-N
+     MOVE RL-HG-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-MODE
 *>   A full arm mesh takes no more quads.
      MOVE 1020 TO RL-HA-COUNT
      CALL "HAND-M-IDENT" USING WS-M
