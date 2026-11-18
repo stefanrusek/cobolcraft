@@ -208,7 +208,9 @@
 *> USING CLIENT-STATE, M (the model to view transform), corners (4 x, y, z, in model space, in the order of a texture: top-left, top-right, bottom-right,
 *> bottom-left), texture coordinates (4 u then 4 v, atlas), normal (model space), light 0 to 1: adds the six vertices of the quad (corners 1 2 3 1 3 4) to the
 *> hand, shaded by the two-light formula of 12 section 1.9 (min(1, (max(0, n.L0) + max(0, n.L1)) x 0.6 + 0.4), the lights of the level in view space)
-*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 5 the six vertices go to RL-EN-VERTEX (a banner held by a mob: the entity atlas and mesh, shaded as 4). With glint 3 the six vertices go to RL-HA-VERTEX (the empty hand's arm) and nowhere else; with glint 4 to RL-GI-VERTEX (an item held by a mob, shaded by its world direction, the pose chain in entity-relative world coordinates; the caller sees to the room). With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
+*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 5 the six vertices go to RL-EN-VERTEX (a banner held by a mob: the entity atlas and mesh, shaded as 4). With glint 3 the six
+*>   vertices go to RL-HA-VERTEX (the empty hand's arm) and nowhere else; with glint 4 to RL-GI-VERTEX (an item held by a mob, shaded by its world direction, the pose chain in entity-relative world coordinates; the
+*>   caller sees to the room). With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
 *> glint coordinates of the atlas coordinates through the item scale 8 (GLINT-UV) and the glint strength as brightness.
  DATA DIVISION.
  WORKING-STORAGE SECTION.

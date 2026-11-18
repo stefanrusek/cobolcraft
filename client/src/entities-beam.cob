@@ -374,6 +374,9 @@
  01 WS-AY                  FLOAT-LONG.
  01 WS-AX                  FLOAT-LONG.
  01 WS-AT                  FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
  01 WS-V0                  FLOAT-LONG.
  01 WS-V1                  FLOAT-LONG.
  01 WS-N                   BINARY-LONG.
@@ -418,9 +421,12 @@
      END-IF
      MOVE FUNCTION PI TO WS-PI
      COMPUTE WS-H = FUNCTION SQRT(L-V(1) * L-V(1) + L-V(3) * L-V(3))
-     CALL "EM8-ATAN2" USING L-V(3) L-V(1) WS-AT
+     MOVE L-V(1) TO WS-VX
+     MOVE L-V(2) TO WS-VY
+     MOVE L-V(3) TO WS-VZ
+     CALL "EM8-ATAN2" USING WS-VZ WS-VX WS-AT
      COMPUTE WS-AY = 0 - WS-AT - WS-PI / 2
-     CALL "EM8-ATAN2" USING WS-H L-V(2) WS-AT
+     CALL "EM8-ATAN2" USING WS-H WS-VY WS-AT
      COMPUTE WS-AX = 0 - WS-AT - WS-PI / 2
      COMPUTE WS-F(1) = FUNCTION SIN(WS-AX)
      COMPUTE WS-F(2) = FUNCTION COS(WS-AX)
