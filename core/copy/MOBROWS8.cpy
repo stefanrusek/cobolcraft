@@ -2,6 +2,8 @@
 *> The giant (20 section 18.1: max health 100, movement speed 0.5, attack damage 50, experience 5; no goals and no targets: SM-NEUTRAL 7 is the inert code of
 *> STDMOB-AGGRO and of the stroll; summon only: no natural spawn rule).
 *> The creaking (20 section 17: health 1, speed 0.4 at modifier 1.0, attack 3, follow 32, no experience; spawned by hearts and summons only).
+*> The breeze (20 section 16: max health 30, movement speed 0.63 at modifier 1.0: 0.63 squared / 0.454 = 874, attack damage 3, follow range 24, experience 10; no biome
+*> spawn entry; SM-RANGED 7: it has no melee goal, BREEZE-SHOOT fires its wind charge).
 *> The warden (20 section 15: max health 500, movement speed 0.3 at the fighting modifier 1.2: (0.3 x 1.2) squared / 0.454 = 285, attack damage 30, follow range 24,
 *> experience 5; no biome spawn entry; the Darkness pulse is WARDEN-DARKNESS).
     05 FILLER.
@@ -50,5 +52,21 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.              *> ranged kind
+       10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "breeze".
+       10 FILLER BINARY-LONG VALUE 30.
+       10 FILLER BINARY-LONG VALUE 874.              *> 0.63 squared / 0.454
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.              *> monster
+       10 FILLER BINARY-LONG VALUE 3.              *> attack damage 3 (unused: no melee goal)
+       10 FILLER BINARY-LONG VALUE 24.              *> follow range
+       10 FILLER BINARY-LONG VALUE 0.              *> does not burn
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 10.              *> experience points
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 7.              *> ranged kind: breeze wind charge
        10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
        10 FILLER BINARY-LONG VALUE 0.

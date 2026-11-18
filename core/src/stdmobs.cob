@@ -1244,6 +1244,9 @@
      IF SM-RANGED(WS-M) = 6
          CALL "SHULKER-ATTACK" USING WS-ROW WS-M
      END-IF
+     IF SM-RANGED(WS-M) = 7
+         CALL "BREEZE-SHOOT" USING WS-ROW WS-M
+     END-IF
      IF SM-KEY(WS-M) = "snow_golem"
          CALL "SNOW-GOLEM-TICK" USING WS-ROW WS-M
      END-IF
