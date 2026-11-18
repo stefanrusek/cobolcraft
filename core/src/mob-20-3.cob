@@ -228,7 +228,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HAND-KEY.
-*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-HAND                 BINARY-LONG.
@@ -241,6 +241,7 @@
          WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
          WHEN 4 MOVE "minecraft:bow" TO L-KEY
          WHEN 9 MOVE "minecraft:warped_fungus_on_a_stick" TO L-KEY
+         WHEN 10 MOVE "minecraft:stone_sword" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -600,6 +601,9 @@
                  COMPUTE EN-EQUIP(L-ROW) = 10 * (WS-TIER + 1) + WS-SLOTS
              END-IF
              MOVE 4 TO EN-HAND(L-ROW)
+         WHEN "wither_skeleton"
+*>           Default equipment: a stone sword (44-6 section 9.4; no random enchantments).
+             MOVE 10 TO EN-HAND(L-ROW)
          WHEN "slime"
          WHEN "magma_cube"
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
