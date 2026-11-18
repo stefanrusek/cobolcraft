@@ -38,7 +38,7 @@
  01 WS-NAME                PIC X(48).
  01 WS-PFKEY               PIC X(80).
  01 WS-PAIRS               PIC X(160).
- 01 WS-CASE                PIC X(200).
+ 01 WS-CASE                PIC X(240).
  01 WS-OBS                 BINARY-LONG.
  01 WS-EXP                 BINARY-LONG.
  01 WS-X0 BINARY-LONG.
@@ -248,7 +248,7 @@
          END-PERFORM
          MOVE WS-I TO WS-CASETXT
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.2: platform decorated from chunk case " WS-CASETXT " obsidian cells" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.2: platform decorated from chunk case " WS-CASETXT " obsidian cells" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-N-OBS TO WS-OBS
          IF WS-I = 1
              MOVE 15 TO WS-EXP
@@ -257,12 +257,12 @@
          END-IF
          PERFORM ASSERT-N
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.2: platform decorated from chunk case " WS-CASETXT " obsidian only on the floor" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.2: platform decorated from chunk case " WS-CASETXT " obsidian only on the floor" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-N-OTHER TO WS-OBS
          MOVE 0 TO WS-EXP
          PERFORM ASSERT-N
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.2: platform decorated from chunk case " WS-CASETXT " air cells" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.2: platform decorated from chunk case " WS-CASETXT " air cells" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-N-AIR TO WS-OBS
          IF WS-I = 1
              MOVE 45 TO WS-EXP

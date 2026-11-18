@@ -45,7 +45,7 @@
  01 WS-NAME                PIC X(48).
  01 WS-FTKEY               PIC X(80).
  01 WS-PAIRS               PIC X(160).
- 01 WS-CASE                PIC X(200).
+ 01 WS-CASE                PIC X(240).
  01 WS-OBS                 BINARY-LONG.
  01 WS-EXP                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -126,7 +126,7 @@
          CALL "FD-GET-FT" USING WS-FTKEY WS-FT
          CALL "FD-ENSURE-FT" USING WS-FT
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.3-4: " FUNCTION TRIM(WS-NAME) " compiles to its type" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.3-4: " FUNCTION TRIM(WS-NAME) " compiles to its type" DELIMITED BY SIZE INTO WS-CASE
          MOVE FT-TYPE(WS-FT) TO WS-OBS
          PERFORM ASSERT-N
      END-PERFORM
@@ -172,12 +172,12 @@
          END-PERFORM
          MOVE SPACES TO WS-CASE
          MOVE WS-ACTIVE TO WS-CASETXT
-         STRING "35-7§10.3: active " WS-CASETXT " every cell of the window agrees with the model" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.3: active " WS-CASETXT " every cell of the window agrees with the model" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-BAD TO WS-OBS
          MOVE 0 TO WS-EXP
          PERFORM ASSERT-N
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.3: active " WS-CASETXT " the portal layer holds the portal only when active (centre cell above the pillar base is bedrock)" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.3: active " WS-CASETXT " the portal layer holds the portal only when active (centre cell above the pillar base is bedrock)" DELIMITED BY SIZE INTO WS-CASE
          MOVE 24 TO WS-X
          MOVE 62 TO WS-Y
          MOVE 41 TO WS-Z
@@ -201,20 +201,20 @@
      MOVE 70 TO WS-PY
      MOVE 40 TO WS-PZ
      CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-PX WS-PY WS-PZ WS-RESULT
-     MOVE "35-7§10.4: the gateway feature with an exit asks for one entity request" TO WS-CASE
+     MOVE "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.4: the gateway feature with an exit asks for one entity request" TO WS-CASE
      MOVE GBL-COUNT TO WS-OBS
      MOVE 1 TO WS-EXP
      PERFORM ASSERT-N
-     MOVE "35-7§10.4: the request is of kind 3 at the gateway block" TO WS-CASE
+     MOVE "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.4: the request is of kind 3 at the gateway block" TO WS-CASE
      COMPUTE WS-OBS = GBL-KIND(1) * 1000000 + (GBL-X(1) - 24) * 10000 + (GBL-Y(1) - 70) * 100 + (GBL-Z(1) - 40)
      MOVE 3000000 TO WS-EXP
      PERFORM ASSERT-N
      MOVE GBL-TEXT(1) TO WS-NUMS
-     MOVE "35-7§10.4: the request carries the exit position (5, 60, -7)" TO WS-CASE
+     MOVE "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.4: the request carries the exit position (5, 60, -7)" TO WS-CASE
      COMPUTE WS-OBS = (WS-NUM(1) + 100) * 1000000 + (WS-NUM(2) + 100) * 1000 + (WS-NUM(3) + 100)
      COMPUTE WS-EXP = 105 * 1000000 + 160 * 1000 + 93
      PERFORM ASSERT-N
-     MOVE "35-7§10.4: the request flags are exit present and exact false" TO WS-CASE
+     MOVE "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.4: the request flags are exit present and exact false" TO WS-CASE
      MOVE GBL-SEED(1) TO WS-OBS
      MOVE 1 TO WS-EXP
      PERFORM ASSERT-N
@@ -224,7 +224,7 @@
      CALL "FD-ENSURE-FT" USING WS-FT
      PERFORM NEW-WORLD
      CALL "FR-PLACE-FT" USING XR-STATE WS-FT WS-PX WS-PY WS-PZ WS-RESULT
-     MOVE "35-7§10.4: the return gateway (exit (100, 50, 0), exact) flags are exit present and exact (3)" TO WS-CASE
+     MOVE "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.4: the return gateway (exit (100, 50, 0), exact) flags are exit present and exact (3)" TO WS-CASE
      MOVE GBL-SEED(1) TO WS-OBS
      MOVE 3 TO WS-EXP
      PERFORM ASSERT-N
