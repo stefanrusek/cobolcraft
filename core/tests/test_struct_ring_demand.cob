@@ -293,6 +293,33 @@
      IF WS-CALLS > 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM CHECK-ROWS-SECOND.
+
+*> Two positions that both can be the nearest (the second moved next to the first) and a limit of exactly the 57 rows of one position: the first snap is done, nothing is left for the second,
+*> so the call ends with SD-SNAP-PENDING 1 (and a call with no limit snaps both).
+ CHECK-ROWS-SECOND.
+     CALL "STRUCT-RINGS-PREP" USING WS-SET WS-SEED
+     MOVE SS-RING-ROW(WS-SET) TO WS-ROW
+     COMPUTE WS-OX = SR-RAW-X(WS-ROW, 1) * 16 + 8
+     COMPUTE WS-OZ = SR-RAW-Z(WS-ROW, 1) * 16 + 8
+     COMPUTE SR-RAW-X(WS-ROW, 2) = SR-RAW-X(WS-ROW, 1) + 1
+     MOVE SR-RAW-Z(WS-ROW, 1) TO SR-RAW-Z(WS-ROW, 2)
+     MOVE 57 TO SD-SNAP-LIMIT
+     MOVE 0 TO SD-SNAP-PENDING
+     CALL "STRUCT-NEAREST-RING" USING WS-SET WS-SEED WS-OX WS-OY WS-OZ WS-FOUND WS-CX WS-CZ WS-X WS-Y WS-Z
+     MOVE 0 TO SD-SNAP-LIMIT
+     MOVE SPACES TO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": a limit that the first position uses up leaves the second for the next call" DELIMITED BY SIZE INTO TL-CASE
+     MOVE SD-SNAP-PENDING TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO SD-SNAP-PENDING
+     CALL "STRUCT-NEAREST-RING" USING WS-SET WS-SEED WS-OX WS-OY WS-OZ WS-FOUND WS-CX WS-CZ WS-X WS-Y WS-Z
+     MOVE SPACES TO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": a call with no limit finishes it and leaves nothing pending" DELIMITED BY SIZE INTO TL-CASE
+     MOVE SD-SNAP-PENDING TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  COMPARE-LIST.

@@ -16,7 +16,7 @@
 *>   STRUCT-IS-CHUNK USING set, seed, chunk x, chunk z, flag out: isStructureChunk (4.2), RECURSIVE through the exclusion zone
 *>   STRUCT-IN-RANGE USING set, seed, chunk x, chunk z, radius, flag out: hasStructureChunkInRange (4.1)
 *>   STRUCT-RINGS-RAW USING distance, spread, count, seed (BINARY-DOUBLE UNSIGNED), table (256 rows of x, z, fork seed): 4.6 positions before the biome snap
-*>   STRUCT-RING-SNAP USING ring x, ring z, set, fork seed, chunk x out, chunk z out: 4.6.1 the biome search of one position
+*>   STRUCT-RING-SNAP-ROWS USING ring x, ring z, set, fork seed, chunk x out, chunk z out, progress, rows, rows done out, done out: 4.6.1 the biome search of one position, a few rows of it at a time
 *>   STRUCT-RINGS-BUILD USING set, seed: builds the ring list of a rings set for the seed (SD-RING row of SS-RING-ROW); STRUCT-RING-HAS tests membership (building on demand)
 *>   STRUCT-ORIGIN USING chunk x out, chunk z out; STRUCT-LOCATE-POS USING set, chunk x, chunk z, x out, y out, z out (4.8)
 *>   STRUCT-POSSIBLE-BUILD: SS-POSSIBLE of every set from the climate points (4.1)
@@ -564,34 +564,6 @@
  END PROGRAM STRUCT-RING-SNAP-ROWS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-RING-SNAP.
-*> USING ring x, ring z, set, fork seed (BINARY-DOUBLE UNSIGNED), chunk x out, chunk z out: 4.6.1 the biome search of one position (all its rows: STRUCT-RING-SNAP-ROWS).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-PROG.
-    05 WS-P-STARTED        BINARY-LONG VALUE 0.
-    05 WS-P-DZ             BINARY-LONG.
-    05 WS-P-K              BINARY-LONG.
-    05 WS-P-CX             BINARY-LONG.
-    05 WS-P-CZ             BINARY-LONG.
-    05 WS-P-RNG            BINARY-DOUBLE UNSIGNED.
- 01 WS-ALL                 BINARY-LONG VALUE 0.
- 01 WS-ROWS-DONE           BINARY-LONG.
- 01 WS-DONE                BINARY-LONG.
- LINKAGE SECTION.
- 01 L-RX                   BINARY-LONG.
- 01 L-RZ                   BINARY-LONG.
- 01 L-SET                  BINARY-LONG.
- 01 L-FORK                 BINARY-DOUBLE UNSIGNED.
- 01 L-CX                   BINARY-LONG.
- 01 L-CZ                   BINARY-LONG.
- PROCEDURE DIVISION USING L-RX L-RZ L-SET L-FORK L-CX L-CZ.
-     MOVE 0 TO WS-P-STARTED
-     CALL "STRUCT-RING-SNAP-ROWS" USING L-RX L-RZ L-SET L-FORK L-CX L-CZ WS-PROG WS-ALL WS-ROWS-DONE WS-DONE
-     GOBACK.
- END PROGRAM STRUCT-RING-SNAP.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-RINGS-PREP.
 *> USING set, seed: gives the set a ring row and fills it for the seed with the positions before the biome snap (STRUCT-RINGS-RAW) and their forked seeds; no
 *> position is snapped yet (SR-DONE 0).
@@ -778,7 +750,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-RING-HAS.
 *> USING set, seed, chunk x, chunk z, flag out: 1 when the chunk is in the set's ring list for the seed. The row is filled when absent or filled for another
-*> seed (STRUCT-RINGS-PREP). The biome snap moves a position by at most 7 chunks on each axis (STRUCT-RING-SNAP: the quart cells 4 rx - 26 to 4 rx + 30), so
+*> seed (STRUCT-RINGS-PREP). The biome snap moves a position by at most 7 chunks on each axis (STRUCT-RING-SNAP-ROWS: the quart cells 4 rx - 26 to 4 rx + 30), so
 *> only the positions within 7 chunks of the chunk can be it: those are snapped when they are not yet (STRUCT-RING-READY) and compared; the others are left.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
