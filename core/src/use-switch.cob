@@ -11,7 +11,7 @@
 *> A property is read and written through the property text of the state (BLOCKS-STATE-PROPS) and the state search BLOCKS-STATE-OF; the keys are compared
 *> in their bare form (core/src/keys.cob), so the standard and the cobolcraft set both work.
 *> Entry points:
-*>   SW-BLOCK-KIND USING block id, kind out (0 none, 1 lever, 2 button, 3 door, 4 trapdoor, 5 fence gate), delay out (button release ticks)
+*>   SW-BLOCK-KIND USING block id, kind out (0 none, 1 lever, 2 button, 3 door, 4 trapdoor, 5 fence gate, 6 repeater, 7 comparator), delay out (button release ticks)
 *>   SW-SET-PROP USING state, name (PIC X(16)), value (PIC X(16), "toggle" flips true and false, "keep" reads only), state out, old value out (PIC X(16), spaces when the
 *>     state has no such property: then the state out is the state given)
 *>   SW-USE USING connection id, PLAY-SERVERBOUND, handled out (1 when the block took the click)
@@ -64,6 +64,10 @@
              IF WS-BARE(1:4) = "iron"
                  MOVE 0 TO L-KIND
              END-IF
+         WHEN WS-BARE = "repeater"
+             MOVE 6 TO L-KIND
+         WHEN WS-BARE = "comparator"
+             MOVE 7 TO L-KIND
      END-EVALUATE
      GOBACK.
  END PROGRAM SW-BLOCK-KIND.
@@ -136,6 +140,9 @@
  01 WS-KIND                BINARY-LONG.
  01 WS-DELAY               BINARY-LONG.
  01 WS-NAME-POWERED        PIC X(16) VALUE "powered".
+ 01 WS-NAME-DELAY          PIC X(16) VALUE "delay".
+ 01 WS-NAME-MODE           PIC X(16) VALUE "mode".
+ 01 WS-DIGIT               PIC 9.
  01 WS-NAME-OPEN           PIC X(16) VALUE "open".
  01 WS-NAME-HALF           PIC X(16) VALUE "half".
  01 WS-TOGGLE              PIC X(16) VALUE "toggle".
@@ -174,15 +181,37 @@
      IF WS-KIND = 2
          MOVE WS-TRUE TO WS-VALUE
      END-IF
-     IF WS-KIND <= 2
-         CALL "SW-SET-PROP" USING WS-STATE WS-NAME-POWERED WS-VALUE WS-NEW WS-OLD
-     ELSE
-         CALL "SW-SET-PROP" USING WS-STATE WS-NAME-OPEN WS-VALUE WS-NEW WS-OLD
-     END-IF
+     EVALUATE WS-KIND
+         WHEN 1
+         WHEN 2
+             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-POWERED WS-VALUE WS-NEW WS-OLD
+         WHEN 6
+*>           the repeater's delay cycles 1 to 4 (30-2 section 3.6)
+             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-DELAY WS-KEEP WS-NEW WS-OLD
+             COMPUTE WS-DIGIT = FUNCTION MOD(FUNCTION NUMVAL(WS-OLD), 4) + 1
+             MOVE WS-DIGIT TO WS-VALUE
+             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-DELAY WS-VALUE WS-NEW WS-OLD
+         WHEN 7
+*>           the comparator's mode toggles (30-2 section 4.6)
+             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-MODE WS-KEEP WS-NEW WS-OLD
+             MOVE "subtract" TO WS-VALUE
+             IF WS-OLD = "subtract"
+                 MOVE "compare" TO WS-VALUE
+             END-IF
+             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-MODE WS-VALUE WS-NEW WS-OLD
+         WHEN OTHER
+             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-OPEN WS-VALUE WS-NEW WS-OLD
+     END-EVALUATE
      IF WS-NEW = WS-STATE
          GOBACK
      END-IF
      CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW
+     IF WS-KIND = 1 OR WS-KIND = 2
+         CALL "REDSTONE-SWITCH-NOTIFY" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW
+     END-IF
+     IF WS-KIND = 7
+         CALL "RL-DIODE-TICK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW WS-BLOCK
+     END-IF
      IF WS-KIND = 2
          CALL "BT-SCHEDULE" USING WS-DIM WS-TYPE-BLOCK WS-BLOCK PSB-BX PSB-BY PSB-BZ WS-DELAY WS-NORMAL WS-RESULT
      END-IF
@@ -224,6 +253,9 @@
      CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
      CALL "SW-SET-PROP" USING WS-STATE WS-NAME WS-FALSE WS-NEW WS-OLD
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
+     IF WS-NEW NOT = WS-STATE
+         CALL "REDSTONE-SWITCH-NOTIFY" USING L-DIM L-X L-Y L-Z WS-NEW
+     END-IF
      GOBACK.
  END PROGRAM SW-BUTTON-RELEASE.
 
