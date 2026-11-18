@@ -40,7 +40,7 @@
  01 WS-HITS                BINARY-LONG.
  01 WS-ANY                 BINARY-LONG.
  01 WS-PAT                 PIC X(40).
- 01 WS-IDTXT               PIC X(24).
+ 01 WS-IDTXT               PIC X(32).
  01 WS-PAT-LEN             BINARY-LONG.
  01 WS-SHORT               PIC X(48).
  01 WS-TEXT                PIC X(160).
@@ -64,19 +64,19 @@
     05 WS-JNN              PIC X(24) OCCURS 8 TIMES.
 *>  entities by id
  01 WS-ENT-IDS.
-    05 FILLER              PIC X(24) VALUE "minecraft:villager".
-    05 FILLER              PIC X(24) VALUE "minecraft:zombie_villager".
-    05 FILLER              PIC X(24) VALUE "minecraft:cat".
-    05 FILLER              PIC X(24) VALUE "minecraft:horse".
-    05 FILLER              PIC X(24) VALUE "minecraft:sheep".
-    05 FILLER              PIC X(24) VALUE "minecraft:cow".
-    05 FILLER              PIC X(24) VALUE "minecraft:pig".
-    05 FILLER              PIC X(24) VALUE "minecraft:iron_golem".
-    05 FILLER              PIC X(24) VALUE "minecraft:camel".
-    05 FILLER              PIC X(24) VALUE "minecraft:armor_stand".
-    05 FILLER              PIC X(24) VALUE "minecraft:allay".
+    05 FILLER              PIC X(32) VALUE "minecraft:villager".
+    05 FILLER              PIC X(32) VALUE "minecraft:zombie_villager".
+    05 FILLER              PIC X(32) VALUE "minecraft:cat".
+    05 FILLER              PIC X(32) VALUE "minecraft:horse".
+    05 FILLER              PIC X(32) VALUE "minecraft:sheep".
+    05 FILLER              PIC X(32) VALUE "minecraft:cow".
+    05 FILLER              PIC X(32) VALUE "minecraft:pig".
+    05 FILLER              PIC X(32) VALUE "minecraft:iron_golem".
+    05 FILLER              PIC X(32) VALUE "minecraft:camel".
+    05 FILLER              PIC X(32) VALUE "minecraft:armor_stand".
+    05 FILLER              PIC X(32) VALUE "minecraft:allay".
  01 WS-ENT-TAB REDEFINES WS-ENT-IDS.
-    05 WS-EID              PIC X(24) OCCURS 11 TIMES.
+    05 WS-EID              PIC X(32) OCCURS 11 TIMES.
  01 WS-ENT-WANT.
     05 FILLER              PIC 99 VALUE 15.
     05 FILLER              PIC 99 VALUE 10.
@@ -95,24 +95,24 @@
     05 WS-EC               BINARY-LONG OCCURS 11 TIMES.
 *>  loot tables (the village chests of 9.5)
  01 WS-LOOT-NAMES.
-    05 FILLER              PIC X(20) VALUE "village_armorer".
-    05 FILLER              PIC X(20) VALUE "village_butcher".
-    05 FILLER              PIC X(20) VALUE "village_cartographer".
-    05 FILLER              PIC X(20) VALUE "village_desert_house".
-    05 FILLER              PIC X(20) VALUE "village_fisher".
-    05 FILLER              PIC X(20) VALUE "village_fletcher".
-    05 FILLER              PIC X(20) VALUE "village_mason".
-    05 FILLER              PIC X(20) VALUE "village_plains_house".
-    05 FILLER              PIC X(20) VALUE "village_savanna_house".
-    05 FILLER              PIC X(20) VALUE "village_shepherd".
-    05 FILLER              PIC X(20) VALUE "village_snowy_house".
-    05 FILLER              PIC X(20) VALUE "village_taiga_house".
-    05 FILLER              PIC X(20) VALUE "village_tannery".
-    05 FILLER              PIC X(20) VALUE "village_temple".
-    05 FILLER              PIC X(20) VALUE "village_toolsmith".
-    05 FILLER              PIC X(20) VALUE "village_weaponsmith".
+    05 FILLER              PIC X(24) VALUE "village_armorer".
+    05 FILLER              PIC X(24) VALUE "village_butcher".
+    05 FILLER              PIC X(24) VALUE "village_cartographer".
+    05 FILLER              PIC X(24) VALUE "village_desert_house".
+    05 FILLER              PIC X(24) VALUE "village_fisher".
+    05 FILLER              PIC X(24) VALUE "village_fletcher".
+    05 FILLER              PIC X(24) VALUE "village_mason".
+    05 FILLER              PIC X(24) VALUE "village_plains_house".
+    05 FILLER              PIC X(24) VALUE "village_savanna_house".
+    05 FILLER              PIC X(24) VALUE "village_shepherd".
+    05 FILLER              PIC X(24) VALUE "village_snowy_house".
+    05 FILLER              PIC X(24) VALUE "village_taiga_house".
+    05 FILLER              PIC X(24) VALUE "village_tannery".
+    05 FILLER              PIC X(24) VALUE "village_temple".
+    05 FILLER              PIC X(24) VALUE "village_toolsmith".
+    05 FILLER              PIC X(24) VALUE "village_weaponsmith".
  01 WS-LOOT-TAB REDEFINES WS-LOOT-NAMES.
-    05 WS-LN               PIC X(20) OCCURS 16 TIMES.
+    05 WS-LN               PIC X(24) OCCURS 16 TIMES.
  01 WS-LOOT-WANT.
     05 FILLER              PIC 99 VALUE 01.
     05 FILLER              PIC 99 VALUE 01.

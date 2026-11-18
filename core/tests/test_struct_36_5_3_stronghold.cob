@@ -88,9 +88,9 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 36-5§3 Stronghold: the entry is the structure stronghold with weight 1" TO TL-CASE
-     MOVE SE-STRUCT(SS-EN-FIRST(WS-SET) + 1) TO WS-STRUCT
+     MOVE SE-STRUCT(SS-EN-FIRST(WS-SET)) TO WS-STRUCT
      MOVE 0 TO TL-OBSERVED-N
-     IF SDT-KEY(WS-STRUCT) = "minecraft:stronghold" AND SE-WEIGHT(SS-EN-FIRST(WS-SET) + 1) = 1
+     IF SDT-KEY(WS-STRUCT) = "minecraft:stronghold" AND SE-WEIGHT(SS-EN-FIRST(WS-SET)) = 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      MOVE 1 TO TL-EXPECTED-N

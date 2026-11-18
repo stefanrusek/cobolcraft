@@ -65,6 +65,7 @@
  01 WS-Z1B                 BINARY-LONG.
  01 WS-ZERO0               BINARY-LONG VALUE 0.
  01 WS-N                   BINARY-LONG.
+ 01 WS-CARTS               BINARY-LONG.
  01 WS-DRAWN               FLOAT-LONG.
  01 WS-CHANCE-ALL          FLOAT-LONG VALUE 0.8.
  01 WS-CHANCE-ONE          FLOAT-LONG VALUE 1.0.
@@ -144,6 +145,21 @@
      END-IF
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the chest minecart (2.10): 1 percent per side per section: the rail that createChest places at (2,0,z-1) and (0,0,z+1): 400 corridors of three sections = 2400 trials, 24 expected
+     MOVE 0 TO WS-CX
+     MOVE 0 TO WS-CARTS
+     PERFORM VARYING WS-CASE FROM 1 BY 1 UNTIL WS-CASE > 400
+         PERFORM RUN-CORRIDOR
+         PERFORM COUNT-RAILS
+         ADD WS-N TO WS-CARTS
+     END-PERFORM
+     MOVE "acceptance US12 36-5§2.13 Loot, spawners: chests exist only as chest minecarts, 1 percent per side per section: between 10 and 45 rails of 2400 trials (no rails track)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-CARTS >= 10 AND WS-CARTS <= 45
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the spawner count and the rails or spider split over many corridors: MS-CREATE of a free site
      MOVE 0 TO WS-RAILS WS-SPIDERS WS-BOTH WS-MADE
      PERFORM VARYING WS-SEED FROM 1 BY 1 UNTIL WS-SEED > 3000
@@ -213,6 +229,42 @@
      MOVE 2 TO WS-Y1B
      MOVE 14 TO WS-Z1B
      CALL "MSP-MAYBE-BOX" USING WS-ROW WS-CHANCE-ALL WS-X0B WS-Y0B WS-Z0B WS-X1B WS-Y1B WS-Z1B SBK-S-CAVE-AIR BY CONTENT SBK-S-CAVE-AIR BY REFERENCE WS-ZERO0 BY CONTENT WS-ZERO0.
+ RUN-CORRIDOR.
+     CALL "SPB-RESET"
+     MOVE 0 TO GBL-COUNT GBL-LOST
+     SET ADDRESS OF CE-CHUNK TO WS-PTR
+     MOVE LOW-VALUES TO CE-CHUNK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 135 * 256
+         MOVE WS-STONE TO CE-STATE(WS-I)
+     END-PERFORM
+     CALL "FL-OPEN" USING WS-PTR WS-CX WS-CZ WS-MIN WS-HEIGHT WS-SEA
+     CALL "MSP-OPEN"
+     COMPUTE SP-XR-LO = WS-CASE * 7919 + 13
+     COMPUTE SP-XR-HI = WS-CASE * 104729 + 77
+     MOVE 4 TO A-X0
+     MOVE 50 TO A-Y0
+     MOVE 0 TO A-Z0
+     MOVE 6 TO A-X1
+     MOVE 52 TO A-Y1
+     MOVE 14 TO A-Z1
+     MOVE 2 TO WS-PO
+     CALL "SPB-ADD" USING WS-PT WS-PO WS-DEP WS-MST WS-BOX WS-ROW
+     MOVE 0 TO SP-F1(WS-ROW) SP-F2(WS-ROW)
+     MOVE 3 TO SP-F4(WS-ROW)
+     CALL "MS-POST" USING WS-ROW
+     MOVE 3 TO WS-PO.
+ COUNT-RAILS.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-Y FROM 49 BY 1 UNTIL WS-Y > 52
+         PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 15
+             PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 15
+                 PERFORM CELL-STATE
+                 IF WS-S = SBK-S-RAIL(1) OR WS-S = SBK-S-RAIL(2)
+                     ADD 1 TO WS-N
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM.
  COUNT-AIR.
      MOVE 0 TO WS-N
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 135 * 256

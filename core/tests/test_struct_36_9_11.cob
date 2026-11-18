@@ -169,6 +169,7 @@
      CALL "JIG-POOL-FIND" USING WS-KEY WS-POOL
      MOVE JN-ELEM(JP-FIRST(WS-POOL)) TO WS-EL
      MOVE "acceptance US12 36-9§11.1 The pool graph: towers holds one rigid list element of watchtower then watchtower_overgrown" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF JP-N(WS-POOL) = 1 AND JE-KIND(WS-EL) = 3 AND JE-SUB-N(WS-EL) = 2 AND JE-PROJ(WS-EL) = 0
          MOVE JS-ELEM(JE-SUB-FIRST(WS-EL)) TO WS-SUB
