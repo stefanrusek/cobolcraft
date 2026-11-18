@@ -501,6 +501,31 @@ Dimensions and attributes of every mob below are in the §2 table (size) and in 
 
 Metadata of all fish: 16 = from bucket (Boolean).
 
+#### 4.1.1 Schooling rule in full (`AbstractSchoolingFish`, `FollowFlockLeaderGoal`)
+
+State per schooling fish: `leader` (a fish or none) and `schoolSize` (starts at 1). Definitions: `isFollower` = it has a leader and that leader is alive; `hasFollowers` = `schoolSize > 1`; `canBeFollowed` = `hasFollowers` and `schoolSize < maxSchoolSize`; `maxSchoolSize` = the spawn cluster size of 4.1 (8, salmon 5); `inRangeOfLeader` = squared distance to the leader `<= 121.0` (11 blocks).
+
+`FollowFlockLeaderGoal` (goal priority 5, flags none declared; counted in `reducedTickDelay`, 18 section on tick-delay scaling):
+- `nextStartTick = reducedTickDelay(200 + nextInt(200) % 20)` (one draw `nextInt(200)` on the fish's own random, taken modulo 20; the constructor rolls it once).
+- `canUse`, in order:
+  1. If the fish `hasFollowers`: false.
+  2. If it `isFollower`: true.
+  3. If `nextStartTick > 0`: decrement it and return false.
+  4. Re-roll `nextStartTick` as above and search: every fish of the same Java class (`getEntitiesOfClass`) in the box inflated by 8 on every axis around the fish's own box, keeping those with `canBeFollowed() || !isFollower()`.
+  5. Leader = any one of the found fish that `canBeFollowed` (a stream `findAny`: the first in list order for a sequential stream), else the fish itself.
+  6. The leader adopts followers with `addFollowers(stream)`, a fixed pipeline over the found list in list order: (a) keep the fish that are not followers (the filter passed by `canUse`); (b) `limit(N)` with `N = maxSchoolSize - leader.schoolSize`; (c) keep the fish that are not the leader; (d) each remaining fish does `startFollowing(leader)` (sets its `leader`, increments the leader's `schoolSize`). The limit is applied before the leader is excluded, and the leader is not a follower, so when the leader is among the first `N` fish of the list it uses one of the `N` slots and at most `N - 1` fish are adopted.
+  7. Return whether the fish itself `isFollower` now.
+- `canContinueToUse`: `isFollower` and `inRangeOfLeader`. `start`: `timeToRecalcPath = 0`. `stop`: `stopFollowing` (decrement the old leader's `schoolSize`, clear the leader).
+- `tick`: `timeToRecalcPath` decrements; while it is above 0 do nothing; otherwise set it to `adjustedTickDelay(10)` (5) and `pathToLeader`: when a follower, `navigation.moveTo(leader, speed 1.0)`. The speed modifier is 1.0 times the movement-speed attribute through the fish move control of 4.1 (no sprint or panic factor), so a follower swims toward the leader at the same base speed it uses for random swimming (speed modifier 1.0).
+- Leader housekeeping (`AbstractSchoolingFish.tick`, every tick): when `hasFollowers` and `nextInt(200) == 1` (the draw is on the LEVEL's random, `level().getRandom()`, not the fish's own), count the fish of the same class in the 8-block inflated box; if the list size is 1 or less (only itself), set `schoolSize = 1` (the school dissolves).
+- The fish goal set of 4.1 (panic at 0, avoid at 2, the random swim goal `FishSwimGoal` at 4, this goal at 5) is the same for every schooling fish; a follower simply cannot start the random swim goal because `canRandomSwim` is false while it follows. A fish whose leader died is no longer a follower (`isFollower` needs a living leader).
+- Spawn (`finalizeSpawn`): the first fish of a group creates the group data with itself as leader (it does not follow); each later fish of the group `startFollowing(group leader)`.
+Worked examples (max school size 8):
+- 5 cod spawned in one cluster: fish 1 is the leader (`schoolSize` 1), fish 2 to 5 follow it (`schoolSize` 5); `canBeFollowed` stays true. A lone cod whose box is within 8 blocks of fish 1's box on each axis (box edge to box edge, the inflated-box search of step 4, not a Euclidean radius) runs the search after its start tick, finds fish 1 (`canBeFollowed`), takes it as the leader, and fish 1 adopts it (`schoolSize` 6).
+- Leader in the list: a lone fish L (its own leader, `schoolSize` 1) finds the list `[L, F1 .. F9]`, all non-followers. `N = 8 - 1 = 7`. Pipeline: limit 7 gives `[L, F1 .. F6]`, excluding L gives `[F1 .. F6]`: 6 adopted, `schoolSize` 7 (not 8).
+- Leader late in the list: the same fish with the list `[F1 .. F9, L]`: limit 7 gives `[F1 .. F7]`, L is not in it, 7 adopted, `schoolSize` 8.
+The framework summary of this goal is 18 section 4.2.
+
 ### 4.2 Cod, salmon, pufferfish, tropical fish
 
 | Mob | Size (w x h) | Extra attributes | Special | Metadata (own) | Loot | Spawn |
@@ -624,7 +649,7 @@ stored on the squid:
   0.9 and `rotateSpeed *= 0.99`. Out of water: vertical velocity -= gravity (or the levitation rule
   `0.05 * (amplifier + 1)`) times the air drag, horizontal velocity zero.
 - Ink: when `hurtServer` succeeds and the squid has a last attacker, it spawns 30 ink particles (`SQUID_INK`, glow
-  variant `GLOW_SQUID_INK`) and plays the squirt sound.
+  variant `GLOW_SQUID_INK`) and plays the squirt sound. Origin, per-particle direction and speed formulas, draw order: 42-7 section 1.4.1.
 - Glow squid: `hurtServer` that lands sets dark ticks to 100 (it stops glowing for 100 ticks; the counter decrements
   each `aiStep`); the client spawns glow particles while the counter is zero.
 
@@ -807,7 +832,7 @@ expanded; Open question 10.)
 
 | Depth rule | Mobs |
 |---|---|
-| Surface band `seaLevel - 13` to `seaLevel`, water below and above | cod, salmon, pufferfish, squid, dolphin; tropical fish also anywhere in biomes tagged `allows_tropical_fish_spawns_at_any_height` |
+| Surface band `seaLevel - 13` to `seaLevel`, water below and above | cod, salmon, pufferfish, squid, dolphin; tropical fish also anywhere in biomes tagged `allows_tropical_fish_spawns_at_any_height` (read: `data/minecraft/tags/worldgen/biome/allows_tropical_fish_spawns_at_any_height.json` has exactly one value, `minecraft:lush_caves`) |
 | `seaLevel - 25` to `seaLevel - 5` | nautilus |
 | `y <= seaLevel - 33`, brightness 0 | glow squid (underground water creature category: in every biome with the entry, §3.3) |
 | `nextInt(20) == 0` gate, no sky from below the water | guardian (the ocean monument override of §3.5 restricts guardians to the monument box; the biome lists carry no guardian entries) |
@@ -1175,11 +1200,30 @@ is below half the maximum, with probability 1/4 it teleports; otherwise if the d
 entity is a `shulker_bullet`, the shulker may split (`hitByShulkerBullet`): when it is not closed or it can teleport
 away; count the shulkers within an 8-block inflated box (including itself, a limit of 5 is declared as `OTHER_SHULKER_LIMIT`); compute `p = (count - 1) / 5` and, when `nextFloat() < p`, a new shulker of the same colour (reason BREEDING) is created at its previous position (it teleported away first).
 
-Shulker bullet (`ShulkerBullet`, type `shulker_bullet`, 0.3125 x 0.3125, range 8, no metadata): speed constant 0.15; it homes on
-its target (velocity eased toward a target delta that grows by `x 1.025` per tick clamped to `[-1, 1]`), takes steps
-of `flightSteps = 10 + nextInt(5) * 10` along one axis at a time (`selectNextMoveDirection`), then re-aims. Hit on an
-entity: `hurt(mobProjectile, 4.0)` and, if it lands and the victim is living, Levitation for 200 ticks (source = the
-shulker). Bullets can be destroyed by being hit (`hurtServer`).
+Shulker bullet (`ShulkerBullet`, type `shulker_bullet`, 0.3125 x 0.3125, range 8, no metadata, `noPhysics` true):
+
+- **Start position and orientation.** The constructor `ShulkerBullet(level, owner, target, axis)` places the bullet at the centre of the **owner's current bounding box** (`AABB.getCenter`, the midpoint of each axis range, so for a shulker it depends on the current lid opening; the shooter is fully open at that moment but the box follows the peek value progressively, 6.2 Peek), with rotation yaw 0 and pitch 0 (`snapTo` with the bullet's own default rotation). The owner is the shulker, the target is the shulker's current attack target, and the `axis` is the axis of the shulker's attach face. The initial move direction is UP, immediately replaced by the selection below. The initial velocity is zero until the first tick.
+- **Constants.** Speed 0.15 (blocks per tick, the length of the target delta vector), gravity 0.04 (`getDefaultGravity`), homing gain 0.2, delta growth 1.025, clamp 1.0.
+- **Direction selection (`selectNextMoveDirection(axis, target)`)**, run from the constructor, when `flightSteps` counts down to 0, and when blocked. Inputs: `axis` (an axis or none) and `target` (an entity or none). Steps:
+  1. Target block `T` and aim point `(ax, ay, az)`. With a target: `yOff = 0.5 * target height`; `T` = the block containing `(target.x, target.y + yOff, target.z)`; aim `(T.x + 0.5, T.y + yOff, T.z + 0.5)` (the half height is added to the integer block Y, as read). Without a target: `T` = the block below the bullet's block, `yOff = 0.5`.
+  2. If the block `T` is within 2.0 of the bullet (`BlockPos.closerToCenterThan(position, 2.0)`): the direction is none and the aim stays as in step 1; go to step 7.
+  3. Otherwise let `B` be the bullet's block and build the candidate list in this order, skipping the axis equal to `axis`: X: if `B.x < T.x` and the block east of `B` is air add EAST, else if `B.x > T.x` and west is air add WEST; Y: if `B.y < T.y` and above is air add UP, else if `B.y > T.y` and below is air add DOWN; Z: if `B.z < T.z` and south is air add SOUTH, else if `B.z > T.z` and north is air add NORTH.
+  4. Draw `d0 = Direction.getRandom` (`nextInt(6)` indexing DOWN, UP, NORTH, SOUTH, WEST, EAST) from the bullet's random. This draw always happens.
+  5. If the candidate list is empty: up to 5 times, while the block at `B + d0` is not air, redraw `d0` (one `nextInt(6)` each); the final `d0` is the direction. If the list is not empty: the direction is `list[nextInt(list.size())]` (one more draw; `d0` is unused).
+  6. The aim point becomes the bullet position plus the direction's unit step.
+  7. Store the direction (possibly none); target delta = (aim - bullet position) normalised and scaled by 0.15 (all zero when the aim equals the position exactly); `flightSteps = 10 + 10 * nextInt(5)`; flag a sync.
+- **Tick.** Steering, gravity and the hit test run on the server only; the client only moves the bullet by its synchronised velocity and emits a particle. Per tick:
+  1. Server: resolve the target entity from `finalTarget`; when it cannot be resolved, clear the stored reference.
+  2. Server, steering branch (target resolved, alive, and not a spectator player): each target delta component = clamp(delta * 1.025, -1, 1); velocity += (delta - velocity) * 0.2 per axis.
+  3. Server, gravity branch (target missing, dead, or a spectator player): velocity Y decreases by 0.04; the target deltas keep their values.
+  4. Server: compute the hit result along the velocity (`getHitResultOnMoveVector`, entities satisfying `Projectile.canHitEntity` and not `noPhysics`).
+  5. Both sides: move by the velocity (`setPos(position + velocity)`), apply block effects, handle a portal.
+  6. Server: on a non-miss hit with the bullet alive, call the shared hit handler (a deflecting entity may redirect it, and then the hit is not applied).
+  7. Both sides: rotate toward the movement (factor 0.5).
+  8. Client: add an `end_rod` particle at `(x - vx, y - vy + 0.15, z - vz)` with zero velocity.
+  9. Server, only when the resolved target is non-null (alive or not, spectator or not): `flightSteps` counts down while above 0; when it reaches 0 re-select the direction with the axis of the current direction (none when there is none). Then, when a direction exists: let `B` be the bullet's block and `a` the axis of the direction; if the block `B + direction` is loaded and can be stood on (its collision shape for the entity context has a full top face, `entityCanStandOnFace` with UP) re-select with axis `a`; otherwise, with `T` the target's block, re-select with axis `a` when `a` is X and `B.x == T.x`, or `a` is Z and `B.z == T.z`, or `a` is Y and `B.y == T.y`.
+- **Hits.** Entity hit: `hurtOrSimulate(mobProjectile(bullet, owner if living), 4.0)`; when it returns true the post-attack enchantment effects run for the victim, and a living victim receives Levitation for 200 ticks (amplifier 0), source = the owner when there is one, else the bullet. Block hit: 2 `explosion` particles (spread 0.2, speed 0) and the sound `SHULKER_BULLET_HIT` (volume 1, pitch 1). Every hit then destroys the bullet (discard, game event `ENTITY_DAMAGE`). Being hit (`hurtServer`, always returns true): sound `SHULKER_BULLET_HURT`, 15 `crit` particles (spread 0.2, speed 0), destroyed. A redirected projectile uses the momentum deflection with the bullet as owner. Peaceful difficulty discards a bullet in `checkDespawn`. The bullet is never on fire, always `isPickable`, and its light-dependent magic value is 1.
+- **Shoot (from `ShulkerAttackGoal`).** Order within one shot: `attackTime` is set first, then the bullet is created and added (`addFreshEntity`), then the shoot sound `SHULKER_SHOOT` is played at volume 2.0 with pitch `1 + (nextFloat() - nextFloat()) * 0.2` (two draws on the shulker's random, first minus second). The goal also keeps the look control on the target with turn limits 180 and 180 every tick.
 
 ### 6.3 End crystal (`EndCrystal`)
 
@@ -1522,12 +1566,31 @@ orientation by the pattern search) is:
 | 2 | `# # #` | `#` = a block in tag `wither_summon_base_blocks` = {`soul_sand`, `soul_soil`} |
 | 3 (bottom) | `~ # ~` | `~` = air; `#` as above |
 
-A second pattern with a blank top row (`getOrCreateWitherBase`: rows blank, `###`, `~#~`) also exists; its caller was not read. On a full match:
-create a `wither` (reason TRIGGERED); clear the pattern blocks (`CarvedPumpkinBlock.clearPatternBlocks`); position it at the X and Z
-of the pattern block returned by `getBlock(1, 2, 0)` (pattern coordinates as `BlockPattern` defines them; the middle column of the
-last aisle row, read as the bottom `~ # ~` row's middle) centred (+0.5), Y = that block's Y + 0.55, yaw 90 degrees when the pattern's forward axis is X (else 0;
-body yaw 90 when X); call `makeInvulnerable` (below); trigger the "summoned entity" criterion for every server player within 50
-blocks; add the entity; then `updatePatternBlocks` (neighbour updates around the cleared cells).
+`checkSpawn(level, pos, skull block entity)` runs only on the server, so it returns at once on a client. Preconditions, all required: the skull block entity's state is `wither_skeleton_skull` or `wither_skeleton_wall_skull`; `pos.y >= level minimum Y`; the difficulty is not Peaceful; the full pattern (`getOrCreateWitherFull`, 7.1.1) is found around `pos`; and the `wither` entity can be created. On a full match:
+create a `wither` (reason TRIGGERED); clear the pattern blocks (`CarvedPumpkinBlock.clearPatternBlocks`: for each of the 3 columns in order, for each of the 3 rows in order, set the cell to air with flags 2 and broadcast level event 2001 (block break) carrying the old block state id; all nine cells are cleared, including the two air cells); position it at the X and Z of the pattern cell with indexes (column 1, row 2, aisle 0) (the middle cell of the bottom row, a soul sand or soul soil block) plus 0.5 each, and Y = that block's Y + 0.55; yaw 0 and body yaw 0 when the axis of the match's `forwards` direction is X, otherwise yaw 90 and body yaw 90 (pitch 0; the rule is in 7.1.1); call `makeInvulnerable` (below); trigger the "summoned entity" criterion for every server player within 50
+blocks of the wither's box (box inflated by 50 on every axis); add the entity; then `updatePatternBlocks` (`updateNeighborsAt(cell, air)` for each of the nine cells, same order as the clear).
+
+#### 7.1.1 Pattern orientation, the yaw rule and the base pattern
+
+`BlockPattern` stores the pattern as `[aisle][row][column]` (depth, height, width). The wither pattern has one aisle (depth 1), three rows (height 3) and three columns (width 3); the cells are given as strings per row, one character per column, with the blank character matching ANY block (always true). `find(level, pos)` searches for a match as follows: let `n = max(width, height, depth) = 3`; every candidate origin `o` ("front top left") in the box from `pos` to `pos + (2, 2, 2)` inclusive, visited with X changing fastest, then Y, then Z; for each origin, every ordered pair of directions `(forwards, up)` taken from the six directions in the order DOWN, UP, NORTH, SOUTH, WEST, EAST (forwards in the outer loop, up in the inner loop), skipping pairs where `up == forwards` or `up == opposite(forwards)`; the first pair (and origin) for which all nine cells match is returned. The cell `(column c, row r, aisle d)` is at the world position
+
+`o + c * (forwards x up) + d * forwards - r * up` (the vector cross product of the two unit step vectors, per axis; the second term is the aisle offset and is 0 for this pattern).
+
+Orientation consequences (derived from that formula):
+
+| Built shape | Match found with | Axis of `forwards` | Wither yaw and body yaw |
+|---|---|---|---|
+| upright T, the three top cells in a row along the X axis (east-west arms) | `up` = UP, `forwards` = NORTH or SOUTH (the cross product `forwards x up` is along X) | Z | **90** |
+| upright T, the three top cells in a row along the Z axis (north-south arms) | `up` = UP, `forwards` = EAST or WEST | X | **0** |
+
+A sideways or upside-down T (which the search also accepts when the blocks happen to fit, with `up` horizontal or DOWN) uses the same rule on whatever `forwards` was found first in the iteration order above; it is not a case of practical interest. The yaw value only fixes the wither's initial look direction and body angle (which compass direction yaw 0 and 90 denote is the entity yaw convention of 18 framework and is not restated here).
+
+
+Predicates. Full pattern (`getOrCreateWitherFull`): row 1 `^^^`, row 2 `###`, row 3 `~#~`; `#` = a block in tag `wither_summon_base_blocks`, `^` = `wither_skeleton_skull` or `wither_skeleton_wall_skull` (any state), `~` = air (`BlockState.isAir`, so cave air and void air count too).
+
+Base pattern (`getOrCreateWitherBase`, read): row 1 is three blank characters (always true), row 2 `###`, row 3 `~#~`, with the same `#` and `~` predicates. It is used by exactly one caller, `WitherSkullBlock.canSpawnMob(level, pos, stack)`, which is called only by the dispenser behaviour registered for the `wither_skeleton_skull` item (`DispenseItemBehavior`, anonymous class `$7`). `canSpawnMob` is true when all hold: the stack is the `wither_skeleton_skull` item; `pos.y >= level minimum Y + 2`; the difficulty is not Peaceful; the level is a server level; and the base pattern is found around `pos` (the search of 7.1.1 with the position being the cell in front of the dispenser). The dispenser (target cell = dispenser position + its facing) then, when the target cell is air and `canSpawnMob` is true: places a `wither_skeleton_skull` block (the floor variant) whose `rotation` property is `RotationSegment.convertToSegment(facing)` (the 16-segment angle for the dispenser's facing; a vertical facing is not traced), calls `setBlockAndUpdate`, emits the `block_place` game event at the target cell, and, when the new block's entity is a skull block entity, runs `checkSpawn` on it (so the full pattern, with the skull now in place, creates the wither); the item stack shrinks by 1 and the dispense counts as a success. Otherwise (the target cell is not air, or `canSpawnMob` is false) the item is dispensed as equipment (`EquipmentDispenseItemBehavior.dispenseEquipment`; whether the dispense counts as a success and what happens to the stack are in 30-redstone-4 sections 4.7 and 4.9). So the base pattern only decides whether a dispenser may place the final skull; it does not itself create anything.
+
+The player placement path: both `WitherSkullBlock.setPlacedBy` and the wall skull block's `setPlacedBy` call `checkSpawn(level, pos)`, which looks up the block entity and, if it is a skull block entity, runs the full check above.
 
 ### 7.2 The Wither (`WitherBoss`)
 
@@ -1689,18 +1752,52 @@ body was not read, so the exact application rule is open (Open question 13). Use
 ### 8.6 Lightning bolt (`LightningBolt`)
 
 Type `lightning_bolt`, size 0, range 16, no save, no loot. Constants: `START_LIFE` 2, damage radius 3.0, detection radius 15.0.
-`life` starts at 2; `flashes = nextInt(3) + 1`; a random seed for the visual. First tick (`life == 2`): sound events (client), on Normal
-or Hard difficulty `spawnFire(4)`, power the lightning rod, clear copper oxidation/wax, `LIGHTNING_STRIKE` game event. Each tick `life -= 1`;
-at `life < 0`: if `flashes == 0` the bolt triggers its advancement for players within 15 blocks (server) and is discarded;
-else when `life < -nextInt(10)`: `flashes -= 1`, `life = 1`, new seed, `spawnFire(0)`. While `life >= 0` and not `visualOnly`
-(server): every entity in the box `+- 3` horizontally, `-3` to `+6+3` vertically gets `thunderHit` (its own effect: not read). The client sets the sky
-flash time to 2.
+Construction: `life = 2`, then the entity's own random (not shared with the level) gives `seed = nextLong()` (visual) and `flashes = nextInt(3) + 1`
+(in this order). First tick (`life == 2`): on the client the thunder sound (volume 10000, pitch `0.8 + 0.2 * nextFloat`) and the impact sound
+(volume 2, pitch `0.5 + 0.2 * nextFloat`) unless silent; on the server, on Normal or Hard difficulty `spawnFire(4)`, then power the lightning
+rod, clear copper oxidation/wax, `LIGHTNING_STRIKE` game event. Each tick, after that, `life -= 1`;
+at `life < 0`: if `flashes == 0` the bolt triggers its `lightning_strike` advancement for every server player at distance `< 256` (the float
+`distanceTo`, squared not used) from the bolt, passing the list of alive entities in the box x +- 15, z +- 15, y from -15 to +21 (`y + 6 + 15`)
+that were not already hit by this bolt (server) and the bolt is discarded;
+else when `life < -nextInt(10)` (one draw per tick in this state): `flashes -= 1`, `life = 1`, `seed = nextLong()`, `spawnFire(0)`. While `life >= 0` and not `visualOnly`
+(server): every alive entity in the box x and z +- 3, y from -3 to +9 (`y + 6 + 3`) gets `thunderHit` (8.6.1) and is added to the
+bolt's hit set; when the bolt has a cause player, the channeled lightning criterion is triggered with those entities. The client sets the sky
+flash time to 2 while `life >= 0`.
+
+**`spawnFire(n)`.** Server side only and never for a `visualOnly` bolt (it returns at once). Let `B` be the block that contains the bolt's own
+position (`blockPosition`, not the strike position below). Steps:
+1. If `ServerLevel.canSpreadFireAround(B)` is false, return (29a section on fire; the rule `fire_spread_radius_around_player`, default 128, -1 = everywhere).
+2. Fire state choice at a cell `c` (`BaseFireBlock.getState(level, c)`): if the block below `c` can host soul fire (`SoulFireBlock.canSurviveOnBlock`: the tag `soul_fire_base_blocks` = soul sand and soul soil, 24 part 3) the state is `soul_fire`; otherwise the placement state of `fire` (`FireBlock.getStateForPlacement`, 29b-8).
+3. If the block at `B` is air (`isAir`) and the chosen state `canSurvive` there (29b-8), place that fire state with `setBlockAndUpdate` and count it.
+4. Then repeat `n` times (`n` = 4 for the strike, 0 for a later flash, so a flash only does steps 1 to 3): draw `dx = nextInt(3) - 1`, `dy = nextInt(3) - 1`, `dz = nextInt(3) - 1` (three draws on the bolt's own random, in the order x, y, z), let `c = B + (dx, dy, dz)`, recompute the fire state for `c`; if `c` is air and the state can survive there, place it and count.
+So the strike tries the bolt's own cell and then four random cells of the 3 x 3 x 3 block around it (the same cell can be drawn again and the own cell can be drawn by `(0,0,0)`; a later attempt on a cell already holding fire fails the air test). The difficulty gate applies only to the strike call (`spawnFire(4)`); the `spawnFire(0)` of each extra flash has no difficulty test, so on Easy (a bolt that is not `visualOnly`) a flash can still place fire on the bolt's own cell when that cell is air and the fire can survive there. The count of placed fires (`blocksSetOnFire`) is kept on the bolt (its consumer was not traced).
+
+Strike position (`getStrikePosition`, used for the lightning rod and copper cleaning): the block containing `(x, y - 1.0E-6, z)` of the bolt, which is the block directly below the bolt's own cell when the bolt's Y is an integer.
+
+#### 8.6.1 `thunderHit` per entity type
+
+Read: every class under `net/minecraft/world` that declares `thunderHit`. The base `Entity.thunderHit` is in 17 (remaining fire ticks plus 1; ignite for 8 s when that leaves 0; hurt 5.0 by `lightning_bolt`). No `Animal`, `Monster` or `AbstractGolem` override exists, so "the base effect" below always means `Entity.thunderHit`. The same table, with the fire counter rule, is in 44-9 section 2; keep the two in step. Overrides:
+
+| Entity | Effect |
+|---|---|
+| `Pig` | difficulty not Peaceful: convert to `zombified_piglin` (`ConversionParams.single(mob, keepEquipment false, preserveCanPickUpLoot true)`); the finalizer runs `populateDefaultEquipmentSlots(own random, local difficulty at its position)` and sets persistence required; if the conversion returns nothing, or on Peaceful, the base effect applies instead (the base effect is not applied when the conversion succeeded). 19 §2.1. |
+| `Villager` | difficulty not Peaceful: log line, convert to `witch` (keepEquipment false, preserveCanPickUpLoot false); finalizer: `finalizeSpawn` with reason `CONVERSION`, persistence required, and the villager releases all its points of interest; a failed conversion or Peaceful falls back to the base effect. 19 §22. |
+| `Creeper` | the base effect, then the powered flag becomes true. 20 §6.1. |
+| `MushroomCow` | when this bolt's UUID differs from the last one recorded: swap the variant (red becomes brown, anything else becomes red), record the UUID, play `MOOSHROOM_CONVERT` (volume 2, pitch 1); no base effect. 19 §2.3. |
+| `CopperGolem` | the base effect, then when this bolt's UUID differs from the last one recorded: record it; and when the weather state is not UNAFFECTED: `nextWeatheringTick = -1` and the synchronised weather state becomes the previous (less oxidised) state. 19 §21. |
+| `Turtle` | hurt by `lightning_bolt` for `Float.MAX_VALUE` (dies; no fire, no base effect). |
+| `Cushion` | when not already removed: `kill`, then drop its item (8.16.1). |
+| `ArmorStand`, `BlockAttachedEntity` (item frames, paintings, leash knots) | no effect (empty method). |
+
+Every other entity uses the base effect. The `witch`, skeleton trap and trap-horse interactions are in 19 and 33 §4.4.
 
 ### 8.7 Firework rocket (`FireworkRocketEntity`)
 
 Type `firework_rocket`, 0.25 x 0.25, range 4, interval 10. Metadata 8 item stack, 9 attached entity id (optional unsigned VarInt), 10
 shot at angle (Boolean). Lifetime `10 * (1 + flightDuration) + nextInt(6) + nextInt(7)`; initial velocity `(triangle(0, 0.002297), 0.05,
-triangle(0, 0.002297))`. A rocket attached to a gliding entity each tick adds to that entity's velocity `look * 0.1 + (look * 1.5 -
+triangle(0, 0.002297))` (draw order: x, z, then `nextInt(6)`, then `nextInt(7)` for the lifetime, all on the rocket's own random). **Flight (`FireworkRocketEntity.tick`).** Per tick, for a rocket that is not attached to an entity and was not shot at an angle (`DATA_SHOT_AT_ANGLE` false): let `f = 1.0` when the rocket had a horizontal collision (the entity flag from its previous move) else `f = 1.15`; the velocity becomes `(vx * f, vy * 1.0, vz * f) + (0, 0.04, 0)` (so the rocket accelerates upward by 0.04 per tick and horizontally by 15 percent per tick; it has no gravity, no drag and no other force). It then computes its hit result along the new velocity (`ProjectileUtil.getHitResultOnMoveVector` with the entity-hit filter `Projectile.canHitEntity` of the rocket), moves by that velocity (`MoverType.SELF`, with block effects applied) and finally sets the velocity back to the vector it moved by (the move's collision response does not change it). A rocket shot at an angle (crossbow) skips the acceleration step entirely and keeps the velocity it was given. A rocket attached to an entity (`DATA_ATTACHED_TO_TARGET` present) does not move itself: when the attached entity is gliding (`isFallFlying`) its velocity is changed as stated below, and the rocket's position is the entity position plus the hand offset for a firework (`getHandHoldingItemAngle`), else the entity position (offset zero), and the rocket's velocity equals the entity's velocity; the attached entity reference is looked up by id on the first tick when it is not yet resolved. After the movement: when the rocket is alive, not `noPhysics` and the hit result is not a miss it calls the shared hit handler and flags a sync; rotation is updated from the velocity (`updateRotation`). When `life == 0` (the first tick) and not silent the launch sound `FIREWORK_ROCKET_LAUNCH` plays (source AMBIENT, volume 3.0, pitch 1.0). Then `life += 1`; on the client every tick a `firework` particle is added at the rocket position with velocity `(gaussian * 0.05, -vy * 0.5, gaussian * 0.05)` (the `life % 2 < 2` test is always true); on the server when `life > lifetime` the rocket explodes. Hits: hitting an entity makes the rocket explode (server); hitting a block first runs the block's `entityInside` with no effect applier, then explodes only when the rocket has an explosion (`hasExplosion`: the item's explosions list is non-empty), then runs the base block-hit handling. Constants: horizontal factor 1.15 (1.0 when blocked horizontally), upward 0.04 per tick; the gliding boost is below.
+
+A rocket attached to a gliding entity each tick adds to that entity's velocity `look * 0.1 + (look * 1.5 -
 velocity) * 0.5` and follows it. On expiry `explode` broadcasts entity event 17, fires the `EXPLODE` game event (source = owner), calls `dealExplosionDamage` and discards the rocket. Damage `D = 5 + 2 * (number of explosion stars)` (0 when the item has none); the entity it is attached to takes `D` (fireworks damage source); other living entities in the box inflated by 5 take `D * sqrt((5 - distance) / 5)` when a collider-clip from the rocket to one of the sampled heights of the entity is unobstructed.
 
 ### 8.8 Boats and minecarts
@@ -1716,14 +1813,53 @@ velocity) * 0.5` and follows it. On expiry `explode` broadcasts entity event 17,
 |---|---|
 | `armor_stand` | 0.5 x 1.975, eye 1.7775, range 10. Metadata 15 client flags (Byte: 1 small, 4 show arms, 8 no base plate, 16 marker), 16 head pose, 17 body, 18 left arm, 19 right arm, 20 left leg, 21 right leg (Rotations). Constants: wobble time 5, equipment offsets feet 0.1, legs 0.4, chest 0.9, head 1.6; disabled-slot bit offsets: taking 8, putting 16. |
 | `item_frame`, `glow_item_frame` | 0.5 x 0.5 builder, no update interval, no delta tracking. Metadata 8 direction, 9 item, 10 rotation (VarInt); 8 rotations; depth 0.0625, width and height 0.75; default drop chance 1.0. |
-| `painting` | 0.5 x 0.5 builder; metadata 8 direction, 9 painting variant (Holder, 00 §10.2); depth 0.0625. |
+| `painting` | 0.5 x 0.5 builder; metadata 8 direction, 9 painting variant (Holder, 00 §10.2); depth 0.0625. Variant identity and placement: 8.9.1. |
 | `leash_knot` | 0.375 x 0.5, eye 0.0625, not saved, no metadata beyond the base. |
 | `marker` | no metadata, no tracking range (0): never sent to clients. |
-| `interaction` | metadata 8 width, 9 height (Floats, defaults 1.0), 10 response (Boolean, default false); NBT `width`, `height`, `attack`, `interaction`, `response`. |
-| `block_display`, `item_display`, `text_display` | metadata 8 to 22 common display fields (interpolation start delta, duration, pos-rot duration, translation, scale, left and right rotation, billboard byte, brightness override, view range, shadow radius and strength, width, height, glow colour); then block display 23 block state; item display 23 item stack, 24 item display type (Byte); text display 23 text component, 24 line width, 25 background colour, 26 text opacity (Byte), 27 style flags (Byte). Range 10, update interval 10. |
+| `interaction` | metadata 8 width, 9 height (Floats, defaults 1.0), 10 response (Boolean, default false); NBT `width`, `height`, `attack`, `interaction`, `response`. Behaviour: 8.9.2. |
+| `block_display`, `item_display`, `text_display` | metadata 8 to 22 common display fields (interpolation start delta, duration, pos-rot duration, translation, scale, left and right rotation, billboard byte, brightness override, view range, shadow radius and strength, width, height, glow colour); then block display 23 block state; item display 23 item stack, 24 item display type (Byte); text display 23 text component, 24 line width, 25 background colour, 26 text opacity (Byte), 27 style flags (Byte). Range 10, **update interval 1** (read in `EntityTypes`: all three display types are registered with `clientTrackingRange(10)` and `updateInterval(1)`; defaults and encodings: 8.9.3). Corrected: update interval 10 -> 1. |
 | `ominous_item_spawner` | metadata 8 item stack. |
 | `sulfur_cube` | owned by 20 §18.2 (not repeated here). |
 | Projectiles with a stack metadata (`snowball`, `egg`, `ender_pearl`, `experience_bottle`, `splash_potion`, `lingering_potion`, `eye_of_ender`, `fireball`, `small_fireball`) | metadata 8 = item stack for rendering; arrows 8 flags, 9 pierce level, 10 in ground, (arrow 11 effect colour); trident 11 loyalty, 12 foil; fishing bobber 8 hooked entity id, 9 biting; wind charge, llama spit, evoker fangs, shulker bullet: no metadata. Behaviour: not covered. |
+
+#### 8.9.1 Painting variant identity and placement
+
+- Registry: `minecraft:painting_variant`, a data-driven registry (04 painting_variant; schema `width`, `height` 1 to 16, `asset_id`, optional `title`, `author`). The jar's data pack has 51 entries (`data/minecraft/painting_variant/*.json`, counted with `unzip -Z1`; the registry rows themselves are owned by 04 and 46). Four of them (`earth`, `fire`, `water`, `wind`, each 2 x 2) are not in the tag `painting_variant/placeable`; the tag lists the other 47 in this order: kebab, aztec, alban, aztec2, bomb, plant, wasteland, pool, courbet, sea, sunset, creebet, wanderer, graham, match, bust, stage, void, skull_and_roses, wither, fighters, pointer, pigscene, burning_skull, skeleton, donkey_kong, baroque, humble, meditative, prairie_ride, unpacked, backyard, bouquet, cavebird, changing, cotan, endboss, fern, finding, lowmist, orb, owlemons, passage, pond, sunflowers, tides, dennis. Example file: `kebab` has width 1, height 1, asset `minecraft:kebab`, author `painting.minecraft.kebab.author` (gray), title `painting.minecraft.kebab.title` (yellow).
+- Wire (metadata 9): a `Holder<PaintingVariant>` with `PaintingVariant.STREAM_CODEC` = `ByteBufCodecs.holder(registry, DIRECT_STREAM_CODEC)`: VarInt `registry id + 1`, or 0 followed by the direct form (identifier asset id, optional title component, optional author component, plus width and height as in the direct codec). The numeric id is the position in the registry data the server synchronises (04; 46 for the standard pack).
+- Default before a variant is set: `VariantUtils.getAny(registryAccess, painting_variant)` = the registry's first entry (`MappedRegistry.getAny` returns `byId.getFirst()`, id 0).
+- NBT keys of a saved painting: `facing` (legacy 2D direction id), the hanging-entity block position keys, and `variant` (an identifier, `VariantUtils.writeVariant/readVariant`).
+- Placement (`Painting.create(level, pos, direction)`): candidates = every entry of the `placeable` tag in tag order; set the direction; remove every candidate for which the painting, with that variant set, does not `survives()` at that spot; if none remain, no painting. Take the maximum `area` (width * height) among the rest and remove the candidates with a smaller area; pick one of the remaining uniformly with `Util.getRandomSafe(list, painting.random)` (one `nextInt(size)` on the painting's own random); set it. So placing always picks one of the largest variants that fit.
+
+#### 8.9.2 Interaction entity behaviour (`Interaction`)
+
+`noPhysics` true; box = `EntityDimensions.scalable(width, height)` placed with its bottom centre at the entity position (the box is rebuilt when metadata 8 or 9 changes: `refreshDimensions`; also when read from NBT). `tick` does nothing. `isPickable` true, `canBeHitByProjectile` false, piston reaction `IGNORE_ENTITY`, ignores block triggers, `hurtServer` always returns false (it cannot be damaged). Two records are kept on the server side only (not synchronised): `attack` and `interaction`, each `{player: UUID, timestamp: long game time}`, saved as NBT compounds `attack` and `interaction` (keys `player` as the UUID codec and `timestamp` as a long; absent when never set), plus `width`, `height` (floats, default 1.0) and `response` (boolean, default false).
+- Attack (`skipAttackInteraction`, called by `Player.attack` through `cannotAttack`, which first requires `isAttackable`): for a player attacker: store `attack = (player uuid, current game time)`, trigger the player-hurt-entity advancement criterion with the generic damage source and dealt/taken 1.0 and blocked false (server players only), and return `!response`: with `response` false the attack is skipped (no damage, no further attack processing), with `response` true the normal attack processing continues (and then `hurtServer` still returns false). A non-player attacker: returns false and records nothing.
+- Interact (right-click, `interact(player, hand, hit)`): client side returns SUCCESS when `response` is true, else CONSUME. Server side stores `interaction = (player uuid, current game time)` and returns CONSUME.
+- Readers: `getLastAttacker` resolves the player of `attack` by UUID in the level (null when unset or offline) and `getTarget` resolves the player of `interaction` the same way (the `execute ... on attacker` and `on target` relation queries of 15/16 call these two methods).
+
+#### 8.9.3 Display entity defaults (metadata 8 to 27)
+
+Defaults from `Display.defineSynchedData` and the subclasses (read; ids as in Appendix A):
+
+| Id | Field | Type | Default |
+|---|---|---|---|
+| 8 | transformation interpolation start delta ticks | VarInt | 0 |
+| 9 | transformation interpolation duration | VarInt | 0 |
+| 10 | pos-rot interpolation duration | VarInt | 0 |
+| 11 | translation | Vector3f | (0, 0, 0) |
+| 12 | scale | Vector3f | (1, 1, 1) |
+| 13 | left rotation | Quaternionf | identity (0, 0, 0, 1) |
+| 14 | right rotation | Quaternionf | identity |
+| 15 | billboard constraint | Byte | 0 (`fixed`; 1 `vertical`, 2 `horizontal`, 3 `center`) |
+| 16 | brightness override | VarInt | -1 (none) |
+| 17 | view range | Float | 1.0 |
+| 18 | shadow radius | Float | 0.0 |
+| 19 | shadow strength | Float | 1.0 |
+| 20 | width | Float | 0.0 |
+| 21 | height | Float | 0.0 |
+| 22 | glow colour override | VarInt | -1 (none) |
+
+Block display: 23 block state default `air`. Item display: 23 item stack default empty, 24 display context Byte default 0; context ids: 0 `none`, 1 `thirdperson_lefthand`, 2 `thirdperson_righthand`, 3 `firstperson_lefthand`, 4 `firstperson_righthand`, 5 `head`, 6 `gui`, 7 `ground`, 8 `fixed`, 9 `on_shelf`. Text display: 23 text component default `Component.empty()` (an empty literal: the component codec collapses a style-less, sibling-less literal to a plain string, so the network NBT form is a root String tag of length 0; `tryCollapseToString` rule read in `ComponentSerialization`, empty-literal result inferred), 24 line width VarInt 200, 25 background colour VarInt 1073741824 (`0x40000000`), 26 text opacity Byte -1 (the constant `INITIAL_TEXT_OPACITY`), 27 style flags Byte 0 (bits: 1 shadow, 2 see-through, 4 use default background, 8 align left, 16 align right; both alignment bits clear = centre). NBT names of the text flags: `shadow`, `see_through`, `default_background`, `alignment` (`center`, `left`, `right`), `line_width`, `text_opacity`, `background`, `text`.
 
 ### 8.10 Bat (`Bat`)
 
@@ -1786,6 +1922,12 @@ Per tick: `newPos = position + velocity`; server with a target: `velocity = upda
 Type `experience_bottle`, 0.25 x 0.25, range 4, update interval 10, no loot; gravity 0.07; metadata 8 = item stack (default `experience_bottle`). On hit (server): world event 2002 with colour value -13083194, world event 1053 unless silent;
 amount `3 + nextInt(5) + nextInt(5)` (3 to 11); `ExperienceOrb.awardWithDirection(hitLocation, direction, amount)` (the position is the hit location, not the bottle's position) where `direction` is the unit normal of the hit face for a block hit, else the negative of the bottle's velocity (orb splitting: §8.2); the bottle is discarded.
 
+**Throw speed and inaccuracy.** `ExperienceBottleItem.use` (the player throw): plays `EXPERIENCE_BOTTLE_THROW` (source NEUTRAL, volume 0.5, pitch `0.4 / (nextFloat * 0.4 + 0.8)`, one draw from the level random, at the player's position) on both sides; on a server level creates the bottle and shoots it with `Projectile.spawnProjectileFromRotation(factory, level, stack, player, angle offset -20.0, power 0.7, inaccuracy 1.0)`: the bottle starts at `(player x, player eye Y - 0.10000000149011612, player z)` (the `ThrowableItemProjectile` constructor taking the owner; owner = the player, item = one-item copy of the stack) and `shootFromRotation(player, player pitch, player yaw, -20.0, 0.7, 1.0)` is applied:
+- direction `d = (-sin(yaw) * cos(pitch), -sin(pitch + (-20.0)), cos(yaw) * cos(pitch))`, with the angles in degrees multiplied by the float 0.017453292f (a float product, widened to double) and `sin`/`cos` the `Mth` tables (10 section 16.3); the pitch term uses the offset, so the bottle flies 20 degrees higher than the look direction (a pitch of 0 gives `d.y = -sin(-20 degrees) = +0.342`);
+- `shoot(d, power 0.7, inaccuracy 1.0)`: normalise `d`, add `triangle(0, 0.0172275 * 1.0)` to each component (three draws on the BOTTLE's own random, in the order x, y, z), multiply by 0.7; this is the initial velocity (so the base speed is 0.7 blocks per tick, with a per-axis random deviation of up to plus or minus `2 * 0.0172275` before scaling); yaw and pitch of the bottle follow the velocity (`atan2` forms of 10 section 16.4 times 57.2957763671875);
+- then the shooter's own known movement is added: its x and z velocity always, its y velocity only when the shooter is not on the ground.
+The stack is consumed (1) and the item-used statistic is awarded. Flight: the common `ThrowableProjectile.tick` (first-tick bubble column handling, gravity 0.07 per tick as above, inertia, hit test along the movement, move; the shared rules are in 17 with the other thrown items). The dispenser variant (power 1.375, uncertainty 3.0) is in 8.17.
+
 ### 8.14 Llama spit (`LlamaSpit`)
 
 Type `llama_spit`, 0.25 x 0.25, range 4, update interval 10, no delta tracking, no loot. Gravity 0.06; air drag 0.99 per tick; discarded when it enters water. Spawned by a llama (owner = the llama) at
@@ -1806,15 +1948,67 @@ a drop caused by lightning gets 20 ticks of invulnerability. Breaking by a playe
 `mannequin`: type size 0.6 x 1.8, eye 1.62, range 32, update interval 2; a living avatar entity that shows a player skin. Metadata: 15 main hand (humanoid arm: 0 left, 1 right), 16 model customisation (Byte; default all layers set = the 7 model-part bits = 127), 17 profile (resolvable profile, 00 §13.3), 18 immovable (Boolean),
 19 description (optional component; default translation `entity.minecraft.mannequin.label`). NBT keys: `profile`, `hidden_layers`, `main_hand`, `pose` (allowed values: standing, crouching, swimming, fall_flying, sleeping), `immovable`, `description`, `hide_description`.
 
+#### 8.16.1 Cushion placement, survival and seat
+
+Sources: `CushionItem.useOn`, `Cushion` (`canBePlacedAt`, `wouldSurviveAt`, `hasAnchorBelow`, `isAnchorBuried`, `isCoveredBySuffocatingBlocks`, `survives`), tag `cushion_uses_collision_shape`, `Entity.getPassengerRidingPosition`, `EntityAttachments`. Type facts: size 1.0 x 0.25, no custom attachments (so the default attachment points apply), update interval 2147483647, no delta tracking.
+
+**Tag `cushion_uses_collision_shape`** (`data/minecraft/tags/block/cushion_uses_collision_shape.json`): `#minecraft:cauldrons` (`cauldron`, `water_cauldron`, `lava_cauldron`, `powder_snow_cauldron`), `minecraft:hopper`, `minecraft:composter`. It is read only by the item (below): for a click on such a block the click point is recomputed against the block's collision shape instead of its outline shape.
+
+**Item use** (`CushionItem.useOn(context)`):
+1. If the context has a player and the clicked block state is in the tag above: take the player's eye position `E`, the click location `C`, `d = C - E`, target `T = C + normalize(d) * 0.001`; clip the block's collision shape from `E` to `T`; when the clip hits, the rest of the use runs with a context rebuilt from that hit (new click location and face), otherwise with the original. (No player or a block not in the tag: unchanged.)
+2. The (possibly rebuilt) clicked face must be UP, else FAIL.
+3. A block place context is built; `P` = its clicked position (the clicked block when that block is replaceable, else the block adjacent in the clicked face direction, as for block placement, 29). Seat origin `O = (P.x + 0.5, clickLocation.y, P.z + 0.5)`: the cell's horizontal centre and the exact Y of the click point (`Vec3.atCenterOfWithY`).
+4. `aabb = EntityType.cushion.getSpawnAABB(O)` = from `(O.x - 0.5, O.y, O.z - 0.5)` to `(O.x + 0.5, O.y + 0.25, O.z + 0.5)` (half width `scale * width / 2` with scale 1.0, height `scale * 0.25`).
+5. `Cushion.canBePlacedAt(level, aabb)` must hold, else FAIL.
+6. Client: SUCCESS here. Server: when any `Cushion` entity already overlaps `aabb`, FAIL; else create a cushion with the default stack configuration (colour and name from the stack, `EntityType.createDefaultStackConfig`), reason `SPAWN_ITEM_USE`, positioned at `P` with alignment flags set; then `snapTo(O, yaw, 0)` with `yaw` = `Direction.fromYRot(placeContext rotation).toYRot()` (the placing player's yaw snapped to the nearest of the four horizontal directions), `addFreshEntity`, `destroyIfInFire`, the sound `CUSHION_PLACE` (source BLOCKS, volume 0.75, pitch 0.8, at the cushion), game event `ENTITY_PLACE` (cause: the player), consume 1 item; result SUCCESS.
+
+**`canBePlacedAt(level, aabb)`** = `wouldSurviveAt(level, aabb)` AND NOT `isAnchorBuried(level, aabb)`.
+- `wouldSurviveAt` = `hasAnchorBelow` AND NOT `isCoveredBySuffocatingBlocks`. `survives()` (used by the 100-tick check below) is `wouldSurviveAt` on the entity's current box.
+- `hasAnchorBelow`: let `A` = the box `(minX, minY - 0.015625, minZ)` to `(nextDown(maxX), minY, nextDown(maxZ))` (a slab 1/64 thick directly under the cushion's box, nearly its full footprint). Scan the blocks that overlap `A` expanded by 0.125 downward (`expandTowards(0, -0.125, 0)`); the result is true when some block's outline shape (`BlockState.getShape`, NOT the collision shape) is non-empty and the bounding box of that shape, moved to the block position, intersects `A`.
+- `isCoveredBySuffocatingBlocks`: take the box deflated by one ulp on every side (`AABB.nextDeflated`: `Math.nextUp` on the minimum corner, `Math.nextDown` on the maximum corner), iterate all block cells it touches (`BlockPos.betweenClosed`); the result is true only when EVERY such block `isSuffocating` (the loop returns false at the first one that is not). So a cushion fully inside solid blocks does not survive; one with any non-suffocating block in its box does.
+- `isAnchorBuried`: `C` = the box `(minX, minY, minZ)` to `(maxX, minY + 0.015625, maxZ)` deflated by one ulp; start with the shape of `C`; for each block collision shape that overlaps `C` (`Level.getBlockCollisions(null, C)`), subtract it from the shape (`BooleanOp.ONLY_FIRST` join); if the remaining shape is empty at any point the anchor is buried (true). In words: the bottom 1/64 of the cushion must not be entirely covered by solid collision, so a cushion cannot be placed sunk into a full block.
+- Cell sets: `Level.findBlocksIn(aabb)` (a `BoxBlockMatcher`) visits every cell from `BlockPos.containing(min corner)` to `BlockPos.containing(max corner)`, both inclusive (`BlockScanUtils.findBlocks` takes the per-axis minimum and maximum of the two cells; cells above the world top or below the world bottom count as air). `BlockPos.betweenClosed(aabb)` uses the same two corner cells, inclusive, X changing fastest then Y then Z. So a maximum face exactly on a cell boundary includes the next cell, which is why the one-ulp deflation is applied where it is used. (Order of visit is irrelevant to these tests; Open question 23.)
+
+**Survival while placed**: every 100 ticks on the server (`BlockAttachedEntity.tick`, counter `ticksSinceLastCheck`): `tickAtCheckInterval` (fluid `entityInside` for the block at its position when `collidedWithFluid`, then `destroyIfInFire`: any block in its deflated box with the block tag `fire` makes it take 1.0 `in_fire` damage) and then, when not removed and `!survives()`, the cushion is discarded and its item dropped (`dropItem`, 8.16). `destroyIfInFire` also runs once at placement. A lightning strike (`thunderHit`) kills it and drops the item.
+
+**Seat position.** Right-click by a player without secondary use on a cushion that has no rider: the server runs `startRiding`; on success plays `CUSHION_SIT` (volume 1, pitch 1) at the cushion and the result is SUCCESS_SERVER (when riding fails, CONSUME; client CONSUME; with secondary use or a rider, PASS). The passenger's position: `getPassengerRidingPosition` = cushion position + the PASSENGER attachment point; the cushion has no explicit attachments, so the fallback `AT_HEIGHT` applies: `(0, height, 0) = (0, 0.25, 0)` (rotated by the cushion yaw, which leaves a zero horizontal offset unchanged). The riding entity's feet are placed at that point minus its own VEHICLE attachment point (`Entity.positionRider`); for a player the VEHICLE attachment is `Avatar.DEFAULT_VEHICLE_ATTACHMENT = (0, 0.6, 0)` (the `player` type is registered with it), so a seated player's feet are at the cushion's x and z and `cushion Y + 0.25 - 0.6 = cushion Y - 0.35`. On dismount (`removePassenger`), when the cushion is not being removed, `CUSHION_GET_UP` plays (volume 1, pitch 1).
+
+#### 8.16.2 Mannequin defaults (metadata 15 to 19)
+
+`Mannequin` extends `Avatar` (metadata 15 main hand, 16 model customisation). Defaults: 15 main hand = right (`Avatar.DEFAULT_MAIN_HAND`); 16 = 0 in `Avatar`, but the `Mannequin` constructor sets it to `ALL_LAYERS` (the OR of the mask of every `PlayerModelPart`, 127 for the seven parts of 13); 17 profile = `Mannequin.DEFAULT_PROFILE` = `ResolvableProfile$Static.EMPTY`; 18 immovable = false; 19 description = `Optional.of(DEFAULT_DESCRIPTION)` with `DEFAULT_DESCRIPTION = Component.translatable("entity.minecraft.mannequin.label")`. The Java field `description` starts as the same default and `hideDescription` false; `hide_description` true makes the synchronised value `Optional.empty()`.
+- Wire form of 17 (00 section 13.3): `Static.EMPTY` holds `Either.right(Partial.EMPTY)` and `PlayerSkin$Patch.EMPTY`; `Partial.EMPTY` has no name, no id, an empty property map; the patch has four absent optionals. So the bytes are eight zero bytes: `00` (Either: partial form, boolean false), `00` (no name), `00` (no UUID), `00` (VarInt property count 0), then `00 00 00 00` (the four optional skin-patch fields: body, cape, elytra, model). (The Either boolean value for the right branch being false is the 00 section 13.3 statement.) The skin a client shows for an empty profile was not traced (Open question 24).
+- Wire form of 19 (Optional component, 00 section 9 and 6.6): Boolean true, then the component as network NBT. The translatable has no style and no siblings, so it does not collapse to a string; the component codec encodes through its type-less ("fuzzy") branch, so it is a root Compound with one String entry `translate` = `entity.minecraft.mannequin.label` (the optional `fallback` and `with` entries and the style entries are absent; the encode path was read, the exact omission of absent optional fields is the codec rule of 00 section 9.1 and inferred). With `hide_description` the field is Boolean false only.
+- NBT: `profile`, `hidden_layers` (a list of model part names), `main_hand`, `pose` (standing, crouching, swimming, fall_flying, sleeping), `immovable`, `description`, `hide_description`.
+
 ### 8.17 Ominous item spawner (`OminousItemSpawner`)
 
 Type `ominous_item_spawner`, 0.25 x 0.25, range 8, no loot, no physics. Metadata 8 = item stack. Created with an item and `spawn_item_after_ticks = nextIntBetween(60, 120)` (inclusive). Server tick: when `tickCount == spawnAfter - 36` the about-to-spawn sound plays; when `tickCount >= spawnAfter`: if the item is a projectile item
 it is launched downward (direction DOWN) with the item's dispense power and uncertainty, owner = the spawner; otherwise an `ItemEntity` with the stack appears at its position; then world event 3021 (data 1), the `ENTITY_PLACE` game event, the stack is cleared and the spawner is killed. Client: particles every 5 game ticks. NBT keys: `item`, `spawn_item_after_ticks`.
 
+**Launch details.** For a projectile item the spawner reads the item's dispense configuration (8.17.1); if the configuration has an event override it plays that level event (data 0) at the spawner's block; it creates the projectile with `asProjectile(level, spawner position (exact, not the dispenser position function), stack, DOWN)`, shoots it through `Projectile.spawnProjectileUsingShoot` with direction `(0, -1, 0)`, the configuration's power and uncertainty (`Projectile.shoot` on the projectile, before it is added to the level), and sets the spawner as the projectile's owner after it was added. Because the shoot step is the projectile's own `shoot` (not the item's `ProjectileItem.shoot`), the wind charge and fire charge are also re-aimed. The about-to-spawn sound is `TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM` (source NEUTRAL, at the spawner's block, played when `tickCount == spawnAfter - 36`).
+
+#### 8.17.1 Dispense configuration per item
+
+`ProjectileItem.createDispenseConfig` returns `positionFunction`, `uncertainty`, `power` and an optional event override. Defaults (`DispenseConfig.DEFAULT`, read in the builder): position = dispenser centre + `0.7 * facing step` + `(0, 0.1, 0)`, uncertainty 6.0, power 1.1, no override (the dispense sound event is then 1002). The `shoot` of a dispensed projectile is `Projectile.shoot(facing step, power, uncertainty)`: the normalised direction plus `triangle(0, 0.0172275 * uncertainty)` on each axis (x, y, z order, the projectile's own random), times `power`. Thirteen items are registered with `DispenserBlock.registerProjectileBehavior` (read in `DispenseItemBehavior.bootStrap`); `TridentItem` also implements `ProjectileItem` (with the default configuration) but is not registered for dispensers, so it only matters for the ominous item spawner.
+
+| Item | Position | Uncertainty | Power | Sound event override | Entity |
+|---|---|---|---|---|---|
+| `arrow`, `tipped_arrow`, `spectral_arrow` | default | 6.0 | 1.1 | none (1002) | `Arrow` / `SpectralArrow`, pickup ALLOWED |
+| `egg`, `blue_egg`, `brown_egg` | default | 6.0 | 1.1 | none | `ThrownEgg` |
+| `snowball` | default | 6.0 | 1.1 | none | `Snowball` |
+| `experience_bottle` | default | 3.0 (default x 0.5) | 1.375 (default x 1.25, float) | none | `ThrownExperienceBottle` |
+| `splash_potion`, `lingering_potion` | default | 3.0 | 1.375 | none | thrown potion entities |
+| `firework_rocket` | centre + 0.5000099999997474 * facing step | 1.0 | 0.5 | 1004 | `FireworkRocketEntity` (shot at angle) |
+| `fire_charge` | centre + 1.0 * facing step | 6.6666665 | 1.0 | 1018 | `SmallFireball` |
+| `wind_charge` | centre + 1.0 * facing step | 6.6666665 | 1.0 | 1051 | `WindCharge` |
+| `trident` (spawner only) | default | 6.0 | 1.1 | none | `ThrownTrident`, pickup ALLOWED |
+
+(The position of the fire charge and wind charge is `DispenserBlock.getDispensePosition(source, 1.0, Vec3.ZERO)`: the dispenser's block centre plus `1.0 * facing step`; the firework's position is `FireworkRocketItem.getEntityJustOutsideOfBlockPos`: the block centre plus `0.5000099999997474 * facing step` on each axis.) The full behaviour of the dispenser around these values (item removal, entity construction, the random draws of the fire charge and wind charge velocity) is 30-redstone-4 section 4.1, which agrees with this table on every value. The non-projectile entity-spawning dispenser behaviours are in 30-redstone-4: armor stand 4.2, boats and rafts 4.4, wither skeleton skull 4.7 (the base pattern of 7.1.1), TNT 4.14, spawn eggs 4.11, minecarts 4.22.
+
 ### 8.18 Breeze wind charge (explosion parameters)
 
 `breeze_wind_charge`: 0.3125 x 0.3125, range 4, update interval 10 (§2). Its owner is 20 (it is shot by the breeze) and the base projectile is `wind_charge` (17 §3.15). Only the explosion was read here: `BreezeWindCharge.explode` creates an explosion at the hit position with radius 3.0, no fire,
-interaction `TRIGGER`, the shared `EXPLOSION_DAMAGE_CALCULATOR` (`SimpleExplosionDamageCalculator` over the `blocks_wind_charge` block tag), particles `gust_emitter_small` and `gust_emitter_large` and the breeze wind charge burst sound. Flight and deflection are the base class's (not read).
+interaction `TRIGGER`, the `AbstractWindCharge` damage calculator (a `SimpleExplosionDamageCalculator`), particles `gust_emitter_small` and `gust_emitter_large` and the sound `BREEZE_WIND_CHARGE_BURST` (sound event `entity.breeze.wind_burst`, numeric id 210 in 46). Its damage calculator is the public `AbstractWindCharge.EXPLOSION_DAMAGE_CALCULATOR`: explodes blocks true, damages entities false, an empty knockback-multiplier optional (no multiplier), immune blocks = block tag `blocks_wind_charge_explosions`. The ordinary `wind_charge` (`WindCharge.explode`) creates its explosion with radius 1.2, interaction `TRIGGER`, the same two particles, its own private calculator (same flags and tag, knockback multiplier 1.22) and the sound `WIND_CHARGE_BURST` = sound event `entity.wind_charge.wind_burst` (numeric id 1776 in 46). Both sounds are holders and travel as the explosion sound of the explosion packet (05a). Flight and deflection are the base class's (not read).
 
 ## 9. Worked examples
 
@@ -1889,16 +2083,23 @@ How the contents were checked in this round and what a test suite should assert.
 10. **Nautilus:** idle behaviours, ride and dash control, tame-state bits, armor, `ChargeAttack` internals, the `NAUTILUS_TEMPTATIONS` sensor and `ZombieNautilusAi` were not expanded.
 11. **Strider:** the held-item test and boost of steering, `StriderGoToLavaGoal` and the strider path navigation were not read.
 12. **Dragon phase hooks:** each phase's `onCrystalDestroyed` hook was not read; `strafePlayer` (holding pattern) is described only as switching to STRAFE_PLAYER with the player as target; the strafe path creation was not expanded.
-13. **Not read:** item pickup and throw delays; `thunderHit` effects; the area effect cloud application loop (`serverTick`); armor stand interaction and pose rules; item frame and painting survival and placement; `interaction` and `marker` details; display interpolation.
+13. **Not read:** item pickup and throw delays; the area effect cloud application loop (`serverTick`); armor stand interaction and pose rules; item frame and painting survival and placement; `marker` details; display interpolation.
 14. **Boats and minecarts:** buoyancy, steering, rail physics, slope handling, chest inventories, `MinecartBehavior` selection. Only constants and metadata are given.
 15. (resolved: the default eye height is `0.85 x height`, §2.)
 16. **Piglin and hoglin loot** conditions are not applicable (no pools); piglin anger for `UNIVERSAL_ANGER` memory is registered but its writer was not read.
-17. **Cushion** survival check (`tickAtCheckInterval`) and mannequin interaction rules were not read.
+17. (resolved: cushion placement, survival and seat in 8.16.1, mannequin defaults in 8.16.2.) Open: the mannequin's right-click interaction rules.
 18. (resolved: the bat spawn rule is fully described in §8.10.)
 19. **Happy ghast:** natural spawning path (no biome entry), growth by feeding, harness item identity, `HappyGhastFloatGoal` and `BabyFlyingPathNavigation` were not read.
 20. (resolved: the Wither is described in §7.2; its client-only powered effects are not specified.)
 21. (resolved: llama spit, §8.14.)
 22. **Hoglin/zoglin spawn weights in structures** are not applicable (none read).
+23. **Block scan order** (`Level.findBlocksIn` / `BoxBlockMatcher` / `BlockScanUtils.sectionBasedScan`): the cell set is resolved (8.16.1: `containing(min corner)` to `containing(max corner)`, inclusive); the visiting order inside the scan (chunk, section, then cells) was only skimmed, and it does not matter for the cushion tests, which only ask whether any cell qualifies.
+24. **Mannequin skin for an empty profile** (what skin a client draws for `ResolvableProfile$Static.EMPTY`) was not traced; the metadata bytes are given in 8.16.2.
+25. **Shulker bullet:** `BlockPos.closerToCenterThan(position, d)` is read (`distToCenterSqr(position) < d * d`, the distance to the block centre, `(x + 0.5, y + 0.5, z + 0.5)`). Open: the iteration and ordering inside `ProjectileUtil.getHitResultOnMoveVector` and `hitTargetOrDeflectSelf` (which of several overlapping entities or blocks is hit first).
+26. **Wither build:** the table of 7.1.1 covers the upright T; the orientation of a sideways or upside-down build (accepted by the pattern search) was derived from the pattern formula only and not tested; `makeInvulnerable` is described in 7.2.
+27. **Lightning:** the consumer of `blocksSetOnFire` was not read.
+28. **Text display empty component:** the empty literal is read to collapse to a plain string through `tryCollapseToString`; that method's body (returning an empty string for an empty literal) was not opened.
+29. **Fish schooling:** the entity-list order from `getEntitiesOfClass` decides leader and follower selection (4.1.1) and is not specified here.
 
 ## Appendix A. Entity metadata (own fields) for every entity type
 
