@@ -238,7 +238,7 @@
                  MOVE WS-X TO EN-OX(WS-ROW)
                  MOVE WS-Y TO EN-OY(WS-ROW)
                  MOVE WS-Z TO EN-OZ(WS-ROW)
-                 MOVE 0 TO EN-MOB-FLAGS(WS-ROW) EN-BABY(WS-ROW)
+                 MOVE 0 TO EN-MOB-FLAGS(WS-ROW) EN-BABY(WS-ROW) EN-DARK(WS-ROW) EN-DARK-MS(WS-ROW)
                  MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
                  MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE 0 TO EN-SQ(WS-ROW) EN-SQ-OLD(WS-ROW) EN-SQ-TGT(WS-ROW) EN-WOG(WS-ROW)
@@ -331,6 +331,10 @@
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
                      IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
                          MOVE MD-MD-INT TO EN-VALUE(WS-ROW)
+                     END-IF
+                     IF MD-MD-INDEX = 18 AND EN-KEY(WS-ROW) = "glow_squid"
+                         MOVE MD-MD-INT TO EN-DARK(WS-ROW)
+                         MOVE CL-NOW-MS TO EN-DARK-MS(WS-ROW)
                      END-IF
                      IF MD-MD-INDEX = 16 AND EN-KEY(WS-ROW) = "creeper"
                          CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL

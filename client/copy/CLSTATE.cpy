@@ -720,6 +720,8 @@
           15 EN-OZ           FLOAT-LONG.
           15 EN-MOB-FLAGS    BINARY-LONG.
           15 EN-BABY         PIC 9.
+          15 EN-DARK         BINARY-LONG.   *> a glow squid's dark ticks remaining (entry 18, INT) when it was set at the clock EN-DARK-MS: the counter falls 1 a tick (34-8 section 2.2)
+          15 EN-DARK-MS      BINARY-DOUBLE.
           15 EN-SW-ACTIVE    PIC 9.
           15 EN-SW-TICKS     BINARY-LONG.
           15 EN-SW-DUR       BINARY-LONG.

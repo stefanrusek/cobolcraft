@@ -244,6 +244,11 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-T                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-DARK                BINARY-LONG.
+ 01 WS-GL-INS.
+    05 WS-GL-IN            FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-GL-OUTS.
+    05 WS-GL-OUT           FLOAT-LONG OCCURS 64 TIMES.
  01 WS-BRIGHT              FLOAT-LONG.
  01 WS-SWELL               FLOAT-LONG.
  01 WS-KSWELL              FLOAT-LONG.
@@ -425,6 +430,14 @@
      COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-ROW))
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW))
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
+*>   A glow squid's block light (34-8 section 2.2, EF8-GLOW-LIGHT): from its dark ticks remaining, which fall 1 a tick from the value last set (a hit sets 100).
+     IF EN-KEY(WS-ROW) = "glow_squid"
+         COMPUTE WS-DARK = FUNCTION MAX(0, EN-DARK(WS-ROW) - FUNCTION INTEGER((CL-NOW-MS - EN-DARK-MS(WS-ROW)) / 50))
+         MOVE WS-DARK TO WS-GL-IN(1)
+         MOVE WS-BLOCK TO WS-GL-IN(2)
+         CALL "EF8-GLOW-LIGHT" USING WS-GL-INS WS-GL-OUTS
+         MOVE WS-GL-OUT(1) TO WS-BLOCK
+     END-IF
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
 *>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
      MOVE 1 TO WS-HOOK-X WS-HOOK-Y
