@@ -212,6 +212,7 @@
                          CALL "LIGHTNING-STEP" USING WS-ROW
                      WHEN 10
                          CALL "MINECART-STEP" USING WS-ROW
+                         CALL "DECOR-DATA-SYNC" USING WS-ROW
                      WHEN 14
                          CALL "WITHER-STEP" USING WS-ROW
                      WHEN 15

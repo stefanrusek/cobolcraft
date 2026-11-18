@@ -3,7 +3,7 @@
 *> and, for kinds 11 to 13, by THROWN-TICK. Kinds: 11 armor stand (PJ-I1 flags, PJ-POSE: 15 flags Byte, 16 head, 17 body, 18 left arm, 19 right arm, 20 left leg, 21 right leg, Rotations), 12 item frame and
 *> glow item frame (PJ-I1 direction, PJ-I2 item, PJ-I3 rotation: 8 Direction, 9 stack (empty = 0 x 0), 10 VarInt), 13 painting (PJ-I1 direction: 8; the variant 9 is not stored), 44 interaction (PJ-R1 width, PJ-R2
 *> height, PJ-I1 response: 8 and 9 Float, 10 Boolean), 45 cushion (PJ-I1 dye colour: 8), 46 mannequin (PJ-I1 main hand 1 right, PJ-I2 model customisation 127, PJ-I3 immovable: 15 humanoid arm, 16 Byte, 18
-*> Boolean), 47 block display (PJ-I1 block state: 23), 48 item display (PJ-I1 item, PJ-I2 display type: 23 stack, 24 Byte).
+*> Boolean), 10 minecart (PJ-I4 hurt time, PJ-I5 hurt direction, PJ-R3 damage: 8 and 9 VarInt, 10 Float; a furnace minecart (PJ-I1 4) 13 fuel Boolean), 51 boat paddles (PJ-I1 left, PJ-I2 right: 11 and 12 Boolean), 47 block display (PJ-I1 block state: 23), 48 item display (PJ-I1 item, PJ-I2 display type: 23 stack, 24 Byte).
 *> A cushion is sat on by CUSHION-USE (MOB-INTERACT: no secondary use, nobody sits there, the player rides nothing).
 *> Not done: the defaults of the display fields 8 to 22 (the documents name the fields, not their defaults, so nothing is sent for them), the text display (the component default), the mannequin's profile (17)
 *> and description (19: its component value and the profile default are not in the documents), the painting variant, the interaction entity's attack and interaction records and its response (8.9 gives constants
@@ -114,6 +114,13 @@
                  COMPUTE WS-V = FUNCTION INTEGER(PJ-POSE(L-SLOT, WS-I) * 100 + 100000)
                  COMPUTE WS-SUM = FUNCTION MOD(WS-SUM * 31 + WS-V, 1000000007)
              END-PERFORM
+         WHEN 10
+             COMPUTE WS-SUM = PJ-I4(L-SLOT) + 64 * (PJ-I5(L-SLOT) + 2) + 1024 * FUNCTION INTEGER(PJ-R3(L-SLOT) * 10)
+             IF PJ-I1(L-SLOT) = 4 AND PJ-I3(L-SLOT) > 0
+                 ADD 1000000 TO WS-SUM
+             END-IF
+         WHEN 51
+             COMPUTE WS-SUM = PJ-I1(L-SLOT) + 2 * PJ-I2(L-SLOT)
          WHEN 12
              COMPUTE WS-SUM = PJ-I1(L-SLOT) + 8 * PJ-I3(L-SLOT) + 64 * PJ-I2(L-SLOT)
          WHEN OTHER
@@ -180,6 +187,35 @@
              MOVE 1 TO WS-SER
              MOVE PJ-I3(WS-SLOT) TO WS-INT
              MOVE 0 TO WS-COUNT WS-ITEM
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+         WHEN 10
+             MOVE 8 TO WS-INDEX
+             MOVE 1 TO WS-SER
+             MOVE PJ-I4(WS-SLOT) TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             MOVE 9 TO WS-INDEX
+             MOVE PJ-I5(WS-SLOT) TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             MOVE 10 TO WS-INDEX
+             MOVE 3 TO WS-SER
+             MOVE PJ-R3(WS-SLOT) TO WS-F1
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             IF PJ-I1(WS-SLOT) = 4
+                 MOVE 13 TO WS-INDEX
+                 MOVE 8 TO WS-SER
+                 MOVE 0 TO WS-INT
+                 IF PJ-I3(WS-SLOT) > 0
+                     MOVE 1 TO WS-INT
+                 END-IF
+                 CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             END-IF
+         WHEN 51
+             MOVE 11 TO WS-INDEX
+             MOVE 8 TO WS-SER
+             MOVE PJ-I1(WS-SLOT) TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             MOVE 12 TO WS-INDEX
+             MOVE PJ-I2(WS-SLOT) TO WS-INT
              CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
          WHEN 13
              MOVE 8 TO WS-INDEX
@@ -430,3 +466,44 @@
      END-IF
      GOBACK.
  END PROGRAM CUSHION-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BOAT-PADDLE.
+*> USING connection id, PLAY-SERVERBOUND (a decoded Paddle Boat 0x23: PSB-FLAGS bit 1 left, bit 2 right): the rider of a boat sets the paddle states of the boat it steers (44-8 section 3.5); the viewers get
+*> metadata 11 and 12 when they changed. A player who steers no boat changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-BOAT                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 51.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-RIGHT               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     MOVE CN-PLAYER(L-ID) TO WS-PLAYER
+     MOVE EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER)) TO WS-BOAT
+     IF WS-BOAT = 0
+         GOBACK
+     END-IF
+     IF EN-BT-KIND(WS-BOAT) = 0 OR EN-RIDER(WS-BOAT) NOT = WS-PLAYER
+         GOBACK
+     END-IF
+     CALL "PJ-FIND" USING EN-ID(WS-BOAT) WS-SLOT
+     IF WS-SLOT = 0
+         CALL "PJ-ALLOC" USING EN-ID(WS-BOAT) WS-KIND WS-SLOT
+     END-IF
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-RIGHT = FUNCTION INTEGER(PSB-FLAGS / 2)
+     COMPUTE WS-LEFT = PSB-FLAGS - 2 * WS-RIGHT
+     MOVE WS-LEFT TO PJ-I1(WS-SLOT)
+     MOVE WS-RIGHT TO PJ-I2(WS-SLOT)
+     CALL "DECOR-DATA-SYNC" USING WS-BOAT
+     GOBACK.
+ END PROGRAM BOAT-PADDLE.
