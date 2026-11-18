@@ -15,7 +15,7 @@
 *>   RANGED-GLIDE-TICK USING player row                one tick of a glide
 *>   RANGED-ROCKET-LAUNCH USING player row, attached (1 or 0), x, y, z (FLOAT-LONG)   a rocket of the held stack
 *>   RANGED-ROCKET-USE USING player row, done out      Use Item with a rocket
-*>   RANGED-ROCKET-ON USING connection id, PLAY-SERVERBOUND, item id, done out   Use Item On with a rocket
+*>   RANGED-ROCKET-ON USING connection id, PLAY-SERVERBOUND, done out   Use Item On with a rocket in the main hand
 *>   RANGED-ROCKET-BOOST USING rocket row, attached entity id
 
  IDENTIFICATION DIVISION.
@@ -187,7 +187,6 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY CITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-DETACHED            BINARY-LONG VALUE 0.
  01 WS-X                   FLOAT-LONG.
@@ -196,16 +195,10 @@
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
- 01 L-ITEM                 BINARY-LONG.
  01 L-DONE                 BINARY-LONG.
- PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND L-ITEM L-DONE.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND L-DONE.
      MOVE 0 TO L-DONE
-     IF L-ITEM = 0 OR PSB-HAND NOT = 0
-         GOBACK
-     END-IF
-     IF IT-KEY(L-ITEM + 1) NOT = "firework_rocket"
-         GOBACK
-     END-IF
+*>   BLOCK-USE-ON calls this for a firework rocket in the main hand only.
      MOVE CN-PLAYER(L-ID) TO WS-ROW
 *>   The click point (the block plus the cursor) moved 0.15 along the face normal (0 down, 1 up, 2 north, 3 south, 4 west, 5 east).
      COMPUTE WS-X = PSB-BX + PSB-CURSOR-X

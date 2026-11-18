@@ -34,6 +34,10 @@
  01 WS-LOSS1               BINARY-LONG.
  01 WS-LOSS2               BINARY-LONG.
  01 WS-LAST0               BINARY-DOUBLE.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-BOB-CONN            BINARY-LONG.
+ 01 WS-HEALTH0             FLOAT-LONG.
+ 01 WS-YAW20               FLOAT-SHORT VALUE 20.
  01 WS-CASE                PIC X(240).
  01 WS-EXPECT              BINARY-DOUBLE.
  01 WS-OBSERVE             BINARY-DOUBLE.
@@ -193,6 +197,123 @@
      MOVE "acceptance US14 17 6.3 Lunge I costs 4.0 exhaustion on top of the stab's 0.1 (hundredths: 410)" TO WS-CASE
      MOVE 410 TO WS-EXPECT
      COMPUTE WS-OBSERVE = FUNCTION INTEGER((PL-EXHAUSTION(WS-PLAYER) - WS-EXH0) * 100 + 0.5)
+     PERFORM CHECK-N
+
+*>   Aimed to the side (yaw 20): the ray's x slab matters; the cow on the line is hit.
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     PERFORM FRESH
+     MOVE 20 TO PL-YAW(WS-PLAYER)
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     COMPUTE EN-X(WS-COW1) = PL-X(WS-PLAYER) - 3.2 * FUNCTION SIN(20 * FUNCTION PI / 180)
+     COMPUTE EN-Z(WS-COW1) = PL-Z(WS-PLAYER) + 3.2 * FUNCTION COS(20 * FUNCTION PI / 180)
+     PERFORM STAB
+     COMPUTE WS-LOSS1 = 100 - EN-HEALTH(WS-COW1)
+     MOVE "acceptance US14 17 3.12 aimed 20 degrees to the side the stab hits the cow on that line" TO WS-CASE
+     MOVE 3 TO WS-EXPECT
+     MOVE WS-LOSS1 TO WS-OBSERVE
+     PERFORM CHECK-N
+*>   The same stab at yaw 45 with the cow straight ahead: the ray passes beside the box (the slabs do not overlap).
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 45 TO PL-YAW(WS-PLAYER)
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     PERFORM STAB
+     COMPUTE WS-LOSS1 = 100 - EN-HEALTH(WS-COW1)
+     MOVE "acceptance US14 17 3.12 a stab at yaw 45 misses a cow straight ahead" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-LOSS1 TO WS-OBSERVE
+     PERFORM CHECK-N
+*>   Looking exactly level the ray never meets a cow lying below it; looking along x a cow off the line in z is passed.
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 0 TO PL-YAW(WS-PLAYER) PL-PITCH(WS-PLAYER)
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     COMPUTE EN-Y(WS-COW1) = PL-Y(WS-PLAYER) - 1.5
+     PERFORM STAB
+     COMPUTE WS-LOSS1 = 100 - EN-HEALTH(WS-COW1)
+     MOVE "acceptance US14 17 3.12 a level ray passes over a cow 1.5 blocks lower: not hit" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-LOSS1 TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 90 TO PL-YAW(WS-PLAYER)
+     MOVE 5 TO PL-PITCH(WS-PLAYER)
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     COMPUTE EN-X(WS-COW1) = PL-X(WS-PLAYER) - 3
+     COMPUTE EN-Z(WS-COW1) = PL-Z(WS-PLAYER) + 2
+     PERFORM STAB
+     COMPUTE WS-LOSS1 = 100 - EN-HEALTH(WS-COW1)
+     MOVE "acceptance US14 17 3.12 looking along x a cow 2 blocks off the line in z is not hit" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-LOSS1 TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO PL-YAW(WS-PLAYER)
+
+*>   A sword or an empty hand has no jab.
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     MOVE "iron_sword" TO WS-KEY
+     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     PERFORM STAB
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     PERFORM STAB
+     COMPUTE WS-LOSS1 = 100 - EN-HEALTH(WS-COW1)
+     MOVE "acceptance US14 17 3.12 STAB with a sword or with an empty hand does nothing" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-LOSS1 TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   Lunge is refused while riding or gliding: the stab still hurts, but no push and no extra wear.
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     PERFORM FRESH
+     MOVE "minecraft:lunge" TO WS-ENCH-KEY
+     CALL "RT-ENCHANT" USING WS-PLAYER WS-ONE WS-ENCH-KEY WS-ONE
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     MOVE 1 TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     PERFORM STAB
+     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     CALL "RT-DAMAGE" USING WS-PLAYER WS-ONE WS-DAMAGE
+     MOVE "acceptance US14 17 6.3 a riding player's Lunge does nothing: the stab costs 1 durability only" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-DAMAGE TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     MOVE 5 TO TS-GLIDE-TICKS(WS-PLAYER)
+     PERFORM STAB
+     MOVE 0 TO TS-GLIDE-TICKS(WS-PLAYER)
+     CALL "RT-DAMAGE" USING WS-PLAYER WS-ONE WS-DAMAGE
+     MOVE "acceptance US14 17 6.3 a gliding player's Lunge does nothing either: 2 durability in all" TO WS-CASE
+     MOVE 2 TO WS-EXPECT
+     MOVE WS-DAMAGE TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   Another player in the line of the stab takes the damage too (player combat on).
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     PERFORM FRESH
+     MOVE 3 TO WS-DZ
+     PERFORM PLACE-COWS
+     COMPUTE EN-X(WS-COW1) = PL-X(WS-PLAYER) + 3
+     CALL "RT-JOIN-BOB" USING WS-PLAYER WS-BOB WS-BOB-CONN
+     MOVE PL-HEALTH(WS-BOB) TO WS-HEALTH0
+     PERFORM STAB
+     COMPUTE WS-LOSS1 = FUNCTION INTEGER(WS-HEALTH0 - PL-HEALTH(WS-BOB) + 0.5)
+     MOVE "acceptance US14 17 3.12 another player 3 blocks ahead is stabbed for 3" TO WS-CASE
+     MOVE 3 TO WS-EXPECT
+     MOVE WS-LOSS1 TO WS-OBSERVE
      PERFORM CHECK-N
      STOP RUN.
 

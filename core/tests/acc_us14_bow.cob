@@ -10,6 +10,7 @@
  COPY CORESTATE.
  COPY CTOOLS.
  COPY CMENU.
+ COPY PLAYPKT.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-CONN                BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
@@ -36,6 +37,7 @@
  01 WS-DZ                  FLOAT-LONG VALUE 3.
  01 WS-COW                 BINARY-LONG.
  01 WS-HEALTH0             BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
  01 WS-CASE                PIC X(240).
  01 WS-EXPECT              BINARY-DOUBLE.
  01 WS-OBSERVE             BINARY-DOUBLE.
@@ -117,6 +119,12 @@
      MOVE "acceptance US14 17 3.9 the off hand's spectral arrows go first: 2 become 1, the inventory arrows stay 8" TO WS-CASE
      MOVE 108 TO WS-EXPECT
      COMPUTE WS-OBSERVE = MN-EQUIP-COUNT(WS-PLAYER, 5) * 100 + PL-SLOT-COUNT(WS-PLAYER, 5)
+     PERFORM CHECK-N
+     MOVE 20 TO WS-TICKS
+     PERFORM DRAW-AND-RELEASE
+     MOVE "acceptance US14 17 3.9 the last spectral arrow empties the off hand slot, the inventory arrows still stay 8" TO WS-CASE
+     MOVE 8 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = MN-EQUIP-COUNT(WS-PLAYER, 5) * 100 + PL-SLOT-COUNT(WS-PLAYER, 5) + MN-EQUIP-ITEM(WS-PLAYER, 5) * 1000
      PERFORM CHECK-N
      MOVE 0 TO MN-EQUIP-COUNT(WS-PLAYER, 5)
 
@@ -209,6 +217,48 @@
      IF WS-HEALTH0 - EN-HEALTH(WS-COW) >= 6 AND WS-COUNT = 0
          MOVE 1 TO WS-OBSERVE
      END-IF
+     PERFORM CHECK-N
+
+*>   The ammunition is gone by the release: nothing is shot. The held slot changed: nothing either.
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE "arrow" TO WS-KEY
+     CALL "RT-GIVE" USING WS-PLAYER WS-FIVE WS-KEY WS-TEN
+     CALL "RT-CLEAR-TYPE" USING WS-ARROW-TYPE
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     MOVE 20 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 5)
+     CALL "TEST-ACTION" USING WS-CONN WS-SIX WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
+     CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 3.9 arrows gone between the draw and the release: nothing is shot" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "RT-GIVE" USING WS-PLAYER WS-FIVE WS-KEY WS-TEN
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 1 TO PL-HELD(WS-PLAYER)
+     CALL "TEST-ACTION" USING WS-CONN WS-SIX WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 3.9 the held slot changed during the draw: the release shoots nothing" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   Use Item guards: the off hand, an empty hand.
+     MOVE 1 TO PSB-HAND
+     CALL "RANGED-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     MOVE "acceptance US14 17 3.9 Use Item with the off hand is not handled" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-DONE TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO PSB-HAND
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "RANGED-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     MOVE "acceptance US14 17 3.9 Use Item with an empty hand is not handled" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-DONE TO WS-OBSERVE
      PERFORM CHECK-N
      STOP RUN.
 

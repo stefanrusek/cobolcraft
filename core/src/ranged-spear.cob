@@ -131,6 +131,9 @@
  01 WS-MAXX                FLOAT-LONG.
  01 WS-MAXY                FLOAT-LONG.
  01 WS-MAXZ                FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
  01 WS-NEAR                FLOAT-LONG.
  01 WS-FAR                 FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
@@ -195,6 +198,9 @@
      COMPUTE WS-BONUS = WS-DAMAGE10K / 10 - 1000
      CALL "TOOL-ATTACK-ATTR" USING WS-BONUS WS-STRENGTH WS-WEAKNESS WS-BASE
      COMPUTE WS-POINTS ROUNDED = FUNCTION MAX(1, WS-BASE / 1000)
+*>   The Lunge level of the spear as it was before the stab (a spear that breaks in the stab has still lunged).
+     MOVE "minecraft:lunge" TO WS-LEVEL-KEY
+     CALL "RANGED-ENCHANT" USING PL-SLOT-VAR(L-ROW, WS-SLOT) WS-LEVEL-KEY WS-LUNGE
      MOVE 4.5 TO WS-MAX-REACH
      IF PL-MODE(L-ROW) = 1
          MOVE 6.5 TO WS-MAX-REACH
@@ -226,12 +232,21 @@
              COMPUTE WS-TYPE = EN-TYPE(WS-E) + 1
              COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-TYPE) / 2000 + WS-MARGIN
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(WS-TYPE) / 1000
-             COMPUTE WS-MINX = EN-X(WS-E) - WS-HALF
-             COMPUTE WS-MAXX = EN-X(WS-E) + WS-HALF
-             COMPUTE WS-MINY = EN-Y(WS-E) - WS-MARGIN
-             COMPUTE WS-MAXY = EN-Y(WS-E) + WS-HEIGHT + WS-MARGIN
-             COMPUTE WS-MINZ = EN-Z(WS-E) - WS-HALF
-             COMPUTE WS-MAXZ = EN-Z(WS-E) + WS-HALF
+             MOVE EN-X(WS-E) TO WS-BX
+             MOVE EN-Y(WS-E) TO WS-BY
+             MOVE EN-Z(WS-E) TO WS-BZ
+*>           A player's box stands at the player's own position.
+             IF EN-PLAYER(WS-E) > 0
+                 MOVE PL-X(EN-PLAYER(WS-E)) TO WS-BX
+                 MOVE PL-Y(EN-PLAYER(WS-E)) TO WS-BY
+                 MOVE PL-Z(EN-PLAYER(WS-E)) TO WS-BZ
+             END-IF
+             COMPUTE WS-MINX = WS-BX - WS-HALF
+             COMPUTE WS-MAXX = WS-BX + WS-HALF
+             COMPUTE WS-MINY = WS-BY - WS-MARGIN
+             COMPUTE WS-MAXY = WS-BY + WS-HEIGHT + WS-MARGIN
+             COMPUTE WS-MINZ = WS-BZ - WS-HALF
+             COMPUTE WS-MAXZ = WS-BZ + WS-HALF
              CALL "RANGED-RAY-BOX" USING WS-EX WS-EY WS-EZ WS-DX WS-DY WS-DZ WS-MINX WS-MINY WS-MINZ WS-MAXX WS-MAXY WS-MAXZ
                  WS-NEAR WS-FAR WS-HIT
 *>           The box must be met somewhere between the minimum and the maximum reach.
@@ -253,12 +268,6 @@
 *>   The swing resets the attack strength.
      COMPUTE TS-LAST-ATTACK(L-ROW) = CW-TICKS + 1
 *>   Lunge (6.3): after the stab, an impulse along the look vector without its vertical part, exhaustion and one more point of damage.
-     MOVE "minecraft:lunge" TO WS-LEVEL-KEY
-     IF PL-SLOT-COUNT(L-ROW, WS-SLOT) > 0
-         CALL "RANGED-ENCHANT" USING PL-SLOT-VAR(L-ROW, WS-SLOT) WS-LEVEL-KEY WS-LUNGE
-     ELSE
-         MOVE 0 TO WS-LUNGE
-     END-IF
      IF WS-LUNGE > 0
          MOVE 0 TO WS-RIDING
          IF EN-VEHICLE(PL-ENTITY-ROW(L-ROW)) > 0

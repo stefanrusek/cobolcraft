@@ -39,6 +39,13 @@
  01 WS-VY                  FLOAT-LONG.
  01 WS-VZ                  FLOAT-LONG.
  01 WS-LEVITATION          BINARY-LONG VALUE 24.
+ 01 WS-C71                 BINARY-LONG VALUE 71.
+ 01 WS-FIREWORKS           PIC X(64).
+ 01 WS-FIREWORKS-LENGTH    BINARY-LONG VALUE 2.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EY                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-FACES-OK            BINARY-LONG.
  01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
  01 WS-DURATION            BINARY-LONG VALUE 200.
  01 WS-FLAGS               BINARY-LONG VALUE 0.
@@ -226,6 +233,95 @@
              MOVE 1 TO WS-OBSERVE
          END-IF
      END-IF
+     PERFORM CHECK-N
+
+*>   The fireworks component of the stack (type 71: flight duration 3, one explosion) sets the rocket's lifetime (at least 10 x (3 + 1)) and its stars.
+     PERFORM FRESH
+     MOVE "firework_rocket" TO WS-KEY
+     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-THREE
+     MOVE X"0301" TO WS-FIREWORKS
+     MOVE 0 TO WS-HANDLE
+     CALL "SP-SET-COMPONENT" USING WS-HANDLE WS-C71 WS-FIREWORKS WS-FIREWORKS-LENGTH
+     MOVE WS-HANDLE TO PL-SLOT-VAR(WS-PLAYER, 1)
+     CALL "TEST-PLAYER-COMMAND" USING WS-CONN WS-SIX
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     CALL "RT-COUNT" USING WS-ROCKET-TYPE WS-COUNT WS-ROW
+     MOVE 0 TO WS-SLOT
+     IF WS-COUNT = 1
+         CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     END-IF
+     MOVE "acceptance US14 17 3.13 a rocket with flight duration 3 and one explosion lives at least 40 ticks and has 1 star" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-COUNT = 1 AND WS-SLOT > 0
+         IF PJ-I2(WS-SLOT) >= 40 AND PJ-I2(WS-SLOT) <= 51 AND PJ-I3(WS-SLOT) = 1
+             MOVE 1 TO WS-OBSERVE
+         END-IF
+     END-IF
+     PERFORM CHECK-N
+
+*>   An attached rocket whose player is no longer gliding rides along without pushing; one attached to nobody does nothing.
+     MOVE PL-X(WS-PLAYER) TO TS-GLIDE-LAST-X(WS-PLAYER)
+     MOVE 1 TO PL-ON-GROUND(WS-PLAYER)
+     MOVE 1 TO WS-TICKS
+*>   The tick in which the glide ends still pushes (the rocket moves before the glide is checked); the next ones do not.
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE 2 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-MOTION" USING WS-CONN WS-FOUND WS-VX WS-VY WS-VZ
+     MOVE "acceptance US14 17 3.13 a landed glider (counter 0) is no longer pushed by its rocket: no Set Entity Motion in the next ticks" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-FOUND TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 999999 TO PJ-I4(WS-SLOT)
+     CALL "TEST-TICKS" USING WS-ONE
+     CALL "RT-MOTION" USING WS-CONN WS-FOUND WS-VX WS-VY WS-VZ
+     MOVE "acceptance US14 17 3.13 a rocket attached to an entity that is no player pushes nobody" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-FOUND TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   Use Item On each face: the click point (cursor 0.5, 0.5, 0.5) moved 0.15 along the face's normal.
+     MOVE 1 TO WS-FACES-OK
+     PERFORM VARYING WS-FACE FROM 0 BY 1 UNTIL WS-FACE > 5
+         PERFORM FRESH
+         MOVE "firework_rocket" TO WS-KEY
+         CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-THREE
+         MOVE WS-CX TO WS-BX
+         MOVE WS-FLOOR TO WS-BY
+         MOVE WS-CZ TO WS-BZ
+         CALL "TEST-USE-ON" USING WS-CONN WS-BX WS-BY WS-BZ WS-FACE WS-ONE
+         CALL "RT-COUNT" USING WS-ROCKET-TYPE WS-COUNT WS-ROW
+         COMPUTE WS-EX = WS-BX + 0.5
+         COMPUTE WS-EY = WS-BY + 0.5
+         COMPUTE WS-EZ = WS-BZ + 0.5
+         EVALUATE WS-FACE
+             WHEN 0
+                 COMPUTE WS-EY = WS-EY - 0.15
+             WHEN 1
+                 COMPUTE WS-EY = WS-EY + 0.15
+             WHEN 2
+                 COMPUTE WS-EZ = WS-EZ - 0.15
+             WHEN 3
+                 COMPUTE WS-EZ = WS-EZ + 0.15
+             WHEN 4
+                 COMPUTE WS-EX = WS-EX - 0.15
+             WHEN OTHER
+                 COMPUTE WS-EX = WS-EX + 0.15
+         END-EVALUATE
+         IF WS-COUNT NOT = 1
+             MOVE 0 TO WS-FACES-OK
+         ELSE
+             IF FUNCTION ABS(EN-X(WS-ROW) - WS-EX) > 0.01 OR FUNCTION ABS(EN-Y(WS-ROW) - WS-EY) > 0.01
+                     OR FUNCTION ABS(EN-Z(WS-ROW) - WS-EZ) > 0.01
+                 MOVE 0 TO WS-FACES-OK
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US14 17 3.13 Use Item On each of the six faces puts the rocket 0.15 off that face of the click point" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-FACES-OK TO WS-OBSERVE
      PERFORM CHECK-N
      STOP RUN.
 

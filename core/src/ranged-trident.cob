@@ -130,18 +130,10 @@
      END-IF
      MOVE "minecraft:loyalty" TO WS-LEVEL-KEY
      CALL "RANGED-ENCHANT" USING L-HANDLE WS-LEVEL-KEY EN-TR-LOYALTY(WS-NEW)
-     MOVE EN-YAW(L-ROW) TO EN-YAW(WS-NEW)
      COMPUTE WS-H = FUNCTION SQRT(WS-VX * WS-VX + WS-VZ * WS-VZ)
-     IF WS-VZ = 0
-         MOVE 90 TO EN-YAW(WS-NEW)
-         IF WS-VX < 0
-             MOVE -90 TO EN-YAW(WS-NEW)
-         END-IF
-     ELSE
-         COMPUTE EN-YAW(WS-NEW) = FUNCTION ATAN(WS-VX / WS-VZ) * 180 / FUNCTION PI
-         IF WS-VZ < 0
-             COMPUTE EN-YAW(WS-NEW) = EN-YAW(WS-NEW) + 180
-         END-IF
+     COMPUTE EN-YAW(WS-NEW) = FUNCTION ATAN(WS-VX / FUNCTION MAX(FUNCTION ABS(WS-VZ), 0.000001)) * 180 / FUNCTION PI
+     IF WS-VZ < 0
+         COMPUTE EN-YAW(WS-NEW) = 180 - EN-YAW(WS-NEW)
      END-IF
      IF WS-H > 0
          COMPUTE EN-PITCH(WS-NEW) = FUNCTION ATAN(WS-VY / WS-H) * 180 / FUNCTION PI
@@ -252,6 +244,18 @@
  01 WS-O                   BINARY-LONG.
  01 WS-RESULT              BINARY-LONG.
  01 WS-HIT-ID              BINARY-LONG.
+ 01 WS-CHANNELING          BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-HEIGHT              BINARY-LONG VALUE 1800.
+ 01 WS-THUNDER             BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-HIT-ENTITY          BINARY-LONG VALUE 1.
+ 01 WS-NO-ROD              BINARY-LONG VALUE 0.
+ 01 WS-SUMMON              BINARY-LONG.
+ 01 WS-NOT-VISUAL          BINARY-LONG VALUE 0.
+ 01 WS-BOLT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-TRIDENT              BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -287,6 +291,26 @@
          MOVE 0 TO EN-HURT(L-ENTITY)
          CALL "HEALTH-MOB-DAMAGE" USING L-ENTITY WS-POINTS WS-CAUSE WS-OWNER-PLAYER
          MOVE EN-ID(L-ENTITY) TO WS-HIT-ID
+     END-IF
+*>   Channeling (17 section 6.3): in a thunderstorm, with open sky over the victim, a lightning bolt strikes where it stands.
+     MOVE "minecraft:channeling" TO WS-LEVEL-KEY
+     CALL "RANGED-ENCHANT" USING EN-TR-VAR(L-TRIDENT) WS-LEVEL-KEY WS-CHANNELING
+     IF WS-CHANNELING > 0
+         IF L-PLAYER > 0
+             MOVE PL-X(L-PLAYER) TO WS-X
+             MOVE PL-Y(L-PLAYER) TO WS-Y
+             MOVE PL-Z(L-PLAYER) TO WS-Z
+         ELSE
+             MOVE EN-X(L-ENTITY) TO WS-X
+             MOVE EN-Y(L-ENTITY) TO WS-Y
+             MOVE EN-Z(L-ENTITY) TO WS-Z
+         END-IF
+         CALL "WEATHER-THUNDERING" USING EN-DIM(L-TRIDENT) WS-THUNDER
+         CALL "WEATHER-EXPOSED" USING EN-DIM(L-TRIDENT) WS-X WS-Y WS-Z WS-HEIGHT WS-SKY
+         CALL "TOOL-TRIDENT-CHANNEL" USING WS-THUNDER WS-SKY WS-HIT-ENTITY WS-NO-ROD WS-SUMMON
+         IF WS-SUMMON = 1
+             CALL "LIGHTNING-SPAWN" USING EN-DIM(L-TRIDENT) WS-X WS-Y WS-Z WS-NOT-VISUAL WS-BOLT
+         END-IF
      END-IF
 *>   The trident has dealt its damage and is deflected: reversed and slowed by the vector (0.02, 0.2, 0.02); the victim cannot be hit again.
      MOVE 1 TO EN-TR-DEALT(L-TRIDENT)

@@ -98,6 +98,17 @@
      MOVE WS-HITS TO WS-OBSERVE
      PERFORM CHECK-N
 
+*>   A client that starts tracking the named cow later gets the name with the Add Entity (ENTITY-VIEW-UPDATE).
+     MOVE SPACE TO VW-SEEN(WS-PLAYER)(WS-COW:1)
+     CALL "ENTITY-TRACK" USING WS-COW
+     CALL "RT-PACKET-HEX" USING WS-CONN 101 WS-HEX WS-FOUND
+     MOVE 0 TO WS-HITS
+     INSPECT WS-HEX TALLYING WS-HITS FOR ALL "426573736965"
+     MOVE "acceptance US14 18 1.4 a viewer that tracks the named cow afterwards is sent the name in Set Entity Data" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+
 *>   A hostile mob takes a name too.
      MOVE "Bessie" TO WS-NAME
      MOVE EN-ID(WS-ZOMBIE) TO WS-ID

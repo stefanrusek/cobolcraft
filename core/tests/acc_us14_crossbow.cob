@@ -207,6 +207,31 @@
      PERFORM CHECK-N
      MOVE 0 TO MN-EQUIP-COUNT(WS-PLAYER, 5)
 
+*>   The arrows are gone when the charge completes: nothing is loaded. The held slot changed: the use is over.
+     PERFORM FRESH-SLOTS
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 5)
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-CHARGED" USING WS-PLAYER WS-ONE WS-CHARGED
+     MOVE "acceptance US14 25 part 7 9.3 the ammunition gone by the end of the charge: the crossbow stays empty" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-CHARGED TO WS-OBSERVE
+     PERFORM CHECK-N
+     PERFORM FRESH-SLOTS
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     MOVE 1 TO PL-HELD(WS-PLAYER)
+     MOVE 1 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-CHARGED" USING WS-PLAYER WS-ONE WS-CHARGED
+     MOVE "acceptance US14 25 part 7 9.3 changing the held slot ends the charge: nothing is loaded when the slot is held again" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-CHARGED TO WS-OBSERVE
+     PERFORM CHECK-N
+
 *>   Creative without ammunition: loads a free arrow, nothing is used up, no durability.
      PERFORM FRESH-SLOTS
      MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 5)

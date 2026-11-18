@@ -46,6 +46,12 @@
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-Y                   BINARY-LONG.
  01 WS-LOSS                BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-BOB-CONN            BINARY-LONG.
+ 01 WS-HEALTH0             FLOAT-LONG.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-BOLT-TYPE           BINARY-LONG.
+ 01 WS-ZERO-ROW            BINARY-LONG.
  01 WS-CASE                PIC X(240).
  01 WS-EXPECT              BINARY-DOUBLE.
  01 WS-OBSERVE             BINARY-DOUBLE.
@@ -230,6 +236,155 @@
      PERFORM CHECK-N
      MOVE 0 TO PL-PITCH(WS-PLAYER)
 
+*>   Another player in the line of the throw takes the 8.0 too.
+     PERFORM FRESH
+     CALL "RT-JOIN-BOB" USING WS-PLAYER WS-BOB WS-BOB-CONN
+     MOVE PL-HEALTH(WS-BOB) TO WS-HEALTH0
+     PERFORM THROW-10
+     MOVE 2 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     COMPUTE WS-LOSS = FUNCTION INTEGER(WS-HEALTH0 - PL-HEALTH(WS-BOB) + 0.5)
+     MOVE "acceptance US14 17 3.10 a thrown trident hurts another player in its way by 8" TO WS-CASE
+     MOVE 8 TO WS-EXPECT
+     MOVE WS-LOSS TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "RT-CLEAR-TYPE" USING WS-TRIDENT-TYPE
+
+*>   Throws along -x, +x and -z: the entity faces its flight.
+     PERFORM FRESH
+     MOVE 180 TO PL-YAW(WS-PLAYER)
+     PERFORM THROW-10
+     MOVE "acceptance US14 17 3.10 a throw along -z (yaw 180) flies with vz below 0" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-VZ(WS-ROW) < 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO PL-YAW(WS-PLAYER)
+     CALL "RT-CLEAR-TYPE" USING WS-TRIDENT-TYPE
+
+*>   Released after the damage grew to 249: the next point would break it, nothing is thrown.
+     PERFORM FRESH
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 249 TO WS-DAMAGE
+     MOVE PL-SLOT-VAR(WS-PLAYER, 1) TO WS-HANDLE
+     CALL "SP-SET-DAMAGE" USING WS-HANDLE WS-DAMAGE
+     MOVE WS-HANDLE TO PL-SLOT-VAR(WS-PLAYER, 1)
+     CALL "TEST-ACTION" USING WS-CONN WS-SIX WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
+     CALL "RT-COUNT" USING WS-TRIDENT-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 3.10 a trident that would break by the time of the release is not thrown" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = PL-SLOT-COUNT(WS-PLAYER, 1) - WS-COUNT
+     PERFORM CHECK-N
+
+*>   Riptide in the rain (no water): launched all the same; riding forbids it.
+     PERFORM FRESH
+     MOVE "minecraft:riptide" TO WS-ENCH-KEY
+     CALL "RT-ENCHANT" USING WS-PLAYER WS-ONE WS-ENCH-KEY WS-ONE
+     MOVE 1 TO CW-RAIN-LEVEL(PL-DIM(WS-PLAYER))
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "TEST-ACTION" USING WS-CONN WS-SIX WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
+     MOVE "acceptance US14 17 3.10 Riptide under open rain launches the player without water: the spin of 20 ticks" TO WS-CASE
+     MOVE 20 TO WS-EXPECT
+     MOVE TS-SPIN-TICKS(WS-PLAYER) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO TS-SPIN-TICKS(WS-PLAYER)
+     PERFORM FRESH
+     MOVE "minecraft:riptide" TO WS-ENCH-KEY
+     CALL "RT-ENCHANT" USING WS-PLAYER WS-ONE WS-ENCH-KEY WS-ONE
+     MOVE 1 TO CW-RAIN-LEVEL(PL-DIM(WS-PLAYER))
+     CALL "TEST-USE-ITEM" USING WS-CONN
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 1 TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     CALL "TEST-ACTION" USING WS-CONN WS-SIX WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
+     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     MOVE "acceptance US14 17 3.10 a riding player cannot use Riptide: no spin, no damage" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     CALL "RT-DAMAGE" USING WS-PLAYER WS-ONE WS-DAMAGE
+     COMPUTE WS-OBSERVE = TS-SPIN-TICKS(WS-PLAYER) + WS-DAMAGE
+     PERFORM CHECK-N
+     MOVE 0 TO CW-RAIN-LEVEL(PL-DIM(WS-PLAYER))
+
+*>   Loyalty: a trident stuck in the floor for more than 4 ticks flies home on its own.
+     PERFORM FRESH
+     MOVE "minecraft:loyalty" TO WS-ENCH-KEY
+     CALL "RT-ENCHANT" USING WS-PLAYER WS-ONE WS-ENCH-KEY WS-ONE
+     MOVE 60 TO PL-PITCH(WS-PLAYER)
+     PERFORM THROW-10
+     MOVE 8 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-COUNT" USING WS-TRIDENT-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 3.10 Loyalty: a trident stuck in the floor is back in the hand after a few ticks" TO WS-CASE
+     MOVE 10 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = PL-SLOT-COUNT(WS-PLAYER, 1) * 10 + WS-COUNT
+     PERFORM CHECK-N
+     MOVE 0 TO PL-PITCH(WS-PLAYER)
+
+*>   Thrown by a creative player: a survival player does not pick it up, a creative player does.
+     PERFORM FRESH
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     MOVE 60 TO PL-PITCH(WS-PLAYER)
+     PERFORM THROW-10
+     MOVE 3 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 12 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-COUNT" USING WS-TRIDENT-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 3.9 a mode 2 trident stays where it is for a survival player" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = WS-COUNT - PL-SLOT-COUNT(WS-PLAYER, 1)
+     PERFORM CHECK-N
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     MOVE 3 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-COUNT" USING WS-TRIDENT-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 3.9 and a creative player picks it up" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO PL-PITCH(WS-PLAYER)
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+
+*>   Channeling: a hit in a thunderstorm under open sky summons lightning at the victim; without the storm nothing.
+     PERFORM FRESH
+     MOVE "minecraft:channeling" TO WS-ENCH-KEY
+     CALL "RT-ENCHANT" USING WS-PLAYER WS-ONE WS-ENCH-KEY WS-ONE
+     MOVE "lightning_bolt" TO WS-KEY
+     CALL "RT-ENTITY-ID" USING WS-KEY WS-BOLT-TYPE
+     CALL "RT-CLEAR-TYPE" USING WS-BOLT-TYPE
+     MOVE "cow" TO WS-KEY
+     CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-COW
+     MOVE 100 TO EN-HEALTH(WS-COW)
+     CALL "TRIDENT-SPAWN" USING WS-PLAYER WS-TRIDENT-ITEM PL-SLOT-VAR(WS-PLAYER, 1) WS-ROW
+     MOVE 0 TO WS-ZERO-ROW
+     CALL "TRIDENT-HIT" USING WS-ROW WS-COW WS-ZERO-ROW
+     CALL "RT-COUNT" USING WS-BOLT-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 6.3 Channeling without a thunderstorm summons nothing" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO CW-RAIN-LEVEL(PL-DIM(WS-PLAYER))
+     MOVE 1 TO CW-THUNDER-LEVEL(PL-DIM(WS-PLAYER))
+     CALL "TRIDENT-SPAWN" USING WS-PLAYER WS-TRIDENT-ITEM PL-SLOT-VAR(WS-PLAYER, 1) WS-ROW
+     MOVE 0 TO EN-HURT(WS-COW)
+     CALL "TRIDENT-HIT" USING WS-ROW WS-COW WS-ZERO-ROW
+     CALL "RT-COUNT" USING WS-BOLT-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 17 6.3 Channeling in a thunderstorm under open sky: a lightning bolt strikes the cow" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO CW-RAIN-LEVEL(PL-DIM(WS-PLAYER))
+     MOVE 0 TO CW-THUNDER-LEVEL(PL-DIM(WS-PLAYER))
+
 *>   A trident that would break with the next point of damage cannot be used.
      PERFORM FRESH
      MOVE 249 TO WS-DAMAGE
@@ -291,6 +446,11 @@
      MOVE 20 TO WS-EXPECT
      MOVE TS-SPIN-TICKS(WS-PLAYER) TO WS-OBSERVE
      PERFORM CHECK-N
+*>   The cow wades about in the water: it is put back against the player before the spin's tick.
+     COMPUTE EN-X(WS-COW) = PL-X(WS-PLAYER) + 0.3
+     MOVE PL-Y(WS-PLAYER) TO EN-Y(WS-COW)
+     COMPUTE EN-Z(WS-COW) = PL-Z(WS-PLAYER) + 0.3
+     MOVE 0 TO EN-HURT(WS-COW)
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      COMPUTE WS-LOSS = 100 - EN-HEALTH(WS-COW)

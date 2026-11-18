@@ -42,6 +42,14 @@
  01 WS-CRIT                 BINARY-LONG VALUE 0.
  01 WS-PIERCE-LEVEL         BINARY-LONG VALUE 0.
  01 WS-ITEM-OK              BINARY-LONG.
+ 01 WS-BOB                  BINARY-LONG.
+ 01 WS-BOB-CONN             BINARY-LONG.
+ 01 WS-FOUND                BINARY-LONG.
+ 01 WS-MX                   FLOAT-LONG.
+ 01 WS-MY                   FLOAT-LONG.
+ 01 WS-MZ                   FLOAT-LONG.
+ 01 WS-HEALTH0              FLOAT-LONG.
+ 01 WS-LOSS-PLAYER          BINARY-LONG.
  01 WS-V0                   FLOAT-LONG.
  01 WS-CASE                PIC X(240).
  01 WS-EXPECT              BINARY-DOUBLE.
@@ -156,6 +164,53 @@
      MOVE 1 TO WS-EXPECT
      CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW
      COMPUTE WS-OBSERVE = (1 - WS-COUNT) * PL-SLOT-COUNT(WS-PLAYER, 1)
+     PERFORM CHECK-N
+
+*>   An arrow that has been stuck for 1200 ticks goes.
+     CALL "RT-CLEAR-SLOTS" USING WS-PLAYER
+     PERFORM STICK
+     MOVE 0 TO EN-ARR-PICKUP(WS-ARROW)
+     MOVE 1199 TO EN-AGE(WS-ARROW)
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW
+     MOVE "acceptance US14 44 7.5 an arrow stuck for 1200 ticks despawns" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   Another player in the line of flight: hurt, pushed by Punch, and passed through by a piercing arrow.
+     CALL "RT-JOIN-BOB" USING WS-PLAYER WS-BOB WS-BOB-CONN
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-DRAIN-IDS" USING WS-BOB-CONN WS-IDS
+     MOVE PL-HEALTH(WS-BOB) TO WS-HEALTH0
+     MOVE 1 TO WS-PIERCE-LEVEL
+     PERFORM FIRE-PUNCH
+     COMPUTE WS-LOSS-PLAYER = FUNCTION INTEGER(WS-HEALTH0 - PL-HEALTH(WS-BOB) + 0.5)
+     MOVE "acceptance US14 17 3.9 an arrow hurts another player in its way by 6 (speed 3.0 x base damage 2.0)" TO WS-CASE
+     MOVE 6 TO WS-EXPECT
+     MOVE WS-LOSS-PLAYER TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "RT-MOTION" USING WS-BOB-CONN WS-FOUND WS-MX WS-MY WS-MZ
+     MOVE "acceptance US14 17 3.9 Punch I sends the hit player Set Entity Motion of 0.6 along the flight (millis 590 to 610)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-FOUND = 1 AND WS-MZ > 0.59 AND WS-MZ < 0.61 AND WS-MX > -0.01 AND WS-MX < 0.01
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-BOB)
+     MOVE PL-HEALTH(WS-BOB) TO WS-HEALTH0
+     MOVE 0 TO WS-DX
+     MOVE 5 TO WS-DZ
+     CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-COW
+     MOVE 100 TO EN-HEALTH(WS-COW)
+     MOVE 1 TO WS-PIERCE-LEVEL
+     PERFORM FIRE-PIERCE
+     CALL "TEST-TICKS" USING WS-TICKS
+     COMPUTE WS-LOSS-PLAYER = FUNCTION INTEGER(WS-HEALTH0 - PL-HEALTH(WS-BOB) + 0.5)
+     MOVE "acceptance US14 17 3.9 a piercing arrow passes through the player (hurt once, 6) and hurts the cow behind (6)" TO WS-CASE
+     MOVE 66 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = WS-LOSS-PLAYER * 10 + (100 - EN-HEALTH(WS-COW))
      PERFORM CHECK-N
      STOP RUN.
 
