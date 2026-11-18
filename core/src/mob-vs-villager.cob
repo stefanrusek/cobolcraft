@@ -46,6 +46,9 @@
  01 WS-KEY24                PIC X(24).
  01 WS-NONE                 BINARY-LONG VALUE 0.
  01 WS-FOE-KEY              PIC X(24).
+ 01 WS-JOHNNY               BINARY-LONG.
+ 01 WS-CAND                 BINARY-LONG.
+ 01 WS-BPRIO                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-M                     BINARY-LONG.
@@ -75,7 +78,11 @@
          SUBTRACT 1 FROM EN-PET-CD(L-ROW)
      END-IF
      COMPUTE WS-RANGE = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
-     MOVE 0 TO WS-F
+     MOVE 0 TO WS-F WS-JOHNNY
+*>   Johnny (20 section 13.1, goal 4): any living entity that is not an illager friend is a foe, after the others.
+     IF SM-KEY(L-M) = "vindicator"
+         CALL "JOHNNY-IS" USING L-ROW WS-JOHNNY
+     END-IF
 *>   A foe set by a hunt or a retaliation (EN-FOE) comes first.
      IF EN-FOE(L-ROW) > 0
          MOVE EN-FOE(L-ROW) TO WS-N
@@ -93,10 +100,18 @@
          IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
              IF WS-S > 0
+                 MOVE 0 TO WS-CAND
                  IF SM-KEY(WS-S) = "villager" OR "wandering_trader" OR (SM-KEY(WS-S) = "iron_golem" AND (SM-KEY(L-M) = "vindicator" OR "ravager"))
+                     MOVE 1 TO WS-CAND
+                 END-IF
+                 IF WS-CAND = 0 AND WS-JOHNNY = 1 AND WS-N NOT = L-ROW
+                         AND NOT (SM-KEY(WS-S) = "evoker" OR "illusioner" OR "pillager" OR "vindicator")
+                     MOVE 2 TO WS-CAND
+                 END-IF
+                 IF WS-CAND > 0
                      COMPUTE WS-D2 = (EN-X(WS-N) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-N) - EN-Y(L-ROW)) ** 2 + (EN-Z(WS-N) - EN-Z(L-ROW)) ** 2
-                     IF WS-D2 <= WS-RANGE AND (WS-F = 0 OR WS-D2 < WS-BEST)
-                         IF NOT (WS-ILLAGER = 1 AND EN-MOBAGE(WS-N) < 0)
+                     IF WS-D2 <= WS-RANGE AND (WS-F = 0 OR WS-CAND < WS-BPRIO OR (WS-CAND = WS-BPRIO AND WS-D2 < WS-BEST))
+                         IF NOT (WS-ILLAGER = 1 AND EN-MOBAGE(WS-N) < 0 AND (SM-KEY(WS-S) = "villager" OR "wandering_trader"))
                              MOVE 1 TO WS-SEES
                              IF WS-SEE = 1
                                  COMPUTE WS-AX = EN-X(L-ROW)
@@ -108,6 +123,7 @@
                              IF WS-SEES = 1
                                  MOVE WS-N TO WS-F
                                  MOVE WS-D2 TO WS-BEST
+                                 MOVE WS-CAND TO WS-BPRIO
                              END-IF
                          END-IF
                      END-IF

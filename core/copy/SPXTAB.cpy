@@ -3,7 +3,7 @@
 *> A row is SPX-SPECIES (the standard mob key), SPX-KEY, SPX-TAG (the NBT tag type: 1 Byte, 2 Short, 3 Int, 4 Long, 5 Float, 8 String, 9 List, 10 Compound, 11 Int Array), SPX-DEF (the number written
 *> when the key was not read), SPX-TEXT (the text written then), SPX-MODE (A written always, C only when read, Y always the payload read or an empty list, Z the same but only when ENTITY-SPX-WRITE-Z is asked for the key (the writer of the species puts it where the document has it), X only when the first number of the species is 1 and Z always: the payload read or an empty list),
 *> SPX-SLOT. Keys that other core programs already write are not here.
- 78 SPX-ROWS             VALUE 130.
+ 78 SPX-ROWS             VALUE 131.
  01 SPX-TABLE-VALUES.
     05 FILLER              PIC X(24) VALUE "rabbit".
     05 FILLER              PIC X(24) VALUE "RabbitType".
@@ -915,8 +915,16 @@
     05 FILLER              PIC X(24) VALUE SPACES.
     05 FILLER              PIC X VALUE "A".
     05 FILLER              PIC 99 VALUE 3.
+*>   The Johnny flag of a vindicator (45-6 section 2: a Byte written when set, read default 0; 20 section 13.1; JOHNNY-IS, core/src/mob-20-johnny.cob). Slot 2 (slot 1 is its RaidId).
+    05 FILLER              PIC X(24) VALUE "vindicator".
+    05 FILLER              PIC X(24) VALUE "Johnny".
+    05 FILLER              PIC 99 VALUE 1.
+    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
+    05 FILLER              PIC X(24) VALUE SPACES.
+    05 FILLER              PIC X VALUE "C".
+    05 FILLER              PIC 99 VALUE 2.
  01 SPX-TABLE REDEFINES SPX-TABLE-VALUES.
-    05 SPX-ROW OCCURS 130 TIMES.
+    05 SPX-ROW OCCURS 131 TIMES.
        10 SPX-SPECIES   PIC X(24).
        10 SPX-KEY       PIC X(24).
        10 SPX-TAG       PIC 99.
