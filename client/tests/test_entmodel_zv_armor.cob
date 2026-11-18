@@ -185,6 +185,24 @@
      MOVE "zvil_armor_chest" TO TL-EXPECTED
      MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Leggings (layer 6) and boots (layer 7) name their rows too.
+     MOVE "iron_leggings" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 4)
+     MOVE "iron_boots" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 3)
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 6 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+     MOVE "T" TO TL-MODE
+     MOVE "zv armor layer 6 is the model row zvil_armor_legs" TO TL-CASE
+     MOVE "zvil_armor_legs" TO TL-EXPECTED
+     MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 7 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+     MOVE "zv armor layer 7 is the model row zvil_armor_feet" TO TL-CASE
+     MOVE "zvil_armor_feet" TO TL-EXPECTED
+     MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   It draws: the body, the helmet and the chestplate take three atlas slots.
      MOVE 0 TO EA-MT-COUNT
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE

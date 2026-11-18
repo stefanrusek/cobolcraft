@@ -416,6 +416,13 @@
      MOVE 0.99886 TO WS-EXP(6)
      MOVE 1 TO WS-EXP(7)
      PERFORM CHECK-M
+     COMPUTE PL-HURT-UNTIL = CL-NOW-MS + 1000
+     CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
+     MOVE "T5301 a hurt time over its length is clamped to the start of the tilt (sin(pi) = 0: no tilt)" TO WS-NAME
+     MOVE 0 TO WS-EXP(5)
+     MOVE 1 TO WS-EXP(6)
+     PERFORM CHECK-M
+     COMPUTE PL-HURT-UNTIL = CL-NOW-MS + 250
      MOVE "damageTiltStrength" TO WS-OPT-NAME
      MOVE "0.0" TO WS-OPT-VALUE
      MOVE 3 TO WS-OPT-LENGTH
@@ -664,6 +671,26 @@
      MOVE 0 TO PL-SLOT-FOIL(PL-HELD + 1)
      MOVE 10 TO PL-SLOT-ITEM(PL-HELD + 1)
      MOVE 11 TO CL-HAND-ITEM CL-ATK-LAST
+*>   An off hand with foil has its own glint (the main hand shows nothing).
+     MOVE 0 TO CL-HAND-ITEM
+     MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     MOVE 1 TO PL-OFFHAND-COUNT PL-OFFHAND-FOIL
+     MOVE 10 TO PL-OFFHAND-ITEM
+     MOVE 11 TO CL-OHAND-ITEM
+     MOVE 1 TO CL-OHAND-H CL-OHAND-OH
+     MOVE 7100000 TO CL-NOW-MS
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T5301 an off hand with foil has a glint mesh" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-HG-COUNT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-OFFHAND-COUNT PL-OFFHAND-FOIL CL-OHAND-ITEM
+     MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
+     MOVE 11 TO CL-HAND-ITEM
 *>   Eating: 10 of 30 ticks (the use lasts CL-EAT-MS = 1500 ms) puts the main hand's item at the eating pose, with no swing.
      MOVE 0 TO PL-OFFHAND-COUNT
      MOVE 0 TO CL-OHAND-ITEM
