@@ -456,6 +456,11 @@
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      MOVE 0 TO WS-LIGHT
+*>   SM-NEUTRAL 7: inert (the giant, 20 section 18.1: no goals and no targets are registered).
+     IF SM-NEUTRAL(L-M) = 7
+         MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+         GOBACK
+     END-IF
      IF SM-NEUTRAL(L-M) = 2
          CALL "STDMOB-ENDER-AIM" USING L-ROW L-M
          GOBACK
@@ -1007,6 +1012,9 @@
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "warden"
+         CALL "WARDEN-DARKNESS" USING WS-ROW
+     END-IF
 *>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
      IF SM-KEY(WS-M) = "endermite"
          ADD 1 TO EN-WAKE(WS-ROW)
@@ -1343,8 +1351,8 @@
              MOVE WS-TEMPT-HZ TO WS-HZ
              MOVE WS-TEMPT-YAW TO WS-YAW
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
-         WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem"
-*>           A golem does not stroll: the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
+         WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem" OR "giant"
+*>           A golem does not stroll (nor does the giant, which has no goals): the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN OTHER
              IF EN-COOLDOWN(WS-ROW) = 0
