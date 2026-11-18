@@ -3,6 +3,7 @@
 *>
 *>   STDMOB-FLAGS-BUILD USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the flags of the row: spider and cave spider index 16 BYTE (bit 0 climbing); pillager 17 charging, sulfur cube 19 max fuse, enderman 16 carried block,
 *>     17 creepy, 18 stared at; nothing for another row.
+*>   STDMOB-FLAGS-NEEDED USING tracker row, needed out: some flag is not at its default (a new viewer needs the packet).
 *>   STDMOB-FLAGS-SEND USING tracker row: STDMOB-FLAGS-BUILD to the viewers of the row.
 
  IDENTIFICATION DIVISION.
@@ -106,3 +107,25 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM STDMOB-FLAGS-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FLAGS-NEEDED.
+*> USING tracker row, needed out: 1 when the row's flags differ from the defaults a client assumes (a climbing spider, an enderman that carries a block or has a target, a pillager that is
+*> charging, a primed sulfur cube), so that a viewer who starts to track it is sent them (ENTITY-VIEW-UPDATE).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY P49NSTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-NEEDED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-NEEDED.
+     MOVE 0 TO L-NEEDED
+     IF PN-ID(L-ROW) = EN-ID(L-ROW)
+         IF PN-CLIMB(L-ROW) NOT = 0 OR PN-CARRY(L-ROW) NOT = 0 OR PN-CREEPY(L-ROW) NOT = 0 OR PN-STARED(L-ROW) NOT = 0
+                 OR PN-CHARGE(L-ROW) NOT = 0 OR PN-MAXFUSE(L-ROW) > 0
+             MOVE 1 TO L-NEEDED
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-FLAGS-NEEDED.

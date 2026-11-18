@@ -371,6 +371,7 @@
  01 WS-WOOL                BINARY-LONG.
  01 WS-NEEDED              BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-FLAGS-NEEDED        BINARY-LONG.
  01 WS-IDS.
     05 WS-ID               BINARY-LONG OCCURS 16 TIMES.
  LINKAGE SECTION.
@@ -431,6 +432,15 @@
              END-IF
              CALL "PB-RESET" USING PB-BUFFER
              CALL "MOB-DATA-BUILD" USING L-ROW PB-BUFFER
+         END-IF
+*>       The flags of a spider, enderman, pillager or sulfur cube that are not at the client's defaults (mob-20-flags.cob).
+         CALL "STDMOB-FLAGS-NEEDED" USING L-ROW WS-FLAGS-NEEDED
+         IF WS-FLAGS-NEEDED = 1
+             IF PB-LENGTH > 0
+                 CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             END-IF
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "STDMOB-FLAGS-BUILD" USING L-ROW PB-BUFFER
          END-IF
      END-IF
      IF WS-SEES = 0 AND VW-SEEN(L-PLAYER)(L-ROW:1) = "1"
