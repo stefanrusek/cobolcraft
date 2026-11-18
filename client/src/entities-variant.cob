@@ -227,6 +227,10 @@
          WHEN "zvil_armor_chest" MOVE "armor_chest" TO WS-BASE
          WHEN "zvil_armor_legs" MOVE "armor_legs" TO WS-BASE
          WHEN "zvil_armor_feet" MOVE "armor_feet" TO WS-BASE
+         WHEN "piglin_armor_head" MOVE "armor_head" TO WS-BASE
+         WHEN "piglin_armor_chest" MOVE "armor_chest" TO WS-BASE
+         WHEN "piglin_armor_legs" MOVE "armor_legs" TO WS-BASE
+         WHEN "piglin_armor_feet" MOVE "armor_feet" TO WS-BASE
      END-EVALUATE
      COMPUTE WS-KIND = FUNCTION INTEGER(L-CODE / 1000)
      COMPUTE WS-CD = FUNCTION MOD(L-CODE, 100)
@@ -269,6 +273,10 @@
                  MOVE "humanoid" TO WS-NAME
                  IF WS-BASE = "armor_legs"
                      MOVE "humanoid_leggings" TO WS-NAME
+                 END-IF
+*>               A baby's pieces are all of the layer type humanoid_baby (34-2 section 1.5 step 2).
+                 IF WS-BABY NOT = SPACES
+                     MOVE "humanoid_baby" TO WS-NAME
                  END-IF
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"

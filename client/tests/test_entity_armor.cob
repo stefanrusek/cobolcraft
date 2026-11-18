@@ -208,7 +208,7 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A zombie holding a sword in its helmet slot gets no piece (the slot of the item differs); a baby wears none; a cow wears none.
+*>   A zombie holding a sword in its helmet slot gets no piece (the slot of the item differs); a baby wears the piece on the baby armor row (T9904: test_entmodel_baby_armor); a cow wears none.
      MOVE "iron_sword" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      MOVE WS-ITEM TO EN-EQ(1, 6)
@@ -222,10 +222,16 @@
      MOVE WS-ITEM TO EN-EQ(1, 6)
      MOVE 1 TO EN-BABY(1)
      CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 8 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
-     MOVE "acceptance armor a baby zombie wears no piece" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "acceptance armor a baby zombie wears the piece (on the baby armor row)" TO TL-CASE
+     MOVE 6004 TO TL-EXPECTED-N
      MOVE WS-CODE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance armor the baby zombie's helmet is the row armor_head~b" TO TL-CASE
+     MOVE "armor_head~b" TO TL-EXPECTED
+     MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
      MOVE 0 TO EN-BABY(1)
 *>   Skeletons, piglins, drowned and zombified piglins wear their pieces too; a cow does not.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6

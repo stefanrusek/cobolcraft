@@ -1,7 +1,7 @@
 *> T9904 (lane 002-lane-p70b; docs/protocol/34-3 section 2.4): the zombie villager's adult armor rows. Each slot's mesh is the humanoid mesh at the slot's grow with the head box
 *> 8 high (origin y -10), the body and the legs at grow + 0.1 (tex 16, 16 and 0, 16; leg pivots x -2 and 2) and the retained parts of the slot: helmet head and hat (grows 1.0
 *> and 1.5), chestplate body 1.1 and arms 1.0, leggings body 0.6 and legs 0.6, boots legs 1.1. The overlay layers 5 to 8 of an adult zombie villager wear the pieces on the rows
-*> zvil_armor_*, with the equipment textures of the humanoid armor; a baby wears none (no baby armor row is wired).
+*> zvil_armor_*, with the equipment textures of the humanoid armor; a baby wears the piece on the baby armor row (T9904: test_entmodel_baby_armor).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-ENTMODEL-ZV-ARMOR.
  DATA DIVISION.
@@ -214,12 +214,17 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A baby wears none.
+*>   A baby wears it on the baby armor row.
      MOVE 1 TO EN-BABY(1)
      CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 8 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
-     MOVE "zv armor a baby zombie villager wears no piece" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "zv armor a baby zombie villager wears the piece" TO TL-CASE
+     MOVE 6004 TO TL-EXPECTED-N
      MOVE WS-CODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "zv armor a baby zombie villager's helmet is the row armor_head~b" TO TL-CASE
+     MOVE "armor_head~b" TO TL-EXPECTED
+     MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTMODEL-ZV-ARMOR.
