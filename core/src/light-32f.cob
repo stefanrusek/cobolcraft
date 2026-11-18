@@ -194,7 +194,12 @@
  01 WS-EMIT                BINARY-LONG.
  01 WS-ENGINE              BINARY-LONG.
  01 WS-FACES.
-    05 WS-FACE             BINARY-LONG OCCURS 6 TIMES.
+    05 WS-FA1              BINARY-LONG.
+    05 WS-FA2              BINARY-LONG.
+    05 WS-FA3              BINARY-LONG.
+    05 WS-FA4              BINARY-LONG.
+    05 WS-FA5              BINARY-LONG.
+    05 WS-FA6              BINARY-LONG.
  01 WS-F                   BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE 0 TO WS-STATE
@@ -272,11 +277,11 @@
                      CALL "L32-FACE-MASKS" USING WS-SHAPE WS-FACES
                  END-IF
                  IF WS-OCC = 1 AND BSH-READY = 0
-                     MOVE 15 TO WS-FACE(1) WS-FACE(2) WS-FACE(3) WS-FACE(4) WS-FACE(5) WS-FACE(6)
+                     MOVE 15 TO WS-FA1 WS-FA2 WS-FA3 WS-FA4 WS-FA5 WS-FA6
                  END-IF
                  COMPUTE WS-ENGINE = WS-S + 2
                  CALL "L32-DEFINE-STATE" USING WS-ENGINE WS-EMIT WS-DAMP WS-OCC WS-USE
-                     WS-FACE(1) WS-FACE(2) WS-FACE(3) WS-FACE(4) WS-FACE(5) WS-FACE(6)
+                     WS-FA1 WS-FA2 WS-FA3 WS-FA4 WS-FA5 WS-FA6
                  MOVE 0 TO EN-ISAIR(WS-S + 1)
                  IF WS-AIR = 1
                      MOVE 1 TO EN-ISAIR(WS-S + 1)
