@@ -243,6 +243,85 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:random","alias":"a:b","targets":[]}]}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a random alias with no target when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:random_group","groups":[]}]}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a random_group alias with no group when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"type":"minecraft:uniform","min_inclusive":{"above_bottom":5},"max_inclusive":{"absolute":9}},"max_distance_from_center":9}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a uniform start height of an anchor that is not absolute when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"type":"minecraft:uniform","min_inclusive":{"absolute":1},"max_inclusive":{"above_bottom":9}},"max_distance_from_center":9}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a uniform start height whose maximum is not absolute when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"type":"minecraft:uniform","min_inclusive":{"absolute":-40},"max_inclusive":{"absolute":-20}},"max_distance_from_center":9}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a uniform start height of two absolute anchors when a jigsaw file is read then it is ok and the provider is kept (36-10 2.1)" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 1 AND SDA-Y-KIND(1) = 1 AND SDA-Y-MIN(1) = -40 AND SDA-Y-MAX(1) = -20
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+*>   the binding tables are bounded (128 bindings, 256 options): a full table makes the file not ok
+     MOVE 127 TO SDA-USED
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:direct","alias":"a:a","target":"b:b"},{"type":"minecraft:direct","alias":"a:c","target":"b:c"}]}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given more bindings than the table has room for when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE 0 TO SDA-USED
+     MOVE 255 TO SDA-OPT-USED
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:random","alias":"a:b","targets":[{"data":"x:1","weight":1},{"data":"x:2","weight":1}]}]}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a random alias with more targets than the option table has room for when a file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:random_group","groups":[{"data":[],"weight":1},{"data":[],"weight":1}]}]}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a random_group with more groups than the option table has room for when a file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE 250 TO SDA-OPT-USED
+     MOVE 126 TO SDA-USED
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:random_group","groups":[{"data":[{"type":"minecraft:direct","alias":"a:a","target":"b:b"},{"type":"minecraft:direct","alias":"a:c","target":"b:c"},{"type":"minecraft:direct","alias":"a:d","target":"b:d"}],"weight":1}]}]}' TO WS-TEXT
+     PERFORM PARSE-READ-ONE
+     MOVE "test struct jigsaw unit given a group of more bindings than the binding table has room for when a file is read then it is not ok" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF SDT-JIG-OK(1) = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE 0 TO SDA-USED SDA-OPT-USED
      MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","start_jigsaw_name":"minecraft:city_anchor","size":2,"start_height":{"absolute":5},"max_distance_from_center":9}' TO WS-TEXT
      PERFORM PARSE-READ-ONE
      MOVE "test struct jigsaw unit given a start_jigsaw_name when a jigsaw file is read then it is ok and the name is kept (36-10 2.1)" TO TL-CASE
@@ -568,6 +647,58 @@
          PERFORM CHECK
      END-PERFORM
      MOVE "test:start" TO SDT-JIG-POOL(1)
+*>   36-10 2.2 step 7: a start jigsaw name that no jigsaw of the chosen element has: no structure
+     MOVE "test:no_such_name" TO SDA-START(1)
+     MOVE 5 TO WS-CX
+     PERFORM NO-START
+     MOVE "test struct jigsaw unit given a start jigsaw name that the element does not have when the start is built then there is no structure (36-10 2.2 step 7)" TO TL-CASE
+     PERFORM CHECK-NONE
+     MOVE SPACES TO SDA-START(1)
+*>   step 3 and 5: an alias of the start pool to a pool that does not exist falls back to the declared pool (the hub of the first case again), an alias to test:start2 builds that pool's three pieces
+     MOVE 0 TO SDA-USED
+     MOVE 1 TO SDA-AL-FIRST(1)
+     MOVE 1 TO SDA-AL-N(1)
+     ADD 1 TO SDA-USED
+     MOVE 1 TO SDB-KIND(1)
+     MOVE "test:start" TO SDB-ALIAS(1)
+     MOVE "test:nowhere" TO SDB-TARGET(1)
+     MOVE WW-CX(1) TO WS-CX
+     MOVE WW-CZ(1) TO WS-CZ
+     ADD 40 TO WS-CX
+     CALL "JIG-FIND-POINT" USING WS-ONE WS-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID
+     MOVE "test struct jigsaw unit given an alias of the start pool to an unregistered pool when the start is built then the declared pool is used (36-10 2.2 step 5)" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF WS-VALID = 1 AND SP-COUNT = 2
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE "test:start2" TO SDB-TARGET(1)
+     MOVE W2-CX(1) TO WS-CX
+     MOVE W2-CZ(1) TO WS-CZ
+     ADD 40 TO WS-CX
+     CALL "JIG-FIND-POINT" USING WS-ONE WS-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID
+     MOVE "test struct jigsaw unit given an alias of the start pool to test:start2 when the start is built then it is that pool's start of three pieces (36-10 2.2 step 5)" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF WS-VALID = 1 AND SP-COUNT = 3
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE 0 TO SDA-AL-N(1) SDA-USED
+*>   step 1: a uniform start height draws once: the stub's y is within the provider's range
+     MOVE 1 TO SDA-Y-KIND(1)
+     MOVE 70 TO SDA-Y-MIN(1)
+     MOVE 72 TO SDA-Y-MAX(1)
+     MOVE WW-CX(1) TO WS-CX
+     MOVE WW-CZ(1) TO WS-CZ
+     ADD 20 TO WS-CX
+     CALL "JIG-FIND-POINT" USING WS-ONE WS-SEED WS-CX WS-CZ WS-X WS-Y WS-Z WS-VALID
+     MOVE "test struct jigsaw unit given a uniform start height of 70 to 72 when the start is built then the stub's y is within it (36-10 2.2 step 1)" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF WS-VALID = 1 AND WS-Y >= 70 AND WS-Y <= 72
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE 0 TO SDA-Y-KIND(1)
 *>   the starts that cannot be built
      MOVE 0 TO SDT-JIG-SIZE(1)
      MOVE 9 TO WS-CX
