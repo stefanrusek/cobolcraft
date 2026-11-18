@@ -10,6 +10,7 @@
 *>     a tick: a random direction of six; the block at (floor x, floor (y + 0.5), floor z) plus that direction, when it is a host block, becomes its infested block and the silverfish is discarded.
 *>   STDMOB-INFESTED-AT USING dim, x, y, z, found out: 1 when the cell holds an infested block.
 *>   STDMOB-SILVERFISH-HURT USING tracker row, attacker player row: a silverfish hurt by an attacker starts its wake-up-friends timer at 20 (9.1 hurtServer).
+*>   STDMOB-SILVERFISH-MAGIC USING tracker row, cause: the same timer start for damage of the type magic with no attacker (tag always_triggers_silverfish, 9.1).
 *>   STDMOB-SILVERFISH-WAKE USING tracker row: one tick of the timer (STDMOB-STEP). At 0 the cells of the box x and z within 10, y within 5, are scanned in
 *>     layers of growing distance; each infested block found is destroyed (the mob-griefing rule is taken as true, it is not modelled) and lets a silverfish
 *>     out, and after each block the scan stops with probability 1/2 (a hash of the entity id, the time and the layer). Merge with stone is open.
@@ -136,6 +137,27 @@
      END-IF
      GOBACK.
  END PROGRAM STDMOB-SILVERFISH-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-SILVERFISH-MAGIC.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ COPY RULES.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CAUSE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-CAUSE.
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M > 0 AND L-CAUSE = CAUSE-MAGIC
+         IF SM-KEY(WS-M) = "silverfish"
+             MOVE 20 TO EN-WAKE(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-SILVERFISH-MAGIC.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SILVERFISH-WAKE.

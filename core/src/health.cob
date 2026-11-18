@@ -565,6 +565,12 @@
              MOVE "minecraft:cramming" TO WS-WANTED
          WHEN CAUSE-VOID
              MOVE "minecraft:out_of_world" TO WS-WANTED
+         WHEN CAUSE-MAGIC
+             MOVE "minecraft:magic" TO WS-WANTED
+         WHEN CAUSE-INDIRECT-MAGIC
+             MOVE "minecraft:indirect_magic" TO WS-WANTED
+         WHEN CAUSE-WITHER
+             MOVE "minecraft:wither" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE
@@ -759,6 +765,7 @@
      END-IF
      CALL "STDMOB-REINFORCE" USING WS-ROW L-ATTACKER
      CALL "STDMOB-SILVERFISH-HURT" USING WS-ROW L-ATTACKER
+     CALL "STDMOB-SILVERFISH-MAGIC" USING WS-ROW L-CAUSE
      IF EN-HEALTH(WS-ROW) = 0
          CALL "RAID-RAIDER-DIED" USING WS-ROW WS-KILLER
          CALL "MOB-DEFEAT" USING WS-ROW

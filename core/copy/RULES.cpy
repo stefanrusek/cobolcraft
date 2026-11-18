@@ -65,6 +65,11 @@
  78 CAUSE-GENERIC              VALUE 16.
 *> CAUSE-IN-FIRE (002-lane-fire, T11101): standing in a fire block (damage type in_fire, 1.0, soul fire 2.0; 17 section 4.11); no RULE-CAUSE row.
  78 CAUSE-IN-FIRE              VALUE 17.
+*> CAUSE-MAGIC, CAUSE-INDIRECT-MAGIC, CAUSE-WITHER (002-lane-p49n; 17 sections 4.9a and 4.12): the damage types magic (an instant_damage effect, poison; it wakes a silverfish, 20 section 9.1),
+*> indirect_magic (the same with a thrower: a witch's potion) and wither (the wither effect); a mob takes them (no RULE-CAUSE row), a witch takes 0.15 of the two magic types (20 section 11).
+ 78 CAUSE-MAGIC               VALUE 18.
+ 78 CAUSE-INDIRECT-MAGIC      VALUE 19.
+ 78 CAUSE-WITHER              VALUE 20.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

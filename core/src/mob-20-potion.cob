@@ -148,6 +148,7 @@
  01 WS-MILLI                BINARY-LONG.
  01 WS-RESULT               BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
+ 01 WS-OWNED                BINARY-LONG VALUE 1.
  01 WS-FLAGS                BINARY-LONG VALUE 6.
  01 WS-MF                   BINARY-LONG VALUE 2.
  01 WS-HP                   FLOAT-SHORT.
@@ -210,7 +211,7 @@
              IF WS-D2 <= 16
                  COMPUTE WS-T = (1 - FUNCTION SQRT(WS-D2) / 4) * 1000
                  IF WS-DUR = 0
-                     CALL "MEF-INSTANT-T" USING WS-N WS-ID WS-AMP WS-T
+                     CALL "MEF-INSTANT-OWNED" USING WS-N WS-ID WS-AMP WS-T WS-OWNED
                  ELSE
                      COMPUTE WS-MAPPED = (WS-DUR * WS-T + 500) / 1000
                      IF WS-MAPPED > 20
