@@ -1239,8 +1239,11 @@
              GOBACK
          END-IF
      END-IF
-     IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
+     IF SM-RANGED(WS-M) = 1
          CALL "STDMOB-SHOOT" USING WS-ROW WS-M WS-STOP
+     END-IF
+     IF SM-RANGED(WS-M) = 2
+         CALL "STDMOB-CROSSBOW" USING WS-ROW WS-M WS-STOP
      END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
@@ -1275,7 +1278,7 @@
                  CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
              END-IF
 *>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
-             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
+             IF SM-RANGED(WS-M) = 1
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF
