@@ -1,6 +1,6 @@
 *> Implementation test (lane genlimits; docs/protocol/56 sections 4.1 and 5.2, docs/protocol/21 section 3.2 with 18 section 6): the water animals' spawn rules of
 *> a superflat world use its sea level -63, not 63. Surface water animals (y in [sea - 13, sea]) fit y -76 to -63, a glow squid (y <= sea - 33, raw brightness 0)
-*> never fits above -96. Before the fix MS6-WATER-RULE read DM-SEA-LEVEL 63 for superflat, so a cod fitted y 50 to 63 (nowhere in a flat world) and a glow squid
+*> never fits above y -96 (under the world). Before the fix MS6-WATER-RULE read DM-SEA-LEVEL 63 for superflat, so a cod fitted y 50 to 63 (no water there in a flat world) and a glow squid
 *> fitted any dark water cell below y 30 (the village well). A standard world and the Nether keep their own sea levels; DIM-SEA-LEVEL-OF is the one place that decides.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-MOB-21-4-FLAT.
@@ -11,6 +11,9 @@
  COPY CONTENT.
  COPY DIMENSIONS.
  COPY STDMOBS.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY BRWORLD.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
@@ -28,11 +31,51 @@
  01 WS-SEA                 BINARY-LONG.
  01 WS-LO                  BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-ENV                 PIC X(1024).
+ 01 WS-FILE                PIC X(1100).
+ 01 WS-FILE-INFO           PIC X(16).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
  PROCEDURE DIVISION.
-     CALL "MS-TEST-OPEN" USING WS-PLAYER
+*>   A real superflat world (the flat generator is cheap): needs the generated packs; without them the test is skipped with one passing marker case.
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
+     IF WS-ENV = SPACES
+         MOVE "/tmp/cc-test/generated" TO WS-DIR
+     ELSE
+         MOVE WS-ENV TO WS-DIR
+     END-IF
+     MOVE SPACES TO WS-FILE
+     STRING FUNCTION TRIM(WS-DIR TRAILING) "/vanilla-data/pack.mcmeta" X"00" DELIMITED BY SIZE INTO WS-FILE
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-FILE-INFO
+     IF RETURN-CODE NOT = 0
+         MOVE "N" TO TL-MODE
+         MOVE "implementation genlimits no generated packs here, skipped" TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 1 TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         STOP RUN
+     END-IF
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "superflat" TO CS-WORLD-TYPE
+     MOVE WS-DIR TO CS-GENERATED-DIR
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     MOVE "12345" TO CS-SEED-TEXT
+     MOVE "Flat" TO CS-NEW-WORLD-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "BR-WORLD-READY"
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
      MOVE "N" TO TL-MODE
-     MOVE "implementation genlimits the test world is the standard overworld (dimension 3)" TO TL-CASE
+     MOVE "implementation genlimits the superflat world holds the player in the standard overworld (dimension 3)" TO TL-CASE
      MOVE DIM-STANDARD-OVERWORLD TO TL-EXPECTED-N
      MOVE WS-DIM TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -45,15 +88,12 @@
      MOVE SPACES TO WS-KEY
      MOVE "minecraft:water" TO WS-KEY
      CALL "MS-TEST-STATE" USING WS-KEY WS-WATER
-*>   One column of water from y -70 to -60 over a stone floor at -71, water also above (the cell at -59 is water, -58 air).
-     COMPUTE WS-X = WS-PX + 20
+*>   One column of water from y -64 (over the void under the world) to -58 in the flat ground, air at -57.
+     COMPUTE WS-X = WS-PX + 3
      MOVE WS-PZ TO WS-Z
-     PERFORM VARYING WS-Y FROM -71 BY 1 UNTIL WS-Y > -58
+     PERFORM VARYING WS-Y FROM -64 BY 1 UNTIL WS-Y > -57
          MOVE WS-WATER TO WS-OK
-         IF WS-Y = -71
-             MOVE WS-STONE TO WS-OK
-         END-IF
-         IF WS-Y = -58
+         IF WS-Y = -57
              MOVE 0 TO WS-OK
          END-IF
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-OK
@@ -63,7 +103,8 @@
      MOVE "glow_squid" TO WS-KEY48
      CALL "MS6-SPECIES" USING WS-KEY48 WS-GLOW-ROW
 
-*>   A standard overworld: sea 63, the cod needs y 50 to 63: y -63 fails, y -60 glow squid (dark water, below 30) passes.
+*>   The same world read as a standard one (CW-WORLD-TYPE): sea 63, the cod needs y 50 to 63, so y -63 fails.
+     MOVE "standard" TO CW-WORLD-TYPE
      CALL "DIM-SEA-LEVEL-OF" USING WS-DIM WS-SEA
      MOVE "implementation genlimits a standard world's overworld sea level is 63" TO TL-CASE
      MOVE 63 TO TL-EXPECTED-N
@@ -76,7 +117,7 @@
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The same world as superflat.
+*>   The world as it is: superflat.
      MOVE "superflat" TO CW-WORLD-TYPE
      CALL "DIM-SEA-LEVEL-OF" USING WS-DIM WS-SEA
      MOVE "implementation genlimits superflat overworld sea level is -63 (56 4.1)" TO TL-CASE
@@ -89,29 +130,16 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE -76 TO WS-Y
-     MOVE -76 TO WS-LO
-     CALL "MS6-WATER-RULE" USING WS-DIM WS-ROW WS-X WS-Y WS-Z WS-OK
-     MOVE "implementation genlimits superflat: a cod at y -76 (sea - 13) passes" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     MOVE WS-OK TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE -77 TO WS-Y
-     CALL "MS6-WATER-RULE" USING WS-DIM WS-ROW WS-X WS-Y WS-Z WS-OK
-     MOVE "implementation genlimits superflat: a cod at y -77 (below the band) fails" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE WS-OK TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -62 TO WS-Y
      CALL "MS6-WATER-RULE" USING WS-DIM WS-ROW WS-X WS-Y WS-Z WS-OK
      MOVE "implementation genlimits superflat: a cod at y -62 (above sea level) fails" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   The village well case: dark water at y -65, far above -96: no glow squid in a flat world.
-     MOVE -65 TO WS-Y
+*>   The village well case: dark water far above -96 (y -63 here): no glow squid in a flat world.
+     MOVE -63 TO WS-Y
      CALL "MS6-WATER-RULE" USING WS-DIM WS-GLOW-ROW WS-X WS-Y WS-Z WS-OK
-     MOVE "implementation genlimits superflat: a glow squid in water at y -65 fails (needs y <= -96)" TO TL-CASE
+     MOVE "implementation genlimits superflat: a glow squid in water at y -63 fails (needs y <= -96)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

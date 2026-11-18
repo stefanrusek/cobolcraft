@@ -34,7 +34,7 @@
  PROGRAM-ID. MS6-WATER-RULE.
 *> USING dim row, species row, x, y, z (BINARY-LONG feet cell), ok out (BINARY-LONG): the spawn predicates of the water animals (21 section 3.2). SM-SPAWN 7 and 8 (surface water
 *> animal; the tropical fish's any-height biome tag is open): y in [sea - 13, sea], water below and a water block above. SM-SPAWN 9 (glow squid): y at most sea - 33, raw
-*> brightness (sky or block light) 0 and water at the position. The sea level is that of the dimension (DM-SEA-LEVEL).
+*> brightness (sky or block light) 0 and water at the position. The sea level is that of the level (DIM-SEA-LEVEL-OF: the dimension's own, -63 in the overworld of a superflat world, 56 section 4.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
@@ -45,6 +45,7 @@
  01 WS-ABOVE               BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-SEA                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -54,10 +55,11 @@
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-ROW L-X L-Y L-Z L-OK.
      MOVE 0 TO L-OK
+     CALL "DIM-SEA-LEVEL-OF" USING L-DIM WS-SEA
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X L-Y L-Z WS-KIND
      IF SM-SPAWN(L-ROW) = 9
          CALL "STDMOB-LIGHTS" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK
-         IF L-Y <= DM-SEA-LEVEL(L-DIM) - 33 AND WS-SKY = 0 AND WS-BLOCK = 0 AND WS-KIND = 2
+         IF L-Y <= WS-SEA - 33 AND WS-SKY = 0 AND WS-BLOCK = 0 AND WS-KIND = 2
              MOVE 1 TO L-OK
          END-IF
          GOBACK
@@ -66,7 +68,7 @@
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-BELOW
      COMPUTE WS-Y = L-Y + 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-ABOVE
-     IF L-Y >= DM-SEA-LEVEL(L-DIM) - 13 AND L-Y <= DM-SEA-LEVEL(L-DIM) AND WS-BELOW = 2 AND WS-ABOVE = 2
+     IF L-Y >= WS-SEA - 13 AND L-Y <= WS-SEA AND WS-BELOW = 2 AND WS-ABOVE = 2
          MOVE 1 TO L-OK
      END-IF
      GOBACK.

@@ -74,6 +74,26 @@
  END PROGRAM WORLD-GEN-OWN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. DIM-SEA-LEVEL-OF.
+*> USING dimension row (BINARY-LONG), sea level out (BINARY-LONG): the level's sea level (ServerLevel.getSeaLevel): the dimension's own (DM-SEA-LEVEL), but -63 in the overworld of a
+*> superflat world (56 section 4.1 and 5.2: the flat generator's constant, whatever the layers). The one place the spawn info (PLAY-SPAWN-INFO-BUILD) and the water animals' spawn
+*> rules (MS6-WATER-RULE) ask.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-SEA                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-SEA.
+     MOVE DM-SEA-LEVEL(L-DIM) TO L-SEA
+     IF CW-WORLD-TYPE = "superflat" AND L-DIM = DIM-STANDARD-OVERWORLD
+         MOVE -63 TO L-SEA
+     END-IF
+     GOBACK.
+ END PROGRAM DIM-SEA-LEVEL-OF.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-IS-FLAT.
 *> USING flag out (BINARY-LONG): 1 when the open world is of the superflat type (56 section 5.1: the flat generator in the overworld), else 0.
  DATA DIVISION.
