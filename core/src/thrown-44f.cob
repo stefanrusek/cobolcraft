@@ -32,6 +32,11 @@
          CALL "PROJ-ROTATE" USING L-ROW
          MOVE 1 TO L-DONE
      END-IF
+*>   A shulker bullet is destroyed by a hit (21 section 6.2).
+     IF WS-KIND = 4
+         CALL "ENTITY-REMOVE" USING L-ROW
+         MOVE 1 TO L-DONE
+     END-IF
      GOBACK.
  END PROGRAM PROJ-REDIRECT.
 

@@ -547,14 +547,12 @@
          END-IF
      END-IF
      IF WS-P = 0
-         IF EN-VARIANT(L-ROW) NOT = 0
-             MOVE 0 TO EN-VARIANT(L-ROW)
-             CALL "STDMOB-VARIANT-SEND" USING L-ROW
-         END-IF
+         CALL "SHULKER-PEEK" USING L-ROW
          GOBACK
      END-IF
-     IF EN-VARIANT(L-ROW) = 0
+     IF EN-VARIANT(L-ROW) NOT = 100
          MOVE 100 TO EN-VARIANT(L-ROW)
+         MOVE 0 TO EN-WAKE(L-ROW)
          MOVE 20 TO EN-SHOOT-TIME(L-ROW)
          CALL "STDMOB-VARIANT-SEND" USING L-ROW
          GOBACK

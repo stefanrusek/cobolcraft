@@ -36,6 +36,10 @@
      IF WS-KEY = "zombie" OR "zombie_villager" OR "husk"
          MOVE 2 TO L-ARMOR
      END-IF
+*>   A closed shulker (raw peek 0) has a +20 armour modifier (21 section 6.2).
+     IF WS-KEY = "shulker" AND EN-VARIANT(L-ROW) = 0
+         MOVE 20 TO L-ARMOR
+     END-IF
      IF EN-EQUIP(L-ROW) > 0
          COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
          COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
