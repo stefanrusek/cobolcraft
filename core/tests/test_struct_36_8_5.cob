@@ -274,6 +274,7 @@
      PERFORM SPAWNER-TEST
      PERFORM CHEST-TEST
      PERFORM CLIP-TEST
+     PERFORM LAVA-TICK-TEST
      PERFORM ROLL-TEST
      STOP RUN.
  CLEAR-WORLD.
@@ -538,6 +539,34 @@
      IF WS-STATE NOT = 0
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 15 TO SW-X1
+     EXIT.
+ LAVA-TICK-TEST.
+*>   the castle entrance's lava well (5.7): the lava source at local (6, 5, 6) asks for a scheduled fluid tick (delay 0) once, when that cell is inside the write box
+     PERFORM CLEAR-WORLD
+     MOVE 0 TO GBL-COUNT
+     MOVE 9 TO WS-TYPE
+     MOVE 2 TO WS-ORIENT
+     PERFORM ADD-PIECE-BOX
+     MOVE 6 TO WS-X
+     MOVE 5 TO WS-Y
+     MOVE 6 TO WS-Z
+     CALL "SPB-WORLD" USING WS-ROW WS-X WS-Y WS-Z WS-WX WS-WY WS-WZ
+     MOVE "acceptance US12 36-8§5.7 A. CastleEntrance: the lava source's fluid tick is asked for once at the world cell of local (6, 5, 6)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF GBL-COUNT = 1 AND GBL-KIND(1) = 4 AND GBL-X(1) = WS-WX AND GBL-Y(1) = WS-WY AND GBL-Z(1) = WS-WZ
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM CLEAR-WORLD
+     MOVE 0 TO GBL-COUNT
+     MOVE 2 TO SW-X1
+     PERFORM ADD-PIECE-BOX
+     MOVE "acceptance US12 36-8§5.7 A. CastleEntrance: with the lava cell outside the write box no tick is asked for" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE GBL-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 15 TO SW-X1
      EXIT.

@@ -1,7 +1,7 @@
 *> The nether fortress as a structure (docs/protocol/36-structures-8-nether-and-end.md sections 2 and 5 to 6): the start (FORT-FIND-POINT: setLargeFeatureSeed, the pieces of struct-fortress.cob,
 *> a stub at the chunk's minimum corner at y 64 with no biome pre-check, 2.1) and the blocks of each piece (FORT-POST: the generated lists of struct-fortress-gen.cob run by SCP-RUN, the
 *> bridge end filler's private random, the throne's blaze spawner, the turn pieces' chest). The random of the placement is the decoration random SP-XR.
-*> Deviations: the lava well's extra fluid tick (5.7 last row) is not scheduled (worldgen has no tick queue); shape-check marks of the fences are not made; the spawner's setEntityId draws
+*> The lava well's extra fluid tick (5.7 last row) is asked for through kind 4 of the block entity channel (FORT-LAVA-TICK); deviations: shape-check marks of the fences are not made; the spawner's setEntityId draws
 *> nothing (31 section 7 is not built).
 *> Entry points: FORT-FIND-POINT USING seed (BINARY-DOUBLE), chunk x, chunk z, x out, y out, z out, valid out; FORT-POST USING row.
 
@@ -161,6 +161,35 @@
  END PROGRAM FORT-SPAWNER.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FORT-LAVA-TICK.
+*> USING row: the castle entrance's lava well (5.7 last row): when the world cell of local (6, 5, 6) is inside the write box, a fluid tick with delay 0 is asked for there (kind 4 of the block
+*> entity channel; placing the lava source scheduled the first one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTPIECE.
+ 01 WS-WX                  BINARY-LONG.
+ 01 WS-WY                  BINARY-LONG.
+ 01 WS-WZ                  BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG VALUE 6.
+ 01 WS-LY                  BINARY-LONG VALUE 5.
+ 01 WS-LZ                  BINARY-LONG VALUE 6.
+ 01 WS-KIND                BINARY-LONG VALUE 4.
+ 01 WS-NOLOOT              PIC X(48) VALUE SPACES.
+ 01 WS-NOTEXT              PIC X(32) VALUE SPACES.
+ 01 WS-SEED                BINARY-DOUBLE VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "SPB-WORLD" USING L-ROW WS-LX WS-LY WS-LZ WS-WX WS-WY WS-WZ
+     CALL "SPB-BOX-INSIDE" USING SP-WBOX WS-WX WS-WY WS-WZ WS-IN
+     IF WS-IN = 1
+         CALL "GBE-ADD" USING WS-WX WS-WY WS-WZ WS-KIND WS-NOLOOT WS-SEED WS-NOTEXT
+     END-IF
+     GOBACK.
+ END PROGRAM FORT-LAVA-TICK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FORT-POST.
 *> USING row: postProcess of a fortress piece (5): the piece's lists in order with the chest, the spawner and the filler where the document puts them.
  DATA DIVISION.
@@ -188,6 +217,7 @@
              CALL "FORT-GEO-08" USING L-ROW
          WHEN 9
              CALL "FORT-GEO-09-A" USING L-ROW
+             CALL "FORT-LAVA-TICK" USING L-ROW
          WHEN 10
              CALL "FORT-GEO-10" USING L-ROW
          WHEN 11

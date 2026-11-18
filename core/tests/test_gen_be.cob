@@ -16,6 +16,7 @@
  COPY GENENT.
  COPY ENDGATEWAY.
  COPY GENQUEUE.
+ COPY BLOCKTICK.
  01 WS-ANSWER              PIC X(350404) BASED.
  01 WS-CHUNK-OUT           PIC X(304640).
  01 WS-MARKER              BINARY-LONG.
@@ -51,6 +52,13 @@
  01 WS-LIT-2               BINARY-LONG.
  01 WS-LIT-3               BINARY-LONG.
  01 WS-LIT-4               BINARY-LONG.
+ 01 WS-LAVA                BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-FKIND               BINARY-LONG.
+ 01 WS-FAMOUNT             BINARY-LONG.
+ 01 WS-FFALLING            BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-TYPE2               BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
@@ -195,6 +203,40 @@
      MOVE "test gen be: the list is empty after the apply" TO TL-CASE
      COMPUTE TL-OBSERVED-N = GB-COUNT + GB-LOST
      MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   kind 4: a scheduled fluid tick (36 part 8 section 5.7 lava well): asked for at a lava source of the chunk it is scheduled with delay 0, at a stone block nothing is
+     MOVE "minecraft:lava" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-LAVA
+     CALL "FLUID-OF-STATE" USING WS-LAVA WS-FLUID WS-FKIND WS-FAMOUNT WS-FFALLING
+     COMPUTE WS-CELL = (3 + 64) * 256 + (-5 + 16) * 16 + (36 - 32) + 1
+     MOVE WS-LAVA TO CE-STATE(WS-CELL)
+     MOVE BT-COUNT TO WS-TICKS
+     MOVE 2 TO GB-COUNT
+     MOVE 36 TO GB-X(1)
+     MOVE 3 TO GB-Y(1)
+     MOVE -5 TO GB-Z(1)
+     MOVE 4 TO GB-KIND(1)
+     MOVE 33 TO GB-X(2)
+     MOVE 0 TO GB-Y(2)
+     MOVE -2 TO GB-Z(2)
+     MOVE 4 TO GB-KIND(2)
+     CALL "GBE-APPLY" USING WS-DIM WS-ROW
+     MOVE 0 TO WS-X
+     MOVE 36 TO WS-X
+     MOVE 3 TO WS-Y
+     MOVE -5 TO WS-Z
+     CALL "BT-HAS" USING WS-DIM WS-TYPE2 WS-FLUID WS-X WS-Y WS-Z WS-INDEX
+     MOVE "test gen be: a kind 4 request at a lava source scheduled one fluid tick of lava there, and none at the stone block" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-INDEX * 10 + BT-COUNT - WS-TICKS
+     MOVE 11 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen be: lava is a fluid of the block table" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-FLUID > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the worker's answer carries the requests after the overflow: GEN-STANDARD-TAKE publishes them
      ALLOCATE GW-ANSWER-BYTES CHARACTERS INITIALIZED RETURNING GW-ADDR(1)
