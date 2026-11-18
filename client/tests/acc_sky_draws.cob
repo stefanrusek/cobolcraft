@@ -161,6 +161,23 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   Above the layer (the eye over 196.33) and inside it (between 192.33 and 196.33): the mesh is made again for the other side and is still drawn.
+     MOVE 250 TO PL-Y PL-SENT-Y
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-TEXT
+     CALL "TEST-SKY-DRAWS" USING CLIENT-STATE WS-TEXT
+     MOVE "acceptance sky: given the Player above the clouds when the frame is built then the clouds are still drawn (their top faces)" TO TL-CASE
+     MOVE "sun 1 moon 1 stars 0 clouds 1 pipes 2/2/1" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 192 TO PL-Y PL-SENT-Y
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-TEXT
+     CALL "TEST-SKY-DRAWS" USING CLIENT-STATE WS-TEXT
+     MOVE "acceptance sky: given the Player inside the cloud layer when the frame is built then the clouds are still drawn" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO PL-Y PL-SENT-Y
+
 *>   renderClouds "fast": one flat quad a cell, fewer vertices than the boxes of "true" (fancy); "false": none.
      MOVE "renderClouds" TO WS-NAME
      MOVE SPACES TO WS-VALUE

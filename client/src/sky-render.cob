@@ -515,12 +515,8 @@
                  COMPUTE WS-A(1) = WS-P(3)
                  MOVE 0 TO WS-A(2)
                  COMPUTE WS-A(3) = 0 - WS-P(1)
-                 COMPUTE WS-LEN = FUNCTION SQRT(WS-A(1) * WS-A(1) + WS-A(3) * WS-A(3))
-                 IF WS-LEN < 0.000001
-                     MOVE 1 TO WS-A(1)
-                     MOVE 0 TO WS-A(3)
-                     MOVE 1 TO WS-LEN
-                 END-IF
+*>               (A star exactly overhead would have a = 0: the floor of the length leaves it a degenerate quad, which no draw of the generator makes.)
+                 COMPUTE WS-LEN = FUNCTION MAX(FUNCTION SQRT(WS-A(1) * WS-A(1) + WS-A(3) * WS-A(3)), 0.000001)
                  COMPUTE WS-A(1) = WS-A(1) / WS-LEN
                  COMPUTE WS-A(3) = WS-A(3) / WS-LEN
                  COMPUTE WS-B(1) = WS-P(2) * WS-A(3) - WS-P(3) * WS-A(2)
