@@ -44,9 +44,6 @@
      MOVE 0 TO L-OK
      CALL "PS-GET" USING L-STATE WS-FACING WS-TEXT WS-FOUND
      CALL "PS-DIR-OF" USING WS-TEXT WS-F
-     IF WS-F < 2
-         GOBACK
-     END-IF
 *>   canAttachTo for the neighbour on each side of the sign (clockwise then counter-clockwise): a wall hanging sign there must face along the same axis, any other block must be solid on the sign's side.
      PERFORM VARYING WS-SIDE FROM 1 BY 1 UNTIL WS-SIDE > 2 OR L-OK = 1
          IF WS-SIDE = 1
@@ -132,9 +129,6 @@
  PROCEDURE DIVISION USING PLACE-CONTEXT.
      MOVE 1 TO PC-FITS
      CALL "PS-WALL-BLOCK" USING PC-STATE WS-WALL WS-KIND
-     IF WS-WALL = 0
-         GOBACK
-     END-IF
 *>   The attachment direction: DOWN for everything but the hanging sign, which hangs from UP.
      MOVE 0 TO WS-ATTACH
      IF WS-KIND = 5
@@ -203,7 +197,7 @@
          WHEN 5
              COMPUTE WS-ABOVE = PC-Y + 1
              CALL "WORLD-GET-BLOCK" USING PC-DIM PC-X WS-ABOVE PC-Z WS-OLD
-             CALL "SUP-SOLID-AT" USING PC-DIM PC-X WS-ABOVE PC-Z WS-SOLID WS-BLOCK WS-BITS
+             CALL "PS-FULL-AT" USING PC-DIM PC-X WS-ABOVE PC-Z WS-SOLID
              MOVE 1 TO WS-SNEAK-ATTACHED
              IF WS-SOLID = 1 AND PC-SNEAK = 0
                  MOVE 0 TO WS-SNEAK-ATTACHED
@@ -345,7 +339,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PS-LADDER.
-*> LadderBlock.getStateForPlacement (24 part 2 section 7.2): refused when the item does not replace the clicked block and the clicked block is a ladder facing the clicked face; otherwise the opposite of the
+*> LadderBlock.getStateForPlacement (24 part 2 section 7.2) and the tripwire hook (24 part 4 section 6.26: the opposite of the first horizontal direction where it survives): a ladder is refused when the item does not replace the clicked block and the clicked block is a ladder facing the clicked face; otherwise the opposite of the
 *> first horizontal nearest looking direction at which the ladder survives.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -361,11 +355,13 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-CLICKED             BINARY-LONG.
  01 WS-FACE-DIR            BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
  LINKAGE SECTION.
  COPY PLACECTX.
  PROCEDURE DIVISION USING PLACE-CONTEXT.
      MOVE 1 TO PC-FITS
-     IF PC-REPLACE = 0
+     CALL "PS-NAME-OF" USING PC-STATE WS-KEY
+     IF PC-REPLACE = 0 AND WS-KEY = "ladder"
          CALL "WORLD-GET-BLOCK" USING PC-DIM PC-BX PC-BY PC-BZ WS-CLICKED
          IF WS-CLICKED > 0 AND WS-CLICKED < CB-STATE-COUNT
              IF CB-S-BLOCK(WS-CLICKED + 1) = CB-S-BLOCK(PC-STATE + 1)

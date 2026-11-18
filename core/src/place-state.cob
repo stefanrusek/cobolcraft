@@ -4,7 +4,7 @@
 *>
 *> Entry points:
 *>   PS-WALL-BLOCK USING state, wall block out (1-based block number, 0 when the state is not a standing block with a wall block), kind out (1 torch, 2 sign, 3 banner, 4 skull or head, 5 hanging sign, 6 coral fan)
-*>   PS-FAMILY USING state, family out (0 none; 1 pillar, 2 slab, 3 stair, 4 face attached (lever, button, grindstone), 5 ladder, 7 facing opposite the player, 8 facing the player, 9 anvil, 10 opposite the nearest
+*>   PS-FAMILY USING state, family out (0 none; 1 pillar, 2 slab, 3 stair, 4 face attached (lever, button, grindstone), 5 ladder and tripwire hook, 7 facing opposite the player, 8 facing the player, 9 anvil, 10 opposite the nearest
 *>     looking direction, 11 the nearest looking direction, 12 the clicked face, 13 door, 14 trapdoor, 15 lantern, 16 multiface (vine, glow lichen, sculk vein, resin clump))
 *>   PLACE-CONTEXT-BUILD USING connection id, Use Item On (PLAY-SERVERBOUND), item state, PLACE-CONTEXT out: the click, the player's view and the target cell (the clicked cell when the clicked block is replaced by the
 *>     item: a replaceable block, a slab or a multiface block with room for it; else the cell on the clicked face)
@@ -117,6 +117,7 @@
 *> The block families by key: kind (E the whole key, S the end of the key), the key or its end, the family number of PS-FAMILY.
  01 WS-ROWS.
     05 FILLER PIC X(27) VALUE "Eladder                  05".
+    05 FILLER PIC X(27) VALUE "Etripwire_hook           05".
     05 FILLER PIC X(27) VALUE "S_slab                   02".
     05 FILLER PIC X(27) VALUE "S_stairs                 03".
     05 FILLER PIC X(27) VALUE "Elever                   04".
@@ -159,7 +160,7 @@
     05 FILLER PIC X(27) VALUE "Esculk_vein              16".
     05 FILLER PIC X(27) VALUE "Eresin_clump             16".
  01 WS-ROW-TABLE REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 42 TIMES.
+    05 WS-ROW OCCURS 43 TIMES.
        10 WS-ROW-KIND      PIC X.
        10 WS-ROW-TEXT      PIC X(24).
        10 WS-ROW-FAMILY    PIC 99.
@@ -169,7 +170,7 @@
  PROCEDURE DIVISION USING L-STATE L-FAMILY.
      MOVE 0 TO L-FAMILY
      CALL "PS-NAME-OF" USING L-STATE WS-NAME
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 42 OR L-FAMILY > 0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 43 OR L-FAMILY > 0
          MOVE WS-ROW-TEXT(WS-I) TO WS-SUFFIX
          MOVE 0 TO WS-FLAG
          IF WS-ROW-KIND(WS-I) = "E"
@@ -382,9 +383,6 @@
  COPY PLACECTX.
  PROCEDURE DIVISION USING PLACE-CONTEXT.
      MOVE 1 TO PC-FITS
-     IF PC-STATE <= 0 OR PC-STATE >= CB-STATE-COUNT
-         GOBACK
-     END-IF
 *>   A standing-and-wall item (torch, sign, hanging sign, banner, skull, coral fan): 25 part 4 section 9.2.
      CALL "PS-WALL-BLOCK" USING PC-STATE WS-WALL WS-KIND
      IF WS-WALL > 0

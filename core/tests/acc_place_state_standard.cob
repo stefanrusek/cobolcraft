@@ -47,6 +47,7 @@
  01 WS-SEQ                 BINARY-LONG VALUE 0.
  01 WS-FACE                BINARY-LONG.
  01 WS-CY                  FLOAT-SHORT.
+ 01 WS-CX                  FLOAT-SHORT.
  01 WS-TEXT-AREA           PIC X(4096).
  01 WS-SPEC                PIC X(120).
  01 WS-SPEC-KEY            PIC X(48).
@@ -78,1035 +79,1548 @@
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_log[axis=y]                                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a log clicked on a north face lies along z                                                      ".
     05 FILLER PIC X(32) VALUE "oak_log                         ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_log[axis=z]                                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a log clicked on an east face lies along x                                                      ".
     05 FILLER PIC X(32) VALUE "oak_log                         ".
     05 FILLER PIC X(1) VALUE "5".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_log[axis=x]                                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "hay clicked on a west face lies along x                                                         ".
     05 FILLER PIC X(32) VALUE "hay_block                       ".
     05 FILLER PIC X(1) VALUE "4".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "hay_block[axis=x]                                                                                   ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a chain clicked on a south face lies along z                                                    ".
     05 FILLER PIC X(32) VALUE "iron_chain                      ".
     05 FILLER PIC X(1) VALUE "3".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "iron_chain[axis=z]                                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the top face is a bottom slab                                                         ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=bottom]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the underside is a top slab                                                           ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=top]                                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the upper half of a side is a top slab                                                ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "075".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=top]                                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the lower half of a side is a bottom slab                                             ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "025".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=bottom]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the middle of a side is a bottom slab                                                 ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=bottom]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the top of a bottom slab makes a double slab                                          ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "oak_slab[type=bottom]                   ".
+    05 FILLER PIC X(48) VALUE "oak_slab[type=bottom]                           ".
     05 FILLER PIC X(1) VALUE "S".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=double]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the upper half of the side of a bottom slab makes a double slab                       ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "075".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "oak_slab[type=bottom]                   ".
+    05 FILLER PIC X(48) VALUE "oak_slab[type=bottom]                           ".
     05 FILLER PIC X(1) VALUE "S".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=double]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the lower half of the side of a bottom slab goes beside it                            ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "025".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "oak_slab[type=bottom]                   ".
+    05 FILLER PIC X(48) VALUE "oak_slab[type=bottom]                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=bottom]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the underside of a top slab makes a double slab                                       ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "oak_slab[type=top]                      ".
+    05 FILLER PIC X(48) VALUE "oak_slab[type=top]                              ".
     05 FILLER PIC X(1) VALUE "S".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=double]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab on the top of a double slab goes above it                                                ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "oak_slab[type=double]                   ".
+    05 FILLER PIC X(48) VALUE "oak_slab[type=double]                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=bottom]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a slab placed into the cell of a bottom slab makes a double slab                                ".
     05 FILLER PIC X(32) VALUE "oak_slab                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|+0|oak_slab[type=bottom]                          ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_slab[type=double]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair facing the player (south)                                                               ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,half=bottom,shape=straight]                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair on the underside is upside down                                                         ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,half=top]                                                                   ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair on the upper half of a side is upside down                                              ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "075".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,half=top]                                                                   ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair facing north when the player looks north                                                ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+180".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=north,half=bottom]                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair facing west when the player looks west                                                  ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=west]                                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair facing east when the player looks east                                                  ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "-090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=east]                                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair with a stair facing east in front is an outer left corner                               ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|+1|oak_stairs[facing=east,half=bottom]            ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=outer_left]                                                           ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair with a stair facing west in front is an outer right corner                              ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|+1|oak_stairs[facing=west,half=bottom]            ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=outer_right]                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair with a stair facing east behind is an inner left corner                                 ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|-1|oak_stairs[facing=east,half=bottom]            ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=inner_left]                                                           ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair with a stair facing west behind is an inner right corner                                ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|-1|oak_stairs[facing=west,half=bottom]            ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=inner_right]                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair with a stair facing the same way in front stays straight                                ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|+1|oak_stairs[facing=south,half=bottom]           ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=straight]                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stair beside an upside down stair stays straight                                              ".
     05 FILLER PIC X(32) VALUE "oak_stairs                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|+1|oak_stairs[facing=east,half=top]               ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=straight]                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lever on a top face is a floor lever facing the player                                        ".
     05 FILLER PIC X(32) VALUE "lever                           ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lever[face=floor,facing=south]                                                                      ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lever on the underside is a ceiling lever                                                     ".
     05 FILLER PIC X(32) VALUE "lever                           ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lever[face=ceiling,facing=south]                                                                    ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lever on a north face is a wall lever facing north                                            ".
     05 FILLER PIC X(32) VALUE "lever                           ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lever[face=wall,facing=north]                                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a stone button on an east face is a wall button facing east                                     ".
     05 FILLER PIC X(32) VALUE "stone_button                    ".
     05 FILLER PIC X(1) VALUE "5".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "stone_button[face=wall,facing=east]                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a button on a top face facing west when the player looks west                                   ".
     05 FILLER PIC X(32) VALUE "oak_button                      ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_button[face=floor,facing=west]                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a grindstone on a south face is a wall grindstone facing south                                  ".
     05 FILLER PIC X(32) VALUE "grindstone                      ".
     05 FILLER PIC X(1) VALUE "3".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "grindstone[face=wall,facing=south]                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a ladder on a north face faces north                                                            ".
     05 FILLER PIC X(32) VALUE "ladder                          ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "ladder[facing=north]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a ladder on a west face faces west                                                              ".
     05 FILLER PIC X(32) VALUE "ladder                          ".
     05 FILLER PIC X(1) VALUE "4".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "ladder[facing=west]                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a ladder on a top face with nothing beside it is not placed                                     ".
     05 FILLER PIC X(32) VALUE "ladder                          ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a ladder on a top face with a block beside it hangs on that block                               ".
     05 FILLER PIC X(32) VALUE "ladder                          ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|+1|+1|stone                                          ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "ladder[facing=north]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a ladder on the underside is not placed                                                         ".
     05 FILLER PIC X(32) VALUE "ladder                          ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on a top face stands (yaw 0: rotation 8)                                                 ".
     05 FILLER PIC X(32) VALUE "oak_sign                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_sign[rotation=8]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on a top face (yaw 90: rotation 12)                                                      ".
     05 FILLER PIC X(32) VALUE "oak_sign                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_sign[rotation=12]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on a top face (yaw 180: rotation 0)                                                      ".
     05 FILLER PIC X(32) VALUE "oak_sign                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+180".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_sign[rotation=0]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on a top face (yaw -90: rotation 4)                                                      ".
     05 FILLER PIC X(32) VALUE "oak_sign                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "-090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_sign[rotation=4]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on a north face is a wall sign facing north                                              ".
     05 FILLER PIC X(32) VALUE "oak_sign                        ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_wall_sign[facing=north]                                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on an east face is a wall sign facing east                                               ".
     05 FILLER PIC X(32) VALUE "spruce_sign                     ".
     05 FILLER PIC X(1) VALUE "5".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "spruce_wall_sign[facing=east]                                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sign on the underside is not placed                                                           ".
     05 FILLER PIC X(32) VALUE "oak_sign                        ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a hanging sign on the underside of a block hangs (yaw 0: rotation 8, attached false)            ".
     05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=false,rotation=8]                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a hanging sign on the underside (yaw 90: rotation 12)                                           ".
     05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=false,rotation=12]                                                        ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a hanging sign on a top face with nothing above is not placed                                   ".
     05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a hanging sign on a north face with a block beside it is a wall hanging sign                    ".
     05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+1|+0|-1|stone                                          ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_wall_hanging_sign[facing=north]                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a hanging sign on a north face with nothing beside it is not placed                             ".
     05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a banner on a top face stands (yaw 0: rotation 8)                                               ".
     05 FILLER PIC X(32) VALUE "white_banner                    ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "white_banner[rotation=8]                                                                            ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a banner on a north face is a wall banner facing north                                          ".
     05 FILLER PIC X(32) VALUE "white_banner                    ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "white_wall_banner[facing=north]                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a skull on a top face stands (yaw 0: rotation 0)                                                ".
     05 FILLER PIC X(32) VALUE "skeleton_skull                  ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "skeleton_skull[rotation=0]                                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a skull on a top face (yaw 90: rotation 4)                                                      ".
     05 FILLER PIC X(32) VALUE "skeleton_skull                  ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "skeleton_skull[rotation=4]                                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a skull on a north face is a wall skull facing north                                            ".
     05 FILLER PIC X(32) VALUE "skeleton_skull                  ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "skeleton_wall_skull[facing=north]                                                                   ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a head on an east face is a wall head facing east                                               ".
     05 FILLER PIC X(32) VALUE "zombie_head                     ".
     05 FILLER PIC X(1) VALUE "5".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "zombie_wall_head[facing=east]                                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a dead coral fan on a top face stands                                                           ".
     05 FILLER PIC X(32) VALUE "dead_tube_coral_fan             ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "dead_tube_coral_fan                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a dead coral fan on a north face is a wall fan facing north                                     ".
     05 FILLER PIC X(32) VALUE "dead_tube_coral_fan             ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "dead_tube_coral_wall_fan[facing=north]                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lantern on a top face stands                                                                  ".
     05 FILLER PIC X(32) VALUE "lantern                         ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lantern[hanging=false]                                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lantern on the underside hangs                                                                ".
     05 FILLER PIC X(32) VALUE "lantern                         ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lantern[hanging=true]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lantern on a side with a block below it stands                                                ".
     05 FILLER PIC X(32) VALUE "lantern                         ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+0|-1|-1|stone                                          ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lantern[hanging=false]                                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lantern on a side with nothing above or below is not placed                                   ".
     05 FILLER PIC X(32) VALUE "lantern                         ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a vine on a north face holds on the block behind it                                             ".
     05 FILLER PIC X(32) VALUE "vine                            ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "vine[south=true,north=false]                                                                        ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a vine on a top face has nothing to hold on to                                                  ".
     05 FILLER PIC X(32) VALUE "vine                            ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "glow lichen on a top face holds on the block below                                              ".
     05 FILLER PIC X(32) VALUE "glow_lichen                     ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "glow_lichen[down=true,up=false]                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a sculk vein on a west face holds on the block beside it                                        ".
     05 FILLER PIC X(32) VALUE "sculk_vein                      ".
     05 FILLER PIC X(1) VALUE "4".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "sculk_vein[east=true,west=false]                                                                    ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a vine added to a vine takes a second face                                                      ".
     05 FILLER PIC X(32) VALUE "vine                            ".
     05 FILLER PIC X(1) VALUE "4".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "-090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "vine[north=true]                        ".
+    05 FILLER PIC X(48) VALUE "vine[north=true]                                ".
     05 FILLER PIC X(1) VALUE "S".
     05 FILLER PIC X(56) VALUE "+0|+0|-1|stone                                          ".
     05 FILLER PIC X(56) VALUE "+1|+0|+0|stone                                          ".
     05 FILLER PIC X(100) VALUE "vine[north=true,east=true]                                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a door faces the player; hinge left without a wall beside it                                    ".
     05 FILLER PIC X(32) VALUE "oak_door                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=left]                                                        ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a door next to a wall on the clockwise side has its hinge on the right                          ".
     05 FILLER PIC X(32) VALUE "oak_door                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "-1|+1|+0|stone                                          ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=right]                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a door next to a wall on the counter-clockwise side has its hinge on the left                   ".
     05 FILLER PIC X(32) VALUE "oak_door                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "+1|+1|+0|stone                                          ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=left]                                                        ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a door facing east when the player looks east                                                   ".
     05 FILLER PIC X(32) VALUE "oak_door                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "-090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_door[facing=east,half=lower]                                                                    ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a trapdoor on a top face is a bottom trapdoor facing the player                                 ".
     05 FILLER PIC X(32) VALUE "oak_trapdoor                    ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_trapdoor[facing=north,half=bottom]                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a trapdoor on the underside is a top trapdoor                                                   ".
     05 FILLER PIC X(32) VALUE "oak_trapdoor                    ".
     05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_trapdoor[facing=north,half=top]                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a trapdoor on the upper half of a north face lies on that face at the top                       ".
     05 FILLER PIC X(32) VALUE "oak_trapdoor                    ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "075".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_trapdoor[facing=north,half=top]                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a trapdoor on the lower half of a north face lies on that face at the bottom                    ".
     05 FILLER PIC X(32) VALUE "oak_trapdoor                    ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "025".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_trapdoor[facing=north,half=bottom]                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a trapdoor on the lower half of an east face faces east                                         ".
     05 FILLER PIC X(32) VALUE "oak_trapdoor                    ".
     05 FILLER PIC X(1) VALUE "5".
     05 FILLER PIC X(3) VALUE "025".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_trapdoor[facing=east,half=bottom]                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a fence gate faces the direction of the player (south)                                          ".
     05 FILLER PIC X(32) VALUE "oak_fence_gate                  ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_fence_gate[facing=south]                                                                        ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a fence gate (player looks west)                                                                ".
     05 FILLER PIC X(32) VALUE "oak_fence_gate                  ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_fence_gate[facing=west]                                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a furnace faces the player (north when the player looks south)                                  ".
     05 FILLER PIC X(32) VALUE "furnace                         ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "furnace[facing=north]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a furnace (player looks west: faces east)                                                       ".
     05 FILLER PIC X(32) VALUE "furnace                         ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+090".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "furnace[facing=east]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "an anvil faces clockwise of the player (west when the player looks south)                       ".
     05 FILLER PIC X(32) VALUE "anvil                           ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "anvil[facing=west]                                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a dispenser faces the player when the player looks level (north)                                ".
     05 FILLER PIC X(32) VALUE "dispenser                       ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "dispenser[facing=north]                                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a dispenser faces up when the player looks down                                                 ".
     05 FILLER PIC X(32) VALUE "dispenser                       ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+080".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "dispenser[facing=up]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a piston faces the player when the player looks level (north)                                   ".
     05 FILLER PIC X(32) VALUE "piston                          ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "piston[facing=north]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "an observer faces the way the player looks (south)                                              ".
     05 FILLER PIC X(32) VALUE "observer                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "observer[facing=south]                                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lightning rod faces the clicked face (north)                                                  ".
     05 FILLER PIC X(32) VALUE "lightning_rod                   ".
     05 FILLER PIC X(1) VALUE "2".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lightning_rod[facing=north]                                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "an amethyst cluster faces the clicked face (east)                                               ".
     05 FILLER PIC X(32) VALUE "amethyst_cluster                ".
     05 FILLER PIC X(1) VALUE "5".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "amethyst_cluster[facing=east]                                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a repeater faces the player (north when the player looks south)                                 ".
     05 FILLER PIC X(32) VALUE "repeater                        ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "repeater[facing=north]                                                                              ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a decorated pot faces the player (south)                                                        ".
     05 FILLER PIC X(32) VALUE "decorated_pot                   ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "decorated_pot[facing=south]                                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a loom faces the player (north when the player looks south)                                     ".
     05 FILLER PIC X(32) VALUE "loom                            ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "loom[facing=north]                                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a lectern faces the player (north when the player looks south)                                  ".
     05 FILLER PIC X(32) VALUE "lectern                         ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "lectern[facing=north]                                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
     05 FILLER PIC X(96) VALUE "a bookshelf shelf faces the player                                                              ".
     05 FILLER PIC X(32) VALUE "oak_shelf                       ".
     05 FILLER PIC X(1) VALUE "1".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(4) VALUE "+000".
     05 FILLER PIC X(4) VALUE "+000".
-    05 FILLER PIC X(40) VALUE "stone                                   ".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
     05 FILLER PIC X(1) VALUE "T".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(56) VALUE "                                                        ".
     05 FILLER PIC X(100) VALUE "oak_shelf[facing=north]                                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a stair is straight when the stair in front has a stair beside it that continues its line       ".
+    05 FILLER PIC X(32) VALUE "oak_stairs                      ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+1|+1|oak_stairs[facing=east,half=bottom]            ".
+    05 FILLER PIC X(56) VALUE "-1|+1|+0|oak_stairs[facing=south,half=bottom]           ".
+    05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=straight]                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a stair is straight when the stair behind has a stair beside it that continues its line         ".
+    05 FILLER PIC X(32) VALUE "oak_stairs                      ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+1|-1|oak_stairs[facing=east,half=bottom]            ".
+    05 FILLER PIC X(56) VALUE "+1|+1|+0|oak_stairs[facing=south,half=bottom]           ".
+    05 FILLER PIC X(100) VALUE "oak_stairs[facing=south,shape=straight]                                                             ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a stair facing east with a stair facing north in front is an outer left corner                  ".
+    05 FILLER PIC X(32) VALUE "oak_stairs                      ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "-090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+1|+1|+0|oak_stairs[facing=north,half=bottom]           ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_stairs[facing=east,shape=outer_left]                                                            ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a door facing west                                                                              ".
+    05 FILLER PIC X(32) VALUE "oak_door                        ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_door[facing=west,half=lower]                                                                    ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a door beside a door on the counter-clockwise side has its hinge on the right                   ".
+    05 FILLER PIC X(32) VALUE "oak_door                        ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+1|+1|+0|oak_door[facing=south,half=lower]              ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=right]                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a door beside a door on the clockwise side has its hinge on the left                            ".
+    05 FILLER PIC X(32) VALUE "oak_door                        ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "-1|+1|+0|oak_door[facing=south,half=lower]              ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=left]                                                        ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a door between two walls takes its hinge from the click (left of the cell centre: right)        ".
+    05 FILLER PIC X(32) VALUE "oak_door                        ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+1|+1|+0|stone                                          ".
+    05 FILLER PIC X(56) VALUE "-1|+1|+0|stone                                          ".
+    05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=right]                                                       ".
+    05 FILLER PIC X(3) VALUE "025".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a door between two walls takes its hinge from the click (right of the cell centre: left)        ".
+    05 FILLER PIC X(32) VALUE "oak_door                        ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+1|+1|+0|stone                                          ".
+    05 FILLER PIC X(56) VALUE "-1|+1|+0|stone                                          ".
+    05 FILLER PIC X(100) VALUE "oak_door[facing=south,half=lower,hinge=left]                                                        ".
+    05 FILLER PIC X(3) VALUE "075".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a wall hanging sign beside a wall hanging sign along its axis is placed                         ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "2".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+1|+0|-1|oak_wall_hanging_sign[facing=north]            ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_wall_hanging_sign[facing=north]                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a wall hanging sign beside a wall hanging sign across its axis is not placed                    ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "2".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+1|+0|-1|oak_wall_hanging_sign[facing=east]             ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a wall hanging sign along the player is not attached                       ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "oak_wall_hanging_sign[facing=north]             ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=false,rotation=8]                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a wall hanging sign across the player is attached                          ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "oak_wall_hanging_sign[facing=north]             ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=true,rotation=12]                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a ceiling hanging sign along the player is not attached                    ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "-090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "oak_hanging_sign[attached=false,rotation=4]     ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+1|+0|stone                                          ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=false,rotation=4]                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a ceiling hanging sign across the player is attached                       ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "oak_hanging_sign[attached=false,rotation=4]     ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+1|+0|stone                                          ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=true,rotation=8]                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a ceiling hanging sign turned by an eighth is attached                     ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "oak_hanging_sign[attached=false,rotation=2]     ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+1|+0|stone                                          ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=true,rotation=8]                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a stone block (yaw 180: rotation 0, not attached)                          ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+180".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=false,rotation=0]                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a sneaking player hangs a sign attached under a stone block                                     ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=true,rotation=8]                                                          ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(96) VALUE "a hanging sign under a stone block (player looks east: rotation 4)                              ".
+    05 FILLER PIC X(32) VALUE "oak_hanging_sign                ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "-090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_hanging_sign[attached=false,rotation=4]                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a lever put into grass with nothing to hold it is not placed                                    ".
+    05 FILLER PIC X(32) VALUE "lever                           ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "short_grass                                     ".
+    05 FILLER PIC X(1) VALUE "S".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "short_grass                                                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a log put on grass replaces it                                                                  ".
+    05 FILLER PIC X(32) VALUE "oak_log                         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "short_grass                                     ".
+    05 FILLER PIC X(1) VALUE "S".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_log[axis=y]                                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a log used on an empty cell is placed on the clicked face                                       ".
+    05 FILLER PIC X(32) VALUE "oak_log                         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "air                                             ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "oak_log[axis=y]                                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a ladder used on a ladder facing the clicked face is not placed                                 ".
+    05 FILLER PIC X(32) VALUE "ladder                          ".
+    05 FILLER PIC X(1) VALUE "2".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "ladder[facing=north]                            ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+0|+1|stone                                          ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a tripwire hook on a north face faces north                                                     ".
+    05 FILLER PIC X(32) VALUE "tripwire_hook                   ".
+    05 FILLER PIC X(1) VALUE "2".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "tripwire_hook[facing=north]                                                                         ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a tripwire hook on a top face with nothing beside it is not placed                              ".
+    05 FILLER PIC X(32) VALUE "tripwire_hook                   ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "air                                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a vine beside a vine that has the face stays on the face of the block                           ".
+    05 FILLER PIC X(32) VALUE "vine                            ".
+    05 FILLER PIC X(1) VALUE "2".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "+0|+1|-1|vine[south=true]                               ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "vine[south=true]                                                                                    ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-ROW OCCURS 93 TIMES.
+    05 WS-ROW OCCURS 118 TIMES.
        10 WS-C-LABEL        PIC X(96).
        10 WS-C-ITEM         PIC X(32).
        10 WS-C-FACE         PIC 9.
        10 WS-C-CY           PIC 9V99.
        10 WS-C-YAW          PIC S999 SIGN LEADING SEPARATE.
        10 WS-C-PITCH        PIC S999 SIGN LEADING SEPARATE.
-       10 WS-C-SUPPORT      PIC X(40).
+       10 WS-C-SUPPORT      PIC X(48).
        10 WS-C-AT           PIC X.
        10 WS-C-PRE          PIC X(56) OCCURS 2 TIMES.
        10 WS-C-WANT         PIC X(100).
+       10 WS-C-CX           PIC 9V99.
+       10 WS-C-SNEAK        PIC 9.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -1162,7 +1676,7 @@
      COMPUTE WS-PX = WS-BX + 6
      COMPUTE WS-PY = WS-FLOOR + 4
      COMPUTE WS-PZ = WS-BZ + 6
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 93
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 118
          PERFORM RUN-CASE
      END-PERFORM
      STOP RUN.
@@ -1203,7 +1717,9 @@
      MOVE WS-C-PITCH(WS-I) TO PL-PITCH(WS-PLAYER)
      MOVE WS-C-FACE(WS-I) TO WS-FACE
      MOVE WS-C-CY(WS-I) TO WS-CY
-     CALL "TEST-USE-ON-AT" USING WS-CONN WS-PX WS-PY WS-PZ WS-FACE WS-CY WS-SEQ
+     MOVE WS-C-CX(WS-I) TO WS-CX
+     MOVE WS-C-SNEAK(WS-I) TO PL-SNEAKING(WS-PLAYER)
+     CALL "TEST-USE-ON-AT" USING WS-CONN WS-PX WS-PY WS-PZ WS-FACE WS-CX WS-CY WS-SEQ
 *>   The cell to look at: the support's own cell, or the cell on the clicked face.
      MOVE WS-PX TO WS-X
      MOVE WS-PY TO WS-Y
@@ -1301,7 +1817,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-USE-ON-AT.
-*> USING connection id, x, y, z, face, cursor y (FLOAT-SHORT), sequence: feeds Use Item On with the main hand on that block and face, cursor (0.5, cursor y, 0.5), not inside, no border hit.
+*> USING connection id, x, y, z, face, cursor x, cursor y (FLOAT-SHORT), sequence: feeds Use Item On with the main hand on that block and face, cursor (cursor x, cursor y, 0.5), not inside, no border hit.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -1315,15 +1831,16 @@
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
  01 L-FACE                 BINARY-LONG.
+ 01 L-CX                   FLOAT-SHORT.
  01 L-CY                   FLOAT-SHORT.
  01 L-SEQUENCE             BINARY-LONG.
- PROCEDURE DIVISION USING L-ID L-X L-Y L-Z L-FACE L-CY L-SEQUENCE.
+ PROCEDURE DIVISION USING L-ID L-X L-Y L-Z L-FACE L-CX L-CY L-SEQUENCE.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
      CALL "PB-PUT-VARINT" USING PB-BUFFER L-FACE
-     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-HALF
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CX
      CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CY
      CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-HALF
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO

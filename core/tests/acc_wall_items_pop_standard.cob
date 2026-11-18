@@ -235,8 +235,15 @@
     05 FILLER PIC X(2) VALUE "-1".
     05 FILLER PIC X(32) VALUE "-                               ".
     05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a tripwire hook falls when its wall is broken                                                   ".
+    05 FILLER PIC X(64) VALUE "tripwire_hook[facing=east]                                      ".
+    05 FILLER PIC X(2) VALUE "+1".
+    05 FILLER PIC X(2) VALUE "+0".
+    05 FILLER PIC X(2) VALUE "+0".
+    05 FILLER PIC X(32) VALUE "tripwire_hook                   ".
+    05 FILLER PIC X(1) VALUE "1".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-ROW OCCURS 25 TIMES.
+    05 WS-ROW OCCURS 26 TIMES.
        10 WS-C-LABEL        PIC X(96).
        10 WS-C-SPEC         PIC X(64).
        10 WS-C-DX           PIC X(2).
@@ -297,7 +304,7 @@
      COMPUTE WS-PX = WS-BX + 6
      COMPUTE WS-PY = WS-FLOOR + 4
      COMPUTE WS-PZ = WS-BZ + 6
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 25
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 26
          PERFORM RUN-CASE
      END-PERFORM
      STOP RUN.

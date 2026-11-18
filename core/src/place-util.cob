@@ -263,25 +263,26 @@
  PROGRAM-ID. PS-DIR-OF.
 *> USING direction name (PIC X(32): "down", "up", "north", "south", "west", "east"), direction out (BINARY-LONG, -1 for any other text).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER              PIC X(5) VALUE "down ".
+    05 FILLER              PIC X(5) VALUE "up   ".
+    05 FILLER              PIC X(5) VALUE "north".
+    05 FILLER              PIC X(5) VALUE "south".
+    05 FILLER              PIC X(5) VALUE "west ".
+    05 FILLER              PIC X(5) VALUE "east ".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(5) OCCURS 6 TIMES.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-TEXT                 PIC X(32).
  01 L-DIR                  BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-DIR.
-     EVALUATE FUNCTION TRIM(L-TEXT)
-         WHEN "down"
-             MOVE 0 TO L-DIR
-         WHEN "up"
-             MOVE 1 TO L-DIR
-         WHEN "north"
-             MOVE 2 TO L-DIR
-         WHEN "south"
-             MOVE 3 TO L-DIR
-         WHEN "west"
-             MOVE 4 TO L-DIR
-         WHEN "east"
-             MOVE 5 TO L-DIR
-         WHEN OTHER
-             MOVE -1 TO L-DIR
-     END-EVALUATE
+     MOVE -1 TO L-DIR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         IF L-TEXT = WS-NAME(WS-I)
+             COMPUTE L-DIR = WS-I - 1
+         END-IF
+     END-PERFORM
      GOBACK.
  END PROGRAM PS-DIR-OF.

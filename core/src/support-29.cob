@@ -333,6 +333,8 @@
  01 WS-ABOVE-STATE         BINARY-LONG.
  01 WS-SEA-OK              BINARY-LONG.
  01 WS-NAME24              PIC X(24).
+ 01 WS-NAME48              PIC X(48).
+ 01 WS-SIGN-SUFFIX         PIC X(24) VALUE "hanging_sign".
  01 WS-SIDE-TABLE.
     05 WS-SIDE-DX          BINARY-LONG OCCURS 4 TIMES.
     05 WS-SIDE-DZ          BINARY-LONG OCCURS 4 TIMES.
@@ -526,6 +528,13 @@
              COMPUTE WS-Y = L-Y + 1
              CALL "SUP-SOLID-AT" USING L-DIM L-X WS-Y L-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
              IF WS-OTHER-SOLID = 1
+                 MOVE 1 TO L-OK
+             END-IF
+*>           a hanging sign hangs from another one (the chain of hanging signs)
+             CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-ABOVE-STATE
+             CALL "PS-NAME-OF" USING WS-ABOVE-STATE WS-NAME48
+             CALL "PS-ENDS" USING WS-NAME48 WS-SIGN-SUFFIX WS-FLAG
+             IF WS-FLAG = 1
                  MOVE 1 TO L-OK
              END-IF
 *>       a lantern stands on a solid block below it, or (hanging) hangs from one above
