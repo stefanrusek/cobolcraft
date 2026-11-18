@@ -24,6 +24,7 @@
  01 WS-NAMESPACE           PIC X(48).
  01 WS-PATH                PIC X(48).
  01 WS-COLON               BINARY-LONG.
+ 01 WS-STANDING            PIC X(48).
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
  01 L-KEY                  PIC X(112).
@@ -37,6 +38,11 @@
          MOVE CB-KEY(WS-BLOCK) TO WS-PATH
      ELSE
          UNSTRING CB-KEY(WS-BLOCK) DELIMITED BY ":" INTO WS-NAMESPACE WS-PATH
+     END-IF
+*>   A wall variant (wall torch, wall sign, wall banner, wall head, wall fan, wall hanging sign) has the loot table of its standing block (wallVariant: overrideLootTable, 24 part 1 section 4.1).
+     CALL "PS-STANDING-KEY" USING WS-PATH WS-STANDING
+     IF WS-STANDING NOT = SPACES
+         MOVE WS-STANDING TO WS-PATH
      END-IF
      STRING FUNCTION TRIM(WS-NAMESPACE) ":blocks/" FUNCTION TRIM(WS-PATH) DELIMITED BY SIZE INTO L-KEY
      GOBACK.

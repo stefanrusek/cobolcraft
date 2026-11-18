@@ -267,13 +267,7 @@
  COPY CORESTATE.
  COPY CBLOCKS.
  COPY DIMENSIONS.
- 01 WS-OFFSETS.
-    05 FILLER PIC X(18) VALUE "101121110112011211".
- 01 WS-OFFSET-TABLE REDEFINES WS-OFFSETS.
-    05 WS-OFFSET OCCURS 6 TIMES.
-       10 WS-OFF-X         PIC 9.
-       10 WS-OFF-Y         PIC 9.
-       10 WS-OFF-Z         PIC 9.
+ COPY PLACECTX.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -295,7 +289,7 @@
  01 WS-WL-TEXT             PIC X(32).
  01 WS-WL-MODE             BINARY-LONG VALUE 2.
  01 WS-STACKED             BINARY-LONG.
- 01 WS-TORCH-FITS          BINARY-LONG.
+ 01 WS-MERGES              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -310,11 +304,6 @@
          MOVE 1 TO L-PLACED
          GOBACK
      END-IF
-*>   Face offsets, each digit minus 1: down (0,-1,0), up (0,1,0), north (0,0,-1), south (0,0,1),
-*>   west (-1,0,0), east (1,0,0).
-     COMPUTE WS-X = PSB-BX + WS-OFF-X(PSB-FACE + 1) - 1
-     COMPUTE WS-Y = PSB-BY + WS-OFF-Y(PSB-FACE + 1) - 1
-     COMPUTE WS-Z = PSB-BZ + WS-OFF-Z(PSB-FACE + 1) - 1
      MOVE L-PLACED-STATE TO WS-STATE
      IF CB-S-BLOCK(WS-STATE + 1) = CR-CARDSTACK
          EVALUATE PSB-FACE
@@ -327,6 +316,11 @@
          END-EVALUATE
      END-IF
      CALL "SEG-FACING" USING L-ID WS-STATE
+*>   The placement context: the cell the block goes to (the clicked cell when the item replaces the clicked block, else the cell on the clicked face), the click and the player's view (place-state.cob).
+     CALL "PLACE-CONTEXT-BUILD" USING L-ID PLAY-SERVERBOUND WS-STATE PLACE-CONTEXT
+     MOVE PC-X TO WS-X
+     MOVE PC-Y TO WS-Y
+     MOVE PC-Z TO WS-Z
      IF WS-Y < DM-MIN-Y(WS-DIM) OR WS-Y >= DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM)
          GOBACK
      END-IF
@@ -341,16 +335,22 @@
      IF WS-OLD = 0 OR WS-REPLACEABLE = 1
          CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
      END-IF
+*>   A slab onto a slab that is not double and a multiface block onto one with a free face add to the block that is there.
+     CALL "PS-MERGES" USING PLACE-CONTEXT WS-OLD WS-MERGES
+     IF WS-MERGES = 1
+         MOVE 0 TO WS-HIT
+     END-IF
      IF WS-HIT = 1
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
-*>   A torch item is a standing-and-wall item (25-4 section 9.2): clicked on the side of a block it places the wall torch facing away from it (torch-place.cob).
-     CALL "TORCH-PLACE-STATE" USING WS-DIM WS-X WS-Y WS-Z PSB-FACE PL-YAW(CN-PLAYER(L-ID)) PL-PITCH(CN-PLAYER(L-ID)) WS-STATE WS-TORCH-FITS
-     IF WS-TORCH-FITS = 0
+*>   The state the block takes from the click and the player's view (place-state.cob: standing-and-wall items, attached blocks, pillars, slabs, stairs, doors and the facing blocks); nothing fits: nothing is placed.
+     CALL "PLACE-STATE" USING PLACE-CONTEXT
+     IF PC-FITS = 0
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
+     MOVE PC-STATE TO WS-STATE
 *>   A door or tall plant needs its upper half's cell (empty or replaceable) too, and places both halves.
      CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
 *>   BlockItem.canPlace: the block must survive where it is placed (a plant on its ground, kelp and seagrass in a water source only; support-29.cob).
