@@ -27,6 +27,8 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-SAVED-SW            BINARY-LONG.
+ 01 WS-EO                  FLOAT-LONG.
+ 01 WS-PT                  FLOAT-LONG.
  01 WS-M.
     05 FILLER              FLOAT-LONG VALUE 1.
     05 FILLER              FLOAT-LONG VALUE 0.
@@ -176,6 +178,8 @@
 *>   Equip: a hand that shows nothing yet lowers the item by 0.6 and lifts it in 4 ticks; a changed stack lowers it again.
      MOVE 0 TO CL-HAND-ITEM CL-HAND-H CL-HAND-OH
      MOVE 0 TO CL-HAND-TICK-MS
+     MOVE 2 TO CL-ATK-LAST
+     MOVE 100 TO CL-ATK-TICKER
      MOVE 2000000 TO CL-NOW-MS
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "T5300 a hand that shows nothing yet draws nothing at the first frame" TO TL-CASE
@@ -305,7 +309,7 @@
      MOVE 1 TO CL-HAND-H CL-HAND-OH
      MOVE 1 TO CL-HAND-TICK-MS
      MOVE 3000000 TO CL-NOW-MS
-     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X
+     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X WS-EO WS-PT
      MOVE "T5300 after a gap of over 400 ms the equip clock restarts without ticks (E = 0)" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-X) < 0.001 AND CL-HAND-TICK-MS = CL-NOW-MS
@@ -314,7 +318,7 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5000000 TO CL-HAND-TICK-MS
-     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X
+     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X WS-EO WS-PT
      MOVE "T5300 a clock that ran backwards restarts too" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
      IF CL-HAND-TICK-MS = CL-NOW-MS

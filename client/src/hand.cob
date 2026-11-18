@@ -23,6 +23,10 @@
                  OR (IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1)
              MOVE CL-NOW-MS TO CL-SWING-AT
          END-IF
+*>       An attack on an entity restarts the attack strength ticker (17 section 4.1).
+         IF IN-BUTTON-PRESSED(CC-BUTTON-LEFT + 1) = 1 AND TG-ENTITY-HIT = 1
+             MOVE 0 TO CL-ATK-TICKER
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM HAND-INPUT.
@@ -138,41 +142,64 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-EQUIP.
-*> USING CLIENT-STATE, equip offset E out (12 section 6.2): the shown stack CL-HAND-ITEM (item + 1, 0 none) follows the selected one through the height
-*> CL-HAND-H: every 50 ms tick oh = h and h moves toward 1 (the shown stack is the selected one) or 0 by at most 0.4; below 0.1 the shown stack becomes the
-*> selected one. E = 1 - lerp(partial tick, oh, h). A clock that was never started, or a frame gap over 400 ms, restarts the tick clock without ticks.
+*> USING CLIENT-STATE, equip offset E of the main hand out, equip offset of the off hand out, partial tick out (12 section 6.2): the shown stacks CL-HAND-ITEM and
+*> CL-OHAND-ITEM (item + 1, 0 none) follow the selected and the off-hand stack through the heights CL-HAND-H and CL-OHAND-H: every 50 ms tick (HAND-TICK first) oh = h
+*> and h moves toward the wanted height by at most 0.4 (1 when the shown stack is the current one, 0 otherwise; the main hand's 1 is multiplied by the cube of the
+*> attack strength scale (ticker + 1) / D, so the held item drops while the attack cooldown recharges); below 0.1 the shown stack becomes the current one.
+*> E = 1 - lerp(partial tick, oh, h). A clock that was never started, or a frame gap over 400 ms, restarts the tick clock without ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WANT                FLOAT-LONG.
  01 WS-STEP                FLOAT-LONG.
  01 WS-CURRENT             BINARY-LONG.
- 01 WS-PARTIAL             FLOAT-LONG.
+ 01 WS-OCURRENT            BINARY-LONG.
+ 01 WS-DELAY               FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-E                    FLOAT-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-E.
-     MOVE 0 TO WS-CURRENT
+ 01 L-EO                   FLOAT-LONG.
+ 01 L-PART                 FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-E L-EO L-PART.
+     MOVE 0 TO WS-CURRENT WS-OCURRENT
      IF PL-SLOT-COUNT(PL-HELD + 1) > 0
          COMPUTE WS-CURRENT = PL-SLOT-ITEM(PL-HELD + 1) + 1
      END-IF
+     IF PL-OFFHAND-COUNT > 0
+         COMPUTE WS-OCURRENT = PL-OFFHAND-ITEM + 1
+     END-IF
+     CALL "HAND-ATTACK-DELAY" USING CLIENT-STATE WS-CURRENT WS-DELAY
      IF CL-HAND-TICK-MS = 0 OR CL-NOW-MS < CL-HAND-TICK-MS OR CL-NOW-MS - CL-HAND-TICK-MS > 400
          MOVE CL-NOW-MS TO CL-HAND-TICK-MS
      END-IF
      PERFORM UNTIL CL-NOW-MS - CL-HAND-TICK-MS < 50
+         CALL "HAND-TICK" USING CLIENT-STATE WS-CURRENT
          MOVE CL-HAND-H TO CL-HAND-OH
+         MOVE CL-OHAND-H TO CL-OHAND-OH
+         COMPUTE WS-SCALE = FUNCTION MIN(1, (CL-ATK-TICKER + 1) / WS-DELAY)
          MOVE 0 TO WS-WANT
          IF CL-HAND-ITEM = WS-CURRENT
-             MOVE 1 TO WS-WANT
+             COMPUTE WS-WANT = WS-SCALE ** 3
          END-IF
          COMPUTE WS-STEP = FUNCTION MAX(-0.4, FUNCTION MIN(0.4, WS-WANT - CL-HAND-H))
          ADD WS-STEP TO CL-HAND-H
          IF CL-HAND-H < 0.1
              MOVE WS-CURRENT TO CL-HAND-ITEM
          END-IF
+         MOVE 0 TO WS-WANT
+         IF CL-OHAND-ITEM = WS-OCURRENT
+             MOVE 1 TO WS-WANT
+         END-IF
+         COMPUTE WS-STEP = FUNCTION MAX(-0.4, FUNCTION MIN(0.4, WS-WANT - CL-OHAND-H))
+         ADD WS-STEP TO CL-OHAND-H
+         IF CL-OHAND-H < 0.1
+             MOVE WS-OCURRENT TO CL-OHAND-ITEM
+         END-IF
          ADD 50 TO CL-HAND-TICK-MS
      END-PERFORM
-     COMPUTE WS-PARTIAL = (CL-NOW-MS - CL-HAND-TICK-MS) / 50
-     COMPUTE L-E = 1 - (CL-HAND-OH + WS-PARTIAL * (CL-HAND-H - CL-HAND-OH))
+     COMPUTE L-PART = (CL-NOW-MS - CL-HAND-TICK-MS) / 50
+     COMPUTE L-E = 1 - (CL-HAND-OH + L-PART * (CL-HAND-H - CL-HAND-OH))
+     COMPUTE L-EO = 1 - (CL-OHAND-OH + L-PART * (CL-OHAND-H - CL-OHAND-OH))
      GOBACK.
  END PROGRAM HAND-EQUIP.
 
@@ -251,8 +278,10 @@
  END PROGRAM HAND-QUAD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. HAND-MESH.
-*> USING CLIENT-STATE: RL-HAND-VERTEX and RL-HAND-COUNT for this frame (none, a cube of 36 vertices or an extruded icon).
+ PROGRAM-ID. HAND-BUILD.
+*> USING CLIENT-STATE, prefix (the view pose, 12 FLOAT-LONG), side (+1 right arm, -1 left), item (id + 1, 0 none), equip offset, pose kind (HAND-ARM), elapsed use
+*> ticks, use duration, swing (1 = this hand swings), light 0 to 1: appends one hand's item to RL-HAND-VERTEX (nothing, a cube of 36 vertices or an extruded icon).
+*> A left hand uses the right-hand display entry mirrored (12 section 8.2: tx, ry and rz negated); the block default of the left hand is block/block's own entry.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -276,7 +305,6 @@
     05 WS-FACE-DIR         PIC 9 OCCURS 6 TIMES.
  01 WS-M.
     05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
- 01 WS-E                   FLOAT-LONG.
  01 WS-AX                  FLOAT-LONG.
  01 WS-AY                  FLOAT-LONG.
  01 WS-AZ                  FLOAT-LONG.
@@ -310,12 +338,6 @@
  01 WS-OPAQUE              PIC 9 OCCURS 1024 TIMES.
  01 WS-EDGE                PIC 9.
  01 WS-LIGHT               FLOAT-LONG.
- 01 WS-STATE               BINARY-LONG.
- 01 WS-SKY                 BINARY-LONG.
- 01 WS-BLK                 BINARY-LONG.
- 01 WS-EX                  BINARY-LONG.
- 01 WS-EY                  BINARY-LONG.
- 01 WS-EZ                  BINARY-LONG.
  01 WS-CORNERS.
     05 WS-CP               FLOAT-LONG OCCURS 12 TIMES.
  01 WS-UV.
@@ -333,34 +355,30 @@
  01 WS-Y0                  FLOAT-LONG.
  01 WS-Y1                  FLOAT-LONG.
  01 WS-CELL                FLOAT-LONG.
- 01 WS-PREV-COUNT          BINARY-LONG.
- 01 WS-STILL               BINARY-LONG.
  01 B-ATLAS                PIC X(1073741824) BASED.
+ 01 WS-SIDE-F              FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
- PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME
-     MOVE CL-HAND-KEY-COUNT TO WS-PREV-COUNT
-     MOVE 0 TO CL-HAND-KEY-COUNT
-     IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0
-         CALL "HAND-EQUIP" USING CLIENT-STATE WS-E
-     ELSE
+ 01 L-PREFIX.
+    05 L-PV                FLOAT-LONG OCCURS 12 TIMES.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-ITEM1                BINARY-LONG.
+ 01 L-E                    FLOAT-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ELAPSED              FLOAT-LONG.
+ 01 L-DURATION             FLOAT-LONG.
+ 01 L-SWING                BINARY-LONG.
+ 01 L-LIGHT                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PREFIX L-SIDE L-ITEM1 L-E L-KIND L-ELAPSED L-DURATION L-SWING L-LIGHT.
+     IF L-ITEM1 = 0
          GOBACK
      END-IF
-     IF CL-HAND-ITEM = 0
-         GOBACK
-     END-IF
-     COMPUTE WS-ITEM = CL-HAND-ITEM - 1
+     COMPUTE WS-ITEM = L-ITEM1 - 1
      CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
      IF WS-SPRITE = 0
          GOBACK
      END-IF
-*>   The light at the eye (like an entity: the larger of the sky light by the daylight and the block light, of 15).
-     COMPUTE WS-EX = FUNCTION INTEGER(PL-X)
-     COMPUTE WS-EY = FUNCTION INTEGER(PL-Y + 1.62)
-     COMPUTE WS-EZ = FUNCTION INTEGER(PL-Z)
-     CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
-     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
+     MOVE L-LIGHT TO WS-LIGHT
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-HBLOCK WS-HTOOL WS-HFOOD
 *>   A block item is the unit cube when its model has faces (a standard set) or it is a stand-in block; any other item is an extruded icon.
      MOVE 0 TO WS-STD
@@ -376,28 +394,13 @@
      IF WS-HAVE = 2
          GOBACK
      END-IF
-*>   Nothing swings and nothing changed since the last frame (the item, its sprite, the equip height, the light): the mesh built then
-*>   is still in RL-HAND-VERTEX and in the GPU slot, so it is neither built nor uploaded again.
-     MOVE 1 TO WS-STILL
-     IF CL-SWING-AT > 0 AND CL-NOW-MS >= CL-SWING-AT AND CL-NOW-MS - CL-SWING-AT < CL-SWING-MS
-         MOVE 0 TO WS-STILL
-     END-IF
-     IF WS-STILL = 1 AND WS-PREV-COUNT > 0 AND CL-HAND-KEY-ITEM = WS-ITEM AND CL-HAND-KEY-SPRITE = WS-SPRITE
-             AND CL-HAND-KEY-E = WS-E AND CL-HAND-KEY-LIGHT = WS-LIGHT
-         MOVE WS-PREV-COUNT TO RL-HAND-COUNT CL-HAND-KEY-COUNT
-         MOVE 1 TO RL-HAND-SAME
-         GOBACK
-     END-IF
-     IF WS-STILL = 1
-         MOVE WS-ITEM TO CL-HAND-KEY-ITEM
-         MOVE WS-SPRITE TO CL-HAND-KEY-SPRITE
-         MOVE WS-E TO CL-HAND-KEY-E
-         MOVE WS-LIGHT TO CL-HAND-KEY-LIGHT
-     END-IF
      IF WS-HAVE = 0
          IF WS-CUBE = 1
              MOVE 0 TO WS-DV(1) WS-DV(3) WS-DV(4) WS-DV(5) WS-DV(6)
              MOVE 45 TO WS-DV(2)
+             IF L-SIDE < 0
+                 MOVE 225 TO WS-DV(2)
+             END-IF
              MOVE 0.4 TO WS-DV(7) WS-DV(8) WS-DV(9)
          ELSE
              MOVE 0 TO WS-DV(1)
@@ -408,30 +411,34 @@
              MOVE 0.68 TO WS-DV(7) WS-DV(8) WS-DV(9)
          END-IF
      END-IF
-*>   The arm transform, then the swing of progress p = (now - start) / 300 ms (whack).
-     CALL "HAND-M-IDENT" USING WS-M
-     MOVE 0.56 TO WS-AX
-     COMPUTE WS-AY = -0.52 + WS-E * -0.6
-     MOVE -0.72 TO WS-AZ
-     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
-     IF CL-SWING-AT > 0 AND CL-NOW-MS >= CL-SWING-AT AND CL-NOW-MS - CL-SWING-AT < CL-SWING-MS
+*>   The left hand's display entry is the right one mirrored (a block's own default excepted).
+     IF L-SIDE < 0 AND NOT (WS-HAVE = 0 AND WS-CUBE = 1)
+         COMPUTE WS-DV(4) = 0 - WS-DV(4)
+         COMPUTE WS-DV(2) = 0 - WS-DV(2)
+         COMPUTE WS-DV(3) = 0 - WS-DV(3)
+     END-IF
+*>   The prefix (view bobbing and sway), the arm transform or the use pose, then the swing of progress p = (now - start) / 300 ms (whack).
+     MOVE L-PREFIX TO WS-M
+     CALL "HAND-ARM" USING WS-M L-SIDE L-E L-KIND L-ELAPSED L-DURATION
+     MOVE L-SIDE TO WS-SIDE-F
+     IF L-SWING = 1
          COMPUTE WS-P = (CL-NOW-MS - CL-SWING-AT) / CL-SWING-MS
          COMPUTE WS-Q = FUNCTION SQRT(WS-P)
-         COMPUTE WS-AX = -0.4 * FUNCTION SIN(WS-Q * FUNCTION PI)
+         COMPUTE WS-AX = WS-SIDE-F * -0.4 * FUNCTION SIN(WS-Q * FUNCTION PI)
          COMPUTE WS-AY = 0.2 * FUNCTION SIN(WS-Q * 2 * FUNCTION PI)
          COMPUTE WS-AZ = -0.2 * FUNCTION SIN(WS-P * FUNCTION PI)
          CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
          MOVE 2 TO WS-AXIS
-         COMPUTE WS-DEG = 45 + FUNCTION SIN(WS-P * WS-P * FUNCTION PI) * -20
+         COMPUTE WS-DEG = WS-SIDE-F * (45 + FUNCTION SIN(WS-P * WS-P * FUNCTION PI) * -20)
          CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
          MOVE 3 TO WS-AXIS
-         COMPUTE WS-DEG = FUNCTION SIN(WS-Q * FUNCTION PI) * -20
+         COMPUTE WS-DEG = WS-SIDE-F * FUNCTION SIN(WS-Q * FUNCTION PI) * -20
          CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
          MOVE 1 TO WS-AXIS
          COMPUTE WS-DEG = FUNCTION SIN(WS-Q * FUNCTION PI) * -80
          CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
          MOVE 2 TO WS-AXIS
-         MOVE -45 TO WS-DEG
+         COMPUTE WS-DEG = WS-SIDE-F * -45
          CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
      END-IF
 *>   ItemTransform.apply: translate, rotationXYZ, scale, translate(-0.5).
@@ -484,9 +491,6 @@
              MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
              CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
          END-PERFORM
-         IF WS-STILL = 1
-             MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
-         END-IF
          GOBACK
      END-IF
 *>   An extruded icon: the whole icon on the front (z 8.5/16) and the back (z 7.5/16) ...
@@ -604,6 +608,136 @@
              END-IF
          END-PERFORM
      END-PERFORM
+     GOBACK.
+ END PROGRAM HAND-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HAND-MESH.
+*> USING CLIENT-STATE: RL-HAND-VERTEX and RL-HAND-COUNT for this frame: the main hand's item, then the off hand's (HAND-BUILD each), under the view pose of HAND-PREFIX. The
+*> main arm is the right one unless the mainHand option is "left", the off hand's the other. While the player eats the main hand takes the eating pose (12 section 6.6;
+*> CL-EAT-MS is the use duration). Nothing swings and nothing changed since the last frame (the items, their sprites, the equip heights, the light, the view pose): the
+*> mesh built then is still in RL-HAND-VERTEX and in the GPU slot, so it is neither built nor uploaded again.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-NAME                PIC X(40) VALUE "mainHand".
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-M.
+    05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-EO                  FLOAT-LONG.
+ 01 WS-PART                FLOAT-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-OITEM               BINARY-LONG.
+ 01 WS-SPRITE              BINARY-LONG.
+ 01 WS-OSPRITE             BINARY-LONG.
+ 01 WS-SIDE                BINARY-LONG.
+ 01 WS-OSIDE               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ELAPSED             FLOAT-LONG.
+ 01 WS-DURATION            FLOAT-LONG.
+ 01 WS-SWING               BINARY-LONG.
+ 01 WS-NOKIND              BINARY-LONG VALUE 0.
+ 01 WS-NOSWING             BINARY-LONG VALUE 0.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO2               FLOAT-LONG VALUE 0.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-EX                  BINARY-LONG.
+ 01 WS-EY                  BINARY-LONG.
+ 01 WS-EZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-STILL               BINARY-LONG.
+ 01 WS-PREV-COUNT          BINARY-LONG.
+ 01 WS-DIGEST              FLOAT-LONG.
+ 01 WS-HAVE                BINARY-LONG.
+ 01 WS-OHAVE               BINARY-LONG.
+ 01 WS-VAL.
+    05 WS-DV               FLOAT-LONG OCCURS 9 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME
+     MOVE CL-HAND-KEY-COUNT TO WS-PREV-COUNT
+     MOVE 0 TO CL-HAND-KEY-COUNT
+     IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0
+         CALL "HAND-EQUIP" USING CLIENT-STATE WS-E WS-EO WS-PART
+     ELSE
+         GOBACK
+     END-IF
+     IF CL-HAND-ITEM = 0 AND CL-OHAND-ITEM = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO WS-SIDE
+     MOVE -1 TO WS-OSIDE
+     MOVE "mainHand" TO WS-NAME
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-LENGTH WS-FOUND
+     IF WS-FOUND = 1 AND WS-VALUE(1:6) = '"left"'
+         MOVE -1 TO WS-SIDE
+         MOVE 1 TO WS-OSIDE
+     END-IF
+     MOVE 0 TO WS-SPRITE WS-OSPRITE
+     IF CL-HAND-ITEM > 0
+         COMPUTE WS-ITEM = CL-HAND-ITEM - 1
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
+     END-IF
+     IF CL-OHAND-ITEM > 0
+         COMPUTE WS-OITEM = CL-OHAND-ITEM - 1
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-OITEM WS-OSPRITE
+     END-IF
+*>   The light at the eye (like an entity: the larger of the sky light by the daylight and the block light, of 15).
+     COMPUTE WS-EX = FUNCTION INTEGER(PL-X)
+     COMPUTE WS-EY = FUNCTION INTEGER(PL-Y + 1.62)
+     COMPUTE WS-EZ = FUNCTION INTEGER(PL-Z)
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
+     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
+     CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
+*>   The main hand: eating (the right button held on a food item) takes the eating pose and no swing; else a swing within its 300 ms.
+     MOVE 0 TO WS-KIND WS-SWING WS-ELAPSED WS-DURATION
+     IF PL-EATING = 1 AND CL-NOW-MS >= PL-EAT-START
+         MOVE 1 TO WS-KIND
+         COMPUTE WS-ELAPSED = (CL-NOW-MS - PL-EAT-START) / 50
+         COMPUTE WS-DURATION = CL-EAT-MS / 50
+     ELSE
+         IF CL-SWING-AT > 0 AND CL-NOW-MS >= CL-SWING-AT AND CL-NOW-MS - CL-SWING-AT < CL-SWING-MS
+             MOVE 1 TO WS-SWING
+         END-IF
+     END-IF
+     MOVE 1 TO WS-STILL
+     IF WS-SWING = 1 OR WS-KIND > 0
+         MOVE 0 TO WS-STILL
+     END-IF
+*>   A code-drawn model (present 2) draws nothing: the digest tells that change of the shown model apart from a still hand.
+     MOVE 0 TO WS-HAVE WS-OHAVE
+     IF WS-SPRITE > 0
+         CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+     END-IF
+     IF WS-OSPRITE > 0
+         CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-OITEM WS-OHAVE WS-VAL
+     END-IF
+     COMPUTE WS-DIGEST = WS-EO * 7.31 + CL-OHAND-ITEM * 131.7 + WS-OSPRITE * 0.37 + WS-HAVE * 1000.3 + WS-OHAVE * 3000.7
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         COMPUTE WS-DIGEST = WS-DIGEST + WS-MV(WS-I) * (WS-I + 1)
+     END-PERFORM
+     IF WS-STILL = 1 AND WS-PREV-COUNT > 0 AND CL-HAND-KEY-ITEM = WS-ITEM AND CL-HAND-KEY-SPRITE = WS-SPRITE
+             AND CL-HAND-KEY-E = WS-E AND CL-HAND-KEY-LIGHT = WS-LIGHT AND CL-HAND-KEY-P = WS-DIGEST
+         MOVE WS-PREV-COUNT TO RL-HAND-COUNT CL-HAND-KEY-COUNT
+         MOVE 1 TO RL-HAND-SAME
+         GOBACK
+     END-IF
+     IF WS-STILL = 1
+         MOVE WS-ITEM TO CL-HAND-KEY-ITEM
+         MOVE WS-SPRITE TO CL-HAND-KEY-SPRITE
+         MOVE WS-E TO CL-HAND-KEY-E
+         MOVE WS-LIGHT TO CL-HAND-KEY-LIGHT
+         MOVE WS-DIGEST TO CL-HAND-KEY-P
+     END-IF
+     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-SIDE CL-HAND-ITEM WS-E WS-KIND WS-ELAPSED WS-DURATION WS-SWING WS-LIGHT
+     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-OSIDE CL-OHAND-ITEM WS-EO WS-NOKIND WS-ZERO WS-ZERO2 WS-NOSWING WS-LIGHT
      IF WS-STILL = 1
          MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
      END-IF

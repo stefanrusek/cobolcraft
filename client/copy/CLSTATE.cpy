@@ -26,6 +26,23 @@
     05 CL-HAND-KEY-LIGHT     FLOAT-LONG.
     05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
+    05 CL-OHAND-ITEM         BINARY-LONG.     *> the off hand's shown stack (item id + 1, 0 none), equip height and previous height (hand.cob)
+    05 CL-OHAND-H            FLOAT-LONG.
+    05 CL-OHAND-OH           FLOAT-LONG.
+    05 CL-ATK-TICKER         BINARY-LONG.     *> attackStrengthTicker (17 section 4.1): +1 per client tick, 0 on an attack or a change of the held stack
+    05 CL-ATK-LAST           BINARY-LONG.     *> the held stack (item id + 1) of the last tick
+    05 CL-BOB-INIT           BINARY-LONG.     *> 1 once the last position below is known
+    05 CL-BOB-X              FLOAT-LONG.      *> the position of the last hand tick (walk distance, 53 section 15.2)
+    05 CL-BOB-Z              FLOAT-LONG.
+    05 CL-BOB-WALK           FLOAT-LONG.      *> walkDist and walkDistO, bob and bobO (53 section 15.2)
+    05 CL-BOB-WALK-O         FLOAT-LONG.
+    05 CL-BOB                FLOAT-LONG.
+    05 CL-BOB-O              FLOAT-LONG.
+    05 CL-XBOB               FLOAT-LONG.      *> the smoothed pitch and yaw that lag the view (53 section 15.3), and their values one tick earlier
+    05 CL-XBOB-O             FLOAT-LONG.
+    05 CL-YBOB               FLOAT-LONG.
+    05 CL-YBOB-O             FLOAT-LONG.
+    05 CL-HAND-KEY-P         FLOAT-LONG.      *> a digest of the view pose (bob and sway) and of the off hand the cached mesh was built for
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
     05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
