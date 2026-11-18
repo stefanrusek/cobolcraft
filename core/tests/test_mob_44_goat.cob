@@ -254,7 +254,32 @@
      COMPUTE WS-O = WS-O * 10 + EN-RAM-TX(WS-GOAT) - FUNCTION INTEGER(WS-FX)
      MOVE 3410 TO WS-E
      PERFORM CHECK-N
+*>   A cooldown runs down with the player near; a player standing in the air has no walkable block: no run-up, the cooldown 600, in state 0 and in state 1 (T moved).
+     MOVE 0 TO EN-RAM-STATE(WS-GOAT)
+     MOVE 5 TO EN-RAM-CD(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: a cooldown with a player near runs down by 1" TO WS-CASE
+     MOVE EN-RAM-CD(WS-GOAT) TO WS-O
+     MOVE 4 TO WS-E
+     PERFORM CHECK-N
+     COMPUTE PL-Y(WS-PLAYER) = WS-FY + 6
+     MOVE 0 TO EN-RAM-CD(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: a player in the air stands on no walkable block: no run-up, the cooldown 600" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 10000 + EN-RAM-CD(WS-GOAT)
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+     MOVE 1 TO EN-RAM-STATE(WS-GOAT)
+     MOVE 0 TO EN-RAM-CD(WS-GOAT) EN-RAM-AGE(WS-GOAT)
+     COMPUTE EN-RAM-TY(WS-GOAT) = FUNCTION INTEGER(WS-FY)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: the target moved off T into the air: no new run-up, the goal ends with the cooldown 600" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 10000 + EN-RAM-CD(WS-GOAT)
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+     MOVE WS-FY TO PL-Y(WS-PLAYER)
 *>   The goal ends after 160 ticks without a ram: Entity Event 59 and the cooldown 600.
+     MOVE 1 TO EN-RAM-STATE(WS-GOAT)
      MOVE 160 TO EN-RAM-AGE(WS-GOAT)
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
      MOVE "acceptance US15 54§7.1 Goat ram: the run-up that took 161 ticks is dropped with the cooldown 600" TO WS-CASE

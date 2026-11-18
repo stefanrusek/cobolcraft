@@ -178,6 +178,49 @@
      MOVE "bottle 1 wart 3 fuel 2 bottle2 0" TO TL-EXPECTED
      PERFORM CHECK
 
+     MOVE "acceptance p70c brew quick edges: items 0 are no input, reagent or fuel; a click on an empty slot does nothing; blaze powder with a full fuel slot goes nowhere unless it is a reagent, then into the empty ingredient slot" TO TL-CASE
+     CALL "BREW-IS-INPUT" USING WS-ZERO WS-OK
+     CALL "BREW-IS-REAGENT" USING WS-ZERO WS-OK2
+     CALL "BREW-FUEL" USING WS-ZERO WS-USES WS-SPEED
+     MOVE WS-OK TO WS-E1
+     MOVE WS-OK2 TO WS-E2
+     MOVE WS-USES TO WS-E3
+     MOVE 1 TO WS-TYPE
+     MOVE 0 TO WS-BUTTON
+     MOVE 20 TO WS-I
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-I WS-BUTTON WS-TYPE
+     MOVE 64 TO BE-SLOT-COUNT(WS-BE, 5)
+     MOVE WS-BLAZE TO PL-SLOT-ITEM(WS-ROW, 5)
+     MOVE 3 TO PL-SLOT-COUNT(WS-ROW, 5)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROW, 5)
+     MOVE 36 TO WS-I
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-I WS-BUTTON WS-TYPE
+     MOVE PL-SLOT-COUNT(WS-ROW, 5) TO WS-E4
+     MOVE 3 TO RC-COUNT
+     INITIALIZE RC-ROW(3)
+     MOVE 20 TO RR-SERIALIZER(3)
+     MOVE "minecraft:potion" TO RR-ING(3, 1)
+     MOVE "minecraft:blaze_powder" TO RR-ING(3, 2)
+     MOVE "minecraft:potion" TO RR-RESULT-ID(3)
+     MOVE "brewing/strength" TO RR-KEY(3)
+     MOVE WS-WART TO WS-RVAR
+     MOVE BE-SLOT-COUNT(WS-BE, 4) TO WS-RESULT
+     MOVE 0 TO BE-SLOT-COUNT(WS-BE, 4)
+     MOVE 0 TO BE-SLOT-ITEM(WS-BE, 4)
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-I WS-BUTTON WS-TYPE
+     MOVE BE-SLOT-COUNT(WS-BE, 4) TO WS-E5
+     MOVE PL-SLOT-COUNT(WS-ROW, 5) TO WS-E6
+     MOVE WS-RVAR TO BE-SLOT-ITEM(WS-BE, 4)
+     MOVE WS-RESULT TO BE-SLOT-COUNT(WS-BE, 4)
+     MOVE 2 TO RC-COUNT
+     MOVE 2 TO BE-SLOT-COUNT(WS-BE, 5)
+     MOVE 0 TO PL-SLOT-COUNT(WS-ROW, 5) PL-SLOT-ITEM(WS-ROW, 5)
+     MOVE SPACES TO WS-TEXT
+     STRING "zeros " FUNCTION TRIM(WS-E1) FUNCTION TRIM(WS-E2) FUNCTION TRIM(WS-E3) " blaze-left " FUNCTION TRIM(WS-E4) " ingredient " FUNCTION TRIM(WS-E5)
+         " rest " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "zeros 000 blaze-left 3 ingredient 3 rest 0" TO TL-EXPECTED
+     PERFORM CHECK
+
      MOVE "acceptance p70c brew close and reopen: the stand keeps its contents when the window closes, the window id moves on and the contents are in the new menu" TO TL-CASE
      CALL "TEST-CLOSE-WIN" USING WS-CONN
      MOVE MN-WINDOW(WS-ROW) TO WS-E1
