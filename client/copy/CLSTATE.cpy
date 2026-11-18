@@ -262,6 +262,16 @@
        10 PL-STACK-CHARGED   BINARY-LONG.    *> 1 when the item stack last decoded has charged_projectiles (51) that are not empty (a loaded crossbow), taken over by the slot it is set into like the foil
        10 PL-OFFHAND-CHARGED BINARY-LONG.
        10 PL-SLOT-CHARGED    BINARY-LONG OCCURS 36 TIMES.
+*>     banner_patterns 74 of the last item stack decoded (STACK-BANNER) and of each slot (1 to 36 the slots, 37 the off hand), taken over like the foil: the number of layers kept
+*>     (at most 16), each layer's pattern holder (the registry position + 1, 0 an inline pattern) and dye id (hand-banner.cob; 54 section 22).
+       10 PL-STACK-BN.
+          15 PL-STACK-BN-COUNT BINARY-LONG.
+          15 PL-STACK-BN-PAT   BINARY-LONG OCCURS 16 TIMES.
+          15 PL-STACK-BN-DYE   BINARY-LONG OCCURS 16 TIMES.
+       10 PL-SLOT-BN OCCURS 37 TIMES.
+          15 PL-SLOT-BN-COUNT  BINARY-LONG.
+          15 PL-SLOT-BN-PAT    BINARY-LONG OCCURS 16 TIMES.
+          15 PL-SLOT-BN-DYE    BINARY-LONG OCCURS 16 TIMES.
        10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
        10 PL-OFFHAND-DAMAGE  BINARY-LONG.
 *>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
@@ -1432,7 +1442,7 @@
 *>     after the hand mesh (and its depth clear) when the main hand shows no item.
        10 RL-HA-COUNT        BINARY-LONG.
        10 RL-HA-UPLOADED     BINARY-LONG.
-       10 RL-HA-VERTEX OCCURS 128 TIMES.
+       10 RL-HA-VERTEX OCCURS 1024 TIMES.
           15 RL-HA-X         FLOAT-SHORT.
           15 RL-HA-Y         FLOAT-SHORT.
           15 RL-HA-Z         FLOAT-SHORT.

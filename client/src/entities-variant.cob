@@ -297,6 +297,10 @@
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 9 AND WS-BASE = "banner" AND WS-CD >= 1 AND WS-CD <= 43
+*>               A banner pattern sprite (54 section 22.3): the pattern's id under entity/banner.
+                 CALL "BANNER-PATTERN-NAME" USING WS-CD WS-DIRNAME
+                 STRING "textures/entity/banner/" FUNCTION TRIM(WS-DIRNAME) ".png" DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 8 AND WS-CD = 1
 *>               A saddle: the row key is the layer type (horse_saddle, pig_saddle, strider_saddle, ...).
                  MOVE WS-BASE TO WS-DIRNAME

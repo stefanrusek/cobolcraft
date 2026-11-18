@@ -249,7 +249,7 @@
      IF (L-GLINT = 1 OR L-GLINT = 2) AND RL-HG-COUNT + 6 > 4096
          GOBACK
      END-IF
-     IF L-GLINT = 3 AND RL-HA-COUNT + 6 > 128
+     IF L-GLINT = 3 AND RL-HA-COUNT + 6 > 1024
          GOBACK
      END-IF
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
@@ -380,6 +380,8 @@
  01 WS-VAL.
     05 WS-DV               FLOAT-LONG OCCURS 9 TIMES.
  01 WS-HBLOCK              BINARY-LONG.
+ 01 WS-BDYE                BINARY-LONG.
+ 01 WS-HAND-NO             BINARY-LONG.
  01 WS-HTOOL               PIC X.
  01 WS-HFOOD               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
@@ -459,8 +461,17 @@
      END-IF
 *>   The display transform of the model, else the default of block/block or item/generated (12 section 8.2).
      CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
+*>   A banner is a code-drawn model with the display entry of its base model template_banner (52 section 6.7: rotation (0, 90, 0), scale 0.375); any other code-drawn model is not drawn.
+     MOVE -1 TO WS-BDYE
      IF WS-HAVE = 2
-         GOBACK
+         CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE WS-ITEM WS-BDYE
+         IF WS-BDYE < 0
+             GOBACK
+         END-IF
+         MOVE 1 TO WS-HAVE
+         MOVE 0 TO WS-DV(1) WS-DV(3) WS-DV(4) WS-DV(5) WS-DV(6)
+         MOVE 90 TO WS-DV(2)
+         MOVE 0.375 TO WS-DV(7) WS-DV(8) WS-DV(9)
      END-IF
      IF WS-HAVE = 0
          IF WS-CUBE = 1
@@ -528,6 +539,14 @@
      CALL "HAND-M-SCALE" USING WS-M WS-AX WS-AY WS-AZ
      MOVE -0.5 TO WS-AX WS-AY WS-AZ
      CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+     IF WS-BDYE >= 0
+         MOVE 2 TO WS-HAND-NO
+         IF L-ITEM1 = CL-HAND-ITEM
+             MOVE 1 TO WS-HAND-NO
+         END-IF
+         CALL "HAND-BANNER" USING CLIENT-STATE WS-M WS-HAND-NO WS-BDYE WS-LIGHT
+         GOBACK
+     END-IF
      MOVE 0 TO WS-LO(1) WS-LO(2) WS-LO(3)
      MOVE 1 TO WS-HI(1) WS-HI(2) WS-HI(3)
 *>   Normals of the corner table's faces.
@@ -746,6 +765,7 @@
  01 WS-HAND-NO             BINARY-LONG.
  01 WS-LOADED              BINARY-LONG.
  01 WS-ARM                 BINARY-LONG.
+ 01 WS-BANNER              BINARY-LONG.
  01 WS-ITEM-CLASS          BINARY-LONG.
  01 WS-P                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
@@ -886,6 +906,21 @@
          END-IF
      END-IF
      MOVE 1 TO WS-STILL
+*>   A banner in a hand is built each frame (its mesh is not the one of the cache).
+     IF CL-HAND-ITEM > 0
+         COMPUTE WS-ITEM = CL-HAND-ITEM - 1
+         CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE WS-ITEM WS-BANNER
+         IF WS-BANNER >= 0
+             MOVE 0 TO WS-STILL
+         END-IF
+     END-IF
+     IF CL-OHAND-ITEM > 0
+         COMPUTE WS-OITEM = CL-OHAND-ITEM - 1
+         CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE WS-OITEM WS-BANNER
+         IF WS-BANNER >= 0
+             MOVE 0 TO WS-STILL
+         END-IF
+     END-IF
      IF WS-SWING = 1 OR (WS-KIND > 0 AND WS-KIND NOT = 7 AND WS-KIND NOT = 8) OR (WS-OKIND > 0 AND WS-OKIND NOT = 7 AND WS-OKIND NOT = 8)
          MOVE 0 TO WS-STILL
      END-IF
