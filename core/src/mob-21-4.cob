@@ -503,6 +503,9 @@
  COPY STDMOBS.
  COPY RULES.
  01 WS-WET                 BINARY-LONG.
+ 01 WS-MOIST               BINARY-LONG.
+ 01 WS-RAIN                BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG VALUE 600.
  01 WS-SALT                BINARY-LONG.
  01 WS-R                   FLOAT-LONG.
  01 WS-AMOUNT              BINARY-LONG.
@@ -516,7 +519,15 @@
  PROCEDURE DIVISION USING L-ROW L-M.
      CALL "FLUID-TOUCHES-WATER" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-WET
      MOVE EN-YAW(L-ROW) TO WS-YAW
-     IF WS-WET = 1
+     MOVE WS-WET TO WS-MOIST
+*>   A dolphin's moistness refills in water or in rain (isInWaterOrRain, 44 part 7 section 4.2): rain wets it only for the moistness, not for swimming and gravity.
+     IF WS-WET = 0 AND SM-KEY(L-M) = "dolphin"
+         CALL "WEATHER-RAINING" USING EN-DIM(L-ROW) WS-RAIN
+         IF WS-RAIN = 1
+             CALL "WEATHER-EXPOSED" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-HEIGHT WS-MOIST
+         END-IF
+     END-IF
+     IF WS-MOIST = 1
          MOVE 0 TO EN-DRY(L-ROW)
      ELSE
          ADD 1 TO EN-DRY(L-ROW)
