@@ -1,0 +1,46 @@
+## Lane 002-lane-p49j-a (T24000 to T24199; docs 44-7 aquatic, tasks T2772 to T2793, and 44-9 end bosses and decorations, tasks T2816 to T2841)
+
+Method: the axolotl, nautilus family, elder guardian, display, interaction, marker, cushion, mannequin, dried ghast and happy ghast entities have no mob row or block in the core, so their deterministic rules are built as small rule functions (core/src/q44-44-7.cob, core/src/q44-44-9.cob: draws and world facts are inputs) and proven by section tests; they are NOT called by a tick. Rules of mobs that exist were tested on the real mobs.
+
+- [x] T24000 [US15-core] Write test `core/tests/test_q44_44_7_1.cob` (44-7 section 1.1: the seven aquatic siblings have rows and water categories) for T2772
+- [x] T24001 [US15-core] 44-7 section 1: the siblings of 1.1 already have rows (MOB21ROWS.cpy); the scope map's other rows are gaps, see T24090 for T2773
+- [x] T24002 [US15-core] Write test `core/tests/test_q44_44_7_2.cob` (2.1 group baby, 2.2 age lock, 2.7 targeting order and worked example; red: link failure) for T2774
+- [x] T24003 [US15-core] Implement 44-7 section 2 as `Q7-GROUP-BABY`, `Q7-GROUP-CHANCE`, `Q7-AGE-LOCK`, `Q7-RANGE-PASS`, `Q7-TARGET-TEST` (core/src/q44-44-7.cob) for T2775. Not built: 2.3 to 2.5 and 2.8 (nearest-visible, tempting sensors, list order: no aquatic brain) and 2.6 world side (already in test_mob_21_4_1 and _5)
+- [x] T24004 [US15-core] Write test `core/tests/test_q44_44_7_3.cob` (the corrections table rows whose rule exists) for T2776
+- [x] T24005 [US15-core] 44-7 section 3: pinned through the rule functions of sections 5, 6, 7, 8, 10 for T2777
+- [x] T24006 [US15-core] Write test `core/tests/test_q44_44_7_4.cob` (4.1 flop draws 13.1, 4.2 hop draws, 13.2 dry-out cadence, dolphin in rain; red: the rain case) for T2778
+- [x] T24007 [US15-core] 44-7 section 4.2: a dolphin is wet in rain (`STDMOB-AQUATIC-STEP`, WEATHER-RAINING and WEATHER-EXPOSED, moistness only) for T2779. Not built: verticalCollision flag of the flop, needsSync, sounds, isNoAi, baby canAttack
+- [x] T24008 [US15-core] Write test `core/tests/test_q44_44_7_5.cob` (elder helper filter table, schedule, Game Event value, 13.3) for T2780
+- [x] T24009 [US15-core] Implement 44-7 section 5 as `Q7-ELDER-DUE`, `Q7-ELDER-FILTER`, `Q7-ELDER-VALUE` for T2781 (function only: no elder guardian mob in the core)
+- [x] T24010 [US15-core] Write test `core/tests/test_q44_44_7_6.cob` (6.1 XP of squid, glow squid, dolphin on real kills, 6.3 chances, 6.4 feeding outcome) for T2782
+- [x] T24011 [US15-core] Implement 44-7 section 6 (`Q7-XP-WATER`, `Q7-DOLPHIN-FEED`; the real XP already follows 1 + nextInt(3) in STDMOB-XP) for T2783. Not built: spawn-egg babies (6.2), the dolphin feed interaction on a real dolphin
+- [x] T24012 [US15-core] Write test `core/tests/test_q44_44_7_7.cob` (jump goal steps, continue, start, pitch, facing; 13.14) for T2784
+- [x] T24013 [US15-core] Implement 44-7 section 7.0 as `Q7-JUMP-*` for T2785 (function only). Not built: running the goal in the dolphin tick, 7.1 item goals, 7.2 treasure and swim-with-player goals
+- [x] T24014 [US15-core] Write test `core/tests/test_q44_44_7_8.cob` (8.1 to 8.6, 13.5 to 13.8, scan order of 2197 offsets) for T2786
+- [x] T24015 [US15-core] Implement 44-7 section 8 as `Q7-AXO-*` and `Q7-SCAN-ORDER` for T2787 (functions only: no axolotl mob row, no TryFindLiquid behaviour)
+- [x] T24016 [US15-core] Write test `core/tests/test_q44_44_7_9.cob` (9.1 and 9.2 matchers, unreachable list, 9.3 item tags) for T2788
+- [x] T24017 [US15-core] Implement 44-7 section 9 as `Q7-AXO-ATTACKABLE`, `Q7-AXO-TAG`, `Q7-FROG-ATTACKABLE`, `Q7-FROG-UNREACH`, `Q7-NAU-FOOD` for T2789 (functions only: the frog's own sensor is not rewired)
+- [x] T24018 [US15-core] Write test `core/tests/test_q44_44_7_10.cob` (nautilus food, taming roll, slots, armor, shear order, ridden input and speed, dash, rider effect, radius, target finder, charge, knockback, variant) for T2790
+- [x] T24019 [US15-core] Implement 44-7 section 10 as `Q7-NAU-*` and `Q7-VEHICLE-OK` for T2791 (functions only: no nautilus or zombie nautilus mob)
+- [x] T24020 [US15-core] Write test `core/tests/test_q44_44_7_11.cob` (per-mob control table, turning factor, body turn, path update, dolphin drift) for T2792
+- [x] T24021 [US15-core] Implement 44-7 section 11 as `Q7-CTRL`, `Q7-TURN-FACTOR`, `Q7-BODY-TURN`, `Q7-CAN-UPDATE-PATH`, `Q7-DOLPHIN-VY` for T2793 (functions only)
+- [ ] T24090 [US15-core] CODE GAP 44-7: axolotl, nautilus, zombie nautilus, guardian and elder guardian mob rows, brains, the dolphin goal list (jump, treasure, swim-with-player, items), the tempting and nearest-visible sensors (2.3 to 2.5, 2.8), the 10.3.1 equip and dispenser dispatch, 10.2 interactions (taming, feeding, riding, inventory menu), the 10.4.1 vehicle-move handler, the axolotl potion rehydration hook in thrown-44.cob, spawn-egg babies (6.2)
+- [x] T24100 [US15-core] Write test `core/tests/test_q44_44_9_1.cob` (1.2 strafe yOffset formula; the hooks and strafe tick are proven by acc_us16_dragon_phase and _life) for T2816
+- [x] T24101 [US15-core] 44-9 section 1.2: `Q9-STRAFE-YOFFSET` (the dragon code in dragon-44b.cob already implements the strafe) for T2817
+- [x] T24102 [US15-core] Write test `core/tests/test_q44_44_9_2.cob` (2.1 fire counter semantics) for T2818
+- [x] T24103 [US15-core] Implement 44-9 section 2.1 as `Q9-THUNDER-FIRE`, `Q9-FIRE-TICK` for T2819 (functions; the per-class effects are in acc_us16_lightning)
+- [x] T24104 [US15-core] Write test `core/tests/test_q44_44_9_3.cob` (3 instant effect arithmetic) for T2820
+- [x] T24105 [US15-core] Implement 44-9 section 3 arithmetic as `Q9-INSTANT` for T2821 (the loop is in acc_us16_cloud)
+- [x] T24106 [US15-core] 44-9 section 4 armor stand: already built and proven (acc_us16_armorstand, decor-44.cob); no new test (T2822, T2823)
+- [x] T24107 [US15-core] Write test `core/tests/test_q44_44_9_5.cob` (5.1 check interval, 5.2 coexist, 5.3 rendered yaw) for T2824
+- [x] T24108 [US15-core] Implement 44-9 sections 5.1 to 5.3 as `Q9-CHECK-TICK`, `Q9-HANG-CONFLICT`, `Q9-FRAME-YAW` for T2825 (decor-44b.cob does not run the 100 tick check)
+- [x] T24109 [US15-core] Write test `core/tests/test_q44_44_9_6.cob` (6.1 culling and range, 6.2 progress, 6.2.1 teleport steps, 6.3 alignment) for T2826
+- [x] T24110 [US15-core] Implement 44-9 section 6 as `Q9-DISPLAY-*`, `Q9-TELEPORT-*`, `Q9-TEXT-ALIGN` for T2827 (functions only: no display entities)
+- [x] T24111 [US15-core] Write test `core/tests/test_q44_44_9_7.cob` (7 attack skip and use result) for T2828
+- [x] T24112 [US15-core] Implement 44-9 section 7 as `Q9-INTERACT-ATTACK`, `Q9-INTERACT-USE` for T2829 (functions only: no interaction or marker entity)
+- [x] T24113 [US15-core] Write test `core/tests/test_q44_44_9_8.cob` (8.2 mannequin dimensions) for T2830
+- [x] T24114 [US15-core] Implement 44-9 section 8.2 dimensions as `Q9-MAN-DIM` for T2831 (function only; cushion 8.1 is a gap)
+- [x] T24115 [US15-core] Write test `core/tests/test_q44_44_9_9.cob` (9.1 dried ghast schedule, 9.2 feeding growth) for T2832
+- [x] T24116 [US15-core] Implement 44-9 sections 9.1 and 9.2 as `Q9-DRIED-RANDOM`, `Q9-DRIED-TICK`, `Q9-FEED-SECONDS`, `Q9-AGE-UP` for T2833 (functions only)
+- [ ] T24190 [US15-core] CODE GAP 44-9: display, interaction, marker, cushion, mannequin, dried ghast block and happy ghast entities do not exist in the core (6.3 block/item/text subtypes, 8.1 cushion survival and placement, 8.2 mannequin entity, 9.1 hatch, 9.1.1 ambience, rest of 9 from 9.3 on); 5.1 and 5.2 survival check every 100 ticks, push and move kill, maps in frames
+- [ ] T24191 [US15-core] NOT REACHED (budget): 44-9 sections 9.3 onward of section 9, 10 (covered by acc_us16 44-9 10 cases), 11 (acc_us16 44-9 11.1 and 11.2 cases), 12 and 13 were not re-analysed in this lane (T2834 to T2841)
