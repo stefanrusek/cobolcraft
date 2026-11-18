@@ -28,11 +28,31 @@
  01 WS-N6                 BINARY-LONG.
  01 WS-N7                 BINARY-LONG.
  01 WS-N8                 BINARY-LONG.
+ 01 WS-N9                 BINARY-LONG.
+ 01 WS-N10                 BINARY-LONG.
+ 01 WS-N11                 BINARY-LONG.
+ 01 WS-N12                 BINARY-LONG.
  01 WS-CHAIN.
     05 WS-LEVEL OCCURS 5 TIMES.
        10 WS-AMP            BINARY-LONG.
        10 WS-DUR            BINARY-LONG.
        10 WS-ACTIVE         BINARY-LONG.
+ 01 WS-TAB.
+    05 WS-TN                BINARY-LONG.
+    05 WS-TC OCCURS 6 TIMES.
+       10 WS-TA             BINARY-LONG.
+       10 WS-TB             BINARY-LONG.
+       10 WS-TD             BINARY-LONG.
+ 01 WS-COL.
+    05 WS-CELL OCCURS 14 TIMES.
+       10 WS-CE             BINARY-LONG.
+       10 WS-CF             BINARY-LONG.
+ 01 WS-S1                  PIC X(32).
+ 01 WS-S2                  PIC X(32).
+ 01 WS-S3                  PIC X(32).
+ 01 WS-S4                  PIC X(32).
+ 01 WS-S5                  PIC X(32).
+ 01 WS-S6                  PIC X(32).
  PROCEDURE DIVISION.
      MOVE 0 TO WS-N1
      MOVE 0.9 TO WS-A
