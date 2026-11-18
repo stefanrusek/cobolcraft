@@ -2358,6 +2358,20 @@
  END PROGRAM BC-ACK-SET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BC-ACK-CLEAR.
+*> USING connection id (BINARY-LONG): the connection ends or begins: the acknowledgement it owed is dropped (BC-ACK is kept per connection id, and a
+*> new connection of that id must not be sent the last one's, a Block Changed Ack its client does not expect in its login or configuration phase).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BCHANGE.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     MOVE 0 TO BC-ACK(L-ID)
+     GOBACK.
+ END PROGRAM BC-ACK-CLEAR.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BC-ACK-TICK.
 *> USING connection id (BINARY-LONG): the start of ServerGamePacketListenerImpl.tick (29 section 7.3): a stored sequence is sent as
 *> Block Changed Ack and reset.
