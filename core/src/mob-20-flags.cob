@@ -1,7 +1,7 @@
 *> Entity metadata of the species flags of 002-lane-p49n (docs/protocol/20: spider 7.1, pillager 13.2, enderman 8.1, sulfur cube 18.2), one Set Entity Data packet per mob.
 *> State: P49NSTATE.cpy. A species with no entry here gets no packet from these programs (STDMOB-VARIANT-BUILD holds the older ones).
 *>
-*>   STDMOB-FLAGS-BUILD USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the flags of the row: spider and cave spider index 16 BYTE (bit 0 climbing); enderman 16 carried block,
+*>   STDMOB-FLAGS-BUILD USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the flags of the row: spider and cave spider index 16 BYTE (bit 0 climbing); pillager 17 charging, sulfur cube 19 max fuse, enderman 16 carried block,
 *>     17 creepy, 18 stared at; nothing for another row.
 *>   STDMOB-FLAGS-SEND USING tracker row: STDMOB-FLAGS-BUILD to the viewers of the row.
 
@@ -37,6 +37,12 @@
                  MOVE 16 TO WS-INDEX(WS-N)
                  MOVE MD-MDS-BYTE TO WS-SERIALIZER(WS-N)
                  MOVE PN-CLIMB(L-ROW) TO WS-VALUE(WS-N)
+             WHEN "pillager"
+*>               Charging the crossbow (index 17, BOOLEAN, 20 section 13.2).
+                 ADD 1 TO WS-N
+                 MOVE 17 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CHARGE(L-ROW) TO WS-VALUE(WS-N)
              WHEN "sulfur_cube"
 *>               MAX_FUSE (index 19, INT, default -1) of a primed cube (20 section 18.2).
                  IF PN-MAXFUSE(L-ROW) > 0

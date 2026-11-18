@@ -15,6 +15,11 @@
        10 PN-STARE-WANT      BINARY-LONG.
 *>     sulfur cube (core/src/mob-20-sulfur.cob, 20 section 18.2): PN-BODY the item id + 1 of the BODY slot (0 empty), PN-FUSE the fuse ticks left and PN-MAXFUSE the synched max fuse
 *>     (0 = not primed; the fuse 0 of a primed cube is the tick it explodes).
+*>     pillager (core/src/mob-20-pillager.cob, 20 section 13.2): PN-INV-ITEM (item id + 1, 0 empty) and PN-INV-COUNT of its five inventory slots, PN-CHARGE the charging flag last sent as
+*>     metadata 17.
+       10 PN-INV-ITEM        BINARY-LONG OCCURS 5 TIMES.
+       10 PN-INV-COUNT       BINARY-LONG OCCURS 5 TIMES.
+       10 PN-CHARGE          BINARY-LONG.
        10 PN-BODY            BINARY-LONG.
        10 PN-FUSE            BINARY-LONG.
        10 PN-MAXFUSE         BINARY-LONG.
@@ -29,3 +34,8 @@
        10 PN-SH-Y            BINARY-LONG.
        10 PN-SH-Z            BINARY-LONG.
        10 PN-SH-LEVEL        BINARY-LONG.
+*> The loot context facts of a raider that dies (set by RAIDER-LOOT-SET before STDMOB-DROPS rolls its table, cleared after; 26 section on entity predicates type_specific/raider).
+ 01 PN-LOOT EXTERNAL.
+    05 PN-LOOT-RAIDER        BINARY-LONG.
+    05 PN-LOOT-HAS-RAID      BINARY-LONG.
+    05 PN-LOOT-CAPTAIN       BINARY-LONG.
