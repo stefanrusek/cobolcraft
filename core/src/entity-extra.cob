@@ -23,7 +23,7 @@
      END-IF
      CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
      IF WS-SLOT > 0
-         IF PJ-KIND(WS-SLOT) = 3
+         IF PJ-KIND(WS-SLOT) = 3 OR PJ-KIND(WS-SLOT) = 41
              MOVE 1 TO L-NEEDED
          END-IF
      END-IF
@@ -55,6 +55,9 @@
      IF WS-SLOT > 0
          IF PJ-KIND(WS-SLOT) = 3
              CALL "CLOUD-DATA-BUILD" USING L-ROW WS-SLOT PB-BUFFER
+         END-IF
+         IF PJ-KIND(WS-SLOT) = 41
+             CALL "OIS-DATA-BUILD" USING L-ROW PB-BUFFER
          END-IF
      END-IF
      GOBACK.

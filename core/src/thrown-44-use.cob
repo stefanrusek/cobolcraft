@@ -222,6 +222,8 @@
                          CALL "DFIRE-STEP" USING WS-ROW
                      WHEN 40
                          CALL "XP-BOTTLE-STEP" USING WS-ROW
+                     WHEN 41
+                         CALL "OIS-STEP" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF
