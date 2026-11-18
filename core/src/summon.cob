@@ -5,15 +5,15 @@
 *> Families (SUMMON-FAMILY: 0 none; the sub family selects the variant): 1 ground item, 2 experience orb, 3 primed TNT, 4 falling block, 5 area effect cloud, 6 lightning bolt, 7 end crystal, 8 armor stand,
 *> 9 item frame (sub 0) or glow item frame (sub 1), 10 painting, 11 minecart (sub 1 minecart, 2 chest, 3 hopper, 4 furnace, 5 TNT, 6 spawner, 7 command block), 12 boat, raft and their chest variants,
 *> 13 interaction, 14 block display, 15 item display, 16 mannequin, 17 cushion, 18 marker, 19 arrow, 20 snowball, 21 egg, 22 ender pearl, 23 experience bottle, 24 fireball, 25 small fireball,
-*> 26 wind charge (sub 0) and breeze wind charge (sub 1), 27 splash potion (sub 0) and lingering potion (sub 1), 28 ominous item spawner, 29 firework rocket, 30 eye of ender, 31 shulker bullet, 32 llama spit.
-*> Not created (documented gaps): text_display (its component default is not in the documents), spectral_arrow, trident, evoker_fangs, wither_skull, dragon_fireball, leash_knot (the core has the knot only as a mob's
+*> 26 wind charge (sub 0) and breeze wind charge (sub 1), 27 splash potion (sub 0) and lingering potion (sub 1), 28 ominous item spawner, 29 firework rocket, 30 eye of ender, 31 shulker bullet, 32 llama spit, 33 wither, 34 ender dragon.
+*> Not created (documented gaps): text_display (its component default is not in the documents), spectral_arrow, trident, evoker_fangs, wither_skull, dragon_fireball, breeze, leash_knot (the core has the knot only as a mob's
 *> EN-LEASH-KNOT), every mob type without a row of STDMOBS.cpy, the passengers of a non-mob entity, and the family keys the core does not model (a potion's contents, the text of a mannequin, the transformation of a display).
 *>
 *>   SUMMON-FAMILY USING entity type id, family out, sub family out       0 for a type this file does not create (also in a cobolcraft world)
 *>   SUMMON-CAN USING entity type id, can out                              1 when /summon can create the type (a mob row, or a family)
 *>   SUMMON-KEYS USING root node, EB-DATA, KD-DATA, E8-DATA, block state out   the keys of the tree read by the entity key readers (ENTITY-BASE-KEY, ENTITY-KEEP-KEY, ENTITY8-NBT-KEY, block_state)
 *>   SUMMON-LOAD USING dimension row, entity type id, x, y, z, root node, row out   a mob or a ground item through ENTITY-NBT-READ (0 when the loader made none)
-*>   SUMMON-SPAWN USING dimension row, entity type id, x, y, z, root node, row out   the entity of a family (0 when it was not made)
+*>   SUMMON-SPAWN USING dimension row, entity type id, x, y, z, root node, row out   the entity of a family (0 when it was not made; the caller gives only a type SUMMON-FAMILY knows)
 *>   FB-SPAWN-AT USING dimension row, x, y, z, state, row out              a falling block at the position (the cell is not touched, unlike FB-SPAWN)
 
  IDENTIFICATION DIVISION.
@@ -226,6 +226,10 @@
              MOVE 31 TO L-FAMILY
          WHEN WS-PATH = "llama_spit"
              MOVE 32 TO L-FAMILY
+         WHEN WS-PATH = "wither"
+             MOVE 33 TO L-FAMILY
+         WHEN WS-PATH = "ender_dragon"
+             MOVE 34 TO L-FAMILY
          WHEN OTHER
              CALL "BOAT-KIND" USING L-TYPE WS-BOAT
              IF WS-BOAT > 0
@@ -337,6 +341,7 @@
  01 WS-K-POS               PIC X(16) VALUE "Pos".
  01 WS-ID                  PIC X(256).
  01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-COLONS              BINARY-LONG.
  01 WS-FIRST-ID            BINARY-LONG.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -351,7 +356,9 @@
  PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-ROOT L-ROW.
      MOVE 0 TO L-ROW
      MOVE SPACES TO WS-ID
-     IF ET-KEY(L-TYPE + 1)(1:10) = "minecraft:" OR ET-KEY(L-TYPE + 1)(1:12) = "cobolcraft:"
+     MOVE 0 TO WS-COLONS
+     INSPECT ET-KEY(L-TYPE + 1) TALLYING WS-COLONS FOR ALL ":"
+     IF WS-COLONS > 0
          MOVE ET-KEY(L-TYPE + 1) TO WS-ID
      ELSE
          STRING "minecraft:" DELIMITED BY SIZE ET-KEY(L-TYPE + 1) DELIMITED BY SPACE INTO WS-ID
@@ -426,6 +433,8 @@
  01 WS-FAMILY              BINARY-LONG.
  01 WS-SUB                 BINARY-LONG.
  01 WS-KEY                 PIC X(112).
+ 01 WS-PATH                PIC X(64).
+ 01 WS-NAMESPACE           PIC X(64).
  01 WS-NAME                PIC X(64).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-K-MOTION            PIC X(16) VALUE "Motion".
@@ -550,16 +559,13 @@
  PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-ROOT L-ROW.
      MOVE 0 TO L-ROW
      CALL "SUMMON-FAMILY" USING L-TYPE WS-FAMILY WS-SUB
-     IF WS-FAMILY = 0
-         GOBACK
-     END-IF
 *>   The entity type key in full form, for the spawn programs that find their type by key.
-     MOVE SPACES TO WS-KEY
-     IF ET-KEY(L-TYPE + 1)(1:10) = "minecraft:"
-         MOVE ET-KEY(L-TYPE + 1) TO WS-KEY
-     ELSE
-         STRING "minecraft:" DELIMITED BY SIZE ET-KEY(L-TYPE + 1) DELIMITED BY SPACE INTO WS-KEY
+     MOVE SPACES TO WS-KEY WS-PATH WS-NAMESPACE
+     UNSTRING ET-KEY(L-TYPE + 1) DELIMITED BY ":" INTO WS-NAMESPACE WS-PATH
+     IF WS-PATH = SPACES
+         MOVE ET-KEY(L-TYPE + 1) TO WS-PATH
      END-IF
+     STRING "minecraft:" DELIMITED BY SIZE WS-PATH DELIMITED BY SPACE INTO WS-KEY
 *>   Motion and Rotation (45-1 section 5): a list of three doubles and of two floats.
      MOVE 0 TO WS-VX WS-VY WS-VZ WS-YAW WS-PITCH WS-HAS-MOTION WS-HAS-ROTATION
      IF L-ROOT > 0
@@ -786,9 +792,13 @@
          WHEN 31
              MOVE 4 TO WS-PROJ-KIND
              CALL "PROJ-SPAWN" USING WS-PROJ-KIND L-DIM L-X L-Y L-Z WS-DIR-X WS-DOWN WS-DIR-Z WS-Z1 WS-Z2 L-ROW
-         WHEN OTHER
+         WHEN 32
              MOVE 5 TO WS-PROJ-KIND
              CALL "PROJ-SPAWN" USING WS-PROJ-KIND L-DIM L-X L-Y L-Z WS-DIR-X WS-DOWN WS-DIR-Z WS-Z1 WS-Z2 L-ROW
+         WHEN 33
+             CALL "WITHER-SPAWN" USING L-DIM L-X L-Y L-Z L-ROW
+         WHEN OTHER
+             CALL "DRAGON-SPAWN" USING L-DIM L-X L-Y L-Z L-ROW
      END-EVALUATE
      IF L-ROW > 0 AND WS-FAMILY NOT = 1
          CALL "ENTITY-BASE-APPLY" USING L-ROW EB-DATA

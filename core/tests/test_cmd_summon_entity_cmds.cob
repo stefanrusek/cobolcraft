@@ -12,6 +12,11 @@
  COPY CITEMS.
  COPY BRWORLD.
  01 WS-ID-OPAL             BINARY-LONG.
+ 01 WS-ID-BOB              BINARY-LONG.
+ 01 WS-SUB-DIM             BINARY-LONG VALUE 2.
+ 01 WS-SUB-X               FLOAT-LONG VALUE 3.5.
+ 01 WS-SUB-Y               FLOAT-LONG VALUE 40.
+ 01 WS-SUB-Z               FLOAT-LONG VALUE 3.5.
  01 WS-NAME                PIC X(16).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-LINE                PIC X(768).
@@ -56,6 +61,7 @@
     05 WS-KEY-ROW             PIC X(32) OCCURS 22 TIMES.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "TEST-STANDARD-TABLES"
      MOVE "Opal" TO WS-NAME
@@ -130,6 +136,34 @@
          STRING "acceptance US13 /kill the " WS-KEY-TEXT(1:WS-KEY-LENGTH) " is gone" DELIMITED BY SIZE INTO WS-CASE
          CALL "TEST-EXPECT" USING WS-CASE WS-EXPECTED WS-TEXT
      END-PERFORM
+*>   An entity of another dimension: tp to a destination in the subroutine (Bob, moved there) changes its dimension (ENTITY-CHANGE-DIM) and the entity stands where Bob stands.
+     MOVE "Bob" TO WS-NAME
+     MOVE 3 TO WS-NAME-LENGTH
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ID-BOB
+     CALL "DIM-SWITCH" USING CN-PLAYER(WS-ID-BOB) WS-SUB-DIM WS-SUB-X WS-SUB-Y WS-SUB-Z
+     MOVE "oak_boat" TO WS-KEY-TEXT
+     MOVE "summon minecraft:oak_boat ~1 ~ ~1" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "tp @e[type=minecraft:oak_boat,limit=1] Bob" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "acceptance US13 /tp into the subroutine: Teleported" TO WS-CASE
+     MOVE "commands.teleport.success.entity.single(oak_boat,Bob)" TO WS-EXPECTED
+     CALL "TEST-EXPECT" USING WS-CASE WS-EXPECTED WS-TEXT
+     PERFORM FIND-ENTITY
+     MOVE "acceptance US13 /tp an entity into the subroutine dimension" TO WS-CASE
+     MOVE 2 TO WS-EXPECTED-N
+     MOVE 0 TO WS-NUM
+     IF WS-ROW > 0
+         MOVE EN-DIM(WS-ROW) TO WS-NUM
+     END-IF
+     CALL "TEST-EXPECT-NUMBER" USING WS-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /tp the entity stands where Bob stands (x in tenths)" TO WS-CASE
+     COMPUTE WS-EXPECTED-N = PL-X(CN-PLAYER(WS-ID-BOB)) * 10
+     MOVE 0 TO WS-NUM
+     IF WS-ROW > 0
+         COMPUTE WS-NUM = EN-X(WS-ROW) * 10
+     END-IF
+     CALL "TEST-EXPECT-NUMBER" USING WS-CASE WS-EXPECTED-N WS-NUM
      STOP RUN.
 
  FIND-ENTITY.

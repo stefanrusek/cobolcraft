@@ -34,6 +34,7 @@
  01 WS-KEY-TEXT            PIC X(48).
  01 WS-FIND-X              FLOAT-LONG.
  01 WS-HEALTH-OF           BINARY-LONG.
+ 01 WS-CURSOR              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -162,6 +163,13 @@
      MOVE 5 TO WS-EXPECTED-N
      MOVE WS-HEALTH-OF TO WS-NUM
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /summon completes the mobs of the core and not the player-like type" TO TL-CASE
+     MOVE "/summon s" TO WS-LINE
+     MOVE 9 TO WS-CURSOR
+     CALL "TEST-SUGGEST" USING WS-ID-OPAL 7 WS-LINE WS-CURSOR
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
+     MOVE "7 8 1 [cobolcraft:sodgrazer]" TO WS-EXPECTED
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /summon summon alone is incomplete" TO TL-CASE
      MOVE "summon" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED
