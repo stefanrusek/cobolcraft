@@ -627,6 +627,7 @@
  01 WS-LEGACY              BINARY-LONG.
  01 WS-KEY                 PIC X(24).
  01 WS-SINKS               BINARY-LONG.
+ 01 WS-HCOLL               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -634,6 +635,7 @@
  01 L-YAW                  FLOAT-SHORT.
  PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-YAW.
      MOVE L-ROW TO WS-ROW
+     MOVE 0 TO WS-HCOLL
      MOVE EN-DIM(WS-ROW) TO WS-DIM
      MOVE EN-TYPE(WS-ROW) TO WS-TYPE
      MOVE EN-X(WS-ROW) TO WS-X
@@ -698,6 +700,9 @@
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-X
      END-IF
+     IF WS-HIT = 1 AND L-HX NOT = 0
+         MOVE 1 TO WS-HCOLL
+     END-IF
      COMPUTE WS-NEW = WS-Z + L-HZ
      CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
@@ -709,6 +714,13 @@
      END-IF
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-Z
+     END-IF
+     IF WS-HIT = 1 AND L-HZ NOT = 0
+         MOVE 1 TO WS-HCOLL
+     END-IF
+*>   The horizontal collision of this move (18 section 3.3); a climbing spider that collided rises at 0.2 (3.2).
+     IF WS-LEGACY = 0
+         CALL "PN-HCOLL-SET" USING WS-ROW WS-HCOLL WS-VY
      END-IF
      IF WS-WET = 0 AND WS-LEGACY = 0
          COMPUTE WS-VY = (WS-VY - 0.08) * 0.98

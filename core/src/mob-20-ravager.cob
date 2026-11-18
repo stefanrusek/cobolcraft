@@ -211,6 +211,8 @@
      IF RV-SPEED(WS-SLOT) = 0
          MOVE 300000 TO RV-SPEED(WS-SLOT)
      END-IF
+*>   Leaves in its way are destroyed after a horizontal collision (13.6).
+     CALL "RAVAGER-LEAVES" USING L-ROW
 *>   The movement speed attribute lerps by 0.1 towards 0.35 with a target, else 0.3 (13.6).
      IF EN-TARGET(L-ROW) > 0
          COMPUTE RV-SPEED(WS-SLOT) = RV-SPEED(WS-SLOT) + (350000 - RV-SPEED(WS-SLOT)) / 10

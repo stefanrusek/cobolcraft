@@ -1029,6 +1029,10 @@
      IF SM-KEY(WS-M) = "warden"
          CALL "WARDEN-DARKNESS" USING WS-ROW
      END-IF
+*>   A spider's climbing flag follows its horizontal collision (Spider.tick, 20 section 7.1).
+     IF SM-KEY(WS-M) = "spider" OR "cave_spider"
+         CALL "SPIDER-CLIMB-TICK" USING WS-ROW
+     END-IF
 *>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
      IF SM-KEY(WS-M) = "endermite"
          ADD 1 TO EN-WAKE(WS-ROW)
