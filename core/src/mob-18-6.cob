@@ -1079,15 +1079,12 @@
                  END-IF
                  CALL "M19-PACK-SHARE" USING WS-FIRST WS-NEW
                  CALL "AQUA-PACK" USING L-STATE WS-FIRST WS-NEW WS-IN-PACK WS-AQUA-DONE
-                 IF WS-AQUA-DONE = 1
-                     MOVE 1 TO WS-DONE-PACK
-                 END-IF
                  ADD 1 TO L-SPAWNED WS-IN-PACK
                  CALL "MS6-COST-ADD" USING L-BIOME WS-KEY24 WS-POINTS WS-PN WS-FX WS-FY WS-FZ
                  IF L-SPAWNED >= 4
                      MOVE 1 TO WS-DONE-ALL
                  END-IF
-                 IF WS-IN-PACK >= 4
+                 IF WS-IN-PACK >= 4 OR WS-AQUA-DONE = 1
                      MOVE 1 TO WS-DONE-PACK
                  END-IF
              END-IF
