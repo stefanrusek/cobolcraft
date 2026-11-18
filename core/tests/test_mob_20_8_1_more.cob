@@ -48,6 +48,9 @@
  01 WS-HAS                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-NIGHT               BINARY-DOUBLE VALUE 18000.
+ 01 WS-DAYTIME             BINARY-DOUBLE VALUE 6000.
+ 01 WS-GONE                BINARY-LONG.
+ 01 WS-PASS                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -222,6 +225,65 @@
      MOVE EN-HEALTH(WS-MOB) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-MOB
+
+*>   Daylight (8.1): by day, in the open, 600 ticks after its target changed, it loses the target and teleports (about 4 ticks in 100 at full brightness); not before 600 ticks, not at night.
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X) + 10
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     COMPUTE WS-X0 = WS-BX + 0.5
+     MOVE 90 TO PL-YAW(WS-PLAYER)
+     MOVE 0 TO PL-PITCH(WS-PLAYER)
+     PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 3
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-MOB
+         MOVE PL-ENTITY-ID(WS-PLAYER) TO EN-TARGET-ID(WS-MOB)
+         MOVE WS-PLAYER TO EN-TARGET(WS-MOB)
+         MOVE WS-DAYTIME TO CW-TIME
+         IF WS-PASS = 3
+             MOVE WS-NIGHT TO CW-TIME
+         END-IF
+         MOVE 0 TO WS-GONE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 600 OR WS-GONE = 1
+             MOVE WS-X0 TO EN-X(WS-MOB)
+             MOVE WS-Z TO EN-Z(WS-MOB)
+             MOVE WS-Y TO EN-Y(WS-MOB)
+             MOVE 700 TO EN-ENDER-TICKS(WS-MOB)
+             IF WS-PASS = 2
+                 MOVE 590 TO EN-ENDER-TICKS(WS-MOB)
+             END-IF
+             ADD 1 TO CW-TICKS
+             CALL "MOB-STEP" USING WS-MOB
+             IF FUNCTION ABS(EN-X(WS-MOB) - WS-X0) + FUNCTION ABS(EN-Z(WS-MOB) - WS-Z) > 3
+                 MOVE 1 TO WS-GONE
+             END-IF
+         END-PERFORM
+         EVALUATE WS-PASS
+             WHEN 1
+                 MOVE "acceptance US15 20§8.1 Enderman teleports by day after 600 ticks" TO TL-CASE
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE WS-GONE TO TL-OBSERVED-N
+                 CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+                 MOVE "acceptance US15 20§8.1 Enderman loses its target to the daylight" TO TL-CASE
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE EN-TARGET(WS-MOB) TO TL-OBSERVED-N
+                 CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+             WHEN 2
+                 MOVE "acceptance US15 20§8.1 Enderman does not teleport by day before 600 ticks" TO TL-CASE
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE WS-GONE TO TL-OBSERVED-N
+                 CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+             WHEN OTHER
+                 MOVE "acceptance US15 20§8.1 Enderman does not teleport at night" TO TL-CASE
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE WS-GONE TO TL-OBSERVED-N
+                 CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         END-EVALUATE
+         CALL "ENTITY-REMOVE" USING WS-MOB
+     END-PERFORM
      STOP RUN.
  END PROGRAM TEST-MOB-20-8-1-MORE.
  COPY CORETEST.

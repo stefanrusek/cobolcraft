@@ -297,14 +297,19 @@
 *> USING tracker row, table row of an enderman: called by STDMOB-ENDER-AIM once a tick while it holds a target (8.1). Water-sensitive (18 section 2.6 step 12): standing in a water
 *> block, or in rain with the sky open, it takes 1 point (CAUSE-DROWN) every tick. The target's stare: staring (STDMOB-ENDER-STARE) within 4 blocks (squared distance below 16) it
 *> teleports (one random teleport); farther than 16 blocks (squared distance above 256) for 30 consecutive ticks (EN-STRAFE-TIME counts them, an enderman never strafes) it teleports towards
-*> the target. The random numbers are seeded from the entity id and the world tick.
+*> the target; by day with 600 ticks since the target changed it loses the target and teleports (the daylight rule). The random numbers are seeded from the entity id and the world tick.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CBLOCKS.
  COPY RULES.
+ COPY STDMOBS.
  COPY XORO.
  01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-BRIGHT              BINARY-LONG.
+ 01 WS-AMBIENT             BINARY-LONG VALUE 0.
+ 01 WS-DRAW                FLOAT-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -366,12 +371,24 @@
              GOBACK
          END-IF
      END-IF
+     COMPUTE WS-SEED = EN-ID(L-ROW) * 1000003 + CW-TICKS
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+*>   Daylight (8.1): bright outside (the day half of the monsters_burn window), 600 ticks since the target changed, the sky visible, brightness above 0.5 and
+*>   nextFloat x 30 below (B - 0.4) x 2: the target is cleared and it teleports.
+     COMPUTE WS-T = FUNCTION MOD(CW-TIME, 24000)
+     IF EN-ENDER-TICKS(L-ROW) >= 600 AND WS-SKY >= 15 AND NOT (WS-T >= SM-BURN-DAY-END AND WS-T < SM-BURN-DAY-START)
+         CALL "STDMOB-BRIGHTNESS" USING WS-SKY WS-AMBIENT WS-BRIGHT
+         CALL "XORO-NEXT-DOUBLE" USING XR-STATE WS-DRAW
+         IF WS-BRIGHT > 500 AND WS-DRAW * 30 < (WS-BRIGHT / 1000 - 0.4) * 2
+             MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+             CALL "STDMOB-ENDER-DEST-RANDOM" USING XR-STATE EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-DX WS-DY WS-DZ
+             CALL "STDMOB-ENDER-TELEPORT" USING L-ROW WS-DX WS-DY WS-DZ WS-OK
+         END-IF
+     END-IF
      MOVE EN-TARGET(L-ROW) TO WS-P
      IF WS-P = 0
          GOBACK
      END-IF
-     COMPUTE WS-SEED = EN-ID(L-ROW) * 1000003 + CW-TICKS
-     CALL "XORO-SEED" USING WS-SEED XR-STATE
      COMPUTE WS-WX = EN-X(L-ROW) - PL-X(WS-P)
      COMPUTE WS-WY = EN-Y(L-ROW) + 2.55 - (PL-Y(WS-P) + 1.62)
      COMPUTE WS-WZ = EN-Z(L-ROW) - PL-Z(WS-P)
