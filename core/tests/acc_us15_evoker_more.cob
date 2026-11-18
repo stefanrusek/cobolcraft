@@ -227,6 +227,7 @@
  01 WS-PACKET-ID           BINARY-LONG.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-INDEX-BYTE          BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-AREA                PIC X(65536) BASED.
  01 WS-COPY                PIC X(512).
@@ -245,13 +246,19 @@
      CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
      PERFORM UNTIL WS-OUTCOME NOT = 0
          CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         *>       The health slot (index 9) sent at the pairing (18 section 9.3) is not the packet looked for.
          IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
              MOVE 1 TO WS-FOUND
              SET ADDRESS OF WS-AREA TO PK-ADDR
-             COMPUTE WS-COUNT = PK-LENGTH - PK-POS
-             MOVE SPACES TO WS-COPY
-             MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
-             CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+             MOVE FUNCTION ORD(WS-AREA(PK-POS + 2:1)) TO WS-INDEX-BYTE
+             IF WS-INDEX-BYTE = 10
+                 MOVE 0 TO WS-FOUND
+             ELSE
+                 COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+                 MOVE SPACES TO WS-COPY
+                 MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+                 CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+             END-IF
          END-IF
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
