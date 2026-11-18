@@ -14,6 +14,7 @@
  COPY VILPOIX.
  COPY STRUCTOVR.
  COPY CUSTOMSP.
+ COPY DIMENSIONS.
  COPY PATROL.
  COPY TRADERSP.
  01 WS-CASE                PIC X(240).
@@ -62,6 +63,9 @@
  01 WS-RULE-INDEX          BINARY-LONG.
  01 WS-RULE-VALUE          BINARY-DOUBLE.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-SAVE-DIM            BINARY-LONG.
+ 01 WS-SAVE-Y              FLOAT-LONG.
+ 01 WS-SAVE-X              FLOAT-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -151,6 +155,52 @@
      MOVE 1 TO WS-RULE-VALUE
      PERFORM SET-SPAWN-MOBS
      MOVE 0 TO PT-NEXT
+
+*>   the world tick reaches the list: STDMOB-SPAWN-TICK counts the cat spawner's counter down
+     MOVE 5 TO CSP-CAT-NEXT
+     CALL "STDMOB-SPAWN-TICK"
+     MOVE "acceptance US15 44-2§6 the spawn tick of the world calls the custom spawners once (cat counter 5 to 4)" TO WS-CASE
+     MOVE 4 TO WS-E
+     MOVE CSP-CAT-NEXT TO WS-O
+     PERFORM CHECK-N
+
+*>   a village with five homes, but the attempt cannot go ahead: no alive Overworld player (the only one stands in the Nether), a spot in chunks that are not loaded (the
+*>   player far away), a spot without ground (the player high in the air): no cat in forty attempts each
+     MOVE 1 TO PX-KIND(1)
+     MOVE WS-DIM TO PX-DIM(1)
+     MOVE WS-PX TO PX-X(1)
+     MOVE WS-PY TO PX-Y(1)
+     MOVE WS-PZ TO PX-Z(1)
+     MOVE 5 TO WS-HOMES
+     PERFORM SET-HOMES
+     MOVE PL-DIM(WS-PLAYER) TO WS-SAVE-DIM
+     MOVE DIM-STANDARD-NETHER TO PL-DIM(WS-PLAYER)
+     PERFORM CLEAR-ALL
+     PERFORM ATTEMPTS
+     MOVE WS-SAVE-DIM TO PL-DIM(WS-PLAYER)
+     MOVE "acceptance US15 44-3§1.6 step 2: a random player is taken from the Overworld only: a player in the Nether ends the attempt, no cat" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-CATS TO WS-O
+     PERFORM CHECK-N
+     MOVE PL-X(WS-PLAYER) TO WS-SAVE-X
+     COMPUTE PL-X(WS-PLAYER) = WS-SAVE-X + 5000
+     PERFORM ATTEMPTS
+     MOVE WS-SAVE-X TO PL-X(WS-PLAYER)
+     MOVE "acceptance US15 44-3§1.6 step 3: the chunks within 10 blocks of the spot must be loaded: far from every loaded chunk no cat" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-CATS TO WS-O
+     PERFORM CHECK-N
+     MOVE PL-Y(WS-PLAYER) TO WS-SAVE-Y
+     COMPUTE PL-Y(WS-PLAYER) = WS-SAVE-Y + 30
+     PERFORM ATTEMPTS
+     MOVE WS-SAVE-Y TO PL-Y(WS-PLAYER)
+     MOVE "acceptance US15 44-3§1.6 step 4: the spawn placement check needs ground below the spot: 30 blocks up in the air no cat" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-CATS TO WS-O
+     PERFORM CHECK-N
+     MOVE 0 TO PX-KIND(1)
+     MOVE 0 TO WS-HOMES
+     PERFORM SET-HOMES
 
 *>   no point of interest, no hut: forty attempts spawn nothing
      PERFORM CLEAR-ALL
