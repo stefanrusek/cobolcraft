@@ -31,7 +31,7 @@
     05 FILLER              PIC X(18) VALUE "026 00 16 05 02 00".
     05 FILLER              PIC X(18) VALUE "020 06 64 05 00 01".
     05 FILLER              PIC X(18) VALUE "024 05 12 05 00 00".
-    05 FILLER              PIC X(18) VALUE "024 05 32 05 00 00".
+    05 FILLER              PIC X(18) VALUE "024 05 32 05 12 00".
     05 FILLER              PIC X(18) VALUE "024 00 12 10 00 00".
     05 FILLER              PIC X(18) VALUE "014 04 16 03 00 00".
     05 FILLER              PIC X(18) VALUE "032 00 18 05 00 00".
