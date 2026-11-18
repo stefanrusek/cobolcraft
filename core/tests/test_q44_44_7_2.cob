@@ -74,6 +74,12 @@
      CALL "Q7-GROUP-CHANCE" USING WS-KEY WS-CHANCE
      MOVE "acceptance US15 44-7§6.3 squid group chance 0.05 (x1000)" TO WS-NAME
      PERFORM EXPECT
+     MOVE "axolotl" TO WS-KEY
+     CALL "Q7-GROUP-CHANCE" USING WS-KEY WS-CHANCE
+     MOVE "acceptance US15 44-7§8.1 an axolotl group never uses the generic baby chance (AgeableMobGroupData(false)): 0" TO WS-NAME
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-CHANCE * 1000
+     PERFORM EXPECT
 *>   2.2: the toggle flips the flag, sets age -24000 and the particle timer 40 (both ways).
      MOVE 0 TO WS-LOCKED
      MOVE 0 TO WS-AGE
@@ -193,6 +199,14 @@
      MOVE "acceptance US15 44-7§2.7 step 5 is combat only: non-combat allied passes" TO WS-NAME
      MOVE 1 TO WS-EXP
      PERFORM EXPECT
+     PERFORM TT-CLEAR
+     MOVE 0.5 TO WS-VIS
+     MOVE 81 TO WS-D2
+     PERFORM TT-RUN
+     MOVE "acceptance US15 44-7§2.7 step 6 inside the full test: range 16, visibility 0.5, a target 9 away fails" TO WS-NAME
+     MOVE 0 TO WS-EXP
+     PERFORM EXPECT
+     MOVE 1 TO WS-VIS
      PERFORM TT-CLEAR
      MOVE 1 TO WS-LOS
      MOVE 1 TO WS-MOB
