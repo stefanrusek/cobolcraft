@@ -578,6 +578,14 @@
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 *>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
        10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
+*>     --- 002-lane-p49j-b: arrows (core/src/arrows.cob; docs/protocol/44 part 8 section 7) ---
+       10 EN-ARW-CRIT         BINARY-LONG.        *> arrow: 1 when critical (metadata 8 bit 1)
+       10 EN-ARW-PIERCE       BINARY-LONG.        *> arrow: the pierce level (metadata 9)
+       10 EN-ARW-IGN-N        BINARY-LONG.        *> arrow: entities in the piercing ignore set
+       10 EN-ARW-IGN          BINARY-LONG OCCURS 5 TIMES.   *> arrow: entity ids already pierced
+       10 EN-ARW-PUNCH        BINARY-LONG.        *> arrow: the weapon's knockback k in thousandths (Punch), 0 none
+       10 EN-ARW-SHAKE        BINARY-LONG.        *> arrow: shakeTime, 7 after it stuck
+       10 EN-ARW-PICKUP       BINARY-LONG.        *> arrow: pickup mode 0 disallowed, 1 allowed, 2 creative only
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

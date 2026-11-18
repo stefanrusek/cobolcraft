@@ -50,6 +50,7 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-H                   FLOAT-LONG.
+ 01 WS-P                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -77,6 +78,12 @@
      MOVE L-VZ TO EN-VZ(WS-ROW)
      MOVE L-BASE TO EN-ITEM(WS-ROW)
      MOVE L-OWNER TO EN-TARGET-ID(WS-ROW)
+*>   44 part 8 section 7.6: a player owner makes the pickup mode ALLOWED (1), any other owner leaves it DISALLOWED (0).
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ID(WS-P) = L-OWNER AND L-OWNER > 0
+             MOVE 1 TO EN-ARW-PICKUP(WS-ROW)
+         END-IF
+     END-PERFORM
      COMPUTE WS-H = FUNCTION SQRT(L-VX * L-VX + L-VZ * L-VZ)
      IF L-VZ = 0
          IF L-VX >= 0
@@ -120,6 +127,13 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
  01 WS-FIRE-TICKS          BINARY-LONG.
+ 01 WS-TARGET-ID           BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 4407.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-RESIST              BINARY-LONG VALUE 0.
+ 01 WS-KX                  FLOAT-LONG.
+ 01 WS-KZ                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -129,6 +143,27 @@
          + EN-VZ(L-ARROW) * EN-VZ(L-ARROW))
      COMPUTE WS-MILLI = FUNCTION INTEGER(WS-SPEED * EN-ITEM(L-ARROW) + 0.999)
      COMPUTE WS-DAMAGE = FUNCTION INTEGER((WS-MILLI + 999) / 1000)
+*>   Piercing (7.3 step 3): a level-N arrow remembers N + 1 targets; the next hit attempt discards it without damage.
+     IF EN-ARW-PIERCE(L-ARROW) > 0
+         IF L-PLAYER > 0
+             MOVE PL-ENTITY-ID(L-PLAYER) TO WS-TARGET-ID
+         ELSE
+             MOVE EN-ID(L-ENTITY) TO WS-TARGET-ID
+         END-IF
+         IF EN-ARW-IGN-N(L-ARROW) < EN-ARW-PIERCE(L-ARROW) + 1 AND EN-ARW-IGN-N(L-ARROW) < 5
+             ADD 1 TO EN-ARW-IGN-N(L-ARROW)
+             MOVE WS-TARGET-ID TO EN-ARW-IGN(L-ARROW, EN-ARW-IGN-N(L-ARROW))
+         ELSE
+             CALL "ENTITY-REMOVE" USING L-ARROW
+             GOBACK
+         END-IF
+     END-IF
+*>   Critical (7.3 step 4): damage + nextInt(damage / 2 + 2).
+     IF EN-ARW-CRIT(L-ARROW) = 1
+         COMPUTE WS-BOUND = FUNCTION INTEGER(WS-DAMAGE / 2) + 2
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-ROLL
+         ADD WS-ROLL TO WS-DAMAGE
+     END-IF
      MOVE EN-TARGET-ID(L-ARROW) TO WS-OWNER-ID
      MOVE 0 TO WS-OWNER-ROW WS-OWNER-PLAYER
      PERFORM VARYING WS-O FROM 1 BY 1 UNTIL WS-O > EN-COUNT
@@ -167,9 +202,134 @@
              END-IF
          END-IF
      END-IF
-     CALL "ENTITY-REMOVE" USING L-ARROW
+*>   Punch (7.4): a mob is pushed along the arrow's horizontal direction, y + 0.1.
+     IF EN-ARW-PUNCH(L-ARROW) > 0 AND L-ENTITY > 0
+         CALL "ARROW-KNOCKBACK" USING L-ARROW WS-RESIST WS-KX WS-KZ
+         COMPUTE EN-VX(L-ENTITY) = EN-VX(L-ENTITY) + WS-KX
+         COMPUTE EN-VY(L-ENTITY) = EN-VY(L-ENTITY) + 0.1
+         COMPUTE EN-VZ(L-ENTITY) = EN-VZ(L-ENTITY) + WS-KZ
+     END-IF
+*>   A piercing arrow flies on (7.3 step 8); any other is discarded (step 8).
+     IF EN-ARW-PIERCE(L-ARROW) <= 0
+         CALL "ENTITY-REMOVE" USING L-ARROW
+     END-IF
      GOBACK.
  END PROGRAM ARROW-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-KNOCKBACK.
+*> USING arrow row, target resistance (thousandths), dx out, dz out (FLOAT-LONG): 44 part 8 section 7.4 doKnockback: k = the weapon's knockback (EN-ARW-PUNCH, thousandths),
+*> dir = normalize(velocity x (1, 0, 1)) x k x 0.6 x max(0, 1 - resistance); a zero direction gives 0 0 (no push).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ARROW                BINARY-LONG.
+ 01 L-RESIST               BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ARROW L-RESIST L-DX L-DZ.
+     MOVE 0 TO L-DX L-DZ
+     COMPUTE WS-H = FUNCTION SQRT(EN-VX(L-ARROW) * EN-VX(L-ARROW) + EN-VZ(L-ARROW) * EN-VZ(L-ARROW))
+     IF EN-ARW-PUNCH(L-ARROW) > 0 AND WS-H > 0
+         COMPUTE WS-S = FUNCTION MAX(0, 1 - L-RESIST / 1000)
+         COMPUTE L-DX = EN-VX(L-ARROW) / WS-H * EN-ARW-PUNCH(L-ARROW) / 1000 * 0.6 * WS-S
+         COMPUTE L-DZ = EN-VZ(L-ARROW) / WS-H * EN-ARW-PUNCH(L-ARROW) / 1000 * 0.6 * WS-S
+     END-IF
+     GOBACK.
+ END PROGRAM ARROW-KNOCKBACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-PICKUP.
+*> USING arrow row, player row, taken out (1 when the arrow was picked up): 44 part 8 section 7.6 playerTouch and tryPickup. Only an arrow that sticks in a block (EN-ON-GROUND) and whose
+*> shakeTime is 0 can be taken. The pickup mode (EN-ARW-PICKUP) 0 DISALLOWED refuses; 1 ALLOWED adds one arrow item to the inventory (true only when it fits); 2 CREATIVE_ONLY takes it
+*> only for a creative player (nothing is added). On success the viewers get Take Item Entity, the player the changed slots, and the arrow is discarded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:arrow".
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-BEFORE.
+    05 WS-BEFORE-SLOT OCCURS 36 TIMES.
+       10 WS-BEFORE-ITEM   BINARY-LONG.
+       10 WS-BEFORE-N      BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ARROW                BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-TAKEN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ARROW L-PLAYER L-TAKEN.
+     MOVE 0 TO L-TAKEN WS-OK
+     IF EN-ON-GROUND(L-ARROW) = 0 OR EN-ARW-SHAKE(L-ARROW) > 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         MOVE PL-SLOT-ITEM(L-PLAYER, WS-S) TO WS-BEFORE-ITEM(WS-S)
+         MOVE PL-SLOT-COUNT(L-PLAYER, WS-S) TO WS-BEFORE-N(WS-S)
+     END-PERFORM
+     EVALUATE EN-ARW-PICKUP(L-ARROW)
+         WHEN 1
+             CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+             CALL "INV-ADD" USING L-PLAYER WS-ITEM WS-ONE WS-LEFT
+             IF WS-LEFT = 0
+                 MOVE 1 TO WS-OK
+             END-IF
+         WHEN 2
+             IF PL-MODE(L-PLAYER) = 1
+                 MOVE 1 TO WS-OK
+             END-IF
+     END-EVALUATE
+     IF WS-OK = 1
+         IF WS-READY = 0
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             MOVE 1 TO WS-READY
+         END-IF
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "TAKE-ITEM-ENTITY-BUILD" USING EN-ID(L-ARROW) PL-ENTITY-ID(L-PLAYER) WS-ONE PB-BUFFER
+         CALL "GI-VIEWERS-SEND" USING L-ARROW PB-BUFFER
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+             IF PL-SLOT-ITEM(L-PLAYER, WS-S) NOT = WS-BEFORE-ITEM(WS-S) OR PL-SLOT-COUNT(L-PLAYER, WS-S) NOT = WS-BEFORE-N(WS-S)
+                 COMPUTE WS-SLOT = WS-S - 1
+                 CALL "INV-SLOT-SEND" USING PL-CONN(L-PLAYER) WS-SLOT
+             END-IF
+         END-PERFORM
+         CALL "ENTITY-REMOVE" USING L-ARROW
+         MOVE 1 TO L-TAKEN
+     END-IF
+     GOBACK.
+ END PROGRAM ARROW-PICKUP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-IGNORED.
+*> USING arrow row, entity id, ignored out: 1 when the entity id is in the piercing arrow's ignore set (7.3 canHitEntity).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ARROW                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-IGNORED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ARROW L-ID L-IGNORED.
+     MOVE 0 TO L-IGNORED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-ARW-IGN-N(L-ARROW)
+         IF EN-ARW-IGN(L-ARROW, WS-I) = L-ID
+             MOVE 1 TO L-IGNORED
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ARROW-IGNORED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROW-FIND-HIT.
@@ -185,6 +345,7 @@
  01 WS-M                   BINARY-LONG.
  01 WS-W                   FLOAT-LONG.
  01 WS-H                   FLOAT-LONG.
+ 01 WS-IGNORED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -196,7 +357,12 @@
      MOVE 0 TO L-ENTITY L-PLAYER
      COMPUTE WS-MARGIN = FUNCTION MAX(0, FUNCTION MIN(0.3, (EN-COOLDOWN(L-ARROW) - 2) / 20))
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR L-PLAYER > 0
+         MOVE 0 TO WS-IGNORED
+         IF PL-USED(WS-P) = 1
+             CALL "ARROW-IGNORED" USING L-ARROW PL-ENTITY-ID(WS-P) WS-IGNORED
+         END-IF
          IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ARROW)
+                 AND WS-IGNORED = 0
                  AND PL-MODE(WS-P) < 3 AND PL-ENTITY-ID(WS-P) NOT = EN-TARGET-ID(L-ARROW)
                  AND FUNCTION ABS(L-X - PL-X(WS-P)) <= 0.3 + WS-MARGIN AND FUNCTION ABS(L-Z - PL-Z(WS-P)) <= 0.3 + WS-MARGIN
                  AND L-Y >= PL-Y(WS-P) - WS-MARGIN AND L-Y <= PL-Y(WS-P) + 1.8 + WS-MARGIN
@@ -204,7 +370,12 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR L-PLAYER > 0 OR L-ENTITY > 0
+         MOVE 0 TO WS-IGNORED
+         IF EN-USED(WS-E) = 1
+             CALL "ARROW-IGNORED" USING L-ARROW EN-ID(WS-E) WS-IGNORED
+         END-IF
          IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ARROW) AND EN-HEALTH(WS-E) > 0 AND EN-ID(WS-E) NOT = EN-TARGET-ID(L-ARROW)
+                 AND WS-IGNORED = 0
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-M
              IF WS-M > 0
                  COMPUTE WS-W = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
@@ -247,10 +418,16 @@
  01 WS-H                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-WATER-HEIGHT        FLOAT-LONG.
+ 01 WS-WATER-KIND          BINARY-LONG.
+ 01 WS-IN-WATER            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      IF EN-ON-GROUND(L-ROW) = 1
+         IF EN-ARW-SHAKE(L-ROW) > 0
+             SUBTRACT 1 FROM EN-ARW-SHAKE(L-ROW)
+         END-IF
          ADD 1 TO EN-AGE(L-ROW)
          IF EN-AGE(L-ROW) >= 1200
              CALL "ENTITY-REMOVE" USING L-ROW
@@ -258,6 +435,18 @@
          GOBACK
      END-IF
      ADD 1 TO EN-COOLDOWN(L-ROW)
+*>   In water (7.1, 7.2 step 4): the velocity is multiplied by 0.6 before the move (the air drag 0.99 comes after it, only out of water).
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "BOAT-FLUID" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-WATER-HEIGHT WS-WATER-KIND
+     MOVE 0 TO WS-IN-WATER
+     IF WS-WATER-KIND > 0
+         MOVE 1 TO WS-IN-WATER
+         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.6
+         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.6
+         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.6
+     END-IF
      COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
      COMPUTE WS-STEPS = FUNCTION INTEGER(WS-SPEED / 0.1) + 1
      MOVE EN-X(L-ROW) TO WS-PX
@@ -287,7 +476,14 @@
      END-PERFORM
      IF WS-DONE = 2
          CALL "ARROW-HIT" USING L-ROW WS-ENTITY WS-PLAYER
-         GOBACK
+         IF EN-USED(L-ROW) = 0
+             GOBACK
+         END-IF
+*>       A piercing arrow flew on from the hit point (7.3 step 8).
+         MOVE WS-QX TO WS-PX
+         MOVE WS-QY TO WS-PY
+         MOVE WS-QZ TO WS-PZ
+         MOVE 0 TO WS-DONE
      END-IF
      IF WS-DONE = 1
 *>       Stuck: at the last free point, no velocity (44 section 7.5).
@@ -297,13 +493,19 @@
          MOVE 0 TO EN-VX(L-ROW) EN-VY(L-ROW) EN-VZ(L-ROW)
          MOVE 1 TO EN-ON-GROUND(L-ROW)
          MOVE 0 TO EN-AGE(L-ROW)
+*>       7.5 step 6: shakeTime 7, no longer critical or piercing, the ignore set is cleared.
+         MOVE 7 TO EN-ARW-SHAKE(L-ROW)
+         MOVE 0 TO EN-ARW-CRIT(L-ROW) EN-ARW-PIERCE(L-ROW) EN-ARW-IGN-N(L-ROW)
      ELSE
          MOVE WS-PX TO EN-X(L-ROW)
          MOVE WS-PY TO EN-Y(L-ROW)
          MOVE WS-PZ TO EN-Z(L-ROW)
-         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
-         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99 - 0.05
-         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+         IF WS-IN-WATER = 0
+             COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
+             COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99
+             COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+         END-IF
+         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) - 0.05
          COMPUTE WS-H = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
          IF WS-H > 0
              COMPUTE WS-PITCH = FUNCTION ATAN(EN-VY(L-ROW) / WS-H) * 180 / FUNCTION PI
