@@ -269,7 +269,7 @@
      MOVE EN-KILLER(L-ROW) TO WS-KILLED
      CALL "STDMOB-INDEX" USING WS-TYPE WS-M
      CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
-     IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube"
+     IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube" OR SM-KEY(WS-M) = "sulfur_cube"
          CALL "STDMOB-SLIME-DIE" USING L-ROW WS-KILLED
      ELSE
          IF WS-RULE = 1
@@ -980,7 +980,7 @@
          GOBACK
      END-IF
      CALL "BR-WORLD-READY"
-     IF SM-KIND(WS-M) = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
+     IF SM-KIND(WS-M) = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1) AND SM-KEY(WS-M) NOT = "sulfur_cube"
          CALL "ENTITY-REMOVE" USING WS-ROW
          GOBACK
      END-IF

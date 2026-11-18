@@ -174,7 +174,7 @@
          MOVE "powered" TO WN MOVE 7 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-VARIANT(L-ROW)
      END-IF
-     IF WS-KEY = "slime" OR "magma_cube"
+     IF WS-KEY = "slime" OR "magma_cube" OR "sulfur_cube"
          MOVE "Size" TO WN MOVE 4 TO WL
          COMPUTE WS-VALUE = FUNCTION MAX(EN-VARIANT(L-ROW), 1) - 1
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
@@ -539,7 +539,7 @@
      IF WS-KEY = "creeper"
          MOVE MQ-POWERED TO EN-VARIANT(L-ROW)
      END-IF
-     IF (WS-KEY = "slime" OR "magma_cube") AND MQ-SIZE >= 0
+     IF (WS-KEY = "slime" OR "magma_cube" OR "sulfur_cube") AND MQ-SIZE >= 0
          COMPUTE EN-VARIANT(L-ROW) = MQ-SIZE + 1
      END-IF
      IF WS-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel"
