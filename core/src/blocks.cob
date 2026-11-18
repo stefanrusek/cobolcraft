@@ -406,6 +406,7 @@
  01 WS-SWITCH              BINARY-LONG.
  01 WS-KNOT                BINARY-LONG.
  01 WS-NOTE                BINARY-LONG.
+ 01 WS-BELL                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -445,6 +446,8 @@
      CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
 *>   A fence takes the lead of the player's mobs (a leash knot, 24 section 6.3).
      CALL "MOB-FENCE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ WS-KNOT
+*>   A bell is rung by a proper hit with an empty hand (30 part 8 section 8.3; VL-BELL-USE, which makes the villagers within 32 blocks hear it).
+     CALL "VL-BELL-USE" USING L-ID PLAY-SERVERBOUND WS-BELL
 *>   A note block is tuned by a right click (M44-NOTE-USE).
      MOVE 0 TO WS-NOTE
      IF NOT (PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0)
@@ -452,6 +455,8 @@
      END-IF
      EVALUATE TRUE
          WHEN WS-KNOT = 1
+             CONTINUE
+         WHEN WS-BELL = 1
              CONTINUE
          WHEN WS-NOTE = 1
              CONTINUE
