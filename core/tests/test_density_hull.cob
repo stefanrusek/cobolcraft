@@ -328,6 +328,18 @@
      COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
      COMPUTE TL-EXPECTED-N = 3500 * 100000 + 3500
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   a ground level delta of 30 lifts the second record's layers to y -34 (above its box: up to -34 + 13 = -21), so it reaches the cell of y -40 to -33 and the first record does not: 0.8 + 1
+     MOVE 0 TO SBR-X0(2)
+     MOVE 3 TO SBR-X1(2)
+     MOVE 30 TO SBR-GROUND(2)
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-CELL-J WS-LO WS-HI
+     MOVE "test density hull a record lifted by its ground level delta reaches the cell above its box (1.7 .. 5.3)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 1700 * 100000 + 5300
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 500 TO SBR-X0(2)
+     MOVE 503 TO SBR-X1(2)
+     MOVE 0 TO SBR-GROUND(2)
 *>   the first record and the junction moved away too: none of them reaches the cell
      MOVE 500 TO SBR-X0(1)
      MOVE 503 TO SBR-X1(1)

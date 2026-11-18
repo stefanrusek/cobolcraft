@@ -85,5 +85,55 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the sampler's range test follows a ground level delta: the layers of the record are y 60 - 5 = 55 to 63 (minus 13 below, plus 13 above), so at y 56 the record's own value is the sample and
+*>   it is not zero, at y 40 (below 42) the record is left out and the sample is 0; with a delta of 30 the layers are 63 to 90 and the sample is the record's own value at y 80 and at y 100
+     MOVE 3 TO SBR-MODE(1)
+     MOVE 1 TO SBD-RIGID-COUNT
+     MOVE 0 TO SBD-JUNC-COUNT
+     MOVE 1 TO SBD-ACTIVE
+     MOVE -5 TO SBR-GROUND(1)
+     MOVE 2 TO WS-X
+     MOVE 2 TO WS-Z
+     MOVE 56 TO WS-Y
+     CALL "STRUCT-BEARD-SAMPLE" USING WS-X WS-Y WS-Z WS-B
+     CALL "STRUCT-BEARD-RIGID" USING SBR-MODE(1) SBR-X0(1) SBR-Y0(1) SBR-Z0(1) SBR-X1(1) SBR-Y1(1) SBR-Z1(1) SBR-GROUND(1) WS-X WS-Y WS-Z WS-R1
+     COMPUTE WS-DIFF = WS-B - WS-R1
+     MOVE "test struct beard density a negative ground level delta lowers the layers: at y 56 the sample is the record's own nonzero value" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DIFF < 0.0000001 AND WS-DIFF > -0.0000001 AND (WS-B > 0.001 OR WS-B < -0.001)
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 40 TO WS-Y
+     CALL "STRUCT-BEARD-SAMPLE" USING WS-X WS-Y WS-Z WS-B
+     MOVE "test struct beard density a record 13 blocks below its lowered layers is left out: the sample at y 40 is 0" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-B < 0.0000001 AND WS-B > -0.0000001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 30 TO SBR-GROUND(1)
+     MOVE 80 TO WS-Y
+     CALL "STRUCT-BEARD-SAMPLE" USING WS-X WS-Y WS-Z WS-B
+     CALL "STRUCT-BEARD-RIGID" USING SBR-MODE(1) SBR-X0(1) SBR-Y0(1) SBR-Z0(1) SBR-X1(1) SBR-Y1(1) SBR-Z1(1) SBR-GROUND(1) WS-X WS-Y WS-Z WS-R1
+     COMPUTE WS-DIFF = WS-B - WS-R1
+     MOVE "test struct beard density a ground level delta above the box lifts the layers: at y 80 the sample is the record's own value" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DIFF < 0.0000001 AND WS-DIFF > -0.0000001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 100 TO WS-Y
+     CALL "STRUCT-BEARD-SAMPLE" USING WS-X WS-Y WS-Z WS-B
+     CALL "STRUCT-BEARD-RIGID" USING SBR-MODE(1) SBR-X0(1) SBR-Y0(1) SBR-Z0(1) SBR-X1(1) SBR-Y1(1) SBR-Z1(1) SBR-GROUND(1) WS-X WS-Y WS-Z WS-R1
+     COMPUTE WS-DIFF = WS-B - WS-R1
+     MOVE "test struct beard density at y 100 inside the lifted range the sample is the record's own value" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DIFF < 0.0000001 AND WS-DIFF > -0.0000001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO SBR-GROUND(1) SBD-ACTIVE SBD-RIGID-COUNT
      STOP RUN.
  END PROGRAM TEST-STRUCT-BEARD-DENSITY.
