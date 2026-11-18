@@ -144,6 +144,16 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE SX-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE '{"multipart":[{"apply":{"model":"post"},"when":{"up":"true"}}]}' TO WS-TEXT
+     MOVE 63 TO WS-LENGTH
+     CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LENGTH
+     MOVE "up=false" TO WS-PROPS
+     MOVE 8 TO WS-PROPS-LENGTH
+     CALL "BLOCKSTATE-SELECT" USING JSON-DOC WS-PROPS WS-PROPS-LENGTH STATE-MODELS
+     MOVE "blockstates a multipart state no case holds for is marked empty on purpose (-1), not model-less" TO TL-CASE
+     MOVE -1 TO TL-EXPECTED-N
+     MOVE SX-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  SHOW-MODELS.

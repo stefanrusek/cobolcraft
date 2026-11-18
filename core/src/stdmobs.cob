@@ -508,6 +508,7 @@
  01 WS-BLOCK               BINARY-LONG.
  01 WS-DARK                BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
+ 01 WS-RAW                 BINARY-LONG.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
@@ -529,7 +530,8 @@
          COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
          COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW)) + 1
          COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
-         CALL "STDMOB-LIGHTS" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-SKY WS-BLOCK
+*>       LIGHT-RAW, not STDMOB-LIGHTS: the stored sky light is 0 under a column's topmost block (leaves, glass), which would read dark by day.
+         CALL "LIGHT-RAW" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-SKY WS-BLOCK WS-RAW
          CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
          COMPUTE WS-LIGHT = FUNCTION MAX(WS-BLOCK, WS-SKY - WS-DARK)
      END-IF

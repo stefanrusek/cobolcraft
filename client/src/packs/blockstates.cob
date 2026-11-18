@@ -6,7 +6,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCKSTATE-SELECT.
-*> USING JSON-DOC, state key (PIC X(62)), state key length, STATE-MODELS out.
+*> USING JSON-DOC, state key (PIC X(62)), state key length, STATE-MODELS out (SX-COUNT -1: a multipart state with no part that applies).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ROOT                BINARY-LONG VALUE 1.
@@ -91,6 +91,11 @@
              END-IF
              MOVE JN-NEXT(WS-NODE) TO WS-NODE
          END-PERFORM
+*>       A multipart state no case holds for is the union of no parts (08 4.4): empty on purpose, SX-COUNT -1 (STATE-BAKE draws nothing), unlike a
+*>       state the file leaves without a model (0, the missing model).
+         IF WS-SECTION > 0 AND SX-COUNT = 0
+             MOVE -1 TO SX-COUNT
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM BLOCKSTATE-SELECT.

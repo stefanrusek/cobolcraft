@@ -100,6 +100,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-S STATE-MODELS.
      MOVE 0 TO BM-QUAD-COUNT(L-S)
      MOVE SX-COUNT TO WS-COUNT
+*>   SX-COUNT -1 (BLOCKSTATE-SELECT: a multipart state with no part that applies): no model at all, nothing to draw.
      IF WS-COUNT = 0
          MOVE 1 TO WS-COUNT
          MOVE SPACES TO SX-ID(1)
