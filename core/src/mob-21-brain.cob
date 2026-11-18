@@ -232,7 +232,8 @@
                          END-EVALUATE
                      END-IF
                      IF WS-HIT = 1
-                         COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+*>                       Nearest first by Manhattan distance (findBlocksInBoxByManhattanDistance, 44-6 section 4.1).
+                         COMPUTE WS-D2 = FUNCTION ABS(WS-DX) + FUNCTION ABS(WS-DY) + FUNCTION ABS(WS-DZ)
                          IF WS-BEST = 0 OR WS-D2 < WS-BEST
                              MOVE WS-D2 TO WS-BEST
                              MOVE 1 TO L-FOUND
@@ -416,6 +417,9 @@
      MOVE 1 TO WS-ADULT
      IF EN-MOBAGE(L-ROW) < 0
          MOVE 0 TO WS-ADULT
+     END-IF
+     IF PG-ATE(WS-SLOT) > 0
+         SUBTRACT 1 FROM PG-ATE(WS-SLOT)
      END-IF
      IF PG-NOWALK(WS-SLOT) > 0
          SUBTRACT 1 FROM PG-NOWALK(WS-SLOT)
