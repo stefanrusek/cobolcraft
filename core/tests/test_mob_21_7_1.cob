@@ -77,7 +77,7 @@
              MOVE WS-I TO WS-ROW
          END-IF
      END-PERFORM
-     MOVE "acceptance US16 21 7.1 a row along z of wall skulls over soul soil makes one wither" TO TL-CASE
+     MOVE "acceptance US15 21§7.1 Build pattern minecraft:wither a row along z of wall skulls over soul soil makes one wither" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -89,15 +89,15 @@
              ADD WS-STATE TO WS-SUM
          END-PERFORM
      END-PERFORM
-     MOVE "acceptance US16 21 7.1 all seven pattern blocks are cleared" TO TL-CASE
+     MOVE "acceptance US15 21§7.1 Build pattern minecraft:wither all seven pattern blocks are cleared" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-SUM TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US16 21 7.1 the wither stands at the centre of the base column" TO TL-CASE
+     MOVE "acceptance US15 21§7.1 Build pattern minecraft:wither the wither stands at the centre of the base column" TO TL-CASE
      COMPUTE TL-EXPECTED-N = WS-X0 * 1000 + 500
      COMPUTE TL-OBSERVED-N ROUNDED = EN-X(WS-ROW) * 1000
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US16 21 7.1 and at the base block's z centre" TO TL-CASE
+     MOVE "acceptance US15 21§7.1 Build pattern minecraft:wither and at the base block's z centre" TO TL-CASE
      COMPUTE TL-EXPECTED-N = WS-Z0 * 1000 + 500
      COMPUTE TL-OBSERVED-N ROUNDED = EN-Z(WS-ROW) * 1000
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -114,11 +114,11 @@
              MOVE EN-AGE(WS-I) TO WS-AGE
          END-IF
      END-PERFORM
-     MOVE "acceptance US16 21 7.4 one nether star is dropped" TO TL-CASE
+     MOVE "acceptance US15 21§7.4 Nether Star minecraft:wither one nether star is dropped" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US16 21 7.4 its age is -6000 (extended lifetime, 12000 ticks)" TO TL-CASE
+     MOVE "acceptance US15 21§7.4 Nether Star minecraft:wither its age is -6000 (extended lifetime, 12000 ticks)" TO TL-CASE
      MOVE -6000 TO TL-EXPECTED-N
      MOVE WS-AGE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
