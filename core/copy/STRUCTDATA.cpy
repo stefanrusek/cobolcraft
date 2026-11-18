@@ -34,6 +34,9 @@
 *>  SDT-JIG-* the fields of a jigsaw structure (STRUCT-JIG-READ in struct-jig.cob, 36-3 3.1): the start pool, size, absolute start height, heightmap (-1 none, 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), expansion hack, horizontal and vertical distance, padding bottom and top, ignore_waterlogging, and ok (1 when the assembler can build it)
     05 SD-BLOCK-FIRST       BINARY-LONG.
     05 SD-BLOCK-COUNT       BINARY-LONG.
+*>  the biomes of the tag minecraft:required_ocean_monument_surrounding (a run of SD-BIOME, read by STRUCT-LOAD; 36-6 5.1 step 3)
+    05 SD-SURR-FIRST        BINARY-LONG.
+    05 SD-SURR-COUNT        BINARY-LONG.
 *>  SS-KIND 0 concentric_rings, 1 dimension_origin, 2 random_spread (the placement registry ids); SS-SPREAD 0 linear 1 triangular; SS-METHOD the frequency reduction
 *>  method id; SS-EX-SET the set index of the exclusion zone (0 none) and SS-EX-COUNT its chunk_count; SS-RING-ROW the row of SD-RING built for the set (0 none);
 *>  SS-POSSIBLE 1 when a structure of the set has a biome the source can make (4.1)

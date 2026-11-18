@@ -453,7 +453,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-FIND-POINT.
 *> USING structure row, seed (BINARY-DOUBLE), chunk x, chunk z, stub x out, stub y out, stub z out, valid out: findGenerationPoint of the structure's type (36-1 5.3). The mineshaft builds
-*> its pieces (MS-FIND-POINT, sea level 63 and min y -64 of the overworld) and leaves them in the builder; the stronghold builds its pieces (SH-FIND-POINT, struct-stronghold.cob); the woodland mansion its template pieces (MAN-FIND-POINT, struct-man-start.cob); the igloo and the shipwreck build template pieces (STRUCT-TPL-FIND-POINT); the swamp hut, the jungle temple and the desert pyramid build scattered pieces (STRUCT-SCATTER-FIND-POINT);
+*> its pieces (MS-FIND-POINT, sea level 63 and min y -64 of the overworld) and leaves them in the builder; the stronghold builds its pieces (SH-FIND-POINT, struct-stronghold.cob); the woodland mansion its template pieces (MAN-FIND-POINT, struct-man-start.cob);
+*> the ocean monument its one building piece (MON-FIND-POINT, struct-mon-build.cob); the igloo and the shipwreck build template pieces (STRUCT-TPL-FIND-POINT); the swamp hut, the jungle temple and the desert pyramid build scattered pieces (STRUCT-SCATTER-FIND-POINT);
 *> any other type has no generator yet: the stub is the chunk's middle column at y 0, valid, with no piece.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -468,6 +469,8 @@
  01 WS-STRONG-ID           BINARY-LONG.
  01 WS-MANSION-NAME        PIC X(40) VALUE "woodland_mansion".
  01 WS-MANSION-ID          BINARY-LONG.
+ 01 WS-MONUMENT-NAME       PIC X(40) VALUE "ocean_monument".
+ 01 WS-MONUMENT-ID         BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-SEA                 BINARY-LONG VALUE 63.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
@@ -508,6 +511,11 @@
          IF SDT-TYPE(L-STRUCT) = WS-MANSION-ID
              MOVE 1 TO WS-DONE
              CALL "MAN-FIND-POINT" USING L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID
+         END-IF
+         CALL "STRUCT-ENUM-ID" USING WS-KIND WS-MONUMENT-NAME WS-MONUMENT-ID
+         IF SDT-TYPE(L-STRUCT) = WS-MONUMENT-ID
+             MOVE 1 TO WS-DONE
+             CALL "MON-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID
          END-IF
          CALL "STRUCT-ENUM-ID" USING WS-KIND WS-PORTAL-NAME WS-PORTAL-ID
          IF SDT-TYPE(L-STRUCT) = WS-PORTAL-ID
@@ -559,6 +567,8 @@
                      CALL "SCP-POST" USING WS-I
                  WHEN SP-TYPE(WS-I) >= 19 AND SP-TYPE(WS-I) <= 31
                      CALL "SH-POST" USING WS-I
+                 WHEN SP-TYPE(WS-I) = 38
+                     CALL "MON-POST" USING WS-I
                  WHEN OTHER
                      CALL "MS-POST" USING WS-I
              END-EVALUATE

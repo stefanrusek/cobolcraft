@@ -37,3 +37,15 @@
        10 MC-X1            BINARY-LONG.
        10 MC-Y1            BINARY-LONG.
        10 MC-Z1            BINARY-LONG.
+*> The block drawing context of the geometry (core/src/struct-mon-geo.cob, struct-mon-room.cob, struct-mon-build.cob; 5.6 to 5.9): MP-ROW the SP-PIECE row whose box and orientation are the
+*> local frame of the piece being drawn, MP-CELL the slots of its cells A, B, C and D (0 none; 5.8), MP-DESIGN its main design, MP-PILLAR the pillar flag of a simple room, MP-XOFF the x offset of a
+*> wing of the building. MB-STATE the block states by code (1 prismarine bricks, 2 prismarine, 3 dark prismarine, 4 sea lantern, 5 gold block, 6 wet sponge, 7 water), MB-KEEP the block numbers
+*> the water clearing leaves (ice, packed ice, blue ice, water), valid for the block table epoch MB-EPOCH.
+    05 MP-ROW              BINARY-LONG.
+    05 MP-CELL             BINARY-LONG OCCURS 4 TIMES.
+    05 MP-DESIGN           BINARY-LONG.
+    05 MP-PILLAR           BINARY-LONG.
+    05 MP-XOFF             BINARY-LONG.
+    05 MB-EPOCH            BINARY-LONG.
+    05 MB-STATE            BINARY-LONG OCCURS 7 TIMES.
+    05 MB-KEEP             BINARY-LONG OCCURS 4 TIMES.
