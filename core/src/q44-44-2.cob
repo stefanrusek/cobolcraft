@@ -42,3 +42,51 @@
      MOVE 15 TO BE-XI(L-INDEX, 11) BE-XI(L-INDEX, 13)
      GOBACK.
  END PROGRAM SPW-POTENTIAL-PICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPW-CUSTOM-OK.
+*> USING dim, x, y, z (BINARY-LONG feet cell), species row (STDMOBS.cpy), custom rules (5 BINARY-LONG: set, block light min, max, sky light min, max), ok out: SpawnData.custom_spawn_rules
+*> isValidPosition of 44 part 2 section 3 together with the Peaceful test of 18 section 6.12 step 3: a type that is not friendly (a monster, SM-KIND 1) is refused on Peaceful, the block
+*> light of the cell and the effective sky brightness (the sky light less the night's darkening, or 10 in a thunderstorm; ServerLevel.getEffectiveSkyBrightness) must lie in the
+*> inclusive ranges.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STDMOBS.
+ COPY BRWORLD.
+ COPY CORESTATE.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-RAW                 BINARY-LONG.
+ 01 WS-DARKEN              BINARY-LONG.
+ 01 WS-THUNDER             BINARY-LONG.
+ 01 WS-EFF                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-RULES.
+    05 L-RULE-SET          BINARY-LONG.
+    05 L-RULE-BMIN         BINARY-LONG.
+    05 L-RULE-BMAX         BINARY-LONG.
+    05 L-RULE-SMIN         BINARY-LONG.
+    05 L-RULE-SMAX         BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ROW L-RULES L-OK.
+     CALL "LIGHT-RAW" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK WS-RAW
+     CALL "STDMOB-DARKEN" USING CW-TIME WS-DARKEN
+     CALL "WEATHER-THUNDERING" USING L-DIM WS-THUNDER
+     IF WS-THUNDER = 1
+         MOVE 10 TO WS-DARKEN
+     END-IF
+     COMPUTE WS-EFF = FUNCTION MAX(WS-SKY - WS-DARKEN, 0)
+     MOVE 1 TO L-OK
+     IF SM-KIND(L-ROW) = 1 AND BW-DIFFICULTY = 0
+         MOVE 0 TO L-OK
+     END-IF
+     IF WS-BLOCK < L-RULE-BMIN OR WS-BLOCK > L-RULE-BMAX OR WS-EFF < L-RULE-SMIN OR WS-EFF > L-RULE-SMAX
+         MOVE 0 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM SPW-CUSTOM-OK.
