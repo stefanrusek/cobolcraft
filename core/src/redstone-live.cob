@@ -189,6 +189,8 @@
                          MOVE 4 TO WS-DIR
                      WHEN "east"
                          MOVE 5 TO WS-DIR
+                     WHEN "up"
+                         MOVE 1 TO WS-DIR
                      WHEN OTHER
                          MOVE 0 TO WS-DIR
                  END-EVALUATE
@@ -350,7 +352,12 @@
              WHEN 5
              WHEN 6
              WHEN 8
+             WHEN 18 THRU 24
+             WHEN 26 THRU 28
                  MOVE 1 TO WS-CONNECT
+             WHEN 17
+                 MOVE RL-S-DIR(WS-STATE + 1) TO WS-FACING
+                 CALL "RS1-OBS-CONNECT" USING WS-D WS-FACING WS-CONNECT
              WHEN 7
                  MOVE RL-S-DIR(WS-STATE + 1) TO WS-FACING
                  CALL "RS1-OPP" USING WS-FACING WS-OPP
@@ -450,6 +457,7 @@
  01 WS-SIDE                BINARY-LONG.
  01 WS-FACING              BINARY-LONG.
  01 WS-ON                  BINARY-LONG.
+ 01 WS-OWN                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
@@ -533,6 +541,47 @@
          WHEN 8
              IF WS-ON = 1 AND L-D = WS-FACING
                  CALL "RL-CMP-GET" USING L-DIM L-X L-Y L-Z L-OUT
+             END-IF
+         WHEN 17
+*>           the observer (30-2 6.2): 15 towards its back, weak and strong alike
+             CALL "RS1-OBS-SIGNAL" USING WS-ON WS-FACING L-D WS-OWN L-OUT
+         WHEN 18
+         WHEN 19
+         WHEN 23
+         WHEN 28
+*>           pressure plates (30-5 4.1), the detector rail (30-6) and the lectern: the own signal every way, strong only towards UP (asked by the block below)
+             MOVE 0 TO WS-OWN
+             IF WS-CLASS = 19
+                 MOVE RL-S-POWER(L-STATE + 1) TO WS-OWN
+             ELSE
+                 IF WS-ON = 1
+                     MOVE 15 TO WS-OWN
+                 END-IF
+             END-IF
+             IF L-DIRECT = 0 OR L-D = 1
+                 MOVE WS-OWN TO L-OUT
+             END-IF
+         WHEN 20
+         WHEN 21
+*>           the daylight detector (30-5 5) and the target block (30-5 6): the power every way, never strong
+             IF L-DIRECT = 0
+                 MOVE RL-S-POWER(L-STATE + 1) TO L-OUT
+             END-IF
+         WHEN 22
+         WHEN 24
+*>           the lightning rod (30-5 7) and the tripwire hook (30-8): 15 while powered every way, strong towards the facing
+             IF WS-ON = 1 AND (L-DIRECT = 0 OR L-D = WS-FACING)
+                 MOVE 15 TO L-OUT
+             END-IF
+         WHEN 26
+*>           the sculk sensor (30-8): the power every way, strong towards UP
+             IF L-DIRECT = 0 OR L-D = 1
+                 MOVE RL-S-POWER(L-STATE + 1) TO L-OUT
+             END-IF
+         WHEN 27
+*>           the calibrated sculk sensor: nothing towards its facing, else as the sensor
+             IF L-D NOT = WS-FACING AND (L-DIRECT = 0 OR L-D = 1)
+                 MOVE RL-S-POWER(L-STATE + 1) TO L-OUT
              END-IF
      END-EVALUATE
      GOBACK.
@@ -1736,6 +1785,11 @@
              IF L-KIND = 1 OR L-KIND = 3
                  CALL "RL-BULB-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
              END-IF
+         WHEN 17
+             CALL "RL-OBS-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+         WHEN 18
+         WHEN 19
+             CALL "RL-PLATE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
      END-EVALUATE
      GOBACK.
  END PROGRAM REDSTONE-HOOK.
