@@ -575,6 +575,9 @@
      ELSE
          IF WS-WET = 1
              CALL "AQUA-SWIM" USING L-ROW L-M
+             IF SM-KEY(L-M) = "dolphin"
+                 CALL "AQUA-DOLPHIN-JUMP" USING L-ROW
+             END-IF
          END-IF
      END-IF
      IF SM-KEY(L-M) = "pufferfish"
