@@ -186,8 +186,10 @@
      MOVE 0 TO WS-FOUND
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 15 OR WS-FOUND = 1
          COMPUTE WS-SCALE = 10 ** WS-K
+         COMPUTE WS-DIV = 10 ** WS-K
          COMPUTE WS-R = FUNCTION INTEGER(WS-A * WS-SCALE + 0.5)
-         COMPUTE WS-CHECK = WS-R / WS-SCALE
+*>       two integers: the quotient is stored the way a number read from text is (a decimal into a float)
+         COMPUTE WS-CHECK = WS-R / WS-DIV
          PERFORM SAME-AS-A
      END-PERFORM
      SUBTRACT 1 FROM WS-K

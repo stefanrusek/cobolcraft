@@ -643,6 +643,27 @@
          DELIMITED BY SIZE INTO WS-TEXT
      MOVE "cook 0 lit total 1 used 7 second 0" TO TL-EXPECTED
      PERFORM CHECK
+
+     MOVE "acceptance US12 furnace given an unlit furnace one third through an item (1 of 3) when new fuel lights it then the progress keeps "
+         & "its share of the new total of 50 (speed 4), rounded up (50 / 3 = 16.67: 17), and the tick adds one" TO TL-CASE
+     MOVE WS-RAW TO BE-SLOT-ITEM(WS-BE, 1)
+     MOVE 2 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 0 TO BE-SLOT-VAR(WS-BE, 1)
+     MOVE WS-COAL TO BE-SLOT-ITEM(WS-BE, 2)
+     MOVE 1 TO BE-SLOT-COUNT(WS-BE, 2)
+     MOVE 0 TO BE-SLOT-VAR(WS-BE, 2)
+     MOVE 0 TO BE-SLOT-COUNT(WS-BE, 3)
+     MOVE 0 TO BE-F-LIT(WS-BE)
+     MOVE 1 TO BE-F-COOK(WS-BE)
+     MOVE 3 TO BE-F-COOK-TOTAL(WS-BE)
+     MOVE 1 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE BE-F-COOK(WS-BE) TO WS-E1
+     MOVE BE-F-COOK-TOTAL(WS-BE) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "cook " FUNCTION TRIM(WS-E1) " total " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "cook 18 total 50" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
 
 *> Places the furnace item WS-ID at WS-X, opens it, shift-clicks the input item WS-A (3) and coal (2) into it and runs one tick; WS-BE is its entity.

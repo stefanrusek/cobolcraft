@@ -120,9 +120,9 @@
 
      MOVE "acceptance US12 39§4 Nether portal travel: she arrives at the scaled position (10.0 / 8, 10.5 / 8) in a portal made for her: "
          & "feet (2.0, 41.0, 1.5), six portal blocks at (1, 41, 1), the same game mode" TO TL-CASE
-     COMPUTE WS-F1 = PL-X(WS-ROW)
-     COMPUTE WS-F2 = PL-Y(WS-ROW)
-     COMPUTE WS-F3 = PL-Z(WS-ROW)
+     COMPUTE WS-F1 ROUNDED = PL-X(WS-ROW)
+     COMPUTE WS-F2 ROUNDED = PL-Y(WS-ROW)
+     COMPUTE WS-F3 ROUNDED = PL-Z(WS-ROW)
      MOVE DIM-STANDARD-NETHER TO WS-DIM
      MOVE 2 TO WS-X MOVE 41 TO WS-Y MOVE 1 TO WS-Z
      CALL "PT-PORTALS" USING WS-DIM WS-X WS-Y WS-Z WS-AXIS WS-W WS-H WS-COUNT
@@ -144,9 +144,9 @@
      MOVE 41.0 TO PL-Y(WS-ROW)
      MOVE 1.5 TO PL-Z(WS-ROW)
      CALL "TEST-TICKS" USING WS-TWO
-     COMPUTE WS-F1 = PL-X(WS-ROW)
-     COMPUTE WS-F2 = PL-Y(WS-ROW)
-     COMPUTE WS-F3 = PL-Z(WS-ROW)
+     COMPUTE WS-F1 ROUNDED = PL-X(WS-ROW)
+     COMPUTE WS-F2 ROUNDED = PL-Y(WS-ROW)
+     COMPUTE WS-F3 ROUNDED = PL-Z(WS-ROW)
      MOVE PL-DIM(WS-ROW) TO WS-A
      MOVE PQ-POI-COUNT TO WS-B
      MOVE SPACES TO TL-OBSERVED
