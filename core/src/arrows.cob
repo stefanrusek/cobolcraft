@@ -294,6 +294,8 @@
          MOVE WS-PX TO EN-X(L-ROW)
          MOVE WS-PY TO EN-Y(L-ROW)
          MOVE WS-PZ TO EN-Z(L-ROW)
+*>       a target block hit by the arrow gives its power (30 part 5 section 6)
+         CALL "RL-TARGET-HIT" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-PX WS-PY WS-PZ
          MOVE 0 TO EN-VX(L-ROW) EN-VY(L-ROW) EN-VZ(L-ROW)
          MOVE 1 TO EN-ON-GROUND(L-ROW)
          MOVE 0 TO EN-AGE(L-ROW)

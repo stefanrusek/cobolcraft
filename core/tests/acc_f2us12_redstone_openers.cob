@@ -68,7 +68,7 @@
      MOVE "minecraft:tnt" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TNT-TYPE WS-ENTITY-ROW WS-STATUS
 *>   a stone floor at y 100 and clear air at y 101 to 103 for x 0 to 6, z 0 to 20
-     PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 20
+     PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 24
          PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 6
              MOVE 100 TO WS-Y
              MOVE "stone" TO WS-K
@@ -167,6 +167,14 @@
      MOVE 3 TO WS-X MOVE 101 TO WS-Y
      MOVE "acceptance US12-4 live redstone 30-7 3.5 step 1 power beside the upper half opens the door (each half asks the other half's neighbours too)" TO WS-CASE
      MOVE "facing=north,half=lower,hinge=left,open=true,powered=true" TO WS-EXP
+     PERFORM ASSERT-PROPS
+
+*>   the lower half rewritten with flags 3 tells the upper half with the door as the source: the upper half does nothing (3.5 step 2)
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "oak_door" TO WS-K
+     MOVE "facing=north,half=lower,hinge=right,open=true,powered=true" TO WS-PR PERFORM PUT-BLOCK
+     MOVE 102 TO WS-Y
+     MOVE "acceptance US12-4 live redstone 30-7 3.5 step 2 an update from the other door half changes nothing: the upper half keeps open and powered" TO WS-CASE
+     MOVE "facing=north,half=upper,hinge=left,open=true,powered=true" TO WS-EXP
      PERFORM ASSERT-PROPS
 
 *>   E. copper bulb (z 8): each rising edge flips lit, a falling edge only clears powered (7.2)
@@ -271,6 +279,26 @@
      MOVE "acceptance US12-4 live redstone 30-7 3.3 step 4 and so is the upper half" TO WS-CASE
      MOVE "true,true" TO TL-EXPECTED
      PERFORM ASSERT-OP
+*>   H. a door placed with the signal only beside its upper cell (z 22) is open and powered (3.3 step 2)
+     MOVE 22 TO WS-Z
+     MOVE 4 TO WS-X MOVE 102 TO WS-Y MOVE "redstone_block" TO WS-K MOVE SPACES TO WS-PR PERFORM PUT-BLOCK
+     MOVE "oak_door" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM PLACE-ITEM
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y
+     PERFORM READ-OPEN-POWERED
+     MOVE "acceptance US12-4 live redstone 30-7 3.3 step 2 a door placed where only the cell above has a signal is open and powered" TO WS-CASE
+     MOVE "true,true" TO TL-EXPECTED
+     PERFORM ASSERT-OP
+*>   I. placing a block that follows no signal changes nothing about it (z 20)
+     MOVE 20 TO WS-Z
+     MOVE "stone" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM PLACE-ITEM
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y
+     MOVE "acceptance US12-4 live redstone 30-7 placement of an unrelated block (stone) is untouched" TO WS-CASE
+     MOVE "stone" TO WS-EXP
+     PERFORM ASSERT-KEY
      STOP RUN.
 
  FIND-ITEM.

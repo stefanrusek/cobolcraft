@@ -61,6 +61,7 @@
  01 WS-FDIR                BINARY-LONG.
  01 WS-FKIND               BINARY-LONG.
  01 WS-K2                  PIC X(48).
+ 01 WS-NSLOTS              BINARY-LONG.
  01 WS-P1N                 PIC X(16).
  01 WS-P1V                 PIC X(16).
  01 WS-P2N                 PIC X(16).
@@ -85,7 +86,7 @@
              COMPUTE WS-WIRE-BLOCK = WS-ID
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 30
+     PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 36
          PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 6
              MOVE 100 TO WS-Y
              MOVE "stone" TO WS-K
@@ -220,6 +221,38 @@
      MOVE "acceptance US12-4 live redstone 30-2 5.3 a candle cake reads 14" TO WS-CASE
      PERFORM STATE-CASE
 
+*>   C2. block entity containers by their slots (z 26 and up): the block at x 4 gets its entity filled, the container tick tells the comparator
+     MOVE 26 TO WS-Z
+     MOVE "furnace" TO WS-K MOVE SPACES TO WS-P1N
+     MOVE 1 TO WS-NSLOTS
+     MOVE "5" TO WS-EXP
+     MOVE "acceptance US12-4 live redstone 30-2 5.3 a furnace holding one full stack of its 3 slots reads floor(1/3 * 14) + 1 = 5" TO WS-CASE
+     PERFORM FILL-CASE
+     MOVE 28 TO WS-Z
+     MOVE "decorated_pot" TO WS-K MOVE SPACES TO WS-P1N
+     MOVE 1 TO WS-NSLOTS
+     MOVE "15" TO WS-EXP
+     MOVE "acceptance US12-4 live redstone 30-2 5.3 a decorated pot holding a full stack of its one slot reads 15" TO WS-CASE
+     PERFORM FILL-CASE
+     MOVE 30 TO WS-Z
+     MOVE "crafter" TO WS-K MOVE SPACES TO WS-P1N
+     MOVE 3 TO WS-NSLOTS
+     MOVE "3" TO WS-EXP
+     MOVE "acceptance US12-4 live redstone 30-2 5.3 a crafter with 3 filled slots reads 3" TO WS-CASE
+     PERFORM FILL-CASE
+     MOVE 32 TO WS-Z
+     MOVE "chiseled_bookshelf" TO WS-K MOVE SPACES TO WS-P1N
+     MOVE 0 TO WS-NSLOTS
+     MOVE "3" TO WS-EXP
+     MOVE "acceptance US12-4 live redstone 30-2 5.3 a chiseled bookshelf whose last interacted slot is 2 reads 3" TO WS-CASE
+     PERFORM FILL-CASE
+     MOVE 34 TO WS-Z
+     MOVE "lectern" TO WS-K MOVE "has_book" TO WS-P1N MOVE "true" TO WS-P1V
+     MOVE 1 TO WS-NSLOTS
+     MOVE "5" TO WS-EXP
+     MOVE "acceptance US12-4 live redstone 31-4 3.3 a lectern on page 3 of 11 reads floor(3/10 * 14) + 1 = 5" TO WS-CASE
+     PERFORM FILL-CASE
+
 *>   D. an item frame behind a conductor (z 24): stone at x 4, the frame at x 5 faces east with a stack turned 3 times: 4
      MOVE 24 TO WS-Z
      MOVE 2 TO WS-X MOVE 101 TO WS-Y MOVE "redstone_wire" TO WS-K PERFORM PUT-DEF
@@ -244,6 +277,35 @@
      MOVE "4" TO WS-EXP
      PERFORM ASSERT-POWER
      STOP RUN.
+
+ FILL-CASE.
+*>   the row of WS-Z with the block WS-K (property WS-P1N set to WS-P1V when named) at x 4; its entity gets WS-NSLOTS full stacks of the item,
+*>   the chiseled bookshelf last slot 2 (WS-NSLOTS 0), the lectern page 3 of 11; the expected output is WS-EXP
+     MOVE WS-K TO WS-K2
+     PERFORM BUILD-ROW
+     MOVE WS-K2 TO WS-K
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y
+     PERFORM MAKE-DEF
+     IF WS-P1N NOT = SPACES
+         MOVE WS-P1N TO WS-PN MOVE WS-P1V TO WS-PV PERFORM SET-P
+     END-IF
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NSLOTS
+         MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, WS-I)
+         MOVE 64 TO BE-SLOT-COUNT(WS-BE, WS-I)
+     END-PERFORM
+     IF WS-K2 = "chiseled_bookshelf"
+         MOVE 2 TO BE-COOLDOWN(WS-BE)
+     END-IF
+     IF WS-K2 = "lectern"
+         MOVE 3 TO BE-XI(WS-BE, 1)
+         MOVE 11 TO BE-XI(WS-BE, 2)
+     END-IF
+     MOVE 4 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 2 TO WS-X
+     PERFORM READ-WIRE
+     PERFORM ASSERT-POWER.
 
  STATE-CASE.
 *>   the row of WS-Z: the wire, the comparator, then the block WS-K with the property WS-P1N set to WS-P1V at x 4

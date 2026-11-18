@@ -71,6 +71,9 @@
  01 WS-KEY112              PIC X(112).
  01 WS-STATUS              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40).
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
  01 WS-BEFORE              BINARY-LONG.
  01 WS-TNT-BEFORE          BINARY-LONG.
  PROCEDURE DIVISION.
@@ -283,6 +286,91 @@
      MOVE "acceptance US12-4 live redstone 30-4 5.1 a hopper placed beside power is disabled by its onPlace" TO WS-CASE
      MOVE "enabled=false,facing=down" TO WS-EXP
      PERFORM ASSERT-PROPS
+*>   H. a dropper (z 16) into a chest that already holds the item stacks it; the last item of the dropper empties its slot
+     MOVE 16 TO WS-Z
+     MOVE "stone" TO WS-K
+     PERFORM FIND-ITEM
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "chest" TO WS-K PERFORM PUT-DEF
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE2
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE2, 1)
+     MOVE 5 TO BE-SLOT-COUNT(WS-BE2, 1)
+     MOVE 3 TO WS-X MOVE "dropper" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 1)
+     MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 2 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE BE-SLOT-COUNT(WS-BE2, 1) TO WS-P
+     MOVE "acceptance US12-4 live redstone 30-4 1.4 step 6 an item that matches a stack of the container joins it: 6" TO WS-CASE
+     MOVE "6" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE BE-SLOT-COUNT(WS-BE, 1) TO WS-P
+     MOVE "acceptance US12-4 live redstone 30-4 1.4 the dropper's last item leaves its slot empty: 0" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   I. a dropper without an entity does nothing (z 18)
+     MOVE 18 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "dropper" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE 0 TO BE-USED(WS-BE)
+     PERFORM COUNT-LOOSE
+     MOVE WS-COUNT TO WS-BEFORE
+     MOVE 2 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM COUNT-LOOSE
+     COMPUTE WS-P = WS-COUNT - WS-BEFORE
+     MOVE "acceptance US12-4 live redstone 30-4 1.4 step 1 a dropper whose block entity is missing dispenses nothing" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   J. the last TNT of a dispenser with the rule tnt_explodes off: event 1001, the item stays (z 20)
+     MOVE 20 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "dispenser" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE "tnt" TO WS-K
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 1)
+     MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE "tnt_explodes" TO WS-RULE-NAME
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     PERFORM COUNT-TNT
+     MOVE WS-COUNT TO WS-TNT-BEFORE
+     MOVE 2 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     PERFORM COUNT-TNT
+     COMPUTE WS-P = WS-COUNT - WS-TNT-BEFORE
+     MOVE "acceptance US12-4 live redstone 30-4 4.14 with tnt_explodes off no TNT is primed" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE BE-SLOT-COUNT(WS-BE, 1) TO WS-P
+     MOVE "acceptance US12-4 live redstone 30-4 4.14 and the TNT item stays in the dispenser: 1" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   K. the last item of a dispenser empties its slot (z 22)
+     MOVE 22 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "dispenser" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE "stone" TO WS-K
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 1)
+     MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 2 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE BE-SLOT-COUNT(WS-BE, 1) TO WS-P
+     MOVE "acceptance US12-4 live redstone 30-4 1.3 the last item dispensed leaves the slot empty: 0" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
      STOP RUN.
 
  COUNT-LOOSE.

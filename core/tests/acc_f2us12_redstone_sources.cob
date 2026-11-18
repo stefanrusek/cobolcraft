@@ -48,6 +48,11 @@
  01 WS-SIG                 BINARY-LONG.
  01 WS-ED                  PIC -(9)9.
  01 WS-PX                  FLOAT-LONG.
+ 01 WS-ER                  BINARY-LONG VALUE 0.
+ 01 WS-ETYPE               BINARY-LONG.
+ 01 WS-ESTATUS             BINARY-LONG.
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-KEY112              PIC X(112).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "PT-OPEN" USING WS-SKIP
@@ -269,7 +274,140 @@
      MOVE "acceptance US12-4 live redstone 30-5 7 the block in front of the rod is not strongly powered: 0" TO WS-CASE
      MOVE "0" TO WS-EXP
      PERFORM ASSERT-SIGNAL
+*>   daylight detector (z 15) and target block (z 16): the power every way, never strong
+     MOVE 15 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "daylight_detector" TO WS-K PERFORM MAKE-DEF
+     MOVE "power" TO WS-PN MOVE "7" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 2 TO WS-D
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-5 5 a daylight detector gives its power weakly: 7" TO WS-CASE
+     MOVE "7" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 100 TO WS-Y
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-5 5 and gives no strong power to the block below it: 0" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 16 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "target" TO WS-K PERFORM PUT-DEF
+     MOVE "power" TO WS-PN MOVE "9" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-5 6 a target block gives its power weakly: 9" TO WS-CASE
+     MOVE "9" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+*>   sculk sensor (z 17), calibrated sculk sensor (z 18): the power weakly, strongly upwards; the calibrated one nothing towards its facing
+     MOVE 17 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "sculk_sensor" TO WS-K
+     MOVE "power=5,sculk_sensor_phase=inactive,waterlogged=false" TO WS-PR
+     CALL "PT-STATE" USING WS-K WS-PR WS-ST
+     PERFORM PUT-ST
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-8 4.6 a sculk sensor gives its power weakly: 5" TO WS-CASE
+     MOVE "5" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 100 TO WS-Y
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-8 4.6 and strongly to the block below it: 5" TO WS-CASE
+     MOVE "5" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 18 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "calibrated_sculk_sensor" TO WS-K
+     MOVE "facing=north,power=6,sculk_sensor_phase=inactive,waterlogged=false" TO WS-PR
+     CALL "PT-STATE" USING WS-K WS-PR WS-ST
+     PERFORM PUT-ST
+     MOVE 2 TO WS-D
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-8 5 a calibrated sculk sensor gives nothing towards its facing: 0" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 5 TO WS-D
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-8 5 and its power towards the other sides: 6" TO WS-CASE
+     MOVE "6" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 100 TO WS-Y
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-8 5 and strongly to the block below it: 6" TO WS-CASE
+     MOVE "6" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+*>   lectern (z 19) and detector rail (z 20): powered gives 15 weakly and strongly to the block below
+     MOVE 19 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "lectern" TO WS-K PERFORM MAKE-DEF
+     MOVE "powered" TO WS-PN MOVE "true" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 100 TO WS-Y
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 31-4 3 a powered lectern strongly powers the block below it: 15" TO WS-CASE
+     MOVE "15" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+     MOVE 20 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "detector_rail" TO WS-K PERFORM MAKE-DEF
+     MOVE "powered" TO WS-PN MOVE "true" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 100 TO WS-Y
+     PERFORM READ-SIGNAL
+     MOVE "acceptance US12-4 live redstone 30-6 4.1 a powered detector rail strongly powers the block it lies on: 15" TO WS-CASE
+     MOVE "15" TO WS-EXP
+     PERFORM ASSERT-SIGNAL
+
+*>   entities that never press a plate (z 24): a display, an interaction, a marker, a bat, an ominous item spawner; an armor stand does
+     MOVE 24 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "stone_pressure_plate" TO WS-K PERFORM PUT-DEF
+     MOVE "text_display" TO WS-K PERFORM SPAWN-ENT
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 4.1 a display entity does not press a plate" TO WS-CASE
+     MOVE "powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE "interaction" TO WS-K PERFORM SPAWN-ENT
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 4.1 an interaction entity does not press a plate" TO WS-CASE
+     MOVE "powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE "marker" TO WS-K PERFORM SPAWN-ENT
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 4.1 a marker entity does not press a plate" TO WS-CASE
+     MOVE "powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE "ominous_item_spawner" TO WS-K PERFORM SPAWN-ENT
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 4.1 an ominous item spawner does not press a plate" TO WS-CASE
+     MOVE "powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE "bat" TO WS-K PERFORM SPAWN-ENT
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 4.1 a bat does not press a plate" TO WS-CASE
+     MOVE "powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE "armor_stand" TO WS-K PERFORM SPAWN-ENT
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-5 4.1 an armor stand (not a marker) is a living entity that presses a stone plate" TO WS-CASE
+     MOVE "powered=true" TO WS-EXP
+     PERFORM ASSERT-PROPS
      STOP RUN.
+
+ SPAWN-ENT.
+*>   an entity of the type of key WS-K standing on the plate at (3, 101, WS-Z); the one made before is dropped
+     IF WS-ER > 0
+         MOVE 0 TO EN-USED(WS-ER)
+     END-IF
+     MOVE SPACES TO WS-KEY112
+     STRING "minecraft:" FUNCTION TRIM(WS-K) DELIMITED BY SIZE INTO WS-KEY112
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY112 WS-ETYPE WS-ENTITY-ROW WS-ESTATUS
+     CALL "ENTITY-ALLOC" USING WS-ER
+     CALL "ENTITY-NEW-ID" USING EN-ID(WS-ER)
+     MOVE WS-ETYPE TO EN-TYPE(WS-ER)
+     MOVE WS-DIM TO EN-DIM(WS-ER)
+     MOVE 3.5 TO EN-X(WS-ER)
+     MOVE 101.0 TO EN-Y(WS-ER)
+     COMPUTE EN-Z(WS-ER) = WS-Z + 0.5.
 
  PUT-SOURCE-ROD.
      MOVE 3 TO WS-X MOVE 101 TO WS-Y

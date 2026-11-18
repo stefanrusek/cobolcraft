@@ -220,6 +220,57 @@
      MOVE "acceptance US12-4 live redstone 30-8 7.7 a hook removed while attached: the calculation with removing true detaches the other hook" TO WS-CASE
      MOVE "attached=false,facing=east,powered=false" TO WS-EXP
      PERFORM ASSERT-PROPS
+*>   a powered hook removed (z 2): its removal tells its neighbours (7.7)
+     PERFORM PLAYER-AWAY
+     MOVE 2 TO WS-Z
+     MOVE 0 TO WS-X MOVE 101 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 5 TO WS-X PERFORM PUT-DEF
+     MOVE 1 TO WS-X MOVE "tripwire_hook" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 2 TO WS-X MOVE "tripwire" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X PERFORM PUT-DEF
+     MOVE 4 TO WS-X MOVE "tripwire_hook" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "west" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 2.5 TO PL-X(WS-ROW)
+     MOVE 101.0 TO PL-Y(WS-ROW)
+     MOVE 2.5 TO PL-Z(WS-ROW)
+     MOVE 2 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 4 TO WS-X MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-X
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-8 7.7 a powered hook removed: the other hook is detached (and unpowered) by the calculation" TO WS-CASE
+     MOVE "attached=false,facing=east,powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     PERFORM PLAYER-AWAY
+*>   a wire beside a hook that faces away from the line finds no hook (z 4)
+     MOVE 4 TO WS-Z
+     MOVE 1 TO WS-X MOVE 101 TO WS-Y MOVE "stone" TO WS-K
+     MOVE 5 TO WS-Z PERFORM PUT-DEF
+     MOVE 4 TO WS-Z
+     MOVE "tripwire_hook" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "north" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 2 TO WS-X MOVE "tripwire" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-X
+     PERFORM READ-PROPS
+     MOVE "acceptance US12-4 live redstone 30-8 7.5 a wire next to a hook facing elsewhere does not attach it" TO WS-CASE
+     MOVE "attached=false,facing=north,powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   an unattached wire is pressed by an entity at its shape (y 0 to 8 sixteenths): z 6
+     MOVE 6 TO WS-Z
+     MOVE 3 TO WS-X MOVE "tripwire" TO WS-K PERFORM PUT-DEF
+     MOVE 3.5 TO PL-X(WS-ROW)
+     MOVE 101.0 TO PL-Y(WS-ROW)
+     MOVE 6.5 TO PL-Z(WS-ROW)
+     MOVE 2 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE "powered" TO WS-PN
+     PERFORM READ-ONE
+     MOVE "acceptance US12-4 live redstone 30-8 7.1 an unattached wire (shape y 0 to 8 sixteenths) is pressed by a player" TO WS-CASE
+     MOVE "powered=true" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     PERFORM PLAYER-AWAY
      STOP RUN.
 
  READ-ONE.

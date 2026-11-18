@@ -1880,6 +1880,10 @@
              END-IF
          WHEN 25
              CALL "RL-TRIP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+         WHEN 21
+             IF L-KIND = 1 OR L-KIND = 7
+                 CALL "RL-TARGET-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
          WHEN 17
              CALL "RL-OBS-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
          WHEN 18

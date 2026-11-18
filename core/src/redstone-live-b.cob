@@ -6,7 +6,7 @@
 *> of 8.2 in the document, not here).
 *> Entry points:
 *>   RL-LAMP-HOOK USING kind, dimension row, x, y, z, state    kind 3 neighborChanged and 7 scheduled tick of a redstone lamp
-*>   RL-OPEN-HOOK USING kind, dimension row, x, y, z, state, source block    kind 3 of a door, a trapdoor and a fence gate
+*>   RL-OPEN-HOOK USING kind, dimension row, x, y, z, state, source block    kind 3 (neighborChanged, the only kind it is called with) of a door, a trapdoor and a fence gate
 *>   RL-BULB-HOOK USING kind, dimension row, x, y, z, state, old state    kind 1 and 3 of a copper bulb (checkAndFlip)
 *>   RL-TNT-HOOK USING kind, dimension row, x, y, z, state, old state    kind 1 and 3 of a TNT block
 *>   REDSTONE-PLACE-STATE USING dimension row, x, y, z, state (in and out)    the placed state of a lamp, a trapdoor, a fence gate and the lower half of a door
@@ -190,9 +190,6 @@
  01 L-STATE                BINARY-LONG.
  01 L-SOURCE               BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-SOURCE.
-     IF L-KIND NOT = 3
-         GOBACK
-     END-IF
      MOVE CB-S-BLOCK(L-STATE + 1) TO LS-BLOCK
      MOVE RL-CLASS(LS-BLOCK + 1) TO LS-CLASS
      CALL "RL-GET-BOOL" USING L-STATE WS-POWERED LS-POWERED
