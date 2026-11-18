@@ -42,6 +42,7 @@
     05 CL-XBOB-O             FLOAT-LONG.
     05 CL-YBOB               FLOAT-LONG.
     05 CL-YBOB-O             FLOAT-LONG.
+    05 CL-HAND-KEY-GCOUNT    BINARY-LONG.     *> vertex count of the cached hand glint mesh (RL-HG-VERTEX)
     05 CL-HAND-KEY-P         FLOAT-LONG.      *> a digest of the view pose (bob and sway) and of the off hand the cached mesh was built for
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
@@ -1281,6 +1282,22 @@
           15 RL-GL-R         FLOAT-SHORT.
           15 RL-GL-G         FLOAT-SHORT.
           15 RL-GL-BLUE      FLOAT-SHORT.
+*>     The glint of the item in the hand (hand.cob; 54 section 19.3, texture 5, glint pipeline, the hand's projection): the quads of the hand mesh over the opaque
+*>     texels (a flat item: one quad per opaque texel on each face and the edge quads; a block: its faces) with the glint coordinates of the item scale 8.
+       10 RL-HG-COUNT        BINARY-LONG.
+       10 RL-HG-UPLOADED     BINARY-LONG.
+       10 RL-HG-VERTEX OCCURS 4096 TIMES.
+          15 RL-HG-X         FLOAT-SHORT.
+          15 RL-HG-Y         FLOAT-SHORT.
+          15 RL-HG-Z         FLOAT-SHORT.
+          15 RL-HG-U         FLOAT-SHORT.
+          15 RL-HG-V         FLOAT-SHORT.
+          15 RL-HG-B         FLOAT-SHORT.
+          15 RL-HG-A         FLOAT-SHORT.
+          15 RL-HG-SKY       FLOAT-SHORT.
+          15 RL-HG-R         FLOAT-SHORT.
+          15 RL-HG-G         FLOAT-SHORT.
+          15 RL-HG-BLUE      FLOAT-SHORT.
 *>     The glint of the item icons (glint.cob GLINT-ICON; UI-SLOT; texture 5, glint pipeline, the UI's matrix): quads over the opaque texels of the icon of each slot whose
 *>     stack has the foil, vertices as RL-IC-VERTEX with the glint coordinates of the item scale 8. PL-STACK-FOIL is the foil decision of the item stack last decoded
 *>     (STACK-FOIL), taken over by the slot the stack is set into; PL-SLOT-FOIL and PL-OFFHAND-FOIL the foil of the player slots 0 to 35 and the off hand.

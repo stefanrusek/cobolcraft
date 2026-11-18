@@ -609,6 +609,61 @@
      MOVE '"right"' TO WS-OPT-VALUE
      MOVE 7 TO WS-OPT-LENGTH
      CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+*>   The glint of a foil item in the hand (54 section 19.3): a flat item's glint covers its opaque texels (12 vertices a texel, more than the hand's 12 + edges), carries the
+*>   glint strength 0.75 as brightness and is kept while the mesh is reused; with no foil there is none; a block item's glint is its 36 vertices.
+     MOVE 0 TO PL-OFFHAND-COUNT CL-OHAND-ITEM CL-SWING-AT PL-EATING
+     MOVE 10 TO PL-SLOT-ITEM(PL-HELD + 1)
+     MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
+     MOVE 11 TO CL-HAND-ITEM CL-ATK-LAST
+     MOVE 100 TO CL-ATK-TICKER
+     MOVE 1 TO CL-HAND-H CL-HAND-OH
+     MOVE 0 TO PL-SLOT-FOIL(PL-HELD + 1)
+     MOVE 7000000 TO CL-NOW-MS
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T5301 an item without foil has no glint mesh" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HG-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE RL-HAND-COUNT TO WS-COUNT
+     MOVE 1 TO PL-SLOT-FOIL(PL-HELD + 1)
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T5301 a flat foil item's glint mesh covers its texels and is whole quads" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-HG-COUNT > WS-COUNT AND FUNCTION MOD(RL-HG-COUNT, 6) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T5301 the hand's own mesh is unchanged by the foil" TO TL-CASE
+     MOVE WS-COUNT TO TL-EXPECTED-N
+     MOVE RL-HAND-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T5301 the glint's brightness is the glint strength 0.75" TO TL-CASE
+     MOVE 750 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = RL-HG-B(1) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE RL-HG-COUNT TO WS-COUNT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T5301 a still foil hand reuses its glint mesh with the hand mesh" TO TL-CASE
+     MOVE WS-COUNT TO TL-EXPECTED-N
+     MOVE RL-HG-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE "T5301 and the hand mesh is the reused one" TO TL-CASE
+     MOVE RL-HAND-SAME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A block item (item 1) with foil: its 6 faces.
+     MOVE 1 TO PL-SLOT-ITEM(PL-HELD + 1)
+     MOVE 2 TO CL-HAND-ITEM CL-ATK-LAST
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T5301 a block item's glint mesh is its 36 vertices" TO TL-CASE
+     MOVE 36 TO TL-EXPECTED-N
+     MOVE RL-HG-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-SLOT-FOIL(PL-HELD + 1)
+     MOVE 10 TO PL-SLOT-ITEM(PL-HELD + 1)
+     MOVE 11 TO CL-HAND-ITEM CL-ATK-LAST
 *>   Eating: 10 of 30 ticks (the use lasts CL-EAT-MS = 1500 ms) puts the main hand's item at the eating pose, with no swing.
      MOVE 0 TO PL-OFFHAND-COUNT
      MOVE 0 TO CL-OHAND-ITEM

@@ -208,7 +208,8 @@
 *> USING CLIENT-STATE, M (the model to view transform), corners (4 x, y, z, in model space, in the order of a texture: top-left, top-right, bottom-right,
 *> bottom-left), texture coordinates (4 u then 4 v, atlas), normal (model space), light 0 to 1: adds the six vertices of the quad (corners 1 2 3 1 3 4) to the
 *> hand, shaded by the two-light formula of 12 section 1.9 (min(1, (max(0, n.L0) + max(0, n.L1)) x 0.6 + 0.4), the lights of the level in view space)
-*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more.
+*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
+*> glint coordinates of the atlas coordinates through the item scale 8 (GLINT-UV) and the glint strength as brightness.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
@@ -224,6 +225,10 @@
  01 WS-K                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
+ 01 WS-GU                  FLOAT-LONG.
+ 01 WS-GV                  FLOAT-LONG.
+ 01 WS-GSCALE              FLOAT-LONG VALUE 8.
+ 01 WS-GSTRENGTH           FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-M.
@@ -236,8 +241,12 @@
  01 L-NORMAL.
     05 L-NV                FLOAT-LONG OCCURS 3 TIMES.
  01 L-LIGHT                FLOAT-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT.
-     IF RL-HAND-COUNT + 6 > 2048
+ 01 L-GLINT                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT L-GLINT.
+     IF L-GLINT NOT = 2 AND RL-HAND-COUNT + 6 > 2048
+         GOBACK
+     END-IF
+     IF L-GLINT > 0 AND RL-HG-COUNT + 6 > 4096
          GOBACK
      END-IF
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
@@ -262,17 +271,35 @@
      END-PERFORM
      PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 6
          MOVE WS-ORD(WS-V) TO WS-K
-         ADD 1 TO RL-HAND-COUNT
          COMPUTE WS-C = (WS-K - 1) * 3
-         MOVE WS-P(WS-C + 1) TO RL-HAND-X(RL-HAND-COUNT)
-         MOVE WS-P(WS-C + 2) TO RL-HAND-Y(RL-HAND-COUNT)
-         MOVE WS-P(WS-C + 3) TO RL-HAND-Z(RL-HAND-COUNT)
-         MOVE L-U(WS-K) TO RL-HAND-U(RL-HAND-COUNT)
-         MOVE L-V(WS-K) TO RL-HAND-V(RL-HAND-COUNT)
-         COMPUTE RL-HAND-B(RL-HAND-COUNT) = FUNCTION MAX(WS-SHADE * L-LIGHT, 0.1)
-         MOVE 1 TO RL-HAND-A(RL-HAND-COUNT)
-         MOVE 0 TO RL-HAND-SKY(RL-HAND-COUNT)
-         MOVE 1 TO RL-HAND-R(RL-HAND-COUNT) RL-HAND-G(RL-HAND-COUNT) RL-HAND-BLUE(RL-HAND-COUNT)
+         IF L-GLINT NOT = 2
+             ADD 1 TO RL-HAND-COUNT
+             MOVE WS-P(WS-C + 1) TO RL-HAND-X(RL-HAND-COUNT)
+             MOVE WS-P(WS-C + 2) TO RL-HAND-Y(RL-HAND-COUNT)
+             MOVE WS-P(WS-C + 3) TO RL-HAND-Z(RL-HAND-COUNT)
+             MOVE L-U(WS-K) TO RL-HAND-U(RL-HAND-COUNT)
+             MOVE L-V(WS-K) TO RL-HAND-V(RL-HAND-COUNT)
+             COMPUTE RL-HAND-B(RL-HAND-COUNT) = FUNCTION MAX(WS-SHADE * L-LIGHT, 0.1)
+             MOVE 1 TO RL-HAND-A(RL-HAND-COUNT)
+             MOVE 0 TO RL-HAND-SKY(RL-HAND-COUNT)
+             MOVE 1 TO RL-HAND-R(RL-HAND-COUNT) RL-HAND-G(RL-HAND-COUNT) RL-HAND-BLUE(RL-HAND-COUNT)
+         END-IF
+         IF L-GLINT > 0
+             ADD 1 TO RL-HG-COUNT
+             MOVE WS-P(WS-C + 1) TO RL-HG-X(RL-HG-COUNT)
+             MOVE WS-P(WS-C + 2) TO RL-HG-Y(RL-HG-COUNT)
+             MOVE WS-P(WS-C + 3) TO RL-HG-Z(RL-HG-COUNT)
+             MOVE L-U(WS-K) TO WS-GU
+             MOVE L-V(WS-K) TO WS-GV
+             CALL "GLINT-UV" USING WS-GU WS-GV WS-GSCALE
+             MOVE WS-GU TO RL-HG-U(RL-HG-COUNT)
+             MOVE WS-GV TO RL-HG-V(RL-HG-COUNT)
+             CALL "GLINT-STRENGTH" USING CLIENT-STATE WS-GSTRENGTH
+             MOVE WS-GSTRENGTH TO RL-HG-B(RL-HG-COUNT)
+             MOVE 1 TO RL-HG-A(RL-HG-COUNT)
+             MOVE 0 TO RL-HG-SKY(RL-HG-COUNT)
+             MOVE 1 TO RL-HG-R(RL-HG-COUNT) RL-HG-G(RL-HG-COUNT) RL-HG-BLUE(RL-HG-COUNT)
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM HAND-QUAD.
@@ -281,6 +308,7 @@
  PROGRAM-ID. HAND-BUILD.
 *> USING CLIENT-STATE, prefix (the view pose, 12 FLOAT-LONG), side (+1 right arm, -1 left), item (id + 1, 0 none), equip offset, pose kind (HAND-ARM), elapsed use
 *> ticks, use duration, swing (1 = this hand swings), light 0 to 1: appends one hand's item to RL-HAND-VERTEX (nothing, a cube of 36 vertices or an extruded icon).
+*> With foil 1 the glint mesh RL-HG-VERTEX gets the quads too (HAND-QUAD glint 1; a flat item: one quad per opaque texel on each face, glint 2, instead of the whole icon).
 *> A left hand uses the right-hand display entry mirrored (12 section 8.2: tx, ry and rz negated); the block default of the left hand is block/block's own entry.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -357,6 +385,9 @@
  01 WS-CELL                FLOAT-LONG.
  01 B-ATLAS                PIC X(1073741824) BASED.
  01 WS-SIDE-F              FLOAT-LONG.
+ 01 WS-GL                  BINARY-LONG.
+ 01 WS-NOGL                BINARY-LONG VALUE 0.
+ 01 WS-GL2                 BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-PREFIX.
@@ -369,7 +400,8 @@
  01 L-DURATION             FLOAT-LONG.
  01 L-SWING                BINARY-LONG.
  01 L-LIGHT                FLOAT-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-PREFIX L-SIDE L-ITEM1 L-E L-KIND L-ELAPSED L-DURATION L-SWING L-LIGHT.
+ 01 L-FOIL                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PREFIX L-SIDE L-ITEM1 L-E L-KIND L-ELAPSED L-DURATION L-SWING L-LIGHT L-FOIL.
      IF L-ITEM1 = 0
          GOBACK
      END-IF
@@ -421,6 +453,10 @@
      MOVE L-PREFIX TO WS-M
      CALL "HAND-ARM" USING WS-M L-SIDE L-E L-KIND L-ELAPSED L-DURATION
      MOVE L-SIDE TO WS-SIDE-F
+     MOVE 0 TO WS-GL
+     IF L-FOIL = 1
+         MOVE 1 TO WS-GL
+     END-IF
      IF L-SWING = 1
          COMPUTE WS-P = (CL-NOW-MS - CL-SWING-AT) / CL-SWING-MS
          COMPUTE WS-Q = FUNCTION SQRT(WS-P)
@@ -489,7 +525,7 @@
              MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
              MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
              MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
-             CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
+             CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GL
          END-PERFORM
          GOBACK
      END-IF
@@ -515,7 +551,7 @@
          MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
          MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
          MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
-         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
+         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-NOGL
      END-PERFORM
 *>   ... and an edge quad where an opaque pixel (alpha above 0) borders a transparent one or the icon's rim, showing that pixel's texel.
      MOVE AT-SW(WS-SPRITE) TO WS-N
@@ -533,6 +569,31 @@
          END-PERFORM
      END-PERFORM
      COMPUTE WS-CELL = 1 / WS-N
+*>   The glint of a foil item covers the opaque texels only: one quad of each on the front and the back, its glint coordinates those of its texel corners.
+     IF L-FOIL = 1
+         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 2
+             MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
+             MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
+             MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
+             PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-N
+                 PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-N
+                     IF WS-OPAQUE(WS-PY * WS-N + WS-PX + 1) = 1
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+*>                           Corner k of the face's pick table: x and y low or high within the texel; z of the face.
+                             COMPUTE WS-CP((WS-K - 1) * 3 + 1) = (WS-PX + WS-PICK(WS-F, (WS-K - 1) * 3 + 1)) * WS-CELL
+                             COMPUTE WS-CP((WS-K - 1) * 3 + 2) = 1 - (WS-PY + 1 - WS-PICK(WS-F, (WS-K - 1) * 3 + 2)) * WS-CELL
+                             COMPUTE WS-CP((WS-K - 1) * 3 + 3) = (19 - 2 * WS-F) / 32
+*>                           The texel's corner of the icon: top-left, top-right, bottom-right, bottom-left.
+                             COMPUTE WS-U16(WS-K) = (WS-PX + FUNCTION MOD(FUNCTION INTEGER((WS-K) / 2), 2)) * 16 / WS-N
+                             COMPUTE WS-V16(WS-K) = (WS-PY + FUNCTION INTEGER(WS-K / 3)) * 16 / WS-N
+                             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
+                         END-PERFORM
+                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GL2
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-IF
      PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-N
          PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-N
              IF WS-OPAQUE(WS-PY * WS-N + WS-PX + 1) = 1
@@ -602,7 +663,7 @@
                                  MOVE 0.53125 TO WS-CP(3) WS-CP(12)
                                  MOVE 0.46875 TO WS-CP(6) WS-CP(9)
                          END-EVALUATE
-                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
+                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GL
                      END-IF
                  END-PERFORM
              END-IF
@@ -652,6 +713,9 @@
  01 WS-BLK                 BINARY-LONG.
  01 WS-STILL               BINARY-LONG.
  01 WS-PREV-COUNT          BINARY-LONG.
+ 01 WS-PREV-GCOUNT         BINARY-LONG.
+ 01 WS-FOIL                BINARY-LONG.
+ 01 WS-OFOIL               BINARY-LONG.
  01 WS-DIGEST              FLOAT-LONG.
  01 WS-HAVE                BINARY-LONG.
  01 WS-OHAVE               BINARY-LONG.
@@ -661,9 +725,10 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME
+     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME RL-HG-COUNT
      MOVE CL-HAND-KEY-COUNT TO WS-PREV-COUNT
-     MOVE 0 TO CL-HAND-KEY-COUNT
+     MOVE CL-HAND-KEY-GCOUNT TO WS-PREV-GCOUNT
+     MOVE 0 TO CL-HAND-KEY-COUNT CL-HAND-KEY-GCOUNT
      IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0
          CALL "HAND-EQUIP" USING CLIENT-STATE WS-E WS-EO WS-PART
      ELSE
@@ -719,13 +784,23 @@
      IF WS-OSPRITE > 0
          CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-OITEM WS-OHAVE WS-VAL
      END-IF
+*>   The foil of the stacks the player holds (54 section 19.2; the shown stack follows the held one within a few ticks).
+     MOVE 0 TO WS-FOIL WS-OFOIL
+     IF PL-SLOT-COUNT(PL-HELD + 1) > 0 AND PL-SLOT-FOIL(PL-HELD + 1) = 1
+         MOVE 1 TO WS-FOIL
+     END-IF
+     IF PL-OFFHAND-COUNT > 0 AND PL-OFFHAND-FOIL = 1
+         MOVE 1 TO WS-OFOIL
+     END-IF
      COMPUTE WS-DIGEST = WS-EO * 7.31 + CL-OHAND-ITEM * 131.7 + WS-OSPRITE * 0.37 + WS-HAVE * 1000.3 + WS-OHAVE * 3000.7
+         + WS-FOIL * 17.3 + WS-OFOIL * 29.9
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
          COMPUTE WS-DIGEST = WS-DIGEST + WS-MV(WS-I) * (WS-I + 1)
      END-PERFORM
      IF WS-STILL = 1 AND WS-PREV-COUNT > 0 AND CL-HAND-KEY-ITEM = WS-ITEM AND CL-HAND-KEY-SPRITE = WS-SPRITE
              AND CL-HAND-KEY-E = WS-E AND CL-HAND-KEY-LIGHT = WS-LIGHT AND CL-HAND-KEY-P = WS-DIGEST
          MOVE WS-PREV-COUNT TO RL-HAND-COUNT CL-HAND-KEY-COUNT
+         MOVE WS-PREV-GCOUNT TO RL-HG-COUNT CL-HAND-KEY-GCOUNT
          MOVE 1 TO RL-HAND-SAME
          GOBACK
      END-IF
@@ -736,10 +811,11 @@
          MOVE WS-LIGHT TO CL-HAND-KEY-LIGHT
          MOVE WS-DIGEST TO CL-HAND-KEY-P
      END-IF
-     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-SIDE CL-HAND-ITEM WS-E WS-KIND WS-ELAPSED WS-DURATION WS-SWING WS-LIGHT
-     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-OSIDE CL-OHAND-ITEM WS-EO WS-NOKIND WS-ZERO WS-ZERO2 WS-NOSWING WS-LIGHT
+     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-SIDE CL-HAND-ITEM WS-E WS-KIND WS-ELAPSED WS-DURATION WS-SWING WS-LIGHT WS-FOIL
+     CALL "HAND-BUILD" USING CLIENT-STATE WS-M WS-OSIDE CL-OHAND-ITEM WS-EO WS-NOKIND WS-ZERO WS-ZERO2 WS-NOSWING WS-LIGHT WS-OFOIL
      IF WS-STILL = 1
          MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
+         MOVE RL-HG-COUNT TO CL-HAND-KEY-GCOUNT
      END-IF
      GOBACK.
  END PROGRAM HAND-MESH.

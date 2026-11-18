@@ -28,6 +28,7 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-SAVED-SW            BINARY-LONG.
  01 WS-EO                  FLOAT-LONG.
+ 01 WS-NOGLINT             BINARY-LONG VALUE 0.
  01 WS-PT                  FLOAT-LONG.
  01 WS-M.
     05 FILLER              FLOAT-LONG VALUE 1.
@@ -271,7 +272,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full mesh takes no more quads; a stalled or backwards clock restarts the equip ticks.
      MOVE 2044 TO RL-HAND-COUNT
-     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT
+     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT WS-NOGLINT
      MOVE "T5300 a mesh of 2044 vertices takes no more quad" TO TL-CASE
      MOVE 2044 TO TL-EXPECTED-N
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
