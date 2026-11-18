@@ -50,14 +50,19 @@
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
-*>   The Mob keys written every time (45-2 section 3): CanPickUpLoot, PersistenceRequired, LeftHanded (no state here: false).
+*>   The Mob keys written every time (45-2 section 3): CanPickUpLoot (true for the piglins and the pillager, which pick loot up: 45-6 sections 3 and 13; no
+*>   state here), PersistenceRequired, LeftHanded (no state here: false).
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     MOVE 0 TO WS-VALUE
+     IF WS-KEY = "piglin" OR "piglin_brute" OR "pillager"
+         MOVE 1 TO WS-VALUE
+     END-IF
      MOVE "CanPickUpLoot" TO WN MOVE 13 TO WL
-     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-DIRECTION
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
      MOVE "PersistenceRequired" TO WN MOVE 19 TO WL
      CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-PERSISTENT(L-ROW)
      MOVE "LeftHanded" TO WN MOVE 10 TO WL
      CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-DIRECTION
-     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
          GOBACK
      END-IF
@@ -184,6 +189,7 @@
      END-IF
      CALL "SPECIES4-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
      CALL "HOSTILE5-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+     CALL "VILLAGER6-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
      CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
@@ -296,27 +302,6 @@
              CALL "PB-GET-INT" USING PB-BUFFER MQ-SIZE
          WHEN L-NAME = "PersistenceRequired" AND L-TYPE = 1
              CALL "PB-GET-BYTE" USING PB-BUFFER MQ-PERSIST
-         WHEN L-NAME = "VillagerData" AND L-TYPE = 10
-*>           The compound {profession, level, type}: the profession key (without its namespace) and the level; the type follows the biome (19 section 22.1).
-             MOVE "profession" TO WS-PATH
-             MOVE 10 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 8
-                 MOVE SPACES TO WS-KEY
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
-                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
-                 MOVE WS-BARE TO MQ-PROF
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "level" TO WS-PATH
-             MOVE 5 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 3
-                 CALL "PB-GET-INT" USING PB-BUFFER MQ-VLEVEL
-             END-IF
-             MOVE WS-START TO PB-POS
-             CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
          WHEN L-NAME = "leash" AND L-TYPE = 10
 *>           The compound {UUID: Int Array(4)}; the whole compound is skipped after the one entry is read.
              MOVE "UUID" TO WS-PATH
@@ -356,7 +341,6 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
- COPY VILSTATE.
  01 WS-KEY                 PIC X(24).
  01 WS-CATKEY              PIC X(48).
  01 WS-CV                  BINARY-LONG.
@@ -375,8 +359,6 @@
     05 FILLER              PIC X(10) VALUE "aggressive".
  01 WS-GENE-TABLE REDEFINES WS-GENE-NAMES.
     05 WS-GENE             PIC X(10) OCCURS 7 TIMES.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY ENMOBDATA.
@@ -496,16 +478,6 @@
      MOVE MQ-EQUIP TO EN-EQUIP(L-ROW)
      MOVE MQ-HEAD-WEAR TO EN-HEAD-WEAR(L-ROW)
      MOVE MQ-LEASH TO EN-LEASH-UUID(L-ROW)
-*>   A villager keeps the profession and level it was saved with (a template's nitwit); a profession of "none" is the default.
-     IF WS-KEY = "villager" AND MQ-PROF NOT = SPACES AND MQ-PROF NOT = "none"
-         CALL "VL-FIND" USING EN-ID(L-ROW) WS-ZERO WS-SLOT
-         IF WS-SLOT > 0
-             MOVE MQ-PROF TO VL-PROF(WS-SLOT)
-             IF MQ-VLEVEL > 0
-                 MOVE MQ-VLEVEL TO VL-LEVEL(WS-SLOT)
-             END-IF
-         END-IF
-     END-IF
      GOBACK.
  END PROGRAM MOB-NBT-APPLY.
 
