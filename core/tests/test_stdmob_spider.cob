@@ -31,6 +31,7 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-GLASS               BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
@@ -86,6 +87,26 @@
          CALL "MOB-STEP" USING WS-SPIDER
      END-PERFORM
      MOVE "test stdmob spider: by day the spider takes no target" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-TARGET(WS-SPIDER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Daylight under a transparent roof: glass two cells above the feet leaves the cell above the feet at sky light 15 by the sky rule (LIGHT-RAW), though the
+*>   stored light there may read dark; the spider still takes no target by day.
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:glass" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-GLASS = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-GLASS
+     MOVE 6000 TO CW-TIME
+     MOVE 0 TO EN-TARGET(WS-SPIDER)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         MOVE WS-X0 TO EN-X(WS-SPIDER)
+         MOVE WS-Y TO EN-Y(WS-SPIDER)
+         CALL "MOB-STEP" USING WS-SPIDER
+     END-PERFORM
+     MOVE "test stdmob spider: by day under glass the spider takes no target" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE EN-TARGET(WS-SPIDER) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
