@@ -9,8 +9,7 @@
 *> Hits (every hit discards the projectile): a large fireball hurts the entity it meets for 6 and explodes with its power (EXPLODE-RUN at the last free point; blocks
 *> go only with the game rule mob_griefing); a small fireball hurts for 5 and sets a mob on fire for 5 seconds (EN-BURN 100), and on a block, with an owner that is a
 *> mob and mob_griefing on, puts a fire block in the free cell in front of the face; a snowball hurts a blaze for 3 and anything else for 0.
-*> Approximations (open): water inertia 0.8 and bubbles, deflection by a player's hit (the reflected fireball of 21 section 5.1), setting a player on fire (the core has
-*> no burning player), restoring the fire ticks when the hurt fails, the damage types fireball and thrown (a player hit by a projectile is hurt with CAUSE-MOB), the
+*> Approximations (open): water inertia 0.8 and bubbles, deflection by a player's hit (the reflected fireball of 21 section 5.1), setting a player on fire (the damage types fireball and thrown (a player hit by a projectile is hurt with CAUSE-MOB), the
 *> shoot uncertainty of a snowball (0 here), block hits by sample steps and not an exact voxel clip.
 *> A fireball whose owner entity is gone, or whose chunk is not loaded, is discarded by PROJECTILES-TICK (44 part 8 section 6.4 step 2).
 *>
@@ -211,6 +210,9 @@
  01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-SOURCE              BINARY-LONG VALUE 0.
  01 WS-DIM                 BINARY-LONG.
+ 01 WS-OLD-BURN            BINARY-LONG.
+ 01 WS-FIRE-TICKS          BINARY-LONG VALUE 100.
+ 01 WS-HEALTH-BEFORE       FLOAT-SHORT.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -265,7 +267,19 @@
                  MOVE WS-NAME-LENGTH TO PL-KILLER-LENGTH(L-PLAYER)
              END-IF
              COMPUTE WS-MILLI = WS-DAMAGE * 1000
+*>           A small fireball sets the player on fire for 5 s first and gives the previous fire ticks back when the hurt fails (21 section 5.2).
+             MOVE 0 TO WS-OLD-BURN
+             IF PL-ENTITY-ROW(L-PLAYER) > 0
+                 MOVE EN-BURN(PL-ENTITY-ROW(L-PLAYER)) TO WS-OLD-BURN
+             END-IF
+             MOVE PL-HEALTH(L-PLAYER) TO WS-HEALTH-BEFORE
+             IF WS-KIND = 2
+                 CALL "PLAYER-IGNITE" USING L-PLAYER WS-FIRE-TICKS
+             END-IF
              CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI WS-CAUSE WS-OWNER-ID WS-OWNER-PLAYER WS-RESULT
+             IF WS-KIND = 2 AND PL-HEALTH(L-PLAYER) >= WS-HEALTH-BEFORE AND PL-ENTITY-ROW(L-PLAYER) > 0
+                 MOVE WS-OLD-BURN TO EN-BURN(PL-ENTITY-ROW(L-PLAYER))
+             END-IF
              IF WS-KIND = 4
                  CALL "EFFECT-ADD" USING L-PLAYER WS-LEVITATION WS-AMPLIFIER WS-DURATION WS-FLAGS
              END-IF
