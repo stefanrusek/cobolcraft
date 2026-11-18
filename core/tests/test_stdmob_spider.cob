@@ -32,6 +32,8 @@
  01 WS-BZ                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-GLASS               BINARY-LONG.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
@@ -107,6 +109,25 @@
          CALL "MOB-STEP" USING WS-SPIDER
      END-PERFORM
      MOVE "test stdmob spider: by day under glass the spider takes no target" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-TARGET(WS-SPIDER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Under the eaves: a 3 x 3 stone roof two above the feet (the cell above the feet is 2 steps from open sky). The stored light there reads 0, the sky engine's spread gives 13
+*>   (32 section 5.2), the spider's threshold: by day it still takes no target.
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) + 2
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8
+         COMPUTE WS-RX = WS-BX - 1 + FUNCTION MOD(WS-I, 3)
+         COMPUTE WS-RZ = WS-BZ - 1 + FUNCTION INTEGER(WS-I / 3)
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-RX WS-BY WS-RZ WS-STONE
+     END-PERFORM
+     MOVE 6000 TO CW-TIME
+     MOVE 0 TO EN-TARGET(WS-SPIDER)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         MOVE WS-X0 TO EN-X(WS-SPIDER)
+         MOVE WS-Y TO EN-Y(WS-SPIDER)
+         CALL "MOB-STEP" USING WS-SPIDER
+     END-PERFORM
+     MOVE "test stdmob spider: by day under the eaves (sky 13 by the spread) the spider takes no target" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE EN-TARGET(WS-SPIDER) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

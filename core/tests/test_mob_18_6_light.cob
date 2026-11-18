@@ -50,6 +50,8 @@
  01 WS-ZROW               BINARY-LONG.
  01 WS-A                  BINARY-LONG.
  01 WS-B                  BINARY-LONG.
+ 01 WS-HALF               BINARY-LONG VALUE 2.
+ 01 WS-SIDE               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -99,9 +101,11 @@
      MOVE 0 TO WS-E
      MOVE WS-PASS TO WS-O
      PERFORM CHECK-N
-*>   A cave: a stone roof, by day and by night.
+*>   A cave: a stone roof, by day and by night. The roof is 25 x 25: a small roof would let the sky shine in from the side (sky light 15 less the steps to the open sky,
+*>   32 section 5.2; test_mob_18_6_spread), and a cave is deeper than 7 steps from the open sky.
      MOVE "minecraft:stone" TO WS-KEY
      MOVE 3 TO WS-I
+     MOVE 12 TO WS-HALF
      PERFORM SET-AT
      PERFORM COUNT-PASSES
      MOVE "acceptance 18§6.8 a zombie rule passes under a stone roof by day" TO WS-CASE
@@ -111,6 +115,7 @@
      MOVE "minecraft:air" TO WS-KEY
      MOVE 3 TO WS-I
      PERFORM SET-AT
+     MOVE 2 TO WS-HALF
 *>   Night, open sky.
      MOVE 18000 TO CW-TIME
      PERFORM COUNT-PASSES
@@ -145,9 +150,10 @@
  SET-AT.
      CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
      COMPUTE WS-BY = WS-FY + WS-I
-     PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 24
-         COMPUTE WS-BX = WS-QX - 2 + FUNCTION MOD(WS-J, 5)
-         COMPUTE WS-BZ = WS-QZ - 2 + FUNCTION INTEGER(WS-J / 5)
+     COMPUTE WS-SIDE = 2 * WS-HALF + 1
+     PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J >= WS-SIDE * WS-SIDE
+         COMPUTE WS-BX = WS-QX - WS-HALF + FUNCTION MOD(WS-J, WS-SIDE)
+         COMPUTE WS-BZ = WS-QZ - WS-HALF + FUNCTION INTEGER(WS-J / WS-SIDE)
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
      END-PERFORM.
  RELIGHT.

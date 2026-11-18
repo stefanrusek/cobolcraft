@@ -650,9 +650,16 @@
      COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
      MOVE CB-SOLID(WS-BLOCK) TO L-KIND
      MOVE 0 TO WS-WATER WS-LAVA WS-FIRE WS-RAIL
-     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-WATER FOR ALL "water"
-     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-LAVA FOR ALL "lava"
-     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-FIRE FOR ALL "fire"
+*>   The fluids and the fire are the blocks of those names, not every key that holds the word (a water cauldron is no water, a campfire or a fire coral is no fire).
+     IF CB-KEY(WS-BLOCK) = "water"
+         MOVE 1 TO WS-WATER
+     END-IF
+     IF CB-KEY(WS-BLOCK) = "lava"
+         MOVE 1 TO WS-LAVA
+     END-IF
+     IF CB-KEY(WS-BLOCK) = "fire" OR CB-KEY(WS-BLOCK) = "soul_fire"
+         MOVE 1 TO WS-FIRE
+     END-IF
      INSPECT CB-KEY(WS-BLOCK) TALLYING WS-RAIL FOR ALL "rail"
      IF WS-WATER > 0
          MOVE 2 TO L-KIND
@@ -670,15 +677,63 @@
  END PROGRAM MS6-BLOCK-KIND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS6-STURDY-TOP.
+*> USING dim, x, y, z, ok out (BINARY-LONG): for the cell of a full solid block (MS6-BLOCK-KIND 1), whether its top face is sturdy, the part of Block.isValidSpawn (18 section 6.8: the top face is sturdy
+*> and the light emission is below 14) that the collision flag does not tell. The core keeps no face shapes (24 section 5.2), so the blocks whose top face is smaller than the cell are named by their keys:
+*> beds, carpets, farmland, paths, cauldrons, fences, walls, panes and bars, doors and trapdoors, chests and the workstations and lights of a village (campfire, lantern, bell, anvil, grindstone,
+*> composter, lectern, hopper, brewing stand, flower pots), and the stairs and slabs that do not hold their full face up (a stair with half top, a slab of type top or double does). The light emission
+*> and the blocks that override isValidSpawn (soul sand, mud, carved pumpkin, jack o'lantern, redstone lamp) are not modelled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-SMALL               BINARY-LONG.
+ 01 WS-STAIRS              BINARY-LONG.
+ 01 WS-SLAB                BINARY-LONG.
+ 01 WS-UP                  BINARY-LONG.
+ 01 WS-PROPS               PIC X(160).
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-OK.
+     MOVE 1 TO L-OK
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+     MOVE 0 TO WS-SMALL WS-STAIRS WS-SLAB WS-UP
+     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-SMALL FOR ALL "_bed" ALL "carpet" ALL "farmland" ALL "dirt_path" ALL "cauldron" ALL "_fence" ALL "_wall" ALL "_pane"
+         ALL "iron_bars" ALL "_door" ALL "chest" ALL "campfire" ALL "lantern" ALL "bell" ALL "anvil" ALL "grindstone" ALL "composter" ALL "lectern" ALL "hopper"
+         ALL "brewing_stand" ALL "flower_pot" ALL "potted_" ALL "stonecutter"
+     IF WS-SMALL > 0
+         MOVE 0 TO L-OK
+         GOBACK
+     END-IF
+     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-STAIRS FOR ALL "_stairs"
+     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-SLAB FOR ALL "_slab"
+     IF WS-STAIRS > 0 OR WS-SLAB > 0
+         CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
+         INSPECT WS-PROPS TALLYING WS-UP FOR ALL "half=top" ALL "type=top" ALL "type=double"
+         IF WS-UP = 0
+             MOVE 0 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MS6-STURDY-TOP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-PLACEMENT-OK.
 *> USING placement (1 ON_GROUND, 2 IN_WATER, 3 IN_LAVA, 4 NO_RESTRICTIONS), dim, x, y, z, ok out (BINARY-LONG): SpawnPlacements.isSpawnPositionOk (6.9).
-*> ON_GROUND: a solid block below and valid empty blocks (kind 0: no full block, fluid, fire or rail) at the position and above it. IN_WATER: water at
+*> ON_GROUND: a solid block below with a sturdy top face (MS6-STURDY-TOP) and valid empty blocks (kind 0: no full block, fluid, fire or rail) at the position and above it. IN_WATER: water at
 *> the position and no full block above. IN_LAVA: lava at the position. The world border is not modelled (the dimension is unbounded here).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-KIND                BINARY-LONG.
  01 WS-ABOVE               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
+ 01 WS-STURDY              BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-PLACE                BINARY-LONG.
@@ -694,9 +749,13 @@
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-ABOVE
      COMPUTE WS-Y = L-Y - 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-BELOW
+     MOVE 1 TO WS-STURDY
+     IF WS-BELOW = 1
+         CALL "MS6-STURDY-TOP" USING L-DIM L-X WS-Y L-Z WS-STURDY
+     END-IF
      EVALUATE L-PLACE
          WHEN 1
-             IF WS-KIND = 0 AND WS-ABOVE = 0 AND WS-BELOW = 1
+             IF WS-KIND = 0 AND WS-ABOVE = 0 AND WS-BELOW = 1 AND WS-STURDY = 1
                  MOVE 1 TO L-OK
              END-IF
          WHEN 2
@@ -810,6 +869,7 @@
  01 WS-OPEN-SKY            BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
  01 WS-RAW                 BINARY-LONG.
+ 01 WS-SPREAD              BINARY-LONG VALUE 7.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-DIM                  BINARY-LONG.
@@ -831,6 +891,9 @@
 *>   LIGHT-RAW, not STDMOB-LIGHTS: the stored sky light is 0 at and below a column's topmost non-void block, so a cell holding grass or a flower, or lying
 *>   under leaves or glass, would read dark in full daylight; LIGHT-RAW lights such a cell by the sky when no opaque block is above it.
      CALL "LIGHT-RAW" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK WS-RAW
+*>   The stored sky light does not spread sideways (light.cob): under the eaves of a house or a porch roof it reads 0 although the sky shines in from the side, which let hostile mobs
+*>   spawn there by day. LIGHT-SKY-SPREAD gives the level the sky engine has there (32 section 5.2) for the cells within 7 steps of open sky.
+     CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X L-Y L-Z WS-SPREAD WS-SKY
      COMPUTE WS-BELOW = L-Y - 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-BELOW L-Z WS-KIND
      MOVE 0 TO WS-VALID WS-BRIGHT WS-DARK WS-PEACEFUL

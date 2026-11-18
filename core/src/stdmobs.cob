@@ -509,6 +509,7 @@
  01 WS-DARK                BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
  01 WS-RAW                 BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 2.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
@@ -532,6 +533,8 @@
          COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
 *>       LIGHT-RAW, not STDMOB-LIGHTS: the stored sky light is 0 under a column's topmost block (leaves, glass), which would read dark by day.
          CALL "LIGHT-RAW" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-SKY WS-BLOCK WS-RAW
+*>       13 is the threshold: the sky engine's spread (32 section 5.2) reaches it within 2 steps of open sky (under the eaves of a house), where the stored light reads 0.
+         CALL "LIGHT-SKY-SPREAD" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-NEAR WS-SKY
          CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
          COMPUTE WS-LIGHT = FUNCTION MAX(WS-BLOCK, WS-SKY - WS-DARK)
      END-IF
