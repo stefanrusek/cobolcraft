@@ -125,6 +125,7 @@
 *>   counters at their defaults, abilities from the game mode, post_effects), so the game reads the file too; PLAYER-DAT-READ takes either set.
      IF CW-LAYOUT = 1
          CALL "PLAYER-STD-WRITE" USING L-KNOWN PB-BUFFER
+         CALL "PLAYER-KEEP-WRITE" USING L-KNOWN PB-BUFFER
      END-IF
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      CALL "PERSIST-UUID-TEXT" USING KN-UUID(L-KNOWN) WS-UUID-TEXT
@@ -184,6 +185,7 @@
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-FILE-INFO           PIC X(16).
+ 01 WS-HANDLED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-UUID                 PIC X(16).
  01 L-KNOWN                BINARY-LONG.
@@ -298,7 +300,10 @@
                      END-IF
                  END-PERFORM
              WHEN OTHER
-                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 CALL "PLAYER-KEEP-KEY" USING PB-BUFFER WS-TYPE WN L-KNOWN WS-HANDLED
+                 IF WS-HANDLED = 0
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 END-IF
          END-EVALUATE
      END-PERFORM
      CALL "XP-NEEDED" USING KX-XP-LEVEL(L-KNOWN) WS-NEEDED

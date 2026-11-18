@@ -1,0 +1,298 @@
+*> Player file keys of lane 002-lane-p49m (docs/protocol/45-entity-nbt-3 sections 2.1, 3 and 6; state in KKEEP.cpy, one row per known player):
+*>   PLAYER-KEEP-KEY USING PB-BUFFER, tag type, name, known row, handled out   reads LastDeathLocation, previousPlayerGameType, warden_spawn_tracker,
+*>       entered_nether_pos, last_explosion_impact_pos, raid_omen_position, respawn, RootVehicle, ender_pearls and the shoulder entities of a player compound
+*>   PLAYER-KEEP-WRITE USING known row, PB-BUFFER   writes them (warden_spawn_tracker always; the others only when set) after the standard keys
+*>   PLAYER-DEATH-SPOT USING player row   LastDeathLocation: the dimension and block of a player that has died (HEALTH-DIE)
+*>   PLAYER-PREVIOUS-MODE USING player row, old mode   previousPlayerGameType: the mode a game mode change leaves
+*> The tag payloads of respawn, RootVehicle, ender_pearls and the shoulder entities are kept as the file has them (the core has no bed spawn, no mount that outlives
+*> its rider's session, no pearl in flight and no shoulder parrot to hold them): a load keeps them for the next save. A raw payload that does not fit its area is not kept.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-KEEP-KEY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY KKEEP.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-INT-CAPACITY        BINARY-LONG VALUE 3.
+ 01 WS-INT-COUNT           BINARY-LONG.
+ 01 WS-INTS.
+    05 WS-INT              BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-DIM-CAPACITY        BINARY-LONG VALUE 48.
+ 01 WS-DIM-LENGTH          BINARY-LONG.
+ 01 WS-DIM                 PIC X(48).
+ 01 WS-HAVE-POS            BINARY-LONG.
+ 01 WS-RESPAWN-CAPACITY    BINARY-LONG VALUE 256.
+ 01 WS-ROOT-CAPACITY       BINARY-LONG VALUE 1024.
+ 01 WS-SHOULDER-CAPACITY   BINARY-LONG VALUE 512.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-KNOWN                BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-NAME L-KNOWN L-HANDLED.
+     MOVE 1 TO L-HANDLED
+     EVALUATE TRUE
+         WHEN L-NAME = "LastDeathLocation" AND L-TYPE = 10
+             MOVE SPACES TO WS-DIM
+             MOVE 0 TO WS-DIM-LENGTH WS-HAVE-POS
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-CAPACITY WL
+                 IF WS-INNER-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 EVALUATE TRUE
+                     WHEN WN = "dimension" AND WS-INNER-TYPE = 8
+                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-DIM WS-DIM-CAPACITY WS-DIM-LENGTH
+                     WHEN WN = "pos" AND WS-INNER-TYPE = 11
+                         CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT WS-INTS
+                         IF WS-INT-COUNT = 3
+                             MOVE 1 TO WS-HAVE-POS
+                         END-IF
+                     WHEN OTHER
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                 END-EVALUATE
+             END-PERFORM
+             IF WS-HAVE-POS = 1 AND WS-DIM-LENGTH > 0
+                 MOVE 1 TO KK-DEATH-ON(L-KNOWN)
+                 MOVE WS-DIM TO KK-DEATH-DIM(L-KNOWN)
+                 MOVE WS-DIM-LENGTH TO KK-DEATH-DIM-LEN(L-KNOWN)
+                 MOVE WS-INT(1) TO KK-DEATH-X(L-KNOWN)
+                 MOVE WS-INT(2) TO KK-DEATH-Y(L-KNOWN)
+                 MOVE WS-INT(3) TO KK-DEATH-Z(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "previousPlayerGameType" AND L-TYPE = 3
+             CALL "PB-GET-INT" USING PB-BUFFER KK-PREV-MODE(L-KNOWN)
+             MOVE 1 TO KK-PREV-ON(L-KNOWN)
+         WHEN L-NAME = "warden_spawn_tracker" AND L-TYPE = 10
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-CAPACITY WL
+                 IF WS-INNER-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 EVALUATE TRUE
+                     WHEN WN = "ticks_since_last_warning" AND WS-INNER-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER KK-WARD-TICKS(L-KNOWN)
+                     WHEN WN = "warning_level" AND WS-INNER-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER KK-WARD-LEVEL(L-KNOWN)
+                     WHEN WN = "cooldown_ticks" AND WS-INNER-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER KK-WARD-COOL(L-KNOWN)
+                     WHEN OTHER
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                 END-EVALUATE
+             END-PERFORM
+             IF KK-WARD-TICKS(L-KNOWN) < 0
+                 MOVE 0 TO KK-WARD-TICKS(L-KNOWN)
+             END-IF
+             IF KK-WARD-LEVEL(L-KNOWN) < 0
+                 MOVE 0 TO KK-WARD-LEVEL(L-KNOWN)
+             END-IF
+             IF KK-WARD-COOL(L-KNOWN) < 0
+                 MOVE 0 TO KK-WARD-COOL(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "entered_nether_pos" AND L-TYPE = 9
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+             IF WS-ELEMENT-TYPE = 6 AND WS-COUNT = 3
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KK-NETHER-X(L-KNOWN)
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KK-NETHER-Y(L-KNOWN)
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KK-NETHER-Z(L-KNOWN)
+                 MOVE 1 TO KK-NETHER-ON(L-KNOWN)
+             ELSE
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ELEMENT-TYPE
+                 END-PERFORM
+             END-IF
+         WHEN L-NAME = "last_explosion_impact_pos" AND L-TYPE = 9
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+             IF WS-ELEMENT-TYPE = 6 AND WS-COUNT = 3
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KK-IMPACT-X(L-KNOWN)
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KK-IMPACT-Y(L-KNOWN)
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KK-IMPACT-Z(L-KNOWN)
+                 MOVE 1 TO KK-IMPACT-ON(L-KNOWN)
+             ELSE
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ELEMENT-TYPE
+                 END-PERFORM
+             END-IF
+         WHEN L-NAME = "raid_omen_position" AND L-TYPE = 11
+             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT WS-INTS
+             IF WS-INT-COUNT = 3
+                 MOVE 1 TO KK-RAID-ON(L-KNOWN)
+                 MOVE WS-INT(1) TO KK-RAID-X(L-KNOWN)
+                 MOVE WS-INT(2) TO KK-RAID-Y(L-KNOWN)
+                 MOVE WS-INT(3) TO KK-RAID-Z(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "respawn" AND L-TYPE = 10
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-RESPAWN-CAPACITY KK-RESPAWN-LEN(L-KNOWN) KK-RESPAWN-RAW(L-KNOWN)
+             IF KK-RESPAWN-LEN(L-KNOWN) = 1
+                 MOVE 0 TO KK-RESPAWN-LEN(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "RootVehicle" AND L-TYPE = 10
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-ROOT-CAPACITY KK-ROOT-LEN(L-KNOWN) KK-ROOT-RAW(L-KNOWN)
+             IF KK-ROOT-LEN(L-KNOWN) = 1
+                 MOVE 0 TO KK-ROOT-LEN(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "ender_pearls" AND L-TYPE = 9
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-ROOT-CAPACITY KK-PEARL-LEN(L-KNOWN) KK-PEARL-RAW(L-KNOWN)
+             IF KK-PEARL-LEN(L-KNOWN) = 5
+                 MOVE 0 TO KK-PEARL-LEN(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "ShoulderEntityLeft" AND L-TYPE = 10
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-SHOULDER-CAPACITY KK-SHL-LEN(L-KNOWN) KK-SHL-RAW(L-KNOWN)
+             IF KK-SHL-LEN(L-KNOWN) = 1
+                 MOVE 0 TO KK-SHL-LEN(L-KNOWN)
+             END-IF
+         WHEN L-NAME = "ShoulderEntityRight" AND L-TYPE = 10
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-SHOULDER-CAPACITY KK-SHR-LEN(L-KNOWN) KK-SHR-RAW(L-KNOWN)
+             IF KK-SHR-LEN(L-KNOWN) = 1
+                 MOVE 0 TO KK-SHR-LEN(L-KNOWN)
+             END-IF
+         WHEN OTHER
+             MOVE 0 TO L-HANDLED
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PLAYER-KEEP-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-KEEP-WRITE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY KKEEP.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-T-LIST              BINARY-LONG VALUE 9.
+ 01 WS-INTS.
+    05 WS-INT              BINARY-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ 01 L-KNOWN                BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-KNOWN PB-BUFFER.
+     IF KK-DEATH-ON(L-KNOWN) = 1
+         MOVE "LastDeathLocation" TO WN MOVE 17 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         MOVE "dimension" TO WN MOVE 9 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL KK-DEATH-DIM(L-KNOWN) KK-DEATH-DIM-LEN(L-KNOWN)
+         MOVE "pos" TO WN MOVE 3 TO WL
+         MOVE KK-DEATH-X(L-KNOWN) TO WS-INT(1)
+         MOVE KK-DEATH-Y(L-KNOWN) TO WS-INT(2)
+         MOVE KK-DEATH-Z(L-KNOWN) TO WS-INT(3)
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-INTS
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-IF
+     MOVE "warden_spawn_tracker" TO WN MOVE 20 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "ticks_since_last_warning" TO WN MOVE 24 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KK-WARD-TICKS(L-KNOWN)
+     MOVE "warning_level" TO WN MOVE 13 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KK-WARD-LEVEL(L-KNOWN)
+     MOVE "cooldown_ticks" TO WN MOVE 14 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KK-WARD-COOL(L-KNOWN)
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     IF KK-PREV-ON(L-KNOWN) = 1
+         MOVE "previousPlayerGameType" TO WN MOVE 22 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KK-PREV-MODE(L-KNOWN)
+     END-IF
+     IF KK-NETHER-ON(L-KNOWN) = 1
+         MOVE "entered_nether_pos" TO WN MOVE 18 TO WL
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KK-NETHER-X(L-KNOWN)
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KK-NETHER-Y(L-KNOWN)
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KK-NETHER-Z(L-KNOWN)
+     END-IF
+     IF KK-IMPACT-ON(L-KNOWN) = 1
+         MOVE "last_explosion_impact_pos" TO WN MOVE 25 TO WL
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KK-IMPACT-X(L-KNOWN)
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KK-IMPACT-Y(L-KNOWN)
+         CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KK-IMPACT-Z(L-KNOWN)
+     END-IF
+     IF KK-ROOT-LEN(L-KNOWN) > 0
+         MOVE "RootVehicle" TO WN MOVE 11 TO WL
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER KK-ROOT-RAW(L-KNOWN) KK-ROOT-LEN(L-KNOWN)
+     END-IF
+     IF KK-RESPAWN-LEN(L-KNOWN) > 0
+         MOVE "respawn" TO WN MOVE 7 TO WL
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER KK-RESPAWN-RAW(L-KNOWN) KK-RESPAWN-LEN(L-KNOWN)
+     END-IF
+     IF KK-RAID-ON(L-KNOWN) = 1
+         MOVE "raid_omen_position" TO WN MOVE 18 TO WL
+         MOVE KK-RAID-X(L-KNOWN) TO WS-INT(1)
+         MOVE KK-RAID-Y(L-KNOWN) TO WS-INT(2)
+         MOVE KK-RAID-Z(L-KNOWN) TO WS-INT(3)
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-INTS
+     END-IF
+     IF KK-PEARL-LEN(L-KNOWN) > 0
+         MOVE "ender_pearls" TO WN MOVE 12 TO WL
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-LIST WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER KK-PEARL-RAW(L-KNOWN) KK-PEARL-LEN(L-KNOWN)
+     END-IF
+     IF KK-SHL-LEN(L-KNOWN) > 0
+         MOVE "ShoulderEntityLeft" TO WN MOVE 18 TO WL
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER KK-SHL-RAW(L-KNOWN) KK-SHL-LEN(L-KNOWN)
+     END-IF
+     IF KK-SHR-LEN(L-KNOWN) > 0
+         MOVE "ShoulderEntityRight" TO WN MOVE 19 TO WL
+         CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER KK-SHR-RAW(L-KNOWN) KK-SHR-LEN(L-KNOWN)
+     END-IF
+     GOBACK.
+ END PROGRAM PLAYER-KEEP-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-DEATH-SPOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY KKEEP.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+         IF KN-UUID(WS-I) = PL-UUID(L-ROW)
+             MOVE 1 TO KK-DEATH-ON(WS-I)
+             MOVE DM-KEY(PL-DIM(L-ROW)) TO KK-DEATH-DIM(WS-I)
+             MOVE DM-KEY-LENGTH(PL-DIM(L-ROW)) TO KK-DEATH-DIM-LEN(WS-I)
+             COMPUTE KK-DEATH-X(WS-I) = FUNCTION INTEGER(PL-X(L-ROW))
+             COMPUTE KK-DEATH-Y(WS-I) = FUNCTION INTEGER(PL-Y(L-ROW))
+             COMPUTE KK-DEATH-Z(WS-I) = FUNCTION INTEGER(PL-Z(L-ROW))
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PLAYER-DEATH-SPOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-PREVIOUS-MODE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY KKEEP.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OLD                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-OLD.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+         IF KN-UUID(WS-I) = PL-UUID(L-ROW)
+             MOVE 1 TO KK-PREV-ON(WS-I)
+             MOVE L-OLD TO KK-PREV-MODE(WS-I)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PLAYER-PREVIOUS-MODE.
