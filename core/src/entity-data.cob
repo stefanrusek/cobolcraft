@@ -205,14 +205,18 @@
                  CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-ITEM-COUNT(WS-ROW)
                  CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
              ELSE
-*>               A LivingEntity (45-2): Health, the LivingEntity keys and the Mob keys; a TNT, falling block, boat, minecart or projectile is an Entity only.
+*>               A LivingEntity (45-2; an armor stand, 45-9, has no Mob keys): Health, the LivingEntity keys and the Mob keys; a TNT, falling block, boat, minecart or projectile is an Entity only.
                  CALL "ENTITY-IS-LIVING" USING WS-ROW WS-LIVING
-                 IF WS-LIVING = 1
+                 IF WS-LIVING > 0
                      MOVE "Health" TO WN MOVE 6 TO WL
                      MOVE EN-HEALTH(WS-ROW) TO WS-FLOAT
                      CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
                      CALL "LIVING-NBT-WRITE" USING WS-ROW PB-BUFFER
-                     CALL "MOB-NBT-WRITE" USING WS-ROW PB-BUFFER
+                     IF WS-LIVING = 1
+                         CALL "MOB-NBT-WRITE" USING WS-ROW PB-BUFFER
+                     ELSE
+                         CALL "ARMORSTAND9-NBT-WRITE" USING WS-ROW PB-BUFFER
+                     END-IF
                  END-IF
                  CALL "ENTITY8-NBT-WRITE" USING WS-ROW PB-BUFFER
              END-IF
