@@ -378,7 +378,7 @@
  PROGRAM-ID. MOVE-SPRINT.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 1 sets the
 *> sprinting flag (not for a survival player whose food is 6 or less), action 2 clears it, action 3 (START_RIDING_JUMP, the strength in
-*> PSB-DATA) jumps the mount the player rides (M44-RIDING-JUMP), any other action is ignored.
+*> PSB-DATA) jumps the mount the player rides (M44-RIDING-JUMP), action 6 (START_FALL_FLYING) starts an elytra glide (RANGED-GLIDE-START), any other action is ignored.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -398,6 +398,10 @@
 *>   START_RIDING_JUMP (action 3): the strength 0 to 100 in the data jumps the mount (M44-RIDING-JUMP).
      IF PSB-ACTION = 3
          CALL "M44-RIDING-JUMP" USING CN-PLAYER(L-ID) PSB-DATA WS-JUMPED
+     END-IF
+*>   START_FALL_FLYING (action 6): the glide of an elytra (ranged-glide.cob).
+     IF PSB-ACTION = 6
+         CALL "RANGED-GLIDE-START" USING CN-PLAYER(L-ID)
      END-IF
      CALL "POSE-UPDATE" USING CN-PLAYER(L-ID)
      GOBACK.

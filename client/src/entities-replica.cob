@@ -343,6 +343,9 @@
          WHEN 103
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
              CALL "PB-GET-LPVEC3" USING PB-BUFFER WS-VX WS-VY WS-VZ
+             IF WS-ID = PL-ENTITY-ID
+                 CALL "PLAYER-MOTION-SET" USING CLIENT-STATE WS-VX WS-VY WS-VZ
+             END-IF
              CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
              IF WS-ROW > 0
                  MOVE WS-VX TO EN-VX(WS-ROW)

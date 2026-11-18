@@ -7,7 +7,7 @@
 *> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIREHEALTH
 *> (health, damage, death and respawn), WIREHUNGER (hunger, eating and sprinting), WIREMOB (mobs),
 *> WIRECRAFT (crafting), WIREWEATHER (weather), WIREDIM (dimensions and travel), WIRECMD
-*> (commands), WIREPACK (server pack offer). Chat is generated from contract/cases/wire-chat.tsv
+*> (commands), WIREPACK (server pack offer), WIRELEVEL (level events and particles). Chat is generated from contract/cases/wire-chat.tsv
 *> (build/gen/core/tests/contract_wire_chat_core.cob).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-SERVER.
@@ -27,6 +27,7 @@
      CALL "WIRE-DIM-CASES"
      CALL "WIRE-CMD-CASES"
      CALL "WIRE-PACK-CASES"
+     CALL "WIRE-LEVEL-CASES"
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-SERVER.
 
@@ -45,4 +46,5 @@
  COPY WIREDIM.
  COPY WIRECMD.
  COPY WIREPACK.
+ COPY WIRELEVEL.
  COPY CORETEST.

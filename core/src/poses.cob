@@ -46,6 +46,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CTOOLS.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
@@ -101,6 +102,11 @@
          MOVE WS-DESIRED TO PL-POSE(L-ROW)
      END-IF
      MOVE 0 TO PL-POSE-FLAGS(L-ROW)
+*>   Gliding (17 section 3.13): the fall flying pose (1) and the shared flag 7 (0x80, 18 section 1.4).
+     IF TS-GLIDE-TICKS(L-ROW) > 0
+         MOVE 1 TO PL-POSE(L-ROW)
+         ADD 128 TO PL-POSE-FLAGS(L-ROW)
+     END-IF
      IF PL-SNEAKING(L-ROW) = 1
          ADD 2 TO PL-POSE-FLAGS(L-ROW)
      END-IF

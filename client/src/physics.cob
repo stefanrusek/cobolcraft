@@ -19,7 +19,9 @@
 *>   - step-up (13 section 1.4): on the ground, a blocked horizontal move is tried again from 0.6 higher and the player drops back
 *>     to the floor it reaches, when that gets it further (a slab, a stair, a carpet edge); the rise is no higher than what hangs over
 *>     the cells the move enters leaves (a 1/16 lip under a door lintel, a dirt_path before a door);
-*>   - on the ground: the box 0.001 lower would touch a collision box.
+*>   - on the ground: the box 0.001 lower would touch a collision box;
+*>   - an elytra glide (17 section 3.13; physics-glide.cob): Space pressed in the air with an elytra worn starts it (PHYS-GLIDE-START, from PHYS-INPUT, survival-like players without
+*>     mayfly only: the double press of 1.4 is theirs), and while PL-GLIDING PHYS-GLIDE replaces the walking step of PHYS-TICK; Set Entity Motion of the local player is PLAYER-MOTION-SET.
 *> The flying speeds, jump speed, gravity, flying toggle and mouse factor are recorded in standin
 *> §11.4 with the walking speed. The box is the operator's
 *> collision box: 0.7 wide, 1.75 high, centred on the feet position; it overlaps a cell when the
@@ -60,6 +62,9 @@
              CALL "CLP-SEND-ABILITIES" USING CLIENT-STATE WS-CONN
          ELSE
              MOVE CL-NOW-MS TO PL-SPACE-MS
+         END-IF
+         IF WS-CAN-FLY = 0
+             CALL "PHYS-GLIDE-START" USING CLIENT-STATE
          END-IF
      END-IF
      GOBACK.
@@ -125,6 +130,16 @@
      MOVE PL-JUMP TO WS-JUMP
      MOVE 0 TO PL-JUMP
      CALL "PHYS-FLUID" USING CLIENT-STATE
+*>   Gliding (17 section 3.13): the flight step replaces the walking step; it hands the tick back to the walking step when the glide ended.
+     IF PL-GLIDING = 1
+         CALL "PHYS-GLIDE" USING CLIENT-STATE
+         IF PL-GLIDING = 1
+             MOVE 0 TO WS-SNEAK
+             CALL "PHYS-POSE" USING CLIENT-STATE WS-SNEAK
+             CALL "PHYS-FOV" USING CLIENT-STATE
+             GOBACK
+         END-IF
+     END-IF
 *>   The swimming flag (53 section 4): kept while sprinting in water, set when sprinting with the eyes under water; never while flying.
      IF PL-SWIMMING = 1
          IF PL-SPRINTING = 0 OR PL-IN-WATER = 0 OR PL-FLYING = 1
@@ -318,6 +333,8 @@
      MOVE 3 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-HZ WS-BLOCKED
      COMPUTE PL-COLLIDED = FUNCTION MAX(WS-BX, WS-BLOCKED)
+     MOVE WS-HX TO PL-MOVE-X
+     MOVE WS-HZ TO PL-MOVE-Z
 *>   The step-up: a blocked move on the ground goes over a step of up to 0.6 (13 section 1.4).
      IF PL-COLLIDED = 1 AND PL-ON-GROUND = 1 AND PL-FLYING = 0 AND WS-FLUID = 0
          CALL "PHYS-STEP-UP" USING CLIENT-STATE WS-SX WS-SY WS-SZ WS-HX WS-HZ WS-STEPPED
@@ -620,7 +637,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-BOX.
 *> USING CLIENT-STATE, half width out, height out (FLOAT-LONG): the box of the Player's pose (docs/protocol/53 sections 1 and 2.1):
-*> standing (0) the operator's box 0.7 x 1.75, crouching (5) 1.5 high, swimming or crawling (3) 0.6 x 0.6.
+*> standing (0) the operator's box 0.7 x 1.75, crouching (5) 1.5 high, swimming or crawling (3) and fall flying (1) 0.6 x 0.6.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  LINKAGE SECTION.
@@ -633,6 +650,9 @@
          WHEN 5
              MOVE 1.5 TO L-HEIGHT
          WHEN 3
+             MOVE 0.3 TO L-HALF
+             MOVE 0.6 TO L-HEIGHT
+         WHEN 1
              MOVE 0.3 TO L-HALF
              MOVE 0.6 TO L-HEIGHT
          WHEN OTHER
@@ -849,6 +869,9 @@
          IF L-SHIFT = 1 AND PL-FLYING = 0
              MOVE 5 TO WS-DESIRED
          END-IF
+         IF PL-GLIDING = 1
+             MOVE 1 TO WS-DESIRED
+         END-IF
          IF PL-SWIMMING = 1
              MOVE 3 TO WS-DESIRED
          END-IF
@@ -885,6 +908,8 @@
          WHEN 5
              MOVE 1.25 TO WS-TARGET
          WHEN 3
+             MOVE 0.4 TO WS-TARGET
+         WHEN 1
              MOVE 0.4 TO WS-TARGET
          WHEN OTHER
              MOVE 1.6 TO WS-TARGET

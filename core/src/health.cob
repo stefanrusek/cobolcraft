@@ -800,6 +800,10 @@
  01 WS-REACH               FLOAT-LONG.
  01 WS-EXHAUST             FLOAT-LONG.
  01 WS-REDIRECTED          BINARY-LONG.
+ 01 WS-PIERCING            BINARY-LONG.
+ 01 WS-IGNORED             BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-LEN                 BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  COPY PLAYPKT.
@@ -808,6 +812,21 @@
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      IF PL-STATE(WS-ROW) NOT = PS-ALIVE
+         GOBACK
+     END-IF
+*>   handleAttack returns at once for a spear in the main hand (17 section 3.12): the jab is Player Action STAB (ranged-spear.cob).
+     MOVE 0 TO WS-PIERCING
+     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) > 0
+         MOVE IT-KEY(PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1) + 1) TO WS-KEY
+         COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY))
+         IF WS-LEN >= 6
+             IF WS-KEY(WS-LEN - 5:6) = "_spear"
+                 MOVE 1 TO WS-PIERCING
+             END-IF
+         END-IF
+     END-IF
+     CALL "TOOL-SPEAR-ATTACK-IGNORED" USING WS-PIERCING WS-IGNORED
+     IF WS-IGNORED = 1
          GOBACK
      END-IF
      MOVE 0 TO WS-ENTITY

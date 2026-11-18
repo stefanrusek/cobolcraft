@@ -7,13 +7,16 @@
 *> margin max(0, min(0.3, (tick - 2) / 20)) of 44 section 7.3); a hit does ceil(speed x base damage) (a player through HEALTH-HURT with CAUSE-ARROW, a
 *> mob in whole points) and removes the arrow; then drag 0.99 and gravity 0.05.
 *> A stray, bogged or parched arrow carries its effect in EN-VARIANT of the arrow row (STDMOB-ARROW-KIND) and a player it hits gets it (STDMOB-ARROW-APPLY, 20 section 5).
-*> Approximations (open): block hits use sample steps and not an exact voxel clip, water drag, critical arrows, piercing, Punch and Power, fire,
-*> tipped arrows, pickup of stuck arrows and the arrow count of the victim are not modelled.
+*> A critical arrow (EN-ARR-CRIT) adds nextInt(damage / 2 + 2); Punch (EN-ARR-PUNCH) pushes the victim along the flight (ARROW-PUNCH); a piercing arrow (EN-ARR-PIERCE)
+*> flies on, remembering the entities it hit (EN-ARR-HIT), until it has hit pierce + 1 of them; a stuck arrow is picked up by a player (ARROW-PICKUP).
+*> Approximations (open): block hits use sample steps and not an exact voxel clip, water drag, tipped arrows and the arrow count of the victim are not modelled.
 *>
 *> Entry points:
 *>   ARROW-TYPE USING type id out                       the entity type id of arrow, 0 outside a standard world
 *>   ARROW-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), base damage (thousandths), owner entity id, row out
-*>   ARROW-STEP USING tracker row                       one tick of one arrow
+*>   ARROW-STEP USING tracker row                       one tick of one arrow or thrown trident (ranged-trident.cob)
+*>   ARROW-SEND USING tracker row                       Teleport Entity to the viewers when it moved
+*>   ARROW-PICKUP USING tracker row                     a stuck arrow touched by a player (ranged-pickup.cob)
 *>   ARROWS-TICK                                        every arrow (CORE-TICK)
 *>   STDMOB-SHOOT USING tracker row, table row, stop out   the bow goal of a skeleton (20 section 5)
 
@@ -120,15 +123,29 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
  01 WS-FIRE-TICKS          BINARY-LONG.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 6102.
+ 01 WS-HIT-ID              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-ARROW L-ENTITY L-PLAYER.
+     IF EN-IS-TRIDENT(L-ARROW) = 1
+         CALL "TRIDENT-HIT" USING L-ARROW L-ENTITY L-PLAYER
+         GOBACK
+     END-IF
      COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ARROW) * EN-VX(L-ARROW) + EN-VY(L-ARROW) * EN-VY(L-ARROW)
          + EN-VZ(L-ARROW) * EN-VZ(L-ARROW))
      COMPUTE WS-MILLI = FUNCTION INTEGER(WS-SPEED * EN-ITEM(L-ARROW) + 0.999)
      COMPUTE WS-DAMAGE = FUNCTION INTEGER((WS-MILLI + 999) / 1000)
+*>   A critical arrow adds nextInt(damage / 2 + 2) (17 section 3.9).
+     IF EN-ARR-CRIT(L-ARROW) = 1
+         COMPUTE WS-BOUND = WS-DAMAGE / 2 + 2
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-ROLL
+         ADD WS-ROLL TO WS-DAMAGE
+     END-IF
      MOVE EN-TARGET-ID(L-ARROW) TO WS-OWNER-ID
      MOVE 0 TO WS-OWNER-ROW WS-OWNER-PLAYER
      PERFORM VARYING WS-O FROM 1 BY 1 UNTIL WS-O > EN-COUNT
@@ -167,9 +184,60 @@
              END-IF
          END-IF
      END-IF
-     CALL "ENTITY-REMOVE" USING L-ARROW
+*>   Punch pushes the victim along the arrow's flight (17 section 3.9: knockback x 0.6 on the horizontal).
+     IF EN-ARR-PUNCH(L-ARROW) > 0
+         CALL "ARROW-PUNCH" USING L-ARROW L-ENTITY L-PLAYER
+     END-IF
+*>   A piercing arrow remembers who it hit and flies on until it has hit pierce + 1 entities (then it is gone).
+     IF L-PLAYER > 0
+         MOVE PL-ENTITY-ID(L-PLAYER) TO WS-HIT-ID
+     ELSE
+         MOVE EN-ID(L-ENTITY) TO WS-HIT-ID
+     END-IF
+     ADD 1 TO EN-ARR-NHIT(L-ARROW)
+     IF EN-ARR-NHIT(L-ARROW) <= 8
+         MOVE WS-HIT-ID TO EN-ARR-HIT(L-ARROW, EN-ARR-NHIT(L-ARROW))
+     END-IF
+     IF EN-ARR-NHIT(L-ARROW) > EN-ARR-PIERCE(L-ARROW)
+         CALL "ENTITY-REMOVE" USING L-ARROW
+     END-IF
      GOBACK.
  END PROGRAM ARROW-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-PUNCH.
+*> USING arrow row, entity row, player row (one of them 0): the knockback of a Punch arrow (17 section 3.9): a push of level x 0.6 along the arrow's horizontal flight
+*> (the victim's knockback resistance is not applied: no attribute table of it is kept); a mob takes it as motion, a player is sent Set Entity Motion.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-RESIST              BINARY-LONG VALUE 0.
+ 01 WS-PUSH                BINARY-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-VX                  BINARY-LONG.
+ 01 WS-VY                  BINARY-LONG VALUE 0.
+ 01 WS-VZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ARROW                BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ARROW L-ENTITY L-PLAYER.
+     CALL "TOOL-ARROW-KNOCKBACK" USING EN-ARR-PUNCH(L-ARROW) WS-RESIST WS-PUSH
+     COMPUTE WS-H = FUNCTION SQRT(EN-VX(L-ARROW) * EN-VX(L-ARROW) + EN-VZ(L-ARROW) * EN-VZ(L-ARROW))
+     IF WS-H > 0.00001
+         COMPUTE WS-VX = EN-VX(L-ARROW) / WS-H * WS-PUSH
+         COMPUTE WS-VZ = EN-VZ(L-ARROW) / WS-H * WS-PUSH
+         IF L-PLAYER > 0
+             CALL "COMBAT-MOTION-SEND" USING L-PLAYER WS-VX WS-VY WS-VZ
+         ELSE
+             IF EN-USED(L-ENTITY) = 1
+                 COMPUTE EN-VX(L-ENTITY) = EN-VX(L-ENTITY) + WS-VX / 1000
+                 COMPUTE EN-VZ(L-ENTITY) = EN-VZ(L-ENTITY) + WS-VZ / 1000
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ARROW-PUNCH.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROW-FIND-HIT.
@@ -185,6 +253,8 @@
  01 WS-M                   BINARY-LONG.
  01 WS-W                   FLOAT-LONG.
  01 WS-H                   FLOAT-LONG.
+ 01 WS-SEEN                BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -194,9 +264,20 @@
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-ARROW L-X L-Y L-Z L-ENTITY L-PLAYER.
      MOVE 0 TO L-ENTITY L-PLAYER
+     IF EN-IS-TRIDENT(L-ARROW) = 1 AND EN-TR-DEALT(L-ARROW) = 1
+         GOBACK
+     END-IF
      COMPUTE WS-MARGIN = FUNCTION MAX(0, FUNCTION MIN(0.3, (EN-COOLDOWN(L-ARROW) - 2) / 20))
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR L-PLAYER > 0
-         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ARROW)
+         MOVE 0 TO WS-SEEN
+         IF PL-USED(WS-P) = 1
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > FUNCTION MIN(EN-ARR-NHIT(L-ARROW), 8)
+                 IF EN-ARR-HIT(L-ARROW, WS-K) = PL-ENTITY-ID(WS-P)
+                     MOVE 1 TO WS-SEEN
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-SEEN = 0 AND PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ARROW)
                  AND PL-MODE(WS-P) < 3 AND PL-ENTITY-ID(WS-P) NOT = EN-TARGET-ID(L-ARROW)
                  AND FUNCTION ABS(L-X - PL-X(WS-P)) <= 0.3 + WS-MARGIN AND FUNCTION ABS(L-Z - PL-Z(WS-P)) <= 0.3 + WS-MARGIN
                  AND L-Y >= PL-Y(WS-P) - WS-MARGIN AND L-Y <= PL-Y(WS-P) + 1.8 + WS-MARGIN
@@ -204,7 +285,15 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT OR L-PLAYER > 0 OR L-ENTITY > 0
-         IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ARROW) AND EN-HEALTH(WS-E) > 0 AND EN-ID(WS-E) NOT = EN-TARGET-ID(L-ARROW)
+         MOVE 0 TO WS-SEEN
+         IF EN-USED(WS-E) = 1
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > FUNCTION MIN(EN-ARR-NHIT(L-ARROW), 8)
+                 IF EN-ARR-HIT(L-ARROW, WS-K) = EN-ID(WS-E)
+                     MOVE 1 TO WS-SEEN
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-SEEN = 0 AND EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ARROW) AND EN-HEALTH(WS-E) > 0 AND EN-ID(WS-E) NOT = EN-TARGET-ID(L-ARROW)
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-M
              IF WS-M > 0
                  COMPUTE WS-W = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
@@ -225,9 +314,6 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO.
- 01 WS-READY               PIC 9 VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 128.
- 01 WS-STEP                FLOAT-LONG VALUE 0.000122.
  01 WS-SPEED               FLOAT-LONG.
  01 WS-STEPS               BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -250,11 +336,34 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   A trident flying home (Loyalty) has no physics (ranged-trident.cob).
+     IF EN-ON-GROUND(L-ROW) = 2
+         CALL "TRIDENT-RETURN" USING L-ROW
+         GOBACK
+     END-IF
      IF EN-ON-GROUND(L-ROW) = 1
          ADD 1 TO EN-AGE(L-ROW)
-         IF EN-AGE(L-ROW) >= 1200
-             CALL "ENTITY-REMOVE" USING L-ROW
-         END-IF
+         EVALUATE TRUE
+             WHEN EN-AGE(L-ROW) >= 1200
+                 CALL "ENTITY-REMOVE" USING L-ROW
+             WHEN EN-IS-TRIDENT(L-ROW) = 1
+*>               A trident stuck for more than 4 ticks has dealt its damage; with Loyalty it then flies home.
+                 IF EN-AGE(L-ROW) > 4
+                     MOVE 1 TO EN-TR-DEALT(L-ROW)
+                 END-IF
+                 IF EN-TR-LOYALTY(L-ROW) > 0 AND EN-TR-DEALT(L-ROW) = 1
+                     MOVE 2 TO EN-ON-GROUND(L-ROW)
+                 ELSE
+                     CALL "TRIDENT-PICKUP" USING L-ROW
+                 END-IF
+             WHEN OTHER
+                 CALL "ARROW-PICKUP" USING L-ROW
+         END-EVALUATE
+         GOBACK
+     END-IF
+*>   A flying trident that has dealt its damage and has Loyalty turns for home.
+     IF EN-IS-TRIDENT(L-ROW) = 1 AND EN-TR-DEALT(L-ROW) = 1 AND EN-TR-LOYALTY(L-ROW) > 0
+         MOVE 2 TO EN-ON-GROUND(L-ROW)
          GOBACK
      END-IF
      ADD 1 TO EN-COOLDOWN(L-ROW)
@@ -310,6 +419,23 @@
              MOVE WS-PITCH TO EN-PITCH(L-ROW)
          END-IF
      END-IF
+     CALL "ARROW-SEND" USING L-ROW
+     GOBACK.
+ END PROGRAM ARROW-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-SEND.
+*> USING tracker row: when the row moved by the wire resolution since the viewers were last told, they get Teleport Entity with its position, motion and angles.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-STEP                FLOAT-LONG VALUE 0.000122.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
      IF FUNCTION ABS(EN-X(L-ROW) - EN-WAY-X(L-ROW)) >= WS-STEP OR FUNCTION ABS(EN-Y(L-ROW) - EN-FLEE-X(L-ROW)) >= WS-STEP
              OR FUNCTION ABS(EN-Z(L-ROW) - EN-WAY-Z(L-ROW)) >= WS-STEP
          IF WS-READY = 0
@@ -326,11 +452,12 @@
          CALL "ENTITY-TRACK" USING L-ROW
      END-IF
      GOBACK.
- END PROGRAM ARROW-STEP.
+     GOBACK.
+ END PROGRAM ARROW-SEND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROWS-TICK.
-*> No parameters (CORE-TICK, after the orbs): ARROW-STEP for every arrow in a loaded chunk.
+*> No parameters (CORE-TICK, after the orbs): ARROW-STEP for every arrow and every thrown trident in a loaded chunk.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -345,7 +472,7 @@
          GOBACK
      END-IF
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = WS-TYPE
+         IF EN-USED(WS-E) = 1 AND (EN-TYPE(WS-E) = WS-TYPE OR EN-IS-TRIDENT(WS-E) = 1)
              COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-E) / 16)
              COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-E) / 16)
              CALL "WORLD-FIND" USING EN-DIM(WS-E) WS-CX WS-CZ WS-CHUNK
