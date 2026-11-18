@@ -375,6 +375,7 @@
  COPY CONTENT.
  COPY CBLOCKS.
  COPY CTPROPS.
+ COPY CTBSHAPE.
  01 WS-REGISTRY            PIC X(48) VALUE "block".
  01 WS-TAG-PICKAXE         PIC X(112) VALUE "minecraft:mineable/pickaxe".
  01 WS-TAG-SHOVEL          PIC X(112) VALUE "minecraft:mineable/shovel".
@@ -393,6 +394,22 @@
  01 WS-S                   BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-CLASS               PIC X(32).
+ 01 WS-NAME                PIC X(48).
+ 01 WS-NAMES               PIC X(300).
+ 01 WS-PROPS               PIC X(160).
+ 01 WS-HAS-PROPS           BINARY-LONG.
+ 01 WS-ALWAYS-WET          BINARY-LONG.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-DOUBLE              BINARY-LONG.
+ 01 WS-EXTENDED            BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-FLUID-EMPTY         BINARY-LONG.
+ 01 WS-PROP-DEFAULT        BINARY-LONG.
+ 01 WS-DAMP                BINARY-LONG.
+ 01 WS-PROPAGATES          BINARY-LONG.
+ 01 WS-USE                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-ROW                  PIC X(819).
@@ -483,6 +500,72 @@
          MOVE WS-LIGHT TO CB-S-LIGHT(WS-S + 1)
      END-PERFORM
      MOVE CB-S-LIGHT(CB-DEFAULT-STATE(WS-INDEX) + 1) TO CB-LIGHT(WS-INDEX)
+*>   The sky light dampening of each state (32 section 7; the rules are L32-BLOCK-RULES'): the class, whether the occlusion shape is a full cube (canOcclude
+*>   and an outline of the full cube; the outline shapes are built before the blocks, so a set without them reads every state as a full cube) and whether
+*>   the state holds a fluid (waterlogged, a liquid, the plants that always stand in water).
+     MOVE CT-BR-CLASS TO WS-CLASS
+     MOVE SPACES TO WS-NAMES
+     STRING " " CT-BR-PROPS " " DELIMITED BY SIZE INTO WS-NAMES
+     MOVE 0 TO WS-HITS
+     INSPECT WS-NAMES TALLYING WS-HITS FOR ALL " waterlogged[" ALL " type[" ALL " extended["
+     MOVE 0 TO WS-HAS-PROPS
+     IF WS-HITS > 0
+         MOVE 1 TO WS-HAS-PROPS
+     END-IF
+     MOVE 0 TO WS-ALWAYS-WET
+     IF WS-CLASS = "LiquidBlock"
+         MOVE 1 TO WS-ALWAYS-WET
+     END-IF
+     MOVE CB-KEY(WS-INDEX) TO WS-NAME
+     IF WS-NAME = "seagrass" OR "tall_seagrass" OR "kelp" OR "kelp_plant" OR "bubble_column"
+         MOVE 1 TO WS-ALWAYS-WET
+     END-IF
+     PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-INDEX) BY 1 UNTIL WS-S > WS-LAST
+         MOVE WS-ALWAYS-WET TO WS-WET
+         MOVE 0 TO WS-DOUBLE WS-EXTENDED
+         IF WS-HAS-PROPS = 1
+             CALL "BLOCKS-STATE-PROPS" USING WS-S WS-PROPS
+             MOVE 0 TO WS-HITS
+             INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "waterlogged=true"
+             IF WS-HITS > 0
+                 MOVE 1 TO WS-WET
+             END-IF
+             MOVE 0 TO WS-HITS
+             INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "type=double"
+             IF WS-HITS > 0
+                 MOVE 1 TO WS-DOUBLE
+             END-IF
+             MOVE 0 TO WS-HITS
+             INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "extended=true"
+             IF WS-HITS > 0
+                 MOVE 1 TO WS-EXTENDED
+             END-IF
+         END-IF
+         MOVE 1 TO WS-FULL
+         IF BSH-READY = 1 AND BSH-OUT(WS-S + 1) NOT = 1
+             MOVE 0 TO WS-FULL
+         END-IF
+         MOVE 0 TO WS-SOLID
+         IF CB-OPAQUE(WS-INDEX) = 1 AND WS-FULL = 1
+             MOVE 1 TO WS-SOLID
+         END-IF
+         COMPUTE WS-FLUID-EMPTY = 1 - WS-WET
+         MOVE 0 TO WS-PROP-DEFAULT
+         IF WS-FULL = 0 AND WS-FLUID-EMPTY = 1
+             MOVE 1 TO WS-PROP-DEFAULT
+         END-IF
+         CALL "L32-BLOCK-RULES" USING WS-CLASS WS-SOLID WS-PROP-DEFAULT WS-FLUID-EMPTY WS-WET WS-DOUBLE WS-EXTENDED
+             WS-DAMP WS-PROPAGATES WS-USE
+*>       A block with no collision that holds no fluid lets the sky through (24 part 2 section 5.3: plants, flowers, mushrooms, torches, signs, rails, wheat, vines: 0).
+*>       The class overrides of L32-BLOCK-RULES list only the classes that declare them, not the plants that inherit VegetationBlock's (tall grass, ferns, dry grass,
+*>       crops, stems, hanging roots, vines, leaf litter) and whose outline is the full cube by the offset rule of 51: they come out 1 there. The cobweb (WebBlock:
+*>       outline a full cube, dampening 1 by the table), leaves and the liquids keep what the rules gave.
+         IF WS-DAMP = 1 AND CB-SOLID(WS-INDEX) = 0 AND WS-WET = 0
+             AND WS-CLASS NOT = "LeavesBlock" AND WS-CLASS NOT = "LiquidBlock" AND WS-CLASS NOT = "WebBlock"
+             MOVE 0 TO WS-DAMP
+         END-IF
+         MOVE WS-DAMP TO CB-S-DAMP(WS-S + 1)
+     END-PERFORM
      GOBACK.
  END PROGRAM BLOCKS-FILL.
 
@@ -507,6 +590,9 @@
      MOVE CB-EPOCH TO WS-EPOCH
      MOVE LOW-VALUES TO CORE-BLOCKS
      COMPUTE CB-EPOCH = WS-EPOCH + 1
+*>   The collision and outline shape of every state (51 block shapes; the content library's tables, built once per set type), before the blocks: the
+*>   sky light dampening of a state (BLOCKS-FILL) reads its outline.
+     CALL "BSH-BUILD"
      MOVE 0 TO WS-STATE
      MOVE CT-OK TO WS-STATUS
      PERFORM UNTIL WS-STATE >= CT-STATE-COUNT OR WS-STATUS NOT = CT-OK
@@ -518,8 +604,6 @@
              MOVE WS-STATE TO CB-STATE-COUNT
          END-IF
      END-PERFORM
-*>   The collision and outline shape of every state (51 block shapes; the content library's tables, built once per set type).
-     CALL "BSH-BUILD"
 *>   The roles of the cobolcraft rules, by key.
      MOVE SPACES TO WS-PAIRS
      MOVE "cobolcraft:cardstack" TO WS-KEY
