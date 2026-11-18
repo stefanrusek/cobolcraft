@@ -279,20 +279,38 @@
  WORKING-STORAGE SECTION.
  01 WS-HS                  FLOAT-LONG.
  01 WS-LEN                 FLOAT-LONG.
+ 01 WS-ANG                 FLOAT-LONG.
+ 01 WS-HALFPI              FLOAT-LONG VALUE 1.5707963267948966.
+ 01 WS-DEG                 FLOAT-LONG VALUE 57.2957763671875.
+ 01 WS-HS2                 FLOAT-LONG.
  LINKAGE SECTION.
  01 L-VX                   FLOAT-LONG.
  01 L-VY                   FLOAT-LONG.
  01 L-VZ                   FLOAT-LONG.
  01 L-XROT                 FLOAT-LONG.
  PROCEDURE DIVISION USING L-VX L-VY L-VZ L-XROT.
-     COMPUTE WS-HS = FUNCTION SQRT(L-VX * L-VX + L-VZ * L-VZ)
+     COMPUTE WS-HS2 = L-VX * L-VX + L-VZ * L-VZ
+     MOVE 0 TO WS-HS
+     IF WS-HS2 > 0.000000000001
+         COMPUTE WS-HS = FUNCTION SQRT(WS-HS2)
+     END-IF
      COMPUTE WS-LEN = FUNCTION SQRT(L-VX * L-VX + L-VY * L-VY + L-VZ * L-VZ)
      IF L-VY * L-VY < 0.03 AND L-XROT NOT = 0
          COMPUTE L-XROT = L-XROT - L-XROT * 0.2
      ELSE
-         IF WS-LEN > 0.00001
-             COMPUTE L-XROT = FUNCTION ATAN(-L-VY / WS-HS) * 57.2957763671875
-         END-IF
+         EVALUATE TRUE
+             WHEN WS-LEN <= 0.00001
+                 CONTINUE
+             WHEN WS-HS2 <= 0.000000000001 AND L-VY > 0
+                 COMPUTE WS-ANG = WS-HALFPI * WS-DEG
+                 COMPUTE L-XROT = 0 - WS-ANG
+             WHEN WS-HS2 <= 0.000000000001
+                 COMPUTE WS-ANG = WS-HALFPI * WS-DEG
+                 MOVE WS-ANG TO L-XROT
+             WHEN OTHER
+                 COMPUTE WS-ANG = FUNCTION ATAN(-L-VY / WS-HS)
+                 COMPUTE L-XROT = WS-ANG * WS-DEG
+         END-EVALUATE
      END-IF
      GOBACK.
  END PROGRAM Q7-JUMP-PITCH.
@@ -705,3 +723,20 @@
      END-IF
      GOBACK.
  END PROGRAM Q7-NAU-FOOD.
+
+*> 8.3 ValidatePlayDead: USING the PLAY_DEAD_TICKS value (inout), erased out: at 0 or below the memory (and HURT_BY_ENTITY) is erased, otherwise the value falls by 1.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-AXO-VALIDATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-ERASED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKS L-ERASED.
+     MOVE 0 TO L-ERASED
+     IF L-TICKS <= 0
+         MOVE 1 TO L-ERASED
+     ELSE
+         SUBTRACT 1 FROM L-TICKS
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-AXO-VALIDATE.
