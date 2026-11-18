@@ -2,7 +2,8 @@
 *> spacing cells, skip-existing false). The sets of the loaded structure data (struct-data.cob) that hold the structure (or a structure of the tag) and are random_spread are searched
 *> in square rings of spacing cells around the source's cell; in each ring the cells' potential chunks (STRUCT-POTENTIAL) that are structure chunks (STRUCT-IS-CHUNK) and hold a start
 *> of the wanted structure (STRUCT-CHUNK-STARTS: the gate, the biome check) are candidates, the one whose locate position is nearest the source wins, and the first ring with a
-*> candidate ends the search of that set; the nearest answer of all sets wins. Concentric ring sets (strongholds) are the eye of ender's code (STRUCT-NEAREST-NAMED) and are not searched here.
+*> candidate ends the search of that set; the nearest answer of all sets wins. Concentric ring sets (strongholds) are searched by the eye of ender's code (STRUCT-NEAREST-RING, 36-1 section 11 step 3); the nearest of the ring chunks counts as a start.
+*> The one-time setup the chunk workers do in their own processes (generator seed, climate points, possible structure sets) is run here when the main process has not run it (a world loaded from disk).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CXC-STRUCT-TAG-HAS IS RECURSIVE.
@@ -192,7 +193,16 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
+ COPY CLIMATE.
+ COPY GENQUEUE.
  01 WS-RADIUS              BINARY-LONG VALUE 100.
+ 01 WS-READY               BINARY-LONG.
+ 01 WS-ORIGIN-Y            BINARY-LONG VALUE 32.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-DX                  BINARY-DOUBLE.
+ 01 WS-DZ                  BINARY-DOUBLE.
  01 WS-S                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-ST                  BINARY-LONG.
@@ -214,8 +224,43 @@
  01 L-D2                   BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-KIND L-ID L-SX L-SZ L-SEED L-FOUND L-X L-Z L-D2.
      MOVE 0 TO L-FOUND L-X L-Z L-D2
+*>   the setup of a world the chunk workers made chunks for (or that no chunk was made for yet): needs the generator data, else there is nothing to search
+     CALL "GEN-DATA-READY" USING WS-READY
+     IF WS-READY = 1 AND SD-SET-COUNT > 0
+         CALL "GEN-WORLD-SETUP"
+         IF CL-COUNT = 0
+             CALL "OVB-BUILD"
+         END-IF
+         IF SD-POSS-DONE = 0
+             CALL "STRUCT-POSSIBLE-BUILD"
+         END-IF
+     END-IF
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
          MOVE 0 TO WS-ANY
+         IF SS-KIND(WS-S) = 0
+             PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(WS-S)
+                 MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-K) TO WS-ST
+                 CALL "CXC-STRUCT-WANT" USING L-KIND L-ID WS-ST WS-WANT
+                 IF WS-WANT = 1
+                     MOVE 1 TO WS-ANY
+                 END-IF
+             END-PERFORM
+             IF WS-ANY = 1
+                 CALL "STRUCT-NEAREST-RING" USING WS-S L-SEED L-SX WS-ORIGIN-Y L-SZ WS-F WS-CX WS-CZ WS-X WS-LY WS-Z
+                 IF WS-F = 1
+                     COMPUTE WS-DX = WS-X - L-SX
+                     COMPUTE WS-DZ = WS-Z - L-SZ
+                     COMPUTE WS-D2 = WS-DX * WS-DX + WS-DZ * WS-DZ
+                     IF L-FOUND = 0 OR WS-D2 < L-D2
+                         MOVE 1 TO L-FOUND
+                         MOVE WS-X TO L-X
+                         MOVE WS-Z TO L-Z
+                         MOVE WS-D2 TO L-D2
+                     END-IF
+                 END-IF
+             END-IF
+             MOVE 0 TO WS-ANY
+         END-IF
          IF SS-KIND(WS-S) = 2
              PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(WS-S)
                  MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-K) TO WS-ST
