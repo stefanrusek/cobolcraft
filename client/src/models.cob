@@ -532,6 +532,11 @@
 *> from outside the element: for the side faces top is +y; for up the top edge is north and the
 *> right edge east; for down the top edge is south and the right edge east. UVs: the face's uv or
 *> the default of 08 §5.5.1; a face rotation of r moves each corner's UV r / 90 corners clockwise.
+*> A flat element (no thickness along an axis) with a face on both sides of that axis is a decal (glow
+*> lichen, vines, sculk veins, the petal and leaf litter pads): its two quads lie in one plane, and a
+*> solid layer that passes equal depth lets the one that looks into the supporting block (dark) fight with
+*> the one that looks into the air. Each of the two is moved 0.002 of a block (0.032 pixels) out along its
+*> own normal, so the viewer's side is nearer (08 and 12 name no offset: this is the bake's own choice).
 *> Then the element rotation (§5.4.1, right-handed, about the origin; Euler x, then y, then z;
 *> single-axis rescale) and the division by 16.
  DATA DIVISION.
@@ -563,6 +568,8 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-T                   FLOAT-LONG.
  01 WS-SCALE               FLOAT-LONG.
+ 01 WS-OPPOSITE            BINARY-LONG.
+ 01 WS-DECAL-SHIFT         FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLMODEL.
  01 L-E                    BINARY-LONG.
@@ -655,6 +662,36 @@
          MOVE WS-CU(WS-K) TO QD-U(WS-J)
          MOVE WS-CV(WS-K) TO QD-V(WS-J)
      END-PERFORM
+*>   Decal: the two faces of a flat element move apart along their normals (before the rotation).
+     COMPUTE WS-OPPOSITE = L-FACE - 1 + 2 * FUNCTION MOD(L-FACE, 2)
+     MOVE 0.032 TO WS-DECAL-SHIFT
+     IF FUNCTION MOD(L-FACE, 2) = 1
+         COMPUTE WS-DECAL-SHIFT = 0 - WS-DECAL-SHIFT
+     END-IF
+     IF MF-PRESENT(L-E, WS-OPPOSITE) = 1
+         EVALUATE L-FACE
+             WHEN DIR-DOWN
+             WHEN DIR-UP
+                 IF FY = TY
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         ADD WS-DECAL-SHIFT TO WS-PY(WS-K)
+                     END-PERFORM
+                 END-IF
+             WHEN DIR-NORTH
+             WHEN DIR-SOUTH
+                 IF FZ = TZ
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         ADD WS-DECAL-SHIFT TO WS-PZ(WS-K)
+                     END-PERFORM
+                 END-IF
+             WHEN OTHER
+                 IF FX = TX
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         ADD WS-DECAL-SHIFT TO WS-PX(WS-K)
+                     END-PERFORM
+                 END-IF
+         END-EVALUATE
+     END-IF
 *>   Element rotation about the origin (each step about a fixed model axis).
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
          COMPUTE WS-X = WS-PX(WS-K) - ME-ROT-ORIGIN(L-E, 1)

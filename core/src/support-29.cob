@@ -98,6 +98,8 @@
              WHEN "minecraft:fern"
              WHEN "minecraft:bush"
              WHEN "minecraft:sweet_berry_bush"
+             WHEN "minecraft:pink_petals"
+             WHEN "minecraft:wildflowers"
                  MOVE 1 TO SP-RULE(WS-I)
              WHEN "minecraft:dead_bush"
              WHEN "minecraft:short_dry_grass"
@@ -141,6 +143,7 @@
              WHEN "minecraft:redstone_wire"
              WHEN "minecraft:repeater"
              WHEN "minecraft:comparator"
+             WHEN "minecraft:leaf_litter"
                  MOVE 14 TO SP-RULE(WS-I)
              WHEN "minecraft:wall_torch"
              WHEN "minecraft:soul_wall_torch"
