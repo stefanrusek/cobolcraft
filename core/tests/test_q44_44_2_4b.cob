@@ -242,6 +242,41 @@
      PERFORM CHECK-N
      PERFORM CLEAR-STONE
 
+*>   free cells but a ring of stone around the spawner and a cap over it: the visual ray from the block to the cell is blocked, no mob
+     PERFORM VARYING WS-X FROM -1 BY 1 UNTIL WS-X > 1
+         PERFORM VARYING WS-Z FROM -1 BY 1 UNTIL WS-Z > 1
+             PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 3
+                 IF WS-X NOT = 0 OR WS-Z NOT = 0 OR WS-Y > 0
+                     COMPUTE WS-X0 = WS-SX + WS-X
+                     COMPUTE WS-Z0 = WS-SZ + WS-Z
+                     COMPUTE WS-Y0 = WS-SY + WS-Y
+                     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-STONE
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE CW-TICKS = WS-T0 + 300
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
+         CALL "BE-TICK-ALL"
+     END-PERFORM
+     PERFORM COUNT-MOBS
+     MOVE "acceptance US15 44-2§4.7 free cells behind a ring of stone have no line of sight from the block: no mob is spawned" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O = WS-ZOMBIES * 10 + BE-XI(WS-BE, 3)
+     PERFORM CHECK-N
+     PERFORM VARYING WS-X FROM -1 BY 1 UNTIL WS-X > 1
+         PERFORM VARYING WS-Z FROM -1 BY 1 UNTIL WS-Z > 1
+             PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 3
+                 IF WS-X NOT = 0 OR WS-Z NOT = 0 OR WS-Y > 0
+                     COMPUTE WS-X0 = WS-SX + WS-X
+                     COMPUTE WS-Z0 = WS-SZ + WS-Z
+                     COMPUTE WS-Y0 = WS-SY + WS-Y
+                     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X0 WS-Y0 WS-Z0 WS-AIR
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+
 *>   custom spawn rules that do not hold (block light 15 only), then rules that hold
      MOVE 1 TO BE-XI(WS-BE, 16)
      MOVE 15 TO BE-XI(WS-BE, 12)
