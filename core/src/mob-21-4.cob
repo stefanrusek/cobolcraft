@@ -221,6 +221,10 @@
  01 WS-KIND                BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
  01 WS-ODDS                FLOAT-LONG.
+ 01 WS-AVOID               BINARY-LONG.
+ 01 WS-AVOID-X             FLOAT-LONG.
+ 01 WS-AVOID-Z             FLOAT-LONG.
+ 01 WS-AVOID-MOD           FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -233,6 +237,18 @@
      END-IF
      MOVE EN-YAW(L-ROW) TO WS-YAW
      COMPUTE WS-TARGET = SM-WALK-MILLI(L-M) / 1000
+     MOVE 0 TO WS-AVOID
+     IF EN-FLEE(L-ROW) = 0 AND SM-KIND(L-M) = 3
+         CALL "AQUA-AVOID" USING L-ROW WS-AVOID-X WS-AVOID-Z WS-AVOID-MOD WS-AVOID
+     END-IF
+     IF WS-AVOID = 1
+*>       The avoid-player goal of the fish (4.1): away from the player at attribute x 1.4 (within 7 blocks) or 1.6.
+         COMPUTE WS-DX = EN-X(L-ROW) - WS-AVOID-X
+         COMPUTE WS-DZ = EN-Z(L-ROW) - WS-AVOID-Z
+         COMPUTE WS-TARGET = SM-WALK-MILLI(L-M) / 1000 * WS-AVOID-MOD
+         MOVE 0 TO EN-COOLDOWN(L-ROW)
+         MOVE 1 TO WS-GO
+     ELSE
      IF EN-FLEE(L-ROW) > 0
          SUBTRACT 1 FROM EN-FLEE(L-ROW)
          MOVE EN-FLEE-PLAYER(L-ROW) TO WS-P
@@ -274,6 +290,7 @@
                  MOVE 1 TO WS-GO
              END-IF
          END-IF
+     END-IF
      END-IF
      IF WS-GO = 0
          MOVE 0 TO EN-SWIM-SPEED(L-ROW)

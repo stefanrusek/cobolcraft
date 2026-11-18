@@ -521,6 +521,45 @@
  END PROGRAM AQUA-PUFFER-MOBS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. AQUA-AVOID.
+*> USING row, x out, z out, modifier out (FLOAT-LONG), found out: AvoidEntityGoal(Player, 8, 1.6, 1.4) of the fish (21 section 4.1; 18 section 4.2): the nearest survival or adventure player of the
+*> dimension within 8 blocks (squared 64, and within 3 blocks of height) gives its x and z to flee from; the modifier is 1.4 within 7 blocks (squared 49) and 1.6 beyond.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-BEST                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-MODIFIER             FLOAT-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Z L-MODIFIER L-FOUND.
+     MOVE 0 TO L-FOUND
+     MOVE 65 TO WS-BEST
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND (PL-MODE(WS-P) = 0 OR PL-MODE(WS-P) = 2)
+             COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
+             COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + WS-DY * WS-DY + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+             IF WS-D2 <= 64 AND WS-D2 < WS-BEST AND FUNCTION ABS(WS-DY) < 3
+                 MOVE WS-D2 TO WS-BEST
+                 MOVE PL-X(WS-P) TO L-X
+                 MOVE PL-Z(WS-P) TO L-Z
+                 MOVE 1 TO L-FOUND
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1.6 TO L-MODIFIER
+     IF WS-BEST < 49
+         MOVE 1.4 TO L-MODIFIER
+     END-IF
+     GOBACK.
+ END PROGRAM AQUA-AVOID.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-SPAWN-RULE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.

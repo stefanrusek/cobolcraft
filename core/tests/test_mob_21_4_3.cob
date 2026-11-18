@@ -101,8 +101,13 @@
      PERFORM CHECK-N
      STOP RUN.
  TICK.
+*>   The fish keeps its place: it would swim away from the player (the fish avoid goal, 21 section 4.1), out of the 2-block range this test sets up.
      ADD 1 TO CW-TIME
-     CALL "MOB-STEP" USING WS-ROW.
+     CALL "MOB-STEP" USING WS-ROW
+     MOVE WS-X TO EN-X(WS-ROW)
+     MOVE WS-Y TO EN-Y(WS-ROW)
+     MOVE WS-Z TO EN-Z(WS-ROW)
+     MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW).
  CHECK-N.
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-MOB-21-4-3.
