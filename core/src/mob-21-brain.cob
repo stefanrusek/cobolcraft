@@ -232,7 +232,8 @@
                          END-EVALUATE
                      END-IF
                      IF WS-HIT = 1
-                         COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+*>                       Nearest first by Manhattan distance (findBlocksInBoxByManhattanDistance, 44-6 section 4.1).
+                         COMPUTE WS-D2 = FUNCTION ABS(WS-DX) + FUNCTION ABS(WS-DY) + FUNCTION ABS(WS-DZ)
                          IF WS-BEST = 0 OR WS-D2 < WS-BEST
                              MOVE WS-D2 TO WS-BEST
                              MOVE 1 TO L-FOUND
