@@ -536,6 +536,9 @@
  01 WS-SWAMP-HUT           PIC X(80) VALUE "minecraft:swamp_hut".
  01 WS-DESERT-PYRAMID      PIC X(80) VALUE "minecraft:desert_pyramid".
  01 WS-BURIED-TREASURE     PIC X(80) VALUE "minecraft:buried_treasure".
+ 01 WS-FORTRESS            PIC X(80) VALUE "minecraft:fortress".
+ 01 WS-END-CITY            PIC X(80) VALUE "minecraft:end_city".
+ 01 WS-BASTION             PIC X(80) VALUE "minecraft:bastion_remnant".
  01 WS-JUNGLE-TEMPLE       PIC X(80) VALUE "minecraft:jungle_pyramid".
  01 WS-SHIPWRECK           PIC X(80) VALUE "minecraft:shipwreck".
  01 WS-SHIPWRECK-BEACHED   PIC X(80) VALUE "minecraft:shipwreck_beached".
@@ -605,6 +608,11 @@
          CALL "STRUCT-GATE-ON" USING WS-JUNGLE-TEMPLE
          CALL "STRUCT-GATE-ON" USING WS-DESERT-PYRAMID
          CALL "STRUCT-GATE-ON" USING WS-BURIED-TREASURE
+*>       the nether fortress (36-8 section 2), placed by the Nether's own chunk generator (nether-struct.cob)
+         CALL "STRUCT-GATE-ON" USING WS-FORTRESS
+*>       the end city (36-8 section 8), placed by the End's own chunk generator (struct-endcity-place.cob)
+         CALL "STRUCT-GATE-ON" USING WS-END-CITY
+         CALL "STRUCT-GATE-ON" USING WS-BASTION
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF

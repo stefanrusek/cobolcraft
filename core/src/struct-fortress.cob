@@ -201,6 +201,10 @@
      CALL "SPB-ADD" USING L-TYPE L-DIR L-DEPTH WS-ZERO WS-BOX L-ROW
      IF L-ROW > 0
          MOVE WS-AUX TO SP-F1(L-ROW)
+*>       a turn piece's chest is pending when the roll was 0 (6.1)
+         IF (L-TYPE = 11 OR L-TYPE = 13) AND WS-AUX = 0
+             MOVE 1 TO SP-F2(L-ROW)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM FORT-MAKE.

@@ -363,7 +363,12 @@
                  COMPUTE WS-N5 = FUNCTION NUMVAL(WS-TOK(6))
                  COMPUTE WS-N6 = FUNCTION NUMVAL(WS-TOK(7))
                  CALL "SCP-STATE" USING L-ROW WS-TOK(8) WS-EDGE
-                 CALL "SCP-STATE" USING L-ROW WS-TOK(9) WS-FILL
+*>               a line with one block names it for the edge and the fill alike
+                 IF WS-TOK(9) = SPACES
+                     MOVE WS-EDGE TO WS-FILL
+                 ELSE
+                     CALL "SCP-STATE" USING L-ROW WS-TOK(9) WS-FILL
+                 END-IF
                  MOVE 0 TO WS-SKIP
                  IF WS-TOK(1) = "K"
                      MOVE 1 TO WS-SKIP

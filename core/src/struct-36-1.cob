@@ -755,11 +755,13 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BIOME-AT.
 *> USING qx, qy, qz (quart cell), index out, biome out (PIC X(40)): the biome the structure code sees at the cell: that of the multi-noise source
-*> (CLIMATE-BIOME-AT), or in a superflat world the one biome of the flat settings everywhere (56 section 4.2: the fixed biome source).
+*> (CLIMATE-BIOME-AT), or in a superflat world the one biome of the flat settings everywhere (56 section 4.2: the fixed biome source), or while the Nether's structure stage runs (SDM-KIND 1)
+*> the Nether's biome source.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY FLATSET.
+ COPY STRUCTDIM.
  LINKAGE SECTION.
  01 L-QX                   BINARY-LONG.
  01 L-QY                   BINARY-LONG.
@@ -767,15 +769,18 @@
  01 L-INDEX                BINARY-LONG.
  01 L-BIOME                PIC X(40).
  PROCEDURE DIVISION USING L-QX L-QY L-QZ L-INDEX L-BIOME.
-     IF CW-WORLD-TYPE = "superflat"
-         IF FS-LOADED = 0
-             CALL "FLAT-SETTINGS-DEFAULT"
-         END-IF
-         MOVE 1 TO L-INDEX
-         MOVE FS-BIOME TO L-BIOME
-     ELSE
-         CALL "CLIMATE-BIOME-AT" USING L-QX L-QY L-QZ L-INDEX L-BIOME
-     END-IF
+     EVALUATE TRUE
+         WHEN CW-WORLD-TYPE = "superflat"
+             IF FS-LOADED = 0
+                 CALL "FLAT-SETTINGS-DEFAULT"
+             END-IF
+             MOVE 1 TO L-INDEX
+             MOVE FS-BIOME TO L-BIOME
+         WHEN SDM-KIND = 1
+             CALL "NETHER-STRUCT-BIOME-AT" USING L-QX L-QZ L-INDEX L-BIOME
+         WHEN OTHER
+             CALL "CLIMATE-BIOME-AT" USING L-QX L-QY L-QZ L-INDEX L-BIOME
+     END-EVALUATE
      GOBACK.
  END PROGRAM STRUCT-BIOME-AT.
 
