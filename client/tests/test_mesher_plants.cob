@@ -37,8 +37,8 @@
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-ONE
 
      MOVE "T" TO TL-MODE
-     MOVE "mesher-plants given a lucite cell above a column and no sky light data when meshed then the top face of the "
-         & "column and the side face of its neighbour that look into the cell are lit (1.00 on top, 0.60 on the side with its fixed side shade), not the 0.10 floor" TO TL-CASE
+     MOVE "mesher-plants given a lucite cell above a column and no sky light data when meshed then the faces that look into it are lit, not 0.10"
+         TO TL-CASE
      MOVE "1.00 0.60" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      CALL "TEST-FACE" USING CLIENT-STATE WS-ROW "01.5 10.0 01.5 0" TL-OBSERVED
