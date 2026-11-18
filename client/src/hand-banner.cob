@@ -178,7 +178,43 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-BANNER.
-*> USING CLIENT-STATE, M (12 FLOAT-LONG: the pose through the display transform and the recentring of the item), hand (1 main, 2 off), dye of the banner's colour, light 0 to 1 (FLOAT-LONG).
+*> USING CLIENT-STATE, M (12 FLOAT-LONG: the pose through the display transform and the recentring of the item), hand (1 main, 2 off), dye of the banner's colour, light 0 to 1 (FLOAT-LONG):
+*> BANNER-DRAW of the local player's stack in that hand (PL-SLOT-BN) into the hand mesh.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG VALUE 3.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-BANNER.
+    05 WS-COUNT            BINARY-LONG.
+    05 WS-PAT              BINARY-LONG OCCURS 16 TIMES.
+    05 WS-DYES             BINARY-LONG OCCURS 16 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-M.
+    05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-LIGHT                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-HAND L-DYE L-LIGHT.
+     IF L-HAND = 1
+         COMPUTE WS-INDEX = PL-HELD + 1
+     ELSE
+         MOVE 37 TO WS-INDEX
+     END-IF
+     MOVE PL-SLOT-BN-COUNT(WS-INDEX) TO WS-COUNT
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 16
+         MOVE PL-SLOT-BN-PAT(WS-INDEX, WS-N) TO WS-PAT(WS-N)
+         MOVE PL-SLOT-BN-DYE(WS-INDEX, WS-N) TO WS-DYES(WS-N)
+     END-PERFORM
+     CALL "BANNER-DRAW" USING CLIENT-STATE L-M WS-BANNER L-DYE L-LIGHT WS-MODE
+     GOBACK.
+ END PROGRAM HAND-BANNER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BANNER-DRAW.
+*> USING CLIENT-STATE, M (12 FLOAT-LONG: the pose through the display transform and the recentring of the item), layers (BINARY-LONG count, 16 holders, 16 dyes), dye of the banner's colour, light 0 to 1
+*> (FLOAT-LONG), mode (3 the hand mesh, 4 the ground item mesh): the banner's pole, bar, flag and layers (52 section 6.4, 54 section 22.3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-KEY                 PIC X(24) VALUE "banner".
@@ -205,10 +241,14 @@
  COPY CLSTATE.
  01 L-M.
     05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
- 01 L-HAND                 BINARY-LONG.
+ 01 L-BANNER.
+    05 L-COUNT             BINARY-LONG.
+    05 L-PAT               BINARY-LONG OCCURS 16 TIMES.
+    05 L-DYES              BINARY-LONG OCCURS 16 TIMES.
  01 L-DYE                  BINARY-LONG.
  01 L-LIGHT                FLOAT-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-M L-HAND L-DYE L-LIGHT.
+ 01 L-MODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-BANNER L-DYE L-LIGHT L-MODE.
      CALL "ENTITY-MODEL-FIND" USING WS-KEY WS-ROW
      MOVE 0 TO WS-SLOT-BASE
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EA-MT-COUNT
@@ -218,11 +258,6 @@
      END-PERFORM
      IF WS-SLOT-BASE = 0 OR EA-W = 0 OR EA-H = 0
          GOBACK
-     END-IF
-     IF L-HAND = 1
-         COMPUTE WS-INDEX = PL-HELD + 1
-     ELSE
-         MOVE 37 TO WS-INDEX
      END-IF
 *>   The local transform of the banner: translate (0.5, 0, 0.5), scale (2/3, -2/3, -2/3).
      MOVE L-M TO WS-M
@@ -246,7 +281,7 @@
      MOVE 42 TO WS-GV(9)
      MOVE 44 TO WS-GV(11)
      MOVE 0 TO WS-GV(12)
-     CALL "HAND-CUBOID" USING CLIENT-STATE WS-M WS-SLOT-BASE WS-GEOM WS-TINT L-LIGHT
+     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE WS-M WS-SLOT-BASE WS-GEOM WS-TINT L-LIGHT L-MODE
      MOVE -10 TO WS-GV(5)
      MOVE -44 TO WS-GV(6)
      MOVE -1 TO WS-GV(7)
@@ -254,7 +289,7 @@
      MOVE 2 TO WS-GV(9) WS-GV(10)
      MOVE 0 TO WS-GV(11)
      MOVE 42 TO WS-GV(12)
-     CALL "HAND-CUBOID" USING CLIENT-STATE WS-M WS-SLOT-BASE WS-GEOM WS-TINT L-LIGHT
+     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE WS-M WS-SLOT-BASE WS-GEOM WS-TINT L-LIGHT L-MODE
 *>   The flag (pivot (0, -44, 0), turned about X by -0.0025 pi; tex 0, 0; origin -10 0 -2; 20 x 40 x 1): with the banner sprite, then the layers.
      MOVE -44 TO WS-GV(2)
      COMPUTE WS-GV(4) = -0.0025 * FUNCTION PI
@@ -265,16 +300,16 @@
      MOVE 40 TO WS-GV(9)
      MOVE 1 TO WS-GV(10)
      MOVE 0 TO WS-GV(11) WS-GV(12)
-     CALL "HAND-CUBOID" USING CLIENT-STATE WS-M WS-SLOT-BASE WS-GEOM WS-TINT L-LIGHT
+     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE WS-M WS-SLOT-BASE WS-GEOM WS-TINT L-LIGHT L-MODE
 *>   The base colour layer (the sprite `base`, order 1), then each pattern (order 2 on, its dye); a layer 0.05 pixel nearer the viewer than the one before.
-     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N > PL-SLOT-BN-COUNT(WS-INDEX) OR WS-N > 16
+     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N > L-COUNT OR WS-N > 16
          IF WS-N = 0
              MOVE 9001 TO WS-CODE
              MOVE L-DYE TO WS-DYE
              MOVE 1 TO WS-ORDER
          ELSE
-             COMPUTE WS-CODE = 9000 + PL-SLOT-BN-PAT(WS-INDEX, WS-N)
-             MOVE PL-SLOT-BN-DYE(WS-INDEX, WS-N) TO WS-DYE
+             COMPUTE WS-CODE = 9000 + L-PAT(WS-N)
+             MOVE L-DYES(WS-N) TO WS-DYE
              COMPUTE WS-ORDER = WS-N + 1
          END-IF
          MOVE 0 TO WS-SLOT
@@ -289,8 +324,47 @@
              COMPUTE WS-TV(2) = FUNCTION MOD(FUNCTION INTEGER(WS-ARGB / 256), 256) / 255
              COMPUTE WS-TV(3) = FUNCTION MOD(WS-ARGB, 256) / 255
              COMPUTE WS-GV(7) = -2 - 0.05 * WS-ORDER
-             CALL "HAND-CUBOID" USING CLIENT-STATE WS-M WS-SLOT WS-GEOM WS-TINT L-LIGHT
+             CALL "HAND-CUBOID-MODE" USING CLIENT-STATE WS-M WS-SLOT WS-GEOM WS-TINT L-LIGHT L-MODE
          END-IF
      END-PERFORM
      GOBACK.
- END PROGRAM HAND-BANNER.
+ END PROGRAM BANNER-DRAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BANNER-SLOTS.
+*> USING CLIENT-STATE, replica row, new (BINARY-LONG, set to 1 when a slot's image changed): the entity atlas slots of the sprites of the banners a mob holds (HAND-BANNER-SLOTS for the local
+*> player): for each hand slot (1 main, 2 off) whose item is a banner `banner_base` (code 0), `base` (9001) and 9000 + the holder of each of the layers of EN-HB.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(24) VALUE "banner".
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-DYE                 BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-NEW.
+     CALL "ENTITY-MODEL-FIND" USING WS-KEY WS-ROW
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 2
+         MOVE -1 TO WS-DYE
+         IF EN-EQ(L-ROW, WS-SLOT) > 0
+             CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE EN-EQ(L-ROW, WS-SLOT) WS-DYE
+         END-IF
+         IF WS-DYE >= 0 AND WS-ROW > 0
+             MOVE 0 TO WS-CODE
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-ROW WS-CODE L-NEW
+             MOVE 9001 TO WS-CODE
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-ROW WS-CODE L-NEW
+             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-HB-COUNT(L-ROW, WS-SLOT)
+                 IF EN-HB-PAT(L-ROW, WS-SLOT, WS-N) >= 1 AND EN-HB-PAT(L-ROW, WS-SLOT, WS-N) <= 43
+                     COMPUTE WS-CODE = 9000 + EN-HB-PAT(L-ROW, WS-SLOT, WS-N)
+                     CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-ROW WS-CODE L-NEW
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-BANNER-SLOTS.

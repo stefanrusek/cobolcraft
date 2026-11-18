@@ -169,6 +169,8 @@
                  CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-X WS-TEX
                  CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
+*>           The banners the mob holds (hand-banner.cob).
+             CALL "ENTITY-BANNER-SLOTS" USING CLIENT-STATE WS-R WS-NEW
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
              PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM

@@ -145,6 +145,27 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-CUBOID.
+*> USING CLIENT-STATE, M, slot, geometry, tint, light: HAND-CUBOID-MODE into the hand mesh (mode 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MODE                BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-M.
+    05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-GEOM.
+    05 L-G                 FLOAT-LONG OCCURS 15 TIMES.
+ 01 L-TINT.
+    05 L-T                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-LIGHT                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-SLOT L-GEOM L-TINT L-LIGHT.
+     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE L-M L-SLOT L-GEOM L-TINT L-LIGHT WS-MODE
+     GOBACK.
+ END PROGRAM HAND-CUBOID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HAND-CUBOID-MODE.
 *> USING CLIENT-STATE, M (12 FLOAT-LONG, HAND-M-IDENT layout: the model space in blocks to the view), entity atlas slot (EA-MT), geometry (15 FLOAT-LONG: the part's pivot x y z in
 *> pixels, its rotation about X in radians, the cuboid's origin x y z, size w h d, texture offset u v, grow, the texture's width and height in pixels), tint (3 FLOAT-LONG), light 0 to 1:
 *> appends the 36 vertices of the cuboid (the six faces down, up, west, north, east, south as ModelPart does, the texels of 12 section 7.4 on the slot's rectangle) to RL-HA-VERTEX
@@ -163,7 +184,6 @@
  01 WS-COS                 FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
- 01 WS-MODE                BINARY-LONG VALUE 3.
  01 WS-BOX-IN.
     05 WS-BI               FLOAT-LONG OCCURS 16 TIMES.
  01 WS-BOX-OUT.
@@ -201,7 +221,8 @@
  01 L-TINT.
     05 L-T                 FLOAT-LONG OCCURS 3 TIMES.
  01 L-LIGHT                FLOAT-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-M L-SLOT L-GEOM L-TINT L-LIGHT.
+ 01 L-MODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-SLOT L-GEOM L-TINT L-LIGHT L-MODE.
      MOVE L-G(5) TO WS-BI(1)
      MOVE L-G(6) TO WS-BI(2)
      MOVE L-G(7) TO WS-BI(3)
@@ -251,10 +272,22 @@
          MOVE WS-NO(1) TO WS-NV(1)
          COMPUTE WS-NV(2) = WS-NO(2) * WS-COS - WS-NO(3) * WS-SIN
          COMPUTE WS-NV(3) = WS-NO(2) * WS-SIN + WS-NO(3) * WS-COS
-         MOVE RL-HA-COUNT TO WS-BEFORE
-         CALL "HAND-QUAD" USING CLIENT-STATE L-M WS-CORNERS WS-UV WS-NORMAL L-LIGHT WS-MODE
-*>       The tint of the six vertices of the quad just added (none when the mesh was full).
-         IF RL-HA-COUNT = WS-BEFORE + 6
+         IF L-MODE = 4
+             MOVE RL-GI-COUNT TO WS-BEFORE
+         ELSE
+             MOVE RL-HA-COUNT TO WS-BEFORE
+         END-IF
+         CALL "HAND-QUAD" USING CLIENT-STATE L-M WS-CORNERS WS-UV WS-NORMAL L-LIGHT L-MODE
+*>       The tint of the six vertices of the quad just added (none when the mesh was full): the hand mesh (mode 3) or the ground item mesh (mode 4).
+         IF L-MODE = 4 AND RL-GI-COUNT = WS-BEFORE + 6
+             PERFORM VARYING WS-V FROM 0 BY 1 UNTIL WS-V > 5
+                 COMPUTE WS-J = RL-GI-COUNT - WS-V
+                 MOVE L-T(1) TO RL-GI-R(WS-J)
+                 MOVE L-T(2) TO RL-GI-G(WS-J)
+                 MOVE L-T(3) TO RL-GI-BLUE(WS-J)
+             END-PERFORM
+         END-IF
+         IF L-MODE NOT = 4 AND RL-HA-COUNT = WS-BEFORE + 6
              PERFORM VARYING WS-V FROM 0 BY 1 UNTIL WS-V > 5
                  COMPUTE WS-J = RL-HA-COUNT - WS-V
                  MOVE L-T(1) TO RL-HA-R(WS-J)
@@ -264,4 +297,4 @@
          END-IF
      END-PERFORM
      GOBACK.
- END PROGRAM HAND-CUBOID.
+ END PROGRAM HAND-CUBOID-MODE.

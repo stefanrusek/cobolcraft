@@ -22,6 +22,7 @@
  01 WS-A                   BINARY-LONG.
  01 WS-SIDE                FLOAT-LONG.
  01 WS-BRIGHT              BINARY-LONG VALUE 0.
+ 01 WS-BDYE                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -60,9 +61,88 @@
          COMPUTE WS-AZ = -10 / 16
      END-IF
      CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+     CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE L-ITEM WS-BDYE
+     IF WS-BDYE >= 0
+         CALL "ENTITY-BANNER-HELD" USING CLIENT-STATE WS-M L-ROW L-HAND WS-BDYE L-EYE-TABLE
+         GOBACK
+     END-IF
      CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M L-ITEM L-HAND L-ROW L-EYE-TABLE WS-BRIGHT
      GOBACK.
  END PROGRAM ENTITY-HELD-POSED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BANNER-HELD.
+*> USING CLIENT-STATE, placement (12 FLOAT-LONG: the arm's frame turned and translated as for any held item), replica row, hand (1 right arm, 2 left arm), dye of the banner's colour, eye (3 FLOAT-LONG):
+*> a banner in a mob's hand (52 section 6.7): the display of template_banner for thirdperson_righthand (translation (0, 2, 0.5) / 16, rotation (0, 90, 0), scale 0.375; the left hand takes it
+*> mirrored: rotation y negated), the recentring, then BANNER-DRAW into the ground item mesh with the layers of the stack in the hand (EN-HB of the main hand's slot, the off hand's: the main
+*> hand is the left arm of a left-handed mob), lit by the light of the mob's cell.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-M.
+    05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AY                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-DEG                 FLOAT-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG VALUE 4.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-BANNER.
+    05 WS-COUNT            BINARY-LONG.
+    05 WS-PAT              BINARY-LONG OCCURS 16 TIMES.
+    05 WS-DYES             BINARY-LONG OCCURS 16 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-M.
+    05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-ROW L-HAND L-DYE L-EYE-TABLE.
+     MOVE L-M TO WS-M
+     MOVE 0 TO WS-AX
+     COMPUTE WS-AY = 2 / 16
+     COMPUTE WS-AZ = 0.5 / 16
+     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+     MOVE 2 TO WS-AXIS
+     MOVE 90 TO WS-DEG
+     IF L-HAND = 2
+         MOVE -90 TO WS-DEG
+     END-IF
+     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     MOVE 0.375 TO WS-AX WS-AY WS-AZ
+     CALL "HAND-M-SCALE" USING WS-M WS-AX WS-AY WS-AZ
+     MOVE -0.5 TO WS-AX WS-AY WS-AZ
+     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+*>   The hand's stack: the main hand is the right arm unless the mob is left-handed (mob flags bit 2).
+     MOVE L-HAND TO WS-SLOT
+     IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(L-ROW) / 2), 2) = 1
+         COMPUTE WS-SLOT = 3 - L-HAND
+     END-IF
+     MOVE EN-HB-COUNT(L-ROW, WS-SLOT) TO WS-COUNT
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 16
+         MOVE EN-HB-PAT(L-ROW, WS-SLOT, WS-N) TO WS-PAT(WS-N)
+         MOVE EN-HB-DYE(L-ROW, WS-SLOT, WS-N) TO WS-DYES(WS-N)
+     END-PERFORM
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLK
+     COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15, 0.1)
+     CALL "BANNER-DRAW" USING CLIENT-STATE WS-M WS-BANNER L-DYE WS-LIGHT WS-MODE
+     GOBACK.
+ END PROGRAM ENTITY-BANNER-HELD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEM-POSED-DRAW.
