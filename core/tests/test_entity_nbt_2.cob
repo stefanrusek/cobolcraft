@@ -42,7 +42,7 @@
  01 WS-A                   BINARY-LONG.
  01 WS-ZOMBIE              BINARY-LONG.
  01 WS-PIGLIN              BINARY-LONG.
- 01 WS-SODGRAZER           BINARY-LONG.
+ 01 WS-SILVERFISH           BINARY-LONG.
  01 WS-ZOMBIE-TYPE         BINARY-LONG.
  01 WS-PIGLIN-TYPE         BINARY-LONG.
  PROCEDURE DIVISION.
@@ -60,7 +60,7 @@
      MOVE 6000 TO CW-TIME
      MOVE 1000 TO CW-GAME-TIME
      MOVE 0 TO CW-TICKS
-*>   Chunk (1, 2): a zombie; chunk (2, 2): a zombified piglin; chunk (3, 2): a sodgrazer (a mob of no standard row).
+*>   Chunk (1, 2): a zombie; chunk (2, 2): a zombified piglin; chunk (3, 2): a silverfish (a hostile with no species keys).
      MOVE 20.5 TO WS-X MOVE 55 TO WS-Y MOVE 37.25 TO WS-Z
      MOVE "zombie" TO WS-WANT-KEY PERFORM SPAWN-AT
      MOVE WS-ROW TO WS-ZOMBIE
@@ -78,8 +78,8 @@
      MOVE 500 TO EN-ANGER(WS-PIGLIN)
      MOVE WS-PLAYER TO EN-TARGET(WS-PIGLIN)
      MOVE 60.5 TO WS-X
-     MOVE "sodgrazer" TO WS-WANT-KEY PERFORM SPAWN-AT
-     MOVE WS-ROW TO WS-SODGRAZER
+     MOVE "silverfish" TO WS-WANT-KEY PERFORM SPAWN-AT
+     MOVE WS-ROW TO WS-SILVERFISH
 
      MOVE 2 TO WS-CZ
      MOVE "T" TO TL-MODE
@@ -124,7 +124,7 @@
 
      MOVE 3 TO WS-CX
      PERFORM WRITE-CHUNK
-     MOVE "acceptance US15 45-2 sodgrazer: the always-written keys, no effects, no equipment, no anger" TO TL-CASE
+     MOVE "acceptance US15 45-2 silverfish: the always-written keys, no effects, no equipment, no anger" TO TL-CASE
      PERFORM TAIL-FROM-HURT
      MOVE "HurtTime:0,DeathTime:0,AbsorptionAmount:0.000,current_impulse_context_reset_grace_time:0,attributes:[],FallFlying:0,Brain:{memories:{}},CanPickUpLoot:0,PersistenceRequired:0,LeftHanded:0}]"
          TO TL-EXPECTED
@@ -182,10 +182,6 @@
  SPAWN-AT.
      MOVE SPACES TO WS-KEY
      STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
-     IF WS-WANT-KEY = "sodgrazer"
-         MOVE SPACES TO WS-KEY
-         STRING "cobolcraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
-     END-IF
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
      CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW.
  WRITE-CHUNK.

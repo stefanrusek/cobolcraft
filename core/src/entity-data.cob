@@ -119,6 +119,8 @@
  01 WS-UNKNOWN-COUNT       BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-KIND-ZERO           BINARY-LONG VALUE 0.
+ 01 WS-ITEM-HEALTH         BINARY-LONG VALUE 5.
+ 01 WS-LIVING              BINARY-LONG.
  01 WS-SLICES.
     05 WS-SLICE OCCURS 256 TIMES.
        10 WS-SLICE-START   BINARY-LONG.
@@ -185,6 +187,13 @@
 *>           The Entity base keys (45 section 5, ENTITY-BASE-WRITE): the six written every time, then the conditional ones.
              CALL "ENTITY-BASE-WRITE" USING WS-ROW PB-BUFFER
              IF EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
+*>               The ItemEntity keys (45-8 section 3.1), in the table order: Health, Age and PickupDelay Shorts, then the stack.
+                 MOVE "Health" TO WN MOVE 6 TO WL
+                 CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-ITEM-HEALTH
+                 MOVE "Age" TO WN MOVE 3 TO WL
+                 CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-AGE(WS-ROW)
+                 MOVE "PickupDelay" TO WN MOVE 11 TO WL
+                 CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-DELAY(WS-ROW)
                  MOVE "Item" TO WN MOVE 4 TO WL
                  CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
                  MOVE "id" TO WN MOVE 2 TO WL
@@ -195,14 +204,17 @@
                  MOVE "count" TO WN MOVE 5 TO WL
                  CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-ITEM-COUNT(WS-ROW)
                  CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-                 MOVE "Age" TO WN MOVE 3 TO WL
-                 CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-AGE(WS-ROW)
              ELSE
-                 MOVE "Health" TO WN MOVE 6 TO WL
-                 MOVE EN-HEALTH(WS-ROW) TO WS-FLOAT
-                 CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
-                 CALL "LIVING-NBT-WRITE" USING WS-ROW PB-BUFFER
-                 CALL "MOB-NBT-WRITE" USING WS-ROW PB-BUFFER
+*>               A LivingEntity (45-2): Health, the LivingEntity keys and the Mob keys; a TNT, falling block, boat, minecart or projectile is an Entity only.
+                 CALL "ENTITY-IS-LIVING" USING WS-ROW WS-LIVING
+                 IF WS-LIVING = 1
+                     MOVE "Health" TO WN MOVE 6 TO WL
+                     MOVE EN-HEALTH(WS-ROW) TO WS-FLOAT
+                     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+                     CALL "LIVING-NBT-WRITE" USING WS-ROW PB-BUFFER
+                     CALL "MOB-NBT-WRITE" USING WS-ROW PB-BUFFER
+                 END-IF
+                 CALL "ENTITY8-NBT-WRITE" USING WS-ROW PB-BUFFER
              END-IF
              CALL "EXTRA-APPEND" USING WS-KIND-ZERO WS-ROW PB-BUFFER WS-START
              CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
@@ -336,12 +348,17 @@
  COPY SPDATA.
  COPY H5DATA.
  COPY V6DATA.
+ COPY A7DATA.
+ COPY E8DATA.
  01 WS-SPECIES            PIC X(24).
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM PB-BUFFER.
-     INITIALIZE EB-DATA LV-DATA SP-DATA H5-DATA V6-DATA
+     INITIALIZE EB-DATA LV-DATA SP-DATA H5-DATA V6-DATA A7-DATA E8-DATA
+     MOVE -1 TO E8-STATE
+     MOVE 80 TO E8-FUSE
+     MOVE 2400 TO A7-MOIST
      MOVE 1 TO SP-LEFT SP-RIGHT
      MOVE -1 TO SP-SCUTE
      MOVE -1 TO WS-ENTITY-TYPE
@@ -399,6 +416,11 @@
              WHEN WN = "Age" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER WS-AGE
                  MOVE WS-AGE TO MQ-AGE
+             WHEN WN = "Age" AND WS-TYPE = 2
+                 CALL "PB-GET-SHORT" USING PB-BUFFER WS-AGE
+                 MOVE WS-AGE TO MQ-AGE
+             WHEN WN = "PickupDelay" AND WS-TYPE = 2
+                 CALL "PB-GET-SHORT" USING PB-BUFFER WS-DELAY
              WHEN WN = "Item" AND WS-TYPE = 10
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
@@ -443,6 +465,12 @@
                      CALL "MOB-NBT-KEY" USING PB-BUFFER WS-TYPE WN MQ-DATA WS-HANDLED
                  END-IF
                  IF WS-HANDLED = 0
+                     CALL "AQUATIC7-NBT-KEY" USING PB-BUFFER WS-TYPE WN A7-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "ENTITY8-NBT-KEY" USING PB-BUFFER WS-TYPE WN E8-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
                      CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                  END-IF
          END-EVALUATE
@@ -476,6 +504,11 @@
              MOVE H5-IMMUNE TO V6-IMMUNE
              MOVE H5-TIME TO V6-TIME
              CALL "VILLAGER6-NBT-APPLY" USING WS-ROW WS-SPECIES V6-DATA
+             MOVE MQ-VARIANT-INT TO A7-TROP
+             MOVE MQ-AGE TO A7-AGE
+             MOVE MQ-LOCKED TO A7-LOCKED
+             CALL "AQUATIC7-NBT-APPLY" USING WS-ROW WS-SPECIES A7-DATA
+             CALL "ENTITY8-NBT-APPLY" USING WS-ROW E8-DATA
              MOVE WS-GROUND-FLAG TO EN-ON-GROUND(WS-ROW)
              MOVE WS-FIRE TO EN-BURN(WS-ROW)
              IF WS-AIR < 300

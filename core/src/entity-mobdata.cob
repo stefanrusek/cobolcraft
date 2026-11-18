@@ -69,7 +69,7 @@
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE SM-KIND(WS-M) TO WS-KIND
 *>   AgeableMob and Animal: every passive species but the allay and the golems.
-     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem")
+     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish")
          MOVE "Age" TO WN MOVE 3 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-MOBAGE(L-ROW)
          MOVE "ForcedAge" TO WN MOVE 9 TO WL
@@ -190,6 +190,7 @@
      CALL "SPECIES4-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
      CALL "HOSTILE5-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
      CALL "VILLAGER6-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+     CALL "AQUATIC7-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
      CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
@@ -370,7 +371,7 @@
      END-IF
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE SM-KIND(WS-M) TO WS-KIND
-     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem")
+     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish")
          MOVE MQ-AGE TO EN-MOBAGE(L-ROW)
          MOVE MQ-FORCED TO EN-FORCED(L-ROW)
          MOVE MQ-LOCKED TO EN-LOCKED(L-ROW)
