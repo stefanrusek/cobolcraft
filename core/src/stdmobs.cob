@@ -1934,6 +1934,9 @@
 *> the Euclidean distance to the target, nodes never farther than 15 blocks horizontally from the start or 8 below / 15 above it. The search pops
 *> the open node of the least f at most `budget` times; it ends at the target, or when the open set is empty or the budget used, with the path to
 *> the node that came closest (the least heuristic). A start that is not standable moves down to a floor within 3 cells, else there is no path.
+*> The open list is a binary heap of node numbers (WS-HEAP, the place of a node in it WN-HPOS) ordered by f, equal f (the comparison of two FLOAT-LONG items is fuzzy: within 1e-7 counts as equal)
+*> by the lower node number: the node the scan of every node for the least f used to find (test_p49q_path compares the two on random grids). A node whose g falls moves up; the grid of
+*> node numbers is cleared cell by cell of the nodes made, not whole.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-NODES.
@@ -1949,6 +1952,22 @@
  01 WS-GRID-TABLE.
     05 WS-GRID             BINARY-LONG OCCURS 24576 TIMES.
  01 WS-NODE-COUNT          BINARY-LONG.
+ 01 WS-HEAP-TABLE.
+    05 WS-HEAP             BINARY-LONG OCCURS 1024 TIMES.
+ 01 WS-HSIZE               BINARY-LONG.
+ 01 WS-HPOS-TABLE.
+    05 WS-HPOS             BINARY-LONG OCCURS 1024 TIMES.
+ 01 WS-UP-NODE             BINARY-LONG VALUE 0.
+ 01 WS-UP-POS              BINARY-LONG.
+ 01 WS-PARENT              BINARY-LONG.
+ 01 WS-CHILD               BINARY-LONG.
+ 01 WS-MOVER               BINARY-LONG.
+ 01 WS-SIFT                BINARY-LONG.
+ 01 WS-LESS                BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-FRESH               BINARY-LONG VALUE 1.
  01 WS-POPPED              BINARY-LONG.
  01 WS-CUR                 BINARY-LONG.
  01 WS-BEST                BINARY-LONG.
@@ -2022,8 +2041,12 @@
      IF WS-FOUND = 0
          GOBACK
      END-IF
-     INITIALIZE WS-GRID-TABLE
+     IF WS-FRESH = 1
+         INITIALIZE WS-GRID-TABLE
+         MOVE 0 TO WS-FRESH
+     END-IF
      MOVE 1 TO WS-NODE-COUNT
+     MOVE 1 TO WS-HSIZE WS-HEAP(1) WS-HPOS(1)
      MOVE L-SX TO WN-X(1)
      MOVE WS-NY TO WN-Y(1)
      MOVE L-SZ TO WN-Z(1)
@@ -2039,16 +2062,60 @@
      MOVE 0 TO WS-POPPED WS-DONE
      PERFORM UNTIL WS-DONE = 1
          MOVE 0 TO WS-CUR
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NODE-COUNT
-             IF WN-STATE(WS-I) = 0 AND (WS-CUR = 0 OR WN-F(WS-I) < WN-F(WS-CUR))
-                 MOVE WS-I TO WS-CUR
-             END-IF
-         END-PERFORM
+         IF WS-HSIZE > 0
+             MOVE WS-HEAP(1) TO WS-CUR
+         END-IF
          IF WS-CUR = 0 OR WS-POPPED >= L-BUDGET
              MOVE 1 TO WS-DONE
          ELSE
              ADD 1 TO WS-POPPED
              MOVE 1 TO WN-STATE(WS-CUR)
+*>           Pop: the last node of the heap takes the place of the root and sinks.
+             MOVE WS-HEAP(WS-HSIZE) TO WS-MOVER
+             SUBTRACT 1 FROM WS-HSIZE
+             IF WS-HSIZE > 0
+                 MOVE 1 TO WS-UP-POS
+                 MOVE 1 TO WS-SIFT
+                 PERFORM UNTIL WS-SIFT = 0
+                     COMPUTE WS-CHILD = WS-UP-POS * 2
+                     IF WS-CHILD > WS-HSIZE
+                         MOVE 0 TO WS-SIFT
+                     ELSE
+                         IF WS-CHILD < WS-HSIZE
+                             MOVE WS-HEAP(WS-CHILD + 1) TO WS-A
+                             MOVE WS-HEAP(WS-CHILD) TO WS-B
+                             EVALUATE TRUE
+                                 WHEN WN-F(WS-A) < WN-F(WS-B)
+                                     ADD 1 TO WS-CHILD
+                                 WHEN WN-F(WS-B) < WN-F(WS-A)
+                                     CONTINUE
+                                 WHEN WS-A < WS-B
+                                     ADD 1 TO WS-CHILD
+                             END-EVALUATE
+                         END-IF
+                         MOVE WS-HEAP(WS-CHILD) TO WS-A
+                         EVALUATE TRUE
+                             WHEN WN-F(WS-A) < WN-F(WS-MOVER)
+                                 MOVE 1 TO WS-LESS
+                             WHEN WN-F(WS-MOVER) < WN-F(WS-A)
+                                 MOVE 0 TO WS-LESS
+                             WHEN WS-A < WS-MOVER
+                                 MOVE 1 TO WS-LESS
+                             WHEN OTHER
+                                 MOVE 0 TO WS-LESS
+                         END-EVALUATE
+                         IF WS-LESS = 1
+                             MOVE WS-A TO WS-HEAP(WS-UP-POS)
+                             MOVE WS-UP-POS TO WS-HPOS(WS-A)
+                             MOVE WS-CHILD TO WS-UP-POS
+                         ELSE
+                             MOVE 0 TO WS-SIFT
+                         END-IF
+                     END-IF
+                 END-PERFORM
+                 MOVE WS-MOVER TO WS-HEAP(WS-UP-POS)
+                 MOVE WS-UP-POS TO WS-HPOS(WS-MOVER)
+             END-IF
              IF WN-X(WS-CUR) = L-TX AND WN-Y(WS-CUR) = L-TY AND WN-Z(WS-CUR) = L-TZ
                  MOVE WS-CUR TO WS-BEST
                  MOVE 1 TO L-REACHED
@@ -2110,6 +2177,9 @@
                                      MOVE WS-TENT TO WN-G(WS-NODE-COUNT)
                                      MOVE WS-CUR TO WN-PARENT(WS-NODE-COUNT)
                                      MOVE 0 TO WN-STATE(WS-NODE-COUNT)
+                                     ADD 1 TO WS-HSIZE
+                                     MOVE WS-HSIZE TO WS-UP-POS
+                                     MOVE WS-NODE-COUNT TO WS-UP-NODE
                                      COMPUTE WS-DX = WS-NX - L-TX
                                      COMPUTE WS-DY = WS-CAND - L-TY
                                      COMPUTE WS-DZ = WS-NZ - L-TZ
@@ -2126,9 +2196,39 @@
                                      MOVE WS-TENT TO WN-G(WS-I)
                                      MOVE WS-CUR TO WN-PARENT(WS-I)
                                      COMPUTE WN-F(WS-I) = WS-TENT + 1.5 * WN-H(WS-I)
+                                     MOVE WS-I TO WS-UP-NODE
+                                     MOVE WS-HPOS(WS-I) TO WS-UP-POS
                                  END-IF
                              END-IF
                          END-IF
+                     END-IF
+*>                   A node made or whose g fell moves up the heap until its parent is not after it.
+                     IF WS-UP-NODE > 0
+                         MOVE 1 TO WS-SIFT
+                         PERFORM UNTIL WS-SIFT = 0 OR WS-UP-POS = 1
+                             COMPUTE WS-PARENT = WS-UP-POS / 2
+                             MOVE WS-HEAP(WS-PARENT) TO WS-A
+                             EVALUATE TRUE
+                                 WHEN WN-F(WS-UP-NODE) < WN-F(WS-A)
+                                     MOVE 1 TO WS-LESS
+                                 WHEN WN-F(WS-A) < WN-F(WS-UP-NODE)
+                                     MOVE 0 TO WS-LESS
+                                 WHEN WS-UP-NODE < WS-A
+                                     MOVE 1 TO WS-LESS
+                                 WHEN OTHER
+                                     MOVE 0 TO WS-LESS
+                             END-EVALUATE
+                             IF WS-LESS = 1
+                                 MOVE WS-A TO WS-HEAP(WS-UP-POS)
+                                 MOVE WS-UP-POS TO WS-HPOS(WS-A)
+                                 MOVE WS-PARENT TO WS-UP-POS
+                             ELSE
+                                 MOVE 0 TO WS-SIFT
+                             END-IF
+                         END-PERFORM
+                         MOVE WS-UP-NODE TO WS-HEAP(WS-UP-POS)
+                         MOVE WS-UP-POS TO WS-HPOS(WS-UP-NODE)
+                         MOVE 0 TO WS-UP-NODE
                      END-IF
                  END-PERFORM
              END-IF
@@ -2148,6 +2248,14 @@
          MOVE WN-X(WS-LINK(WS-I)) TO L-PX(L-COUNT)
          MOVE WN-Y(WS-LINK(WS-I)) TO L-PY(L-COUNT)
          MOVE WN-Z(WS-LINK(WS-I)) TO L-PZ(L-COUNT)
+     END-PERFORM
+*>   The grid cells of the nodes made are cleared for the next search.
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-NODE-COUNT
+         COMPUTE WS-GX = WN-X(WS-C) - L-SX + 16
+         COMPUTE WS-GZ = WN-Z(WS-C) - L-SZ + 16
+         COMPUTE WS-GY = WN-Y(WS-C) - WN-Y(1) + 8
+         COMPUTE WS-KEY = (WS-GX * 32 + WS-GZ) * 24 + WS-GY + 1
+         MOVE 0 TO WS-GRID(WS-KEY)
      END-PERFORM
      GOBACK.
  END PROGRAM STDMOB-PATH.
