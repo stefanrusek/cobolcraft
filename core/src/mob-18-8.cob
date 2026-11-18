@@ -323,7 +323,10 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ COPY VILSTATE.
  01 WS-M                   BINARY-LONG.
+ 01 WS-VSLOT               BINARY-LONG.
+ 01 WS-VNO                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-BABY                 BINARY-LONG.
@@ -388,6 +391,15 @@
              END-IF
          END-IF
      END-IF
+*>   A villager sends its VillagerData (19 section 22, index 19) once it differs from the default: plains, no profession, level 1.
+     IF WS-M > 0 AND SM-KEY(WS-M) = "villager"
+         CALL "VL-FIND" USING EN-ID(L-ROW) WS-VNO WS-VSLOT
+         IF WS-VSLOT > 0
+             IF VL-PROF(WS-VSLOT) NOT = "none" OR VL-LEVEL(WS-VSLOT) NOT = 1 OR VL-TYPE(WS-VSLOT) NOT = 2
+                 MOVE 1 TO L-NEEDED
+             END-IF
+         END-IF
+     END-IF
 *>   The tadpole is a water animal (kind 2): its lock is sent too (19 section 11.2).
      IF WS-M > 0
          IF (SM-KEY(WS-M) = "tadpole" AND EN-LOCKED(L-ROW) = 1) OR (SM-KEY(WS-M) = "frog" AND EN-TONGUE(L-ROW) > 0)
@@ -405,6 +417,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ COPY VILSTATE.
  01 WS-KEY                 PIC X(24).
  01 WS-FLAGS               BINARY-LONG.
  01 WS-TAME-ONE            BINARY-LONG VALUE 1.
@@ -415,6 +428,10 @@
  01 WS-BABY                BINARY-LONG.
  01 WS-WOOL                BINARY-LONG.
  01 WS-NEEDED              BINARY-LONG.
+ 01 WS-SERIALIZER-VILLAGER BINARY-LONG VALUE 18.
+ 01 WS-VSLOT               BINARY-LONG.
+ 01 WS-VNO                 BINARY-LONG VALUE 0.
+ 01 WS-PROF-ID             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
@@ -469,6 +486,20 @@
          MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
          MOVE 1 TO MD-MD-INT
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+*>   A villager: index 19 VILLAGER_DATA (type id, profession id, level; 19 section 22, 46 section 6).
+     IF WS-KEY = "villager"
+         CALL "VL-FIND" USING EN-ID(L-ROW) WS-VNO WS-VSLOT
+         IF WS-VSLOT > 0
+             CALL "VIL-PROF-ID" USING VL-PROF(WS-VSLOT) WS-PROF-ID
+             INITIALIZE MD-METADATA-ENTRY-X
+             MOVE 19 TO MD-MX-INDEX
+             MOVE WS-SERIALIZER-VILLAGER TO MD-MX-SERIALIZER
+             MOVE VL-TYPE(WS-VSLOT) TO MD-MX-INT
+             MOVE WS-PROF-ID TO MD-MX-INT-2
+             MOVE VL-LEVEL(WS-VSLOT) TO MD-MX-INT-3
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+         END-IF
      END-IF
      CALL "MOB-CARE-DATA" USING L-ROW PB-BUFFER
      MOVE MD-MD-END TO MD-MD-INDEX

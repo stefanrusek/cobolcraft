@@ -15,6 +15,8 @@
 *>   - the left button pressed while a player or mob is the target (RAYCAST's entity target, which
 *>     leaves no target block) sends Attack with its entity id (US7-5; standin-content §10.4, in
 *>     either game mode); the server decides the hit and the damage.
+*>   - the right button pressed while a player or mob is the target sends Interact (05c 0x1A, main hand, the sneak state) with its entity id, which is how a villager or a
+*>     wandering trader opens its trade window and animals are fed (the server decides).
 *>   - eating (US8-3; standin-content §11.5, §11.6; 09 §3.3 Use Item 0x43, Player Action 6): the
 *>     right button pressed on the world screen with a food item held, when it uses no block,
 *>     sends Use Item (the next sequence number, the facing) and the Player is eating; releasing
@@ -114,6 +116,10 @@
 *>   Attack: the entity aimed at.
      IF IN-BUTTON-PRESSED(CC-BUTTON-LEFT + 1) = 1 AND TG-ENTITY-HIT = 1
          CALL "CONTROLS-SEND-ATTACK" USING CLIENT-STATE
+     END-IF
+*>   Interact: the right button on the world screen with a player or mob aimed at (a villager or trader opens its trades, an animal is fed or milked ...); the server decides.
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND TG-ENTITY-HIT = 1
+         CALL "CONTROLS-SEND-INTERACT" USING CLIENT-STATE
      END-IF
 *>   A survival break in progress: aborted, or finished once its time has passed.
 *>   Airborne (13 section 2.1 step 7): the server adds a fifth of the progress in a tick the player is not on the ground, so
@@ -433,6 +439,31 @@
      CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
      GOBACK.
  END PROGRAM CONTROLS-SEND-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SEND-INTERACT.
+*> USING CLIENT-STATE: Interact with the main hand on the entity target, with the sneak state of the client.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-SNEAK               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE PL-SNEAK-FLAG TO WS-SNEAK
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-INTERACT" USING PB-BUFFER TG-ENTITY WS-SNEAK
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CONTROLS-SEND-INTERACT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTROLS-HOTBAR.

@@ -1,12 +1,13 @@
 *> The POI index of villagers (lane 002-lane-mobsb3, T8105; docs/protocol/54 section 4, 19 section 22.7, 44 section 1.3). Points of interest are found by scanning the loaded chunks
 *> one 16-high section (y -64 to 319) per call and kept in VILPOIX.cpy; an entry is validated when it is used. Kinds: 1 bed (a block whose key ends in _bed, one ticket), 2 bell (the meeting
 *> point, 32 tickets), 3 job site (the 13 workstation blocks of VIL-PROFESSION, one ticket). Claims are VILPOI.cpy entries with PO-KIND 2 and 3 (job sites keep PO-KIND 0 from VP-CLAIM).
-*> Gaps: a block placed after its chunk was scanned is found only when the chunk is scanned again (never; the scan list is not reset), the beds are not checked for being occupied or as
+*> A block placed while the world runs is indexed by PXI-NOTE when it is set, so a placed workstation, bed or bell does not wait for the scan of its chunk. Gaps: the beds are not checked for being occupied or as
 *> two halves (both halves are indexed, the foot and the head), no path check.
 *>
 *>   PXI-KIND-OF USING dim, x, y, z, kind out        the kind of the block at a position now (0 none)
 *>   PXI-SCAN USING dim, chunk x, chunk z            advance the scan of that chunk by one section (does nothing when it is done or not loaded)
 *>   PXI-ADD USING dim, x, y, z, kind                adds a point (no duplicate)
+*>   PXI-NOTE USING dim, x, y, z, block state        a block was placed: a point of interest of its kind is indexed at once (WORLD-SET-BLOCK)
 *>   PXI-NEAREST USING dim, x, y, z, kind, range, ox, oy, oz, found out   the nearest valid point of the kind with a free ticket within range (a taken one is skipped)
 *>   PXI-TICKETS USING dim, x, y, z, kind, count out the claims on a point
 
@@ -111,6 +112,30 @@
      END-IF
      GOBACK.
  END PROGRAM PXI-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PXI-NOTE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY VILPOIX.
+ 01 WS-KIND                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                   BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ 01 L-STATE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     CALL "PXI-INIT"
+     IF L-STATE > 0 AND L-STATE < CB-STATE-COUNT
+         MOVE PX-BKIND(CB-S-BLOCK(L-STATE + 1) + 1) TO WS-KIND
+         IF WS-KIND > 0
+             CALL "PXI-ADD" USING L-DIM L-X L-Y L-Z WS-KIND
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PXI-NOTE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PXI-SCAN.
