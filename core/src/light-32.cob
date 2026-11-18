@@ -521,7 +521,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-INIT.
 *> USING sky engine present (1.1): resets the whole engine (nothing stores light, no chunk is available; 4 block sections from section Y 0; the window
-*> is chunks -1 to 2), defines the preset states 0
+*> owns chunks -1 to 2, the other slots no chunk), defines the preset states 0
 *> (air: no emission, dampening 0, no occlusion) and 1 (bedrock: dampening 15, full faces, the state of an unloaded cell, 2.2), and
 *> starts the sky storage's lowest light section at Integer.MAX_VALUE (6.8).
  DATA DIVISION.
@@ -530,6 +530,7 @@
  01 WS-F                   BINARY-LONG.
  01 WS-R                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-SKY                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SKY.
@@ -542,6 +543,22 @@
      MOVE 4 TO EN-NS
      MOVE 6 TO EN-NL
      MOVE -1 TO EN-LOWL
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 36
+         MOVE 1073741823 TO EN-OWN-X(WS-R) EN-OWN-Z(WS-R)
+     END-PERFORM
+     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 5
+         PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 5
+             COMPUTE WS-N = WS-R * 6 + WS-C
+             EVALUATE TRUE
+                 WHEN WS-R < 4 AND WS-C < 4
+                     COMPUTE EN-SLOTMAP(WS-N + 1) = WS-R * 4 + WS-C + 1
+                 WHEN WS-R < 4
+                     COMPUTE EN-SLOTMAP(WS-N + 1) = 16 + WS-N - (WS-R * 4 + 4) + 1
+                 WHEN OTHER
+                     COMPUTE EN-SLOTMAP(WS-N + 1) = 16 + WS-N - 16 + 1
+             END-EVALUATE
+         END-PERFORM
+     END-PERFORM
      PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 3
          PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
              COMPUTE EN-OWN-Z(WS-R * 4 + WS-C + 1) = WS-R - 1
@@ -575,7 +592,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-CLAIM-CHUNK.
-*> USING chunk x, chunk z, previous owner changed (out, 1 when the slot was another chunk's): gives the chunk the slot (z + 1 mod 4) * 4 + (x + 1 mod 4) + 1 of the
+*> USING chunk x, chunk z, previous owner changed (out, 1 when the slot was another chunk's): gives the chunk its slot (EN-SLOTMAP of ((z + 1) mod 6) * 6 + (x + 1) mod 6 + 1) of the
 *> sliding window. A slot owned by another chunk is cleared first: its blocks, availability, sky sources, section counts and every light storage of
 *> both layers, so the caller saves what it needs of the old chunk and has run the queued updates beforehand.
  DATA DIVISION.
@@ -588,13 +605,14 @@
  01 WS-FIRST               BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  01 L-CHANGED              BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ L-CHANGED.
      MOVE 0 TO L-CHANGED
-     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
+     COMPUTE WS-COL = EN-SLOTMAP(FUNCTION MOD(L-CZ + 1, 6) * 6 + FUNCTION MOD(L-CX + 1, 6) + 1)
      IF EN-OWN-X(WS-COL) NOT = L-CX OR EN-OWN-Z(WS-COL) NOT = L-CZ
          MOVE 1 TO L-CHANGED
          MOVE L-CX TO EN-OWN-X(WS-COL)
@@ -622,10 +640,9 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
              MOVE 0 TO EN-LS(WS-COL, WS-I)
          END-PERFORM
-         COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 4096
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-NS * 4096
-             MOVE 0 TO EN-BLK(WS-BASE + WS-I)
-         END-PERFORM
+         COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 8192 + 1
+         COMPUTE WS-N = EN-NS * 8192
+         MOVE LOW-VALUES TO EN-BLK-X(WS-BASE:WS-N)
      END-IF
      GOBACK.
  END PROGRAM L32-CLAIM-CHUNK.
@@ -842,7 +859,7 @@
      COMPUTE WS-CX = (L-X - WS-LX) / 16
      COMPUTE WS-CZ = (L-Z - WS-LZ) / 16
      COMPUTE WS-SY = (L-Y - WS-LY) / 16
-     COMPUTE WS-SLOT = FUNCTION MOD(WS-CZ + 1, 4) * 4 + FUNCTION MOD(WS-CX + 1, 4) + 1
+     COMPUTE WS-SLOT = EN-SLOTMAP(FUNCTION MOD(WS-CZ + 1, 6) * 6 + FUNCTION MOD(WS-CX + 1, 6) + 1)
      IF EN-OWN-X(WS-SLOT) = WS-CX AND EN-OWN-Z(WS-SLOT) = WS-CZ
          MOVE WS-SLOT TO L-COL
          IF WS-SY >= EN-LOWL AND WS-SY < EN-LOWL + EN-NL
@@ -868,7 +885,7 @@
  01 L-CZ                   BINARY-LONG.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ L-FLAG.
-     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
+     COMPUTE WS-COL = EN-SLOTMAP(FUNCTION MOD(L-CZ + 1, 6) * 6 + FUNCTION MOD(L-CX + 1, 6) + 1)
      MOVE L-FLAG TO EN-AVAIL(WS-COL)
      IF L-FLAG = 1
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
@@ -890,6 +907,7 @@
  01 WS-INDEX               BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
  01 WS-SEC                 BINARY-LONG.
+ 01 WS-OLD                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -899,7 +917,8 @@
      CALL "L32-LOCATE" USING L-X L-Y L-Z WS-COL WS-SID WS-INDEX
      COMPUTE WS-CELL = (WS-COL - 1) * EN-NS * 4096 + (L-Y - EN-MINY) * 256 + FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16) + 1
      COMPUTE WS-SEC = (WS-COL - 1) * EN-NS + (L-Y - EN-MINY) / 16 + 1
-     IF EN-BLK(WS-CELL) NOT = 0
+     MOVE EN-BLK(WS-CELL) TO WS-OLD
+     IF WS-OLD NOT = 0
          SUBTRACT 1 FROM EN-NONAIR(WS-SEC)
      END-IF
      IF L-STATE NOT = 0

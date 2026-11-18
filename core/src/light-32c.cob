@@ -497,7 +497,9 @@
  01 WS-COL                 BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
- 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-SEC                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-REST                BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -513,23 +515,28 @@
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ.
-     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
+     COMPUTE WS-COL = EN-SLOTMAP(FUNCTION MOD(L-CZ + 1, 6) * 6 + FUNCTION MOD(L-CX + 1, 6) + 1)
      MOVE 1 TO LY-ON(1, WS-COL)
      COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 4096
-     COMPUTE WS-N = EN-NS * 4096
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-         COMPUTE WS-ID = EN-BLK(WS-BASE + WS-I)
-         MOVE EN-EMIT(WS-ID + 1) TO WS-E
-         IF WS-E NOT = 0
-             COMPUTE WS-Y = (WS-I - 1) / 256
-             COMPUTE WS-REST = WS-I - 1 - WS-Y * 256
-             ADD EN-MINY TO WS-Y
-             COMPUTE WS-Z = WS-REST / 16
-             COMPUTE WS-X = L-CX * 16 + WS-REST - WS-Z * 16
-             COMPUTE WS-Z = L-CZ * 16 + WS-Z
-             CALL "L32-IS-EMPTY-SHAPE" USING WS-ID WS-EMPTY
-             CALL "L32-ENTRY" USING WS-KIND WS-E WS-EMPTY WS-NONE WS-ENTRY
-             CALL "L32-PUSH-INC" USING WS-LAYER WS-X WS-Y WS-Z WS-ENTRY
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= EN-NS
+         COMPUTE WS-SEC = (WS-COL - 1) * EN-NS + WS-S + 1
+         IF EN-NONAIR(WS-SEC) > 0
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4096
+                 COMPUTE WS-I = WS-S * 4096 + WS-J
+                 COMPUTE WS-ID = EN-BLK(WS-BASE + WS-I)
+                 MOVE EN-EMIT(WS-ID + 1) TO WS-E
+                 IF WS-E NOT = 0
+                     COMPUTE WS-Y = (WS-I - 1) / 256
+                     COMPUTE WS-REST = WS-I - 1 - WS-Y * 256
+                     ADD EN-MINY TO WS-Y
+                     COMPUTE WS-Z = WS-REST / 16
+                     COMPUTE WS-X = L-CX * 16 + WS-REST - WS-Z * 16
+                     COMPUTE WS-Z = L-CZ * 16 + WS-Z
+                     CALL "L32-IS-EMPTY-SHAPE" USING WS-ID WS-EMPTY
+                     CALL "L32-ENTRY" USING WS-KIND WS-E WS-EMPTY WS-NONE WS-ENTRY
+                     CALL "L32-PUSH-INC" USING WS-LAYER WS-X WS-Y WS-Z WS-ENTRY
+                 END-IF
+             END-PERFORM
          END-IF
      END-PERFORM
      GOBACK.

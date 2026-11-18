@@ -1,5 +1,5 @@
 *> Test of the sliding window of the light engine (core/src/light-32.cob L32-SET-DIMENSION, L32-CLAIM-CHUNK; T0697): chunks anywhere (a chunk takes the slot
-*> (z + 1 mod 4) * 4 + (x + 1 mod 4) + 1 of the 4 x 4 window and a slot taken by another chunk is cleared), the dimension's section count and lowest section,
+*> ((z + 1) mod 6) * 6 + (x + 1) mod 6 + 1 of the 6 x 6 window and a slot taken by another chunk is cleared), the dimension's section count and lowest section,
 *> block states beyond the first 64, and sky light under an overhang (32 section 5.2: sky light spreads sideways one level less per cell).
 *> Expected levels come from the rules of docs/protocol/32-light-engine.md: block light loses one level per cell and by the opacity of the cell entered; an
 *> open column holds sky light 15, a neighbouring cell 14, and so on.
@@ -80,12 +80,12 @@
      MOVE "14/13/12/8/0 " TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Case 2: the window slides: chunk (3, 0) takes the slot of chunk (-1, 0), whose cells then read as outside (bedrock, level 0) and chunk (3, 0) reads its own.
+*>   Case 2: the window slides: chunk (5, 0) takes the slot of chunk (-1, 0), whose cells then read as outside (bedrock, level 0) and chunk (5, 0) reads its own.
      MOVE 0 TO WS-SKY
      PERFORM START-ENGINE
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
-     MOVE 3 TO WS-CX
+     MOVE 5 TO WS-CX
      MOVE 0 TO WS-CZ
      CALL "L32-CLAIM-CHUNK" USING WS-CX WS-CZ WS-CHANGED
      MOVE WS-CHANGED TO WS-SHOW
@@ -95,7 +95,7 @@
      STRING FUNCTION TRIM(WS-SHOW) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      MOVE 1 TO WS-C
      CALL "L32-AVAIL-CHUNK" USING WS-CX WS-CZ WS-C
-     MOVE 48 TO WS-X
+     MOVE 80 TO WS-X
      MOVE 0 TO WS-Y WS-Z
      MOVE 2 TO WS-C
      CALL "L32-SET-CELL" USING WS-X WS-Y WS-Z WS-C

@@ -17,7 +17,7 @@
  01 L-COL                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SX L-SY L-SZ L-SID L-COL.
      MOVE 0 TO L-SID L-COL
-     COMPUTE WS-SLOT = FUNCTION MOD(L-SZ + 1, 4) * 4 + FUNCTION MOD(L-SX + 1, 4) + 1
+     COMPUTE WS-SLOT = EN-SLOTMAP(FUNCTION MOD(L-SZ + 1, 6) * 6 + FUNCTION MOD(L-SX + 1, 6) + 1)
      IF EN-OWN-X(WS-SLOT) = L-SX AND EN-OWN-Z(WS-SLOT) = L-SZ
          MOVE WS-SLOT TO L-COL
          IF L-SY >= EN-LOWL AND L-SY < EN-LOWL + EN-NL
@@ -94,6 +94,13 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-XLO                 BINARY-LONG.
+ 01 WS-XHI                 BINARY-LONG.
+ 01 WS-YLO                 BINARY-LONG.
+ 01 WS-YHI                 BINARY-LONG.
+ 01 WS-ZLO                 BINARY-LONG.
+ 01 WS-ZHI                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-K                    BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -104,9 +111,31 @@
      CALL "L32-LOCATE" USING L-X L-Y L-Z WS-COL WS-SID WS-INDEX
      CALL "L32-NIBBLE-SET" USING LY-WD(L-K, WS-SID) WS-INDEX L-LEVEL
      MOVE 1 TO LY-CH(L-K, WS-SID)
-     PERFORM VARYING WS-DX FROM -1 BY 1 UNTIL WS-DX > 1
-         PERFORM VARYING WS-DY FROM -1 BY 1 UNTIL WS-DY > 1
-             PERFORM VARYING WS-DZ FROM -1 BY 1 UNTIL WS-DZ > 1
+     MOVE 0 TO WS-XLO WS-XHI WS-YLO WS-YHI WS-ZLO WS-ZHI
+     COMPUTE WS-LC = FUNCTION MOD(L-X, 16)
+     IF WS-LC = 0
+         MOVE -1 TO WS-XLO
+     END-IF
+     IF WS-LC = 15
+         MOVE 1 TO WS-XHI
+     END-IF
+     COMPUTE WS-LC = FUNCTION MOD(L-Y, 16)
+     IF WS-LC = 0
+         MOVE -1 TO WS-YLO
+     END-IF
+     IF WS-LC = 15
+         MOVE 1 TO WS-YHI
+     END-IF
+     COMPUTE WS-LC = FUNCTION MOD(L-Z, 16)
+     IF WS-LC = 0
+         MOVE -1 TO WS-ZLO
+     END-IF
+     IF WS-LC = 15
+         MOVE 1 TO WS-ZHI
+     END-IF
+     PERFORM VARYING WS-DX FROM WS-XLO BY 1 UNTIL WS-DX > WS-XHI
+         PERFORM VARYING WS-DY FROM WS-YLO BY 1 UNTIL WS-DY > WS-YHI
+             PERFORM VARYING WS-DZ FROM WS-ZLO BY 1 UNTIL WS-DZ > WS-ZHI
                  COMPUTE WS-X = L-X + WS-DX
                  COMPUTE WS-Y = L-Y + WS-DY
                  COMPUTE WS-Z = L-Z + WS-DZ
@@ -396,7 +425,7 @@
  PROCEDURE DIVISION USING L-K.
      IF LY-INCONS(L-K) = 1
          MOVE 0 TO LY-INCONS(L-K)
-         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
+         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 36 * EN-NL
              IF LY-PR(L-K, WS-SID) = 1
                  COMPUTE WS-COL = (WS-SID - 1) / EN-NL + 1
                  IF LY-RETAIN(L-K, WS-COL) = 1
@@ -410,7 +439,7 @@
                  MOVE 0 TO LY-WP(L-K, WS-SID)
              END-IF
          END-PERFORM
-         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
+         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 36 * EN-NL
              IF LY-PR(L-K, WS-SID) = 1
                  COMPUTE WS-COL = (WS-SID - 1) / EN-NL + 1
                  COMPUTE WS-SY = WS-SID - (WS-COL - 1) * EN-NL + EN-LOWL - 1
@@ -419,7 +448,7 @@
                  MOVE 0 TO LY-PR(L-K, WS-SID)
              END-IF
          END-PERFORM
-         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
+         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 36 * EN-NL
              IF LY-QP(L-K, WS-SID) NOT = 0 AND LY-WP(L-K, WS-SID) = 1
                  IF LY-QP(L-K, WS-SID) = 1
                      MOVE LY-QD(L-K, WS-SID) TO LY-WD(L-K, WS-SID)
@@ -430,7 +459,7 @@
          END-PERFORM
      END-IF
      MOVE 0 TO WS-ANY
-     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
+     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 36 * EN-NL
          IF LY-CH(L-K, WS-SID) = 1
              MOVE 1 TO WS-ANY
              MOVE LY-WP(L-K, WS-SID) TO LY-VP(L-K, WS-SID)
@@ -441,13 +470,13 @@
          END-IF
      END-PERFORM
      IF WS-ANY = 1
-         PERFORM VARYING WS-COL FROM 1 BY 1 UNTIL WS-COL > 16
+         PERFORM VARYING WS-COL FROM 1 BY 1 UNTIL WS-COL > 36
              MOVE LY-TOP(L-K, WS-COL) TO LY-VTOP(L-K, WS-COL)
              MOVE LY-TOPSET(L-K, WS-COL) TO LY-VTOPSET(L-K, WS-COL)
          END-PERFORM
          MOVE LY-LOWEST(L-K) TO LY-VLOWEST(L-K)
      END-IF
-     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
+     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 36 * EN-NL
          IF LY-AF(L-K, WS-SID) = 1
              ADD 1 TO LY-NOTIFY(L-K, WS-SID)
              MOVE 0 TO LY-AF(L-K, WS-SID)
