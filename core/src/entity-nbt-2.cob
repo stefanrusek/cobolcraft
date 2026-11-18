@@ -190,7 +190,6 @@
                      WHEN "minecraft:invisibility" MOVE WS-DURATION TO LV-FX-INVIS
                      WHEN "minecraft:fire_resistance" MOVE WS-DURATION TO LV-FX-FIRE
                      WHEN "minecraft:water_breathing" MOVE WS-DURATION TO LV-FX-WATER
-                     WHEN OTHER CONTINUE
                  END-EVALUATE
              END-PERFORM
          WHEN L-NAME = "last_hurt_by_player" AND L-TYPE = 11

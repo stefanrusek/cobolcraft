@@ -69,14 +69,14 @@
 *>   goat (chunk 1): screaming, no left horn
      MOVE 1 TO WS-CX
      MOVE "goat" TO WS-WANT-KEY PERFORM SPAWN-ONE
-     MOVE 3 TO EN-WOOL(WS-MOB)
+     MOVE 7 TO EN-WOOL(WS-MOB)
      PERFORM WRITE-CHUNK
-     MOVE "acceptance US15 45-4 goat: IsScreamingGoat 1, HasLeftHorn 0, HasRightHorn 1" TO TL-CASE
-     MOVE "IsScreamingGoat:1,HasLeftHorn:0,HasRightHorn:1" TO TL-EXPECTED
+     MOVE "acceptance US15 45-4 goat: IsScreamingGoat 1, HasLeftHorn 0, HasRightHorn 0" TO TL-CASE
+     MOVE "IsScreamingGoat:1,HasLeftHorn:0,HasRightHorn:0" TO TL-EXPECTED
      PERFORM CHECK-HAS
      PERFORM RELOAD
-     MOVE "acceptance US15 45-4 goat read back: screaming, left horn gone, right horn kept (EN-WOOL 3)" TO TL-CASE
-     MOVE 3 TO TL-EXPECTED-N
+     MOVE "acceptance US15 45-4 goat read back: screaming, both horns gone (EN-WOOL 7)" TO TL-CASE
+     MOVE 7 TO TL-EXPECTED-N
      MOVE EN-WOOL(WS-MOB) TO TL-OBSERVED-N
      PERFORM CHECK-NUM
 
@@ -218,6 +218,57 @@
      PERFORM WRITE-CHUNK
      MOVE "acceptance US15 45-4 snow golem: Pumpkin 1" TO TL-CASE
      MOVE "Pumpkin:1" TO TL-EXPECTED
+     PERFORM CHECK-HAS
+
+*>   armadillo rolling (chunk 11), unrolling (12) and idle (13): the state names and the ticks each state has left
+     MOVE 11 TO WS-CX
+     MOVE "armadillo" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     MOVE 1 TO EN-ARMA(WS-MOB)
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-4 armadillo: state rolling" TO TL-CASE
+     MOVE "state:rolling" TO TL-EXPECTED
+     PERFORM CHECK-HAS
+     PERFORM RELOAD
+     MOVE "acceptance US15 45-4 armadillo read back: rolling with 10 ticks" TO TL-CASE
+     MOVE 1010 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-ARMA(WS-MOB) * 1000 + EN-ARMA-T(WS-MOB)
+     PERFORM CHECK-NUM
+     MOVE 12 TO WS-CX
+     MOVE "armadillo" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     MOVE 3 TO EN-ARMA(WS-MOB)
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-4 armadillo: state unrolling" TO TL-CASE
+     MOVE "state:unrolling" TO TL-EXPECTED
+     PERFORM CHECK-HAS
+     PERFORM RELOAD
+     MOVE "acceptance US15 45-4 armadillo read back: unrolling with 30 ticks" TO TL-CASE
+     MOVE 3030 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-ARMA(WS-MOB) * 1000 + EN-ARMA-T(WS-MOB)
+     PERFORM CHECK-NUM
+     MOVE 13 TO WS-CX
+     MOVE "armadillo" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-4 armadillo: state idle" TO TL-CASE
+     MOVE "state:idle" TO TL-EXPECTED
+     PERFORM CHECK-HAS
+     PERFORM RELOAD
+     MOVE "acceptance US15 45-4 armadillo read back: idle" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-ARMA(WS-MOB) TO TL-OBSERVED-N
+     PERFORM CHECK-NUM
+
+*>   a turtle with no home set writes its own block (chunk 14: x 228.5, y 55, z 37.25); an allay with nothing in its inventory writes an empty list (chunk 15)
+     MOVE 14 TO WS-CX
+     MOVE "turtle" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-4 turtle without a home: home_pos is its own block" TO TL-CASE
+     MOVE "home_pos:I[228,55,37],has_egg:0" TO TL-EXPECTED
+     PERFORM CHECK-HAS
+     MOVE 15 TO WS-CX
+     MOVE "allay" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-4 allay with nothing held: an empty Inventory" TO TL-CASE
+     MOVE "Inventory:[],DuplicationCooldown:0" TO TL-EXPECTED
      PERFORM CHECK-HAS
      STOP RUN.
  SPAWN-ONE.

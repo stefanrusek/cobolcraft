@@ -75,6 +75,17 @@
      MOVE "{invulnerable:1,flying:0,mayfly:1,instabuild:1,mayBuild:1,flySpeed:0.050,walkSpeed:0.100}" TO TL-EXPECTED
      PERFORM CHECK
 
+*>   A spectator: flying and invulnerable and unable to build; an adventure player cannot build either.
+     MOVE 3 TO PL-MODE(WS-ROW)
+     CALL "CORE-SAVE"
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "abilities" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance US15 45-3 the abilities of spectator: invulnerable, flying, mayfly, no instabuild, no mayBuild" TO TL-CASE
+     MOVE "{invulnerable:1,flying:1,mayfly:1,instabuild:0,mayBuild:0,flySpeed:0.050,walkSpeed:0.100}" TO TL-EXPECTED
+     PERFORM CHECK
+
 *>   A file of the game itself has no HeldSlot, GameMode or Food: its own keys are read.
      CALL "PB-RESET" USING PB-BUFFER
      MOVE SPACES TO WN
@@ -101,6 +112,7 @@
      MOVE 627 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = KN-HELD(WS-ROW) * 100 + KN-MODE(WS-ROW) * 10 + KN-FOOD(WS-ROW)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      STOP RUN.
  PLAYER-FILE.
      MOVE PL-UUID(WS-ROW) TO WS-AREA

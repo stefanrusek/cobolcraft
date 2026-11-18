@@ -168,6 +168,20 @@
      MOVE 1001 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = EN-TAD-AGE(WS-MOB) + EN-LOCKED(WS-MOB)
      PERFORM CHECK-NUM
+
+*>   a small salmon (chunk 8): EN-VARIANT 1 = 1 + id 0
+     MOVE 8 TO WS-CX
+     MOVE "salmon" TO WS-WANT-KEY PERFORM SPAWN-ONE
+     MOVE 1 TO EN-VARIANT(WS-MOB)
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-7 salmon: type small" TO TL-CASE
+     MOVE "FromBucket:0,type:small" TO TL-EXPECTED
+     PERFORM CHECK-HAS
+     PERFORM RELOAD
+     MOVE "acceptance US15 45-7 salmon read back: small (EN-VARIANT 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-VARIANT(WS-MOB) TO TL-OBSERVED-N
+     PERFORM CHECK-NUM
      STOP RUN.
  SPAWN-ONE.
      COMPUTE WS-X = 16 * WS-CX + 4.5

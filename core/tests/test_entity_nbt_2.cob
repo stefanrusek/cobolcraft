@@ -44,6 +44,8 @@
  01 WS-PIGLIN              BINARY-LONG.
  01 WS-SILVERFISH           BINARY-LONG.
  01 WS-ZOMBIE-TYPE         BINARY-LONG.
+ 01 WS-SKELETON            BINARY-LONG.
+ 01 WS-SKELETON-TYPE       BINARY-LONG.
  01 WS-PIGLIN-TYPE         BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
@@ -77,6 +79,8 @@
      MOVE WS-ROW TO WS-PIGLIN
      MOVE 500 TO EN-ANGER(WS-PIGLIN)
      MOVE WS-PLAYER TO EN-TARGET(WS-PIGLIN)
+     MOVE 300 TO EN-FX-FIRE(WS-PIGLIN)
+     MOVE 400 TO EN-FX-WATER(WS-PIGLIN)
      MOVE 60.5 TO WS-X
      MOVE "silverfish" TO WS-WANT-KEY PERFORM SPAWN-AT
      MOVE WS-ROW TO WS-SILVERFISH
@@ -170,6 +174,36 @@
      MOVE "acceptance US15 45-2 zombified piglin read back: 400 ticks of anger left, angry at the player" TO TL-CASE
      COMPUTE TL-EXPECTED-N = 400 * 1000 + WS-PLAYER
      COMPUTE TL-OBSERVED-N = EN-ANGER(WS-PIGLIN) * 1000 + EN-TARGET(WS-PIGLIN)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 45-2 zombified piglin read back: fire resistance 300 and water breathing 400 ticks" TO TL-CASE
+     MOVE 300400 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-FX-FIRE(WS-PIGLIN) * 1000 + EN-FX-WATER(WS-PIGLIN)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A skeleton in four leather pieces whose helmet is broken: the head slot is empty, the other three are written, and loading restores the broken helmet.
+     MOVE "T" TO TL-MODE
+     MOVE 4 TO WS-CX
+     MOVE 76.5 TO WS-X
+     MOVE "skeleton" TO WS-WANT-KEY PERFORM SPAWN-AT
+     MOVE WS-ROW TO WS-SKELETON
+     COMPUTE EN-EQUIP(WS-SKELETON) = 10 * (0 + 1) + 4
+     MOVE -1 TO EN-HEAD-WEAR(WS-SKELETON)
+     MOVE EN-TYPE(WS-SKELETON) TO WS-SKELETON-TYPE
+     PERFORM WRITE-CHUNK
+     MOVE "acceptance US15 45-2 skeleton with a broken helmet: chest, legs and feet written, no head" TO TL-CASE
+     MOVE "equipment:{chest:{id:minecraft:leather_chestplate,count:1},legs:{id:minecraft:leather_leggings,count:1},feet:{id:minecraft:leather_boots,count:1}}" TO TL-EXPECTED
+     UNSTRING WS-TEXT DELIMITED BY "equipment:" INTO WS-HEAD WS-TAIL
+     STRING "equipment:" WS-TAIL DELIMITED BY SIZE INTO WS-HEAD
+     MOVE WS-HEAD(1:FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-SKELETON
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-NBT-READ" USING WS-DIM PB-BUFFER WS-OUTCOME
+     MOVE WS-SKELETON-TYPE TO WS-WANT-TYPE
+     PERFORM FIND-TYPE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-2 skeleton read back: four leather slots and the broken helmet" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 14 * 10 - 1
+     COMPUTE TL-OBSERVED-N = EN-EQUIP(WS-ROW) * 10 + EN-HEAD-WEAR(WS-ROW)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  FIND-TYPE.

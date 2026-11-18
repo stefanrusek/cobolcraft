@@ -188,10 +188,11 @@
  01 WS-UUID                PIC X(16).
  01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 16.
  01 WS-TEXT-LENGTH         BINARY-LONG.
- 01 WN                     PIC X(32).
- 01 WL                     BINARY-LONG.
- 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
- 01 WS-TYPE                BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-CONTAINER           BINARY-LONG VALUE 10.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-PATH                PIC X(8).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-KEY                 PIC X(64).
  01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
  01 WS-KEY-LENGTH          BINARY-LONG.
@@ -283,32 +284,33 @@
          WHEN L-NAME = "LastPoseTick" AND L-TYPE = 4
              CALL "PB-GET-LONG" USING PB-BUFFER SP-POSE
          WHEN L-NAME = "Inventory" AND L-TYPE = 9
+*>           The first stack: its id and count are found in the element; the element is then skipped.
              CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
-                 MOVE 0 TO WS-J
-                 PERFORM UNTIL PB-ERROR = 1
-                     MOVE SPACES TO WN
-                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
-                     IF WS-TYPE = 0
-                         EXIT PERFORM
-                     END-IF
-                     EVALUATE TRUE
-                         WHEN WN = "id" AND WS-TYPE = 8
-                             MOVE SPACES TO WS-KEY
-                             CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-                             CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
-                             CALL "KEY-BARE" USING WS-LOCAL WS-BARE
-                             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > IT-COUNT
-                                 IF SP-INV-ITEM = 0 AND (IT-KEY(WS-J) = WS-LOCAL OR IT-KEY(WS-J) = WS-BARE)
-                                     COMPUTE SP-INV-ITEM = WS-J - 1
-                                 END-IF
-                             END-PERFORM
-                         WHEN WN = "count" AND WS-TYPE = 3
-                             CALL "PB-GET-INT" USING PB-BUFFER SP-INV-COUNT
-                         WHEN OTHER
-                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
-                     END-EVALUATE
-                 END-PERFORM
+                 MOVE PB-POS TO WS-START
+                 MOVE "id" TO WS-PATH
+                 MOVE 2 TO WS-PATH-LENGTH
+                 CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
+                 IF WS-FOUND = 8 AND WS-I = 1
+                     MOVE SPACES TO WS-KEY
+                     CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
+                     CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                     CALL "KEY-BARE" USING WS-LOCAL WS-BARE
+                     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > IT-COUNT
+                         IF SP-INV-ITEM = 0 AND (IT-KEY(WS-J) = WS-LOCAL OR IT-KEY(WS-J) = WS-BARE)
+                             COMPUTE SP-INV-ITEM = WS-J - 1
+                         END-IF
+                     END-PERFORM
+                 END-IF
+                 MOVE WS-START TO PB-POS
+                 MOVE "count" TO WS-PATH
+                 MOVE 5 TO WS-PATH-LENGTH
+                 CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
+                 IF WS-FOUND = 3 AND WS-I = 1
+                     CALL "PB-GET-INT" USING PB-BUFFER SP-INV-COUNT
+                 END-IF
+                 MOVE WS-START TO PB-POS
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ELEMENT-TYPE
              END-PERFORM
          WHEN OTHER
              MOVE 0 TO L-HANDLED
@@ -363,8 +365,6 @@
                  WHEN "unrolling"
                      MOVE 3 TO EN-ARMA(L-ROW)
                      MOVE 30 TO EN-ARMA-T(L-ROW)
-                 WHEN OTHER
-                     CONTINUE
              END-EVALUATE
              IF SP-SCUTE >= 0
                  MOVE SP-SCUTE TO EN-SCUTE(L-ROW)
