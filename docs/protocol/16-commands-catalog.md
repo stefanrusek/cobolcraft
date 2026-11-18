@@ -1992,7 +1992,7 @@ Registered only under the conditions in section 2; no player-facing use. Grammar
 
 | Command | Level | Registered when | Grammar | Messages (lang) |
 |---|---|---|---|---|
-| `test` | 2 | always | `test run <tests:selector> [...]`, `runmultiple`, `runthese`, `runclosest`, `runthat`, `runfailed [onlyRequiredTests]`, `verify`, `locate`, `resetclosest/resetthese/resetthat`, `clearthat/clearthese/clearall [radius]`, `stop`, `pos [var]`, `create <id> [width [height [depth]]]`, `export <test>`, `exportclosest/exportthese/exportthat` | `commands.test.*` and `test.*` keys (game-test framework; not specified) |
+| `test` | 2 | always | `test run <tests:selector> [...]`, `runmultiple`, `runthese`, `runclosest`, `runthat`, `runfailed [onlyRequiredTests]`, `verify`, `locate`, `resetclosest/resetthese/resetthat`, `clearthat/clearthese/clearall [radius]`, `stop`, `pos [var]`, `create <id> [width [height [depth]]]`, `export <test>`, `exportclosest/exportthese/exportthat` | `commands.test.*` and `test.*` keys (game-test framework: specified in 55; the four `export*` literals exist only when `IS_RUNNING_IN_IDE` is set, 55 §2.1) |
 | `chase` | 0 | `DEBUG_CHASE_COMMAND` | `chase follow <host:string> <port:integer 1..65535>`; `chase lead <bind_address:string> <port:integer 1024..65535>`; `chase stop` | none referenced |
 | `raid` | 3 | dev or IDE | `raid start <omenlvl:integer min 0>`; `raid stop`; `raid check`; `raid sound <type:component>`; `raid spawnleader`; `raid setomen <level:integer min 0>`; `raid glow` | none referenced |
 | `debugpath` | 2 | dev or IDE | `debugpath <to:block_pos>` | none |
