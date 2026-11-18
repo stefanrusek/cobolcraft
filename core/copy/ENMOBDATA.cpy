@@ -32,3 +32,6 @@
     05 MQ-PERSIST          BINARY-LONG.
     05 MQ-PROF             PIC X(16).
     05 MQ-VLEVEL           BINARY-LONG.
+    05 MQ-HAND             BINARY-LONG.
+    05 MQ-EQUIP            BINARY-LONG.
+    05 MQ-HEAD-WEAR        BINARY-LONG.

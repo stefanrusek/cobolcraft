@@ -103,7 +103,9 @@
      MOVE "Entities" TO WS-PATH PERFORM ADD-GET
      MOVE "5023 I[1,2] [{id:cobolcraft:sodgrazer,Pos:[20.500,55.000,37.250],Motion:[0.000,-0.250,"
          & "0.000],Rotation:[90.000,0.000],"
-         & "fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,2],Health:5.000},{id:cobolcraft:loose_item,Pos:[21.000,"
+         & "fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,2],Health:5.000,HurtTime:0,DeathTime:0,AbsorptionAmount:0.000,current_impulse_context_reset_grace_time:0,"
+         & "attributes:[],FallFlying:0,Brain:{memories:{}},"
+         & "CanPickUpLoot:0,PersistenceRequired:0,LeftHanded:0},{id:cobolcraft:loose_item,Pos:[21.000,"
          & "56.000,38.000],Motion:[0.125,0.250,-0.375],Rotation:[0.000,0.000],"
          & "fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,3],Item:{id:cobolcraft:"
          & "loam,count:7},Age:1200}]" TO TL-EXPECTED

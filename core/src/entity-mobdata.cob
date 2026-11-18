@@ -50,10 +50,13 @@
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
-     IF EN-PERSISTENT(L-ROW) = 1
-         MOVE "PersistenceRequired" TO WN MOVE 19 TO WL
-         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-PERSISTENT(L-ROW)
-     END-IF
+*>   The Mob keys written every time (45-2 section 3): CanPickUpLoot, PersistenceRequired, LeftHanded (no state here: false).
+     MOVE "CanPickUpLoot" TO WN MOVE 13 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-DIRECTION
+     MOVE "PersistenceRequired" TO WN MOVE 19 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-PERSISTENT(L-ROW)
+     MOVE "LeftHanded" TO WN MOVE 10 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-DIRECTION
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
          GOBACK
@@ -179,41 +182,8 @@
          COMPUTE WS-VALUE = FUNCTION MAX(EN-VARIANT(L-ROW), 1) - 1
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
      END-IF
-*>   equipment: the saddle slot and the wolf's body slot (the armour with its damage component).
-     IF (EN-SADDLE(L-ROW) = 1 AND (WS-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel"))
-             OR (WS-KEY = "wolf" AND EN-WOLF-ARM(L-ROW) > 0)
-         MOVE "equipment" TO WN MOVE 9 TO WL
-         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-         IF WS-KEY = "wolf"
-             MOVE "body" TO WN MOVE 4 TO WL
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-             MOVE "id" TO WN MOVE 2 TO WL
-             COMPUTE WS-VALUE = EN-WOLF-ARM(L-ROW) + 1
-             CALL "PERSIST-NAMESPACED" USING IT-KEY(WS-VALUE) IT-KEY-LENGTH(WS-VALUE) WS-NS-KEY WS-NS-LENGTH
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
-             MOVE "count" TO WN MOVE 5 TO WL
-             MOVE 1 TO WS-VALUE
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
-             MOVE "components" TO WN MOVE 10 TO WL
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-             MOVE "minecraft:damage" TO WN MOVE 16 TO WL
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-WOLF-ARM-DMG(L-ROW)
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-         ELSE
-             MOVE "saddle" TO WN MOVE 6 TO WL
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-             MOVE "id" TO WN MOVE 2 TO WL
-             MOVE "minecraft:saddle" TO WS-NS-KEY
-             MOVE 16 TO WS-NS-LENGTH
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
-             MOVE "count" TO WN MOVE 5 TO WL
-             MOVE 1 TO WS-VALUE
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-         END-IF
-         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-     END-IF
+*>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
+     CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
      IF EN-LEASH(L-ROW) > 0
          MOVE "leash" TO WN MOVE 5 TO WL
@@ -367,37 +337,8 @@
                  MOVE WS-KM TO MQ-LEASH
              END-IF
          WHEN L-NAME = "equipment" AND L-TYPE = 10
-*>           The saddle slot (present: saddled) and the body slot (an item id and its damage component); the other slots are not modelled.
-             MOVE "saddle" TO WS-PATH
-             MOVE 6 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 10
-                 MOVE 1 TO MQ-SADDLE
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "body.id" TO WS-PATH
-             MOVE 7 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 8
-                 MOVE SPACES TO WS-KEY
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
-                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
-                     IF IT-KEY(WS-I) = WS-LOCAL OR IT-KEY(WS-I) = WS-BARE
-                         COMPUTE MQ-BODY = WS-I - 1
-                     END-IF
-                 END-PERFORM
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "body.components.minecraft:damage" TO WS-PATH
-             MOVE 32 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 3
-                 CALL "PB-GET-INT" USING PB-BUFFER MQ-BODY-DMG
-             END-IF
-             MOVE WS-START TO PB-POS
-             CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
+*>           The slots of MOB-EQUIP-WRITE: saddle, body, main hand and armour.
+             CALL "MOB-EQUIP-READ" USING PB-BUFFER MQ-DATA
          WHEN OTHER
              MOVE 0 TO L-HANDLED
      END-EVALUATE
@@ -549,6 +490,9 @@
          MOVE MQ-BODY TO EN-WOLF-ARM(L-ROW)
          MOVE MQ-BODY-DMG TO EN-WOLF-ARM-DMG(L-ROW)
      END-IF
+     MOVE MQ-HAND TO EN-HAND(L-ROW)
+     MOVE MQ-EQUIP TO EN-EQUIP(L-ROW)
+     MOVE MQ-HEAD-WEAR TO EN-HEAD-WEAR(L-ROW)
      MOVE MQ-LEASH TO EN-LEASH-UUID(L-ROW)
 *>   A villager keeps the profession and level it was saved with (a template's nitwit); a profession of "none" is the default.
      IF WS-KEY = "villager" AND MQ-PROF NOT = SPACES AND MQ-PROF NOT = "none"
