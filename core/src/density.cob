@@ -1137,6 +1137,15 @@
  01 LS-SLOT                BINARY-LONG.
  01 LS-I                   BINARY-LONG.
  01 LS-GI                  BINARY-LONG.
+ 01 LS-CX0                 BINARY-LONG.
+ 01 LS-CX1                 BINARY-LONG.
+ 01 LS-CZ0                 BINARY-LONG.
+ 01 LS-CZ1                 BINARY-LONG.
+ 01 LS-CY0                 BINARY-LONG.
+ 01 LS-CY1                 BINARY-LONG.
+ 01 LS-RY0                 BINARY-LONG.
+ 01 LS-RY1                 BINARY-LONG.
+ 01 LS-RY2                 BINARY-LONG.
  01 LS-L1                  FLOAT-LONG.
  01 LS-H1                  FLOAT-LONG.
  01 LS-L2                  FLOAT-LONG.
@@ -1188,9 +1197,51 @@
          WHEN 35
              MOVE 0 TO L-LO L-HI
              IF SBD-ACTIVE = 1
-*>               the sum of at most SBD-RIGID-COUNT records of at most 0.8 and SBD-JUNC-COUNT junctions of at most 0.4 (the bury and beard terms are below 1)
-                 COMPUTE L-HI = SBD-RIGID-COUNT * 0.8 + SBD-JUNC-COUNT * 0.4 + 1
-                 COMPUTE L-LO = 0 - L-HI
+                 IF DNG-ACTIVE = 1
+*>                   the cell's blocks (4 x 4 in x and z, 8 in y) against the range of each record and junction (the test STRUCT-BEARD-SAMPLE makes before it evaluates one: a record
+*>                   that the test leaves out adds exactly 0): the sum of at most 0.8 for each record and 0.4 for each junction that can reach the cell (the bury and beard terms are below 1)
+                     COMPUTE LS-CX0 = DNG-X0 + 4 * L-CI
+                     COMPUTE LS-CX1 = LS-CX0 + 3
+                     COMPUTE LS-CZ0 = DNG-Z0 + 4 * L-CK
+                     COMPUTE LS-CZ1 = LS-CZ0 + 3
+                     COMPUTE LS-CY0 = -64 + 8 * L-CJ
+                     COMPUTE LS-CY1 = LS-CY0 + 7
+                     MOVE 0 TO LS-I LS-GI
+                     PERFORM VARYING LS-SLOT FROM 1 BY 1 UNTIL LS-SLOT > SBD-RIGID-COUNT
+                         IF LS-CX1 >= SBR-X0(LS-SLOT) - 12 AND LS-CX0 <= SBR-X1(LS-SLOT) + 12
+                                 AND LS-CZ1 >= SBR-Z0(LS-SLOT) - 12 AND LS-CZ0 <= SBR-Z1(LS-SLOT) + 12
+                             COMPUTE LS-RY0 = SBR-Y0(LS-SLOT) + SBR-GROUND(LS-SLOT)
+                             MOVE SBR-Y1(LS-SLOT) TO LS-RY1
+                             IF SBR-Y0(LS-SLOT) < LS-RY0
+                                 MOVE SBR-Y0(LS-SLOT) TO LS-RY0
+                             END-IF
+                             COMPUTE LS-RY0 = LS-RY0 - 13
+                             COMPUTE LS-RY2 = SBR-Y0(LS-SLOT) + SBR-GROUND(LS-SLOT)
+                             IF LS-RY2 > LS-RY1
+                                 MOVE LS-RY2 TO LS-RY1
+                             END-IF
+                             COMPUTE LS-RY1 = LS-RY1 + 13
+                             IF LS-CY1 >= LS-RY0 AND LS-CY0 <= LS-RY1
+                                 ADD 1 TO LS-I
+                             END-IF
+                         END-IF
+                     END-PERFORM
+                     PERFORM VARYING LS-SLOT FROM 1 BY 1 UNTIL LS-SLOT > SBD-JUNC-COUNT
+                         IF LS-CX1 >= SBJ-X(LS-SLOT) - 12 AND LS-CX0 <= SBJ-X(LS-SLOT) + 12
+                                 AND LS-CZ1 >= SBJ-Z(LS-SLOT) - 12 AND LS-CZ0 <= SBJ-Z(LS-SLOT) + 12
+                                 AND LS-CY1 >= SBJ-Y(LS-SLOT) - 12 AND LS-CY0 <= SBJ-Y(LS-SLOT) + 12
+                             ADD 1 TO LS-GI
+                         END-IF
+                     END-PERFORM
+                     IF LS-I + LS-GI > 0
+                         COMPUTE L-HI = LS-I * 0.8 + LS-GI * 0.4 + 1
+                         COMPUTE L-LO = 0 - L-HI
+                     END-IF
+                 ELSE
+*>                   no grid of a chunk (no cell geometry): the sum of at most SBD-RIGID-COUNT records of at most 0.8 and SBD-JUNC-COUNT junctions of at most 0.4 (the bury and beard terms are below 1)
+                     COMPUTE L-HI = SBD-RIGID-COUNT * 0.8 + SBD-JUNC-COUNT * 0.4 + 1
+                     COMPUTE L-LO = 0 - L-HI
+                 END-IF
              END-IF
          WHEN 2 THRU 4
              CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1

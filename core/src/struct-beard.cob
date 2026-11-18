@@ -167,6 +167,7 @@
  01 WS-T                   FLOAT-LONG.
  01 WS-LO                  BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -185,10 +186,22 @@
 *>   a record is exactly 0 farther than 12 blocks from its box in x or z, and farther than 12 above or below its layers (beard: -12 <= y - bottom < 12 after the ground level delta; bury and
 *>   encapsulate: the y distance halved is below 6): such a record adds 0.0, which changes no single precision sum, so it is not evaluated
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SBD-RIGID-COUNT
-         COMPUTE WS-LO = FUNCTION MIN(SBR-Y0(WS-I), SBR-Y0(WS-I) + SBR-GROUND(WS-I)) - 13
-         COMPUTE WS-HI = FUNCTION MAX(SBR-Y1(WS-I), SBR-Y0(WS-I) + SBR-GROUND(WS-I)) + 13
+         MOVE 0 TO WS-FLAG
          IF L-X >= SBR-X0(WS-I) - 12 AND L-X <= SBR-X1(WS-I) + 12 AND L-Z >= SBR-Z0(WS-I) - 12 AND L-Z <= SBR-Z1(WS-I) + 12
-                 AND L-Y >= WS-LO AND L-Y <= WS-HI
+             COMPUTE WS-GY = SBR-Y0(WS-I) + SBR-GROUND(WS-I)
+             MOVE SBR-Y0(WS-I) TO WS-LO
+             IF WS-GY < WS-LO
+                 MOVE WS-GY TO WS-LO
+             END-IF
+             MOVE SBR-Y1(WS-I) TO WS-HI
+             IF WS-GY > WS-HI
+                 MOVE WS-GY TO WS-HI
+             END-IF
+             IF L-Y >= WS-LO - 13 AND L-Y <= WS-HI + 13
+                 MOVE 1 TO WS-FLAG
+             END-IF
+         END-IF
+         IF WS-FLAG = 1
              CALL "STRUCT-BEARD-RIGID" USING SBR-MODE(WS-I) SBR-X0(WS-I) SBR-Y0(WS-I) SBR-Z0(WS-I) SBR-X1(WS-I) SBR-Y1(WS-I)
                  SBR-Z1(WS-I) SBR-GROUND(WS-I) L-X L-Y L-Z WS-V
              CALL "FX-OP" USING WS-OP-ADD WS-SUM WS-V WS-T

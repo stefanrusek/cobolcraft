@@ -55,6 +55,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BEARD-KERNEL.
+*> the value of an entry is computed once (FUNCTION EXP is a decimal evaluation, tens of microseconds) and kept: the table has 24 * 24 * 24 entries (the arguments are 0 to 23), the same values the formula gives
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-A                   BINARY-LONG.
@@ -62,18 +63,30 @@
  01 WS-C                   BINARY-LONG.
  01 WS-D                   FLOAT-LONG.
  01 WS-E                   FLOAT-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-KERNELS.
+    05 WS-KERNEL           OCCURS 13824 TIMES.
+       10 WS-KSET          BINARY-LONG VALUE 0.
+       10 WS-KVAL          FLOAT-LONG.
  LINKAGE SECTION.
  01 L-I                    BINARY-LONG.
  01 L-J                    BINARY-LONG.
  01 L-K                    BINARY-LONG.
  01 L-R                    FLOAT-LONG.
  PROCEDURE DIVISION USING L-I L-J L-K L-R.
+     COMPUTE WS-AT = (L-I * 24 + L-J) * 24 + L-K + 1
+     IF WS-KSET(WS-AT) = 1
+         MOVE WS-KVAL(WS-AT) TO L-R
+         GOBACK
+     END-IF
      COMPUTE WS-A = L-J - 12
      COMPUTE WS-B = L-K - 12 + 0.5
      COMPUTE WS-C = L-I - 12
      COMPUTE WS-D = WS-A * WS-A + WS-B * WS-B + WS-C * WS-C
      COMPUTE WS-E = FUNCTION EXP(0 - WS-D / 16)
      CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-E L-R
+     MOVE 1 TO WS-KSET(WS-AT)
+     MOVE L-R TO WS-KVAL(WS-AT)
      GOBACK.
  END PROGRAM STRUCT-BEARD-KERNEL.
 
