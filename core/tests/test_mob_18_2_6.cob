@@ -150,6 +150,18 @@
      MOVE 0 TO WS-E
      MOVE EN-FROZEN(WS-ROW) TO WS-O
      PERFORM CHECK-N
+*>   A frozen mob of 1 health dies of the freeze damage on a 40th tick.
+     MOVE "minecraft:powder_snow" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE 200 TO EN-FROZEN(WS-ROW)
+     MOVE 1 TO EN-HEALTH(WS-ROW)
+     COMPUTE CW-TICKS = 200
+     PERFORM TICK-ALL
+     MOVE "acceptance US15 18§2.6 LivingEntity.aiStep: the freeze damage can kill (a mob of 1 health)" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE EN-HEALTH(WS-ROW) TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
 
  TICK-ALL.

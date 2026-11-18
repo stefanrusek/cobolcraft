@@ -42,6 +42,8 @@
  01 WS-BONUSES             BINARY-LONG.
  01 WS-SEEN                BINARY-LONG.
  01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-PITCH              FLOAT-SHORT VALUE 0.
+ 01 WS-ONE                BINARY-LONG VALUE 1.
  COPY XORO.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
@@ -136,6 +138,26 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE PB-LENGTH TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A flagged mob that comes into a viewer's range: Add Entity, the mob flags (index 15) and the health, all Set Entity Data being 101.
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE 220.5 TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 1 TO EN-NO-AI(WS-ROW)
+     MOVE 0 TO EN-LEFTY(WS-ROW)
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 5
+     CALL "ENTITY-MOVE" USING WS-ROW WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-ONE
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE "T" TO TL-MODE
+     MOVE "mob flags: pairing sends Add Entity, the mob flags and the health" TO TL-CASE
+     MOVE "1 101x2" TO TL-EXPECTED
+     MOVE FUNCTION TRIM(WS-TEXT) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     CALL "ENTITY-REMOVE" USING WS-ROW
 
 *>   finalizeSpawn steps 1 and 2: 400 mobs, about 5 percent left-handed, every one with a follow_range spread within +-0.11485.
      MOVE 0 TO WS-LEFTIES WS-BONUSES

@@ -131,6 +131,30 @@
      MOVE 0 TO WS-E
      MOVE EN-AFFLICT(WS-ROW) TO WS-O
      PERFORM CHECK-N
+*>   Through the mob's own step (night, so it does not burn): after the 140 + 301 ticks the row is a stray.
+     CALL "ENTITY-REMOVE" USING WS-ROW
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE 16001 TO CW-TIME
+     CALL "MOB-SPAWN" USING WS-DIM WS-SKELETON WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 100 TO EN-HEALTH(WS-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 445
+         ADD 1 TO CW-TICKS
+         MOVE 0 TO EN-HURT(WS-ROW)
+         MOVE WS-X TO EN-X(WS-ROW)
+         MOVE WS-Y TO EN-Y(WS-ROW)
+         MOVE WS-Z TO EN-Z(WS-ROW)
+         CALL "STDMOB-STEP" USING WS-ROW
+     END-PERFORM
+     MOVE 0 TO WS-STRAYS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-STRAY
+             ADD 1 TO WS-STRAYS
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§3.8 Conversion tracker: the mob's own step converts it after 441 ticks in powder snow" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE WS-STRAYS TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
 
  CONVERT-TICK.
