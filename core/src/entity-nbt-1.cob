@@ -7,8 +7,8 @@
 *>   ENTITY-DOUBLE-CLASS USING double, class  0 finite, 1 NaN, 2 +Infinity, 3 -Infinity
 *>   ENTITY-FLOAT-FINITE USING float, flag    1 when the float is finite
 *>   ENTITY-VALIDATE USING x y z vx vy vz yaw pitch, valid   the section 5 and 6 rules of Pos, Motion and Rotation
-*> Not modelled: CustomName, Tags, data, Team (no name, tag set, custom data or scoreboard in the core; a world of the 26.3 layout keeps them
-*> through EXTRA-CAPTURE) and Passengers (the mob and player riders are stored by their vehicle's own keys).
+*> CustomName, Tags, data and Team are in entity-keep.cob (state of ENKEEP.cob). Not modelled: Passengers (the mob and player riders are stored by their
+*> vehicle's own keys).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-BASE-WRITE.
@@ -23,6 +23,8 @@
  01 WS-UUID-INTS.
     05 WS-UUID-INT         BINARY-LONG OCCURS 4 TIMES.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-NAME-PART           BINARY-LONG VALUE 1.
+ 01 WS-LIST-PART           BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
@@ -48,6 +50,7 @@
      MOVE "UUID" TO WN MOVE 4 TO WL
      CALL "ENTITY-UUID-INTS" USING EN-UUID(L-ROW) WS-UUID-INTS
      CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-UUID-INTS
+     CALL "ENTITY-KEEP-WRITE" USING L-ROW PB-BUFFER WS-NAME-PART
      IF EN-NAME-VIS(L-ROW) = 1
          MOVE "CustomNameVisible" TO WN MOVE 17 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ONE
@@ -72,6 +75,7 @@
          MOVE "HasVisualFire" TO WN MOVE 13 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ONE
      END-IF
+     CALL "ENTITY-KEEP-WRITE" USING L-ROW PB-BUFFER WS-LIST-PART
      GOBACK.
  END PROGRAM ENTITY-BASE-WRITE.
 
@@ -114,6 +118,8 @@
              CALL "PB-GET-INT" USING PB-BUFFER EB-FROZEN
          WHEN L-NAME = "HasVisualFire" AND L-TYPE = 1
              CALL "PB-GET-BYTE" USING PB-BUFFER EB-VISFIRE
+         WHEN L-NAME = "CustomName" OR "Tags" OR "data" OR "Team"
+             CALL "ENTITY-KEEP-KEY" USING PB-BUFFER L-TYPE L-NAME EB-DATA
          WHEN OTHER
              MOVE 0 TO L-HANDLED
      END-EVALUATE
@@ -152,6 +158,7 @@
      MOVE EB-PORTAL TO EN-PORTAL-CD(L-ROW)
      MOVE EB-INVTIME TO EN-INVTIME(L-ROW)
      MOVE EB-FROZEN TO EN-FROZEN(L-ROW)
+     CALL "ENTITY-KEEP-APPLY" USING L-ROW EB-DATA
      GOBACK.
  END PROGRAM ENTITY-BASE-APPLY.
 

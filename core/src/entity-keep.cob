@@ -1,0 +1,181 @@
+*> Entity NBT, part 1 (docs/protocol/45-entity-nbt-1-shared-model-and-entity-base.md section 5; lane 002-lane-p49m): CustomName, Tags, data and Team
+*> of the Entity base, the keys that ENTITY-BASE-WRITE, ENTITY-BASE-KEY and ENTITY-BASE-APPLY share with the state of ENKEEP.cpy.
+*>   ENTITY-KEEP-SLICE USING PB-BUFFER, tag type, capacity, length out, bytes out   the payload of the tag at PB-POS (skipped) when it fits capacity
+*>   ENTITY-TAGS-READ USING PB-BUFFER, count out, length out, bytes out             a Tags list as a set of the strings that fit 1024 bytes
+*>   ENTITY-KEEP-KEY USING PB-BUFFER, tag type, name, EB-DATA                       reads CustomName, Tags, data or Team into EB-DATA
+*>   ENTITY-KEEP-APPLY USING row, EB-DATA                                           puts them into the row
+*>   ENTITY-KEEP-WRITE USING row, PB-BUFFER, which                                  which 1: CustomName (after UUID); 2: Tags then data (after HasVisualFire)
+*> The text component of CustomName and the custom data are kept as the tag the file had (no state of the game reads them); the Team of a saved entity
+*> names a scoreboard team and the core has no scoreboard, so the doc's "the team is missing" outcome applies: it is dropped. A data given as an SNBT
+*> String (45-1 section 5) is not parsed and not kept. Tags: a list longer than 1024 leaves the set empty (45-1 section 5), duplicates collapse.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-KEEP-SLICE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-POINTER             USAGE POINTER.
+ 01 B-SLICE                PIC X(2048) BASED.
+ 01 B-OUT                  PIC X(2048) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-OUT                  PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-CAPACITY L-LENGTH L-OUT.
+     MOVE 0 TO L-LENGTH
+     MOVE PB-POS TO WS-START
+     CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
+     COMPUTE WS-SIZE = PB-POS - WS-START
+     IF PB-ERROR = 0 AND WS-SIZE > 0 AND WS-SIZE <= L-CAPACITY
+         SET WS-POINTER TO PB-ADDR
+         SET WS-POINTER UP BY WS-START
+         SET ADDRESS OF B-SLICE TO WS-POINTER
+         SET ADDRESS OF B-OUT TO ADDRESS OF L-OUT
+         MOVE B-SLICE(1:WS-SIZE) TO B-OUT(1:WS-SIZE)
+         MOVE WS-SIZE TO L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-KEEP-SLICE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-TAGS-READ.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-ELEMENT-LENGTH      BINARY-LONG.
+ 01 WS-DUPLICATE           BINARY-LONG.
+ 01 WS-ENTRY               PIC X(1024).
+ 01 WS-POINTER             USAGE POINTER.
+ 01 B-ENTRY                PIC X(2048) BASED.
+ 01 B-OUT                  PIC X(1024) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-OUT                  PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-COUNT L-LENGTH L-OUT.
+     MOVE 0 TO L-COUNT L-LENGTH
+     SET ADDRESS OF B-OUT TO ADDRESS OF L-OUT
+     CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR PB-ERROR = 1
+         MOVE PB-POS TO WS-START
+         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ELEMENT-TYPE
+         COMPUTE WS-SIZE = PB-POS - WS-START
+         IF PB-ERROR = 0 AND WS-ELEMENT-TYPE = 8 AND WS-SIZE <= 1024
+             SET WS-POINTER TO PB-ADDR
+             SET WS-POINTER UP BY WS-START
+             SET ADDRESS OF B-ENTRY TO WS-POINTER
+             MOVE B-ENTRY(1:WS-SIZE) TO WS-ENTRY(1:WS-SIZE)
+             MOVE 0 TO WS-DUPLICATE
+             MOVE 1 TO WS-J
+             PERFORM UNTIL WS-J > L-LENGTH OR WS-DUPLICATE = 1
+                 COMPUTE WS-ELEMENT-LENGTH = 2 + (FUNCTION ORD(B-OUT(WS-J:1)) - 1) * 256 + FUNCTION ORD(B-OUT(WS-J + 1:1)) - 1
+                 IF WS-ELEMENT-LENGTH = WS-SIZE AND B-OUT(WS-J:WS-SIZE) = WS-ENTRY(1:WS-SIZE)
+                     MOVE 1 TO WS-DUPLICATE
+                 END-IF
+                 ADD WS-ELEMENT-LENGTH TO WS-J
+             END-PERFORM
+             IF WS-DUPLICATE = 0 AND L-LENGTH + WS-SIZE <= 1024
+                 MOVE WS-ENTRY(1:WS-SIZE) TO B-OUT(L-LENGTH + 1:WS-SIZE)
+                 ADD WS-SIZE TO L-LENGTH
+                 ADD 1 TO L-COUNT
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-N > 1024
+         MOVE 0 TO L-COUNT L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-TAGS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-KEEP-KEY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 256.
+ 01 WS-DATA-CAPACITY       BINARY-LONG VALUE 1024.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ COPY EBDATA.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-NAME EB-DATA.
+     EVALUATE TRUE
+         WHEN L-NAME = "CustomName" AND (L-TYPE = 8 OR L-TYPE = 9 OR L-TYPE = 10)
+             MOVE L-TYPE TO EB-NAME-TYPE
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-NAME-CAPACITY EB-NAME-LEN EB-NAME-RAW
+         WHEN L-NAME = "Tags" AND L-TYPE = 9
+             CALL "ENTITY-TAGS-READ" USING PB-BUFFER EB-TAG-COUNT EB-TAG-LEN EB-TAG-RAW
+         WHEN L-NAME = "data" AND L-TYPE = 10
+             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER L-TYPE WS-DATA-CAPACITY EB-DATA-LEN EB-DATA-RAW
+             IF EB-DATA-LEN = 1
+                 MOVE 0 TO EB-DATA-LEN
+             END-IF
+         WHEN OTHER
+             CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM ENTITY-KEEP-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-KEEP-APPLY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ENKEEP.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY EBDATA.
+ PROCEDURE DIVISION USING L-ROW EB-DATA.
+     MOVE EB-NAME-LEN TO EK-NAME-LEN(L-ROW)
+     MOVE EB-NAME-TYPE TO EK-NAME-TYPE(L-ROW)
+     MOVE EB-NAME-RAW TO EK-NAME-RAW(L-ROW)
+     MOVE EB-TAG-COUNT TO EK-TAG-COUNT(L-ROW)
+     MOVE EB-TAG-LEN TO EK-TAG-LEN(L-ROW)
+     MOVE EB-TAG-RAW TO EK-TAG-RAW(L-ROW)
+     MOVE EB-DATA-LEN TO EK-DATA-LEN(L-ROW)
+     MOVE EB-DATA-RAW TO EK-DATA-RAW(L-ROW)
+     GOBACK.
+ END PROGRAM ENTITY-KEEP-APPLY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-KEEP-WRITE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ENKEEP.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-T-STRING            BINARY-LONG VALUE 8.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ 01 L-WHICH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER L-WHICH.
+     IF L-WHICH = 1
+         IF EK-NAME-LEN(L-ROW) > 0
+             MOVE "CustomName" TO WN MOVE 10 TO WL
+             CALL "NBT-WRITE-HEADER" USING PB-BUFFER EK-NAME-TYPE(L-ROW) WN WL
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-NAME-RAW(L-ROW) EK-NAME-LEN(L-ROW)
+         END-IF
+     ELSE
+         IF EK-TAG-COUNT(L-ROW) > 0
+             MOVE "Tags" TO WN MOVE 4 TO WL
+             CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-STRING EK-TAG-COUNT(L-ROW)
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-TAG-RAW(L-ROW) EK-TAG-LEN(L-ROW)
+         END-IF
+         IF EK-DATA-LEN(L-ROW) > 0
+             MOVE "data" TO WN MOVE 4 TO WL
+             CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-DATA-RAW(L-ROW) EK-DATA-LEN(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-KEEP-WRITE.

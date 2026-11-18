@@ -11,3 +11,11 @@
     05 EB-GLOW             BINARY-LONG.
     05 EB-FROZEN           BINARY-LONG.
     05 EB-VISFIRE          BINARY-LONG.
+    05 EB-NAME-LEN         BINARY-LONG.
+    05 EB-NAME-TYPE        BINARY-LONG.
+    05 EB-NAME-RAW         PIC X(256).
+    05 EB-TAG-COUNT        BINARY-LONG.
+    05 EB-TAG-LEN          BINARY-LONG.
+    05 EB-TAG-RAW          PIC X(1024).
+    05 EB-DATA-LEN         BINARY-LONG.
+    05 EB-DATA-RAW         PIC X(1024).
