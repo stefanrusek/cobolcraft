@@ -224,6 +224,8 @@
                          CALL "XP-BOTTLE-STEP" USING WS-ROW
                      WHEN 41
                          CALL "OIS-STEP" USING WS-ROW
+                     WHEN 42
+                         CALL "WIND-STEP" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF
