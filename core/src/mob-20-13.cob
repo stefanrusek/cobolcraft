@@ -132,6 +132,8 @@
  COPY STDMOBS.
  01 WS-E                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-PBEST               BINARY-LONG.
  01 WS-BEST                BINARY-LONG.
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
@@ -147,7 +149,7 @@
  01 L-HZ                   FLOAT-LONG.
  01 L-AVOID                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M L-HX L-HZ L-AVOID.
-     MOVE 0 TO L-HX L-HZ L-AVOID WS-BEST
+     MOVE 0 TO L-HX L-HZ L-AVOID WS-BEST WS-PBEST
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-HEALTH(WS-E) > 0 AND EN-PLAYER(WS-E) = 0
              COMPUTE WS-DX = EN-X(L-ROW) - EN-X(WS-E)
@@ -165,14 +167,44 @@
              END-IF
          END-IF
      END-PERFORM
-     IF WS-BEST > 0
+*>   An evoker also avoids a survival player (8.0, 0.6, 1.0): a player row is an entity row of its own.
+     IF SM-KEY(L-M) = "evoker"
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+             IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-MODE(WS-P) = 0 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+                 COMPUTE WS-DX = EN-X(L-ROW) - PL-X(WS-P)
+                 COMPUTE WS-DY = EN-Y(L-ROW) - PL-Y(WS-P)
+                 COMPUTE WS-DZ = EN-Z(L-ROW) - PL-Z(WS-P)
+                 COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+                 IF FUNCTION ABS(WS-DX) <= 8 AND FUNCTION ABS(WS-DZ) <= 8 AND FUNCTION ABS(WS-DY) <= 3 AND WS-D2 <= 64
+                         AND ((WS-BEST = 0 AND WS-PBEST = 0) OR WS-D2 < WS-BEST-D2)
+                     MOVE 0 TO WS-BEST
+                     MOVE WS-P TO WS-PBEST
+                     MOVE WS-D2 TO WS-BEST-D2
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     IF WS-BEST > 0 OR WS-PBEST > 0
          MOVE 1 TO L-AVOID
-         COMPUTE WS-DX = EN-X(L-ROW) - EN-X(WS-BEST)
-         COMPUTE WS-DZ = EN-Z(L-ROW) - EN-Z(WS-BEST)
+         IF WS-PBEST > 0
+             COMPUTE WS-DX = EN-X(L-ROW) - PL-X(WS-PBEST)
+             COMPUTE WS-DZ = EN-Z(L-ROW) - PL-Z(WS-PBEST)
+         ELSE
+             COMPUTE WS-DX = EN-X(L-ROW) - EN-X(WS-BEST)
+             COMPUTE WS-DZ = EN-Z(L-ROW) - EN-Z(WS-BEST)
+         END-IF
          COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
          COMPUTE WS-SPEED = SM-WALK-MILLI(L-M) / 1000
-         IF WS-BEST-D2 < 49
-             COMPUTE WS-SPEED = WS-SPEED * 1.2
+*>       Speeds: the evoker 0.6 walking and 1.0 within 7 blocks; vindicator, pillager and illusioner 1.0 and 1.2.
+         IF SM-KEY(L-M) = "evoker"
+             COMPUTE WS-SPEED = WS-SPEED * 0.6
+             IF WS-BEST-D2 < 49
+                 COMPUTE WS-SPEED = SM-WALK-MILLI(L-M) / 1000
+             END-IF
+         ELSE
+             IF WS-BEST-D2 < 49
+                 COMPUTE WS-SPEED = WS-SPEED * 1.2
+             END-IF
          END-IF
          IF WS-H > 0
              COMPUTE L-HX = WS-DX / WS-H * WS-SPEED

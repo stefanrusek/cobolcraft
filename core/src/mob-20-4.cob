@@ -61,12 +61,22 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ COPY EVKSTATE.
+ 01 WS-RV-SLOT             BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  01 L-SPEED                FLOAT-LONG.
  PROCEDURE DIVISION USING L-ROW L-M L-SPEED.
      COMPUTE L-SPEED = SM-WALK-MILLI(L-M) / 1000
+*>   A ravager's speed is its lerped movement speed attribute (13.6, RV-SPEED): squared / 0.454.
+     IF SM-KEY(L-M) = "ravager"
+         CALL "EVK-RV-FIND" USING EN-ID(L-ROW) WS-ZERO WS-RV-SLOT
+         IF WS-RV-SLOT > 0 AND RV-SPEED(WS-RV-SLOT) > 0
+             COMPUTE L-SPEED = (RV-SPEED(WS-RV-SLOT) / 1000000) ** 2 / 0.454
+         END-IF
+     END-IF
      IF EN-VARIANT(L-ROW) = 1 AND (SM-KEY(L-M) = "zombie" OR SM-KEY(L-M) = "zombie_villager" OR SM-KEY(L-M) = "husk")
          COMPUTE L-SPEED = L-SPEED * 2.25
      END-IF

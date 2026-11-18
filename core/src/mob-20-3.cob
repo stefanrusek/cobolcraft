@@ -613,6 +613,11 @@
              MOVE 10 TO EN-HAND(L-ROW)
          WHEN "pillager"
              MOVE 11 TO EN-HAND(L-ROW)
+*>           An illusioner holds a bow (13.5), a vex an iron sword (13.4).
+         WHEN "illusioner"
+             MOVE 4 TO EN-HAND(L-ROW)
+         WHEN "vex"
+             MOVE 1 TO EN-HAND(L-ROW)
          WHEN "salmon"
          WHEN "tropical_fish"
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M

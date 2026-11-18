@@ -516,6 +516,15 @@
      IF WS-SLOT = 0
          GOBACK
      END-IF
+*>   CopyOwnerTargetGoal (13.4): without a target of its own, the vex takes the attack target of its owner.
+     IF EN-TARGET(L-ROW) = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) = VX-OWNER(WS-SLOT) AND EN-HEALTH(WS-I) > 0 AND EN-TARGET(WS-I) > 0
+                 MOVE EN-TARGET(WS-I) TO EN-TARGET(L-ROW)
+                 MOVE EN-TARGET-ID(WS-I) TO EN-TARGET-ID(L-ROW)
+             END-IF
+         END-PERFORM
+     END-IF
      IF VX-LIFE(WS-SLOT) > 0
          SUBTRACT 1 FROM VX-LIFE(WS-SLOT)
          IF VX-LIFE(WS-SLOT) = 0
