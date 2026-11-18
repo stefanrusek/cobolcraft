@@ -34,6 +34,7 @@
              IF VL-ID(WS-I) = 0
                  MOVE WS-I TO L-SLOT
                  INITIALIZE VL-ENTRY(WS-I)
+                 CALL "VM-CLEAR" USING WS-I
                  MOVE L-ID TO VL-ID(WS-I)
                  MOVE 1 TO VL-KIND(WS-I) VL-LEVEL(WS-I)
                  MOVE 2 TO VL-TYPE(WS-I)
@@ -59,6 +60,7 @@
      CALL "VP-RELEASE" USING L-ID
      IF WS-SLOT > 0
          INITIALIZE VL-ENTRY(WS-SLOT)
+         CALL "VM-CLEAR" USING WS-SLOT
      END-IF
      GOBACK.
  END PROGRAM VL-REMOVE.
