@@ -29,6 +29,8 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-MEMBER              BINARY-LONG.
+ 01 WS-P49-OWNER           BINARY-LONG VALUE 900001.
+ 01 WS-P49-HOME            BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -82,6 +84,8 @@
      COMPUTE PX-X(1) = FUNCTION INTEGER(WS-X)
      COMPUTE PX-Y(1) = FUNCTION INTEGER(WS-Y)
      COMPUTE PX-Z(1) = FUNCTION INTEGER(WS-Z)
+*>   A village needs a claimed point of interest (44-3 section 1.4): the villager 900001 sleeps in this bed.
+     CALL "VPX-CLAIM" USING WS-P49-OWNER WS-P49-HOME WS-DIM PX-X(1) PX-Y(1) PX-Z(1)
      CALL "RAID-WALK" USING WS-A WS-HX WS-HZ WS-WALK
      MOVE "acceptance US15 20§13 in a village it does not (the raid is at its goal)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N

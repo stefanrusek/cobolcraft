@@ -34,6 +34,8 @@
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-HIT                 BINARY-LONG.
+ 01 WS-P49-OWNER           BINARY-LONG VALUE 900000.
+ 01 WS-P49-MEET            BINARY-LONG VALUE 3.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -49,6 +51,8 @@
 *>   The village: two bells beside the player.
      COMPUTE WS-N = WS-X + 3
      CALL "PXI-ADD" USING WS-DIM WS-N WS-Y WS-Z WS-KIND2
+     ADD 1 TO WS-P49-OWNER
+     CALL "VPX-CLAIM" USING WS-P49-OWNER WS-P49-MEET WS-DIM WS-N WS-Y WS-Z
 *>   The spawn position at cooldown 5 (n = 0, f = -0.24) lies within 9 blocks of the centre, on the floor.
      MOVE 1 TO RD-USED(1)
      MOVE 1 TO RD-STATUS(1)

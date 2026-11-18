@@ -91,7 +91,9 @@
      MOVE WS-Y0 TO WS-BY
      MOVE WS-Z0 TO WS-BZ
      MOVE "minecraft:red_bed" TO WS-KEY
+     MOVE "facing=north,occupied=false,part=head" TO WS-PAIRS
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     MOVE SPACES TO WS-PAIRS
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
      COMPUTE WS-BY = WS-Y0 + 2
      MOVE "minecraft:bell" TO WS-KEY
