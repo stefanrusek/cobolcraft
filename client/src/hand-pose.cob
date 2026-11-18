@@ -1,8 +1,7 @@
 *> The view pose and the arm poses of the first-person hand (12 section 6.1, 6.2, 6.6; 53 section 15). HAND-TICK runs one 50 ms client tick of the state the hand
 *> keeps (walk distance and bob amount 53 section 15.2, the lagging view angles 15.3, the attack strength ticker 17 section 4.1). HAND-PREFIX builds the pose stack's
 *> first frame: view bobbing (12 section 6.1 step 1, the bobView option) and hand sway (step 3). HAND-ATTACK-DELAY is the full-charge delay of an item. HAND-ARM
-*> applies the arm transform of 12 section 6.3 step 1 or, while an item is used, the pose of its use animation (6.6). Not done: the hurt tilt (6.1 step 2; the client
-*> keeps no hurt direction), brush and spear poses (open question 6 of 12), the crossbow-charged pose.
+*> applies the arm transform of 12 section 6.3 step 1 or, while an item is used, the pose of its use animation (6.6). HAND-DEATH-TICK keeps the death time. Not done: brush and spear poses (open question 6 of 12), the crossbow-charged pose.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-TICK.
@@ -57,6 +56,25 @@
  END PROGRAM HAND-TICK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. HAND-DEATH-TICK.
+*> USING CLIENT-STATE: one client tick of deathTime (12 section 6.1 step 2): CL-DEATH-TIME counts up while the local player's health is 0 or less, at most to 20
+*> (the value the tilt reads), and is 0 while the player is alive.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF PL-HEALTH <= 0
+         IF CL-DEATH-TIME < 20
+             ADD 1 TO CL-DEATH-TIME
+         END-IF
+     ELSE
+         MOVE 0 TO CL-DEATH-TIME
+     END-IF
+     GOBACK.
+ END PROGRAM HAND-DEATH-TICK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-PREFIX.
 *> USING CLIENT-STATE, partial tick, M out (12 FLOAT-LONG, HAND-M-IDENT layout): the first frame of the pose stack. View bobbing with w = -(walkDist + (walkDist -
 *> walkDistO) x partial) and b = lerp(partial, bobO, bob) (the option bobView, true when absent): translate (sin(w pi) b 0.5, -|cos(w pi) b|, 0), rotate Z by
@@ -106,8 +124,14 @@
          COMPUTE WS-DEG = FUNCTION ABS(FUNCTION COS(WS-W * FUNCTION PI - 0.2) * WS-B) * 5
          CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
      END-IF
-*>   The hurt tilt (12 section 6.1 step 2): t = the hurt time left over its 500 ms (10 ticks), k = sin(t^4 pi); rotate Y by -dir, Z by -k 14 s, Y by +dir
-*>   (s the damageTiltStrength option, 1 by default). The death tilt needs the death time, which the client does not keep.
+*>   The tilt of 12 section 6.1 step 2. While the player dies (health 0 or less): rotate Z by 40 - 8000 / (min(deathTime, 20) + 200) degrees (deathTime is
+*>   CL-DEATH-TIME) and nothing else. Otherwise the hurt tilt: t = the hurt time left over its 500 ms (10 ticks), k = sin(t^4 pi); rotate Y by -dir, Z by -k 14 s,
+*>   Y by +dir (s the damageTiltStrength option, 1 by default).
+     IF PL-HEALTH <= 0
+         MOVE 3 TO WS-AXIS
+         COMPUTE WS-DEG = 40 - 8000 / (FUNCTION MIN(CL-DEATH-TIME, 20) + 200)
+         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
+     END-IF
      IF CL-NOW-MS < PL-HURT-UNTIL AND PL-HEALTH > 0
          COMPUTE WS-T = (PL-HURT-UNTIL - CL-NOW-MS) / CL-HURT-MS
          IF WS-T > 1

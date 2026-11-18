@@ -43,6 +43,7 @@
     05 CL-YBOB               FLOAT-LONG.
     05 CL-YBOB-O             FLOAT-LONG.
     05 CL-HAND-KEY-GCOUNT    BINARY-LONG.     *> vertex count of the cached hand glint mesh (RL-HG-VERTEX)
+    05 CL-DEATH-TIME         BINARY-LONG.     *> deathTime of the local player: client ticks since the health fell to 0 (at most 20), 0 while alive (hand-pose.cob HAND-DEATH-TICK; 12 section 6.1 step 2)
     05 CL-HAND-KEY-P         FLOAT-LONG.      *> a digest of the view pose (bob and sway) and of the off hand the cached mesh was built for
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
