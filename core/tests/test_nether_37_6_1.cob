@@ -49,6 +49,11 @@
  01 WS-ED2                 PIC -(9)9.
  01 WS-ED3                 PIC -(9)9.
  01 WS-ED4                 PIC -(9)9.
+ 01 WS-KEY64               PIC X(64).
+ 01 WS-U20                 PIC 9(20).
+ 01 WS-STATE               BINARY-DOUBLE UNSIGNED.
+ 01 WS-FL                  FLOAT-LONG.
+ 01 WS-SC                  FLOAT-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE 1 TO WS-A
