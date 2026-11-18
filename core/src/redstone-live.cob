@@ -85,6 +85,13 @@
  01 LS-RESULT              BINARY-LONG.
  01 LS-CALLS.
     05 LS-CALL             BINARY-LONG OCCURS 7 TIMES.
+ 01 LS-C1                  BINARY-LONG.
+ 01 LS-C2                  BINARY-LONG.
+ 01 LS-C3                  BINARY-LONG.
+ 01 LS-C4                  BINARY-LONG.
+ 01 LS-C5                  BINARY-LONG.
+ 01 LS-C6                  BINARY-LONG.
+ 01 LS-C7                  BINARY-LONG.
  01 LS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -148,8 +155,15 @@
      MOVE 512 TO LS-BUDGET
      CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-NEW LS-FLAGS LS-BUDGET LS-RESULT
      IF LS-TARGET NOT = LS-POWER
-         CALL "RS1-WIRE-NOTIFY-ORDER" USING L-X L-Y L-Z LS-CALL(1) LS-CALL(2) LS-CALL(3) LS-CALL(4)
-             LS-CALL(5) LS-CALL(6) LS-CALL(7)
+         CALL "RS1-WIRE-NOTIFY-ORDER" USING L-X L-Y L-Z LS-C1 LS-C2 LS-C3 LS-C4
+             LS-C5 LS-C6 LS-C7
+             MOVE LS-C1 TO LS-CALL(1)
+             MOVE LS-C2 TO LS-CALL(2)
+             MOVE LS-C3 TO LS-CALL(3)
+             MOVE LS-C4 TO LS-CALL(4)
+             MOVE LS-C5 TO LS-CALL(5)
+             MOVE LS-C6 TO LS-CALL(6)
+             MOVE LS-C7 TO LS-CALL(7)
          PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > 7
              MOVE L-X TO LS-NX
              MOVE L-Y TO LS-NY

@@ -89,7 +89,7 @@
      MOVE 1 TO WS-A
      CALL "NETHER-BIOME-DEF" USING WS-A WS-DEF
      MOVE WS-D-PARTICLE TO TL-OBSERVED
-     MOVE "" TO TL-EXPECTED
+     MOVE SPACES TO TL-EXPECTED
      MOVE "acceptance US12 37-3§7 Fog, sky and ambient particles 7.3 ambient particle of biome 1" TO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
