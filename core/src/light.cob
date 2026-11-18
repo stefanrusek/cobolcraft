@@ -2,7 +2,8 @@
 *> §15.3), selected by the chunk's dimension (DIMENSIONS.cpy DM-LIGHT-POLICY), over the chunk cache
 *> (world.cob, CELLS.cpy: light is 4 bits per cell,
 *> byte 2048 + (cell - 1) div 2 + 1, an odd cell in the low nibble). DIM-LIGHT-BLOCK-ONLY has no sky light at all; otherwise sky light: 15 in every cell above its
-*> column's topmost non-void block, 0 at or below it; no sideways spreading. Block light: a source of
+*> column's topmost non-void block and down through every cell that lets light through (dampening 0), less the dampening of the cells that take some (leaves, water)
+*> and 0 below the first occluder; no sideways spreading (LIGHT-SKY). Block light: a source of
 *> level L (SB-LIGHT) has L, a non-opaque cell has L minus the length of the shortest face-adjacent
 *> path from the source through non-opaque cells (never below 0), opaque cells other than sources
 *> have 0, and the highest level from any source wins. Light never reaches 15 blocks from its source,
@@ -748,17 +749,21 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LIGHT-SKY.
-*> USING row (BINARY-LONG): the sky light of that cached chunk. Whole layers are set at once up to
-*> the lowest column top, then each column from there to its own top. A dimension whose light policy
-*> has no sky light (DIM-LIGHT-BLOCK-ONLY, standin §15.3) gets 0 in every cell.
+*> USING row (BINARY-LONG): the sky light of that cached chunk, column by column (no sideways spreading), by the light dampening of the cells (CB-S-DAMP;
+*> docs/protocol/32-light-engine.md section 5.2). Walking a column down from its topmost non-void block, the light is 15 through every cell that lets it through
+*> (dampening 0: air, plants, glass, paths, slabs) and from the first cell that takes some of it (leaves and water 1) on each cell holds the level before it less
+*> its dampening, at least 1 (so a leaf reads 14 and the air under it 13); a cell that occludes the light's way down (CB-OPAQUE: stone, but also a slab or a path,
+*> whose own cell still reads the level that reached it) leaves 0 below it. Above the topmost non-void block it is 15. Whole layers are set at once up to the
+*> lowest column's topmost occluder, then each column from there to its own top. A dimension whose light policy has no sky light (DIM-LIGHT-BLOCK-ONLY, standin
+*> §15.3) gets 0 in every cell.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
+ COPY CBLOCKS.
  COPY CELLS.
  01 WS-TOPS.
     05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
- 01 WS-MIN                 BINARY-LONG.
  01 WS-LOW                 BINARY-LONG.
  01 WS-C                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -767,6 +772,10 @@
  01 WS-V                   BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-DAMP                BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
  01 WS-ODD                 PIC 9.
  01 WS-READY               PIC 9 VALUE 0.
 *> The byte with its low nibble cleared (odd cells hold the high nibble) and with its high nibble cleared, by byte value + 1.
@@ -791,38 +800,66 @@
          GOBACK
      END-IF
      CALL "WORLD-COLUMN-TOPS" USING L-ROW WS-TOPS
-     COMPUTE WS-MIN = DM-HEIGHT(CK-DIM(L-ROW)) - 1
+*>   The lowest topmost occluder of the columns (a column with none counts as 0): the layers under it are dark in every column.
+     COMPUTE WS-LOW = DM-HEIGHT(CK-DIM(L-ROW)) - 1
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
-         IF WS-TOP(WS-C) < WS-MIN
-             MOVE WS-TOP(WS-C) TO WS-MIN
+         MOVE WS-TOP(WS-C) TO WS-Y
+         PERFORM UNTIL WS-Y < 0
+             MOVE CE-STATE(WS-Y * 256 + WS-C) TO WS-STATE
+             IF CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) = 1
+                 EXIT PERFORM
+             END-IF
+             SUBTRACT 1 FROM WS-Y
+         END-PERFORM
+         IF WS-Y < WS-LOW
+             MOVE WS-Y TO WS-LOW
          END-IF
      END-PERFORM
+     IF WS-LOW < 0
+         MOVE 0 TO WS-LOW
+     END-IF
      COMPUTE WS-LENGTH = DM-HEIGHT(CK-DIM(L-ROW)) * 128
      MOVE ALL X"FF" TO CE-SKYS(2049:WS-LENGTH)
-     COMPUTE WS-LENGTH = (WS-MIN + 1) * 128
+     COMPUTE WS-LENGTH = WS-LOW * 128
      IF WS-LENGTH > 0
          MOVE LOW-VALUES TO CE-SKYS(2049:WS-LENGTH)
      END-IF
 *>   The light section above the dimension has sky light 15 (06 §7.1; the one below stays 0).
      COMPUTE WS-LENGTH = (DM-HEIGHT(CK-DIM(L-ROW)) / 16 + 1) * 2048 + 1
      MOVE ALL X"FF" TO CE-SKYS(WS-LENGTH:2048)
-     COMPUTE WS-LOW = WS-MIN + 1
-*>   Every cell of a column has the parity of the column (a layer is 256 cells): its byte steps by 128 a layer, and a table clears the nibble.
+*>   Every cell of a column has the parity of the column (a layer is 256 cells): its byte steps by 128 a layer, and a table sets the nibble.
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
-         COMPUTE WS-N = WS-LOW * 256 + WS-C
-         COMPUTE WS-B = 2048 + (WS-N - 1) / 2 + 1
          MOVE 0 TO WS-ODD
          IF FUNCTION MOD(WS-C, 2) = 1
              MOVE 1 TO WS-ODD
          END-IF
-         PERFORM VARYING WS-Y FROM WS-LOW BY 1 UNTIL WS-Y > WS-TOP(WS-C)
-             MOVE CE-SKY(WS-B) TO WS-V
-             IF WS-ODD = 1
-                 MOVE WS-CLEAR-LOW(WS-V + 1) TO CE-SKY(WS-B)
-             ELSE
-                 MOVE WS-CLEAR-HIGH(WS-V + 1) TO CE-SKY(WS-B)
+         MOVE 15 TO WS-LEVEL
+         COMPUTE WS-N = (WS-C - 1) / 2
+         COMPUTE WS-B = 2048 + WS-TOP(WS-C) * 128 + WS-N + 1
+         PERFORM VARYING WS-Y FROM WS-TOP(WS-C) BY -1 UNTIL WS-Y < WS-LOW
+             MOVE CE-STATE(WS-Y * 256 + WS-C) TO WS-STATE
+             MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
+             MOVE CB-S-DAMP(WS-STATE + 1) TO WS-DAMP
+             IF WS-LEVEL < 15 OR WS-DAMP > 0
+                 IF WS-DAMP < 1
+                     MOVE 1 TO WS-DAMP
+                 END-IF
+                 COMPUTE WS-LEVEL = WS-LEVEL - WS-DAMP
+                 IF WS-LEVEL < 0
+                     MOVE 0 TO WS-LEVEL
+                 END-IF
+                 MOVE CE-SKY(WS-B) TO WS-V
+                 IF WS-ODD = 1
+                     COMPUTE CE-SKY(WS-B) = WS-CLEAR-LOW(WS-V + 1) + WS-LEVEL
+                 ELSE
+                     COMPUTE CE-SKY(WS-B) = WS-CLEAR-HIGH(WS-V + 1) + WS-LEVEL * 16
+                 END-IF
              END-IF
-             ADD 128 TO WS-B
+*>           What leaves the cell downward: nothing past an occluder.
+             IF CB-OPAQUE(WS-BLOCK + 1) = 1
+                 MOVE 0 TO WS-LEVEL
+             END-IF
+             SUBTRACT 128 FROM WS-B
          END-PERFORM
      END-PERFORM
      GOBACK.
