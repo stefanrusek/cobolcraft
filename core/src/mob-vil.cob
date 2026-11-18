@@ -10,6 +10,7 @@
 *>   VL-RESTOCK USING slot, game time, did out                     22.4 restock: demand updated, uses reset, at most twice a day
 *>   VL-OFFER-COST USING slot, offer, special, price item out (X(32)), count out    the first price of an offer with the demand and special price
 *>   VL-REMOVE USING entity id                                     the entity is gone
+*>   VIL-PROF-ID USING profession key (X(16)), registry id out     the villager_profession id (46 section 6.2), the VillagerData of Set Entity Data
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-FIND.
@@ -359,3 +360,46 @@
      CALL "VIL-BIOME-TYPE" USING WS-KEY L-TYPE
      GOBACK.
  END PROGRAM VL-BIOME-TYPE-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-PROF-ID.
+*> USING profession key (X(16)), registry id out: the villager_profession registry id of a profession (docs/protocol/46 section 6.2); 0 for none and for any key that is not listed.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PROF                  PIC X(16).
+ 01 L-ID                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-PROF L-ID.
+     EVALUATE L-PROF
+         WHEN "armorer"
+             MOVE 1 TO L-ID
+         WHEN "butcher"
+             MOVE 2 TO L-ID
+         WHEN "cartographer"
+             MOVE 3 TO L-ID
+         WHEN "cleric"
+             MOVE 4 TO L-ID
+         WHEN "farmer"
+             MOVE 5 TO L-ID
+         WHEN "fisherman"
+             MOVE 6 TO L-ID
+         WHEN "fletcher"
+             MOVE 7 TO L-ID
+         WHEN "leatherworker"
+             MOVE 8 TO L-ID
+         WHEN "librarian"
+             MOVE 9 TO L-ID
+         WHEN "mason"
+             MOVE 10 TO L-ID
+         WHEN "nitwit"
+             MOVE 11 TO L-ID
+         WHEN "shepherd"
+             MOVE 12 TO L-ID
+         WHEN "toolsmith"
+             MOVE 13 TO L-ID
+         WHEN "weaponsmith"
+             MOVE 14 TO L-ID
+         WHEN OTHER
+             MOVE 0 TO L-ID
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-PROF-ID.

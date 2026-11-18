@@ -92,6 +92,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY VILSTATE.
+ COPY VILPOIX.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
  01 WS-DAY                  BINARY-LONG.
@@ -144,10 +145,20 @@
      END-IF
 *>   The index fills while villagers live: one section of the chunk round the villager every 5 ticks (7 x 7 chunks, one after the other).
      IF FUNCTION MOD(CW-TICKS + EN-ID(L-ROW), 5) = 0
-         COMPUTE WS-IDX = FUNCTION MOD(CW-TICKS / 5, 49)
-         COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW) / 16) + FUNCTION INTEGER(WS-IDX / 7) - 3
-         COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW) / 16) + FUNCTION MOD(WS-IDX, 7) - 3
-         CALL "PXI-SCAN" USING EN-DIM(L-ROW) WS-CX WS-CZ
+*>     The scan in progress goes on first (one chunk after the other: 24 calls finish it), then the chunk of the villager, then the round of the 7 x 7.
+         IF PX-SC-ON = 1
+             CALL "PXI-SCAN" USING PX-SC-DIM PX-SC-CX PX-SC-CZ
+         ELSE
+             COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW) / 16)
+             COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW) / 16)
+             CALL "PXI-SCAN" USING EN-DIM(L-ROW) WS-CX WS-CZ
+             IF PX-SC-ON = 0
+                 COMPUTE WS-IDX = FUNCTION MOD(CW-TICKS / 5, 49)
+                 COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW) / 16) + FUNCTION INTEGER(WS-IDX / 7) - 3
+                 COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW) / 16) + FUNCTION MOD(WS-IDX, 7) - 3
+                 CALL "PXI-SCAN" USING EN-DIM(L-ROW) WS-CX WS-CZ
+             END-IF
+         END-IF
      END-IF
      IF CW-TICKS < VL-NEXT-BRAIN(WS-SLOT)
          GOBACK
@@ -212,12 +223,16 @@
              CALL "PXI-KEY-AT" USING WS-QD WS-QX WS-QY WS-QZ WS-KEY
              CALL "VL-CLAIM" USING WS-SLOT WS-KEY WS-CHANGED
              MOVE 0 TO VL-POT(WS-SLOT)
+             IF WS-CHANGED = 1
+                 CALL "MOB-DATA-SEND" USING L-ROW
+             END-IF
          END-IF
      END-IF
      IF WS-HAS-JOB = 0 AND VL-PROF(WS-SLOT) NOT = "none" AND VL-PROF(WS-SLOT) NOT = "nitwit"
              AND VL-XP(WS-SLOT) = 0 AND VL-LEVEL(WS-SLOT) <= 1 AND VL-KIND(WS-SLOT) = 1
          MOVE "none" TO VL-PROF(WS-SLOT)
          MOVE 0 TO VL-O-N(WS-SLOT) VL-BUILT(WS-SLOT)
+         CALL "MOB-DATA-SEND" USING L-ROW
      END-IF
      MOVE 0 TO WS-FOUND
      EVALUATE WS-ACT
@@ -231,10 +246,15 @@
              CALL "VPX-OF" USING EN-ID(L-ROW) WS-HOME WS-QD WS-QX WS-QY WS-QZ WS-FOUND
              MOVE 4 TO WS-PD
      END-EVALUATE
+*>   GoToPotentialJobSite (44 section 2.5): a claimed site that is not taken yet is walked to in the idle, work and play activities, up to its own block.
+     IF WS-FOUND = 0 AND VL-POT(WS-SLOT) = 1 AND WS-ACT NOT = 2 AND WS-ACT NOT = 3
+         CALL "VPX-OF" USING EN-ID(L-ROW) WS-JOB WS-QD WS-QX WS-QY WS-QZ WS-FOUND
+         MOVE 2 TO WS-PD
+     END-IF
      IF WS-FOUND = 1
          CALL "VL-BRAIN-DIST" USING L-ROW WS-QX WS-QY WS-QZ WS-D2
-         IF WS-ACT = 1
-             MOVE 9 TO WS-PD
+         IF VL-POT(WS-SLOT) = 1 AND WS-ACT NOT = 2 AND WS-ACT NOT = 3
+             MOVE 2 TO WS-PD
          END-IF
          IF WS-D2 > WS-PD AND EN-COOLDOWN(L-ROW) = 0 AND VL-SLEEP(WS-SLOT) = 0
              MOVE WS-QX TO EN-DEST-X(L-ROW)

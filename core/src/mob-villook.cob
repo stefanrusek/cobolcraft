@@ -29,23 +29,8 @@
      IF WS-SLOT > 0
          MOVE VL-TYPE(WS-SLOT) TO L-TYPE
          MOVE VL-LEVEL(WS-SLOT) TO L-LEVEL
-         EVALUATE VL-PROF(WS-SLOT)
-             WHEN "armorer" MOVE 1 TO L-PROF
-             WHEN "butcher" MOVE 2 TO L-PROF
-             WHEN "cartographer" MOVE 3 TO L-PROF
-             WHEN "cleric" MOVE 4 TO L-PROF
-             WHEN "farmer" MOVE 5 TO L-PROF
-             WHEN "fisherman" MOVE 6 TO L-PROF
-             WHEN "fletcher" MOVE 7 TO L-PROF
-             WHEN "leatherworker" MOVE 8 TO L-PROF
-             WHEN "librarian" MOVE 9 TO L-PROF
-             WHEN "mason" MOVE 10 TO L-PROF
-             WHEN "nitwit" MOVE 11 TO L-PROF
-             WHEN "shepherd" MOVE 12 TO L-PROF
-             WHEN "toolsmith" MOVE 13 TO L-PROF
-             WHEN "weaponsmith" MOVE 14 TO L-PROF
-             WHEN OTHER MOVE 0 TO L-PROF
-         END-EVALUATE
+*>       the profession id is the one of VIL-PROF-ID (mob-vil.cob), the single mapping of the profession key to the registry id
+         CALL "VIL-PROF-ID" USING VL-PROF(WS-SLOT) L-PROF
      END-IF
      GOBACK.
  END PROGRAM VILLOOK-CODE.
