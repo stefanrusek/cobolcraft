@@ -509,6 +509,9 @@
        10 PL-PUSH-X          FLOAT-LONG.    *> the current's push of this tick (29a section 8.3)
        10 PL-PUSH-Z          FLOAT-LONG.
        10 PL-FLYING          PIC 9.
+       10 PL-GLIDING         PIC 9.          *> elytra gliding (17 section 3.13; physics-glide.cob): PL-VX, PL-VY, PL-VZ then hold the glider's velocity in blocks per tick
+       10 PL-MOVE-X          FLOAT-LONG.     *> the horizontal step of the last walking tick: the velocity a glide starts with
+       10 PL-MOVE-Z          FLOAT-LONG.
        10 PL-JUMP            PIC 9.
        10 PL-SPACE-MS        BINARY-DOUBLE.
        10 PL-SENT-X          FLOAT-LONG.
