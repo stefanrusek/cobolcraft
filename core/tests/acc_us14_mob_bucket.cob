@@ -63,7 +63,7 @@
 *>   Pickup: a cod named Fin with 2 health into a stack of one water bucket.
      CALL "RT-CLEAR-SLOTS" USING WS-PLAYER
      MOVE "water_bucket" TO WS-KEY
-     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
      MOVE "cod" TO WS-KEY
      CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-MOB
      MOVE 2 TO EN-HEALTH(WS-MOB)
@@ -127,7 +127,7 @@
 *>   A creative player keeps the water bucket and gets the filled one too.
      CALL "RT-CLEAR-SLOTS" USING WS-PLAYER
      MOVE "water_bucket" TO WS-KEY
-     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
      MOVE 1 TO PL-MODE(WS-PLAYER)
      MOVE "pufferfish" TO WS-KEY
      CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-MOB
@@ -151,7 +151,7 @@
 *>   An empty bucket and a mob that no bucket holds: nothing happens.
      CALL "RT-CLEAR-SLOTS" USING WS-PLAYER
      MOVE "bucket" TO WS-KEY
-     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
      MOVE "tropical_fish" TO WS-KEY
      CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-MOB
      MOVE EN-ID(WS-MOB) TO WS-ID
@@ -164,7 +164,7 @@
      END-IF
      PERFORM CHECK-N
      MOVE "water_bucket" TO WS-KEY
-     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
      MOVE "cow" TO WS-KEY
      CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-ROW
      MOVE EN-ID(WS-ROW) TO WS-ID
@@ -182,7 +182,7 @@
 *>   Release: a tadpole bucket (age 100) used on the floor in front: the tadpole appears, the bucket is empty.
      CALL "RT-CLEAR-SLOTS" USING WS-PLAYER
      MOVE "water_bucket" TO WS-KEY
-     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
      MOVE "tadpole" TO WS-KEY
      CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-MOB
      MOVE 100 TO EN-TAD-AGE(WS-MOB)
@@ -224,7 +224,7 @@
 *>   A bucket whose data holds a key of another kind (NoAI) and Health 3.0: the unknown key is skipped, the mob spawns with Health 3.
      CALL "RT-CLEAR-SLOTS" USING WS-PLAYER
      MOVE "cod_bucket" TO WS-KEY
-     CALL "RT-GIVE" USING WS-PLAYER WS-ONE WS-KEY WS-ONE
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
      MOVE X"0A0100044E6F4149010500064865616C74684040000000" TO WS-CRAFTED
      MOVE 0 TO WS-HANDLE
      CALL "SP-SET-COMPONENT" USING WS-HANDLE WS-C61 WS-CRAFTED WS-CRAFTED-LENGTH
