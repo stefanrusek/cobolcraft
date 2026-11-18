@@ -271,6 +271,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The hand holding the block item: 36 vertices, and the up face and a side face sample different atlas regions (vertex 1 of face 1 is a side,
 *>   vertex 1 of face 5 the up face); a flat item (stick) is an extruded icon.
+     MOVE 1 TO CL-HAND-NOCULL
      MOVE "grass_block" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      MOVE SCR-WORLD TO SM-SCREEN

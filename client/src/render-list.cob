@@ -457,9 +457,8 @@
          MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
          MOVE CC-TEX-BLOCKS TO RL-D-TEX(RL-DRAW-COUNT)
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
-         MOVE RL-PROJ(WS-I) TO WS-HAND-PROJ(WS-I)
-     END-PERFORM
+*>   The hand pass has its own projection (12 section 6.9: fixed 70 degrees, not the world's fov with the sprint modifier).
+     CALL "HAND-PROJECT" USING CLIENT-STATE WS-HAND-PROJ-TABLE
      MOVE MESH-SLOT-HAND TO WS-SLOT
      MOVE CC-PIPE-OPAQUE TO WS-PIPE
      MOVE CC-TEX-BLOCKS TO WS-TEX

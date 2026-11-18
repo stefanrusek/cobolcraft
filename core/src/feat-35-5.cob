@@ -228,3 +228,75 @@
      END-PERFORM
      GOBACK.
  END PROGRAM F355-LIMITS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F355-RUNS-IN.
+*> USING key (PIC X(80), the placed feature id without the namespace), step (0 to 10), count out: section 19, the number of biomes of the loaded worldgen store (function kind 7) that list the placed
+*> feature in that decoration step (a biome lists a feature once per step); 0 for a step outside 0 to 10.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FULL                PIC X(160).
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(80).
+ 01 L-STEP                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-STEP L-COUNT.
+     MOVE 0 TO L-COUNT
+     MOVE SPACES TO WS-FULL
+     STRING "minecraft:" FUNCTION TRIM(L-KEY TRAILING) DELIMITED BY SIZE INTO WS-FULL
+     IF L-STEP >= 0 AND L-STEP <= 10
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WG-COUNT(4)
+             IF WGF-KIND(WS-I) = 7
+                 MOVE 0 TO WS-FOUND
+                 MOVE WGN-CHILD(WGF-ROOT(WS-I), 1) TO WS-NODE
+                 PERFORM UNTIL WS-NODE = 0
+                     IF WGN-INT(WS-NODE, 1) = L-STEP AND WGN-TEXT-1(WS-NODE) = WS-FULL
+                         MOVE 1 TO WS-FOUND
+                     END-IF
+                     MOVE WGN-NEXT(WS-NODE) TO WS-NODE
+                 END-PERFORM
+                 ADD WS-FOUND TO L-COUNT
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM F355-RUNS-IN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F355-BIOME-HAS.
+*> USING biome (PIC X(80), the biome id without the namespace), key (PIC X(80), a placed feature id without the namespace), step, flag out: 1 when the biome's feature lists name the placed feature in
+*> that step (section 19); 0 for another step or a biome that is not loaded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-FULL                PIC X(160).
+ 01 WS-BIOME-FULL          PIC X(112).
+ LINKAGE SECTION.
+ 01 L-BIOME                PIC X(80).
+ 01 L-KEY                  PIC X(80).
+ 01 L-STEP                 BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BIOME L-KEY L-STEP L-FLAG.
+     MOVE 0 TO L-FLAG
+     MOVE SPACES TO WS-FULL WS-BIOME-FULL
+     STRING "minecraft:" FUNCTION TRIM(L-KEY TRAILING) DELIMITED BY SIZE INTO WS-FULL
+     STRING "minecraft:" FUNCTION TRIM(L-BIOME TRAILING) DELIMITED BY SIZE INTO WS-BIOME-FULL
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WG-COUNT(4)
+         IF WGF-KIND(WS-I) = 7 AND WGF-KEY(WS-I) = WS-BIOME-FULL
+             MOVE WGN-CHILD(WGF-ROOT(WS-I), 1) TO WS-NODE
+             PERFORM UNTIL WS-NODE = 0
+                 IF WGN-INT(WS-NODE, 1) = L-STEP AND WGN-TEXT-1(WS-NODE) = WS-FULL
+                     MOVE 1 TO L-FLAG
+                 END-IF
+                 MOVE WGN-NEXT(WS-NODE) TO WS-NODE
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM F355-BIOME-HAS.

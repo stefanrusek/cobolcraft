@@ -53,6 +53,8 @@
  01 WS-HERE                BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
  01 WS-COLD                BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-VKEY                PIC X(24).
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -65,6 +67,14 @@
      MOVE 1 TO WS-COLD
      IF WS-HERE = 1 OR WS-BELOW = 1
          MOVE 0 TO WS-COLD
+     END-IF
+*>   ridingWarm (44-6 section 8.2): the vehicle is a strider that is not suffocating.
+     MOVE EN-MOUNT(L-ROW) TO WS-V
+     IF WS-V > 0 AND EN-MOUNT-ID(L-ROW) = EN-ID(WS-V)
+         CALL "MOB-SPECIES-KEY" USING WS-V WS-VKEY
+         IF WS-VKEY = "strider" AND EN-COLD(WS-V) = 0
+             MOVE 0 TO WS-COLD
+         END-IF
      END-IF
      IF WS-COLD NOT = EN-COLD(L-ROW)
          MOVE WS-COLD TO EN-COLD(L-ROW)

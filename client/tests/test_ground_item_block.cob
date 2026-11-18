@@ -1,7 +1,8 @@
  *> T10402 (bug-sweep: dropped block items drew as flat icons): the item of a block (here the grass block of the mini-vanilla pack) dropped in a
-*> standard-set world is the cube of its model (34-9 9.2 thick model; ground display of block/block: scale 0.25, translate (0, 3, 0) / 16): 36 vertices a
-*> copy, x and z within 0.125 of the entity, y from 0.0625 + bob to 0.3125 + bob (bob 0.1 at age 0), each face with the sprite of its own direction (the top,
-*> the bottom and the sides differ), and the copies by stack size.
+*> standard-set world is the cube of its model (34-9 9.2 thick model; ground display of block/block: scale 0.25, translate (0, 3, 0) / 16): x and z within
+*> 0.125 of the entity, y from 0.0625 + bob to 0.3125 + bob (bob 0.1 at age 0), each face with the sprite of its own direction (the top, the bottom and the sides
+*> differ), and the copies by stack size. Only the faces that face the camera are in the mesh (T32300, test_ground_item_faces): the eye below and west of the
+*> cube at (10, 64, 10) sees its bottom, north and west faces (18 vertices a copy), the eye above and east at (11, 66, 11) its top, south and east faces.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-GROUND-ITEM-BLOCK.
  DATA DIVISION.
@@ -72,12 +73,12 @@
      MOVE 0 TO CL-NOW-MS RL-GI-COUNT
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE "N" TO TL-MODE
-     MOVE "ground block item one grass block is one cube of 36 vertices" TO TL-CASE
-     MOVE 36 TO TL-EXPECTED-N
+     MOVE "ground block item one grass block seen from below is the three faces that face the eye (18 vertices)" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-FIRST
-     MOVE 36 TO WS-LAST
+     MOVE 18 TO WS-LAST
      CALL "GIB-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
      MOVE 375 TO WS-E(1)
      MOVE 625 TO WS-E(2)
@@ -90,15 +91,38 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-D TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   The six faces take their own sprites: the smallest u of each face's six vertices differs between the top, the bottom and the sides.
+*>   The six faces take their own sprites: the smallest u of each face's six vertices differs between the top, the bottom and the sides (the three faces
+*>   seen from below are chunks 1 to 3, the three seen from above chunks 4 to 6).
+     MOVE 11 TO WS-EYE(1) WS-EYE(3)
+     MOVE 66 TO WS-EYE(2)
+     MOVE 0 TO RL-GI-COUNT
+     CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "ground block item one grass block seen from above is the three faces that face the eye (18 vertices)" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         MOVE 1 TO WS-MINU(WS-I + 3)
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
+             IF RL-GI-U((WS-I - 1) * 6 + WS-J) < WS-MINU(WS-I + 3)
+                 MOVE RL-GI-U((WS-I - 1) * 6 + WS-J) TO WS-MINU(WS-I + 3)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 0 TO RL-GI-COUNT
+     CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE 0 TO WS-DISTINCT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
          MOVE 1 TO WS-MINU(WS-I)
          PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
              IF RL-GI-U((WS-I - 1) * 6 + WS-J) < WS-MINU(WS-I)
                  MOVE RL-GI-U((WS-I - 1) * 6 + WS-J) TO WS-MINU(WS-I)
              END-IF
          END-PERFORM
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
          MOVE 0 TO WS-SEEN
          PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J >= WS-I
              IF WS-MINU(WS-J) = WS-MINU(WS-I)
@@ -117,8 +141,8 @@
      MOVE 2 TO EN-STACK-COUNT(1)
      MOVE 0 TO RL-GI-COUNT
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
-     MOVE "ground block item a stack of 2 is two cubes (72 vertices)" TO TL-CASE
-     MOVE 72 TO TL-EXPECTED-N
+     MOVE "ground block item a stack of 2 is two cubes of three faces each (36 vertices)" TO TL-CASE
+     MOVE 36 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

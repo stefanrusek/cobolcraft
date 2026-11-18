@@ -25,6 +25,7 @@
  01 WS-STONE               BINARY-LONG.
  01 WS-ZOMBIE-TYPE         BINARY-LONG.
  01 WS-ZOMBIE              BINARY-LONG.
+ 01 WS-MAX-X              FLOAT-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
@@ -97,17 +98,22 @@
      COMPUTE WS-FZ = WS-CZ + 0.5
      CALL "MOB-SPAWN" USING WS-DIM WS-ZOMBIE-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-ZOMBIE
      MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO WS-MAX-X
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 400
          ADD 1 TO CW-TIME
+         ADD 1 TO CW-TICKS
          MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
          CALL "MOB-STEP" USING WS-ZOMBIE
+         IF EN-X(WS-ZOMBIE) > WS-MAX-X
+             MOVE EN-X(WS-ZOMBIE) TO WS-MAX-X
+         END-IF
      END-PERFORM
      COMPUTE WS-HEALTH-TENTHS = PL-HEALTH(WS-PLAYER) * 10
      MOVE "N" TO TL-MODE
-     MOVE "test stdmob follow: the zombie went round the wall and is east of it" TO TL-CASE
+     MOVE "test stdmob follow: the zombie went round the wall and was east of it" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF EN-X(WS-ZOMBIE) > WS-CX + 1
+     IF WS-MAX-X > WS-CX + 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

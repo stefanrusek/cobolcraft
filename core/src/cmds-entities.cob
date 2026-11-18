@@ -265,7 +265,7 @@
 *> and is sent to the players who see it (MOB-SPAWN); in a standard world the mobs are the rows of STDMOBS.cpy (the key with or without minecraft:, which
 *> is its namespace); another type is entity.not_summonable [key]; a monster in Peaceful difficulty
 *> or with hostile mobs off is commands.summon.failed.peaceful; a position outside the spawnable bounds is
-*> commands.summon.invalidPosition; NBT other than {} is cobolcraft.entity.nbt_unsupported (BLOCKED); commands.summon.success
+*> commands.summon.invalidPosition; an NBT is loaded into a standard mob by ENTITY-NBT-ONE (the keys the core models: NoAI, LeftHanded, Health, Age ...; no finalize); NBT for another mob is cobolcraft.entity.nbt_unsupported (BLOCKED); commands.summon.success
 *> [entity key] is broadcast; the result is 1. A summoned table mob is finalized like a spawned one (STDMOB-FINALIZE: variant, armour, weapon, size).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -273,6 +273,7 @@
  COPY COREAPI.
  COPY CONTENT.
  COPY CITEMS.
+ COPY STDMOBS.
  COPY MOBS.
  COPY BRWORLD.
  COPY BRRUN.
@@ -313,6 +314,18 @@
  01 WS-L1                  BINARY-LONG.
  01 WS-L2                  BINARY-LONG.
  01 WS-RC                  BINARY-LONG VALUE -1.
+ 01 WS-HAS-NBT             BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-HEALTH-NODE         BINARY-LONG.
+ 01 WS-FIND-KEY            PIC X(64).
+ 01 WS-FIND-LENGTH         BINARY-LONG.
+ 01 WS-POS-LENGTH          BINARY-LONG VALUE 3.
+ 01 WS-ID-KEY-LENGTH       BINARY-LONG VALUE 2.
+ 01 WS-NBT-CAPACITY        BINARY-LONG VALUE 4096.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-STD-ROW             BINARY-LONG.
  PROCEDURE DIVISION.
      GO TO MAIN-LINE.
 
@@ -369,6 +382,48 @@
          END-IF
      END-PERFORM.
 
+*> The entity of WS-TYPE loaded from the NBT argument (16 section 5.8 steps 3 and 4): the tree is written as the compound of an entity (Pos first so that the NBT may
+*> override it, the NBT's own keys, then id), loaded by ENTITY-NBT-ONE (a mob without Health gets its full health), then moved to the position keeping its own rotation.
+ SUMMON-FROM-NBT.
+     CALL "NBX-PARSE" USING BR-R-LINE BA-START(WS-NBT) BA-END(WS-NBT) WS-NODE
+     MOVE SPACES TO WS-FIND-KEY
+     MOVE "Health" TO WS-FIND-KEY
+     MOVE 6 TO WS-FIND-LENGTH
+     CALL "NBX-FIND" USING WS-NODE WS-FIND-KEY WS-FIND-LENGTH WS-HEALTH-NODE
+     CALL "PB-INIT" USING PB-BUFFER WS-NBT-CAPACITY
+     MOVE SPACES TO WS-FIND-KEY
+     MOVE "Pos" TO WS-FIND-KEY
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-FIND-KEY WS-POS-LENGTH WS-T-DOUBLE WS-THREE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-Z
+     CALL "NBX-TO-BUFFER" USING PB-BUFFER WS-NODE
+     MOVE SPACES TO WS-FIND-KEY
+     MOVE "id" TO WS-FIND-KEY
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-FIND-KEY WS-ID-KEY-LENGTH WS-ID WS-ID-LENGTH
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE CW-NEXT-ENTITY-ID TO WS-BEFORE
+     CALL "ENTITY-NBT-ONE" USING BS-DIM PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "NBX-FREE" USING WS-NODE
+     MOVE 0 TO WS-NEW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) >= WS-BEFORE AND EN-PLAYER(WS-I) = 0
+             MOVE WS-I TO WS-NEW
+         END-IF
+     END-PERFORM
+     IF WS-NEW = 0
+         CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+     ELSE
+         IF WS-HEALTH-NODE = 0
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-NEW) WS-STD-ROW
+             MOVE SM-HEALTH(WS-STD-ROW) TO EN-HEALTH(WS-NEW)
+         END-IF
+         MOVE EN-YAW(WS-NEW) TO WS-YAW
+         CALL "ENTITY-MOVE" USING WS-NEW WS-X WS-Y WS-Z WS-YAW EN-PITCH(WS-NEW) EN-ON-GROUND(WS-NEW)
+     END-IF.
+
  MAIN-LINE.
      MOVE CW-SETTINGS TO CORE-SETTINGS
      CALL "BR-WORLD-READY"
@@ -386,7 +441,7 @@
              MOVE 0 TO WS-L2
              CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
              MOVE 1 TO BR-R-FAILED
-         WHEN WS-NBT > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2
+         WHEN WS-NBT > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2 AND WS-STD = 0
              MOVE "cobolcraft.entity.nbt_unsupported" TO WS-KEY
              PERFORM FAIL-PLAIN
          WHEN WS-STD-HOSTILE = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
@@ -418,8 +473,17 @@
          ELSE
              MOVE MB-ENTITY-TYPE(WS-MOB) TO WS-TYPE
          END-IF
-         CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
-         IF WS-STD > 0
+         MOVE 0 TO WS-HAS-NBT
+         IF WS-NBT > 0 AND WS-STD > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2
+             MOVE 1 TO WS-HAS-NBT
+         END-IF
+         IF WS-HAS-NBT = 1
+             PERFORM SUMMON-FROM-NBT
+         ELSE
+             CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+         END-IF
+*>       The mob initialisation runs only without an NBT (16 section 5.8: the finalize flag is false when an NBT is given).
+         IF WS-STD > 0 AND WS-HAS-NBT = 0
              COMPUTE WS-FSEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
              CALL "XORO-SEED" USING WS-FSEED XR-STATE
              CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW

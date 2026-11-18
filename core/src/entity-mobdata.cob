@@ -54,6 +54,15 @@
          MOVE "PersistenceRequired" TO WN MOVE 19 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-PERSISTENT(L-ROW)
      END-IF
+*>   The mob flags (45-2 section 3): LeftHanded (bit 2 of the mob flags byte) and NoAI (bit 0), each written when set.
+     IF EN-LEFTY(L-ROW) = 1
+         MOVE "LeftHanded" TO WN MOVE 10 TO WL
+         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-LEFTY(L-ROW)
+     END-IF
+     IF EN-NO-AI(L-ROW) = 1
+         MOVE "NoAI" TO WN MOVE 4 TO WL
+         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-NO-AI(L-ROW)
+     END-IF
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
          GOBACK
@@ -324,6 +333,10 @@
              CALL "PB-GET-INT" USING PB-BUFFER MQ-SIZE
          WHEN L-NAME = "PersistenceRequired" AND L-TYPE = 1
              CALL "PB-GET-BYTE" USING PB-BUFFER MQ-PERSIST
+         WHEN L-NAME = "NoAI" AND L-TYPE = 1
+             CALL "PB-GET-BYTE" USING PB-BUFFER MQ-NOAI
+         WHEN L-NAME = "LeftHanded" AND L-TYPE = 1
+             CALL "PB-GET-BYTE" USING PB-BUFFER MQ-LEFTY
          WHEN L-NAME = "VillagerData" AND L-TYPE = 10
 *>           The compound {profession, level, type}: the profession key (without its namespace) and the level; the type follows the biome (19 section 22.1).
              MOVE "profession" TO WS-PATH
@@ -439,6 +452,11 @@
  COPY ENMOBDATA.
  PROCEDURE DIVISION USING L-ROW MQ-DATA.
      MOVE MQ-PERSIST TO EN-PERSISTENT(L-ROW)
+     MOVE MQ-NOAI TO EN-NO-AI(L-ROW)
+     MOVE MQ-LEFTY TO EN-LEFTY(L-ROW)
+     IF EN-NO-AI(L-ROW) = 1 OR EN-LEFTY(L-ROW) = 1
+         CALL "STDMOB-FLAGS-SEND" USING L-ROW
+     END-IF
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
          GOBACK

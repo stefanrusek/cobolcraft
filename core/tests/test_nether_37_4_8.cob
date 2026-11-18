@@ -36,14 +36,14 @@
      MOVE WS-CHUNK TO WS-COPY
      MOVE LOW-VALUES TO WS-CHUNK
      CALL "NETHER-GEN-CHUNK" USING WS-SEED WS-CX WS-CZ WS-CHUNK WS-MARKER
-     MOVE "acceptance US12-core 37-4§8 the chunk (0, 0) made twice has the same bytes" TO TL-CASE
+     MOVE "acceptance US12 37-4§8 the chunk (0, 0) made twice has the same bytes" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-CHUNK(1:196608) = WS-COPY(1:196608) AND WS-CHUNK(1:1) = WS-COPY(1:1)
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-4§8 the chunk (0, 0) biome cells are the same twice" TO TL-CASE
+     MOVE "acceptance US12 37-4§8 the chunk (0, 0) biome cells are the same twice" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF CE-BIOMES(1:1024) = WS-COPY(196608 + 53248 + 53248 + 1:1024)
@@ -59,7 +59,7 @@
 
  CHECK-CHUNK.
      MOVE WS-CX TO WS-ED
-     MOVE "acceptance US12-core 37-4§8 chunk: marker -1" TO TL-CASE
+     MOVE "acceptance US12 37-4§8 chunk: marker -1" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      MOVE WS-MARKER TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -75,7 +75,7 @@
              ADD 1 TO WS-BAD
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-2§9 y 0 and y 127 are bedrock in all 256 columns" TO TL-CASE
+     MOVE "acceptance US12 37-2§9 y 0 and y 127 are bedrock in all 256 columns" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -86,7 +86,7 @@
              ADD 1 TO WS-BAD
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-2§3 sections 8 to 15 (y 128 and up) stay air" TO TL-CASE
+     MOVE "acceptance US12 37-2§3 sections 8 to 15 (y 128 and up) stay air" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -102,7 +102,7 @@
                  ADD 1 TO WS-BAD
          END-EVALUATE
      END-PERFORM
-     MOVE "acceptance US12-core 37-4§5 every block is air or one of the generator's blocks" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 every block is air or one of the generator's blocks" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -116,7 +116,7 @@
              END-IF
          END-PERFORM
      END-PERFORM
-     MOVE "acceptance US12-core 37-4§5.1 rule 3: y 122 to 126 hold only netherrack, bedrock (and air)" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 rule 3: y 122 to 126 hold only netherrack, bedrock (and air)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -130,11 +130,11 @@
              END-IF
          END-PERFORM
      END-PERFORM
-     MOVE "acceptance US12-core 37-4§5.2 no bedrock between y 5 and y 122" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.2 no bedrock between y 5 and y 122" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-4§5.2 bedrock: more than 256 + 256 blocks (the edges alone) and fewer than 2 x 256 x 4 (partial layers)" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.2 bedrock: more than 256 + 256 blocks (the edges alone) and fewer than 2 x 256 x 4 (partial layers)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-COUNT-BEDROCK > 512 AND WS-COUNT-BEDROCK < 2048
@@ -153,7 +153,7 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM
-     MOVE "acceptance US12-core 37-3§5.1 biome cells of 16 sections: ids 0 to 4, every row equal to the first" TO TL-CASE
+     MOVE "acceptance US12 37-3§5 5.1 biome cells of 16 sections: ids 0 to 4, every row equal to the first" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

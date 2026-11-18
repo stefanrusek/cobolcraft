@@ -6,6 +6,8 @@
 *> placed and used with the right button, blocks placed, the pause menu's Disconnect and Quit World.
 *> Outcomes are read from the clients: dimension name, position, sky, world replica, inventory
 *> replica, health, food, game mode.
+*> The standard world's three dimensions (minecraft:overworld, the_nether, the_end), the portals between them and
+*> the standard day timeline (T3599) are in acc_f2us12_dimensions.cob.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US12-DIMENSIONS.
  DATA DIVISION.

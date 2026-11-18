@@ -44,7 +44,7 @@
      PERFORM NETHER-TABLES
      CALL "NETHER-SETUP" USING WS-NEG
      COMPUTE WS-DIFF = NH-SEED - 18446744073709551616
-     MOVE "acceptance US12-core 37-2§4 world seed -1 is the unsigned 64 bits 2^64 - 1" TO TL-CASE
+     MOVE "acceptance US12 37-2§4 world seed -1 is the unsigned 64 bits 2^64 - 1" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      MOVE WS-DIFF TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -54,31 +54,31 @@
      MOVE 0 TO WS-TO
      MOVE 25 TO WS-Y
      PERFORM GRADIENT-CASE
-     MOVE "acceptance US12-core 37-2§5 gradient anchors 100 to 0, values 0 to 1, y 25: 0.75" TO TL-CASE
+     MOVE "acceptance US12 37-2§5 gradient anchors 100 to 0, values 0 to 1, y 25: 0.75" TO TL-CASE
      MOVE 750 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 200 TO WS-Y
      PERFORM GRADIENT-CASE
-     MOVE "acceptance US12-core 37-2§5 gradient anchors 100 to 0, y 200 clamps to the from anchor: 0" TO TL-CASE
+     MOVE "acceptance US12 37-2§5 gradient anchors 100 to 0, y 200 clamps to the from anchor: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -5 TO WS-Y
      PERFORM GRADIENT-CASE
-     MOVE "acceptance US12-core 37-2§5 gradient anchors 100 to 0, y -5 clamps to the to anchor: 1" TO TL-CASE
+     MOVE "acceptance US12 37-2§5 gradient anchors 100 to 0, y -5 clamps to the to anchor: 1" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the vertical_gradient condition at its true edges: floor y 0, roof y 122
      MOVE 1 TO WS-WHICH
      MOVE 0 TO WS-X WS-Z WS-Y
      CALL "NETHER-GRADIENT-AT" USING WS-WHICH WS-X WS-Y WS-Z WS-G
-     MOVE "acceptance US12-core 37-4§5.2 floor gradient is true at y 0" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.2 floor gradient is true at y 0" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-G TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-WHICH
      MOVE 122 TO WS-Y
      CALL "NETHER-GRADIENT-AT" USING WS-WHICH WS-X WS-Y WS-Z WS-G
-     MOVE "acceptance US12-core 37-4§5.2 roof gradient is true at y 122" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.2 roof gradient is true at y 122" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-G TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -93,7 +93,7 @@
      MOVE 0 TO NC-CX NC-CZ
      CALL "NETHER-CV-ELLIPSOID" USING WS-CX WS-CY WS-CZ WS-HR WS-VR
      COMPUTE WS-IDX = (120 - 1) + (3 + 16 * 3) * 120 + 1
-     MOVE "acceptance US12-core 37-4§7 an ellipsoid at cy 118 carves the axis column up to y 120" TO TL-CASE
+     MOVE "acceptance US12 37-4§7 an ellipsoid at cy 118 carves the axis column up to y 120" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      IF NC-MASK(WS-IDX:1) = "1"
          MOVE 1 TO TL-OBSERVED-N
@@ -109,7 +109,7 @@
      MOVE 3 TO WS-SD
      MOVE 33 TO WS-Y
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§5.1 4: deltas top block in the gravel band where patch >= -0.012: gravel" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 5.1 4: deltas top block in the gravel band where patch >= -0.012: gravel" TO TL-CASE
      MOVE 103 TO TL-EXPECTED-N
      MOVE WS-OUT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -117,7 +117,7 @@
      MOVE 90 TO WS-Y
      MOVE 11 TO WS-SDB
      PERFORM RULE-AT
-     MOVE "acceptance US12-core 37-4§9.8 deltas top block y 90 where the selector >= 0 (column 49, 0): basalt" TO TL-CASE
+     MOVE "acceptance US12 37-4§9 9.8 deltas top block y 90 where the selector >= 0 (column 49, 0): basalt" TO TL-CASE
      MOVE 101 TO TL-EXPECTED-N
      MOVE WS-OUT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -126,13 +126,13 @@
      MOVE 3 TO WS-BIOME
      MOVE 2 TO WS-SD
      PERFORM WART-RULE
-     MOVE "acceptance US12-core 37-4§5 6c crimson forest with wart noise 1.2 at y 31: nether wart block" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 6c crimson forest with wart noise 1.2 at y 31: nether wart block" TO TL-CASE
      MOVE 109 TO TL-EXPECTED-N
      MOVE WS-OUT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-BIOME
      PERFORM WART-RULE
-     MOVE "acceptance US12-core 37-4§5 6b warped forest with wart noise 1.2 at y 31: warped wart block" TO TL-CASE
+     MOVE "acceptance US12 37-4§5 6b warped forest with wart noise 1.2 at y 31: warped wart block" TO TL-CASE
      MOVE 107 TO TL-EXPECTED-N
      MOVE WS-OUT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

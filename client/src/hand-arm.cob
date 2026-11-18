@@ -211,6 +211,8 @@
     05 WS-V4               FLOAT-SHORT OCCURS 4 TIMES.
  01 WS-NORMAL.
     05 WS-NV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-NOQ.
+    05 WS-NOQV              FLOAT-LONG OCCURS 9 TIMES VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-M.
@@ -280,7 +282,7 @@
              WHEN OTHER
                  MOVE RL-HA-COUNT TO WS-BEFORE
          END-EVALUATE
-         CALL "HAND-QUAD" USING CLIENT-STATE L-M WS-CORNERS WS-UV WS-NORMAL L-LIGHT L-MODE
+         CALL "HAND-QUAD" USING CLIENT-STATE L-M WS-CORNERS WS-UV WS-NORMAL L-LIGHT L-MODE WS-NOQ
 *>       The tint of the six vertices of the quad just added (none when the mesh was full): the hand mesh (mode 3) or the ground item mesh (mode 4).
          IF L-MODE = 4 AND RL-GI-COUNT = WS-BEFORE + 6
              PERFORM VARYING WS-V FROM 0 BY 1 UNTIL WS-V > 5

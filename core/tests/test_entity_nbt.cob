@@ -102,8 +102,10 @@
      MOVE "Position" TO WS-PATH PERFORM ADD-GET
      MOVE "Entities" TO WS-PATH PERFORM ADD-GET
      MOVE "5023 I[1,2] [{id:cobolcraft:sodgrazer,Pos:[20.500,55.000,37.250],Motion:[0.000,-0.250,"
-         & "0.000],Rotation:[90.000,0.000],Health:5.000},{id:cobolcraft:loose_item,Pos:[21.000,"
-         & "56.000,38.000],Motion:[0.125,0.250,-0.375],Rotation:[0.000,0.000],Item:{id:cobolcraft:"
+         & "0.000],Rotation:[90.000,0.000],"
+         & "fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,2],Health:5.000},{id:cobolcraft:loose_item,Pos:[21.000,"
+         & "56.000,38.000],Motion:[0.125,0.250,-0.375],Rotation:[0.000,0.000],"
+         & "fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,3],Item:{id:cobolcraft:"
          & "loam,count:7},Age:1200}]" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -143,7 +145,7 @@
          END-IF
      END-PERFORM
      MOVE "[{id:cobolcraft:loose_item,Pos:[17.500,40.000,33.500],Motion:[0.000,0.000,0.000],"
-         & "Rotation:[0.000,0.000],Item:{id:cobolcraft:slag,count:64},Age:4000}] | type 1 dim 2 "
+         & "Rotation:[0.000,0.000],fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,5],Item:{id:cobolcraft:slag,count:64},Age:4000}] | type 1 dim 2 "
          & "at 17.500 40.000 33.500 v 0.000 0.000 0.000 item 17x64 left 2000" TO TL-EXPECTED
      PERFORM CHECK
 

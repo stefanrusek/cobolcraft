@@ -284,6 +284,7 @@
 *> Walking (19 section 2.1, 18 section 4.2 RandomStrollGoal): a standing mob starts a stroll on a tick with probability 1/120 and walks it
 *> 3 to 10 blocks along one heading, then it stands.
  78 SM-STROLL-ODDS           VALUE 120.
+ 78 SM-STROLL-ROLL           VALUE 60.   *> nextInt(60) per goal evaluation (every second tick: 18 section 2.7, 4.2)
  78 SM-STROLL-BLOCKS         VALUE 10.
  78 SM-STROLL-TICKS          VALUE 200.
 *> Natural spawning of the creature category (18 sections 6.1, 6.3, 6.5, 6.8): the friendly cycle runs when Time mod 400 = 0; a

@@ -26,19 +26,19 @@
      MOVE 1 TO WS-B
      MOVE 2 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 nether_wastes step 2: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 nether_wastes step 2: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-B
      MOVE 4 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 nether_wastes step 4: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 nether_wastes step 4: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-B
      MOVE 7 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 nether_wastes step 7: 15 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 nether_wastes step 7: 15 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "spring_open;patch_fire;patch_soul_fire;glowstone_extra;glowstone;brown_mushroom_nether;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -48,13 +48,13 @@
      MOVE 1 TO WS-B
      MOVE 9 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 nether_wastes step 9: 3 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 nether_wastes step 9: 3 placed features in list order" TO TL-CASE
      MOVE "spring_lava;brown_mushroom_normal;red_mushroom_normal;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-B
      PERFORM COUNT-OF
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12-core 37-5§8 nether_wastes lists 18 placed features" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 nether_wastes lists 18 placed features" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -63,19 +63,19 @@
      MOVE 2 TO WS-B
      MOVE 2 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 soul_sand_valley step 2: 1 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 soul_sand_valley step 2: 1 placed features in list order" TO TL-CASE
      MOVE "basalt_pillar;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-B
      MOVE 4 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 soul_sand_valley step 4: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 soul_sand_valley step 4: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-B
      MOVE 7 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 soul_sand_valley step 7: 15 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 soul_sand_valley step 7: 15 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "spring_open;patch_fire;patch_soul_fire;glowstone_extra;glowstone;patch_crimson_roots;ore_magma;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -85,13 +85,13 @@
      MOVE 2 TO WS-B
      MOVE 9 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 soul_sand_valley step 9: 1 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 soul_sand_valley step 9: 1 placed features in list order" TO TL-CASE
      MOVE "spring_lava;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-B
      PERFORM COUNT-OF
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12-core 37-5§8 soul_sand_valley lists 17 placed features" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 soul_sand_valley lists 17 placed features" TO TL-CASE
      MOVE 17 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -100,19 +100,19 @@
      MOVE 3 TO WS-B
      MOVE 2 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 crimson_forest step 2: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 crimson_forest step 2: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-B
      MOVE 4 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 crimson_forest step 4: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 crimson_forest step 4: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-B
      MOVE 7 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 crimson_forest step 7: 12 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 crimson_forest step 7: 12 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "spring_open;patch_fire;glowstone_extra;glowstone;ore_magma;spring_closed;ore_gravel_nether;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -121,7 +121,7 @@
      MOVE 3 TO WS-B
      MOVE 9 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 crimson_forest step 9: 6 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 crimson_forest step 9: 6 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "spring_lava;brown_mushroom_normal;red_mushroom_normal;weeping_vines;crimson_fungi;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -130,7 +130,7 @@
      MOVE 3 TO WS-B
      PERFORM COUNT-OF
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12-core 37-5§8 crimson_forest lists 18 placed features" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 crimson_forest lists 18 placed features" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -139,19 +139,19 @@
      MOVE 4 TO WS-B
      MOVE 2 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 warped_forest step 2: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 warped_forest step 2: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-B
      MOVE 4 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 warped_forest step 4: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 warped_forest step 4: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-B
      MOVE 7 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 warped_forest step 7: 13 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 warped_forest step 7: 13 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "spring_open;patch_fire;patch_soul_fire;glowstone_extra;glowstone;ore_magma;spring_closed;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -161,7 +161,7 @@
      MOVE 4 TO WS-B
      MOVE 9 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 warped_forest step 9: 7 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 warped_forest step 9: 7 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "spring_lava;brown_mushroom_normal;red_mushroom_normal;warped_fungi;warped_forest_vegetation;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -170,7 +170,7 @@
      MOVE 4 TO WS-B
      PERFORM COUNT-OF
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12-core 37-5§8 warped_forest lists 20 placed features" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 warped_forest lists 20 placed features" TO TL-CASE
      MOVE 20 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -179,19 +179,19 @@
      MOVE 5 TO WS-B
      MOVE 2 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 basalt_deltas step 2: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 basalt_deltas step 2: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-B
      MOVE 4 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 basalt_deltas step 4: 3 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 basalt_deltas step 4: 3 placed features in list order" TO TL-CASE
      MOVE "delta;small_basalt_columns;large_basalt_columns;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-B
      MOVE 7 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 basalt_deltas step 7: 15 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 basalt_deltas step 7: 15 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE 1 TO WS-P
      STRING "basalt_blobs;blackstone_blobs;spring_delta;patch_fire;patch_soul_fire;glowstone_extra;glowstone;" DELIMITED BY SIZE INTO TL-EXPECTED WITH POINTER WS-P
@@ -201,20 +201,20 @@
      MOVE 5 TO WS-B
      MOVE 9 TO WS-WANT
      PERFORM LIST-OF
-     MOVE "acceptance US12-core 37-5§2 basalt_deltas step 9: 0 placed features in list order" TO TL-CASE
+     MOVE "acceptance US12 37-5§2 basalt_deltas step 9: 0 placed features in list order" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-B
      PERFORM COUNT-OF
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12-core 37-5§8 basalt_deltas lists 18 placed features" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 basalt_deltas lists 18 placed features" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T" TO TL-MODE
      ADD WS-COUNT TO WS-TOTAL
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12-core 37-5§8 91 placed feature entries in all, 37 distinct rows in the order" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 91 placed feature entries in all, 37 distinct rows in the order" TO TL-CASE
      MOVE 91037 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-TOTAL * 1000 + 37
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

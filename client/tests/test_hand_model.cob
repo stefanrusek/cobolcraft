@@ -43,6 +43,16 @@
     05 FILLER              FLOAT-LONG VALUE 0.
     05 FILLER              FLOAT-LONG VALUE 0.
     05 FILLER              FLOAT-LONG VALUE 0.
+ 01 WS-ROT.
+    05 FILLER              FLOAT-LONG VALUE 1.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 1.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 1.
  01 WS-CORNERS.
     05 WS-CP               FLOAT-LONG OCCURS 12 TIMES VALUE 0.
  01 WS-UV.
@@ -54,6 +64,8 @@
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "N" TO TL-MODE
+*>   These cases are about the poses and the whole mesh, not about which faces face the eye (T32900 tests that): keep the back faces.
+     MOVE 1 TO CL-HAND-NOCULL
      MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
      MOVE 0 TO CL-SWING-AT
      MOVE 1000000 TO CL-NOW-MS
@@ -272,7 +284,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full mesh takes no more quads; a stalled or backwards clock restarts the equip ticks.
      MOVE 2044 TO RL-HAND-COUNT
-     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT WS-NOGLINT
+     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT WS-NOGLINT WS-ROT
      MOVE "T5300 a mesh of 2044 vertices takes no more quad" TO TL-CASE
      MOVE 2044 TO TL-EXPECTED-N
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N

@@ -47,15 +47,15 @@
      PERFORM CHECK-DENSITIES
      MOVE 0 TO WS-FIRST
      PERFORM COUNT-RUNS
-     MOVE "acceptance US12-core 37-2§12.4 column (0, 0) solid 0..75, air 76..94, solid 95..127 (solid blocks 76 + 33)" TO TL-CASE
+     MOVE "acceptance US12 37-2§12 12.4 column (0, 0) solid 0..75, air 76..94, solid 95..127 (solid blocks 76 + 33)" TO TL-CASE
      MOVE 109 TO TL-EXPECTED-N
      MOVE WS-SOLID TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-2§12.4 column (0, 0) first air block is y 76" TO TL-CASE
+     MOVE "acceptance US12 37-2§12 12.4 column (0, 0) first air block is y 76" TO TL-CASE
      MOVE 76 TO TL-EXPECTED-N
      MOVE WS-FIRST TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-2§12.4 column (0, 0) last air block is y 94" TO TL-CASE
+     MOVE "acceptance US12 37-2§12 12.4 column (0, 0) last air block is y 94" TO TL-CASE
      MOVE 94 TO TL-EXPECTED-N
      MOVE WS-LAST TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -63,11 +63,11 @@
      MOVE 2 TO WS-LZ
      CALL "NETHER-COLUMN" USING WS-LX WS-LZ
      PERFORM COUNT-RUNS
-     MOVE "acceptance US12-core 37-2§12.4 column (5, 2) has 108 solid blocks" TO TL-CASE
+     MOVE "acceptance US12 37-2§12 12.4 column (5, 2) has 108 solid blocks" TO TL-CASE
      MOVE 108 TO TL-EXPECTED-N
      MOVE WS-SOLID TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-2§12.4 column (5, 2) air 76..95" TO TL-CASE
+     MOVE "acceptance US12 37-2§12 12.4 column (5, 2) air 76..95" TO TL-CASE
      COMPUTE TL-EXPECTED-N = 76 * 1000 + 95
      COMPUTE TL-OBSERVED-N = WS-FIRST * 1000 + WS-LAST
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -102,7 +102,7 @@
          COMPUTE WS-J = WS-CORNER-Y(WS-I) / 8 + 1
          MOVE SPACES TO TL-CASE
          MOVE WS-CORNER-Y(WS-I) TO WS-ED
-         STRING "acceptance US12-core 37-2§12.3 corner value at y " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-CASE
+         STRING "acceptance US12 37-2§12 12.3 corner value at y " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-CASE
          MOVE WS-CORNER-V(WS-I) TO TL-EXPECTED-N
          COMPUTE WS-SCALED = NH-CORNER(WS-J) * 100000000
          PERFORM COMPARE-SCALED
@@ -143,7 +143,7 @@
  CHECK-DENSITY.
      MOVE SPACES TO TL-CASE
      MOVE WS-Y TO WS-ED
-     STRING "acceptance US12-core 37-2§12.4 squeezed density of column (0, 0) at y " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-CASE
+     STRING "acceptance US12 37-2§12 12.4 squeezed density of column (0, 0) at y " FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO TL-CASE
      MOVE WS-WANT TO TL-EXPECTED-N
      COMPUTE WS-I = WS-Y + 1
      COMPUTE WS-SCALED = NH-COL(WS-I) * 100000000
@@ -194,7 +194,7 @@
              END-IF
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-2§6.3 fill of column (5, 2): netherrack 0..75 and 96..127, air 76..95" TO TL-CASE
+     MOVE "acceptance US12 37-2§6 6.3 fill of column (5, 2): netherrack 0..75 and 96..127, air 76..95" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BADS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -231,11 +231,11 @@
                  ADD 1 TO WS-BADS
          END-EVALUATE
      END-PERFORM
-     MOVE "acceptance US12-core 37-2§7 fill: no air below y 32, lava only below y 32, no other block" TO TL-CASE
+     MOVE "acceptance US12 37-2§7 fill: no air below y 32, lava only below y 32, no other block" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BADS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-2§7 a chunk of the area 6 x 6 around the origin has a lava sea (lava blocks above 0)" TO TL-CASE
+     MOVE "acceptance US12 37-2§7 a chunk of the area 6 x 6 around the origin has a lava sea (lava blocks above 0)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-LAVA > 0

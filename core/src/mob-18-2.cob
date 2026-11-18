@@ -278,6 +278,11 @@
      ELSE
          COMPUTE EN-AIR-LOST(WS-ROW) = FUNCTION MAX(0, EN-AIR-LOST(WS-ROW) - 4)
      END-IF
+*>   2.6 step 11 freezing and 3.3 applyEffectsFromBlocks (core/src/mob-18-3.cob).
+     CALL "M183-TICK" USING WS-ROW
+     IF EN-HEALTH(WS-ROW) = 0
+         GOBACK
+     END-IF
 *>   3.3 pushEntities: the draw first (the count only matters on a draw of 0, so the scan runs on a quarter of the ticks).
      MOVE EN-ID(WS-ROW) TO WS-ARG(1)
      MOVE CW-TICKS TO WS-ARG(2)

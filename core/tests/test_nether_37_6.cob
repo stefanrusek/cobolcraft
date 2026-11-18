@@ -36,7 +36,7 @@
      MOVE "N" TO TL-MODE
      MOVE 1 TO WS-SET
      CALL "NETHER-STRUCTURE-SET" USING WS-SET WS-SPACING WS-SEPARATION WS-SALT WS-COUNT
-     MOVE "acceptance US12-core 37-6§2 set 1 fortress...: spacing 27, separation 4, salt 30084232, 2 entries" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 1 fortress...: spacing 27, separation 4, salt 30084232, 2 entries" TO TL-CASE
      MOVE 27043008423202 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-SPACING * 1000000000000 + WS-SEPARATION * 10000000000 + WS-SALT * 100 + WS-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -46,7 +46,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 1 entry 1: fortress weight 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 1 entry 1: fortress weight 2" TO TL-CASE
      MOVE "fortress 2" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -57,14 +57,14 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 1 entry 2: bastion_remnant weight 3" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 1 entry 2: bastion_remnant weight 3" TO TL-CASE
      MOVE "bastion_remnant 3" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "N" TO TL-MODE
      MOVE 2 TO WS-SET
      CALL "NETHER-STRUCTURE-SET" USING WS-SET WS-SPACING WS-SEPARATION WS-SALT WS-COUNT
-     MOVE "acceptance US12-core 37-6§2 set 2 nether_fossil...: spacing 2, separation 1, salt 14357921, 1 entries" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 2 nether_fossil...: spacing 2, separation 1, salt 14357921, 1 entries" TO TL-CASE
      MOVE 2011435792101 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-SPACING * 1000000000000 + WS-SEPARATION * 10000000000 + WS-SALT * 100 + WS-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -74,14 +74,14 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 2 entry 1: nether_fossil weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 2 entry 1: nether_fossil weight 1" TO TL-CASE
      MOVE "nether_fossil 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "N" TO TL-MODE
      MOVE 3 TO WS-SET
      CALL "NETHER-STRUCTURE-SET" USING WS-SET WS-SPACING WS-SEPARATION WS-SALT WS-COUNT
-     MOVE "acceptance US12-core 37-6§2 set 3 ruined_portal...: spacing 40, separation 15, salt 34222645, 7 entries" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 ruined_portal...: spacing 40, separation 15, salt 34222645, 7 entries" TO TL-CASE
      MOVE 40153422264507 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-SPACING * 1000000000000 + WS-SEPARATION * 10000000000 + WS-SALT * 100 + WS-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -91,7 +91,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 1: ruined_portal weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 1: ruined_portal weight 1" TO TL-CASE
      MOVE "ruined_portal 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -102,7 +102,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 2: ruined_portal_desert weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 2: ruined_portal_desert weight 1" TO TL-CASE
      MOVE "ruined_portal_desert 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -113,7 +113,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 3: ruined_portal_jungle weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 3: ruined_portal_jungle weight 1" TO TL-CASE
      MOVE "ruined_portal_jungle 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -124,7 +124,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 4: ruined_portal_swamp weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 4: ruined_portal_swamp weight 1" TO TL-CASE
      MOVE "ruined_portal_swamp 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -135,7 +135,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 5: ruined_portal_mountain weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 5: ruined_portal_mountain weight 1" TO TL-CASE
      MOVE "ruined_portal_mountain 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -146,7 +146,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 6: ruined_portal_ocean weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 6: ruined_portal_ocean weight 1" TO TL-CASE
      MOVE "ruined_portal_ocean 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -157,7 +157,7 @@
      MOVE WS-WEIGHT TO WS-N1
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§2 set 3 entry 7: ruined_portal_nether weight 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 set 3 entry 7: ruined_portal_nether weight 1" TO TL-CASE
      MOVE "ruined_portal_nether 1" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -167,7 +167,7 @@
      MOVE -1 TO WS-CX
      MOVE 30 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 1 chunk (-1, 30): candidate chunk (-20, 46), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 1 chunk (-1, 30): candidate chunk (-20, 46), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -175,7 +175,7 @@
      MOVE 46 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 1: the candidate chunk (-20, 46) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 1: the candidate chunk (-20, 46) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -184,7 +184,7 @@
      MOVE 5 TO WS-CX
      MOVE 5 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 1 chunk (5, 5): candidate chunk (15, 2), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 1 chunk (5, 5): candidate chunk (15, 2), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -192,7 +192,7 @@
      MOVE 2 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 1: the candidate chunk (15, 2) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 1: the candidate chunk (15, 2) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -201,7 +201,7 @@
      MOVE 100 TO WS-CX
      MOVE -50 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 1 chunk (100, -50): candidate chunk (83, -39), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 1 chunk (100, -50): candidate chunk (83, -39), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -209,7 +209,7 @@
      MOVE -39 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 1: the candidate chunk (83, -39) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 1: the candidate chunk (83, -39) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -218,7 +218,7 @@
      MOVE 7 TO WS-CX
      MOVE 10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 2 chunk (7, 10): candidate chunk (6, 10), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 2 chunk (7, 10): candidate chunk (6, 10), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -226,7 +226,7 @@
      MOVE 10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 2: the candidate chunk (6, 10) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 2: the candidate chunk (6, 10) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -235,7 +235,7 @@
      MOVE -3 TO WS-CX
      MOVE -9 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 2 chunk (-3, -9): candidate chunk (-4, -10), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 2 chunk (-3, -9): candidate chunk (-4, -10), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -243,7 +243,7 @@
      MOVE -10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 2: the candidate chunk (-4, -10) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 2: the candidate chunk (-4, -10) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -252,7 +252,7 @@
      MOVE 0 TO WS-CX
      MOVE 0 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 3 chunk (0, 0): candidate chunk (20, 9), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 3 chunk (0, 0): candidate chunk (20, 9), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -260,7 +260,7 @@
      MOVE 9 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 3: the candidate chunk (20, 9) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 3: the candidate chunk (20, 9) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -269,7 +269,7 @@
      MOVE -41 TO WS-CX
      MOVE 77 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 3 chunk (-41, 77): candidate chunk (-80, 60), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 3 chunk (-41, 77): candidate chunk (-80, 60), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -277,7 +277,7 @@
      MOVE 60 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 0 set 3: the candidate chunk (-80, 60) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 set 3: the candidate chunk (-80, 60) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -286,7 +286,7 @@
      MOVE -1 TO WS-CX
      MOVE 30 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 1 chunk (-1, 30): candidate chunk (-17, 44), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 1 chunk (-1, 30): candidate chunk (-17, 44), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -294,7 +294,7 @@
      MOVE 44 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 1: the candidate chunk (-17, 44) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 1: the candidate chunk (-17, 44) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -303,7 +303,7 @@
      MOVE 5 TO WS-CX
      MOVE 5 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 1 chunk (5, 5): candidate chunk (12, 20), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 1 chunk (5, 5): candidate chunk (12, 20), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -311,7 +311,7 @@
      MOVE 20 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 1: the candidate chunk (12, 20) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 1: the candidate chunk (12, 20) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -320,7 +320,7 @@
      MOVE 100 TO WS-CX
      MOVE -50 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 1 chunk (100, -50): candidate chunk (97, -37), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 1 chunk (100, -50): candidate chunk (97, -37), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -328,7 +328,7 @@
      MOVE -37 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 1: the candidate chunk (97, -37) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 1: the candidate chunk (97, -37) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -337,7 +337,7 @@
      MOVE 7 TO WS-CX
      MOVE 10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 2 chunk (7, 10): candidate chunk (6, 10), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 2 chunk (7, 10): candidate chunk (6, 10), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -345,7 +345,7 @@
      MOVE 10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 2: the candidate chunk (6, 10) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 2: the candidate chunk (6, 10) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -354,7 +354,7 @@
      MOVE -3 TO WS-CX
      MOVE -9 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 2 chunk (-3, -9): candidate chunk (-4, -10), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 2 chunk (-3, -9): candidate chunk (-4, -10), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -362,7 +362,7 @@
      MOVE -10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 2: the candidate chunk (-4, -10) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 2: the candidate chunk (-4, -10) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -371,7 +371,7 @@
      MOVE 0 TO WS-CX
      MOVE 0 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 3 chunk (0, 0): candidate chunk (1, 0), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 3 chunk (0, 0): candidate chunk (1, 0), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -379,7 +379,7 @@
      MOVE 0 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 3: the candidate chunk (1, 0) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 3: the candidate chunk (1, 0) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -388,7 +388,7 @@
      MOVE -41 TO WS-CX
      MOVE 77 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 3 chunk (-41, 77): candidate chunk (-74, 56), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 3 chunk (-41, 77): candidate chunk (-74, 56), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -396,7 +396,7 @@
      MOVE 56 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed 12345 set 3: the candidate chunk (-74, 56) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 set 3: the candidate chunk (-74, 56) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -405,7 +405,7 @@
      MOVE -1 TO WS-CX
      MOVE 30 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 1 chunk (-1, 30): candidate chunk (-18, 31), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 1 chunk (-1, 30): candidate chunk (-18, 31), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -413,7 +413,7 @@
      MOVE 31 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 1: the candidate chunk (-18, 31) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 1: the candidate chunk (-18, 31) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -422,7 +422,7 @@
      MOVE 5 TO WS-CX
      MOVE 5 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 1 chunk (5, 5): candidate chunk (4, 18), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 1 chunk (5, 5): candidate chunk (4, 18), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -430,7 +430,7 @@
      MOVE 18 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 1: the candidate chunk (4, 18) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 1: the candidate chunk (4, 18) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -439,7 +439,7 @@
      MOVE 100 TO WS-CX
      MOVE -50 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 1 chunk (100, -50): candidate chunk (98, -51), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 1 chunk (100, -50): candidate chunk (98, -51), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -447,7 +447,7 @@
      MOVE -51 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 1: the candidate chunk (98, -51) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 1: the candidate chunk (98, -51) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -456,7 +456,7 @@
      MOVE 7 TO WS-CX
      MOVE 10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 2 chunk (7, 10): candidate chunk (6, 10), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 2 chunk (7, 10): candidate chunk (6, 10), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -464,7 +464,7 @@
      MOVE 10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 2: the candidate chunk (6, 10) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 2: the candidate chunk (6, 10) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -473,7 +473,7 @@
      MOVE -3 TO WS-CX
      MOVE -9 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 2 chunk (-3, -9): candidate chunk (-4, -10), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 2 chunk (-3, -9): candidate chunk (-4, -10), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -481,7 +481,7 @@
      MOVE -10 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 2: the candidate chunk (-4, -10) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 2: the candidate chunk (-4, -10) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -490,7 +490,7 @@
      MOVE 0 TO WS-CX
      MOVE 0 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 3 chunk (0, 0): candidate chunk (20, 19), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 3 chunk (0, 0): candidate chunk (20, 19), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -498,7 +498,7 @@
      MOVE 19 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 3: the candidate chunk (20, 19) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 3: the candidate chunk (20, 19) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -507,7 +507,7 @@
      MOVE -41 TO WS-CX
      MOVE 77 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 3 chunk (-41, 77): candidate chunk (-78, 51), not it unless equal" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 3 chunk (-41, 77): candidate chunk (-78, 51), not it unless equal" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -515,7 +515,7 @@
      MOVE 51 TO WS-CZ
      CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-CX WS-CZ WS-AX WS-AZ WS-FLAG
 
-     MOVE "acceptance US12-core 37-6§2 seed -1 set 3: the candidate chunk (-78, 51) is a structure chunk" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 set 3: the candidate chunk (-78, 51) is a structure chunk" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -525,7 +525,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (0, 0) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (0, 0) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -535,7 +535,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (0, 0) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (0, 0) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -545,7 +545,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (0, 0) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (0, 0) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -555,7 +555,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (0, 0) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (0, 0) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -565,7 +565,7 @@
      MOVE 2 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (1, 2) valid starts 11: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (1, 2) valid starts 11: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -575,7 +575,7 @@
      MOVE 2 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (1, 2) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (1, 2) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -585,7 +585,7 @@
      MOVE 2 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (1, 2) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (1, 2) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -595,7 +595,7 @@
      MOVE 2 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (1, 2) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (1, 2) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -605,7 +605,7 @@
      MOVE 9 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (-5, 9) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (-5, 9) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -615,7 +615,7 @@
      MOVE 9 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (-5, 9) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (-5, 9) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -625,7 +625,7 @@
      MOVE 9 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (-5, 9) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (-5, 9) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -635,7 +635,7 @@
      MOVE 9 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (-5, 9) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (-5, 9) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -645,7 +645,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (40, -7) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (40, -7) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -655,7 +655,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (40, -7) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (40, -7) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -665,7 +665,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (40, -7) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (40, -7) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -675,7 +675,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 0 chunk (40, -7) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 0 chunk (40, -7) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -685,7 +685,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (0, 0) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (0, 0) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -695,7 +695,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (0, 0) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (0, 0) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -705,7 +705,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (0, 0) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (0, 0) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -715,7 +715,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (0, 0) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (0, 0) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -725,7 +725,7 @@
      MOVE 2 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (1, 2) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (1, 2) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -735,7 +735,7 @@
      MOVE 2 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (1, 2) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (1, 2) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -745,7 +745,7 @@
      MOVE 2 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (1, 2) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (1, 2) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -755,7 +755,7 @@
      MOVE 2 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (1, 2) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (1, 2) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -765,7 +765,7 @@
      MOVE 9 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (-5, 9) valid starts 11: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (-5, 9) valid starts 11: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -775,7 +775,7 @@
      MOVE 9 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (-5, 9) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (-5, 9) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -785,7 +785,7 @@
      MOVE 9 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (-5, 9) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (-5, 9) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -795,7 +795,7 @@
      MOVE 9 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (-5, 9) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (-5, 9) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -805,7 +805,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (40, -7) valid starts 11: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (40, -7) valid starts 11: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -815,7 +815,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (40, -7) valid starts 10: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (40, -7) valid starts 10: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -825,7 +825,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (40, -7) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (40, -7) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -835,7 +835,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed 12345 chunk (40, -7) valid starts 00: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed 12345 chunk (40, -7) valid starts 00: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -845,7 +845,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1000001" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (0, 0) valid starts 1000001: picked entry 7" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (0, 0) valid starts 1000001: picked entry 7" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -855,7 +855,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0000001" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (0, 0) valid starts 0000001: picked entry 7" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (0, 0) valid starts 0000001: picked entry 7" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -865,7 +865,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (0, 0) valid starts 0000000: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (0, 0) valid starts 0000000: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -875,7 +875,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1111110" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (0, 0) valid starts 1111110: picked entry 6" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (0, 0) valid starts 1111110: picked entry 6" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -885,7 +885,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1000001" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (40, -7) valid starts 1000001: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (40, -7) valid starts 1000001: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -895,7 +895,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0000001" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (40, -7) valid starts 0000001: picked entry 7" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (40, -7) valid starts 0000001: picked entry 7" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -905,7 +905,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (40, -7) valid starts 0000000: picked entry 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (40, -7) valid starts 0000000: picked entry 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -915,7 +915,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1111110" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 ruined_portals chunk (40, -7) valid starts 1111110: picked entry 6" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 ruined_portals chunk (40, -7) valid starts 1111110: picked entry 6" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -925,7 +925,7 @@
      MOVE 10 TO WS-CZ
      MOVE "1000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 fossil set with one entry tries it directly: valid 1 gives 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 fossil set with one entry tries it directly: valid 1 gives 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -935,154 +935,154 @@
      MOVE 10 TO WS-CZ
      MOVE "0000000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 fossil set with one entry tries it directly: valid 0 gives 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 fossil set with one entry tries it directly: valid 0 gives 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-SET
      MOVE 1 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 fortress may start in biome 1: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 fortress may start in biome 1: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-SET
      MOVE 2 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 fortress may start in biome 2: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 fortress may start in biome 2: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-SET
      MOVE 3 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 fortress may start in biome 3: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 fortress may start in biome 3: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-SET
      MOVE 4 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 fortress may start in biome 4: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 fortress may start in biome 4: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-SET
      MOVE 5 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 fortress may start in biome 5: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 fortress may start in biome 5: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-SET
      MOVE 1 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 bastion_remnant may start in biome 1: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 bastion_remnant may start in biome 1: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-SET
      MOVE 2 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 bastion_remnant may start in biome 2: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 bastion_remnant may start in biome 2: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-SET
      MOVE 3 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 bastion_remnant may start in biome 3: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 bastion_remnant may start in biome 3: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-SET
      MOVE 4 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 bastion_remnant may start in biome 4: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 bastion_remnant may start in biome 4: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-SET
      MOVE 5 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 bastion_remnant may start in biome 5: 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 bastion_remnant may start in biome 5: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-SET
      MOVE 1 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 ruined_portal_nether may start in biome 1: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 ruined_portal_nether may start in biome 1: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-SET
      MOVE 2 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 ruined_portal_nether may start in biome 2: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 ruined_portal_nether may start in biome 2: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-SET
      MOVE 3 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 ruined_portal_nether may start in biome 3: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 ruined_portal_nether may start in biome 3: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-SET
      MOVE 4 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 ruined_portal_nether may start in biome 4: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 ruined_portal_nether may start in biome 4: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-SET
      MOVE 5 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 ruined_portal_nether may start in biome 5: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 ruined_portal_nether may start in biome 5: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-SET
      MOVE 1 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 nether_fossil may start in biome 1: 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 nether_fossil may start in biome 1: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-SET
      MOVE 2 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 nether_fossil may start in biome 2: 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 nether_fossil may start in biome 2: 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-SET
      MOVE 3 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 nether_fossil may start in biome 3: 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 nether_fossil may start in biome 3: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-SET
      MOVE 4 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 nether_fossil may start in biome 4: 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 nether_fossil may start in biome 4: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-SET
      MOVE 5 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 nether_fossil may start in biome 5: 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 nether_fossil may start in biome 5: 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-SET
      MOVE 0 TO WS-I
      CALL "NETHER-STRUCTURE-BIOME" USING WS-SET WS-I WS-FLAG
-     MOVE "acceptance US12-core 37-6§8 an unknown biome number 0 allows nothing" TO TL-CASE
+     MOVE "acceptance US12 37-6§8 an unknown biome number 0 allows nothing" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1093,7 +1093,7 @@
      MOVE WS-MAX TO WS-N3
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) " " FUNCTION TRIM(WS-N2) "-" FUNCTION TRIM(WS-N3) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§9.4 fortress override entry 1: blaze weight 10 count 2 to 3" TO TL-CASE
+     MOVE "acceptance US12 37-6§9 9.4 fortress override entry 1: blaze weight 10 count 2 to 3" TO TL-CASE
      MOVE "blaze 10 2-3" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1105,7 +1105,7 @@
      MOVE WS-MAX TO WS-N3
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) " " FUNCTION TRIM(WS-N2) "-" FUNCTION TRIM(WS-N3) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§9.4 fortress override entry 2: zombified_piglin weight 5 count 4 to 4" TO TL-CASE
+     MOVE "acceptance US12 37-6§9 9.4 fortress override entry 2: zombified_piglin weight 5 count 4 to 4" TO TL-CASE
      MOVE "zombified_piglin 5 4-4" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1117,7 +1117,7 @@
      MOVE WS-MAX TO WS-N3
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) " " FUNCTION TRIM(WS-N2) "-" FUNCTION TRIM(WS-N3) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§9.4 fortress override entry 3: wither_skeleton weight 8 count 5 to 5" TO TL-CASE
+     MOVE "acceptance US12 37-6§9 9.4 fortress override entry 3: wither_skeleton weight 8 count 5 to 5" TO TL-CASE
      MOVE "wither_skeleton 8 5-5" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1129,7 +1129,7 @@
      MOVE WS-MAX TO WS-N3
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) " " FUNCTION TRIM(WS-N2) "-" FUNCTION TRIM(WS-N3) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§9.4 fortress override entry 4: skeleton weight 2 count 5 to 5" TO TL-CASE
+     MOVE "acceptance US12 37-6§9 9.4 fortress override entry 4: skeleton weight 2 count 5 to 5" TO TL-CASE
      MOVE "skeleton 2 5-5" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1141,7 +1141,7 @@
      MOVE WS-MAX TO WS-N3
      MOVE SPACES TO TL-OBSERVED
      STRING WS-NAME(1:WS-LEN) " " FUNCTION TRIM(WS-N1) " " FUNCTION TRIM(WS-N2) "-" FUNCTION TRIM(WS-N3) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 37-6§9.4 fortress override entry 5: magma_cube weight 3 count 4 to 4" TO TL-CASE
+     MOVE "acceptance US12 37-6§9 9.4 fortress override entry 5: magma_cube weight 3 count 4 to 4" TO TL-CASE
      MOVE "magma_cube 3 4-4" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1149,56 +1149,56 @@
      MOVE 1 TO WS-CODE
      MOVE 0 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 search radius into the Nether 16" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 search radius into the Nether 16" TO TL-CASE
      MOVE 16 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-CODE
      MOVE 0 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 search radius into the overworld 128" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 search radius into the overworld 128" TO TL-CASE
      MOVE 128 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-CODE
      MOVE 0 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 creation spiral radius 16" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 creation spiral radius 16" TO TL-CASE
      MOVE 16 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-CODE
      MOVE 0 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 a portal used in the overworld goes to the Nether" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 a portal used in the overworld goes to the Nether" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-CODE
      MOVE 1 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 a portal used in the Nether goes to the overworld" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 a portal used in the Nether goes to the overworld" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-CODE
      MOVE 2 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 a portal used in the End targets the Nether" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 a portal used in the End targets the Nether" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-CODE
      MOVE 0 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 fallback lower bound 70" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 fallback lower bound 70" TO TL-CASE
      MOVE 70 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 9 TO WS-CODE
      MOVE 0 TO WS-V
      CALL "NETHER-PORTAL-NUMBER" USING WS-CODE WS-V
-     MOVE "acceptance US12-core 37-6§10 an unknown code gives -1" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 an unknown code gives -1" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1206,7 +1206,7 @@
      MOVE 256 TO WS-B
      MOVE 128 TO WS-I
      CALL "NETHER-PORTAL-TOP" USING WS-A WS-B WS-I WS-V
-     MOVE "acceptance US12-core 37-6§10 portal top y for min y 0, height 256, logical height 128: 127" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 portal top y for min y 0, height 256, logical height 128: 127" TO TL-CASE
      MOVE 127 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1214,7 +1214,7 @@
      MOVE 384 TO WS-B
      MOVE 384 TO WS-I
      CALL "NETHER-PORTAL-TOP" USING WS-A WS-B WS-I WS-V
-     MOVE "acceptance US12-core 37-6§10 portal top y for min y -64, height 384, logical height 384: 319" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 portal top y for min y -64, height 384, logical height 384: 319" TO TL-CASE
      MOVE 319 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-V * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1222,7 +1222,7 @@
      MOVE 127 TO WS-B
      MOVE 60 TO WS-I
      CALL "NETHER-PORTAL-FALLBACK" USING WS-A WS-B WS-I WS-FLAG WS-V
-     MOVE "acceptance US12-core 37-6§10 fallback portal y for min y 0, top 127, entity y 60: ok 1, y 70" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 fallback portal y for min y 0, top 127, entity y 60: ok 1, y 70" TO TL-CASE
      MOVE 1070 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1000 + WS-V
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1230,7 +1230,7 @@
      MOVE 127 TO WS-B
      MOVE 90 TO WS-I
      CALL "NETHER-PORTAL-FALLBACK" USING WS-A WS-B WS-I WS-FLAG WS-V
-     MOVE "acceptance US12-core 37-6§10 fallback portal y for min y 0, top 127, entity y 90: ok 1, y 90" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 fallback portal y for min y 0, top 127, entity y 90: ok 1, y 90" TO TL-CASE
      MOVE 1090 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1000 + WS-V
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1238,7 +1238,7 @@
      MOVE 127 TO WS-B
      MOVE 200 TO WS-I
      CALL "NETHER-PORTAL-FALLBACK" USING WS-A WS-B WS-I WS-FLAG WS-V
-     MOVE "acceptance US12-core 37-6§10 fallback portal y for min y 0, top 127, entity y 200: ok 1, y 118" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 fallback portal y for min y 0, top 127, entity y 200: ok 1, y 118" TO TL-CASE
      MOVE 1118 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1000 + WS-V
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1246,7 +1246,7 @@
      MOVE 319 TO WS-B
      MOVE 0 TO WS-I
      CALL "NETHER-PORTAL-FALLBACK" USING WS-A WS-B WS-I WS-FLAG WS-V
-     MOVE "acceptance US12-core 37-6§10 fallback portal y for min y -64, top 319, entity y 0: ok 1, y 70" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 fallback portal y for min y -64, top 319, entity y 0: ok 1, y 70" TO TL-CASE
      MOVE 1070 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1000 + WS-V
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1254,7 +1254,7 @@
      MOVE 70 TO WS-B
      MOVE 64 TO WS-I
      CALL "NETHER-PORTAL-FALLBACK" USING WS-A WS-B WS-I WS-FLAG WS-V
-     MOVE "acceptance US12-core 37-6§10 fallback portal y for min y 0, top 70, entity y 64: ok 0, y 0" TO TL-CASE
+     MOVE "acceptance US12 37-6§10 fallback portal y for min y 0, top 70, entity y 64: ok 0, y 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-FLAG * 1000 + WS-V
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1264,7 +1264,7 @@
      MOVE 0 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (0, 0) valid starts 11: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (0, 0) valid starts 11: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1274,7 +1274,7 @@
      MOVE 0 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (0, 0) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (0, 0) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1284,7 +1284,7 @@
      MOVE 2 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (1, 2) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (1, 2) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1294,7 +1294,7 @@
      MOVE 2 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (1, 2) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (1, 2) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1304,7 +1304,7 @@
      MOVE 9 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (-5, 9) valid starts 11: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (-5, 9) valid starts 11: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1314,7 +1314,7 @@
      MOVE 9 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (-5, 9) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (-5, 9) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1324,7 +1324,7 @@
      MOVE -7 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (40, -7) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (40, -7) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1334,7 +1334,7 @@
      MOVE -7 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (40, -7) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (40, -7) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1344,7 +1344,7 @@
      MOVE 3 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (3, 3) valid starts 11: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (3, 3) valid starts 11: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1354,7 +1354,7 @@
      MOVE 3 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (3, 3) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (3, 3) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1364,7 +1364,7 @@
      MOVE 9 TO WS-CZ
      MOVE "1100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (9, 9) valid starts 11: picked entry 1" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (9, 9) valid starts 11: picked entry 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -1374,7 +1374,7 @@
      MOVE 9 TO WS-CZ
      MOVE "0100000" TO WS-VALID
      CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-CX WS-CZ WS-VALID WS-PICKED
-     MOVE "acceptance US12-core 37-6§2 seed -1 chunk (9, 9) valid starts 01: picked entry 2" TO TL-CASE
+     MOVE "acceptance US12 37-6§2 seed -1 chunk (9, 9) valid starts 01: picked entry 2" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-PICKED * 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

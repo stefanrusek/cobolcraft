@@ -49,6 +49,8 @@
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
+*>   The pose cases read every quad of the mesh: the back faces the hand pass drops (12 section 6.9) are kept here (test_hand_doc and test_hand_pickaxe test the culling).
+     MOVE 1 TO CL-HAND-NOCULL
      MOVE "N" TO TL-MODE
 *>   Every use pose, right and left: the arm transform of 12 section 6.3 step 1 or the pose of 6.6.
      MOVE "T5301 plain arm, right" TO WS-NAME

@@ -49,7 +49,7 @@
  01 WS-NAME                PIC X(48).
  01 WS-FTKEY               PIC X(80).
  01 WS-PAIRS               PIC X(160).
- 01 WS-CASE                PIC X(200).
+ 01 WS-CASE                PIC X(240).
  01 WS-OBS                 BINARY-LONG.
  01 WS-EXP                 BINARY-LONG.
  01 WS-BAD                 BINARY-LONG.
@@ -290,19 +290,19 @@
          END-PERFORM
          MOVE WS-CASENO TO WS-CASETXT
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.5: void platform chunk " WS-CASETXT " stone count" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.5: void platform chunk " WS-CASETXT " stone count" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-N-STONE TO WS-OBS
          MOVE WS-CHK-STONE(WS-CASENO) TO WS-EXP
          PERFORM ASSERT-N
          MOVE WS-CASENO TO WS-CASETXT
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.5: void platform chunk " WS-CASETXT " cobblestone count" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.5: void platform chunk " WS-CASETXT " cobblestone count" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-N-COBBLE TO WS-OBS
          MOVE WS-CHK-COBBLE(WS-CASENO) TO WS-EXP
          PERFORM ASSERT-N
          MOVE WS-CASENO TO WS-CASETXT
          MOVE SPACES TO WS-CASE
-         STRING "35-7§10.5: void platform chunk " WS-CASETXT " writes nothing else" DELIMITED BY SIZE INTO WS-CASE
+         STRING "acceptance US12 35-7§10 End features: island, platform, podium, gateway, and the void platform: §10.5: void platform chunk " WS-CASETXT " writes nothing else" DELIMITED BY SIZE INTO WS-CASE
          MOVE WS-N-OTHER TO WS-OBS
          MOVE 0 TO WS-EXP
          PERFORM ASSERT-N

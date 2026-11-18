@@ -39,7 +39,7 @@
  01 WS-WANT                BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG VALUE 2.
  01 WS-OK                  BINARY-LONG.
- 01 WS-CASE                PIC X(200).
+ 01 WS-CASE                PIC X(240).
  01 WS-OBS                 BINARY-LONG.
  01 WS-EXP                 BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -243,25 +243,25 @@
      MOVE "minecraft:n7_delta" TO WS-FTKEY
      MOVE 1 TO WS-MODE
      PERFORM RUN-SEEDS-N
-     MOVE "35-7§3 delta_feature of the data: every window cell and the random stream agree with the model" TO WS-CASE
+     MOVE "acceptance US12 35-7§3 `delta_feature`: of the data: every window cell and the random stream agree with the model" TO WS-CASE
      PERFORM ASSERT-RESULT-N
      MOVE "minecraft:n7_small_5" TO WS-FTKEY
      MOVE 2 TO WS-MODE
      PERFORM RUN-SEEDS-N
-     MOVE "35-7§4 stepped_column_cluster (small columns, reach 5, 50 columns): every cell and the stream agree with the model" TO WS-CASE
+     MOVE "acceptance US12 35-7§4 `stepped_column_cluster`: stepped_column_cluster (small columns, reach 5, 50 columns): every cell and the stream agree with the model" TO WS-CASE
      PERFORM ASSERT-RESULT-N
      MOVE "minecraft:n7_small_8" TO WS-FTKEY
      PERFORM RUN-SEEDS-N
-     MOVE "35-7§4 stepped_column_cluster (small columns, reach 8, 15 columns): the same" TO WS-CASE
+     MOVE "acceptance US12 35-7§4 `stepped_column_cluster`: stepped_column_cluster (small columns, reach 8, 15 columns): the same" TO WS-CASE
      PERFORM ASSERT-RESULT-N
      MOVE "minecraft:n7_large_5" TO WS-FTKEY
      PERFORM RUN-SEEDS-N
-     MOVE "35-7§4 stepped_column_cluster (large columns, reach 5): the same" TO WS-CASE
+     MOVE "acceptance US12 35-7§4 `stepped_column_cluster`: stepped_column_cluster (large columns, reach 5): the same" TO WS-CASE
      PERFORM ASSERT-RESULT-N
      MOVE "minecraft:n7_pillar" TO WS-FTKEY
      MOVE 3 TO WS-MODE
      PERFORM RUN-SEEDS-N
-     MOVE "35-7§5 basalt_pillar of the data (pillar, patchy square, simple blocks, side pillars): every cell and the stream agree with the model" TO WS-CASE
+     MOVE "acceptance US12 35-7§5 `single_block_pillar`, `overlay`, `projected_random_patchy_square`: the basalt pillar: every cell and the stream agree with the model" TO WS-CASE
      PERFORM ASSERT-RESULT-N
      MOVE "minecraft:n7_spread" TO WS-FTKEY
      MOVE 4 TO WS-MODE
