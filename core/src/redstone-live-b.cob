@@ -333,6 +333,7 @@
  01 LS-EXPLODES            BINARY-LONG.
  01 LS-RULE                BINARY-DOUBLE.
  01 LS-NO                  BINARY-LONG VALUE 0.
+ 01 LS-NO2                 BINARY-LONG VALUE 0.
  01 LS-CAN                 BINARY-LONG VALUE 1.
  01 LS-CREATED             BINARY-LONG.
  01 LS-OLD-TNT             BINARY-LONG.

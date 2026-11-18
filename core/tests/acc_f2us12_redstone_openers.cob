@@ -11,6 +11,7 @@
  COPY COREAPI.
  COPY DIMENSIONS.
  COPY CBLOCKS.
+ COPY CITEMS.
  01 WS-SKIP                BINARY-LONG.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
@@ -40,6 +41,15 @@
  01 WS-KEY                 PIC X(112).
  01 WS-STATUS              BINARY-LONG.
  01 WS-ED                  PIC -(9)9.
+ 01 WS-SEQ                 BINARY-LONG VALUE 0.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-OP-NAME             PIC X(16).
+ 01 WS-OP-KEEP             PIC X(16) VALUE "keep".
+ 01 WS-OP-NEW              BINARY-LONG.
+ 01 WS-OP-A                PIC X(16).
+ 01 WS-OP-B                PIC X(16).
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "PT-OPEN" USING WS-SKIP
@@ -216,7 +226,90 @@
      MOVE WS-CASE TO TL-CASE
      MOVE WS-EXP TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   G. placement beside power (z 12 to 18): the lamp, the trapdoor, the gate and the door start lit or open
+     MOVE 12 TO WS-Z
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "redstone_block" TO WS-K MOVE SPACES TO WS-PR PERFORM PUT-BLOCK
+     MOVE "redstone_lamp" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM PLACE-ITEM
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y
+     MOVE "acceptance US12-4 live redstone 30-7 6 step 1 a lamp placed beside power is lit" TO WS-CASE
+     MOVE "lit=true" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 14 TO WS-Z
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "redstone_block" TO WS-K MOVE SPACES TO WS-PR PERFORM PUT-BLOCK
+     MOVE "oak_trapdoor" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM PLACE-ITEM
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y
+     PERFORM READ-OPEN-POWERED
+     MOVE "acceptance US12-4 live redstone 30-7 4.2 step 4 a trapdoor placed beside power is open and powered" TO WS-CASE
+     MOVE "true,true" TO TL-EXPECTED
+     PERFORM ASSERT-OP
+     MOVE 16 TO WS-Z
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "redstone_block" TO WS-K MOVE SPACES TO WS-PR PERFORM PUT-BLOCK
+     MOVE "oak_fence_gate" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM PLACE-ITEM
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y
+     PERFORM READ-OPEN-POWERED
+     MOVE "acceptance US12-4 live redstone 30-7 5.2 step 1 a fence gate placed beside power is open and powered" TO WS-CASE
+     MOVE "true,true" TO TL-EXPECTED
+     PERFORM ASSERT-OP
+     MOVE 18 TO WS-Z
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "redstone_block" TO WS-K MOVE SPACES TO WS-PR PERFORM PUT-BLOCK
+     MOVE "oak_door" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM PLACE-ITEM
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y
+     PERFORM READ-OPEN-POWERED
+     MOVE "acceptance US12-4 live redstone 30-7 3.3 step 2 a door placed beside power is open and powered" TO WS-CASE
+     MOVE "true,true" TO TL-EXPECTED
+     PERFORM ASSERT-OP
+     MOVE 102 TO WS-Y
+     PERFORM READ-OPEN-POWERED
+     MOVE "acceptance US12-4 live redstone 30-7 3.3 step 4 and so is the upper half" TO WS-CASE
+     MOVE "true,true" TO TL-EXPECTED
+     PERFORM ASSERT-OP
      STOP RUN.
+
+ FIND-ITEM.
+     MOVE 0 TO WS-ITEM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
+         IF IT-KEY(WS-I) = WS-K
+             COMPUTE WS-ITEM = WS-I - 1
+         END-IF
+     END-PERFORM.
+
+ PLACE-ITEM.
+*>   the creative player holds WS-ITEM and clicks the top of the floor block at x 3 of row WS-Z, standing above it
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE 0 TO PL-HELD(WS-ROW)
+     COMPUTE WS-PX = 3 + 0.5
+     MOVE WS-PX TO PL-X(WS-ROW)
+     MOVE 104.0 TO PL-Y(WS-ROW)
+     COMPUTE WS-PX = WS-Z + 0.5
+     MOVE WS-PX TO PL-Z(WS-ROW)
+     MOVE 3 TO WS-X
+     MOVE 100 TO WS-Y
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ.
+
+ READ-OPEN-POWERED.
+*>   "open,powered" of the block at (WS-X, WS-Y, WS-Z)
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE "open" TO WS-OP-NAME
+     CALL "SW-SET-PROP" USING WS-STATE WS-OP-NAME WS-OP-KEEP WS-OP-NEW WS-OP-A
+     MOVE "powered" TO WS-OP-NAME
+     CALL "SW-SET-PROP" USING WS-STATE WS-OP-NAME WS-OP-KEEP WS-OP-NEW WS-OP-B
+     MOVE SPACES TO WS-PROPS
+     STRING FUNCTION TRIM(WS-OP-A) "," FUNCTION TRIM(WS-OP-B) DELIMITED BY SIZE INTO WS-PROPS.
+
+ ASSERT-OP.
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-PROPS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  PUT-BLOCK.
 *>   the block of key WS-K and property pairs WS-PR at (WS-X, WS-Y, WS-Z), written with flags 3
