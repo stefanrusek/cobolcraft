@@ -50,6 +50,8 @@
  01 WS-ASLEEP              BINARY-LONG.
  01 WS-WALKING             BINARY-LONG.
  01 WS-SL                  BINARY-LONG.
+ 01 WS-SETTLED             BINARY-LONG.
+ 01 WS-SETTLED-N           BINARY-LONG.
  01 WS-NO                  BINARY-LONG VALUE 0.
  01 WS-FIRST-TEXT          PIC X(8).
  01 WS-FIRST               BINARY-LONG VALUE 1.
@@ -112,17 +114,19 @@
              PERFORM TICK-ALL
          END-PERFORM
          CALL STATIC "clock" RETURNING WS-CLOCK1
-         MOVE 0 TO WS-ASLEEP WS-WALKING
+         MOVE 0 TO WS-ASLEEP WS-WALKING WS-SETTLED-N
          PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > WS-N
              CALL "VL-FIND" USING EN-ID(WS-ROW(WS-T)) WS-NO WS-SL
              IF VL-SLEEP(WS-SL) = 1
                  ADD 1 TO WS-ASLEEP
              END-IF
+             CALL "STDMOB-SETTLED" USING WS-ROW(WS-T) WS-SETTLED
+             ADD WS-SETTLED TO WS-SETTLED-N
              IF EN-COOLDOWN(WS-ROW(WS-T)) > 0
                  ADD 1 TO WS-WALKING
              END-IF
          END-PERFORM
-         DISPLAY "BENCH state at the end of the phase: asleep " WS-ASLEEP " walking " WS-WALKING
+         DISPLAY "BENCH state at the end of the phase: asleep " WS-ASLEEP " walking " WS-WALKING " settled " WS-SETTLED-N
          COMPUTE WS-US = (WS-CLOCK1 - WS-CLOCK0) / (WS-TICKS * WS-N)
          MOVE WS-US TO WS-US-TEXT
          DISPLAY "BENCH villager step us per villager tick (" WS-LABEL(WS-PHASE) ", 40 villagers): " WS-US-TEXT
