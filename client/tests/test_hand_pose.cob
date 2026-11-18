@@ -594,6 +594,42 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO PL-EATING
      MOVE 0 TO CL-SWING-AT
+*>   The off hand takes the new stack at the bottom of its dip (below 0.1), like the main hand's.
+     MOVE 0 TO CL-OHAND-ITEM CL-OHAND-H CL-OHAND-OH
+     MOVE 1 TO PL-OFFHAND-COUNT
+     MOVE 10 TO PL-OFFHAND-ITEM
+     MOVE 4000000 TO CL-NOW-MS
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     ADD 50 TO CL-NOW-MS
+     CALL "HAND-EQUIP" USING CLIENT-STATE WS-E WS-EO WS-PART
+     MOVE "T5301 the off hand shows the new stack once its height is under 0.1" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     MOVE CL-OHAND-ITEM TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A block item in the off hand with no display entry of its model takes block/block's own left-hand entry (rotation y 225, scale 0.4; 12 section 8.2):
+*>   the first vertex of the cube (model corner (0, 1, 1)) is at (-0.56, -0.32, -1.0028), not the mirrored right entry's (-0.8428, -0.32, -0.72).
+     MOVE 0 TO CL-HAND-ITEM PL-OFFHAND-COUNT
+     MOVE 1 TO PL-OFFHAND-COUNT
+     MOVE 1 TO PL-OFFHAND-ITEM
+     MOVE 2 TO CL-OHAND-ITEM
+     MOVE 1 TO CL-OHAND-H CL-OHAND-OH
+     MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     MOVE 0 TO CL-ATK-LAST
+     MOVE 5000000 TO CL-NOW-MS
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T5301 a block item in the off hand is a cube of 36 vertices" TO TL-CASE
+     MOVE 36 TO TL-EXPECTED-N
+     MOVE RL-HAND-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T5301 the off hand's block takes the left-hand default (first vertex x -560, y -320, z -1003)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(RL-HAND-X(1) + 0.56) < 0.003 AND FUNCTION ABS(RL-HAND-Y(1) + 0.32) < 0.003
+             AND FUNCTION ABS(RL-HAND-Z(1) + 1.00284) < 0.003
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The attack delay of a held item: the bare hand and an item with no attack modifier 5 ticks; the standard set's iron sword 20 / 1.6 = 12.5.
      MOVE 0 TO WS-HELD
      CALL "HAND-ATTACK-DELAY" USING CLIENT-STATE WS-HELD WS-DELAY
