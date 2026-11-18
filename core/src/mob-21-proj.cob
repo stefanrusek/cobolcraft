@@ -243,6 +243,18 @@
              END-IF
      END-EVALUATE
      CALL "PROJ-OWNER" USING L-ROW WS-OWNER-ROW
+*>   A fireball a player deflected does 1000 damage to a ghast, the player the cause (21 section 5.1, 44 part 6 section 9.1).
+     MOVE CAUSE-MOB TO WS-CAUSE
+     IF WS-KIND = 1 AND L-ENTITY > 0 AND WS-OWNER-ROW > 0
+         CALL "STDMOB-INDEX" USING EN-TYPE(L-ENTITY) WS-M
+         IF WS-M > 0
+             IF SM-KEY(WS-M) = "ghast" AND EN-PLAYER(WS-OWNER-ROW) > 0
+                 MOVE 1000 TO WS-DAMAGE
+                 MOVE CAUSE-PLAYER TO WS-CAUSE
+                 MOVE EN-PLAYER(WS-OWNER-ROW) TO WS-OWNER-PLAYER
+             END-IF
+         END-IF
+     END-IF
      IF WS-DAMAGE > 0
          IF L-PLAYER > 0
              MOVE SPACES TO PL-KILLER-NAME(L-PLAYER)
