@@ -1870,6 +1870,12 @@
              IF L-KIND = 3 OR L-KIND = 7
                  CALL "RL-DISP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
              END-IF
+         WHEN 24
+             IF L-KIND = 1 OR L-KIND = 2 OR L-KIND = 7
+                 CALL "RL-HOOK-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+             END-IF
+         WHEN 25
+             CALL "RL-TRIP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
          WHEN 17
              CALL "RL-OBS-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
          WHEN 18

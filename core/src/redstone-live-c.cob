@@ -193,9 +193,9 @@
  END PROGRAM RL-ENTITY-FACTS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. RL-PLATE-COUNT.
-*> USING dimension row, x, y, z of a plate, all out, living out: the entities counted in the touch box (30-5 4.1): the box (x + 1/16, y, z + 1/16) to (x + 15/16, y + 1/4, z + 15/16), overlapped
-*> strictly by the box of an entity standing at its position.
+ PROGRAM-ID. RL-BOX-COUNT.
+*> USING dimension row, low x, high x, low y, high y, low z, high z (FLOAT-LONG), all out, living out: the entities counted (30-5 4.1) whose box, standing at the entity's position, overlaps the
+*> given box strictly.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -207,6 +207,38 @@
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-COUNTED             BINARY-LONG.
  01 WS-LIVING              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-LOX                  FLOAT-LONG.
+ 01 L-HIX                  FLOAT-LONG.
+ 01 L-LOY                  FLOAT-LONG.
+ 01 L-HIY                  FLOAT-LONG.
+ 01 L-LOZ                  FLOAT-LONG.
+ 01 L-HIZ                  FLOAT-LONG.
+ 01 L-ALL                  BINARY-LONG.
+ 01 L-LIVE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-LOX L-HIX L-LOY L-HIY L-LOZ L-HIZ L-ALL L-LIVE.
+     MOVE 0 TO L-ALL L-LIVE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = L-DIM
+             CALL "RL-ENTITY-FACTS" USING WS-I WS-X WS-Y WS-Z WS-HALF WS-HEIGHT WS-COUNTED WS-LIVING
+             IF WS-COUNTED = 1 AND WS-X + WS-HALF > L-LOX AND WS-X - WS-HALF < L-HIX AND WS-Z + WS-HALF > L-LOZ
+                     AND WS-Z - WS-HALF < L-HIZ AND WS-Y + WS-HEIGHT > L-LOY AND WS-Y < L-HIY
+                 ADD 1 TO L-ALL
+                 IF WS-LIVING = 1
+                     ADD 1 TO L-LIVE
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RL-BOX-COUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-PLATE-COUNT.
+*> USING dimension row, x, y, z of a plate, all out, living out: the entities counted in the touch box (30-5 4.1): the box (x + 1/16, y, z + 1/16) to (x + 15/16, y + 1/4, z + 15/16).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
  01 WS-LOX                 FLOAT-LONG.
  01 WS-HIX                 FLOAT-LONG.
  01 WS-LOZ                 FLOAT-LONG.
@@ -221,25 +253,13 @@
  01 L-ALL                  BINARY-LONG.
  01 L-LIVE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ALL L-LIVE.
-     MOVE 0 TO L-ALL L-LIVE
      COMPUTE WS-LOX = L-X + 0.0625
      COMPUTE WS-HIX = L-X + 0.9375
      COMPUTE WS-LOZ = L-Z + 0.0625
      COMPUTE WS-HIZ = L-Z + 0.9375
      MOVE L-Y TO WS-LOY
      COMPUTE WS-HIY = L-Y + 0.25
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
-         IF EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = L-DIM
-             CALL "RL-ENTITY-FACTS" USING WS-I WS-X WS-Y WS-Z WS-HALF WS-HEIGHT WS-COUNTED WS-LIVING
-             IF WS-COUNTED = 1 AND WS-X + WS-HALF > WS-LOX AND WS-X - WS-HALF < WS-HIX AND WS-Z + WS-HALF > WS-LOZ
-                     AND WS-Z - WS-HALF < WS-HIZ AND WS-Y + WS-HEIGHT > WS-LOY AND WS-Y < WS-HIY
-                 ADD 1 TO L-ALL
-                 IF WS-LIVING = 1
-                     ADD 1 TO L-LIVE
-                 END-IF
-             END-IF
-         END-IF
-     END-PERFORM
+     CALL "RL-BOX-COUNT" USING L-DIM WS-LOX WS-HIX WS-LOY WS-HIY WS-LOZ WS-HIZ L-ALL L-LIVE
      GOBACK.
  END PROGRAM RL-PLATE-COUNT.
 
@@ -428,6 +448,9 @@
                  PERFORM VARYING LS-CZ FROM LS-Z0 BY 1 UNTIL LS-CZ > LS-Z1
                      CALL "WORLD-GET-BLOCK" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
                      MOVE RL-CLASS(CB-S-BLOCK(LS-STATE + 1) + 1) TO LS-CLASS
+                     IF LS-CLASS = 25 AND RL-S-ON(LS-STATE + 1) = 0
+                         CALL "RL-TRIP-ENTITY" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
+                     END-IF
                      IF LS-CLASS = 18 OR LS-CLASS = 19
                          MOVE RL-S-POWER(LS-STATE + 1) TO LS-OLD
                          IF LS-CLASS = 18 AND RL-S-ON(LS-STATE + 1) = 1
