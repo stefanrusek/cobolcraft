@@ -4,7 +4,7 @@
 *> of the 15 families), an unwaxed one is reset to its unaffected variant, then 3 + nextInt(3) walks of 1 + nextInt(8) steps run from the strike position: a step draws up to 10 positions of the cube +- 1 around the
 *> cursor (nextInt(3) for x, y, z), takes the first weathering copper block (never a waxed one), scrapes it one oxidation step back when it has one, sends level event 3002 with data -1 and moves the cursor there;
 *> a walk ends when a step finds none. All of it runs for a visual-only bolt too (29b-3 9.4).
-*> Not done: spawnFire(4) on Normal and Hard (the placement rule of the fire is not in the documents), updateNeighbours of the block the rod is fixed to (the rod's own change goes through BLOCK-CHANGE), the
+*> spawnFire(4) on Normal and Hard runs first (LIGHTNING-SPAWN-FIRE, mob-21-8-6b.cob). Not done: updateNeighbours of the block the rod is fixed to (the rod's own change goes through BLOCK-CHANGE), the
 *> game event lightning_strike, the advancement for players within 15 blocks, the sounds, the random source (the draws are the hash of xp.cob, not the level's random source).
 *>
 *>   LIGHTNING-CELL USING dim, x, y, z, state out, bare key out (PIC X(48)), waxed out, level out, family out
@@ -207,12 +207,18 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY BRWORLD.
+ 01 WS-FIRES               BINARY-LONG VALUE 4.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   spawnFire(4) on Normal and Hard first (mob-21-8-6b.cob), then the rod and the copper.
+     IF BW-DIFFICULTY >= 2
+         CALL "LIGHTNING-SPAWN-FIRE" USING L-ROW WS-FIRES
+     END-IF
      COMPUTE WS-X = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-Y = FUNCTION INTEGER(EN-Y(L-ROW) - 0.000001)
      COMPUTE WS-Z = FUNCTION INTEGER(EN-Z(L-ROW))
