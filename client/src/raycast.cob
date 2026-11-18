@@ -63,6 +63,11 @@
     05 WS-RO               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-RDIR.
     05 WS-RD               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-ROFF.
+    05 WS-RF               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-OFX                 FLOAT-LONG.
+ 01 WS-OFY                 FLOAT-LONG.
+ 01 WS-OFZ                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -133,7 +138,12 @@
                  WHEN WS-SHAPE = 0
                      MOVE 0 TO WS-SEEN
                  WHEN WS-SHAPE > 1
-                     CALL "BSH-RAY" USING WS-SHAPE WS-CX WS-CY WS-CZ WS-RORG WS-RDIR WS-RT WS-RAX
+*>                   An offset plant's outline is moved by its model offset (51 section 1.4): the ray moves the other way.
+                     CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OFX WS-OFY WS-OFZ
+                     COMPUTE WS-RF(1) = WS-RO(1) - WS-OFX
+                     COMPUTE WS-RF(2) = WS-RO(2) - WS-OFY
+                     COMPUTE WS-RF(3) = WS-RO(3) - WS-OFZ
+                     CALL "BSH-RAY" USING WS-SHAPE WS-CX WS-CY WS-CZ WS-ROFF WS-RDIR WS-RT WS-RAX
                      IF WS-RT < 0 OR WS-RT > CL-REACH
                          MOVE 0 TO WS-SEEN
                      ELSE

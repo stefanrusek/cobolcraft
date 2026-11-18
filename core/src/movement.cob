@@ -63,6 +63,11 @@
  01 WS-SHAPE               BINARY-LONG.
  01 WS-BOX.
     05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-SBOX.
+    05 WS-SB               FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -105,7 +110,15 @@
                      CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
                  END-IF
                  IF WS-SHAPE NOT = 0
-                     CALL "BSH-OVERLAPS" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-BOX L-HIT
+*>                   The shape of an offset block is moved by its model offset (51 section 1.4): the box moves the other way.
+                     CALL "BSH-OFFSET" USING WS-STATE WS-BX WS-BY WS-BZ WS-OX WS-OY WS-OZ
+                     COMPUTE WS-SB(1) = WS-B(1) - WS-OX
+                     COMPUTE WS-SB(2) = WS-B(2) - WS-OY
+                     COMPUTE WS-SB(3) = WS-B(3) - WS-OZ
+                     COMPUTE WS-SB(4) = WS-B(4) - WS-OX
+                     COMPUTE WS-SB(5) = WS-B(5) - WS-OY
+                     COMPUTE WS-SB(6) = WS-B(6) - WS-OZ
+                     CALL "BSH-OVERLAPS" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-SBOX L-HIT
                  END-IF
              END-PERFORM
          END-PERFORM

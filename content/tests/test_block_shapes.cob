@@ -31,6 +31,15 @@
  01 WS-EXPECT              PIC X(300).
  01 WS-CASE                PIC X(80).
  01 WS-I                   BINARY-LONG.
+ 01 WS-OCX                 BINARY-LONG.
+ 01 WS-OCY                 BINARY-LONG.
+ 01 WS-OCZ                 BINARY-LONG.
+ 01 WS-EXP-X               BINARY-LONG.
+ 01 WS-EXP-Y               BINARY-LONG.
+ 01 WS-EXP-Z               BINARY-LONG.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
  01 WS-SLIP-TABLE.
     05 FILLER PIC X(40) VALUE "ice".
     05 FILLER BINARY-LONG VALUE 980.
@@ -2054,6 +2063,117 @@
      MOVE "T4506 wall hanging sign west (out)" TO WS-CASE
      MOVE "6000,14000,0,10000,16000,16000;7000,0,1000,9000,10000,1" & "5000" TO WS-EXPECT
      PERFORM CHECK-OUT
+*>   T4506: the model offset of 51 section 1.4 (expected values from an independent script of the hash: millionths of a block).
+     MOVE "dandelion" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "T4506 offset of dandelion at (1, 0)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "short_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 2 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE -183333 TO WS-EXP-X
+     MOVE -133333 TO WS-EXP-Y
+     MOVE 50000 TO WS-EXP-Z
+     MOVE "T4506 offset of short_grass at (2, 0)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "fern" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 2 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE -183333 TO WS-EXP-X
+     MOVE -133333 TO WS-EXP-Y
+     MOVE 50000 TO WS-EXP-Z
+     MOVE "T4506 offset of fern at (2, 0)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "bamboo_sapling" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 3 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 1 TO WS-OCZ
+     MOVE -250000 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 216667 TO WS-EXP-Z
+     MOVE "T4506 offset of bamboo_sapling at (3, 1)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=up,waterlogged=false" TO WS-P1
+     MOVE 3 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 1 TO WS-OCZ
+     MOVE -125000 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 125000 TO WS-EXP-Z
+     MOVE "T4506 offset of pointed_dripstone at (3, 1)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "small_dripleaf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "half=lower,facing=north,waterlogged=false" TO WS-P1
+     MOVE 4 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 2 TO WS-OCZ
+     MOVE 16667 TO WS-EXP-X
+     MOVE -20000 TO WS-EXP-Y
+     MOVE -183333 TO WS-EXP-Z
+     MOVE "T4506 offset of small_dripleaf at (4, 2)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "tall_seagrass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "half=lower" TO WS-P1
+     MOVE -3 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE -2 TO WS-OCZ
+     MOVE -116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 150000 TO WS-EXP-Z
+     MOVE "T4506 offset of tall_seagrass at (-3, -2)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "stone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 2 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "T4506 offset of stone at (2, 0)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "poppy" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 0 TO WS-OCX
+     MOVE 0 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE -250000 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -250000 TO WS-EXP-Z
+     MOVE "T4506 offset of poppy at (0, 0)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "tall_dry_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 5 TO WS-OCX
+     MOVE 64 TO WS-OCY
+     MOVE 1 TO WS-OCZ
+     MOVE -116667 TO WS-EXP-X
+     MOVE -133333 TO WS-EXP-Y
+     MOVE 16667 TO WS-EXP-Z
+     MOVE "T4506 offset of tall_dry_grass at (5, 1)" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE 0 TO WS-STATE
+     MOVE 0 TO WS-OCX WS-OCY WS-OCZ WS-EXP-X WS-EXP-Y WS-EXP-Z
+     MOVE "T4506 offset of the void state is none" TO WS-CASE
+     PERFORM CHECK-OFS-STATE
+     MOVE 99999 TO WS-STATE
+     MOVE "T4506 offset of a state past the table is none" TO WS-CASE
+     PERFORM CHECK-OFS-STATE
 *>   Play2 defect 3: the workstation and container shapes of 51 section 3.5 (hopper, cauldron, composter, grindstone, bell, scaffolding, piston head,
 *>   wall skulls, joined chests, beds, lectern). The cauldron's four corner legs are four 4 x 4 pillars (the L-shaped 2-pixel notch is not kept).
      MOVE "hopper" TO WS-KEY
@@ -2457,6 +2577,23 @@
      MOVE WS-ID TO TL-OBSERVED-N
      PERFORM ASSERT-N
      GOBACK.
+
+ CHECK-OFS.
+     PERFORM FIND-STATE
+     PERFORM CHECK-OFS-STATE.
+
+ CHECK-OFS-STATE.
+     CALL "BSH-OFFSET" USING WS-STATE WS-OCX WS-OCY WS-OCZ WS-OX WS-OY WS-OZ
+     MOVE WS-EXP-X TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OX * 1000000
+     MOVE WS-CASE TO TL-CASE
+     PERFORM ASSERT-N
+     MOVE WS-EXP-Y TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OY * 1000000
+     PERFORM ASSERT-N
+     MOVE WS-EXP-Z TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OZ * 1000000
+     PERFORM ASSERT-N.
 
  FIND-STATE.
      CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE.

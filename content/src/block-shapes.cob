@@ -716,6 +716,8 @@
  01 WS-KEY                 PIC X(40).
  01 WS-LENGTH              BINARY-LONG.
  01 WS-KEY2                PIC X(40).
+ 01 WS-OFS                 BINARY-LONG.
+ 01 WS-OHITS               BINARY-LONG.
  01 WS-LENGTH2             BINARY-LONG.
  01 WS-COND1               PIC X(40).
  01 WS-COND2               PIC X(40).
@@ -757,7 +759,7 @@
          MOVE 0 TO BSH-HASH(WS-S)
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-MAX-STATES
-         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S)
+         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S) BSH-OFS(WS-S)
      END-PERFORM
      INITIALIZE BSH-SHAPE(1) BSC-SHAPE
      MOVE 1 TO BSC-N
@@ -827,6 +829,34 @@
              WHEN OTHER
                  MOVE 0 TO WS-SLIPPERY
          END-EVALUATE
+*>       The model offset kind of the block (51 section 1.4): the flags offset:XZ and offset:XYZ, with the two blocks that have other limits.
+         MOVE 0 TO WS-OFS
+         MOVE 0 TO WS-OHITS
+         INSPECT WS-FLAGS TALLYING WS-OHITS FOR ALL "offset:XYZ"
+         IF WS-OHITS > 0
+             MOVE 2 TO WS-OFS
+         ELSE
+             MOVE 0 TO WS-OHITS
+             INSPECT WS-FLAGS TALLYING WS-OHITS FOR ALL "offset:XZ"
+             IF WS-OHITS > 0
+                 MOVE 1 TO WS-OFS
+             END-IF
+         END-IF
+*>       The registry rows of the flowers, the grasses and the seagrass carry no offset flag, but 51 section 1.4 names them: by class.
+         IF WS-OFS = 0
+             EVALUATE FUNCTION TRIM(CT-BR-CLASS)
+                 WHEN "FlowerBlock" WHEN "WitherRoseBlock" WHEN "TallSeagrassBlock"
+                     MOVE 1 TO WS-OFS
+                 WHEN "TallGrassBlock" WHEN "ShortDryGrassBlock" WHEN "TallDryGrassBlock"
+                     MOVE 2 TO WS-OFS
+             END-EVALUATE
+         END-IF
+         EVALUATE FUNCTION TRIM(CT-BR-KEY)
+             WHEN "pointed_dripstone" WHEN "minecraft:pointed_dripstone" WHEN "sulfur_spike" WHEN "minecraft:sulfur_spike"
+                 MOVE 3 TO WS-OFS
+             WHEN "small_dripleaf" WHEN "minecraft:small_dripleaf"
+                 MOVE 4 TO WS-OFS
+         END-EVALUATE
          IF WS-NEEDS = 1
              CALL "BSH-PROPS-SPLIT" USING CT-BR-PROPS
          END-IF
@@ -872,6 +902,7 @@
                  MOVE 1 TO BSH-CLIMB(WS-S)
              END-IF
              MOVE WS-SLIPPERY TO BSH-SLIP(WS-S)
+             MOVE WS-OFS TO BSH-OFS(WS-S)
          END-PERFORM
      END-PERFORM
      MOVE 1 TO BSH-READY
@@ -1108,3 +1139,84 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BSH-RAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-OFFSET.
+*> USING state id, cell x, y, z (BINARY-LONG), dx, dy, dz out (FLOAT-LONG, blocks): the model offset of a block of an offset kind (51 section 1.4) at that cell; 0 for any
+*> other state. h = (int)(x 3129871) sign extended, XOR z 116129781 (64 bits), XOR y with y = 0 (both kinds take the seed at y 0, so the cell's own y is unused); seed =
+*> (h h 42317861 + h 11) >> 16 (64 bit wrap, arithmetic shift); dx = clamp(((seed AND 15) / 15 - 0.5) 0.5, -m, m), dz the same from (seed >> 8) AND 15, and for the XYZ
+*> kinds dy = ((seed >> 4 AND 15) / 15 - 1) v; m 0.25 (0.125 for kind 3), v 0.2 (0.1 for kind 4). The divisions are in 32-bit floats.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-M32                 BINARY-DOUBLE UNSIGNED VALUE 4294967296.
+ 01 WS-H63                 BINARY-DOUBLE UNSIGNED VALUE 9223372036854775808.
+ 01 WS-A                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-B                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-L                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-S                   BINARY-DOUBLE.
+ 01 WS-T                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-F                   FLOAT-SHORT.
+ 01 WS-LIMIT               FLOAT-SHORT.
+ 01 WS-MAX                 FLOAT-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-X L-Y L-Z L-DX L-DY L-DZ.
+     MOVE 0 TO L-DX L-DY L-DZ WS-KIND
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         MOVE BSH-OFS(L-STATE + 1) TO WS-KIND
+     END-IF
+     IF WS-KIND = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-A = FUNCTION MOD(L-X * 3129871, WS-M32)
+     IF WS-A >= 2147483648
+         COMPUTE WS-A = WS-A + WS-M64 - WS-M32
+     END-IF
+     COMPUTE WS-B = FUNCTION MOD(L-Z * 116129781, WS-M64)
+     CALL "CBL_XOR" USING WS-A WS-B BY VALUE 8
+     MOVE WS-B TO WS-L
+     IF WS-L >= WS-H63
+         COMPUTE WS-S = WS-L - WS-M64
+     ELSE
+         MOVE WS-L TO WS-S
+     END-IF
+     COMPUTE WS-T = FUNCTION MOD(WS-S * WS-S * 42317861 + WS-S * 11, WS-M64)
+     IF WS-T >= WS-H63
+         COMPUTE WS-S = WS-T - WS-M64
+     ELSE
+         MOVE WS-T TO WS-S
+     END-IF
+     COMPUTE WS-SEED = FUNCTION INTEGER(WS-S / 65536)
+     MOVE 0.25 TO WS-LIMIT
+     IF WS-KIND = 3
+         MOVE 0.125 TO WS-LIMIT
+     END-IF
+     MOVE WS-LIMIT TO WS-MAX
+     COMPUTE WS-N = FUNCTION MOD(WS-SEED, 16)
+     COMPUTE WS-F = WS-N / 15
+     COMPUTE L-DX = FUNCTION MAX(0 - WS-MAX, FUNCTION MIN(WS-MAX, (WS-F - 0.5) * 0.5))
+     COMPUTE WS-N = FUNCTION MOD(FUNCTION INTEGER(WS-SEED / 256), 16)
+     COMPUTE WS-F = WS-N / 15
+     COMPUTE L-DZ = FUNCTION MAX(0 - WS-MAX, FUNCTION MIN(WS-MAX, (WS-F - 0.5) * 0.5))
+     IF WS-KIND = 2 OR WS-KIND = 4
+         COMPUTE WS-N = FUNCTION MOD(FUNCTION INTEGER(WS-SEED / 16), 16)
+         COMPUTE WS-F = WS-N / 15
+         IF WS-KIND = 4
+             COMPUTE L-DY = (WS-F - 1.0) * 0.1
+         ELSE
+             COMPUTE L-DY = (WS-F - 1.0) * 0.2
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-OFFSET.
