@@ -206,6 +206,13 @@
      MOVE -1875 TO WS-EXP
      COMPUTE WS-OBS ROUNDED = WF5 * 1000
      PERFORM EXPECT
+     MOVE 0 TO WA WB WE
+     MOVE 2 TO WC
+     MOVE 1 TO WD
+     CALL "Q9-GHAST-COLLIDE" USING WA WB WC WD WE WS-OBS
+     MOVE "acceptance US15 44-9§9.7 a flying ghast with passengers collides with another happy ghast" TO WS-NAME
+     MOVE 1 TO WS-EXP
+     PERFORM EXPECT
      MOVE 2 TO WA
      MOVE 4 TO WF1
      MOVE 4 TO WF2
