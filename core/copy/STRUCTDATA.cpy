@@ -29,6 +29,8 @@
     05 SD-EPOCH             BINARY-LONG.
     05 SD-CACHE-HITS        BINARY-LONG.
     05 SD-CACHE-MISSES      BINARY-LONG.
+*>  SD-STUB-ONLY 1 while STRUCT-STUB-OK asks a structure's generator for its stub (position and biome) only: the jigsaw assembly, the scattered pieces and the mansion layout are then not built
+    05 SD-STUB-ONLY         BINARY-LONG.
 *>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa) or the shipwreck's is_beached (1 beached) or the ocean ruin's biome_temp (1 warm)
 *>  SDT-LARGE and SDT-CLUSTER the ocean ruin's large_probability and cluster_probability (float32 values)
 *>  SDT-JIG-* the fields of a jigsaw structure (STRUCT-JIG-READ in struct-jig.cob, 36-3 3.1): the start pool, size, absolute start height, heightmap (-1 none, 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), expansion hack, horizontal and vertical distance, padding bottom and top, ignore_waterlogging, and ok (1 when the assembler can build it)

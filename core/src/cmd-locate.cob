@@ -98,6 +98,88 @@
  END PROGRAM CXC-STRUCT-WANT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-STRUCT-CELL-HIT.
+*> USING set row, kind, identifier, seed (BINARY-DOUBLE), chunk x, chunk z (a structure chunk of the set: STRUCT-IS-CHUNK is true), hit out: 1 when the start the generation makes in the chunk for the set
+*> (STRUCT-CHUNK-STARTS-RAW: the entries in the chooser's order, the first whose generation point has a biome of the structure) is a wanted structure. The answer is that of the start list but no
+*> start is built: only the validity of the entries (STRUCT-STUB-OK: the generation point and its biome, no pieces) is asked, and only as far as it decides. The first wanted entry in the order that is
+*> valid is looked for first (an entry of the wrong biome costs a height and a biome lookup); the entries before it that are not wanted are asked only then, because any one of them valid is the
+*> set's start instead.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SET-OK              BINARY-LONG.
+ 01 WS-ANY                 BINARY-LONG.
+ 01 WS-ORDER.
+    05 WS-ORDER-ENTRY      BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-ST                  BINARY-LONG.
+ 01 WS-ON                  BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-KIND L-ID L-SEED L-CX L-CZ L-HIT.
+     MOVE 0 TO L-HIT WS-ANY WS-FIRST
+     CALL "FLAT-STRUCT-SET-OK" USING SS-KEY(L-SET) WS-SET-OK
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(L-SET)
+         MOVE SE-STRUCT(SS-EN-FIRST(L-SET) + WS-K) TO WS-ST
+         MOVE SDT-KEY(WS-ST) TO WS-KEY
+         CALL "STRUCT-GATE" USING WS-KEY WS-ON
+         IF WS-ON = 1
+             MOVE 1 TO WS-ANY
+         END-IF
+     END-PERFORM
+     IF SS-POSSIBLE(L-SET) = 0 OR WS-ANY = 0 OR WS-SET-OK = 0
+         GOBACK
+     END-IF
+     CALL "STRUCT-ENTRY-ORDER" USING L-SET L-SEED L-CX L-CZ WS-ORDER WS-N
+*>   the first wanted entry in the order that is on in the gate and valid
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N OR WS-FIRST > 0
+         MOVE SE-STRUCT(SS-EN-FIRST(L-SET) + WS-ORDER-ENTRY(WS-K) - 1) TO WS-ST
+         CALL "CXC-STRUCT-WANT" USING L-KIND L-ID WS-ST WS-WANT
+         IF WS-WANT = 1
+             MOVE SDT-KEY(WS-ST) TO WS-KEY
+             CALL "STRUCT-GATE" USING WS-KEY WS-ON
+             IF WS-ON = 1
+                 CALL "STRUCT-STUB-OK" USING WS-ST L-SEED L-CX L-CZ WS-VALID
+                 IF WS-VALID = 1
+                     MOVE WS-K TO WS-FIRST
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-FIRST = 0
+         GOBACK
+     END-IF
+*>   it is the set's start unless an entry before it (not wanted) is valid
+     MOVE 1 TO L-HIT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K >= WS-FIRST OR L-HIT = 0
+         MOVE SE-STRUCT(SS-EN-FIRST(L-SET) + WS-ORDER-ENTRY(WS-K) - 1) TO WS-ST
+         CALL "CXC-STRUCT-WANT" USING L-KIND L-ID WS-ST WS-WANT
+         IF WS-WANT = 0
+             MOVE SDT-KEY(WS-ST) TO WS-KEY
+             CALL "STRUCT-GATE" USING WS-KEY WS-ON
+             IF WS-ON = 1
+                 CALL "STRUCT-STUB-OK" USING WS-ST L-SEED L-CX L-CZ WS-VALID
+                 IF WS-VALID = 1
+                     MOVE 0 TO L-HIT
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXC-STRUCT-CELL-HIT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CXC-STRUCT-SET-RING.
 *> USING set row, kind, identifier, seed (BINARY-DOUBLE, the level seed reduced to signed 64 bits), source block x, source block z, ring (cells, 36-1 section 11 step 4), found out, locate x out,
 *> locate z out, squared distance out (BINARY-DOUBLE): the answer of the random_spread set in ring r: the first cell on the border of the square (ix from -r to r outer, iz inner) whose potential chunk is
@@ -118,9 +200,6 @@
  01 WS-PX                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
- 01 WS-COUNT               BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-WANT                BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
@@ -158,16 +237,7 @@
              CALL "STRUCT-POTENTIAL" USING L-SET L-SEED WS-CX WS-CZ WS-PX WS-PZ
              CALL "STRUCT-IS-CHUNK" USING L-SET L-SEED WS-PX WS-PZ WS-FLAG
              IF WS-FLAG = 1
-                 CALL "STRUCT-CHUNK-STARTS" USING L-SEED WS-PX WS-PZ WS-COUNT
-                 MOVE 0 TO WS-HIT
-                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-COUNT
-                     IF SC-SET(WS-S) = L-SET
-                         CALL "CXC-STRUCT-WANT" USING L-KIND L-ID SC-STRUCT(WS-S) WS-WANT
-                         IF WS-WANT = 1
-                             MOVE 1 TO WS-HIT
-                         END-IF
-                     END-IF
-                 END-PERFORM
+                 CALL "CXC-STRUCT-CELL-HIT" USING L-SET L-KIND L-ID L-SEED WS-PX WS-PZ WS-HIT
                  IF WS-HIT = 1
                      CALL "STRUCT-LOCATE-POS" USING L-SET WS-PX WS-PZ WS-X WS-Y WS-Z
                      COMPUTE WS-DX = WS-X - L-SX
