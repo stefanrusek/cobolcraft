@@ -790,6 +790,7 @@
  COPY CORESTATE.
  COPY BRWORLD.
  COPY STDMOBS.
+ COPY CBLOCKS.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
@@ -804,6 +805,9 @@
  01 WS-LOCAL               BINARY-LONG.
  01 WS-32                  BINARY-LONG VALUE 32.
  01 WS-8                   BINARY-LONG VALUE 8.
+ 01 WS-20                  BINARY-LONG VALUE 20.
+ 01 WS-BSTATE              BINARY-LONG.
+ 01 WS-BKEY                PIC X(48).
  01 WS-DRAW                BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -862,6 +866,17 @@
 *>       The any-light monster rule (21 section 3.2): no light test, the base and the not-Peaceful tests of predicate 4.
          MOVE 4 TO WS-PRED
      END-IF
+     IF SM-SPAWN(L-ROW) = 12
+*>       checkGhastSpawnRules (44-6 section 9.1), in this order: the difficulty is not Peaceful, then nextInt(20) = 0, then the generic monster rule (predicate 4 holds the
+*>       base and the not-Peaceful tests).
+         MOVE 4 TO WS-PRED
+         IF WS-PEACEFUL = 0
+             CALL "XORO-NEXT-INT" USING L-STATE WS-20 WS-DRAW
+             IF WS-DRAW NOT = 0
+                 MOVE 1 TO WS-PEACEFUL
+             END-IF
+         END-IF
+     END-IF
      IF SM-SPAWN(L-ROW) = 11
 *>       Piglin and hoglin (21 section 3.2): only the floor test of predicate 1, on Peaceful too.
          MOVE 1 TO WS-PRED
@@ -873,6 +888,16 @@
          END-IF
      END-IF
      CALL "MS6-RULE-CHECK" USING WS-PRED L-REASON WS-PEACEFUL WS-DARK WS-BRIGHT WS-VALID WS-GRASS WS-OPEN-SKY L-OK
+*>   checkHoglinSpawnRules (44-6 section 6.2): the block below must not be a nether wart block.
+     IF SM-KEY(L-ROW) = "hoglin" AND L-OK = 1
+         CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-BELOW L-Z WS-BSTATE
+         IF WS-BSTATE NOT = 0
+             MOVE CB-KEY(CB-S-BLOCK(WS-BSTATE + 1) + 1) TO WS-BKEY
+             IF WS-BKEY = "minecraft:nether_wart_block" OR "nether_wart_block"
+                 MOVE 0 TO L-OK
+             END-IF
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM MS6-RULE-AT.
 

@@ -129,6 +129,7 @@
  01 WS-TICKS               BINARY-LONG.
  01 WS-AVOID-KIND          BINARY-LONG VALUE 3.
  01 WS-BABY-TICKS          BINARY-LONG VALUE 100.
+ 01 WS-HANDLED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ATTACKER             BINARY-LONG.
@@ -137,11 +138,21 @@
      IF WS-M = 0
          GOBACK
      END-IF
+     IF SM-KEY(WS-M) = "hoglin"
+         CALL "PGAI-UNPACIFY" USING L-ROW
+     END-IF
      IF SM-KEY(WS-M) = "piglin" AND EN-MOBAGE(L-ROW) < 0
 *>       A baby avoids its attacker for 100 ticks and gets no anger itself; the others are told (44-6 section 2.3 step 6).
          CALL "PGB-AVOID-SET" USING L-ROW WS-AVOID-KIND PL-X(L-ATTACKER) PL-Z(L-ATTACKER) WS-BABY-TICKS
          CALL "NETHER-ALERT" USING L-ROW L-ATTACKER
          GOBACK
+     END-IF
+*>   An adult piglin or a brute (44-6 sections 2.3 to 2.5): the end of a retreat, the retaliation distance rule and universal_anger.
+     IF SM-KEY(WS-M) = "piglin" OR SM-KEY(WS-M) = "piglin_brute"
+         CALL "PGAI-HURT-BY-PLAYER" USING L-ROW L-ATTACKER WS-HANDLED
+         IF WS-HANDLED = 1
+             GOBACK
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "piglin_brute"
 *>       A brute hit by a player takes it as its target and tells the piglins around it.

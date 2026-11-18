@@ -642,6 +642,7 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SOURCE              BINARY-LONG.
+ 01 WS-BY-PLAYER           BINARY-LONG.
  01 WS-APPLY               BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-DTYPE               BINARY-LONG.
@@ -697,7 +698,11 @@
          CALL "ARMADILLO-HURT" USING WS-ROW L-ATTACKER
          CALL "PANDA-HURT" USING WS-ROW L-ATTACKER
      END-IF
-     CALL "PIGLIN-HURT" USING WS-ROW
+     MOVE 0 TO WS-BY-PLAYER
+     IF L-ATTACKER > 0
+         MOVE 1 TO WS-BY-PLAYER
+     END-IF
+     CALL "PIGLIN-HURT" USING WS-ROW WS-BY-PLAYER
 *>   Wolf armour absorbs the hit instead of the wolf (19 section 6.1).
      CALL "WOLF-ARMOR-ABSORB" USING WS-ROW WS-DMG WS-ABSORBED
      IF WS-ABSORBED = 1

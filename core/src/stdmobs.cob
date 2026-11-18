@@ -279,6 +279,7 @@
              END-IF
              CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED WS-WOOL
              CALL "FOX-DROP-HELD" USING L-ROW
+             CALL "PIGLIN-DROP-INVENTORY" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
              CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW)
          END-IF
@@ -937,6 +938,7 @@
  01 WS-PET-WALK            BINARY-LONG.
  01 WS-EVK-CAST            BINARY-LONG.
  01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-ATTACK-GAP           BINARY-LONG.
  01 WS-RV-STILL            BINARY-LONG.
  01 WS-VS-HX               FLOAT-LONG.
  01 WS-VS-HZ               FLOAT-LONG.
@@ -1287,7 +1289,8 @@
              IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
-                 MOVE SM-ATTACK-TICKS TO EN-COOLDOWN(WS-ROW)
+                 CALL "STDMOB-ATTACK-GAP" USING WS-ROW WS-M WS-ATTACK-GAP
+                 MOVE WS-ATTACK-GAP TO EN-COOLDOWN(WS-ROW)
                  CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-M WS-DAMAGE
                  IF WS-DAMAGE > 0
                      CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-ROW
@@ -1407,6 +1410,10 @@
      END-IF
      IF WS-FLIER = 1
          GOBACK
+     END-IF
+*>   A slime or magma cube walks only in its jumps (CubeMobMoveControl, 44 part 6 section 9.3).
+     IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube"
+         CALL "CUBE-HOP" USING WS-ROW WS-M WS-HX WS-HZ
      END-IF
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW

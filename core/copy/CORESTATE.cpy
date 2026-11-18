@@ -578,6 +578,8 @@
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 *>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
        10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
+*>     --- 002-lane-p49l: cube mobs (core/src/mob-21-cube.cob; 44 part 6 section 9.3) ---
+       10 EN-HOP             BINARY-LONG.        *> slime, magma cube: jumpDelay, the ticks on the ground until the next jump
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

@@ -243,6 +243,17 @@
              END-IF
      END-EVALUATE
      CALL "PROJ-OWNER" USING L-ROW WS-OWNER-ROW
+*>   A reflected fireball (the owner is a player, 44-6 section 9.1) takes a ghast for 1000: it is never invulnerable to it.
+     IF WS-KIND = 1 AND L-ENTITY > 0 AND L-PLAYER = 0 AND WS-OWNER-ROW > 0
+         IF EN-PLAYER(WS-OWNER-ROW) > 0
+             CALL "STDMOB-INDEX" USING EN-TYPE(L-ENTITY) WS-M
+             IF WS-M > 0
+                 IF SM-KEY(WS-M) = "ghast"
+                     MOVE 1000 TO WS-DAMAGE
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
      IF WS-DAMAGE > 0
          IF L-PLAYER > 0
              MOVE SPACES TO PL-KILLER-NAME(L-PLAYER)

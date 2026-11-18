@@ -616,6 +616,13 @@
                  CALL "MOB-JOCKEY-SPIDER" USING L-STATE L-ROW
              END-IF
              CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "hoglin"
+         WHEN "zoglin"
+*>           finalizeSpawn of a hoglin or zoglin: a baby with probability 0.2 (nextFloat() < 0.2, 44 part 6 sections 6.2 and 6.3); a negative age is the baby flag here.
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             IF WS-D < 0.2
+                 MOVE -24000 TO EN-MOBAGE(L-ROW)
+             END-IF
          WHEN "strider"
              CALL "STRIDER-JOCKEY" USING L-STATE L-ROW
          WHEN "phantom"
