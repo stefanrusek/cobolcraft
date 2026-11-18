@@ -1392,8 +1392,13 @@
          MOVE 1 TO WS-PERSIST
      END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
-     IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1
+*>   The monster rows that are not built notInPeaceful (20 section 19.4): the piglin and the shulker stay in Peaceful. The warden is never removed for distance
+*>   (removeWhenFarAway false).
+     IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1 AND SM-KEY(WS-S) NOT = "piglin" AND SM-KEY(WS-S) NOT = "shulker"
          MOVE 1 TO WS-PEACEFUL
+     END-IF
+     IF SM-KEY(WS-S) = "warden"
+         MOVE 0 TO WS-REMOVABLE
      END-IF
      IF WS-IDLE-ID(L-ROW) NOT = EN-ID(L-ROW)
          MOVE EN-ID(L-ROW) TO WS-IDLE-ID(L-ROW)
