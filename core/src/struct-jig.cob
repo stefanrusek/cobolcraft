@@ -154,7 +154,7 @@
  01 WS-FX                  BINARY-LONG.
  01 WS-FY                  BINARY-LONG.
  01 WS-FZ                  BINARY-LONG.
- 01 WS-TAGKEY              PIC X(48).
+ 01 WS-TAGKEY              PIC X(80).
 *> the candidate's jigsaws
  01 WS-CJ-COUNT            BINARY-LONG.
  01 WS-CJ.

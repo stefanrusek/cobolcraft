@@ -27,9 +27,9 @@
        10 TN-PRIO-PLACE     BINARY-LONG.
        10 TN-PRIO-SELECT    BINARY-LONG.
        10 TN-LOOT           PIC X(48).
-       10 TN-NAME           PIC X(48).
-       10 TN-POOL           PIC X(48).
-       10 TN-TARGET         PIC X(48).
+       10 TN-NAME           PIC X(80).
+       10 TN-POOL           PIC X(80).
+       10 TN-TARGET         PIC X(80).
        10 TN-TEXT           PIC X(96).
  01 STRUCT-TPL EXTERNAL.
     05 TP-COUNT             BINARY-LONG.
