@@ -94,6 +94,11 @@
                  MOVE 0 TO EN-RS(L-ROW)
              END-IF
              MOVE L-INT TO EN-TGT(L-ROW)
+*>   An item frame's direction (entry 8, DIRECTION) and the rotation of its item (entry 10, INT, stored modulo 8; 44-9 section 5.3).
+         WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 8 AND L-SERIALIZER = 12
+             MOVE L-INT TO EN-FDIR(L-ROW)
+         WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 10 AND L-SERIALIZER = 1
+             COMPUTE EN-FROT(L-ROW) = FUNCTION MOD(L-INT, 8)
 *>   An axolotl's playing-dead flag (entry 19, BOOLEAN, 19 section 18).
          WHEN EN-KEY(L-ROW) = "axolotl" AND L-INDEX = 19 AND L-SERIALIZER = 8
              MOVE L-INT TO EN-AX-PD(L-ROW)

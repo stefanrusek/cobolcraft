@@ -12,6 +12,66 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-M.
+    05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AY                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-DEG                 FLOAT-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-BRIGHT              BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-HAND L-ITEM L-EYE-TABLE.
+*>   The frame of the arm part as the matrix (the axes are its columns) at the mob's place relative to the eye.
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+         MOVE EN-HAND-F(L-ROW, L-HAND, 3 + WS-A) TO WS-MV((WS-A - 1) * 3 + 1)
+         MOVE EN-HAND-F(L-ROW, L-HAND, 6 + WS-A) TO WS-MV((WS-A - 1) * 3 + 2)
+         MOVE EN-HAND-F(L-ROW, L-HAND, 9 + WS-A) TO WS-MV((WS-A - 1) * 3 + 3)
+     END-PERFORM
+     COMPUTE WS-MV(10) = EN-HAND-F(L-ROW, L-HAND, 1) + EN-X(L-ROW) - L-EYE(1)
+     COMPUTE WS-MV(11) = EN-HAND-F(L-ROW, L-HAND, 2) + EN-Y(L-ROW) - L-EYE(2)
+     COMPUTE WS-MV(12) = EN-HAND-F(L-ROW, L-HAND, 3) + EN-Z(L-ROW) - L-EYE(3)
+     MOVE 1 TO WS-SIDE
+     IF L-HAND = 2
+         MOVE -1 TO WS-SIDE
+     END-IF
+*>   rotate X by -90, Y by 180, then translate: an adult (+-1, 2, -10) / 16, a baby (0, 1, -4.5) / 16.
+     MOVE 1 TO WS-AXIS
+     MOVE -90 TO WS-DEG
+     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     MOVE 2 TO WS-AXIS
+     MOVE 180 TO WS-DEG
+     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     IF EN-BABY(L-ROW) = 1
+         MOVE 0 TO WS-AX
+         COMPUTE WS-AY = 1 / 16
+         COMPUTE WS-AZ = -4.5 / 16
+     ELSE
+         COMPUTE WS-AX = WS-SIDE / 16
+         COMPUTE WS-AY = 2 / 16
+         COMPUTE WS-AZ = -10 / 16
+     END-IF
+     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M L-ITEM L-HAND L-ROW L-EYE-TABLE WS-BRIGHT
+     GOBACK.
+ END PROGRAM ENTITY-HELD-POSED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-POSED-DRAW.
+*> USING CLIENT-STATE, placement (12 FLOAT-LONG: the columns of the 3 x 3 matrix, then the translation, relative to the eye), item registry id, display context (1 thirdperson_righthand,
+*> 2 thirdperson_lefthand, 3 fixed), replica row whose cell gives the light, eye (3 FLOAT-LONG), bright (BINARY-LONG, 1 for full bright): draws the item at the placement with its display
+*> transform of the context (as above for the hands; the fixed context of an item frame without an entry: item/generated rotates (0, 180, 0), block/block scales 0.5, 12 section 8.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
  COPY CONTENT.
  01 WS-CORNER-DATA.
     05 FILLER PIC X(12) VALUE "011111101001".
@@ -73,12 +133,16 @@
     05 WS-NV               FLOAT-LONG OCCURS 3 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
- 01 L-ROW                  BINARY-LONG.
- 01 L-HAND                 BINARY-LONG.
+ 01 L-M.
+    05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
  01 L-ITEM                 BINARY-LONG.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
- PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-HAND L-ITEM L-EYE-TABLE.
+ 01 L-BRIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-ITEM L-HAND L-ROW L-EYE-TABLE L-BRIGHT.
+     MOVE L-M TO WS-M
      CALL "ITEM-SPRITE-OF" USING CLIENT-STATE L-ITEM WS-SPRITE
      MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
 *>   A code-drawn (special) model is not drawn from its icon.
@@ -86,36 +150,6 @@
      IF WS-HAVE = 2
          GOBACK
      END-IF
-*>   The frame of the arm part as the matrix (the axes are its columns) at the mob's place relative to the eye.
-     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
-         MOVE EN-HAND-F(L-ROW, L-HAND, 3 + WS-A) TO WS-MV((WS-A - 1) * 3 + 1)
-         MOVE EN-HAND-F(L-ROW, L-HAND, 6 + WS-A) TO WS-MV((WS-A - 1) * 3 + 2)
-         MOVE EN-HAND-F(L-ROW, L-HAND, 9 + WS-A) TO WS-MV((WS-A - 1) * 3 + 3)
-     END-PERFORM
-     COMPUTE WS-MV(10) = EN-HAND-F(L-ROW, L-HAND, 1) + EN-X(L-ROW) - L-EYE(1)
-     COMPUTE WS-MV(11) = EN-HAND-F(L-ROW, L-HAND, 2) + EN-Y(L-ROW) - L-EYE(2)
-     COMPUTE WS-MV(12) = EN-HAND-F(L-ROW, L-HAND, 3) + EN-Z(L-ROW) - L-EYE(3)
-     MOVE 1 TO WS-SIDE
-     IF L-HAND = 2
-         MOVE -1 TO WS-SIDE
-     END-IF
-*>   rotate X by -90, Y by 180, then translate: an adult (+-1, 2, -10) / 16, a baby (0, 1, -4.5) / 16.
-     MOVE 1 TO WS-AXIS
-     MOVE -90 TO WS-DEG
-     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
-     MOVE 2 TO WS-AXIS
-     MOVE 180 TO WS-DEG
-     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
-     IF EN-BABY(L-ROW) = 1
-         MOVE 0 TO WS-AX
-         COMPUTE WS-AY = 1 / 16
-         COMPUTE WS-AZ = -4.5 / 16
-     ELSE
-         COMPUTE WS-AX = WS-SIDE / 16
-         COMPUTE WS-AY = 2 / 16
-         COMPUTE WS-AZ = -10 / 16
-     END-IF
-     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
 *>   A block item is the unit cube when its model has faces (a standard set) or it is a stand-in block; any other item is its icon.
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE L-ITEM WS-BLOCK WS-TOOL WS-FOOD
      MOVE 0 TO WS-STD
@@ -137,10 +171,7 @@
          END-IF
      END-IF
 *>   The display transform: the arm's own entry, else the right entry (mirrored for the left arm), else the default of item/generated or block/block.
-     MOVE 1 TO WS-CONTEXT
-     IF L-HAND = 2
-         MOVE 2 TO WS-CONTEXT
-     END-IF
+     MOVE L-HAND TO WS-CONTEXT
      CALL "ITEM-DISPLAY" USING CLIENT-STATE L-ITEM WS-CONTEXT WS-HAVE WS-VAL
      IF WS-HAVE = 0 AND L-HAND = 2
          MOVE 1 TO WS-CONTEXT
@@ -150,6 +181,16 @@
              COMPUTE WS-DV(2) = 0 - WS-DV(2)
              COMPUTE WS-DV(3) = 0 - WS-DV(3)
          END-IF
+     END-IF
+     IF WS-HAVE = 0 AND L-HAND = 3
+         MOVE 0 TO WS-DV(1) WS-DV(2) WS-DV(3) WS-DV(4) WS-DV(5) WS-DV(6)
+         MOVE 1 TO WS-DV(7) WS-DV(8) WS-DV(9)
+         MOVE 180 TO WS-DV(2)
+         IF WS-CUBE = 1
+             MOVE 0 TO WS-DV(2)
+             MOVE 0.5 TO WS-DV(7) WS-DV(8) WS-DV(9)
+         END-IF
+         MOVE 1 TO WS-HAVE
      END-IF
      IF WS-HAVE = 0
          MOVE 0 TO WS-DV(1) WS-DV(2) WS-DV(3) WS-DV(4) WS-DV(5) WS-DV(6)
@@ -187,6 +228,9 @@
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLK
      COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15, 0.1)
+     IF L-BRIGHT = 1
+         MOVE 1 TO WS-LIGHT
+     END-IF
 *>   The geometry in the model's unit cube (the faces of HAND-BUILD's tables): corner texels of the icon top-left, top-right, bottom-right, bottom-left.
      MOVE 0 TO WS-NRM-V(1, 1) WS-NRM-V(1, 2) WS-NRM-V(2, 1) WS-NRM-V(2, 2) WS-NRM-V(3, 2) WS-NRM-V(3, 3)
          WS-NRM-V(4, 2) WS-NRM-V(4, 3) WS-NRM-V(5, 1) WS-NRM-V(5, 3) WS-NRM-V(6, 1) WS-NRM-V(6, 3)
@@ -236,4 +280,94 @@
          CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-MODE
      END-PERFORM
      GOBACK.
- END PROGRAM ENTITY-HELD-POSED.
+ END PROGRAM ITEM-POSED-DRAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-FRAME-EMIT.
+*> USING CLIENT-STATE, replica row of an item_frame or glow_item_frame with an item (EN-STACK-ITEM, EN-STACK-COUNT above 0), eye (3 FLOAT-LONG): the framed item (34-9 section 10 submit):
+*> from the entity position translate the direction's unit step x 0.46875; a horizontal direction rotates X by 0 and Y by 180 - toYRot (north 180, south 0, west 90, east 270), a vertical one X by
+*> -90 x the step (up -90, down +90) and Y by 180; translate (0, 0, 0.4375) (0.5 when the frame is invisible, the flags bit 32); rotate Z by rotation x 45 degrees; scale 0.5; then the item with its
+*> fixed display transform (ITEM-POSED-DRAW, context 3), full bright for a glow frame. A map in the frame is not drawn (the client keeps no map data).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-M.
+    05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AY                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-DEG                 FLOAT-LONG.
+ 01 WS-STEP                FLOAT-LONG.
+ 01 WS-BRIGHT              BINARY-LONG.
+ 01 WS-CONTEXT             BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
+     MOVE 0 TO WS-MV(2) WS-MV(3) WS-MV(4) WS-MV(6) WS-MV(7) WS-MV(8)
+     MOVE 1 TO WS-MV(1) WS-MV(5) WS-MV(9)
+     COMPUTE WS-MV(10) = EN-X(L-ROW) - L-EYE(1)
+     COMPUTE WS-MV(11) = EN-Y(L-ROW) - L-EYE(2)
+     COMPUTE WS-MV(12) = EN-Z(L-ROW) - L-EYE(3)
+     MOVE 0 TO WS-AX WS-AY WS-AZ
+     EVALUATE EN-FDIR(L-ROW)
+         WHEN 0
+             MOVE -0.46875 TO WS-AY
+         WHEN 1
+             MOVE 0.46875 TO WS-AY
+         WHEN 2
+             MOVE -0.46875 TO WS-AZ
+         WHEN 3
+             MOVE 0.46875 TO WS-AZ
+         WHEN 4
+             MOVE -0.46875 TO WS-AX
+         WHEN OTHER
+             MOVE 0.46875 TO WS-AX
+     END-EVALUATE
+     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+     MOVE 1 TO WS-AXIS
+     MOVE 2 TO WS-STEP
+     EVALUATE EN-FDIR(L-ROW)
+         WHEN 0
+             MOVE 90 TO WS-DEG
+             MOVE 180 TO WS-STEP
+         WHEN 1
+             MOVE -90 TO WS-DEG
+             MOVE 180 TO WS-STEP
+         WHEN 2
+             MOVE 0 TO WS-DEG
+             MOVE 0 TO WS-STEP
+         WHEN 3
+             MOVE 0 TO WS-DEG
+             MOVE 180 TO WS-STEP
+         WHEN 4
+             MOVE 0 TO WS-DEG
+             MOVE 90 TO WS-STEP
+         WHEN OTHER
+             MOVE 0 TO WS-DEG
+             MOVE -90 TO WS-STEP
+     END-EVALUATE
+     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     MOVE 2 TO WS-AXIS
+     MOVE WS-STEP TO WS-DEG
+     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     MOVE 0 TO WS-AX WS-AY
+     MOVE 0.4375 TO WS-AZ
+     IF FUNCTION MOD(FUNCTION INTEGER(EN-FLAGS(L-ROW) / 32), 2) = 1
+         MOVE 0.5 TO WS-AZ
+     END-IF
+     CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
+     MOVE 3 TO WS-AXIS
+     COMPUTE WS-DEG = EN-FROT(L-ROW) * 45
+     CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     MOVE 0.5 TO WS-AX WS-AY WS-AZ
+     CALL "HAND-M-SCALE" USING WS-M WS-AX WS-AY WS-AZ
+     MOVE 0 TO WS-BRIGHT
+     IF EN-KEY(L-ROW) = "glow_item_frame"
+         MOVE 1 TO WS-BRIGHT
+     END-IF
+     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M EN-STACK-ITEM(L-ROW) WS-CONTEXT L-ROW L-EYE-TABLE WS-BRIGHT
+     GOBACK.
+ END PROGRAM ENTITY-FRAME-EMIT.

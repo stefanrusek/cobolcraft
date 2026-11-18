@@ -282,6 +282,9 @@
          END-IF
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE
+*>               An item frame draws no entity model: its item is in the ground item mesh (ENTITY-FRAME-EMIT).
+                 WHEN CL-MD-ANIM(EN-MODEL(WS-R)) = "F"
+                     CONTINUE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
                      CALL "ENTITY-ARROW-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0
@@ -703,6 +706,12 @@
                      CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
                  END-IF
              END-PERFORM
+         END-IF
+     END-PERFORM
+*>   The items in item frames (34-9 section 10).
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND (EN-KEY(WS-R) = "item_frame" OR "glow_item_frame") AND EN-STACK-COUNT(WS-R) > 0
+             CALL "ENTITY-FRAME-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
          END-IF
      END-PERFORM
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE

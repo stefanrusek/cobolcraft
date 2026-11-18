@@ -158,7 +158,7 @@
      MOVE 0 TO WS-NEW
      ADD 1 TO EA-MT-STAMP
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) NOT = "F"
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX

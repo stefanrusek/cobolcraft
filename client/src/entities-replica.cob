@@ -253,6 +253,8 @@
                  END-PERFORM
                  MOVE 0 TO EN-AX-BS(WS-ROW) EN-AX-BT(WS-ROW)
                  MOVE 1 TO EN-HP(WS-ROW)
+                 MOVE 2 TO EN-FDIR(WS-ROW)
+                 MOVE 0 TO EN-FROT(WS-ROW)
                  MOVE 0 TO EN-DD(WS-ROW) EN-NCI(WS-ROW) EN-BP(WS-ROW) EN-BX(WS-ROW) EN-BY(WS-ROW) EN-BZ(WS-ROW)
                  MOVE WS-PITCH TO EN-AX-XR(WS-ROW)
                  MOVE WS-YAW TO EN-AX-YR(WS-ROW)
@@ -318,7 +320,8 @@
                  END-IF
 *>               The item stack of a stand-in loose item is entry 0; the item entity of a standard world has it as entry 8 (21 App A DATA_ITEM).
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
-                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND EN-KEY(WS-ROW) = "item"))
+                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND EN-KEY(WS-ROW) = "item")
+                             OR (MD-MD-INDEX = 9 AND EN-VANILLA(WS-ROW) = 1 AND (EN-KEY(WS-ROW) = "item_frame" OR "glow_item_frame")))
                      MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
                      MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
                  END-IF

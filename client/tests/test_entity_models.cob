@@ -285,6 +285,10 @@
          IF CL-MD-FAMILY(WS-I) = 0 AND RL-EN-COUNT = 6
              ADD 1 TO WS-OK
          END-IF
+*>       An item frame (code F) draws no model: its item is in the ground item mesh (test_entity_frame).
+         IF CL-MD-ANIM(WS-I) = "F" AND RL-EN-COUNT = 0
+             ADD 1 TO WS-OK
+         END-IF
 *>       A row that is the extra layer of another (the sheep's wool) is no entity type: it is drawn with its base row (below).
          IF WS-STATUS NOT = CT-OK AND RL-EN-COUNT = 0
              ADD 1 TO WS-OK

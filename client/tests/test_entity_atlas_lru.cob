@@ -152,7 +152,7 @@
          END-IF
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
              MOVE 0 TO WS-SEEN
-             IF EN-MODEL(WS-I) > 0
+             IF EN-MODEL(WS-I) > 0 AND CL-MD-ANIM(EN-MODEL(WS-I)) NOT = "F"
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
                      IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-I)
                          MOVE 1 TO WS-SEEN
