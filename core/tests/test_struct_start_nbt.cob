@@ -349,7 +349,7 @@
      MOVE 2 TO WS-CX
      MOVE 0 TO WS-CZ
      CALL "STRUCT-START-FIND" USING WS-S WS-CX WS-CZ WS-ROW
-     MOVE "acceptance US12 36-1§7.3 loading: unknown tags are skipped (an int among starts and references, an unknown key of a start and of the structures compound, children that are not compounds): alpha at chunk (2, 0) loads without a piece, no reference, outcome 0" TO TL-CASE
+     MOVE "acceptance US12 36-1§7.3 loading: unknown tags are skipped (an int among starts and references, unknown keys, non-compound children): alpha at chunk (2, 0) loads empty, no reference" TO TL-CASE
      COMPUTE TL-OBSERVED-N = WS-OUTCOME * 1000 + SST-COUNT * 100 + SST-N(WS-ROW) * 10 + SST-REF-COUNT
      MOVE 100 TO TL-EXPECTED-N
      PERFORM CHECK-NUM
@@ -375,6 +375,9 @@
          MOVE 1 TO WS-BB-N(4) WS-BB-N(5) WS-BB-N(6)
          CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
      END-IF
+*>   an unknown key of a piece tag is skipped
+     MOVE "Extra" TO WN MOVE 5 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER.
 
 *> a long array named WS-KEY of four packed positions: (9, 0), (8, -8), (-8, 8), (0, 9)

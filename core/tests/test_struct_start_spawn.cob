@@ -98,6 +98,44 @@
      MOVE 9 TO WS-Z1
      MOVE -30 TO WS-Y1
      CALL "STRUCT-START-PIECE-ADD" USING WS-PR WS-T WS-O WS-D WS-J WS-G WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-P
+*>   a second swamp hut start at chunk (-1, 0), piece (-5..1, 70..72, 0..8): it reaches chunk (0, 0); a fortress, a pillager outpost (full) and trial chambers at chunk (0, 0)
+     MOVE 1 TO WS-S
+     MOVE -1 TO WS-PCX
+     MOVE 0 TO WS-PCZ
+     CALL "STRUCT-START-PUT" USING WS-S WS-PCX WS-PCZ WS-REFS WS-ROW
+     MOVE WS-ROW TO WS-PR
+     MOVE -5 TO WS-X0
+     MOVE 70 TO WS-Y0
+     MOVE 0 TO WS-Z0
+     MOVE 1 TO WS-X1
+     MOVE 72 TO WS-Y1
+     MOVE 8 TO WS-Z1
+     CALL "STRUCT-START-PIECE-ADD" USING WS-PR WS-T WS-O WS-D WS-J WS-G WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-P
+     MOVE 0 TO WS-PCX
+     MOVE 5 TO WS-S
+     CALL "STRUCT-START-PUT" USING WS-S WS-PCX WS-PCZ WS-REFS WS-ROW
+     MOVE WS-ROW TO WS-PR
+     MOVE 0 TO WS-X0 WS-Z0
+     MOVE 90 TO WS-Y0
+     MOVE 10 TO WS-X1 WS-Z1
+     MOVE 95 TO WS-Y1
+     CALL "STRUCT-START-PIECE-ADD" USING WS-PR WS-T WS-O WS-D WS-J WS-G WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-P
+     MOVE 6 TO WS-S
+     CALL "STRUCT-START-PUT" USING WS-S WS-PCX WS-PCZ WS-REFS WS-ROW
+     MOVE WS-ROW TO WS-PR
+     MOVE 3 TO WS-X0 WS-Z0
+     MOVE 100 TO WS-Y0
+     MOVE 12 TO WS-X1 WS-Z1
+     MOVE 110 TO WS-Y1
+     CALL "STRUCT-START-PIECE-ADD" USING WS-PR WS-T WS-O WS-D WS-J WS-G WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-P
+     MOVE 7 TO WS-S
+     CALL "STRUCT-START-PUT" USING WS-S WS-PCX WS-PCZ WS-REFS WS-ROW
+     MOVE WS-ROW TO WS-PR
+     MOVE 0 TO WS-X0 WS-Z0
+     MOVE -30 TO WS-Y0
+     MOVE 5 TO WS-X1 WS-Z1
+     MOVE -20 TO WS-Y1
+     CALL "STRUCT-START-PIECE-ADD" USING WS-PR WS-T WS-O WS-D WS-J WS-G WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-P
      MOVE 0 TO WS-CX WS-CZ
      CALL "STRUCT-REFS-CREATE" USING WS-CX WS-CZ
      MOVE 1 TO WS-CX
@@ -146,9 +184,9 @@
      PERFORM CHECK
 *>   a position in the chunk of the swamp hut and the monument but outside the monument's y range and the hut's pieces
      MOVE 1 TO WS-CAT
-     MOVE 100 TO WS-Y
+     MOVE 120 TO WS-Y
      PERFORM ASK
-     MOVE "acceptance US12 36-1§10 spawn override: above every box (y 100): 0" TO TL-CASE
+     MOVE "acceptance US12 36-1§10 spawn override: above every box (y 120): 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      PERFORM CHECK
 *>   the first candidate wins: structure 1 (the hut) is listed before the monument for chunk (0, 0); a position in both a hut piece and the monument box answers the hut
@@ -184,6 +222,38 @@
      PERFORM ASK
      MOVE "acceptance US12 36-1§10 spawn override: x 45 is beyond the inflated box (to 42): 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK
+*>   the second hut start (only it has a piece at y 71): the structure is one row with both starts
+     MOVE 1 TO WS-X
+     MOVE 71 TO WS-Y
+     MOVE 5 TO WS-Z
+     MOVE 1 TO WS-CAT
+     PERFORM ASK
+     MOVE "acceptance US12 36-1§10 spawn override: a second start of the same structure that references the chunk qualifies too (a piece of the start of chunk (-1, 0)): row 7" TO TL-CASE
+     MOVE 7 TO TL-EXPECTED-N
+     PERFORM CHECK
+*>   a fortress (piece mode, list 1), a pillager outpost (full mode, list 6) and trial chambers (every category, list 10)
+     MOVE 2 TO WS-X
+     MOVE 92 TO WS-Y
+     MOVE 2 TO WS-Z
+     PERFORM ASK
+     MOVE "acceptance US12 36-1§10 spawn override: inside a fortress piece, monster: the fortress list (row 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK
+     MOVE 8 TO WS-X
+     MOVE 105 TO WS-Y
+     MOVE 8 TO WS-Z
+     PERFORM ASK
+     MOVE "acceptance US12 36-1§10 spawn override: inside a pillager outpost's box (full mode), monster: row 6" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     PERFORM CHECK
+     MOVE 3 TO WS-X
+     MOVE -25 TO WS-Y
+     MOVE 3 TO WS-Z
+     MOVE 6 TO WS-CAT
+     PERFORM ASK
+     MOVE "acceptance US12 36-1§10 spawn override: inside a trial chambers piece, any category (water creature): row 10" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
      PERFORM CHECK
 *>   a chunk nothing references: 0
      MOVE 500 TO WS-X

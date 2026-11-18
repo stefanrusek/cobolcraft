@@ -10,6 +10,40 @@
 *>   STRUCT-BEARD-PREPARE USING chunk x, chunk z: makes the starts of the adapting structures within 8 chunks (their generators, STRUCT-CAPTURE) and collects; empty when no structure is gated on; once per chunk, seed and data epoch
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-BEARD-EXTEND.
+*> USING have (0 until the first box, then 1), box x0 y0 z0 x1 y1 z1: the union of the affected box and that box
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTBEARD.
+ LINKAGE SECTION.
+ 01 L-HAVE                 BINARY-LONG.
+ 01 L-BX0                  BINARY-LONG.
+ 01 L-BY0                  BINARY-LONG.
+ 01 L-BZ0                  BINARY-LONG.
+ 01 L-BX1                  BINARY-LONG.
+ 01 L-BY1                  BINARY-LONG.
+ 01 L-BZ1                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HAVE L-BX0 L-BY0 L-BZ0 L-BX1 L-BY1 L-BZ1.
+     IF L-HAVE = 0
+         MOVE L-BX0 TO SBD-AX0
+         MOVE L-BY0 TO SBD-AY0
+         MOVE L-BZ0 TO SBD-AZ0
+         MOVE L-BX1 TO SBD-AX1
+         MOVE L-BY1 TO SBD-AY1
+         MOVE L-BZ1 TO SBD-AZ1
+         MOVE 1 TO L-HAVE
+     ELSE
+         MOVE FUNCTION MIN(SBD-AX0, L-BX0) TO SBD-AX0
+         MOVE FUNCTION MIN(SBD-AY0, L-BY0) TO SBD-AY0
+         MOVE FUNCTION MIN(SBD-AZ0, L-BZ0) TO SBD-AZ0
+         MOVE FUNCTION MAX(SBD-AX1, L-BX1) TO SBD-AX1
+         MOVE FUNCTION MAX(SBD-AY1, L-BY1) TO SBD-AY1
+         MOVE FUNCTION MAX(SBD-AZ1, L-BZ1) TO SBD-AZ1
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-BEARD-EXTEND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BEARD-COLLECT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -82,7 +116,7 @@
                          MOVE WS-BY1 TO SBR-Y1(SBD-RIGID-COUNT)
                          MOVE WS-BZ1 TO SBR-Z1(SBD-RIGID-COUNT)
                          MOVE WS-GROUND TO SBR-GROUND(SBD-RIGID-COUNT)
-                         PERFORM EXTEND-BOX
+                         CALL "STRUCT-BEARD-EXTEND" USING WS-HAVE WS-BX0 WS-BY0 WS-BZ0 WS-BX1 WS-BY1 WS-BZ1
                      ELSE
                          ADD 1 TO SBD-LOST
                      END-IF
@@ -105,7 +139,7 @@
                              MOVE WS-SX TO WS-BX1
                              MOVE WS-SY TO WS-BY1
                              MOVE WS-SZ TO WS-BZ1
-                             PERFORM EXTEND-BOX
+                             CALL "STRUCT-BEARD-EXTEND" USING WS-HAVE WS-BX0 WS-BY0 WS-BZ0 WS-BX1 WS-BY1 WS-BZ1
                          ELSE
                              ADD 1 TO SBD-LOST
                          END-IF
@@ -118,25 +152,6 @@
          MOVE 1 TO SBD-ACTIVE
      END-IF
      GOBACK.
-
-*> the union of the affected box and the box WS-BX0 .. WS-BZ1
- EXTEND-BOX.
-     IF WS-HAVE = 0
-         MOVE WS-BX0 TO SBD-AX0
-         MOVE WS-BY0 TO SBD-AY0
-         MOVE WS-BZ0 TO SBD-AZ0
-         MOVE WS-BX1 TO SBD-AX1
-         MOVE WS-BY1 TO SBD-AY1
-         MOVE WS-BZ1 TO SBD-AZ1
-         MOVE 1 TO WS-HAVE
-     ELSE
-         MOVE FUNCTION MIN(SBD-AX0, WS-BX0) TO SBD-AX0
-         MOVE FUNCTION MIN(SBD-AY0, WS-BY0) TO SBD-AY0
-         MOVE FUNCTION MIN(SBD-AZ0, WS-BZ0) TO SBD-AZ0
-         MOVE FUNCTION MAX(SBD-AX1, WS-BX1) TO SBD-AX1
-         MOVE FUNCTION MAX(SBD-AY1, WS-BY1) TO SBD-AY1
-         MOVE FUNCTION MAX(SBD-AZ1, WS-BZ1) TO SBD-AZ1
-     END-IF.
  END PROGRAM STRUCT-BEARD-COLLECT.
 
  IDENTIFICATION DIVISION.
