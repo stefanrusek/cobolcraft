@@ -94,3 +94,38 @@
      END-PERFORM
      GOBACK.
  END PROGRAM F357-MANHATTAN-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F357-TEMPLATE-ANCHOR.
+*> USING rotation (0 NONE, 1 CLOCKWISE_90, 2 CLOCKWISE_180, 3 COUNTERCLOCKWISE_90), size x, size z (the template's unrotated size), dx, dz out: section 11.3 step 3, the offset of the anchor from the origin:
+*> unit(rotation.rotate(WEST)) * (size x div 2) + unit(rotation.rotate(NORTH)) * (size z div 2); the y offset is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WEST                BINARY-LONG VALUE 4.
+ 01 WS-NORTH               BINARY-LONG VALUE 2.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-AX                  BINARY-LONG.
+ 01 WS-AY                  BINARY-LONG.
+ 01 WS-AZ                  BINARY-LONG.
+ 01 WS-HALF-X              BINARY-LONG.
+ 01 WS-HALF-Z              BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROT                  BINARY-LONG.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROT L-SX L-SZ L-DX L-DZ.
+     DIVIDE L-SX BY 2 GIVING WS-HALF-X
+     DIVIDE L-SZ BY 2 GIVING WS-HALF-Z
+     CALL "F356-ROTATE" USING L-ROT WS-WEST WS-DIR
+     CALL "F356-DIR-STEP" USING WS-DIR WS-AX WS-AY WS-AZ
+     CALL "F356-ROTATE" USING L-ROT WS-NORTH WS-DIR
+     CALL "F356-DIR-STEP" USING WS-DIR WS-BX WS-BY WS-BZ
+     COMPUTE L-DX = WS-AX * WS-HALF-X + WS-BX * WS-HALF-Z
+     COMPUTE L-DZ = WS-AZ * WS-HALF-X + WS-BZ * WS-HALF-Z
+     GOBACK.
+ END PROGRAM F357-TEMPLATE-ANCHOR.

@@ -353,16 +353,31 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 3.2 TO WS-LOW
-     MOVE 3.3 TO WS-HIGH
+     MOVE -1000 TO WS-LOW
+     MOVE 1000 TO WS-HIGH
      CALL "WGR-SET-SEED" USING XR-STATE WS-SEED
      CALL "F356-CLAMPED-NORMAL" USING XR-STATE WS-MEAN WS-DEV WS-LOW WS-HIGH WS-R
-     MOVE "acceptance US12 35-6§2.2 ClampedNormalFloat.sample stays within min and max (3.2 to 3.3)" TO TL-CASE
+     MOVE "acceptance US12 35-6§2.2 ClampedNormalFloat.sample inside min and max is the normal value itself (within 5 deviations of the mean)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-R >= 3.2 AND WS-R <= 3.3
+     IF WS-R >= 0.5 AND WS-R <= 5.5
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 100 TO WS-LOW
+     MOVE 200 TO WS-HIGH
+     CALL "F356-CLAMPED-NORMAL" USING XR-STATE WS-MEAN WS-DEV WS-LOW WS-HIGH WS-R
+     MOVE "acceptance US12 35-6§2.2 ClampedNormalFloat.sample below min is min" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE WS-R TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -200 TO WS-LOW
+     MOVE -100 TO WS-HIGH
+     CALL "F356-CLAMPED-NORMAL" USING XR-STATE WS-MEAN WS-DEV WS-LOW WS-HIGH WS-R
+     MOVE "acceptance US12 35-6§2.2 ClampedNormalFloat.sample above max is max" TO TL-CASE
+     MOVE -100 TO TL-EXPECTED-N
+     MOVE WS-R TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   2.4 Column.create: both ends a range, only the floor a ray up, only the ceiling a ray down, neither a line; the range height is ceiling - floor - 1; a negative height is refused
