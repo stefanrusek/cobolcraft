@@ -597,7 +597,7 @@ generator (`ItemModelGenerator`), not from `elements`:
 - Texture slots `layer0` to `layer4` are read in order, stopping at the first missing slot. Each layer
   becomes a flat front and back quad, 1/16 block thick (from z 7.5 to 8.5), plus edge quads wherever an
   opaque pixel borders a transparent one.
-- Layer *n* uses tint index *n* (inferred).
+- Layer *n* uses tint index *n*; the quad is white when the item definition has no tint for that index.
 - `particle` defaults to `#layer0`.
 - `gui_light` defaults to `front`.
 

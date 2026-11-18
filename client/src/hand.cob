@@ -3,9 +3,12 @@
 *> the shown item in view space as vanilla poses it (12 section 6.3): the arm transform, the swing (6.4, 300 ms = 6 ticks), then the model's display transform for
 *> firstperson_righthand (8.2; the nearest model of the item's chain that names one, else the defaults of block/block and item/generated). A flat item is extruded
 *> (08 section 5.7): front and back quads 1/16 block apart and an edge quad, showing one texel, wherever an opaque pixel borders a transparent one; a block item is the unit
-*> cube. HAND-QUAD shades by the two-light formula of 12 section 1.9 and the light at the eye. RENDER-LIST-BUILD draws it with the projection alone, after a depth clear
-*> (a draw record with slot -1; SUBMIT-FRAME calls cc_vk_clear_depth), so it is never inside a block. Not done: the arm of an empty hand (6.5), the left hand and
-*> off hand, the use poses (6.6), view bobbing and sway (6.1), the cooldown dip (6.2) and the glint.
+*> cube. HAND-QUAD drops the quads that face away from the eye (the hand pass culls back faces: 12 section 6.9; the shim's solid pipeline has no culling, so it is done
+*> here) and shades the rest by the LEVEL lights of 12 section 6.10 (normals in world orientation, HAND-VIEW-ROT) and the light at the eye. HAND-PROJECT is the hand's own
+*> projection (fixed 70 degrees, 6.9). RENDER-LIST-BUILD draws the mesh with that projection alone, after a depth clear (a draw record with slot -1; SUBMIT-FRAME calls
+*> cc_vk_clear_depth), so it is never inside a block; the shim's solid pipeline tests less-or-equal with writes, the conventional form of the document's
+*> greater-or-equal on a depth cleared to 0. Not done: the arm of an empty hand (6.5), the left hand and off hand, the use poses (6.6), view bobbing, sway and the hurt
+*> tilt (6.1), the cooldown dip (6.2), the glint, the level light map (the light at the eye is a brightness factor) and the death fov.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-INPUT.
@@ -177,22 +180,95 @@
  END PROGRAM HAND-EQUIP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. HAND-VIEW-ROT.
+*> USING yaw, pitch (view angles in degrees, FLOAT-LONG), Q (9 FLOAT-LONG by rows): the camera rotation Q = Ry(180 - yaw) x Rx(-pitch) of 12 section 6.7.2, which takes
+*> a view-space direction to the world's (the normals of a held item are in world orientation, 6.10).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-CB                  FLOAT-LONG.
+ 01 WS-SB                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-YAW                  FLOAT-LONG.
+ 01 L-PITCH                FLOAT-LONG.
+ 01 L-Q.
+    05 L-QV                FLOAT-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING L-YAW L-PITCH L-Q.
+     COMPUTE WS-C = FUNCTION COS((180 - L-YAW) * FUNCTION PI / 180)
+     COMPUTE WS-S = FUNCTION SIN((180 - L-YAW) * FUNCTION PI / 180)
+     COMPUTE WS-CB = FUNCTION COS(L-PITCH * FUNCTION PI / 180)
+     COMPUTE WS-SB = 0 - FUNCTION SIN(L-PITCH * FUNCTION PI / 180)
+     MOVE WS-C TO L-QV(1)
+     COMPUTE L-QV(2) = WS-S * WS-SB
+     COMPUTE L-QV(3) = WS-S * WS-CB
+     MOVE 0 TO L-QV(4)
+     MOVE WS-CB TO L-QV(5)
+     COMPUTE L-QV(6) = 0 - WS-SB
+     COMPUTE L-QV(7) = 0 - WS-S
+     COMPUTE L-QV(8) = WS-C * WS-SB
+     COMPUTE L-QV(9) = WS-C * WS-CB
+     GOBACK.
+ END PROGRAM HAND-VIEW-ROT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HAND-PROJECT.
+*> USING CLIENT-STATE, projection (16 FLOAT-LONG, column-major, y down like the world's RL-PROJ): the hand pass's own perspective (12 section 6.9): vertical field of
+*> view 70 degrees whatever the fov option and the sprint modifier are, scaled by 1 + fovEffectScale x (0.85714287 - 1) with the eye in water or lava; aspect = window
+*> width / height; near 0.05, far 2048 (the far plane only moves the depth values).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOV                 FLOAT-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-ASPECT              FLOAT-LONG.
+ 01 WS-NEAR                FLOAT-LONG VALUE 0.05.
+ 01 WS-FAR                 FLOAT-LONG VALUE 2048.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-PROJ.
+    05 L-P                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PROJ.
+     MOVE 70 TO WS-FOV
+     IF PL-EYE-WATER = 1 OR PL-EYE-LAVA = 1
+         COMPUTE WS-FOV = 70 * (1 + CL-FOV-EFFECT * (0.85714287 - 1))
+     END-IF
+     COMPUTE WS-F = 1 / FUNCTION TAN(WS-FOV / 2 * FUNCTION PI / 180)
+     COMPUTE WS-ASPECT = FUNCTION MAX(IN-WIN-W, 1) / FUNCTION MAX(IN-WIN-H, 1)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0 TO L-P(WS-I)
+     END-PERFORM
+     COMPUTE L-P(1) = WS-F / WS-ASPECT
+     COMPUTE L-P(6) = 0 - WS-F
+     COMPUTE L-P(11) = WS-FAR / (WS-NEAR - WS-FAR)
+     MOVE -1 TO L-P(12)
+     COMPUTE L-P(15) = WS-NEAR * WS-FAR / (WS-NEAR - WS-FAR)
+     GOBACK.
+ END PROGRAM HAND-PROJECT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-QUAD.
-*> USING CLIENT-STATE, M (the model to view transform), corners (4 x, y, z, in model space, in the order of a texture: top-left, top-right, bottom-right,
-*> bottom-left), texture coordinates (4 u then 4 v, atlas), normal (model space), light 0 to 1: adds the six vertices of the quad (corners 1 2 3 1 3 4) to the
-*> hand, shaded by the two-light formula of 12 section 1.9 (min(1, (max(0, n.L0) + max(0, n.L1)) x 0.6 + 0.4), the lights of the level in view space)
-*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more.
+*> USING CLIENT-STATE, M (the model to view transform), corners (4 x, y, z, in model space, in the order of a texture seen from outside: top-left, top-right, bottom-right,
+*> bottom-left: clockwise, the terrain's winding), texture coordinates (4 u then 4 v, atlas), normal (model space), light 0 to 1, Q (HAND-VIEW-ROT): adds the six vertices of
+*> the quad (corners 1 2 3 1 3 4) to the hand, unless the quad faces away from the eye at the origin (cross(c2 - c1, c3 - c2) . c1 not above 0: the hand pass culls back
+*> faces, 12 section 6.9; CL-HAND-NOCULL 1 keeps them), shaded by the LEVEL lights of 12 section 6.10: min(1, (max(0, n.L0) + max(0, n.L1)) x 0.6 + 0.4) with n = Q x (the quad's normal in view space)
+*> and L0, L1 the world directions of the level; the brightness is that times the light, at least 0.1. A full mesh (2048 vertices) takes no more.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 6 TIMES.
  01 WS-N                   FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-W                   FLOAT-LONG OCCURS 3 TIMES.
  01 WS-LEN                 FLOAT-LONG.
  01 WS-D0                  FLOAT-LONG.
  01 WS-D1                  FLOAT-LONG.
+ 01 WS-L1Y                 FLOAT-LONG.
  01 WS-SHADE               FLOAT-LONG.
  01 WS-P                   FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-E1                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-E2                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-FACING              FLOAT-LONG.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
@@ -209,10 +285,31 @@
  01 L-NORMAL.
     05 L-NV                FLOAT-LONG OCCURS 3 TIMES.
  01 L-LIGHT                FLOAT-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT.
+ 01 L-Q.
+    05 L-QV                FLOAT-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT L-Q.
      IF RL-HAND-COUNT + 6 > 2048
          GOBACK
      END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
+             COMPUTE WS-P((WS-K - 1) * 3 + WS-R) = L-MV((WS-R - 1) * 3 + 1) * L-CP((WS-K - 1) * 3 + 1)
+                 + L-MV((WS-R - 1) * 3 + 2) * L-CP((WS-K - 1) * 3 + 2) + L-MV((WS-R - 1) * 3 + 3) * L-CP((WS-K - 1) * 3 + 3)
+                 + L-MV(9 + WS-R)
+         END-PERFORM
+     END-PERFORM
+*>   Back faces are not drawn: the quad is seen clockwise from the eye (the origin of view space) exactly when cross(c2 - c1, c3 - c2) . c1 is above 0.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
+         COMPUTE WS-E1(WS-R) = WS-P(3 + WS-R) - WS-P(WS-R)
+         COMPUTE WS-E2(WS-R) = WS-P(6 + WS-R) - WS-P(3 + WS-R)
+     END-PERFORM
+     COMPUTE WS-FACING = (WS-E1(2) * WS-E2(3) - WS-E1(3) * WS-E2(2)) * WS-P(1)
+         + (WS-E1(3) * WS-E2(1) - WS-E1(1) * WS-E2(3)) * WS-P(2)
+         + (WS-E1(1) * WS-E2(2) - WS-E1(2) * WS-E2(1)) * WS-P(3)
+     IF CL-HAND-NOCULL NOT = 1 AND WS-FACING <= 0
+         GOBACK
+     END-IF
+*>   The normal in view space, then in world orientation (the camera rotation Q put back, 6.7.2).
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
          COMPUTE WS-N(WS-R) = L-MV((WS-R - 1) * 3 + 1) * L-NV(1) + L-MV((WS-R - 1) * 3 + 2) * L-NV(2)
              + L-MV((WS-R - 1) * 3 + 3) * L-NV(3)
@@ -223,16 +320,17 @@
              COMPUTE WS-N(WS-R) = WS-N(WS-R) / WS-LEN
          END-PERFORM
      END-IF
-     COMPUTE WS-D0 = FUNCTION MAX(0, 0.16169 * WS-N(1) + 0.808452 * WS-N(2) - 0.565916 * WS-N(3))
-     COMPUTE WS-D1 = FUNCTION MAX(0, -0.16169 * WS-N(1) + 0.808452 * WS-N(2) + 0.565916 * WS-N(3))
-     COMPUTE WS-SHADE = FUNCTION MIN(1, (WS-D0 + WS-D1) * 0.6 + 0.4)
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-         PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
-             COMPUTE WS-P((WS-K - 1) * 3 + WS-R) = L-MV((WS-R - 1) * 3 + 1) * L-CP((WS-K - 1) * 3 + 1)
-                 + L-MV((WS-R - 1) * 3 + 2) * L-CP((WS-K - 1) * 3 + 2) + L-MV((WS-R - 1) * 3 + 3) * L-CP((WS-K - 1) * 3 + 3)
-                 + L-MV(9 + WS-R)
-         END-PERFORM
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
+         COMPUTE WS-W(WS-R) = L-QV((WS-R - 1) * 3 + 1) * WS-N(1) + L-QV((WS-R - 1) * 3 + 2) * WS-N(2) + L-QV((WS-R - 1) * 3 + 3) * WS-N(3)
      END-PERFORM
+*>   The second light of the Nether points down (normalize(-0.2, -1, 0.7)).
+     MOVE 0.808452 TO WS-L1Y
+     IF PL-DIM-NAME = "minecraft:the_nether"
+         MOVE -0.808452 TO WS-L1Y
+     END-IF
+     COMPUTE WS-D0 = FUNCTION MAX(0, 0.16169 * WS-W(1) + 0.808452 * WS-W(2) - 0.565916 * WS-W(3))
+     COMPUTE WS-D1 = FUNCTION MAX(0, -0.16169 * WS-W(1) + WS-L1Y * WS-W(2) + 0.565916 * WS-W(3))
+     COMPUTE WS-SHADE = FUNCTION MIN(1, (WS-D0 + WS-D1) * 0.6 + 0.4)
      PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 6
          MOVE WS-ORD(WS-V) TO WS-K
          ADD 1 TO RL-HAND-COUNT
@@ -335,6 +433,23 @@
  01 WS-CELL                FLOAT-LONG.
  01 WS-PREV-COUNT          BINARY-LONG.
  01 WS-STILL               BINARY-LONG.
+ 01 WS-VYAW                FLOAT-LONG.
+ 01 WS-VPITCH              FLOAT-LONG.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-VQ.
+    05 WS-VQV              FLOAT-LONG OCCURS 9 TIMES.
+*> The four walls of an exposed pixel edge (12 section 6.8): for each side up, down, west, east its four corners in the client's clockwise order (the document's v0 v3 v2 v1) as
+*> five digits: x (0 the pixel's left, 1 its right), y (0 its bottom, 1 its top), z (0 the back plane 7.5 / 16, 1 the front 8.5 / 16), u and v (0 = 0.1 into the pixel, 1 = 0.9).
+ 01 WS-WALL-DATA.
+    05 FILLER PIC X(20) VALUE "01000110101111101101".
+    05 FILLER PIC X(20) VALUE "00100101101001100001".
+    05 FILLER PIC X(20) VALUE "01010011000010100011".
+    05 FILLER PIC X(20) VALUE "11110110001000110111".
+ 01 WS-WALL-TABLE REDEFINES WS-WALL-DATA.
+    05 WS-WALL-SIDE        OCCURS 4 TIMES.
+       10 WS-WALL-CORNER   OCCURS 4 TIMES.
+          15 WS-WD         PIC 9 OCCURS 5 TIMES.
  01 B-ATLAS                PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -362,6 +477,9 @@
      CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-HBLOCK WS-HTOOL WS-HFOOD
+*>   The view angles: held items are lit in world orientation (12 section 6.10), so the shade follows the camera.
+     CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VYAW WS-VPITCH WS-EYE-TABLE
+     CALL "HAND-VIEW-ROT" USING WS-VYAW WS-VPITCH WS-VQ
 *>   A block item is the unit cube when its model has faces (a standard set) or it is a stand-in block; any other item is an extruded icon.
      MOVE 0 TO WS-STD
      IF CT-OPEN = 1 AND CT-STATE-COUNT > 0 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
@@ -384,6 +502,7 @@
      END-IF
      IF WS-STILL = 1 AND WS-PREV-COUNT > 0 AND CL-HAND-KEY-ITEM = WS-ITEM AND CL-HAND-KEY-SPRITE = WS-SPRITE
              AND CL-HAND-KEY-E = WS-E AND CL-HAND-KEY-LIGHT = WS-LIGHT
+             AND CL-HAND-KEY-YAW = WS-VYAW AND CL-HAND-KEY-PITCH = WS-VPITCH
          MOVE WS-PREV-COUNT TO RL-HAND-COUNT CL-HAND-KEY-COUNT
          MOVE 1 TO RL-HAND-SAME
          GOBACK
@@ -393,6 +512,8 @@
          MOVE WS-SPRITE TO CL-HAND-KEY-SPRITE
          MOVE WS-E TO CL-HAND-KEY-E
          MOVE WS-LIGHT TO CL-HAND-KEY-LIGHT
+         MOVE WS-VYAW TO CL-HAND-KEY-YAW
+         MOVE WS-VPITCH TO CL-HAND-KEY-PITCH
      END-IF
      IF WS-HAVE = 0
          IF WS-CUBE = 1
@@ -482,18 +603,27 @@
              MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
              MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
              MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
-             CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
+             CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-VQ
          END-PERFORM
          IF WS-STILL = 1
              MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
          END-IF
          GOBACK
      END-IF
-*>   An extruded icon: the whole icon on the front (z 8.5/16) and the back (z 7.5/16) ...
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-         CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
-     END-PERFORM
+*>   An extruded icon (12 section 6.8): the whole icon on the front (z 8.5 / 16, u from the left) and on the back (z 7.5 / 16, seen from behind: its corners are the front's
+*>   at the same x and y, so u still grows with +x) ...
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 2
+         IF WS-F = 1
+             MOVE 0 TO WS-U16(1) WS-U16(4) WS-V16(1) WS-V16(2)
+             MOVE 16 TO WS-U16(2) WS-U16(3) WS-V16(3) WS-V16(4)
+         ELSE
+             MOVE 16 TO WS-U16(1) WS-U16(4)
+             MOVE 0 TO WS-U16(2) WS-U16(3) WS-V16(1) WS-V16(2)
+             MOVE 16 TO WS-V16(3) WS-V16(4)
+         END-IF
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
+         END-PERFORM
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
              PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
                  COMPUTE WS-C = (WS-K - 1) * 3 + WS-A
@@ -511,9 +641,9 @@
          MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
          MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
          MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
-         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
+         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-VQ
      END-PERFORM
-*>   ... and an edge quad where an opaque pixel (alpha above 0) borders a transparent one or the icon's rim, showing that pixel's texel.
+*>   ... and a wall where an opaque pixel (alpha above 0) borders a transparent one or the icon's rim, its texture coordinates inside the pixel (0.1 to 0.9 of it).
      MOVE AT-SW(WS-SPRITE) TO WS-N
      IF WS-N > 32
          MOVE 32 TO WS-N
@@ -532,12 +662,6 @@
      PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-N
          PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-N
              IF WS-OPAQUE(WS-PY * WS-N + WS-PX + 1) = 1
-*>               The texel of the pixel: its centre in sprite units, on all four corners.
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-                     COMPUTE WS-U16(WS-K) = (WS-PX + 0.5) * 16 / WS-N
-                     COMPUTE WS-V16(WS-K) = (WS-PY + 0.5) * 16 / WS-N
-                     CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
-                 END-PERFORM
                  COMPUTE WS-X0 = WS-PX * WS-CELL
                  COMPUTE WS-X1 = (WS-PX + 1) * WS-CELL
                  COMPUTE WS-Y0 = 1 - (WS-PY + 1) * WS-CELL
@@ -563,42 +687,41 @@
                          END-IF
                      END-IF
                      IF WS-EDGE = 1
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                             IF WS-WD(WS-SIDE, WS-K, 1) = 0
+                                 MOVE WS-X0 TO WS-CP((WS-K - 1) * 3 + 1)
+                             ELSE
+                                 MOVE WS-X1 TO WS-CP((WS-K - 1) * 3 + 1)
+                             END-IF
+                             IF WS-WD(WS-SIDE, WS-K, 2) = 0
+                                 MOVE WS-Y0 TO WS-CP((WS-K - 1) * 3 + 2)
+                             ELSE
+                                 MOVE WS-Y1 TO WS-CP((WS-K - 1) * 3 + 2)
+                             END-IF
+                             IF WS-WD(WS-SIDE, WS-K, 3) = 0
+                                 MOVE 0.46875 TO WS-CP((WS-K - 1) * 3 + 3)
+                             ELSE
+                                 MOVE 0.53125 TO WS-CP((WS-K - 1) * 3 + 3)
+                             END-IF
+                             COMPUTE WS-U16(WS-K) = (WS-PX + 0.1 + 0.8 * WS-WD(WS-SIDE, WS-K, 4)) * 16 / WS-N
+                             COMPUTE WS-V16(WS-K) = (WS-PY + 0.1 + 0.8 * WS-WD(WS-SIDE, WS-K, 5)) * 16 / WS-N
+                             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
+                         END-PERFORM
                          EVALUATE WS-SIDE
                              WHEN 1
-*>                               Up (the pixel above is clear): the top edge, along x.
                                  MOVE 0 TO WS-NV(1) WS-NV(3)
                                  MOVE 1 TO WS-NV(2)
-                                 MOVE WS-X0 TO WS-CP(1) WS-CP(10)
-                                 MOVE WS-X1 TO WS-CP(4) WS-CP(7)
-                                 MOVE WS-Y1 TO WS-CP(2) WS-CP(5) WS-CP(8) WS-CP(11)
-                                 MOVE 0.53125 TO WS-CP(3) WS-CP(6)
-                                 MOVE 0.46875 TO WS-CP(9) WS-CP(12)
                              WHEN 2
                                  MOVE 0 TO WS-NV(1) WS-NV(3)
                                  MOVE -1 TO WS-NV(2)
-                                 MOVE WS-X0 TO WS-CP(1) WS-CP(10)
-                                 MOVE WS-X1 TO WS-CP(4) WS-CP(7)
-                                 MOVE WS-Y0 TO WS-CP(2) WS-CP(5) WS-CP(8) WS-CP(11)
-                                 MOVE 0.53125 TO WS-CP(3) WS-CP(6)
-                                 MOVE 0.46875 TO WS-CP(9) WS-CP(12)
                              WHEN 3
                                  MOVE 0 TO WS-NV(2) WS-NV(3)
                                  MOVE -1 TO WS-NV(1)
-                                 MOVE WS-X0 TO WS-CP(1) WS-CP(4) WS-CP(7) WS-CP(10)
-                                 MOVE WS-Y1 TO WS-CP(2) WS-CP(5)
-                                 MOVE WS-Y0 TO WS-CP(8) WS-CP(11)
-                                 MOVE 0.53125 TO WS-CP(3) WS-CP(12)
-                                 MOVE 0.46875 TO WS-CP(6) WS-CP(9)
                              WHEN OTHER
                                  MOVE 0 TO WS-NV(2) WS-NV(3)
                                  MOVE 1 TO WS-NV(1)
-                                 MOVE WS-X1 TO WS-CP(1) WS-CP(4) WS-CP(7) WS-CP(10)
-                                 MOVE WS-Y1 TO WS-CP(2) WS-CP(5)
-                                 MOVE WS-Y0 TO WS-CP(8) WS-CP(11)
-                                 MOVE 0.53125 TO WS-CP(3) WS-CP(12)
-                                 MOVE 0.46875 TO WS-CP(6) WS-CP(9)
                          END-EVALUATE
-                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT
+                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-VQ
                      END-IF
                  END-PERFORM
              END-IF
