@@ -800,6 +800,11 @@
           15 EN-HAND OCCURS 2 TIMES.
              20 EN-HAND-OK    BINARY-LONG.
              20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
+*>           The frame of the arm part (ENTITY-HAND-FRAME; 1 in EN-HAND-FOK when found): its origin (the pivot of the part) and the images of its three axes, a block long,
+*>           in the entity-relative world: 12 values, origin then x, y and z axis. The held item of 34-1 section 8.3 is placed in it (ENTITY-HELD-POSED).
+             20 EN-HAND-FOK   BINARY-LONG.
+             20 EN-HAND-FG.
+                25 EN-HAND-F  FLOAT-LONG OCCURS 12 TIMES.
 *>        The item components of the equipment that the models draw (54 sections 17 to 19 and 22; ENTITY-EQ-COMPONENTS, per slot like EN-EQ): EN-EQ-DYE the
 *>        dyed_color RGB (low 24 bits, -1 none), EN-EQ-TRIM-MAT and -PAT the trim's material and pattern holders (registry position + 1, 0 none or an inline holder),
 *>        EN-EQ-FOIL 1 when the stack has the glint (the override, else a non-empty enchantments component). EN-HB, per hand (1 main, 2 off): the base_color dye

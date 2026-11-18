@@ -258,7 +258,7 @@
                  END-PERFORM
                  MOVE -1 TO EN-HB-BASE(WS-ROW, 1) EN-HB-BASE(WS-ROW, 2)
                  MOVE 0 TO EN-HB-COUNT(WS-ROW, 1) EN-HB-COUNT(WS-ROW, 2)
-                 MOVE 0 TO EN-HAND-OK(WS-ROW, 1) EN-HAND-OK(WS-ROW, 2)
+                 MOVE 0 TO EN-HAND-OK(WS-ROW, 1) EN-HAND-OK(WS-ROW, 2) EN-HAND-FOK(WS-ROW, 1) EN-HAND-FOK(WS-ROW, 2)
                  MOVE 14 TO EN-X2(WS-ROW)
                  MOVE -1 TO EN-X3(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)

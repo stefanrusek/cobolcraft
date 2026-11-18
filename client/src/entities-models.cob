@@ -325,6 +325,10 @@
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
        10 WS-BK-HL            BINARY-LONG VALUE 0.
+       10 WS-BK-HFR.
+          15 WS-BK-HFRV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
+       10 WS-BK-HFL.
+          15 WS-BK-HFLV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
        10 WS-BK-OK            BINARY-LONG VALUE 0.
        10 WS-BK-OFX           FLOAT-LONG VALUE 0.
        10 WS-BK-OFY           FLOAT-LONG VALUE 0.
@@ -948,9 +952,11 @@
 *>               The cuboid of an arm (the first of a part named right_arm, left_arm, or the crossed arms, kept as a negative index): where the held item goes.
                  IF MM-NAME(WS-P) = "right_arm" AND WS-BK-HR(WS-E) = 0
                      MOVE WS-NC TO WS-BK-HR(WS-E)
+                     CALL "ENTITY-ARM-LOCAL" USING WS-BOX-IN WS-BK-HFR(WS-E)
                  END-IF
                  IF MM-NAME(WS-P) = "left_arm" AND WS-BK-HL(WS-E) = 0
                      MOVE WS-NC TO WS-BK-HL(WS-E)
+                     CALL "ENTITY-ARM-LOCAL" USING WS-BOX-IN WS-BK-HFL(WS-E)
                  END-IF
                  IF MM-NAME(WS-P) = "arms" AND WS-BK-HR(WS-E) = 0
                      COMPUTE WS-BK-HR(WS-E) = 0 - WS-NC
@@ -1057,6 +1063,11 @@
                  MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K)
                  MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K + 3)
              END-PERFORM
+*>           The frame of an arm part (not of the crossed arms): where the item of 34-1 section 8.3 is placed.
+             IF WS-BK-HR(WS-E) > 0
+                 CALL "ENTITY-HAND-FRAME" USING WS-BK-CORNER(WS-E, WS-HI) WS-BK-HFR(WS-E) EN-HAND-FG(WS-ROW, 1)
+                 MOVE 1 TO EN-HAND-FOK(WS-ROW, 1)
+             END-IF
          END-IF
          IF WS-BK-HL(WS-E) > 0
              CALL "ENTITY-HAND-FIND" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) 1 WS-HP WS-HA EN-HAND-OK(WS-ROW, 2)
@@ -1064,6 +1075,8 @@
                  MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K)
                  MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K + 3)
              END-PERFORM
+             CALL "ENTITY-HAND-FRAME" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) WS-BK-HFL(WS-E) EN-HAND-FG(WS-ROW, 2)
+             MOVE 1 TO EN-HAND-FOK(WS-ROW, 2)
          END-IF
      END-IF
      GOBACK.
