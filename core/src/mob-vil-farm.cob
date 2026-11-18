@@ -143,7 +143,6 @@
  01 WS-DZ                   FLOAT-LONG.
  01 WS-DY                   FLOAT-LONG.
  01 WS-KEY                  PIC X(48).
- 01 WS-KEY48                PIC X(48).
  01 WS-ITEM-ID              BINARY-LONG.
  01 WS-VILLAGER-ID          BINARY-LONG.
  01 WS-COUNT                BINARY-LONG.
@@ -162,12 +161,7 @@
              COMPUTE WS-DZ = EN-Z(WS-N) - EN-Z(L-ROW)
              COMPUTE WS-DY = EN-Y(WS-N) - EN-Y(L-ROW)
              IF WS-DX >= -1.3 AND WS-DX <= 1.3 AND WS-DZ >= -1.3 AND WS-DZ <= 1.3 AND WS-DY >= -1.0 AND WS-DY <= 2.0
-                 MOVE IT-KEY(EN-ITEM(WS-N) + 1) TO WS-KEY48
-                 IF WS-KEY48(1:10) = "minecraft:"
-                     MOVE WS-KEY48(11:38) TO WS-KEY
-                 ELSE
-                     MOVE WS-KEY48 TO WS-KEY
-                 END-IF
+                 MOVE IT-KEY(EN-ITEM(WS-N) + 1) TO WS-KEY
                  MOVE 0 TO WS-T
                  EVALUATE WS-KEY
                      WHEN "wheat"
