@@ -150,7 +150,7 @@
      MOVE "Entities" TO WS-PATH
      CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
      MOVE "T" TO TL-MODE
-     MOVE "[{id:minecraft:wolf,Pos:[20.500,55.000,37.250],Motion:[0.000,0.000,0.000],Rotation:[90.000,0.000],"
+     MOVE "[{id:minecraft:wolf,Pos:[20.500,55.000,37.250],Motion:[0.000,0.000,0.000],Rotation:[90.000,0.000],fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,2],"
          & "Health:8.000,Age:0,ForcedAge:0,AgeLocked:0,InLove:0,Owner:I[1,2,3,4],Sitting:1,CollarColor:3,"
          & "equipment:{body:{id:minecraft:wolf_armor,count:1,components:{minecraft:damage:12}}}}"
          TO TL-EXPECTED

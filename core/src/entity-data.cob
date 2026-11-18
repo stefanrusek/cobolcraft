@@ -87,7 +87,7 @@
 *> cannot hold, ENTITY-UNKNOWN-SCAN, are copied after the core's own, 07 §10.7): the entities/ chunk
 *> payload (07 §9.3) of that chunk: DataVersion, Position [chunk x, chunk z] and Entities, one
 *> compound per mob and ground item of that dimension whose position is in the chunk, in tracker
-*> order: id, Pos, Motion, Rotation, then Health (mobs) or Item {id, count} and Age (ground items).
+*> order: id, Pos, Motion, Rotation, the base keys fall_distance, Fire, Air, OnGround, Invulnerable, PortalCooldown and UUID (45 section 5), then Health (mobs) or Item {id, count} and Age (ground items).
 *> Players are not stored here (07 §9.2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -102,6 +102,11 @@
  01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-DOUBLE              FLOAT-LONG.
+ 01 WS-AIR                 BINARY-LONG.
+ 01 WS-UUID-INTS.
+    05 WS-UUID-INT         BINARY-LONG OCCURS 4 TIMES.
  01 WS-POSITION.
     05 WS-POSITION-INT     BINARY-LONG OCCURS 2 TIMES.
  01 WS-ROW                 BINARY-LONG.
@@ -177,6 +182,24 @@
              CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-FLOAT WS-TWO
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-YAW(WS-ROW)
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-PITCH(WS-ROW)
+*>           The Entity base keys written every time (45 section 5), in the table order.
+             MOVE "fall_distance" TO WN MOVE 13 TO WL
+             MOVE 0 TO WS-DOUBLE
+             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WL WS-DOUBLE
+             MOVE "Fire" TO WN MOVE 4 TO WL
+             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-BURN(WS-ROW)
+             MOVE "Air" TO WN MOVE 3 TO WL
+             COMPUTE WS-AIR = 300 - EN-AIR-LOST(WS-ROW)
+             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-AIR
+             MOVE "OnGround" TO WN MOVE 8 TO WL
+             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-ON-GROUND(WS-ROW)
+             MOVE "Invulnerable" TO WN MOVE 12 TO WL
+             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-KIND-ZERO
+             MOVE "PortalCooldown" TO WN MOVE 14 TO WL
+             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-KIND-ZERO
+             MOVE "UUID" TO WN MOVE 4 TO WL
+             CALL "ENTITY-UUID-INTS" USING EN-UUID(WS-ROW) WS-UUID-INTS
+             CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-UUID-INTS
              IF EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
                  MOVE "Item" TO WN MOVE 4 TO WL
                  CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
@@ -312,6 +335,15 @@
  01 WS-PITCH               FLOAT-SHORT.
  01 WS-HEALTH              FLOAT-SHORT.
  01 WS-HANDLED             BINARY-LONG.
+ 01 WS-FIRE                BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG.
+ 01 WS-GROUND-FLAG         BINARY-LONG.
+ 01 WS-UUID-SET            BINARY-LONG.
+ 01 WS-UUID-COUNT          BINARY-LONG.
+ 01 WS-UUID-CAPACITY       BINARY-LONG VALUE 4.
+ 01 WS-UUID-INTS.
+    05 WS-UUID-INT         BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-UUID                PIC X(16).
  COPY ENMOBDATA.
  LINKAGE SECTION.
  COPY PROTO.
@@ -321,7 +353,8 @@
      MOVE 0 TO WS-ROW
      MOVE PB-POS TO WS-START
      MOVE 0 TO WS-ITEM WS-ITEM-COUNT WS-AGE WS-DELAY WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ
-     MOVE 0 TO WS-YAW WS-PITCH WS-HEALTH
+     MOVE 0 TO WS-YAW WS-PITCH WS-HEALTH WS-FIRE WS-GROUND-FLAG WS-UUID-SET
+     MOVE 300 TO WS-AIR
      INITIALIZE MQ-DATA
      MOVE -1 TO MQ-VARIANT-INT MQ-EGG MQ-SIZE
      PERFORM UNTIL PB-ERROR = 1
@@ -357,6 +390,17 @@
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-PITCH
              WHEN WN = "Health" AND WS-TYPE = 5
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-HEALTH
+             WHEN WN = "Fire" AND WS-TYPE = 2
+                 CALL "PB-GET-SHORT" USING PB-BUFFER WS-FIRE
+             WHEN WN = "Air" AND WS-TYPE = 2
+                 CALL "PB-GET-SHORT" USING PB-BUFFER WS-AIR
+             WHEN WN = "OnGround" AND WS-TYPE = 1
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-GROUND-FLAG
+             WHEN WN = "UUID" AND WS-TYPE = 11
+                 CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-UUID-CAPACITY WS-UUID-COUNT WS-UUID-INTS
+                 IF WS-UUID-COUNT = 4
+                     MOVE 1 TO WS-UUID-SET
+                 END-IF
              WHEN WN = "Age" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER WS-AGE
                  MOVE WS-AGE TO MQ-AGE
@@ -409,7 +453,16 @@
              MOVE WS-PITCH TO EN-PITCH(WS-ROW)
              MOVE WS-VY TO EN-VY(WS-ROW)
              CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
+             MOVE WS-GROUND-FLAG TO EN-ON-GROUND(WS-ROW)
+             MOVE WS-FIRE TO EN-BURN(WS-ROW)
+             IF WS-AIR < 300
+                 COMPUTE EN-AIR-LOST(WS-ROW) = 300 - WS-AIR
+             END-IF
      END-EVALUATE
+     IF PB-ERROR = 0 AND WS-ROW > 0 AND WS-UUID-SET = 1
+         CALL "ENTITY-UUID-BYTES" USING WS-UUID-INTS WS-UUID
+         MOVE WS-UUID TO EN-UUID(WS-ROW)
+     END-IF
 *>   The keys of the file's compound that the core does not model are kept for the next save of a 26.3 world (07 section 10.7).
      IF WS-ROW > 0
          CALL "EXTRA-CAPTURE" USING WS-KIND-ZERO WS-ROW PB-BUFFER WS-START WS-END
@@ -604,3 +657,57 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PERSIST-ENTITIES-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-UUID-INTS.
+*> USING uuid (PIC X(16)), ints out (4 BINARY-LONG): the UUID as four big-endian signed ints, the form of the UUID key (45 section 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-V                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-UUID                 PIC X(16).
+ 01 L-INTS.
+    05 L-INT               BINARY-LONG OCCURS 4 TIMES.
+ PROCEDURE DIVISION USING L-UUID L-INTS.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE 0 TO WS-V
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
+             COMPUTE WS-V = WS-V * 256 + FUNCTION ORD(L-UUID((WS-I - 1) * 4 + WS-J:1)) - 1
+         END-PERFORM
+         IF WS-V >= 2147483648
+             SUBTRACT 4294967296 FROM WS-V
+         END-IF
+         MOVE WS-V TO L-INT(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-UUID-INTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-UUID-BYTES.
+*> USING ints (4 BINARY-LONG), uuid out (PIC X(16)): the inverse of ENTITY-UUID-INTS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-V                   BINARY-DOUBLE.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INTS.
+    05 L-INT               BINARY-LONG OCCURS 4 TIMES.
+ 01 L-UUID                 PIC X(16).
+ PROCEDURE DIVISION USING L-INTS L-UUID.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE L-INT(WS-I) TO WS-V
+         IF WS-V < 0
+             ADD 4294967296 TO WS-V
+         END-IF
+         PERFORM VARYING WS-J FROM 4 BY -1 UNTIL WS-J < 1
+             COMPUTE WS-B = FUNCTION MOD(WS-V, 256)
+             MOVE FUNCTION CHAR(WS-B + 1) TO L-UUID((WS-I - 1) * 4 + WS-J:1)
+             COMPUTE WS-V = (WS-V - WS-B) / 256
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-UUID-BYTES.
