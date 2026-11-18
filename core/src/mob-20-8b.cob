@@ -107,7 +107,7 @@
      IF WS-STATE > 0
          MOVE 1 TO L-BLOCKING
          IF CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) = "minecraft:water" OR "minecraft:lava" OR "minecraft:bubble_column"
-                 OR "minecraft:cave_air" OR "minecraft:void_air"
+                 OR "minecraft:cave_air" OR "minecraft:void_air" OR "water" OR "lava" OR "bubble_column" OR "cave_air" OR "void_air"
              MOVE 0 TO L-BLOCKING
          END-IF
      END-IF

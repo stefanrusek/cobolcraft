@@ -16,7 +16,7 @@
 *>   WARDEN-SUMMON USING dim, x, y, z, warden row out: SpawnUtil.trySpawnMob (2.4) with 20 attempts, horizontal 5, vertical 6 and the ON_TOP_OF_COLLIDER strategy (the cell above empty, the
 *>     floor solid; a cell 3 high is needed for the warden's box); 0 when no attempt succeeded.
 *>   SHRIEKER-HOOK USING dim, x, y, z, state: the scheduled block tick (BU-HOOK kind 7): a shrieking shrieker stops shrieking (flags 3) and responds.
-*>   SHRIEKER-STEP-ON USING player row: SculkShriekerBlock.stepOn for a player on the ground (not flying, not a spectator) whose supporting block (0.500001 below the feet) is a shrieker.
+*>   SHRIEKER-STEP-ON USING player row: SculkShriekerBlock.stepOn for a player on the ground (not flying, not a spectator) whose supporting block (the cell just below the feet: a shrieker is half a block high, a player on it stands 0.5 above its cell) is a shrieker.
 *> Not here: vibrations (the game events are not delivered to listeners), the game event SHRIEK, the reply sounds, breaking a shrieking block (preRemoveSideEffects), the saved warning_level,
 *> and the warden's own finalize memories beyond what MOB-SPAWN does.
 
@@ -505,7 +505,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      COMPUTE WS-X = FUNCTION INTEGER(PL-X(L-ROW))
-     COMPUTE WS-Y = FUNCTION INTEGER(PL-Y(L-ROW) - 0.500001)
+     COMPUTE WS-Y = FUNCTION INTEGER(PL-Y(L-ROW) - 0.00001)
      COMPUTE WS-Z = FUNCTION INTEGER(PL-Z(L-ROW))
      CALL "WORLD-GET-BLOCK" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-STATE
      IF WS-STATE > 0
