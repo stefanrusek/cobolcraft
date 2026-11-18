@@ -1,4 +1,4 @@
-*> Rows added by lane p49b (T15000 ff.), included by STDMOBS.cpy last. Columns as the rows there.
+*> Rows added by lane p49b (T15000 ff.), included by STDMOBS.cpy after MOB21ROWS3.cpy (the villager rows and the strider stay the last four). Columns as the rows there.
 *> The giant (20 section 18.1: max health 100, movement speed 0.5, attack damage 50, experience 5; no goals and no targets: SM-NEUTRAL 7 is the inert code of
 *> STDMOB-AGGRO and of the stroll; summon only: no natural spawn rule).
 *> The warden (20 section 15: max health 500, movement speed 0.3 at the fighting modifier 1.2: (0.3 x 1.2) squared / 0.454 = 285, attack damage 30, follow range 24,
