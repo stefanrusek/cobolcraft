@@ -4,13 +4,14 @@
 *> padding 10 and 10, ignore_waterlogging, encapsulate, step underground_structures = 3, set 34 / 12 / 94251327) and trail_ruins (pool tower, size 7, start height -15, heightmap WORLD_SURFACE_WG, distance 80,
 *> bury, step 3, set 34 / 8 / 83469867), the abandoned camps of the section 6 table (18 records, pool abandoned_camp/tent/<biome>, size 2, height 0 with WORLD_SURFACE_WG, distance 80, hack on,
 *> surface_structures = 4, beard_thin) and the record counts (52 structures, 28 of type jigsaw). Not read by the loader and so not checked: spawn_overrides (36-1 section 10 / struct-override.cob),
-*> start_jigsaw_name, pool_aliases and the uniform start height of the trial chambers (their SDT-JIG-OK is 0: the assembler does not build them yet).
+*> the loader now reads start_jigsaw_name, pool_aliases and the uniform start height (STRUCT-ALIAS-READ), so the ancient city and the trial chambers have SDT-JIG-OK 1.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-36-10-PARAMS.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY STRUCTDATA.
+ COPY STRUCTALIAS.
  01 WS-ENV                 PIC X(1024).
  01 WS-DIR                 PIC X(1100).
  01 WS-FILE                PIC X(1100).
@@ -117,9 +118,13 @@
      MOVE 20083232 TO TL-EXPECTED-N
      MOVE SS-SALT(WS-SET) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-10§3 Ancient city: the start jigsaw name is not read, so the assembler does not build it yet (SDT-JIG-OK 0)" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE SDT-JIG-OK(WS-ROW) TO TL-OBSERVED-N
+     MOVE "acceptance US12 36-10§3 Ancient city: the loader reads the start jigsaw name minecraft:city_anchor and the constant height -27, so the assembler builds it (SDT-JIG-OK 1)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF SDT-JIG-OK(WS-ROW) = 1 AND SDA-START(WS-ROW) = "minecraft:city_anchor" AND SDA-Y-KIND(WS-ROW) = 0 AND SDT-JIG-Y(WS-ROW) = -27
+             AND SDA-AL-N(WS-ROW) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   4.1 trial chambers
@@ -146,9 +151,22 @@
      MOVE 94251327 TO TL-EXPECTED-N
      MOVE SS-SALT(WS-SET) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 36-10§4 Trial chambers: the pool aliases and the uniform start height are not built yet (SDT-JIG-OK 0)" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE SDT-JIG-OK(WS-ROW) TO TL-OBSERVED-N
+     MOVE "acceptance US12 36-10§4 Trial chambers: the uniform start height -40 to -20, no start jigsaw name and the three pool alias bindings are read (SDT-JIG-OK 1)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF SDT-JIG-OK(WS-ROW) = 1 AND SDA-START(WS-ROW) = SPACES AND SDA-Y-KIND(WS-ROW) = 1 AND SDA-Y-MIN(WS-ROW) = -40
+             AND SDA-Y-MAX(WS-ROW) = -20 AND SDA-AL-N(WS-ROW) = 3
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 36-10§4.2 Trial chambers: the bindings are one random_group of three groups (weight 1 each, two direct bindings each), a random of three and a random of four targets" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF SDB-KIND(SDA-AL-FIRST(WS-ROW)) = 3 AND SDB-OPT-N(SDA-AL-FIRST(WS-ROW)) = 3 AND SDB-KIND(SDA-AL-FIRST(WS-ROW) + 1) = 2
+             AND SDB-OPT-N(SDA-AL-FIRST(WS-ROW) + 1) = 3 AND SDB-KIND(SDA-AL-FIRST(WS-ROW) + 2) = 2 AND SDB-OPT-N(SDA-AL-FIRST(WS-ROW) + 2) = 4
+             AND SDO-SUB-N(SDB-OPT-FIRST(SDA-AL-FIRST(WS-ROW))) = 2 AND SDO-WEIGHT(SDB-OPT-FIRST(SDA-AL-FIRST(WS-ROW))) = 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   5.1 trail ruins

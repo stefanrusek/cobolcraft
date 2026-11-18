@@ -14,6 +14,7 @@
  COPY STRUCTTPL.
  COPY STRUCTJIG.
  COPY JIGTEST.
+ COPY STRUCTALIAS.
  COPY FEATDATA.
  COPY JSONDOC.
  01 WS-GEN-DIR             PIC X(1100).
@@ -226,9 +227,9 @@
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:direct"}]}' TO WS-TEXT
+     MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:unknown_binding"}]}' TO WS-TEXT
      PERFORM PARSE-READ-ONE
-     MOVE "test struct jigsaw unit given pool aliases when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE "test struct jigsaw unit given a pool alias of an unknown binding type when a jigsaw file is read then it is not ok" TO TL-CASE
      MOVE 0 TO WS-FLAG
      IF SDT-JIG-OK(1) = 0
          MOVE 1 TO WS-FLAG
@@ -244,9 +245,9 @@
      PERFORM CHECK
      MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","start_jigsaw_name":"minecraft:city_anchor","size":2,"start_height":{"absolute":5},"max_distance_from_center":9}' TO WS-TEXT
      PERFORM PARSE-READ-ONE
-     MOVE "test struct jigsaw unit given a start_jigsaw_name when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE "test struct jigsaw unit given a start_jigsaw_name when a jigsaw file is read then it is ok and the name is kept (36-10 2.1)" TO TL-CASE
      MOVE 0 TO WS-FLAG
-     IF SDT-JIG-OK(1) = 0
+     IF SDT-JIG-OK(1) = 1 AND SDA-START(1) = "minecraft:city_anchor"
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
@@ -521,6 +522,9 @@
      MOVE 20 TO SDT-JIG-VER(1)
      MOVE 0 TO SDT-JIG-PADB(1) SDT-JIG-PADT(1) SDT-JIG-LIQ(1)
      MOVE 1 TO SDT-JIG-OK(1)
+*>   the reads above left a start jigsaw name in the alias table of this row (STRUCT-ALIAS-READ): these synthetic structures have none, a constant height and no bindings
+     MOVE SPACES TO SDA-START(1)
+     MOVE 0 TO SDA-Y-KIND(1) SDA-AL-N(1)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
          MOVE WW-CX(WS-I) TO WS-CX
          MOVE WW-CZ(WS-I) TO WS-CZ
