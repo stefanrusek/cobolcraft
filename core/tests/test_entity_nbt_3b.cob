@@ -33,6 +33,7 @@
  01 WS-SIXTEEN             BINARY-LONG VALUE 16.
  01 WS-LINE                PIC X(128).
  01 WS-CAUSE               BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
  01 WS-ATTACKER            BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
@@ -110,6 +111,67 @@
      MOVE "acceptance US15 45-3§3.3 RootVehicle is kept" TO TL-CASE
      MOVE "{Attach:I[1,2,3,4],Entity:{id:minecraft:pig}}" TO TL-EXPECTED
      PERFORM CHECK
+*>   Odd shapes: an unknown key inside the compounds, negative counters (read as 0), position lists that are no Vec3, empty compounds and lists (no key), a shoulder entity on the right.
+     MOVE SPACES TO WS-SNBT
+     STRING '{LastDeathLocation:{dimension:"minecraft:overworld",pos:[I;1,2,3],extra:1b},'
+         'warden_spawn_tracker:{ticks_since_last_warning:-5,warning_level:-1,cooldown_ticks:-2,other:1b},'
+         'entered_nether_pos:[1.0d,2.0d],last_explosion_impact_pos:[1.0d],respawn:{},RootVehicle:{},ender_pearls:[],'
+         'ShoulderEntityLeft:{},ShoulderEntityRight:{id:"minecraft:parrot"}}' DELIMITED BY SIZE INTO WS-SNBT
+     CALL "PLAYER-SNBT" USING WS-SNBT PB-BUFFER
+     CALL "PERSIST-WRITE-FILE" USING WS-FILE-PATH WS-FILE-LENGTH PB-BUFFER
+     CALL "PLAYER-DAT-READ" USING WS-UUID WS-KNOWN
+     MOVE 1 TO KN-DIRTY(WS-KNOWN)
+     CALL "CORE-SAVE"
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE "T" TO TL-MODE
+     MOVE "warden_spawn_tracker" TO WS-PATH
+     MOVE "acceptance US15 45-3§6.3 negative warden counters read as 0" TO TL-CASE
+     MOVE "{ticks_since_last_warning:0,warning_level:0,cooldown_ticks:0}" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE "ShoulderEntityRight" TO WS-PATH
+     MOVE "acceptance US15 45-3§3.6 a shoulder entity on the right is kept" TO TL-CASE
+     MOVE "{id:minecraft:parrot}" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE "LastDeathLocation" TO WS-PATH
+     MOVE "acceptance US15 45-3§6.2 an unknown key inside LastDeathLocation is dropped" TO TL-CASE
+     MOVE "{dimension:minecraft:overworld,pos:I[1,2,3]}" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE 0 TO WS-HITS
+     MOVE "entered_nether_pos" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     IF FUNCTION TRIM(WS-TEXT) = "absent"
+         ADD 1 TO WS-HITS
+     END-IF
+     MOVE "last_explosion_impact_pos" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     IF FUNCTION TRIM(WS-TEXT) = "absent"
+         ADD 1 TO WS-HITS
+     END-IF
+     MOVE "respawn" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     IF FUNCTION TRIM(WS-TEXT) = "absent"
+         ADD 1 TO WS-HITS
+     END-IF
+     MOVE "RootVehicle" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     IF FUNCTION TRIM(WS-TEXT) = "absent"
+         ADD 1 TO WS-HITS
+     END-IF
+     MOVE "ender_pearls" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     IF FUNCTION TRIM(WS-TEXT) = "absent"
+         ADD 1 TO WS-HITS
+     END-IF
+     MOVE "ShoulderEntityLeft" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     IF FUNCTION TRIM(WS-TEXT) = "absent"
+         ADD 1 TO WS-HITS
+     END-IF
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-3§3 a bad Vec3, an empty respawn, RootVehicle, shoulder and ender_pearls list are not written" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A player that dies: LastDeathLocation is the block of the death; a /gamemode leaves the mode before it as previousPlayerGameType.
      MOVE 10.5 TO PL-X(WS-ROW)
      MOVE 64 TO PL-Y(WS-ROW)

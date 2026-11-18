@@ -118,6 +118,18 @@
      MOVE "Count:3" TO WS-FRAGMENT
      MOVE "acceptance US15 45-8§3.2 and its Count" TO TL-CASE
      PERFORM EXPECT-ONCE
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"minecraft:ominous_item_spawner",Pos:[20.5d,55.0d,37.25d],spawn_item_after_ticks:100L}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM LOAD-AND-SAVE
+     MOVE "spawn_item_after_ticks:100" TO WS-FRAGMENT
+     MOVE "acceptance US15 45-8§3.5 an ominous item spawner keeps spawn_item_after_ticks (a Long)" TO TL-CASE
+     PERFORM EXPECT-ONCE
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"minecraft:item",Pos:[20.5d,55.0d,37.25d],Item:{id:"minecraft:stone",count:2,components:{}}}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM LOAD-AND-SAVE
+     MOVE "components" TO WS-FRAGMENT
+     MOVE "acceptance US15 45-1§8 an empty components compound is not written" TO TL-CASE
+     PERFORM EXPECT-NONE
      STOP RUN.
 *> Every entity of the world but the players is removed, then WS-SNBT is loaded, saved and rendered into WS-TEXT.
  LOAD-AND-SAVE.

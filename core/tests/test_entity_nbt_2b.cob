@@ -36,6 +36,13 @@
  01 WS-KEY                 PIC X(48).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-WANT                PIC X(1024).
+ 01 WS-PLAYER-ROW          BINARY-LONG.
+ 01 WS-DIRECTION           BINARY-LONG VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-INTS.
+    05 WS-INT              BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-EDIT-TABLE.
+    05 WS-EDIT             PIC -(10)9 OCCURS 4 TIMES.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-HOSTILE-MOBS
@@ -92,6 +99,52 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An amplifier above 127 (an Int in the file) is written as the negative byte, a Vec3 of two elements is no position, every slot has a drop chance (a name that is no slot and a
+*>   non-Float are ignored), and the feeder of LoveCause is the player of that UUID.
+     MOVE CN-PLAYER(WS-ALICE) TO WS-PLAYER-ROW
+     CALL "PERSIST-UUID-INTS" USING WS-DIRECTION PL-UUID(WS-PLAYER-ROW) WS-INTS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE WS-INT(WS-I) TO WS-EDIT(WS-I)
+     END-PERFORM
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"cobolcraft:sodgrazer",Pos:[20.5d,55.0d,37.25d],active_effects:[{id:"minecraft:strength",amplifier:200,duration:10}],'
+         'current_explosion_impact_pos:[1.0d,2.0d],drop_chances:{mainhand:0.1f,offhand:0.2f,feet:0.3f,legs:0.4f,chest:0.5f,head:0.6f,'
+         'body:0.7f,saddle:0.8f,bogus:1.0f,head2:"x"},LoveCause:[I;' FUNCTION TRIM(WS-EDIT(1)) ',' FUNCTION TRIM(WS-EDIT(2)) ','
+         FUNCTION TRIM(WS-EDIT(3)) ',' FUNCTION TRIM(WS-EDIT(4)) ']}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM FIND-MOB
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     CALL "ENT-SNBT" USING WS-SNBT PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-NBT-READ" USING WS-DIM PB-BUFFER WS-OUTCOME
+     PERFORM SAVE-AND-RENDER
+     MOVE WS-TEXT TO WS-FIRST
+     MOVE "active_effects:" TO WS-KEY
+     MOVE "active_effects:[{id:minecraft:strength,amplifier:-56,duration:10," TO WS-WANT
+     MOVE "acceptance US15 45-2§2.3 an amplifier of 200 (an Int in the file) is the negative byte -56" TO TL-CASE
+     PERFORM CHECK-AT-KEY
+     MOVE "drop_chances:" TO WS-KEY
+     MOVE "drop_chances:{mainhand:0.100,offhand:0.200,feet:0.300,legs:0.400,chest:0.500,head:0.600,body:0.700,saddle:0.800}" TO WS-WANT
+     MOVE "acceptance US15 45-2§3.1 every slot of drop_chances in the slot order; a name that is no slot and a non-Float are ignored" TO TL-CASE
+     PERFORM CHECK-AT-KEY
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "current_explosion_impact_pos"
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-2§2.1 a position list of two elements is no position" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FIND-MOB
+     MOVE "acceptance US15 45-2§4.2 the feeder of LoveCause is the player of that UUID (the entity's feeder row)" TO TL-CASE
+     MOVE WS-PLAYER-ROW TO TL-EXPECTED-N
+     MOVE EN-LOVE-CAUSE(WS-MOB) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "LoveCause:" TO WS-KEY
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO WS-WANT
+     STRING "LoveCause:I[" FUNCTION TRIM(WS-EDIT(1)) "," FUNCTION TRIM(WS-EDIT(2)) "," FUNCTION TRIM(WS-EDIT(3)) ","
+         FUNCTION TRIM(WS-EDIT(4)) "]" DELIMITED BY SIZE INTO WS-WANT
+     MOVE "acceptance US15 45-2§4.2 and it is written back from the player" TO TL-CASE
+     PERFORM CHECK-AT-KEY
 *>   Defaults: a default locator_bar_icon, no home (-1), every drop chance at 0.085, a negative drop chance and an empty attributes list write none of them.
      MOVE SPACES TO WS-SNBT
      STRING '{id:"cobolcraft:sodgrazer",Pos:[20.5d,55.0d,37.25d],locator_bar_icon:{style:"minecraft:default"},home_radius:-1,'

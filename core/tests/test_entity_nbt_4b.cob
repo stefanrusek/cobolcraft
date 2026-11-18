@@ -154,6 +154,19 @@
      MOVE "Gossips:[{Target:I[1,2,3,4],Type:trading,Value:5}]" TO WS-FRAGMENT
      MOVE "acceptance US15 45-5§4.2 a zombie villager keeps the Gossips it carries" TO TL-CASE
      PERFORM EXPECT-ONCE
+*>   A chested llama with no items kept writes an empty Items; a wandering trader's Inventory is kept.
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"minecraft:llama",Pos:[20.5d,55.0d,37.25d],Strength:3,ChestedHorse:1b}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM LOAD-AND-SAVE
+     MOVE "Items:[]" TO WS-FRAGMENT
+     MOVE "acceptance US15 45-4§6.5 a chested llama with no items writes an empty Items" TO TL-CASE
+     PERFORM EXPECT-ONCE
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"minecraft:wandering_trader",Pos:[20.5d,55.0d,37.25d],Inventory:[{id:"minecraft:bread",count:2}]}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM LOAD-AND-SAVE
+     MOVE "Inventory:[{id:minecraft:bread,count:2}]" TO WS-FRAGMENT
+     MOVE "acceptance US15 45-6§7 a wandering trader keeps its Inventory" TO TL-CASE
+     PERFORM EXPECT-ONCE
      STOP RUN.
 *> Every entity of the world but the players is removed, then WS-SNBT is loaded, saved and rendered into WS-TEXT.
  LOAD-AND-SAVE.

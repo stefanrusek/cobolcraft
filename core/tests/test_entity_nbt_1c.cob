@@ -28,6 +28,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-SPIDER              BINARY-LONG.
  01 WS-SKELETON            BINARY-LONG.
+ 01 WS-ZOMBIE              BINARY-LONG.
  01 WS-VERSION             BINARY-LONG.
  01 WS-KEY                 PIC X(24).
  PROCEDURE DIVISION.
@@ -78,6 +79,38 @@
      MOVE "acceptance US15 45-1§6 the same compounds loaded twice leave two mobs (a UUID already in use refuses the entity)" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Passengers of passengers load too (a zombie on the skeleton on the spider: three mobs); a rider row that points at a mob that rides nothing ends the chain when saving.
+     PERFORM REMOVE-ALL
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"minecraft:spider",Pos:[20.5d,55.0d,37.25d],Passengers:[{id:"minecraft:skeleton",Pos:[20.5d,55.0d,37.25d],'
+         'Passengers:[{id:"minecraft:zombie",Pos:[20.5d,55.0d,37.25d]}]}]}' DELIMITED BY SIZE INTO WS-SNBT
+     MOVE 0 TO WS-VERSION
+     PERFORM LOAD
+     PERFORM COUNT-MOBS
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-1§7.3 the passenger of a passenger is loaded (three mobs)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FIND-ROWS
+     MOVE 0 TO WS-ZOMBIE
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0
+             CALL "MOB-SPECIES-KEY" USING WS-ROW WS-KEY
+             IF WS-KEY = "zombie"
+                 MOVE WS-ROW TO WS-ZOMBIE
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 0 TO EN-MOUNT(WS-ZOMBIE) EN-MOUNT-ID(WS-ZOMBIE)
+     MOVE WS-ZOMBIE TO EN-PASS(WS-SKELETON)
+     PERFORM SAVE-AND-RENDER
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "Passengers:"
+     MOVE "acceptance US15 45-1§7.1 a rider that rides nothing is no passenger: the chain ends at the skeleton" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   One compound with a UUID loaded twice: the second is refused, a UUID is in use once.
      PERFORM REMOVE-ALL
