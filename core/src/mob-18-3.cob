@@ -4,6 +4,8 @@
 *>       cobweb in it, a sweet berry bush (1 young, 2 grown), a magma block under its feet and powder snow in the cell of its feet
 *>   M183-FREEZE USING tracker row, in powder snow (BINARY-LONG)   ticksFrozen: +1 in powder snow, -2 otherwise (never below 0); fully frozen (140) takes 1.0 freeze damage
 *>       (5.0 for blaze, strider and magma cube) on every 40th tick; polar bear, stray, snow golem and wither cannot freeze
+*>   M183-ARROWS-TICK USING tracker row   the stuck-arrow counter (18 section 2.3 step 3): above 0 a timer of 20 x (30 - count) ticks counts down and at 0 the count drops by one;
+*>       a changed count is sent to the viewers as metadata 12 (INT)
 *>   M183-CONVERT USING tracker row, converted out (1 when the row was replaced)   the conversion tracker of a skeleton in powder snow (20 section 3.8, 18 section 4.10): afflicted for 140 ticks it starts converting,
 *>       300 ticks later (the count below 0) it is replaced by a stray with its equipment; the counters reset when the condition stops
 *>   M183-TICK USING tracker row   the block effects of the box after the move (cactus 1.0, magma block 1.0 on the ground, a sweet berry bush 1.0 when the mob moved more than
@@ -265,3 +267,42 @@
      MOVE 1 TO L-DONE
      GOBACK.
  END PROGRAM M183-CONVERT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M183-ARROWS-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ COPY PROTO.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-ARROWS(L-ROW) > 0
+         IF EN-ARROW-TIMER(L-ROW) <= 0
+             COMPUTE EN-ARROW-TIMER(L-ROW) = 20 * (30 - EN-ARROWS(L-ROW))
+         END-IF
+         SUBTRACT 1 FROM EN-ARROW-TIMER(L-ROW)
+         IF EN-ARROW-TIMER(L-ROW) <= 0
+             SUBTRACT 1 FROM EN-ARROWS(L-ROW)
+         END-IF
+     END-IF
+     IF EN-ARROWS(L-ROW) NOT = EN-ARROWS-SENT(L-ROW)
+         MOVE EN-ARROWS(L-ROW) TO EN-ARROWS-SENT(L-ROW)
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 12 TO MD-MD-INDEX
+         MOVE MD-MDS-INT TO MD-MD-SERIALIZER
+         MOVE EN-ARROWS(L-ROW) TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         MOVE MD-MD-END TO MD-MD-INDEX
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM M183-ARROWS-TICK.

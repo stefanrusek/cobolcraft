@@ -120,6 +120,8 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
  01 WS-FIRE-TICKS          BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-AFTER               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -154,7 +156,13 @@
          CALL "STDMOB-ARROW-APPLY" USING L-PLAYER EN-VARIANT(L-ARROW)
      ELSE
          MOVE 0 TO EN-HURT(L-ENTITY)
+         COMPUTE WS-BEFORE = EN-HEALTH(L-ENTITY) * 1000 - EN-HEALTH-MILLI(L-ENTITY)
          CALL "HEALTH-MOB-DAMAGE" USING L-ENTITY WS-DAMAGE WS-CAUSE WS-OWNER-PLAYER
+*>       A hit that hurt a living target adds a stuck arrow (17 section 3.9 / 18 section 2.3).
+         COMPUTE WS-AFTER = EN-HEALTH(L-ENTITY) * 1000 - EN-HEALTH-MILLI(L-ENTITY)
+         IF WS-AFTER < WS-BEFORE
+             ADD 1 TO EN-ARROWS(L-ENTITY)
+         END-IF
      END-IF
 *>   A burning arrow (a flaming arrow, 17 section 3.9: Flame) sets what it hits alight for five seconds (AbstractArrow.onHitEntity).
      IF EN-BURN(L-ARROW) > 0

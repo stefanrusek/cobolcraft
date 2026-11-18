@@ -1088,6 +1088,7 @@
              MOVE 0 TO EN-KILLER(WS-ROW)
          END-IF
      END-IF
+     CALL "M183-ARROWS-TICK" USING WS-ROW
      IF SM-KEY(WS-M) = "tadpole"
          CALL "TADPOLE-TICK" USING WS-ROW WS-TAD-GONE
          IF WS-TAD-GONE = 1
