@@ -24,8 +24,8 @@
      COMPUTE WS-LZ = FUNCTION MOD(L-Z, 16)
      COMPUTE WS-CX = (L-X - WS-LX) / 16
      COMPUTE WS-CZ = (L-Z - WS-LZ) / 16
-     IF WS-CX >= -1 AND WS-CX <= 2 AND WS-CZ >= -1 AND WS-CZ <= 2
-         COMPUTE WS-COL = (WS-CZ + 1) * 4 + WS-CX + 2
+     COMPUTE WS-COL = FUNCTION MOD(WS-CZ + 1, 4) * 4 + FUNCTION MOD(WS-CX + 1, 4) + 1
+     IF EN-OWN-X(WS-COL) = WS-CX AND EN-OWN-Z(WS-COL) = WS-CZ
          IF EN-AVAIL(WS-COL) = 1
              MOVE EN-LS(WS-COL, WS-LX + 16 * WS-LZ + 1) TO L-RESULT
          END-IF
@@ -86,14 +86,14 @@
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ.
-     COMPUTE WS-COL = (L-CZ + 1) * 4 + L-CX + 2
-     COMPUTE WS-BASE = (WS-COL - 1) * 16384
+     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
+     COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 4096
      MOVE -1 TO WS-TOP
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
          MOVE WS-MINV TO EN-LS(WS-COL, WS-I)
      END-PERFORM
-     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 3
-         IF EN-NONAIR((WS-COL - 1) * 4 + WS-S + 1) > 0
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= EN-NS
+         IF EN-NONAIR((WS-COL - 1) * EN-NS + WS-S + 1) > 0
              MOVE WS-S TO WS-TOP
          END-IF
      END-PERFORM
@@ -106,7 +106,7 @@
                  CALL "L32-SKY-EDGE-OCC" USING WS-ABOVE WS-HERE WS-OCCLUDED
                  IF WS-OCCLUDED = 1
                      MOVE 1 TO WS-FOUND
-                     COMPUTE EN-LS(WS-COL, WS-I + 1) = WS-Y + 1
+                     COMPUTE EN-LS(WS-COL, WS-I + 1) = WS-Y + 1 + EN-MINY
                  END-IF
                  MOVE WS-HERE TO WS-ABOVE
                  SUBTRACT 1 FROM WS-Y
@@ -122,6 +122,7 @@
 *> edge, or the minimum value when the walk reaches the cell below the world without one.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY L32.
  01 WS-MINV                BINARY-LONG VALUE -2147483648.
  01 WS-ABOVE               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
@@ -138,7 +139,7 @@
      CALL "L32-STATE-AT" USING L-X L-Y L-Z WS-ABOVE
      COMPUTE WS-Y = L-Y - 1
      MOVE 0 TO WS-DONE
-     PERFORM UNTIL WS-Y < -1 OR WS-DONE = 1
+     PERFORM UNTIL WS-Y < EN-MINY - 1 OR WS-DONE = 1
          CALL "L32-STATE-AT" USING L-X WS-Y L-Z WS-BELOW
          CALL "L32-SKY-EDGE-OCC" USING WS-ABOVE WS-BELOW WS-OCCLUDED
          IF WS-OCCLUDED = 1
@@ -213,7 +214,7 @@
      COMPUTE WS-LZ = FUNCTION MOD(L-Z, 16)
      COMPUTE WS-CX = (L-X - WS-LX) / 16
      COMPUTE WS-CZ = (L-Z - WS-LZ) / 16
-     COMPUTE WS-COL = (WS-CZ + 1) * 4 + WS-CX + 2
+     COMPUTE WS-COL = FUNCTION MOD(WS-CZ + 1, 4) * 4 + FUNCTION MOD(WS-CX + 1, 4) + 1
      COMPUTE WS-INDEX = WS-LX + 16 * WS-LZ + 1
      IF L-Y + 1 >= EN-LS(WS-COL, WS-INDEX)
          CALL "L32-SKY-STEP" USING L-X L-Y L-Z WS-COL WS-INDEX L-CHANGED
@@ -439,7 +440,7 @@
              IF WS-SEC < LY-LOWEST(2)
                  MOVE 1 TO WS-DONE
              ELSE
-                 COMPUTE WS-SID = (WS-COL - 1) * 6 + WS-SEC + 2
+                 COMPUTE WS-SID = (WS-COL - 1) * EN-NL + WS-SEC - EN-LOWL + 1
                  IF LY-WP(2, WS-SID) = 1
                      MOVE 1 TO WS-DONE
                  ELSE
@@ -521,8 +522,8 @@
              COMPUTE WS-S = WS-NSEC - 1
              CALL "L32-LOCATE" USING L-NX L-NY L-NZ WS-COL WS-SID WS-INDEX
              PERFORM UNTIL WS-S < WS-LAST
-                 COMPUTE WS-SID = (WS-COL - 1) * 6 + WS-S + 2
-                 IF WS-S >= -1 AND LY-WP(2, WS-SID) = 1
+                 COMPUTE WS-SID = (WS-COL - 1) * EN-NL + WS-S - EN-LOWL + 1
+                 IF WS-S >= EN-LOWL AND LY-WP(2, WS-SID) = 1
                      COMPUTE WS-Y = WS-S * 16 + 15
                      PERFORM 16 TIMES
                          IF L-INCREASE = 1
@@ -594,7 +595,7 @@
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ.
-     COMPUTE WS-COL = (L-CZ + 1) * 4 + L-CX + 2
+     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
      MOVE 1 TO LY-ON(2, WS-COL)
      MOVE LY-LOWEST(2) TO WS-BOTTOM
      MOVE LY-LOWEST(2) TO WS-SEC
@@ -604,7 +605,7 @@
      SUBTRACT 1 FROM WS-SEC
      MOVE 0 TO WS-STOP
      PERFORM UNTIL WS-SEC < WS-BOTTOM OR WS-STOP = 1
-         COMPUTE WS-SID = (WS-COL - 1) * 6 + WS-SEC + 2
+         COMPUTE WS-SID = (WS-COL - 1) * EN-NL + WS-SEC - EN-LOWL + 1
          IF LY-WP(2, WS-SID) = 1
              COMPUTE WS-SB = WS-SEC * 16
              COMPUTE WS-ST = WS-SB + 15
@@ -699,7 +700,7 @@
  01 L-CZ                   BINARY-LONG.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ L-FLAG.
-     COMPUTE WS-COL = (L-CZ + 1) * 4 + L-CX + 2
+     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
      MOVE L-FLAG TO LY-ON(1, WS-COL)
      IF EN-SKY-ON = 1
          MOVE L-FLAG TO LY-ON(2, WS-COL)
@@ -727,7 +728,7 @@
              END-IF
              COMPUTE WS-SEC = WS-TOP - 1
              PERFORM UNTIL WS-SEC < WS-LO
-                 COMPUTE WS-SID = (WS-COL - 1) * 6 + WS-SEC + 2
+                 COMPUTE WS-SID = (WS-COL - 1) * EN-NL + WS-SEC - EN-LOWL + 1
                  IF LY-WP(2, WS-SID) = 1 AND LY-WD(2, WS-SID) = LOW-VALUES
                      MOVE ALL X"FF" TO LY-WD(2, WS-SID)
                      MOVE 1 TO LY-CH(2, WS-SID)

@@ -50,10 +50,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-PUSH-INC.
-*> USING layer, x, y, z, entry: appends a pair to the increase queue (3, 4).
+*> USING layer, x, y, z, entry: appends a pair to the increase queue (3, 4); a full table (50000) first moves the pairs still waiting to the front.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-K                    BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -61,6 +63,14 @@
  01 L-Z                    BINARY-LONG.
  01 L-ENTRY                BINARY-LONG.
  PROCEDURE DIVISION USING L-K L-X L-Y L-Z L-ENTRY.
+     IF QU-INC-TAIL(L-K) = 50000 AND QU-INC-HEAD(L-K) > 1
+         PERFORM VARYING WS-I FROM QU-INC-HEAD(L-K) BY 1 UNTIL WS-I > QU-INC-TAIL(L-K)
+             COMPUTE WS-J = WS-I - QU-INC-HEAD(L-K) + 1
+             MOVE QU-INC(L-K, WS-I) TO QU-INC(L-K, WS-J)
+         END-PERFORM
+         COMPUTE QU-INC-TAIL(L-K) = QU-INC-TAIL(L-K) - QU-INC-HEAD(L-K) + 1
+         MOVE 1 TO QU-INC-HEAD(L-K)
+     END-IF
      ADD 1 TO QU-INC-TAIL(L-K)
      MOVE L-X TO QU-INC-X(L-K, QU-INC-TAIL(L-K))
      MOVE L-Y TO QU-INC-Y(L-K, QU-INC-TAIL(L-K))
@@ -71,10 +81,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-PUSH-DEC.
-*> USING layer, x, y, z, entry: appends a pair to the decrease queue (3, 4).
+*> USING layer, x, y, z, entry: appends a pair to the decrease queue (3, 4); a full table (50000) first moves the pairs still waiting to the front.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-K                    BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -82,6 +94,14 @@
  01 L-Z                    BINARY-LONG.
  01 L-ENTRY                BINARY-LONG.
  PROCEDURE DIVISION USING L-K L-X L-Y L-Z L-ENTRY.
+     IF QU-DEC-TAIL(L-K) = 50000 AND QU-DEC-HEAD(L-K) > 1
+         PERFORM VARYING WS-I FROM QU-DEC-HEAD(L-K) BY 1 UNTIL WS-I > QU-DEC-TAIL(L-K)
+             COMPUTE WS-J = WS-I - QU-DEC-HEAD(L-K) + 1
+             MOVE QU-DEC(L-K, WS-I) TO QU-DEC(L-K, WS-J)
+         END-PERFORM
+         COMPUTE QU-DEC-TAIL(L-K) = QU-DEC-TAIL(L-K) - QU-DEC-HEAD(L-K) + 1
+         MOVE 1 TO QU-DEC-HEAD(L-K)
+     END-IF
      ADD 1 TO QU-DEC-TAIL(L-K)
      MOVE L-X TO QU-DEC-X(L-K, QU-DEC-TAIL(L-K))
      MOVE L-Y TO QU-DEC-Y(L-K, QU-DEC-TAIL(L-K))
@@ -477,6 +497,7 @@
  01 WS-COL                 BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-REST                BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -492,15 +513,17 @@
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ.
-     COMPUTE WS-COL = (L-CZ + 1) * 4 + L-CX + 2
+     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
      MOVE 1 TO LY-ON(1, WS-COL)
-     COMPUTE WS-BASE = (WS-COL - 1) * 16384
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16384
+     COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 4096
+     COMPUTE WS-N = EN-NS * 4096
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
          COMPUTE WS-ID = EN-BLK(WS-BASE + WS-I)
          MOVE EN-EMIT(WS-ID + 1) TO WS-E
          IF WS-E NOT = 0
              COMPUTE WS-Y = (WS-I - 1) / 256
              COMPUTE WS-REST = WS-I - 1 - WS-Y * 256
+             ADD EN-MINY TO WS-Y
              COMPUTE WS-Z = WS-REST / 16
              COMPUTE WS-X = L-CX * 16 + WS-REST - WS-Z * 16
              COMPUTE WS-Z = L-CZ * 16 + WS-Z

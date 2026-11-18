@@ -520,13 +520,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-INIT.
-*> USING sky engine present (1.1): resets the whole engine (nothing stores light, no chunk is available), defines the preset states 0
+*> USING sky engine present (1.1): resets the whole engine (nothing stores light, no chunk is available; 4 block sections from section Y 0; the window
+*> is chunks -1 to 2), defines the preset states 0
 *> (air: no emission, dampening 0, no occlusion) and 1 (bedrock: dampening 15, full faces, the state of an unloaded cell, 2.2), and
 *> starts the sky storage's lowest light section at Integer.MAX_VALUE (6.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
  01 WS-F                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-SKY                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SKY.
@@ -536,6 +539,15 @@
      MOVE 1 TO QU-INC-HEAD(1) QU-INC-HEAD(2) QU-DEC-HEAD(1) QU-DEC-HEAD(2)
      MOVE 15 TO EN-DAMP(2)
      MOVE 1 TO EN-OCC(2)
+     MOVE 4 TO EN-NS
+     MOVE 6 TO EN-NL
+     MOVE -1 TO EN-LOWL
+     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 3
+         PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
+             COMPUTE EN-OWN-Z(WS-R * 4 + WS-C + 1) = WS-R - 1
+             COMPUTE EN-OWN-X(WS-R * 4 + WS-C + 1) = WS-C - 1
+         END-PERFORM
+     END-PERFORM
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
          MOVE 15 TO EN-FACE(2, WS-F)
      END-PERFORM
@@ -543,8 +555,84 @@
  END PROGRAM L32-INIT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. L32-SET-DIMENSION.
+*> USING block section count (1 to 24), minimum block section Y: sizes the columns for a dimension (EN-NS, EN-MINSEC; light sections one below the lowest block
+*> section to one above the highest, 1). Call it right after L32-INIT, before any chunk is made available.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY L32.
+ LINKAGE SECTION.
+ 01 L-NS                   BINARY-LONG.
+ 01 L-MIN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-NS L-MIN.
+     MOVE L-NS TO EN-NS
+     MOVE L-MIN TO EN-MINSEC
+     COMPUTE EN-NL = L-NS + 2
+     COMPUTE EN-LOWL = L-MIN - 1
+     COMPUTE EN-MINY = L-MIN * 16
+     GOBACK.
+ END PROGRAM L32-SET-DIMENSION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. L32-CLAIM-CHUNK.
+*> USING chunk x, chunk z, previous owner changed (out, 1 when the slot was another chunk's): gives the chunk the slot (z + 1 mod 4) * 4 + (x + 1 mod 4) + 1 of the
+*> sliding window. A slot owned by another chunk is cleared first: its blocks, availability, sky sources, section counts and every light storage of
+*> both layers, so the caller saves what it needs of the old chunk and has run the queued updates beforehand.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY L32.
+ 01 WS-COL                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SID                 BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CX L-CZ L-CHANGED.
+     MOVE 0 TO L-CHANGED
+     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
+     IF EN-OWN-X(WS-COL) NOT = L-CX OR EN-OWN-Z(WS-COL) NOT = L-CZ
+         MOVE 1 TO L-CHANGED
+         MOVE L-CX TO EN-OWN-X(WS-COL)
+         MOVE L-CZ TO EN-OWN-Z(WS-COL)
+         MOVE 0 TO EN-AVAIL(WS-COL) EN-PAST-INIT(WS-COL) EN-LIGHT-CORRECT(WS-COL)
+         COMPUTE WS-FIRST = (WS-COL - 1) * EN-NL + 1
+         COMPUTE WS-LAST = WS-COL * EN-NL
+         PERFORM VARYING WS-SID FROM WS-FIRST BY 1 UNTIL WS-SID > WS-LAST
+             MOVE 0 TO EN-EMPTYNOTE(WS-SID) EN-DIRTY(WS-SID)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
+                 MOVE 0 TO LY-STATE(WS-K, WS-SID) LY-WP(WS-K, WS-SID) LY-VP(WS-K, WS-SID) LY-QP(WS-K, WS-SID)
+                 MOVE 0 TO LY-PR(WS-K, WS-SID) LY-CH(WS-K, WS-SID) LY-AF(WS-K, WS-SID) LY-NOTIFY(WS-K, WS-SID)
+                 MOVE LOW-VALUES TO LY-WD(WS-K, WS-SID) LY-VD(WS-K, WS-SID) LY-QD(WS-K, WS-SID)
+             END-PERFORM
+         END-PERFORM
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
+             MOVE 0 TO LY-ON(WS-K, WS-COL) LY-RETAIN(WS-K, WS-COL) LY-TOP(WS-K, WS-COL) LY-TOPSET(WS-K, WS-COL)
+             MOVE 0 TO LY-VTOP(WS-K, WS-COL) LY-VTOPSET(WS-K, WS-COL)
+         END-PERFORM
+         COMPUTE WS-FIRST = (WS-COL - 1) * EN-NS + 1
+         COMPUTE WS-LAST = WS-COL * EN-NS
+         PERFORM VARYING WS-SID FROM WS-FIRST BY 1 UNTIL WS-SID > WS-LAST
+             MOVE 0 TO EN-NONAIR(WS-SID)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+             MOVE 0 TO EN-LS(WS-COL, WS-I)
+         END-PERFORM
+         COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 4096
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-NS * 4096
+             MOVE 0 TO EN-BLK(WS-BASE + WS-I)
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM L32-CLAIM-CHUNK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-DEFINE-STATE.
-*> USING state id 0 to 63, emission, dampening, canOcclude, useShapeForLightOcclusion, then the six face occlusion shapes (DOWN, UP, NORTH,
+*> USING state id 0 to 39999, emission, dampening, canOcclude, useShapeForLightOcclusion, then the six face occlusion shapes (DOWN, UP, NORTH,
 *> SOUTH, WEST, EAST) as quadrant masks 0 to 15 (0 empty, 15 a full face; the block registry's shapes are in 24, 2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -727,16 +815,18 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-LOCATE.
-*> USING world x, y, z; gives the column 1 to 16 (0 outside the window of chunks -1 to 2), the section id 1 to 96 (0 outside the light
-*> sections -1 to 4) and the nibble index of the cell in its section (1).
+*> USING world x, y, z; gives the column 1 to 16 (0 when the chunk does not own its slot of the window), the section id (0 outside the light
+*> sections EN-LOWL to EN-LOWL + EN-NL - 1) and the nibble index of the cell in its section (1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY L32.
  01 WS-LX                  BINARY-LONG.
  01 WS-LY                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-SY                  BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -752,10 +842,11 @@
      COMPUTE WS-CX = (L-X - WS-LX) / 16
      COMPUTE WS-CZ = (L-Z - WS-LZ) / 16
      COMPUTE WS-SY = (L-Y - WS-LY) / 16
-     IF WS-CX >= -1 AND WS-CX <= 2 AND WS-CZ >= -1 AND WS-CZ <= 2
-         COMPUTE L-COL = (WS-CZ + 1) * 4 + WS-CX + 2
-         IF WS-SY >= -1 AND WS-SY <= 4
-             COMPUTE L-SID = (L-COL - 1) * 6 + WS-SY + 2
+     COMPUTE WS-SLOT = FUNCTION MOD(WS-CZ + 1, 4) * 4 + FUNCTION MOD(WS-CX + 1, 4) + 1
+     IF EN-OWN-X(WS-SLOT) = WS-CX AND EN-OWN-Z(WS-SLOT) = WS-CZ
+         MOVE WS-SLOT TO L-COL
+         IF WS-SY >= EN-LOWL AND WS-SY < EN-LOWL + EN-NL
+             COMPUTE L-SID = (L-COL - 1) * EN-NL + WS-SY - EN-LOWL + 1
              COMPUTE L-INDEX = WS-LY * 256 + WS-LZ * 16 + WS-LX
          END-IF
      END-IF
@@ -764,7 +855,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-AVAIL-CHUNK.
-*> USING chunk x, chunk z (-1 to 2), flag: makes the chunk available to the engine's chunk getter (1) or not (0), with its sky-source table
+*> USING chunk x, chunk z (a chunk that owns its slot), flag: makes the chunk available to the engine's chunk getter (1) or not (0), with its sky-source table
 *> filled from the chunk's cells when it becomes available (5.3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -777,7 +868,7 @@
  01 L-CZ                   BINARY-LONG.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ L-FLAG.
-     COMPUTE WS-COL = (L-CZ + 1) * 4 + L-CX + 2
+     COMPUTE WS-COL = FUNCTION MOD(L-CZ + 1, 4) * 4 + FUNCTION MOD(L-CX + 1, 4) + 1
      MOVE L-FLAG TO EN-AVAIL(WS-COL)
      IF L-FLAG = 1
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
@@ -789,7 +880,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-SET-CELL.
-*> USING x, y, z (y 0 to 63), state id: stores a block state in an available chunk without any light work (the plain store of a chunk
+*> USING x, y, z (y inside the build height), state id: stores a block state in an available chunk without any light work (the plain store of a chunk
 *> that is being built), keeping the count of non-air cells of its block section.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -806,8 +897,8 @@
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-X L-Y L-Z L-STATE.
      CALL "L32-LOCATE" USING L-X L-Y L-Z WS-COL WS-SID WS-INDEX
-     COMPUTE WS-CELL = (WS-COL - 1) * 16384 + L-Y * 256 + FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16) + 1
-     COMPUTE WS-SEC = (WS-COL - 1) * 4 + L-Y / 16 + 1
+     COMPUTE WS-CELL = (WS-COL - 1) * EN-NS * 4096 + (L-Y - EN-MINY) * 256 + FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16) + 1
+     COMPUTE WS-SEC = (WS-COL - 1) * EN-NS + (L-Y - EN-MINY) / 16 + 1
      IF EN-BLK(WS-CELL) NOT = 0
          SUBTRACT 1 FROM EN-NONAIR(WS-SEC)
      END-IF
@@ -839,8 +930,8 @@
      IF WS-COL > 0
          IF EN-AVAIL(WS-COL) = 1
              MOVE 0 TO L-STATE
-             IF L-Y >= 0 AND L-Y <= 63
-                 MOVE EN-BLK((WS-COL - 1) * 16384 + L-Y * 256 + FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16) + 1) TO L-STATE
+             IF L-Y >= EN-MINY AND L-Y < EN-MINY + EN-NS * 16
+                 MOVE EN-BLK((WS-COL - 1) * EN-NS * 4096 + (L-Y - EN-MINY) * 256 + FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16) + 1) TO L-STATE
              END-IF
          END-IF
      END-IF

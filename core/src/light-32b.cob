@@ -4,8 +4,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-SECTION-ID.
-*> USING section x, y, z (section coordinates); gives the section id 1 to 96 and the column 1 to 16 (0 when outside the window).
+*> USING section x, y, z (section coordinates); gives the section id and the column 1 to 16 (0 when outside the window).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY L32.
+ 01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-SX                   BINARY-LONG.
  01 L-SY                   BINARY-LONG.
@@ -14,10 +17,11 @@
  01 L-COL                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SX L-SY L-SZ L-SID L-COL.
      MOVE 0 TO L-SID L-COL
-     IF L-SX >= -1 AND L-SX <= 2 AND L-SZ >= -1 AND L-SZ <= 2
-         COMPUTE L-COL = (L-SZ + 1) * 4 + L-SX + 2
-         IF L-SY >= -1 AND L-SY <= 4
-             COMPUTE L-SID = (L-COL - 1) * 6 + L-SY + 2
+     COMPUTE WS-SLOT = FUNCTION MOD(L-SZ + 1, 4) * 4 + FUNCTION MOD(L-SX + 1, 4) + 1
+     IF EN-OWN-X(WS-SLOT) = L-SX AND EN-OWN-Z(WS-SLOT) = L-SZ
+         MOVE WS-SLOT TO L-COL
+         IF L-SY >= EN-LOWL AND L-SY < EN-LOWL + EN-NL
+             COMPUTE L-SID = (L-COL - 1) * EN-NL + L-SY - EN-LOWL + 1
          END-IF
      END-IF
      GOBACK.
@@ -161,7 +165,7 @@
              MOVE L-SY TO WS-Y
              MOVE 0 TO WS-STORES
              PERFORM UNTIL WS-STORES = 1 OR WS-Y < LY-LOWEST(2)
-                 COMPUTE WS-SID = (L-COL - 1) * 6 + WS-Y + 2
+                 COMPUTE WS-SID = (L-COL - 1) * EN-NL + WS-Y - EN-LOWL + 1
                  MOVE LY-WP(2, WS-SID) TO WS-STORES
                  IF WS-STORES = 0
                      SUBTRACT 1 FROM WS-Y
@@ -210,8 +214,8 @@
          WHEN OTHER
              MOVE 0 TO WS-FOUND
              COMPUTE WS-S = L-SY + 1
-             PERFORM UNTIL WS-S > 4 OR WS-FOUND = 1
-                 COMPUTE WS-SRC = (L-COL - 1) * 6 + WS-S + 2
+             PERFORM UNTIL WS-S >= EN-LOWL + EN-NL OR WS-FOUND = 1
+                 COMPUTE WS-SRC = (L-COL - 1) * EN-NL + WS-S - EN-LOWL + 1
                  IF LY-WP(2, WS-SRC) = 1
                      MOVE 1 TO WS-FOUND
                  ELSE
@@ -392,9 +396,9 @@
  PROCEDURE DIVISION USING L-K.
      IF LY-INCONS(L-K) = 1
          MOVE 0 TO LY-INCONS(L-K)
-         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 96
+         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
              IF LY-PR(L-K, WS-SID) = 1
-                 COMPUTE WS-COL = (WS-SID - 1) / 6 + 1
+                 COMPUTE WS-COL = (WS-SID - 1) / EN-NL + 1
                  IF LY-RETAIN(L-K, WS-COL) = 1
                      IF LY-QP(L-K, WS-SID) NOT = 1 AND LY-WP(L-K, WS-SID) = 1
                          MOVE LY-WD(L-K, WS-SID) TO LY-QD(L-K, WS-SID)
@@ -406,16 +410,16 @@
                  MOVE 0 TO LY-WP(L-K, WS-SID)
              END-IF
          END-PERFORM
-         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 96
+         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
              IF LY-PR(L-K, WS-SID) = 1
-                 COMPUTE WS-COL = (WS-SID - 1) / 6 + 1
-                 COMPUTE WS-SY = WS-SID - (WS-COL - 1) * 6 - 2
+                 COMPUTE WS-COL = (WS-SID - 1) / EN-NL + 1
+                 COMPUTE WS-SY = WS-SID - (WS-COL - 1) * EN-NL + EN-LOWL - 1
                  CALL "L32-NODE-REMOVED" USING L-K WS-COL WS-SY
                  MOVE 1 TO LY-CH(L-K, WS-SID)
                  MOVE 0 TO LY-PR(L-K, WS-SID)
              END-IF
          END-PERFORM
-         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 96
+         PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
              IF LY-QP(L-K, WS-SID) NOT = 0 AND LY-WP(L-K, WS-SID) = 1
                  IF LY-QP(L-K, WS-SID) = 1
                      MOVE LY-QD(L-K, WS-SID) TO LY-WD(L-K, WS-SID)
@@ -426,7 +430,7 @@
          END-PERFORM
      END-IF
      MOVE 0 TO WS-ANY
-     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 96
+     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
          IF LY-CH(L-K, WS-SID) = 1
              MOVE 1 TO WS-ANY
              MOVE LY-WP(L-K, WS-SID) TO LY-VP(L-K, WS-SID)
@@ -443,7 +447,7 @@
          END-PERFORM
          MOVE LY-LOWEST(L-K) TO LY-VLOWEST(L-K)
      END-IF
-     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 96
+     PERFORM VARYING WS-SID FROM 1 BY 1 UNTIL WS-SID > 16 * EN-NL
          IF LY-AF(L-K, WS-SID) = 1
              ADD 1 TO LY-NOTIFY(L-K, WS-SID)
              MOVE 0 TO LY-AF(L-K, WS-SID)
@@ -574,7 +578,7 @@
                  MOVE WS-SY TO WS-S
                  COMPUTE WS-ROW = FUNCTION MOD(L-Z, 16) * 16 + FUNCTION MOD(L-X, 16)
                  PERFORM UNTIL WS-DONE = 1 OR WS-S >= WS-TOP
-                     COMPUTE WS-SSID = (WS-COL - 1) * 6 + WS-S + 2
+                     COMPUTE WS-SSID = (WS-COL - 1) * EN-NL + WS-S - EN-LOWL + 1
                      IF L-VARIANT = 0
                          MOVE LY-VP(2, WS-SSID) TO WS-PRESENT
                      ELSE
