@@ -386,8 +386,8 @@
  01 WS-32                  BINARY-LONG VALUE 32.
  01 WS-8                   BINARY-LONG VALUE 8.
  01 WS-20                  BINARY-LONG VALUE 20.
- 01 WS-15                  BINARY-LONG VALUE 15.
- 01 WS-40                  BINARY-LONG VALUE 40.
+ 01 WS-RIVER              BINARY-LONG.
+ 01 WS-ODDS                BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-PEACEFUL            BINARY-LONG.
@@ -452,20 +452,16 @@
                  MOVE 1 TO WS-BASE
              END-IF
              CALL "MS6-BIOME-AT" USING L-DIM L-X L-Y L-Z WS-BIOME
+             MOVE 0 TO WS-RIVER
+             INSPECT SPB-NAME(WS-BIOME) TALLYING WS-RIVER FOR ALL "river"
+             COMPUTE WS-ODDS = 40 - 25 * FUNCTION MIN(WS-RIVER, 1)
              IF WS-BASE = 1 AND WS-SPAWNER = 1
                  MOVE 1 TO L-OK
              END-IF
              IF WS-BASE = 1 AND WS-SPAWNER = 0
-                 IF SPB-NAME(WS-BIOME) = "river" OR "frozen_river"
-                     CALL "XORO-NEXT-INT" USING L-STATE WS-15 WS-DRAW
-                     IF WS-DRAW = 0
-                         MOVE 1 TO L-OK
-                     END-IF
-                 ELSE
-                     CALL "XORO-NEXT-INT" USING L-STATE WS-40 WS-DRAW
-                     IF WS-DRAW = 0 AND L-Y < DM-SEA-LEVEL(L-DIM) - 5
-                         MOVE 1 TO L-OK
-                     END-IF
+                 CALL "XORO-NEXT-INT" USING L-STATE WS-ODDS WS-DRAW
+                 IF WS-DRAW = 0 AND (WS-RIVER > 0 OR L-Y < DM-SEA-LEVEL(L-DIM) - 5)
+                     MOVE 1 TO L-OK
                  END-IF
              END-IF
      END-EVALUATE
