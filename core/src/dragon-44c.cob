@@ -61,7 +61,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DRAGON-HEALTH-SYNC.
-*> USING row: the tracker row's health is the ceiling of the exact health.
+*> USING row: the tracker row's health is the ceiling of the exact health; the viewers get the changed value (the health slot, 18 section 9.3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -75,6 +75,7 @@
          ADD 1 TO WS-I
      END-IF
      MOVE WS-I TO EN-HEALTH(L-ROW)
+     CALL "STDMOB-HP-SYNC" USING L-ROW
      GOBACK.
  END PROGRAM DRAGON-HEALTH-SYNC.
 
@@ -508,6 +509,7 @@
      ADD 1 TO DG-TICK
      IF DG-HP <= 0
          MOVE 0 TO EN-HEALTH(L-ROW)
+         CALL "STDMOB-HP-SYNC" USING L-ROW
          CALL "DRAGON-DEATH" USING L-ROW
          GOBACK
      END-IF
