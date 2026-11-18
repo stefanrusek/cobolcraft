@@ -335,7 +335,6 @@
  COPY DIMENSIONS.
  COPY CBLOCKS.
  COPY CELLS.
- 01 WS-CELLS               BINARY-LONG.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 32.
@@ -386,6 +385,32 @@
          CALL "BE-CHUNK-READ" USING PB-BUFFER WS-BE-COUNT L-ROW
          MOVE WS-END TO PB-POS
      END-IF
+     CALL "CHUNK-COUNT-SOURCES" USING L-ROW
+     MOVE 0 TO CK-CHANGED(L-ROW) CK-LIT(L-ROW)
+     MOVE PB-ERROR TO L-OUTCOME
+     IF CK-FOREIGN(L-ROW) = 1 AND PB-ERROR = 0
+         MOVE 2 TO L-OUTCOME
+     END-IF
+     GOBACK.
+ END PROGRAM CHUNK-NBT-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHUNK-COUNT-SOURCES.
+*> USING cache row (BINARY-LONG; its memory allocated and its cells filled): CK-SOURCES of every block section recounted from the cells, the number of cells whose state gives off light
+*> (CB-S-LIGHT above 0). The light engine scans only the sections with a count above 0 for sources, so every chunk that gets its cells from outside the block-change path (read from a region
+*> file, made by a generator) is counted here (lane bugtorch T30020: the chunks the standard generator made were not, so their torches and lava gave no light).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CBLOCKS.
+ COPY CELLS.
+ 01 WS-CELLS               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CE-MAX-SECTIONS
          MOVE 0 TO CK-SOURCES(L-ROW, WS-I)
      END-PERFORM
@@ -395,13 +420,8 @@
              ADD 1 TO CK-SOURCES(L-ROW, (WS-I - 1) / 4096 + 1)
          END-IF
      END-PERFORM
-     MOVE 0 TO CK-CHANGED(L-ROW) CK-LIT(L-ROW)
-     MOVE PB-ERROR TO L-OUTCOME
-     IF CK-FOREIGN(L-ROW) = 1 AND PB-ERROR = 0
-         MOVE 2 TO L-OUTCOME
-     END-IF
      GOBACK.
- END PROGRAM CHUNK-NBT-READ.
+ END PROGRAM CHUNK-COUNT-SOURCES.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHUNK-NBT-SECTION.

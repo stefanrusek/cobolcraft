@@ -295,6 +295,7 @@
  01 WS-WL-TEXT             PIC X(32).
  01 WS-WL-MODE             BINARY-LONG VALUE 2.
  01 WS-STACKED             BINARY-LONG.
+ 01 WS-TORCH-FITS          BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -341,6 +342,12 @@
          CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
      END-IF
      IF WS-HIT = 1
+         CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
+         GOBACK
+     END-IF
+*>   A torch item is a standing-and-wall item (25-4 section 9.2): clicked on the side of a block it places the wall torch facing away from it (torch-place.cob).
+     CALL "TORCH-PLACE-STATE" USING WS-DIM WS-X WS-Y WS-Z PSB-FACE PL-YAW(CN-PLAYER(L-ID)) PL-PITCH(CN-PLAYER(L-ID)) WS-STATE WS-TORCH-FITS
+     IF WS-TORCH-FITS = 0
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF

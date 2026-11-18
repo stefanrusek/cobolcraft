@@ -12,8 +12,11 @@
 *>   CB-TOOL-REQ 1 when the row's "tool req." column is yes (13 section 2.6 "Req"); CB-NEED-TIER 3, 2 or 1 when the block is in
 *>               the tag minecraft:needs_diamond_tool, needs_iron_tool or needs_stone_tool (highest first), else 0.
 *>   CB-LIGHT    the light the default state emits; CB-S-LIGHT is the light of each state: a plain number in the
-*>               row's light text is that number for every state, "N ... if lit, else 0" is N where the state's
-*>               property lit is true; any other text is 0 (the light engine of 32 will define the rest).
+*>               row's light text is that number for every state, "N ... if lit, else 0", "N when lit", "lit?N:0" and
+*>               "lit ? N : 0" give N where the state's property lit is true; the other texts of the table by state
+*>               (candles 3 x candles when lit, "N when berries", copper bulbs 15/12/8/4 by weathering, sea pickles,
+*>               respawn anchors, light blocks, trial spawners, vaults, glow lichen) are BLOCKS-LIGHT-KIND and
+*>               BLOCKS-STATE-LIGHT (block-props.cob); any other text is 0.
 *> CB-EPOCH rises by one at every BLOCKS-OPEN, so a program that caches ids resolved from keys can tell.
  78 CB-MAX-BLOCKS         VALUE 1400.
  78 CB-MAX-STATES         VALUE 40000.
