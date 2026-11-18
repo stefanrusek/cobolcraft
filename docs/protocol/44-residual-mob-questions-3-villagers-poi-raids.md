@@ -60,7 +60,7 @@ A zero-ticket POI (beehive, portal, ...) is never "occupied" and always "has no 
 
 Storage: records are kept per section (a map from the section-relative position to the record, plus an index by type); a section also carries a validity flag. Adding a record of a different type at an occupied position is an error. Reconciliation with the blocks is described below. `ensureLoadedAndValid(level, pos, radius)` loads and validates the sections within `floorDiv(radius, 16)` chunks of the position's chunk (no +1 here; the +1 belongs only to `getInSquare`, below), over every section height from the level's minimum section to its maximum section, before a search.
 
-**Reconciliation with the blocks (`PoiManager.checkConsistencyWithBlocks`, `PoiSection.refresh`, read; closes former Open question 2).** `refresh` does nothing when the section's validity flag is already true. It runs only on a section whose flag is false, in this order: (1) copy the section's record map; (2) clear the records and the by-type index; (3) rescan every block of the section (only when the chunk section may contain POI blocks, `mayHavePoi`; otherwise nothing is scanned and every record is dropped); for each block state that has a POI type, reuse the old record at the same section-relative position if there is one (its free tickets and its old type are kept, because reuse is by position only, even if the block now maps to a different type), else create a record with all tickets free; (4) set the flag true and mark the section dirty. Records at positions that are no longer POI blocks are therefore dropped. When no PoiSection is loaded for the section and the chunk section may contain POI blocks, a section is created and populated by the same scan (all records new, all tickets free). `onSectionLoad` and `setDirty` both feed the section's source level (village centre or not, 1.4) into the distance tracker.
+**Reconciliation with the blocks (`PoiManager.checkConsistencyWithBlocks`, `PoiSection.refresh`, read).** `refresh` does nothing when the section's validity flag is already true. It runs only on a section whose flag is false, in this order: (1) copy the section's record map; (2) clear the records and the by-type index; (3) rescan every block of the section (only when the chunk section may contain POI blocks, `mayHavePoi`; otherwise nothing is scanned and every record is dropped); for each block state that has a POI type, reuse the old record at the same section-relative position if there is one (its free tickets and its old type are kept, because reuse is by position only, even if the block now maps to a different type), else create a record with all tickets free; (4) set the flag true and mark the section dirty. Records at positions that are no longer POI blocks are therefore dropped. When no PoiSection is loaded for the section and the chunk section may contain POI blocks, a section is created and populated by the same scan (all records new, all tickets free). `onSectionLoad` and `setDirty` both feed the section's source level (village centre or not, 1.4) into the distance tracker.
 
 Queries (all return only records inside the range):
 
@@ -83,13 +83,13 @@ The manager keeps, for every loaded section, a small integer "distance to the ne
 
 1. A section is a **village centre** when it holds at least one **occupied** record (1.3) of a POI type in tag `village` (job site, home or meeting). An unclaimed bed or an unclaimed workstation does not make a village; a bed that a villager has claimed, a workstation a villager holds, or a bell with at least one of its 32 tickets taken does.
 2. The field is a bounded-level propagation: a centre has level 0; level of any other section = 1 + the smallest level among its 26 neighbours (the three nested -1..1 offsets in x, y and z, excluding itself), i.e. the Chebyshev (cube) distance in sections; the maximum level is 7, and levels above 6 are not stored, so 7 means "no village within 6 sections". The field is recomputed lazily (`runAllUpdates`) when `tick` or a query runs; it is updated when a section's records change or when a section is loaded.
-   Read this round (closes the neighbour-rule part of former Open question 1): the tracker is a `SectionTracker` built with 7 levels (0 to 6 storable; the constructor arguments are 7, 16, 256) and a default level of 7; the source test is "is a village centre" (source level 0, else 7); the neighbour rule `computeLevelFromNeighbor` returns the source level when the neighbour is itself a source, else the neighbour's level + 1; the neighbourhood visited after a change is the 26 offsets of the -1..1 cube (`SectionTracker.checkNeighborsAfterUpdate`). So the Chebyshev reading above is confirmed, not inferred.
+   Read: the tracker is a `SectionTracker` built with 7 levels (0 to 6 storable; the constructor arguments are 7, 16, 256) and a default level of 7; the source test is "is a village centre" (source level 0, else 7); the neighbour rule `computeLevelFromNeighbor` returns the source level when the neighbour is itself a source, else the neighbour's level + 1; the neighbourhood visited after a change is the 26 offsets of the -1..1 cube (`SectionTracker.checkNeighborsAfterUpdate`). So the Chebyshev reading above is confirmed, not inferred.
 3. `sectionsToVillage(section)` returns that level (0 to 6, or 7).
 4. `ServerLevel.isCloseToVillage(pos, n)` is false when `n > 6`, else true when `sectionsToVillage(section of pos) <= n`. `ServerLevel.isVillage(pos)` is `isCloseToVillage(pos, 1)`: the position's section is at most 1 section (Chebyshev) from a village centre section. (20 section 14.1 states the same tests; this is their source.)
 
 Consequences (worked examples are in 7): a lone bed claimed by a sleeping villager makes the 3 x 3 x 3 sections around its own section "village" for `isVillage`, and the 5 x 5 x 5 sections "close to village" (n = 2) for patrol, cat and similar tests. The village boundary is therefore a union of cubes, not a radius, and moves when claims change.
 
-### 1.4a Block-change hook that creates and removes POIs (`Level.setBlock`, `ServerLevel.updatePOIOnBlockStateChange`; closes former Open question 2)
+### 1.4a Block-change hook that creates and removes POIs (`Level.setBlock`, `ServerLevel.updatePOIOnBlockStateChange`)
 
 1. At the end of a successful block change, `Level.setBlock` (after the neighbour updates and shape updates have run) calls `updatePOIOnBlockStateChange(pos, oldState, newState)`. The base `Level` method does nothing; only `ServerLevel` overrides it.
 2. The override looks up the POI type of the old state and of the new state (`PoiTypes.forState`, the state-to-type map of 1.2; "none" when the state belongs to no type). When the two lookups are equal (both none, or the same type) it returns at once: replacing one bed colour with another, or changing a non-POI property, leaves the record and its tickets untouched. Note that the lookup is by block state, so a state change inside one type (for example a lectern changing from unpowered to powered, which stays in the lectern type) does nothing; a bed whose `part` flips from head to foot is a change from `home` to none.
@@ -143,7 +143,7 @@ So a siege is: 1 night in 10, only where a player stands in a village, a ring 32
 
 The villager side (gossip and panic triggers, 3 or 5 villagers who slept within 24000 ticks and have no `golem_detected_recently` memory, placement search) is in 19 section 22.10. The golem's own village behaviour is in 6. The sensor that sets the "golem nearby" memory is in 4.3 (`golem_detected`).
 
-## 2. Villager brain: POI behaviours (read in this round)
+## 2. Villager brain: POI behaviours
 
 The behaviours below are the ones listed in 18 Open question 3. The brain entries and priorities are in 19 section 22.3. Memory names are the brain memory module types of 18 section 4.7: `job_site`, `potential_job_site`, `secondary_job_site`, `home`, `meeting_point`, `hiding_place`, `last_slept`, `last_woken`, `last_worked_at_poi`, `walk_target`, `look_target`, `interaction_target`, `breed_target`, `heard_bell_time`, `nearest_bed`, `nearest_visible_living_entities`, `visited_block_positions` and the others named in the text. A memory holding a position stores the dimension too (a global position); a behaviour that compares positions first compares dimensions.
 
@@ -157,7 +157,7 @@ Each evaluation:
 3. A per-instance cache `Long2Object` maps a POI position (as long) to a retry object. First all cache entries older than 400 ticks since their last attempt (`isStillValid`: `now - lastAttempt < 400`) are dropped.
 4. Candidates: `findAllClosestFirstWithType(poiPredicate, positionFilter, mobBlockPos, 48, HAS_SPACE)` (closest first). The position filter is an argument of that call, so it runs before the limit: rejected positions do not use up the slots. The stream is then limited to **5**, then filtered by the extra validity predicate (the bed check for homes: the block is in tag `villagers_can_sleep_on_bed` and not occupied, 19 section 22.8), which therefore runs after the limit. The position filter rejects a position when it has a cache entry and that retry object says "not yet" (`shouldRetry(now)` false). A position with no cache entry passes with no call at all. `markAttempt(now)` is called only for a position that already has an entry and whose `shouldRetry` passed (read: the filter calls `get`, then `shouldRetry`, then `markAttempt`). Retry objects are created only on a failed path (step 7), and the constructor itself marks the first attempt.
    The `onlyAdult` flag of step 1 per brain entry (read, `VillagerGoalPackages`): job site **true** (claim stored in `potential_job_site`, no entity event), meeting point **true** (event 14), home **false** (event 14).
-5. Path: one path is requested to the whole set of candidate positions (`findPathToPois`): the target set holds the positions, the search radius is the largest `validRange` among the candidate types; no candidates means no path.
+5. Path: one path is requested to the whole set of candidate positions (`findPathToPois`): the target set holds the positions and the **reach** (the Manhattan distance within which a target counts as reached) is the largest `validRange` among the candidate types, **starting from 1** (`max(1, largest valid range)`); no candidates means no path. The reach is the second argument of `PathNavigation.createPath(Set, int)` (2.19 A); the search radius and the region size come from the mob's follow range. For the POI types of 1.2 the valid range is 1 for every type except the meeting point (6); the maximum starts from 1, so the reach is never below 1. A path to a job site, bed or the bell stops within 1 block of the POI block, and a path to a set that contains a meeting point reaches within 6.
 6. If a path exists and `canReach()`: the path's target position is the choice. The POI is claimed with `take(poiPredicate, (type, pos) -> pos equals target, target, 1)` (radius 1, so only that exact record), the global position is stored in `memoryB` (the storing memory above), the entity event byte is broadcast if one was configured (14 for homes and the meeting point, none for jobs), and the whole retry cache is cleared; the debug synchroniser is told of the POI change.
 7. If there is no usable path, every candidate gets a retry object (created on first failure) so the next scan skips it for a while.
 8. The behaviour returns "started" after a scan that reached step 4.
@@ -211,7 +211,7 @@ Requires `potential_job_site` present; maximum run time **1200** ticks. Start co
   4. Collect the `home` POIs within 48 blocks (any occupancy) through a position filter: a position that is already a key of the map is rejected; otherwise a per-run counter is incremented (starting from 0) and the position is rejected when the incremented value is 5 or more, so at most 4 positions per run are accepted (the test is `value < 5` after the increment); an accepted position is stored in the map with expiry `lastRun + 40` (the jittered `lastRun` of step 3, not the plain game time).
   5. One path is requested to the collected set (`findPathToPois`). If the path exists and `canReach()`: when the POI manager has a type at the path's target, `walk_target` is set to the target with the given speed and closeness **1** (a literal 1, not the home's valid range) and the debug synchroniser is told.
   6. If there is no usable path and the counter is below 5 (fewer than 5 positions were examined), the map entries whose expiry is below the current `lastRun` are purged (purging only happens on this failure branch).
-- `GoToClosestVillage(speed, closeEnough)` (rest activity when there is no `home`): does nothing if the villager's block is a village (`isVillage`). Otherwise let `d0 = sectionsToVillage(own section)`; make up to **5** attempts: sample a land position with `LandRandomPos.getPos(villager, 15, 7, scoring)` where the scoring prefers positions with a smaller section distance (the lambda returns the section distance of the candidate); for each sampled position compute `d = sectionsToVillage(its section)`: if `d < d0` accept it and stop; if `d == d0` remember it as a fallback (the last such); at the end set `walk_target` to the accepted or fallback position with the speed and closeness. So a lost villager repeatedly moves towards sections closer to POIs.
+- `GoToClosestVillage(speed, closeEnough)` (rest activity when there is no `home`): does nothing if the villager's block is a village (`isVillage`). Otherwise let `d0 = sectionsToVillage(own section)`; make up to **5** attempts: sample a land position with `LandRandomPos.getPos(villager, 15, 7, scoring)` where the scoring prefers positions with a smaller section distance (the scorer returns **minus** the candidate's `sectionsToVillage`, so a nearer section scores higher; scorer form: 2.19 B); for each sampled position compute `d = sectionsToVillage(its section)`: if `d < d0` accept it and stop; if `d == d0` remember it as a fallback (the last such); at the end set `walk_target` to the accepted or fallback position with the speed and closeness. So a lost villager repeatedly moves towards sections closer to POIs.
 
 ### 2.9 Bed behaviours: `WakeUp`, `JumpOnBed`
 
@@ -230,7 +230,7 @@ If none of the three yields a position nothing happens. Otherwise: the four memo
 
 - `ReactToBell` (core, priority 0): runs when `heard_bell_time` is present (the memory is set to the game time by the bell block entity, `BellBlockEntity.updateEntities`: see 2.11a). If **no** raid is found at the villager's position (`getRaidAt` is null), the villager's active activity becomes HIDE (when possible). With a raid present, nothing changes (the raid activities are driven by `SetRaidStatus`).
 - `RingBell` (pre-raid activity, priority 0): runs only when `meeting_point` is present. On each evaluation a random float must be above **0.95** (about 5% of the evaluations); then if the villager is within 3 blocks (`closerThan(pos, 3.0)` on integer block distance) of the stored meeting point and that block is a bell, the bell is rung (`BellBlock.attemptToRing` with no player). Ringing the bell is what the village then reacts to.
-- `SocializeAtBell` (meet activity): requires `meeting_point`, `walk_target`, `look_target`, `interaction_target`, `nearest_visible_living_entities`. On each evaluation a one-in-100 gate (`nextInt(100) == 0`) must hold; the villager must be in the meeting point's dimension and within 4 blocks of it (`closerToCenterThan(pos, 4.0)`); the nearest visible entity list must contain a villager (entity type test only); then the closest entity of that list that is of villager type and has `distanceToSqr <= 32.0` (about 5.66 blocks) is chosen (the predicate has no explicit self test; the visible list is not expected to hold the mob itself, inferred). The start lambda performs exactly three writes on the acting villager, in this order: `interaction_target` = the other villager; `look_target` = an entity tracker on it (eye flag true); `walk_target` = an entity tracker on it (eye flag false) with speed **0.3** and closeness **1**. It never touches the other villager's memories (closes former Open question 10).
+- `SocializeAtBell` (meet activity): requires `meeting_point`, `walk_target`, `look_target`, `interaction_target`, `nearest_visible_living_entities`. On each evaluation a one-in-100 gate (`nextInt(100) == 0`) must hold; the villager must be in the meeting point's dimension and within 4 blocks of it (`closerToCenterThan(pos, 4.0)`); the nearest visible entity list must contain a villager (entity type test only); then the closest entity of that list that is of villager type and has `distanceToSqr <= 32.0` (about 5.66 blocks) is chosen (the predicate has no explicit self test; the visible list is not expected to hold the mob itself, inferred). The start lambda performs exactly three writes on the acting villager, in this order: `interaction_target` = the other villager; `look_target` = an entity tracker on it (eye flag true); `walk_target` = an entity tracker on it (eye flag false) with speed **0.3** and closeness **1**. It never touches the other villager's memories.
 
 ### 2.11a The bell block entity side (`BellBlockEntity`, closes Open question 4)
 
@@ -261,7 +261,7 @@ Start: a raid exists at the villager's position, its status is VICTORY, and the 
 
 Parameters: a function that maps the entity to a position tracker (or none), the speed, an item thrower, a cooldown memory and its duration, and a "has item" predicate. Start: an item is held and a target exists; it sets walk and look to the target (speed as given). Each tick: when the target is within **3.0** blocks of the entity's eye position the item is thrown (the thrower is the second callback: it is given the entity, the held stack and the target position) and the cooldown memory is set to the configured duration. Used by the allay with its own throw rules (19 section 21 lists the allay brain); the villager gift behaviour of 19 section 22.9 is a different class (`GiveGiftToHero`).
 
-### 2.17 Farmer behaviours and movement helpers read in this round
+### 2.17 Farmer behaviours and movement helpers
 
 **`SetWalkTargetFromBlockMemory(memory, speed, closeEnough, tooFar, giveUpAfter)`** (a one-shot behaviour; argument order read from the factory and its lambdas). Registered memory `cant_reach_walk_target_since`; requires `walk_target` absent and the global-position memory present. Per evaluation, with `p` the remembered position and `d` the Manhattan distance (`distManhattan`, |dx|+|dy|+|dz| of block coordinates) from the villager's block to `p`:
 1. If `p` is in another dimension, or `cant_reach_walk_target_since` exists and `now - since > giveUpAfter`: the villager releases the POI of that memory (`releasePoi`), the memory is erased, `cant_reach_walk_target_since` is set to `now`, and the behaviour reports success (no walk target).
@@ -285,9 +285,141 @@ Instances in the villager brain (positional values are `closeEnough`, `tooFar`, 
 - Start: look and walk target set to the chosen cell (speed 0.5, closeness 1); the main hand holds a bone meal item; `nextWorkCycleTime` = now; `timeWorkedSoFar` = 0. Continues while `timeWorkedSoFar < 80` and a target exists. Stop: main hand emptied, `lastBonemealingSession` = `tickCount`.
 - Each tick: when `now >= nextWorkCycleTime` and the villager is within 1.0 block of the cell: the first bone meal stack in slot order is used (`BoneMealItem.growCrop`, which consumes one bone meal as a player's use would: growth rule in 29b section 1); if it grew, level event 1505 with data 15 is sent at the cell, a new target is chosen by the scan (the old one may be picked again if it is still not fully grown), the look and walk targets are set to it, and `nextWorkCycleTime` = now + 40. Then `timeWorkedSoFar` increases by 1 (on every tick that passed the time-and-distance test, whether or not growth happened; ticks that returned early do not count). Note: when the start condition holds but no bone meal remains by the time of the tick, the tick only counts time.
 
-### 2.18 Sensor timing shared by all sensors (closes former Open question 29)
+### 2.18 Sensor timing shared by all sensors
 
 Every sensor has a scan interval: the default constructor sets 20 ticks, another constructor sets an explicit number. `randomlyDelayStart` sets the countdown to `nextInt(interval)` when the brain is created. Per tick the countdown is decremented first; when it is at most 0 it is reset to `interval` and the sensor first refreshes its targeting-condition ranges (the follow range of the entity) and then runs its scan. So a sensor scans on its first tick with probability 1/interval and thereafter every `interval` ticks exactly. `hurt_by` and `visible_villager_babies` therefore scan every 20 ticks; `secondary_pois` (explicit constructor) every 40 and `nearest_bed` every 20 (4.1, 4.5).
+
+### 2.19 Path requests (`canReach`) and the random position helpers
+
+Artifact: the jar recorded in `docs/protocol/README.md` (`minecraft-26.3-client.jar`, SHA-256
+`4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`). This section closes the `canReach` and `LandRandomPos` items
+of this part and of 44-6 Open question 3, 44-x2 Open question 18 and 44-4 Open question 4. It supplements 18 sections 4.2 (helper
+catalogue) and 5 (path finder); where it differs, it corrects 18 (list in D).
+
+#### A. `PathNavigation.createPath` and `Path.canReach`
+
+`canReach()` is the path's stored `reached` flag: true exactly when the search stopped because some target satisfied the reach
+test (the Manhattan distance from a visited node to a target block is at most the `reach` argument, 18 section 5.2 step 4);
+false for the "closest approach" path returned when no target was reached. The path can be non-null and `canReach()` false.
+
+The entry points (all end in one general method):
+
+| Variant | Targets | `regionOffset` | `offsetUp` | `reach` | `maxPathLength` |
+|---|---|---|---|---|---|
+| `createPath(BlockPos target, int reach)` | the one block | 8 | false | `reach` | default |
+| `createPath(Set<BlockPos>, int reach)` and `createPath(Stream<BlockPos>, int reach)` | the set | 8 | false | `reach` | default |
+| `createPath(BlockPos target, int reach, int maxPathLength)` | the one block | 8 | false | `reach` | the third argument |
+| `createPath(double x, y, z, int reach)` | the block containing the point | 8 | false | `reach` | default |
+| `createPath(Entity target, int reach)` | the target entity's block position | 16 | **true** | `reach` | default |
+
+The default `maxPathLength` is `max(follow_range attribute value, requiredPathLength)` (`requiredPathLength` is a field set by
+`setRequiredPathLength`, initially 16.0 (read in the constructor), which is why a mob with a follow range below 16 still searches
+16 blocks). The general method, in order:
+1. An empty target set returns null. A mob whose Y is below the level's minimum Y returns null.
+2. `canUpdatePath()` false returns null. Ground navigation: true when the mob is on the ground, in a liquid or riding;
+   water-bound: when breaching is allowed or the mob is in a liquid; flying: when it can float and is in liquid, or is not a
+   passenger; amphibious: always true.
+3. Reuse: when a path exists, is not finished (`!isDone`) and the new target set contains the stored target position, that existing path is returned
+   unchanged (no new search).
+4. The start block is the mob's block position, or the block above when `offsetUp`. The path region is the cube of half-size
+   `floor(maxPathLength + regionOffset)` around the start; the search is `PathFinder.findPath(region, mob, targets,
+   maxPathLength, reach, maxVisitedNodesMultiplier)` (18 section 5.2), so **`maxPathLength` is the distance-from-start cut-off** and
+   `reach` the completion tolerance.
+5. When the result is non-null with a target: store the target position and the reach, and reset the stuck timeout.
+Worked example (an `AcquirePoi` home search, 2.1): a villager (follow range 16, so region half-size 24) asks for the set
+{bed A (valid range 1)}: `createPath(Set, 1)` (the reach is `max(1, 1)`); a node within Manhattan distance 1 of bed A's block counts as reached, and
+`canReach()` is true only then.
+
+#### B. The random position helpers in full (`RandomPos`, `GoalUtils`, `DefaultRandomPos`, `LandRandomPos`)
+
+**Shared predicates (`GoalUtils`).**
+
+| Predicate | Rule |
+|---|---|
+| `mobRestricted(mob, r)` | the mob has a home (home radius not -1) **and** the home block is **closer than `homeRadius + r + 1`** to the mob's position, measured from the **centre** of the home block with a strict test: `distToCenterSqr(position) < (homeRadius + r + 1)^2` (`closerToCenterThan`). **This is the opposite of what 18 section 4.2 states** (it says "not closer"); the artifact's result is true when the mob is *within* that radius. |
+| `isRestricted(restricted, mob, pos)` | `restricted` and `isWithinHome(pos)` is false. `isWithinHome(blockPos)` is true when there is no home (radius -1), else `distSqr(home block, pos) < homeRadius^2` (strict, block to block integer squared distance). |
+| `isOutsideLimits(pos, mob)` | `level.isOutsideBuildHeight(pos.y)` |
+| `isNotStable(navigation, pos)` | `!navigation.isStableDestination(pos)`: ground and base navigation: the block **below** `pos` has `isSolidRender` (a full opaque cube); water-bound: the block **at** `pos` is **not** solid-render; flying: `entityCanStandOn` of the block at `pos`; amphibious: the block below is not air |
+| `hasMalus(mob, pos)` | `mob.getPathfindingMalus(WalkNodeEvaluator.getPathTypeStatic(mob, pos)) != 0` (any nonzero value, negative included; static type: 18 section 5.1) |
+| `isWater(mob, pos)` | the fluid state at `pos` is in tag `water` |
+| `isSolid(mob, pos)` | `blockState.isSolid()` at `pos` |
+
+**Candidate generation (`RandomPos`).** Random calls are on the mob's own random source in exactly this order.
+- `generateRandomDirection(rand, h, v)`: `dx = nextInt(2h + 1) - h`, then `dy = nextInt(2v + 1) - v`, then `dz = nextInt(2h + 1) - h` (calls in
+  the order x, y, z; result a block offset).
+- `generateRandomDirectionWithinRadians(rand, minH, maxH, v, yOffset, dx, dz, maxAngle)`:
+  1. `angle = atan2(dz, dx) - 1.5707963705062866 + w * maxAngle` where `w = 2.0f * nextFloat() - 1.0f` is computed **entirely in float** (float multiply, then float subtract) and only then widened to double and multiplied by the double `maxAngle` (`Mth.atan2` is the table routine of 10 section 16.4; bit-exactness depends on the float step);
+  2. `dist = lerp(sqrt(nextDouble()), minH, maxH) * sqrt2` where `sqrt2` is the float `Mth.SQRT_OF_TWO` (`sqrt(2f)`) widened;
+  3. `x = -dist * sin(angle)`, `z = dist * cos(angle)` with the JDK `Math.sin` and `Math.cos` (**not** the table functions);
+  4. if `|x| > maxH` or `|z| > maxH`: the candidate is rejected (null) **and no y draw is made**;
+  5. else `y = nextInt(2v + 1) - v + yOffset`; the offset is `BlockPos.containing(x, y, z)` (floor of each).
+  So the draw count per attempt is 2 (angle, distance) when rejected at step 4 and 3 otherwise. Note that `angle`'s first operand is
+  `atan2(dz, dx)` with the **z** component first.
+- `generateRandomPosTowardDirection(mob, hRange, rand, offset)`: `x = offset.x`, `z = offset.z` (as doubles); if the mob has a
+  home and `hRange > 1`: when `mob.x > home.x` then `x -= nextDouble() * hRange / 2` else `x += nextDouble() * hRange / 2`; then the same for
+  z with `mob.z` and `home.z` (so two `nextDouble` draws, x first, only when a home exists and `hRange > 1`); the result is
+  `BlockPos.containing(x + mob.x, offset.y + mob.y, z + mob.z)`.
+- `moveUpOutOfSolid(pos, maxY, isSolid)`: when `isSolid(pos)`, let `c` be the block above `pos`; while `c.y <= maxY` and `c` is solid, step `c` up one block; return `c`. So the result is the first
+  non-solid block above, or the block at `maxY + 1` when every block up to `maxY` is solid; when `pos` is not solid it is returned unchanged. `maxY` is the level's maximum build Y.
+- `generateRandomPos(mob, candidateSupplier [, scorer])` (**the selection rule**): `best = null`, `bestScore = -infinity`; up to
+  **10 attempts**: draw one candidate from the supplier (a null candidate costs an attempt and is skipped); `score = scorer(candidate)`
+  (default scorer: `mob.getWalkTargetValue(candidate)`, the float widened to double; 44-1 section 4.13); when `score > bestScore`
+  **strictly**, the candidate becomes `best`. The result is the **bottom centre** of `best`'s block (`x + 0.5, y, z + 0.5`), or none
+  when `best` is null. Consequences: the earliest of equally scored candidates wins; a scorer that returns `-infinity` for every
+  candidate yields none (`-infinity > -infinity` is false); a candidate is scored only if it passed all rejection tests of the
+  helper; all 10 attempts are always made (there is no early exit on a good score).
+
+**`DefaultRandomPos`** (rejection list applied to the toward-direction result): reject when `isOutsideLimits`, `isRestricted(restricted,
+mob, pos)`, `isNotStable` or `hasMalus` (in that order, all after the toward-direction step; there is no move-up). Entry points:
+- `getPos(mob, h, v)`: `restricted = mobRestricted(mob, h)`; candidate = `generateRandomDirection(h, v)` then the toward-direction step with
+  `hRange = h`.
+- `getPosTowards(mob, h, v, target, maxAngle)`: `d = target - mob position` (3D vector; only x and z are used); `restricted = mobRestricted(mob,
+  h)`; candidate = `generateRandomDirectionWithinRadians(minH 0, maxH h, v, yOffset 0, d.x, d.z, maxAngle)` (a null result is
+  returned as null), then the toward-direction step with `hRange = h`.
+- `getPosAway(mob, h, v, from)`: `d = mob position - from`; `restricted = mobRestricted(mob, h)`; `maxAngle = 1.5707963705062866`;
+  otherwise as `getPosTowards`.
+
+**`LandRandomPos`** (the rejection list is split in two): after the direction step, the toward-direction step rejects (null) when
+`isOutsideLimits`, `isRestricted` or `isNotStable` (in that order); the survivor is then moved up out of solid
+(`moveUpOutOfSolid(pos, level max Y, isSolid)`), and the moved position is rejected when `isWater` or `hasMalus` holds (note: the
+height limit is not re-tested after the move). Entry points:
+- `getPos(mob, h, v)` = `getPos(mob, h, v, mob::getWalkTargetValue)`; `getPos(mob, h, v, scorer)`: `restricted = mobRestricted(mob, h)`;
+  candidate = `generateRandomDirection(h, v)`, toward-direction step (`hRange = h`), move up out of solid, water/malus rejection;
+  selection by the scorer as in `generateRandomPos`. **The scorer form simply replaces `getWalkTargetValue`** as the score; nothing
+  else changes (example: `VillageBoundRandomStroll` and `MoveThroughVillageGoal` pass scorers).
+- `getPosTowards(mob, h, v, target)`: `d = target - mob position`; `restricted = mobRestricted(mob, h)`; candidate =
+  `generateRandomDirectionWithinRadians(0, h, v, 0, d.x, d.z, 1.5707963705062866)`, then as above (the maximum angle is fixed at that value; no
+  maxAngle parameter).
+- `getPosAway(mob, h, v, from)` = `getPosAway(mob, 0, h, v, from)`; `getPosAway(mob, minH, maxH, v, from)`: `d = mob position - from`;
+  when `|d| = 0` exactly, `d` is replaced by `(nextDouble() - 0.5, 0, nextDouble() - 0.5)` (two draws, x then z, drawn **once** before
+  the attempts, not per attempt); `restricted = mobRestricted(mob, maxH)`; candidate = within-radians direction with `minH, maxH, v,
+  yOffset 0, d.x, d.z, maxAngle 1.5707963705062866`; then as above. (Closes 44-6 Open question 3: the sampling inside
+  `RandomPos.generateRandomPos` is the 10-attempt strict-greater scoring described above, with the default score
+  `getWalkTargetValue`, so a piglin or hoglin fleeing from a point scores candidates by their walk-target value; away-bias comes
+  only from the direction step.)
+
+**`getWalkTargetValue` and the light-level cost** (checks 44-1 section 4.13 against the artifact): the default for a
+`PathfinderMob` is 0. `LevelReader.getPathfindingCostFromLightLevels(pos)` is `getLightLevelDependentMagicValue(pos) - 0.5`, all in
+**float**: `b = getMaxLocalRawBrightness(pos) / 15.0f` (the raw brightness is the larger of the block light and the sky light minus
+the current sky darkness, or 15 outside the +-30000000 horizontal limits), `m = b / (4.0f - 3.0f * b)`, and the magic value is
+`lerp(ambientLight, m, 1.0f) = m + ambientLight * (1.0f - m)` with `ambientLight` the dimension type's field; the cost is that
+minus 0.5f. Table (Overworld, ambient light 0): brightness 0 gives `-0.5`; 7 gives `m = 0.4667 / 2.6 = 0.1795` and cost `-0.3205`;
+15 gives `m = 1.0 / 1.0 = 1.0` and cost `+0.5`. `PathfinderMob.checkSpawnRules` is `getWalkTargetValue(block position, level) >= 0`. The value
+read matches 44-1 section 4.13 (confirmed).
+
+**Worked example (draw order).** A mob without a home calls `LandRandomPos.getPos(mob, 10, 7)`. Attempt 1 draws `nextInt(21)`,
+`nextInt(15)`, `nextInt(21)` (offset), then the toward-direction step draws nothing (no home); the position is floored at the mob's
+block plus the offset; rejection tests run; if it passes it is scored and kept as `best`. Attempts 2 to 10 repeat. A mob with a home
+(radius 16, `mobRestricted` true) additionally draws two `nextDouble` per attempt in the toward-direction step.
+
+#### C. Differences from 18 section 4.2
+
+| 18 statement | Artifact |
+|---|---|
+| `restricted` is true when the mob's position is **not** closer than `homeRadius + hRange + 1` to the home centre | it is true when the home block is **closer** than that (`closerToCenterThan`); the effect is that a mob near its home must stay inside its home radius |
+| `LandRandomPos` rejects "outside the limits, restricted, or not stable; then moved up out of solid; then rejected if water or malus" | correct, with the order of 2.19 B; `DefaultRandomPos` has no move-up and tests the malus with the others |
+| "the 5-argument `getPosAway(mob, minH?, maxH, v, from)` ... `maxAngle`" | `getPosAway` uses a fixed maximum angle of 1.5707963705062866 (float pi/2 widened); `getPosTowards` of `LandRandomPos` also fixes it, while `DefaultRandomPos.getPosTowards` takes it as a parameter |
+| `NearestVisibleLivingEntities` and other sensor semantics | see 4.7 |
 
 ## 3. Villager internals
 
@@ -350,9 +482,52 @@ Scan interval 20 ticks; acts only for a baby mob (adults return at once). Consta
 
 Requires `hurt_by` and `hurt_by_entity`. Each scan: if the mob has a last damage source, `hurt_by` is set to it and, when the source's entity is a living entity, `hurt_by_entity` is set to that entity; with no last damage source `hurt_by` is erased. Then if `hurt_by_entity` holds an entity that is dead or in another level, it is erased. (Scan interval: the default 20 ticks, 2.18.)
 
+### 4.7 The visibility predicate of `nearest_visible_living_entities`
+
+The memory `nearest_visible_living_entities` holds a `NearestVisibleLivingEntities` object. It is rebuilt every scan of the
+nearest-living-entities sensor (`NearestLivingEntitySensor`, scan interval 20 ticks, 2.18) together with `nearest_living_entities`:
+1. Let `r` be the mob's `follow_range` attribute value. Collect every living entity (any `LivingEntity` subclass) whose bounding
+   box intersects the mob's bounding box inflated by `r` on all three axes, excluding the mob itself and any entity that is not alive (`isAlive` false), and sort the list **ascending by squared distance** to the mob (`distanceToSqr`; a stable sort, so equal distances keep the
+   order in which the entity lookup returned them, which is not specified further by the artifact: **(inferred)** for ties). This list is stored as `nearest_living_entities`.
+2. The same list is wrapped in a `NearestVisibleLivingEntities` object for the mob. The object stores no visibility result
+   at creation: the list of "nearby" entities is the whole list, and visibility is evaluated **lazily** whenever a query
+   (`findClosest(predicate)`, `findAll`, `find`, `contains`) tests an entity that passes the caller's own predicate.
+3. **The visibility test** of one entity `e`, evaluated at most once per `NearestVisibleLivingEntities` object and then remembered
+   (a per-object map from entity to boolean, so within one scan period the answer for an entity never changes even if the entity
+   moves or the mob's attack target changes; a fresh object is built at the next scan): `Sensor.isEntityTargetable(level, mob, e)`:
+   - if `e` is the mob's current `ATTACK_TARGET` memory value: the non-combat conditions with **invisibility testing off**;
+     otherwise: the non-combat conditions with **invisibility testing on**; both with line of sight checked and both with
+     `range` = **the follow range** (`follow_range` attribute value) of the mob whose sensor scanned last: `Sensor.tick` calls
+     `updateTargetingConditionRanges(mob)` before every `doTick`, which sets the `range` of all six shared static
+     `TargetingConditions` objects to that mob's follow range (16.0 is only their initial value). The objects are shared by every
+     mob, so a lazy visibility test made between two scans of different mobs uses the range of whichever mob scanned most
+     recently; mobs with different follow ranges (brute 12, ghast 100, villager and piglin 16) therefore interfere unless the
+     range is stored per mob. ("Non-combat" = no `canAttack`/`isAlliedTo` test.)
+   - `TargetingConditions.test(level, mob, e)` for those objects (rules in 18 section 4.3) reduces to, in order: (a) `e` is not the mob; (b) `e` is not a spectator and is alive (`canBeSeenByAnyone`); (c) the
+     squared distance from the mob's position to `e`'s position (x, y, z of the feet) is at most `max(R * v, 2.0)^2` (`R` = the range above), where `v` is 1.0
+     when invisibility testing is off, otherwise `e.getVisibilityPercent(mob)` (crouching x 0.8; invisible: x `max(armour cover, 0.1)` x 0.7;
+     then the `mob_visibility` equipment factors, clamped to [0, 10]; 18 section 4.3); (d) line of sight (only evaluated when the
+     mob is a `Mob`): `mob.getSensing().hasLineOfSight(e)`.
+   - `Sensing.hasLineOfSight(e)` caches per entity id for the current tick (cleared by `Sensing.tick`): false when the entity is in a
+     different level; false when the distance between the **mob's eye point** (x, eyeY, z) and the point (e.x, **e's eye Y**, e.z) exceeds
+     128.0; otherwise a ray clip from the mob's eye point to that point of the target, with block mode collider and fluids ignored,
+     and the entity is visible exactly when the clip result type is MISS (no collider block in between).
+   So the effective visibility radius for brain queries is the sphere `max(R * v, 2)` blocks around the mob. The candidate list is
+   a **cube**: the entities whose box intersects the mob's box inflated by the mob's own follow range `r` on each axis. The squared-
+   distance limit of `TargetingConditions.test` is spherical, so an entity in a corner of the cube fails the range test even at
+   `v = 1`, and `R` (the last scanner's follow range) can differ from `r`.
+4. `NearestVisibleLivingEntities.empty()` (used when the memory is absent or reset) contains no entities and nothing is visible.
+5. Query semantics: `findClosest(p)` returns the first entity **in list order** (nearest first) for which `p` holds **and** the
+   visibility test holds; `find` and `findAll` filter in the same order; `contains(entity)` requires membership in the list and
+   visibility; `contains(predicate)` is true when any entity passes both.
+Worked example (follow-range-16 mobs such as villagers): a villager and an iron golem 10 blocks away behind a closed wooden door: the golem is in
+`nearest_living_entities` (position order) but the ray clip hits the door's collider, so `findClosest(isGolem)` is empty. A
+sneaking player 14 blocks away in open air: visibility percentage 0.8, range `16 * 0.8 = 12.8`, squared 163.84; the squared
+distance is 196, so the player is not visible; at 12 blocks (144) the player is visible.
+
 ## 5. Raid leftovers (20 section 14)
 
-- **Bar titles** (previously "not read"): the raid boss bar name is the translatable component `event.minecraft.raid`; on victory the bar name is `event.minecraft.raid.victory.full`; on loss `event.minecraft.raid.defeat.full`; with 2 or fewer raiders `event.minecraft.raid.raiders_remaining` (with the count as argument). Texts (`assets/minecraft/lang/en_us.json`): `event.minecraft.raid` = "Raid"; `event.minecraft.raid.victory.full` = "Raid - Victory"; `event.minecraft.raid.defeat.full` = "Raid - Defeat"; `event.minecraft.raid.raiders_remaining` = "Raiders Remaining: %s"; the short keys `event.minecraft.raid.victory` = "Victory" and `event.minecraft.raid.defeat` = "Defeat" also exist.
+- **Bar titles:** the raid boss bar name is the translatable component `event.minecraft.raid`; on victory the bar name is `event.minecraft.raid.victory.full`; on loss `event.minecraft.raid.defeat.full`; with 2 or fewer raiders `event.minecraft.raid.raiders_remaining` (with the count as argument). Texts (`assets/minecraft/lang/en_us.json`): `event.minecraft.raid` = "Raid"; `event.minecraft.raid.victory.full` = "Raid - Victory"; `event.minecraft.raid.defeat.full` = "Raid - Defeat"; `event.minecraft.raid.raiders_remaining` = "Raiders Remaining: %s"; the short keys `event.minecraft.raid.victory` = "Victory" and `event.minecraft.raid.defeat` = "Defeat" also exist.
 - **Persistence** (`Raids`, saved-data id `raids`): the saved data holds the map of raids by integer id, `next_id` (the counter used by `getUniqueId`, which hands out and increments) and `tick`. Each raid stores `started`, `active`, `ticks_active`, `raid_omen_level`, `groups_spawned`, `cooldown_ticks`, `post_raid_ticks`, `total_health`, `group_count`, `status`, `center` and `heroes_of_the_village`. (Not stored: the raiders of each wave, which re-register themselves through `Raider.setCurrentRaid` when entities load, the boss bar and the wave spawn position.) The manager marks itself dirty every 200 ticks and when a raid starts or changes.
 - **Nearby raid** (`getNearbyRaid(pos, maxDistSq)`): among raids that are active (`isActive`), the one whose centre has the smallest squared distance to the position, provided the distance is below the maximum; the villager brain uses 9216 (96 blocks) through `ServerLevel.getRaidAt`.
 - **Joining**: `canJoinRaid(raider, raid)` requires the raider alive, flagged able to join and with a no-action time of at most 2400 ticks.
@@ -365,7 +540,7 @@ Attributes: max health 100, movement speed 0.25, knockback resistance 1, attack 
 
 Goals (priority: goal): p1 MeleeAttack(speed 1.0, follow even when not seen: true); p2 MoveTowardsTarget(0.9, 32); p2 MoveBackToVillage(0.6, false); p4 GolemRandomStrollInVillage(0.6); p5 OfferFlower; p7 LookAtPlayer(6); p8 RandomLookAround. Targets: p1 DefendVillageTarget; p2 HurtByTarget (no ignored classes); p3 NearestAttackable(Player, interval 10, mustSee true, mustReach false, filter: angry-at); p3 NearestAttackable(Mob, interval 5, mustSee false, mustReach false, filter: an `Enemy` that is not a creeper); p4 ResetUniversalAnger(false). The persistent anger duration is the uniform range 20 to 39 seconds (`TimeUtil.rangeOfSeconds(20, 39)`).
 
-**The player-created flag takes part in targeting through `canAttack` (correction of the first draft of this section).** `IronGolem` overrides `canAttack(target)`: (1) when the golem is player-created and the target is a player, the result is false; (2) when the target is a creeper, false (for every golem, player-created or not); (3) otherwise the parent rules: `Mob.canAttack` is false for a ghast target, then `LivingEntity.canAttack` is false for a player target when the world difficulty is peaceful, else it equals the target's `canBeSeenAsEnemy` (not invulnerable, and not a spectator and alive, `canBeSeenByAnyone`). `canAttack` is consulted by the targeting-condition test (`TargetingConditions.test`) for combat conditions with an attacker (the attacker's `canAttack(target)` must hold and the two must not be allied); every target goal above uses combat conditions, so a player-created golem never selects a player as a target through any of the target goals above (DefendVillageTarget, HurtByTarget, the angry-at player scan), even when a villager's reputation with that player is at or below -100 or when the player hit it. The flag is also saved (`PlayerCreated`) and loaded, and it is set to true by the pumpkin build pattern (`CarvedPumpkinBlock`, the golem created with the TRIGGERED spawn reason); the whole jar was searched (every class of `net/minecraft`): the only code that reads `isPlayerCreated` is `IronGolem` itself (this method and the save), and the only writers are `IronGolem` (load) and `CarvedPumpkinBlock`. The village-summoned golem has the flag false (19 section 22.10), so it can attack players that villagers hate.
+**The player-created flag takes part in targeting through `canAttack`.** `IronGolem` overrides `canAttack(target)`: (1) when the golem is player-created and the target is a player, the result is false; (2) when the target is a creeper, false (for every golem, player-created or not); (3) otherwise the parent rules: `Mob.canAttack` is false for a ghast target, then `LivingEntity.canAttack` is false for a player target when the world difficulty is peaceful, else it equals the target's `canBeSeenAsEnemy` (not invulnerable, and not a spectator and alive, `canBeSeenByAnyone`). `canAttack` is consulted by the targeting-condition test (`TargetingConditions.test`) for combat conditions with an attacker (the attacker's `canAttack(target)` must hold and the two must not be allied); every target goal above uses combat conditions, so a player-created golem never selects a player as a target through any of the target goals above (DefendVillageTarget, HurtByTarget, the angry-at player scan), even when a villager's reputation with that player is at or below -100 or when the player hit it. The flag is also saved (`PlayerCreated`) and loaded, and it is set to true by the pumpkin build pattern (`CarvedPumpkinBlock`, the golem created with the TRIGGERED spawn reason); the whole jar was searched (every class of `net/minecraft`): the only code that reads `isPlayerCreated` is `IronGolem` itself (this method and the save), and the only writers are `IronGolem` (load) and `CarvedPumpkinBlock`. The village-summoned golem has the flag false (19 section 22.10), so it can attack players that villagers hate.
 
 **`DefendVillageTargetGoal`** (target goal with combat targeting, range 64): `canUse`: take the villagers inside the golem's box inflated by (10, 8, 10) and the players inside the golem's targeting range; for each villager and each player pair, a player becomes the potential target when `villager.getPlayerReputation(player) <= -100`; the target is rejected when the player is a spectator or in creative mode. When a target exists the golem's target is set to it (`start`). Gossip constants (`GossipType`, read; argument order weight, max value, decay per day, per-transfer decay, the last two inferred from the field names `decayPerDay` and `decayPerTransfer`): major_negative (-5, 100, 10, 10), minor_negative (-1, 200, 20, 20), minor_positive (1, 25, 1, 5), major_positive (5, 20, 0, 20). The per-type cap means major_negative contributes at most -5 x 100 = -500 to a reputation, so the floor from that type alone is -500 and a single kill (value 25, -125) crosses the -100 threshold once. `ReputationEventType` has five members: zombie_villager_cured, golem_killed, villager_hurt, villager_killed, trade (19 section 22.5 does not list golem_killed; what the villager does for it was not traced, Open question 31). In effect: a golem near a villager that dislikes a player (reputation at or below -100, for instance after killing villagers: 19 section 22.5, major_negative weight -5, value 25 per kill = -125 per kill) attacks that player.
 
@@ -385,7 +560,7 @@ Other read rules: `doHurtTarget`: 1. set the attack animation tick to 10 and bro
 1. **Melting**: if the environment attribute `gameplay/snow_golem_melts` is true at the golem's position, the golem takes 1 point of on-fire damage (every tick, so 20 per second at 1 per tick; the damage uses the on-fire damage source). Data for the attribute: true in the biomes badlands, desert, eroded badlands, savanna, savanna plateau, windswept savanna and wooded badlands, and in the Nether dimension type (all read from the shipped data).
 2. **Trail**: if the game rule `mob_griefing` is true, for each of 4 cells `i = 0..3`: `x = floor(pos.x + ((i mod 2) * 2 - 1) * 0.25)`, `y = floor(pos.y)`, `z = floor(pos.z + (((i div 2) mod 2) * 2 - 1) * 0.25)`; if the block there is air and the snow layer block (default state) can survive there, it is placed (with a block-place game event for the golem). There is no tick throttle and **no biome or melt test in the trail code**: melting biomes do not suppress the trail by themselves (a snow layer cannot survive on some blocks, which is the block's own rule). Goals: p1 RangedAttack(1.25, interval 20, range 10), p2 WaterAvoidingStroll(1.0, probability 1.0000001E-5 as the float constant read), p3 LookAtPlayer(6), p4 RandomLookAround; target: p1 NearestAttackable(Mob, interval 10, mustSee true, mustReach false, filter `Enemy`). Ranged attack (`performRangedAttack`, read): `dx = target.x - golem.x`, `dz = target.z - golem.z`, `dy = (target eyeY - 1.100000023841858) - snowball.y + 0.2 * sqrt(dx^2 + dz^2)` (0.2 as the double 0.20000000298023224); the snowball is created at the golem's x, golem eyeY - 0.10000000149011612 (the `ThrowableItemProjectile` constructor) and z, and fired with `shoot(dx, dy, dz, power 1.6, uncertainty 12.0)`. The golem overrides `rangedAttackUncertainty` with the constant 12.0 (the interface default, 14 minus 4 times the difficulty id, is not used). Sound `snow_golem.shoot` with volume 1 and a pitch `0.4 / (nextFloat * 0.4 + 0.8)`. Worked example (the eye heights are assumed for illustration, not read): golem at (0, 64, 0) with eyeY 65.7 shooting a target at (10, 64, 0) with eyeY 65.62: snowball y = 65.6, dx = 10, dz = 0, dy = (65.62 - 1.1) - 65.6 + 0.2 * 10 = 0.92. Shearing removes the pumpkin and rolls the loot table `data/minecraft/loot_table/shearing/snow_golem.json` (code constant `SHEAR_SNOW_GOLEM`; one roll of one entry: a carved pumpkin; random sequence `shearing/snow_golem`). Max health 4, speed 0.2.
 
-**Tag `snow_golem_immune_to`** (closes former Open question 28; the earlier string search missed it because the key is declared in `BlockTags` as a field, not written as a string in any other class): the shipped data has `data/minecraft/tags/block/snow_golem_immune_to.json` with the single value `powder_snow`. `BlockTags` declares the key `SNOW_GOLEM_IMMUNE_TO`, and `EntityTypes` registers the snow golem with `EntityType.Builder.immuneTo(SNOW_GOLEM_IMMUNE_TO)`; fox, polar bear, stray, wither and wither skeleton are registered the same way with their own tags (18 already lists the six tags). `SnowGolem` itself has no tag test, which is why searching it found nothing. The rule is `EntityType.isBlockDangerous(state)`, read as:
+**Tag `snow_golem_immune_to`** (the key is declared in `BlockTags` as a field, not written as a string in any other class): the shipped data has `data/minecraft/tags/block/snow_golem_immune_to.json` with the single value `powder_snow`. `BlockTags` declares the key `SNOW_GOLEM_IMMUNE_TO`, and `EntityTypes` registers the snow golem with `EntityType.Builder.immuneTo(SNOW_GOLEM_IMMUNE_TO)`; fox, polar bear, stray, wither and wither skeleton are registered the same way with their own tags (18 already lists the six tags). `SnowGolem` itself has no tag test, which is why searching it found nothing. The rule is `EntityType.isBlockDangerous(state)`, read as:
 1. false when the state is in the type's immune tag;
 2. else true when the type is not fire-immune and `NodeEvaluator.isBurningBlock(state)` holds;
 3. else true for wither rose, sweet berry bush, cactus or powder snow;
@@ -489,7 +664,7 @@ The enchantment-related extra costs of trades (`additional_trade_cost`) are in 1
 10. (Closed, 2.11.) `SocializeAtBell` writes only three memories of the acting villager and never the other villager's.
 11. (Closed, 2.15.) The constant 20 is a hold-off countdown.
 12. (Closed, 2.15.) The 10 is the number of flee position attempts; the chaser count bound is 5.
-13. (Closed, section 6.) The whole `net/minecraft` class set was searched: `isPlayerCreated` is read only inside `IronGolem` (`canAttack` and saving). The earlier draft's claim that the flag has no effect on targeting was wrong and is corrected.
+13. (Closed, section 6.) The whole `net/minecraft` class set was searched: `isPlayerCreated` is read only inside `IronGolem` (`canAttack` and saving).
 14. (Closed, section 6.) Iron golem melee damage read.
 15. (Closed, 8.2.) The passenger case of the search distances is 1 and 1 (read). `CopperGolemState` has exactly five enum values (IDLE, GETTING_ITEM, GETTING_NO_ITEM, DROPPING_ITEM, DROPPING_NO_ITEM) and no timings of its own; the only timings are the tick 9 and tick 60 constants of 8.2.
 16. The biome-preview pixel rules (`MapItem.renderBiomePreviewMap`) and the map colour table are owned by 25 part 5 section 8.6 (only partly read there, its Open question 10) and 24 part 1 section 8.1 (block map colour column); this part does not repeat them and the remaining pixel arithmetic is still open there. The decoration icon data are client assets, not read.
@@ -502,9 +677,10 @@ The enchantment-related extra costs of trades (`additional_trade_cost`) are in 1
 23. (Closed, 1.7a.) `Mth.sin` and `Mth.cos` read; worked example 2 rewritten.
 24. (Closed, 2.17 and 2.18.) The positional numbers of `SetWalkTargetFromBlockMemory` and `SetHiddenState` and the draws of `MoveToSkySeeingSpot` were read; the numbers of `InteractWith`, `StrollToPoi` and `ShowTradesToPlayer` are covered by 2.8, 2.15 and 3.4. `Swim(0.8)` and `LookAtTargetSink(45, 90)` are generic framework behaviours (18).
 25. (Closed, 2.17.) The candidate-selection draws were read: `HarvestFarmland` one `nextInt(size)`, `UseBonemeal` a reservoir draw; the seed planted is the first plantable slot.
-26. (Closed by 19 section 22.8, 22.9 and 22.6, re-checked this round against the artifact.) `SleepInBed` (no timeout: `timedOut` is always false; stop sets a 40-tick restart delay), `VillagerMakeLove` (behaviour run limits 350 and 350, birth at start + 275 + `nextInt(50)`, parents' age 6000, child -24000, event 12 on the child, event 13 on both parents when no bed) and `GiveGiftToHero` (cooldown 600, then 600 + `nextInt(6001)`, throw at 5 blocks after 20 ticks) agree with 19.
+26. (Closed by 19 section 22.8, 22.9 and 22.6, re-checked against the artifact.) `SleepInBed` (no timeout: `timedOut` is always false; stop sets a 40-tick restart delay), `VillagerMakeLove` (behaviour run limits 350 and 350, birth at start + 275 + `nextInt(50)`, parents' age 6000, child -24000, event 12 on the child, event 13 on both parents when no bed) and `GiveGiftToHero` (cooldown 600, then 600 + `nextInt(6001)`, throw at 5 blocks after 20 ticks) agree with 19.
 27. (Closed.) The remaining sensors were read in 4.4 to 4.6; the villager leftovers of 19 Open questions 27 and 33 are answered in 2.17, 3 and 19 section 22.3.
-28. (Closed, section 7.) Tag `snow_golem_immune_to` (`powder_snow`) is read through `EntityType.isBlockDangerous` (the type's immune tag) in `NaturalSpawner`, `DismountHelper` and the breeze long jump. The earlier search missed it because the key is a `BlockTags` field.
+28. (Closed, section 7.) Tag `snow_golem_immune_to` (`powder_snow`) is read through `EntityType.isBlockDangerous` (the type's immune tag) in `NaturalSpawner`, `DismountHelper` and the breeze long jump. The key is a `BlockTags` field.
 29. (Closed, 2.18.) The default sensor interval is 20 ticks with a random initial delay.
-31. Not read this round (searched: only the class listings and the classes named in sections 6 and 7): the villager-side handling of the `golem_killed` reputation event (which entity-death hook applies it); `GoToWantedItem` with the `nearest_items` and `nearest_players` sensors and the tag `villager_picks_up`; the wandering trader spawner (`WanderingTraderSpawner`, `WanderingTraderData`) constants and the despawn-delay source (19 section 23 is referred to, not re-read); the pattern matcher's orientation search used by the golem build patterns (6) and the copper golem pattern details; the caller of `checkConsistencyWithBlocks` on chunk load; which blank-cell predicate the iron golem pattern uses (taken as air, inferred).
 30. Scope pointer: 19 Open question 4 (`valid_spawn` and `checkMobSpawnRules` for villager, wandering trader, iron golem, snow golem) is not covered in this part; 44 part 2 (spawning and structures) section 11 answers it: `valid_spawn` has no consumer and the per-block `isValidSpawn` predicate decides.
+31. The `golem_killed` event has no producer ([44-x2](44-residual-mob-questions-x2-continuation.md) section 14); `GoToWantedItem` and the item sensor are in 44-6 section 3.3 and 44-x2 section 12.2; the item tag `villager_picks_up` (data) is `#villager_plantable_seeds` (`wheat_seeds`, `potato`, `carrot`, `beetroot_seeds`, `torchflower_seeds`, `pitcher_pod`), `bread`, `wheat` and `beetroot`. Not read (searched: only the class listings and the classes named in sections 6 and 7): the wandering trader spawner (`WanderingTraderSpawner`, `WanderingTraderData`) constants and the despawn-delay source (19 section 23 is referred to, not re-read); the pattern matcher's orientation search used by the golem build patterns (6) and the copper golem pattern details; the caller of `checkConsistencyWithBlocks` on chunk load; which blank-cell predicate the iron golem pattern uses (taken as air, inferred).
+32. Closed: the `canReach` semantics, the `createPath` variants and the `LandRandomPos` family are in 2.19; the visibility predicate of `nearest_visible_living_entities` is in 4.7.

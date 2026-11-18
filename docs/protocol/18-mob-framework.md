@@ -12,7 +12,7 @@ Reading conventions:
 
 - A fact marked **(inferred)** was deduced from partial bytecode plus the structure of the surrounding code and was not seen in full. Everything else was read directly.
 - Class and method names in backticks say where something was read. They are not the design.
-- "Tick" is one server tick (50 ms). "Block units" are blocks. `rand` is the entity's own random source (`Mob.getRandom`) unless said otherwise. The game's random generators and their seeding are not specified by the artifact for these uses; any uniform generator is acceptable (CobolCraft does not need to reproduce vanilla's random streams).
+- "Tick" is one server tick (50 ms). "Block units" are blocks. `rand` is the entity's own random source (`Mob.getRandom`) unless said otherwise. The game's random generators are read in section 10.0: every entity owns a `RandomSource` created by `RandomSource.create()` (the `LegacyRandomSource` linear congruential generator of [10](10-world-generation-terrain.md) §2.6), seeded from a non-reproducible unique seed (a multiplier-chained counter XOR `System.nanoTime`), so vanilla's mob random streams are **not** reproducible and CobolCraft does not need to reproduce them; any uniform generator is acceptable. How a test feeds scripted draws is the convention of section 10.0 (a CobolCraft design decision).
 - Player movement is already specified in [13](13-client-gameplay-and-controls.md) §1. This document extends that to non-player entities and does not repeat the player-only parts.
 - Entity wire packets (Add Entity, Move Entity, Teleport, Set Entity Motion, Set Entity Data, Update Attributes, Entity Event, Set Equipment, Set Passengers, Rotate Head, Damage Event, Hurt Animation) are defined in [05a](05a-play-clientbound-00-71.md) and [05b](05b-play-clientbound-72-143.md); here only the rules for **when** they are sent are given (section 9).
 
@@ -34,6 +34,8 @@ The entity type registry is a static registry (04 §5): the numeric id is the re
 Defaults for fields not listed: `serialize` true, `summon` true, `allowedInPeaceful` true, `trackDeltas` true. `canSpawnFarFromPlayer` defaults to true exactly for categories CREATURE and MISC, otherwise false. Block-damage immunity (`immuneTo`) is a block tag per type: default `DEFAULT_IMMUNE_TO`; fox, polar bear, snow golem, stray, wither and wither skeleton use their own tag (`FOX_IMMUNE_TO`, `POLAR_BEAR_IMMUNE_TO`, `SNOW_GOLEM_IMMUNE_TO`, `STRAY_IMMUNE_TO`, `WITHER_IMMUNE_TO`, `WITHER_SKELETON_IMMUNE_TO`); these tags decide which blocks do not hurt the entity when it stands in or touches them (contents of the tags are in the jar's block tag data and are synchronised by Update Tags, 04).
 
 Types registered with a size scale at spawn (`spawnDimensionsScale`): magma_cube 4.0, slime 4.0, sulfur_cube 2.0 (these three are the cube mobs; their real size is width/height times a size factor, defined per mob).
+
+**Display entities** (`block_display`, `item_display`, `text_display`): `clientTrackingRange(10)` (`EntityTypes.DISPLAY_TRACKING_RANGE` = 10) and `updateInterval(1)`, so `ServerEntity` considers a display's movement every tick (9.2 step 3).
 
 | id | key | cat | w x h | eye | track | upd | flags |
 |---|---|---|---|---|---|---|---|
@@ -376,6 +378,14 @@ Only values that differ from the slot default are sent when an entity is first p
 
 `ServerLevel` ticks each entity; for a living mob the sequence is `Mob.tick` -> `LivingEntity.tick` -> `Entity.tick`, with `baseTick`, `aiStep`, `serverAiStep` and `travel` nested as below. Every mob that is within the entity-ticking range of a player is ticked; entities outside it are not.
 
+**The entity-ticking range (read from `ServerLevel.tick` and its per-entity lambda, `DistanceManager`, `ChunkLevel`, `SimulationChunkTracker`, `ChunkTracker`, `TicketType`, `ChunkMap.skipPlayer`, `Visibility`, `PersistentEntitySectionManager`, `DedicatedServerProperties`, `Options`).** The rule is a **chunk-based simulation distance around players, the same for every entity type and category**; nothing per type or per category was found (the only per-entity switch is `Entity.isAlwaysTicking`, which is false for `Entity` and true only for `Player`).
+
+1. *Simulation distance* `S` (chunks). On a dedicated server it is the property `simulation-distance` (default **10**); on the integrated server it comes from the client option `simulationDistance` (default **12**, range 5 to 32, or 2 to 32 in debug mode; the same 32-or-16 cap as the render distance, 13 §7; that the integrated server's `PlayerList` is fed from this option is inferred, only the option and the `PlayerList` setter were read). `PlayerList.simulationDistance` carries it and `DistanceManager.updateSimulationDistance` re-levels the tickets when it changes.
+2. *Ticket level.* Every player (except a spectator when the game rule `spectators_generate_chunks` is false: `ChunkMap.skipPlayer`) holds a `player_simulation` ticket (no timeout, flags simulation and keep-dimension-active) on the chunk of the player's position, with ticket level `max(0, 31 - S)`. Chunk levels propagate through the 8 neighbours with +1 per step (`ChunkTracker.computeLevelFromNeighbor`), so the level at chunk (cx, cz) is `max(0, 31 - S) + d` with `d` the **Chebyshev (square) chunk distance** `max(|cx - px|, |cz - pz|)` to the nearest player chunk (minimum over all tickets). The thresholds are fixed constants: level **31** or less = entity ticking (`ENTITY_TICKING_LEVEL`), 32 = block ticking only, 33 = full. Hence a chunk is **entity-ticking exactly when `d <= S`** (for `S <= 31`; at `S = 32` the clamp at ticket level 0 gives `d <= 31`), and the ring `d = S + 1` is block-ticking only (blocks tick, entities do not). Other simulation tickets also create entity-ticking chunks: forced chunks (`forced`), portals (`portal`, 300 ticks), ender pearls (`ender_pearl`, 40 ticks) and the dragon-fight area (`dragon`); their radii were not tabulated (Open question 22).
+3. *What is ticked.* `ServerLevel.tick` runs the entity tick list (the entities whose chunk is entity-ticking, `Visibility.TICKING`; a player entity is always in it). For each entity in order: skip it if removed or if the tick-rate manager froze it (`TickRateManager.isEntityFrozen`); call `checkDespawn` (the despawn rule of 6.11 therefore also runs on entities of the list that are about to be skipped below); skip every non-player entity whose chunk is not entity-ticking by the level check (the second test uses `DistanceManager.inEntityTickingRange`); drop the vehicle link if the vehicle is removed or no longer lists the entity as a passenger (an entity riding a vehicle that is ticked on its own is ticked by the vehicle, not here); then `tickNonPassenger`.
+4. *Consequences for mobs.* A mob in a chunk with `d > S` does not tick at all: no AI, no movement, no ambient sound, no despawn countdown by the framework other than the `checkDespawn` call above, no goal timers. A living entity that is not always ticking and whose block position is not entity-ticking is also **not pushable** (`LivingEntity.isPushable`). Distance is measured between chunk coordinates, not block distance: a player at the edge of a chunk sees the ticking square extend `S` chunks plus up to 15 blocks in the direction of that edge. With the default `S` = 10 the entity-ticking square is 21 x 21 chunks (336 x 336 blocks) around the player's chunk; with the integrated server's default 12 it is 25 x 25 chunks. A flat radius (for example 64 blocks) is a simplification that differs from this rule.
+5. *Not covered:* the tracking range (what players are sent) is a separate rule (9.1); the mob-despawn distances (128 and 32 blocks) are 6.11.
+
 ### 2.2 `Mob.tick`
 
 1. `LivingEntity.tick` (2.3).
@@ -390,9 +400,134 @@ Only values that differ from the slot default are sent when an entity is first p
 5. Body/head rotation bookkeeping: compute the horizontal movement since the previous tick; when the squared distance exceeds 0.0025000002 the body yaw turns toward the movement direction (atan2 minus 90 degrees), with a 180 degree flip applied when moving backwards by more than 95/265 degrees relative to the facing; `tickHeadTurn` smooths `yBodyRot` toward the target; then the previous-tick rotation values are normalised into a 180 degree window.
 6. Fall-flying tick counter; sleeping pose forces pitch 0; dirty attributes refreshed; elytra animation; grace timers decrement.
 
-### 2.4 `Mob.baseTick`
+### 2.4 `Mob.baseTick` and ambient sounds
 
-`LivingEntity.baseTick` (2.5), then if alive: `if nextInt(1000) < ambientSoundTime++` then `ambientSoundTime = -getAmbientSoundInterval()` and the ambient sound plays. Ambient sound interval: Mob 80, Animal 120 (other mobs override).
+`LivingEntity.baseTick` (2.5), then, for a mob that is alive, the ambient-sound test (`Mob.baseTick`, read in full, the same on every tick, no gate other than "alive"):
+
+1. Draw `r = rand.nextInt(1000)`. **This draw is made on every tick of every living mob, whether or not the mob has an ambient sound.** (A fixture that scripts a mob's random source must feed this value first in each tick; 10.0.)
+2. Let `t` be the field `ambientSoundTime` as it was **before** this tick (initial value 0); the field is incremented by 1 on every tick regardless of the outcome.
+3. If `r < t`: set `ambientSoundTime = -getAmbientSoundInterval()` and call `playAmbientSound()`. Otherwise nothing more happens.
+4. Independently, `Mob.playHurtSound` (called whenever the mob is hurt, before the hurt sound itself) sets `ambientSoundTime = -getAmbientSoundInterval()` too, whether or not the mob has a hurt sound. So a mob that was just hurt stays quiet for at least the interval.
+
+Consequence (derived): after a reset to `-I` (`I` the interval), `t` is `-I` at the first following tick and grows by 1 per tick, so no ambient sound is possible for `I + 1` ticks; from tick `I + 2` on the chance per tick is `(t)/1000` with `t = 1, 2, 3, ...`, i.e. 0.1 percent, 0.2 percent, ... rising by 0.1 percent per tick. The wait after the quiet period, counting the tick on which the sound plays, has mean 39.3 ticks (derived by summing the survival product `prod(1 - m/1000)`), so the period between two ambient sounds is `I + 1 + 39.3`: about 120.3 ticks for `I = 80` and about 160.3 for `I = 120`. Mobs whose `getAmbientSound()` returns null (or whose conditions below say "none") still reset the timer and still consume the per-tick draw.
+
+`playAmbientSound()` is `makeSound(getAmbientSound())` unless a class overrides it (Axolotl, Fox, Shulker, Breeze, AbstractPiglin: rows below). `makeSound(event)` does nothing when `event` is null; otherwise it calls `playSound(event, getSoundVolume(), getVoicePitch())`: the arguments are computed first (so the pitch draws are consumed even when the entity is silent), then, unless the entity has the silent flag, `Level.playSound(null, x, y, z, event, getSoundSource(), volume, pitch)`. On the server this sends a Sound packet (05b) to players within `SoundEvent.getRange(volume)` = 16 x volume blocks when the volume is above 1, else 16 blocks (the sound event has no fixed range; inferred for the individual events), with a seed that is probably drawn from the level's `soundSeedGenerator` (`nextLong` of a thread-safe `LegacyRandomSource`; inferred from the field's only reader; it only varies the client's choice among sound variants). The `SoundSource` category is HOSTILE for `Monster` and for ghast, phantom, shulker, hoglin, ender dragon and the slime and magma cube, a rabbit uses HOSTILE when its variant is EVIL and NEUTRAL otherwise (`Rabbit.getSoundSource`), and the sulfur cube, parrot and happy ghast are NEUTRAL; every other mob uses the `Entity` default NEUTRAL.
+
+**Voice pitch** (`LivingEntity.getVoicePitch`, the default; two `nextFloat` draws, the first minus the second): adult `(f1 - f2) x 0.2 + 1.0`; baby (`isBaby`) `(f1 - f2) x 0.2 + 1.5`. Overrides: bat = the default x 0.95; happy ghast = 1.0 with no draws; parrot = the adult formula for every age (its own `getPitch`); zombie villager = baby base 2.0 (adult 1.0). **Volume** (`getSoundVolume`): default 1.0; overrides in the table.
+
+**Ambient interval `I`** (`getAmbientSoundInterval`, read for every class in the entity package): `Mob` 80; `Animal`, `WaterAnimal`, `AgeableWaterCreature`, `AbstractGolem`, `Cat` 120; `AbstractHorse` (horse, donkey, mule, llama, trader llama, camel, camel husk, skeleton horse, zombie horse) 400; `Turtle` 200; `Guardian` (and the elder guardian) 160; `Ocelot` 900; `HappyGhast` the `Animal` value x 6 (720) while it is a vehicle. This resolves the part of RQ-1.15 of [44](44-residual-mob-questions-1-shared-model-framework.md) (same values, confirmed).
+
+#### 2.4.1 Ambient sound of every mob
+
+Complete for all 90 entity types of the registry (1.1) that are `Mob`s: the effective method is the one of the nearest class in the inheritance chain (the table gives the result, with the interval and the volume of the effective class). All sound-event resource names were read from the `SoundEvents` static initialiser (the string passed at registration); `std` pitch is the default pitch above. Mobs not listed are not `Mob`s (boats, projectiles, armor stand, displays and the other non-mob entity types have no ambient sound). Sound-variant data is in `data/minecraft/{cat,chicken,cow,pig,wolf}_sound_variant/` (the ambient entry of the variant chosen by the mob's sound variant; a baby uses the baby set where the data has one). Conditions are tested at the moment the sound would play; the "draws" mentioned are `rand` draws made only on the branch that reaches them. The player is not a `Mob`.
+
+| mob | ambient sound event (adult unless stated; `minecraft:` namespace) | interval | volume | pitch |
+|---|---|---|---|---|
+| allay | `entity.allay.ambient_with_item` when the main-hand slot is non-empty, else `entity.allay.ambient_without_item` | 80 | 0.4 | std |
+| armadillo | none while scared (rolled up); else `entity.armadillo.ambient` | 120 | 1.0 | std |
+| axolotl | in water `entity.axolotl.idle_water`, else `entity.axolotl.idle_air`; nothing while playing dead (the timer still resets) | 120 | 1.0 | std |
+| bat | `entity.bat.ambient`; while hanging (resting) only when `nextInt(4) == 0` (the draw is made only while resting) | 80 | 0.1 | std x 0.95 |
+| bee | none (null) | 120 | 0.4 | std |
+| blaze | `entity.blaze.ambient` | 80 | 1.0 | std |
+| bogged | `entity.bogged.ambient` | 80 | 1.0 | std |
+| breeze | on the ground `entity.breeze.idle_ground`, else `entity.breeze.idle_air`; **never emitted by the server** (note below) | 80 | 1.0 | std |
+| camel | `entity.camel.ambient` | 400 | 0.8 | std |
+| camel_husk | `entity.camel_husk.ambient` | 400 | 0.8 | std |
+| cat | tame: in love `purr`, else `nextInt(4) == 0` -> `purreow`, else `ambient`; untamed: `stray_ambient`; names from the cat sound set (classic `entity.cat.*`, royal `entity.cat_royal.*`, baby `entity.baby_cat.*`) | 120 | 1.0 | std |
+| cave_spider | `entity.spider.ambient` | 80 | 1.0 | std |
+| chicken | sound set: classic `entity.chicken.ambient`, picky `entity.chicken_picky.ambient`, baby (any variant) `entity.baby_chicken.ambient` | 120 | 1.0 | std |
+| cod | `entity.cod.ambient` | 120 | 1.0 | std |
+| copper_golem | none (no ambient sound) | 120 | 1.0 | std |
+| cow | sound set (no baby set): classic `entity.cow.ambient`, moody `entity.cow_moody.ambient` | 120 | 0.4 | std |
+| creaking | none while active; else `entity.creaking.ambient` | 80 | 1.0 | std |
+| creeper | none (no ambient sound) | 80 | 1.0 | std |
+| dolphin | in water `entity.dolphin.ambient_water`, else `entity.dolphin.ambient` | 120 | 1.0 | std |
+| donkey | `entity.donkey.ambient` | 400 | 0.8 | std |
+| drowned | in water `entity.drowned.ambient_water`, else `entity.drowned.ambient` | 80 | 1.0 | std |
+| elder_guardian | in water `entity.elder_guardian.ambient`, else `entity.elder_guardian.ambient_land` | 160 | 1.0 | std |
+| enderman | creepy (screaming/staring) `entity.enderman.scream`, else `entity.enderman.ambient` | 80 | 1.0 | std |
+| endermite | `entity.endermite.ambient` | 80 | 1.0 | std |
+| ender_dragon | `entity.ender_dragon.ambient` | 80 | 5.0 | std |
+| evoker | `entity.evoker.ambient` | 80 | 1.0 | std |
+| fox | sleeping `entity.fox.sleep`; else if not bright outside and `nextFloat() < 0.1` and no non-spectator player in the box inflated 16 on every axis: `entity.fox.screech`; else `entity.fox.ambient`. **`Fox.playAmbientSound` evaluates this up to twice (note below).** | 120 | 1.0 (screech from the first evaluation: 2.0) | std |
+| frog | `entity.frog.ambient` | 120 | 1.0 | std |
+| ghast | `entity.ghast.ambient` | 80 | 5.0 | std |
+| happy_ghast | baby `entity.ghastling.ambient`, else `entity.happy_ghast.ambient`; interval x6 while it carries a passenger | 120 (x6 as vehicle) | 1.0 baby, 4.0 adult | 1.0 fixed (no draws) |
+| giant | none (no ambient sound) | 80 | 1.0 | std |
+| glow_squid | `entity.glow_squid.ambient` | 120 | 0.4 | std |
+| goat | screaming goat `entity.goat.screaming.ambient`, else `entity.goat.ambient` | 120 | 1.0 | std |
+| guardian | in water `entity.guardian.ambient`, else `entity.guardian.ambient_land` | 160 | 1.0 | std |
+| hoglin | server side only: AVOID or converting `entity.hoglin.retreat`; FIGHT `entity.hoglin.angry`; near a repellent `entity.hoglin.retreat`; else `entity.hoglin.ambient`; no active non-core activity: none | 120 | 1.0 | std |
+| horse | baby `entity.baby_horse.ambient`, else `entity.horse.ambient` | 400 | 0.8 | std |
+| husk | `entity.husk.ambient` | 80 | 1.0 | std |
+| illusioner | `entity.illusioner.ambient` | 80 | 1.0 | std |
+| iron_golem | none (no ambient sound) | 120 | 1.0 | std |
+| llama | `entity.llama.ambient` | 400 | 0.8 | std |
+| magma_cube | none (no ambient sound) | 80 | 0.4 x size | std |
+| mooshroom | as the cow (same `AbstractCow` sound set, default variant classic) | 120 | 0.4 | std |
+| mule | `entity.mule.ambient` | 400 | 0.8 | std |
+| nautilus | baby: underwater `entity.baby_nautilus.ambient`, else `entity.baby_nautilus.ambient_land`; adult: underwater `entity.nautilus.ambient`, else `entity.nautilus.ambient_land` | 120 | 1.0 | std |
+| ocelot | `entity.ocelot.ambient` | 900 | 1.0 | std |
+| panda | aggressive `entity.panda.aggressive_ambient`; else worried `entity.panda.worried_ambient`; else `entity.panda.ambient` | 120 | 1.0 | std |
+| parched | `entity.parched.ambient` | 80 | 1.0 | std |
+| parrot | default `entity.parrot.ambient`; when the difficulty is not Peaceful and `level.getRandom().nextInt(1000) == 0`, the imitation sound of one random key of the imitation map (2.4.2) | 120 | 1.0 | adult std (no baby base) |
+| phantom | `entity.phantom.ambient` | 80 | 1.0 | std |
+| pig | sound set: classic `entity.pig.ambient`, big `entity.pig_big.ambient`, mini `entity.pig_mini.ambient`, baby (any variant) `entity.baby_pig.ambient` | 120 | 1.0 | std |
+| piglin | only while the IDLE activity is active (`AbstractPiglin.playAmbientSound`); server side only: FIGHT `entity.piglin.angry`; converting `entity.piglin.retreat`; AVOID near its avoid target `retreat`; ADMIRE_ITEM `entity.piglin.admiring_item`; CELEBRATE `entity.piglin.celebrate`; sees a player holding a loved item `entity.piglin.jealous`; near a repellent `retreat`; else `entity.piglin.ambient` | 80 | 1.0 | std |
+| piglin_brute | `entity.piglin_brute.ambient`, only while the IDLE activity is active | 80 | 1.0 | std |
+| pillager | `entity.pillager.ambient` | 80 | 1.0 | std |
+| polar_bear | baby `entity.polar_bear.ambient_baby`, else `entity.polar_bear.ambient` | 120 | 1.0 | std |
+| pufferfish | none (no ambient sound) | 120 | 1.0 | std |
+| rabbit | `entity.rabbit.ambient` | 120 | 1.0 | std |
+| ravager | `entity.ravager.ambient` | 80 | 1.0 | std |
+| salmon | `entity.salmon.ambient` | 120 | 1.0 | std |
+| sheep | `entity.sheep.ambient` | 120 | 1.0 | std |
+| shulker | `entity.shulker.ambient`, only while not closed | 120 | 1.0 | std |
+| silverfish | `entity.silverfish.ambient` | 80 | 1.0 | std |
+| skeleton | `entity.skeleton.ambient` | 80 | 1.0 | std |
+| skeleton_horse | eyes in water `entity.skeleton_horse.ambient_water`, else `entity.skeleton_horse.ambient` | 400 | 0.8 | std |
+| slime | none (no ambient sound) | 80 | 0.4 x size | std |
+| sniffer | none in state DIGGING or SEARCHING; else `entity.sniffer.idle` | 120 | 1.0 | std |
+| snow_golem | `entity.snow_golem.ambient` | 120 | 1.0 | std |
+| spider | `entity.spider.ambient` | 80 | 1.0 | std |
+| squid | `entity.squid.ambient` | 120 | 0.4 | std |
+| stray | `entity.stray.ambient` | 80 | 1.0 | std |
+| strider | none while panicking or being tempted; else `entity.strider.ambient` | 120 | 1.0 | std |
+| sulfur_cube | none (no ambient sound) | 80 | 0.4 x size | std |
+| tadpole | none (null) | 120 | 1.0 | std |
+| trader_llama | `entity.llama.ambient` | 400 | 0.8 | std |
+| tropical_fish | `entity.tropical_fish.ambient` | 120 | 1.0 | std |
+| turtle | `entity.turtle.ambient_land` only when out of water, on the ground and not a baby; otherwise none | 200 | 1.0 | std |
+| vex | `entity.vex.ambient` | 80 | 1.0 | std |
+| villager | sleeping: none; trading `entity.villager.trade`; else `entity.villager.ambient` | 80 | 1.0 | std |
+| vindicator | `entity.vindicator.ambient` | 80 | 1.0 | std |
+| wandering_trader | trading `entity.wandering_trader.trade`, else `entity.wandering_trader.ambient` | 80 | 1.0 | std |
+| warden | none in the roaring pose or while digging or emerging; else by anger level: calm `entity.warden.ambient`, agitated `entity.warden.agitated`, angry `entity.warden.angry` | 80 | 4.0 | std |
+| witch | `entity.witch.ambient` | 80 | 1.0 | std |
+| wither | `entity.wither.ambient` | 80 | 1.0 | std |
+| wither_skeleton | `entity.wither_skeleton.ambient` | 80 | 1.0 | std |
+| wolf | angry: `growl`; else `nextInt(3) == 0` (drawn only when not angry): tame with health < 20 `whine`, otherwise `pant`; else (2 in 3) `ambient`; names from the wolf sound set (classic `entity.wolf.*`; variants `wolf_angry`, `wolf_big`, `wolf_cute`, `wolf_grumpy`, `wolf_puglin`, `wolf_sad`; baby `entity.baby_wolf.*`) | 120 | 0.4 | std |
+| zoglin | server side only: attack target present `entity.zoglin.angry`, else `entity.zoglin.ambient` | 80 | 1.0 | std |
+| zombie | `entity.zombie.ambient` | 80 | 1.0 | std |
+| zombie_horse | `entity.zombie_horse.ambient` | 400 | 0.8 | std |
+| zombie_nautilus | underwater `entity.zombie_nautilus.ambient`, else `entity.zombie_nautilus.ambient_land` | 120 | 1.0 | std |
+| zombie_villager | `entity.zombie_villager.ambient` | 80 | 1.0 | std with baby base 2.0 |
+| zombified_piglin | angry `entity.zombified_piglin.angry`, else `entity.zombified_piglin.ambient` | 80 | 1.0 | std |
+
+Fox, exact sequence (so a scripted draw queue is right). `getAmbientSound` for the fox: if sleeping, `fox.sleep` and no draw; else if not bright outside, draw `nextFloat()`; only when it is below 0.1, query the players in the box (no draw); no players: `fox.screech`; in every other case `fox.ambient`. `Fox.playAmbientSound` calls it once as **E1**. If E1 is the screech, it plays `playSound(screech, 2.0, getVoicePitch())` (two `nextFloat` pitch draws) and stops. Otherwise it calls `Animal.playAmbientSound` (the `Mob` rule), which evaluates `getAmbientSound` again as **E2** (a fresh `nextFloat` draw when not sleeping and not bright, a fresh player query when that draw is below 0.1) and plays E2 through `makeSound` at volume 1.0 with the standard pitch (two `nextFloat` draws). So an awake fox in the dark with no player near can draw the `< 0.1` test twice per ambient event, and E2 can be the screech, at volume 1.0 and not 2.0. Probabilities in that situation: screech at volume 2.0 is 0.1; screech at volume 1.0 is 0.9 x 0.1 = 0.09; ambient 0.81. Case table for an awake fox in the dark (not bright outside), `d1` = the E1 draw, `d2` = the E2 draw (drawn only if E1 was not the screech): (a) `d1 < 0.1` and no player in the box: E1 is the screech, played at 2.0, no E2; (b) `d1 < 0.1` and a player in the box: E1 is ambient, so E2 runs with a fresh draw `d2` (and a fresh player query if `d2 < 0.1`): `d2 < 0.1` with no player now near gives the screech at 1.0, otherwise ambient; (c) `d1 >= 0.1`: E1 is ambient (no query), E2 runs with `d2` as in (b). In bright daylight no draw is made in either evaluation, and both give ambient. A sleeping fox draws nothing for the sound choice.
+
+Breeze: `Breeze.playAmbientSound` does nothing while the breeze has a target and is on the ground; otherwise it calls `Level.playLocalSound(entity, event, source, 1.0, 1.0)`. That overload is an empty method in `Level`, and `ServerLevel` does not override it (only `ClientLevel` does), so **the server never emits a breeze ambient sound**; only the client's copy of the entity, which runs the same `baseTick`, plays it locally. The server still draws `nextInt(1000)` every tick and resets the timer.
+
+Hoglin, zoglin and piglin return none when the level is the client (their sound depends on brain state). The per-situation sound events other than the ambient ones (hurt, death, step, attack) are the constants cited by each mob class (44 §17 lists land animals).
+
+#### 2.4.2 Parrot imitation map
+
+`Parrot.MOB_SOUND_MAP` is a `java.util.HashMap` from entity type to sound event with **42 entries** (built in the static initialiser). `getImitatedSound(type)` is `map.getOrDefault(type, entity.parrot.ambient)`. Entries (entity type -> event, `minecraft:` namespace): blaze, bogged, breeze, camel_husk, creaking, creeper, drowned, elder_guardian, ender_dragon, endermite, evoker, ghast, guardian, hoglin, husk, illusioner, magma_cube, parched, phantom, piglin, piglin_brute, pillager, ravager, shulker, silverfish, skeleton, slime, spider, stray, vex, vindicator, warden, witch, wither, wither_skeleton, zoglin, zombie, zombie_horse, zombie_nautilus, zombie_villager each map to `entity.parrot.imitate.<same name>`; `cave_spider` maps to `entity.parrot.imitate.spider`; `happy_ghast` maps to the sound event `intentionally_empty` (`SoundEvents.EMPTY`, a silent event: the imitation plays nothing audible).
+
+Two paths use the map:
+1. *Ambient path* (`Parrot.getAmbientSound` -> `Parrot.getAmbient(level, level.getRandom())`): when the difficulty is not Peaceful and the level random's `nextInt(1000)` is 0, the key set is copied into a list and `list.get(nextInt(list.size()))` (a `nextInt(42)` on the same level random) picks a type; its imitation event is returned and played by `makeSound` at volume 1.0 with the parrot's pitch (the adult formula). The order of the key list is **not defined by the artifact**: the map is a `HashMap` whose keys are `EntityType` objects, which do not override `hashCode`, so iteration order follows identity hash codes and differs between runs. The list-index to type pairing is therefore not reproducible in vanilla; a test can only assert "one of the 42 entries, uniformly". CobolCraft design decision: use a fixed order (the order of the list above, or registry order) so the draw is scriptable.
+2. *AI-step path* (`Parrot.imitateNearbyMobs(level, parrot)`, called after `level.getRandom().nextInt(400) == 0` in the parrot's `aiStep`, 44 §4 parrot rules): with the level random: the parrot must be alive and not silent and `nextInt(2) == 0` (short-circuit in that order); then the mobs of class `Mob` in the parrot's box inflated by 20 on every axis, excluding parrots (`NOT_PARROT_PREDICATE`), are listed; if the list is non-empty one is chosen with `nextInt(list.size())` (the list order is the entity query order); if it is silent nothing happens; otherwise `getImitatedSound(thatMob.getType())` (types not in the map, such as a pig, give `entity.parrot.ambient`) is played at the parrot's position with the parrot's sound source, volume **0.7** and pitch `Parrot.getPitch(level random)` (two `nextFloat` draws, adult formula, from the level random). It returns true when a sound was played.
+Both paths use the same map.
 
 ### 2.5 `Entity.baseTick` and `LivingEntity.baseTick`
 
@@ -459,7 +594,7 @@ When `isDeadOrDying` and the level ticks deaths, `tickDeath` runs each tick: `de
 
 ### 2.10 No-AI and immobile mobs
 
-A mob with the no-AI flag (mob flag 1, `setNoAi`) has `isEffectiveAi` false (`Mob.isEffectiveAi` = the living entity rule and not no-AI). In `LivingEntity.aiStep` this has two effects (both read): `serverAiStep` is not called (no goals, navigation, controls, `customServerAiStep`), and `travel` is not called, so the mob applies no gravity, friction or movement from its own velocity; only effects from outside (knockback velocity is stored but not integrated, pushes, vehicles, `setPos`) can change it. `isImmobile` (dead or dying, sleeping, plus per-mob rules) zeroes `jumping`, `xxa` and `zza`.
+A mob with the no-AI flag (mob flag 1, `setNoAi`) has `isEffectiveAi` false (`Mob.isEffectiveAi` = the living entity rule and not no-AI). In `LivingEntity.aiStep` this has two effects (both read): `serverAiStep` is not called (no goals, navigation, controls, `customServerAiStep`), and `travel` is not called, so the mob applies no gravity, friction or movement from its own velocity; only effects from outside (knockback velocity is stored but not integrated, pushes, vehicles, `setPos`) can change it. `isImmobile` (dead or dying, sleeping, plus per-mob rules) zeroes `jumping`, `xxa` and `zza`. How the flag is set and saved (NBT key `NoAI`, `/data`, `/summon`, buckets, conversion) is in [45-2](45-entity-nbt-2-living-entity-mob-animal.md) §3.0.
 
 ---
 
@@ -603,6 +738,48 @@ In the air (`onGround` false): `a = 0.02 x speed` (pig walk: 0.005), horizontal 
 3. `jumpFromGround`: `jumpPower = jump_strength x 1.0 x blockJumpFactor + jumpBoostPower`, with `jump_strength` default **0.41999998688697815** (`Attributes` default; none of pig, cow, sheep, chicken, zombie override it), `blockJumpFactor` the block jump factor (3.3), jump boost 0.1 per level. If `jumpPower <= 1.0E-5` nothing happens. Otherwise the vertical velocity becomes `max(jumpPower, vy)` (it is set, not added, and horizontal velocity is untouched); only a sprinting entity adds 0.2 horizontally along its yaw (mobs normally are not sprinting).
 4. JUMPING operation: `speed = m x movement_speed` as in MOVE_TO and `zza` follows `speed`; the operation returns to WAIT when the mob is on the ground (or in a liquid and affected by fluids).
 
+### 3.2.2 Swimming and flying speeds, and the sources behind 3.2.1
+
+**Sources of the walking formula.** 3.2.1 rests on `Mob.setSpeed` (stores `speed`, then calls `setZza` with the same value), `MoveControl.tick` (MOVE_TO, STRAFE, JUMPING), `FlyingMoveControl.tick`, the fish move control, the `LivingEntity.aiStep` order (input factor 0.98, `serverAiStep`, jump handling, `travel`), `travelInAir`, `travelInWater`, `travelFlying`, `Entity.getInputVector` and `Entity.moveRelative`, and the `createAttributes` bodies of pig (0.25), cow (0.20000000298023224), sheep (0.23000000417232513), chicken (0.25) and zombie (0.23000000417232513) and the pig's goal constructors (panic 1.25, tempt 1.2, follow parent 1.1). `zza = speed` holds for every move control that calls `Mob.setSpeed` (MOVE_TO, JUMPING, the STRAFE `setSpeed`, `FlyingMoveControl`, the fish control), so a walking mob accelerates by `speed x speed` per tick. The numbers are computed from the read constants, not observed in a run.
+
+**One formula for every medium.** In a tick a mob adds `k x (xxa, yya, zza)` (rotated by yaw; the vector is zeroed if its squared length is below 1.0E-7 and normalised if above 1) to its velocity, moves by the new velocity, then multiplies the velocity by drag factors `(h, v, h)`. With a constant horizontal input the horizontal displacement per tick converges to
+
+`D = |k x zza| / (1 - h)`  (blocks per tick; `x 20` for blocks per second)
+
+and the velocity stored after the drag is `h x D`. For each medium (each value read):
+
+| Medium (code) | input `zza` | `k` | `h` (horizontal drag) | `D` |
+|---|---|---|---|---|
+| on ground, friction 0.6 (`travelInAir`) | `speed` | `speed` | 0.546 | `speed^2 / 0.454` |
+| in air, not on the ground (`travelInAir`, a mob that jumped or fell) | `speed` | 0.02 | 0.91 | `0.02 x speed / 0.09` |
+| in water, a land mob (`travelInWater`; the attribute `water_movement_efficiency` has base 0 for every mob, so the efficiency terms are off) | `speed` | 0.02 | 0.8 (vertical 0.8) | `0.02 x speed / 0.2 = 0.1 x speed` |
+| in water, an `AbstractFish` (its own `travelInWater` override; also the tadpole) | `speed` (lerped, below) | 0.01 | 0.9 (all axes) | `0.01 x speed / 0.1 = 0.1 x speed` |
+| flying with `FlyingMoveControl` through the generic `travelInAir` (bee, parrot: `omnidirectionalAirMover` true, no gravity while moving) | `f` | 0.02 | 0.91 (vertical also 0.91) | `0.02 x f / 0.09` |
+| flying through `travelFlying(input, speed)` with `speed` = `getSpeed()` (allay; in water the allay uses 0.02 and drag 0.8, in lava 0.02 and 0.5) | `f` | `f` | 0.91 | `f^2 / 0.09` |
+
+For the flyers `f = speedModifier x flying_speed` when airborne (`x movement_speed` when on the ground), set by `FlyingMoveControl`; it also sets `yya = +f` when the target is above the mob and `-f` otherwise (including a level target, `dy = 0`: the vertical input then points down) and `zza = f`, so the input is `(0, +-f, f)`; the vertical acceleration equals the horizontal one. The fish control sets `speed` to `lerp(0.125, speed, speedModifier x movement_speed)` each tick (so `speed` approaches the target as `target x (1 - 0.875^n)`), adds `speed x (dy / distance) x 0.1` to the vertical velocity when `dy != 0`, turns the yaw by at most 90 degrees per tick and copies it to the body yaw; when the navigation is done it sets `speed` to 0; with its eyes in water it adds 0.005 to the vertical velocity in the control step, and its water travel step subtracts 0.005 again when the fish has no target.
+
+**Worked numbers** (steady state, flat ground or open fluid or air, one MOVE_TO per tick, modifier `m`; blocks per tick, blocks per second in brackets):
+
+| Case | `speed` (`f`) | `D` |
+|---|---|---|
+| pig, walk, ground (3.2.1) | 0.25 | 0.1377 (2.75) |
+| zombie, chase, ground (3.2.1) | 0.23 | 0.1165 (2.33) |
+| cow, walk, ground (3.2.1) | 0.20 | 0.0881 (1.76) |
+| pig, walk, **swimming** (m = 1.0) | 0.25 | 0.025 (0.50) |
+| pig, panic, swimming (m = 1.25) | 0.3125 | 0.03125 (0.625) |
+| zombie, chase, **swimming** | 0.23 | 0.023 (0.46) |
+| cow, walk, swimming | 0.20 | 0.020 (0.40) |
+| cod (any `AbstractFish` with the default movement speed 0.7, which the attribute registry gives when the class sets none), wander `RandomSwimmingGoal` m = 1.0 | 0.7 (reached asymptotically, see the ramp below) | 0.070 (1.40) |
+| cod, panic (m = 1.25) | 0.875 | 0.0875 (1.75) |
+| bee, flying, m = 1.0 (flying_speed 0.6) | f = 0.6 | horizontal 0.1333 (2.67), vertical 0.1333 |
+| allay, flying, m = 1.0 (flying_speed 0.1) | f = 0.1 | 0.1111 (2.22) |
+| pig, in air (jumping or falling), walk | 0.25 | 0.0556 (1.11) before the vertical motion ends the flight |
+
+Fish speed ramp (`speed_n = 0.7 x (1 - 0.875^n)` from rest, n ticks after the first MOVE_TO): 0.0875, 0.1641, 0.2311, 0.2897, 0.3410, 0.3858, 0.4251, 0.4595, 0.4895, 0.5158 for n = 1 to 10 (derived; the displacement per tick follows `0.1 x speed_n` with the 0.9 drag ramp, so it lags by a few ticks).
+
+Two cautions. First, a land mob that stands in water is slowed by a factor of about `0.1 / speed` against walking (pig 5.5 times slower), the `FloatGoal` only keeps it afloat (`jumping` true adds +0.04 vertical velocity per tick, 3.2.1 E). Second, none of the entries above includes attribute modifiers (baby, sprint, speed effects), block speed factors (soul sand 0.4, honey 0.4, 3.3), or the arrival test of 3.2.1 A step 5.
+
 ### 3.3 Collision, push and block effects
 
 - `Entity.move` moves along each axis in the order y, then the larger of x/z, with collision against block shapes and the world border, honouring the step height; sets `onGround` (vertical movement was blocked while moving down), `horizontalCollision`, `verticalCollision`. Sneaking-off-edge protection applies to players only.
@@ -712,7 +889,7 @@ Format: `Class(params)` flags; conditions in prose. `nav` = the mob's `PathNavig
 
 **Random position helpers** (`net.minecraft.world.entity.ai.util`), read in full:
 
-*Core* (`RandomPos.generateRandomPos(mob, candidateSupplier)`): up to **10** candidates are drawn from the supplier; null candidates are skipped; each non-null block position is scored with the mob's `getWalkTargetValue(pos)` (0 for `PathfinderMob`; `Animal` returns 10 on a grass block below the position, otherwise a light-level-based cost) and the **highest** score wins (strictly greater replaces, so the earliest wins ties); the result is the bottom centre of the winning block, or none if every candidate was null. Helper flag `restricted = mobRestricted(mob, hRange)`: true when the mob has a home and its position is **not** closer than `homeRadius + hRange + 1` to the home centre.
+*Core* (`RandomPos.generateRandomPos(mob, candidateSupplier)`): up to **10** candidates are drawn from the supplier; null candidates are skipped; each non-null block position is scored with the mob's `getWalkTargetValue(pos)` (0 for `PathfinderMob`; `Animal` returns 10 on a grass block below the position, otherwise a light-level-based cost) and the **highest** score wins (strictly greater replaces, so the earliest wins ties); the result is the bottom centre of the winning block, or none if every candidate was null. Helper flag `restricted = mobRestricted(mob, hRange)`: true when the mob has a home **and** the home block's centre is **closer** than `homeRadius + hRange + 1` to the mob's position (`BlockPos.closerToCenterThan`, strict: squared distance below `(homeRadius + hRange + 1)^2`). A restricted candidate is then rejected unless it is within the home (`isRestricted`).
 
 *Random direction*: `generateRandomDirection(rand, h, v)` = `(nextInt(2h+1) - h, nextInt(2v+1) - v, nextInt(2h+1) - h)`. `generateRandomDirectionWithinRadians(rand, minH, maxH, v, yOffset, dx, dz, maxAngle)`: `angle = atan2(dz, dx) - PI/2 + (2 x nextFloat() - 1) x maxAngle`; `dist = lerp(sqrt(nextDouble()), minH, maxH) x sqrt(2)`; `x = -dist x sin(angle)`, `z = dist x cos(angle)`; reject (none) if `|x| > maxH` or `|z| > maxH`; `y = nextInt(2v+1) - v + yOffset`; result `BlockPos.containing(x, y, z)`.
 
@@ -1229,7 +1406,7 @@ The default placement for a type without a registration is NO_RESTRICTIONS.
 `finalizeSpawn(level, difficultyInstance, reason, groupData)` (read) applies, for every mob regardless of reason:
 
 1. The **follow-range spread**: if the mob has no `random_spawn_bonus` modifier on `follow_range`, add the permanent modifier `random_spawn_bonus`, operation ADD_MULTIPLIED_BASE, amount = triangle(0, 0.11485) = `RS.nextDouble() - RS.nextDouble()` scaled by 0.11485 (a triangular distribution with mode 0 and half-width 0.11485).
-2. **Left-handedness**: `RS.nextFloat() < 0.05` -> mob flag left-handed (set via `setLeftHanded`; the flag is bit 2 of slot 15).
+2. **Left-handedness**: `RS.nextFloat() < 0.05` -> mob flag left-handed (set via `setLeftHanded`; flag value 2 of the mob-flags byte, slot 15). The draw is made only by `finalizeSpawn`; a mob loaded from NBT keeps its saved `LeftHanded` (45-2 §3.0).
 Subclass overrides call this first and then add their own rules: `AgeableMob.finalizeSpawn` (7.1.1), monster equipment (7.1.2) and per-mob variants (per-mob catalogues).
 
 **7.1.1 Baby chance** (`AgeableMob.finalizeSpawn`): the group data object `AgeableMobGroupData` carries `babySpawnChance` (default 0.05, a mob may pass a different value), `shouldSpawnBaby` (default true), a group size counter. When called with an existing group data: if `groupSize > 0` (and spawning babies is enabled) and `RS.nextFloat() <= babySpawnChance` then `setAge(-24000)` (baby); the counter increments. The first member of a pack creates the group data (size counter 0) and so is never a baby from this rule; later members have a 5% chance each. A spawn egg or a breed creates babies by other means (`setBaby`).
@@ -1237,7 +1414,7 @@ Subclass overrides call this first and then add their own rules: `AgeableMob.fin
 **7.1.2 Monster default equipment** (`Mob.populateDefaultEquipmentSlots`, read in full). With `special = difficulty.getSpecialMultiplier()` (7.1.3):
 1. If `nextFloat() < 0.15 x special`: the mob receives armor; otherwise nothing is added.
 2. Armor tier `t = nextInt(3)` (0 to 2). Then exactly **three** independent rolls: each `nextFloat() < 0.1087` adds 1 to `t` (so `t` is 0 to 5; a failed roll does not stop the later rolls).
-3. Per-slot chance `c` = 0.1 when the level difficulty is Hard, else 0.25. Go through the slots in `EQUIPMENT_POPULATION_ORDER`; the **first** slot in the order is always considered; for every later slot, if `nextFloat() < c` the loop **stops** (that slot and all later ones stay as they are). A considered slot that is empty receives `Mob.getEquipmentForSlot(slot, t)` when that is a non-null item (the table from tier to item is in `Mob.getEquipmentForSlot` and was not tabulated here, Open question 5).
+3. Per-slot chance `c` = 0.1 when the level difficulty is Hard, else 0.25. Go through the slots in `EQUIPMENT_POPULATION_ORDER`; the **first** slot in the order is always considered; for every later slot, if `nextFloat() < c` the loop **stops** (that slot and all later ones stay as they are). A considered slot that is empty receives `Mob.getEquipmentForSlot(slot, t)` when that is a non-null item (the tier table, `Mob.getEquipmentForSlot`: tier 0 leather, 1 copper, 2 golden, 3 chainmail, 4 iron, 5 diamond, each as helmet, chestplate, leggings or boots for the slots head, chest, legs, feet in that order; any other tier or slot gives no item; netherite is not in the table).
 Enchantments (`populateDefaultEquipmentEnchantments`, read): the main-hand item is considered with base chance **0.25** and each humanoid armor slot with base chance **0.5**; a non-empty slot is enchanted when `nextFloat() < base x special`, using the enchantment provider `mob_spawn_equipment` (`EnchantmentHelper.enchantItemFromProvider`, whose level and selection rules were not read).
 
 **7.1.3 Local (regional) difficulty** (`DifficultyInstance`, read): inputs: the difficulty, the world's day time `T`, the chunk's `inhabitedTime` `I`, the moon-phase factor `M` (0 to 1, from the moon brightness; 1 at full moon):
@@ -1251,7 +1428,28 @@ From the formula: the base factor ranges from 0.75 (day time 0, no inhabited tim
 
 ### 7.2 Which items a mob wants (`wantsToPickUp`, `canReplaceCurrentItem`)
 
-`canReplaceCurrentItem(candidate, current, slot)`: armor is compared by (armor value, toughness, then durability) `compareArmor`; weapons by the sum of attack damage attribute modifiers (plus a 1.0 bonus for being non-empty) `compareWeapons`; the replacement is allowed when strictly better; an empty slot always accepts a valid item (`canHoldItem`). The inner comparison functions (`compareArmor`, `compareWeapons`, `getApproximateAttributeWith`) were read only at the call level (Open question 5).
+The rule below is read from `Mob.canReplaceCurrentItem` and its helpers (same as 44 RQ-1.3).
+
+`canReplaceCurrentItem(candidate, current, slot)`:
+1. `current` empty: yes.
+2. Slot is an armor slot: `compareArmor`. Slot is the main hand: `compareWeapons`. Any other slot: no (some mobs override).
+
+`compareArmor(candidate, current, slot)`:
+1. `current` has the enchantment effect `prevent_armor_change` (Curse of Binding): no.
+2. `A_c`, `A_o` = approximated armor attribute of candidate and current; if they differ the answer is `A_c > A_o`.
+3. Else `T_c`, `T_o` = approximated armor toughness; if they differ the answer is `T_c > T_o`.
+4. Else `canReplaceEqualItem`.
+
+`compareWeapons(candidate, current, slot)`:
+1. `P` = the mob's preferred weapon tag (`getPreferredWeaponType`, none by default; overrides: drowned, skeleton family, pillager, piglin, with baby piglin and wither skeleton returning none: 44 RQ-1.3). If `P` exists: `current` in `P` and `candidate` not: no; `current` not in `P` and `candidate` in `P`: yes.
+2. `D_c`, `D_o` = approximated attack damage; if they differ the answer is `D_c > D_o`.
+3. Else `canReplaceEqualItem`.
+
+`getApproximateAttributeWith(stack, attribute, slot)`: `base` = the mob's base value of the attribute (0 when the mob lacks it); `v = base`; for each modifier of the stack's attribute-modifier component **in list order** whose slot group contains `slot` and whose attribute matches: ADD_VALUE `v += a`; ADD_MULTIPLIED_BASE `v += a x base`; ADD_MULTIPLIED_TOTAL `v += a x v` (running value). This is a single pass in list order, not the three-phase attribute formula of 1.3.
+
+`canReplaceEqualItem(candidate, current)`: (1) different numbers of distinct enchantments: yes exactly when the candidate has more; (2) else different damage values: yes exactly when the candidate's is lower; (3) else yes exactly when the candidate has a custom name and the current has none.
+
+`wantsToPickUp` is `canHoldItem`, which is true for every item in `Mob`. `equipItemIfPossible(stack)` (used by `pickUpItem` on a copy of the item entity's stack): slot = `getEquipmentSlotForItem`; the item must be equippable there; `replace = canReplaceCurrentItem`; if the slot is armor and `replace` is false, the main hand is tried instead (replace only if the main hand is empty); when `replace` and `canHoldItem`: the slot's drop chance `c` is read; if the old stack is non-empty and `max(rand.nextFloat() - 0.1, 0) < c` the old stack is dropped as an item entity (the `nextFloat` is drawn only when the old stack is non-empty); the new stack, limited by `EquipmentSlot.limit`, is stored with a guaranteed drop (drop chance set to the preserve value, 7.1.4) and `persistenceRequired` becomes true. The picked-up count is removed from the item entity, which is discarded when empty.
 
 ### 7.3 Damage (`LivingEntity.hurtServer(level, source, amount)`)
 
@@ -1430,7 +1628,19 @@ In order (read):
 
 ## 10. Worked examples (for tests)
 
-The random numbers below are chosen by hand to exercise the rules; they are not produced by any vanilla generator. A test fixture feeds the listed values to the implementation's random source in the stated order.
+The random numbers below are chosen by hand to exercise the rules; they are not produced by any vanilla generator. A test fixture feeds the listed values to the implementation's random source in the stated order (convention in 10.0).
+
+### 10.0 Convention for feeding scripted random draws
+
+**What the artifact does (read).** `Entity.random` is created in the `Entity` constructor with `RandomSource.create()`, and `Level.random` (used by natural spawning, `ServerLevel` code and the bow's shot sound pitch via `Level.getRandom`) with the same call; `RandomSource.create()` is `new LegacyRandomSource(RandomSupport.generateUniqueSeed())`, the `java.util.Random` generator of [10](10-world-generation-terrain.md) §2.6, seeded with a counter that is multiplied by 1181783497276652981 on each call and XOR-ed with `System.nanoTime()`. So every entity has **its own** generator and the level has one more; none of them is reproducible between runs. `Mob.getRandom` is the entity's generator; `finalizeSpawn`, the goals and the ambient-sound test use it; `NaturalSpawner` uses the level's. The generator interface (`RandomSource`) offers: `nextInt()`, `nextInt(bound)` (uniform 0 to bound-1), `nextInt(origin, bound)` (`origin + nextInt(bound - origin)`, an error if `origin >= bound`), `nextIntBetweenInclusive(a, b)` (`a + nextInt(b - a + 1)`), `nextLong`, `nextBoolean`, `nextFloat` (0 inclusive to 1 exclusive), `nextDouble`, `nextGaussian`, `triangle(c, w)` (`c + w x (d1 - d2)` with two `nextDouble` draws, or two `nextFloat` draws for the float form; the first draw minus the second) and `consumeCount(n)` (n `nextInt()` draws).
+
+**The convention (a CobolCraft design decision, not an artifact fact).** A conforming implementation exposes one random-source interface with exactly the calls above, and gives each entity one instance plus one for the level. A test fixture replaces the instance by a **scripted source**: a queue of values per source (one queue per entity and one for the level) that each call pops in call order. Rules:
+1. The value a test supplies is the value the call returns, already in range: an integer in `[0, bound)` for `nextInt(bound)`, a float in `[0, 1)` for `nextFloat`. The scripted source does not reduce or scale; `nextInt(origin, bound)` and `nextIntBetweenInclusive` are derived from `nextInt(bound)` as above, so a fixture lists the underlying `nextInt` value. A call with an empty queue is a test failure.
+2. A draw is consumed exactly where the text says a draw happens, in the stated order, and **not** on a branch that is not taken (for example the bat's `nextInt(4)` only while resting, the wolf's `nextInt(3)` only when not angry, the equipment-drop `nextFloat` only when the old stack is non-empty). Short-circuit conditions draw only up to the first decisive operand. A condition that is **evaluated twice** by the game draws twice: the fox's `getAmbientSound` runs up to twice per ambient event (2.4.1).
+3. Per-tick draws that always happen are part of the script: each living mob consumes one `nextInt(1000)` at the start of its ambient test (2.4) every tick; a fixture for a multi-tick scenario supplies it, or uses a source that is told to answer "never" for that draw (a value of 999 never satisfies `r < ambientSoundTime` while `ambientSoundTime` is below 999).
+4. Draws that the artifact makes **inside** helper calls are listed where the helper is described (`getVoicePitch` consumes two `nextFloat` when a sound is made; `triangle` two `nextDouble`; the goal selector consumes the draws of each `canUse` it actually evaluates, 4.1 and 10.1).
+5. Entities draw from their own queue only. A fixture that creates a second entity (a pack member, a baby) gives it its own queue; a draw the text attributes to "the level" (spawn position, pack size, weighted entry, jitter, spawn yaw) goes to the level queue.
+The worked examples below follow this convention (the draws are listed in call order on the queue the text names). The call order for each common case (spawning, `finalizeSpawn`, equipment, ambient sound, goal evaluation, breeding) is the order of the steps in the respective section (10.2, 7.1, 2.4, 4.1, 8.1).
 
 ### 10.1 Goal arbitration
 
@@ -1498,23 +1708,27 @@ A conforming implementation can be tested with: the worked examples in section 1
 2. Mob-specific overrides of `getWalkTargetValue` (beyond `Animal` and the default 0) and per-mob goal speeds are per-mob data (per-mob catalogues).
 3. Brain: the generic behaviours cited by 19, 20 and 21 are in 4.7 (read at the shape level; the arithmetic inside the declarative lambdas of `ChargeAttack`, `RamTarget`, `PrepareRamNearestTarget`, `SetHiddenState`, `TryLaySpawnOnFluidNearLand`, `SetWalkTargetFromBlockMemory` was not expanded). Not read: the villager, raid and point-of-interest behaviours (`AcquirePoi`, `ValidateNearbyPoi`, `SleepInBed`, `WakeUp`, `WorkAtPoi`, `TradeWithVillager`, and the others listed at the end of 4.7), the three `LongJump*` behaviours, the `warden` package, and these sensors: `secondary_pois`, `villager_hostiles`, `golem_detected`, `armadillo_scare_detected`, `piglin_specific_sensor`, `piglin_brute_specific_sensor`, `hoglin_specific_sensor`, `axolotl_attackables`, `frog_attackables`, `warden_entity_sensor`, `breeze_attack_entity_sensor`.
 4. Trial spawner mechanics (states, configuration, ominous variant), spawn egg item components beyond 6.12, and the custom spawners (`tickCustomSpawners`: phantom, patrol, trader, cat, village siege/raid) are not specified here.
-5. Default monster equipment: the roll structure is read (7.1.2); the tier-to-item table (`Mob.getEquipmentForSlot`), the `mob_spawn_equipment` enchantment provider, and the inner comparison functions of `canReplaceCurrentItem` (7.2) were not read.
+5. Resolved (7.1.2, 7.2): default monster equipment: roll structure 7.1.2, tier table 7.1.2 (`Mob.getEquipmentForSlot`: leather, copper, golden, chainmail, iron, diamond), the comparison functions of `canReplaceCurrentItem` 7.2. The `mob_spawn_equipment` provider (`by_cost_with_difficulty`, tag `on_mob_spawn_equipment`, `min_cost` 5, `max_cost_span` 17 in `data/minecraft/enchantment_provider/mob_spawn_equipment.json`, read again) and its selection algorithm are specified in [44](44-residual-mob-questions-1-shared-model-framework.md) RQ-1.2; the selection arithmetic itself was taken from that part and not re-read here.
 6. `ItemEntity` motion, friction and merge conditions beyond the constants in 6.11 were not expanded.
 7. Water extinguishing fire (`extinguishFire` callers in the fluid code) was not read; the fire tick rules of 2.5 and the lava damage and ignition are read.
 8. The protection arithmetic of `EnchantmentHelper.getDamageProtection` per enchantment is in [17](17-tools-weapons-and-combat.md) section 6; not repeated here.
 9. Block data used by spawning and physics: friction, speed factor, jump factor, `isValidSpawn` overrides per block, per-block entity effects (cactus, berry bushes, magma, cobweb, honey, soul sand), and the `valid_spawn` tag semantics, are block-registry data not tabulated here.
-10. Per-mob values referenced by the framework (xpReward, getMaxSpawnClusterSize and isMaxGroupSizeReached overrides, ambient sound intervals, attack ranges, food items, goal priorities, the taming chance, baby feeding speed-up) are left to the per-mob catalogues.
+10. Per-mob values referenced by the framework (xpReward, getMaxSpawnClusterSize and isMaxGroupSizeReached overrides, attack ranges, food items, goal priorities, the taming chance, baby feeding speed-up) are left to the per-mob catalogues (cluster size and taming chance are in 44 RQ-1.14 and RQ-1.16). **Ambient sound intervals, events, volumes and pitches are resolved in 2.4 and 2.4.1.**
 11. `EntitySpawnReason`: the set (NATURAL, CHUNK_GENERATION, SPAWNER, STRUCTURE, BREEDING, MOB_SUMMONED, JOCKEY, EVENT, CONVERSION, REINFORCEMENT, TRIGGERED, BUCKET, SPAWN_ITEM_USE, COMMAND, DISPENSER, PATROL, TRIAL_SPAWNER, LOAD, DIMENSION_TRAVEL) is read; only `isSpawner` (SPAWNER, TRIAL_SPAWNER) and `ignoresLightRequirements` (TRIAL_SPAWNER) were read as gates. Which other reasons skip which `checkSpawnRules`, obstruction and light gates is not consolidated.
 12. Projectiles: arrow piercing and knockback, the wind charge entities and the other projectile entities (ranged attacks call `performRangedAttack`) were not read; see [17](17-tools-weapons-and-combat.md) for the item side.
 13. A consolidated game-rules section: the rules read here are `spawn_mobs`, `spawn_monsters`, `mob_griefing`, `mob_drops`, `entity_drops`, `universal_anger`, `forgive_dead_players`, `random_tick_speed` and `max_entity_cramming`, each described where used; their defaults and the remaining mob-related rules were not collected.
 14. Statistics used by mobs (for example `time_since_rest` and the damage statistics) were not read here.
-15. The mob equipment enchantment-selection helper (`EnchantmentHelper.enchantItemFromProvider` with the `mob_spawn_equipment` provider) and the equipment tier table (`Mob.getEquipmentForSlot`) (see Open question 5).
+15. Resolved (see 5): the enchantment-selection helper is in 44 RQ-1.2; the tier table is in 7.1.2.
 16. The arthropod entity-type tag and the Bane of Arthropods effects were not read (the tag `arthropod` and `sensitive_to_bane_of_arthropods` are synchronised tags, 04).
 17. Structure `spawn_overrides` replacement rule and the "piece" versus "full" bounding-box semantics used by `mobsAt` (6.5 step 4 uses the fortress case only).
 18. `GateBehavior` and `TriggerGate` order and running policies beyond `RunOne` (4.6).
 19. Internals not expanded beyond the shape given in 4.7: `TryFindLand`, `TryFindLandNearLiquid`, `TryFindLiquid` (the candidate tests are given; the scan order is not), `GoToWantedItem`, `Croak`, `SetHiddenState`, `CopyMemoryWithExpiry`.
 20. 3.2.1: `Mth.sin` and `Mth.cos` use a lookup table in the artifact; its size and precision were not examined, so the rotated acceleration components may differ from exact trigonometry in the last digits.
-21. 3.2.1: players are specified as `Player` speed = attribute and client input 0.98 (doc 13 section 1.3); the server-side handling of client movement packets was not examined. Moving platforms, water, ice (F > 0.6 uses `speed^2 x 0.21600002 / F^3`, not walked through with numbers) and the knockback interaction were not worked.
+21. 3.2.1: (water and flying cases now worked in 3.2.2; ice and moving platforms still not.) Players are specified as `Player` speed = attribute and client input 0.98 (doc 13 section 1.3); the server-side handling of client movement packets was not examined. Moving platforms, water, ice (F > 0.6 uses `speed^2 x 0.21600002 / F^3`, not walked through with numbers) and the knockback interaction were not worked.
+22. Radii of the simulation tickets other than the player's (`forced`, `portal`, `ender_pearl`, `dragon`; 2.1): only the ticket types, timeouts and flags and the portal radius argument 3 (`addTicketWithRadius`) were read; how the radius becomes a ticket level was not traced. Whether the integrated server feeds its `PlayerList` simulation distance from the client option was not traced (2.1).
+23. Resolved (2.4.2): parrot imitation map. Still inferred: that `Level.playSound` takes its seed from `soundSeedGenerator` (2.4).
+24. Display entities' own interpolation tick (`Display.tick`) was not read; only their registration constants (1.1).
+
 
 ## Appendix A. Natural spawn data per biome (`gameplay/natural_mob_spawns`, `gameplay/creature_world_gen_spawn_probability`)
 
