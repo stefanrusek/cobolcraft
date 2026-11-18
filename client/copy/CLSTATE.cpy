@@ -1147,6 +1147,9 @@
 *>     names `display.firstperson_righthand`, IS-FP-VAL(i * 9 + n) the rotation x y z, translation x y z (sixteenths) and scale x y z.
        10 IS-FP-STATE        PIC 9 OCCURS 2048 TIMES.
        10 IS-FP-VAL          FLOAT-SHORT OCCURS 18432 TIMES.
+*>     The same for the contexts thirdperson_righthand (1), thirdperson_lefthand (2) and fixed (3) (ITEM-DISPLAY): IS-DX-STATE(i * 3 + c) = 1 when named, IS-DX-VAL(i * 27 + (c - 1) * 9 + n).
+       10 IS-DX-STATE        PIC 9 OCCURS 6144 TIMES.
+       10 IS-DX-VAL          FLOAT-SHORT OCCURS 55296 TIMES.
        10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
        10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
 *>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
