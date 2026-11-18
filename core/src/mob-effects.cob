@@ -48,10 +48,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY MOBEFFECT.
+ COPY CORESTATE.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
  01 WS-YES                  BINARY-LONG VALUE 1.
  01 WS-REPLACE              BINARY-LONG.
+ 01 WS-E                    BINARY-LONG.
+ 01 WS-SPECIES              PIC X(24).
  LINKAGE SECTION.
  01 L-ENT                   BINARY-LONG.
  01 L-EFFECT                BINARY-LONG.
@@ -61,6 +64,17 @@
  PROCEDURE DIVISION USING L-ENT L-EFFECT L-AMPLIFIER L-DURATION L-FLAGS.
      IF L-EFFECT < 0 OR L-EFFECT >= 40
          GOBACK
+     END-IF
+*>   canBeAffected: a wither skeleton is immune to the Wither effect (19; 44-6 section 9.4).
+     IF L-EFFECT = 19
+         PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+             IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = L-ENT
+                 CALL "MOB-SPECIES-KEY" USING WS-E WS-SPECIES
+                 IF WS-SPECIES = "wither_skeleton"
+                     GOBACK
+                 END-IF
+             END-IF
+         END-PERFORM
      END-IF
      MOVE 1 TO WS-REPLACE
      CALL "MEF-FIND" USING L-ENT L-EFFECT WS-NO WS-SLOT

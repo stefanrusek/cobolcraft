@@ -578,6 +578,16 @@
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 *>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
        10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
+*>     --- 002-lane-p49k: the Entity base keys that the saved compound carries (45-1 section 5; core/src/entity-nbt-1.cob) ---
+       10 EN-INVULN          BINARY-LONG.        *> Invulnerable: the permanent flag (not the hit window), 1 = set
+       10 EN-PORTAL-CD       BINARY-LONG.        *> PortalCooldown: ticks left
+       10 EN-INVTIME         BINARY-LONG.        *> invulnerable_time: the post-hit counter, written only above 0
+       10 EN-SILENT          BINARY-LONG.        *> Silent
+       10 EN-NOGRAV          BINARY-LONG.        *> NoGravity
+       10 EN-GLOW            BINARY-LONG.        *> Glowing (the glowing tag)
+       10 EN-VISFIRE         BINARY-LONG.        *> HasVisualFire
+       10 EN-NAME-VIS        BINARY-LONG.        *> CustomNameVisible
+       10 EN-FROZEN          BINARY-LONG.        *> TicksFrozen
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

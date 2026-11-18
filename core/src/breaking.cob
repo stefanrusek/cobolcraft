@@ -269,6 +269,8 @@
      CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
      MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
      CALL "BLOCK-BREAK-END" USING L-ROW
+*>   playerWillDestroy: breaking a block guarded by piglins angers the idle ones around (44-6 section 2.9).
+     CALL "PIGLIN-GUARDED-BREAK" USING L-ROW WS-STATE
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-VOID
 *>   A door or tall plant loses both halves and drops once, from its lower half.
      CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z WS-STATE WS-DROP-Y WS-DROP-STATE

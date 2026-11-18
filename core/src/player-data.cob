@@ -121,6 +121,12 @@
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      MOVE "HeldSlot" TO WN MOVE 8 TO WL
      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KN-HELD(L-KNOWN)
+*>   A world of the 26.3 layout also gets the keys of the standard player file (45-3 sections 2 and 3: SelectedItemSlot, playerGameType, the food keys, the
+*>   counters at their defaults, abilities from the game mode, post_effects), so the game reads the file too; PLAYER-DAT-READ takes either set.
+     IF CW-LAYOUT = 1
+         CALL "PLAYER-STD-WRITE" USING L-KNOWN PB-BUFFER
+         CALL "PLAYER-KEEP-WRITE" USING L-KNOWN PB-BUFFER
+     END-IF
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      CALL "PERSIST-UUID-TEXT" USING KN-UUID(L-KNOWN) WS-UUID-TEXT
      MOVE SPACES TO WS-SUFFIX
@@ -179,6 +185,7 @@
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-FILE-INFO           PIC X(16).
+ 01 WS-HANDLED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-UUID                 PIC X(16).
  01 L-KNOWN                BINARY-LONG.
@@ -260,6 +267,13 @@
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-XPP
              WHEN WN = "HeldSlot" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER KN-HELD(L-KNOWN)
+             WHEN WN = "SelectedItemSlot" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER KN-HELD(L-KNOWN)
+             WHEN WN = "playerGameType" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                 MOVE WS-INT TO KN-MODE(L-KNOWN)
+             WHEN WN = "foodLevel" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER KN-FOOD(L-KNOWN)
              WHEN WN = "foodSaturationLevel" AND WS-TYPE = 5
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-SATURATION
                  MOVE WS-SATURATION TO KX-SATURATION(L-KNOWN)
@@ -286,7 +300,10 @@
                      END-IF
                  END-PERFORM
              WHEN OTHER
-                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 CALL "PLAYER-KEEP-KEY" USING PB-BUFFER WS-TYPE WN L-KNOWN WS-HANDLED
+                 IF WS-HANDLED = 0
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 END-IF
          END-EVALUATE
      END-PERFORM
      CALL "XP-NEEDED" USING KX-XP-LEVEL(L-KNOWN) WS-NEEDED
@@ -299,3 +316,86 @@
      END-IF
      GOBACK.
  END PROGRAM PLAYER-DAT-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-STD-WRITE.
+*> USING known row, PB-BUFFER (a player compound being written): the keys of the standard player file that the core holds the state of or that have a fixed default (45-3 sections 2 and 3):
+*> SelectedItemSlot, playerGameType, foodLevel, foodTickTimer 0, foodExhaustionLevel 0.0, SleepTimer 0, XpSeed 0, Score 0, abilities (the seven values the game mode gives: 45-3
+*> section 2.2), spawn_extra_particles_on_fall 0 and an empty post_effects. Not written (no state): LastDeathLocation, respawn, warden_spawn_tracker, entered_nether_pos,
+*> last_explosion_impact_pos, raid_omen_position, ender_pearls, the shoulder entities, previousPlayerGameType.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-T-STRING            BINARY-LONG VALUE 8.
+ 01 WS-FLOAT               FLOAT-SHORT VALUE 0.
+ 01 WS-FLY-SPEED           FLOAT-SHORT VALUE 0.05.
+ 01 WS-WALK-SPEED          FLOAT-SHORT VALUE 0.1.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KNOWN                BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-KNOWN PB-BUFFER.
+     MOVE KN-MODE(L-KNOWN) TO WS-MODE
+     MOVE "SelectedItemSlot" TO WN MOVE 16 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KN-HELD(L-KNOWN)
+     MOVE "playerGameType" TO WN MOVE 14 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-MODE
+     MOVE "foodLevel" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KN-FOOD(L-KNOWN)
+     MOVE "foodTickTimer" TO WN MOVE 13 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-ZERO
+     MOVE "foodExhaustionLevel" TO WN MOVE 19 TO WL
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+     MOVE "SleepTimer" TO WN MOVE 10 TO WL
+     CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-ZERO
+     MOVE "XpSeed" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-ZERO
+     MOVE "Score" TO WN MOVE 5 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-ZERO
+     MOVE "abilities" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "invulnerable" TO WN MOVE 12 TO WL
+     MOVE 0 TO WS-FLAG
+     IF WS-MODE = 1 OR 3
+         MOVE 1 TO WS-FLAG
+     END-IF
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-FLAG
+     MOVE "flying" TO WN MOVE 6 TO WL
+     MOVE 0 TO WS-FLAG
+     IF WS-MODE = 3
+         MOVE 1 TO WS-FLAG
+     END-IF
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-FLAG
+     MOVE "mayfly" TO WN MOVE 6 TO WL
+     MOVE 0 TO WS-FLAG
+     IF WS-MODE = 1 OR 3
+         MOVE 1 TO WS-FLAG
+     END-IF
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-FLAG
+     MOVE "instabuild" TO WN MOVE 10 TO WL
+     MOVE 0 TO WS-FLAG
+     IF WS-MODE = 1
+         MOVE 1 TO WS-FLAG
+     END-IF
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-FLAG
+     MOVE "mayBuild" TO WN MOVE 8 TO WL
+     MOVE 1 TO WS-FLAG
+     IF WS-MODE = 2 OR 3
+         MOVE 0 TO WS-FLAG
+     END-IF
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-FLAG
+     MOVE "flySpeed" TO WN MOVE 8 TO WL
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLY-SPEED
+     MOVE "walkSpeed" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-WALK-SPEED
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "spawn_extra_particles_on_fall" TO WN MOVE 29 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ZERO
+     MOVE "post_effects" TO WN MOVE 12 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-STRING WS-ZERO
+     GOBACK.
+ END PROGRAM PLAYER-STD-WRITE.

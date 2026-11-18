@@ -85,6 +85,29 @@
      MOVE 12 TO EN-WOLF-ARM-DMG(WS-ROW)
      MOVE 8 TO EN-HEALTH(WS-ROW)
      MOVE 0 TO EN-WOOL(WS-ROW)
+*>   The wolf's own compound, written alone: every key of its chain in order.
+     MOVE 1 TO WS-CX
+     MOVE 2 TO WS-CZ
+     MOVE "mobdata wolf payload: Age, ForcedAge, AgeLocked, InLove, Owner, Sitting, CollarColor, body armour with its damage"
+         TO TL-CASE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "ENTITY-NBT-WRITE" USING WS-DIM WS-CX WS-CZ PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-ROOT-TYPE
+     MOVE PB-POS TO WS-ROOT
+     MOVE "Entities" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     MOVE "T" TO TL-MODE
+     MOVE "[{id:minecraft:wolf,Pos:[20.500,55.000,37.250],Motion:[0.000,0.000,0.000],Rotation:[90.000,0.000],fall_distance:0.000,Fire:0,Air:300,OnGround:0,Invulnerable:0,PortalCooldown:0,UUID:I[0,0,0,2],"
+         & "Health:8.000,HurtTime:0,DeathTime:0,AbsorptionAmount:0.000,current_impulse_context_reset_grace_time:0,"
+         & "attributes:[],FallFlying:0,Brain:{memories:{}},"
+         & "anger_end_time:-1,CanPickUpLoot:0,PersistenceRequired:0,LeftHanded:0,Age:0,ForcedAge:0,AgeLocked:0,InLove:0,Owner:I[1,2,3,4],Sitting:1,CollarColor:3,"
+         & "equipment:{body:{id:minecraft:wolf_armor,count:1,components:{minecraft:damage:12}}}}"
+         TO TL-EXPECTED
+     COMPUTE WS-A = FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))
+     MOVE WS-TEXT(1:WS-A) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "sheep" TO WS-WANT-KEY PERFORM SPAWN-MOB
      MOVE 21 TO EN-WOOL(WS-ROW)
      MOVE -12000 TO EN-MOBAGE(WS-ROW)
@@ -137,26 +160,11 @@
      MOVE 1 TO EN-SADDLE(WS-ROW)
      MOVE "iron_golem" TO WS-WANT-KEY PERFORM SPAWN-MOB
 
-*>   The wolf's own compound, written alone: every key of its chain in order.
+*>   The payload of every mob (more than a text of 8192 bytes once the chunk holds all of them).
      MOVE 1 TO WS-CX
      MOVE 2 TO WS-CZ
-     MOVE "mobdata wolf payload: Age, ForcedAge, AgeLocked, InLove, Owner, Sitting, CollarColor, body armour with its damage"
-         TO TL-CASE
      CALL "PB-RESET" USING PB-BUFFER
      CALL "ENTITY-NBT-WRITE" USING WS-DIM WS-CX WS-CZ PB-BUFFER
-     MOVE 0 TO PB-POS
-     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-ROOT-TYPE
-     MOVE PB-POS TO WS-ROOT
-     MOVE "Entities" TO WS-PATH
-     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
-     MOVE "T" TO TL-MODE
-     MOVE "[{id:minecraft:wolf,Pos:[20.500,55.000,37.250],Motion:[0.000,0.000,0.000],Rotation:[90.000,0.000],"
-         & "Health:8.000,Age:0,ForcedAge:0,AgeLocked:0,InLove:0,Owner:I[1,2,3,4],Sitting:1,CollarColor:3,"
-         & "equipment:{body:{id:minecraft:wolf_armor,count:1,components:{minecraft:damage:12}}}}"
-         TO TL-EXPECTED
-     COMPUTE WS-A = FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))
-     MOVE WS-TEXT(1:WS-A) TO TL-OBSERVED
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Every mob of the chunk leaves and the payload brings it back.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-MOB-COUNT
