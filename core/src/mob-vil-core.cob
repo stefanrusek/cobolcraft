@@ -3,7 +3,7 @@
 *> SetRaidStatus and ResetRaidStatus (one in 20 per tick: PRE_RAID before the first wave and between waves, RAID with a wave under way, the schedule when the raid is gone), in the HIDE activity
 *> SetHiddenState (15 s) and LocateHidingPlace(32, 1.25, 2), in the RAID activity LocateHidingPlace(24, 1.4, 1), in PRE_RAID RingBell. Gaps: LocateHidingPlace's home is the villager's own claimed
 *> home (the document's PoiManager.find and getRandom over every bed are not modelled), the RAID activity runs LocateHidingPlace always (its condition is not given), MoveToSkySeeingSpot, the
-*> celebration and the walk speeds 1.5, 1.4 and 1.25 are not run.
+*> celebration is not run; the walk speeds 1.5 (pre-raid), 1.4 and 1.25 are applied by VL-WALK-SCALE.
 *>   VL-CORE-TICK USING row, slot, baby
 
  IDENTIFICATION DIVISION.
@@ -329,13 +329,13 @@
              IF VM-ACT(L-SLOT) = VA-HIDE
                  MOVE 32 TO WS-RADIUS
                  MOVE 2 TO WS-CLOSE
-                 MOVE 0.5 TO WS-SPEED
+                 MOVE 1.25 TO WS-SPEED
                  CALL "VL-CORE-HIDING" USING L-ROW L-SLOT WS-RADIUS WS-CLOSE WS-SPEED
              END-IF
          WHEN VA-RAID
              MOVE 24 TO WS-RADIUS
              MOVE 1 TO WS-CLOSE
-             MOVE 0.5 TO WS-SPEED
+             MOVE 1.4 TO WS-SPEED
              CALL "VL-CORE-HIDING" USING L-ROW L-SLOT WS-RADIUS WS-CLOSE WS-SPEED
          WHEN VA-PRE-RAID
 *>           RingBell: one in 20 evaluations (a roll above 0.95), within 3 blocks of the meeting point that is a bell.

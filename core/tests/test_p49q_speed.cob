@@ -88,6 +88,7 @@
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
 *>   The hide walk of the brain: LocateHidingPlace in HIDE at 1.25 s and in RAID at 1.4 s (the speed is stored in thousandths in the walk target).
      MOVE 13000 TO CW-TIME
+     CALL "VL-WALK-STOP" USING WS-A WS-SA
      COMPUTE WS-BELL-X = WS-X0 + 12
      CALL "VM-AT" USING WS-SA MT-HIDING-PLACE WS-DIM WS-BELL-X WS-Y WS-Z0
      MOVE CW-TICKS TO WS-NOW

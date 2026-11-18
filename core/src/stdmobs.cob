@@ -1421,6 +1421,9 @@
                  END-IF
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M EN-DEST-X(WS-ROW) WS-GY EN-DEST-Z(WS-ROW) WS-HX WS-HZ
                      WS-ARRIVED
+                 IF SM-KEY(WS-M) = "villager"
+                     CALL "VL-WALK-SCALE" USING WS-ROW WS-HX WS-HZ
+                 END-IF
                  IF WS-ARRIVED = 1
                      MOVE 0 TO EN-COOLDOWN(WS-ROW)
                  END-IF

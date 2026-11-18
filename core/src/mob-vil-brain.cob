@@ -401,7 +401,7 @@
              CALL "VM-ERASE" USING L-SLOT MT-POTENTIAL-JOB-SITE
              MOVE 0 TO VM-T(L-SLOT, TM-POT-START)
          ELSE
-             MOVE 0.5 TO WS-SPEED
+             MOVE 1.0 TO WS-SPEED
              CALL "VL-WALK-SET" USING L-ROW L-SLOT WS-QD WS-QX WS-QY WS-QZ WS-SPEED WS-ONE
          END-IF
          GOBACK
