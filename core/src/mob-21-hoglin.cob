@@ -104,7 +104,10 @@
      IF WS-KEY = "ravager"
          CALL "RAVAGER-ATTACKED" USING L-MOB
      END-IF
-     IF WS-KEY = "hoglin" OR "zoglin" OR "ravager"
+     IF WS-KEY = "warden"
+         CALL "WARDEN-MELEE" USING L-MOB
+     END-IF
+     IF WS-KEY = "hoglin" OR "zoglin" OR "ravager" OR "warden"
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-MOB) WS-EVENT PB-BUFFER
          CALL "HEALTH-VIEWERS-SEND" USING L-MOB PB-BUFFER

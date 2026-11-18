@@ -461,6 +461,11 @@
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
          GOBACK
      END-IF
+*>   SM-NEUTRAL 8: the warden's target is the angriest player (WARDEN-AGGRO, 20 section 15).
+     IF SM-NEUTRAL(L-M) = 8
+         CALL "WARDEN-AGGRO" USING L-ROW
+         GOBACK
+     END-IF
      IF SM-NEUTRAL(L-M) = 2
          CALL "STDMOB-ENDER-AIM" USING L-ROW L-M
          GOBACK
@@ -1197,6 +1202,12 @@
          MOVE WS-RAID-HX TO WS-PET-HX
          MOVE WS-RAID-HZ TO WS-PET-HZ
          MOVE WS-RAID-WALK TO WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "warden"
+         CALL "WARDEN-SONIC" USING WS-ROW WS-RV-STILL
+         IF WS-RV-STILL = 1
+             MOVE 1 TO WS-STOP
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "ravager"
          CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL

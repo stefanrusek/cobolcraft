@@ -31,7 +31,7 @@
        10 FILLER BINARY-LONG VALUE 30.              *> attack damage 30
        10 FILLER BINARY-LONG VALUE 24.              *> follow range
        10 FILLER BINARY-LONG VALUE 0.              *> fire immune, does not burn
-       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 8.              *> SM-NEUTRAL 8: targets by anger (WARDEN-AGGRO)
        10 FILLER BINARY-LONG VALUE 5.              *> experience points
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
