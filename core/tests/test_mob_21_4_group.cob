@@ -213,6 +213,13 @@
      MOVE "acceptance US15 44-1 RQ-1.14 a tropical fish that is no school member ends its pack (done), a school member does not" TO TL-CASE
      MOVE WS-LONE TO TL-OBSERVED-N
      PERFORM CHECK-N
+*>   A row that is no standard mob (a player's entity) is left alone.
+     MOVE 1 TO WS-NOW
+     CALL "AQUA-PACK" USING XR-STATE WS-FIRST PL-ENTITY-ROW(WS-PLAYER) WS-NOW WS-DONE
+     MOVE "acceptance US15 44-7§6.3 a row that is no standard mob has no group data (done 0)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DONE TO TL-OBSERVED-N
+     PERFORM CHECK-N
      STOP RUN.
  CHECK-N.
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

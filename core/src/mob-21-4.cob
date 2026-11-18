@@ -653,6 +653,8 @@
                  CALL "AXOLOTL-TICK" USING L-ROW L-M WS-WET
              WHEN SM-KIND(L-M) = 6
                  CALL "GUARDIAN-TICK" USING L-ROW L-M WS-WET
+             WHEN SM-KEY(L-M) = "dolphin"
+                 CALL "DOLPHIN-TICK" USING L-ROW L-M WS-WET
              WHEN WS-WET = 1
                  CALL "AQUA-SWIM" USING L-ROW L-M
          END-EVALUATE

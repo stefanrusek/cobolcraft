@@ -13,6 +13,8 @@
  COPY XORO.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X0                  BINARY-LONG.
  01 WS-Y0                  BINARY-LONG.
@@ -386,6 +388,46 @@
      IF EN-HEALTH(WS-FOE) < WS-HEALTH-BEFORE
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     PERFORM CHECK-N
+*>   The hurt path: 600 hits of 1 by a player on a healthy axolotl in water start play dead on about 1 in 9 (draw A 0 and draw B 0): 30 to 110; a hit without a source entity never does.
+     CALL "ENTITY-REMOVE" USING WS-A
+     COMPUTE WS-X = WS-X0 + 4.5
+     COMPUTE WS-Y = WS-Y0 + 3.5
+     COMPUTE WS-Z = WS-Z0 + 4.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-AXOLOTL WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 0 TO WS-HITS
+     MOVE 1 TO WS-DMG
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 600
+         ADD 1 TO CW-TIME
+         MOVE 0 TO EN-IDLE(WS-ROW) EN-HURT(WS-ROW)
+         MOVE 14 TO EN-HEALTH(WS-ROW)
+         MOVE 3 TO WS-CAUSE
+         CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-DMG WS-CAUSE WS-PLAYER
+         IF EN-IDLE(WS-ROW) > 0
+             ADD 1 TO WS-HITS
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 44-7§8.3 a player's hit starts play dead on about 1 in 9 (600 hits: 30 to 110)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HITS >= 30 AND WS-HITS <= 110
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO WS-HITS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
+         ADD 1 TO CW-TIME
+         MOVE 0 TO EN-IDLE(WS-ROW) EN-HURT(WS-ROW)
+         MOVE 14 TO EN-HEALTH(WS-ROW)
+         MOVE 6 TO WS-CAUSE
+         CALL "HEALTH-MOB-DAMAGE" USING WS-ROW WS-DMG WS-CAUSE WS-PLAYER
+         IF EN-IDLE(WS-ROW) > 0
+             ADD 1 TO WS-HITS
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 44-7§8.3 a hit with no entity source (a command) never starts play dead" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
      PERFORM CHECK-N
      STOP RUN.
  CHECK-N.

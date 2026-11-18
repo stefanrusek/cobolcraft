@@ -432,6 +432,63 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
      PERFORM CHECK-N
+*>   The beam on a mob target: a squid 5 blocks away takes the beam and the hit (10 health: 1 and 6 share the hurt window, so 6 are lost).
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     COMPUTE WS-X = WS-X0 + 2.5
+     COMPUTE WS-Y = WS-Y0 + 3.5
+     COMPUTE WS-Z = WS-Z0 + 4.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-GUARDIAN WS-X WS-Y WS-Z WS-YAW WS-ROW
+     COMPUTE WS-X = WS-X0 + 7.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-SQUID WS-X WS-Y WS-Z WS-YAW WS-SQ
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 130 OR EN-HEALTH(WS-SQ) < 10
+         ADD 1 TO CW-TIME
+         CALL "MOB-STEP" USING WS-ROW
+         COMPUTE WS-X = WS-X0 + 2.5
+         MOVE WS-X TO EN-X(WS-ROW)
+         MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
+         COMPUTE WS-X = WS-X0 + 7.5
+         MOVE WS-X TO EN-X(WS-SQ)
+         MOVE 0 TO EN-VX(WS-SQ) EN-VY(WS-SQ) EN-VZ(WS-SQ)
+     END-PERFORM
+     MOVE "acceptance US15 21§4.8 the beam and the melee hit on a squid: it loses 6 of 10 health" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-SQ) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+*>   A target that dies (a squid with 0 health) is dropped; so is a player with 0 health.
+     CALL "ENTITY-REMOVE" USING WS-SQ
+     CALL "MOB-SPAWN" USING WS-DIM WS-SQUID WS-X WS-Y WS-Z WS-YAW WS-SQ
+     MOVE 0 TO EN-FOE(WS-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 25 OR EN-FOE(WS-ROW) = WS-SQ
+         ADD 1 TO CW-TIME
+         CALL "MOB-STEP" USING WS-ROW
+         MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
+     END-PERFORM
+     MOVE 0 TO EN-HEALTH(WS-SQ)
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW
+     MOVE "acceptance US15 21§4.8 a target with 0 health is dropped (squid)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-FOE(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-SQ
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     COMPUTE PL-X(WS-PLAYER) = WS-X0 + 7.5
+     MOVE PL-X(WS-PLAYER) TO EN-X(PL-ENTITY-ROW(WS-PLAYER))
+     MOVE 0 TO EN-FOE(WS-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 25 OR EN-FOE(WS-ROW) = PL-ENTITY-ROW(WS-PLAYER)
+         ADD 1 TO CW-TIME
+         CALL "MOB-STEP" USING WS-ROW
+         MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
+     END-PERFORM
+     MOVE 0 TO PL-HEALTH(WS-PLAYER)
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW
+     MOVE "acceptance US15 21§4.8 a player with 0 health is dropped" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-FOE(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
      STOP RUN.
  CHECK-N.
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
