@@ -32,3 +32,9 @@
     05 MQ-PERSIST          BINARY-LONG.
     05 MQ-PROF             PIC X(16).
     05 MQ-VLEVEL           BINARY-LONG.
+    05 MQ-VTYPE            PIC X(16).
+    05 MQ-FOOD             BINARY-LONG.
+    05 MQ-VXP              BINARY-LONG.
+    05 MQ-LAST-RESTOCK     BINARY-DOUBLE.
+    05 MQ-LAST-DECAY       BINARY-DOUBLE.
+    05 MQ-RESTOCKS         BINARY-LONG.
