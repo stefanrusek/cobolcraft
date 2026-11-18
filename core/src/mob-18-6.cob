@@ -810,6 +810,8 @@
  01 WS-OPEN-SKY            BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
  01 WS-RAW                 BINARY-LONG.
+ 01 WS-20                  BINARY-LONG VALUE 20.
+ 01 WS-GHAST-DRAW          BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-DIM                  BINARY-LONG.
@@ -858,7 +860,7 @@
          CALL "MS6-DARK-ENOUGH" USING WS-SKY WS-BLOCK WS-DRAW WS-ZERO WS-LOCAL WS-LEVEL WS-DARK
      END-IF
      MOVE 0 TO WS-OPEN-SKY
-     IF SM-SPAWN(L-ROW) = 10
+     IF SM-SPAWN(L-ROW) = 10 OR SM-SPAWN(L-ROW) = 12
 *>       The any-light monster rule (21 section 3.2): no light test, the base and the not-Peaceful tests of predicate 4.
          MOVE 4 TO WS-PRED
      END-IF
@@ -873,6 +875,13 @@
          END-IF
      END-IF
      CALL "MS6-RULE-CHECK" USING WS-PRED L-REASON WS-PEACEFUL WS-DARK WS-BRIGHT WS-VALID WS-GRASS WS-OPEN-SKY L-OK
+*>   Ghast.checkGhastSpawnRules (21 section 3.2): after the not-Peaceful and floor tests, one try in 20 passes (natural and chunk generation reasons).
+     IF SM-SPAWN(L-ROW) = 12 AND L-OK = 1 AND L-REASON < 2
+         CALL "XORO-NEXT-INT" USING L-STATE WS-20 WS-GHAST-DRAW
+         IF WS-GHAST-DRAW NOT = 0
+             MOVE 0 TO L-OK
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM MS6-RULE-AT.
 
@@ -1392,8 +1401,13 @@
          MOVE 1 TO WS-PERSIST
      END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
-     IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1
+*>   The monster rows that are not built notInPeaceful (20 section 19.4): the piglin and the shulker stay in Peaceful. The warden is never removed for distance
+*>   (removeWhenFarAway false).
+     IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1 AND SM-KEY(WS-S) NOT = "piglin" AND SM-KEY(WS-S) NOT = "shulker"
          MOVE 1 TO WS-PEACEFUL
+     END-IF
+     IF SM-KEY(WS-S) = "warden"
+         MOVE 0 TO WS-REMOVABLE
      END-IF
      IF WS-IDLE-ID(L-ROW) NOT = EN-ID(L-ROW)
          MOVE EN-ID(L-ROW) TO WS-IDLE-ID(L-ROW)

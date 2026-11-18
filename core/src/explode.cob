@@ -321,6 +321,7 @@
  COPY CORESTATE.
  COPY CITEMS.
  COPY RULES.
+ COPY BRWORLD.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-TABLE.
@@ -415,6 +416,17 @@
                  COMPUTE WS-S = (1 - WS-DIST) * WS-SEEN
                  COMPUTE WS-DAMAGE = (WS-S * WS-S + WS-S) / 2 * 7 * WS-REACH + 1
                  COMPUTE WS-MILLI = WS-DAMAGE * 1000
+*>               A mob's blast scales with the difficulty (20 section 3.1 and 20.1): Peaceful 0, Easy min(d / 2 + 1, d), Normal d, Hard 3d / 2.
+                 IF L-SOURCE > 0
+                     EVALUATE BW-DIFFICULTY
+                         WHEN 0
+                             MOVE 0 TO WS-MILLI
+                         WHEN 1
+                             COMPUTE WS-MILLI = FUNCTION MIN(WS-MILLI / 2 + 1000, WS-MILLI)
+                         WHEN 3
+                             COMPUTE WS-MILLI = WS-MILLI * 3 / 2
+                     END-EVALUATE
+                 END-IF
                  MOVE SPACES TO PL-KILLER-NAME(WS-P)
                  MOVE 0 TO PL-KILLER-LENGTH(WS-P)
                  IF L-SOURCE > 0
