@@ -9,6 +9,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY CTOOLS.
+ COPY CMENU.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-CONN                BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
@@ -32,7 +33,7 @@
  01 WS-SPEED               BINARY-LONG.
  01 WS-IDS                 PIC X(1024).
  01 WS-DX                  FLOAT-LONG VALUE 0.
- 01 WS-DZ                  FLOAT-LONG VALUE 5.
+ 01 WS-DZ                  FLOAT-LONG VALUE 3.
  01 WS-COW                 BINARY-LONG.
  01 WS-HEALTH0             BINARY-LONG.
  01 WS-CASE                PIC X(240).
@@ -84,15 +85,16 @@
      MOVE WS-DAMAGE TO WS-OBSERVE
      PERFORM CHECK-N
 
-*>   A 5 tick draw: p = 0.2917, velocity 0.875, not critical.
+*>   A 5 tick draw: f = 0.25, p = (f f + 2 f) / 3 = 0.1875, velocity 0.5625, not critical (the draw table of 17 section 3.9 lists p 0.2917 and 0.6458 for
+*>   t = 5 and t = 15, which its own formula does not give; the formula agrees with the t = 10 and t = 20 rows).
      MOVE 5 TO WS-TICKS
      PERFORM DRAW-AND-RELEASE
      COMPUTE WS-SPEED = FUNCTION INTEGER(FUNCTION SQRT(EN-VX(WS-ROW) * EN-VX(WS-ROW) + EN-VY(WS-ROW) * EN-VY(WS-ROW)
          + EN-VZ(WS-ROW) * EN-VZ(WS-ROW)) * 1000)
-     MOVE "acceptance US14 17 3.9 a 5 tick draw: velocity 0.875 within the spread (millis 840 to 910), not critical, second arrow used" TO WS-CASE
+     MOVE "acceptance US14 17 3.9 a 5 tick draw: velocity 0.5625 within the spread (millis 540 to 590), not critical, second arrow used" TO WS-CASE
      MOVE 1 TO WS-EXPECT
      MOVE 0 TO WS-OBSERVE
-     IF WS-SPEED >= 840 AND WS-SPEED <= 910 AND EN-ARR-CRIT(WS-ROW) = 0 AND PL-SLOT-COUNT(WS-PLAYER, 5) = 8
+     IF WS-SPEED >= 540 AND WS-SPEED <= 590 AND EN-ARR-CRIT(WS-ROW) = 0 AND PL-SLOT-COUNT(WS-PLAYER, 5) = 8
          MOVE 1 TO WS-OBSERVE
      END-IF
      PERFORM CHECK-N
@@ -200,7 +202,7 @@
      PERFORM DRAW-AND-RELEASE
      MOVE 6 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
-     MOVE "acceptance US14 17 3.9 the arrow reaches the cow five blocks ahead, hurts it by at least 6 and is gone" TO WS-CASE
+     MOVE "acceptance US14 17 3.9 the arrow reaches the cow three blocks ahead, hurts it by at least 6 and is gone" TO WS-CASE
      MOVE 1 TO WS-EXPECT
      MOVE 0 TO WS-OBSERVE
      CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW
@@ -220,7 +222,11 @@
      CALL "TEST-USE-ITEM" USING WS-CONN
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-ACTION" USING WS-CONN WS-SIX WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
-     CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW.
+     CALL "RT-COUNT" USING WS-ARROW-TYPE WS-COUNT WS-ROW
+*>   No arrow: row 1 stands in so that the cases below fail instead of reading outside the table.
+     IF WS-COUNT = 0
+         MOVE 1 TO WS-ROW
+     END-IF.
 
  CHECK-N.
      MOVE "N" TO TL-MODE

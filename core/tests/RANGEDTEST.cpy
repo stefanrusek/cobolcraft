@@ -2,6 +2,7 @@
 *> test after changing it):
 *>   RT-OPEN USING player row out, connection out, floor y out, cx out, cz out: a standard-tables world (view distance 2, no hostile mobs, difficulty normal) with
 *>     Stefan in survival, 9 x 9 stone floor 40 blocks above where he joined (three layers of air above it), standing on it at its centre, noon.
+*>   (the registry fixture core/tests/fixtures/ranged-registry is loaded by RT-OPEN)
 *>   RT-ITEM-ID USING short item key (PIC X(48), no namespace), item id out
 *>   RT-GIVE USING player row, slot (1 based), short item key, count: the slot holds that item (no patch)
 *>   RT-ENTITY-ID USING short entity key, entity type id out
@@ -32,6 +33,7 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
+ 01 WS-REGISTRY-DIR        PIC X(1100) VALUE "core/tests/fixtures/ranged-registry".
  01 WS-DX                  BINARY-LONG.
  01 WS-DZ                  BINARY-LONG.
  LINKAGE SECTION.
@@ -50,6 +52,8 @@
      MOVE 2 TO BW-DIFFICULTY
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH L-CONN
+*>   The enchantment registry of the tests (TOOL-ENCHANT-ID reads it): the enchantments of the ranged weapons and the tools.
+     CALL "REGISTRY-LOAD-ALL" USING WS-REGISTRY-DIR WS-STATUS
      MOVE CN-PLAYER(L-CONN) TO L-PLAYER
      MOVE 0 TO PL-MODE(L-PLAYER)
      MOVE 0 TO PL-HELD(L-PLAYER)
