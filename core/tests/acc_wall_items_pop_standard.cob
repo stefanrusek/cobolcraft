@@ -207,7 +207,7 @@
     05 FILLER PIC X(2) VALUE "+0".
     05 FILLER PIC X(32) VALUE "-                               ".
     05 FILLER PIC X(1) VALUE "1".
-    05 FILLER PIC X(96) VALUE "a dead coral wall fan goes when its wall is broken (a fan drops only with silk touch)                           ".
+    05 FILLER PIC X(96) VALUE "a dead coral wall fan goes when its wall is broken (a fan drops only with silk touch)           ".
     05 FILLER PIC X(64) VALUE "dead_tube_coral_wall_fan[facing=north,waterlogged=false]        ".
     05 FILLER PIC X(2) VALUE "+0".
     05 FILLER PIC X(2) VALUE "+0".
