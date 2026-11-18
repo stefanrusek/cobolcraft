@@ -477,11 +477,11 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-SUMMON.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
-     MOVE "summon <entity:entitytype>" TO WS-PATH
+     MOVE "summon <entity:summontype!>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "summon <entity:entitytype> <pos:vec3>" TO WS-PATH
+     MOVE "summon <entity:summontype!> <pos:vec3>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "summon <entity:entitytype> <pos:vec3> <nbt:nbt>" TO WS-PATH
+     MOVE "summon <entity:summontype!> <pos:vec3> <nbt:nbt>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SUMMON.

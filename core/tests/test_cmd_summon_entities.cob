@@ -23,6 +23,7 @@
  01 WS-EXPECTED            PIC X(1024).
  01 WS-EXPECTED-N          BINARY-DOUBLE.
  01 WS-NUM                 BINARY-DOUBLE.
+ 01 WS-CURSOR              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-KEEP                BINARY-LONG.
@@ -132,6 +133,28 @@
      MOVE "summon minecraft:leash_knot" TO WS-LINE
      MOVE "entity.not_summonable(minecraft:leash_knot)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+*>   Tab completion lists the entity types /summon can create (the summonable_entities provider of 15 section 14.4, answered by the server for the ask_server node).
+     MOVE "acceptance US15 /summon completes the types that can be summoned" TO TL-CASE
+     MOVE "/summon exp" TO WS-LINE
+     MOVE 11 TO WS-CURSOR
+     CALL "TEST-SUGGEST" USING WS-ID-OPAL 7 WS-LINE WS-CURSOR
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
+     MOVE "7 8 3 [minecraft:experience_bottle,minecraft:experience_orb]" TO WS-EXPECTED
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US15 /summon does not complete the fishing bobber (noSummon)" TO TL-CASE
+     MOVE "/summon fishing" TO WS-LINE
+     MOVE 15 TO WS-CURSOR
+     CALL "TEST-SUGGEST" USING WS-ID-OPAL 8 WS-LINE WS-CURSOR
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
+     MOVE "8 0 0 []" TO WS-EXPECTED
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US15 /summon does not complete the leash knot (the core has no entity for it)" TO TL-CASE
+     MOVE "/summon leash" TO WS-LINE
+     MOVE 13 TO WS-CURSOR
+     CALL "TEST-SUGGEST" USING WS-ID-OPAL 9 WS-LINE WS-CURSOR
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
+     MOVE "9 0 0 []" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US15 /summon the player type has noSummon" TO TL-CASE
      MOVE "summon minecraft:player" TO WS-LINE
