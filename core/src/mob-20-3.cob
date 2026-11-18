@@ -241,6 +241,8 @@
          WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
          WHEN 4 MOVE "minecraft:bow" TO L-KEY
          WHEN 9 MOVE "minecraft:warped_fungus_on_a_stick" TO L-KEY
+         WHEN 10 MOVE "minecraft:iron_axe" TO L-KEY
+         WHEN 11 MOVE "minecraft:crossbow" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -606,6 +608,11 @@
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
          WHEN "sulfur_cube"
              CALL "SULFUR-CUBE-INIT" USING L-ROW
+*>           A vindicator holds an iron axe, a pillager a crossbow (20 sections 13.1 and 13.2, populateDefaultEquipmentSlots).
+         WHEN "vindicator"
+             MOVE 10 TO EN-HAND(L-ROW)
+         WHEN "pillager"
+             MOVE 11 TO EN-HAND(L-ROW)
          WHEN "salmon"
          WHEN "tropical_fish"
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M

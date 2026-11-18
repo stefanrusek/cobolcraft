@@ -1268,6 +1268,9 @@
      IF SM-FUSE(WS-M) > 0 AND WS-STOP = 0
          CALL "STDMOB-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
      END-IF
+     IF (SM-KEY(WS-M) = "vindicator" OR "pillager") AND WS-STOP = 0
+         CALL "STDMOB-ILLAGER-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
+     END-IF
      EVALUATE TRUE
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.

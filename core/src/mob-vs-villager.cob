@@ -2,7 +2,7 @@
 *>   MOBVS-TICK USING mob row, table row, hx out, hz out, walk out
 *> The zombie family (zombie, husk, drowned, zombie villager), vindicators and ravagers, with no player target, take the nearest live villager or wandering trader within the follow
 *> range as their foe (illagers and ravagers skip baby villagers, a vindicator and a ravager must see the target; the zombie need not), walk to it (STDMOB-HEAD) and in reach hit it with
-*> the attack damage on the attack timer (EN-PET-CD). A killing blow by the zombie family goes through ZV-KILL-RULE: when it converts, ZV-KILLED replaces the villager.
+*> the attack damage on the attack timer (EN-PET-CD). A vindicator also takes an iron golem as its foe (20 section 13.1, target 3, must see). A killing blow by the zombie family goes through ZV-KILL-RULE: when it converts, ZV-KILLED replaces the villager.
 *> Gaps: the target is not kept between ticks (the nearest is picked again), the attack animation event, no knockback, the persistent-anger and alert-others lists, pillagers
 *> and evokers (ranged and spells) do not attack villagers here, no hurt-by response of the villager other than the panic of its sensors, a wandering trader is not converted.
  IDENTIFICATION DIVISION.
@@ -93,7 +93,7 @@
          IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
              IF WS-S > 0
-                 IF SM-KEY(WS-S) = "villager" OR "wandering_trader"
+                 IF SM-KEY(WS-S) = "villager" OR "wandering_trader" OR (SM-KEY(WS-S) = "iron_golem" AND SM-KEY(L-M) = "vindicator")
                      COMPUTE WS-D2 = (EN-X(WS-N) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-N) - EN-Y(L-ROW)) ** 2 + (EN-Z(WS-N) - EN-Z(L-ROW)) ** 2
                      IF WS-D2 <= WS-RANGE AND (WS-F = 0 OR WS-D2 < WS-BEST)
                          IF NOT (WS-ILLAGER = 1 AND EN-MOBAGE(WS-N) < 0)

@@ -1,5 +1,7 @@
-*> Illagers of document 20 section 13 (002-lane-p49b): the pillager's crossbow goal (13.2).
+*> Illagers of document 20 section 13 (002-lane-p49b): the pillager's crossbow goal (13.2) and the avoid-creaking goal of the vindicator and pillager (13.1, 13.2).
 *> Entry points:
+*>   STDMOB-ILLAGER-AVOID USING tracker row, table row, hx out, hz out, avoid out: AvoidEntityGoal(creaking, 8.0, 1.0, 1.2) (18 section 4): the nearest creaking in the box (+-8, 3, +-8)
+*>     within 8 blocks makes the mob walk directly away from it, at 1.2 x its speed within 7 blocks and 1.0 beyond (the random flee position getPosAway is not reproduced).
 *>   STDMOB-CROSSBOW USING tracker row, table row of a crossbow mob (SM-RANGED 2), stop out: RangedCrossbowAttackGoal (speed 1.0, radius 8.0). seeTime (EN-SWELL) as the bow goal: it
 *>     grows by 1 a tick with a line of sight and falls by 1 without (a change of sight resets it first). The mob must approach when (the squared distance is above 64 or seeTime is
 *>     below 5) and attackDelay (EN-SHOOT-TIME in state 2) is 0; stop 1 when it need not approach (it stands). States (EN-DRAW): 0 UNCHARGED: when it need not approach it starts
@@ -121,3 +123,61 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-CROSSBOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-ILLAGER-AVOID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-BEST-D2             FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-M                    BINARY-LONG.
+ 01 L-HX                   FLOAT-LONG.
+ 01 L-HZ                   FLOAT-LONG.
+ 01 L-AVOID                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-M L-HX L-HZ L-AVOID.
+     MOVE 0 TO L-HX L-HZ L-AVOID WS-BEST
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-HEALTH(WS-E) > 0 AND EN-PLAYER(WS-E) = 0
+             COMPUTE WS-DX = EN-X(L-ROW) - EN-X(WS-E)
+             COMPUTE WS-DY = EN-Y(L-ROW) - EN-Y(WS-E)
+             COMPUTE WS-DZ = EN-Z(L-ROW) - EN-Z(WS-E)
+             IF FUNCTION ABS(WS-DX) <= 8 AND FUNCTION ABS(WS-DZ) <= 8 AND FUNCTION ABS(WS-DY) <= 3
+                 CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-K
+                 IF WS-K > 0
+                     COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+                     IF SM-KEY(WS-K) = "creaking" AND WS-D2 <= 64 AND (WS-BEST = 0 OR WS-D2 < WS-BEST-D2)
+                         MOVE WS-E TO WS-BEST
+                         MOVE WS-D2 TO WS-BEST-D2
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-BEST > 0
+         MOVE 1 TO L-AVOID
+         COMPUTE WS-DX = EN-X(L-ROW) - EN-X(WS-BEST)
+         COMPUTE WS-DZ = EN-Z(L-ROW) - EN-Z(WS-BEST)
+         COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+         COMPUTE WS-SPEED = SM-WALK-MILLI(L-M) / 1000
+         IF WS-BEST-D2 < 49
+             COMPUTE WS-SPEED = WS-SPEED * 1.2
+         END-IF
+         IF WS-H > 0
+             COMPUTE L-HX = WS-DX / WS-H * WS-SPEED
+             COMPUTE L-HZ = WS-DZ / WS-H * WS-SPEED
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-ILLAGER-AVOID.
