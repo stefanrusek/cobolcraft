@@ -2400,6 +2400,8 @@
  COPY DIMENSIONS.
  COPY BRRUN.
  COPY PROTO.
+ COPY LOCATEQ.
+ 01 WS-QUEUED              BINARY-LONG.
  01 WS-WANT-ID             PIC X(80).
  01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
  01 WS-NAME-BIOME          PIC X(32) VALUE "biome".
@@ -2537,29 +2539,14 @@
              END-IF
              COMPUTE WS-SX = FUNCTION INTEGER(BS-X)
              COMPUTE WS-SZ = FUNCTION INTEGER(BS-Z)
-             CALL "CXC-STRUCT-NEAREST" USING WS-KIND WS-WANT-ID WS-SX WS-SZ CW-SEED WS-FOUND WS-BEST-X WS-BEST-Z WS-BEST-D2
-             IF WS-FOUND = 0
-                 MOVE "commands.locate.structure.not_found" TO WS-KEY
-                 PERFORM FAIL-TEXT
-             ELSE
-                 COMPUTE WS-DISTANCE = FUNCTION INTEGER(FUNCTION SQRT(WS-BEST-D2))
-                 MOVE SPACES TO WS-COORD
-                 MOVE "[" TO WS-COORD(1:1)
-                 MOVE 2 TO WS-COORD-LENGTH
-                 MOVE WS-BEST-X TO WS-VALUE
-                 PERFORM ADD-NUMBER
-                 MOVE ", ~, " TO WS-COORD(WS-COORD-LENGTH:5)
-                 ADD 5 TO WS-COORD-LENGTH
-                 MOVE WS-BEST-Z TO WS-VALUE
-                 PERFORM ADD-NUMBER
-                 MOVE "]" TO WS-COORD(WS-COORD-LENGTH:1)
-                 MOVE "commands.locate.structure.success" TO WS-KEY
-                 CALL "BX-KEY" USING PB-TEXT WS-KEY
-                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
-                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-COORD WS-COORD-LENGTH
-                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-DISTANCE
-                 CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
-                 MOVE WS-DISTANCE TO BR-R-RESULT
+*>           a player's own line is carried on from tick to tick (cmd-locate-async.cob) and answered when the search is over; any other line answers at once
+             MOVE 0 TO WS-QUEUED
+             IF LQ-DIRECT = 1 AND BS-OUT > 0 AND BS-ROW = BS-OUT
+                 CALL "CXC-LOCATE-QUEUE" USING BS-OUT WS-KIND WS-WANT-ID WS-TEXT WS-TEXT-LENGTH WS-SX WS-SZ CW-SEED WS-QUEUED
+             END-IF
+             IF WS-QUEUED = 0
+                 CALL "CXC-STRUCT-NEAREST" USING WS-KIND WS-WANT-ID WS-SX WS-SZ CW-SEED WS-FOUND WS-BEST-X WS-BEST-Z WS-BEST-D2
+                 CALL "CXC-LOCATE-REPLY" USING WS-FOUND WS-BEST-X WS-BEST-Z WS-BEST-D2 WS-TEXT WS-TEXT-LENGTH
              END-IF
          WHEN WS-POI-LIT > 0
              CALL "BX-FIND" USING WS-NAME-POI WS-ARG

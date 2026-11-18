@@ -31,6 +31,10 @@
     05 SD-CACHE-MISSES      BINARY-LONG.
 *>  SD-STUB-ONLY 1 while STRUCT-STUB-OK asks a structure's generator for its stub (position and biome) only: the jigsaw assembly, the scattered pieces and the mansion layout are then not built
     05 SD-STUB-ONLY         BINARY-LONG.
+*>  SD-SNAP-LIMIT: when above 0, STRUCT-NEAREST-RING searches at most that many rows of the biome search of the ring positions (57 rows of 57 cells each is a position) in a call and sets SD-SNAP-PENDING
+*>  to 1 when it would have searched more (the answer is then not final; the rows done stay done, so the next call goes on): the locate search of a tick (cmd-locate-async.cob) takes a few rows
+    05 SD-SNAP-LIMIT        BINARY-LONG.
+    05 SD-SNAP-PENDING      BINARY-LONG.
 *>  the biomes of the tag minecraft:mineshaft_blocking (a run of SD-BIOME, read by STRUCT-LOAD), SDT-VARIANT the mineshaft_type of a structure (0 normal, 1 mesa) or the shipwreck's is_beached (1 beached) or the ocean ruin's biome_temp (1 warm)
 *>  SDT-LARGE and SDT-CLUSTER the ocean ruin's large_probability and cluster_probability (float32 values)
 *>  SDT-JIG-* the fields of a jigsaw structure (STRUCT-JIG-READ in struct-jig.cob, 36-3 3.1): the start pool, size, absolute start height, heightmap (-1 none, 0 WORLD_SURFACE_WG, 1 OCEAN_FLOOR_WG), expansion hack, horizontal and vertical distance, padding bottom and top, ignore_waterlogging, and ok (1 when the assembler can build it)
@@ -103,6 +107,15 @@
        10 SR-RAW-Z          BINARY-LONG OCCURS 256 TIMES.
        10 SR-FORK           BINARY-DOUBLE UNSIGNED OCCURS 256 TIMES.
        10 SR-DONE           BINARY-LONG OCCURS 256 TIMES.
+*>  the biome search of a position carried on from call to call (STRUCT-RING-SNAP-ROWS): SR-P-STARTED 1 once begun, the next row SR-P-DZ, the qualifying cells seen SR-P-K, the forked random SR-P-RNG and the
+*>  candidate chunk SR-P-CX, SR-P-CZ (6 fields in one group per position, the group SR-PROG)
+       10 SR-PROG           OCCURS 256 TIMES.
+          15 SR-P-STARTED   BINARY-LONG.
+          15 SR-P-DZ        BINARY-LONG.
+          15 SR-P-K         BINARY-LONG.
+          15 SR-P-CX        BINARY-LONG.
+          15 SR-P-CZ        BINARY-LONG.
+          15 SR-P-RNG       BINARY-DOUBLE UNSIGNED.
 *>  the gate: structure ids that are on (STRUCT-GATE); empty after a reset, so no structure starts anything
     05 SD-GATE              PIC X(80) OCCURS 64 TIMES.
 *>  the starts of the chunk last asked (STRUCT-CHUNK-STARTS): the set and structure rows and the stub position

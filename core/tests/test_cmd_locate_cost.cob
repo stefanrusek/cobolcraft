@@ -9,6 +9,13 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY STRUCTDATA.
+ COPY LOCATEQ.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-MAX-US              BINARY-DOUBLE.
+ 01 WS-PENDING             BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-PUMP                PIC X(8).
+ 01 WS-E-NOW               BINARY-DOUBLE.
  01 WS-ENV                 PIC X(1024).
  01 WS-DIR                 PIC X(1024).
  01 WS-FILE                PIC X(1100).
@@ -103,6 +110,15 @@
 *>   the eye of ender's search (thrown-44g.cob: STRUCT-NEAREST-NAMED "strongholds" from the thrower's block position)
      IF WS-WANT = "eye"
          CALL "COST-CLOCK" USING WS-T0
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
+             IF SS-KIND(WS-S) = 0
+                 CALL "STRUCT-RINGS-PREP" USING WS-S CW-SEED
+             END-IF
+         END-PERFORM
+         CALL "COST-CLOCK" USING WS-T1
+         COMPUTE WS-SECONDS = (WS-T1 - WS-T0) / 1000000
+         DISPLAY "COST eye ring list prep cpu=" WS-SECONDS
+         CALL "COST-CLOCK" USING WS-T0
          CALL "STRUCT-NEAREST-NAMED" USING WS-EYE-NAME CW-SEED WS-SX WS-OY WS-SZ WS-FOUND WS-CHX WS-CHZ WS-LX WS-LY WS-LZ
          CALL "COST-CLOCK" USING WS-T1
          COMPUTE WS-SECONDS = (WS-T1 - WS-T0) / 1000000
@@ -158,8 +174,33 @@
      ELSE
          STRING "locate structure " FUNCTION TRIM(WS-ID) DELIMITED BY SIZE INTO WS-LINE
      END-IF
+     MOVE SPACES TO WS-PUMP
+     ACCEPT WS-PUMP FROM ENVIRONMENT "CC_COST_TICKS"
      CALL "COST-CLOCK" USING WS-T0
-     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     IF WS-PUMP = SPACES
+         CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     ELSE
+*>       the ticks carry the search on (the slice of the game: 10 ms): the CPU time of the most expensive tick is what the game frame waits for
+         CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
+         MOVE 0 TO WS-TICKS WS-MAX-US
+         MOVE 1 TO WS-PENDING
+         PERFORM UNTIL WS-PENDING = 0
+             CALL "COST-CLOCK" USING WS-T1
+             CALL "CORE-TICK"
+             CALL "COST-CLOCK" USING WS-E-NOW
+             ADD 1 TO WS-TICKS
+             IF WS-E-NOW - WS-T1 > WS-MAX-US
+                 COMPUTE WS-MAX-US = WS-E-NOW - WS-T1
+             END-IF
+             MOVE 0 TO WS-PENDING
+             PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > LQ-MAX
+                 ADD LQ-USED(WS-E) TO WS-PENDING
+             END-PERFORM
+         END-PERFORM
+         CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-TEXT
+         COMPUTE WS-SECONDS = WS-MAX-US / 1000000
+         DISPLAY "COST ticks=" WS-TICKS " max tick cpu=" WS-SECONDS
+     END-IF
      CALL "COST-CLOCK" USING WS-T1
      COMPUTE WS-SECONDS = (WS-T1 - WS-T0) / 1000000
      DISPLAY "COST command " FUNCTION TRIM(WS-WANT) " from " WS-SX "," WS-SZ " cpu=" WS-SECONDS " reply=" FUNCTION TRIM(WS-TEXT(1:120))

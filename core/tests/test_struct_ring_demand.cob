@@ -63,6 +63,8 @@
  01 WS-EDIT-A              PIC -(9)9.
  01 WS-EDIT-B              PIC -(19)9.
  01 WS-LABEL               PIC X(60).
+ 01 WS-CALLS               BINARY-LONG.
+ 01 WS-DONE-FREE           BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE 0 TO WS-SEED-OF(1)
@@ -248,6 +250,49 @@
      STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": the nearest ring chunk snapped the one position that can be nearest, not the whole list (lane buglocate)" DELIMITED BY SIZE INTO TL-CASE
      MOVE WS-DONE TO TL-OBSERVED-N
      MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-DONE TO WS-DONE-FREE
+     PERFORM CHECK-ROWS.
+
+*> The same search a few rows at a time (SD-SNAP-LIMIT 3: the rows of the biome search of a position, 57 a position; lane buglocate2, the locate of a tick): a stale row, the same origin, the call repeated while
+*> it leaves SD-SNAP-PENDING 1. The answer is the nearest chunk of the reference, the same positions are snapped as by the unlimited call, and it took more than one call (a snap is 57 rows).
+ CHECK-ROWS.
+     PERFORM MAKE-STALE
+     MOVE 3 TO SD-SNAP-LIMIT
+     MOVE 0 TO WS-CALLS SD-SNAP-PENDING
+     MOVE 1 TO WS-FLAG
+     PERFORM UNTIL WS-FLAG = 0 OR WS-CALLS > 1000
+         CALL "STRUCT-NEAREST-RING" USING WS-SET WS-SEED WS-OX WS-OY WS-OZ WS-FOUND WS-CX WS-CZ WS-X WS-Y WS-Z
+         ADD 1 TO WS-CALLS
+         MOVE SD-SNAP-PENDING TO WS-FLAG
+         MOVE 0 TO SD-SNAP-PENDING
+     END-PERFORM
+     MOVE 0 TO SD-SNAP-LIMIT
+     MOVE SS-RING-ROW(WS-SET) TO WS-ROW
+     MOVE SPACES TO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": a few rows at a time the nearest ring chunk is the nearest of the list built at once" DELIMITED BY SIZE INTO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-FOUND * 100 + FUNCTION ABS(WS-CX - WS-BX) + FUNCTION ABS(WS-CZ - WS-BZ)
+     MOVE 100 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM COUNT-DONE
+     MOVE SPACES TO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": a few rows at a time snaps the positions the unlimited call snaps" DELIMITED BY SIZE INTO TL-CASE
+     MOVE WS-DONE TO TL-OBSERVED-N
+     MOVE WS-DONE-FREE TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM COMPARE-LIST
+     MOVE SPACES TO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": the positions snapped a few rows at a time are those of the list built at once" DELIMITED BY SIZE INTO TL-CASE
+     MOVE WS-WRONG TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-CASE
+     STRING "ring demand " FUNCTION TRIM(WS-LABEL) ": a snap is carried on over several calls" DELIMITED BY SIZE INTO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-CALLS > 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  COMPARE-LIST.

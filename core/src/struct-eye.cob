@@ -13,7 +13,8 @@
 *> The ring list is snapped on demand (STRUCT-RING-READY; each position has its own forked seed, so the order of the snaps changes none of them): the biome snap moves a ring position by
 *> at most 7 chunks on each axis (STRUCT-RING-HAS), that is at most 112 blocks on each axis and 159 blocks apart, so a position whose raw centre is farther from the origin than the best answer so far
 *> plus 160 blocks cannot be nearer and is never snapped. Positions already snapped count with their chunk; the unsnapped one with the nearest raw centre is snapped next. The answer is the one
-*> of the whole list (the first of equal distances wins by its index) but a search from a spot near one of the 128 strongholds snaps a handful of the positions (one snap is 3249 biome lookups).
+*> of the whole list (the first of equal distances wins by its index) but a search from a spot near one of the 128 strongholds snaps a handful of the positions (one snap is 3249 biome lookups). With SD-SNAP-LIMIT above 0 a call
+*> does that many rows of the biome searches (57 rows a position) and leaves SD-SNAP-PENDING 1 when more were needed: the answer of such a call is not final, the next call goes on from the rows done (the locate search of a tick).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
@@ -26,6 +27,10 @@
  01 WS-PICK                BINARY-LONG.
  01 WS-PICK-D              BINARY-DOUBLE.
  01 WS-STOP                BINARY-LONG.
+ 01 WS-ROWS-USED           BINARY-LONG.
+ 01 WS-ALLOW               BINARY-LONG.
+ 01 WS-ROWS-DONE           BINARY-LONG.
+ 01 WS-SNAP-DONE           BINARY-LONG.
  01 WS-D                   BINARY-DOUBLE.
  01 WS-H                   BINARY-DOUBLE.
  01 WS-LOW                 BINARY-DOUBLE.
@@ -45,7 +50,7 @@
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
  PROCEDURE DIVISION USING L-SET L-SEED L-OX L-OY L-OZ L-FOUND L-CX L-CZ L-X L-Y L-Z.
-     MOVE 0 TO L-FOUND L-CX L-CZ L-X L-Y L-Z
+     MOVE 0 TO L-FOUND L-CX L-CZ L-X L-Y L-Z WS-ROWS-USED
      IF L-SET < 1 OR L-SET > SD-SET-COUNT
          GOBACK
      END-IF
@@ -97,15 +102,29 @@
              COMPUTE WS-LOW = WS-H - 160
              COMPUTE WS-D = WS-LOW * WS-LOW + WS-DY * WS-DY
              IF WS-BEST-I = 0 OR WS-LOW <= 0 OR WS-D <= WS-BEST
-                 CALL "STRUCT-RING-READY" USING L-SET WS-ROW WS-PICK
-                 COMPUTE WS-DX = SR-X(WS-ROW, WS-PICK) * 16 + 8 - L-OX
-                 COMPUTE WS-DZ = SR-Z(WS-ROW, WS-PICK) * 16 + 8 - L-OZ
-                 COMPUTE WS-D = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
-                 IF WS-BEST-I = 0 OR WS-D < WS-BEST OR (WS-D = WS-BEST AND WS-PICK < WS-BEST-I)
-                     MOVE WS-D TO WS-BEST
-                     MOVE WS-PICK TO WS-BEST-I
+*>               the rows of the biome search this call may still do (0: all of them)
+                 MOVE 0 TO WS-ALLOW
+                 IF SD-SNAP-LIMIT > 0
+                     COMPUTE WS-ALLOW = SD-SNAP-LIMIT - WS-ROWS-USED
                  END-IF
-                 MOVE 0 TO WS-STOP
+                 IF SD-SNAP-LIMIT > 0 AND WS-ALLOW <= 0
+                     MOVE 1 TO SD-SNAP-PENDING
+                 ELSE
+                     CALL "STRUCT-RING-READY-ROWS" USING L-SET WS-ROW WS-PICK WS-ALLOW WS-ROWS-DONE WS-SNAP-DONE
+                     ADD WS-ROWS-DONE TO WS-ROWS-USED
+                     IF WS-SNAP-DONE = 0
+                         MOVE 1 TO SD-SNAP-PENDING
+                     ELSE
+                         COMPUTE WS-DX = SR-X(WS-ROW, WS-PICK) * 16 + 8 - L-OX
+                         COMPUTE WS-DZ = SR-Z(WS-ROW, WS-PICK) * 16 + 8 - L-OZ
+                         COMPUTE WS-D = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+                         IF WS-BEST-I = 0 OR WS-D < WS-BEST OR (WS-D = WS-BEST AND WS-PICK < WS-BEST-I)
+                             MOVE WS-D TO WS-BEST
+                             MOVE WS-PICK TO WS-BEST-I
+                         END-IF
+                         MOVE 0 TO WS-STOP
+                     END-IF
+                 END-IF
              END-IF
          END-IF
      END-PERFORM
