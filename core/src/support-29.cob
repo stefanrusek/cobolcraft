@@ -154,13 +154,39 @@
              WHEN "minecraft:tripwire_hook"
                  MOVE 15 TO SP-RULE(WS-I)
              WHEN "minecraft:lever"
+             WHEN "minecraft:grindstone"
                  MOVE 16 TO SP-RULE(WS-I)
+             WHEN "minecraft:lantern"
+             WHEN "minecraft:soul_lantern"
+                 MOVE 19 TO SP-RULE(WS-I)
+             WHEN "minecraft:vine"
+             WHEN "minecraft:glow_lichen"
+             WHEN "minecraft:sculk_vein"
+             WHEN "minecraft:resin_clump"
+                 MOVE 20 TO SP-RULE(WS-I)
              WHEN OTHER
                  IF WS-N > 7 AND WS-FULL(WS-N - 6:7) = "_banner"
                      MOVE 14 TO SP-RULE(WS-I)
                      IF WS-N > 12 AND WS-FULL(WS-N - 11:12) = "_wall_banner"
                          MOVE 15 TO SP-RULE(WS-I)
                      END-IF
+                 END-IF
+*>               Coral fans stand on a block with a solid top, wall fans hang on the block behind (24 part 6 section 3.4); a copper lantern is a lantern.
+                 IF WS-N > 10 AND WS-FULL(WS-N - 9:10) = "_coral_fan"
+                     MOVE 14 TO SP-RULE(WS-I)
+                 END-IF
+                 IF WS-N > 15 AND WS-FULL(WS-N - 14:15) = "_coral_wall_fan"
+                     MOVE 15 TO SP-RULE(WS-I)
+                 END-IF
+                 IF WS-N > 14 AND WS-FULL(WS-N - 13:14) = "copper_lantern"
+                     MOVE 19 TO SP-RULE(WS-I)
+                 END-IF
+*>               A ceiling hanging sign hangs from the block above it; a wall hanging sign has no survive rule (it is placed by WallHangingSignBlock.canPlace).
+                 IF WS-N > 13 AND WS-FULL(WS-N - 12:13) = "_hanging_sign"
+                     MOVE 18 TO SP-RULE(WS-I)
+                 END-IF
+                 IF WS-N > 18 AND WS-FULL(WS-N - 17:18) = "_wall_hanging_sign"
+                     MOVE 0 TO SP-RULE(WS-I)
                  END-IF
          END-EVALUATE
      END-PERFORM
@@ -306,6 +332,7 @@
  01 WS-FACE-FOUND          BINARY-LONG.
  01 WS-ABOVE-STATE         BINARY-LONG.
  01 WS-SEA-OK              BINARY-LONG.
+ 01 WS-NAME24              PIC X(24).
  01 WS-SIDE-TABLE.
     05 WS-SIDE-DX          BINARY-LONG OCCURS 4 TIMES.
     05 WS-SIDE-DZ          BINARY-LONG OCCURS 4 TIMES.
@@ -494,6 +521,29 @@
              IF WS-OTHER-SOLID = 1 OR WS-FACE-FOUND = 0
                  MOVE 1 TO L-OK
              END-IF
+*>       a ceiling hanging sign hangs from a solid block above it
+         WHEN 18
+             COMPUTE WS-Y = L-Y + 1
+             CALL "SUP-SOLID-AT" USING L-DIM L-X WS-Y L-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+             IF WS-OTHER-SOLID = 1
+                 MOVE 1 TO L-OK
+             END-IF
+*>       a lantern stands on a solid block below it, or (hanging) hangs from one above
+         WHEN 19
+             MOVE SPACES TO WS-TEXT
+             MOVE "hanging" TO WS-NAME24
+             CALL "BLOCK-STATE-PROP" USING WS-MODE L-STATE WS-NAME24 WS-TEXT WS-FOUND
+             COMPUTE WS-Y = L-Y - 1
+             IF FUNCTION TRIM(WS-TEXT) = "true"
+                 COMPUTE WS-Y = L-Y + 1
+             END-IF
+             CALL "SUP-SOLID-AT" USING L-DIM L-X WS-Y L-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+             IF WS-OTHER-SOLID = 1
+                 MOVE 1 TO L-OK
+             END-IF
+*>       a vine, glow lichen, sculk vein or resin clump holds on while one of its faces has a solid block behind it (a vine's side face also holds on a vine above that has the face)
+         WHEN 20
+             CALL "SUP-MULTIFACE" USING L-DIM L-X L-Y L-Z L-STATE L-OK
 *>       a door: its lower half stands on a solid block, its upper half on the lower half of the same door
          WHEN 17
              MOVE SPACES TO WS-TEXT
@@ -510,6 +560,67 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM SUP-SURVIVES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SUP-MULTIFACE.
+*> USING dimension row, x, y, z, state, ok out: the survive rule of a multiface block (24 part 4 sections 6.7 and 6.8): at least one face of the state is set and held, a face by the solid block behind it and,
+*> for a vine's side face, also by a vine above with that face set (VineBlock.getUpdatedState).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-DIR-TEXT            PIC X(32).
+ 01 WS-NAME                PIC X(24).
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BITS                BINARY-LONG.
+ 01 WS-ABOVE               BINARY-LONG.
+ 01 WS-ABOVE-Y             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-OK.
+     MOVE 0 TO L-OK
+     COMPUTE WS-ABOVE-Y = L-Y + 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-ABOVE-Y L-Z WS-ABOVE
+     PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
+         CALL "PS-DIR-NAME" USING WS-D WS-DIR-TEXT
+         MOVE WS-DIR-TEXT TO WS-NAME
+         CALL "PS-GET" USING L-STATE WS-NAME WS-TEXT WS-FOUND
+         IF WS-FOUND = 1 AND FUNCTION TRIM(WS-TEXT) = "true"
+             CALL "PS-DIR-STEP" USING WS-D WS-DX WS-DY WS-DZ
+             COMPUTE WS-X = L-X + WS-DX
+             COMPUTE WS-Y = L-Y + WS-DY
+             COMPUTE WS-Z = L-Z + WS-DZ
+             CALL "SUP-SOLID-AT" USING L-DIM WS-X WS-Y WS-Z WS-SOLID WS-BLOCK WS-BITS
+             IF WS-SOLID = 1
+                 MOVE 1 TO L-OK
+             END-IF
+*>           The block above is the same block with the same face set (the vine that hangs from a vine).
+             IF WS-D >= 2 AND WS-ABOVE > 0 AND WS-ABOVE < CB-STATE-COUNT
+                 IF CB-S-BLOCK(WS-ABOVE + 1) = CB-S-BLOCK(L-STATE + 1)
+                     CALL "PS-GET" USING WS-ABOVE WS-NAME WS-TEXT WS-FOUND
+                     IF FUNCTION TRIM(WS-TEXT) = "true"
+                         MOVE 1 TO L-OK
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SUP-MULTIFACE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SUP-SHAPE.
