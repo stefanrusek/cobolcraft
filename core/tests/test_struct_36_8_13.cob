@@ -12,6 +12,7 @@
  COPY STRUCTDATA.
  COPY STRUCTPIECE.
  COPY STRUCTJIG.
+ COPY STRUCTTPL.
  COPY STRUCTDIM.
  01 WS-ENV                 PIC X(1024).
  01 WS-DIR                 PIC X(1024).
@@ -106,6 +107,9 @@
  01 WS-PID                 BINARY-LONG.
  01 WS-BADLOAD             BINARY-LONG VALUE 0.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-ENT                 BINARY-LONG.
+ 01 WS-DUP                 BINARY-LONG.
+ 01 WS-TROW                BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE SPACES TO WS-ENV
@@ -154,8 +158,8 @@
      END-PERFORM
 *>   the starts of a stretch of the set's candidate chunks that pick the bastion
      MOVE 1 TO SDM-KIND
-     PERFORM VARYING WS-SX FROM 0 BY 1 UNTIL WS-SX > 400 OR WS-STARTS >= 10
-         PERFORM VARYING WS-SZ FROM 0 BY 1 UNTIL WS-SZ > 400 OR WS-STARTS >= 10
+     PERFORM VARYING WS-SX FROM 0 BY 1 UNTIL WS-SX > 400 OR WS-STARTS >= 24
+         PERFORM VARYING WS-SZ FROM 0 BY 1 UNTIL WS-SZ > 400 OR WS-STARTS >= 24
              CALL "NETHER-STRUCTURE-CANDIDATE" USING WS-SEED WS-SET WS-SX WS-SZ WS-CAND-X WS-CAND-Z WS-FLAG
              IF WS-FLAG = 1
                  CALL "NETHER-STRUCTURE-PICK" USING WS-SEED WS-SET WS-SX WS-SZ WS-VALID WS-PICKED
@@ -166,8 +170,8 @@
          END-PERFORM
      END-PERFORM
      MOVE 0 TO SDM-KIND
-     MOVE "acceptance US12 36-8§13 C. Bastion remnant: use of the jigsaw engine: ten bastion starts were built" TO TL-CASE
-     MOVE 10 TO TL-EXPECTED-N
+     MOVE "acceptance US12 36-8§13 C. Bastion remnant: use of the jigsaw engine: 24 bastion starts were built" TO TL-CASE
+     MOVE 24 TO TL-EXPECTED-N
      MOVE WS-STARTS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 36-8§13 C. Bastion remnant: use of the jigsaw engine: some picked starts are refused for their biome" TO TL-CASE
@@ -199,12 +203,35 @@
              ADD 1 TO WS-SUM
          END-IF
      END-PERFORM
-     MOVE "acceptance US12 36-8§14 C. The four variants and their pool graphs: at least three of the four variants occur in ten starts" TO TL-CASE
+     MOVE "acceptance US12 36-8§14 C. The four variants and their pool graphs: all four variants occur in 24 starts" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-SUM >= 3
+     IF WS-SUM >= 4
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the bastion's mob templates hold 2 piglins, 2 piglin brutes and 1 hoglin (18.3 item 4): every distinct template of the mob pools reached by the starts
+     MOVE 0 TO WS-ENT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > JE-COUNT
+         MOVE JE-LOC(WS-I) TO WS-LOC
+         IF WS-LOC(1:23) = "minecraft:bastion/mobs/"
+             MOVE 0 TO WS-DUP
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J >= WS-I
+                 IF JE-LOC(WS-J) = WS-LOC
+                     MOVE 1 TO WS-DUP
+                 END-IF
+             END-PERFORM
+             IF WS-DUP = 0
+                 CALL "STRUCT-TPL-LOAD" USING SD-DIR WS-LOC WS-TROW
+                 IF WS-TROW > 0
+                     ADD TP-ENTITIES(WS-TROW) TO WS-ENT
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 36-8§15 C. Mobs, blocks, spawner, loot: the mob templates store 5 entities (2 piglins, 2 piglin brutes, 1 hoglin)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-ENT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the twelve named processor lists load
      MOVE 0 TO WS-BADLOAD
