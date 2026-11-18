@@ -58,7 +58,7 @@
  END PROGRAM MINECART-USE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MINECART-HURT.
+ PROGRAM-ID. MINECART-HURT-SRC.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -76,12 +76,18 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-KIND                BINARY-LONG.
+ 01 WS-SPEED2              FLOAT-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 9112.
+ 01 WS-TWENTY              BINARY-LONG VALUE 20.
+ 01 WS-R1                  BINARY-LONG.
+ 01 WS-R2                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
  01 L-ATTACKER             BINARY-LONG.
+ 01 L-IGNITES              BINARY-LONG.
  01 L-HANDLED              BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-AMOUNT L-ATTACKER L-HANDLED.
+ PROCEDURE DIVISION USING L-ROW L-AMOUNT L-ATTACKER L-IGNITES L-HANDLED.
      MOVE 0 TO L-HANDLED
      CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
      IF WS-SLOT = 0 OR PJ-KIND(WS-SLOT) NOT = 10
@@ -97,8 +103,22 @@
              MOVE 1 TO WS-CREATIVE
          END-IF
      END-IF
-     IF WS-CREATIVE = 0 AND PJ-R3(WS-SLOT) <= 40
+*>   shouldSourceDestroy (2 step 6): only the TNT cart overrides it, with the ignition test of the source.
+     IF WS-CREATIVE = 0 AND PJ-R3(WS-SLOT) <= 40 AND (PJ-I1(WS-SLOT) NOT = 5 OR L-IGNITES = 0)
          GOBACK
+     END-IF
+*>   The TNT cart's destroy (4.6): an igniting source, or a horizontal speed squared of 0.01 or more, primes a cart that is not yet primed (fuse nextInt(20) + nextInt(20)) and the cart stays.
+     IF WS-CREATIVE = 0 AND PJ-I1(WS-SLOT) = 5
+         COMPUTE WS-SPEED2 = EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW)
+         IF L-IGNITES = 1 OR WS-SPEED2 >= 0.01
+             IF PJ-I3(WS-SLOT) < 0
+                 CALL "MINECART-PRIME" USING L-ROW
+                 CALL "XP-RANDOM" USING WS-SALT WS-TWENTY WS-R1
+                 CALL "XP-RANDOM" USING WS-SALT WS-TWENTY WS-R2
+                 COMPUTE PJ-I3(WS-SLOT) = WS-R1 + WS-R2
+             END-IF
+             GOBACK
+         END-IF
      END-IF
      IF EN-RIDER(L-ROW) > 0
          CALL "MOB-RIDE-STOP" USING L-ROW
@@ -130,6 +150,22 @@
              CALL "DECOR-DROP" USING WS-DIM WS-X WS-Y WS-Z WS-ITEM
          END-IF
      END-IF
+     GOBACK.
+ END PROGRAM MINECART-HURT-SRC.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MINECART-HURT.
+*> USING cart row, amount (points), attacker player row (0 none), handled out: MINECART-HURT-SRC for a source that does not ignite TNT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-IGNITES             BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-AMOUNT L-ATTACKER L-HANDLED.
+     CALL "MINECART-HURT-SRC" USING L-ROW L-AMOUNT L-ATTACKER WS-IGNITES L-HANDLED
      GOBACK.
  END PROGRAM MINECART-HURT.
 
