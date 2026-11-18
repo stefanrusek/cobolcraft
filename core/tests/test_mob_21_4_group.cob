@@ -13,6 +13,7 @@
  COPY XORO.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-SAME                BINARY-LONG.
  01 WS-LONE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X0                  BINARY-LONG.
@@ -69,7 +70,8 @@
      MOVE 1 TO WS-SEED
      CALL "XORO-SEED" USING WS-SEED XR-STATE
      MOVE 0 TO WS-BAD
-     CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-FIRST WS-BAD WS-DONE
+     MOVE WS-FIRST TO WS-SAME
+     CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-SAME WS-BAD WS-DONE
      MOVE "acceptance US15 44-7§6.3 the first member of a pack is never a baby (squid, age 0)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE EN-MOBAGE(WS-FIRST) TO TL-OBSERVED-N
