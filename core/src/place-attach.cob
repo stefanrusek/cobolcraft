@@ -123,6 +123,8 @@
  01 WS-A1                  BINARY-LONG.
  01 WS-A2                  BINARY-LONG.
  01 WS-ROT                 BINARY-LONG.
+ 01 WS-ROT-INDEX           BINARY-LONG.
+ 01 WS-ROT-DIRS            PIC X(4) VALUE "2534".
  01 WS-ATTACHED-TEXT       PIC X(32).
  LINKAGE SECTION.
  COPY PLACECTX.
@@ -214,16 +216,11 @@
                      CALL "PS-GET" USING WS-OLD WS-ROTATION WS-TEXT WS-FOUND
                      IF WS-FOUND = 1
                          COMPUTE WS-ROT = FUNCTION NUMVAL(WS-TEXT)
-                         EVALUATE WS-ROT
-                             WHEN 0
-                                 MOVE 2 TO WS-A-DIR
-                             WHEN 4
-                                 MOVE 5 TO WS-A-DIR
-                             WHEN 8
-                                 MOVE 3 TO WS-A-DIR
-                             WHEN 12
-                                 MOVE 4 TO WS-A-DIR
-                         END-EVALUATE
+*>                       A quarter turn gives a direction (0 north, 4 east, 8 south, 12 west: RotationSegment.convertToDirection); any other rotation none.
+                         IF FUNCTION MOD(WS-ROT, 4) = 0
+                             COMPUTE WS-ROT-INDEX = WS-ROT / 4 + 1
+                             MOVE WS-ROT-DIRS(WS-ROT-INDEX:1) TO WS-A-DIR
+                         END-IF
                      END-IF
                  END-IF
                  IF WS-A-DIR >= 2
