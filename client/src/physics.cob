@@ -17,7 +17,8 @@
 *>     a move stopped short is blocked; a blocked vertical move stops the vertical speed; a blocked X or Z move is the
 *>     horizontal collision flag of Move Player, unless the step-up below carried the player over the obstacle;
 *>   - step-up (13 section 1.4): on the ground, a blocked horizontal move is tried again from 0.6 higher and the player drops back
-*>     to the floor it reaches, when that gets it further (a slab, a stair, a carpet edge);
+*>     to the floor it reaches, when that gets it further (a slab, a stair, a carpet edge); the rise is no higher than what hangs over
+*>     the cells the move enters leaves (a 1/16 lip under a door lintel, a dirt_path before a door);
 *>   - on the ground: the box 0.001 lower would touch a collision box.
 *> The flying speeds, jump speed, gravity, flying toggle and mouse factor are recorded in standin
 *> §11.4 with the walking speed. The box is the operator's
@@ -563,6 +564,7 @@
  01 WS-P1                  FLOAT-LONG OCCURS 3 TIMES.
  01 WS-PLAIN               FLOAT-LONG.
  01 WS-STEP                FLOAT-LONG.
+ 01 WS-CEILING             FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-SX                   FLOAT-LONG.
@@ -584,6 +586,19 @@
      MOVE 0.6 TO WS-UP
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-UP WS-BLOCKED
      COMPUTE WS-UP = PL-Y - L-SY
+*>   The rise is also held down by what hangs over the cells the move enters (the box swept toward the wanted move): a 1/16 lip under a
+*>   door lintel is stepped over by the rise the lintel leaves, not refused for the full 0.6 (51 section 6: passable if the entity rises by at most the step height).
+     COMPUTE PL-X = L-SX + L-DX
+     MOVE L-SY TO PL-Y
+     COMPUTE PL-Z = L-SZ + L-DZ
+     MOVE 2 TO WS-AXIS
+     MOVE 0.6 TO WS-CEILING
+     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-CEILING WS-BLOCKED
+     COMPUTE WS-CEILING = PL-Y - L-SY
+     MOVE L-SX TO PL-X
+     MOVE L-SZ TO PL-Z
+     COMPUTE WS-UP = FUNCTION MIN(WS-UP, WS-CEILING)
+     COMPUTE PL-Y = L-SY + WS-UP
      MOVE 1 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DX WS-BLOCKED
      MOVE 3 TO WS-AXIS
