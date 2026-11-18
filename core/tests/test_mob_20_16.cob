@@ -48,6 +48,9 @@
  01 WS-MOB2                BINARY-LONG.
  01 WS-CHARGE2             BINARY-LONG.
  01 WS-POWER0              BINARY-LONG VALUE 0.
+ 01 WS-DIR1                FLOAT-LONG VALUE 1.
+ 01 WS-DIR2                FLOAT-LONG VALUE 0.5.
+ 01 WS-DIR3                FLOAT-LONG VALUE 0.25.
  01 WS-NOBODY              BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
@@ -147,7 +150,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A charge in a chunk that is not loaded is removed by the projectile tick; the others are stepped.
-     CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-X WS-Y WS-Z WS-POWER0 WS-NOBODY WS-CHARGE2
+     CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-DIR1 WS-DIR2 WS-DIR3 WS-POWER0 WS-NOBODY WS-CHARGE2
      COMPUTE EN-X(WS-CHARGE2) = 100000
      CALL "PROJECTILES-TICK"
      MOVE "acceptance US15 20§16 Breeze charge in an unloaded chunk is removed" TO TL-CASE
