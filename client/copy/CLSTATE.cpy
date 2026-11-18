@@ -1420,6 +1420,22 @@
           15 RL-HAND-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-HAND-G         FLOAT-SHORT.
           15 RL-HAND-BLUE      FLOAT-SHORT.
+*>     The empty hand's arm (view space, entity atlas texture 1, the hand's projection; hand-arm.cob; 12 section 6.5): the arm and sleeve cuboids of the player model, drawn
+*>     after the hand mesh (and its depth clear) when the main hand shows no item.
+       10 RL-HA-COUNT        BINARY-LONG.
+       10 RL-HA-UPLOADED     BINARY-LONG.
+       10 RL-HA-VERTEX OCCURS 128 TIMES.
+          15 RL-HA-X         FLOAT-SHORT.
+          15 RL-HA-Y         FLOAT-SHORT.
+          15 RL-HA-Z         FLOAT-SHORT.
+          15 RL-HA-U         FLOAT-SHORT.
+          15 RL-HA-V         FLOAT-SHORT.
+          15 RL-HA-B         FLOAT-SHORT.
+          15 RL-HA-A         FLOAT-SHORT.
+          15 RL-HA-SKY       FLOAT-SHORT.
+          15 RL-HA-R         FLOAT-SHORT.
+          15 RL-HA-G         FLOAT-SHORT.
+          15 RL-HA-BLUE      FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.

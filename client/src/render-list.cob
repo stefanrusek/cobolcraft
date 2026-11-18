@@ -451,7 +451,7 @@
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
 *>   The hand (first person, world screen): a depth clear, then the held item in view space with the projection alone.
      CALL "HAND-MESH" USING CLIENT-STATE
-     IF RL-HAND-COUNT > 0
+     IF RL-HAND-COUNT > 0 OR RL-HA-COUNT > 0
          ADD 1 TO RL-DRAW-COUNT
          MOVE -1 TO RL-D-SLOT(RL-DRAW-COUNT)
          MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
@@ -478,6 +478,12 @@
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HG-VERTEX(1) RL-HG-COUNT RL-HG-UPLOADED
          WS-PIPE WS-TEX WS-HAND-PROJ-TABLE
      MOVE 0 TO RL-NO-UPLOAD
+*>   The arm of an empty main hand (12 section 6.5): the entity atlas, over the hand mesh, the same projection.
+     MOVE MESH-SLOT-HAND-ARM TO WS-SLOT
+     MOVE CC-PIPE-OPAQUE TO WS-PIPE
+     MOVE CC-TEX-ENTITIES TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HA-VERTEX(1) RL-HA-COUNT RL-HA-UPLOADED
+         WS-PIPE WS-TEX WS-HAND-PROJ-TABLE
      ADD 1 TO RL-UPLOAD-COUNT
      MOVE MESH-SLOT-UI TO RL-U-SLOT(RL-UPLOAD-COUNT)
      SET RL-U-ADDR(RL-UPLOAD-COUNT) TO ADDRESS OF RL-UI-VERTEX(1)

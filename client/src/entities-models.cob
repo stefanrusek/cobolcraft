@@ -149,6 +149,9 @@
  01 WS-OVG                 FLOAT-LONG.
  01 WS-OVB                 FLOAT-LONG.
  01 WS-OVM                 BINARY-LONG.
+ 01 WS-PLAYER-KEY          PIC X(24).
+ COPY CLCONST.
+ COPY CONTENT.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -178,6 +181,13 @@
              END-PERFORM
          END-IF
      END-PERFORM
+*>   The first-person arm of an empty main hand (12 section 6.5, hand-arm.cob) wears the model row "player" with its own image: its slot, in a standard world on the world screen.
+     IF CL-CAMERA = 0 AND SM-SCREEN = SCR-WORLD AND CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE "player" TO WS-PLAYER-KEY
+         CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
+         MOVE 0 TO WS-TEX
+         CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+     END-IF
      IF WS-NEW = 1
          CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
      END-IF

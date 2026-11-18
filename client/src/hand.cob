@@ -208,7 +208,7 @@
 *> USING CLIENT-STATE, M (the model to view transform), corners (4 x, y, z, in model space, in the order of a texture: top-left, top-right, bottom-right,
 *> bottom-left), texture coordinates (4 u then 4 v, atlas), normal (model space), light 0 to 1: adds the six vertices of the quad (corners 1 2 3 1 3 4) to the
 *> hand, shaded by the two-light formula of 12 section 1.9 (min(1, (max(0, n.L0) + max(0, n.L1)) x 0.6 + 0.4), the lights of the level in view space)
-*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
+*> times the light, at least 0.1. A full mesh (2048 vertices) takes no more. With glint 3 the six vertices go to RL-HA-VERTEX (the empty hand's arm) and nowhere else. With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the
 *> glint coordinates of the atlas coordinates through the item scale 8 (GLINT-UV) and the glint strength as brightness.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -243,10 +243,13 @@
  01 L-LIGHT                FLOAT-LONG.
  01 L-GLINT                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT L-GLINT.
-     IF L-GLINT NOT = 2 AND RL-HAND-COUNT + 6 > 2048
+     IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND RL-HAND-COUNT + 6 > 2048
          GOBACK
      END-IF
-     IF L-GLINT > 0 AND RL-HG-COUNT + 6 > 4096
+     IF (L-GLINT = 1 OR L-GLINT = 2) AND RL-HG-COUNT + 6 > 4096
+         GOBACK
+     END-IF
+     IF L-GLINT = 3 AND RL-HA-COUNT + 6 > 128
          GOBACK
      END-IF
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
@@ -272,7 +275,19 @@
      PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 6
          MOVE WS-ORD(WS-V) TO WS-K
          COMPUTE WS-C = (WS-K - 1) * 3
-         IF L-GLINT NOT = 2
+         IF L-GLINT = 3
+             ADD 1 TO RL-HA-COUNT
+             MOVE WS-P(WS-C + 1) TO RL-HA-X(RL-HA-COUNT)
+             MOVE WS-P(WS-C + 2) TO RL-HA-Y(RL-HA-COUNT)
+             MOVE WS-P(WS-C + 3) TO RL-HA-Z(RL-HA-COUNT)
+             MOVE L-U(WS-K) TO RL-HA-U(RL-HA-COUNT)
+             MOVE L-V(WS-K) TO RL-HA-V(RL-HA-COUNT)
+             COMPUTE RL-HA-B(RL-HA-COUNT) = FUNCTION MAX(WS-SHADE * L-LIGHT, 0.1)
+             MOVE 1 TO RL-HA-A(RL-HA-COUNT)
+             MOVE 0 TO RL-HA-SKY(RL-HA-COUNT)
+             MOVE 1 TO RL-HA-R(RL-HA-COUNT) RL-HA-G(RL-HA-COUNT) RL-HA-BLUE(RL-HA-COUNT)
+         END-IF
+         IF L-GLINT NOT = 2 AND L-GLINT NOT = 3
              ADD 1 TO RL-HAND-COUNT
              MOVE WS-P(WS-C + 1) TO RL-HAND-X(RL-HAND-COUNT)
              MOVE WS-P(WS-C + 2) TO RL-HAND-Y(RL-HAND-COUNT)
@@ -284,7 +299,7 @@
              MOVE 0 TO RL-HAND-SKY(RL-HAND-COUNT)
              MOVE 1 TO RL-HAND-R(RL-HAND-COUNT) RL-HAND-G(RL-HAND-COUNT) RL-HAND-BLUE(RL-HAND-COUNT)
          END-IF
-         IF L-GLINT > 0
+         IF L-GLINT = 1 OR L-GLINT = 2
              ADD 1 TO RL-HG-COUNT
              MOVE WS-P(WS-C + 1) TO RL-HG-X(RL-HG-COUNT)
              MOVE WS-P(WS-C + 2) TO RL-HG-Y(RL-HG-COUNT)
@@ -676,7 +691,7 @@
  PROGRAM-ID. HAND-MESH.
 *> USING CLIENT-STATE: RL-HAND-VERTEX and RL-HAND-COUNT for this frame: the main hand's item, then the off hand's (HAND-BUILD each), under the view pose of HAND-PREFIX. The
 *> main arm is the right one unless the mainHand option is "left", the off hand's the other. While the player eats the main hand takes the eating pose (12 section 6.6;
-*> CL-EAT-MS is the use duration); a bow, crossbow, trident or shield in use, an auto spin attack and a loaded crossbow take theirs. Nothing swings and nothing changed since the last frame (the items, their sprites, the equip heights, the light, the view pose): the
+*> CL-EAT-MS is the use duration); a bow, crossbow, trident or shield in use, an auto spin attack and a loaded crossbow take theirs; an empty main hand shows its arm (HAND-EMPTY-ARM, RL-HA-VERTEX). Nothing swings and nothing changed since the last frame (the items, their sprites, the equip heights, the light, the view pose): the
 *> mesh built then is still in RL-HAND-VERTEX and in the GPU slot, so it is neither built nor uploaded again.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -709,6 +724,7 @@
  01 WS-UDURATION           FLOAT-LONG.
  01 WS-HAND-NO             BINARY-LONG.
  01 WS-LOADED              BINARY-LONG.
+ 01 WS-ARM                 BINARY-LONG.
  01 WS-ITEM-CLASS          BINARY-LONG.
  01 WS-P                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
@@ -732,16 +748,27 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME RL-HG-COUNT
+     MOVE 0 TO RL-HAND-COUNT RL-HAND-SAME RL-HG-COUNT RL-HA-COUNT
      MOVE CL-HAND-KEY-COUNT TO WS-PREV-COUNT
      MOVE CL-HAND-KEY-GCOUNT TO WS-PREV-GCOUNT
      MOVE 0 TO CL-HAND-KEY-COUNT CL-HAND-KEY-GCOUNT
-     IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0
+*>   The hands are drawn in first person only, and not to a spectator (53 section 15.1).
+     IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0 AND PL-MODE NOT = 3
          CALL "HAND-EQUIP" USING CLIENT-STATE WS-E WS-EO WS-PART
      ELSE
          GOBACK
      END-IF
-     IF CL-HAND-ITEM = 0 AND CL-OHAND-ITEM = 0
+*>   An empty main hand shows the arm (12 section 6.5) unless the player is invisible (the mob effect invisibility, id 13).
+     MOVE 0 TO WS-ARM
+     IF CL-HAND-ITEM = 0
+         MOVE 1 TO WS-ARM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EF-COUNT
+             IF EF-ID(WS-I) = 13
+                 MOVE 0 TO WS-ARM
+             END-IF
+         END-PERFORM
+     END-IF
+     IF CL-HAND-ITEM = 0 AND CL-OHAND-ITEM = 0 AND WS-ARM = 0
          GOBACK
      END-IF
      MOVE 1 TO WS-SIDE
@@ -768,6 +795,9 @@
      CALL "WORLD-CELL" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-STATE WS-SKY WS-BLK
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLK) / 15
      CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
+     IF WS-ARM = 1
+         CALL "HAND-EMPTY-ARM" USING CLIENT-STATE WS-M WS-SIDE WS-E WS-LIGHT
+     END-IF
 *>   The poses: eating (the right button held on a food item) takes the main hand's eating pose; a bow, crossbow, trident or shield in use (USE-ITEM-INPUT) poses the hand that uses it
 *>   (PL-USE-HAND); an auto spin attack (pose 4) poses the hand that holds a trident; else the main hand swings within its 300 ms, or holds a loaded crossbow at rest (kind 7).
      MOVE 0 TO WS-KIND WS-SWING WS-ELAPSED WS-DURATION WS-OKIND WS-OELAPSED WS-ODURATION

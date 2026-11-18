@@ -215,6 +215,8 @@
  78 MESH-SLOT-GLINT-ICONS   VALUE 65010.
 *> The glint of the item in the hand (one mesh, view space, texture 5, glint pipeline; hand.cob).
  78 MESH-SLOT-HAND-GLINT    VALUE 65011.
+*> The arm of an empty main hand (one mesh, view space, texture 1; hand-arm.cob).
+ 78 MESH-SLOT-HAND-ARM      VALUE 65012.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
