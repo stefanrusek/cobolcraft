@@ -39,15 +39,20 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NET-BUFFERS-INIT.
 *> USING CLIENT-STATE, connection: empty received and outbound buffers (allocated once), no
-*> compression.
+*> compression. Opening the game connection starts a new session: nothing of the last one is kept
+*> (CLIENT-SESSION-RESET).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-CONN                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF L-CONN = CONN-GAME
+         CALL "CLIENT-SESSION-RESET" USING CLIENT-STATE
+     END-IF
      IF CN-READY(L-CONN) = 0
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE PB-BUFFER TO CN-IN(L-CONN)
@@ -288,7 +293,7 @@
  PROGRAM-ID. NET-CLOSE.
 *> USING CLIENT-STATE, connection: closes the socket (a memory connection: CORE-CONN-CLOSED, unless
 *> the core has handed it back already); the connection is free again. Closing the game connection
-*> removes the server's packs (08 §9.5) and closes the content set the client built for it (WT-16).
+*> removes the server's packs (08 §9.5), closes the content set the client built for it (WT-16) and ends the session (CLIENT-SESSION-RESET).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -306,6 +311,7 @@
      MOVE 0 TO CN-HANDLE(L-CONN)
      MOVE PH-NONE TO CN-PHASE(L-CONN)
      IF L-CONN = CONN-GAME
+         CALL "CLIENT-SESSION-RESET" USING CLIENT-STATE
          CALL "SERVER-PACKS-CLEAR" USING CLIENT-STATE
          IF CL-SET-OWNED = 1
              CALL "CONTENT-CLOSE"

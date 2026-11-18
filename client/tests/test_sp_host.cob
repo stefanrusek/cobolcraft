@@ -242,14 +242,12 @@
      STRING "joined " FUNCTION TRIM(WS-E1) " active " FUNCTION TRIM(WS-E2) " run "
          FUNCTION TRIM(WS-E3) " screen " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "sp host the stop confirmation (sent before stopping) "
-         & "reaches the host's chat before the world is quit" TO TL-CASE
-*>   The client language table has no standard command keys yet (BLOCKED, CLLANG.cpy), so the chat shows the key.
-     MOVE "commands.stop.stopping" TO TL-EXPECTED
-     MOVE "none" TO TL-OBSERVED
-     IF CH-COUNT > 0
-         MOVE CH-TEXT(CH-COUNT) TO TL-OBSERVED
-     END-IF
+     MOVE "sp host the stop confirmation (sent before stopping) is chat of the world being quit: "
+         & "quitting ends the session, so the title screen shows no chat line (CLIENT-SESSION-RESET)" TO TL-CASE
+     MOVE "chat 0" TO TL-EXPECTED
+     MOVE CH-COUNT TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING "chat " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A connection the core ends: CORE-STOP called past the host sends Disconnect and hands the
