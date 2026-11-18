@@ -341,6 +341,14 @@
              IF EN-VARIANT(L-ROW) = 1
                  MOVE 1 TO L-BABY L-NEEDED
              END-IF
+*>           Age locked (21 Appendix A, index 17 BOOLEAN of every ageable mob): sent once a golden dandelion locked the age (default false).
+             IF EN-LOCKED(L-ROW) = 1 AND SM-KEY(WS-M) NOT = "tadpole"
+                 MOVE 1 TO L-NEEDED
+             END-IF
+*>           Mooshroom: the type, 0 red or 1 brown (index 18 INT).
+             IF SM-KEY(WS-M) = "mooshroom" AND EN-WOOL(L-ROW) > 0
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "sheep"
                  MOVE EN-WOOL(L-ROW) TO L-WOOL
                  IF L-WOOL > 0
@@ -445,6 +453,20 @@
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     IF EN-LOCKED(L-ROW) = 1 AND WS-KEY NOT = "tadpole"
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 17 TO MD-MD-INDEX
+         MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+         MOVE 1 TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     IF WS-KEY = "mooshroom" AND EN-WOOL(L-ROW) > 0
+         INITIALIZE MD-METADATA-ENTRY-X
+         MOVE 18 TO MD-MX-INDEX
+         MOVE WS-SERIALIZER-INT TO MD-MX-SERIALIZER
+         MOVE EN-WOOL(L-ROW) TO MD-MX-INT
+         CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     END-IF
      IF (WS-KEY = "wolf" OR "parrot" OR "cat") AND EN-TAMED(L-ROW) = 1
          CALL "M188-TAME-FLAGS" USING WS-TAME-ONE EN-SIT(L-ROW) WS-FLAGS
          INITIALIZE MD-METADATA-ENTRY-X
