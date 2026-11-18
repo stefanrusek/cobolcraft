@@ -136,6 +136,20 @@
      MOVE "acceptance US12-4 redstone a source placed beside powerless wire powers it again: 15 14" TO TL-CASE
      MOVE "15 14" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   removing a wire tells its neighbours (5.5): the wire behind the gap loses the power it had through it, the one before the gap keeps 15
+     MOVE 2 TO WS-X
+     CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-AIR WS-FLAGS WS-BUDGET WS-RESULT
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-X
+     PERFORM READ-WIRE
+     PERFORM ADD-POWER
+     PERFORM VARYING WS-X FROM 3 BY 1 UNTIL WS-X > 5
+         PERFORM READ-WIRE
+         PERFORM ADD-POWER
+     END-PERFORM
+     MOVE "acceptance US12-4 redstone removing the wire at x 2: x 1 keeps 15, x 3 to 5 fall to 0" TO TL-CASE
+     MOVE "15 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  READ-WIRE.
