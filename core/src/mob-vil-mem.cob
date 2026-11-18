@@ -5,6 +5,7 @@
 *>   VM-PUT USING slot, type, dim, x, y, z, num, num2, ticks              set it; ticks 0 = never expires, else it is erased when read at or after CW-TICKS + ticks
 *>   VM-ERASE USING slot, type                                          erase it (a claimed point of interest: the claim is released)
 *>   VM-HAS USING slot, type, present out
+*>   VM-AT USING slot, type, dim, x, y, z   a position memory;  VM-NOTE USING slot, type, num   a number;  VM-NOTE-TTL USING slot, type, num, num2, ticks   two numbers that expire
 *>   VM-CLEAR USING slot                                                a new or released slot has no memory and no timers
 
  IDENTIFICATION DIVISION.
@@ -184,3 +185,63 @@
      INITIALIZE VM-M(L-SLOT, L-TYPE)
      GOBACK.
  END PROGRAM VM-ERASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VM-AT.
+*> USING slot, type, dim, x, y, z: a memory that is a position and nothing else, never expiring.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                    BINARY-LONG VALUE 0.
+ 01 WS-B                    BINARY-LONG VALUE 0.
+ 01 WS-C                    BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-TYPE                  BINARY-LONG.
+ 01 L-DIM                   BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-TYPE L-DIM L-X L-Y L-Z.
+     CALL "VM-PUT" USING L-SLOT L-TYPE L-DIM L-X L-Y L-Z WS-A WS-B WS-C
+     GOBACK.
+ END PROGRAM VM-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VM-NOTE.
+*> USING slot, type, num: a memory that is one number (a game tick), never expiring.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIM                  BINARY-LONG VALUE 0.
+ 01 WS-X                    BINARY-LONG VALUE 0.
+ 01 WS-Y                    BINARY-LONG VALUE 0.
+ 01 WS-Z                    BINARY-LONG VALUE 0.
+ 01 WS-NUM2                 BINARY-LONG VALUE 0.
+ 01 WS-TTL                  BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-TYPE                  BINARY-LONG.
+ 01 L-NUM                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-TYPE L-NUM.
+     CALL "VM-PUT" USING L-SLOT L-TYPE WS-DIM WS-X WS-Y WS-Z L-NUM WS-NUM2 WS-TTL
+     GOBACK.
+ END PROGRAM VM-NOTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VM-NOTE-TTL.
+*> USING slot, type, num, num2, ticks: two numbers that expire (ticks 0 = never).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIM                  BINARY-LONG VALUE 0.
+ 01 WS-X                    BINARY-LONG VALUE 0.
+ 01 WS-Y                    BINARY-LONG VALUE 0.
+ 01 WS-Z                    BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-TYPE                  BINARY-LONG.
+ 01 L-NUM                   BINARY-LONG.
+ 01 L-NUM2                  BINARY-LONG.
+ 01 L-TTL                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-TYPE L-NUM L-NUM2 L-TTL.
+     CALL "VM-PUT" USING L-SLOT L-TYPE WS-DIM WS-X WS-Y WS-Z L-NUM L-NUM2 L-TTL
+     GOBACK.
+ END PROGRAM VM-NOTE-TTL.

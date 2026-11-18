@@ -209,6 +209,8 @@
          END-IF
      END-IF
      CALL "VL-WALK-TICK" USING L-ROW WS-SLOT
+     CALL "VL-CORE-TICK" USING L-ROW WS-SLOT WS-BABY
+     MOVE VM-ACT(WS-SLOT) TO WS-ACT
      IF CW-TICKS < VL-NEXT-BRAIN(WS-SLOT)
          GOBACK
      END-IF
@@ -310,6 +312,7 @@
      END-IF
      CALL "VL-BRAIN-WALK" USING L-ROW L-SLOT L-ACT
      CALL "VL-BRAIN-SLEEP" USING L-ROW L-SLOT L-ACT
+     CALL "VL-WORK-TICK" USING L-ROW L-SLOT L-ACT
      GOBACK.
  END PROGRAM VL-BRAIN-BEAT.
 
@@ -396,6 +399,9 @@
          WHEN VA-REST
              MOVE 2 TO WS-INSTANCE
              MOVE MT-HOME TO WS-TYPE
+         WHEN VA-PRE-RAID
+             MOVE 4 TO WS-INSTANCE
+             MOVE MT-MEETING-POINT TO WS-TYPE
      END-EVALUATE
      IF WS-INSTANCE = 0
          GOBACK
@@ -422,7 +428,7 @@
          WHEN 1
 *>           Release the point of interest and give the walk up for now.
              CALL "VM-ERASE" USING L-SLOT WS-TYPE
-             CALL "VM-PUT" USING L-SLOT MT-CANT-REACH-SINCE WS-QD WS-QX WS-QY WS-QZ WS-NOW WS-NONE WS-NONE
+             CALL "VM-NOTE" USING L-SLOT MT-CANT-REACH-SINCE WS-NOW
          WHEN 2
 *>           A position 15 blocks from the villager towards the point (placeholder for getPosTowards).
              COMPUTE WS-H = FUNCTION SQRT((WS-QX - EN-X(L-ROW)) ** 2 + (WS-QZ - EN-Z(L-ROW)) ** 2)

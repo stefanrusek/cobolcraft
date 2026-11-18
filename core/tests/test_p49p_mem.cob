@@ -54,7 +54,7 @@
      MOVE 0 TO WS-E
      MOVE WS-PRESENT TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     CALL "VM-PUT" USING WS-SLOT MT-HIDING-PLACE WS-DIM WS-X WS-Y WS-Z WS-ID WS-ZERO WS-ZERO
+     CALL "VM-AT" USING WS-SLOT MT-HIDING-PLACE WS-DIM WS-X WS-Y WS-Z
      CALL "VM-GET" USING WS-SLOT MT-HIDING-PLACE WS-PRESENT WS-QD WS-QX WS-QY WS-QZ WS-N1 WS-N2
      MOVE "acceptance US15 18§4.5 a memory that was set is present" TO WS-CASE
      MOVE 1 TO WS-E
@@ -92,7 +92,7 @@
      MOVE WS-PRESENT TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
 *>   The claimed points of interest read through the claim table: home, then the job claim as potential job site and, once taken, as job_site.
-     CALL "VM-PUT" USING WS-SLOT MT-HOME WS-DIM WS-X WS-Y WS-Z WS-ZERO WS-ZERO WS-ZERO
+     CALL "VM-AT" USING WS-SLOT MT-HOME WS-DIM WS-X WS-Y WS-Z
      CALL "VPX-OF" USING EN-ID(WS-ROW) WS-HOME WS-QD WS-QX WS-QY WS-QZ WS-PRESENT
      MOVE "acceptance US15 44-3§2.1 putting the home memory claims the point in the claim table" TO WS-CASE
      MOVE 1 TO WS-E
@@ -103,7 +103,7 @@
      MOVE WS-Z TO WS-E
      MOVE WS-QZ TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     CALL "VM-PUT" USING WS-SLOT MT-POTENTIAL-JOB-SITE WS-DIM WS-X WS-Y WS-Z WS-ZERO WS-ZERO WS-ZERO
+     CALL "VM-AT" USING WS-SLOT MT-POTENTIAL-JOB-SITE WS-DIM WS-X WS-Y WS-Z
      CALL "VM-HAS" USING WS-SLOT MT-POTENTIAL-JOB-SITE WS-PRESENT
      MOVE "acceptance US15 44-3§2.1 a claimed job site is the potential job site" TO WS-CASE
      MOVE 1 TO WS-E
@@ -114,7 +114,7 @@
      MOVE 0 TO WS-E
      MOVE WS-PRESENT TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     CALL "VM-PUT" USING WS-SLOT MT-JOB-SITE WS-DIM WS-X WS-Y WS-Z WS-ZERO WS-ZERO WS-ZERO
+     CALL "VM-AT" USING WS-SLOT MT-JOB-SITE WS-DIM WS-X WS-Y WS-Z
      CALL "VM-HAS" USING WS-SLOT MT-POTENTIAL-JOB-SITE WS-PRESENT
      MOVE "acceptance US15 44-3§2.6 once it is the job_site it is no potential job site" TO WS-CASE
      MOVE 0 TO WS-E

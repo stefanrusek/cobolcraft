@@ -2,6 +2,7 @@
 *>   VT-FLAT USING player row, floor y out: a stone floor of 64 x 64 blocks round the player at the y below its feet, three layers of air above (the villagers' ground).
 *>   VT-PLACE USING dim, x, y, z, block key (PIC X(112)), state pairs (PIC X(160)): set one block.
 *>   VT-SPAWN USING dim, x, y, z (BINARY-LONG feet block), row out, slot out: a villager standing in the middle of that block.
+*>   VT-MOB USING key (PIC X(112)), dim, x, y, z (BINARY-LONG feet block), row out: any mob standing in the middle of that block.
 *>   VT-SCAN USING dim, x, z (BINARY-LONG block): the POI index of the chunk of that column (24 sections).
 *>   VT-DAY USING time of day: set the world clock (CW-TIME) and keep CW-TICKS.
  IDENTIFICATION DIVISION.
@@ -106,3 +107,30 @@
      MOVE L-TIME TO CW-TIME
      GOBACK.
  END PROGRAM VT-DAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VT-MOB.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ENTITY-ROW           PIC X(66).
+ 01 WS-STATUS               BINARY-LONG.
+ 01 WS-TYPE                 BINARY-LONG.
+ 01 WS-FX                   FLOAT-LONG.
+ 01 WS-FY                   FLOAT-LONG.
+ 01 WS-FZ                   FLOAT-LONG.
+ 01 WS-YAW                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-KEY                   PIC X(112).
+ 01 L-DIM                   BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-DIM L-X L-Y L-Z L-ROW.
+     CALL "CONTENT-ENTITY-BY-KEY" USING L-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = L-X + 0.5
+     MOVE L-Y TO WS-FY
+     COMPUTE WS-FZ = L-Z + 0.5
+     CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW L-ROW
+     GOBACK.
+ END PROGRAM VT-MOB.

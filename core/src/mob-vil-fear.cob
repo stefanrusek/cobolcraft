@@ -9,6 +9,10 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ COPY VLMEM.
+ 01 WS-SLOT                 BINARY-LONG.
+ 01 WS-NO                   BINARY-LONG VALUE 0.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
  01 WS-N                    BINARY-LONG.
  01 WS-S                    BINARY-LONG.
  01 WS-LIMIT                BINARY-LONG.
@@ -53,6 +57,14 @@
              END-IF
          END-IF
      END-PERFORM
+     CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
+     IF WS-SLOT > 0
+         IF WS-FOUND = 1
+             CALL "VM-NOTE-TTL" USING WS-SLOT MT-NEAREST-HOSTILE WS-HOSTILE EN-ID(WS-HOSTILE) WS-ZERO
+         ELSE
+             CALL "VM-ERASE" USING WS-SLOT MT-NEAREST-HOSTILE
+         END-IF
+     END-IF
      IF WS-FOUND = 1
          IF EN-FLEE(L-ROW) = 0 OR WS-BEST <= 36
              MOVE 21 TO EN-FLEE(L-ROW)
