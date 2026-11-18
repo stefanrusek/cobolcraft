@@ -19,6 +19,7 @@
 *> USING CLIENT-STATE: sets TG-HIT and, on a hit, TG-X, TG-Y, TG-Z, TG-FACE and TG-CX, TG-CY, TG-CZ.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
  COPY CLCONST.
  01 WS-YAW                 FLOAT-LONG.
  01 WS-PITCH               FLOAT-LONG.
@@ -65,6 +66,14 @@
     05 WS-RD               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-ROFF.
     05 WS-RF               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-HELD-ITEM           BINARY-LONG.
+ 01 WS-HNS                 PIC X(16).
+ 01 WS-HPATH               PIC X(40).
+ 01 WS-HMAX                BINARY-LONG.
+ 01 WS-HBLK                BINARY-LONG.
+ 01 WS-HTOOL               PIC X.
+ 01 WS-HFOOD               BINARY-LONG.
+ 01 WS-HKNOWN              BINARY-LONG.
  01 WS-OFX                 FLOAT-LONG.
  01 WS-OFY                 FLOAT-LONG.
  01 WS-OFZ                 FLOAT-LONG.
@@ -134,6 +143,16 @@
          END-IF
          IF WS-SEEN NOT = 0
              CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
+*>           The light block is targeted as a full cube while the main hand holds a light item (51 section 1.5, rule R-A5); else it has no outline.
+             IF WS-STATE < BSH-MAX-STATES AND (WS-SHAPE = 0 OR BSH-N(WS-SHAPE + 1) = 0)
+                 IF BSH-CTX(WS-STATE + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
+                     MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-HELD-ITEM
+                     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-HELD-ITEM WS-HNS WS-HPATH WS-HMAX WS-HBLK WS-HTOOL WS-HFOOD WS-HKNOWN
+                     IF WS-HKNOWN = 1 AND WS-HPATH = "light"
+                         MOVE 1 TO WS-SHAPE
+                     END-IF
+                 END-IF
+             END-IF
              EVALUATE TRUE
                  WHEN WS-SHAPE = 0
                      MOVE 0 TO WS-SEEN

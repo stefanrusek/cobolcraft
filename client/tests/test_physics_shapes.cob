@@ -10,6 +10,7 @@
  COPY CLCONST.
  COPY CCSHIM.
  COPY CONTENT.
+ COPY CTBSHAPE.
  COPY TESTLIB.
  01 WS-SERVER              BINARY-LONG.
  01 WS-KEY                 BINARY-LONG.
@@ -26,6 +27,10 @@
  01 WS-BH                  FLOAT-LONG.
  01 WS-BHT                 FLOAT-LONG.
  01 WS-BHIT                BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-ITEM-STATUS         BINARY-LONG.
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-BLOCK               PIC X(40).
  01 WS-P1                  PIC X(80).
@@ -242,6 +247,34 @@
      MOVE 0 TO WS-X
      MOVE 11 TO WS-Y
      MOVE 3 TO WS-Z
+*>   The light block (51 section 1.5): no outline of its own; it is targeted as a full cube while the held item is the light item.
+     MOVE "light" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     MOVE "level=15,waterlogged=false" TO WS-P1
+     PERFORM FIND-STATE
+     MOVE 3 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 3.5 TO PL-X
+     MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast a light block is not a target with an empty hand" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "light" TO WS-ITEM-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ITEM-ID WS-ITEM-ROW WS-ITEM-STATUS
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(PL-HELD + 1)
+     MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast a light block is a target while a light item is held" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     MOVE 0 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-X
+     MOVE 0.5 TO PL-X
 *>   A cell with no outline (technical air) is not a target.
      MOVE "void_air" TO WS-BLOCK
      MOVE SPACES TO WS-P1
@@ -317,6 +350,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
+ COPY CTBSHAPE.
  01 CT-PROPS.
     05 CTP-COUNT            BINARY-LONG.
     05 CTP-ENTRY OCCURS 16 TIMES.
