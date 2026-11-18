@@ -1158,14 +1158,21 @@
  01 L-TICKS                BINARY-LONG.
  PROCEDURE DIVISION USING L-LEVEL L-TICKS.
      COMPUTE L-TICKS = 25 - 5 * L-LEVEL
+*>   44 part 5 section 2.3: max(0, ...) in modifyCrossbowChargingTime, so Quick Charge 5 and above gives 0.
+     IF L-TICKS < 0
+         MOVE 0 TO L-TICKS
+     END-IF
      GOBACK.
  END PROGRAM TOOL-CROSSBOW-CHARGE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TOOL-CROSSBOW-ANGLE.
+*> 44 part 5 section 2.5 with the Multishot spread 10: step s = 2 x 10 / (n - 1), base b = ((n - 1) mod 2) s / 2, angle_i = b + (-1)^i floor((i + 1) / 2) s
+*> (n = 2 gives +10 then -10, n = 3 gives 0, -10, +10), rounded to whole degrees.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-STEP                BINARY-LONG.
+ 01 WS-STEP                FLOAT-LONG.
+ 01 WS-BASE                FLOAT-LONG.
  01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-COUNT                BINARY-LONG.
@@ -1173,12 +1180,14 @@
  01 L-DEGREES              BINARY-LONG.
  PROCEDURE DIVISION USING L-COUNT L-INDEX L-DEGREES.
      MOVE 0 TO L-DEGREES
-     IF L-COUNT > 1 AND L-INDEX > 0
+     IF L-COUNT > 1
          COMPUTE WS-STEP = 20 / (L-COUNT - 1)
-         COMPUTE WS-K = (L-INDEX + 1) / 2
-         COMPUTE L-DEGREES = WS-K * WS-STEP
-         IF FUNCTION MOD(L-INDEX, 2) = 1
-             COMPUTE L-DEGREES = 0 - L-DEGREES
+         COMPUTE WS-BASE = FUNCTION MOD(L-COUNT - 1, 2) * WS-STEP / 2
+         COMPUTE WS-K = FUNCTION INTEGER((L-INDEX + 1) / 2)
+         IF FUNCTION MOD(L-INDEX, 2) = 0
+             COMPUTE L-DEGREES ROUNDED = WS-BASE + WS-K * WS-STEP
+         ELSE
+             COMPUTE L-DEGREES ROUNDED = WS-BASE - WS-K * WS-STEP
          END-IF
      END-IF
      GOBACK.
@@ -1212,6 +1221,10 @@
      MOVE 0 TO L-LOADED
      IF L-USE >= L-CHARGE
          MOVE 1 TO L-LOADED
+     END-IF
+*>   44 part 5 section 2.3 step 2: a duration of 0 divides by 0, NaN at elapsed 0 (nothing loads), infinity from elapsed 1.
+     IF L-CHARGE = 0 AND L-USE = 0
+         MOVE 0 TO L-LOADED
      END-IF
      GOBACK.
  END PROGRAM TOOL-CROSSBOW-READY.

@@ -534,6 +534,39 @@
      MOVE "a mob's aim: dy = 0.62 + 10 x 0.2 = 2.62" TO WS-CASE
      MOVE 26200 TO WS-E
      PERFORM CHECK-F-4
+*>   The older tools programs (17 section 3.9) agree with the corrected rules.
+     MOVE 5 TO WS-I
+     CALL "TOOL-CROSSBOW-CHARGE" USING WS-I WS-T
+     MOVE "TOOL-CROSSBOW-CHARGE at Quick Charge 5 is clamped to 0 ticks" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-T TO WS-O
+     PERFORM CHECK-N
+     MOVE 2 TO WS-N
+     MOVE 0 TO WS-I
+     CALL "TOOL-CROSSBOW-ANGLE" USING WS-N WS-I WS-T
+     MOVE 1 TO WS-I
+     CALL "TOOL-CROSSBOW-ANGLE" USING WS-N WS-I WS-RES
+     MOVE "TOOL-CROSSBOW-ANGLE for n 2 is +10 then -10" TO WS-CASE
+     MOVE 1 TO WS-E
+     IF WS-T = 10 AND WS-RES = -10
+         MOVE 1 TO WS-O
+     ELSE
+         MOVE 0 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO WS-I
+     MOVE 0 TO WS-T
+     CALL "TOOL-CROSSBOW-READY" USING WS-I WS-T WS-RES
+     MOVE "TOOL-CROSSBOW-READY: a duration 0 crossbow does not load at elapsed 0" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-RES TO WS-O
+     PERFORM CHECK-N
+     MOVE 1 TO WS-I
+     CALL "TOOL-CROSSBOW-READY" USING WS-I WS-T WS-RES
+     MOVE "TOOL-CROSSBOW-READY: a duration 0 crossbow loads from elapsed 1" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE WS-RES TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
 
  CHECK-F-45.

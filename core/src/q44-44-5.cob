@@ -578,13 +578,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-DATA.
-    05 FILLER              PIC X(30) VALUE "0 1  0swim".
-    05 FILLER              PIC X(30) VALUE "0 2  0look target setter".
-    05 FILLER              PIC X(30) VALUE "0 3  0look at target sink".
-    05 FILLER              PIC X(30) VALUE "0 4  0move to target sink".
-    05 FILLER              PIC X(30) VALUE "1 1  5emerging".
-    05 FILLER              PIC X(30) VALUE "2 1  0force unmount".
-    05 FILLER              PIC X(30) VALUE "2 2  0digging".
+    05 FILLER              PIC X(30) VALUE "0 1 00swim".
+    05 FILLER              PIC X(30) VALUE "0 2 00look target setter".
+    05 FILLER              PIC X(30) VALUE "0 3 00look at target sink".
+    05 FILLER              PIC X(30) VALUE "0 4 00move to target sink".
+    05 FILLER              PIC X(30) VALUE "1 1 05emerging".
+    05 FILLER              PIC X(30) VALUE "2 1 00force unmount".
+    05 FILLER              PIC X(30) VALUE "2 2 00digging".
     05 FILLER              PIC X(30) VALUE "3 1 10roar".
     05 FILLER              PIC X(30) VALUE "4 1 10dig cooldown setter".
     05 FILLER              PIC X(30) VALUE "4 2 10stop attacking".
@@ -592,10 +592,10 @@
     05 FILLER              PIC X(30) VALUE "4 4 10walk to target".
     05 FILLER              PIC X(30) VALUE "4 5 10sonic boom".
     05 FILLER              PIC X(30) VALUE "4 6 10melee".
-    05 FILLER              PIC X(30) VALUE "5 1  5set roar target".
-    05 FILLER              PIC X(30) VALUE "5 2  5walk to disturbance".
-    05 FILLER              PIC X(30) VALUE "6 1  5set roar target".
-    05 FILLER              PIC X(30) VALUE "6 2  5sniffing".
+    05 FILLER              PIC X(30) VALUE "5 1 05set roar target".
+    05 FILLER              PIC X(30) VALUE "5 2 05walk to disturbance".
+    05 FILLER              PIC X(30) VALUE "6 1 05set roar target".
+    05 FILLER              PIC X(30) VALUE "6 2 05sniffing".
     05 FILLER              PIC X(30) VALUE "7 1 10set roar target".
     05 FILLER              PIC X(30) VALUE "7 2 10try to sniff".
     05 FILLER              PIC X(30) VALUE "7 3 10stroll group".
@@ -1077,3 +1077,690 @@
      END-IF
      GOBACK.
  END PROGRAM Q5-ANGER-ACTIVE.
+
+*> ---------------------------------------------------------------------------------------------------------------------------------------------------------
+*> Section 4: the living-entity movement attributes of the sulfur cube.
+*>   Q5-MOD-FRICTION USING base, modifier, out        computeModifiedFriction = clamp(1 - (1 - base) x modifier, 0, 1)
+*>   Q5-MODIFIED-VALUE USING amount, out              an attribute with a lone add_multiplied_total amount on base 1: clamp(1 x (1 + amount), 0, 2048)
+*>   Q5-ARCH-FIELD USING archetype (1 regular, 2 sticky, 3 light), field, out
+*>                                                    1 friction_modifier amount, 2 air_drag_modifier amount, 3 bounciness, 4 knockback_resistance, 5 explosion_knockback_resistance,
+*>                                                    6 buoyant (1 true, 0 absent), 7 horizontal_power, 8 vertical_power, 9 push_sound_cooldown, 10 push_sound_impulse_threshold
+*>   Q5-GROUND USING block friction, friction modifier, air drag modifier, on ground, omnidirectional, f out, h out, v out, speed factor out
+*>   Q5-FALL-Y USING y, gravity, client, chunk loaded, above minimum y, out        (travelInAir step 3)
+*>   Q5-LEVITATE USING y, amplifier, out
+*>   Q5-BLOCK-RESTITUTION USING key, out;  Q5-SUPPRESSES-BOUNCE USING key, out
+*>   Q5-BOUNCE USING vx, vy, vz, collided x, collided z, vertical (0 none, 1 below, 2 above), sneaking, below suppresses, block bounciness, living, bounciness attribute,
+*>                   gravity, requested y, air drag, nx out, ny out, nz out, bounced out
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-MOD-FRICTION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BASE                 FLOAT-LONG.
+ 01 L-MODIFIER             FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-BASE L-MODIFIER L-OUT.
+     COMPUTE L-OUT = 1 - (1 - L-BASE) * L-MODIFIER
+     IF L-OUT < 0
+         MOVE 0 TO L-OUT
+     END-IF
+     IF L-OUT > 1
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-MOD-FRICTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-MODIFIED-VALUE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AMOUNT               FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-AMOUNT L-OUT.
+     COMPUTE L-OUT = 1 + L-AMOUNT
+     IF L-OUT < 0
+         MOVE 0 TO L-OUT
+     END-IF
+     IF L-OUT > 2048
+         MOVE 2048 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-MODIFIED-VALUE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-ARCH-FIELD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TABLE.
+    05 FILLER              PIC X(80) VALUE "-0.699999988079071 -0.8999999985098839 0.5 -1 -1 1 0.4125 0.09 0.5 0.2".
+    05 FILLER              PIC X(80) VALUE "1.0 -0.9900000002235174 0.0 -2 -2 0 0.4125 0.09 0.5 0.05".
+    05 FILLER              PIC X(80) VALUE "-0.699999988079071 0.7999999523162842 1.0 -1 -1 1 0.4125 0.18 0.7 0.2".
+ 01 WS-ROW                 PIC X(80).
+ 01 WS-TOKEN               PIC X(24).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ARCH                 BINARY-LONG.
+ 01 L-FIELD                BINARY-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ARCH L-FIELD L-OUT.
+     EVALUATE L-ARCH
+         WHEN 1
+             MOVE WS-TABLE(1:80) TO WS-ROW
+         WHEN 2
+             MOVE WS-TABLE(81:80) TO WS-ROW
+         WHEN OTHER
+             MOVE WS-TABLE(161:80) TO WS-ROW
+     END-EVALUATE
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-FIELD
+         MOVE SPACES TO WS-TOKEN
+         UNSTRING WS-ROW DELIMITED BY ALL SPACE INTO WS-TOKEN WITH POINTER WS-POS
+     END-PERFORM
+     COMPUTE L-OUT = FUNCTION NUMVAL(WS-TOKEN)
+     GOBACK.
+ END PROGRAM Q5-ARCH-FIELD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-GROUND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DRAG-BASE           FLOAT-LONG.
+ 01 WS-NINETY-ONE          FLOAT-LONG VALUE 0.91.
+ 01 WS-AIR-V               FLOAT-LONG.
+ 01 WS-AIR-H               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-BLOCK                FLOAT-LONG.
+ 01 L-FRICTION             FLOAT-LONG.
+ 01 L-AIR                  FLOAT-LONG.
+ 01 L-GROUND               BINARY-LONG.
+ 01 L-OMNI                 BINARY-LONG.
+ 01 L-F                    FLOAT-LONG.
+ 01 L-H                    FLOAT-LONG.
+ 01 L-V                    FLOAT-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-BLOCK L-FRICTION L-AIR L-GROUND L-OMNI L-F L-H L-V L-SPEED.
+     MOVE 1.0 TO L-F
+     IF L-GROUND = 1
+         CALL "Q5-MOD-FRICTION" USING L-BLOCK L-FRICTION L-F
+     END-IF
+     CALL "Q5-MOD-FRICTION" USING WS-NINETY-ONE L-AIR WS-AIR-H
+     COMPUTE L-H = L-F * WS-AIR-H
+     MOVE 0.98 TO WS-DRAG-BASE
+     IF L-OMNI = 1
+         MOVE 0.91 TO WS-DRAG-BASE
+     END-IF
+     CALL "Q5-MOD-FRICTION" USING WS-DRAG-BASE L-AIR L-V
+     MOVE 1.0 TO L-SPEED
+     IF L-GROUND = 1 AND L-F > 0.6
+         COMPUTE L-SPEED = 0.21600002 / (L-F * L-F * L-F)
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-GROUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-FALL-Y.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-GRAVITY              FLOAT-LONG.
+ 01 L-CLIENT               BINARY-LONG.
+ 01 L-LOADED               BINARY-LONG.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-Y L-GRAVITY L-CLIENT L-LOADED L-ABOVE L-OUT.
+*>   On the server gravity always applies. A client whose chunk is absent uses -0.1 above the world's minimum Y, else 0.
+     COMPUTE L-OUT = L-Y - L-GRAVITY
+     IF L-CLIENT = 1 AND L-LOADED = 0
+         MOVE 0 TO L-OUT
+         IF L-ABOVE = 1
+             MOVE -0.1 TO L-OUT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-FALL-Y.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-LEVITATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-Y L-AMPLIFIER L-OUT.
+     COMPUTE L-OUT = L-Y + (0.05 * (L-AMPLIFIER + 1) - L-Y) * 0.2
+     GOBACK.
+ END PROGRAM Q5-LEVITATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-BLOCK-RESTITUTION.
+*> bounce_restitution of the blocks that set it (4.3 step 3): slime_block 1.0, every bed 0.75, shelf_mushroom 0.75; the default is 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-KEY L-OUT.
+     MOVE 0 TO L-OUT
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(L-KEY))
+     EVALUATE TRUE
+         WHEN L-KEY = "slime_block"
+             MOVE 1.0 TO L-OUT
+         WHEN L-KEY = "shelf_mushroom"
+             MOVE 0.75 TO L-OUT
+         WHEN WS-LEN >= 4 AND L-KEY(WS-LEN - 3:4) = "_bed"
+             MOVE 0.75 TO L-OUT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q5-BLOCK-RESTITUTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-SUPPRESSES-BOUNCE.
+*> The block tag suppresses_bounce holds only honey_block.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-KEY = "honey_block"
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-SUPPRESSES-BOUNCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-BOUNCE.
+*> Entity.restituteMovementAfterCollisions (4.3). b = 0 when sneaking, else the bounciness attribute of a living entity (0 for a non-living one). A collided horizontal axis
+*> becomes -v x b. A ceiling hit (vertical 2) has the vertical factor b; a floor hit has factor 0 when the downward speed does not exceed the gravity, when sneaking or when the
+*> block suppresses bounce, else max(b, block bounciness, x 0.8 for a non-living entity). A factor above 0 sets the new vertical velocity to (r g - vy) x lerp(r, 1, air drag) x factor
+*> with r = requested y / vy; a factor of 0 gives 0. Without a vertical collision vy stays.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-FACTOR              FLOAT-LONG.
+ 01 WS-BLOCK               FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-DRAG                FLOAT-LONG.
+ 01 WS-DOWN                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-COLL-X               BINARY-LONG.
+ 01 L-COLL-Z               BINARY-LONG.
+ 01 L-VERTICAL             BINARY-LONG.
+ 01 L-SNEAK                BINARY-LONG.
+ 01 L-SUPPRESS             BINARY-LONG.
+ 01 L-BLOCK-BOUNCE         FLOAT-LONG.
+ 01 L-LIVING               BINARY-LONG.
+ 01 L-ATTRIBUTE            FLOAT-LONG.
+ 01 L-GRAVITY              FLOAT-LONG.
+ 01 L-REQUESTED-Y          FLOAT-LONG.
+ 01 L-AIR-DRAG             FLOAT-LONG.
+ 01 L-NX                   FLOAT-LONG.
+ 01 L-NY                   FLOAT-LONG.
+ 01 L-NZ                   FLOAT-LONG.
+ 01 L-BOUNCED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-VX L-VY L-VZ L-COLL-X L-COLL-Z L-VERTICAL L-SNEAK L-SUPPRESS L-BLOCK-BOUNCE L-LIVING L-ATTRIBUTE
+         L-GRAVITY L-REQUESTED-Y L-AIR-DRAG L-NX L-NY L-NZ L-BOUNCED.
+     MOVE 0 TO WS-B
+     IF L-SNEAK = 0 AND L-LIVING = 1
+         MOVE L-ATTRIBUTE TO WS-B
+     END-IF
+     MOVE L-VX TO L-NX
+     MOVE L-VY TO L-NY
+     MOVE L-VZ TO L-NZ
+     IF L-COLL-X = 1
+         COMPUTE L-NX = 0 - L-VX * WS-B
+     END-IF
+     IF L-COLL-Z = 1
+         COMPUTE L-NZ = 0 - L-VZ * WS-B
+     END-IF
+     MOVE 0 TO L-BOUNCED
+     IF WS-B > 0 AND (L-COLL-X = 1 OR L-COLL-Z = 1)
+         MOVE 1 TO L-BOUNCED
+     END-IF
+     IF L-VERTICAL > 0
+         MOVE WS-B TO WS-FACTOR
+         IF L-VERTICAL = 1
+             COMPUTE WS-DOWN = 0 - L-VY
+             IF WS-DOWN <= L-GRAVITY OR L-SNEAK = 1 OR L-SUPPRESS = 1
+                 MOVE 0 TO WS-FACTOR
+             ELSE
+                 MOVE L-BLOCK-BOUNCE TO WS-BLOCK
+                 IF L-LIVING = 0
+                     COMPUTE WS-BLOCK = WS-BLOCK * 0.8
+                 END-IF
+                 MOVE WS-B TO WS-FACTOR
+                 IF WS-BLOCK > WS-FACTOR
+                     MOVE WS-BLOCK TO WS-FACTOR
+                 END-IF
+             END-IF
+         END-IF
+         MOVE 0 TO L-NY
+         IF WS-FACTOR > 0
+             COMPUTE WS-R = L-REQUESTED-Y / L-VY
+             COMPUTE WS-DRAG = 1 + WS-R * (L-AIR-DRAG - 1)
+             COMPUTE L-NY = (WS-R * L-GRAVITY - L-VY) * WS-DRAG * WS-FACTOR
+             MOVE 1 TO L-BOUNCED
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-BOUNCE.
+
+*> ---------------------------------------------------------------------------------------------------------------------------------------------------------
+*> Section 7: the breeze attack sensor.
+*>   Q5-BREEZE-PICK USING count, excluded table (1 creative or spectator player), attackable table, index out (0 none)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-BREEZE-PICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-EXCLUDED.
+    05 L-EX                PIC 9 OCCURS 64 TIMES.
+ 01 L-ATTACKABLE.
+    05 L-AT                PIC 9 OCCURS 64 TIMES.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT L-EXCLUDED L-ATTACKABLE L-INDEX.
+     MOVE 0 TO L-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT OR L-INDEX > 0
+         IF L-EX(WS-I) = 0 AND L-AT(WS-I) = 1
+             MOVE WS-I TO L-INDEX
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM Q5-BREEZE-PICK.
+
+*> ---------------------------------------------------------------------------------------------------------------------------------------------------------
+*> Section 8: the creaking heart block entity.
+*>   Q5-HEART-OUTPUT USING has protector, distance, out           0 without a protector, else 15 - floor(15 clamp(distance, 0, 32) / 32)
+*>   Q5-HEART-TICKER USING ticker, draw (0 to 4), run out, new ticker out
+*>   Q5-HEART-LOGS USING heart axis, log a, axis a, log b, axis b, ok out
+*>   Q5-HEART-STATE USING has logs, linked, active, state out     (0 UPROOTED, 1 DORMANT, 2 AWAKE)
+*>   Q5-HEART-PROTECTOR USING active, requires persistence, distance, player stuck, remove out
+*>   Q5-HEART-SPAWN USING linked, state, monsters allowed, peaceful, player within 32, ok out
+*>   Q5-HEART-LINK USING live and not removed, uuid known, found in level, ticks existed, link out (0 cleared, 1 live, 2 matched by UUID, 3 UUID kept)
+*>   Q5-HEART-HURT USING has protector, client, emitter, awake, draw (2 or 3), particles out, resins out, emitter out
+*>   Q5-HEART-EMIT USING emitter, bursts out, hurt effect out, t out, pitch out
+*>   Q5-RESIN-NEIGHBOUR USING kind (1 air, 2 water source, 3 resin clump, 4 other), faces, face, result out, faces out
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-OUTPUT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-PROTECTOR            BINARY-LONG.
+ 01 L-DISTANCE             FLOAT-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PROTECTOR L-DISTANCE L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-PROTECTOR = 1
+         MOVE L-DISTANCE TO WS-D
+         IF WS-D < 0
+             MOVE 0 TO WS-D
+         END-IF
+         IF WS-D > 32
+             MOVE 32 TO WS-D
+         END-IF
+         COMPUTE L-OUT = 15 - FUNCTION INTEGER(15 * WS-D / 32 + 0.0000001)
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-OUTPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-TICKER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKER               BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-RUN                  BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKER L-DRAW L-RUN L-NEW.
+*>   The value before the decrement is tested: from 0 up the tick ends; below 0 the body runs and the ticker is reset to 20 + nextInt(5).
+     IF L-TICKER >= 0
+         MOVE 0 TO L-RUN
+         COMPUTE L-NEW = L-TICKER - 1
+     ELSE
+         MOVE 1 TO L-RUN
+         COMPUTE L-NEW = 20 + L-DRAW
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-TICKER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-LOGS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AXIS                 BINARY-LONG.
+ 01 L-LOG-A                BINARY-LONG.
+ 01 L-AXIS-A               BINARY-LONG.
+ 01 L-LOG-B                BINARY-LONG.
+ 01 L-AXIS-B               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-AXIS L-LOG-A L-AXIS-A L-LOG-B L-AXIS-B L-OK.
+     MOVE 0 TO L-OK
+     IF L-LOG-A = 1 AND L-LOG-B = 1 AND L-AXIS-A = L-AXIS AND L-AXIS-B = L-AXIS
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-LOGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-STATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LOGS                 BINARY-LONG.
+ 01 L-LINKED               BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LOGS L-LINKED L-ACTIVE L-STATE.
+     EVALUATE TRUE
+         WHEN L-LOGS = 0 AND L-LINKED = 0
+             MOVE 0 TO L-STATE
+         WHEN L-ACTIVE = 1
+             MOVE 2 TO L-STATE
+         WHEN OTHER
+             MOVE 1 TO L-STATE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q5-HEART-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-PROTECTOR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-PERSISTENT           BINARY-LONG.
+ 01 L-DISTANCE             FLOAT-LONG.
+ 01 L-STUCK                BINARY-LONG.
+ 01 L-REMOVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ACTIVE L-PERSISTENT L-DISTANCE L-STUCK L-REMOVE.
+     MOVE 0 TO L-REMOVE
+     IF (L-ACTIVE = 0 AND L-PERSISTENT = 0) OR L-DISTANCE > 34 OR L-STUCK = 1
+         MOVE 1 TO L-REMOVE
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-PROTECTOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-SPAWN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LINKED               BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-MONSTERS             BINARY-LONG.
+ 01 L-PEACEFUL             BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-LINKED L-STATE L-MONSTERS L-PEACEFUL L-PLAYER L-OK.
+     MOVE 0 TO L-OK
+     IF L-LINKED = 0 AND L-STATE = 2 AND L-MONSTERS = 1 AND L-PEACEFUL = 0 AND L-PLAYER = 1
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-LINK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LIVE                 BINARY-LONG.
+ 01 L-UUID                 BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-LINK                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-LIVE L-UUID L-FOUND L-TICKS L-LINK.
+     MOVE 0 TO L-LINK
+     EVALUATE TRUE
+         WHEN L-LIVE = 1
+             MOVE 1 TO L-LINK
+         WHEN L-UUID = 1 AND L-FOUND = 1
+             MOVE 2 TO L-LINK
+         WHEN L-UUID = 1 AND L-TICKS < 30
+             MOVE 3 TO L-LINK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q5-HEART-LINK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-HURT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PROTECTOR            BINARY-LONG.
+ 01 L-CLIENT               BINARY-LONG.
+ 01 L-EMITTER              BINARY-LONG.
+ 01 L-AWAKE                BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-PARTICLES            BINARY-LONG.
+ 01 L-RESINS               BINARY-LONG.
+ 01 L-NEW-EMITTER          BINARY-LONG.
+ PROCEDURE DIVISION USING L-PROTECTOR L-CLIENT L-EMITTER L-AWAKE L-DRAW L-PARTICLES L-RESINS L-NEW-EMITTER.
+     MOVE 0 TO L-PARTICLES L-RESINS
+     MOVE L-EMITTER TO L-NEW-EMITTER
+     IF L-PROTECTOR = 1 AND L-CLIENT = 0 AND L-EMITTER <= 0
+         MOVE 20 TO L-PARTICLES
+         IF L-AWAKE = 1
+             MOVE L-DRAW TO L-RESINS
+         END-IF
+         MOVE 100 TO L-NEW-EMITTER
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-HEART-EMIT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EMITTER              BINARY-LONG.
+ 01 L-BURSTS               BINARY-LONG.
+ 01 L-HURT                 BINARY-LONG.
+ 01 L-T                    FLOAT-LONG.
+ 01 L-PITCH                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-EMITTER L-BURSTS L-HURT L-T L-PITCH.
+     MOVE 0 TO L-BURSTS L-HURT L-T L-PITCH
+     IF L-EMITTER > 50
+         MOVE 2 TO L-BURSTS
+     END-IF
+     IF L-EMITTER > 0 AND FUNCTION MOD(L-EMITTER, 10) = 0
+         MOVE 1 TO L-HURT
+         COMPUTE L-T = 0.2 + 0.8 * (100 - L-EMITTER) / 100
+         COMPUTE L-PITCH = 0.5 + FUNCTION INTEGER(L-EMITTER / 2) / 100
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-HEART-EMIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-RESIN-NEIGHBOUR.
+*> One neighbour of spreadResin (8, visit rule 2): kind 1 air gives a new resin_clump, 2 a water source a waterlogged one, 3 a clump keeps its faces, anything else is skipped. When
+*> the clump does not have face f (0 to 5, bit f of faces) the face is set and the traversal stops: result 1 for a new clump, 2 a waterlogged new clump, 3 a face added.
+*> Otherwise result 0 (skip) and faces unchanged.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BIT                 BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-FACES                BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-NEW-FACES            BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-FACES L-FACE L-RESULT L-NEW-FACES.
+     MOVE 0 TO L-RESULT
+     MOVE L-FACES TO L-NEW-FACES
+     COMPUTE WS-BIT = 2 ** L-FACE
+     EVALUATE L-KIND
+         WHEN 1
+             MOVE 1 TO L-RESULT
+             MOVE WS-BIT TO L-NEW-FACES
+         WHEN 2
+             MOVE 2 TO L-RESULT
+             MOVE WS-BIT TO L-NEW-FACES
+         WHEN 3
+             COMPUTE WS-HAS = FUNCTION MOD(FUNCTION INTEGER(L-FACES / WS-BIT), 2)
+             IF WS-HAS = 0
+                 MOVE 3 TO L-RESULT
+                 COMPUTE L-NEW-FACES = L-FACES + WS-BIT
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q5-RESIN-NEIGHBOUR.
+
+*> ---------------------------------------------------------------------------------------------------------------------------------------------------------
+*> Section 10A: special dates, explosion-hit reactions, block resistance, raid texts.
+*>   Q5-SPECIAL-DATE USING month, day, kind (1 halloween, 2 the Christmas range 24 to 26 December, 3 Christmas, 4 new year), out
+*>   Q5-CAN-TRIGGER USING trigger block interaction, source is a breeze wind charge, mob griefing, out
+*>   Q5-OPEN-BY-WIND USING block set type key, out (1 yes, 0 no, -1 unknown set type)
+*>   Q5-EXPLOSION-HIT USING class (1 button, 2 door, 3 trapdoor, 4 fence gate, 5 bell), can trigger, powered, lower half, can open by wind, action out
+*>   Q5-RESISTANCE-SET USING resistance, stored out;  Q5-SHORT-FUSE USING base, draw, fuse out
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-SPECIAL-DATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MONTH                BINARY-LONG.
+ 01 L-DAY                  BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-MONTH L-DAY L-KIND L-OUT.
+     MOVE 0 TO L-OUT
+     EVALUATE L-KIND
+         WHEN 1
+             IF L-MONTH = 10 AND L-DAY = 31
+                 MOVE 1 TO L-OUT
+             END-IF
+         WHEN 2
+             IF L-MONTH = 12 AND L-DAY >= 24 AND L-DAY <= 26
+                 MOVE 1 TO L-OUT
+             END-IF
+         WHEN 3
+             IF L-MONTH = 12 AND L-DAY = 24
+                 MOVE 1 TO L-OUT
+             END-IF
+         WHEN 4
+             IF L-MONTH = 1 AND L-DAY = 1
+                 MOVE 1 TO L-OUT
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q5-SPECIAL-DATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-CAN-TRIGGER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TRIGGER              BINARY-LONG.
+ 01 L-BREEZE               BINARY-LONG.
+ 01 L-GRIEFING             BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-TRIGGER L-BREEZE L-GRIEFING L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-TRIGGER = 1 AND (L-BREEZE = 0 OR L-GRIEFING = 1)
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-CAN-TRIGGER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-OPEN-BY-WIND.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-OUT.
+     EVALUATE L-KEY
+         WHEN "iron"
+             MOVE 0 TO L-OUT
+         WHEN "gold"
+         WHEN "copper"
+         WHEN "stone"
+         WHEN "polished_blackstone"
+         WHEN "cherry"
+         WHEN "crimson"
+         WHEN "warped"
+         WHEN "bamboo"
+         WHEN "oak"
+         WHEN "spruce"
+         WHEN "birch"
+         WHEN "acacia"
+         WHEN "jungle"
+         WHEN "dark_oak"
+         WHEN "pale_oak"
+         WHEN "poplar"
+         WHEN "mangrove"
+             MOVE 1 TO L-OUT
+         WHEN OTHER
+             MOVE -1 TO L-OUT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q5-OPEN-BY-WIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-EXPLOSION-HIT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CLASS                BINARY-LONG.
+ 01 L-TRIGGER              BINARY-LONG.
+ 01 L-POWERED              BINARY-LONG.
+ 01 L-LOWER                BINARY-LONG.
+ 01 L-WIND                 BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-CLASS L-TRIGGER L-POWERED L-LOWER L-WIND L-ACTION.
+*>   Action 0 nothing, 1 press the button, 2 toggle open, 3 ring the bell.
+     MOVE 0 TO L-ACTION
+     IF L-TRIGGER = 1
+         EVALUATE L-CLASS
+             WHEN 1
+                 IF L-POWERED = 0
+                     MOVE 1 TO L-ACTION
+                 END-IF
+             WHEN 2
+                 IF L-LOWER = 1 AND L-WIND = 1 AND L-POWERED = 0
+                     MOVE 2 TO L-ACTION
+                 END-IF
+             WHEN 3
+                 IF L-WIND = 1 AND L-POWERED = 0
+                     MOVE 2 TO L-ACTION
+                 END-IF
+             WHEN 4
+                 IF L-POWERED = 0
+                     MOVE 2 TO L-ACTION
+                 END-IF
+             WHEN 5
+                 MOVE 3 TO L-ACTION
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-EXPLOSION-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-RESISTANCE-SET.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RESISTANCE           FLOAT-LONG.
+ 01 L-STORED               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-RESISTANCE L-STORED.
+     MOVE L-RESISTANCE TO L-STORED
+     IF L-RESISTANCE < 0
+         MOVE 0 TO L-STORED
+     END-IF
+     GOBACK.
+ END PROGRAM Q5-RESISTANCE-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q5-SHORT-FUSE.
+*> getRandomShortFuse(base, random) = random.nextInt(base / 4) + base / 8: with the draw given (0 to base / 4 - 1) the fuse (base 80: 10 to 29).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-FUSE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BASE L-DRAW L-FUSE.
+     COMPUTE L-FUSE = L-DRAW + FUNCTION INTEGER(L-BASE / 8)
+     GOBACK.
+ END PROGRAM Q5-SHORT-FUSE.
