@@ -171,6 +171,52 @@
                      MOVE 1 TO RL-COND(WS-I)
                  END-IF
          END-EVALUATE
+*>       the analog output kind (30-2 section 5.3)
+         MOVE 0 TO RL-ANALOG(WS-I)
+         EVALUATE TRUE
+             WHEN WS-BARE = "chest" OR "trapped_chest"
+                 MOVE 1 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "barrel"
+                 MOVE 2 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "shulker_box"
+                 MOVE 3 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "furnace" OR "smoker" OR "blast_furnace"
+                 MOVE 4 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "brewing_stand"
+                 MOVE 5 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "hopper"
+                 MOVE 6 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "dispenser" OR "dropper"
+                 MOVE 7 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "decorated_pot"
+                 MOVE 8 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "crafter"
+                 MOVE 9 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "chiseled_bookshelf"
+                 MOVE 10 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "lectern"
+                 MOVE 11 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "composter"
+                 MOVE 12 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "water_cauldron" OR "powder_snow_cauldron"
+                 MOVE 13 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "lava_cauldron"
+                 MOVE 14 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "cauldron"
+                 MOVE 15 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "cake"
+                 MOVE 16 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "candle_cake"
+                 MOVE 17 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "beehive" OR "bee_nest"
+                 MOVE 18 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "end_portal_frame"
+                 MOVE 19 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "respawn_anchor"
+                 MOVE 20 TO RL-ANALOG(WS-I)
+             WHEN WS-CLASS = 15
+                 MOVE 21 TO RL-ANALOG(WS-I)
+         END-EVALUATE
 *>       the decoded states of the signal blocks
          IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 28)
              COMPUTE WS-LAST = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I) - 1
@@ -1319,6 +1365,20 @@
  01 WS-COND                BINARY-LONG.
  01 WS-OPP                 BINARY-LONG.
  01 WS-DIODES-ONLY         BINARY-LONG.
+ 01 WS-AHAS                BINARY-LONG.
+ 01 WS-AVAL                BINARY-LONG.
+ 01 WS-ACOND               BINARY-LONG.
+ 01 WS-ACLASS              BINARY-LONG.
+ 01 WS-FRAMES              BINARY-LONG.
+ 01 WS-FVAL                BINARY-LONG.
+ 01 WS-S2HAS               BINARY-LONG.
+ 01 WS-S2VAL               BINARY-LONG.
+ 01 WS-INPUT2              BINARY-LONG.
+ 01 WS-OPP-F               BINARY-LONG.
+ 01 WS-AX2                 BINARY-LONG.
+ 01 WS-AY2                 BINARY-LONG.
+ 01 WS-AZ2                 BINARY-LONG.
+ 01 WS-ASTATE              BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -1342,6 +1402,22 @@
      COMPUTE WS-NZ = L-Z + WS-DZ
      CALL "RL-SIGNAL" USING L-DIM WS-NX WS-NY WS-NZ WS-F WS-S
      MOVE WS-S TO L-INPUT
+     IF WS-CLASS = 8
+*>       getInputSignal of the comparator (30-2 4.2): the analog output of the cell it faces replaces the input, else a frame or an analog block behind one conductor
+         CALL "RS1-OPP" USING WS-F WS-OPP-F
+         CALL "RL-ANALOG-AT" USING L-DIM WS-NX WS-NY WS-NZ WS-OPP-F WS-AHAS WS-AVAL
+         CALL "RL-LOOK" USING L-DIM WS-NX WS-NY WS-NZ WS-ASTATE WS-ACLASS WS-ACOND
+         MOVE 0 TO WS-FRAMES WS-FVAL WS-S2HAS WS-S2VAL
+         IF WS-ACOND = 1
+             COMPUTE WS-AX2 = WS-NX + WS-DX
+             COMPUTE WS-AY2 = WS-NY + WS-DY
+             COMPUTE WS-AZ2 = WS-NZ + WS-DZ
+             CALL "RL-FRAME-AT" USING L-DIM WS-AX2 WS-AY2 WS-AZ2 WS-F WS-FRAMES WS-FVAL
+             CALL "RL-ANALOG-AT" USING L-DIM WS-AX2 WS-AY2 WS-AZ2 WS-OPP-F WS-S2HAS WS-S2VAL
+         END-IF
+         CALL "RS1-CMP-INPUT" USING L-INPUT WS-AHAS WS-AVAL WS-ACOND WS-FRAMES WS-FVAL WS-S2HAS WS-S2VAL WS-INPUT2
+         MOVE WS-INPUT2 TO L-INPUT
+     END-IF
      MOVE 0 TO WS-DIODES-ONLY
      IF WS-CLASS = 7
          MOVE 1 TO WS-DIODES-ONLY

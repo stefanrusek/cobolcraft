@@ -2,7 +2,9 @@
 *> (0 none, 1 redstone_wire, 2 redstone_block, 3 redstone_torch, 4 redstone_wall_torch, 5 lever, 6 a button, 7 repeater, 8 comparator, 9 a trapdoor, 10 hopper, 11 redstone_lamp, 12 a door,
 *> 13 a fence gate, 14 tnt, 15 a copper bulb, 16 note_block, 17 observer, 18 an on-off pressure plate, 19 a weighted pressure plate, 20 daylight_detector, 21 target, 22 a lightning rod,
 *> 23 detector_rail, 24 tripwire_hook, 25 tripwire, 26 sculk_sensor, 27 calibrated_sculk_sensor, 28 lectern, 29 dispenser, 30 dropper, 31 piston, 32 sticky_piston, 33 piston_head,
-*> 34 moving_piston); RL-COND is 1 for a
+*> 34 moving_piston); RL-ANALOG is the analog output kind of each block, indexed by block id + 1 (30-2 section 5.3: 0 none, 1 chest, 2 barrel, 3 shulker box, 4 furnace family, 5 brewing stand, 6 hopper, 7 dispenser or dropper,
+*> 8 decorated pot, 9 crafter, 10 chiseled bookshelf, 11 lectern, 12 composter, 13 layered cauldron, 14 lava cauldron, 15 empty cauldron, 16 cake, 17 candle cake, 18 beehive, 19 end portal
+*> frame, 20 respawn anchor, 21 copper bulb); RL-COND is 1 for a
 *> block that is a redstone conductor (30-1 section 2.4: the never and always lists, else the solid opaque block of this core). RL-S-* is the decoded state of every state of the
 *> classes 3 to 8: RL-S-DIR the facing direction (2 north, 3 south, 4 west, 5 east) of a wall torch, repeater and comparator and the connected direction C of a lever and button (30-5
 *> section 1), RL-S-ON lit or powered, RL-S-DELAY the repeater delay, RL-S-LOCKED its lock, RL-S-MODE the comparator mode (1 subtract), RL-S-POWER the power property (weighted plates, daylight detector, target, sculk sensors; 0 when the state has none). RL-SILENT is 1 only while the wire evaluates
@@ -15,6 +17,7 @@
     05 RL-SILENT            BINARY-LONG.
     05 RL-CLASS             BINARY-CHAR UNSIGNED OCCURS 1400 TIMES.
     05 RL-COND              BINARY-CHAR UNSIGNED OCCURS 1400 TIMES.
+    05 RL-ANALOG            BINARY-CHAR UNSIGNED OCCURS 1400 TIMES.
     05 RL-S OCCURS 40000 TIMES.
        10 RL-S-DIR          BINARY-CHAR UNSIGNED.
        10 RL-S-ON           BINARY-CHAR UNSIGNED.
@@ -30,6 +33,7 @@
        10 RL-TOG-Y          BINARY-LONG.
        10 RL-TOG-Z          BINARY-LONG.
        10 RL-TOG-WHEN       BINARY-DOUBLE.
+    05 RL-LAST              BINARY-LONG OCCURS 512 TIMES.
     05 RL-CMP-COUNT         BINARY-LONG.
     05 RL-CMP OCCURS 256 TIMES.
        10 RL-CMP-DIM        BINARY-LONG.
