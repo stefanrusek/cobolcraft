@@ -30,6 +30,11 @@
  01 WS-STEPS               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-PITCH               FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG VALUE 0.
+ 01 WS-WALL                BINARY-LONG VALUE 2.
+ 01 WS-WX                  BINARY-LONG.
+ 01 WS-WY                  BINARY-LONG.
+ 01 WS-WZ                  BINARY-LONG.
  01 WS-VX                  FLOAT-LONG VALUE 0.
  01 WS-VY                  FLOAT-LONG VALUE -0.3.
  01 WS-VZ                  FLOAT-LONG VALUE 0.6.
@@ -245,6 +250,55 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE PL-GLIDING TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Levitation (effect id 24) takes the elytra's use away: no glide.
+     MOVE 0 TO WS-PITCH
+     PERFORM SET-AIR
+     MOVE 1 TO EF-COUNT
+     MOVE 24 TO EF-ID(1)
+     PERFORM PRESS-SPACE
+     MOVE 0 TO EF-COUNT
+     MOVE "test glide: with Levitation Space in the air does not glide" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-GLIDING TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A wall across the way along Z: the glider stops against it (a blocked axis loses its speed), 0.3 off the face of the block at z = -9.
+     PERFORM VARYING WS-WY FROM 95 BY 1 UNTIL WS-WY > 105
+         MOVE 0 TO WS-WX
+         MOVE -9 TO WS-WZ
+         CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-WX WS-WY WS-WZ WS-WALL
+     END-PERFORM
+     PERFORM START-GLIDE
+     MOVE 15 TO WS-STEPS
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-STEPS
+     MOVE "test glide: a wall ahead along Z stops the glider (z -9.3, no speed along Z)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(PL-Z + 9.3) < 0.001 AND PL-VZ = 0 AND PL-GLIDING = 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A wall across the way along X (facing east, yaw -90): the glider stops 0.3 off the face of the block at x = 3.
+     PERFORM VARYING WS-WY FROM 95 BY 1 UNTIL WS-WY > 105
+         MOVE 3 TO WS-WX
+         MOVE -13 TO WS-WZ
+         CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-WX WS-WY WS-WZ WS-WALL
+     END-PERFORM
+     MOVE -90 TO WS-YAW
+     MOVE 0.6 TO WS-VX
+     MOVE 0 TO WS-VZ
+     PERFORM START-GLIDE
+     MOVE 15 TO WS-STEPS
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-STEPS
+     MOVE "test glide: a wall ahead along X stops the glider (x 2.7, no speed along X)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(PL-X - 2.7) < 0.001 AND PL-VX = 0 AND PL-GLIDING = 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> The player in the air at (0.5, 100, -12.5) facing +Z at pitch WS-PITCH, a fresh elytra in the chest slot, no glide, no velocity.
@@ -253,7 +307,7 @@
      MOVE 0.5 TO PL-X
      MOVE 100 TO PL-Y
      MOVE -12.5 TO PL-Z
-     MOVE 0 TO PL-YAW
+     MOVE WS-YAW TO PL-YAW
      MOVE WS-PITCH TO PL-PITCH
      MOVE 1 TO IX-COUNT(2)
      MOVE WS-ELYTRA TO IX-ITEM(2)
