@@ -21,16 +21,19 @@
  01 L-MARKER-Y             BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y.
      MOVE CW-SETTINGS TO CORE-SETTINGS
-     IF CS-WORLD-TYPE = "debug"
-         CALL "WORLDGEN-DEBUG-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
-     ELSE
-         CALL "GEN-DATA-READY" USING WS-READY
-         IF WS-READY = 1
-             CALL "GEN-STANDARD-INSTALL" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
-         ELSE
-             CALL "WORLDGEN-VOID-CHUNK" USING L-CHUNK L-MARKER-Y
-         END-IF
-     END-IF
+     EVALUATE TRUE
+         WHEN CS-WORLD-TYPE = "debug"
+             CALL "WORLDGEN-DEBUG-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+         WHEN CS-WORLD-TYPE = "superflat"
+             CALL "WORLDGEN-FLAT-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+         WHEN OTHER
+             CALL "GEN-DATA-READY" USING WS-READY
+             IF WS-READY = 1
+                 CALL "GEN-STANDARD-INSTALL" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
+             ELSE
+                 CALL "WORLDGEN-VOID-CHUNK" USING L-CHUNK L-MARKER-Y
+             END-IF
+     END-EVALUATE
      GOBACK.
  END PROGRAM WORLDGEN-STANDARD-CHUNK.
 
@@ -52,3 +55,36 @@
      END-IF
      GOBACK.
  END PROGRAM WORLD-IS-DEBUG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-GEN-OWN.
+*> USING flag out (BINARY-LONG): 1 when the open world's overworld has a generator of its own that the generation queue and its workers do not serve
+*> (the hidden debug type: its grid; the superflat type: the flat generator of worldgen-flat.cob), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF CW-WORLD-TYPE = "debug" OR CW-WORLD-TYPE = "superflat"
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-GEN-OWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-IS-FLAT.
+*> USING flag out (BINARY-LONG): 1 when the open world is of the superflat type (56 section 5.1: the flat generator in the overworld), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF CW-WORLD-TYPE = "superflat"
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-IS-FLAT.

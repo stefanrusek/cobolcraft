@@ -148,6 +148,10 @@
  01 WS-DONE                BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE CW-DIM(1) TO WS-DIM
+*>   The flat generator's spawn height (56 section 4.6 and 4.8) replaces the 64 of the noise terrain.
+     IF CW-WORLD-TYPE = "superflat"
+         CALL "FLAT-SPAWN-HEIGHT" USING WS-HEIGHT
+     END-IF
      CALL "WP-PROVISIONAL" USING WS-ZERO WS-ZERO2 WS-HEIGHT WS-X WS-Y WS-Z
      MOVE WS-X TO CW-SPAWN-X
      MOVE WS-Y TO CW-SPAWN-Y
@@ -202,7 +206,7 @@
  01 WS-READY               BINARY-LONG.
  PROCEDURE DIVISION.
      IF CW-WORLD-TYPE = "standard"
-         CALL "WORLD-IS-DEBUG" USING WS-DEBUG
+         CALL "WORLD-GEN-OWN" USING WS-DEBUG
          CALL "GEN-DATA-READY" USING WS-READY
          IF GQ-WORKERS > 0 AND WS-DEBUG = 0 AND WS-READY = 1
              MOVE 2 TO GQ-SP-STATE

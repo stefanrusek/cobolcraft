@@ -13,13 +13,17 @@
  01 WS-READY               BINARY-LONG.
  PROCEDURE DIVISION.
      IF CW-WORLD-TYPE = "standard"
-         CALL "WORLD-IS-DEBUG" USING WS-DEBUG
+         CALL "WORLD-GEN-OWN" USING WS-DEBUG
          CALL "GEN-DATA-READY" USING WS-READY
          IF GQ-WORKERS > 0 AND WS-DEBUG = 0 AND WS-READY = 1
              CALL "GEN-SPAWN-BEGIN"
          ELSE
              CALL "WORLDSIM-INITIAL-SPAWN"
          END-IF
+     END-IF
+*>   A superflat world: the same search with the provisional height of the flat generator (56 section 4.8).
+     IF CW-WORLD-TYPE = "superflat"
+         CALL "WORLDSIM-INITIAL-SPAWN"
      END-IF
      GOBACK.
  END PROGRAM WORLDSIM-NEW-WORLD-SPAWN.

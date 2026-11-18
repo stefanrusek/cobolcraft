@@ -132,7 +132,7 @@
              END-IF
          END-PERFORM
          IF WS-KNOWN = 0 AND PL-MODE(L-ROW) = 0
-             IF CW-WORLD-TYPE = "standard"
+             IF CW-WORLD-TYPE = "standard" OR CW-WORLD-TYPE = "superflat"
 *>               The standard type's own kit (world-types "Starter kit"): table, logs, planks, sticks in hotbar slots 0 to 3,
 *>               each item row found by key; a key the set lacks leaves its slot empty. Off with starter-kit=false.
                  IF SK-OFF NOT = 1

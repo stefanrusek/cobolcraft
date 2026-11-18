@@ -47,7 +47,7 @@ The type is stored in `level.dat` (07 §9.2), as a new key.
 
 | Key | NBT type | Values | Meaning |
 |---|---|---|---|
-| `WorldType` | String | `standard`, `cobolcraft`, `debug` | The type of the world. Written when the world is created. Never changed afterwards. `debug` is the hidden test-tool type of [debug-world.md](debug-world.md): it uses the standard content set, is never chosen by the default rule of section 3.2, never listed in the normal UI, and is created only by the Ctrl-click of the create-world screen or by `CS-WORLD-TYPE` (plan, "Operator addition: debug world"). Every rule of this document that names the standard type's content (sections 4, 6, 7, 8) applies to `debug` as to `standard` |
+| `WorldType` | String | `standard`, `cobolcraft`, `debug`, `superflat` | The type of the world. Written when the world is created. Never changed afterwards. `debug` is the hidden test-tool type of [debug-world.md](debug-world.md): it uses the standard content set, is never chosen by the default rule of section 3.2, never listed in the normal UI, and is created only by the Ctrl-click of the create-world screen or by `CS-WORLD-TYPE` (plan, "Operator addition: debug world"). Every rule of this document that names the standard type's content (sections 4, 6, 7, 8) applies to `debug` as to `standard` |
 | `Seed` | Long | any | The world seed. Used by the standard generator and, through `obfuscateSeed`, by the hashed seed of the Login packet (see below). Written for both types for a uniform schema (Decision WT-5). The cobolcraft generator uses no seed (standin §5.2: deterministic and stateless), so for a cobolcraft world the value is stored and never read |
 | `ContentJar` | String | lower-case hex SHA-256, or absent | For a standard world: the `jar-sha256` of the manifest of the generated directory at creation (22 §6.4). Absent for a cobolcraft world, also when valid generated packs exist at creation (E5): a cobolcraft world does not read them, so there is nothing to record. Informational in this version (Decision WT-6) |
 
@@ -1054,6 +1054,33 @@ Cost on the real data (seed 12345, first start of a 300 x 300 chunk area, `test_
 ### Nether basalt and delta features (core/src/feat-nether.cob, lane featsb4)
 
 `delta_feature` (id 9), `stepped_column_cluster` (49: the small and large basalt columns), `single_block_pillar` (44), `random_neighbor_spread` (35: glowstone_extra) and `projected_random_patchy_square` (33) are placed whole from the data (35-7 sections 3 to 5, 35-4 section 7); the gate admits the families delta, small_basalt_columns, large_basalt_columns, basalt_pillar and glowstone (FG-COUNT 58). `replace_single_block` is not compiled (its rule tests are not read; no data element uses it). The `can_replace` of the basalt columns is the data predicate (air tag, or lava between the bottom and sea level) evaluated by the predicate engine. The int provider `trapezoid` (35-4 2.2) was missing from FR-INT-SAMPLE and is added (it was compiled but never sampled).
+
+## The superflat world type (our design decision, lane 002-lane-superflat-core)
+
+The fourth `WorldType` value is `superflat` (exactly that string; it is 9 bytes and fits `CS-WORLD-TYPE`). It is **our own design decision**, not something the artifact or the
+older sections of this document say; the behaviour of the flat generator itself is specified in [56](../protocol/56-superflat-world.md) and nothing in this section changes it.
+
+- **Content set.** The standard set, like `standard`: `WORLD-CONTENT-OPEN` opens it as `CT-TYPE-STANDARD` (a valid generated directory is needed, WT-17), so mobs, items, recipes,
+  loot, the starter kit (when `starter-kit` is on) and every rule that names the standard type apply as to a standard world. Unlike `debug` the world ticks normally. The standard
+  dimension rows are used: `minecraft:overworld`, and with `extra-dimensions` on the Nether and the End with their ordinary generators (the `flat` world preset of 56 section 2.7).
+- **Where it is chosen.** `CS-WORLD-TYPE` = `superflat` at creation (single-player create screen, or a host that sets it); it is stored in `level.dat` (`WorldType`, section 2.1) and
+  an existing world's `level.dat` decides, as for the other types. The flat layout of `level.dat` (07 section 9) is used, not the 26.3 `Data` layout, so the `WorldType` key can be
+  stored (a `Data` level.dat without the key is read as standard, 2.1 rule 3a). The server configuration key `world-type` does not offer it in this version.
+- **The settings.** layers, biome, lakes, features and structure_overrides (56 section 2.1). A new world has the world preset `flat` of 56 section 2.6 (bedrock 1, dirt 2,
+  grass_block 1; plains; strongholds and villages). They are saved in `data/minecraft/world_gen_settings.dat` in the shape of 56 section 2.5 (the overworld stem's flat
+  generator) by every save, and read back at every open of the folder. A host that wants another preset for a **new** world has no field in the settings record (the contract
+  record is not edited): it calls `FLAT-PRESET-SET` with a preset name of 56 section 3.2 (or `flat`) before `CORE-WORLD-OPEN`, or places a `world_gen_settings.dat` in the new
+  folder first. The nine presets are data in `core/src/flat-settings.cob`.
+- **Generation.** `WORLDGEN-FLAT-CHUNK` (core/src/worldgen-flat.cob), chosen by `WORLDGEN-STANDARD-CHUNK`: the layers, the fixed biome and the structures of 56 section 4. It
+  runs none of the noise, climate, density, aquifer, surface, carver or ore stages. The generation queue and its workers do not serve it (`WORLD-GEN-OWN`).
+- **Not done (listed so nobody reads the gaps as bugs).** The biome features of `features` true (trees, ores, the void preset's start platform), the two lava lakes of `lakes`
+  true, the biome-specific height anchors of 56 section 4.1, and the spawn rules of 56 section 4.9 beyond "no creatures at chunk generation" (ongoing natural spawning is the
+  standard system over the fixed biome). The flags are stored, saved and read; no stage reads them yet.
+- **Structures.** Only the structure sets of `structure_overrides` that pass the biome test (56 section 3.3), with the stronghold ring seed 0 (56 section 4.7), through the same
+  structure code as the standard type: its biome and column queries answer from the flat settings (`STRUCT-BIOME-AT`, `STRUCT-BASE-HEIGHT`). `generate_structures` 0 in the saved file
+  switches them all off. Which families can generate is limited by the gate of `WORLD-GEN-DATA-OPEN` (the same list as the standard type).
+- **Spawn info.** `Is flat` is true in Login and Respawn for every dimension of the world and the sea level of the overworld is -63 (56 section 5.1 and 5.2). The new world's spawn
+  is the search of 33 section 6.2 started at the flat spawn height (56 section 4.8).
 
 ## Entities of generated structures
 

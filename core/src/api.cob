@@ -67,6 +67,8 @@
          GOBACK
      END-IF
      CALL "BLOCKS-OPEN"
+*>   The flat generator settings of a superflat world (docs/protocol/56 section 2; flat-settings.cob): the host's preset, the folder's file or the default.
+     CALL "FLAT-SETTINGS-OPEN"
      CALL "CORE-TABLES-OPEN"
      CALL "GB-RULES-OPEN"
      CALL "EGG-RULES-OPEN"
@@ -123,7 +125,7 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
          IF (L-TYPE = "cobolcraft" AND (DM-EXTRA(WS-I) = 0 OR (DM-EXTRA(WS-I) = 1 AND L-EXTRA = 1)))
                  OR (L-TYPE NOT = "cobolcraft" AND DM-EXTRA(WS-I) = 2)
-                 OR (L-TYPE = "standard" AND DM-EXTRA(WS-I) = 3 AND L-EXTRA = 1)
+                 OR ((L-TYPE = "standard" OR L-TYPE = "superflat") AND DM-EXTRA(WS-I) = 3 AND L-EXTRA = 1)
              ADD 1 TO CW-DIM-COUNT
              MOVE WS-I TO CW-DIM(CW-DIM-COUNT)
          END-IF
@@ -464,7 +466,7 @@
                  GOBACK
          END-EVALUATE
      END-IF
-     IF L-TYPE NOT = "standard" AND L-TYPE NOT = "cobolcraft" AND L-TYPE NOT = "debug"
+     IF L-TYPE NOT = "standard" AND L-TYPE NOT = "cobolcraft" AND L-TYPE NOT = "debug" AND L-TYPE NOT = "superflat"
          MOVE CORE-WO-NO-WORLDTYPE TO L-STATUS
      END-IF
      GOBACK.
@@ -492,6 +494,7 @@
      MOVE SPACES TO WS-DIR
      EVALUATE L-TYPE
          WHEN "standard"
+         WHEN "superflat"
              MOVE CT-TYPE-STANDARD TO WS-TYPE
              MOVE L-DIR TO WS-DIR
          WHEN "debug"
@@ -556,7 +559,7 @@
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
  PROCEDURE DIVISION USING L-TYPE L-DIR.
-     IF L-TYPE = "standard"
+     IF L-TYPE = "standard" OR L-TYPE = "superflat"
          MOVE SPACES TO WS-GEN-DIR
          STRING FUNCTION TRIM(L-DIR TRAILING) "/vanilla-data" DELIMITED BY SIZE INTO WS-GEN-DIR
          CALL "WORLDGEN-FREE"
