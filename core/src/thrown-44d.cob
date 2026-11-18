@@ -198,6 +198,10 @@
          CALL "FIREWORK-EXPLODE" USING L-ROW
          GOBACK
      END-IF
+*>   A rocket attached to a gliding player rides along and pushes it (17 section 3.13; RANGED-ROCKET-BOOST, ranged-glide.cob).
+     IF PJ-I4(WS-SLOT) > 0
+         CALL "RANGED-ROCKET-BOOST" USING L-ROW PJ-I4(WS-SLOT)
+     END-IF
      COMPUTE EN-X(L-ROW) = EN-X(L-ROW) + EN-VX(L-ROW)
      COMPUTE EN-Y(L-ROW) = EN-Y(L-ROW) + EN-VY(L-ROW)
      COMPUTE EN-Z(L-ROW) = EN-Z(L-ROW) + EN-VZ(L-ROW)

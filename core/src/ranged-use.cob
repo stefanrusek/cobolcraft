@@ -437,6 +437,8 @@
              CALL "RANGED-CROSSBOW-USE" USING WS-ROW L-DONE
          WHEN "trident"
              CALL "RANGED-TRIDENT-USE" USING WS-ROW L-DONE
+         WHEN "firework_rocket"
+             CALL "RANGED-ROCKET-USE" USING WS-ROW L-DONE
      END-EVALUATE
      GOBACK.
  END PROGRAM RANGED-ITEM-USE.

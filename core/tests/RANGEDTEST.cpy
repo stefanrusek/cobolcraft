@@ -344,3 +344,48 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM RT-USE-ITEM-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RT-MOTION.
+*> USING connection id, found out, vx, vy, vz out (FLOAT-LONG): drains the connection and decodes the first Set Entity Motion (0x67): the entity id is read and dropped, the vector is the
+*> motion in blocks per tick (found 0 and the zero vector when none came).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-PACKET              BINARY-LONG VALUE 103.
+ LINKAGE SECTION.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-CONN L-FOUND L-VX L-VY L-VZ.
+     MOVE 0 TO L-VX L-VY L-VZ
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN-PACKET" USING L-CONN WS-PACKET PB-BUFFER L-FOUND
+     IF L-FOUND = 1
+*>       TEST-DRAIN-PACKET hands over the packet with its id: the id, then the entity id, then the vector.
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+         CALL "PB-GET-LPVEC3" USING PB-BUFFER L-VX L-VY L-VZ
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM RT-MOTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RT-EQUIP-DAMAGE.
+*> USING player row, damage out: the durability damage of the stack in the chest slot (MN-EQUIP kind 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-DAMAGE.
+     CALL "SP-GET-DAMAGE" USING MN-EQUIP-ITEM(L-PLAYER, 3) MN-EQUIP-VAR(L-PLAYER, 3) L-DAMAGE
+     GOBACK.
+ END PROGRAM RT-EQUIP-DAMAGE.

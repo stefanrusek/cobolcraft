@@ -352,6 +352,9 @@
              IF TS-SPIN-TICKS(WS-ROW) > 0
                  CALL "RANGED-SPIN" USING WS-ROW
              END-IF
+             IF TS-GLIDE-TICKS(WS-ROW) > 0
+                 CALL "RANGED-GLIDE-TICK" USING WS-ROW
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

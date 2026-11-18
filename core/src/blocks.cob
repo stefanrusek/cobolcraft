@@ -406,6 +406,7 @@
  01 WS-SWITCH              BINARY-LONG.
  01 WS-KNOT                BINARY-LONG.
  01 WS-NOTE                BINARY-LONG.
+ 01 WS-ROCKET              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -477,6 +478,8 @@
              CONTINUE
          WHEN PSB-HAND NOT = 0
              CONTINUE
+         WHEN WS-ITEM > 0 AND IT-KEY(WS-ITEM + 1) = "firework_rocket"
+             CALL "RANGED-ROCKET-ON" USING L-ID PLAY-SERVERBOUND WS-ITEM WS-ROCKET
          WHEN WS-BONE = 1
              CALL "GB-BONEMEAL-USE" USING L-ID PSB-BX PSB-BY PSB-BZ WS-BONE-USED
          WHEN WS-PLACES >= 0
