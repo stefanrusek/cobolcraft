@@ -16,19 +16,19 @@
  COPY GENENT.
  COPY MONCASES.
  01 WS-KINDS.
-    05 FILLER              PIC X(8) VALUE "entry   ".
-    05 FILLER              PIC X(8) VALUE "core    ".
-    05 FILLER              PIC X(8) VALUE "simple  ".
-    05 FILLER              PIC X(8) VALUE "top     ".
-    05 FILLER              PIC X(8) VALUE "double X".
-    05 FILLER              PIC X(8) VALUE "double Y".
-    05 FILLER              PIC X(8) VALUE "double Z".
-    05 FILLER              PIC X(8) VALUE "double XY".
-    05 FILLER              PIC X(8) VALUE "double YZ".
-    05 FILLER              PIC X(8) VALUE "wing    ".
-    05 FILLER              PIC X(8) VALUE "penthous".
+    05 FILLER              PIC X(10) VALUE "entry     ".
+    05 FILLER              PIC X(10) VALUE "core      ".
+    05 FILLER              PIC X(10) VALUE "simple    ".
+    05 FILLER              PIC X(10) VALUE "simple top".
+    05 FILLER              PIC X(10) VALUE "double X  ".
+    05 FILLER              PIC X(10) VALUE "double Y  ".
+    05 FILLER              PIC X(10) VALUE "double Z  ".
+    05 FILLER              PIC X(10) VALUE "double XY ".
+    05 FILLER              PIC X(10) VALUE "double YZ ".
+    05 FILLER              PIC X(10) VALUE "wing      ".
+    05 FILLER              PIC X(10) VALUE "penthouse ".
  01 WS-KIND-TAB REDEFINES WS-KINDS.
-    05 WS-KIND-NAME        PIC X(8) OCCURS 11 TIMES.
+    05 WS-KIND-NAME        PIC X(10) OCCURS 11 TIMES.
  01 WS-CASE                BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -88,7 +88,71 @@
      PERFORM VARYING WS-CASE FROM 1 BY 1 UNTIL WS-CASE > MC-PIECES
          PERFORM RUN-CASE
      END-PERFORM
+     PERFORM CELL-CASES
      GOBACK.
+
+*> 5.8: the cells of a double room: B east of A for X and XY, north of A for Z and YZ, C above A, D above B; the wings and the penthouse are the slots 76 to 78
+ CELL-CASES.
+     MOVE 12 TO MD-CONN(11, 6)
+     MOVE 13 TO MD-CONN(11, 3)
+     MOVE 14 TO MD-CONN(11, 2)
+     MOVE 15 TO MD-CONN(12, 2)
+     MOVE 16 TO MD-CONN(13, 2)
+     MOVE 10 TO MC-INDEX(1)
+     PERFORM VARYING WS-CASE FROM 1 BY 1 UNTIL WS-CASE > 7
+         EVALUATE WS-CASE
+             WHEN 1 MOVE 5 TO MC-KIND(1)
+             WHEN 2 MOVE 7 TO MC-KIND(1)
+             WHEN 3 MOVE 6 TO MC-KIND(1)
+             WHEN 4 MOVE 8 TO MC-KIND(1)
+             WHEN 5 MOVE 9 TO MC-KIND(1)
+             WHEN 6 MOVE 3 TO MC-KIND(1)
+             WHEN OTHER MOVE 10 TO MC-KIND(1)
+         END-EVALUATE
+         IF WS-CASE = 7
+             MOVE 1002 TO MC-INDEX(1)
+         END-IF
+         MOVE 1 TO WS-I
+         CALL "MONP-CELLS" USING WS-I
+         MOVE 0 TO WS-OK
+         EVALUATE WS-CASE
+             WHEN 1
+                 IF MP-CELL(1) = 11 AND MP-CELL(2) = 12 AND MP-CELL(3) = 0 AND MP-CELL(4) = 0
+                     MOVE 1 TO WS-OK
+                 END-IF
+             WHEN 2
+                 IF MP-CELL(1) = 11 AND MP-CELL(2) = 13 AND MP-CELL(3) = 0 AND MP-CELL(4) = 0
+                     MOVE 1 TO WS-OK
+                 END-IF
+             WHEN 3
+                 IF MP-CELL(1) = 11 AND MP-CELL(2) = 0 AND MP-CELL(3) = 14 AND MP-CELL(4) = 0
+                     MOVE 1 TO WS-OK
+                 END-IF
+             WHEN 4
+                 IF MP-CELL(1) = 11 AND MP-CELL(2) = 12 AND MP-CELL(3) = 14 AND MP-CELL(4) = 15
+                     MOVE 1 TO WS-OK
+                 END-IF
+             WHEN 5
+                 IF MP-CELL(1) = 11 AND MP-CELL(2) = 13 AND MP-CELL(3) = 14 AND MP-CELL(4) = 16
+                     MOVE 1 TO WS-OK
+                 END-IF
+             WHEN 6
+                 IF MP-CELL(1) = 11 AND MP-CELL(2) = 0 AND MP-CELL(3) = 0 AND MP-CELL(4) = 0
+                     MOVE 1 TO WS-OK
+                 END-IF
+             WHEN OTHER
+                 IF MP-CELL(1) = 77 AND MP-CELL(2) = 0 AND MP-CELL(3) = 0 AND MP-CELL(4) = 0
+                     MOVE 1 TO WS-OK
+                 END-IF
+         END-EVALUATE
+         MOVE WS-CASE TO WS-D
+         MOVE SPACES TO WS-NAME
+         STRING "acceptance US12 36-6§5.8 Geometry of the room, wing and penthouse pieces: the cells A to D of child kind case " WS-D " are those of the document" DELIMITED BY SIZE INTO WS-NAME
+         MOVE WS-NAME TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE WS-OK TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM.
 
 *> one case: the cells' slots 60 to 63 get the open flags and up links of the case, the piece row is the scratch row SP-MAX with the box of the case
  RUN-CASE.
