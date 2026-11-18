@@ -740,3 +740,486 @@
      END-IF
      GOBACK.
  END PROGRAM Q7-AXO-VALIDATE.
+
+*> 10.2 food. USING item key (no namespace), tame, baby, out: an untamed adult takes only nautilus_taming_items, a tame adult or any baby nautilus_food.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-IS-FOOD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-TAMING              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-TAME                 BINARY-LONG.
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TAME L-BABY L-OUT.
+     CALL "Q7-NAU-FOOD" USING L-KEY WS-FOOD WS-TAMING
+     MOVE 0 TO L-OUT
+     IF L-TAME = 0 AND L-BABY = 0
+         MOVE WS-TAMING TO L-OUT
+     ELSE
+         IF WS-FOOD > 0
+             MOVE 1 TO L-OUT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-IS-FOOD.
+
+*> 10.2 tryToTame: draw = nextInt(3); 0 tames (event 7), else event 6.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-TAME-ROLL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-TAMED                BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-TAMED L-EVENT.
+     MOVE 0 TO L-TAMED
+     MOVE 6 TO L-EVENT
+     IF L-DRAW = 0
+         MOVE 1 TO L-TAMED
+         MOVE 7 TO L-EVENT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-TAME-ROLL.
+
+*> 10.3 canUseSlot(SADDLE or BODY): alive, not a baby and tame.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-SLOT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ALIVE                BINARY-LONG.
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-TAME                 BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ALIVE L-BABY L-TAME L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-ALIVE = 1 AND L-BABY = 0 AND L-TAME = 1
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-SLOT.
+
+*> 10.3 armor table. USING material (copper, iron, golden, diamond, netherite), armor, toughness, knockback resistance in thousandths.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-ARMOR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-ARMOR                BINARY-LONG.
+ 01 L-TOUGH                BINARY-LONG.
+ 01 L-KB                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-ARMOR L-TOUGH L-KB.
+     MOVE 0 TO L-ARMOR L-TOUGH L-KB
+     EVALUATE L-KEY
+         WHEN "copper"
+             MOVE 4 TO L-ARMOR
+         WHEN "iron"
+             MOVE 5 TO L-ARMOR
+         WHEN "golden"
+             MOVE 7 TO L-ARMOR
+         WHEN "diamond"
+             MOVE 11 TO L-ARMOR
+             MOVE 2 TO L-TOUGH
+         WHEN "netherite"
+             MOVE 19 TO L-ARMOR
+             MOVE 3 TO L-TOUGH
+             MOVE 100 TO L-KB
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q7-NAU-ARMOR.
+
+*> 10.3.1 shearing: USING passengers present, BODY worn, SADDLE worn, slot out (1 BODY, 2 SADDLE, 0 none). A ridden nautilus cannot be sheared.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-SHEAR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PASS                 BINARY-LONG.
+ 01 L-BODY                 BINARY-LONG.
+ 01 L-SADDLE               BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PASS L-BODY L-SADDLE L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-PASS = 0
+         EVALUATE TRUE
+             WHEN L-BODY = 1
+                 MOVE 1 TO L-OUT
+             WHEN L-SADDLE = 1
+                 MOVE 2 TO L-OUT
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-SHEAR.
+
+*> 10.4 getRiddenInput: USING xxa, zza, player pitch (degrees), x, y, z out.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-RIDDEN-INPUT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RAD                 FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-XXA                  FLOAT-LONG.
+ 01 L-ZZA                  FLOAT-LONG.
+ 01 L-XROT                 FLOAT-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-XXA L-ZZA L-XROT L-X L-Y L-Z.
+     MOVE L-XXA TO L-X
+     MOVE 0 TO L-Y L-Z
+     IF L-ZZA NOT = 0
+         COMPUTE WS-RAD = L-XROT * 0.017453292
+         COMPUTE WS-C = FUNCTION COS(WS-RAD)
+         COMPUTE WS-S = 0 - FUNCTION SIN(WS-RAD)
+         IF L-ZZA < 0
+             COMPUTE WS-C = WS-C * -0.5
+             COMPUTE WS-S = WS-S * -0.5
+         END-IF
+         MOVE WS-S TO L-Y
+         MOVE WS-C TO L-Z
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-RIDDEN-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-RIDDEN-SPEED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-INWATER              BINARY-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-INWATER L-SPEED L-OUT.
+     IF L-INWATER = 1
+         COMPUTE L-OUT = 0.0325 * L-SPEED
+     ELSE
+         COMPUTE L-OUT = 0.02 * L-SPEED
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-RIDDEN-SPEED.
+
+*> 10.4 getPlayerJumpPendingScale: 1.0 from strength 90, else 0.4 + 0.4 x strength / 90.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-JUMP-SCALE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STRENGTH             BINARY-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STRENGTH L-OUT.
+     IF L-STRENGTH >= 90
+         MOVE 1.0 TO L-OUT
+     ELSE
+         COMPUTE L-OUT = 0.4 + 0.4 * L-STRENGTH / 90
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-JUMP-SCALE.
+
+*> 10.4 executeRidersJump: the impulse length m x scale x movement speed x block speed factor, m 1.2 in water and 0.5 on land.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-DASH-IMPULSE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SCALE                FLOAT-LONG.
+ 01 L-INWATER              BINARY-LONG.
+ 01 L-MOVE                 FLOAT-LONG.
+ 01 L-BLOCK                FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SCALE L-INWATER L-MOVE L-BLOCK L-OUT.
+     IF L-INWATER = 1
+         COMPUTE L-OUT = 1.2 * L-SCALE * L-MOVE * L-BLOCK
+     ELSE
+         COMPUTE L-OUT = 0.5 * L-SCALE * L-MOVE * L-BLOCK
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-DASH-IMPULSE.
+
+*> 10.4 tick: if dashing and the cooldown is below 35 the flag clears; then a positive cooldown falls by 1.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-DASH-TICK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COOLDOWN             BINARY-LONG.
+ 01 L-DASH                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-COOLDOWN L-DASH.
+     IF L-DASH = 1 AND L-COOLDOWN < 35
+         MOVE 0 TO L-DASH
+     END-IF
+     IF L-COOLDOWN > 0
+         SUBTRACT 1 FROM L-COOLDOWN
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-DASH-TICK.
+
+*> 10.4 applyEffects: Breath of the Nautilus (60 ticks) when the first passenger lacks it or gameTime mod 40 = 0.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-RIDER-FX.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-TIME                 BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HAS L-TIME L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-HAS = 0 OR FUNCTION MOD(L-TIME, 40) = 0
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-RIDER-FX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-RADIUS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ADULT                BINARY-LONG.
+ 01 L-SADDLED              BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ADULT L-SADDLED L-OUT.
+     MOVE 16 TO L-OUT
+     IF L-ADULT = 1 AND L-SADDLED = 0
+         MOVE 32 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-RADIUS.
+
+*> 10.4.1 USING squared distance moved, squared velocity length, out: 0 when moved2 - v2 > 100.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-VEHICLE-OK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MOVED2               FLOAT-LONG.
+ 01 L-V2                   FLOAT-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-MOVED2 L-V2 L-OUT.
+     MOVE 1 TO L-OUT
+     IF L-MOVED2 - L-V2 > 100
+         MOVE 0 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-VEHICLE-OK.
+
+*> 10.4.2 p = clamp(s x 2.0, 0.15, 1.0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-BUBBLE-P.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SPEED                FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SPEED L-OUT.
+     COMPUTE L-OUT = FUNCTION MIN(FUNCTION MAX(L-SPEED * 2.0, 0.15), 1.0)
+     GOBACK.
+ END PROGRAM Q7-NAU-BUBBLE-P.
+
+*> 10.5 findNearestValidAttackTarget: USING breeding, in water, baby, tame, ANGRY_AT target valid (in water, attackable), cooldown present, roll (1 when nextFloat < 0.5: no target),
+*> pufferfish in water visible, target out (1/0), new ATTACK_TARGET_COOLDOWN stored out (1/0; the value is uniform(2400, 3600)).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-TARGET.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BREEDING             BINARY-LONG.
+ 01 L-INWATER              BINARY-LONG.
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-TAME                 BINARY-LONG.
+ 01 L-ANGRY                BINARY-LONG.
+ 01 L-CDPRESENT            BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-HOSTILE              BINARY-LONG.
+ 01 L-TARGET               BINARY-LONG.
+ 01 L-SETCD                BINARY-LONG.
+ PROCEDURE DIVISION USING L-BREEDING L-INWATER L-BABY L-TAME L-ANGRY L-CDPRESENT L-ROLL L-HOSTILE L-TARGET L-SETCD.
+     MOVE 0 TO L-TARGET
+     MOVE 0 TO L-SETCD
+     IF L-BREEDING = 1 OR L-INWATER = 0 OR L-BABY = 1 OR L-TAME = 1
+         GOBACK
+     END-IF
+     IF L-ANGRY = 1
+         MOVE 1 TO L-TARGET
+         GOBACK
+     END-IF
+     IF L-CDPRESENT = 1
+         GOBACK
+     END-IF
+     MOVE 1 TO L-SETCD
+     IF L-ROLL = 0 AND L-HOSTILE = 1
+         MOVE 1 TO L-TARGET
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-TARGET.
+
+*> 10.6 canStillUse: USING ATTACK_TARGET present, tame, squared distance from the start, squared distance to the target, line of sight, CHARGE_COOLDOWN present, out.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-CHARGE-USE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TARGETP              BINARY-LONG.
+ 01 L-TAME                 BINARY-LONG.
+ 01 L-D2S                  FLOAT-LONG.
+ 01 L-D2T                  FLOAT-LONG.
+ 01 L-LOS                  BINARY-LONG.
+ 01 L-CCD                  BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-TARGETP L-TAME L-D2S L-D2T L-LOS L-CCD L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-TARGETP = 1 AND L-TAME = 0 AND L-D2S < 144 AND L-D2T < 121 AND L-LOS = 1 AND L-CCD = 0
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-CHARGE-USE.
+
+*> 10.6 start: chargeVelocity = normalize(target - own) x speed. USING dx dy dz speed, vx, vz, vy out.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-CHARGE-VEL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LEN                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DX L-DY L-DZ L-SPEED L-VX L-VZ L-VY.
+     MOVE 0 TO L-VX L-VY L-VZ
+     COMPUTE WS-LEN = FUNCTION SQRT(L-DX * L-DX + L-DY * L-DY + L-DZ * L-DZ)
+     IF WS-LEN > 0
+         COMPUTE L-VX = L-DX / WS-LEN * L-SPEED
+         COMPUTE L-VY = L-DY / WS-LEN * L-SPEED
+         COMPUTE L-VZ = L-DZ / WS-LEN * L-SPEED
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-CHARGE-VEL.
+
+*> 10.6 dealKnockBack: strength = clamp(speed x movement speed, 0.2, 2.0) + 0.25 x (speed amp + 1 - (slow amp + 1)); the force is strength x 2.0 (amps are 0 without the effect, else amplifier + 1).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-KNOCKBACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STRENGTH            FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-SPEED                FLOAT-LONG.
+ 01 L-ATTR                 FLOAT-LONG.
+ 01 L-SPEEDAMP             BINARY-LONG.
+ 01 L-SLOWAMP              BINARY-LONG.
+ 01 L-FORCE                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SPEED L-ATTR L-SPEEDAMP L-SLOWAMP L-FORCE.
+     COMPUTE WS-STRENGTH = FUNCTION MIN(FUNCTION MAX(L-SPEED * L-ATTR, 0.2), 2.0) + 0.25 * (L-SPEEDAMP - L-SLOWAMP)
+     COMPUTE L-FORCE = WS-STRENGTH * 2.0
+     GOBACK.
+ END PROGRAM Q7-NAU-KNOCKBACK.
+
+*> 10.1 zombie nautilus variant: warm (1, priority 1, in tag spawns_coral_variant_zombie_nautilus) beats temperate (0, priority 0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-NAU-VARIANT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WARM                 BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-WARM L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-WARM = 1
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-NAU-VARIANT.
+
+*> 11 per-mob water controls. USING mob key, max turn x, max turn y, in-water modifier, outside modifier, applyGravity, look control yaw limit, breaching navigation.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-CTRL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-MAXX                 BINARY-LONG.
+ 01 L-MAXY                 BINARY-LONG.
+ 01 L-INW                  FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ 01 L-GRAV                 BINARY-LONG.
+ 01 L-LOOK                 BINARY-LONG.
+ 01 L-BREACH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-MAXX L-MAXY L-INW L-OUT L-GRAV L-LOOK L-BREACH.
+     MOVE 85 TO L-MAXX
+     MOVE 10 TO L-MAXY
+     MOVE 0 TO L-BREACH
+     EVALUATE L-KEY
+         WHEN "dolphin"
+             MOVE 0.02 TO L-INW
+             MOVE 0.1 TO L-OUT
+             MOVE 1 TO L-GRAV
+             MOVE 10 TO L-LOOK
+             MOVE 1 TO L-BREACH
+         WHEN "axolotl"
+             MOVE 0.1 TO L-INW
+             MOVE 0.5 TO L-OUT
+             MOVE 0 TO L-GRAV
+             MOVE 20 TO L-LOOK
+         WHEN OTHER
+             MOVE 0.011 TO L-INW
+             MOVE 0 TO L-OUT
+             MOVE 1 TO L-GRAV
+             MOVE 10 TO L-LOOK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q7-CTRL.
+
+*> 11 getTurningSpeedFactor = 1 - clamp((angle - 10) / 50, 0, 1).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-TURN-FACTOR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ANGLE                FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ANGLE L-OUT.
+     COMPUTE L-OUT = 1 - FUNCTION MIN(FUNCTION MAX((L-ANGLE - 10) / 50, 0), 1)
+     GOBACK.
+ END PROGRAM Q7-TURN-FACTOR.
+
+*> 11 look control: USING wrapDegrees(head - body), the limit, the body yaw change out (-4, 0 or +4).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-BODY-TURN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIFF                 FLOAT-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIFF L-MAX L-OUT.
+     MOVE 0 TO L-OUT
+     EVALUATE TRUE
+         WHEN L-DIFF < 0 - L-MAX
+             MOVE -4 TO L-OUT
+         WHEN L-DIFF > L-MAX
+             MOVE 4 TO L-OUT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM Q7-BODY-TURN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-CAN-UPDATE-PATH.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BREACH               BINARY-LONG.
+ 01 L-LIQUID               BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-BREACH L-LIQUID L-OUT.
+     MOVE 0 TO L-OUT
+     IF L-BREACH = 1 OR L-LIQUID = 1
+         MOVE 1 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-CAN-UPDATE-PATH.
+
+*> 4.2 the dolphin's vertical drift: the control's +0.005 in water, travelInWater's -0.005 only without an attack target.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. Q7-DOLPHIN-VY.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TARGET               BINARY-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-TARGET L-OUT.
+     MOVE 0.005 TO L-OUT
+     IF L-TARGET = 0
+         COMPUTE L-OUT = L-OUT - 0.005
+     END-IF
+     GOBACK.
+ END PROGRAM Q7-DOLPHIN-VY.
