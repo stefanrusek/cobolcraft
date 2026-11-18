@@ -203,6 +203,12 @@
      MOVE WS-WALK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-ZP
+*>   The spawns above queue the new mobs' own metadata packets (the health pair of a new mob, 45-2); drain them so the next check sees only what the celebration sends.
+     MOVE -1 TO WS-WANTED
+     MOVE "none" TO WS-EXPECTED
+     MOVE "acceptance US15 44-6§2.10 the queue holds no packet of the unused id before the celebration" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE 101 TO WS-WANTED
 *>   The celebration after a kill (draw 0 of 10: it dances), 300 ticks at the place of the kill; it walks there (radius 2 at speed 1.0, dancing radius 4 at 0.6).
      COMPUTE EN-X(WS-HG) = WS-X0 + 4.5
      MOVE 0 TO WS-DRAW
