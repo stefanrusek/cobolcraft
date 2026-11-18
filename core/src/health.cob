@@ -565,6 +565,14 @@
              MOVE "minecraft:cramming" TO WS-WANTED
          WHEN CAUSE-VOID
              MOVE "minecraft:out_of_world" TO WS-WANTED
+         WHEN CAUSE-FREEZE
+             MOVE "minecraft:freeze" TO WS-WANTED
+         WHEN CAUSE-CACTUS
+             MOVE "minecraft:cactus" TO WS-WANTED
+         WHEN CAUSE-HOT-FLOOR
+             MOVE "minecraft:hot_floor" TO WS-WANTED
+         WHEN CAUSE-BERRY
+             MOVE "minecraft:sweet_berry_bush" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE

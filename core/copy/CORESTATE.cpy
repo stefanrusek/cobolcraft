@@ -578,6 +578,17 @@
        10 EN-BOOSTING        BINARY-LONG.        *> strider: 1 while boosting
 *>     --- 002-lane-genent: mobs made by structures (core/src/gen-ent.cob) ---
        10 EN-PERSISTENT      BINARY-LONG.        *> PersistenceRequired: 1 when the mob never despawns (a mob of a structure template or marker; saved and read as the key)
+*>     --- lane p49a: no-AI mobs (core/src/stdmobs.cob; 18 section 2.10) ---
+       10 EN-NO-AI           BINARY-LONG.        *> the no-AI flag (mob flag 1): 1 = no goals, navigation, controls or travel; baseTick effects and the death tick still run (not saved yet)
+       10 EN-LEFTY           BINARY-LONG.        *> the left-handed flag (mob flag 2; finalizeSpawn rolls it, 7.1 step 2; saved as LeftHanded)
+       10 EN-FOLLOW-BONUS    BINARY-LONG.        *> the random_spawn_bonus modifier of follow_range in millionths (7.1 step 1; ADD_MULTIPLIED_BASE), 0 = none yet
+       10 EN-FROZEN          BINARY-LONG.        *> ticksFrozen (18 section 2.6 step 11): +1 a tick in powder snow, -2 otherwise, 140 = fully frozen
+       10 EN-HP-SENT         BINARY-LONG.        *> the health (thousandths) last sent to the viewers as metadata 9 (18 section 9.3); 0 = nothing sent yet
+       10 EN-AFFLICT         BINARY-LONG.        *> conversion tracker (20 section 3.8): ticks the afflicted condition has held (skeleton in powder snow: 140 to convert)
+       10 EN-CONVERTING      BINARY-LONG.        *> 1 while converting (the synched flag); EN-CONVERT-LEFT counts the 300 ticks down
+       10 EN-CONVERT-LEFT    BINARY-LONG.
+       10 EN-PREV-X          FLOAT-LONG.         *> the position at the previous environment tick (the horizontal move test of the sweet berry bush, 3.3)
+       10 EN-PREV-Z          FLOAT-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).
