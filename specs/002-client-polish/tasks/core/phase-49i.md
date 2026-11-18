@@ -2,8 +2,8 @@
 
 Continued from Phase 49a; same goal as stated there.
 
-- [ ] T2748 [US15-core] Write test `core/tests/test_q44_44_5_10C.cob` for Further readings: spawn, rest, triggered blocks (`docs/protocol/44-residual-mob-questions-5-overworld-hostile.md` §10C): every rule, table row, formula and worked case of the section; case names start `acceptance US15 44-5§10C Further readings: spawn, rest, triggered blocks` (FR-036)
-- [ ] T2749 [US15-core] Implement Further readings: spawn, rest, triggered blocks (§10C of `44-residual-mob-questions-5-overworld-hostile.md`) in `core/src/q44-44-5.cob` so the test passes (create the file with the first section of the document)
+- [x] T2748 [US15-core] Write test `core/tests/test_q44_44_5_10C.cob` for Further readings: spawn, rest, triggered blocks (`docs/protocol/44-residual-mob-questions-5-overworld-hostile.md` §10C): every rule, table row, formula and worked case of the section; case names start `acceptance US15 44-5§10C Further readings: spawn, rest, triggered blocks` (FR-036)
+- [x] T2749 [US15-core] Implement Further readings: spawn, rest, triggered blocks (§10C of `44-residual-mob-questions-5-overworld-hostile.md`) in `core/src/q44-44-5.cob` so the test passes (create the file with the first section of the document)
 - [ ] T2750 [US15-core] Write test `core/tests/test_q44_44_6_1.cob` for Conventions and brain vocabulary (`docs/protocol/44-residual-mob-questions-6-nether.md` §1): every rule, table row, formula and worked case of the section; case names start `acceptance US15 44-6§1 Conventions and brain vocabulary` (FR-036)
 - [ ] T2751 [US15-core] Implement Conventions and brain vocabulary (§1 of `44-residual-mob-questions-6-nether.md`) in `core/src/q44-44-6.cob` so the test passes (create the file with the first section of the document)
 - [ ] T2752 [US15-core] Write test `core/tests/test_q44_44_6_2.cob` for Piglin hostility engine (`docs/protocol/44-residual-mob-questions-6-nether.md` §2): every rule, table row, formula and worked case of the section; case names start `acceptance US15 44-6§2 Piglin hostility engine` (FR-036)
