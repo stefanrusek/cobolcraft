@@ -164,6 +164,7 @@
          CALL "MOB-ATTACK-EVENT" USING L-ROW
          IF WS-CONVERTED = 0
              CALL "HEALTH-MOB-DAMAGE" USING WS-F WS-DAMAGE CAUSE-MOB WS-NONE
+             CALL "MOB-HURT-BY-MOB" USING WS-F L-ROW
          END-IF
 *>       A hoglin or zoglin that is hit by a mob turns on it; a piglin's kill restarts its hunting gap.
          IF WS-FOE-KEY = "hoglin" OR "zoglin"

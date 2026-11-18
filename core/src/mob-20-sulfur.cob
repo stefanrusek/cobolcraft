@@ -401,6 +401,7 @@
                          AND FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW)) < WS-HALF + WS-OHALF
                          AND EN-Y(WS-E) < EN-Y(L-ROW) + WS-HEIGHT AND EN-Y(WS-E) + WS-OHEIGHT > EN-Y(L-ROW)
                      CALL "HEALTH-MOB-DAMAGE" USING WS-E WS-AMOUNT WS-CAUSE WS-NONE
+                     CALL "MOB-HURT-BY-MOB" USING WS-E L-ROW
                  END-IF
              END-IF
          END-IF

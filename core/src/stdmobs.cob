@@ -1040,6 +1040,13 @@
      IF SM-KEY(WS-M) = "spider" OR "cave_spider"
          CALL "SPIDER-CLIMB-TICK" USING WS-ROW
      END-IF
+     CALL "MOB-LHBM-TICK" USING WS-ROW
+     IF SM-KEY(WS-M) = "snow_golem" OR "blaze"
+         CALL "STDMOB-WATER-HURT" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0 OR EN-HEALTH(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
      IF SM-KEY(WS-M) = "sulfur_cube"
          CALL "SULFUR-TICK" USING WS-ROW
          IF EN-USED(WS-ROW) = 0
@@ -1470,6 +1477,8 @@
      IF WS-FLIER = 1
          GOBACK
      END-IF
+     CALL "MOB-PUSH-TICK" USING WS-ROW
+     CALL "MOB-JUMP-TICK" USING WS-ROW
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
 *>   A mob on the ground steps on or lands on a turtle egg under it (29b part 7 section 3).

@@ -20,6 +20,12 @@
        10 PN-INV-ITEM        BINARY-LONG OCCURS 5 TIMES.
        10 PN-INV-COUNT       BINARY-LONG OCCURS 5 TIMES.
        10 PN-CHARGE          BINARY-LONG.
+*>     18 sections 2.6 to 3.3 (core/src/mob-18-3b.cob): PN-LH-ID the entity id of lastHurtByMob (0 none) and PN-LH-AGE the ticks since its timestamp, PN-JUMP the jumping input of the
+*>     JumpControl (one tick), PN-NOJUMP the noJumpDelay.
+       10 PN-LH-ID           BINARY-LONG.
+       10 PN-LH-AGE          BINARY-LONG.
+       10 PN-JUMP            BINARY-LONG.
+       10 PN-NOJUMP          BINARY-LONG.
        10 PN-BODY            BINARY-LONG.
        10 PN-FUSE            BINARY-LONG.
        10 PN-MAXFUSE         BINARY-LONG.
