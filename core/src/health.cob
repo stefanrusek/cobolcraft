@@ -572,6 +572,8 @@
              MOVE "minecraft:indirect_magic" TO WS-WANTED
          WHEN CAUSE-WITHER
              MOVE "minecraft:wither" TO WS-WANTED
+         WHEN CAUSE-SULFUR-HOT
+             MOVE "minecraft:sulfur_cube_hot" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE
@@ -678,6 +680,10 @@
          GOBACK
      END-IF
      CALL "ENDER-HURT" USING WS-ROW L-CAUSE WS-WITHER
+     IF WS-WITHER = 1
+         GOBACK
+     END-IF
+     CALL "SULFUR-HURT" USING WS-ROW L-CAUSE WS-WITHER
      IF WS-WITHER = 1
          GOBACK
      END-IF

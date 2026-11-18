@@ -37,6 +37,14 @@
                  MOVE 16 TO WS-INDEX(WS-N)
                  MOVE MD-MDS-BYTE TO WS-SERIALIZER(WS-N)
                  MOVE PN-CLIMB(L-ROW) TO WS-VALUE(WS-N)
+             WHEN "sulfur_cube"
+*>               MAX_FUSE (index 19, INT, default -1) of a primed cube (20 section 18.2).
+                 IF PN-MAXFUSE(L-ROW) > 0
+                     ADD 1 TO WS-N
+                     MOVE 19 TO WS-INDEX(WS-N)
+                     MOVE MD-MDS-INT TO WS-SERIALIZER(WS-N)
+                     MOVE PN-MAXFUSE(L-ROW) TO WS-VALUE(WS-N)
+                 END-IF
              WHEN "enderman"
 *>               The carried block (index 16, OPTIONAL_BLOCK_STATE, serializer 15: 0 absent, else the block state id) and the two flags (20 section 8.1).
                  ADD 1 TO WS-N

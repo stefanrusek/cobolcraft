@@ -86,5 +86,5 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.              *> ranged kind
-       10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
+       10 FILLER BINARY-LONG VALUE 13.             *> natural spawn rule 13: checkSulfurCubeSpawnRules, always true (20 section 18.2)
        10 FILLER BINARY-LONG VALUE 0.

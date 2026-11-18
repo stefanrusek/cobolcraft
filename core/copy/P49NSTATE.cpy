@@ -13,6 +13,11 @@
        10 PN-CREEPY          BINARY-LONG.
        10 PN-STARED          BINARY-LONG.
        10 PN-STARE-WANT      BINARY-LONG.
+*>     sulfur cube (core/src/mob-20-sulfur.cob, 20 section 18.2): PN-BODY the item id + 1 of the BODY slot (0 empty), PN-FUSE the fuse ticks left and PN-MAXFUSE the synched max fuse
+*>     (0 = not primed; the fuse 0 of a primed cube is the tick it explodes).
+       10 PN-BODY            BINARY-LONG.
+       10 PN-FUSE            BINARY-LONG.
+       10 PN-MAXFUSE         BINARY-LONG.
 *> The warning_level of the last shriek of each sculk shrieker (44 part x2 section 2.3, core/src/mob-20-shriek.cob): PN-SH-USED 1, the block position and the level (the block entity's own
 *> key; kept here by position, not in the saved block entity). At most 64 shriekers hold one at a time; an entry is freed when its level goes back to 0.
  78 PN-SH-MAX             VALUE 64.

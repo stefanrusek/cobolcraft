@@ -826,6 +826,11 @@
          CALL "STDMOB-SLIME-RULE" USING L-STATE L-DIM L-X L-Y L-Z L-REASON L-OK
          GOBACK
      END-IF
+*>   checkSulfurCubeSpawnRules is always true (20 section 18.2).
+     IF SM-SPAWN(L-ROW) = 13
+         MOVE 1 TO L-OK
+         GOBACK
+     END-IF
      IF SM-KIND(L-ROW) >= 2
          CALL "MS6-WATER-RULE" USING L-DIM L-ROW L-X L-Y L-Z L-OK
          GOBACK

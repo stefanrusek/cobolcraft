@@ -1033,6 +1033,12 @@
      IF SM-KEY(WS-M) = "spider" OR "cave_spider"
          CALL "SPIDER-CLIMB-TICK" USING WS-ROW
      END-IF
+     IF SM-KEY(WS-M) = "sulfur_cube"
+         CALL "SULFUR-TICK" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
 *>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
      IF SM-KEY(WS-M) = "endermite"
          ADD 1 TO EN-WAKE(WS-ROW)

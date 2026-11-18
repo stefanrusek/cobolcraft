@@ -159,6 +159,7 @@
      IF WS-CUBE = 1
          MOVE 2 TO WS-N
          COMPUTE WS-W = 0.245 * WS-SIZE
+         CALL "SULFUR-SPLIT" USING L-ROW WS-N
      END-IF
      COMPUTE WS-CHILD = WS-SIZE / 2
      MOVE EN-DIM(L-ROW) TO WS-DIM
@@ -206,6 +207,9 @@
      MOVE EN-TYPE(L-ROW) TO WS-TYPE
      CALL "STDMOB-INDEX" USING WS-TYPE WS-M
      MOVE 0 TO WS-LOOT
+     IF SM-KEY(WS-M) = "sulfur_cube"
+         CALL "SULFUR-DEATH" USING L-ROW
+     END-IF
      IF SM-KEY(WS-M) = "slime" AND EN-VARIANT(L-ROW) <= 1
          MOVE 1 TO WS-LOOT
      END-IF
