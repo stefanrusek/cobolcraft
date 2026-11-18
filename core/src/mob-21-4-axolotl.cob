@@ -133,7 +133,63 @@
  END PROGRAM AXOLOTL-FINALIZE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. AQUA-META-SEND.
+*> USING row, index, serializer (1 VarInt, 8 Boolean), value: a Set Entity Data packet with one entry to the viewers of the mob (the baby flag 16, the glow squid's dark ticks 18).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SERIALIZER           BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-INDEX L-SERIALIZER L-VALUE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE L-INDEX TO MD-MD-INDEX
+     MOVE L-SERIALIZER TO MD-MD-SERIALIZER
+     MOVE L-VALUE TO MD-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     MOVE MD-MD-END TO MD-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM AQUA-META-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AQUA-GROW.
+*> USING row: a baby water mob's age counts up by 1 a tick (an age-locked baby keeps it) and the baby flag (metadata 16) goes to the viewers when it reaches 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-BABY                BINARY-LONG VALUE 16.
+ 01 WS-BOOLEAN             BINARY-LONG VALUE 8.
+ 01 WS-FALSE               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF EN-MOBAGE(L-ROW) < 0 AND EN-LOCKED(L-ROW) = 0
+         ADD 1 TO EN-MOBAGE(L-ROW)
+         IF EN-MOBAGE(L-ROW) = 0
+             CALL "AQUA-META-SEND" USING L-ROW WS-BABY WS-BOOLEAN WS-FALSE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM AQUA-GROW.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-PACK.
+*> USING xoro state, first member row, row, group size before this member: the spawn group data of a pack of water mobs. The first member (size 0) is never a baby. Later members:
+*> axolotl: a variant of the first member's two (nextInt(2)), a baby from group size 2 (44-7 section 8.1); squid and glow squid: a baby with chance 0.05, dolphin 0.1 (nextFloat <= chance,
+*> age -24000; 44-7 sections 2.1 and 6.3); tropical fish: the group variant, that of the first school member (21 section 4.4: a fish with the 0.9 pick, EN-WOOL 1; kept in EN-LOVE-CAUSE
+*> of the first member), taken by every later member; a school member sets it when none is set yet. The baby flag goes to the viewers.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -141,6 +197,11 @@
  01 WS-M                   BINARY-LONG.
  01 WS-2                   BINARY-LONG VALUE 2.
  01 WS-PICK                BINARY-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-CHANCE              FLOAT-LONG.
+ 01 WS-BABY                BINARY-LONG VALUE 16.
+ 01 WS-BOOLEAN             BINARY-LONG VALUE 8.
+ 01 WS-TRUE                BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-FIRST                BINARY-LONG.
@@ -148,7 +209,19 @@
  01 L-SIZE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-FIRST L-ROW L-SIZE.
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-     IF WS-M > 0 AND SM-KEY(WS-M) = "axolotl" AND L-SIZE > 0
+     IF WS-M = 0
+         GOBACK
+     END-IF
+     IF SM-KEY(WS-M) = "tropical_fish"
+         IF L-SIZE > 0 AND EN-LOVE-CAUSE(L-FIRST) > 0
+             MOVE EN-LOVE-CAUSE(L-FIRST) TO EN-VARIANT(L-ROW)
+             CALL "STDMOB-VARIANT-SEND" USING L-ROW
+         END-IF
+         IF EN-LOVE-CAUSE(L-FIRST) = 0 AND EN-WOOL(L-ROW) = 1
+             MOVE EN-VARIANT(L-ROW) TO EN-LOVE-CAUSE(L-FIRST)
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "axolotl" AND L-SIZE > 0
          CALL "XORO-NEXT-INT" USING L-STATE WS-2 WS-PICK
          IF WS-PICK = 0
              COMPUTE EN-VARIANT(L-ROW) = 1 + FUNCTION MOD(EN-WOOL(L-FIRST), 8)
@@ -158,6 +231,18 @@
          MOVE EN-WOOL(L-FIRST) TO EN-WOOL(L-ROW)
          IF L-SIZE >= 2
              MOVE -24000 TO EN-MOBAGE(L-ROW)
+             CALL "AQUA-META-SEND" USING L-ROW WS-BABY WS-BOOLEAN WS-TRUE
+         END-IF
+     END-IF
+     IF (SM-KEY(WS-M) = "squid" OR "glow_squid" OR "dolphin") AND L-SIZE > 0
+         MOVE 0.05 TO WS-CHANCE
+         IF SM-KEY(WS-M) = "dolphin"
+             MOVE 0.1 TO WS-CHANCE
+         END-IF
+         CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+         IF WS-D <= WS-CHANCE
+             MOVE -24000 TO EN-MOBAGE(L-ROW)
+             CALL "AQUA-META-SEND" USING L-ROW WS-BABY WS-BOOLEAN WS-TRUE
          END-IF
      END-IF
      GOBACK.
@@ -306,9 +391,6 @@
      IF EN-WAKE(L-ROW) > 0
          SUBTRACT 1 FROM EN-WAKE(L-ROW)
      END-IF
-     IF EN-MOBAGE(L-ROW) < 0 AND EN-LOCKED(L-ROW) = 0
-         ADD 1 TO EN-MOBAGE(L-ROW)
-     END-IF
      IF L-WET = 0
          GOBACK
      END-IF
@@ -358,6 +440,85 @@
      END-IF
      GOBACK.
  END PROGRAM AXOLOTL-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AQUA-PUFFER-MOBS.
+*> USING pufferfish row, mode, state (0 to 2), result out: the scary-mob test and the sting of 21 section 4.3 for mobs. Mode 0: result 1 when a living standard mob whose type is not in tag
+*> not_scary_for_pufferfish (turtle guardian elder_guardian cod pufferfish salmon tropical_fish dolphin squid glow_squid tadpole nautilus zombie_nautilus sulfur_cube; 3.6) meets the box of
+*> the pufferfish inflated by 2. Mode 1: every such mob meeting the box inflated by 0.3 takes 1 + state damage (a mob hit) and, when that cost it health, Poison for 60 x state ticks.
+*> The boxes are the entity dimensions of the type table (the pufferfish scaled by its state: 0.5, 0.7, 1.0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY STDMOBS.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-INFLATE             FLOAT-LONG.
+ 01 WS-SCALE               FLOAT-LONG.
+ 01 WS-WP                  FLOAT-LONG.
+ 01 WS-WT                  FLOAT-LONG.
+ 01 WS-HT                  FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-REACH               FLOAT-LONG.
+ 01 WS-LOW                 FLOAT-LONG.
+ 01 WS-HIGH                FLOAT-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG VALUE 7.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-POISON              BINARY-LONG VALUE 18.
+ 01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
+ 01 WS-DURATION            BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 6.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-MODE L-STATE L-RESULT.
+     MOVE 0 TO L-RESULT
+     MOVE 2.0 TO WS-INFLATE
+     IF L-MODE = 1
+         MOVE 0.3 TO WS-INFLATE
+     END-IF
+     COMPUTE WS-SCALE = 0.5 + 0.2 * L-STATE
+     IF L-STATE = 2
+         MOVE 1.0 TO WS-SCALE
+     END-IF
+     COMPUTE WS-WP = 0.7 * WS-SCALE
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF WS-N NOT = L-ROW AND EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW) AND EN-HEALTH(WS-N) > 0
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
+             IF WS-S > 0
+                 IF NOT (SM-KEY(WS-S) = "turtle" OR "guardian" OR "elder_guardian" OR "cod" OR "pufferfish" OR "salmon" OR "tropical_fish"
+                         OR "dolphin" OR "squid" OR "glow_squid" OR "tadpole" OR "nautilus" OR "zombie_nautilus" OR "sulfur_cube")
+                     COMPUTE WS-WT = ET-WIDTH-MILLI(EN-TYPE(WS-N) + 1) / 1000
+                     COMPUTE WS-HT = ET-HEIGHT-MILLI(EN-TYPE(WS-N) + 1) / 1000
+                     COMPUTE WS-REACH = (WS-WT + WS-WP) / 2 + WS-INFLATE
+                     COMPUTE WS-DX = FUNCTION ABS(EN-X(WS-N) - EN-X(L-ROW))
+                     COMPUTE WS-DZ = FUNCTION ABS(EN-Z(WS-N) - EN-Z(L-ROW))
+                     COMPUTE WS-LOW = EN-Y(L-ROW) - WS-INFLATE
+                     COMPUTE WS-HIGH = EN-Y(L-ROW) + WS-WP + WS-INFLATE
+                     IF WS-DX < WS-REACH AND WS-DZ < WS-REACH AND EN-Y(WS-N) < WS-HIGH AND EN-Y(WS-N) + WS-HT > WS-LOW
+                         MOVE 1 TO L-RESULT
+                         IF L-MODE = 1
+                             COMPUTE WS-DAMAGE = 1 + L-STATE
+                             MOVE EN-HEALTH(WS-N) TO WS-BEFORE
+                             CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE WS-CAUSE WS-NONE
+                             IF EN-HEALTH(WS-N) < WS-BEFORE
+                                 COMPUTE WS-DURATION = 60 * L-STATE
+                                 CALL "MEF-ADD" USING EN-ID(WS-N) WS-POISON WS-AMPLIFIER WS-DURATION WS-FLAGS
+                             END-IF
+                         END-IF
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM AQUA-PUFFER-MOBS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-SPAWN-RULE.

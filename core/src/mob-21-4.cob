@@ -422,7 +422,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-PUFFER.
-*> USING tracker row: 4.3 for a player (the scary-mob test of the mobs is open). A survival or adventure player within 2 blocks of its box starts the puff goal (inflateCounter 1, deflateTimer 0);
+*> USING tracker row: 4.3 for a player and, through AQUA-PUFFER-MOBS, for the mobs (scary test and sting). A survival or adventure player within 2 blocks of its box starts the puff goal (inflateCounter 1, deflateTimer 0);
 *> with none the counter returns to 0. While the counter is above 0: state 0 becomes 1, a counter above 40 makes state 1 into 2, and the counter rises; otherwise a state above 0
 *> deflates: deflateTimer above 60 turns 2 into 1, above 100 turns 1 into 0, and the timer rises. The state is EN-VARIANT; a change goes to the viewers (AQUA-STATE-SEND). With a
 *> state above 0 a player within 0.3 blocks of its box is stung: 1 + state damage (a mob hit) and, when that took health, Poison for 60 x state ticks.
@@ -442,6 +442,9 @@
  01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
  01 WS-DURATION            BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG VALUE 6.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-STING               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -457,6 +460,10 @@
              END-IF
          END-IF
      END-PERFORM
+     IF WS-SCARY = 0
+         MOVE EN-VARIANT(L-ROW) TO WS-STATE
+         CALL "AQUA-PUFFER-MOBS" USING L-ROW WS-ZERO WS-STATE WS-SCARY
+     END-IF
      IF WS-SCARY = 1 AND EN-INFLATE(L-ROW) = 0
          MOVE 1 TO EN-INFLATE(L-ROW)
          MOVE 0 TO EN-DEFLATE(L-ROW)
@@ -508,6 +515,7 @@
                  END-IF
              END-IF
          END-PERFORM
+         CALL "AQUA-PUFFER-MOBS" USING L-ROW WS-ONE WS-STATE WS-STING
      END-IF
      GOBACK.
  END PROGRAM AQUA-PUFFER.
@@ -534,11 +542,15 @@
  01 WS-DRAG                FLOAT-LONG.
  01 WS-LIMIT               BINARY-LONG.
  01 WS-RESET               BINARY-LONG.
+ 01 WS-DARK-OLD            BINARY-LONG.
+ 01 WS-DARK-INDEX          BINARY-LONG VALUE 18.
+ 01 WS-VARINT              BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      CALL "FLUID-TOUCHES-WATER" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-WET
+     CALL "AQUA-GROW" USING L-ROW
      MOVE EN-YAW(L-ROW) TO WS-YAW
 *>   Air: a fish or squid 300 and 20 more (drown), the axolotl 6000 and 20 (dry out, 44 part 7 section 8.4), the guardian none (it breathes under water and flops on land, 21 section 4.8).
      MOVE 320 TO WS-LIMIT
@@ -623,11 +635,16 @@
          CALL "AQUA-PUFFER" USING L-ROW
      END-IF
      IF SM-KEY(L-M) = "glow_squid"
+         MOVE EN-DARK(L-ROW) TO WS-DARK-OLD
          IF EN-DARK(L-ROW) > 0
              SUBTRACT 1 FROM EN-DARK(L-ROW)
          END-IF
          IF EN-HURT(L-ROW) >= RULE-HURT-WINDOW - 1 AND EN-DARK(L-ROW) = 0
              MOVE 100 TO EN-DARK(L-ROW)
+         END-IF
+*>       The dark ticks (metadata 18, VarInt) go to the viewers whenever they change.
+         IF EN-DARK(L-ROW) NOT = WS-DARK-OLD
+             CALL "AQUA-META-SEND" USING L-ROW WS-DARK-INDEX WS-VARINT EN-DARK(L-ROW)
          END-IF
      END-IF
      IF WS-WET = 0 AND SM-KEY(L-M) NOT = "squid" AND SM-KEY(L-M) NOT = "glow_squid"
@@ -772,7 +789,9 @@
          END-EVALUATE
          GOBACK
      END-IF
+     MOVE 0 TO EN-WOOL(L-ROW)
      IF WS-D < 0.9
+         MOVE 1 TO EN-WOOL(L-ROW)
          CALL "XORO-NEXT-INT" USING L-STATE WS-22 WS-N
          ADD 1 TO WS-N
          MOVE WS-C-BASE(WS-N) TO WS-BASE
