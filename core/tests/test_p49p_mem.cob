@@ -184,10 +184,19 @@
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      MOVE EN-Y(WS-ROW) TO WS-GY
      CALL "VL-WALK-GY" USING WS-ROW WS-GY
-     MOVE "acceptance US15 18§5.5 the path search aims at the y of the target" TO WS-CASE
+     MOVE "acceptance US15 18§5.5 on the same floor the path search aims at the standing cell of the column (the villager's y)" TO WS-CASE
      MOVE WS-Y TO WS-E
      MOVE WS-GY TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+     COMPUTE WS-N1 = WS-Y + 3
+     CALL "VL-WALK-SET" USING WS-ROW WS-SLOT WS-DIM WS-QX WS-N1 WS-QZ WS-SPEED WS-CLOSE
+     MOVE WS-Y TO WS-GY
+     CALL "VL-WALK-GY" USING WS-ROW WS-GY
+     MOVE "acceptance US15 18§5.5 a target 3 floors up: the path search aims at its y" TO WS-CASE
+     MOVE WS-N1 TO WS-E
+     MOVE WS-GY TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+     CALL "VL-WALK-SET" USING WS-ROW WS-SLOT WS-DIM WS-QX WS-Y WS-QZ WS-SPEED WS-CLOSE
      CALL "VL-WALK-TICK" USING WS-ROW WS-SLOT
      CALL "VM-HAS" USING WS-SLOT MT-WALK-TARGET WS-PRESENT
      MOVE "acceptance US15 18§5.5 10 blocks from the target the walk goes on" TO WS-CASE

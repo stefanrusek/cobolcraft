@@ -4,6 +4,7 @@
 *>   VT-SPAWN USING dim, x, y, z (BINARY-LONG feet block), row out, slot out: a villager standing in the middle of that block.
 *>   VT-MOB USING key (PIC X(112)), dim, x, y, z (BINARY-LONG feet block), row out: any mob standing in the middle of that block.
 *>   VT-SCAN USING dim, x, z (BINARY-LONG block): the POI index of the chunk of that column (24 sections).
+*>   VT-SCAN-KEEP USING dim, x, z: the same without forgetting the chunks scanned before.
 *>   VT-DAY USING time of day: set the world clock (CW-TIME) and keep CW-TICKS.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VT-FLAT.
@@ -134,3 +135,23 @@
      CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW L-ROW
      GOBACK.
  END PROGRAM VT-MOB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VT-SCAN-KEEP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY VILPOIX.
+ 01 WS-CX                   BINARY-LONG.
+ 01 WS-CZ                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                   BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z.
+     COMPUTE WS-CX = FUNCTION INTEGER(L-X / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
+     PERFORM 24 TIMES
+         CALL "PXI-SCAN" USING L-DIM WS-CX WS-CZ
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VT-SCAN-KEEP.

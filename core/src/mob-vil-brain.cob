@@ -209,6 +209,7 @@
          END-IF
      END-IF
      CALL "VL-WALK-TICK" USING L-ROW WS-SLOT
+     CALL "VL-SENSE" USING L-ROW WS-SLOT
      CALL "VL-CORE-TICK" USING L-ROW WS-SLOT WS-BABY
      IF VM-T(WS-SLOT, TM-CELL-ON) = 1
          CALL "VL-FARM-STEP" USING L-ROW WS-SLOT
@@ -240,6 +241,11 @@
  01 WS-HOME                 BINARY-LONG VALUE 2.
  01 WS-MEET                 BINARY-LONG VALUE 3.
  01 WS-JOB                  BINARY-LONG VALUE 0.
+ 01 WS-INST-JOB             BINARY-LONG VALUE 1.
+ 01 WS-INST-HOME            BINARY-LONG VALUE 2.
+ 01 WS-INST-MEET            BINARY-LONG VALUE 3.
+ 01 WS-REACH-1              BINARY-LONG VALUE 1.
+ 01 WS-REACH-6              BINARY-LONG VALUE 6.
  01 WS-QD                   BINARY-LONG.
  01 WS-QX                   BINARY-LONG.
  01 WS-QY                   BINARY-LONG.
@@ -273,6 +279,9 @@
      IF WS-FOUND = 0
          CALL "PXI-NEAREST" USING EN-DIM(L-ROW) WS-PX WS-PY WS-PZ WS-KIND-BED WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
          IF WS-FOUND = 1
+             CALL "VL-ACQ-OK" USING L-ROW L-SLOT WS-INST-HOME WS-QX WS-QY WS-QZ WS-REACH-1 WS-FOUND
+         END-IF
+         IF WS-FOUND = 1
              CALL "VPX-CLAIM" USING EN-ID(L-ROW) WS-HOME EN-DIM(L-ROW) WS-QX WS-QY WS-QZ
          END-IF
      END-IF
@@ -281,12 +290,18 @@
          IF WS-FOUND = 0
              CALL "PXI-NEAREST" USING EN-DIM(L-ROW) WS-PX WS-PY WS-PZ WS-KIND-BELL WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
              IF WS-FOUND = 1
+                 CALL "VL-ACQ-OK" USING L-ROW L-SLOT WS-INST-MEET WS-QX WS-QY WS-QZ WS-REACH-6 WS-FOUND
+             END-IF
+             IF WS-FOUND = 1
                  CALL "VPX-CLAIM" USING EN-ID(L-ROW) WS-MEET EN-DIM(L-ROW) WS-QX WS-QY WS-QZ
              END-IF
          END-IF
          CALL "VPX-OF" USING EN-ID(L-ROW) WS-JOB WS-QD WS-QX WS-QY WS-QZ WS-FOUND
          IF WS-FOUND = 0 AND VL-PROF(L-SLOT) = "none"
              CALL "PXI-NEAREST" USING EN-DIM(L-ROW) WS-PX WS-PY WS-PZ WS-KIND-JOB WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
+             IF WS-FOUND = 1
+                 CALL "VL-ACQ-OK" USING L-ROW L-SLOT WS-INST-JOB WS-QX WS-QY WS-QZ WS-REACH-1 WS-FOUND
+             END-IF
              IF WS-FOUND = 1
                  CALL "VP-CLAIM" USING EN-DIM(L-ROW) WS-QX WS-QY WS-QZ EN-ID(L-ROW)
                  MOVE 1 TO VL-POT(L-SLOT)
@@ -484,6 +499,98 @@
      END-IF
      GOBACK.
  END PROGRAM VL-BRAIN-SLEEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-CAN-REACH.
+*> USING row, x, y, z of a block, reach, ok out: canReach of AcquirePoi's path (44 section 2.1 step 6): a path search (STDMOB-PATH, 100 nodes, a villager is 2 blocks high) from the
+*> villager's feet cell ends within `reach` (Manhattan, the POI type's valid range: 1 for a bed or a workstation, 6 for a bell) of the block. The document's one search to the whole set of
+*> candidates is one search to the nearest candidate here.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SX                   BINARY-LONG.
+ 01 WS-SY                   BINARY-LONG.
+ 01 WS-SZ                   BINARY-LONG.
+ 01 WS-HEIGHT               BINARY-LONG VALUE 2.
+ 01 WS-BUDGET               BINARY-LONG VALUE 100.
+ 01 WS-COUNT                BINARY-LONG.
+ 01 WS-REACHED              BINARY-LONG.
+ 01 WS-DIST                 BINARY-LONG.
+ 01 WS-PATH-TABLE.
+    05 WS-PATH OCCURS 128 TIMES.
+       10 WS-PX             BINARY-LONG.
+       10 WS-PY             BINARY-LONG.
+       10 WS-PZ             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ 01 L-REACH                 BINARY-LONG.
+ 01 L-OK                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-REACH L-OK.
+     MOVE 0 TO L-OK
+     COMPUTE WS-SX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-SY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-SZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "STDMOB-PATH" USING EN-DIM(L-ROW) WS-SX WS-SY WS-SZ L-X L-Y L-Z WS-HEIGHT WS-BUDGET WS-PATH-TABLE WS-COUNT WS-REACHED
+     IF WS-COUNT = 0
+*>       No floor under the villager within 3 blocks: no search is possible, so the candidate is not turned away.
+         MOVE 1 TO L-OK
+     ELSE
+         COMPUTE WS-DIST = FUNCTION ABS(WS-PX(WS-COUNT) - L-X) + FUNCTION ABS(WS-PY(WS-COUNT) - L-Y) + FUNCTION ABS(WS-PZ(WS-COUNT) - L-Z)
+         IF WS-REACHED = 1 OR WS-DIST <= L-REACH
+             MOVE 1 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM VL-CAN-REACH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-ACQ-OK.
+*> USING row, slot, instance (1 job site, 2 home, 3 meeting point), x, y, z, reach, ok out: the retry and path check of AcquirePoi for the nearest candidate (44 section 2.1 steps 4, 5, 6, 7 and the
+*> JitteredLinearRetry): while the retry delay of the instance runs nothing is tried; a candidate that cannot be reached (VL-CAN-REACH) delays the instance by 40 to 79 ticks more than the
+*> last delay, up to 400 (Q3-ACQ-RETRY); a reached one clears the delay. The document keeps a retry object per candidate position; this keeps one per instance.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY VLMEM.
+ 01 WS-NOW                  BINARY-LONG.
+ 01 WS-YES                  BINARY-LONG.
+ 01 WS-DRAW                 BINARY-LONG.
+ 01 WS-FORTY                BINARY-LONG VALUE 40.
+ 01 WS-SALT                 BINARY-LONG VALUE 179.
+ 01 WS-NEXT                 BINARY-LONG.
+ 01 WS-D                    BINARY-LONG.
+ 01 WS-P                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-INSTANCE              BINARY-LONG.
+ 01 L-X                     BINARY-LONG.
+ 01 L-Y                     BINARY-LONG.
+ 01 L-Z                     BINARY-LONG.
+ 01 L-REACH                 BINARY-LONG.
+ 01 L-OK                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-INSTANCE L-X L-Y L-Z L-REACH L-OK.
+     MOVE 0 TO L-OK
+     MOVE CW-TICKS TO WS-NOW
+     COMPUTE WS-D = 33 + L-INSTANCE
+     COMPUTE WS-P = 36 + L-INSTANCE
+     CALL "Q3-ACQ-SHOULD-RETRY" USING WS-NOW VM-T(L-SLOT, L-INSTANCE) WS-YES
+     IF WS-YES = 0
+         GOBACK
+     END-IF
+     CALL "VL-CAN-REACH" USING L-ROW L-X L-Y L-Z L-REACH L-OK
+     IF L-OK = 1
+         MOVE 0 TO VM-T(L-SLOT, WS-D) VM-T(L-SLOT, L-INSTANCE)
+     ELSE
+         CALL "XP-RANDOM" USING WS-SALT WS-FORTY WS-DRAW
+         CALL "Q3-ACQ-RETRY" USING WS-NOW VM-T(L-SLOT, WS-P) VM-T(L-SLOT, WS-D) WS-DRAW WS-NEXT
+         MOVE WS-NEXT TO VM-T(L-SLOT, L-INSTANCE)
+     END-IF
+     GOBACK.
+ END PROGRAM VL-ACQ-OK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VPX-RELEASE-KIND.

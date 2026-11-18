@@ -6,7 +6,7 @@
 *> applied: every villager walk is at the standard mob speed (gap: the brain's speeds 0.4, 1.1, 1.25 and 1.5 of 19 section 22.3 are not modelled).
 *>   VL-WALK-SET USING row, slot, dim, x, y, z, speed (FLOAT-LONG, a multiple of s), close enough     set walk_target and start walking (EN-DEST-*, 200 ticks)
 *>   VL-WALK-TICK USING row, slot                                                                    follow or end the walk target
-*>   VL-WALK-GY USING row, y (BINARY-LONG in/out)                                                      the y of the walk target of a villager (STDMOB-STEP: the cell the path search aims at)
+*>   VL-WALK-GY USING row, y (BINARY-LONG in/out)                                                      the y of the walk target of a villager when it is on another floor (2 or more blocks off): the cell the path search aims at; on the same floor the villager's own y keeps the target column's standing cell (a workstation or bed block itself is not a cell a mob stands in, and a search for it would use the whole node budget every time)
 *>   VL-WALK-STOP USING row, slot                                                                    erase walk_target and stop the walk
 
  IDENTIFICATION DIVISION.
@@ -74,7 +74,7 @@
      CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
      IF WS-SLOT > 0
          CALL "VM-GET" USING WS-SLOT MT-WALK-TARGET WS-PRESENT WS-DIM WS-X WS-Y WS-Z WS-NUM WS-NUM2
-         IF WS-PRESENT = 1
+         IF WS-PRESENT = 1 AND (WS-Y - L-Y >= 2 OR L-Y - WS-Y >= 2)
              MOVE WS-Y TO L-Y
          END-IF
      END-IF

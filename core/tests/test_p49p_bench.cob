@@ -1,4 +1,4 @@
-*> Benchmark of the villager brain (lane 002-lane-p49p; docs/protocol/44 part 3 and 19 section 22.3): 40 villagers in a village (40 beds, 40 lecterns, one bell) on a flat stone floor take STDMOB-STEP
+*> Benchmark of the villager brain (lane 002-lane-p49p; docs/protocol/44 part 3 and 19 section 22.3): 40 villagers in a village (40 beds, 40 lecterns, one bell) on a flat stone floor, the POI index of the chunks round it filled, take STDMOB-STEP
 *> (the brain, the walk and the physics of a villager) for 150 ticks at the work, meet and rest times. The CPU time per villager tick is shown (DISPLAY "BENCH ...", microseconds, the C clock) and
 *> must stay below a generous bound, so that a per villager cost that grows with the village is noticed.
  IDENTIFICATION DIVISION.
@@ -44,8 +44,29 @@
     05 WS-LABEL            PIC X(5) OCCURS 3 TIMES.
  01 WS-BOUND               BINARY-LONG VALUE 5000.
  01 WS-MEAN                BINARY-LONG.
+ 01 WS-REPEAT-TEXT         PIC X(8).
+ 01 WS-REPEAT              BINARY-LONG VALUE 1.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-ASLEEP              BINARY-LONG.
+ 01 WS-WALKING             BINARY-LONG.
+ 01 WS-SL                  BINARY-LONG.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-FIRST-TEXT          PIC X(8).
+ 01 WS-FIRST               BINARY-LONG VALUE 1.
+ 01 WS-LAST                BINARY-LONG VALUE 3.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
+*>   P49P_BENCH_REPEAT (default 1) lengthens the measured part, for a profiler.
+     ACCEPT WS-REPEAT-TEXT FROM ENVIRONMENT "P49P_BENCH_REPEAT"
+     IF WS-REPEAT-TEXT NOT = SPACES
+         COMPUTE WS-REPEAT = FUNCTION NUMVAL(WS-REPEAT-TEXT)
+     END-IF
+     ACCEPT WS-FIRST-TEXT FROM ENVIRONMENT "P49P_BENCH_PHASE"
+     IF WS-FIRST-TEXT NOT = SPACES
+         COMPUTE WS-FIRST = FUNCTION NUMVAL(WS-FIRST-TEXT)
+         MOVE WS-FIRST TO WS-LAST
+     END-IF
+     COMPUTE WS-TICKS = 150 * WS-REPEAT
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
      CALL "VT-FLAT" USING WS-PLAYER WS-FY
@@ -66,33 +87,48 @@
          MOVE SPACES TO WS-PAIRS
          CALL "VT-PLACE" USING WS-DIM WS-X WS-Y WS-Z WS-KEY WS-PAIRS
      END-PERFORM
+*>   The POI index of the chunks round the village is filled first, so that the one-off fill (one chunk section of 4096 blocks per call) is not counted in the cost of a villager tick.
      CALL "VT-SCAN" USING WS-DIM WS-X0 WS-Z0
-     COMPUTE WS-X = WS-X0 - 16
-     CALL "VT-SCAN" USING WS-DIM WS-X WS-Z0
-     COMPUTE WS-X = WS-X0 + 16
-     CALL "VT-SCAN" USING WS-DIM WS-X WS-Z0
+     PERFORM VARYING WS-I FROM -3 BY 1 UNTIL WS-I > 3
+         PERFORM VARYING WS-T FROM -3 BY 1 UNTIL WS-T > 3
+             COMPUTE WS-X = WS-X0 + WS-I * 16
+             COMPUTE WS-Z = WS-Z0 + WS-T * 16
+             CALL "VT-SCAN-KEEP" USING WS-DIM WS-X WS-Z
+         END-PERFORM
+     END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
          COMPUTE WS-X = WS-X0 - 20 + FUNCTION MOD((WS-I - 1) * 7, 41)
          COMPUTE WS-Z = WS-Z0 - 10 + FUNCTION MOD((WS-I - 1) * 11, 21)
          CALL "VT-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-ROW(WS-I) WS-SLOT
      END-PERFORM
      MOVE 0 TO WS-TOTAL
-     PERFORM VARYING WS-PHASE FROM 1 BY 1 UNTIL WS-PHASE > 3
+     PERFORM VARYING WS-PHASE FROM WS-FIRST BY 1 UNTIL WS-PHASE > WS-LAST
          CALL "VT-DAY" USING WS-PHASE-TIME(WS-PHASE)
          PERFORM 60 TIMES
              PERFORM TICK-ALL
          END-PERFORM
          CALL STATIC "clock" RETURNING WS-CLOCK0
-         PERFORM 150 TIMES
+         PERFORM WS-TICKS TIMES
              PERFORM TICK-ALL
          END-PERFORM
          CALL STATIC "clock" RETURNING WS-CLOCK1
-         COMPUTE WS-US = (WS-CLOCK1 - WS-CLOCK0) / (150 * WS-N)
+         MOVE 0 TO WS-ASLEEP WS-WALKING
+         PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > WS-N
+             CALL "VL-FIND" USING EN-ID(WS-ROW(WS-T)) WS-NO WS-SL
+             IF VL-SLEEP(WS-SL) = 1
+                 ADD 1 TO WS-ASLEEP
+             END-IF
+             IF EN-COOLDOWN(WS-ROW(WS-T)) > 0
+                 ADD 1 TO WS-WALKING
+             END-IF
+         END-PERFORM
+         DISPLAY "BENCH state at the end of the phase: asleep " WS-ASLEEP " walking " WS-WALKING
+         COMPUTE WS-US = (WS-CLOCK1 - WS-CLOCK0) / (WS-TICKS * WS-N)
          MOVE WS-US TO WS-US-TEXT
          DISPLAY "BENCH villager step us per villager tick (" WS-LABEL(WS-PHASE) ", 40 villagers): " WS-US-TEXT
          COMPUTE WS-TOTAL = WS-TOTAL + WS-US
      END-PERFORM
-     COMPUTE WS-MEAN = WS-TOTAL / 3
+     COMPUTE WS-MEAN = WS-TOTAL / (WS-LAST - WS-FIRST + 1)
      MOVE "test p49p bench: a villager tick costs less than 5 ms of CPU in a village" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N

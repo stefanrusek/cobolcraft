@@ -242,15 +242,18 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-STEP.
-*> USING entity row: the per-step upkeep of a villager (the daily gossip decay).
+*> USING entity row, asleep out (1 while the villager sleeps in its bed): the per-step upkeep of a villager (the daily gossip decay, the brain).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VILSTATE.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
+ 01 L-ASLEEP                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ASLEEP.
+     MOVE 0 TO L-ASLEEP
      CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
      IF WS-SLOT > 0
          CALL "VL-TICK" USING WS-SLOT
@@ -261,6 +264,7 @@
          CALL "VL-GOLEM-STEP" USING L-ROW
          CALL "VL-GOSSIP-STEP" USING L-ROW
          CALL "VL-FEAR-STEP" USING L-ROW
+         MOVE VL-SLEEP(WS-SLOT) TO L-ASLEEP
      END-IF
      GOBACK.
  END PROGRAM VL-STEP.

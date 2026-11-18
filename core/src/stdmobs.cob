@@ -930,6 +930,7 @@
  01 WS-GZ                  BINARY-LONG.
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
+ 01 WS-V-ASLEEP            BINARY-LONG.
  01 WS-LIFE-WALK           BINARY-LONG.
  01 WS-LIFE-HX             FLOAT-LONG.
  01 WS-LIFE-HZ             FLOAT-LONG.
@@ -1154,7 +1155,11 @@
          CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "villager"
-         CALL "VL-STEP" USING WS-ROW
+         CALL "VL-STEP" USING WS-ROW WS-V-ASLEEP
+         IF WS-V-ASLEEP = 1
+*>           A sleeping villager stays in its bed: no stroll, no path search.
+             MOVE 1 TO WS-STOP
+         END-IF
          IF EN-USED(WS-ROW) = 1
              CALL "VILLOOK-SYNC" USING WS-ROW
          END-IF
@@ -1364,6 +1369,10 @@
              IF EN-COOLDOWN(WS-ROW) > 0
                  SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
                  COMPUTE WS-GY = FUNCTION INTEGER(EN-Y(WS-ROW))
+*>               A villager walking to a point on another floor searches for a path to that floor (VL-WALK-GY), when the path is searched again.
+                 IF SM-KEY(WS-M) = "villager" AND EN-PATH-TICKS(WS-ROW) = 0
+                     CALL "VL-WALK-GY" USING WS-ROW WS-GY
+                 END-IF
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M EN-DEST-X(WS-ROW) WS-GY EN-DEST-Z(WS-ROW) WS-HX WS-HZ
                      WS-ARRIVED
                  IF WS-ARRIVED = 1
