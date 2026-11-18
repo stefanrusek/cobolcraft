@@ -32,6 +32,13 @@
  01 WS-BLOCK-ROW           PIC X(819).
  01 WS-BSTATUS             BINARY-LONG.
  01 WS-N                   PIC Z(5)9.
+ 01 WS-ZERO-STATES         BINARY-LONG VALUE 0.
+ 01 WS-ZERO-BAD            BINARY-LONG VALUE 0.
+ 01 WS-ZERO-LIST           PIC X(200) VALUE SPACES.
+ 01 WS-ZPTR                BINARY-LONG VALUE 1.
+ 01 WS-ZHITS               BINARY-LONG.
+ 01 WS-ZOK                 BINARY-LONG.
+ 01 WS-ZH                  BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-GEN
      ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -73,6 +80,9 @@
          PERFORM VARYING WS-STATE FROM WS-FIRST BY 1 UNTIL WS-STATE >= WS-FIRST + WS-BATCH OR WS-STATE >= CT-STATE-COUNT
              CALL "MODEL-SLOT-OF" USING CLIENT-STATE WS-STATE WS-ROW
              IF WS-ROW > 0
+                 IF BM-QUAD-COUNT(WS-ROW) = 0
+                     PERFORM CHECK-ZERO-QUADS
+                 END-IF
                  ADD 1 TO WS-CHECKED
                  MOVE 0 TO WS-STRIPES
                  PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > BM-QUAD-COUNT(WS-ROW)
@@ -99,6 +109,12 @@
              END-IF
          END-PERFORM
      END-PERFORM
+     MOVE SPACES TO TL-CASE
+     STRING "debug mesh every state that bakes no quad is a fluid, an air or invisible block, a block-entity block or a wall's unreachable "
+         "state, blocks: " FUNCTION TRIM(WS-ZERO-LIST) DELIMITED BY SIZE INTO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ZERO-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE WS-CHECKED TO WS-N
      MOVE SPACES TO TL-CASE
      STRING "debug mesh states with a baked row checked: " FUNCTION TRIM(WS-N) " of the standard set" DELIMITED BY SIZE INTO TL-CASE
@@ -114,4 +130,39 @@
      MOVE WS-BAD-STATES TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+*> A state that baked no quad (BM-QUAD-COUNT 0): fine for the blocks drawn by something else (fluids: MESH-FLUID; banners, shulker boxes, skulls and heads,
+*> copper golem statues, decorated pots: block-entity models) and the blocks with no visible model (the air blocks, barrier, light, structure_void,
+*> moving_piston, end_portal, end_gateway, bubble_column, conduit) and the states of a wall (or pitcher_crop) that no part holds for; a block model
+*> state of any other block drawing nothing is a block that does not render (operator report, try14: logs, leaves, paths, crafting tables), named here.
+ CHECK-ZERO-QUADS.
+     ADD 1 TO WS-ZERO-STATES
+     CALL "CONTENT-BLOCK-OF-STATE" USING WS-STATE WS-BLOCK-ID WS-INDEX WS-BLOCK-ROW WS-BSTATUS
+     MOVE WS-BLOCK-ROW TO CT-BLOCK-ROW
+     MOVE CT-BR-KEY TO WS-KEY
+     MOVE 0 TO WS-ZOK
+     EVALUATE WS-KEY
+         WHEN "air" WHEN "cave_air" WHEN "void_air" WHEN "water" WHEN "lava" WHEN "moving_piston" WHEN "end_portal" WHEN "end_gateway"
+         WHEN "barrier" WHEN "light" WHEN "structure_void" WHEN "conduit" WHEN "bubble_column" WHEN "pitcher_crop" WHEN "decorated_pot"
+             MOVE 1 TO WS-ZOK
+     END-EVALUATE
+     MOVE 0 TO WS-ZH
+     INSPECT WS-KEY TALLYING WS-ZH FOR ALL "banner" ALL "shulker_box" ALL "_skull" ALL "_head" ALL "golem_statue"
+     IF WS-ZH > 0
+         MOVE 1 TO WS-ZOK
+     END-IF
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-ZH
+     IF WS-ZH > 5 AND WS-KEY(WS-ZH - 4:5) = "_wall"
+         MOVE 1 TO WS-ZOK
+     END-IF
+     IF WS-ZOK = 0
+         ADD 1 TO WS-ZERO-BAD
+         MOVE 0 TO WS-ZHITS
+         IF WS-ZERO-LIST NOT = SPACES
+             INSPECT WS-ZERO-LIST TALLYING WS-ZHITS FOR ALL FUNCTION TRIM(WS-KEY)
+         END-IF
+         IF WS-ZHITS = 0 AND WS-ZPTR < 150
+             STRING FUNCTION TRIM(WS-KEY) " " DELIMITED BY SIZE INTO WS-ZERO-LIST WITH POINTER WS-ZPTR
+         END-IF
+     END-IF.
  END PROGRAM TEST-DEBUG-MESH.
