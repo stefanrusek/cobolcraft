@@ -26,6 +26,11 @@
          IF PJ-KIND(WS-SLOT) = 3 OR PJ-KIND(WS-SLOT) = 41
              MOVE 1 TO L-NEEDED
          END-IF
+         IF PJ-KIND(WS-SLOT) = 11 OR PJ-KIND(WS-SLOT) = 12 OR PJ-KIND(WS-SLOT) = 13 OR PJ-KIND(WS-SLOT) >= 44
+             IF PJ-I8(WS-SLOT) > 0
+                 MOVE 1 TO L-NEEDED
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM ENTITY-EXTRA-NEEDED.
@@ -58,6 +63,9 @@
          END-IF
          IF PJ-KIND(WS-SLOT) = 41
              CALL "OIS-DATA-BUILD" USING L-ROW PB-BUFFER
+         END-IF
+         IF PJ-KIND(WS-SLOT) = 11 OR PJ-KIND(WS-SLOT) = 12 OR PJ-KIND(WS-SLOT) = 13 OR PJ-KIND(WS-SLOT) >= 44
+             CALL "DECOR-DATA-BUILD" USING L-ROW PB-BUFFER
          END-IF
      END-IF
      GOBACK.

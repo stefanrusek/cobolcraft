@@ -226,6 +226,8 @@
                          CALL "OIS-STEP" USING WS-ROW
                      WHEN 42
                          CALL "WIND-STEP" USING WS-ROW
+                     WHEN 11 WHEN 12 WHEN 13
+                         CALL "DECOR-DATA-SYNC" USING WS-ROW
                  END-EVALUATE
              END-IF
          END-IF

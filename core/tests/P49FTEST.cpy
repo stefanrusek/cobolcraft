@@ -1,6 +1,6 @@
 *> Helper of the lane p49f entity data tests (COPY after the test program, touch the test after changing it).
 *>   P49-DRAIN-DATA USING connection id, text out (PIC X(1024)): drains the connection; each packet is its id, a Set Entity Data (0x65) is "101(entity;index=value,...)" with the value
-*>     written "I<n>" for a VarInt, byte, enum or block state, "F<x.xx>" for a float, "Z<0 or 1>" for a boolean, "S<item>x<count>" for an item stack and "V<a>/<b>/<c>" for a Vector3.
+*>     written "R<a>/<b>/<c>" for Rotations, "I<n>" for a VarInt, byte, enum or block state, "F<x.xx>" for a float, "Z<0 or 1>" for a boolean, "S<item>x<count>" for an item stack and "V<a>/<b>/<c>" for a Vector3.
 *>     Set Time (0x73) and Recipe Book Add (0x4B) are left out; packets are separated by one space.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P49-DRAIN-DATA.
@@ -70,6 +70,15 @@
                              MOVE PK-MX-IS-ITEM TO WS-E1
                              MOVE PK-MX-IS-COUNT TO WS-E2
                              STRING "S" FUNCTION TRIM(WS-E1) "x" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                         WHEN 9
+                             MOVE PK-MX-FLOAT(1) TO WS-FL
+                             COMPUTE WS-F1 ROUNDED = WS-FL
+                             MOVE PK-MX-FLOAT(2) TO WS-FL
+                             COMPUTE WS-F2 ROUNDED = WS-FL
+                             MOVE PK-MX-FLOAT(3) TO WS-FL
+                             COMPUTE WS-F3 ROUNDED = WS-FL
+                             STRING "R" FUNCTION TRIM(WS-F1) "/" FUNCTION TRIM(WS-F2) "/" FUNCTION TRIM(WS-F3)
+                                 DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                          WHEN 39
                              MOVE PK-MX-FLOAT(1) TO WS-FL
                              COMPUTE WS-F1 ROUNDED = WS-FL

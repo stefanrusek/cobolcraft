@@ -119,6 +119,7 @@
              WHEN 5
                  MOVE 270 TO EN-YAW(L-ROW)
          END-EVALUATE
+         CALL "DECOR-DATA-SYNC" USING L-ROW
      END-IF
      GOBACK.
  END PROGRAM DECOR-SPAWN.
