@@ -246,15 +246,16 @@
                  CALL "PS-SEGMENT" USING WS-ANGLE WS-SEGMENT
              ELSE
                  MOVE "false" TO WS-ATTACHED-TEXT
+*>               convertToSegment of the opposite of the player's direction: 0 for a player looking north, 4 east, 8 south, 12 west.
                  EVALUATE PC-HDIR
                      WHEN 2
-                         MOVE 8 TO WS-SEGMENT
-                     WHEN 5
-                         MOVE 12 TO WS-SEGMENT
-                     WHEN 3
                          MOVE 0 TO WS-SEGMENT
-                     WHEN OTHER
+                     WHEN 5
                          MOVE 4 TO WS-SEGMENT
+                     WHEN 3
+                         MOVE 8 TO WS-SEGMENT
+                     WHEN OTHER
+                         MOVE 12 TO WS-SEGMENT
                  END-EVALUATE
              END-IF
              CALL "PS-PUT" USING WS-STANDING WS-ATTACHED WS-ATTACHED-TEXT
