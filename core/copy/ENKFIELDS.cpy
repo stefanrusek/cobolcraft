@@ -60,13 +60,17 @@
        10 EK-LOOT            PIC X(64).
        10 EK-LOOT-SEED       BINARY-DOUBLE.
        10 EK-LOVE-UUID       PIC X(16).
-*>   Species keys (45-4 to 45-6; SPXTAB.cpy, core/src/entity-spx.cob): EK-SPX(1 to 4) a number (EK-SPX-NUM), a text (EK-SPX-TXT with EK-SPX-LEN bytes) or a tag payload
-*>   (the same fields) of a key the row was read with (EK-SPX-SET 1); EK-BIG(1 to 3) the payloads of the keys of slots 5 to 7 (chest items, stew effects, trades, gossip, inventories).
-       10 EK-SPX OCCURS 4 TIMES.
+*>   Species keys (45-4 to 45-6; SPXTAB.cpy, core/src/entity-spx.cob): EK-SPX(1 to 20) a number (EK-SPX-NUM), a text (EK-SPX-TXT with EK-SPX-LEN bytes) or a tag payload
+*>   (the same fields) of a key the row was read with (EK-SPX-SET 1); EK-BIG(1 to 3) the payloads of the keys of slots 21 to 23 (chest items, stew effects, trades, gossip, inventories).
+       10 EK-SPX OCCURS 20 TIMES.
           15 EK-SPX-SET      BINARY-LONG.
           15 EK-SPX-NUM      BINARY-DOUBLE.
+          15 EK-SPX-FLT      FLOAT-LONG.
           15 EK-SPX-LEN      BINARY-LONG.
           15 EK-SPX-TXT      PIC X(256).
        10 EK-BIG OCCURS 3 TIMES.
           15 EK-BIG-LEN      BINARY-LONG.
           15 EK-BIG-RAW      PIC X(1024).
+*>   Ground item (45-1 section 8): the components compound of its stack (the payload as the file has it; none when absent or empty).
+       10 EK-ITEM-COMP-LEN   BINARY-LONG.
+       10 EK-ITEM-COMP-RAW   PIC X(512).

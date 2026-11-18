@@ -240,6 +240,8 @@
      MOVE WS-A TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "MOB-LEASH-DROP" USING WS-SHEEP
+*>   Both mobs go before the reload: a UUID that a loaded entity has refuses the entity (45-1 section 6).
+     CALL "ENTITY-REMOVE" USING WS-SHEEP
      CALL "ENTITY-REMOVE" USING WS-COW
      CALL "ENTITY-REMOVE" USING WS-KNOT
      MOVE 0 TO PB-POS

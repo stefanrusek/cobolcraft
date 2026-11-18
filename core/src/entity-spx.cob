@@ -4,6 +4,28 @@
 *>   ENTITY-SPX-WRITE USING row, PB-BUFFER   writes them (the key of a row of mode A at its default when the compound had none)
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-SPECIES-KEY.
+*> USING row, key out (PIC X(24)): the entity type key of the row without its namespace (the species of SPXTAB.cpy rows); spaces for a row that is free.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-BARE                PIC X(48).
+ 01 WS-INDEX               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ PROCEDURE DIVISION USING L-ROW L-KEY.
+     MOVE SPACES TO L-KEY
+     COMPUTE WS-INDEX = EN-TYPE(L-ROW) + 1
+     IF EN-USED(L-ROW) = 1 AND WS-INDEX >= 1 AND WS-INDEX <= ET-COUNT
+         CALL "KEY-BARE" USING ET-KEY(WS-INDEX) WS-BARE
+         MOVE WS-BARE TO L-KEY
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-SPECIES-KEY.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-SPX-READ.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -21,6 +43,7 @@
  01 WS-BIG-CAPACITY        BINARY-LONG VALUE 1024.
  01 WS-INT                 BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-FLOAT               FLOAT-SHORT.
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
@@ -55,9 +78,17 @@
                      CALL "PB-GET-BYTE" USING PB-BUFFER WS-INT
                      MOVE WS-INT TO KD-SPX-NUM(WS-SLOT)
                      MOVE 1 TO KD-SPX-SET(WS-SLOT)
+                 WHEN 2
+                     CALL "PB-GET-SHORT" USING PB-BUFFER WS-INT
+                     MOVE WS-INT TO KD-SPX-NUM(WS-SLOT)
+                     MOVE 1 TO KD-SPX-SET(WS-SLOT)
                  WHEN 3
                      CALL "PB-GET-INT" USING PB-BUFFER WS-INT
                      MOVE WS-INT TO KD-SPX-NUM(WS-SLOT)
+                     MOVE 1 TO KD-SPX-SET(WS-SLOT)
+                 WHEN 5
+                     CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
+                     MOVE WS-FLOAT TO KD-SPX-FLT(WS-SLOT)
                      MOVE 1 TO KD-SPX-SET(WS-SLOT)
                  WHEN 4
                      CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
@@ -71,8 +102,8 @@
                          MOVE 1 TO KD-SPX-SET(WS-SLOT)
                      END-IF
                  WHEN OTHER
-                     IF WS-SLOT > 4
-                         COMPUTE WS-BIG = WS-SLOT - 4
+                     IF WS-SLOT > 20
+                         COMPUTE WS-BIG = WS-SLOT - 20
                          CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER WS-TYPE WS-BIG-CAPACITY KD-BIG-LEN(WS-BIG)
                              KD-BIG-RAW(WS-BIG)
                      ELSE
@@ -105,6 +136,7 @@
  01 WS-TAG                 BINARY-LONG.
  01 WS-INT                 BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-FLOAT               FLOAT-SHORT.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-TEXT                PIC X(256).
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -114,7 +146,7 @@
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
-     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     CALL "ENTITY-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
          GOBACK
      END-IF
@@ -125,8 +157,8 @@
              MOVE SPX-KEY(WS-R) TO WN
              COMPUTE WL = FUNCTION LENGTH(FUNCTION TRIM(WN))
              MOVE 0 TO WS-SET
-             IF WS-SLOT > 4
-                 COMPUTE WS-BIG = WS-SLOT - 4
+             IF WS-SLOT > 20
+                 COMPUTE WS-BIG = WS-SLOT - 20
                  IF EK-BIG-LEN(L-ROW, WS-BIG) > 0
                      MOVE 1 TO WS-SET
                  END-IF
@@ -145,6 +177,8 @@
                          END-IF
                      END-IF
                  WHEN SPX-MODE(WS-R) = "Z"
+                     CONTINUE
+                 WHEN SPX-MODE(WS-R) = "Y"
                      IF WS-SET = 1
                          CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TAG WN WL
                          CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-BIG-RAW(L-ROW, WS-BIG) EK-BIG-LEN(L-ROW, WS-BIG)
@@ -153,16 +187,25 @@
                      END-IF
                  WHEN SPX-MODE(WS-R) = "C" AND WS-SET = 0
                      CONTINUE
-                 WHEN SPX-TAG(WS-R) = 1 OR SPX-TAG(WS-R) = 3
+                 WHEN SPX-TAG(WS-R) = 5
+                     MOVE SPX-DEF(WS-R) TO WS-FLOAT
+                     IF WS-SET = 1
+                         MOVE EK-SPX-FLT(L-ROW, WS-SLOT) TO WS-FLOAT
+                     END-IF
+                     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+                 WHEN SPX-TAG(WS-R) = 1 OR SPX-TAG(WS-R) = 2 OR SPX-TAG(WS-R) = 3
                      MOVE SPX-DEF(WS-R) TO WS-INT
                      IF WS-SET = 1
                          MOVE EK-SPX-NUM(L-ROW, WS-SLOT) TO WS-INT
                      END-IF
-                     IF SPX-TAG(WS-R) = 1
-                         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
-                     ELSE
-                         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
-                     END-IF
+                     EVALUATE SPX-TAG(WS-R)
+                         WHEN 1
+                             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+                         WHEN 2
+                             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-INT
+                         WHEN OTHER
+                             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+                     END-EVALUATE
                  WHEN SPX-TAG(WS-R) = 4
                      MOVE SPX-DEF(WS-R) TO WS-LONG
                      IF WS-SET = 1
@@ -189,3 +232,41 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITY-SPX-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-SPX-WRITE-Z.
+*> USING row, PB-BUFFER, key (PIC X(24)): the key of the species of the row that the table marks Z, as a list of compounds: the payload read or an empty list.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SPXTAB.
+ COPY ENKEEP.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-SPECIES             PIC X(24).
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-BIG                 BINARY-LONG.
+ 01 WS-TAG                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ 01 L-KEY                  PIC X(24).
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER L-KEY.
+     CALL "ENTITY-SPECIES-KEY" USING L-ROW WS-SPECIES
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > SPX-ROWS
+         IF SPX-SPECIES(WS-R) = WS-SPECIES AND SPX-KEY(WS-R) = L-KEY AND SPX-MODE(WS-R) = "Z"
+             MOVE SPX-KEY(WS-R) TO WN
+             COMPUTE WL = FUNCTION LENGTH(FUNCTION TRIM(WN))
+             MOVE SPX-TAG(WS-R) TO WS-TAG
+             COMPUTE WS-BIG = SPX-SLOT(WS-R) - 20
+             IF EK-BIG-LEN(L-ROW, WS-BIG) > 0
+                 CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TAG WN WL
+                 CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-BIG-RAW(L-ROW, WS-BIG) EK-BIG-LEN(L-ROW, WS-BIG)
+             ELSE
+                 CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-SPX-WRITE-Z.

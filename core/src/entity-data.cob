@@ -88,6 +88,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
+ COPY ENKEEP.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-ELEMENT             BINARY-LONG VALUE -1.
@@ -166,7 +167,13 @@
          CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
          MOVE "count" TO WN MOVE 5 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-ITEM-COUNT(L-ROW)
+         IF EK-ITEM-COMP-LEN(L-ROW) > 0
+             MOVE "components" TO WN MOVE 10 TO WL
+             CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-ITEM-COMP-RAW(L-ROW) EK-ITEM-COMP-LEN(L-ROW)
+         END-IF
          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         CALL "ENTITY-SPX-WRITE" USING L-ROW PB-BUFFER
      ELSE
 *>               A LivingEntity (45-2; an armor stand, 45-9, has no Mob keys): Health, the LivingEntity keys and the Mob keys; a TNT, falling block, boat, minecart or projectile is an Entity only.
          CALL "ENTITY-IS-LIVING" USING L-ROW WS-LIVING
@@ -178,12 +185,12 @@
              IF WS-LIVING = 1
                  CALL "MOB-NBT-WRITE" USING L-ROW PB-BUFFER
                  CALL "MOBKEEP-NBT-WRITE" USING L-ROW PB-BUFFER
-                 CALL "ENTITY-SPX-WRITE" USING L-ROW PB-BUFFER
              ELSE
                  CALL "ARMORSTAND9-NBT-WRITE" USING L-ROW PB-BUFFER
              END-IF
          END-IF
          CALL "ENTITY8-NBT-WRITE" USING L-ROW PB-BUFFER
+         CALL "ENTITY-SPX-WRITE" USING L-ROW PB-BUFFER
      END-IF
      GOBACK.
  END PROGRAM ENTITY-COMPOUND-KEYS.
@@ -518,6 +525,8 @@
  COPY A7DATA.
  COPY E8DATA.
  01 WS-SPECIES            PIC X(24).
+ 01 WS-SPECIES-KEY        PIC X(24).
+ 01 WS-COMP-CAPACITY      BINARY-LONG VALUE 512.
  01 WS-PASS-AT            BINARY-LONG.
  01 WS-DUPLICATE           BINARY-LONG.
  01 WS-OTHER               BINARY-LONG.
@@ -616,6 +625,12 @@
                              END-PERFORM
                          WHEN WN = "count" AND WS-INNER-TYPE = 3
                              CALL "PB-GET-INT" USING PB-BUFFER WS-ITEM-COUNT
+                         WHEN WN = "components" AND WS-INNER-TYPE = 10
+                             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER WS-INNER-TYPE WS-COMP-CAPACITY KD-ITEM-COMP-LEN
+                                 KD-ITEM-COMP-RAW
+                             IF KD-ITEM-COMP-LEN = 1
+                                 MOVE 0 TO KD-ITEM-COMP-LEN
+                             END-IF
                          WHEN OTHER
                              CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
                      END-EVALUATE
@@ -667,6 +682,8 @@
              MOVE WS-AGE TO EN-AGE(WS-ROW)
              MOVE WS-YAW TO EN-YAW(WS-ROW)
              MOVE WS-PITCH TO EN-PITCH(WS-ROW)
+             CALL "ENTITY-SPECIES-KEY" USING WS-ROW WS-SPECIES-KEY
+             CALL "ENTITY-SPX-READ" USING PB-BUFFER WS-START WS-END WS-SPECIES-KEY KD-DATA
          WHEN WS-ENTITY-TYPE >= MOB-FIRST-TYPE
              CALL "MOB-SPAWN" USING L-DIM WS-ENTITY-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
              COMPUTE EN-HEALTH(WS-ROW) ROUNDED = WS-HEALTH
@@ -677,7 +694,8 @@
              CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
              CALL "LIVING-NBT-APPLY" USING WS-ROW LV-DATA
              CALL "MOB-SPECIES-KEY" USING WS-ROW WS-SPECIES
-             CALL "ENTITY-SPX-READ" USING PB-BUFFER WS-START WS-END WS-SPECIES KD-DATA
+             CALL "ENTITY-SPECIES-KEY" USING WS-ROW WS-SPECIES-KEY
+             CALL "ENTITY-SPX-READ" USING PB-BUFFER WS-START WS-END WS-SPECIES-KEY KD-DATA
              MOVE MQ-SIT TO SP-SIT
              CALL "SPECIES4-NBT-APPLY" USING WS-ROW WS-SPECIES SP-DATA
              MOVE MQ-BABY TO H5-BABY
