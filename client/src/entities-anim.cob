@@ -35,6 +35,10 @@
     05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
  01 WS-CO.
     05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-FX.
+    05 WS-FXI              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-FX-SITE             PIC X(24) VALUE "fangs_crit".
+ 01 WS-FX-DRAWS            BINARY-LONG VALUE 72.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -102,12 +106,19 @@
                  MOVE WS-COV(3) TO EN-SQ-TGT(WS-R)
                  MOVE WS-COV(4) TO EN-WOG(WS-R)
              END-IF
-*>           Evoker fangs (34-3 4.8): lifeTicks fall by 1 a tick once the bite started (EM3-FANGS-TICK; the crit particle burst is not made here).
+*>           Evoker fangs (34-3 4.8): lifeTicks fall by 1 a tick once the bite started (EM3-FANGS-TICK; the burst of 12 crit particles when lifeTicks reaches 14: ENTITY-MOB-PARTICLES).
              IF EN-KEY(WS-R) = "evoker_fangs"
                  MOVE EN-FA(WS-R) TO WS-CIV(1)
                  MOVE EN-FL(WS-R) TO WS-CIV(2)
                  CALL "EM3-FANGS-TICK" USING WS-CI WS-CO
                  MOVE WS-COV(1) TO EN-FL(WS-R)
+                 IF WS-COV(2) = 1
+                     MOVE EN-X(WS-R) TO WS-FXI(1)
+                     MOVE EN-Y(WS-R) TO WS-FXI(2)
+                     MOVE EN-Z(WS-R) TO WS-FXI(3)
+                     MOVE 0.5 TO WS-FXI(4)
+                     CALL "ENTITY-MOB-PARTICLES" USING CLIENT-STATE WS-FX-SITE WS-FX WS-FX-DRAWS
+                 END-IF
              END-IF
 *>           The aquatic mobs: whether the middle of the box is in water (34-8 5: a fish out of water lies on its side).
              IF EN-KEY(WS-R) = "squid" OR "glow_squid" OR "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
