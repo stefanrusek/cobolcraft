@@ -77,6 +77,7 @@
  01 WS-SKY                 BINARY-LONG.
  01 WS-BL                  BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 7.
  01 WS-IN.
     05 WS-CLASS            BINARY-LONG OCCURS 9 TIMES.
     05 WS-ALONG-X          BINARY-LONG.
@@ -114,6 +115,9 @@
      COMPUTE WS-AGE = WS-STATE - WS-FIRST
      COMPUTE WS-MAX = CB-STATES(WS-BLOCK + 1) - 1
      CALL "LIGHT-RAW" USING L-DIM L-X L-Y L-Z WS-SKY WS-BL WS-LIGHT
+*>   The stored sky light has no sideways spreading (light.cob): under the eaves of a house it reads 0 where the sky engine has up to 14; LIGHT-SKY-SPREAD gives the engine's level (32 section 5.2) within 7 steps of open sky.
+     CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X L-Y L-Z WS-NEAR WS-SKY
+     COMPUTE WS-LIGHT = FUNCTION MAX(WS-BL, WS-SKY)
      COMPUTE WS-CY = L-Y - 1
      MOVE 0 TO WS-ALONG-X WS-ALONG-Z WS-DIAGONAL
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
@@ -182,6 +186,7 @@
  01 WS-SKY                 BINARY-LONG.
  01 WS-BL                  BINARY-LONG.
  01 WS-RAW                 BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 7.
  01 WS-DARKEN              BINARY-LONG.
  01 WS-LIGHT               BINARY-LONG.
  01 WS-SEVEN               BINARY-LONG VALUE 7.
@@ -210,6 +215,8 @@
      COMPUTE WS-STAGE = WS-STATE - CB-FIRST-STATE(WS-BLOCK + 1)
      COMPUTE WS-ABOVE = L-Y + 1
      CALL "LIGHT-RAW" USING L-DIM L-X WS-ABOVE L-Z WS-SKY WS-BL WS-RAW
+*>   The stored sky light has no sideways spreading (light.cob): under the eaves of a house it reads 0 where the sky engine has up to 14; LIGHT-SKY-SPREAD gives the engine's level (32 section 5.2) within 7 steps of open sky.
+     CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X WS-ABOVE L-Z WS-NEAR WS-SKY
      CALL "WORLDSIM-DARKEN" USING L-DIM WS-DARKEN
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-BL, WS-SKY - WS-DARKEN)
      CALL "LEVEL-RANDOM-INT" USING WS-SEVEN WS-DRAW
