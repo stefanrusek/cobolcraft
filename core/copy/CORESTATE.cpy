@@ -583,6 +583,9 @@
        10 EN-LEFTY           BINARY-LONG.        *> the left-handed flag (mob flag 2; finalizeSpawn rolls it, 7.1 step 2; saved as LeftHanded)
        10 EN-FOLLOW-BONUS    BINARY-LONG.        *> the random_spawn_bonus modifier of follow_range in millionths (7.1 step 1; ADD_MULTIPLIED_BASE), 0 = none yet
        10 EN-FROZEN          BINARY-LONG.        *> ticksFrozen (18 section 2.6 step 11): +1 a tick in powder snow, -2 otherwise, 140 = fully frozen
+       10 EN-AFFLICT         BINARY-LONG.        *> conversion tracker (20 section 3.8): ticks the afflicted condition has held (skeleton in powder snow: 140 to convert)
+       10 EN-CONVERTING      BINARY-LONG.        *> 1 while converting (the synched flag); EN-CONVERT-LEFT counts the 300 ticks down
+       10 EN-CONVERT-LEFT    BINARY-LONG.
        10 EN-PREV-X          FLOAT-LONG.         *> the position at the previous environment tick (the horizontal move test of the sweet berry bush, 3.3)
        10 EN-PREV-Z          FLOAT-LONG.
 

@@ -450,6 +450,14 @@
              END-IF
          END-IF
      END-IF
+*>   A skeleton's stray-conversion flag (20 section 3.8: index 16 BOOLEAN): true while converting, false once (EN-CONVERTING 2) when the conversion was cancelled.
+     IF WS-INDEX = 0 AND WS-M > 0 AND SM-KEY(WS-M) = "skeleton" AND EN-CONVERTING(L-ROW) > 0
+         MOVE 16 TO WS-INDEX
+         MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER
+         IF EN-CONVERTING(L-ROW) = 1
+             MOVE 1 TO WS-VALUE
+         END-IF
+     END-IF
 *>   An ignited creeper (metadata 18 BOOLEAN true, 6.1) follows the powered entry, or is the only one.
      IF WS-M > 0 AND SM-KEY(WS-M) = "creeper" AND EN-IGNITED(L-ROW) = 1
          IF WS-INDEX = 0

@@ -1021,6 +1021,7 @@
  01 WS-RAID-HZ             FLOAT-LONG.
  01 WS-RAID-WALK           BINARY-LONG.
  01 WS-EVAL                BINARY-LONG.
+ 01 WS-CONVERTED           BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1111,6 +1112,13 @@
      CALL "STDMOB-FIRE-SYNC" USING WS-ROW
      IF EN-HEALTH(WS-ROW) = 0
          GOBACK
+     END-IF
+*>   The conversion tracker (20 section 3.8): a skeleton in powder snow becomes a stray.
+     IF SM-KEY(WS-M) = "skeleton"
+         CALL "M183-CONVERT" USING WS-ROW WS-CONVERTED
+         IF WS-CONVERTED = 1
+             GOBACK
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "phantom"
          CALL "STDMOB-PHANTOM-TICK" USING WS-ROW WS-M

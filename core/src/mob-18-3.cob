@@ -4,6 +4,8 @@
 *>       cobweb in it, a sweet berry bush (1 young, 2 grown), a magma block under its feet and powder snow in the cell of its feet
 *>   M183-FREEZE USING tracker row, in powder snow (BINARY-LONG)   ticksFrozen: +1 in powder snow, -2 otherwise (never below 0); fully frozen (140) takes 1.0 freeze damage
 *>       (5.0 for blaze, strider and magma cube) on every 40th tick; polar bear, stray, snow golem and wither cannot freeze
+*>   M183-CONVERT USING tracker row, converted out (1 when the row was replaced)   the conversion tracker of a skeleton in powder snow (20 section 3.8, 18 section 4.10): afflicted for 140 ticks it starts converting,
+*>       300 ticks later (the count below 0) it is replaced by a stray with its equipment; the counters reset when the condition stops
 *>   M183-TICK USING tracker row   the block effects of the box after the move (cactus 1.0, magma block 1.0 on the ground, a sweet berry bush 1.0 when the mob moved more than
 *>       0.003 and the bush is grown) and the freezing
 
@@ -183,3 +185,83 @@
      MOVE EN-Z(L-ROW) TO EN-PREV-Z(L-ROW)
      GOBACK.
  END PROGRAM M183-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M183-CONVERT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-CACTUS              BINARY-LONG.
+ 01 WS-WEB                 BINARY-LONG.
+ 01 WS-BERRY               BINARY-LONG.
+ 01 WS-MAGMA               BINARY-LONG.
+ 01 WS-POWDER              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-EQUIP               BINARY-LONG.
+ 01 WS-HAND                BINARY-LONG.
+ 01 WS-WEAR                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DONE.
+     MOVE 0 TO L-DONE
+     IF EN-NO-AI(L-ROW) = 1
+         GOBACK
+     END-IF
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(L-ROW) + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(L-ROW) + 1) / 1000
+     CALL "M183-SCAN" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-HALF WS-HEIGHT WS-CACTUS WS-WEB WS-BERRY WS-MAGMA
+         WS-POWDER
+     IF WS-POWDER = 0
+         IF EN-CONVERTING(L-ROW) = 1
+             MOVE 2 TO EN-CONVERTING(L-ROW)
+             CALL "STDMOB-VARIANT-SEND" USING L-ROW
+         END-IF
+         MOVE 0 TO EN-AFFLICT(L-ROW) EN-CONVERTING(L-ROW) EN-CONVERT-LEFT(L-ROW)
+         GOBACK
+     END-IF
+     IF EN-CONVERTING(L-ROW) = 0
+         ADD 1 TO EN-AFFLICT(L-ROW)
+         IF EN-AFFLICT(L-ROW) >= 140
+             MOVE 1 TO EN-CONVERTING(L-ROW)
+             MOVE 300 TO EN-CONVERT-LEFT(L-ROW)
+             CALL "STDMOB-VARIANT-SEND" USING L-ROW
+         END-IF
+         GOBACK
+     END-IF
+     SUBTRACT 1 FROM EN-CONVERT-LEFT(L-ROW)
+     IF EN-CONVERT-LEFT(L-ROW) >= 0
+         GOBACK
+     END-IF
+*>   convertTo: a stray at the same place and rotation, the equipment kept.
+     MOVE "minecraft:stray" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     MOVE EN-YAW(L-ROW) TO WS-YAW
+     MOVE EN-DIM(L-ROW) TO WS-DIM
+     MOVE EN-EQUIP(L-ROW) TO WS-EQUIP
+     MOVE EN-HAND(L-ROW) TO WS-HAND
+     MOVE EN-HEAD-WEAR(L-ROW) TO WS-WEAR
+     CALL "ENTITY-REMOVE" USING L-ROW
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+     MOVE WS-EQUIP TO EN-EQUIP(WS-NEW)
+     MOVE WS-HAND TO EN-HAND(WS-NEW)
+     MOVE WS-WEAR TO EN-HEAD-WEAR(WS-NEW)
+     CALL "STDMOB-EQUIP-SEND" USING WS-NEW
+     MOVE 1 TO L-DONE
+     GOBACK.
+ END PROGRAM M183-CONVERT.
