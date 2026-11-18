@@ -6,7 +6,7 @@
 *>   F351-NEXT-INT USING state, result out (BINARY-LONG, signed)        nextInt(): next(32)
 *>   F351-NEXT-BOOLEAN USING state, result out (BINARY-LONG 0 or 1)      nextBoolean(): the top bit
 *>   F351-NEXT-LONG USING state, result out (BINARY-DOUBLE signed)       nextLong(): two next(32), the low word sign-extended
-*>   F351-NEXT-GAUSSIAN USING state, result out (FLOAT-LONG)             nextGaussian(): Marsaglia polar; the spare survives a reseed
+*>   F351-NEXT-GAUSSIAN USING state, result out (FLOAT-LONG)             nextGaussian(): Marsaglia polar; the spare belongs to the state (by address) and survives a reseed
 *>   F351-GAUSSIAN-RESET                                                  drops the spare (entry of the same program)
 *>   F351-MODIFY USING state, modifier index, x, y, z (BINARY-LONG), out count, out positions: one modifier on one position (section 7)
 *>   F351-PLACE USING state, x, y, z, result out (BINARY-LONG 0 or 1): the evaluator of 8.2 over F351-PROGRAM; the feature records FO-POS
@@ -62,8 +62,15 @@
  PROGRAM-ID. F351-NEXT-GAUSSIAN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-HAVE                BINARY-LONG VALUE 0.
- 01 WS-SPARE               FLOAT-LONG.
+ 01 WS-TAB.
+    05 WS-ENT OCCURS 64 TIMES.
+       10 WS-ADDR          USAGE POINTER.
+       10 WS-HAVE          BINARY-LONG.
+       10 WS-SPARE         FLOAT-LONG.
+ 01 WS-ME                  USAGE POINTER.
+ 01 WS-IDX                 BINARY-LONG VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-EVICT               BINARY-LONG VALUE 0.
  01 WS-ONE                 FLOAT-LONG VALUE 1.
  01 WS-TWO                 FLOAT-LONG VALUE 2.
  01 WS-MINUS-TWO           FLOAT-LONG VALUE -2.
@@ -86,9 +93,36 @@
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-RESULT               FLOAT-LONG.
  PROCEDURE DIVISION USING L-STATE L-RESULT.
-     IF WS-HAVE = 1
-         MOVE 0 TO WS-HAVE
-         MOVE WS-SPARE TO L-RESULT
+*>   the flag and the spare belong to the source object (35-1 section 5.3): a table keyed by the state's address; a state not in the table takes a free slot, else the slots are
+*>   recycled round-robin (more than 64 states with a pending spare at once do not occur: a chunk step draws from a few)
+     SET WS-ME TO ADDRESS OF L-STATE
+     MOVE 0 TO WS-IDX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64 OR WS-IDX > 0
+         IF WS-ADDR(WS-I) = WS-ME
+             MOVE WS-I TO WS-IDX
+         END-IF
+     END-PERFORM
+     IF WS-IDX = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64 OR WS-IDX > 0
+             IF WS-ADDR(WS-I) = NULL
+                 MOVE WS-I TO WS-IDX
+             END-IF
+         END-PERFORM
+     END-IF
+     IF WS-IDX = 0
+         ADD 1 TO WS-EVICT
+         IF WS-EVICT > 64
+             MOVE 1 TO WS-EVICT
+         END-IF
+         MOVE WS-EVICT TO WS-IDX
+     END-IF
+     IF WS-ADDR(WS-IDX) NOT = WS-ME
+         SET WS-ADDR(WS-IDX) TO WS-ME
+         MOVE 0 TO WS-HAVE(WS-IDX)
+     END-IF
+     IF WS-HAVE(WS-IDX) = 1
+         MOVE 0 TO WS-HAVE(WS-IDX)
+         MOVE WS-SPARE(WS-IDX) TO L-RESULT
          GOBACK
      END-IF
      MOVE 0 TO WS-DONE
@@ -112,14 +146,18 @@
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-MINUS-TWO WS-LN WS-T
      CALL STATIC "cc_f64_div" USING BY REFERENCE WS-T WS-S WS-Q
      CALL STATIC "cc_f64_sqrt" USING BY REFERENCE WS-Q WS-M
-     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-V2 WS-M WS-SPARE
-     MOVE 1 TO WS-HAVE
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-V2 WS-M WS-SPARE(WS-IDX)
+     MOVE 1 TO WS-HAVE(WS-IDX)
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-V1 WS-M L-RESULT
      GOBACK.
 *>   F351-GAUSSIAN-RESET (no parameters): drops the spare, so that the next Gaussian starts a fresh pair (the stage does it at the start of every chunk step: the draws of a chunk must not
 *>   depend on the chunks generated before it in the same process)
      ENTRY "F351-GAUSSIAN-RESET"
-     MOVE 0 TO WS-HAVE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+         SET WS-ADDR(WS-I) TO NULL
+         MOVE 0 TO WS-HAVE(WS-I)
+     END-PERFORM
+     MOVE 0 TO WS-EVICT
      GOBACK.
  END PROGRAM F351-NEXT-GAUSSIAN.
 
