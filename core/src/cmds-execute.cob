@@ -168,6 +168,9 @@
  01 WS-DIM                 BINARY-LONG.
  01 WS-DIM-KEY             PIC X(32).
  01 WS-DIM-LENGTH          BINARY-LONG.
+ 01 WS-WANT                PIC X(96).
+ 01 WS-COLONS              BINARY-LONG.
+ 01 WS-TYPED               BINARY-LONG.
  01 WS-ENABLED             BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-START               BINARY-LONG.
@@ -325,6 +328,18 @@
              MOVE 0 TO WS-DIM
              MOVE BA-START(WS-INDEX) TO WS-START
              ADD 1 TO WS-START
+*> An Identifier without a colon is in the minecraft namespace (15 section 6.7): `in the_nether` is `in minecraft:the_nether`.
+             MOVE SPACES TO WS-WANT
+             MOVE WS-LENGTH TO WS-TYPED
+             MOVE 0 TO WS-COLONS
+             INSPECT BR-R-LINE(WS-START:WS-LENGTH) TALLYING WS-COLONS FOR ALL ":"
+             IF WS-COLONS = 0
+                 MOVE "minecraft:" TO WS-WANT(1:10)
+                 MOVE BR-R-LINE(WS-START:WS-LENGTH) TO WS-WANT(11:WS-LENGTH)
+                 ADD 10 TO WS-LENGTH
+             ELSE
+                 MOVE BR-R-LINE(WS-START:WS-LENGTH) TO WS-WANT(1:WS-LENGTH)
+             END-IF
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
                  MOVE DM-KEY(WS-I) TO WS-DIM-KEY
                  MOVE DM-KEY-LENGTH(WS-I) TO WS-DIM-LENGTH
@@ -335,7 +350,7 @@
                      END-IF
                  END-PERFORM
                  IF WS-ENABLED = 1 AND WS-DIM-LENGTH = WS-LENGTH
-                         AND WS-DIM-KEY(1:WS-LENGTH) = BR-R-LINE(WS-START:WS-LENGTH)
+                         AND WS-DIM-KEY(1:WS-LENGTH) = WS-WANT(1:WS-LENGTH)
                      MOVE WS-I TO WS-DIM
                  END-IF
              END-PERFORM
@@ -343,8 +358,8 @@
                  MOVE "argument.dimension.invalid" TO WS-KEY
                  MOVE 1 TO WS-N-ARGS
                  MOVE SPACES TO WS-A1 WS-A2
-                 MOVE BR-R-LINE(BA-START(WS-INDEX) + 1:WS-LENGTH) TO WS-A1
-                 MOVE WS-LENGTH TO WS-L1
+                 MOVE BR-R-LINE(BA-START(WS-INDEX) + 1:WS-TYPED) TO WS-A1
+                 MOVE WS-TYPED TO WS-L1
                  MOVE 0 TO WS-L2
                  CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
                  MOVE 1 TO BR-R-FAILED
