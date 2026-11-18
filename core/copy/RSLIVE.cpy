@@ -1,8 +1,11 @@
 *> The ids and tables the live redstone wiring (core/src/redstone-live.cob) resolves from the open block table once per CB-EPOCH. RL-CLASS is the role of each block id + 1
-*> (0 none, 1 redstone_wire, 2 redstone_block, 3 redstone_torch, 4 redstone_wall_torch, 5 lever, 6 a button, 7 repeater, 8 comparator, 9 a trapdoor, 10 hopper); RL-COND is 1 for a
+*> (0 none, 1 redstone_wire, 2 redstone_block, 3 redstone_torch, 4 redstone_wall_torch, 5 lever, 6 a button, 7 repeater, 8 comparator, 9 a trapdoor, 10 hopper, 11 redstone_lamp, 12 a door,
+*> 13 a fence gate, 14 tnt, 15 a copper bulb, 16 note_block, 17 observer, 18 an on-off pressure plate, 19 a weighted pressure plate, 20 daylight_detector, 21 target, 22 a lightning rod,
+*> 23 detector_rail, 24 tripwire_hook, 25 tripwire, 26 sculk_sensor, 27 calibrated_sculk_sensor, 28 lectern, 29 dispenser, 30 dropper, 31 piston, 32 sticky_piston, 33 piston_head,
+*> 34 moving_piston); RL-COND is 1 for a
 *> block that is a redstone conductor (30-1 section 2.4: the never and always lists, else the solid opaque block of this core). RL-S-* is the decoded state of every state of the
 *> classes 3 to 8: RL-S-DIR the facing direction (2 north, 3 south, 4 west, 5 east) of a wall torch, repeater and comparator and the connected direction C of a lever and button (30-5
-*> section 1), RL-S-ON lit or powered, RL-S-DELAY the repeater delay, RL-S-LOCKED its lock, RL-S-MODE the comparator mode (1 subtract). RL-SILENT is 1 only while the wire evaluates
+*> section 1), RL-S-ON lit or powered, RL-S-DELAY the repeater delay, RL-S-LOCKED its lock, RL-S-MODE the comparator mode (1 subtract), RL-S-POWER the power property (weighted plates, daylight detector, target, sculk sensors; 0 when the state has none). RL-SILENT is 1 only while the wire evaluates
 *> getBlockSignal (30-1 section 5.5: the shouldSignal flag). The toggle list of the torches (30-1 section 8.3, one list for the process) and the stored comparator outputs (30-2 4.1) follow.
  01 RL-IDS EXTERNAL.
     05 RL-EPOCH             BINARY-LONG.
@@ -18,6 +21,7 @@
        10 RL-S-DELAY        BINARY-CHAR UNSIGNED.
        10 RL-S-LOCKED       BINARY-CHAR UNSIGNED.
        10 RL-S-MODE         BINARY-CHAR UNSIGNED.
+       10 RL-S-POWER        BINARY-CHAR UNSIGNED.
  01 RL-LISTS EXTERNAL.
     05 RL-TOG-COUNT         BINARY-LONG.
     05 RL-TOG OCCURS 256 TIMES.

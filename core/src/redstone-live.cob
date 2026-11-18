@@ -69,6 +69,7 @@
  01 WS-N-DELAY             PIC X(16) VALUE "delay".
  01 WS-N-LOCKED            PIC X(16) VALUE "locked".
  01 WS-N-MODE              PIC X(16) VALUE "mode".
+ 01 WS-N-POWER             PIC X(16) VALUE "power".
  01 WS-DIR                 BINARY-LONG.
  PROCEDURE DIVISION.
      IF RL-EPOCH = CB-EPOCH
@@ -102,8 +103,56 @@
                  MOVE 8 TO WS-CLASS
              WHEN WS-BARE = "hopper"
                  MOVE 10 TO WS-CLASS
+             WHEN WS-BARE = "redstone_lamp"
+                 MOVE 11 TO WS-CLASS
+             WHEN WS-BARE = "tnt"
+                 MOVE 14 TO WS-CLASS
+             WHEN WS-BARE = "note_block"
+                 MOVE 16 TO WS-CLASS
+             WHEN WS-BARE = "observer"
+                 MOVE 17 TO WS-CLASS
+             WHEN WS-BARE = "light_weighted_pressure_plate" OR "heavy_weighted_pressure_plate"
+                 MOVE 19 TO WS-CLASS
+             WHEN WS-BARE = "daylight_detector"
+                 MOVE 20 TO WS-CLASS
+             WHEN WS-BARE = "target"
+                 MOVE 21 TO WS-CLASS
+             WHEN WS-BARE = "detector_rail"
+                 MOVE 23 TO WS-CLASS
+             WHEN WS-BARE = "tripwire_hook"
+                 MOVE 24 TO WS-CLASS
+             WHEN WS-BARE = "tripwire"
+                 MOVE 25 TO WS-CLASS
+             WHEN WS-BARE = "sculk_sensor"
+                 MOVE 26 TO WS-CLASS
+             WHEN WS-BARE = "calibrated_sculk_sensor"
+                 MOVE 27 TO WS-CLASS
+             WHEN WS-BARE = "lectern"
+                 MOVE 28 TO WS-CLASS
+             WHEN WS-BARE = "dispenser"
+                 MOVE 29 TO WS-CLASS
+             WHEN WS-BARE = "dropper"
+                 MOVE 30 TO WS-CLASS
+             WHEN WS-BARE = "piston"
+                 MOVE 31 TO WS-CLASS
+             WHEN WS-BARE = "sticky_piston"
+                 MOVE 32 TO WS-CLASS
+             WHEN WS-BARE = "piston_head"
+                 MOVE 33 TO WS-CLASS
+             WHEN WS-BARE = "moving_piston"
+                 MOVE 34 TO WS-CLASS
              WHEN WS-LEN >= 10 AND WS-BARE(WS-LEN - 6:7) = "_button"
                  MOVE 6 TO WS-CLASS
+             WHEN WS-LEN >= 15 AND WS-BARE(WS-LEN - 14:15) = "_pressure_plate"
+                 MOVE 18 TO WS-CLASS
+             WHEN WS-LEN >= 13 AND WS-BARE(WS-LEN - 12:13) = "lightning_rod"
+                 MOVE 22 TO WS-CLASS
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "copper_bulb"
+                 MOVE 15 TO WS-CLASS
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "_fence_gate"
+                 MOVE 13 TO WS-CLASS
+             WHEN WS-LEN >= 5 AND WS-BARE(WS-LEN - 4:5) = "_door"
+                 MOVE 12 TO WS-CLASS
              WHEN WS-LEN >= 10 AND WS-BARE(WS-LEN - 8:9) = "_trapdoor"
                  MOVE 9 TO WS-CLASS
          END-EVALUATE
@@ -123,12 +172,13 @@
                  END-IF
          END-EVALUATE
 *>       the decoded states of the signal blocks
-         IF WS-CLASS >= 3 AND WS-CLASS <= 8
+         IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 28)
              COMPUTE WS-LAST = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I) - 1
              PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-I) BY 1 UNTIL WS-S > WS-LAST
                  CALL "BLOCKS-STATE-PROPS" USING WS-S WS-TEXT
                  COMPUTE WS-START = WS-S + 1
                  MOVE 0 TO RL-S-DIR(WS-START) RL-S-ON(WS-START) RL-S-DELAY(WS-START) RL-S-LOCKED(WS-START) RL-S-MODE(WS-START)
+                     RL-S-POWER(WS-START)
                  CALL "RL-PROP" USING WS-TEXT WS-N-FACING WS-VALUE
                  EVALUATE WS-VALUE
                      WHEN "north"
@@ -159,6 +209,10 @@
                  END-IF
                  IF WS-VALUE = "true"
                      MOVE 1 TO RL-S-ON(WS-START)
+                 END-IF
+                 IF WS-CLASS = 19 OR WS-CLASS = 20 OR WS-CLASS = 21 OR WS-CLASS = 26 OR WS-CLASS = 27
+                     CALL "RL-PROP" USING WS-TEXT WS-N-POWER WS-VALUE
+                     MOVE FUNCTION NUMVAL(WS-VALUE) TO RL-S-POWER(WS-START)
                  END-IF
                  IF WS-CLASS = 7
                      CALL "RL-PROP" USING WS-TEXT WS-N-DELAY WS-VALUE
@@ -1664,6 +1718,24 @@
          WHEN 7
          WHEN 8
              CALL "RL-DIODE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+         WHEN 11
+             IF L-KIND = 3 OR L-KIND = 7
+                 CALL "RL-LAMP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
+             END-IF
+         WHEN 9
+         WHEN 12
+         WHEN 13
+             IF L-KIND = 3
+                 CALL "RL-OPEN-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 14
+             IF L-KIND = 1 OR L-KIND = 3
+                 CALL "RL-TNT-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 15
+             IF L-KIND = 1 OR L-KIND = 3
+                 CALL "RL-BULB-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM REDSTONE-HOOK.
