@@ -99,6 +99,7 @@
      END-PERFORM
      MOVE 0.5 TO WS-PX
      PERFORM PLAYER-AWAY
+     MOVE 10 TO WS-TICKS PERFORM RUN-TICKS
 
 *>   the comparator of row z sits at x 3 facing east: it reads x 4 and feeds the wire at x 2
      MOVE "stone" TO WS-K

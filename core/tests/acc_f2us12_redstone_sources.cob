@@ -86,6 +86,7 @@
      END-PERFORM
      MOVE 0.5 TO WS-PX
      PERFORM PLAYER-AWAY
+     MOVE 10 TO WS-TICKS PERFORM RUN-TICKS
 
 *>   A. observer (z 0) facing east watches x 4 and feeds the wire at x 2
      MOVE 0 TO WS-Z
