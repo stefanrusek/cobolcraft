@@ -89,6 +89,16 @@
  01 WS-GNUMS.
     05 WS-GNUM             PIC S9(9) SIGN LEADING SEPARATE OCCURS 3 TIMES.
     05 FILLER              PIC X(2).
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-REST                BINARY-DOUBLE.
+ 01 WS-DIV                 BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-ZERO3               BINARY-LONG VALUE 0.
+ 01 WS-ADDED               BINARY-LONG.
+ 01 WS-ADOPTED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -118,6 +128,21 @@
                  MOVE FUNCTION LENGTH(FUNCTION TRIM(GB-LOOT(WS-I))) TO BE-LOOT-LENGTH(WS-INDEX)
                  MOVE GB-SEED(WS-I) TO BE-SEED(WS-INDEX)
              ELSE
+             IF GB-KIND(WS-I) = 4
+*>               kind 4: a bee nest: n occupants (GB-SEED / 10^9) made as Occupant.create(ticks) (a bee with an empty tag, minimum 600, 31-4 section 8.3), their ticks in the hive
+*>               from the three 3-digit groups of the seed
+                 COMPUTE WS-N = GB-SEED(WS-I) / 1000000000
+                 MOVE GB-SEED(WS-I) TO WS-REST
+                 COMPUTE WS-REST = WS-REST - WS-N * 1000000000
+                 PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+                     CALL "BE4-HIVE-ENTER" USING WS-INDEX WS-ZERO WS-ZERO2 WS-ZERO3 WS-ADDED WS-ADOPTED
+                     COMPUTE WS-DIV = 1000 ** (3 - WS-J)
+                     COMPUTE WS-TICKS = WS-REST / WS-DIV
+                     COMPUTE WS-REST = WS-REST - WS-TICKS * WS-DIV
+                     COMPUTE WS-BASE = 6 + 4 * (WS-J - 1)
+                     MOVE WS-TICKS TO BE-XI(WS-INDEX, WS-BASE)
+                 END-PERFORM
+             ELSE
 *>               SpawnData: {entity: {id: "<id>"}} as the children of the entity's compound, the End tag last (7 section 10.7)
                  MOVE FUNCTION LENGTH(FUNCTION TRIM(GB-TEXT(WS-I))) TO WS-LEN
                  MOVE FUNCTION CHAR(WS-LEN + 1) TO WS-CODE
@@ -128,6 +153,7 @@
                  COMPUTE WS-N = WS-PTR - 1
                  MOVE WS-N TO EX-B-LEN(WS-INDEX)
                  MOVE WS-TEXT(1:WS-N) TO EX-B-DATA(WS-INDEX)
+             END-IF
              END-IF
          END-IF
      END-PERFORM

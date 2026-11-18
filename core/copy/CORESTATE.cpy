@@ -479,6 +479,13 @@
        10 EN-RAM-DZ           FLOAT-LONG.
        10 EN-RAM-PX           FLOAT-LONG.         *> goat: the ram point (where the charge ends)
        10 EN-RAM-PZ           FLOAT-LONG.
+       10 EN-RAM-SX           BINARY-LONG.        *> goat: the run-up cell S the goat walks to (54 section 7.1), its block x, y, z
+       10 EN-RAM-SY           BINARY-LONG.
+       10 EN-RAM-SZ           BINARY-LONG.
+       10 EN-RAM-TX           BINARY-LONG.        *> goat: the block of the target when S was chosen (the target moving off it chooses again)
+       10 EN-RAM-TY           BINARY-LONG.
+       10 EN-RAM-TZ           BINARY-LONG.
+       10 EN-RAM-AGE          BINARY-LONG.        *> goat: ticks the run-up goal has run (the time-out is 160)
        10 EN-ARMA-PEEK        BINARY-LONG.        *> armadillo: peek timer (ArmadilloBallUp)
        10 EN-ARMA-AROUND      BINARY-LONG.        *> armadillo: the stored danger-around flag
        10 EN-BEE-POLL         BINARY-LONG.        *> bee: ticks of the current pollination (pollinatingTicks)

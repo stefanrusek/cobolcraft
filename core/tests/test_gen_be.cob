@@ -47,6 +47,7 @@
  01 WS-GNUMS.
     05 WS-GNUM             PIC S9(9) SIGN LEADING SEPARATE OCCURS 3 TIMES.
     05 FILLER              PIC X(2) VALUE SPACES.
+ 01 WS-NEST               BINARY-LONG.
  01 WS-LIT-1               BINARY-LONG.
  01 WS-LIT-2               BINARY-LONG.
  01 WS-LIT-3               BINARY-LONG.
@@ -98,6 +99,8 @@
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-SPAWNER
      MOVE "minecraft:stone" TO WS-KEY
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STONE
+     MOVE "minecraft:bee_nest" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-NEST
      ALLOCATE 304640 CHARACTERS INITIALIZED RETURNING WS-PTR
      SET ADDRESS OF CE-CHUNK TO WS-PTR
      MOVE WS-PTR TO CK-ADDR(5)
@@ -111,7 +114,16 @@
      COMPUTE WS-CELL = (0 + 64) * 256 + (-2 + 16) * 16 + (33 - 32) + 1
      MOVE WS-STONE TO CE-STATE(WS-CELL)
      MOVE 0 TO EG-COUNT
-     MOVE 4 TO GB-COUNT
+     MOVE 5 TO GB-COUNT
+*>   kind 4: a bee nest at (36, 20, -5) with 3 occupants whose ticks in the hive are 10, 20 and 300 (GB-SEED = n x 10^9 + t1 x 10^6 + t2 x 10^3 + t3)
+     COMPUTE WS-CELL = (20 + 64) * 256 + (-5 + 16) * 16 + (36 - 32) + 1
+     MOVE WS-NEST TO CE-STATE(WS-CELL)
+     MOVE 36 TO GB-X(5)
+     MOVE 20 TO GB-Y(5)
+     MOVE -5 TO GB-Z(5)
+     MOVE 4 TO GB-KIND(5)
+     MOVE 3010020300 TO GB-SEED(5)
+     MOVE SPACES TO GB-LOOT(5) GB-TEXT(5)
 *>   kind 3: the entity of an end gateway at (34, 12, -4) with the exit (7, 8, -9), not exact (flags 1)
      MOVE 34 TO GB-X(4)
      MOVE 12 TO GB-Y(4)
@@ -169,6 +181,16 @@
      MOVE "test gen be: its bytes hold the entity id after the string tag" TO TL-CASE
      MOVE EX-B-DATA(WS-INDEX2)(29:21) TO TL-OBSERVED
      MOVE "minecraft:cave_spider" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 36 TO WS-X
+     MOVE 20 TO WS-Y
+     MOVE -5 TO WS-Z
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX2
+     MOVE "N" TO TL-MODE
+     MOVE "test gen be: the bee nest request made a beehive entity (33) with 3 bees at 10, 20 and 300 ticks, each of minimum 600" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = BE-TYPE(WS-INDEX2) * 100000000000 + BE-XI(WS-INDEX2, 5) * 10000000000
+         + BE-XI(WS-INDEX2, 6) * 100000000 + BE-XI(WS-INDEX2, 10) * 100000 + BE-XI(WS-INDEX2, 14) + BE-XI(WS-INDEX2, 7)
+     COMPUTE TL-EXPECTED-N = 33 * 100000000000 + 3 * 10000000000 + 10 * 100000000 + 20 * 100000 + 300 + 600
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 33 TO WS-X
      MOVE 0 TO WS-Y
