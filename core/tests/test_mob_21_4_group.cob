@@ -12,6 +12,8 @@
  COPY STDMOBS.
  COPY XORO.
  01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-LONE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X0                  BINARY-LONG.
  01 WS-Y0                  BINARY-LONG.
@@ -67,7 +69,7 @@
      MOVE 1 TO WS-SEED
      CALL "XORO-SEED" USING WS-SEED XR-STATE
      MOVE 0 TO WS-BAD
-     CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-FIRST WS-BAD
+     CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-FIRST WS-BAD WS-DONE
      MOVE "acceptance US15 44-7§6.3 the first member of a pack is never a baby (squid, age 0)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE EN-MOBAGE(WS-FIRST) TO TL-OBSERVED-N
@@ -75,7 +77,7 @@
      MOVE 0 TO WS-BABIES
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4000
          CALL "MOB-SPAWN" USING WS-DIM WS-SQUID WS-X WS-Y WS-Z WS-YAW WS-ROW
-         CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-ROW WS-ONE-MEMBER
+         CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-ROW WS-ONE-MEMBER WS-DONE
          IF EN-MOBAGE(WS-ROW) = -24000
              ADD 1 TO WS-BABIES
          END-IF
@@ -91,7 +93,7 @@
      MOVE 0 TO WS-BABIES
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4000
          CALL "MOB-SPAWN" USING WS-DIM WS-DOLPHIN WS-X WS-Y WS-Z WS-YAW WS-ROW
-         CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-ROW WS-ONE-MEMBER
+         CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-ROW WS-ONE-MEMBER WS-DONE
          IF EN-MOBAGE(WS-ROW) = -24000
              ADD 1 TO WS-BABIES
          END-IF
@@ -172,7 +174,7 @@
      PERFORM CHECK-N
      CALL "ENTITY-REMOVE" USING WS-ROW
 *>   Tropical fish in a pack: 150 packs of 6 (finalize each, then the group): every member after the first school member (EN-WOOL 1) shares that member's variant.
-     MOVE 0 TO WS-BAD
+     MOVE 0 TO WS-BAD WS-LONE
      MOVE 0 TO WS-GROUP
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 150
          MOVE WS-I TO WS-SEED
@@ -187,9 +189,12 @@
                  MOVE WS-ROW TO WS-FIRST
              END-IF
              COMPUTE WS-NOW = WS-J - 1
-             CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-ROW WS-NOW
+             CALL "AQUA-PACK" USING XR-STATE WS-FIRST WS-ROW WS-NOW WS-DONE
              IF WS-GROUP > 0 AND EN-VARIANT(WS-ROW) NOT = WS-GROUP
                  ADD 1 TO WS-BAD
+             END-IF
+             IF (EN-WOOL(WS-ROW) = 0 AND WS-DONE NOT = 1) OR (EN-WOOL(WS-ROW) = 1 AND WS-DONE NOT = 0)
+                 ADD 1 TO WS-LONE
              END-IF
              IF WS-GROUP = 0 AND EN-WOOL(WS-ROW) = 1
                  MOVE EN-VARIANT(WS-ROW) TO WS-GROUP
@@ -202,6 +207,9 @@
      MOVE "acceptance US15 21§4.4 the members of a pack after the first school member share its variant (150 packs of 6)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     MOVE "acceptance US15 44-1 RQ-1.14 a tropical fish that is no school member ends its pack (done), a school member does not" TO TL-CASE
+     MOVE WS-LONE TO TL-OBSERVED-N
      PERFORM CHECK-N
      STOP RUN.
  CHECK-N.

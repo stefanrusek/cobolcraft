@@ -937,6 +937,7 @@
  01 WS-PACK                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-IN-PACK             BINARY-LONG.
+ 01 WS-AQUA-DONE           BINARY-LONG.
  01 WS-MAXPACK             BINARY-LONG.
  01 WS-ENTRY               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -1077,7 +1078,10 @@
                      MOVE WS-NEW TO WS-FIRST
                  END-IF
                  CALL "M19-PACK-SHARE" USING WS-FIRST WS-NEW
-                 CALL "AQUA-PACK" USING L-STATE WS-FIRST WS-NEW WS-IN-PACK
+                 CALL "AQUA-PACK" USING L-STATE WS-FIRST WS-NEW WS-IN-PACK WS-AQUA-DONE
+                 IF WS-AQUA-DONE = 1
+                     MOVE 1 TO WS-DONE-PACK
+                 END-IF
                  ADD 1 TO L-SPAWNED WS-IN-PACK
                  CALL "MS6-COST-ADD" USING L-BIOME WS-KEY24 WS-POINTS WS-PN WS-FX WS-FY WS-FZ
                  IF L-SPAWNED >= 4

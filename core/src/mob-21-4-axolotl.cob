@@ -7,7 +7,7 @@
 *>   AXOLOTL-PLAY-DEAD USING row: PLAY_DEAD_TICKS = 200. AXOLOTL-PLAYING-DEAD USING row, flag out: 1 while the counter is above 0.
 *>   AXOLOTL-HURT USING row, damage, cause: called by HEALTH-MOB-DAMAGE before the damage applies; draws A and B and starts play dead when the test passes.
 *>   AXOLOTL-FINALIZE USING xoro state, row: finalizeSpawn without group data (8.1): two common variants (nextInt(4) each), then nextInt(2) picks one.
-*>   AQUA-PACK USING xoro state, first member row, row, group size before this member: the group data of a spawned pack (the axolotl: the first member's two variants, a baby from group size 2).
+*>   AQUA-PACK USING xoro state, first member row, row, group size before this member, done out: the group data of a spawned pack (the axolotl: the first member's two variants, a baby from group size 2; squid, glow squid, dolphin babies; the tropical fish school variant; done 1 ends the pack after a lone tropical fish).
 *>   AXOLOTL-TICK USING row, table row, in water: one tick (the timers; in water also play dead, hunting, the fight and the swim).
 *>   AQUA-SPAWN-RULE USING xoro state, dim, table row, x, y, z, reason, ok out: SM-SPAWN 12 axolotl, 13 guardian, 14 drowned (21 section 3.2).
 *> Gaps: out of water the axolotl neither strolls (0.15) nor looks for water (TryFindLiquid); breeding, tempting and the baby flag metadata; line of sight and the other attackability tests of
@@ -186,7 +186,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-PACK.
-*> USING xoro state, first member row, row, group size before this member: the spawn group data of a pack of water mobs. The first member (size 0) is never a baby. Later members:
+*> USING xoro state, first member row, row, group size before this member, done out (1 ends the pack): the spawn group data of a pack of water mobs. The first member (size 0) is never a baby. Later members:
 *> axolotl: a variant of the first member's two (nextInt(2)), a baby from group size 2 (44-7 section 8.1); squid and glow squid: a baby with chance 0.05, dolphin 0.1 (nextFloat <= chance,
 *> age -24000; 44-7 sections 2.1 and 6.3); tropical fish: the group variant, that of the first school member (21 section 4.4: a fish with the 0.9 pick, EN-WOOL 1; kept in EN-LOVE-CAUSE
 *> of the first member), taken by every later member; a school member sets it when none is set yet. The baby flag goes to the viewers.
@@ -207,7 +207,9 @@
  01 L-FIRST                BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  01 L-SIZE                 BINARY-LONG.
- PROCEDURE DIVISION USING L-STATE L-FIRST L-ROW L-SIZE.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-FIRST L-ROW L-SIZE L-DONE.
+     MOVE 0 TO L-DONE
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      IF WS-M = 0
          GOBACK
@@ -219,6 +221,10 @@
          END-IF
          IF EN-LOVE-CAUSE(L-FIRST) = 0 AND EN-WOOL(L-ROW) = 1
              MOVE EN-VARIANT(L-ROW) TO EN-LOVE-CAUSE(L-FIRST)
+         END-IF
+*>       isMaxGroupSizeReached is true for a tropical fish that is no school member: a lone fish ends the pack (44-1 RQ-1.14).
+         IF EN-WOOL(L-ROW) = 0
+             MOVE 1 TO L-DONE
          END-IF
      END-IF
      IF SM-KEY(WS-M) = "axolotl" AND L-SIZE > 0

@@ -446,6 +446,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY PROTO.
  01 WS-P                   BINARY-LONG.
  01 WS-SCARY               BINARY-LONG.
  01 WS-DX                  FLOAT-LONG.
@@ -462,6 +463,9 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-STING               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT-NINE          BINARY-LONG VALUE 9.
+ 01 WS-EVENT-VALUE         FLOAT-SHORT VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -526,6 +530,11 @@
                      MOVE PL-HEALTH(WS-P) TO WS-HEALTH
                      CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
                      IF PL-HEALTH(WS-P) < WS-HEALTH
+*>                       playerTouch (4.3): Game Event 9 (value 0) to the player, then Poison.
+                         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                         CALL "PLAY-GAME-EVENT-BUILD" USING WS-EVENT-NINE WS-EVENT-VALUE PB-BUFFER
+                         CALL "CORE-SEND" USING PL-CONN(WS-P) PB-BUFFER
+                         CALL "PB-FREE" USING PB-BUFFER
                          COMPUTE WS-DURATION = 60 * WS-STATE
                          CALL "EFFECT-ADD" USING WS-P WS-POISON WS-AMPLIFIER WS-DURATION WS-FLAGS
                      END-IF
