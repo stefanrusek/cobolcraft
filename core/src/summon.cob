@@ -505,6 +505,40 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-DISPLAY             BINARY-LONG.
  01 WS-LIFE                BINARY-LONG VALUE 1.
+ 01 WS-I                   BINARY-LONG.
+*> The serialized names of the dye colours (45-9 section 10) and of the item display types (45-8 section 3.9.2), in ordinal order.
+ 01 WS-DYE-NAMES.
+    05 FILLER              PIC X(12) VALUE "white".
+    05 FILLER              PIC X(12) VALUE "orange".
+    05 FILLER              PIC X(12) VALUE "magenta".
+    05 FILLER              PIC X(12) VALUE "light_blue".
+    05 FILLER              PIC X(12) VALUE "yellow".
+    05 FILLER              PIC X(12) VALUE "lime".
+    05 FILLER              PIC X(12) VALUE "pink".
+    05 FILLER              PIC X(12) VALUE "gray".
+    05 FILLER              PIC X(12) VALUE "light_gray".
+    05 FILLER              PIC X(12) VALUE "cyan".
+    05 FILLER              PIC X(12) VALUE "purple".
+    05 FILLER              PIC X(12) VALUE "blue".
+    05 FILLER              PIC X(12) VALUE "brown".
+    05 FILLER              PIC X(12) VALUE "green".
+    05 FILLER              PIC X(12) VALUE "red".
+    05 FILLER              PIC X(12) VALUE "black".
+ 01 WS-DYE-TABLE REDEFINES WS-DYE-NAMES.
+    05 WS-DYE              PIC X(12) OCCURS 16 TIMES.
+ 01 WS-DISPLAY-NAMES.
+    05 FILLER              PIC X(24) VALUE "none".
+    05 FILLER              PIC X(24) VALUE "thirdperson_lefthand".
+    05 FILLER              PIC X(24) VALUE "thirdperson_righthand".
+    05 FILLER              PIC X(24) VALUE "firstperson_lefthand".
+    05 FILLER              PIC X(24) VALUE "firstperson_righthand".
+    05 FILLER              PIC X(24) VALUE "head".
+    05 FILLER              PIC X(24) VALUE "gui".
+    05 FILLER              PIC X(24) VALUE "ground".
+    05 FILLER              PIC X(24) VALUE "fixed".
+    05 FILLER              PIC X(24) VALUE "on_shelf".
+ 01 WS-DISPLAY-TABLE REDEFINES WS-DISPLAY-NAMES.
+    05 WS-DISPLAY-NAME     PIC X(24) OCCURS 10 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -679,26 +713,11 @@
              CALL "SUMMON-ITEM" USING L-ROOT WS-K-ITEM WS-ITEM WS-COUNT
              CALL "SUMMON-TEXT" USING L-ROOT WS-K-DISPLAY WS-NAME WS-NAME-LENGTH
              MOVE 0 TO WS-DISPLAY
-             EVALUATE WS-NAME
-                 WHEN "thirdperson_lefthand"
-                     MOVE 1 TO WS-DISPLAY
-                 WHEN "thirdperson_righthand"
-                     MOVE 2 TO WS-DISPLAY
-                 WHEN "firstperson_lefthand"
-                     MOVE 3 TO WS-DISPLAY
-                 WHEN "firstperson_righthand"
-                     MOVE 4 TO WS-DISPLAY
-                 WHEN "head"
-                     MOVE 5 TO WS-DISPLAY
-                 WHEN "gui"
-                     MOVE 6 TO WS-DISPLAY
-                 WHEN "ground"
-                     MOVE 7 TO WS-DISPLAY
-                 WHEN "fixed"
-                     MOVE 8 TO WS-DISPLAY
-                 WHEN "on_shelf"
-                     MOVE 9 TO WS-DISPLAY
-             END-EVALUATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+                 IF WS-NAME = WS-DISPLAY-NAME(WS-I)
+                     COMPUTE WS-DISPLAY = WS-I - 1
+                 END-IF
+             END-PERFORM
              CALL "IDISPLAY-SPAWN" USING L-DIM L-X L-Y L-Z WS-ITEM WS-DISPLAY L-ROW
          WHEN 16
              CALL "MANNEQUIN-SPAWN" USING L-DIM L-X L-Y L-Z L-ROW
@@ -706,38 +725,11 @@
 *>           The dye name of color (45-9 section 10): white when absent or unknown.
              CALL "SUMMON-TEXT" USING L-ROOT WS-K-COLOR WS-NAME WS-NAME-LENGTH
              MOVE 0 TO WS-INT
-             EVALUATE WS-NAME
-                 WHEN "orange"
-                     MOVE 1 TO WS-INT
-                 WHEN "magenta"
-                     MOVE 2 TO WS-INT
-                 WHEN "light_blue"
-                     MOVE 3 TO WS-INT
-                 WHEN "yellow"
-                     MOVE 4 TO WS-INT
-                 WHEN "lime"
-                     MOVE 5 TO WS-INT
-                 WHEN "pink"
-                     MOVE 6 TO WS-INT
-                 WHEN "gray"
-                     MOVE 7 TO WS-INT
-                 WHEN "light_gray"
-                     MOVE 8 TO WS-INT
-                 WHEN "cyan"
-                     MOVE 9 TO WS-INT
-                 WHEN "purple"
-                     MOVE 10 TO WS-INT
-                 WHEN "blue"
-                     MOVE 11 TO WS-INT
-                 WHEN "brown"
-                     MOVE 12 TO WS-INT
-                 WHEN "green"
-                     MOVE 13 TO WS-INT
-                 WHEN "red"
-                     MOVE 14 TO WS-INT
-                 WHEN "black"
-                     MOVE 15 TO WS-INT
-             END-EVALUATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+                 IF WS-NAME = WS-DYE(WS-I)
+                     COMPUTE WS-INT = WS-I - 1
+                 END-IF
+             END-PERFORM
              CALL "CUSHION-SPAWN" USING L-DIM L-X L-Y L-Z WS-INT L-ROW
          WHEN 18
 *>           The marker is an entity row with no state of its own and no behaviour (45-8 section 3.7); its tracking range keeps it from the clients.
