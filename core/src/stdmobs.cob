@@ -910,6 +910,7 @@
  COPY CORESTATE.
  COPY STDMOBS.
  COPY BRWORLD.
+ 01 WS-STAYS               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
@@ -980,7 +981,12 @@
          GOBACK
      END-IF
      CALL "BR-WORLD-READY"
-     IF SM-KIND(WS-M) = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1) AND SM-KEY(WS-M) NOT = "sulfur_cube"
+*>   A monster is removed with hostile mobs off, and in Peaceful unless it is one of the monsters that are not notInPeaceful (20 section 19.4: piglin, shulker; 18.2: sulfur cube).
+     MOVE 0 TO WS-STAYS
+     IF SM-KEY(WS-M) = "sulfur_cube" OR "piglin" OR "shulker"
+         MOVE 1 TO WS-STAYS
+     END-IF
+     IF SM-KIND(WS-M) = 1 AND (CS-HOSTILE-MOBS NOT = 1 OR (BW-DIFFICULTY = 0 AND WS-STAYS = 0))
          CALL "ENTITY-REMOVE" USING WS-ROW
          GOBACK
      END-IF
