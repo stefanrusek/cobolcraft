@@ -497,7 +497,7 @@
      IF WS-Q < 0
          MOVE 0 TO WS-Q
      END-IF
-     COMPUTE L-OUT = WS-D * (1 - WS-Q) * 1000
+     COMPUTE L-OUT ROUNDED = WS-D * (1 - WS-Q) * 1000
      GOBACK.
  END PROGRAM TOOL-ARMOR-ABSORB.
 

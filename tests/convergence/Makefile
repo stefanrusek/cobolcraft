@@ -29,7 +29,7 @@ endif
 
 LIBS   := $(BUILD)/client/libclient.a $(BUILD)/server/libserver.a $(BUILD)/core/libcore.a $(BUILD)/content/libcontent.a \
           $(BUILD)/formats/libformats.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
-LDLIBS  = $(shell $(PKG_CONFIG) --libs glfw3 vulkan libssl libcrypto) -lz
+LDLIBS  = $(shell $(PKG_CONFIG) --libs glfw3 vulkan libssl libcrypto) -lz -L$(shell brew --prefix gmp)/lib -lgmp
 
 HARNESS    := $(TOUT)/convharness.o
 TESTASSERT := $(TOUT)/testassert.o

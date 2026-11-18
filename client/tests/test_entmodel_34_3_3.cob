@@ -512,8 +512,11 @@
      MOVE SPACES TO TL-CASE
      STRING "acceptance US15 34-3§3 Witch: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
+*>   The observed number is the expected one plus the rounded difference: a value that lies half-way between two steps (1.993125 at this
+*>   scale) rounds either way with the last digit of the float product, which libcob alone and the float overlay (FPFAST) compute differently.
      COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
-     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = (WS-O - WS-E) * 100000
+     ADD TL-EXPECTED-N TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  CHECK-TEXT.

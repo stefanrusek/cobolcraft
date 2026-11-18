@@ -21,7 +21,7 @@ PROGRAM := $(BUILD)/bin/cobolcraft
 .PHONY: bin
 bin: $(if $(wildcard src/main.cob),$(PROGRAM))
 
-$(OBJ)/main.o: src/main.cob
+$(OBJ)/main.o: src/main.cob $(FPFAST_STAMP)
 	@mkdir -p $(dir $@)
 	cobc -c -x $(COBFLAGS) -MF $(@:.o=.d) -MT $@ -o $@ $<
 -include $(OBJ)/main.d

@@ -768,7 +768,46 @@
          & "ke 4.20002 71.31315 -2.62083 -0.02619 -0.00102 -0.02991 | sm"
          & "oke 3.74025 70.74516 -2.52290 0.01362 0.00781 0.00981 (42)" TO WS-EXP
      PERFORM RUN-CASE
+*>   A width whose count 1 + 20 width is no whole number (7.6): the count is rounded up, 8 bubbles and 8 splashes. The widths above (0.6) give a whole
+*>   number, which the rounding up only reaches through the last digit of the float product.
+     MOVE "water entry width 0.33 k 0.2: the count 1 + 20 * 0.33 = 7.6 is rounded up to 8 bubbles and 8 splashes" TO WS-NAME
+     MOVE "splash" TO WS-CLASS
+     MOVE "5.5 63.4 -1.5 0.33 0.1 -0.3 0.05 0.2" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "0.5" TO WS-DRT
+     PERFORM COUNT-CASE
  STOP RUN.
+
+*> The case as RUN-CASE runs it; compared: the number of bubble rows * 100 + the number of splash rows.
+ COUNT-CASE.
+     MOVE WS-INT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0 TO WS-IV(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO WS-IV(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+         MOVE 0.5 TO EM-DRAW(WS-I)
+     END-PERFORM
+     MOVE 0 TO EM-COUNT EM-CUR EM-SOUND-COUNT
+     CALL "P7-BASE" USING WS-CLASS WS-IN P6-EMITS
+     MOVE 0 TO WS-LEN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-COUNT
+         IF EM-NAME(WS-I) = "bubble"
+             ADD 100 TO WS-LEN
+         END-IF
+         IF EM-NAME(WS-I) = "splash"
+             ADD 1 TO WS-LEN
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§4 Entity base emissions: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 808 TO TL-EXPECTED-N
+     MOVE WS-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  RUN-CASE.
      MOVE WS-INT TO WS-TEXT

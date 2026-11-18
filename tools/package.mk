@@ -37,6 +37,18 @@ PKG_CONFIG := PKG_CONFIG_PATH=$(shell brew --prefix)/opt/openssl@3/lib/pkgconfig
 
 TESTLIB  := $(REPO)/tools/testlib
 COBFLAGS := -free $(DEBUGFLAG) -std=default -fstatic-call -I $(REPO)/contract/copy $(INCLUDES)
+# FPFAST=1 (the default): the C that cobc generates for a COBOL program calls the shim's ccfp_decimal_* in place of
+# libcob's cob_decimal_*, and ccfp_intr_* in place of cob_intr_sin, cos, sqrt, mod and binop (shim/src/cc_fpfast.c:
+# arithmetic on FLOAT-LONG and FLOAT-SHORT fields in IEEE double, every other case passed on to libcob). FPFAST=0 compiles the same sources without the defines: libcob alone. The two
+# settings share build/, so a change of the setting recompiles every COBOL object ($(FPFAST_STAMP)).
+FPFAST   ?= 1
+FPFAST_NAMES := set_field get_field add sub mul div pow cmp align
+FPFAST_INTRINSICS := sin cos sqrt mod binop
+ifeq ($(FPFAST),1)
+COBFLAGS += -A "$(foreach n,$(FPFAST_NAMES),-Dcob_decimal_$(n)=ccfp_decimal_$(n)) $(foreach n,$(FPFAST_INTRINSICS),-Dcob_intr_$(n)=ccfp_intr_$(n))"
+endif
+# The shim's cc_fpfast.c calls GMP itself (every COBOL program links libcob, which links GMP).
+LDLIBS   += -L$(shell brew --prefix gmp)/lib -lgmp
 CFLAGS   := -std=c11 -Wall -Wextra -I $(REPO)/contract/include $(INCLUDES)
 ifeq ($(COVERAGE),1)
 COBFLAGS += --coverage
@@ -52,6 +64,7 @@ TEST_PROGS  := $(patsubst tests/%,$(TOUT)/%,$(basename $(TESTS)))
 GENDIR      := $(BUILD)/gen/$(PKG)/tests
 GEN_PROGS   := $(patsubst $(GENDIR)/%,$(TOUT)/%,$(basename $(wildcard $(GENDIR)/*.cob)))
 TESTASSERT  := $(TOUT)/testassert.o
+FPFAST_STAMP := $(OUT)/fpfast-$(FPFAST)-$(words $(FPFAST_NAMES) $(FPFAST_INTRINSICS)).stamp
 # The shared library of the package and those of the packages it links (DEPLIBS, dependents first).
 SHLIB       := $(LIB:.a=.dylib)
 DEPSHLIBS    = $(DEPLIBS:.a=.dylib)
@@ -85,8 +98,15 @@ $(SHLIB): $(OBJS) | $(DEPSHLIBS)
 	@mkdir -p $(dir $@)
 	clang -dynamiclib -Wl,-flat_namespace -Wl,-interposable -install_name $@ -o $@ $(OBJS) $(DEPSHLIBS) $(LDLIBS) $(COBLIBS) $(LDCOV)
 
+# The stamp of the FPFAST setting the COBOL objects of this build were compiled with: making the one of the
+# current setting removes the other, so a change of the setting makes every COBOL object older than its stamp.
+$(FPFAST_STAMP):
+	@mkdir -p $(dir $@)
+	@rm -f $(OUT)/fpfast-*.stamp
+	@touch $@
+
 # A new object makes the counts of its earlier runs (.gcda) unreadable: they go with it.
-$(OBJ)/%.o: src/%.cob
+$(OBJ)/%.o: src/%.cob $(FPFAST_STAMP)
 	@mkdir -p $(dir $@)
 	@rm -f $(@:.o=.gcda)
 	cobc -c $(COBFLAGS) -MF $(@:.o=.d) -MT $@ -o $@ $<
@@ -96,15 +116,15 @@ $(OBJ)/%.o: src/%.c
 	@rm -f $(@:.o=.gcda)
 	clang -c $(CFLAGS) -MMD -MF $(@:.o=.d) -o $@ $<
 
-$(TESTASSERT): $(TESTLIB)/testassert.cob
+$(TESTASSERT): $(TESTLIB)/testassert.cob $(FPFAST_STAMP)
 	@mkdir -p $(dir $@)
 	cobc -c $(COBFLAGS) -I $(TESTLIB) -MF $(@:.o=.d) -MT $@ -o $@ $<
 
-$(TOUT)/%: tests/%.cob $(TESTASSERT) | $(SHLIB) $(DEPSHLIBS)
+$(TOUT)/%: tests/%.cob $(TESTASSERT) $(FPFAST_STAMP) | $(SHLIB) $(DEPSHLIBS)
 	@mkdir -p $(dir $@)
 	cobc -x $(COBFLAGS) -I $(TESTLIB) -MF $@.d -MT $@ -o $@ $< $(TESTASSERT) $(SHLIB) $(DEPSHLIBS) $(LDLIBS)
 
-$(TOUT)/%: $(GENDIR)/%.cob $(TESTASSERT) | $(SHLIB) $(DEPSHLIBS)
+$(TOUT)/%: $(GENDIR)/%.cob $(TESTASSERT) $(FPFAST_STAMP) | $(SHLIB) $(DEPSHLIBS)
 	@mkdir -p $(dir $@)
 	cobc -x $(COBFLAGS) -I $(TESTLIB) -MF $@.d -MT $@ -o $@ $< $(TESTASSERT) $(SHLIB) $(DEPSHLIBS) $(LDLIBS)
 
