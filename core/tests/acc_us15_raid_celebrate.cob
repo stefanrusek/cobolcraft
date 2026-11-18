@@ -52,6 +52,12 @@
      MOVE WS-PLAYER TO EN-TARGET(WS-E2)
      CALL "RAID-JOIN" USING WS-SLOT WS-ONE WS-E WS-ZERO
      CALL "RAID-JOIN" USING WS-SLOT WS-ONE WS-E2 WS-ZERO
+*>   The spawn queued the new mob's own health pair (metadata 9, 18 section 9.3: a non-default value of the first pairing); drain it so the check below sees only what the step sends.
+     MOVE -1 TO WS-WANTED
+     MOVE "none" TO WS-EXPECTED
+     MOVE "acceptance US15 20§13 the queue holds no packet of the unused id before the step" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE 101 TO WS-WANTED
      MOVE "none" TO WS-EXPECTED
      MOVE "acceptance US15 20§13 drain before the loss" TO TL-CASE
      CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED

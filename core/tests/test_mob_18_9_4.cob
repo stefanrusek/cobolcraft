@@ -42,9 +42,9 @@
      MOVE PL-Z(WS-PLAYER) TO WS-Z
      CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
      CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
-     MOVE "acceptance US15 18§9.4 Sending the same data for a freshly spawned mob: a pig spawned in range is paired in the same tick, as one Add Entity (65 is not sent: no non-default data)" TO TL-CASE
+     MOVE "acceptance US15 18§9.4 Sending the same data for a freshly spawned mob: a pig spawned in range is paired in the same tick, as one Add Entity (65), then the health (101: slot 9 is the one non-default value, 9.3)" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "1" TO TL-EXPECTED
+     MOVE "1 101" TO TL-EXPECTED
      MOVE FUNCTION TRIM(WS-TEXT) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-X = PL-X(WS-PLAYER) + 200
@@ -58,9 +58,9 @@
      COMPUTE WS-X = PL-X(WS-PLAYER) + 10
      CALL "ENTITY-MOVE" USING WS-PIG WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-ONE
      CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
-     MOVE "acceptance US15 18§9.1 Who tracks what: moving it into range pairs it (Add Entity)" TO TL-CASE
+     MOVE "acceptance US15 18§9.1 Who tracks what: moving it into range pairs it (Add Entity, then the health pair 101)" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "1" TO TL-EXPECTED
+     MOVE "1 101" TO TL-EXPECTED
      MOVE FUNCTION TRIM(WS-TEXT) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-X = PL-X(WS-PLAYER) + 200

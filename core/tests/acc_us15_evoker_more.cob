@@ -68,6 +68,12 @@
      COMPUTE WS-Y = WS-FY + 1
      COMPUTE WS-Z = WS-Z0 + 12.5
      CALL "MOB-SPAWN" USING WS-DIM WS-ETYPE WS-X WS-Y WS-Z WS-YAW WS-E
+*>   The spawn queued the new mob's own health pair (metadata 9, 18 section 9.3: a non-default value of the first pairing); drain it so the check below sees only what the step sends.
+     MOVE -1 TO WS-WANTED
+     MOVE "none" TO WS-EXPECTED
+     MOVE "acceptance US15 20§13.3 the queue holds no packet of the unused id before the step" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE 101 TO WS-WANTED
 *>   Metadata 17: the spell id while casting, 0 after.
      MOVE 2 TO WS-SPELL
      CALL "EVK-BEGIN" USING WS-E WS-SPELL
