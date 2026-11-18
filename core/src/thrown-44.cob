@@ -2,7 +2,7 @@
 *> A cloud is a tracker row of the standard entity type area_effect_cloud with an entry of PROJSTATE.cpy (PJ-KIND 3): PJ-TICK its tickCount, PJ-RADIUS the stored radius,
 *> PJ-DUR duration (-1 infinite), PJ-WAIT, PJ-REAPP the reapplication delay, PJ-RPT radius per tick, PJ-ROU radius on use, PJ-DUR-USE duration on use, PJ-SCALE the potion
 *> duration scale in thousandths, PJ-FX the effects, PJ-V the victims (entity id, tick the entry expires).
-*> Gaps: the radius, waiting and particle metadata (8 to 10) are not sent (the viewers draw the default radius 3.0), canBeAffected (undead are not poisoned, and so on) is
+*> Gaps: the particle metadata (10) is not sent (radius 8 and waiting 9 are: mob-21-8-5.cob), canBeAffected (undead are not poisoned, and so on) is
 *> not tested, the effect list holds at most 4 effects and at most 16 victims are remembered (the oldest slot is reused), no packet shows a mob effect, the owner is only
 *> remembered (indirect magic damage has no cause of its own: CAUSE-COMMAND).
 *>
@@ -427,6 +427,7 @@
          CALL "PJ-DROP" USING L-ROW
          GOBACK
      END-IF
+     CALL "CLOUD-DATA-SYNC" USING L-ROW WS-SLOT
      IF PJ-TICK(WS-SLOT) < PJ-WAIT(WS-SLOT)
          GOBACK
      END-IF
