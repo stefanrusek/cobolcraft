@@ -122,6 +122,32 @@
      PERFORM CHECK-N
      CALL "ENTITY-REMOVE" USING WS-ROW
 
+*>   A boat whose east and south faces lie exactly on a cell edge (centre x, z = cell + 0.3125) covers 2 x 2 cells: stone in the cells that only touch it does not count.
+     PERFORM VARYING WS-I FROM -2 BY 1 UNTIL WS-I > 2
+         PERFORM VARYING WS-J FROM -2 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-FX = WS-BX + WS-I
+             COMPUTE WS-FZ = WS-BZ + WS-J
+             IF WS-I > 0 OR WS-J > 0
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-STONE
+             ELSE
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-ICE
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     COMPUTE WS-PX = WS-BX + 0.3125
+     COMPUTE WS-PZ = WS-BZ + 0.3125
+     CALL "BOAT-SPAWN" USING WS-DIM WS-PX WS-PY WS-PZ WS-YAW WS-KEY WS-ROW
+     MOVE 1 TO EN-VX(WS-ROW)
+     MOVE 3 TO WS-STATUS
+     CALL "BOAT-FLOAT" USING WS-ROW WS-OLD WS-STATUS
+     MOVE "acceptance US15 44-8§3.3 cells that only touch the boat's edge do not count (0.98, thousandths)" TO WS-CASE
+     MOVE 980 TO WS-E
+     COMPUTE WS-O = FUNCTION INTEGER(EN-VX(WS-ROW) * 1000 + 0.5)
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW
+     COMPUTE WS-PX = WS-BX + 0.5
+     COMPUTE WS-PZ = WS-BZ + 0.5
+
 *>   V4 a damage of exactly 4 points (40) does not destroy the boat (the test is strict), one more point does.
      MOVE 90 TO WS-YAW
      CALL "BOAT-SPAWN" USING WS-DIM WS-PX WS-PY WS-PZ WS-YAW WS-KEY WS-ROW
