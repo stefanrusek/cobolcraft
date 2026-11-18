@@ -17,6 +17,10 @@
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG VALUE 10.
+ 01 WS-Y                   BINARY-LONG VALUE 70.
+ 01 WS-Z                   BINARY-LONG VALUE 10.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-CASE                PIC X(240).
  01 WS-E                   BINARY-LONG.
  01 WS-O                   BINARY-LONG.
@@ -49,6 +53,17 @@
      MOVE DIM-STANDARD-OVERWORLD TO WS-DIM
      MOVE 2 TO BW-DIFFICULTY
      MOVE 8211 TO CW-TICKS
+     INITIALIZE RD-STATE
+*>   A new Raids object starts next_id at 1 and hands out the incremented value: the first raid of a world is id 2 (45-6 section 12.2).
+     CALL "RAID-CREATE-OR-EXTEND" USING WS-ROW WS-X WS-Y WS-Z WS-SLOT
+     MOVE "acceptance US15 44-3§5 the first raid of a world gets id 2" TO WS-CASE
+     MOVE 2 TO WS-E
+     MOVE RD-ID(WS-SLOT) TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+     MOVE "acceptance US15 44-3§5 and next_id is 2 after it" TO WS-CASE
+     MOVE 2 TO WS-E
+     MOVE RD-NEXT-ID TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      INITIALIZE RD-STATE
      MOVE 3 TO RD-NEXT-ID
      MOVE 1 TO RD-USED(1) RD-STARTED(1)

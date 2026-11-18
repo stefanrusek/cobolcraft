@@ -276,6 +276,10 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX OR L-SLOT > 0
              IF RD-USED(WS-I) = 0
                  INITIALIZE RD-ENTRY(WS-I)
+*>               A new Raids object starts next_id at 1 and hands out the incremented value, so the first raid of a world is id 2 (45-6 section 12.2).
+                 IF RD-NEXT-ID = 0
+                     MOVE 1 TO RD-NEXT-ID
+                 END-IF
                  ADD 1 TO RD-NEXT-ID
                  MOVE 1 TO RD-USED(WS-I)
                  MOVE RD-NEXT-ID TO RD-ID(WS-I)
