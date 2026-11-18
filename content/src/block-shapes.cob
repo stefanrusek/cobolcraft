@@ -37,7 +37,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-ADD-BOXES.
 *> USING box list text (PIC X(160): "x1 y1 z1 x2 y2 z2" items separated by ","; pixels, decimals allowed), key (BINARY-LONG 0 to 3: the
-*> yaw, 51 section 2.1), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most 12).
+*> yaw, 51 section 2.1; 4 up and 5 down, 51 section 2.2), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most 12).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
@@ -92,6 +92,17 @@
                      COMPUTE WS-N(3) = 16000 - WS-V(4)
                      MOVE WS-V(6) TO WS-N(4)
                      COMPUTE WS-N(6) = 16000 - WS-V(1)
+*>               Up and down (51 section 2.2): y becomes 16 - z and z becomes y, or y becomes z and z becomes 16 - y.
+                 WHEN 4
+                     COMPUTE WS-N(2) = 16000 - WS-V(6)
+                     COMPUTE WS-N(5) = 16000 - WS-V(3)
+                     MOVE WS-V(2) TO WS-N(3)
+                     MOVE WS-V(5) TO WS-N(6)
+                 WHEN 5
+                     MOVE WS-V(3) TO WS-N(2)
+                     MOVE WS-V(6) TO WS-N(5)
+                     COMPUTE WS-N(3) = 16000 - WS-V(5)
+                     COMPUTE WS-N(6) = 16000 - WS-V(2)
              END-EVALUATE
              IF BSC-N < BSH-MAX-BOXES
                  ADD 1 TO BSC-N
@@ -278,7 +289,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-SPECIAL.
 *> USING which (BINARY-LONG: 1 collision, 2 outline), code (PIC X(12)): the shape of a coded family (51 section 3.2: ST stairs, DR doors,
-*> TD trapdoors, FN fences, GT fence gates, WL walls, PN panes and bars, ML vines and lichen, CH chests, BD beds) from the properties of the current state,
+*> TD trapdoors, FN fences, GT fence gates, WL walls, PN panes and bars, ML vines and lichen, CH chests, BD beds, CP chorus plants, MC moss carpets) from the properties of the current state,
 *> appended to BSC-SHAPE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -319,11 +330,20 @@
     05 FILLER              PIC X(160) VALUE "0 0 0 16 1 16".
  01 WS-FACE-BOX-TABLE REDEFINES WS-FACE-BOXES.
     05 WS-FACE-BOX         PIC X(160) OCCURS 6 TIMES.
+ 01 WS-CHORUS-ARMS.
+    05 FILLER              PIC X(160) VALUE "3 3 0 13 13 8".
+    05 FILLER              PIC X(160) VALUE "8 3 3 16 13 13".
+    05 FILLER              PIC X(160) VALUE "3 3 8 13 13 16".
+    05 FILLER              PIC X(160) VALUE "0 3 3 8 13 13".
+    05 FILLER              PIC X(160) VALUE "3 8 3 13 16 13".
+    05 FILLER              PIC X(160) VALUE "3 0 3 13 8 13".
+ 01 WS-CHORUS-TABLE REDEFINES WS-CHORUS-ARMS.
+    05 WS-CHORUS-ARM       PIC X(160) OCCURS 6 TIMES.
  01 WS-NAME                PIC X(24).
  01 WS-TEXT                PIC X(160).
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
- 01 L-CODE                 PIC X(12).
+ 01 L-CODE                 PIC X(24).
  PROCEDURE DIVISION USING L-WHICH L-CODE.
      MOVE "facing" TO WS-NAME
      CALL "BSH-PROP-VALUE" USING WS-NAME WS-FACING
@@ -482,6 +502,48 @@
              END-IF
              MOVE "0 3 0 16 9 16,0 0 0 3 3 3,13 0 0 16 3 3" TO WS-TEXT
              CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
+         WHEN "CP"
+*>           A chorus plant (R-F40): the 10 pixel node and an arm toward every side that is set (the same for the collision and the outline).
+             MOVE "3 3 3 13 13 13" TO WS-TEXT
+             CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+             PERFORM VARYING WS-SIDE FROM 1 BY 1 UNTIL WS-SIDE > 6
+                 MOVE WS-FACE-NAME(WS-SIDE) TO WS-NAME
+                 CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                 IF WS-VALUE = "true"
+                     MOVE WS-CHORUS-ARM(WS-SIDE) TO WS-TEXT
+                     CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+                 END-IF
+             END-PERFORM
+         WHEN "MC"
+*>           Moss carpet (R-D2): the base sheet when bottom is set (the whole collision); the outline adds a sheet of 10 (low) or 16 (tall) pixels
+*>           on each side that is not none, and is the full cube when it holds nothing.
+             MOVE "bottom" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE = "true"
+                 MOVE "0 0 0 16 1 16" TO WS-TEXT
+                 CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+             END-IF
+             IF L-WHICH = 2
+                 PERFORM VARYING WS-SIDE FROM 1 BY 1 UNTIL WS-SIDE > 4
+                     MOVE WS-SIDE-NAME(WS-SIDE) TO WS-NAME
+                     CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                     MOVE SPACES TO WS-TEXT
+                     EVALUATE WS-VALUE
+                         WHEN "low"
+                             MOVE "0 0 0 16 10 1" TO WS-TEXT
+                         WHEN "tall"
+                             MOVE "0 0 0 16 16 1" TO WS-TEXT
+                     END-EVALUATE
+                     IF WS-TEXT NOT = SPACES
+                         COMPUTE WS-KEY = WS-SIDE - 1
+                         CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
+                     END-IF
+                 END-PERFORM
+                 IF BSC-N = 0
+                     MOVE "0 0 0 16 16 16" TO WS-TEXT
+                     CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+                 END-IF
+             END-IF
          WHEN "ML"
 *>           No collision; the outline is a one pixel sheet on every set face, the full cube when none is set.
              IF L-WHICH = 2
@@ -567,6 +629,18 @@
              CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
              CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
              CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
+*>       R: the boxes authored for north turned to the six-direction facing (rotateAll, 51 section 2.2).
+         WHEN "R"
+             MOVE "facing" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
+             EVALUATE WS-VALUE
+                 WHEN "up"
+                     MOVE 4 TO WS-KEY
+                 WHEN "down"
+                     MOVE 5 TO WS-KEY
+             END-EVALUATE
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
          WHEN "H"
              IF WS-TEXT NOT = "N"
                  MOVE SPACES TO WS-A-TEXT WS-B-TEXT
@@ -641,6 +715,12 @@
  01 WS-HITS                BINARY-LONG.
  01 WS-KEY                 PIC X(40).
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-KEY2                PIC X(40).
+ 01 WS-LENGTH2             BINARY-LONG.
+ 01 WS-COND1               PIC X(40).
+ 01 WS-COND2               PIC X(40).
+ 01 WS-NAME2               PIC X(24).
+ 01 WS-WANT2               PIC X(16).
  01 WS-FIRST               BINARY-LONG.
  01 WS-STATES              BINARY-LONG.
  01 WS-IDX                 BINARY-LONG.
@@ -711,10 +791,14 @@
          MOVE SPACES TO WS-KEY
          STRING "|" FUNCTION TRIM(CT-BR-CLASS) "|" DELIMITED BY SIZE INTO WS-KEY
          COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(CT-BR-CLASS)) + 2
+*>       A row may also name one block by its key as "=key" (the four amethyst clusters share a class and differ in size).
+         MOVE SPACES TO WS-KEY2
+         STRING "|=" FUNCTION TRIM(CT-BR-KEY) "|" DELIMITED BY SIZE INTO WS-KEY2
+         COMPUTE WS-LENGTH2 = FUNCTION LENGTH(FUNCTION TRIM(CT-BR-KEY)) + 3
          MOVE 0 TO WS-MATCHES WS-NEEDS
          PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > BSR-N
              MOVE 0 TO WS-HITS
-             INSPECT BSR-CLASSES(WS-R) TALLYING WS-HITS FOR ALL WS-KEY(1:WS-LENGTH)
+             INSPECT BSR-CLASSES(WS-R) TALLYING WS-HITS FOR ALL WS-KEY(1:WS-LENGTH) ALL WS-KEY2(1:WS-LENGTH2)
              IF WS-HITS > 0
                  ADD 1 TO WS-MATCHES
                  MOVE WS-R TO WS-MATCH(WS-MATCHES)
@@ -759,8 +843,18 @@
                  IF BSR-PROP(WS-R) NOT = SPACES AND BSR-VAL(WS-R) NOT = SPACES AND BSR-MODE(WS-R) NOT = "S"
                      MOVE BSR-PROP(WS-R) TO WS-NAME
                      CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
-                     IF WS-VALUE NOT = BSR-VAL(WS-R)
+*>                   The value may be followed by "&name=value": a second property that must hold too.
+                     MOVE SPACES TO WS-COND1 WS-COND2 WS-NAME2 WS-WANT2
+                     UNSTRING BSR-VAL(WS-R) DELIMITED BY "&" INTO WS-COND1 WS-COND2
+                     IF WS-VALUE NOT = WS-COND1
                          MOVE 0 TO WS-APPLIES
+                     END-IF
+                     IF WS-COND2 NOT = SPACES
+                         UNSTRING WS-COND2 DELIMITED BY "=" INTO WS-NAME2 WS-WANT2
+                         CALL "BSH-PROP-VALUE" USING WS-NAME2 WS-VALUE
+                         IF WS-VALUE NOT = WS-WANT2
+                             MOVE 0 TO WS-APPLIES
+                         END-IF
                      END-IF
                  END-IF
                  IF WS-APPLIES = 1

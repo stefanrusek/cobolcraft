@@ -576,6 +576,1484 @@
      MOVE WS-T TO TL-OBSERVED-N
      PERFORM ASSERT-RAY
 
+*>   T4506: the shapes of 51 section 3 that the tables did not hold (expected boxes computed by an independent script from the rule rows and the
+*>   rotation formulas of section 2; a box in thousandths of a pixel).
+     MOVE "moving_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 moving piston has no shape (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "moving_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 moving piston has no shape (out)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "candle_cake" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "lit=false" TO WS-P1
+     MOVE "T4506 candle cake (coll)" TO WS-CASE
+     MOVE "1000,0,1000,15000,8000,15000;7000,8000,7000,9000,14000," & "9000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "candle_cake" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "lit=false" TO WS-P1
+     MOVE "T4506 candle cake (out)" TO WS-CASE
+     MOVE "1000,0,1000,15000,8000,15000;7000,8000,7000,9000,14000," & "9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "tripwire_hook" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 tripwire hook east (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "tripwire_hook" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 tripwire hook east (out)" TO WS-CASE
+     MOVE "0,0,5000,6000,10000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing up (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,7000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing up (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,7000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing down (coll)" TO WS-CASE
+     MOVE "3000,9000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing down (out)" TO WS-CASE
+     MOVE "3000,9000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing east (coll)" TO WS-CASE
+     MOVE "0,3000,3000,7000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing east (out)" TO WS-CASE
+     MOVE "0,3000,3000,7000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing north (coll)" TO WS-CASE
+     MOVE "3000,3000,9000,13000,13000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "amethyst_cluster" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 amethyst_cluster facing north (out)" TO WS-CASE
+     MOVE "3000,3000,9000,13000,13000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing up (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,5000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing up (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,5000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing down (coll)" TO WS-CASE
+     MOVE "3000,11000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing down (out)" TO WS-CASE
+     MOVE "3000,11000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing east (coll)" TO WS-CASE
+     MOVE "0,3000,3000,5000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing east (out)" TO WS-CASE
+     MOVE "0,3000,3000,5000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing north (coll)" TO WS-CASE
+     MOVE "3000,3000,11000,13000,13000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "large_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 large_amethyst_bud facing north (out)" TO WS-CASE
+     MOVE "3000,3000,11000,13000,13000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing up (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,4000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing up (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,4000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing down (coll)" TO WS-CASE
+     MOVE "3000,12000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing down (out)" TO WS-CASE
+     MOVE "3000,12000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing east (coll)" TO WS-CASE
+     MOVE "0,3000,3000,4000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing east (out)" TO WS-CASE
+     MOVE "0,3000,3000,4000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing north (coll)" TO WS-CASE
+     MOVE "3000,3000,12000,13000,13000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "medium_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 medium_amethyst_bud facing north (out)" TO WS-CASE
+     MOVE "3000,3000,12000,13000,13000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing up (coll)" TO WS-CASE
+     MOVE "4000,0,4000,12000,3000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=up" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing up (out)" TO WS-CASE
+     MOVE "4000,0,4000,12000,3000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing down (coll)" TO WS-CASE
+     MOVE "4000,13000,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=down" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing down (out)" TO WS-CASE
+     MOVE "4000,13000,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing east (coll)" TO WS-CASE
+     MOVE "0,4000,4000,3000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing east (out)" TO WS-CASE
+     MOVE "0,4000,4000,3000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing north (coll)" TO WS-CASE
+     MOVE "4000,4000,13000,12000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "small_amethyst_bud" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 small_amethyst_bud facing north (out)" TO WS-CASE
+     MOVE "4000,4000,13000,12000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=up" TO WS-P1
+     MOVE "T4506 piston extended facing up (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=up" TO WS-P1
+     MOVE "T4506 piston extended facing up (out)" TO WS-CASE
+     MOVE "0,0,0,16000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=down" TO WS-P1
+     MOVE "T4506 piston extended facing down (coll)" TO WS-CASE
+     MOVE "0,4000,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=down" TO WS-P1
+     MOVE "T4506 piston extended facing down (out)" TO WS-CASE
+     MOVE "0,4000,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=east" TO WS-P1
+     MOVE "T4506 piston extended facing east (coll)" TO WS-CASE
+     MOVE "0,0,0,12000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=east" TO WS-P1
+     MOVE "T4506 piston extended facing east (out)" TO WS-CASE
+     MOVE "0,0,0,12000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=south" TO WS-P1
+     MOVE "T4506 piston extended facing south (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=south" TO WS-P1
+     MOVE "T4506 piston extended facing south (out)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=west" TO WS-P1
+     MOVE "T4506 piston extended facing west (coll)" TO WS-CASE
+     MOVE "4000,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=west" TO WS-P1
+     MOVE "T4506 piston extended facing west (out)" TO WS-CASE
+     MOVE "4000,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=north" TO WS-P1
+     MOVE "T4506 piston extended facing north (coll)" TO WS-CASE
+     MOVE "0,0,4000,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=north" TO WS-P1
+     MOVE "T4506 piston extended facing north (out)" TO WS-CASE
+     MOVE "0,0,4000,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=false,facing=up" TO WS-P1
+     MOVE "T4506 piston retracted is a full cube (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=false,facing=up" TO WS-P1
+     MOVE "T4506 piston retracted is a full cube (out)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=up" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing up (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=up" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing up (out)" TO WS-CASE
+     MOVE "0,0,0,16000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=down" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing down (coll)" TO WS-CASE
+     MOVE "0,4000,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=down" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing down (out)" TO WS-CASE
+     MOVE "0,4000,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=east" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing east (coll)" TO WS-CASE
+     MOVE "0,0,0,12000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=east" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing east (out)" TO WS-CASE
+     MOVE "0,0,0,12000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=south" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing south (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=south" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing south (out)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=west" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing west (coll)" TO WS-CASE
+     MOVE "4000,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=west" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing west (out)" TO WS-CASE
+     MOVE "4000,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=north" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing north (coll)" TO WS-CASE
+     MOVE "0,0,4000,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=true,facing=north" TO WS-P1
+     MOVE "T4506 sticky_piston extended facing north (out)" TO WS-CASE
+     MOVE "0,0,4000,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=false,facing=up" TO WS-P1
+     MOVE "T4506 sticky_piston retracted is a full cube (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sticky_piston" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "extended=false,facing=up" TO WS-P1
+     MOVE "T4506 sticky_piston retracted is a full cube (out)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "copper_golem_statue" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 copper_golem_statue (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,14000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "copper_golem_statue" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 copper_golem_statue (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,14000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "exposed_copper_golem_statue" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 exposed_copper_golem_statue (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,14000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "exposed_copper_golem_statue" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 exposed_copper_golem_statue (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,14000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_shelf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 oak shelf facing north (coll)" TO WS-CASE
+     MOVE "0,0,13000,16000,16000,16000;0,12000,11000,16000,16000,1" & "3000;0,0,11000,16000,4000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_shelf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 oak shelf facing north (out)" TO WS-CASE
+     MOVE "0,0,13000,16000,16000,16000;0,12000,11000,16000,16000,1" & "3000;0,0,11000,16000,4000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_shelf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 oak shelf facing east (coll)" TO WS-CASE
+     MOVE "0,0,0,3000,16000,16000;3000,12000,0,5000,16000,16000;30" & "00,0,0,5000,4000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_shelf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 oak shelf facing east (out)" TO WS-CASE
+     MOVE "0,0,0,3000,16000,16000;3000,12000,0,5000,16000,16000;30" & "00,0,0,5000,4000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "attached_pumpkin_stem" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 attached pumpkin stem facing north (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "attached_pumpkin_stem" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 attached pumpkin stem facing north (out)" TO WS-CASE
+     MOVE "6000,0,0,10000,10000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "attached_pumpkin_stem" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "T4506 attached pumpkin stem facing west (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "attached_pumpkin_stem" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "T4506 attached pumpkin stem facing west (out)" TO WS-CASE
+     MOVE "0,0,6000,10000,10000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,facing=south" TO WS-P1
+     MOVE "T4506 cocoa age 0 facing south (coll)" TO WS-CASE
+     MOVE "6000,7000,11000,10000,12000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,facing=south" TO WS-P1
+     MOVE "T4506 cocoa age 0 facing south (out)" TO WS-CASE
+     MOVE "6000,7000,11000,10000,12000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,facing=east" TO WS-P1
+     MOVE "T4506 cocoa age 0 facing east (coll)" TO WS-CASE
+     MOVE "11000,7000,6000,15000,12000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,facing=east" TO WS-P1
+     MOVE "T4506 cocoa age 0 facing east (out)" TO WS-CASE
+     MOVE "11000,7000,6000,15000,12000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,facing=south" TO WS-P1
+     MOVE "T4506 cocoa age 1 facing south (coll)" TO WS-CASE
+     MOVE "5000,5000,9000,11000,12000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,facing=south" TO WS-P1
+     MOVE "T4506 cocoa age 1 facing south (out)" TO WS-CASE
+     MOVE "5000,5000,9000,11000,12000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,facing=east" TO WS-P1
+     MOVE "T4506 cocoa age 1 facing east (coll)" TO WS-CASE
+     MOVE "9000,5000,5000,15000,12000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,facing=east" TO WS-P1
+     MOVE "T4506 cocoa age 1 facing east (out)" TO WS-CASE
+     MOVE "9000,5000,5000,15000,12000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=2,facing=south" TO WS-P1
+     MOVE "T4506 cocoa age 2 facing south (coll)" TO WS-CASE
+     MOVE "4000,3000,7000,12000,12000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=2,facing=south" TO WS-P1
+     MOVE "T4506 cocoa age 2 facing south (out)" TO WS-CASE
+     MOVE "4000,3000,7000,12000,12000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=2,facing=east" TO WS-P1
+     MOVE "T4506 cocoa age 2 facing east (coll)" TO WS-CASE
+     MOVE "7000,3000,4000,15000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "cocoa" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=2,facing=east" TO WS-P1
+     MOVE "T4506 cocoa age 2 facing east (out)" TO WS-CASE
+     MOVE "7000,3000,4000,15000,12000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "shelf_mushroom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,facing=west" TO WS-P1
+     MOVE "T4506 shelf mushroom age 0 facing west (coll)" TO WS-CASE
+     MOVE "9000,9000,3000,16000,11000,13000;12000,8000,5000,16000," & "9000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "shelf_mushroom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,facing=west" TO WS-P1
+     MOVE "T4506 shelf mushroom age 0 facing west (out)" TO WS-CASE
+     MOVE "9000,9000,3000,16000,11000,13000;12000,8000,5000,16000," & "9000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "shelf_mushroom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,facing=west" TO WS-P1
+     MOVE "T4506 shelf mushroom age 1 facing west (coll)" TO WS-CASE
+     MOVE "6000,8000,1000,16000,11000,15000;10000,6000,4000,16000," & "8000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "shelf_mushroom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,facing=west" TO WS-P1
+     MOVE "T4506 shelf mushroom age 1 facing west (out)" TO WS-CASE
+     MOVE "6000,8000,1000,16000,11000,15000;10000,6000,4000,16000," & "8000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "nether_sprouts" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 nether_sprouts (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "nether_sprouts" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 nether_sprouts (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,3000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "weeping_vines" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 weeping_vines (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "weeping_vines" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 weeping_vines (out)" TO WS-CASE
+     MOVE "4000,9000,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "weeping_vines_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 weeping_vines_plant (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "weeping_vines_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 weeping_vines_plant (out)" TO WS-CASE
+     MOVE "1000,0,1000,15000,16000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "twisting_vines" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 twisting_vines (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "twisting_vines" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 twisting_vines (out)" TO WS-CASE
+     MOVE "4000,0,4000,12000,15000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "twisting_vines_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 twisting_vines_plant (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "twisting_vines_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 twisting_vines_plant (out)" TO WS-CASE
+     MOVE "4000,0,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "hanging_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 hanging_roots (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "hanging_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 hanging_roots (out)" TO WS-CASE
+     MOVE "2000,10000,2000,14000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "small_dripleaf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 small_dripleaf (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "small_dripleaf" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 small_dripleaf (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,13000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "short_dry_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 short_dry_grass (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "short_dry_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 short_dry_grass (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,10000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "tall_dry_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tall_dry_grass (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "tall_dry_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tall_dry_grass (out)" TO WS-CASE
+     MOVE "1000,0,1000,15000,16000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "tall_seagrass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tall_seagrass (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "tall_seagrass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tall_seagrass (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pale_hanging_moss" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "tip=true" TO WS-P1
+     MOVE "T4506 hanging moss tip (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pale_hanging_moss" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "tip=true" TO WS-P1
+     MOVE "T4506 hanging moss tip (out)" TO WS-CASE
+     MOVE "1000,2000,1000,15000,16000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pale_hanging_moss" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "tip=false" TO WS-P1
+     MOVE "T4506 hanging moss base (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pale_hanging_moss" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "tip=false" TO WS-P1
+     MOVE "T4506 hanging moss base (out)" TO WS-CASE
+     MOVE "1000,0,1000,15000,16000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "big_dripleaf_stem" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 big dripleaf stem east (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "big_dripleaf_stem" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 big dripleaf stem east (out)" TO WS-CASE
+     MOVE "1000,0,5000,7000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north,flower_amount=1" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 1 facing north (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north,flower_amount=1" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 1 facing north (out)" TO WS-CASE
+     MOVE "0,0,0,8000,3000,8000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east,flower_amount=2" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 2 facing east (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east,flower_amount=2" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 2 facing east (out)" TO WS-CASE
+     MOVE "0,0,0,16000,3000,8000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south,flower_amount=3" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 3 facing south (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south,flower_amount=3" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 3 facing south (out)" TO WS-CASE
+     MOVE "0,0,0,16000,3000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west,flower_amount=4" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 4 facing west (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pink_petals" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west,flower_amount=4" TO WS-P1
+     MOVE "T4506 pink_petals flower_amount 4 facing west (out)" TO WS-CASE
+     MOVE "0,0,0,16000,3000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north,segment_amount=1" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 1 facing north (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north,segment_amount=1" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 1 facing north (out)" TO WS-CASE
+     MOVE "0,0,0,8000,1000,8000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east,segment_amount=2" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 2 facing east (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east,segment_amount=2" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 2 facing east (out)" TO WS-CASE
+     MOVE "0,0,0,16000,1000,8000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south,segment_amount=3" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 3 facing south (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south,segment_amount=3" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 3 facing south (out)" TO WS-CASE
+     MOVE "0,0,0,16000,1000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west,segment_amount=4" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 4 facing west (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "leaf_litter" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west,segment_amount=4" TO WS-P1
+     MOVE "T4506 leaf_litter segment_amount 4 facing west (out)" TO WS-CASE
+     MOVE "0,0,0,16000,1000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip_merge,vertical_direction=up" TO WS-P1
+     MOVE "T4506 pointed_dripstone tip_merge up (coll)" TO WS-CASE
+     MOVE "5000,0,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip_merge,vertical_direction=up" TO WS-P1
+     MOVE "T4506 pointed_dripstone tip_merge up (out)" TO WS-CASE
+     MOVE "5000,0,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=up" TO WS-P1
+     MOVE "T4506 pointed_dripstone tip up (coll)" TO WS-CASE
+     MOVE "5000,0,5000,11000,11000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=up" TO WS-P1
+     MOVE "T4506 pointed_dripstone tip up (out)" TO WS-CASE
+     MOVE "5000,0,5000,11000,11000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=down" TO WS-P1
+     MOVE "T4506 pointed_dripstone tip down (coll)" TO WS-CASE
+     MOVE "5000,5000,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=down" TO WS-P1
+     MOVE "T4506 pointed_dripstone tip down (out)" TO WS-CASE
+     MOVE "5000,5000,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=frustum,vertical_direction=down" TO WS-P1
+     MOVE "T4506 pointed_dripstone frustum down (coll)" TO WS-CASE
+     MOVE "4000,0,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=frustum,vertical_direction=down" TO WS-P1
+     MOVE "T4506 pointed_dripstone frustum down (out)" TO WS-CASE
+     MOVE "4000,0,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=middle,vertical_direction=up" TO WS-P1
+     MOVE "T4506 pointed_dripstone middle up (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=middle,vertical_direction=up" TO WS-P1
+     MOVE "T4506 pointed_dripstone middle up (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=base,vertical_direction=down" TO WS-P1
+     MOVE "T4506 pointed_dripstone base down (coll)" TO WS-CASE
+     MOVE "2000,0,2000,14000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=base,vertical_direction=down" TO WS-P1
+     MOVE "T4506 pointed_dripstone base down (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip_merge,vertical_direction=up" TO WS-P1
+     MOVE "T4506 sulfur_spike tip_merge up (coll)" TO WS-CASE
+     MOVE "5000,0,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip_merge,vertical_direction=up" TO WS-P1
+     MOVE "T4506 sulfur_spike tip_merge up (out)" TO WS-CASE
+     MOVE "5000,0,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=up" TO WS-P1
+     MOVE "T4506 sulfur_spike tip up (coll)" TO WS-CASE
+     MOVE "5000,0,5000,11000,11000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=up" TO WS-P1
+     MOVE "T4506 sulfur_spike tip up (out)" TO WS-CASE
+     MOVE "5000,0,5000,11000,11000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=down" TO WS-P1
+     MOVE "T4506 sulfur_spike tip down (coll)" TO WS-CASE
+     MOVE "5000,5000,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=tip,vertical_direction=down" TO WS-P1
+     MOVE "T4506 sulfur_spike tip down (out)" TO WS-CASE
+     MOVE "5000,5000,5000,11000,16000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=frustum,vertical_direction=down" TO WS-P1
+     MOVE "T4506 sulfur_spike frustum down (coll)" TO WS-CASE
+     MOVE "4000,0,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=frustum,vertical_direction=down" TO WS-P1
+     MOVE "T4506 sulfur_spike frustum down (out)" TO WS-CASE
+     MOVE "4000,0,4000,12000,16000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=middle,vertical_direction=up" TO WS-P1
+     MOVE "T4506 sulfur_spike middle up (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=middle,vertical_direction=up" TO WS-P1
+     MOVE "T4506 sulfur_spike middle up (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=base,vertical_direction=down" TO WS-P1
+     MOVE "T4506 sulfur_spike base down (coll)" TO WS-CASE
+     MOVE "2000,0,2000,14000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "thickness=base,vertical_direction=down" TO WS-P1
+     MOVE "T4506 sulfur_spike base down (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "chorus_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "north=false,east=false,south=false,west=false,up=false,down=false" TO WS-P1
+     MOVE "T4506 chorus plant with no arm (coll)" TO WS-CASE
+     MOVE "3000,3000,3000,13000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chorus_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "north=false,east=false,south=false,west=false,up=false,down=false" TO WS-P1
+     MOVE "T4506 chorus plant with no arm (out)" TO WS-CASE
+     MOVE "3000,3000,3000,13000,13000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "chorus_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "north=true,east=false,south=false,west=false,up=true,down=false" TO WS-P1
+     MOVE "T4506 chorus plant north and up (coll)" TO WS-CASE
+     MOVE "3000,3000,3000,13000,13000,13000;3000,3000,0,13000,1300" & "0,8000;3000,8000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chorus_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "north=true,east=false,south=false,west=false,up=true,down=false" TO WS-P1
+     MOVE "T4506 chorus plant north and up (out)" TO WS-CASE
+     MOVE "3000,3000,3000,13000,13000,13000;3000,3000,0,13000,1300" & "0,8000;3000,8000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "chorus_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "north=true,east=true,south=true,west=true,up=true,down=true" TO WS-P1
+     MOVE "T4506 chorus plant all arms (coll)" TO WS-CASE
+     MOVE "3000,3000,3000,13000,13000,13000;3000,3000,0,13000,1300" & "0,8000;8000,3000,3000,16000,13000,13000;3000,3000,8000," & "13000,13000,16000;0,3000,3000,8000,13000,13000;3000,800" & "0,3000,13000,16000,13000;3000,0,3000,13000,8000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "chorus_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "north=true,east=true,south=true,west=true,up=true,down=true" TO WS-P1
+     MOVE "T4506 chorus plant all arms (out)" TO WS-CASE
+     MOVE "3000,3000,3000,13000,13000,13000;3000,3000,0,13000,1300" & "0,8000;8000,3000,3000,16000,13000,13000;3000,3000,8000," & "13000,13000,16000;0,3000,3000,8000,13000,13000;3000,800" & "0,3000,13000,16000,13000;3000,0,3000,13000,8000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=1" TO WS-P1
+     MOVE "T4506 sea pickle 1 (coll)" TO WS-CASE
+     MOVE "6000,0,6000,10000,6000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=1" TO WS-P1
+     MOVE "T4506 sea pickle 1 (out)" TO WS-CASE
+     MOVE "6000,0,6000,10000,6000,10000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=2" TO WS-P1
+     MOVE "T4506 sea pickle 2 (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,6000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=2" TO WS-P1
+     MOVE "T4506 sea pickle 2 (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,6000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=3" TO WS-P1
+     MOVE "T4506 sea pickle 3 (coll)" TO WS-CASE
+     MOVE "2000,0,2000,14000,6000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=3" TO WS-P1
+     MOVE "T4506 sea pickle 3 (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,6000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=4" TO WS-P1
+     MOVE "T4506 sea pickle 4 (coll)" TO WS-CASE
+     MOVE "2000,0,2000,14000,7000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sea_pickle" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "pickles=4" TO WS-P1
+     MOVE "T4506 sea pickle 4 (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,7000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "turtle_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "eggs=1" TO WS-P1
+     MOVE "T4506 turtle egg 1 (coll)" TO WS-CASE
+     MOVE "3000,0,3000,12000,7000,12000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "turtle_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "eggs=1" TO WS-P1
+     MOVE "T4506 turtle egg 1 (out)" TO WS-CASE
+     MOVE "3000,0,3000,12000,7000,12000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "turtle_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "eggs=2" TO WS-P1
+     MOVE "T4506 turtle egg 2 (coll)" TO WS-CASE
+     MOVE "1000,0,1000,15000,7000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "turtle_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "eggs=2" TO WS-P1
+     MOVE "T4506 turtle egg 2 (out)" TO WS-CASE
+     MOVE "1000,0,1000,15000,7000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "turtle_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "eggs=4" TO WS-P1
+     MOVE "T4506 turtle egg 4 (coll)" TO WS-CASE
+     MOVE "1000,0,1000,15000,7000,15000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "turtle_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "eggs=4" TO WS-P1
+     MOVE "T4506 turtle egg 4 (out)" TO WS-CASE
+     MOVE "1000,0,1000,15000,7000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "sniffer_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 sniffer egg (coll)" TO WS-CASE
+     MOVE "1000,0,2000,15000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "sniffer_egg" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 sniffer egg (out)" TO WS-CASE
+     MOVE "1000,0,2000,15000,16000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "dried_ghast" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 dried ghast (coll)" TO WS-CASE
+     MOVE "3000,0,3000,13000,10000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "dried_ghast" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 dried ghast (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,10000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "tube_coral" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tube coral (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "tube_coral" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tube coral (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,15000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "dead_tube_coral" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 dead tube coral (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "dead_tube_coral" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 dead tube coral (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,15000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "tube_coral_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tube coral fan (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "tube_coral_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 tube coral fan (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,4000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "dead_tube_coral_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 dead tube coral fan (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "dead_tube_coral_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 dead tube coral fan (out)" TO WS-CASE
+     MOVE "2000,0,2000,14000,4000,14000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "tube_coral_wall_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 tube coral wall fan east (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "tube_coral_wall_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 tube coral wall fan east (out)" TO WS-CASE
+     MOVE "0,4000,0,11000,12000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "dead_tube_coral_wall_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "T4506 dead tube coral wall fan south (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "dead_tube_coral_wall_fan" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "T4506 dead tube coral wall fan south (out)" TO WS-CASE
+     MOVE "0,4000,0,16000,12000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "powder_snow" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 powder snow (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "powder_snow" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "T4506 powder snow (out)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 0 lower (coll)" TO WS-CASE
+     MOVE "5000,-1000,5000,11000,3000,11000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 0 lower (out)" TO WS-CASE
+     MOVE "5000,-1000,5000,11000,3000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 1 lower (coll)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,5000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 1 lower (out)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,14000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=2,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 2 lower (coll)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,5000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=2,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 2 lower (out)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=3,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 3 lower (coll)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,5000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=3,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 3 lower (out)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=4,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 4 lower (coll)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,5000,13000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=4,half=lower" TO WS-P1
+     MOVE "T4506 pitcher crop age 4 lower (out)" TO WS-CASE
+     MOVE "3000,-1000,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=3,half=upper" TO WS-P1
+     MOVE "T4506 pitcher crop age 3 upper (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=3,half=upper" TO WS-P1
+     MOVE "T4506 pitcher crop age 3 upper (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,11000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=4,half=upper" TO WS-P1
+     MOVE "T4506 pitcher crop age 4 upper (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pitcher_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=4,half=upper" TO WS-P1
+     MOVE "T4506 pitcher crop age 4 upper (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,15000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "torchflower_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0" TO WS-P1
+     MOVE "T4506 torchflower crop 0 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "torchflower_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=0" TO WS-P1
+     MOVE "T4506 torchflower crop 0 (out)" TO WS-CASE
+     MOVE "5000,0,5000,11000,6000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "torchflower_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1" TO WS-P1
+     MOVE "T4506 torchflower crop 1 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "torchflower_crop" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "age=1" TO WS-P1
+     MOVE "T4506 torchflower crop 1 (out)" TO WS-CASE
+     MOVE "5000,0,5000,11000,10000,11000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=0" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 0 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=0" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 0 (out)" TO WS-CASE
+     MOVE "7000,13000,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=1" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 1 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=1" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 1 (out)" TO WS-CASE
+     MOVE "7000,10000,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=2" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 2 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=2" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 2 (out)" TO WS-CASE
+     MOVE "7000,7000,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=3" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 3 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=3" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 3 (out)" TO WS-CASE
+     MOVE "7000,3000,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=4" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 4 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=true,age=4" TO WS-P1
+     MOVE "T4506 mangrove propagule hanging age 4 (out)" TO WS-CASE
+     MOVE "7000,0,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=false,age=2" TO WS-P1
+     MOVE "T4506 mangrove propagule planted (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "hanging=false,age=2" TO WS-P1
+     MOVE "T4506 mangrove propagule planted (out)" TO WS-CASE
+     MOVE "7000,0,7000,9000,16000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pale_moss_carpet" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=true,north=low,east=tall,south=none,west=none" TO WS-P1
+     MOVE "T4506 moss carpet base with a low north and a tall east (coll)" TO WS-CASE
+     MOVE "0,0,0,16000,1000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pale_moss_carpet" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=true,north=low,east=tall,south=none,west=none" TO WS-P1
+     MOVE "T4506 moss carpet base with a low north and a tall east (out)" TO WS-CASE
+     MOVE "0,0,0,16000,1000,16000;0,0,0,16000,10000,1000;15000,0,0" & ",16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pale_moss_carpet" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=false,north=none,east=none,south=low,west=tall" TO WS-P1
+     MOVE "T4506 moss carpet without a base keeps the sides (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pale_moss_carpet" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=false,north=none,east=none,south=low,west=tall" TO WS-P1
+     MOVE "T4506 moss carpet without a base keeps the sides (out)" TO WS-CASE
+     MOVE "0,0,15000,16000,10000,16000;0,0,0,1000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "pale_moss_carpet" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=false,north=none,east=none,south=none,west=none" TO WS-P1
+     MOVE "T4506 moss carpet with nothing is the full cube outline (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "pale_moss_carpet" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "bottom=false,north=none,east=none,south=none,west=none" TO WS-P1
+     MOVE "T4506 moss carpet with nothing is the full cube outline (out)" TO WS-CASE
+     MOVE "0,0,0,16000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=0" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 0 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=0" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 0 (out)" TO WS-CASE
+     MOVE "1000,0,7000,15000,10000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=8" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 8 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=8" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 8 (out)" TO WS-CASE
+     MOVE "1000,0,7000,15000,10000,9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=4" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 4 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=4" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 4 (out)" TO WS-CASE
+     MOVE "7000,0,1000,9000,10000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=12" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 12 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=12" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 12 (out)" TO WS-CASE
+     MOVE "7000,0,1000,9000,10000,15000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=5" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 5 (coll)" TO WS-CASE
+     MOVE "-" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "rotation=5" TO WS-P1
+     MOVE "T4506 ceiling hanging sign rotation 5 (out)" TO WS-CASE
+     MOVE "3000,0,3000,13000,16000,13000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 wall hanging sign north (coll)" TO WS-CASE
+     MOVE "0,14000,6000,16000,16000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=north" TO WS-P1
+     MOVE "T4506 wall hanging sign north (out)" TO WS-CASE
+     MOVE "0,14000,6000,16000,16000,10000;1000,0,7000,15000,10000," & "9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "T4506 wall hanging sign south (coll)" TO WS-CASE
+     MOVE "0,14000,6000,16000,16000,10000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=south" TO WS-P1
+     MOVE "T4506 wall hanging sign south (out)" TO WS-CASE
+     MOVE "0,14000,6000,16000,16000,10000;1000,0,7000,15000,10000," & "9000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 wall hanging sign east (coll)" TO WS-CASE
+     MOVE "6000,14000,0,10000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=east" TO WS-P1
+     MOVE "T4506 wall hanging sign east (out)" TO WS-CASE
+     MOVE "6000,14000,0,10000,16000,16000;7000,0,1000,9000,10000,1" & "5000" TO WS-EXPECT
+     PERFORM CHECK-OUT
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "T4506 wall hanging sign west (coll)" TO WS-CASE
+     MOVE "6000,14000,0,10000,16000,16000" TO WS-EXPECT
+     PERFORM CHECK-COLL
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE "facing=west" TO WS-P1
+     MOVE "T4506 wall hanging sign west (out)" TO WS-CASE
+     MOVE "6000,14000,0,10000,16000,16000;7000,0,1000,9000,10000,1" & "5000" TO WS-EXPECT
+     PERFORM CHECK-OUT
 *>   Play2 defect 3: the workstation and container shapes of 51 section 3.5 (hopper, cauldron, composter, grindstone, bell, scaffolding, piston head,
 *>   wall skulls, joined chests, beds, lectern). The cauldron's four corner legs are four 4 x 4 pillars (the L-shaped 2-pixel notch is not kept).
      MOVE "hopper" TO WS-KEY

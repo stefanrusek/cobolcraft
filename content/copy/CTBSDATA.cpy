@@ -1,5 +1,5 @@
 *> The rows of the shape rule table (docs/protocol/51-block-shapes.md sections 3 and 4), read by BSH-RULES-LOAD: classes ~ mode ~ property ~ value ~ collision ~ outline.
- 78 BSD-COUNT             VALUE 133.
+ 78 BSD-COUNT             VALUE 214.
  01 BSD-DATA.
     05 FILLER PIC X(500) VALUE "|TorchBlock|RedstoneTorchBlock|~S~~~N~6 0 6 10 10 10".
     05 FILLER PIC X(500) VALUE "|WallTorchBlock|RedstoneWallTorchBlock|~Y~facing~~N~5.5 3 11 10.5 13 16".
@@ -134,5 +134,86 @@
     05 FILLER PIC X(500) VALUE "|WallSkullBlock|PlayerWallHeadBlock|WitherWallSkullBlock|~Y~facing~~4 4 8 12 12 16~=".
     05 FILLER PIC X(500) VALUE "|ChestBlock|TrappedChestBlock|CopperChestBlock|WeatheringCopperChestBlock|~K~CH~~~".
     05 FILLER PIC X(500) VALUE "|BedBlock|~K~BD~~~".
+    05 FILLER PIC X(500) VALUE "|MovingPistonBlock|~S~~~N~N".
+    05 FILLER PIC X(500) VALUE "|CandleCakeBlock|~S~~~1 0 1 15 8 15,7 8 7 9 14 9~=".
+    05 FILLER PIC X(500) VALUE "|TripWireHookBlock|~Y~facing~~N~5 0 10 11 10 16".
+    05 FILLER PIC X(500) VALUE "|=amethyst_cluster|~R~~~3 3 9 13 13 16~=".
+    05 FILLER PIC X(500) VALUE "|=large_amethyst_bud|~R~~~3 3 11 13 13 16~=".
+    05 FILLER PIC X(500) VALUE "|=medium_amethyst_bud|~R~~~3 3 12 13 13 16~=".
+    05 FILLER PIC X(500) VALUE "|=small_amethyst_bud|~R~~~4 4 13 12 12 16~=".
+    05 FILLER PIC X(500) VALUE "|PistonBaseBlock|~R~extended~true~0 0 4 16 16 16~=".
+    05 FILLER PIC X(500) VALUE "|CopperGolemStatueBlock|WeatheringCopperGolemStatueBlock|~S~~~3 0 3 13 14 13~=".
+    05 FILLER PIC X(500) VALUE "|ShelfBlock|~Y~facing~~0 0 13 16 16 16,0 12 11 16 16 13,0 0 11 16 4 13~=".
+    05 FILLER PIC X(500) VALUE "|AttachedStemBlock|~Y~facing~~N~6 0 0 10 10 10".
+    05 FILLER PIC X(500) VALUE "|CocoaBlock|~Q~age~0~6 7 1 10 12 5~=".
+    05 FILLER PIC X(500) VALUE "|CocoaBlock|~Q~age~1~5 5 1 11 12 7~=".
+    05 FILLER PIC X(500) VALUE "|CocoaBlock|~Q~age~2~4 3 1 12 12 9~=".
+    05 FILLER PIC X(500) VALUE "|ShelfMushroomBlock|~Q~age~0~3 9 9 13 11 16,5 8 12 11 9 16~=".
+    05 FILLER PIC X(500) VALUE "|ShelfMushroomBlock|~Q~age~1~1 8 6 15 11 16,4 6 10 12 8 16~=".
+    05 FILLER PIC X(500) VALUE "|NetherSproutsBlock|~S~~~N~2 0 2 14 3 14".
+    05 FILLER PIC X(500) VALUE "|WeepingVinesBlock|~S~~~N~4 9 4 12 16 12".
+    05 FILLER PIC X(500) VALUE "|WeepingVinesPlantBlock|~S~~~N~1 0 1 15 16 15".
+    05 FILLER PIC X(500) VALUE "|TwistingVinesBlock|~S~~~N~4 0 4 12 15 12".
+    05 FILLER PIC X(500) VALUE "|TwistingVinesPlantBlock|~S~~~N~4 0 4 12 16 12".
+    05 FILLER PIC X(500) VALUE "|HangingRootsBlock|~S~~~N~2 10 2 14 16 14".
+    05 FILLER PIC X(500) VALUE "|HangingMossBlock|~P~tip~true~N~1 2 1 15 16 15".
+    05 FILLER PIC X(500) VALUE "|HangingMossBlock|~S~~~N~1 0 1 15 16 15".
+    05 FILLER PIC X(500) VALUE "|SmallDripleafBlock|~S~~~N~2 0 2 14 13 14".
+    05 FILLER PIC X(500) VALUE "|BigDripleafStemBlock|~Y~facing~~N~5 0 9 11 16 15".
+    05 FILLER PIC X(500) VALUE "|FlowerBedBlock|~Q~flower_amount~1~N~0 0 0 8 3 8".
+    05 FILLER PIC X(500) VALUE "|FlowerBedBlock|~Q~flower_amount~2~N~0 0 0 8 3 16".
+    05 FILLER PIC X(500) VALUE "|FlowerBedBlock|~Q~flower_amount~3~N~0 0 0 16 3 16".
+    05 FILLER PIC X(500) VALUE "|FlowerBedBlock|~Q~flower_amount~4~N~0 0 0 16 3 16".
+    05 FILLER PIC X(500) VALUE "|LeafLitterBlock|~Q~segment_amount~1~N~0 0 0 8 1 8".
+    05 FILLER PIC X(500) VALUE "|LeafLitterBlock|~Q~segment_amount~2~N~0 0 0 8 1 16".
+    05 FILLER PIC X(500) VALUE "|LeafLitterBlock|~Q~segment_amount~3~N~0 0 0 16 1 16".
+    05 FILLER PIC X(500) VALUE "|LeafLitterBlock|~Q~segment_amount~4~N~0 0 0 16 1 16".
+    05 FILLER PIC X(500) VALUE "|PointedDripstoneBlock|SulfurSpikeBlock|~P~thickness~tip_merge~5 0 5 11 16 11~=".
+    05 FILLER PIC X(500) VALUE "|PointedDripstoneBlock|SulfurSpikeBlock|~P~thickness~tip&vertical_direction=up~5 0 5 11 11 11~=".
+    05 FILLER PIC X(500) VALUE "|PointedDripstoneBlock|SulfurSpikeBlock|~P~thickness~tip&vertical_direction=down~5 5 5 11 16 11~=".
+    05 FILLER PIC X(500) VALUE "|PointedDripstoneBlock|SulfurSpikeBlock|~P~thickness~frustum~4 0 4 12 16 12~=".
+    05 FILLER PIC X(500) VALUE "|PointedDripstoneBlock|SulfurSpikeBlock|~P~thickness~middle~3 0 3 13 16 13~=".
+    05 FILLER PIC X(500) VALUE "|PointedDripstoneBlock|SulfurSpikeBlock|~P~thickness~base~2 0 2 14 16 14~=".
+    05 FILLER PIC X(500) VALUE "|ChorusPlantBlock|~K~CP~~~".
+    05 FILLER PIC X(500) VALUE "|SeaPickleBlock|~P~pickles~1~6 0 6 10 6 10~=".
+    05 FILLER PIC X(500) VALUE "|SeaPickleBlock|~P~pickles~2~3 0 3 13 6 13~=".
+    05 FILLER PIC X(500) VALUE "|SeaPickleBlock|~P~pickles~3~2 0 2 14 6 14~=".
+    05 FILLER PIC X(500) VALUE "|SeaPickleBlock|~P~pickles~4~2 0 2 14 7 14~=".
+    05 FILLER PIC X(500) VALUE "|TurtleEggBlock|~P~eggs~1~3 0 3 12 7 12~=".
+    05 FILLER PIC X(500) VALUE "|TurtleEggBlock|~S~~~1 0 1 15 7 15~=".
+    05 FILLER PIC X(500) VALUE "|SnifferEggBlock|~S~~~1 0 2 15 16 14~=".
+    05 FILLER PIC X(500) VALUE "|DriedGhastBlock|~S~~~3 0 3 13 10 13~=".
+    05 FILLER PIC X(500) VALUE "|BaseCoralPlantBlock|CoralPlantBlock|~S~~~N~2 0 2 14 15 14".
+    05 FILLER PIC X(500) VALUE "|BaseCoralFanBlock|CoralFanBlock|~S~~~N~2 0 2 14 4 14".
+    05 FILLER PIC X(500) VALUE "|BaseCoralWallFanBlock|CoralWallFanBlock|~Y~facing~~N~0 4 5 16 12 16".
+    05 FILLER PIC X(500) VALUE "|ShortDryGrassBlock|~S~~~N~2 0 2 14 10 14".
+    05 FILLER PIC X(500) VALUE "|TallDryGrassBlock|~S~~~N~1 0 1 15 16 15".
+    05 FILLER PIC X(500) VALUE "|TallSeagrassBlock|~S~~~N~2 0 2 14 16 14".
+    05 FILLER PIC X(500) VALUE "|PowderSnowBlock|~S~~~N~F".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~lower&age=0~5 -1 5 11 3 11~=".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~lower&age=1~3 -1 3 13 5 13~3 -1 3 13 14 13".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~lower&age=2~3 -1 3 13 5 13~3 -1 3 13 16 13".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~lower&age=3~3 -1 3 13 5 13~3 -1 3 13 16 13".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~lower&age=4~3 -1 3 13 5 13~3 -1 3 13 16 13".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~upper&age=3~N~3 0 3 13 11 13".
+    05 FILLER PIC X(500) VALUE "|PitcherCropBlock|~P~half~upper&age=4~N~3 0 3 13 15 13".
+    05 FILLER PIC X(500) VALUE "|TorchflowerCropBlock|~P~age~0~N~5 0 5 11 6 11".
+    05 FILLER PIC X(500) VALUE "|TorchflowerCropBlock|~S~~~N~5 0 5 11 10 11".
+    05 FILLER PIC X(500) VALUE "|MangrovePropaguleBlock|~P~hanging~true&age=0~N~7 13 7 9 16 9".
+    05 FILLER PIC X(500) VALUE "|MangrovePropaguleBlock|~P~hanging~true&age=1~N~7 10 7 9 16 9".
+    05 FILLER PIC X(500) VALUE "|MangrovePropaguleBlock|~P~hanging~true&age=2~N~7 7 7 9 16 9".
+    05 FILLER PIC X(500) VALUE "|MangrovePropaguleBlock|~P~hanging~true&age=3~N~7 3 7 9 16 9".
+    05 FILLER PIC X(500) VALUE "|MangrovePropaguleBlock|~P~hanging~true&age=4~N~7 0 7 9 16 9".
+    05 FILLER PIC X(500) VALUE "|MangrovePropaguleBlock|~S~~~N~7 0 7 9 16 9".
+    05 FILLER PIC X(500) VALUE "|MossyCarpetBlock|~K~MC~~~".
+    05 FILLER PIC X(500) VALUE "|CeilingHangingSignBlock|~P~rotation~0~N~1 0 7 15 10 9".
+    05 FILLER PIC X(500) VALUE "|CeilingHangingSignBlock|~P~rotation~8~N~1 0 7 15 10 9".
+    05 FILLER PIC X(500) VALUE "|CeilingHangingSignBlock|~P~rotation~4~N~7 0 1 9 10 15".
+    05 FILLER PIC X(500) VALUE "|CeilingHangingSignBlock|~P~rotation~12~N~7 0 1 9 10 15".
+    05 FILLER PIC X(500) VALUE "|CeilingHangingSignBlock|~S~~~N~3 0 3 13 16 13".
+    05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~north~0 14 6 16 16 10~0 14 6 16 16 10,1 0 7 15 10 9".
+    05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~south~0 14 6 16 16 10~0 14 6 16 16 10,1 0 7 15 10 9".
+    05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~east~6 14 0 10 16 16~6 14 0 10 16 16,7 0 1 9 10 15".
+    05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~west~6 14 0 10 16 16~6 14 0 10 16 16,7 0 1 9 10 15".
  01 BSD-TABLE REDEFINES BSD-DATA.
-    05 BSD-ROW             PIC X(500) OCCURS 133 TIMES.
+    05 BSD-ROW             PIC X(500) OCCURS 214 TIMES.
