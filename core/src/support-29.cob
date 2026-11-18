@@ -140,6 +140,7 @@
              WHEN "minecraft:torch"
              WHEN "minecraft:soul_torch"
              WHEN "minecraft:redstone_torch"
+             WHEN "minecraft:copper_torch"
              WHEN "minecraft:redstone_wire"
              WHEN "minecraft:repeater"
              WHEN "minecraft:comparator"
@@ -148,6 +149,7 @@
              WHEN "minecraft:wall_torch"
              WHEN "minecraft:soul_wall_torch"
              WHEN "minecraft:redstone_wall_torch"
+             WHEN "minecraft:copper_wall_torch"
              WHEN "minecraft:ladder"
              WHEN "minecraft:tripwire_hook"
                  MOVE 15 TO SP-RULE(WS-I)

@@ -122,9 +122,8 @@
      IF WS-FOUND = 0
          CALL "WORLDGEN-DIM-CHUNK" USING L-DIM L-CX L-CZ CE-CHUNK WS-MARKER-Y
          MOVE 1 TO CK-FRESH(L-ROW)
-         IF WS-MARKER-Y >= 0
-             ADD 1 TO CK-SOURCES(L-ROW, WS-MARKER-Y / 16 + 1)
-         END-IF
+*>       The light sources the generator wrote (the marker, torches, lava, glowstone...) are counted by section: the light engine scans only those sections (lane bugtorch T30020).
+         CALL "CHUNK-COUNT-SOURCES" USING L-ROW
      END-IF
      IF DM-GENERATOR(L-DIM) NOT = DIM-GEN-STANDARD
          CALL "WORLD-FILL-BIOMES" USING L-ROW

@@ -182,6 +182,191 @@
  END PROGRAM BLOCKS-LIMITS-CHECK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCKS-LIGHT-KIND.
+*> USING light text (PIC X(41), the light column of a block row), base (BINARY-LONG, the number the text starts with, 0 when it starts with no number; changed for "lit?N:0" and "lit ? N : 0"),
+*> kind out (BINARY-LONG): how the light of the block's states is derived from the state (docs/protocol/24 the light column and the light notes; lane bugtorch T30010):
+*>   0 the same number for every state (base)        1 base where lit is true ("N if lit, else 0", "N when `lit", "lit?N:0", "lit ? N : 0")
+*>   2 base x candles where lit is true               3 base where berries is true
+*>   4 copper bulb: 15, 12, 8, 4 by weathering when lit (BLOCKS-STATE-LIGHT reads it from the key)
+*>   5 sea pickle: 3 + 3 x pickles when waterlogged   6 respawn anchor: charges x 15 div 4      7 light block: its level
+*>   8 trial spawner by state 0, 4, 8, 8, 8, 0         9 vault by state 6, 12, 12, 12              10 glow lichen: 7 when any face is set
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-REST                PIC X(41).
+ 01 WS-NUMBER              PIC X(41).
+ 01 WS-HITS                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(41).
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TEXT L-BASE L-KIND.
+     MOVE 0 TO L-KIND
+     MOVE SPACES TO WS-REST WS-NUMBER
+     EVALUATE TRUE
+         WHEN L-TEXT(1:4) = "lit?"
+             MOVE L-TEXT(5:37) TO WS-REST
+             UNSTRING WS-REST DELIMITED BY ":" INTO WS-NUMBER
+             COMPUTE L-BASE = FUNCTION NUMVAL(WS-NUMBER)
+             MOVE 1 TO L-KIND
+         WHEN L-TEXT(1:6) = "lit ? "
+             MOVE L-TEXT(7:35) TO WS-REST
+             UNSTRING WS-REST DELIMITED BY SPACE INTO WS-NUMBER
+             COMPUTE L-BASE = FUNCTION NUMVAL(WS-NUMBER)
+             MOVE 1 TO L-KIND
+         WHEN L-TEXT(1:12) = "when lit: 15"
+             MOVE 4 TO L-KIND
+         WHEN L-TEXT(1:5) = "dead:"
+             MOVE 5 TO L-KIND
+         WHEN L-TEXT(1:13) = "level propert"
+             MOVE 7 TO L-KIND
+         WHEN L-TEXT(1:18) = "0/3/7/11/15 by cha"
+             MOVE 6 TO L-KIND
+         WHEN L-TEXT(1:16) = "by state: 0,4,8,"
+             MOVE 8 TO L-KIND
+         WHEN L-TEXT(1:16) = "by state: 6,12,1"
+             MOVE 9 TO L-KIND
+         WHEN L-TEXT(1:10) = "7 if any f"
+             MOVE 10 TO L-KIND
+         WHEN OTHER
+             MOVE 0 TO WS-HITS
+             INSPECT L-TEXT TALLYING WS-HITS FOR ALL "x candles"
+             IF WS-HITS > 0
+                 MOVE 2 TO L-KIND
+                 GOBACK
+             END-IF
+             INSPECT L-TEXT TALLYING WS-HITS FOR ALL "when berries"
+             IF WS-HITS > 0
+                 MOVE 3 TO L-KIND
+                 GOBACK
+             END-IF
+             INSPECT L-TEXT TALLYING WS-HITS FOR ALL "lit, else 0" ALL "when `lit"
+             IF WS-HITS > 0
+                 MOVE 1 TO L-KIND
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BLOCKS-LIGHT-KIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCKS-STATE-LIGHT.
+*> USING kind (BLOCKS-LIGHT-KIND), base (BINARY-LONG), block key (PIC X(48)), properties of the state (CT-PROPS, CTPROPS.cpy), light out (BINARY-LONG): the light the state gives off.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LIT                 BINARY-LONG.
+ 01 WS-BERRIES             BINARY-LONG.
+ 01 WS-WATERLOGGED         BINARY-LONG.
+ 01 WS-FACES               BINARY-LONG.
+ 01 WS-CANDLES             BINARY-LONG.
+ 01 WS-PICKLES             BINARY-LONG.
+ 01 WS-CHARGES             BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(32).
+ 01 WS-WEATHERED           BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-KEY                  PIC X(48).
+ 01 L-PROPS.
+    05 LP-COUNT            BINARY-LONG.
+    05 LP-ENTRY OCCURS 16 TIMES.
+       10 LP-NAME          PIC X(24).
+       10 LP-VALUE         PIC X(32).
+ 01 L-LIGHT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-BASE L-KEY L-PROPS L-LIGHT.
+     MOVE 0 TO L-LIGHT WS-LIT WS-BERRIES WS-WATERLOGGED WS-FACES WS-CANDLES WS-PICKLES WS-CHARGES WS-LEVEL
+     MOVE SPACES TO WS-STATE-TEXT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LP-COUNT
+         EVALUATE LP-NAME(WS-I)
+             WHEN "lit"
+                 IF LP-VALUE(WS-I) = "true"
+                     MOVE 1 TO WS-LIT
+                 END-IF
+             WHEN "berries"
+                 IF LP-VALUE(WS-I) = "true"
+                     MOVE 1 TO WS-BERRIES
+                 END-IF
+             WHEN "waterlogged"
+                 IF LP-VALUE(WS-I) = "true"
+                     MOVE 1 TO WS-WATERLOGGED
+                 END-IF
+             WHEN "down" WHEN "east" WHEN "north" WHEN "south" WHEN "up" WHEN "west"
+                 IF LP-VALUE(WS-I) = "true"
+                     ADD 1 TO WS-FACES
+                 END-IF
+             WHEN "candles"
+                 COMPUTE WS-CANDLES = FUNCTION NUMVAL(LP-VALUE(WS-I))
+             WHEN "pickles"
+                 COMPUTE WS-PICKLES = FUNCTION NUMVAL(LP-VALUE(WS-I))
+             WHEN "charges"
+                 COMPUTE WS-CHARGES = FUNCTION NUMVAL(LP-VALUE(WS-I))
+             WHEN "level"
+                 COMPUTE WS-LEVEL = FUNCTION NUMVAL(LP-VALUE(WS-I))
+             WHEN "trial_spawner_state" WHEN "vault_state"
+                 MOVE LP-VALUE(WS-I) TO WS-STATE-TEXT
+         END-EVALUATE
+     END-PERFORM
+     EVALUATE L-KIND
+         WHEN 1
+             IF WS-LIT = 1
+                 MOVE L-BASE TO L-LIGHT
+             END-IF
+         WHEN 2
+             IF WS-LIT = 1
+                 COMPUTE L-LIGHT = L-BASE * WS-CANDLES
+             END-IF
+         WHEN 3
+             IF WS-BERRIES = 1
+                 MOVE L-BASE TO L-LIGHT
+             END-IF
+         WHEN 4
+             IF WS-LIT = 1
+                 MOVE 15 TO L-LIGHT
+                 MOVE 0 TO WS-WEATHERED
+                 INSPECT L-KEY TALLYING WS-WEATHERED FOR ALL "exposed_"
+                 IF WS-WEATHERED > 0
+                     MOVE 12 TO L-LIGHT
+                 END-IF
+                 MOVE 0 TO WS-WEATHERED
+                 INSPECT L-KEY TALLYING WS-WEATHERED FOR ALL "weathered_"
+                 IF WS-WEATHERED > 0
+                     MOVE 8 TO L-LIGHT
+                 END-IF
+                 MOVE 0 TO WS-WEATHERED
+                 INSPECT L-KEY TALLYING WS-WEATHERED FOR ALL "oxidized_"
+                 IF WS-WEATHERED > 0
+                     MOVE 4 TO L-LIGHT
+                 END-IF
+             END-IF
+         WHEN 5
+             IF WS-WATERLOGGED = 1
+                 COMPUTE L-LIGHT = 3 + 3 * WS-PICKLES
+             END-IF
+         WHEN 6
+             COMPUTE L-LIGHT = WS-CHARGES * 15 / 4
+         WHEN 7
+             MOVE WS-LEVEL TO L-LIGHT
+         WHEN 8
+             EVALUATE WS-STATE-TEXT
+                 WHEN "waiting_for_players"
+                     MOVE 4 TO L-LIGHT
+                 WHEN "active" WHEN "waiting_for_reward_ejection" WHEN "ejecting_reward"
+                     MOVE 8 TO L-LIGHT
+             END-EVALUATE
+         WHEN 9
+             MOVE 12 TO L-LIGHT
+             IF WS-STATE-TEXT = "inactive"
+                 MOVE 6 TO L-LIGHT
+             END-IF
+         WHEN OTHER
+             IF WS-FACES > 0
+                 MOVE 7 TO L-LIGHT
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BLOCKS-STATE-LIGHT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCKS-FILL.
 *> USING block id (BINARY-LONG), row (PIC X(819), CT-BLOCK-ROW): derives the numbers of that block and fills its
 *> CB-BLOCK entry and the CB-STATE entries of its states (the rules of CBLOCKS.cpy).
@@ -203,11 +388,10 @@
  01 WS-HARDNESS            FLOAT-LONG.
  01 WS-TOKEN               PIC X(41).
  01 WS-BASE                BINARY-LONG.
- 01 WS-CONDITIONAL         BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-LIT                 BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
@@ -287,21 +471,16 @@
      IF WS-BASE > 15
          MOVE 0 TO WS-BASE
      END-IF
-     MOVE 0 TO WS-CONDITIONAL
-     INSPECT CT-BR-LIGHT TALLYING WS-CONDITIONAL FOR ALL "lit, else 0"
+     CALL "BLOCKS-LIGHT-KIND" USING CT-BR-LIGHT WS-BASE WS-KIND
      COMPUTE WS-LAST = CB-FIRST-STATE(WS-INDEX) + CB-STATES(WS-INDEX) - 1
      PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-INDEX) BY 1 UNTIL WS-S > WS-LAST
          MOVE L-ID TO CB-S-BLOCK(WS-S + 1)
-         MOVE WS-BASE TO CB-S-LIGHT(WS-S + 1)
-         IF WS-CONDITIONAL > 0
-             MOVE 0 TO CB-S-LIGHT(WS-S + 1)
+         MOVE WS-BASE TO WS-LIGHT
+         IF WS-KIND > 0
              CALL "CONTENT-STATE-PROPS" USING WS-S CT-PROPS WS-STATUS
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CTP-COUNT
-                 IF CTP-NAME(WS-I) = "lit" AND CTP-VALUE(WS-I) = "true"
-                     MOVE WS-BASE TO CB-S-LIGHT(WS-S + 1)
-                 END-IF
-             END-PERFORM
+             CALL "BLOCKS-STATE-LIGHT" USING WS-KIND WS-BASE CB-KEY(WS-INDEX) CT-PROPS WS-LIGHT
          END-IF
+         MOVE WS-LIGHT TO CB-S-LIGHT(WS-S + 1)
      END-PERFORM
      MOVE CB-S-LIGHT(CB-DEFAULT-STATE(WS-INDEX) + 1) TO CB-LIGHT(WS-INDEX)
      GOBACK.
