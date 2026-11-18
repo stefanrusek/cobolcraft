@@ -43,6 +43,7 @@
  01 WS-IDTXT               PIC X(32).
  01 WS-PAT-LEN             BINARY-LONG.
  01 WS-SHORT               PIC X(48).
+ 01 WS-SHORT2              PIC X(48).
  01 WS-TEXT                PIC X(160).
  01 WS-P                   BINARY-LONG.
  01 WS-ED                  PIC -(9)9.
@@ -268,7 +269,8 @@
                      ADD 1 TO WS-JIGS
                      MOVE TN-NAME(WS-TAG) TO WS-SHORT
                      IF WS-SHORT(1:10) = "minecraft:"
-                         MOVE WS-SHORT(11:38) TO WS-SHORT
+                         MOVE WS-SHORT(11:38) TO WS-SHORT2
+                         MOVE WS-SHORT2 TO WS-SHORT
                      END-IF
                      PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 8
                          IF WS-SHORT = WS-JNN(WS-T)

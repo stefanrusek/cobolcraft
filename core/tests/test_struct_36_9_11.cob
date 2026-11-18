@@ -35,6 +35,7 @@
  01 WS-BAD                 BINARY-LONG.
  01 WS-STRUCT              BINARY-LONG.
  01 WS-SHORT               PIC X(48).
+ 01 WS-SHORT2              PIC X(48).
  01 WS-TEXT                PIC X(160).
  01 WS-P                   BINARY-LONG.
  01 WS-ED                  PIC -(9)9.
@@ -325,7 +326,8 @@
              IF TN-KIND(WS-TAG) = 4
                  MOVE TN-NAME(WS-TAG) TO WS-SHORT
                  IF WS-SHORT(1:10) = "minecraft:"
-                     MOVE WS-SHORT(11:38) TO WS-SHORT
+                     MOVE WS-SHORT(11:38) TO WS-SHORT2
+                         MOVE WS-SHORT2 TO WS-SHORT
                  END-IF
                  IF WS-SHORT = "feature"
                      ADD 1 TO WS-FEATURES

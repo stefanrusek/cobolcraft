@@ -21,6 +21,7 @@
  01 WS-STATE               BINARY-DOUBLE UNSIGNED.
  01 WS-I                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-K1                  BINARY-LONG VALUE 1.
  01 WS-CHILD               BINARY-LONG.
  01 WS-GOOD                BINARY-LONG.
  01 WS-BAD                 BINARY-LONG.
@@ -118,7 +119,7 @@
      CALL "SPB-ADD" USING WS-TYPE WS-DIR WS-DEPTH WS-MST WS-BOX WS-ROW
      MOVE 1 TO WS-A
      MOVE 1 TO WS-K
-     CALL "SPB-WORLD" USING WS-ROW WS-K WS-A WS-K WS-X0 WS-Y0 WS-Z0
+     CALL "SPB-WORLD" USING WS-ROW WS-K WS-A WS-K1 WS-X0 WS-Y0 WS-Z0
      MOVE "acceptance US12 36-5§3.8 Child coordinates: the carved leftLow opening of a NORTH piece starts at local (0,3,1): world z maxZ - 1 = 209, y minY + 3; the child for leftLow asks for z minZ + 1 = 201 and y minY + 5 (the high opening)" TO TL-CASE
      MOVE 0 TO WS-A
      MOVE 3 TO WS-B

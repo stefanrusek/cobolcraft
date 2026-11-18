@@ -25,6 +25,7 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE -1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-SIDES               BINARY-LONG.
@@ -66,7 +67,7 @@
      PERFORM UNTIL WS-V < 70 AND WS-V2 = 1
          ADD 1 TO WS-SEED
          MOVE WS-SEED TO WS-STATE
-         CALL "JRAND-SET-SEED" USING WS-STATE WS-STATE
+         CALL "JRAND-SET-SEED" USING WS-STATE WS-SEED
          MOVE 100 TO WS-B
          CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-B WS-V
          MOVE 3 TO WS-B
@@ -92,7 +93,7 @@
      MOVE 500 TO B-Y1
      MOVE 5000 TO B-Z1
      MOVE 0 TO WS-TYPE
-     CALL "SPB-ADD" USING WS-TYPE WS-NONE WS-ZERO WS-ZERO WS-BOX WS-GIANT
+     CALL "SPB-ADD" USING WS-TYPE WS-NONE WS-ZERO WS-ZERO2 WS-BOX WS-GIANT
      MOVE 100 TO B-X0
      MOVE 40 TO B-Y0
      MOVE 186 TO B-Z0
@@ -108,7 +109,7 @@
          MOVE SP-RNG TO WS-STATE
 *>       the model: r, y, the forward child's candidate draws, then i = 189 and 194, each with s and a candidate for s 0 and 1
          MOVE WS-SEED TO WS-MODEL
-         CALL "JRAND-SET-SEED" USING WS-MODEL WS-MODEL
+         CALL "JRAND-SET-SEED" USING WS-MODEL WS-SEED
          MOVE 4 TO WS-B
          CALL "JRAND-NEXT-INT-BOUND" USING WS-MODEL WS-B WS-V
          MOVE 3 TO WS-B
