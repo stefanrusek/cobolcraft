@@ -1,0 +1,10 @@
+## Lane 002-lane-fpfast (T12900+)
+
+The game profile showed the main thread saturated, 70 percent of it in GMP: libcob loads each float operand into a decimal through a string of digits. Measured on 2,000,000 float COMPUTE statements: 2.98 s CPU with libcob, 0.03 s with the overlay; 200,000 `SIN(x) * COS(2x)`: 37.19 s against under 0.01 s.
+
+- [x] T12900 Float arithmetic of COBOL programs in IEEE double: `shim/src/cc_fpfast.c` takes over nine `cob_decimal_*` calls by a compile-time rename (`tools/package.mk`, one `-A` flag line; `FPFAST=0` builds the same sources for libcob alone). Float operands with a float target are computed in double; every other case is passed to libcob. Tests: `shim/tests/test_cc_fpfast.c`, `shim/tests/test_fpfast_compute.cob`.
+- [x] T12901 `FUNCTION SIN`, `COS`, `SQRT`, `MOD` and the arithmetic inside a function's arguments (`cob_intr_binop`) the same way, for float and integer arguments. Tests: the intrinsic cases of `shim/tests/test_cc_fpfast.c`.
+- [x] T12902 `TOOL-ARMOR-ABSORB` (`core/src/tools-combat.cob`) rounds its result to thousandths (`COMPUTE ... ROUNDED`) where it truncated. This rounding is the port's own choice: doc 17 section 4.5 keeps the damage a float and names no thousandths. A truncated float product differs between the two settings (10 damage at armor 20: 1999 in double, 2000 with libcob).
+- [x] T12903 `BR-NUMBER-TEXT` (`core/src/cmd-reader.cob`) checks a candidate of the shortest digits by a division of two integers, stored the way a number read from text is.
+- [x] T12904 Tests that held in one setting only: `client/tests/test_entmodel_34_2_3.cob`, `_34_3_0`, `_34_3_3` compare by a rounded difference; `core/tests/acc_f2us12_portals.cob` prints a rounded float; a new case each in `client/tests/test_particles_42_7_4.cob` and `core/tests/acc_us12_furnace.cob` reaches a rounding-up line with a real fraction (it was reached through float noise only).
+- [ ] T12905 Open: not built or run on Linux; the game's frame rate with T12901 is not measured (with T12900 alone: 4.7 frames a second against 2.6 to 3.0, release build, loaded machine).
