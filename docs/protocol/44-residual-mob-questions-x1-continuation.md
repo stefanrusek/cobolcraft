@@ -162,7 +162,7 @@ Notes: the randomness is a coin flip per evaluation, so the effective check rate
 
 `VexMoveControl.tick` (only when the operation is MOVE_TO): let `v = wanted - position` and `len = |v|`.
 - if `len < boundingBox.getSize()` (the mean edge length of its box): operation becomes WAIT and the velocity is multiplied by **0.5**;
-- else: `delta += v / len * (speedModifier * 0.05)`; then, with no target, the yaw is set to `-atan2(delta.x, delta.z) * 57.295776` (the facing follows the velocity); with a target, the yaw is `-atan2(target.x - x, target.z - z) * 57.295776` (the facing follows the target); in both cases `yBodyRot = yRot`. Precision (read): the `atan2` is the game's own `Mth.atan2(double, double)`, not the standard-library function (it computes the squared length, returns NaN when that is NaN, folds the signs of both arguments, normalises with `fastInvSqrt` and reads an arcsine/cosine lookup table indexed through the `FRAC_BIAS` constant, then adds back the quarter and half turns); its result is narrowed to float, negated, and multiplied by the float constant 57.295776f. No document defines the table-based routine, so an implementation using a standard `atan2` will differ in the low digits of the yaw (Open question 6).
+- else: `delta += v / len * (speedModifier * 0.05)`; then, with no target, the yaw is set to `-atan2(delta.x, delta.z) * 57.295776` (the facing follows the velocity); with a target, the yaw is `-atan2(target.x - x, target.z - z) * 57.295776` (the facing follows the target); in both cases `yBodyRot = yRot`. Precision (read; the full algorithm is in 11.1 and in [10](10-world-generation-terrain.md) section 16.4): the `atan2` is the game's own `Mth.atan2(double, double)`, not the standard-library function (it computes the squared length, returns NaN when that is NaN, folds the signs of both arguments, normalises with `fastInvSqrt` and reads an arcsine/cosine lookup table indexed through the `FRAC_BIAS` constant, then adds back the quarter and half turns); its result is narrowed to float, negated, and multiplied by the float constant 57.295776f. No document defines the table-based routine, so an implementation using a standard `atan2` will differ in the low digits of the yaw (Open question 6).
 `VexCopyOwnerTargetGoal` (a `TargetGoal` built with must-see false): `copyOwnerTargeting = TargetingConditions.forNonCombat().ignoreLineOfSight().ignoreInvisibilityTesting()`. `canUse` is true when the owner is a `Targeting` with a non-null target and `canAttack(target, copyOwnerTargeting)` holds; `start` sets the vex's target to the owner's target (null when the owner is not a `Targeting`) and then runs `TargetGoal.start`. The conditions are evaluated by 18 section 4.3.
 
 ### 6.3 Patrol goal of raiders and patrol groups (`PatrollingMonster`)
@@ -208,7 +208,7 @@ The rule order of `test` is in 18 section 4.3; this subsection records only the 
 | Property | Initial value | Changed by |
 |---|---|---|
 | `isCombat` | fixed at construction: `forCombat()` gives true, `forNonCombat()` gives false | not changeable |
-| `range` | -1.0. The range rule (rule 6 of 18 section 4.3) is guarded by `range > 0`, so with the default it is skipped and this class imposes no distance limit; `test` never reads the follow-range attribute. A follow range only arrives when a caller passes it through `range(d)` (for example the nearest-attackable target goal) | `range(d)` |
+| `range` | -1.0. The range rule (rule 6 of 18 section 4.3) is guarded by `range > 0`, so with the default it is skipped and this class imposes no distance limit; `test` never reads the follow-range attribute. A follow range only arrives when a caller passes it through `range(d)` (for example the nearest-attackable target goal). The shared static objects of `Sensor` are different: `Sensor.tick` assigns the scanning mob's follow range to their `range` before every scan (44-x2 section 12.1) | `range(d)` |
 | `checkLineOfSight` | true | `ignoreLineOfSight()` sets false |
 | `testInvisible` | true | `ignoreInvisibilityTesting()` sets false |
 | `selector` | none (null) | `selector(s)` |
@@ -228,7 +228,7 @@ The rule order of `test` is in 18 section 4.3; this subsection records only the 
 | 4 | `visible` | If different: copy from `other`; changed = true |
 | 5 | `showIcon` | If different: copy from `other`; changed = true |
 
-Cases not listed (lower or equal amplifier and not shorter) leave amplifier and duration unchanged. Amplifier equal and `other` not longer: nothing but the flags in steps 3 to 5. Worked examples (durations in ticks): existing Speed amplifier 0 for 600, apply amplifier 1 for 200: `other` is higher and shorter, so hidden := (amp 0, 600), now amp 1 for 200; when it expires the hidden effect takes over (see `downgradeToHiddenEffect`, whose body is not read here, Open question 4). Existing amp 1 for 200, apply amp 0 for 600: `this` is shorter, amplifier of `other` lower, hidden := (amp 0, 600). Existing amp 0 for 100, apply amp 0 for 300: duration becomes 300.
+Cases not listed (lower or equal amplifier and not shorter) leave amplifier and duration unchanged. Amplifier equal and `other` not longer: nothing but the flags in steps 3 to 5. Worked examples (durations in ticks): existing Speed amplifier 0 for 600, apply amplifier 1 for 200: `other` is higher and shorter, so hidden := (amp 0, 600), now amp 1 for 200; when it expires the hidden effect takes over (`downgradeToHiddenEffect`, read in 11.2). Existing amp 1 for 200, apply amp 0 for 600: `this` is shorter, amplifier of `other` lower, hidden := (amp 0, 600). Existing amp 0 for 100, apply amp 0 for 300: duration becomes 300.
 
 ### 8.3 `BackUpIfTooClose` (44-6 Open q5)
 
@@ -305,18 +305,86 @@ For an entity context and a position context the test is: `entityBottom > pos.y 
 | Scope item | Where |
 |---|---|
 | `TargetingConditions` factory defaults | 8.1 |
-| `MobEffectInstance` addEffect merge rules | 8.2 (the `LivingEntity.addEffect` wrapper that calls `update` is not read; Open question 4) |
+| `MobEffectInstance` addEffect merge rules | 8.2; the `LivingEntity.addEffect` wrapper and the expiry hand-over of hidden effects are 11.2 |
 | `BackUpIfTooClose`, `BecomePassiveIfMemoryPresent`, `BabyFollowAdult`, `SetEntityLookTargetSometimes` | 8.3 to 8.6 |
 | `FaceplantGoal`, `FoxFloatGoal`, `StrollThroughVillageGoal` | 8.7, 8.8 |
 | `CollisionContext.isAbove` epsilon | 8.9 |
 | Goat `UNIHORN_CHANCE` roll and horn removal | 8.10 |
 
+## 11. `Mth.atan2` and hidden effects
+
+Artifact: the jar recorded in `docs/protocol/README.md` (`minecraft-26.3-client.jar`, SHA-256
+`4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`), read statically.
+
+### 11.1 `Mth.atan2` and `Mth.fastInvSqrt` (closes Open question 6)
+
+The routine, its two lookup tables and the inverse-square-root approximation are specified completely in
+[10](10-world-generation-terrain.md) section 16.4 (constants, table construction, the six steps, edge cases, accuracy
+figures and test vectors), which was written from the same class; `Mth.atan2`, `Mth.fastInvSqrt` and the static initialiser of `Mth` agree with it line by line: the bias constant is the double
+whose bit pattern is 4805340802404319232 (2^44, 17592186044416.0); both tables have 257 entries (`LUT_SIZE`), built by
+`ASIN_TAB[i] = asin(i / 256.0)` and `COS_TAB[i] = cos(ASIN_TAB[i])` with the JDK `Math` functions; the magic subtraction
+constant of `fastInvSqrt` is 6910469410427058090 with an arithmetic right shift by one and a single Newton step whose
+multiplier is 1.5; the table index is the low 32 bits of the raw bits of `bias + y` (the unit in the last place of 2^44 is
+1/256, so the index is `y` times 256 rounded to nearest); the correction is `(6.0 + e*e) * e * 0.16666666666666666` with
+`e = y * COS_TAB[i] - x * (i / 256)`; the constants are 1.5707963267948966 and 3.141592653589793. The argument order is `(y, x)`. The two folds run in **opposite orders**: the input is folded in the order y sign, then x sign, then swap (10 section 16.4 step 2: negate a negative `y`, negate a negative `x`, swap when `y > x`), and the result is un-folded in the order swap, then x sign, then y sign (10 section 16.4 step 6: `r = pi/2 - r` when swapped, `r = pi - r` when `x` was negative, `r = -r` when `y` was negative).
+
+**What an implementation must do to reproduce the vanilla result bit for bit.** Use 64-bit IEEE doubles with
+round-to-nearest, evaluate every operation in the order of document 10 section 16.4 with no fused multiply-add and no
+reassociation, build the two tables from correctly rounded (or fdlibm-accurate) `asin` and `cos`, and use the bit trick on
+the raw double bits for `fastInvSqrt` and for the index. The only residual uncertainty is the last bit of the table
+entries (the JDK `Math.asin` and `Math.cos` may differ from the correctly rounded value by one unit in the last place; 10
+section 16.9 item 1 records that this moves the result at the 1e-16 radian level). **Tolerance if bit-exactness is not
+required:** the routine differs from the exact arctangent by up to about 7.8e-6 radian (measured over 200000 random inputs in
+10 section 16.4), so a replacement `atan2` is acceptable only where an error of that size cannot change an observable
+(the callers narrow to float and then to degrees, so a difference of that size changes the result in the last decimal
+digits of the angle). The vex facing in 6.2 and every look and move control call the routine as `atan2(dz, dx)` or
+`atan2(dx, dz)` exactly as those sections state. `Mth.sin` and `Mth.cos` are the 65536-entry float table lookups of 10
+section 16.3.
+
+### 11.2 `LivingEntity.addEffect` and hidden effects (closes Open question 4)
+
+**`addEffect(instance [, source])`** returns a boolean (changed):
+1. If `canBeAffected(instance)` is false: return false (nothing stored).
+2. Look up the entity's active effect of the same type (the map is keyed by effect).
+3. No active effect: store `instance` as the active one; run the entity's `onEffectAdded` (server only: mark the effects
+   dirty, add the effect's attribute modifiers for the amplifier, resend the effect to ServerPlayer passengers with
+   `ClientboundUpdateMobEffectPacket`, flag 0), then the instance's own `onEffectAdded`; changed = true.
+4. Otherwise call the existing instance's `update(instance)` (8.2); when it returns true: `onEffectUpdated(existing, true,
+   source)` and changed = true. The new instance itself is not stored.
+5. In both cases the new instance's `onEffectStarted(entity)` is called last; the result is `changed`.
+`onEffectUpdated(instance, forced, source)` (server only): mark the effects dirty; when `forced` is true remove the effect's
+attribute modifiers and add them again for the instance's **current** amplifier, then refresh the dirty attributes; always
+resend the instance to the passengers that are players.
+
+**Hidden effect hand-over (`downgradeToHiddenEffect`).** Each server tick the entity runs every active instance's
+`tickServer(level, entity, callback)`. Inside it, after the effect's periodic hook, the instance's duration is
+ticked down as just described (by one, except infinite and zero durations, which are left alone) and then
+`downgradeToHiddenEffect` runs:
+- the condition is that the instance's duration is exactly 0 (not merely not positive) **and** a hidden instance exists. The tick-down itself (`tickDownDuration`) first ticks the hidden instance down (recursively), then maps the active duration through `d - 1`, except that `mapDuration` leaves the duration unchanged when it is infinite (-1) **or already 0**, so an infinite effect never counts down and a duration of 0 stays 0;
+- the action copies the five detail fields **duration, amplifier, ambient, visible, showIcon** from the hidden instance
+  into the active instance (effect type is unchanged), and replaces the active instance's hidden reference with the
+  hidden instance's own hidden reference (so a chain of weaker effects shifts up by one level); it returns true;
+- when it returns true the entity's callback runs: `onEffectUpdated(instance, true, null)`, so the attribute modifiers are
+  recomputed for the new amplifier and the clients receive an update packet in the same tick;
+- the instance survives the tick when it then has remaining time: an infinite duration or a duration above 0. With no hidden
+  instance the instance ends at duration 0 (`onEffectsRemoved`).
+For every instance that survives the tick, whenever its duration (after the tick and any downgrade) is a multiple of 600
+(`duration % 600 == 0`; the infinite duration -1 never is), the entity also calls `onEffectUpdated(instance, false, null)`, which only marks the effects dirty and resends
+(no attribute change); this is the periodic client resynchronisation. On the client, `tickClient` ticks the duration down
+and performs the same downgrade without the callback.
+
+Worked example: Speed amplifier 0 for 1200 ticks is active; apply amplifier 1 for 200 ticks (a higher, shorter effect):
+`update` (8.2) keeps a copy of the old effect as hidden (amplifier 0, 1200) and makes the active instance amplifier 1 for 200.
+Each tick both decrement. After 200 ticks the active duration reaches 0 while the hidden one has 1000 left; the downgrade
+copies (amplifier 0, 1000 ticks) into the active instance, clears the hidden reference, and attribute modifiers are
+recomputed for amplifier 0. At 600 ticks left a resync packet is sent; at 0 the effect is removed.
+
 ## Open questions
 
-1. **Scope items not answered by this document.** The per-document list that an earlier version of this question carried was stale (it named items that the later 44-x documents answer, and question numbers that do not exist) and is replaced by pointers. The master index of the open items of 18 to 21, per part, is [44-1](44-residual-mob-questions-1-shared-model-framework.md) section 2; each part's own Open questions list is the current state. Which 44 document covers which area (from the headers and question lists of those documents; their answers were not re-read here): 44-1 spawn reasons (RQ-1.18) and the gate behaviours (RQ-1.22); 44-2 structure `spawn_overrides`; 44-3 `AcquirePoi`, `YieldJobSite`, `ReactToBell`, `SocializeAtBell`, `TradeWithVillager`, `SetRaidStatus`, `DefendVillageTarget`, `WanderToPosition`; 44-4 land animals; 44-5 warden and `ChargeAttack`; 44-6 nether; 44-7 aquatic; 44-8 boats, minecarts, projectiles and bubble columns; 44-9 armor stand, item frame, painting, display, dragon phases and the happy ghast; [44-x2](44-residual-mob-questions-x2-continuation.md) section 1 for the stale parts of this question. Items that this document closed: 44-1 Open q2 (per-block entity effects, section 2); 44-6 Open q5 (`BackUpIfTooClose`, `BecomePassiveIfMemoryPresent`, section 8.3 and 8.4) and q9 (`isAbove` epsilon, 8.9); 44-7 Open q6 (`TargetingConditions` factory defaults, 8.1) and q9 (`MobEffectInstance` merge, 8.2); 44-4 Open q11 (`StrollThroughVillageGoal`, 8.8) and q13 (goat unihorn roll and horn pick, 8.10); and the fox float, faceplant and stroll goals of 19 Open q11 (8.7). Still open under their own numbers, not closed here: 44-6 Open q8 (`getTargetNearestMe` exact tie) and 44-7 Open q1 (`handleMoveVehicle` residue), which an earlier version of this document wrongly listed as closed. Searched: the Open questions lists of 44-1, 44-3, 44-4, 44-6, 44-7 and x2, and the headers of the others; nothing else was read for this question.
+1. **Scope items not answered by this document.** The master index of the open items of 18 to 21, per part, is [44-1](44-residual-mob-questions-1-shared-model-framework.md) section 2; each part's own Open questions list is the current state. Which 44 document covers which area (from the headers and question lists of those documents; their answers were not re-read here): 44-1 spawn reasons (RQ-1.18) and the gate behaviours (RQ-1.22); 44-2 structure `spawn_overrides`; 44-3 `AcquirePoi`, `YieldJobSite`, `ReactToBell`, `SocializeAtBell`, `TradeWithVillager`, `SetRaidStatus`, `DefendVillageTarget`, `WanderToPosition`; 44-4 land animals; 44-5 warden and `ChargeAttack`; 44-6 nether; 44-7 aquatic; 44-8 boats, minecarts, projectiles and bubble columns; 44-9 armor stand, item frame, painting, display, dragon phases and the happy ghast; Items that this document closed: 44-1 Open q2 (per-block entity effects, section 2); 44-6 Open q5 (`BackUpIfTooClose`, `BecomePassiveIfMemoryPresent`, section 8.3 and 8.4) and q9 (`isAbove` epsilon, 8.9); 44-7 Open q6 (`TargetingConditions` factory defaults, 8.1) and q9 (`MobEffectInstance` merge, 8.2); 44-4 Open q11 (`StrollThroughVillageGoal`, 8.8) and q13 (goat unihorn roll and horn pick, 8.10); and the fox float, faceplant and stroll goals of 19 Open q11 (8.7). Not closed here: 44-6 Open q8 (`getTargetNearestMe` exact tie) and 44-7 Open q1 (`handleMoveVehicle` residue). Searched: the Open questions lists of 44-1, 44-3, 44-4, 44-6, 44-7 and x2, and the headers of the others; nothing else was read for this question.
 2. **Campfire particle details.** The ambient particle loop count and velocities were read at the constant level only and are client rendering.
 3. **Out of scope and still open** (as in the round statement): sound events and pitches (19 Open q3) and the entity-id check against a captured registry sync (needs a run).
-4. **Second-pass residuals.** `LivingEntity.addEffect` and `downgradeToHiddenEffect` (the caller and the expiry hand-over of hidden effects) were not read.
-5. **Second-pass scope not reached.** Everything named in the round scope and not listed in section 10 remains open under the numbers of the current 44-x lists (Open question 1): notably the crossbow state machine, spear behaviours, `PrepareRamNearestTarget`, `Piglin.canReplaceCurrentItem`, fox move and look controls, panda, bee, turtle, allay and wolf goals, `GossipContainer` and villager behaviour positions, map preview and structure scan, level events 3011 to 3021 and 2004, boat and minecart interpolation, hopper tick, minecart spawner, `AbstractHorse` travel, dragon phase hooks and display rendering.
-6. **`Mth.atan2` and `fastInvSqrt`.** The vex facing (6.2) uses the game's table-based `Mth.atan2`. Its table contents (`ASIN_TAB`, `COS_TAB`, `FRAC_BIAS`) and the `fastInvSqrt` body were not tabulated here, and a search of docs/protocol found no document that defines them. Until one does, a standard-library `atan2` is a close approximation, not bit-exact.
-7. **README entry (for the editors).** `docs/protocol/README.md` has no entry for any 44 document, this continuation included (a search for `residual-mob` and `x1` finds nothing). Its Documents table and scope sentence still need the 44 series and this continuation. This document may not edit the README.
+4. **Closed in 11.2.** `LivingEntity.addEffect`, `onEffectUpdated` and `downgradeToHiddenEffect` were read.
+5. **Second-pass scope not reached.** Still not read from the original round scope: fox move and look controls, bee and allay goals, wolf goals, `GossipContainer` and villager behaviour positions, map preview and structure scan, level events 3011 to 3021 and 2004, boat and minecart interpolation, hopper tick, minecart spawner, `AbstractHorse` travel, dragon phase hooks and display rendering. Closed since this list was written: the crossbow state machine and the spear behaviours (44-6 sections 2.11 and 5.8), `Piglin.canReplaceCurrentItem` (44-6 section 3.2), `PrepareRamNearestTarget` (44-x2 section 1.2), panda roll, sneeze and eating (44-4 sections 7.1 to 7.4) and the turtle helpers (44-4 section 11.1).
+6. **Closed in 11.1.** `Mth.atan2` and `fastInvSqrt` are specified in 10 section 16.4 (checked against the class); 11.1 gives the bit-exactness conditions and the tolerance.
+7. **README entry.** `docs/protocol/README.md` has no entry for any 44 document, this continuation included (a search for `residual-mob` and `x1` finds nothing). Its Documents table and scope sentence still need the 44 series and this continuation. This document may not edit the README.

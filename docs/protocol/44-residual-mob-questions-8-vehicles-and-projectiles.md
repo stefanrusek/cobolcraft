@@ -6,7 +6,7 @@
 | Closes | 21 Open question 14 (boats and minecarts); 18 Open question 1 (seats: boats, rafts, chest boats, player, mannequin, camel); 18 Open question 12 (projectiles) |
 | Not here | `thunderHit` effects, item pickup and throw delays (21 Open question 13: other rounds); the area effect cloud application loop and decorations (part 9); explosion internals (20 section 6 and later rounds) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.entity.vehicle.*`, `net.minecraft.world.entity.projectile.*`, `Entity`, `EntityTypes`, `Avatar`, `Camel`, `GameRules`, `FeatureFlags`, `DismountHelper`, `HopperBlockEntity`, `MinecartHopper`, `ThrownTrident`, `Mth`, `Breeze`, `WindCharge`, `BoatDispenseItemBehavior`, `FishingHook`, `AbstractThrownPotion`, `ThrownSplashPotion`, `LlamaSpit`, `BoatItem`, `MinecartItem`, `ArrowItem`, `TridentItem` and `AbstractContainerMenu`, and a listing of `data/minecraft/datapacks/`, with no execution. Every value was read in this round; nothing was taken from memory without a read. Where a statement is an inference it says "(inferred)" |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.entity.vehicle.*`, `net.minecraft.world.entity.projectile.*`, `Entity`, `EntityTypes`, `Avatar`, `Camel`, `GameRules`, `FeatureFlags`, `DismountHelper`, `HopperBlockEntity`, `MinecartHopper`, `ThrownTrident`, `Mth`, `Breeze`, `WindCharge`, `BoatDispenseItemBehavior`, `FishingHook`, `AbstractThrownPotion`, `ThrownSplashPotion`, `LlamaSpit`, `BoatItem`, `MinecartItem`, `ArrowItem`, `TridentItem` and `AbstractContainerMenu`, and a listing of `data/minecraft/datapacks/`, with no execution. Every value was read; nothing was taken from memory without a read. Where a statement is an inference it says "(inferred)" |
 | Status | Written by the reader for the gameplay story "all the standard mobs exist and have their standard behavior" in `tickets/CC-0001-client-polish.md`; GAP-31 of `docs/design/README.md` (RS26) |
 
 Class names in backticks say where a fact was read; they are not the design. Tick = 1/20 s, distances in blocks, velocities in
@@ -48,7 +48,7 @@ What other documents already specify and is not repeated here:
 | Knockback arithmetic of `LivingEntity` (`knockback` function) and the projectile knockback direction | 18 section 7 (4.6 of 17) |
 | Entity tracking packets (Add Entity, Set Entity Motion, Teleport) | 18 section 9, 05a, 05b |
 
-Corrections and clarifications to earlier text, read in this round:
+Corrections and clarifications to earlier text:
 
 1. **Arrow knockback** (`AbstractArrow.doKnockback`, read): 17 section 3.9 says the vertical component is added "when the horizontal
    speed is tiny". It is **always** 0.1. The rule is in section 7.4 below. Use this one.
@@ -231,7 +231,7 @@ So a boat above a bubble column waits 60 ticks (about 3 s) and is then launched 
 
 **Minecart item** (`MinecartItem.useOn`): the clicked block must be in tag `rails` (else FAIL). The cart is created at `(x + 0.5, y + 0.0625 + 0.5 if the rail shape is a slope else 0, z + 0.5)` of the clicked block (for a `BaseRailBlock` its shape; other rail-tag blocks count as `north_south`). With the experimental minecart behaviour active the placement fails (FAIL) if any minecart already overlaps the new cart's box. On the server the cart is added, `ENTITY_PLACE` is emitted at the rail position (context: the player and the block below), and 1 item is consumed; SUCCESS.
 
-### 3.11 Minecart dispenser (`MinecartDispenseItemBehavior.execute`, read in this round)
+### 3.11 Minecart dispenser (`MinecartDispenseItemBehavior.execute`)
 
 Let `(stepX, stepY, stepZ)` be the dispenser's facing and `centre` the dispenser block centre.
 
@@ -436,7 +436,7 @@ Constants: `POS_ROT_LERP_TICKS` 3; `ON_RAIL_Y_OFFSET` 0.1; `OPPOSING_SLOPES_REST
 3. For each dismount pose of the passenger in order (`getDismountPoses`): `halfWidth = min(pose width, 1) / 2`. For each pose height in order (`POSE_DISMOUNT_HEIGHTS`: standing and crouching 0, 1, -1; swimming 0, 1) and for each offset: the cell is the cart's block plus (dx, height, dz); `floor` = the block floor height of that cell (`getBlockFloorHeight` over `nonClimbableShape`); skip when `isBlockFloorValid(floor)` is false. Otherwise the passenger box (x and z from -halfWidth to +halfWidth, y from 0 to the pose height) is moved to `upFromBottomCenterOf(cell, floor)`; if `canDismountTo` accepts it, the passenger takes that pose and the point is returned.
 4. If nothing fits: the point (block x, cart box maxY, block z) is used to choose a pose only: for each pose in order, `ceiling = findCeilingFrom(pos, ceil(maxY - posY + pose height))`; the first pose with `maxY + pose height <= ceiling` is set. The returned location is then the base vehicle dismount location.
 
-**DismountHelper** (read this round, `DismountHelper`):
+**DismountHelper** (read, `DismountHelper`):
 
 - `offsetsForDirection(d)`: let `a` = `d` turned clockwise, `b` = the opposite of `a`, `c` = the opposite of `d`; the eight (dx, dz) offsets, in this order, are `a`, `b`, `c + a`, `c + b`, `d + a`, `d + b`, `c`, `d` (each term is the horizontal unit step of that direction; sums add components).
 - `isBlockFloorValid(h)`: true when `h` is finite and `h < 1`.
@@ -633,7 +633,9 @@ Loop (restarts only for piercing arrows, see step 8):
 
 ### 7.6 Pickup (`playerTouch`, `tryPickup`)
 
-Server only. The arrow can be picked up when it is in the ground or `noPhysics`, and `shakeTime <= 0`. Then `tryPickup(player)`: mode `DISALLOWED`: false; `ALLOWED`: `player.getInventory().add(copy of pickup stack)` (true when the whole stack fits); `CREATIVE_ONLY`: true only if the player has infinite materials. On success: `player.take(arrow, 1)` (Take Item Entity animation, 05b 0x7F) and the arrow is discarded. **Mode assignment** (read this round): the arrow constructor sets `DISALLOWED`; an `intangible_projectile` component on the stack sets `CREATIVE_ONLY` (7.1). `setOwner` then chooses by owner type: a `Player` owner while the mode is still `DISALLOWED` gives `ALLOWED`; an `OminousItemSpawner` owner gives `DISALLOWED`; any other owner, and any mode that is already not `DISALLOWED` (for example `CREATIVE_ONLY`), keeps the current mode. The weapon items' projectile creation (`ArrowItem.createArrow`, bow, crossbow) does not touch the mode. Only the dispenser path (`asProjectile` of `ArrowItem`, `SpectralArrowItem`, `TridentItem`) sets `ALLOWED` explicitly; `TridentItem.releaseUsing` sets `CREATIVE_ONLY` after spawning when the thrower has infinite materials (a survival thrower gets `ALLOWED` from `setOwner`). Mob-owned arrows therefore stay `DISALLOWED`.
+**Touch range (read, `Player.aiStep`).** Every tick, for a player with health above 0 who is not a spectator, the server collects all entities whose bounding box intersects the player's bounding box inflated by **1.0 horizontally (x and z) and 0.5 vertically** (`Level.getEntities(player, box)`); when the player is a passenger of a vehicle that is not removed, the box is instead the union of the player's and the vehicle's boxes inflated by **1.0 horizontally and 0.0 vertically**. Experience orbs are set aside; every other non-removed entity gets `playerTouch(player)` immediately, in the order the lookup returned them; then one orb, chosen with `Util.getRandom` on the player's random, gets `playerTouch`. The arrow is touched whenever its own box (0.5 by 0.5) overlaps that region, so a stuck arrow is collected from slightly more than one block away horizontally and half a block vertically.
+
+Server only. The arrow can be picked up when it is in the ground or `noPhysics`, and `shakeTime <= 0`. Then `tryPickup(player)`: mode `DISALLOWED`: false; `ALLOWED`: `player.getInventory().add(copy of pickup stack)` (true when the whole stack fits); `CREATIVE_ONLY`: true only if the player has infinite materials. On success: `player.take(arrow, 1)` (Take Item Entity animation, 05b 0x7F) and the arrow is discarded. **Mode assignment**: the arrow constructor sets `DISALLOWED`; an `intangible_projectile` component on the stack sets `CREATIVE_ONLY` (7.1). `setOwner` then chooses by owner type: a `Player` owner while the mode is still `DISALLOWED` gives `ALLOWED`; an `OminousItemSpawner` owner gives `DISALLOWED`; any other owner, and any mode that is already not `DISALLOWED` (for example `CREATIVE_ONLY`), keeps the current mode. The weapon items' projectile creation (`ArrowItem.createArrow`, bow, crossbow) does not touch the mode. Only the dispenser path (`asProjectile` of `ArrowItem`, `SpectralArrowItem`, `TridentItem`) sets `ALLOWED` explicitly; `TridentItem.releaseUsing` sets `CREATIVE_ONLY` after spawning when the thrower has infinite materials (a survival thrower gets `ALLOWED` from `setOwner`). Mob-owned arrows therefore stay `DISALLOWED`.
 
 ### 7.7 Tipped and spectral arrows
 
@@ -691,7 +693,7 @@ Common physics: 6.5. Item-specific rules are in 17 section 3.15 (impacts, damage
 - **Splash potions and bottles**: gravity 0.05; the effect application arithmetic is in 17 section 3.15.
 - **Experience bottle**: gravity 0.07 (21 section 8.13).
 
-### 10.1 Fishing hook: residual rules (`FishingHook`, read in this round; supplements 17 section 3.11)
+### 10.1 Fishing hook: residual rules (`FishingHook`; supplements 17 section 3.11)
 
 | Rule | Value read |
 |---|---|
@@ -702,14 +704,14 @@ Common physics: 6.5. Item-specific rules are in 17 section 3.15 (impacts, damage
 | Pull on retrieve (`pullEntity`) | only when the owner exists and the pulled entity simulates its own movement: `velocity += (owner position - hook position) x 0.1` (the vector uses the **hook's** position, not the pulled entity's: correction to 17 section 3.11, last bullet) |
 | Gravity | 0.03 (stored as the float 0.03, `getDefaultGravity`) |
 
-**Bite timer, corrections to 17 section 3.11 (read in `catchingFish`):** the per-tick `amount` and the three states are as in 17, with these differences.
+**Bite timer, differences from 17 section 3.11 (read in `catchingFish`):** the per-tick `amount` and the three states are as in 17, with these differences.
 
 1. The particle ramp `0.15`, plus `(20 - t) x 0.05` for t below 20, else `(40 - t) x 0.02` for t below 40, else `(60 - t) x 0.01` for t below 60, is read on **`timeUntilLured`** (the **waiting for a fish to notice** phase, state 3 of 17), not on `timeUntilHooked`. Each tick of that phase, after `timeUntilLured -= amount`, with probability p (that ramp value): pick an angle `nextFloat(0, 360)` degrees and a distance `nextFloat(25, 60)`; the splash particle position is `(x + sin(angle) x distance x 0.1, floor(y) + 1, z + cos(angle) x distance x 0.1)`, spawned only if the block there is water (read: the splash particle count is `2 + nextInt(2)`, so 2 or 3 particles per spawn, with a position jitter of 0.1 in x and z and speed 0). When `timeUntilLured` reaches 0 the fish angle is set to `nextFloat(0, 360)` and `timeUntilHooked = nextInt(20, 80)` (inclusive).
 2. **Fish approaching** (`timeUntilHooked > 0`): `timeUntilHooked -= amount`; if still positive the fish angle changes by `triangle(0, 9.188)` degrees and the fish position is `(x + sin(angle) x t x 0.1, floor(y) + 1, z + cos(angle) x t x 0.1)` with t = `timeUntilHooked`; when that block is water: with probability 0.15 a bubble particle at y - 0.1, and two fishing particles at fixed lateral offsets (cosmetic).
 3. **The bite moment** (`timeUntilHooked` reaches 0 or below): sound `entity.fishing_bobber.splash` (volume 0.25, pitch `1 + (nextFloat - nextFloat) x 0.4`); a bubble burst and a fishing burst at y + 0.5 of `1 + width x 20` particles (cosmetic); `nibble = nextInt(20, 40)` inclusive; the **biting** metadata flag becomes true. The downward tug of the bobber is the BOBBING velocity term of 17 (the extra `(0, -0.1 x r1 x r2, 0)` while biting): the bite moment itself does not change the velocity.
 4. When `nibble` counts down to 0 without a reel-in, the biting flag becomes false and `timeUntilLured`, `timeUntilHooked` and `nibble` are 0 (a new wait of 100 to 600 minus the Lure term starts on the next tick).
 
-### 10.2 Thrown potion engine (`AbstractThrownPotion`, `ThrownSplashPotion`, read in this round; supplements 17 section 3.15 and 10 above)
+### 10.2 Thrown potion engine (`AbstractThrownPotion`, `ThrownSplashPotion`; supplements 17 section 3.15 and 10 above)
 
 Shared by splash and lingering potions; gravity 0.05. Data in the potion stack: potion contents (effects, colour) and `potion_duration_scale` (default read as a float component, default value from the component's default); tag names `douses_fire`, `hurts_water_sensitive_entities`, `extinguishes_entities`, `rehydrates_axolotls` are potion tags of the data pack.
 
@@ -727,11 +729,11 @@ Shared by splash and lingering potions; gravity 0.05. Data in the potion stack: 
 
 Worked example: a splash Slowness potion (duration 1800 ticks, scale 1.0) bursts 2.0 blocks from a pig's box edge: `t = 1 - 2/4 = 0.5`, new duration `(int)(1800 x 0.5 x 1.0 + 0.5) = 900`, applied. At 3.9 blocks: `t = 0.025`, duration `(int)(45.5) = 45`, applied (45 > 20). A 600-tick effect at distance 3.9: `(int)(15.5) = 15`, ends within 20, not applied.
 
-### 10.3 Llama spit order (`LlamaSpit`, read in this round; confirms 21 section 8.14)
+### 10.3 Llama spit order (`LlamaSpit`; confirms 21 section 8.14)
 
 Per tick: hit test along the velocity (a hit on the server discards the spit, an entity hit first hurts as in 21 section 8.14); position += velocity; rotation updated; if no block state in the spit's box is air: discard; if in water: discard; velocity x 0.99; gravity 0.06. On the client, when the Add Entity packet arrives, seven spit particles are spawned at the spit with a velocity of the packet's movement plus `0.4 x (0.1 per index step)` jitter (cosmetic).
 
-### 10.4 Snowball, egg, experience bottle (read in this round)
+### 10.4 Snowball, egg, experience bottle
 
 | Entity | Rule |
 |---|---|
@@ -742,7 +744,7 @@ Per tick: hit test along the velocity (a hit on the server discards the spit, an
 
 ## 11. Mob ranged attacks
 
-Which document specifies each `performRangedAttack` (all read in previous rounds; this table closes 18 Open question 12 by pointing to the numbers):
+Which document specifies each `performRangedAttack` (all read; this table closes 18 Open question 12 by pointing to the numbers):
 
 | Shooter | Projectile | Specified in | Launch parameters there |
 |---|---|---|---|
@@ -758,10 +760,10 @@ Which document specifies each `performRangedAttack` (all read in previous rounds
 | Ender dragon | `DragonFireball` | 21 section 6 | |
 | Breeze | `BreezeWindCharge` | 20 breeze section, section 8 here | |
 | Shulker | `ShulkerBullet` | 21 section 6.2 | speed 0.15, homing |
-| Evoker | evoker fangs (not a projectile entity of this round) | 20 | |
+| Evoker | evoker fangs (not a projectile entity) | 20 | |
 | Player items | arrows, trident, pearl, snowball, egg, potions, xp bottle, wind charge, fishing hook, firework | 17 sections 3.9 to 3.15 | |
 
-The shared helper of all mob shots (`Projectile.spawnProjectileUsingShoot` with `shoot(dx, dy, dz, power, uncertainty)`) is 6.1 here; where a shot reads "speed 1.6" it means `power` in 6.1 (the velocity is `(normalised direction + triangle noise) x power`). The `rangedAttackUncertainty` field used as the `uncertainty` argument is a mob field read in 19 and 20 as cited in the table; its value was not re-read in this round.
+The shared helper of all mob shots (`Projectile.spawnProjectileUsingShoot` with `shoot(dx, dy, dz, power, uncertainty)`) is 6.1 here; where a shot reads "speed 1.6" it means `power` in 6.1 (the velocity is `(normalised direction + triangle noise) x power`). The `rangedAttackUncertainty` field used as the `uncertainty` argument is a mob field read in 19 and 20 as cited in the table; its value was not re-read.
 
 ## 12. Worked examples
 
@@ -841,26 +843,26 @@ Checks an implementation can run against the text above.
 
 Status key: items marked Closed were read; items marked Not read name what was searched or why they remain.
 
-1. **`NewMinecartBehavior`** (not read): `stepAlongTrack` is described in 4.5 and the factor `Mth.SQRT_OF_TWO` is read there; `lerpSteps`, `getCurrentLerpStep`, `adjustToRails` and the client rotation lerps are readable in the same package and are left for a later round (client-side presentation; runs only with the experimental pack). Vehicle interpolation handlers are item 18.
-2. Closed in part: `DismountHelper` read (offsets, `isBlockFloorValid`, `canDismountTo`, `findCeilingFrom`; 4.6). Not read, readable: the world's `getBlockFloorHeight`; scheduled for a later round.
+1. **`NewMinecartBehavior`** (not read): `stepAlongTrack` is described in 4.5 and the factor `Mth.SQRT_OF_TWO` is read there; `lerpSteps`, `getCurrentLerpStep`, `adjustToRails` and the client rotation lerps are readable in the same package (client-side presentation; runs only with the experimental pack). Vehicle interpolation handlers are item 18.
+2. Closed in part: `DismountHelper` read (offsets, `isBlockFloorValid`, `canDismountTo`, `findCeilingFrom`; 4.6). Not read, readable: the world's `getBlockFloorHeight`.
 3. **`Entity.move` collision, `EntitySelector.pushableBy`, `Entity.push`** and the server's move-vehicle validation belong to the entity framework and packet documents.
 4. **Boat bubble-column triggers**: the block side (`BubbleColumnBlock` calling `onAboveBubbleColumn`) is block behaviour.
 5. Closed: `Entity.getGravity()` read (3.1).
 6. Closed: arrow bubble-column behaviour read (6.6, 7.5).
-7. Closed: arrow pickup mode per shooter read (7.6).
+7. Closed: arrow pickup mode per shooter read (7.6); the touch range (player box inflated 1.0, 0.5, 1.0) is read (7.6).
 8. Closed: effect constructor arguments (section 9).
 9. Closed in part: the hopper pull and insert rules and the container comparator signal were read (4.6; `Mth.lerpDiscrete`: `floor(14 f) + 1` for a non-empty container). Not read: the hopper block's own tick, cooldown and push logic.
-10. **Chest vehicle containers** (not read): `interactWithContainerVehicle`, loot generation on first open, `chestVehicleDestroyed` and `isChestVehicleStillValid` were seen only as call names (searched: `AbstractChestBoat`, `AbstractMinecartContainer`). Readable; schedule a round. The menu layout is GAP-19.
+10. **Chest vehicle containers** (not read): `interactWithContainerVehicle`, loot generation on first open, `chestVehicleDestroyed` and `isChestVehicleStillValid` were seen only as call names (searched: `AbstractChestBoat`, `AbstractMinecartContainer`). Not read. The menu layout is GAP-19.
 11. Closed: the boat dispenser (3.10) and the minecart dispenser (3.11) were read. Not read: other dispenser projectile behaviours (arrow dispensing sets pickup `ALLOWED`, 7.6).
 12. **Spawner minecart** (not read): `MinecartSpawner` and its `BaseSpawner` delegation are readable in the same packages; schedule with the spawner block round.
 13. Closed: up to 3 camel riders (section 5).
-14. Closed in part: camel pose clock, travel and seat are read (section 5). Not read, readable: the base `AbstractHorse.travel` and `tickRidden` that the camel calls, `CamelAi`, `CamelPanic` and `RandomSitting`; schedule a round.
+14. Closed in part: camel pose clock, travel and seat are read (section 5). Not read, readable: the base `AbstractHorse.travel` and `tickRidden` that the camel calls, `CamelAi`, `CamelPanic` and `RandomSitting`.
 15. Closed: only `Entity` and `Breeze` override `deflection()`; the breeze's own deflection is read (6.3).
 16. Thrown-item status.
     - Done: `FishingHook` (10.1), `AbstractThrownPotion` and `ThrownSplashPotion` (10.2), `LlamaSpit` (10.3), the lure-phase splash particle count (10.1: `2 + nextInt(2)`), and `Snowball`, `ThrownEgg`, `ThrownExperienceBottle` and the `ShulkerBullet` speed (10.4).
-    - Not done: `FireworkRocketEntity` internals (constants seen in the class: 0.002297, 0.05, 1.5, 0.1, 0.5, 1.15, 0.04, life values 10/6/7, 3.0f) are those of 17 and remain "assumed correct" until a reader decodes them in the next round; the exact `potion_duration_scale` default; the blaze type test of `Snowball` (inferred, 10.4).
-    - Not covered at all in this area and readable: `EvokerFangs` (11 only says it is not a projectile entity), `EyeOfEnder`, `SmallFireball` internals (section 9 says "not detailed here") and `ShulkerBullet` homing internals beyond the speed. Schedule a round for each.
-17. **`ServerboundPaddleBoat` server handling and the player-input to `setInput` mapping** (not re-read): are in 05c and 13; the handler is readable and left for a later round.
+    - Not done: `FireworkRocketEntity` internals (constants seen in the class: 0.002297, 0.05, 1.5, 0.1, 0.5, 1.15, 0.04, life values 10/6/7, 3.0f) are those of 17 and remain "assumed correct" until they are decoded; the exact `potion_duration_scale` default; the blaze type test of `Snowball` (inferred, 10.4).
+    - Not covered at all in this area and readable: `EvokerFangs` (11 only says it is not a projectile entity), `EyeOfEnder`, `SmallFireball` internals (section 9 says "not detailed here") and `ShulkerBullet` homing internals beyond the speed.
+17. **`ServerboundPaddleBoat` server handling and the player-input to `setInput` mapping** (not re-read): are in 05c and 13; the handler was not read.
 18. **Vehicle interpolation handlers** (not read): `createInterpolationHandler` of boats and minecarts and `NewMinecartBehavior.lerpSteps`/`adjustToRails`; 18 section 9 covers tracking in general.
 19. Closed in part: the `SimpleExplosionDamageCalculator` meanings were read (section 8: field meanings, immune-block resistance 3600000.0, flying-player knockback 0). Not read: the explosion engine parameters for `TRIGGER` and `TNT` interactions; the engine is in 20 section 6 and later rounds.
 20. Closed: armor stand, item frame, painting, display entities, interaction and marker, and the area effect cloud loop are covered by the part-9 file `44-residual-mob-questions-9-end-bosses-decorations.md` (its header Covers row confirmed by reading it).
