@@ -6,9 +6,9 @@
 *> Blaze: BLAZE-ATTACK is BlazeAttackGoal (EN-SHOOT-TIME attackTime, EN-DRAW attackStep, EN-SWELL lastSeen, EN-VARIANT the charged flag, metadata 16 bit 0); BLAZE-HEIGHT the
 *> height keeping (EN-WAKE the ticks to the next offset, EN-PH-HEIGHT allowedHeightOffset) and the glide of aiStep. The blaze walks to its target like any monster (STDMOB-STEP).
 *> Snow golem: SNOW-GOLEM-TICK throws a snowball at the nearest monster within 10 blocks that it sees (EN-PET-CD the attack timer, 0 = not started).
-*> Approximations (open): the ghast's canReach sweep samples the path at three heights every half block against whole solid cells and its box is one cell for collisions, the point
-*> clamp over open void and the 64 attempts of getSuitableFlyToPosition (the first point always passes for distance 0) are left out; the thrust of the move control is along the
-*> way to the wanted point (44 part 6 section 9.1 words it as the normalised current velocity, which would never start from rest); the blaze's eye is 1.53 (0.85 of its height),
+*> Approximations (open): the ghast moves by its velocity against three sample heights (GHAST-SOLID), not the box; the 64 attempts of getSuitableFlyToPosition (the first point always
+*> passes for distance 0) are left out; the move control is 44 part 6 section 9.1 (gain normalize(delta) x 0.1, floatDuration, the box sweep GHAST-CAN-REACH, the clamp GHAST-CLAMP;
+*> lane p49s T38500); the blaze's eye is 1.53 (0.85 of its height),
 *> its water avoidance, path maluses and fortress spawns are open; the snow golem's dy reads "target eye - 1.1 - snowball y" once (19 section 20 subtracts a y twice); the
 *> snowball's shoot uncertainty is 0.
 *>
@@ -139,6 +139,225 @@
  END PROGRAM GHAST-SOLID.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GHAST-SEG-HITS.
+*> USING centre (3 FLOAT-LONG), delta (3), box min (3), box max (3), hit out (BINARY-LONG): 1 when the segment from the centre to centre + delta passes through the inside of the
+*> box (the slab method; a segment that only touches a face, or a zero movement, hits nothing). GHAST-CAN-REACH calls it with the cell inflated by the ghast's half extents,
+*> which is the moving 4 x 4 x 4 box against the cell (44-6 section 9.1 collidedWithShapeMovingFrom; the arithmetic of the vanilla call is Open question 8, this is the exact sweep).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-T1                  FLOAT-LONG.
+ 01 WS-T2                  FLOAT-LONG.
+ 01 WS-TMP                 FLOAT-LONG.
+ 01 WS-EPS                 FLOAT-LONG VALUE 0.0000001.
+ LINKAGE SECTION.
+ 01 L-C.
+    05 L-CV                FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-D.
+    05 L-DV                FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-MIN.
+    05 L-MINV              FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-MAX.
+    05 L-MAXV              FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-C L-D L-MIN L-MAX L-HIT.
+     MOVE 0 TO L-HIT
+     MOVE 0 TO WS-LO
+     MOVE 1 TO WS-HI
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+         IF FUNCTION ABS(L-DV(WS-A)) < WS-EPS
+*>           parallel to the slab: the centre must be strictly inside it
+             IF L-CV(WS-A) < L-MINV(WS-A) + WS-EPS OR L-CV(WS-A) > L-MAXV(WS-A) - WS-EPS
+                 MOVE 2 TO WS-HI
+             END-IF
+         ELSE
+             COMPUTE WS-T1 = (L-MINV(WS-A) - L-CV(WS-A)) / L-DV(WS-A)
+             COMPUTE WS-T2 = (L-MAXV(WS-A) - L-CV(WS-A)) / L-DV(WS-A)
+             IF WS-T1 > WS-T2
+                 MOVE WS-T1 TO WS-TMP
+                 MOVE WS-T2 TO WS-T1
+                 MOVE WS-TMP TO WS-T2
+             END-IF
+             IF WS-T1 > WS-LO
+                 MOVE WS-T1 TO WS-LO
+             END-IF
+             IF WS-T2 < WS-HI
+                 MOVE WS-T2 TO WS-HI
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-HI <= 1 AND WS-HI - WS-LO > WS-EPS
+         MOVE 1 TO L-HIT
+     END-IF
+     GOBACK.
+ END PROGRAM GHAST-SEG-HITS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GHAST-CAN-REACH.
+*> USING tracker row, dx, dy, dz (FLOAT-LONG: the way to the wanted point), ok out (BINARY-LONG): canReach of GhastMoveControl with careful false (44-6 section 9.1). The box is 4 x 4 x 4
+*> (feet at the position, half side 2). Every cell the box meets on its way (the box taken every 2 blocks along the way, cells within it) is passable when it is not solid (air, fluids,
+*> plants) or when the current box already intersects it; a solid cell is passable only when the moving box does not pass through it (GHAST-SEG-HITS with the cell inflated by 2).
+*> A cell is a whole cube here: the collision shape table is not consulted (partial shapes count as solid when GI-SOLID-CELL says so).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-EPS                 FLOAT-LONG VALUE 0.0000001.
+ 01 WS-CEN.
+    05 WS-CEN-V            FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-DEL.
+    05 WS-DEL-V            FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-MIN.
+    05 WS-MIN-V            FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-MAX.
+    05 WS-MAX-V            FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-FEET.
+    05 WS-FEET-V           FLOAT-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DX L-DY L-DZ L-OK.
+     MOVE 1 TO L-OK
+     COMPUTE WS-LEN = FUNCTION SQRT(L-DX * L-DX + L-DY * L-DY + L-DZ * L-DZ)
+     MOVE EN-X(L-ROW) TO WS-FEET-V(1)
+     MOVE EN-Y(L-ROW) TO WS-FEET-V(2)
+     MOVE EN-Z(L-ROW) TO WS-FEET-V(3)
+     MOVE WS-FEET-V(1) TO WS-CEN-V(1)
+     COMPUTE WS-CEN-V(2) = WS-FEET-V(2) + 2
+     MOVE WS-FEET-V(3) TO WS-CEN-V(3)
+     MOVE L-DX TO WS-DEL-V(1)
+     MOVE L-DY TO WS-DEL-V(2)
+     MOVE L-DZ TO WS-DEL-V(3)
+     COMPUTE WS-N = FUNCTION INTEGER(WS-LEN / 2) + 1
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > WS-N OR L-OK = 0
+         COMPUTE WS-T = WS-S / WS-N
+         COMPUTE WS-BX = WS-CEN-V(1) + L-DX * WS-T
+         COMPUTE WS-BY = WS-CEN-V(2) + L-DY * WS-T
+         COMPUTE WS-BZ = WS-CEN-V(3) + L-DZ * WS-T
+         COMPUTE WS-X0 = FUNCTION INTEGER(WS-BX - 2)
+         COMPUTE WS-X1 = FUNCTION INTEGER(WS-BX + 2)
+         COMPUTE WS-Y0 = FUNCTION INTEGER(WS-BY - 2)
+         COMPUTE WS-Y1 = FUNCTION INTEGER(WS-BY + 2)
+         COMPUTE WS-Z0 = FUNCTION INTEGER(WS-BZ - 2)
+         COMPUTE WS-Z1 = FUNCTION INTEGER(WS-BZ + 2)
+         PERFORM VARYING WS-CX FROM WS-X0 BY 1 UNTIL WS-CX > WS-X1 OR L-OK = 0
+             PERFORM VARYING WS-CY FROM WS-Y0 BY 1 UNTIL WS-CY > WS-Y1 OR L-OK = 0
+                 PERFORM VARYING WS-CZ FROM WS-Z0 BY 1 UNTIL WS-CZ > WS-Z1 OR L-OK = 0
+                     CALL "GI-SOLID-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-SOLID
+                     IF WS-SOLID = 1
+*>                       a cell the current box intersects (positive overlap on every axis) is passable
+                         MOVE 1 TO WS-HIT
+                         IF WS-CX < WS-FEET-V(1) + 2 - WS-EPS AND WS-CX + 1 > WS-FEET-V(1) - 2 + WS-EPS
+                                 AND WS-CY < WS-FEET-V(2) + 4 - WS-EPS AND WS-CY + 1 > WS-FEET-V(2) + WS-EPS
+                                 AND WS-CZ < WS-FEET-V(3) + 2 - WS-EPS AND WS-CZ + 1 > WS-FEET-V(3) - 2 + WS-EPS
+                             MOVE 0 TO WS-HIT
+                         END-IF
+                         IF WS-HIT = 1
+                             COMPUTE WS-MIN-V(1) = WS-CX - 2
+                             COMPUTE WS-MAX-V(1) = WS-CX + 3
+                             COMPUTE WS-MIN-V(2) = WS-CY - 2
+                             COMPUTE WS-MAX-V(2) = WS-CY + 3
+                             COMPUTE WS-MIN-V(3) = WS-CZ - 2
+                             COMPUTE WS-MAX-V(3) = WS-CZ + 3
+                             CALL "GHAST-SEG-HITS" USING WS-CEN WS-DEL WS-MIN WS-MAX WS-HIT
+                             IF WS-HIT = 1
+                                 MOVE 0 TO L-OK
+                             END-IF
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GHAST-CAN-REACH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GHAST-CLAMP.
+*> USING tracker row, x, y, z (FLOAT-LONG, y in out): the end of RandomFloatAroundGoal (44-6 section 9.1): when the MOTION_BLOCKING height of the point's column (the Y above its
+*> topmost block that blocks motion or holds a fluid) is below the point's block Y and above the dimension's minimum Y, the point's Y becomes mobY - |mobY - pointY| (so the ghast does not
+*> float over open void); x and z stay.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CBLOCKS.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-MIN                 BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-CHUNK-X             BINARY-LONG.
+ 01 WS-CHUNK-Z             BINARY-LONG.
+ 01 WS-CROW                BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-BLOCKS              BINARY-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z.
+     COMPUTE WS-CX = FUNCTION INTEGER(L-X)
+     COMPUTE WS-CY = FUNCTION INTEGER(L-Y)
+     COMPUTE WS-CZ = FUNCTION INTEGER(L-Z)
+     MOVE DM-MIN-Y(EN-DIM(L-ROW)) TO WS-MIN
+     COMPUTE WS-TOP = WS-MIN + DM-HEIGHT(EN-DIM(L-ROW)) - 1
+     MOVE WS-MIN TO WS-HEIGHT
+     MOVE 0 TO WS-DONE
+     COMPUTE WS-CHUNK-X = (WS-CX - FUNCTION MOD(WS-CX, 16)) / 16
+     COMPUTE WS-CHUNK-Z = (WS-CZ - FUNCTION MOD(WS-CZ, 16)) / 16
+     CALL "WORLD-FIND" USING EN-DIM(L-ROW) WS-CHUNK-X WS-CHUNK-Z WS-CROW
+     IF WS-CROW > 0
+         PERFORM VARYING WS-CY FROM WS-TOP BY -1 UNTIL WS-CY < WS-MIN OR WS-DONE = 1
+             CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-STATE
+             MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+             MOVE CB-SOLID(WS-BLK + 1) TO WS-BLOCKS
+             IF CB-KEY(WS-BLK + 1) = "water" OR CB-KEY(WS-BLK + 1) = "minecraft:water"
+                     OR CB-KEY(WS-BLK + 1) = "lava" OR CB-KEY(WS-BLK + 1) = "minecraft:lava"
+                 MOVE 1 TO WS-BLOCKS
+             END-IF
+             IF WS-BLOCKS = 1
+                 COMPUTE WS-HEIGHT = WS-CY + 1
+                 MOVE 1 TO WS-DONE
+             END-IF
+         END-PERFORM
+     END-IF
+     COMPUTE WS-CY = FUNCTION INTEGER(L-Y)
+     IF WS-HEIGHT < WS-CY AND WS-HEIGHT > WS-MIN
+         COMPUTE WS-DY = FUNCTION ABS(EN-Y(L-ROW) - L-Y)
+         COMPUTE L-Y = EN-Y(L-ROW) - WS-DY
+     END-IF
+     GOBACK.
+ END PROGRAM GHAST-CLAMP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GHAST-MOVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -152,14 +371,9 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-D2                  FLOAT-LONG.
  01 WS-LEN                 FLOAT-LONG.
- 01 WS-N                   BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-T                   FLOAT-LONG.
- 01 WS-QX                  FLOAT-LONG.
- 01 WS-QY                  FLOAT-LONG.
- 01 WS-QZ                  FLOAT-LONG.
+ 01 WS-OLD                 BINARY-LONG.
+ 01 WS-REACH               BINARY-LONG.
  01 WS-SOLID               BINARY-LONG.
- 01 WS-BLOCKED             BINARY-LONG.
  01 WS-NX                  FLOAT-LONG.
  01 WS-NY                  FLOAT-LONG.
  01 WS-NZ                  FLOAT-LONG.
@@ -169,9 +383,10 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
 *> USING tracker row of a ghast: RandomFloatAroundGoal and GhastMoveControl (44 part 6 section 9.1) and the flight. Without a wanted point, or at one reached (distance squared below
-*> 1) or too far (above 3600), a new point is drawn in the cube of half side 16 around the ghast. floatDuration falls by 1 a tick; at 0 it grows by nextInt(5) + 2 and the velocity
-*> gains 0.1 (speed 0.06 x 5 / 3) along the way to the wanted point when that way is free (else the point is dropped). The ghast moves by its velocity unless a solid cell is there
-*> (then its velocity is 0) and the velocity is multiplied by 0.91.
+*> 1) or too far (above 3600), a new point is drawn in the cube of half side 16 around the ghast and clamped over open ground (GHAST-CLAMP). The control: floatDuration falls by 1 every
+*> tick and only when it was <= 0 before the fall it grows by nextInt(5) + 2 (so 1 to 5) and acts: when the box can reach the point (GHAST-CAN-REACH) the velocity gains
+*> normalize(delta) x 0.1 (the flying speed 0.06 x 5 / 3; the way to the point, not the current velocity, so there is no start velocity), else the point is dropped. The ghast moves by
+*> its velocity unless a solid cell is there (then its velocity is 0) and the velocity is multiplied by 0.91.
  PROCEDURE DIVISION USING L-ROW.
      COMPUTE WS-DX = EN-PH-TX(L-ROW) - EN-X(L-ROW)
      COMPUTE WS-DY = EN-PH-TY(L-ROW) - EN-Y(L-ROW)
@@ -184,30 +399,20 @@
          COMPUTE EN-PH-TY(L-ROW) = EN-Y(L-ROW) + (WS-R / 500 - 1) * 16
          CALL "XP-RANDOM" USING WS-SALT WS-B1000 WS-R
          COMPUTE EN-PH-TZ(L-ROW) = EN-Z(L-ROW) + (WS-R / 500 - 1) * 16
+         CALL "GHAST-CLAMP" USING L-ROW EN-PH-TX(L-ROW) EN-PH-TY(L-ROW) EN-PH-TZ(L-ROW)
          MOVE 1 TO EN-PH-SET(L-ROW)
      END-IF
+     MOVE EN-PH-SCAN(L-ROW) TO WS-OLD
      SUBTRACT 1 FROM EN-PH-SCAN(L-ROW)
-     IF EN-PH-SCAN(L-ROW) <= 0
+     IF WS-OLD <= 0
          CALL "XP-RANDOM" USING WS-SALT WS-B5 WS-R
          COMPUTE EN-PH-SCAN(L-ROW) = EN-PH-SCAN(L-ROW) + WS-R + 2
          COMPUTE WS-DX = EN-PH-TX(L-ROW) - EN-X(L-ROW)
          COMPUTE WS-DY = EN-PH-TY(L-ROW) - EN-Y(L-ROW)
          COMPUTE WS-DZ = EN-PH-TZ(L-ROW) - EN-Z(L-ROW)
          COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
-*>       canReach: the way sampled every half block.
-         COMPUTE WS-N = FUNCTION INTEGER(WS-LEN * 2) + 1
-         MOVE 0 TO WS-BLOCKED
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR WS-BLOCKED = 1
-             COMPUTE WS-T = WS-I / WS-N
-             COMPUTE WS-QX = EN-X(L-ROW) + WS-DX * WS-T
-             COMPUTE WS-QY = EN-Y(L-ROW) + WS-DY * WS-T
-             COMPUTE WS-QZ = EN-Z(L-ROW) + WS-DZ * WS-T
-             CALL "GHAST-SOLID" USING L-ROW WS-QX WS-QY WS-QZ WS-SOLID
-             IF WS-SOLID = 1
-                 MOVE 1 TO WS-BLOCKED
-             END-IF
-         END-PERFORM
-         IF WS-BLOCKED = 1
+         CALL "GHAST-CAN-REACH" USING L-ROW WS-DX WS-DY WS-DZ WS-REACH
+         IF WS-REACH = 0
              MOVE 0 TO EN-PH-SET(L-ROW)
          ELSE
              COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + WS-DX / WS-LEN * 0.1
