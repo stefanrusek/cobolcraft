@@ -1822,7 +1822,7 @@
  01 L-B                    BINARY-LONG.
  01 L-OUT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT.
-     IF L-KIND NOT = 1 AND L-KIND NOT = 2 AND L-KIND NOT = 3 AND L-KIND NOT = 4 AND L-KIND NOT = 7
+     IF L-KIND NOT = 1 AND L-KIND NOT = 2 AND L-KIND NOT = 3 AND L-KIND NOT = 4 AND L-KIND NOT = 7 AND L-KIND NOT = 10
          GOBACK
      END-IF
      CALL "REDSTONE-IDS-ENSURE"
@@ -1869,6 +1869,10 @@
          WHEN 30
              IF L-KIND = 3 OR L-KIND = 7
                  CALL "RL-DISP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
+             END-IF
+         WHEN 16
+             IF L-KIND = 3 OR L-KIND = 10
+                 CALL "RL-NOTE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
              END-IF
          WHEN 24
              IF L-KIND = 1 OR L-KIND = 2 OR L-KIND = 7
