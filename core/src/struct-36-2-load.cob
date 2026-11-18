@@ -358,7 +358,7 @@
  01 WS-CAP16               BINARY-LONG VALUE 16.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-ID                  PIC X(48).
- 01 WS-LOOT                PIC X(48).
+ 01 WS-LOOT                PIC X(80).
  01 WS-SPAWN               PIC X(48).
  01 WS-MODE                PIC X(16).
  01 WS-JOINT               PIC X(16).
@@ -387,7 +387,7 @@
              WHEN WN = "id" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-ID WS-CAP48 WS-LENGTH
              WHEN WN = "LootTable" AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-LOOT WS-CAP48 WS-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-LOOT WS-CAP80 WS-LENGTH
              WHEN WN = "mode" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-MODE WS-CAP16 WS-LENGTH
              WHEN WN = "joint" AND WS-TYPE = 8

@@ -1,7 +1,7 @@
 *> Real-data test (skipped as a pass without the generated packs; docs/protocol/36-structures-3-jigsaw-assembly.md section 9, JigsawPlacement.addPieces and 8.2): the start of the assembly. The
 *> ancient city (start_jigsaw_name city_anchor, absolute start height -27, no heightmap: 9.3, 9.4 worked example, 9.6) and the trial chambers (uniform start height, pool aliases, dimension padding
 *> 10: 8.2, 7, 9.5) are assembled for world seed 12345 over the synthetic surface of TJ-SURFACE and compared with core/tests/fixtures/gen_jigsaw.py --digest (an independent model of the text):
-*> the stub position, the first piece's origin and box, the piece and junction counts and a digest of every piece (origin, rotation, box, ground level delta, projection) and junction (ancient city only: for the trial chambers the assembler and the model agree on the stub and on the first five pieces of chunk (0, 0) and then part, an open finding of the lane, so only those are asserted). Then the
+*> the stub position, the first piece's origin and box, the piece and junction counts and a digest of every piece (origin, rotation, box, ground level delta, projection) and junction. Then the
 *> rules of 9 on edited structure rows: the named jigsaw lies on the start position before the move and ends at y -28 (the worked example), a start jigsaw name no jigsaw has gives no structure,
 *> a decoded dimension padding too large for the piece gives none while an absent one is never checked, the start pool of an alias is the one that is used and an alias to a missing pool falls
 *> back to the structure's own pool (9.2 step 1), and size 0 gives none (9.7 step 1).
@@ -83,36 +83,36 @@
     05 FILLER PIC X(24) VALUE "trial_chambers".
     05 FILLER BINARY-LONG VALUE 0.
     05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 287.
+    05 FILLER BINARY-LONG VALUE 572.
+    05 FILLER BINARY-LONG VALUE 203397520.
     05 FILLER BINARY-LONG VALUE -9.
     05 FILLER BINARY-LONG VALUE -21.
     05 FILLER BINARY-LONG VALUE -9.
     05 FILLER PIC X(24) VALUE "trial_chambers".
     05 FILLER BINARY-LONG VALUE 1.
     05 FILLER BINARY-LONG VALUE -2.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 240.
+    05 FILLER BINARY-LONG VALUE 478.
+    05 FILLER BINARY-LONG VALUE 23423363.
     05 FILLER BINARY-LONG VALUE 7.
     05 FILLER BINARY-LONG VALUE -23.
     05 FILLER BINARY-LONG VALUE -41.
     05 FILLER PIC X(24) VALUE "trial_chambers".
     05 FILLER BINARY-LONG VALUE 5.
     05 FILLER BINARY-LONG VALUE 5.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 285.
+    05 FILLER BINARY-LONG VALUE 568.
+    05 FILLER BINARY-LONG VALUE 877552409.
     05 FILLER BINARY-LONG VALUE 71.
     05 FILLER BINARY-LONG VALUE -35.
     05 FILLER BINARY-LONG VALUE 89.
     05 FILLER PIC X(24) VALUE "trial_chambers".
     05 FILLER BINARY-LONG VALUE -4.
     05 FILLER BINARY-LONG VALUE 3.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
-    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 270.
+    05 FILLER BINARY-LONG VALUE 538.
+    05 FILLER BINARY-LONG VALUE 458433270.
     05 FILLER BINARY-LONG VALUE -73.
     05 FILLER BINARY-LONG VALUE -25.
     05 FILLER BINARY-LONG VALUE 39.
