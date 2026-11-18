@@ -23,7 +23,10 @@
 *>                No-hat villager rows (villager_nohat, villager_nohat~b, zvillager_nohat, zvillager_nohat~b, code A: the villager without head cuboids, posed as the villager) are the type layer when the profession texture's hat covers the head (34-3 1.5).
 *>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
 *>                The zombie villager's armor rows (zvil_armor_head, _chest, _legs, _feet, 34-3 section 2.4) are the same, with the meshes of EMD-ZV-ARMOR.
-*>                The armor rows of a baby (armor_<slot>~b, the baby armor mesh of 34-2 section 1.4 at the baby deformations; also the baby zombie villager's) and the piglin family's own armor rows (piglin_armor_<slot>, grow 1.02; piglin_armor_<slot>~b, the baby piglin armor at 0.7 and the arm offset (0.5, -0.5, 0)) are the same kind of row; CL-MD-BABY of an adult armor row is the baby row of its slot. The row banner is only an atlas image holder for the sprites of a banner held in first person (hand-banner.cob; the texture codes 9000 + a pattern holder).
+*>                The armor rows of a baby (armor_<slot>~b, the baby armor mesh of 34-2 section 1.4 at the baby deformations; also the baby zombie villager's) and the piglin
+*>                family's own armor rows (piglin_armor_<slot>, grow 1.02; piglin_armor_<slot>~b, the baby piglin armor at 0.7 and the arm offset (0.5, -0.5, 0)) are the same
+*>                kind of row; CL-MD-BABY of an adult armor row is the baby row of its slot. The row banner is only an atlas image holder for the sprites of a banner held
+*>                in first person (hand-banner.cob; the texture codes 9000 + a pattern holder).
 *>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
