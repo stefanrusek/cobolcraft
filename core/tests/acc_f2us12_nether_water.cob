@@ -36,7 +36,7 @@
      MOVE "N" TO TL-MODE
      CALL "PT-OPEN" USING WS-SKIP
      IF WS-SKIP = 1
-         MOVE "acceptance US12 37§3.1 nether water: no generated packs here, skipped" TO TL-CASE
+         MOVE "acceptance US12 37§3 3.1 nether water: no generated packs here, skipped" TO TL-CASE
          MOVE 1 TO TL-EXPECTED-N
          MOVE 1 TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -69,23 +69,23 @@
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-IDS
      MOVE 23 TO WS-Z
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
-     MOVE "acceptance US12 37§3.1 nether water: no water was placed in the cell in front of the wall" TO TL-CASE
+     MOVE "acceptance US12 37§3 3.1 nether water: no water was placed in the cell in front of the wall" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-STATE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12 37§3.1 nether water: the bucket is spent (an empty bucket in the hand)" TO TL-CASE
+     MOVE "acceptance US12 37§3 3.1 nether water: the bucket is spent (an empty bucket in the hand)" TO TL-CASE
      MOVE WS-BUCKET TO TL-EXPECTED-N
      MOVE PL-SLOT-ITEM(WS-ROW, 1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-COUNT
      INSPECT WS-IDS TALLYING WS-COUNT FOR ALL "119"
-     MOVE "acceptance US12 37§3.1 nether water: the fire.extinguish Sound (0x77) was sent" TO TL-CASE
+     MOVE "acceptance US12 37§3 3.1 nether water: the fire.extinguish Sound (0x77) was sent" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-COUNT
      INSPECT WS-IDS TALLYING WS-COUNT FOR ALL "48"
-     MOVE "acceptance US12 37§3.1 nether water: the large_smoke Level Particles (0x30) were sent" TO TL-CASE
+     MOVE "acceptance US12 37§3 3.1 nether water: the large_smoke Level Particles (0x30) were sent" TO TL-CASE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The overworld control: the same use places the water.
@@ -98,7 +98,7 @@
      CALL "TEST-USE-ITEM" USING WS-ALICE
      MOVE 23 TO WS-Z
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
-     MOVE "acceptance US12 37§3.1 nether water: in the overworld the water is placed (the cell is no longer air)" TO TL-CASE
+     MOVE "acceptance US12 37§3 3.1 nether water: in the overworld the water is placed (the cell is no longer air)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-STATE NOT = 0

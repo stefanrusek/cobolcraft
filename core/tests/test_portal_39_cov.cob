@@ -83,7 +83,7 @@
      END-PERFORM
      CALL "PORTAL-FIND-SHAPE" USING DIM-STANDARD-NETHER WS-X WS-Y WS-Z WS-AXIS PORTAL-SHAPE
      MOVE PQ-VALID TO WS-A
-     MOVE "acceptance US12-core 39§3 the shape search stops walking down at the dimension's lowest block: no shape from an open column at y 3" TO TL-CASE
+     MOVE "acceptance US12 39§3 the shape search stops walking down at the dimension's lowest block: no shape from an open column at y 3" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION TRIM(WS-A) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED
@@ -105,7 +105,7 @@
      MOVE 150 TO WS-Y
      CALL "PORTAL-FIND-SHAPE" USING DIM-STANDARD-OVERWORLD WS-X WS-Y WS-Z WS-AXIS PORTAL-SHAPE
      MOVE PQ-VALID TO WS-B
-     MOVE "acceptance US12-core 39§3 a whole frame is a shape and the same frame without the right post block at row 1 is none" TO TL-CASE
+     MOVE "acceptance US12 39§3 a whole frame is a shape and the same frame without the right post block at row 1 is none" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-A) " " FUNCTION TRIM(WS-B) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "1 0" TO TL-EXPECTED
@@ -119,7 +119,7 @@
      MOVE 9 TO PQ-VALID
      CALL "PORTAL-EMPTY-SHAPE" USING DIM-STANDARD-OVERWORLD WS-X WS-Y WS-Z PORTAL-SHAPE
      MOVE PQ-VALID TO WS-A
-     MOVE "acceptance US12-core 39§3 the empty-shape search in plain air finds no shape (every field 0)" TO TL-CASE
+     MOVE "acceptance US12 39§3 the empty-shape search in plain air finds no shape (every field 0)" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION TRIM(WS-A) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED
@@ -147,7 +147,7 @@
      MOVE PI-PORTAL-X TO WS-PS
      CALL "PORTAL-UPDATE-SHAPE" USING DIM-STANDARD-OVERWORLD WS-X WS-Y WS-Z PI-PORTAL-X WS-DOWN WS-PS WS-OUT
      MOVE WS-OUT TO WS-C
-     MOVE "acceptance US12-core 39§3 a portal block of a complete shape keeps its state next to air above and next to a portal block below" TO TL-CASE
+     MOVE "acceptance US12 39§3 a portal block of a complete shape keeps its state next to air above and next to a portal block below" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-A) " " FUNCTION TRIM(WS-C) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE SPACES TO TL-EXPECTED
@@ -161,7 +161,7 @@
      MOVE 79 TO WS-Z
      CALL "PORTAL-POI-REMOVE" USING DIM-STANDARD-OVERWORLD WS-X WS-Y WS-Z
      COMPUTE WS-A = PQ-POI-COUNT - WS-SAVE
-     MOVE "acceptance US12-core 39§5 removing a point of interest that was never recorded leaves the table as it is" TO TL-CASE
+     MOVE "acceptance US12 39§5 removing a point of interest that was never recorded leaves the table as it is" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION TRIM(WS-A) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED
@@ -184,7 +184,7 @@
      CALL "PORTAL-REPLACEABLE" USING DIM-STANDARD-OVERWORLD WS-X WS-Y WS-Z WS-OUT
      CALL "WORLD-SET-BLOCK" USING DIM-STANDARD-OVERWORLD WS-X WS-Y WS-Z WS-AIR
      MOVE WS-OUT TO WS-A
-     MOVE "acceptance US12-core 39§5.2 a block without collision that is neither fluid, fire nor portal is replaceable" TO TL-CASE
+     MOVE "acceptance US12 39§5 5.2 a block without collision that is neither fluid, fire nor portal is replaceable" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION TRIM(WS-A) TO TL-OBSERVED
      MOVE "1" TO TL-EXPECTED
@@ -205,7 +205,7 @@
      COMPUTE WS-T ROUNDED = WS-RY
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-F) " " FUNCTION TRIM(WS-G) " " FUNCTION TRIM(WS-H) " " FUNCTION TRIM(WS-T) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "acceptance US12-core 39§4.4 the relative position is clamped to 0 and 1 along the axis and the height (west of the portal and below it, east of it and above it)" TO TL-CASE
+     MOVE "acceptance US12 39§4 4.4 the relative position is clamped to 0 and 1 along the axis and the height (west of the portal and below it, east of it and above it)" TO TL-CASE
      MOVE "0.000000 0.000000 1.000000 1.000000" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -232,7 +232,7 @@
      COMPUTE WS-F ROUNDED = WS-FX
      COMPUTE WS-G ROUNDED = WS-FY
      COMPUTE WS-H ROUNDED = WS-FZ
-     MOVE "acceptance US12-core 39§6.8 a body overlapping a wall to the north is moved south, z 3200.3" TO TL-CASE
+     MOVE "acceptance US12 39§6 6.8 a body overlapping a wall to the north is moved south, z 3200.3" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-F) " " FUNCTION TRIM(WS-G) " " FUNCTION TRIM(WS-H) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "3200.500000 250.000000 3200.300000" TO TL-EXPECTED
@@ -273,7 +273,7 @@
      MOVE WS-OK TO WS-A
      MOVE PR-X TO WS-B
      MOVE PR-Z TO WS-C
-     MOVE "acceptance US12-core 39§5.2 with only a candidate whose neighbouring slabs are blocked the fallback column hosts the portal (ok 1, x 3999..4000, z 3999..4002)" TO TL-CASE
+     MOVE "acceptance US12 39§5 5.2 with only a candidate whose neighbouring slabs are blocked the fallback column hosts the portal (ok 1, x 3999..4000, z 3999..4002)" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      IF WS-OK = 1 AND PR-X >= 3999 AND PR-X <= 4001 AND PR-Z >= 3999 AND PR-Z <= 4002
          MOVE "built" TO TL-OBSERVED
@@ -296,7 +296,7 @@
      MOVE WS-SAVE-SIZE TO W2-B-SIZE(DIM-STANDARD-NETHER)
      MOVE WS-OK TO WS-A
      MOVE PR-Y TO WS-B
-     MOVE "acceptance US12-core 39§5.2 a platform for an origin at y 125 in the Nether is built at the top of the creation range (y 118)" TO TL-CASE
+     MOVE "acceptance US12 39§5 5.2 a platform for an origin at y 125 in the Nether is built at the top of the creation range (y 118)" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING "ok " FUNCTION TRIM(WS-A) " y " FUNCTION TRIM(WS-B) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "ok 1 y 118" TO TL-EXPECTED
@@ -315,7 +315,7 @@
      CALL "PORTAL-POI-SCAN" USING WS-I
      MOVE WS-SAVE-DIM TO CK-DIM(WS-I)
      COMPUTE WS-A = PQ-POI-COUNT - WS-SAVE
-     MOVE "acceptance US12-core 39§5.1 the point-of-interest scan records nothing when the portal block is unknown or the chunk is in the End" TO TL-CASE
+     MOVE "acceptance US12 39§5 5.1 the point-of-interest scan records nothing when the portal block is unknown or the chunk is in the End" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION TRIM(WS-A) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED

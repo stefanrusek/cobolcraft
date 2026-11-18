@@ -47,49 +47,49 @@
              ADD 1 TO WS-BAD
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-5§8 rows per step 2, 4, 7, 9: 1, 3, 23, 10" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 rows per step 2, 4, 7, 9: 1, 3, 23, 10" TO TL-CASE
      MOVE 1302310 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-C2 * 1000000 + WS-C4 * 100000 + WS-C7 * 100 + WS-C9
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US12-core 37-5§3 every seed offset is index + 10000 * step" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 every seed offset is index + 10000 * step" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the order table: row 3 is step 4 index 2; row 4 is step 7 index 0 ... : first row of each step and the last
      MOVE 1 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§3 row 1: step 2 index 0 basalt_pillar, offset 20000, biome S" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 row 1: step 2 index 0 basalt_pillar, offset 20000, biome S" TO TL-CASE
      MOVE "2 0 20000 basalt_pillar .S..." TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§3 row 5: step 7 index 0 basalt_blobs, offset 70000, biome D" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 row 5: step 7 index 0 basalt_blobs, offset 70000, biome D" TO TL-CASE
      MOVE "7 0 70000 basalt_blobs ....D" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 11 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§3 row 11: glowstone_extra index 6 offset 70006, all five biomes" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 row 11: glowstone_extra index 6 offset 70006, all five biomes" TO TL-CASE
      MOVE "7 6 70006 glowstone_extra WSCPD" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 12 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§8 row 12: glowstone index 7 offset 70007" TO TL-CASE
+     MOVE "acceptance US12 37-5§8 row 12: glowstone index 7 offset 70007" TO TL-CASE
      MOVE "7 7 70007 glowstone WSCPD" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 16 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§3 ore_magma index 11 offset 70011 (row 16), all biomes" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 ore_magma index 11 offset 70011 (row 16), all biomes" TO TL-CASE
      MOVE "7 11 70011 ore_magma WSCPD" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§3 delta index 0 offset 40000, basalt_deltas" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 delta index 0 offset 40000, basalt_deltas" TO TL-CASE
      MOVE "4 0 40000 delta ....D" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 37 TO WS-ROW
      PERFORM ROW-TEXT
-     MOVE "acceptance US12-core 37-5§3 last row: crimson_forest_vegetation index 9 offset 90009, biome C" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 last row: crimson_forest_vegetation index 9 offset 90009, biome C" TO TL-CASE
      MOVE "9 9 90009 crimson_forest_vegetation ..C.." TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the worked example: a crimson-forest-only chunk runs step 7 indices 3, 4, 6, 7, 11, 15, 17 to 22 and step 9 indices 0, 1, 2, 7, 8, 9
@@ -104,7 +104,7 @@
              STRING FUNCTION TRIM(WS-ED) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-K
          END-IF
      END-PERFORM
-     MOVE "acceptance US12-core 37-5§3 a crimson-forest-only chunk runs step/index: 7/3 .. 7/22, 9/0 .. 9/9 as in the worked example" TO TL-CASE
+     MOVE "acceptance US12 37-5§3 a crimson-forest-only chunk runs step/index: 7/3 .. 7/22, 9/0 .. 9/9 as in the worked example" TO TL-CASE
      MOVE "7/3 7/4 7/6 7/7 7/11 7/15 7/17 7/18 7/19 7/20 7/21 7/22 9/0 9/1 9/2 9/7 9/8 9/9" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "N" TO TL-MODE
@@ -143,19 +143,19 @@
      MOVE 0 TO WS-TARGET
      CALL "F351-FLOOR-OF-LAYER" USING WS-COLUMN WS-MIN WS-START WS-TARGET WS-RES
      MOVE WS-RES TO TL-OBSERVED-N
-     MOVE "acceptance US12-core 37-5§5 layer 0 of the worked column: y 100 (the roof bedrock is never a floor)" TO TL-CASE
+     MOVE "acceptance US12 37-5§5 layer 0 of the worked column: y 100 (the roof bedrock is never a floor)" TO TL-CASE
      MOVE 100 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-TARGET
      CALL "F351-FLOOR-OF-LAYER" USING WS-COLUMN WS-MIN WS-START WS-TARGET WS-RES
      MOVE WS-RES TO TL-OBSERVED-N
-     MOVE "acceptance US12-core 37-5§5 layer 1 of the worked column: y 33 (lava counts as empty, the floor under the lava)" TO TL-CASE
+     MOVE "acceptance US12 37-5§5 layer 1 of the worked column: y 33 (lava counts as empty, the floor under the lava)" TO TL-CASE
      MOVE 33 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 2 TO WS-TARGET
      CALL "F351-FLOOR-OF-LAYER" USING WS-COLUMN WS-MIN WS-START WS-TARGET WS-RES
      MOVE WS-RES TO TL-OBSERVED-N
-     MOVE "acceptance US12-core 37-5§5 layer 2 of the worked column: none (min y - 1)" TO TL-CASE
+     MOVE "acceptance US12 37-5§5 layer 2 of the worked column: none (min y - 1)" TO TL-CASE
      MOVE -1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-NETHER-37-5-3.
