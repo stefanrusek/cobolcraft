@@ -84,6 +84,7 @@
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-INHABITED           BINARY-DOUBLE VALUE 0.
+ 01 WS-GAME-TIME           BINARY-DOUBLE.
  01 WS-MOON                BINARY-LONG VALUE 0.
  01 WS-EFF                 BINARY-LONG.
  01 WS-SALT                BINARY-LONG VALUE 41.
@@ -127,7 +128,9 @@
              COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-P))
              CALL "STDMOB-LIGHTS" USING PL-DIM(WS-P) WS-BX WS-BY WS-BZ WS-SKY WS-BLOCK
              IF WS-BY >= 63 AND WS-SKY = 15
-                 CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY CW-TIME WS-INHABITED WS-MOON WS-EFF
+                 *> T of 3.2 is the world game time, not the time of day.
+                 COMPUTE WS-GAME-TIME = CW-GAME-TIME + CW-TICKS
+                 CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY WS-GAME-TIME WS-INHABITED WS-MOON WS-EFF
                  MOVE 3000 TO WS-BOUND
                  CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-D3
                  COMPUTE WS-REST = FUNCTION MAX(1, PL-REST(WS-P))
