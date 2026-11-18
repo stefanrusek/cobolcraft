@@ -77,7 +77,8 @@
          MOVE WS-TEXT(1:64) TO SM-EDIT-NAME
          MOVE FUNCTION MIN(WS-LENGTH, 64) TO SM-EDIT-NAME-LENGTH
          MOVE 0 TO SP-CREATE-MODE SP-CREATE-TYPE SP-CREATE-REFUSED SM-EDIT-SEED-LENGTH
-         MOVE "classic_flat" TO SP-FLAT-PRESET
+         *>       the default of a superflat world is the world preset `flat` (56 section 3.1 and 2.6), until a preset is used on the preset screen
+         MOVE "flat" TO SP-FLAT-PRESET
          MOVE SPACES TO SM-EDIT-SEED
 *>       The name field has the focus (1); the seed field is the second (2).
          MOVE 1 TO SM-FOCUS

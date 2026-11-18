@@ -5,11 +5,11 @@
 *> presets of §3.1 (CLFLAT.cpy) and Use Preset (enabled by a selected row) and Cancel. Done keeps the working preset
 *> in SP-FLAT-PRESET, Cancel drops it. Not in this version, as §6.6 allows: Remove Layer, the preset text box and
 *> its share string (§6.4) and the item icons, so the layers can only come from a preset. The core is handed only
-*> the preset id (SP-FLAT-PRESET): there is no host field for it yet (contract/copy/COREAPI.cpy).
+*> the preset id (SP-FLAT-PRESET), which SP-OPEN passes to FLAT-PRESET-SET before CORE-WORLD-OPEN of a new superflat world.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FLAT-PRESET-FIND.
-*> USING preset id (PIC X(24)), index out (BINARY-LONG): the row of the nine presets of CLFLAT.cpy, 0 for an unknown id.
+*> USING preset id (PIC X(24)), index out (BINARY-LONG): the row of the nine presets of CLFLAT.cpy or of the world preset `flat` (row 10), 0 for an unknown id.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLFLAT.
@@ -19,7 +19,7 @@
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-INDEX.
      MOVE 0 TO L-INDEX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FP-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FP-WORLD
          IF FP-ID(WS-I) = L-ID
              MOVE WS-I TO L-INDEX
          END-IF

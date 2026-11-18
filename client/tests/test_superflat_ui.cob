@@ -208,8 +208,8 @@
      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      MOVE CL-TYPE-SUPERFLAT TO SP-CREATE-TYPE
      CALL "TEST-STEP" USING CLIENT-STATE
-     MOVE "superflat a fresh create-world screen holds the default preset classic_flat" TO TL-CASE
-     MOVE "classic_flat" TO TL-EXPECTED
+     MOVE "superflat a fresh create-world screen holds the default preset flat (the world preset of 56 3.1 and 2.6)" TO TL-CASE
+     MOVE "flat" TO TL-EXPECTED
      MOVE FUNCTION TRIM(SP-FLAT-PRESET) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE ACT-FLAT-CUSTOMIZE TO WS-ACTION
@@ -269,9 +269,9 @@
      MOVE "26 Superflat Customization|Layer Material|Height|water_bucket|Top - 90|gravel|5|dirt|5|stone|5|"
          & "deepslate|64|bedrock|Bottom - 1|Presets|Done|Cancel" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "superflat before Done the world's chosen preset is still classic_flat" TO TL-CASE
+     MOVE "superflat before Done the world's chosen preset is still the default flat" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "classic_flat" TO TL-EXPECTED
+     MOVE "flat" TO TL-EXPECTED
      MOVE FUNCTION TRIM(SP-FLAT-PRESET) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -63,6 +63,8 @@
  COPY CONTENT.
  01 WS-PATH                PIC X(1200).
  01 WS-CREATED             BINARY-LONG.
+ 01 WS-FLAT-PRESET         PIC X(40).
+ 01 WS-FLAT-STATUS         BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  01 WS-SCREEN              BINARY-LONG VALUE SCR-CONNECTING.
  LINKAGE SECTION.
@@ -101,6 +103,13 @@
              MOVE "cobolcraft" TO CS-WORLD-TYPE
      END-EVALUATE
      MOVE CORE-SETTINGS TO SP-SETTINGS
+*>   A new superflat world takes the preset of the create-world screen (the core keeps it for CORE-WORLD-OPEN: FLAT-PRESET-SET,
+*>   56 section 3); a world opened from the list reads its own saved settings.
+     IF SM-SCREEN = SCR-CREATE-WORLD AND CS-WORLD-TYPE = "superflat"
+         MOVE SPACES TO WS-FLAT-PRESET
+         MOVE SP-FLAT-PRESET TO WS-FLAT-PRESET
+         CALL "FLAT-PRESET-SET" USING WS-FLAT-PRESET WS-FLAT-STATUS
+     END-IF
 *>   a hosted world makes its standard chunks in generation worker processes, so the frame loop never waits for one (docs/design/generation-worker.md)
      CALL "GEN-WORKERS-AUTO"
      MOVE LOW-VALUES TO WS-PATH
