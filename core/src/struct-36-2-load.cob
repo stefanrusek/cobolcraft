@@ -354,6 +354,7 @@
  01 WN                     PIC X(24).
  01 WL                     BINARY-LONG.
  01 WS-CAP48               BINARY-LONG VALUE 48.
+ 01 WS-CAP80               BINARY-LONG VALUE 80.
  01 WS-CAP96               BINARY-LONG VALUE 96.
  01 WS-CAP16               BINARY-LONG VALUE 16.
  01 WS-LENGTH              BINARY-LONG.
@@ -365,7 +366,7 @@
  01 WS-META                PIC X(96).
  01 WS-FINAL               PIC X(96).
  01 WS-NAME                PIC X(48).
- 01 WS-POOL                PIC X(48).
+ 01 WS-POOL                PIC X(80).
  01 WS-TARGET              PIC X(48).
  01 WS-PLACE               BINARY-LONG.
  01 WS-SELECT              BINARY-LONG.
@@ -398,7 +399,7 @@
              WHEN WN = "name" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-NAME WS-CAP48 WS-LENGTH
              WHEN WN = "pool" AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-POOL WS-CAP48 WS-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-POOL WS-CAP80 WS-LENGTH
              WHEN WN = "target" AND WS-TYPE = 8
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-TARGET WS-CAP48 WS-LENGTH
              WHEN WN = "placement_priority" AND WS-TYPE = 3
