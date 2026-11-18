@@ -1,12 +1,30 @@
 *> The horizontal-collision flag of a moving mob and what 20 section 7.1 and section 13.6 do with it (002-lane-p49n; docs/protocol/18 section 3.3, 20 sections 7.1 and 13.6).
 *> State: P49NSTATE.cpy.
 *>
+*>   PN-ROW-OPEN USING tracker row: makes the entry of the row the entity's own (clears a stale one).
 *>   PN-HCOLL-SET USING tracker row, hcoll, vy (FLOAT-LONG, in and out): MOB-PHYSICS stores whether its move was blocked horizontally; a mob whose climbing flag is set
 *>     (onClimbable) that collided horizontally gets the vertical velocity 0.2 (18 section 3.2 travelInAir step 4).
 *>   PN-HCOLL-GET USING tracker row, hcoll out: the flag of the last move (0 for a stale entry).
 *>   SPIDER-CLIMB-TICK USING tracker row: Spider.tick (20 section 7.1): the climbing flag follows the horizontal collision; a change is sent as metadata 16.
 *>   RAVAGER-LEAVES USING tracker row: Ravager.aiStep (20 section 13.6): with mob griefing on and a horizontal collision, every leaves block in the bounding box inflated by 0.2 is
 *>     destroyed with its drops, and the ravager jumps (vertical velocity 0.42) when it destroyed one and stands on the ground.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PN-ROW-OPEN.
+*> USING tracker row: the entry of the row belongs to the entity in it (a stale one of an earlier occupant is cleared).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY P49NSTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     IF PN-ID(L-ROW) NOT = EN-ID(L-ROW)
+         INITIALIZE PN-ROW(L-ROW)
+         MOVE EN-ID(L-ROW) TO PN-ID(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM PN-ROW-OPEN.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PN-HCOLL-SET.

@@ -8,3 +8,8 @@
        10 PN-ID              BINARY-LONG.
        10 PN-HCOLL           BINARY-LONG.
        10 PN-CLIMB           BINARY-LONG.
+*>     enderman (core/src/mob-20-8b.cob, 20 section 8.1): PN-CARRY the carried block state id (0 none), PN-CREEPY and PN-STARED the flags last sent as metadata 17 and 18, PN-STARE-WANT the flag the stare rule wants (1 once it took a target by a stare, 0 when the target is gone).
+       10 PN-CARRY           BINARY-LONG.
+       10 PN-CREEPY          BINARY-LONG.
+       10 PN-STARED          BINARY-LONG.
+       10 PN-STARE-WANT      BINARY-LONG.

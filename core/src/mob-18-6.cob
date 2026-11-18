@@ -1358,6 +1358,7 @@
  01 WS-S                   BINARY-LONG.
  01 WS-CAT                 BINARY-LONG.
  01 WS-PERSIST             BINARY-LONG VALUE 0.
+ 01 WS-CARRIES             BINARY-LONG.
  01 WS-ZNO                 BINARY-LONG VALUE 0.
  01 WS-ZSLOT               BINARY-LONG.
  01 WS-REMOVABLE           BINARY-LONG.
@@ -1398,6 +1399,11 @@
      END-IF
 *>   A mob a structure made (EN-PERSISTENT: PersistenceRequired) is never removed for distance.
      IF EN-PERSISTENT(L-ROW) = 1
+         MOVE 1 TO WS-PERSIST
+     END-IF
+*>   An enderman that carries a block never despawns (requiresCustomPersistence, 20 section 8.1).
+     CALL "ENDER-CARRIES" USING L-ROW WS-CARRIES
+     IF WS-CARRIES = 1
          MOVE 1 TO WS-PERSIST
      END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE

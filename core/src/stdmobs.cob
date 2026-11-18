@@ -1100,6 +1100,10 @@
              CALL "STDMOB-BURN" USING WS-ROW WS-M
          END-IF
          CALL "STDMOB-AGGRO" USING WS-ROW WS-M
+         IF SM-KEY(WS-M) = "enderman"
+             CALL "ENDER-CARRY-TICK" USING WS-ROW
+             CALL "ENDER-FLAGS-TICK" USING WS-ROW
+         END-IF
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
          END-IF

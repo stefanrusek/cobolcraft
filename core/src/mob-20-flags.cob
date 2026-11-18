@@ -1,7 +1,8 @@
 *> Entity metadata of the species flags of 002-lane-p49n (docs/protocol/20: spider 7.1, pillager 13.2, enderman 8.1, sulfur cube 18.2), one Set Entity Data packet per mob.
 *> State: P49NSTATE.cpy. A species with no entry here gets no packet from these programs (STDMOB-VARIANT-BUILD holds the older ones).
 *>
-*>   STDMOB-FLAGS-BUILD USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the flags of the row: spider and cave spider index 16 BYTE (bit 0 climbing); nothing for another row.
+*>   STDMOB-FLAGS-BUILD USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the flags of the row: spider and cave spider index 16 BYTE (bit 0 climbing); enderman 16 carried block,
+*>     17 creepy, 18 stared at; nothing for another row.
 *>   STDMOB-FLAGS-SEND USING tracker row: STDMOB-FLAGS-BUILD to the viewers of the row.
 
  IDENTIFICATION DIVISION.
@@ -36,17 +37,37 @@
                  MOVE 16 TO WS-INDEX(WS-N)
                  MOVE MD-MDS-BYTE TO WS-SERIALIZER(WS-N)
                  MOVE PN-CLIMB(L-ROW) TO WS-VALUE(WS-N)
+             WHEN "enderman"
+*>               The carried block (index 16, OPTIONAL_BLOCK_STATE, serializer 15: 0 absent, else the block state id) and the two flags (20 section 8.1).
+                 ADD 1 TO WS-N
+                 MOVE 16 TO WS-INDEX(WS-N)
+                 MOVE 15 TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CARRY(L-ROW) TO WS-VALUE(WS-N)
+                 ADD 1 TO WS-N
+                 MOVE 17 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CREEPY(L-ROW) TO WS-VALUE(WS-N)
+                 ADD 1 TO WS-N
+                 MOVE 18 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER(WS-N)
+                 MOVE PN-STARED(L-ROW) TO WS-VALUE(WS-N)
          END-EVALUATE
      END-IF
      IF WS-N > 0
          CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
          CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-             INITIALIZE MD-METADATA-ENTRY
-             MOVE WS-INDEX(WS-I) TO MD-MD-INDEX
-             MOVE WS-SERIALIZER(WS-I) TO MD-MD-SERIALIZER
-             MOVE WS-VALUE(WS-I) TO MD-MD-INT
-             CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+             IF WS-SERIALIZER(WS-I) = 15
+                 CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-INDEX(WS-I)
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SERIALIZER(WS-I)
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER WS-VALUE(WS-I)
+             ELSE
+                 INITIALIZE MD-METADATA-ENTRY
+                 MOVE WS-INDEX(WS-I) TO MD-MD-INDEX
+                 MOVE WS-SERIALIZER(WS-I) TO MD-MD-SERIALIZER
+                 MOVE WS-VALUE(WS-I) TO MD-MD-INT
+                 CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+             END-IF
          END-PERFORM
          MOVE MD-MD-END TO MD-MD-INDEX
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
