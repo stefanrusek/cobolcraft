@@ -13,6 +13,8 @@
  COPY STRUCTPIECE.
  COPY STRUCTJIG.
  COPY STRUCTTPL.
+ COPY CELLS.
+ COPY GENBE.
  COPY STRUCTDIM.
  01 WS-ENV                 PIC X(1024).
  01 WS-DIR                 PIC X(1024).
@@ -107,6 +109,20 @@
  01 WS-PID                 BINARY-LONG.
  01 WS-BADLOAD             BINARY-LONG VALUE 0.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-SDM-SAVE            BINARY-LONG.
+ 01 WS-PTR                 USAGE POINTER.
+ 01 WS-CHESTS              BINARY-LONG VALUE 0.
+ 01 WS-BAD-LOOT            BINARY-LONG VALUE 0.
+ 01 WS-SPAWNERS            BINARY-LONG VALUE 0.
+ 01 WS-BAD-SPAWNER         BINARY-LONG VALUE 0.
+ 01 WS-CCX                 BINARY-LONG.
+ 01 WS-CCZ                 BINARY-LONG.
+ 01 WS-CX0                 BINARY-LONG.
+ 01 WS-CX1                 BINARY-LONG.
+ 01 WS-CZ0                 BINARY-LONG.
+ 01 WS-CZ1                 BINARY-LONG.
+ 01 WS-MARKER              BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
  01 WS-ENT                 BINARY-LONG.
  01 WS-DUP                 BINARY-LONG.
  01 WS-TROW                BINARY-LONG.
@@ -157,6 +173,8 @@
          MOVE 0 TO WS-SEEN-V(WS-K)
      END-PERFORM
 *>   the starts of a stretch of the set's candidate chunks that pick the bastion
+     ALLOCATE 304640 CHARACTERS INITIALIZED RETURNING WS-PTR
+     SET ADDRESS OF CE-CHUNK TO WS-PTR
      MOVE 1 TO SDM-KIND
      PERFORM VARYING WS-SX FROM 0 BY 1 UNTIL WS-SX > 400 OR WS-STARTS >= 24
          PERFORM VARYING WS-SZ FROM 0 BY 1 UNTIL WS-SZ > 400 OR WS-STARTS >= 24
@@ -210,6 +228,18 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 36-8§15 C. Mobs, blocks, spawner, loot: the chests of generated bastions carry one of the bastion loot tables" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD-LOOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 36-8§15 C. Mobs, blocks, spawner, loot: the chunks of four bastions publish chests, and any spawner is the magma cube's" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-CHESTS >= 1 AND WS-BAD-SPAWNER = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     DISPLAY "PROBE bastion chests " WS-CHESTS " spawners " WS-SPAWNERS
 *>   the bastion's mob templates hold 2 piglins, 2 piglin brutes and 1 hoglin (18.3 item 4): every distinct template of the mob pools reached by the starts
      MOVE 0 TO WS-ENT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > JE-COUNT
@@ -300,6 +330,37 @@
 *>   the start element's template is the one the second draw chose: its box has the template size (no other template of the pool has it)
      IF (SP-X1(1) - SP-X0(1) + 1 NOT = WS-SXX AND SP-X1(1) - SP-X0(1) + 1 NOT = WS-SZZ) OR SP-Y1(1) - SP-Y0(1) + 1 NOT = WS-SYY
          ADD 1 TO WS-BAD-DRAW
+     END-IF
+*>   the chests and spawners the first four starts publish when their chunks are generated (15.4 and 15.5: the loot tables are the four of the bastion, a spawner is the magma cube's)
+     IF WS-STARTS <= 4
+         MOVE SDM-KIND TO WS-SDM-SAVE
+         MOVE 0 TO SDM-KIND
+         COMPUTE WS-CX0 = FUNCTION INTEGER(SP-X0(1) / 16)
+         COMPUTE WS-CX1 = FUNCTION INTEGER(SP-X1(1) / 16)
+         COMPUTE WS-CZ0 = FUNCTION INTEGER(SP-Z0(1) / 16)
+         COMPUTE WS-CZ1 = FUNCTION INTEGER(SP-Z1(1) / 16)
+         PERFORM VARYING WS-CCX FROM WS-CX0 BY 1 UNTIL WS-CCX > WS-CX1
+             PERFORM VARYING WS-CCZ FROM WS-CZ0 BY 1 UNTIL WS-CCZ > WS-CZ1
+                 MOVE LOW-VALUES TO CE-CHUNK
+                 CALL "NETHER-DIM-CHUNK" USING WS-CCX WS-CCZ CE-CHUNK WS-MARKER
+                 PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > GB-COUNT
+                     IF GB-KIND(WS-E) = 1
+                         ADD 1 TO WS-CHESTS
+                         IF GB-LOOT(WS-E)(1:25) NOT = "minecraft:chests/bastion_"
+                             ADD 1 TO WS-BAD-LOOT
+                         END-IF
+                     END-IF
+                     IF GB-KIND(WS-E) = 2
+                         ADD 1 TO WS-SPAWNERS
+                         IF GB-TEXT(WS-E) NOT = "minecraft:magma_cube"
+                             ADD 1 TO WS-BAD-SPAWNER
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+         MOVE WS-SDM-SAVE TO SDM-KIND
+         CALL "STRUCT-FIND-POINT" USING WS-ROW WS-SEED WS-SX WS-SZ WS-PX WS-PY WS-PZ WS-PV
      END-IF
 *>   every piece: the family of the start or the mob and block pools; its processor list
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-FAMILY(WS-K))) TO WS-LEN
