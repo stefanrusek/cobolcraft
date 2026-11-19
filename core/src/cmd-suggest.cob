@@ -13,6 +13,64 @@
 *>   BR-SUGGESTIONS-BUILD USING transaction id, PB-BUFFER: Command Suggestions 0x0F (05a): transaction
 *>     id, start, length, then each entry as a String with no tooltip.
 
+*> The tags of a registry for the completion of a resource_or_tag argument (lane buglocate3): the files of data/minecraft/tags/<registry path>/ of the data directory the structure data
+*> was loaded from (STRUCTDATA SD-DIR, the generated vanilla-data folder), named minecraft:<file name without .json>.
+*>   BR-SUGGEST-TAGS USING registry (PIC X(112)), count out, names out (256 entries of PIC X(64)); nothing when the registry is not of minecraft: or no data directory is known
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-SUGGEST-TAGS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-PATH                PIC X(1300).
+ 01 WS-DIRZ                PIC X(1301).
+ 01 WS-LIST                PIC X(16384).
+ 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 16384.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-ENTRY               PIC X(256).
+ 01 WS-ENTRY-LEN           BINARY-LONG.
+ 01 WS-NAME-LEN            BINARY-LONG.
+ 01 WS-PATH-LEN            BINARY-LONG.
+ 01 WS-TAIL                PIC X(102).
+ LINKAGE SECTION.
+ 01 L-REGISTRY             PIC X(112).
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-NAMES.
+    05 L-NAME              PIC X(64) OCCURS 256 TIMES.
+ PROCEDURE DIVISION USING L-REGISTRY L-COUNT L-NAMES.
+     MOVE 0 TO L-COUNT
+     IF L-REGISTRY(1:10) NOT = "minecraft:" OR SD-DIR = SPACES OR SD-DIR(1:1) = LOW-VALUE
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-TAIL WS-PATH
+     MOVE L-REGISTRY(11:102) TO WS-TAIL
+     STRING FUNCTION TRIM(SD-DIR) "/data/minecraft/tags/" FUNCTION TRIM(WS-TAIL) DELIMITED BY SIZE INTO WS-PATH
+     MOVE LOW-VALUES TO WS-DIRZ
+     COMPUTE WS-PATH-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-PATH))
+     MOVE WS-PATH(1:WS-PATH-LEN) TO WS-DIRZ(1:WS-PATH-LEN)
+     MOVE 0 TO WS-LIST-COUNT
+     CALL STATIC "cc_fs_list" USING BY REFERENCE WS-DIRZ BY REFERENCE WS-LIST
+         BY VALUE WS-LIST-CAPACITY BY REFERENCE WS-LIST-COUNT RETURNING WS-RC
+     IF WS-RC NOT = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO WS-PTR
+     PERFORM WS-LIST-COUNT TIMES
+         MOVE SPACES TO WS-ENTRY
+         MOVE 0 TO WS-ENTRY-LEN
+         UNSTRING WS-LIST DELIMITED BY X"0A" INTO WS-ENTRY COUNT IN WS-ENTRY-LEN WITH POINTER WS-PTR
+         IF WS-ENTRY(1:1) = "F" AND WS-ENTRY-LEN > 6 AND WS-ENTRY(WS-ENTRY-LEN - 4:5) = ".json"
+                 AND WS-ENTRY-LEN <= 59 AND L-COUNT < 256
+             COMPUTE WS-NAME-LEN = WS-ENTRY-LEN - 6
+             ADD 1 TO L-COUNT
+             MOVE SPACES TO L-NAME(L-COUNT)
+             STRING "minecraft:" WS-ENTRY(2:WS-NAME-LEN) DELIMITED BY SIZE INTO L-NAME(L-COUNT)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BR-SUGGEST-TAGS.
+
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-SUGGEST.
  DATA DIVISION.
@@ -68,6 +126,14 @@
  01 WS-REG-CAPACITY        BINARY-LONG VALUE 0.
  01 WS-REG-PAYLOAD-LENGTH  BINARY-LONG.
  01 WS-REG-KEY             PIC X(112).
+ 01 WS-TAG-COUNT           BINARY-LONG.
+ 01 WS-TAG-NAMES.
+    05 WS-TAG-NAME         PIC X(64) OCCURS 256 TIMES.
+ 01 WS-SAVE-REMAINING      PIC X(1024).
+ 01 WS-SAVE-LOWER          PIC X(1024).
+ 01 WS-SAVE-LENGTH         BINARY-LONG.
+ 01 WS-TAG-ID              PIC X(64).
+ 01 WS-TAG-ID-LENGTH       BINARY-LONG.
  01 WS-TRUE-TEXT           PIC X(5) VALUE "true".
  01 WS-FALSE-TEXT          PIC X(5) VALUE "false".
  LINKAGE SECTION.
@@ -185,6 +251,12 @@
                  IF BR-N-REG-LENGTH(WS-CHILD) > 0
                      PERFORM LIST-REGISTRY
                  END-IF
+             WHEN BR-P-RES-OR-TAG
+             WHEN BR-P-RES-OR-TAG-KEY
+                 IF BR-N-REG-LENGTH(WS-CHILD) > 0
+                     PERFORM LIST-REGISTRY
+                     PERFORM LIST-TAGS
+                 END-IF
              WHEN BR-P-RESOURCE-KEY
                  PERFORM LIST-RECIPES
          END-EVALUATE
@@ -224,6 +296,64 @@
                  PERFORM OFFER-RESOURCE
              END-IF
          END-PERFORM
+     END-IF.
+
+*> The tags of the registry of the node, offered as #namespace:path (the text typed after a # or without one is matched against the tag's identifier like a resource, so the
+*> operator who typed `village` is offered #minecraft:village).
+ LIST-TAGS.
+     MOVE SPACES TO WS-REG-KEY
+     MOVE BR-N-REG(WS-CHILD) TO WS-REG-KEY
+     CALL "BR-SUGGEST-TAGS" USING WS-REG-KEY WS-TAG-COUNT WS-TAG-NAMES
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-TAG-COUNT
+         MOVE WS-TAG-NAME(WS-K) TO WS-TAG-ID
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TAG-ID)) TO WS-TAG-ID-LENGTH
+         PERFORM OFFER-TAG
+     END-PERFORM.
+
+*> One tag (WS-TAG-ID, WS-TAG-ID-LENGTH): the text typed without its leading # must match the identifier (OFFER-RESOURCE's rule); the entry is #identifier, never the text typed exactly.
+ OFFER-TAG.
+     MOVE WS-REMAINING TO WS-SAVE-REMAINING
+     MOVE WS-LOWER TO WS-SAVE-LOWER
+     MOVE WS-REMAINING-LENGTH TO WS-SAVE-LENGTH
+     IF WS-REMAINING-LENGTH > 0 AND WS-REMAINING(1:1) = "#"
+         COMPUTE WS-REMAINING-LENGTH = WS-SAVE-LENGTH - 1
+         MOVE SPACES TO WS-REMAINING WS-LOWER
+         IF WS-REMAINING-LENGTH > 0
+             MOVE WS-SAVE-REMAINING(2:WS-REMAINING-LENGTH) TO WS-REMAINING
+             MOVE WS-SAVE-LOWER(2:WS-REMAINING-LENGTH) TO WS-LOWER
+         END-IF
+     END-IF
+     MOVE SPACES TO WS-CANDIDATE
+     MOVE WS-TAG-ID(1:WS-TAG-ID-LENGTH) TO WS-CANDIDATE
+     MOVE WS-TAG-ID-LENGTH TO WS-CANDIDATE-LENGTH
+     MOVE 0 TO WS-SUB-LAST
+     PERFORM VARYING WS-SUB-P FROM 1 BY 1 UNTIL WS-SUB-P > WS-CANDIDATE-LENGTH
+         IF WS-CANDIDATE(WS-SUB-P:1) = ":" AND WS-SUB-LAST = 0
+             MOVE WS-SUB-P TO WS-SUB-LAST
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-COUNT
+     IF WS-REMAINING-LENGTH > 0
+         INSPECT WS-REMAINING(1:WS-REMAINING-LENGTH) TALLYING WS-COUNT FOR ALL ":"
+     END-IF
+     PERFORM MATCH-SUB
+     IF WS-SUB-OK = 0 AND WS-COUNT = 0 AND WS-SUB-LAST > 0
+         MOVE SPACES TO WS-CANDIDATE
+         COMPUTE WS-CANDIDATE-LENGTH = WS-TAG-ID-LENGTH - WS-SUB-LAST
+         MOVE WS-TAG-ID(WS-SUB-LAST + 1:WS-CANDIDATE-LENGTH) TO WS-CANDIDATE
+         PERFORM MATCH-SUB
+     END-IF
+     MOVE WS-SAVE-REMAINING TO WS-REMAINING
+     MOVE WS-SAVE-LOWER TO WS-LOWER
+     MOVE WS-SAVE-LENGTH TO WS-REMAINING-LENGTH
+     MOVE SPACES TO WS-CANDIDATE
+     STRING "#" WS-TAG-ID(1:WS-TAG-ID-LENGTH) DELIMITED BY SIZE INTO WS-CANDIDATE
+     COMPUTE WS-CANDIDATE-LENGTH = WS-TAG-ID-LENGTH + 1
+     IF WS-SUB-OK = 1
+         IF NOT (WS-REMAINING-LENGTH = WS-CANDIDATE-LENGTH
+                 AND WS-CANDIDATE(1:WS-CANDIDATE-LENGTH) = WS-REMAINING(1:WS-REMAINING-LENGTH))
+             PERFORM ADD-ENTRY
+         END-IF
      END-IF.
 
 *> The keys of the recipes of the store (a resource_key argument of the registry minecraft:recipe).

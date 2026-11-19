@@ -203,9 +203,9 @@
      MOVE "locate structure #minecraft:village" TO WS-LINE
      MOVE "commands.locate.structure.not_found(#minecraft:village)" TO WS-EXPECTED
      PERFORM RUN-TEXT
-     MOVE "acceptance US13 /locate structure an id the structure registry does not hold is refused by the argument" TO TL-CASE
+     MOVE "acceptance US13 /locate structure an id the structure registry does not hold: commands.locate.structure.invalid (16 7.7, T43401)" TO TL-CASE
      MOVE "locate structure minecraft:village" TO WS-LINE
-     MOVE "argument.resource.not_found(minecraft:village,minecraft:worldgen/structure) |" TO WS-EXPECTED
+     MOVE "commands.locate.structure.invalid(minecraft:village)" TO WS-EXPECTED
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /locate poi a point of interest: no store, none found" TO TL-CASE
      MOVE "locate poi minecraft:home" TO WS-LINE

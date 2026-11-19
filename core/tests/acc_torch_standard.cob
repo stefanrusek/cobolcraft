@@ -84,6 +84,7 @@
  01 WS-FACING-TABLE REDEFINES WS-FACING-NAMES.
     05 WS-FACING-NAME      PIC X(5) OCCURS 4 TIMES.
  01 WS-WANT                BINARY-LONG.
+ 01 WS-WKIND               BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -225,18 +226,18 @@
      PERFORM CHECK-N
 *>   The wall block of a state: the void and a block that is no torch have none, a standing torch has its wall block.
      MOVE 0 TO WS-STATE
-     CALL "TORCH-WALL-BLOCK" USING WS-STATE WS-WANT
+     CALL "PS-WALL-BLOCK" USING WS-STATE WS-WANT WS-WKIND
      MOVE 0 TO WS-EXPECT
      MOVE WS-WANT TO WS-OBSERVE
      MOVE "acceptance torch standard: the void has no wall torch" TO WS-CASE
      PERFORM CHECK-N
-     CALL "TORCH-WALL-BLOCK" USING WS-STONE WS-WANT
+     CALL "PS-WALL-BLOCK" USING WS-STONE WS-WANT WS-WKIND
      MOVE WS-WANT TO WS-OBSERVE
      MOVE "acceptance torch standard: stone has no wall torch" TO WS-CASE
      PERFORM CHECK-N
      MOVE "torch" TO WS-KEY
      PERFORM FIND-STATE
-     CALL "TORCH-WALL-BLOCK" USING WS-STATE WS-WANT
+     CALL "PS-WALL-BLOCK" USING WS-STATE WS-WANT WS-WKIND
      MOVE "minecraft:wall_torch" TO WS-KEY112
      CALL "BLOCKS-ID-OF" USING WS-KEY112 WS-E
      COMPUTE WS-EXPECT = WS-E + 1

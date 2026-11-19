@@ -695,9 +695,152 @@
          END-IF
      END-PERFORM
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE
+     CALL "THROWN-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE
      CALL "ENTITY-FIRE-MESH" USING CLIENT-STATE L-EYE-TABLE
      GOBACK.
  END PROGRAM GROUND-ITEMS-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-ITEMS-MESH.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG): appends the thrown items of a standard-set world to RL-GI-VERTEX as ThrownItemRenderer draws them (34-9 section 7.1): the eye_of_ender,
+*> snowball, egg and ender_pearl entities (EN-VANILLA 1) show the flat model of their item (the entity's stack, which the server does not send for these, is the default item:
+*> ender_eye, snowball, egg, ender_pearl) as the quad of the ground display transform (12 section 8.2: 0.5 wide, y -0.125 to 0.375 of the entity position, scale 1.0), turned to the
+*> camera (rotated by the camera orientation: no bob and no spin) and drawn on both sides (12 vertices). The eye of ender is full bright (block light 15, brightness 1); the others
+*> take the light of their cell like a dropped item (at least 0.1). Lane buglocate3: without this the eye of ender thrown into the air (core EYE-ITEM-USE) was invisible.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CONTENT.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-SPRITE              BINARY-LONG.
+ 01 WS-VYAW                FLOAT-LONG.
+ 01 WS-VPITCH              FLOAT-LONG.
+ 01 WS-CAM-TABLE.
+    05 WS-CAM              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-PITCH               FLOAT-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-RX                  FLOAT-LONG.
+ 01 WS-RZ                  FLOAT-LONG.
+ 01 WS-UX                  FLOAT-LONG.
+ 01 WS-UY                  FLOAT-LONG.
+ 01 WS-UZ                  FLOAT-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE-ID            BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-U16                 FLOAT-SHORT.
+ 01 WS-V16                 FLOAT-SHORT.
+ 01 WS-CORNERS.
+    05 WS-C OCCURS 4 TIMES.
+       10 WS-C-X             FLOAT-SHORT.
+       10 WS-C-Y             FLOAT-SHORT.
+       10 WS-C-Z             FLOAT-SHORT.
+       10 WS-C-U             FLOAT-SHORT.
+       10 WS-C-V             FLOAT-SHORT.
+*> The twelve vertices of the quad: the front triangles 1 2 3, 1 3 4 and the back triangles 1 3 2, 1 4 3.
+ 01 WS-ORDER-DATA          PIC X(12) VALUE "123134132143".
+ 01 WS-ORDER REDEFINES WS-ORDER-DATA.
+    05 WS-ORD              PIC 9 OCCURS 12 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
+*>   the camera orientation: forward from yaw and pitch (the game's convention), right horizontal, up = right x forward
+     CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VYAW WS-VPITCH WS-CAM-TABLE
+     COMPUTE WS-YAW = WS-VYAW * FUNCTION PI / 180
+     COMPUTE WS-PITCH = WS-VPITCH * FUNCTION PI / 180
+     COMPUTE WS-FX = 0 - FUNCTION SIN(WS-YAW) * FUNCTION COS(WS-PITCH)
+     COMPUTE WS-FY = 0 - FUNCTION SIN(WS-PITCH)
+     COMPUTE WS-FZ = FUNCTION COS(WS-YAW) * FUNCTION COS(WS-PITCH)
+     COMPUTE WS-RX = 0 - FUNCTION COS(WS-YAW)
+     COMPUTE WS-RZ = 0 - FUNCTION SIN(WS-YAW)
+     COMPUTE WS-UX = 0 - WS-RZ * WS-FY
+     COMPUTE WS-UY = WS-RZ * WS-FX - WS-RX * WS-FZ
+     COMPUTE WS-UZ = WS-RX * WS-FY
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         MOVE SPACES TO WS-KEY
+         MOVE 0 TO WS-FULL
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1
+             EVALUATE EN-KEY(WS-R)
+                 WHEN "eye_of_ender"
+                     MOVE "ender_eye" TO WS-KEY
+                     MOVE 1 TO WS-FULL
+                 WHEN "snowball"
+                     MOVE "snowball" TO WS-KEY
+                 WHEN "egg"
+                     MOVE "egg" TO WS-KEY
+                 WHEN "ender_pearl"
+                     MOVE "ender_pearl" TO WS-KEY
+             END-EVALUATE
+         END-IF
+         IF WS-KEY NOT = SPACES AND RL-GI-COUNT + 12 <= CL-MAX-GI-VERTICES
+             MOVE EN-STACK-ITEM(WS-R) TO WS-ITEM
+             IF EN-STACK-COUNT(WS-R) = 0
+                 CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+             END-IF
+             CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
+             MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
+             MOVE 1 TO WS-LIGHT
+             IF WS-FULL = 0
+                 COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-R))
+                 COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-R))
+                 COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-R))
+                 CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
+                 COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15, 0.1)
+             END-IF
+*>           Corner k: left (-0.25 along the camera's right) for 1 and 4, right (+0.25) for 2 and 3; top (+0.375 along its up) for 1 and 2, bottom (-0.125) for 3 and 4.
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 MOVE -0.25 TO WS-SIDE
+                 MOVE 0 TO WS-U16
+                 IF WS-K = 2 OR WS-K = 3
+                     MOVE 0.25 TO WS-SIDE
+                     MOVE 16 TO WS-U16
+                 END-IF
+                 MOVE 0.375 TO WS-TOP
+                 MOVE 0 TO WS-V16
+                 IF WS-K >= 3
+                     MOVE -0.125 TO WS-TOP
+                     MOVE 16 TO WS-V16
+                 END-IF
+                 COMPUTE WS-C-X(WS-K) = EN-X(WS-R) - L-EYE(1) + WS-SIDE * WS-RX + WS-TOP * WS-UX
+                 COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2) + WS-TOP * WS-UY
+                 COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SIDE * WS-RZ + WS-TOP * WS-UZ
+                 CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16 WS-V16 WS-C-U(WS-K) WS-C-V(WS-K)
+             END-PERFORM
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+                 MOVE WS-ORD(WS-I) TO WS-N
+                 ADD 1 TO RL-GI-COUNT
+                 MOVE WS-C-X(WS-N) TO RL-GI-X(RL-GI-COUNT)
+                 MOVE WS-C-Y(WS-N) TO RL-GI-Y(RL-GI-COUNT)
+                 MOVE WS-C-Z(WS-N) TO RL-GI-Z(RL-GI-COUNT)
+                 MOVE WS-C-U(WS-N) TO RL-GI-U(RL-GI-COUNT)
+                 MOVE WS-C-V(WS-N) TO RL-GI-V(RL-GI-COUNT)
+                 MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                 MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM THROWN-ITEMS-MESH.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-FIRE-MESH.

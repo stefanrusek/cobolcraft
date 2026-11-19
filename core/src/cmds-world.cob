@@ -2391,8 +2391,9 @@
 *> ring, 32 blocks times its number, is farther than the best sample), shown as [x, y, z] with the floor of the
 *> distance (commands.locate.biome.success [biome, coordinates, distance], quiet; the result is the distance); a dimension that cannot produce the biome (its single biome,
 *> else lowland and upland, WORLDGEN-BIOMES) or none within the radius is commands.locate.biome.not_found [biome]. structure searches the structure sets of the loaded data (cmd-locate.cob, radius 100 cells; Y shown as ~);
-*> poi finds nothing: the world has no point-of-interest store, so it is commands.locate.poi.not_found [identifier] (an unknown structure or point of interest
-*> is refused by the argument parser, argument.resource.not_found, before the command runs, so commands.locate.structure.invalid is not raised). Not done: the clickable
+*> poi finds nothing: the world has no point-of-interest store, so it is commands.locate.poi.not_found [identifier] (an unknown point of interest is refused by the argument
+*> parser, argument.resource.not_found; an identifier that names no structure is commands.locate.structure.invalid [identifier] raised here, since the structure argument is a
+*> resource_or_tag_key that the parser does not look up: lane buglocate3). Not done: the clickable
 *> coordinates (the message arguments are plain text).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -2401,6 +2402,7 @@
  COPY BRRUN.
  COPY PROTO.
  COPY LOCATEQ.
+ COPY CONTENT.
  01 WS-QUEUED              BINARY-LONG.
  01 WS-WANT-ID             PIC X(80).
  01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
@@ -2408,6 +2410,8 @@
  01 WS-NAME-POI            PIC X(32) VALUE "poi".
  01 WS-REGISTRY            PIC X(112) VALUE "minecraft:worldgen/biome".
  01 WS-STRUCTURE-LIT       BINARY-LONG.
+ 01 WS-REG-COUNT           BINARY-LONG.
+ 01 WS-REG-STATUS          BINARY-LONG.
  01 WS-POI-LIT             BINARY-LONG.
  01 WS-ARG                 BINARY-LONG.
  01 WS-TEXT                PIC X(112).
@@ -2530,6 +2534,14 @@
              CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
              MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
              CALL "CXC-ARG-REF" USING WS-ARG WS-REGISTRY WS-KIND WS-ID WS-TAG
+*>           16 section 7.7: an identifier that names no structure of the registry is commands.locate.structure.invalid [the id]; the registry of the open set is asked only when
+*>           it holds one (a set without it cannot refuse a name)
+             CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-REG-COUNT WS-REG-STATUS
+             IF WS-KIND = 1 AND WS-ID < 0 AND WS-REG-STATUS = CT-OK
+                 MOVE "commands.locate.structure.invalid" TO WS-KEY
+                 PERFORM FAIL-TEXT
+                 GOBACK
+             END-IF
              MOVE SPACES TO WS-WANT-ID
              IF WS-KIND = 2
                  MOVE WS-TAG TO WS-WANT-ID
@@ -2621,7 +2633,7 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-LOCATE.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
-     MOVE "locate structure <structure:structortag>" TO WS-PATH
+     MOVE "locate structure <structure:structortag!>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "locate biome <biome:biomeortag>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
