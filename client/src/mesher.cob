@@ -242,6 +242,7 @@
  01 WS-C                   BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-CULL-D              BINARY-LONG.
+ 01 WS-LIGHT-D             BINARY-LONG.
  01 WS-NB-AT               BINARY-LONG.
  01 WS-OWN-AT              BINARY-LONG.
  01 WS-COVER-AT            BINARY-LONG.
@@ -427,11 +428,18 @@
                          END-IF
                      END-IF
                      IF WS-CULL = 0
-*>                       The light of the cell the face looks into (the cull neighbour when it is that cell).
+*>                       The light of the cell the face looks into (the cull neighbour when it is that cell); a quad that is not flat on
+*>                       the border of its block (a torch, a plant, the top of a slab) of a block that is not a full cube takes the light
+*>                       of its own cell (12 section 1.3 step 2: B = P unless faceCubic), so a torch under a block is not drawn from the
+*>                       stone it looks into.
                          MOVE BM-SHADE(WS-BM, WS-Q) TO WS-D
-                         IF WS-D NOT = WS-CULL-D
+                         MOVE WS-D TO WS-LIGHT-D
+                         IF BM-OWNLIGHT(WS-BM, WS-Q) = 1 AND ST-OPAQUE(WS-ROW-STATE) = 0
+                             MOVE DIR-NONE TO WS-LIGHT-D
+                         END-IF
+                         IF WS-LIGHT-D NOT = WS-CULL-D OR WS-CULL-D = DIR-NONE
                              CALL "MESH-CELL" USING CLIENT-STATE L-ROW WS-NEIGHBOURS WS-HEIGHT WS-X
-                                 WS-Y WS-Z WS-D WS-NSTATE WS-NSKY WS-NBLOCK
+                                 WS-Y WS-Z WS-LIGHT-D WS-NSTATE WS-NSKY WS-NBLOCK
                          END-IF
                          MOVE WS-LB(WS-D, WS-NBLOCK + 1) TO WS-BRIGHT
                          MOVE WS-LS(WS-D, WS-NSKY + 1) TO WS-SKYTERM

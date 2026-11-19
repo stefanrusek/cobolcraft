@@ -377,6 +377,8 @@
                  ADD 1 TO BM-QUAD-COUNT(L-S)
                  MOVE QUAD TO BM-QUAD(L-S, BM-QUAD-COUNT(L-S))
                  MOVE BM-QUAD-COUNT(L-S) TO WS-N
+*>               A chest keeps the light of the cell its face looks into (as before the own-cell rule of STATE-BAKE).
+                 MOVE 0 TO BM-OWNLIGHT(L-S, WS-N)
                  PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
                      CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE QD-U(WS-J) QD-V(WS-J)
                          BM-AU(L-S, WS-N, WS-J) BM-AV(L-S, WS-N, WS-J)
