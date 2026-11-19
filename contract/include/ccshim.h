@@ -204,9 +204,9 @@ void cc_f64_lerp_f64(const double *t, const double *a, const double *b, double *
  * regenerates the mip levels it touches. Both return 0 or call cc_fatal. */
 int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels);
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba);
-/* Between cc_vk_texture_update_begin and cc_vk_texture_update_end the updates are recorded and submitted together, waited for once
- * (each alone waits for the GPU to be idle, which costs a frame's work for every animated sprite); the pixels read back the same
- * after the end. The end with no begin, or with no update between, does nothing. */
+/* Between cc_vk_texture_update_begin and cc_vk_texture_update_end the updates are recorded and submitted together, not waited for
+ * (each alone waits for the GPU to be idle, which costs a frame's work for every animated sprite; the queue runs the copies before the
+ * next frame); the pixels read back the same after the end. The end with no begin, or with no update between, does nothing. */
 void cc_vk_texture_update_begin(void);
 void cc_vk_texture_update_end(void);
 
@@ -230,6 +230,22 @@ void cc_vk_glint_offset(const float *uv);
 
 /* §9 addition: clears the depth attachment between the world pass and the hand pass (US20). */
 void cc_vk_clear_depth(void);
+
+/* §9 addition (diagnostics): with CC_GPU_STATS=1 in the environment of cc_vk_init, the program tells the shim which part of its frame it
+ * enters, and the shim's once-a-second statistics line is followed by one line with the milliseconds per frame (and entries per frame) spent in
+ * each phase. cc_stat_phase(p) ends the phase that was running (charging it the time since its own call) and starts phase p (CC_PHASE_*);
+ * 0 ends it without starting another (cc_vk_frame_begin does that). Without CC_GPU_STATS it returns at once. */
+#define CC_PHASE_INPUT       1 /* events, screens, camera, physics input */
+#define CC_PHASE_PUMP        2 /* the hosted world's pump outside the core tick (guests, console, status) */
+#define CC_PHASE_CORE_TICK   3 /* one core tick (entries per frame = ticks run) */
+#define CC_PHASE_CLIENT_TICK 4 /* sprint, sneak and the 50 ms client tick */
+#define CC_PHASE_CONTROLS    5 /* target ray, block controls, hand, hotbar */
+#define CC_PHASE_NET         6 /* connections and pack downloads */
+#define CC_PHASE_WORLD       7 /* sky, environment, animation, section meshing */
+#define CC_PHASE_UI          8 /* screen model and UI quads (the HUD) */
+#define CC_PHASE_RENDER_LIST 9 /* the render list (entities, particles, weather, clouds) */
+#define CC_PHASE_SUBMIT     10 /* uploads of atlases and meshes, before cc_vk_frame_begin */
+void cc_stat_phase(int32_t phase);
 
 /* §12 cc_open_path: starts opener with path as its only argument (posix_spawn) and returns 0 at once, or
  * CC_NOTFOUND when the opener cannot be started. Does not wait (US4). */
