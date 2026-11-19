@@ -157,9 +157,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHAT-SEND.
 *> USING CLIENT-STATE: Chat Command with a line starting with / (without the /), else Chat with
-*> the line, stamped with the frame's clock as milliseconds since the
-*> Unix epoch (CL-CLOCK counts from day 1 of INTEGER-OF-DATE; 1970-01-01 is day 134775, so the
-*> offset is 134775 x 86400000 ms; local time, which the server does not use, 09 §3.2).
+*> the line, stamped with the frame's clock, which is milliseconds since the Unix epoch (CL-CLOCK, gettimeofday; the server does not use it, 09 §3.2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -167,7 +165,6 @@
  01 WS-READY               BINARY-LONG VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 1100.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
- 01 WS-EPOCH               BINARY-DOUBLE VALUE 11644560000000.
  01 WS-TIME                BINARY-DOUBLE.
  01 WS-COMMAND             PIC X(1024).
  01 WS-LENGTH              BINARY-LONG.
@@ -178,7 +175,7 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
-     COMPUTE WS-TIME = CL-NOW-MS - WS-EPOCH
+     MOVE CL-NOW-MS TO WS-TIME
      CALL "PB-RESET" USING PB-BUFFER
      IF CH-LINE(1:1) = "/"
          MOVE SPACES TO WS-COMMAND

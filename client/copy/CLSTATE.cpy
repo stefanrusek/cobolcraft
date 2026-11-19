@@ -56,6 +56,8 @@
     05 CL-QUIT               PIC 9.          *> 1 = the run ends (quit control or close request)
     05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)
     05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
+    05 CL-INTERP             PIC 9.          *> 1 = frames between client ticks show positions interpolated by the partial tick (smooth.cob; CL-RUN sets it, tests leave 0)
+    05 CL-PARTIAL            FLOAT-LONG.     *> the part of the client tick the frame is in, 0 to 1 (SMOOTH-PARTIAL; 1 = the tick's own state, CL-INIT)
     05 CL-FRAMES             BINARY-DOUBLE.
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
     05 CL-CMD-AT             BINARY-DOUBLE.   *> the frame from which CL-CMD-TEXT (console commands separated by ;, CC_COMMANDS) runs once (0 = none)
@@ -540,6 +542,14 @@
        10 PL-SENT-FLAGS      BINARY-LONG.
        10 PL-POSE            BINARY-LONG.    *> the Pose enum id (docs/protocol/53 section 1): 0 standing, 3 swimming (also crawling), 5 crouching
        10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
+*>     The state one client tick ago (SMOOTH-STORE, smooth.cob): position, eye height and field of view modifier, lerped by CL-PARTIAL for the frame's
+*>     view (53 section 7, 12 section 7.2: lerp(partialTick, old, current)). PL-OSET 0 = no old state (a join, respawn or teleport): the frame uses the current one.
+       10 PL-OSET            PIC 9.
+       10 PL-OX              FLOAT-LONG.
+       10 PL-OY              FLOAT-LONG.
+       10 PL-OZ              FLOAT-LONG.
+       10 PL-OEYE            FLOAT-LONG.
+       10 PL-OFOV            FLOAT-LONG.
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
        10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
        10 PL-ANIM-INIT       PIC 9.          *> the own figure's walk animation (54 section 1): set once the previous position is known
@@ -724,6 +734,10 @@
           15 EN-OX           FLOAT-LONG.
           15 EN-OY           FLOAT-LONG.
           15 EN-OZ           FLOAT-LONG.
+*>        The yaw, pitch and head yaw at the previous client tick (the rendered values lerp from them to the current ones by CL-PARTIAL, smooth.cob).
+          15 EN-OYAW         FLOAT-SHORT.
+          15 EN-OPITCH       FLOAT-SHORT.
+          15 EN-OHEAD        FLOAT-SHORT.
           15 EN-MOB-FLAGS    BINARY-LONG.
           15 EN-BABY         PIC 9.
           15 EN-SW-ACTIVE    PIC 9.

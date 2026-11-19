@@ -248,6 +248,7 @@
  01 WS-GV                  FLOAT-LONG.
  01 WS-GSCALE              FLOAT-LONG VALUE 0.5.
  01 WS-GSTR                FLOAT-LONG.
+ 01 WS-FEET-EYE            FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -350,9 +351,7 @@
      IF CL-CAMERA > 0 AND EN-COUNT < CL-MAX-ENTITIES AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
          COMPUTE WS-R = EN-COUNT + 1
          MOVE EN-ENTITY(WS-R) TO WS-SAVED
-         MOVE PL-X TO EN-X(WS-R)
-         MOVE PL-Y TO EN-Y(WS-R)
-         MOVE PL-Z TO EN-Z(WS-R)
+         CALL "SMOOTH-PLAYER" USING CLIENT-STATE EN-X(WS-R) EN-Y(WS-R) EN-Z(WS-R) WS-FEET-EYE
          MOVE PL-YAW TO EN-YAW(WS-R)
 *>       A world of the standard set: the row is a "player" of the model table (the humanoid with the default skin), emitted like any
 *>       other replica row; only the cobolcraft stand-in world keeps the operator's box.

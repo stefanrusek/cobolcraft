@@ -245,6 +245,8 @@
              CALL "PB-GET-FLOAT" USING L-PACKET PL-YAW
              CALL "PB-GET-FLOAT" USING L-PACKET PL-PITCH
              MOVE 1 TO PL-POSITIONED
+*>           A teleport is no walking: the view does not slide from the old place (smooth.cob).
+             MOVE 0 TO PL-OSET
 *>           A correction: the fall stops and the server already has this position.
              MOVE 0 TO PL-VY
              MOVE PL-X TO PL-SENT-X

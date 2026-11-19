@@ -35,6 +35,7 @@
      MOVE 300 TO PL-MAX-AIR PL-AIR
      MOVE -1 TO PL-VEHICLE
      MOVE -2000 TO HB-LAST-TIME
+     MOVE 1 TO CL-PARTIAL
      CALL "OPTIONS-DEFAULTS" USING CLIENT-STATE
      CALL "OPTIONS-APPLY" USING CLIENT-STATE
      CALL "PARTICLES-CLEAR" USING CLIENT-STATE
@@ -86,18 +87,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-CLOCK.
-*> USING milliseconds out (BINARY-DOUBLE): the wall clock (10 ms resolution of CURRENT-DATE), from
-*> day 1 of INTEGER-OF-DATE so midnight does not wrap.
+*> USING milliseconds out (BINARY-DOUBLE): the wall clock in whole milliseconds (gettimeofday: a struct timeval of seconds and microseconds; CURRENT-DATE
+*> counts hundredths only, and a frame time quantised to 10 ms makes the partial tick of an interpolated frame jitter by up to 0.2 of a tick).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-NOW                 PIC X(21).
+*> The timeval is cleared first: macOS writes 4 bytes of microseconds, Linux 8, and both read as one little-endian 8-byte field.
+ 01 WS-TIMEVAL.
+    05 WS-SEC              BINARY-DOUBLE.
+    05 WS-USEC             BINARY-DOUBLE.
+ 01 WS-NO-ZONE             BINARY-DOUBLE VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-MS                   BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-MS.
-     MOVE FUNCTION CURRENT-DATE TO WS-NOW
-     COMPUTE L-MS = (FUNCTION INTEGER-OF-DATE(FUNCTION NUMVAL(WS-NOW(1:8))) * 86400
-         + FUNCTION NUMVAL(WS-NOW(9:2)) * 3600 + FUNCTION NUMVAL(WS-NOW(11:2)) * 60
-         + FUNCTION NUMVAL(WS-NOW(13:2))) * 1000 + FUNCTION NUMVAL(WS-NOW(15:2)) * 10
+     MOVE 0 TO WS-SEC WS-USEC
+     CALL STATIC "gettimeofday" USING BY REFERENCE WS-TIMEVAL BY VALUE WS-NO-ZONE RETURNING WS-RC
+     COMPUTE L-MS = WS-SEC * 1000 + WS-USEC / 1000
      GOBACK.
  END PROGRAM CL-CLOCK.
 
@@ -123,6 +128,8 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 1 TO MB-CREDIT-ON
+*>   Frames between client ticks show the interpolated state (smooth.cob).
+     MOVE 1 TO CL-INTERP
      MOVE CL-MESH-CREDIT-US TO MB-CREDIT
      PERFORM UNTIL CL-QUIT = 1
          CALL STATIC "cc_win_poll" USING BY REFERENCE WS-EVENTS BY VALUE WS-CAPACITY
@@ -201,6 +208,7 @@
  01 WS-INSIDE              BINARY-LONG.
  01 WS-RANDOM              FLOAT-LONG.
  01 WS-SHOT-RC             BINARY-LONG.
+ 01 WS-SMOOTH-MODE         BINARY-LONG.
  01 B-EVENTS BASED.
     05 B-EVENT             PIC X(24) OCCURS 4096 TIMES.
  LINKAGE SECTION.
@@ -250,9 +258,12 @@
              MOVE PL-X TO WS-PX
              MOVE PL-Y TO WS-PY
              MOVE PL-Z TO WS-PZ
+             CALL "SMOOTH-STORE" USING CLIENT-STATE
              CALL "PHYS-TICK" USING CLIENT-STATE
              CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
              CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+             MOVE 2 TO WS-SMOOTH-MODE
+             CALL "SMOOTH-ENTITIES" USING CLIENT-STATE WS-SMOOTH-MODE
              CALL "BELL-TICK" USING CLIENT-STATE
              COMPUTE CL-SPEED = FUNCTION SQRT((PL-X - WS-PX) ** 2 + (PL-Y - WS-PY) ** 2 + (PL-Z - WS-PZ) ** 2)
              CALL "CLP-MOVE-SEND" USING CLIENT-STATE WS-CONN
@@ -280,6 +291,7 @@
 *>   world is left), the hotbar (world and inventory screens) and the throw keys (world screen;
 *>   on a container screen MENU-POINTER throws from a slot or the cursor).
      CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-CONTROLS
+     CALL "SMOOTH-PARTIAL" USING CLIENT-STATE
      MOVE 0 TO TG-HIT TG-ENTITY-HIT
      IF SM-SCREEN = SCR-WORLD
          CALL "RAYCAST" USING CLIENT-STATE
