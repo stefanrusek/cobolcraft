@@ -9,6 +9,7 @@
 *>   BREEZE-POINT-BEHIND USING tx, ty, tz (the target's feet), head yaw (FLOAT-LONG degrees), gaussian, unit (FLOAT-LONG, nextGaussian then nextFloat), px, py, pz out:
 *>     randomPointBehindTarget: yaw = head yaw + 180 + gaussian x 45, distance 4 + 4 x unit along Vec3.directionFromRotation(0, yaw).
 *>   WIND-BURST USING dim, x, y, z (FLOAT-LONG), source entity id: the explosion of a breeze wind charge (16.3): radius 3, push only.
+*>   BREEZE-STOP-CHECK USING breeze row: the stop-attacking rule of FIGHT (16.1): the target is erased when invalid or not attackable for more than 100 evaluations.
 *>   BREEZE-POS-AWAY USING mob x, y, z, from x, z, h, v, the three draws, ok, block x, y, z: one candidate of getPosAway (16.5; 18 section 4.2).
 *>   BREEZE-POINT-MIDDLE USING bx, by, bz (the breeze), tx, ty, tz (the target), unit (FLOAT-LONG nextDouble), px, py, pz out: the point on the line to the target (8 - 4 x unit) blocks short of it.
 
@@ -425,3 +426,46 @@
      MOVE 1 TO L-OK
      GOBACK.
  END PROGRAM BREEZE-POS-AWAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BREEZE-STOP-CHECK.
+*> USING breeze row: StopAttackingIfTargetInvalid of the breeze's FIGHT activity (16.1, priority 0), one evaluation: the attack target (a player row) is erased when the breeze cannot attack it (not a survival or
+*> adventure player), when it is not alive or is in another level, or when it was not "attackable ignoring line of sight" for more than 100 evaluations: the counter EN-WAKE (starts at 0) is set to 100 when the
+*> target is attackable (alive, survival or adventure, in the dimension, within the follow range 24), else it is decremented first, and the target is kept while the counter is at least 0.
+*> Not here: the tired-of-trying-to-reach rule (200 ticks of a walk target that cannot be reached: the cant_reach_walk_target_since memory is not kept).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-STOP                BINARY-LONG.
+ 01 WS-IN-RANGE            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE EN-TARGET(L-ROW) TO WS-P
+     IF WS-P = 0
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-STOP
+     IF PL-USED(WS-P) NOT = 1 OR PL-STATE(WS-P) NOT = PS-ALIVE OR PL-DIM(WS-P) NOT = EN-DIM(L-ROW)
+             OR (PL-MODE(WS-P) NOT = 0 AND PL-MODE(WS-P) NOT = 2)
+         MOVE 1 TO WS-STOP
+     ELSE
+         MOVE 0 TO WS-IN-RANGE
+         IF (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2 < 576
+             MOVE 1 TO WS-IN-RANGE
+         END-IF
+         IF WS-IN-RANGE = 1
+             MOVE 100 TO EN-WAKE(L-ROW)
+         ELSE
+             SUBTRACT 1 FROM EN-WAKE(L-ROW)
+             IF EN-WAKE(L-ROW) < 0
+                 MOVE 1 TO WS-STOP
+             END-IF
+         END-IF
+     END-IF
+     IF WS-STOP = 1
+         MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM BREEZE-STOP-CHECK.
