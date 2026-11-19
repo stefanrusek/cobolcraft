@@ -4,11 +4,13 @@
 *> snowball is launched downward with the dispense power and uncertainty of 30-4 section 4.1 (velocity (normalize(d) + triangle(0, 0.0172275 x uncertainty)) x power per axis), owned by the spawner;
 *> then level event 3021 with data 1 and the spawner is removed.
 *> Not done: the about-to-spawn sound at tick count spawnAfter - 36 and the begin sound (the core sends no entity sounds), the ENTITY_PLACE game event, the client particles every 5 ticks, the
-*> launch of the other projectile items (arrows, potions, fire charge, wind charge, firework rocket: they become item entities), saving (NBT item, spawn_item_after_ticks), an item with components.
+*> saving (NBT item, spawn_item_after_ticks), an item with components.
 *>
 *>   OIS-SPAWN USING dim, x, y, z (FLOAT-LONG), item, count, row out   the spawner (row 0 when it cannot be made)
 *>   OIS-DATA-BUILD USING row, PB-BUFFER                              Set Entity Data: 8 the item stack
 *>   OIS-JITTER USING uncertainty (thousandths), power (thousandths), vx, vy, vz out   the launch velocity straight down
+*>   OIS-DISPENSE USING item key (PIC X(48), bare), kind out, uncertainty out, power out (thousandths), level event override out (lane p49t, T39030, 8.17.1): kind 0 none, 1 arrow and tipped arrow,
+*>     2 spectral arrow, 3 trident, 4 the eggs, 5 snowball, 6 experience bottle, 7 splash potion, 8 lingering potion, 9 firework rocket, 10 fire charge, 11 wind charge
 *>   OIS-STEP USING row
 
  IDENTIFICATION DIVISION.
@@ -122,6 +124,65 @@
  END PROGRAM OIS-JITTER.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. OIS-DISPENSE.
+*> The dispense configuration of 21 section 8.17.1 per item: the default (uncertainty 6.0, power 1.1) for the arrows, the eggs, the snowball and the trident; 3.0 and 1.375 for the experience bottle and the
+*> potions; the firework rocket 1.0 and 0.5 with event 1004; the fire charge and the wind charge 6.6666665 (here 6667 thousandths) and 1.0 with events 1018 and 1051.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-UNCERTAINTY          BINARY-LONG.
+ 01 L-POWER                BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-KIND L-UNCERTAINTY L-POWER L-EVENT.
+     MOVE 0 TO L-KIND L-EVENT
+     MOVE 6000 TO L-UNCERTAINTY
+     MOVE 1100 TO L-POWER
+     EVALUATE L-KEY
+         WHEN "arrow" WHEN "tipped_arrow"
+             MOVE 1 TO L-KIND
+         WHEN "spectral_arrow"
+             MOVE 2 TO L-KIND
+         WHEN "trident"
+             MOVE 3 TO L-KIND
+         WHEN "egg" WHEN "blue_egg" WHEN "brown_egg"
+             MOVE 4 TO L-KIND
+         WHEN "snowball"
+             MOVE 5 TO L-KIND
+         WHEN "experience_bottle"
+             MOVE 6 TO L-KIND
+             MOVE 3000 TO L-UNCERTAINTY
+             MOVE 1375 TO L-POWER
+         WHEN "splash_potion"
+             MOVE 7 TO L-KIND
+             MOVE 3000 TO L-UNCERTAINTY
+             MOVE 1375 TO L-POWER
+         WHEN "lingering_potion"
+             MOVE 8 TO L-KIND
+             MOVE 3000 TO L-UNCERTAINTY
+             MOVE 1375 TO L-POWER
+         WHEN "firework_rocket"
+             MOVE 9 TO L-KIND
+             MOVE 1000 TO L-UNCERTAINTY
+             MOVE 500 TO L-POWER
+             MOVE 1004 TO L-EVENT
+         WHEN "fire_charge"
+             MOVE 10 TO L-KIND
+             MOVE 6667 TO L-UNCERTAINTY
+             MOVE 1000 TO L-POWER
+             MOVE 1018 TO L-EVENT
+         WHEN "wind_charge"
+             MOVE 11 TO L-KIND
+             MOVE 6667 TO L-UNCERTAINTY
+             MOVE 1000 TO L-POWER
+             MOVE 1051 TO L-EVENT
+         WHEN OTHER
+             MOVE 0 TO L-UNCERTAINTY L-POWER
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM OIS-DISPENSE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. OIS-STEP.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -139,6 +200,12 @@
  01 WS-VZ                  FLOAT-LONG.
  01 WS-UNCERTAINTY         BINARY-LONG.
  01 WS-POWER               BINARY-LONG.
+ 01 WS-DKIND               BINARY-LONG.
+ 01 WS-OVERRIDE            BINARY-LONG.
+ 01 WS-FAMILY              BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG VALUE 2000.
+ 01 WS-LINGER              BINARY-LONG.
+ 01 WS-FSLOT               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-EKEY                PIC X(112).
  01 WS-NEW                 BINARY-LONG.
@@ -168,23 +235,23 @@
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
      CALL "TOOLUSE-KEY" USING PJ-I2(WS-SLOT) WS-KEY
-     MOVE 0 TO WS-KIND
-     EVALUATE WS-KEY
-         WHEN "snowball" WHEN "egg"
-             MOVE 6000 TO WS-UNCERTAINTY
-             MOVE 1100 TO WS-POWER
-             MOVE 1 TO WS-KIND
-         WHEN "experience_bottle"
-             MOVE 3000 TO WS-UNCERTAINTY
-             MOVE 1375 TO WS-POWER
-             MOVE 2 TO WS-KIND
-     END-EVALUATE
-     IF WS-KIND = 0
+     CALL "OIS-DISPENSE" USING WS-KEY WS-DKIND WS-UNCERTAINTY WS-POWER WS-OVERRIDE
+     IF WS-DKIND = 0
          CALL "GI-SPAWN-RANDOM" USING WS-DIM WS-X WS-Y WS-Z PJ-I2(WS-SLOT) PJ-I3(WS-SLOT) WS-NO-VAR WS-NO-DELAY WS-NEW
      ELSE
          CALL "OIS-JITTER" USING WS-UNCERTAINTY WS-POWER WS-VX WS-VY WS-VZ
-         EVALUATE WS-KEY
-             WHEN "snowball"
+         EVALUATE WS-DKIND
+             WHEN 1 WHEN 2 WHEN 3
+                 MOVE WS-DKIND TO WS-FAMILY
+                 IF WS-DKIND = 3
+                     MOVE 8000 TO WS-BASE
+                 END-IF
+                 CALL "ARROW-SPAWN-AS" USING WS-FAMILY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-BASE WS-ID WS-NEW
+             WHEN 4
+                 MOVE 6 TO WS-KIND
+                 MOVE "minecraft:egg" TO WS-EKEY
+                 CALL "THROWN-SPAWN" USING WS-KIND WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
+             WHEN 5
                  MOVE 3 TO WS-KIND
                  CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-NONE WS-ID WS-NEW
                  IF WS-NEW > 0
@@ -192,19 +259,42 @@
                      MOVE WS-VY TO EN-VY(WS-NEW)
                      MOVE WS-VZ TO EN-VZ(WS-NEW)
                  END-IF
-             WHEN "egg"
-                 MOVE 6 TO WS-KIND
-                 MOVE "minecraft:egg" TO WS-EKEY
-                 CALL "THROWN-SPAWN" USING WS-KIND WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
-             WHEN OTHER
+             WHEN 6
                  MOVE 40 TO WS-KIND
                  MOVE "minecraft:experience_bottle" TO WS-EKEY
                  CALL "THROWN-SPAWN" USING WS-KIND WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
+             WHEN 7 WHEN 8
+                 COMPUTE WS-LINGER = WS-DKIND - 7
+                 CALL "POTION-SPAWN" USING WS-LINGER WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
+             WHEN 9
+                 CALL "FIREWORK-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-NO-DELAY WS-NO-DELAY WS-NO-DELAY WS-ID WS-NEW
+                 IF WS-NEW > 0
+*>                   Shot at an angle: the velocity it was given, no acceleration (PJ-I5, 21 section 8.7).
+                     MOVE WS-VX TO EN-VX(WS-NEW)
+                     MOVE WS-VY TO EN-VY(WS-NEW)
+                     MOVE WS-VZ TO EN-VZ(WS-NEW)
+                     CALL "PJ-FIND" USING EN-ID(WS-NEW) WS-FSLOT
+                     MOVE 1 TO PJ-I5(WS-FSLOT)
+                 END-IF
+             WHEN 10
+                 MOVE 2 TO WS-KIND
+                 CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-NONE WS-ID WS-NEW
+                 IF WS-NEW > 0
+                     MOVE WS-VX TO EN-VX(WS-NEW)
+                     MOVE WS-VY TO EN-VY(WS-NEW)
+                     MOVE WS-VZ TO EN-VZ(WS-NEW)
+                 END-IF
+             WHEN OTHER
+                 CALL "WIND-SPAWN" USING WS-NO-DELAY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
          END-EVALUATE
      END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(WS-X)
      COMPUTE WS-CY = FUNCTION INTEGER(WS-Y)
      COMPUTE WS-CZ = FUNCTION INTEGER(WS-Z)
+     IF WS-OVERRIDE > 0
+*>       The dispense event of the item (firework 1004, fire charge 1018, wind charge 1051), data 0, at the spawner's block.
+         CALL "LEVEL-EVENT" USING WS-DIM WS-OVERRIDE WS-CX WS-CY WS-CZ WS-NONE WS-NONE2
+     END-IF
      CALL "LEVEL-EVENT" USING WS-DIM WS-EVENT WS-CX WS-CY WS-CZ WS-DATA WS-NONE2
      CALL "PJ-DROP" USING L-ROW
      GOBACK.
