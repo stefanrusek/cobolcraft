@@ -815,10 +815,10 @@
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  COPY SUPSTATE.
- 01 WS-MODE                BINARY-LONG VALUE 1.
- 01 WS-NAME                PIC X(24) VALUE "level".
- 01 WS-TEXT                PIC X(32).
- 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-FALLING             BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  LINKAGE SECTION.
@@ -838,18 +838,14 @@
      END-IF
      IF L-OK = 1 AND L-STATE > 0 AND L-STATE < CB-STATE-COUNT
          COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
-*>       A water plant (seagrass, tall seagrass, kelp) is placed only in a water source (LiquidBlockContainer.canPlaceLiquid: a full water).
+*>       A water plant (seagrass, tall seagrass, kelp) is placed only where the fluid of the cell is in tag water and full (29a 5.2, 29b part 4 sections 3.2, 9.2 and 9.3:
+*>       FluidState.isFull is amount 8): a source or a falling cell (levels 8 to 15), not the flowing levels 1 to 7. The plant then holds the water source (lane bugkelpplace).
          IF SP-RULE(WS-BLOCK) = 5 OR SP-RULE(WS-BLOCK) = 7 OR SP-RULE(WS-BLOCK) = 11
              MOVE 0 TO L-OK
              CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-OLD
              IF WS-OLD > 0 AND WS-OLD < CB-STATE-COUNT
-                 IF CB-S-BLOCK(WS-OLD + 1) + 1 = SP-WATER
-                     MOVE SPACES TO WS-TEXT
-                     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-OLD WS-NAME WS-TEXT WS-FOUND
-                     IF FUNCTION TRIM(WS-TEXT) = "0"
-                         MOVE 1 TO L-OK
-                     END-IF
-                 END-IF
+                 CALL "FLUID-OF-STATE" USING WS-OLD WS-FLUID WS-KIND WS-AMOUNT WS-FALLING
+                 CALL "LC-PLANT-PLACEMENT" USING WS-KIND WS-AMOUNT L-OK
              END-IF
          END-IF
      END-IF
