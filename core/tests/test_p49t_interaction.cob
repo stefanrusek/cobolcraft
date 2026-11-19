@@ -129,6 +129,13 @@
      MOVE 0 TO WS-E
      MOVE WS-WHO TO WS-O
      PERFORM CHECK-N
+*>   A row with no state entry (the player's own row) has no records.
+     MOVE 1 TO WS-WHICH
+     CALL "INTERACTION-LAST" USING PL-ENTITY-ROW(WS-PLAYER) WS-WHICH WS-WHO
+     MOVE "acceptance US15 21§8.9.2 a row that is no interaction entity has no attacker" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-WHO TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
 
  CHECK-N.
