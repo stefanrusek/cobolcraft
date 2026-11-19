@@ -63,7 +63,7 @@
          COMPUTE WS-ROUNDS = FUNCTION NUMVAL(WS-ENV)
      END-IF
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
-     MOVE 3 TO CS-VIEW-DISTANCE
+     MOVE 13 TO CS-VIEW-DISTANCE
      MOVE 0 TO CS-HOSTILE-MOBS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
@@ -73,7 +73,7 @@
          MOVE 0 TO BT-COUNT
          MOVE 0 TO BT-SUB-COUNT(1) BT-SUB-COUNT(2)
          MOVE 1000 TO CW-TICKS
-*>       from a handful to a few thousand ticks, over 3 to 40 chunks a side
+*>       from a handful to a few thousand ticks, over 32 chunks a side, the view distance of 13 leaving the outer ones out of the ticking range
          PERFORM NEXT-RANDOM
          COMPUTE WS-N = 1 + FUNCTION MOD(WS-Q, 4) * FUNCTION MOD(WS-Q, 4) * 120 + FUNCTION MOD(WS-ROUND, 7) * 20
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
@@ -82,9 +82,9 @@
              PERFORM NEXT-RANDOM
              COMPUTE WS-TYPE = 1 + FUNCTION MOD(WS-Q, 2)
              PERFORM NEXT-RANDOM
-             COMPUTE WS-X = FUNCTION MOD(WS-Q, 256) - 128
+             COMPUTE WS-X = FUNCTION MOD(WS-Q, 512) - 256
              PERFORM NEXT-RANDOM
-             COMPUTE WS-Z = FUNCTION MOD(WS-Q, 256) - 128
+             COMPUTE WS-Z = FUNCTION MOD(WS-Q, 512) - 256
              PERFORM NEXT-RANDOM
              COMPUTE WS-Y = FUNCTION MOD(WS-Q, 60)
              PERFORM NEXT-RANDOM
@@ -157,12 +157,12 @@
      MOVE 0 TO BT-SUB-COUNT(1)
      MOVE 1000 TO CW-TICKS
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= 30000
-         COMPUTE WS-X = FUNCTION MOD(WS-I, 24) * 16 + FUNCTION MOD(WS-I / 50, 16) - 192
-         COMPUTE WS-Z = FUNCTION MOD(WS-I / 24, 25) * 16 + FUNCTION MOD(WS-I / 7, 16) - 192
-         COMPUTE WS-Y = FUNCTION MOD(WS-I / 600, 50)
+         COMPUTE WS-X = FUNCTION MOD(WS-I, 384) - 192
+         COMPUTE WS-Z = FUNCTION MOD(WS-I * 13, 400) - 200
+         DIVIDE WS-I BY 9600 GIVING WS-Y
          MOVE 1 TO WS-DIM
          MOVE 2 TO WS-TYPE
-         COMPUTE WS-ID = 1 + FUNCTION MOD(WS-I, 3)
+         MOVE 1 TO WS-ID
          COMPUTE WS-TRIG = 1000 - FUNCTION MOD(WS-I, 3)
          COMPUTE WS-PRIO = FUNCTION MOD(WS-I, 7) - 3
          MOVE BT-SUB-COUNT(1) TO WS-SUB
