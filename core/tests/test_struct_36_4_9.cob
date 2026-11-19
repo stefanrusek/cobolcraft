@@ -180,6 +180,7 @@
      CALL "GEN-WORLD-SETUP"
      PERFORM TEMPLATE-CASES
      PERFORM COLUMN-CASES
+     PERFORM LAVA-COLUMN-CASE
      PERFORM SCAN-CASES
      PERFORM START-CASES
      PERFORM BOX-CASES
@@ -279,6 +280,39 @@
          END-IF
          PERFORM CHECK
      END-PERFORM.
+
+*> a column with lava below y 32: the first chunk of the grid -2..3 at world seed 0 whose filled chunk holds a lava cell gives the column; NFOS-BASE-COLUMN of that column equals the filled chunk's
+ LAVA-COLUMN-CASE.
+     MOVE 0 TO WS-GSEED
+     MOVE 0 TO WS-FOUND WS-COUNT
+     PERFORM VARYING WS-CX FROM -2 BY 1 UNTIL WS-CX > 3 OR WS-FOUND = 1
+         PERFORM VARYING WS-CZ FROM -2 BY 1 UNTIL WS-CZ > 3 OR WS-FOUND = 1
+             ALLOCATE CE-CHUNK-BYTES CHARACTERS INITIALIZED RETURNING WS-CHUNK-PTR
+             CALL "NETHER-SETUP" USING WS-GSEED
+             CALL "NETHER-STATES"
+             CALL "NETHER-CORNERS" USING WS-CX WS-CZ
+             SET ADDRESS OF CE-CHUNK TO WS-CHUNK-PTR
+             CALL "NETHER-FILL" USING CE-CHUNK
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 32 * 256 OR WS-FOUND = 1
+                 IF CE-STATE(WS-I) = NH-S-LAVA
+                     MOVE 1 TO WS-FOUND
+                     COMPUTE WS-LX = FUNCTION MOD(WS-I - 1, 16)
+                     COMPUTE WS-LZ = FUNCTION MOD(FUNCTION INTEGER((WS-I - 1) / 16), 16)
+                 END-IF
+             END-PERFORM
+             FREE WS-CHUNK-PTR
+         END-PERFORM
+     END-PERFORM
+     SUBTRACT 1 FROM WS-CX WS-CZ
+     CALL "NFOS-BASE-COLUMN" USING WS-GSEED WS-CX WS-CZ WS-LX WS-LZ WS-COLUMN
+     INSPECT WS-COLUMN TALLYING WS-COUNT FOR ALL "L"
+     PERFORM MODEL-COLUMN
+     MOVE "acceptance US12 36-4§9.1 Nether fossil: a base column with lava below y 32 exists in the chunk grid of world seed 0 and equals the filled chunk's column" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF WS-FOUND = 1 AND WS-COUNT > 0 AND WS-COLUMN = WS-MODEL
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK.
 
 *> WS-MODEL: the column (WS-LX, WS-LZ) of the chunk (WS-CX, WS-CZ) as NETHER-FILL makes it (the density grid and the fill of 37-2), as letters
  MODEL-COLUMN.
