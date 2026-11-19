@@ -661,6 +661,10 @@
              CALL "LLAMA-BORN" USING L-ROW
          WHEN "horse"
              CALL "M44-HORSE-BORN" USING L-ROW
+             CALL "M19-EQUINE-BORN" USING L-ROW
+         WHEN "donkey"
+         WHEN "mule"
+             CALL "M19-EQUINE-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
          WHEN "wandering_trader"

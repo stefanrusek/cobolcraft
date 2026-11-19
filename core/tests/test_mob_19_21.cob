@@ -75,6 +75,25 @@
  01 WS-DAMAGE              BINARY-LONG VALUE 1.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-BOLT                BINARY-LONG.
+ 01 WS-PIG-T               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-LEVELS.
+    05 FILLER              PIC X(36) VALUE "0copper_block                       ".
+    05 FILLER              PIC X(36) VALUE "1exposed_copper                     ".
+    05 FILLER              PIC X(36) VALUE "2weathered_copper                   ".
+    05 FILLER              PIC X(36) VALUE "3oxidized_copper                    ".
+    05 FILLER              PIC X(36) VALUE "0waxed_copper_block                 ".
+    05 FILLER              PIC X(36) VALUE "1waxed_exposed_copper               ".
+    05 FILLER              PIC X(36) VALUE "2waxed_weathered_copper             ".
+    05 FILLER              PIC X(36) VALUE "3waxed_oxidized_copper              ".
+ 01 WS-LEVEL-TABLE REDEFINES WS-LEVELS.
+    05 WS-LEVEL-ROW        OCCURS 8 TIMES.
+       10 WS-LEVEL-WANT    PIC 9.
+       10 WS-LEVEL-KEY     PIC X(35).
+ 01 WS-STONE-STATE         BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-HAND                BINARY-LONG VALUE 0.
+ 01 WS-SNEAK               BINARY-LONG VALUE 0.
  01 WS-SLOT                BINARY-LONG.
  01 WS-VISUAL              BINARY-LONG VALUE 1.
  01 WS-NOBODY              BINARY-LONG VALUE 0.
@@ -451,6 +470,183 @@
      IF WS-TEXT = "south"
          MOVE 1 TO WS-O
      END-IF
+     PERFORM CHECK-N
+
+*>   Through a real Interact packet: honeycomb in the main hand waxes a golem standing next to the player.
+     COMPUTE WS-X = WS-PX + 1.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-C
+     MOVE WS-HONEY TO PL-SLOT-ITEM(WS-PLAYER, PL-HELD(WS-PLAYER) + 1)
+     MOVE 3 TO PL-SLOT-COUNT(WS-PLAYER, PL-HELD(WS-PLAYER) + 1)
+     MOVE -1 TO EN-CG-NEXT(WS-C)
+     CALL "TEST-INTERACT" USING PL-CONN(WS-PLAYER) EN-ID(WS-C) WS-HAND WS-SNEAK
+     MOVE "acceptance US15 19§21 Copper golem: an Interact packet with honeycomb waxes it (timer -2) and uses one honeycomb" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-O
+     IF EN-CG-NEXT(WS-C) = -2 AND PL-SLOT-COUNT(WS-PLAYER, PL-HELD(WS-PLAYER) + 1) = 2
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-C
+
+*>   Another species does not answer to the golem's interaction.
+     MOVE "minecraft:pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-T WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-PX + 1.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-T WS-X WS-Y WS-PZ WS-YAW WS-C
+     CALL "TEST-INTERACT" USING PL-CONN(WS-PLAYER) EN-ID(WS-C) WS-HAND WS-SNEAK
+     MOVE "acceptance US15 19§21 Copper golem: honeycomb on a pig is not used by the golem's rules" TO WS-CASE
+     MOVE 2 TO WS-E
+     MOVE PL-SLOT-COUNT(WS-PLAYER, PL-HELD(WS-PLAYER) + 1) TO WS-O
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-C
+
+*>   Statues face the way the golem looks (yaw 90 is west, 270 east); the antenna item drops too.
+     COMPUTE WS-X = WS-PX + 6
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-C
+     MOVE 90 TO EN-YAW(WS-C)
+     MOVE WS-POPPY TO EN-CG-ANT(WS-C)
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-C))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-C))
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-C))
+     CALL "CG-STATUE-MAKE" USING WS-C
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE "facing" TO WS-PROP
+     MOVE 1 TO WS-FOUND
+     CALL "BLOCK-STATE-PROP" USING WS-FOUND WS-STATE WS-PROP WS-TEXT WS-RESULT
+     MOVE "acceptance US15 19§21 Copper golem: yaw 90 gives a statue facing west" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-O
+     IF WS-TEXT = "west"
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+     COMPUTE WS-X = WS-PX + 8
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-C
+     MOVE 270 TO EN-YAW(WS-C)
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-C))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-C))
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-C))
+     CALL "CG-STATUE-MAKE" USING WS-C
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     CALL "BLOCK-STATE-PROP" USING WS-FOUND WS-STATE WS-PROP WS-TEXT WS-RESULT
+     MOVE "acceptance US15 19§21 Copper golem: yaw 270 gives a statue facing east" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-O
+     IF WS-TEXT = "east"
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+     COMPUTE WS-X = WS-PX + 10
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-C
+     MOVE 180 TO EN-YAW(WS-C)
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-C))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-C))
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-C))
+     CALL "CG-STATUE-MAKE" USING WS-C
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     CALL "BLOCK-STATE-PROP" USING WS-FOUND WS-STATE WS-PROP WS-TEXT WS-RESULT
+     MOVE "acceptance US15 19§21 Copper golem: yaw 180 gives a statue facing north" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-O
+     IF WS-TEXT = "north"
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+
+*>   An oxidized, waxed golem (no weathering) in air turns into a statue within a few thousand ticks (0.58 percent a tick); in a block cell it never does.
+     COMPUTE WS-X = WS-PX + 12
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-C
+     MOVE 3 TO EN-CG-WEATHER(WS-C)
+     MOVE -2 TO EN-CG-NEXT(WS-C)
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-C))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-C))
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-C))
+     MOVE "minecraft:short_grass" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1500
+         MOVE WS-X TO EN-X(WS-C)
+         MOVE WS-Y TO EN-Y(WS-C)
+         MOVE WS-PZ TO EN-Z(WS-C)
+         CALL "MOB-STEP" USING WS-C
+     END-PERFORM
+     MOVE "acceptance US15 19§21 Copper golem: in a short grass cell (not air, no suffocation) an oxidized golem stays an entity for 1500 ticks" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE EN-USED(WS-C) TO WS-O
+     PERFORM CHECK-N
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6000 OR EN-USED(WS-C) = 0
+         MOVE WS-X TO EN-X(WS-C)
+         MOVE WS-Y TO EN-Y(WS-C)
+         MOVE WS-PZ TO EN-Z(WS-C)
+         CALL "MOB-STEP" USING WS-C
+     END-PERFORM
+     MOVE "acceptance US15 19§21 Copper golem: in air it becomes a statue within 6000 ticks" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE EN-USED(WS-C) TO WS-O
+     PERFORM CHECK-N
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+     MOVE CB-KEY(WS-BLOCK) TO WS-K48A
+     CALL "KEY-BARE" USING WS-K48A WS-K48B
+     MOVE "acceptance US15 19§21 Copper golem: the statue stands in the cell it left" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-O
+     IF WS-K48B = "oxidized_copper_golem_statue"
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+
+*>   Built by a player: all eight blocks of the copper tag, each with a pumpkin on top; a pumpkin over air builds nothing.
+     COMPUTE WS-BY = WS-FLOOR + 1
+     COMPUTE WS-BY1 = WS-BY + 1
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 8
+         COMPUTE WS-BX = WS-X0 + 12 + WS-D
+         COMPUTE WS-BZ = WS-Z0 + 10
+         MOVE SPACES TO WS-KEY
+         STRING "minecraft:" DELIMITED BY SIZE WS-LEVEL-KEY(WS-D) DELIMITED BY SPACE INTO WS-KEY
+         CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+         MOVE "minecraft:carved_pumpkin" TO WS-KEY
+         CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY1 WS-BZ WS-STATE
+         MOVE 0 TO WS-B
+         CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-BY1 WS-BZ
+         PERFORM COUNT-GOLEMS
+         MOVE "acceptance US15 19§21 Copper golem: each copper block builds a golem of its level (see the next case for the block)" TO WS-CASE
+         MOVE WS-LEVEL-WANT(WS-D) TO WS-E
+         MOVE 99 TO WS-O
+         IF WS-B > 0
+             MOVE EN-CG-WEATHER(WS-B) TO WS-O
+         END-IF
+         PERFORM CHECK-N
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+         COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         MOVE CB-KEY(WS-BLOCK) TO WS-K48A
+         CALL "KEY-BARE" USING WS-K48A WS-K48B
+         MOVE "acceptance US15 19§21 Copper golem: the block of the tag becomes the chest of the same type (name ends in _chest)" TO WS-CASE
+         MOVE 1 TO WS-E
+         MOVE 0 TO WS-O
+         IF WS-K48B(FUNCTION LENGTH(FUNCTION TRIM(WS-K48B TRAILING)) - 5:6) = "_chest"
+             MOVE 1 TO WS-O
+         END-IF
+         PERFORM CHECK-N
+     END-PERFORM
+*>   A pumpkin with air below it builds nothing.
+     COMPUTE WS-BX = WS-X0 + 30
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE "minecraft:carved_pumpkin" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY1 WS-BZ WS-STATE
+     PERFORM COUNT-GOLEMS
+     MOVE WS-N TO WS-I
+     CALL "GOLEM-BUILD" USING WS-DIM WS-BX WS-BY1 WS-BZ
+     PERFORM COUNT-GOLEMS
+     MOVE "acceptance US15 19§21 Copper golem: a pumpkin over air builds nothing" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O = WS-N - WS-I
      PERFORM CHECK-N
 
 *>   Built by a player: a carved pumpkin on a copper block (any weathering level, waxed or not).
