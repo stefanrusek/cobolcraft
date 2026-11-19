@@ -78,6 +78,8 @@
  01 WS-EXPECT-LINE         PIC X(6).
  01 WS-HAVE                BINARY-LONG.
  01 WS-LABEL               PIC X(40).
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-HANGING-STATE       BINARY-LONG.
 *> item key, block key, then one flag per ground (stone, grass block, sand, water over stone, farmland, soul sand): 1 placed, 0 refused, ? not specified here
  01 WS-ROWS.
     05 FILLER PIC X(60) VALUE "potato                  potatoes                000010".
@@ -92,6 +94,9 @@
     05 FILLER PIC X(60) VALUE "sweet_berries           sweet_berry_bush        010010".
     05 FILLER PIC X(60) VALUE "oak_sapling             oak_sapling             010010".
     05 FILLER PIC X(60) VALUE "poppy                   poppy                   010010".
+    05 FILLER PIC X(60) VALUE "mangrove_propagule      mangrove_propagule      010010".
+    05 FILLER PIC X(60) VALUE "azalea                  azalea                  010010".
+    05 FILLER PIC X(60) VALUE "wither_rose             wither_rose             010011".
     05 FILLER PIC X(60) VALUE "cactus                  cactus                  001000".
     05 FILLER PIC X(60) VALUE "sugar_cane              sugar_cane              000000".
     05 FILLER PIC X(60) VALUE "lily_pad                lily_pad                000000".
@@ -100,7 +105,7 @@
     05 FILLER PIC X(60) VALUE "rail                    rail                    111??1".
     05 FILLER PIC X(60) VALUE "redstone                redstone_wire           111??1".
  01 WS-ROW-TABLE REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 19 TIMES.
+    05 WS-ROW OCCURS 22 TIMES.
        10 WS-ROW-ITEM      PIC X(24).
        10 WS-ROW-BLOCK     PIC X(24).
        10 WS-ROW-FLAGS     PIC X(6).
@@ -190,7 +195,7 @@
 *>   The table: every item on every ground, survival (mode 0) then creative (mode 1)
      PERFORM VARYING WS-M FROM 0 BY 1 UNTIL WS-M > 1
          MOVE WS-M TO PL-MODE(WS-PLAYER)
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 19
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 22
              MOVE WS-ROW-ITEM(WS-I) TO WS-ITEM-KEY
              PERFORM FIND-ITEM
              MOVE SPACES TO WS-PLACED-LINE WS-COUNT-LINE
@@ -308,6 +313,29 @@
      MOVE "acceptance crop place standard: cocoa beans used on the side of an oak log place nothing" TO WS-CASE
      PERFORM CHECK-KEY
      COMPUTE WS-CX = WS-CX - 1
+
+*>   A hanging mangrove propagule survives under a mangrove leaves block (supports_hanging_mangrove_propagule) and not under stone
+     MOVE "minecraft:mangrove_propagule" TO WS-KEY112
+     MOVE "age=0,hanging=true,stage=0,waterlogged=false" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY112 WS-PAIRS WS-HANGING-STATE
+     MOVE 5 TO WS-G
+     PERFORM PREPARE-GROUND
+     COMPUTE WS-Y = WS-CY + 1
+     MOVE "mangrove_leaves" TO WS-KEY
+     PERFORM FIND-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y WS-CZ WS-FOUND-STATE
+     CALL "SUP-SURVIVES" USING WS-DIM WS-CX WS-CY WS-CZ WS-HANGING-STATE WS-OK
+     MOVE "acceptance crop place standard: a hanging mangrove propagule survives under mangrove leaves" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y WS-CZ WS-STONE
+     CALL "SUP-SURVIVES" USING WS-DIM WS-CX WS-CY WS-CZ WS-HANGING-STATE WS-OK
+     MOVE "acceptance crop place standard: a hanging mangrove propagule does not survive under stone" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OK TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y WS-CZ WS-AIR
 
 *>   A crop on farmland whose farmland goes away breaks and drops its item
      MOVE 5 TO WS-G
