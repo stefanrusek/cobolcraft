@@ -70,8 +70,8 @@
          END-READ
      END-PERFORM
      CLOSE ROWS-FILE
-     MOVE "R4 shapes: the fixture has its 376 rows" TO TL-CASE
-     MOVE 376 TO TL-EXPECTED-N
+     MOVE "R4 shapes: the fixture has its 430 rows" TO TL-CASE
+     MOVE 430 TO TL-EXPECTED-N
      MOVE WS-SEEN TO TL-OBSERVED-N
      PERFORM ASSERT-N
 

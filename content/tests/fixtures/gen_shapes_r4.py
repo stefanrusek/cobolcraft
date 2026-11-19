@@ -103,6 +103,30 @@ for facing in ('north', 'east', 'south', 'west', 'up', 'down'):
 # scaffolding outline static (3.8.5): context-free (empty context): Stable or Unstable
 stable = [(0,14,0,16,16,16),(0,0,0,2,16,2),(14,0,0,16,16,2),(14,0,14,16,16,16),(0,0,14,2,16,16)]
 unstable = stable + [(0,0,0,16,2,16),(0,0,0,16,2,2),(14,0,0,16,2,16),(0,0,14,16,2,16),(0,0,0,2,2,16)]
+# the rows R-E1 to R-E24 of 3.5 that the R4 round listed as uncovered or re-read (same collision and outline unless said)
+both('enchanting_table', '', '', [(0,0,0,16,12,16)])
+both('brewing_stand', '', '', [(7,2,7,9,14,9), (1,0,1,15,2,15)])
+both('stonecutter', '', '', [(0,0,0,16,9,16)])
+both('end_portal_frame', 'eye=false', '', [(0,0,0,16,13,16)])
+both('end_portal_frame', 'eye=true', '', [(0,0,0,16,13,16), (4,13,4,12,16,12)])
+both('dragon_egg', '', '', [(1,0,1,15,16,15)])
+both('conduit', '', '', [(5,5,5,11,11,11)])
+both('decorated_pot', '', '', [(1,0,1,15,16,15)])
+both('heavy_core', '', '', [(4,0,4,12,8,12)])
+both('copper_golem_statue', 'facing=north', '', [(3,0,3,13,14,13)])
+both('flower_pot', '', '', [(5,0,5,11,6,11)])
+both('potted_dandelion', '', '', [(5,0,5,11,6,11)])
+both('ender_chest', 'facing=north', '', [(1,0,1,15,14,15)])
+both('sculk_sensor', 'sculk_sensor_phase=inactive', '', [(0,0,0,16,8,16)])
+both('calibrated_sculk_sensor', 'facing=north', '', [(0,0,0,16,8,16)])
+row('sculk_shrieker', '', '', 'C', [(0,0,0,16,8,16)])
+row('sculk_shrieker', '', '', 'O', [(0,0,0,16,16,16)])
+for bites in range(7):
+    both('cake', 'bites=%d' % bites, '', [(1 + 2 * bites, 0, 1, 15, 8, 15)])
+for facing in ('north', 'east', 'south', 'west'):
+    ax = [(2,0,2,14,4,14), (4,4,3,12,5,13), (6,5,4,10,10,12), (3,10,0,13,16,16)]
+    both('anvil', 'facing=' + facing, '', [axisyaw(b, facing) for b in ax])
+
 # interaction shapes (51 section 1.8.1, 3.8.1 to 3.8.3, 3.8.5): "I" rows; the default is the empty shape
 def inter(block, p1, p2, boxes):
     row(block, p1, p2, 'I', boxes)

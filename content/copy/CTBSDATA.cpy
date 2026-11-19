@@ -1,5 +1,5 @@
 *> The rows of the shape rule table (docs/protocol/51-block-shapes.md sections 3 and 4), read by BSH-RULES-LOAD: classes ~ mode ~ property ~ value ~ collision ~ outline.
- 78 BSD-COUNT             VALUE 221.
+ 78 BSD-COUNT             VALUE 228.
  01 BSD-DATA.
     05 FILLER PIC X(500) VALUE "|TorchBlock|RedstoneTorchBlock|~S~~~N~6 0 6 10 10 10".
     05 FILLER PIC X(500) VALUE "|WallTorchBlock|RedstoneWallTorchBlock|~Y~facing~~N~5.5 3 11 10.5 13 16".
@@ -15,7 +15,8 @@
     05 FILLER PIC X(500) VALUE "|DaylightDetectorBlock|~S~~~0 0 0 16 6 16~=".
     05 FILLER PIC X(500) VALUE "|RepeaterBlock|ComparatorBlock|~S~~~0 0 0 16 2 16~=".
     05 FILLER PIC X(500) VALUE "|StonecutterBlock|~S~~~0 0 0 16 9 16~=".
-    05 FILLER PIC X(500) VALUE "|SculkSensorBlock|CalibratedSculkSensorBlock|SculkShriekerBlock|~S~~~0 0 0 16 8 16~=".
+    05 FILLER PIC X(500) VALUE "|SculkSensorBlock|CalibratedSculkSensorBlock|~S~~~0 0 0 16 8 16~=".
+    05 FILLER PIC X(500) VALUE "|SculkShriekerBlock|~S~~~0 0 0 16 8 16~F".
     05 FILLER PIC X(500) VALUE "|CampfireBlock|~S~~~0 0 0 16 7 16~=".
     05 FILLER PIC X(500) VALUE "|BrewingStandBlock|~S~~~7 2 7 9 14 9,1 0 1 15 2 15~=".
     05 FILLER PIC X(500) VALUE "|FlowerPotBlock|~S~~~5 0 5 11 6 11~=".
@@ -75,7 +76,13 @@
     05 FILLER PIC X(500) VALUE "|LecternBlock|~Y~facing~~0 0 0 16 2 16,4 2 4 12 14 12~0 0 0 16 2 16,4 2 4 12 14 12,0 10 1 16 14 5.333333,0 12 5.333333 16 16 9.666667,0 14 9.666667 16 18 14".
     05 FILLER PIC X(500) VALUE "|SkullBlock|PlayerHeadBlock|WitherSkullBlock|~S~~~4 0 4 12 8 12~=".
     05 FILLER PIC X(500) VALUE "|ConduitBlock|~S~~~5 5 5 11 11 11~=".
-    05 FILLER PIC X(500) VALUE "|CakeBlock|~S~~~1 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~0~1 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~1~3 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~2~5 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~3~7 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~4~9 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~5~11 0 1 15 8 15~=".
+    05 FILLER PIC X(500) VALUE "|CakeBlock|~P~bites~6~13 0 1 15 8 15~=".
     05 FILLER PIC X(500) VALUE "|FenceBlock|~K~FN~~~".
     05 FILLER PIC X(500) VALUE "|FenceGateBlock|~K~GT~~~".
     05 FILLER PIC X(500) VALUE "|WallBlock|~K~WL~~~".
@@ -223,4 +230,4 @@
     05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~east~6 14 0 10 16 16~6 14 0 10 16 16,7 0 1 9 10 15".
     05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~west~6 14 0 10 16 16~6 14 0 10 16 16,7 0 1 9 10 15".
  01 BSD-TABLE REDEFINES BSD-DATA.
-    05 BSD-ROW             PIC X(500) OCCURS 221 TIMES.
+    05 BSD-ROW             PIC X(500) OCCURS 228 TIMES.
