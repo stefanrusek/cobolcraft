@@ -322,9 +322,13 @@
      MOVE WS-DROPPED TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-VICTIM
-     MOVE "bat" TO WS-WANT-KEY
+*>   A row-less victim: the bat has a row since lane p49f, so the entity is a ground item (the type "item" has no mob row).
+     MOVE "cow" TO WS-WANT-KEY
      PERFORM FIND-TYPE
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VICTIM
+     MOVE "item" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     MOVE WS-TYPE TO EN-TYPE(WS-VICTIM)
      MOVE 0 TO WS-DROPPED
      CALL "STDMOB-CHARGED-HEAD" USING WS-CREEPER WS-VICTIM WS-DROPPED
      MOVE "acceptance US15 20§6.1 Creeper: a type with no row gives no head" TO TL-CASE

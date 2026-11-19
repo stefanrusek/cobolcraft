@@ -158,6 +158,20 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-FOUND TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An index entry whose block is no longer of its kind (put in by hand: the block change hook drops the entries of removed blocks at once) is dropped when it is looked up.
+     COMPUTE WS-BX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 1
+     COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 1
+     COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 1
+     MOVE 3 TO PX-KIND(PX-MAX)
+     MOVE WS-DIM TO PX-DIM(PX-MAX)
+     MOVE WS-BX TO PX-X(PX-MAX)
+     MOVE WS-BY TO PX-Y(PX-MAX)
+     MOVE WS-BZ TO PX-Z(PX-MAX)
+     CALL "PXI-NEAREST" USING WS-DIM WS-OX WS-OY WS-OZ WS-K3 WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
+     MOVE "acceptance US15 19§22.7 a stale entry (the block is not a workstation) is dropped when looked up" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FOUND * 10 + PX-KIND(PX-MAX)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-MOB-VIL-INDEX.
  COPY CORETEST.

@@ -50,6 +50,7 @@
  01 WS-QY                  BINARY-LONG.
  01 WS-QZ                  BINARY-LONG.
  01 WS-BABY                BINARY-LONG VALUE 1.
+ 01 WS-NOT-BABY            BINARY-LONG VALUE 0.
  01 WS-ACT                 BINARY-LONG.
  01 WS-PRESENT             BINARY-LONG.
  01 WS-N1                  BINARY-LONG.
@@ -244,6 +245,12 @@
 *>   ----- the baby villager behaviours.
      MOVE -24000 TO EN-MOBAGE(WS-A) EN-MOBAGE(WS-B) EN-MOBAGE(WS-C)
      MOVE 3 TO WS-ACT
+*>   An adult has no baby behaviours: the call returns at once and the activity stays.
+     CALL "VL-KIDS-TICK" USING WS-A WS-SA WS-NOT-BABY WS-ACT
+     MOVE "test p49q an adult villager runs no baby behaviour (the activity stays)" TO WS-CASE
+     MOVE 3 TO WS-E
+     MOVE WS-ACT TO WS-O
+     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      CALL "VL-KIDS-TICK" USING WS-A WS-SA WS-BABY WS-ACT
      MOVE 4 TO WS-ACT
      MOVE 1000 TO WS-NOW
