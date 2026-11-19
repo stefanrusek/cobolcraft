@@ -294,12 +294,18 @@ def op_core_action(seam, row):
     if "setblock" in row.inputs:
         lines += ["     MOVE %d TO WS-STATE" % number_input(row, "setblock"),
                   "     CALL \"WORLD-SET-BLOCK\" USING WS-DIM WS-X WS-Y WS-Z WS-STATE"]
-    return lines + [
+    # `mode=0` puts the player in survival for this row (the cases' player is creative: a creative player breaks any block, T45001); creative again after it
+    if "mode" in row.inputs:
+        lines += ["     MOVE %d TO PL-MODE(WS-ROW)" % number_input(row, "mode")]
+    lines += [
         "     MOVE %d TO WS-ACTION" % number_input(row, "action"),
         "     MOVE %d TO WS-FACE" % number_input(row, "face"),
         "     MOVE %d TO WS-SEQ" % number_input(row, "seq"),
         "     CALL \"TEST-ACTION\" USING WS-CONN WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ",
     ] + drain_blocks(seam, row) + assert_text(seam, row)
+    if "mode" in row.inputs:
+        lines += ["     MOVE 1 TO PL-MODE(WS-ROW)"]
+    return lines
 
 
 def op_core_block_change(seam, row):

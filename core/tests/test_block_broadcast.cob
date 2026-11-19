@@ -67,7 +67,8 @@
      MOVE 100 TO WS-Y
      PERFORM BOB-BREAKS
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
-     MOVE "49(1,1) 8(20,100,20=0)" TO TL-EXPECTED
+*>   The viewer of a survival break also gets the Level Event 2001 (id 47, the break particles and sound; 29 section 10.4 step 5, lane bugcreative T45002) before the block update.
+     MOVE "47 49(1,1) 8(20,100,20=0)" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
 
@@ -79,7 +80,8 @@
      MOVE 100 TO WS-Y
      PERFORM BOB-BREAKS
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
-     MOVE "49(1,1) 8(20,100,20=2) 4(2) 49(1,1) 8(20,100,20=0)" TO TL-EXPECTED
+*>   Alice views Bob's break: the Level Event 2001 comes with it (bugcreative T45002); Bob, who broke the block, gets none.
+     MOVE "49(1,1) 8(20,100,20=2) 4(2) 47 49(1,1) 8(20,100,20=0)" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
      MOVE "49(1,1) 8(20,100,20=2) 49(1,1) 8(20,100,20=0) 4(2)" TO TL-EXPECTED

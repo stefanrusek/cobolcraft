@@ -1,6 +1,6 @@
 # Contract cases of the play to core hooks for block changes (docs/protocol/29-block-updates-and-placement.md
 # §7 "How clients learn about block changes", 09-cobolcraft-profile.md §3.2 rows 0x04, 0x08, 0x29, 0x42, 0x31).
-# Read by tools/gen/gen_contract.py; see README.md. The player is Alice (creative, joined in memory), the
+# Read by tools/gen/gen_contract.py; see README.md. The player is Alice (creative, joined in memory; a row with mode=0 runs as survival), the
 # world is the test world; the texts are the packets the player is sent, as CORETEST.cpy TEST-DRAIN-BLOCKS
 # writes them: Light Update 49(chunk x,chunk z), Block Update 8(x,y,z=state), Block Changed Ack 4(sequence).
 #
@@ -22,4 +22,4 @@ place-ack-last	core-use-on	BLOCK-USE-ON	core	core		item=2;x=14;y=99;z=14;face=1;
 !change-light-before-update	core-block-change	BLOCK-CHANGE	core	core		x=12;y=100;z=12;state=2	49(0,0) 8(12,100,12=2)
 !break-light-before-update	core-action	BLOCK-ACTION	core	core		action=0;x=20;y=100;z=20;face=1;seq=3;setblock=2	49(1,1) 8(20,100,20=0) 4(3)
 break-ack-last	core-action	BLOCK-ACTION	core	core		action=0;x=21;y=100;z=21;face=1;seq=4;setblock=2;observe=last	4(4)
-refused-update-then-ack	core-action	BLOCK-ACTION	core	core		action=0;x=20;y=0;z=20;face=1;seq=5	8(20,0,20=1) 4(5)
+refused-update-then-ack	core-action	BLOCK-ACTION	core	core		action=0;x=20;y=0;z=20;face=1;seq=5;mode=0	8(20,0,20=1) 4(5)
