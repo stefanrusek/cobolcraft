@@ -31,10 +31,10 @@
     05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              06797+008000+015071+015071+008000+011536+008000+012330+015866+000000+016000+016000+000000+008000+008000+016000+016000".
     05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              07459+000929+004464+004464+000929+003670+005438+009768+008000+000000+008000+008000+000000+000000+000000+008000+008000".
  01 WS-ROWS REDEFINES WS-ROW-DATA.
-    05 WS-Q OCCURS 18 TIMES.
-       10 WS-Q-TEX          PIC X(40).
-       10 WS-Q-B            PIC 9(5).
-       10 WS-Q-V            PIC S9(6) SIGN LEADING SEPARATE OCCURS 16 TIMES.
+    05 WS-RW OCCURS 18 TIMES.
+       10 WS-RW-TEX          PIC X(40).
+       10 WS-RW-B            PIC 9(5).
+       10 WS-RW-V            PIC S9(6) SIGN LEADING SEPARATE OCCURS 16 TIMES.
  01 WS-ITEM-DATA.
     05 FILLER PIC X(20) VALUE "oak_planks      0103".
     05 FILLER PIC X(20) VALUE "oak_slab        0403".
@@ -78,6 +78,9 @@
  01 WS-SAVE-TYPE           BINARY-LONG.
  01 WS-SAVE-COUNT          BINARY-LONG.
  01 WS-QD                  PIC 99.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-MISS                BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-GEN
      ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -115,48 +118,21 @@
          MOVE IS-GUI-COUNT(WS-ITEM + 1) TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
          PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > WS-IT-COUNT(WS-T)
-             COMPUTE WS-ROWN = WS-IT-FIRST(WS-T) + WS-Q - 1
              COMPUTE WS-QN = IS-GUI-FIRST(WS-ITEM + 1) + WS-Q - 1
              MOVE WS-Q TO WS-QD
-             MOVE 0 TO WS-BAD
-             MOVE SPACES TO WS-TEXID
-             MOVE WS-Q-TEX(WS-ROWN) TO WS-TEXID
-             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXID)) TO WS-TEXLEN
-             CALL "ATLAS-FIND" USING CLIENT-STATE WS-TEXID WS-TEXLEN WS-TEXSPR
-             IF IG-SPRITE(WS-QN) NOT = WS-TEXSPR
-                 ADD 1 TO WS-BAD
-             END-IF
-             COMPUTE WS-GOT ROUNDED = IG-BRIGHT(WS-QN) * 10000
-             MOVE WS-Q-B(WS-ROWN) TO WS-EXP
-             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-                 ADD 1 TO WS-BAD
-             END-IF
-             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-                 COMPUTE WS-GOT ROUNDED = IG-X(WS-QN, WS-K) * 1000
-                 MOVE WS-Q-V(WS-ROWN, WS-K) TO WS-EXP
-                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-                     ADD 1 TO WS-BAD
-                 END-IF
-                 COMPUTE WS-GOT ROUNDED = IG-Y(WS-QN, WS-K) * 1000
-                 MOVE WS-Q-V(WS-ROWN, WS-K + 4) TO WS-EXP
-                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-                     ADD 1 TO WS-BAD
-                 END-IF
-                 COMPUTE WS-GOT ROUNDED = IG-U(WS-QN, WS-K) * 1000
-                 MOVE WS-Q-V(WS-ROWN, WS-K + 8) TO WS-EXP
-                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-                     ADD 1 TO WS-BAD
-                 END-IF
-                 COMPUTE WS-GOT ROUNDED = IG-V(WS-QN, WS-K) * 1000
-                 MOVE WS-Q-V(WS-ROWN, WS-K + 12) TO WS-EXP
-                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-                     ADD 1 TO WS-BAD
+             MOVE 0 TO WS-FOUND
+*>           Quads of equal depth (the two side faces of a cube) may come in either order: the pooled quad must equal one of the item's expected quads.
+             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-IT-COUNT(WS-T)
+                 COMPUTE WS-ROWN = WS-IT-FIRST(WS-T) + WS-C - 1
+                 PERFORM QUAD-DIFF
+                 IF WS-BAD = 0
+                     ADD 1 TO WS-FOUND
                  END-IF
              END-PERFORM
              MOVE SPACES TO TL-CASE
-             STRING "bugguiitems " FUNCTION TRIM(WS-IT-KEY(WS-T)) " quad " WS-QD ": sprite, brightness, corners and uv match the model" DELIMITED BY SIZE INTO TL-CASE
-             MOVE 0 TO TL-EXPECTED-N
-             MOVE WS-BAD TO TL-OBSERVED-N
+             STRING "bugguiitems " FUNCTION TRIM(WS-IT-KEY(WS-T)) " quad " WS-QD ": sprite, brightness, corners and uv match a quad of the model" DELIMITED BY SIZE INTO TL-CASE
+             MOVE 1 TO TL-EXPECTED-N
+             MOVE WS-FOUND TO TL-OBSERVED-N
              CALL "TEST-ASSERT" USING TESTLIB-ASSERT
          END-PERFORM
      END-PERFORM
@@ -179,25 +155,34 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-BAD
      PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > 3
-         COMPUTE WS-ROWN = 3 + WS-Q
-         COMPUTE WS-GOT ROUNDED = (RL-IC-X((WS-Q - 1) * 6 + 1) - 11) * 1000
-         MOVE WS-Q-V(WS-ROWN, 1) TO WS-EXP
-         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-             ADD 1 TO WS-BAD
-         END-IF
-         COMPUTE WS-GOT ROUNDED = (RL-IC-Y((WS-Q - 1) * 6 + 1) - 11) * 1000
-         MOVE WS-Q-V(WS-ROWN, 5) TO WS-EXP
-         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-             ADD 1 TO WS-BAD
-         END-IF
-         COMPUTE WS-GOT ROUNDED = (RL-IC-X((WS-Q - 1) * 6 + 3) - 11) * 1000
-         MOVE WS-Q-V(WS-ROWN, 3) TO WS-EXP
-         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-             ADD 1 TO WS-BAD
-         END-IF
-         COMPUTE WS-GOT ROUNDED = RL-IC-B((WS-Q - 1) * 6 + 1) * 10000
-         MOVE WS-Q-B(WS-ROWN) TO WS-EXP
-         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+         MOVE 0 TO WS-FOUND
+         PERFORM VARYING WS-C FROM 4 BY 1 UNTIL WS-C > 6
+             MOVE 0 TO WS-MISS
+             COMPUTE WS-GOT ROUNDED = (RL-IC-X((WS-Q - 1) * 6 + 1) - 11) * 1000
+             MOVE WS-RW-V(WS-C, 1) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             COMPUTE WS-GOT ROUNDED = (RL-IC-Y((WS-Q - 1) * 6 + 1) - 11) * 1000
+             MOVE WS-RW-V(WS-C, 5) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             COMPUTE WS-GOT ROUNDED = (RL-IC-X((WS-Q - 1) * 6 + 3) - 11) * 1000
+             MOVE WS-RW-V(WS-C, 3) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             COMPUTE WS-GOT ROUNDED = RL-IC-B((WS-Q - 1) * 6 + 1) * 10000
+             MOVE WS-RW-B(WS-C) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             IF WS-MISS = 0
+                 ADD 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+         IF WS-FOUND = 0
              ADD 1 TO WS-BAD
          END-IF
      END-PERFORM
@@ -326,5 +311,44 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE WS-SAVE-USED TO IG-USED
      STOP RUN.
+
+*> WS-BAD: how many of the pooled quad WS-QN's sprite, brightness and 16 numbers differ from the expected row WS-ROWN.
+ QUAD-DIFF.
+     MOVE 0 TO WS-BAD
+     MOVE SPACES TO WS-TEXID
+     MOVE WS-RW-TEX(WS-ROWN) TO WS-TEXID
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXID)) TO WS-TEXLEN
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-TEXID WS-TEXLEN WS-TEXSPR
+     IF IG-SPRITE(WS-QN) NOT = WS-TEXSPR
+         ADD 1 TO WS-BAD
+     END-IF
+     COMPUTE WS-GOT ROUNDED = IG-BRIGHT(WS-QN) * 10000
+     MOVE WS-RW-B(WS-ROWN) TO WS-EXP
+     IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+         ADD 1 TO WS-BAD
+     END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         COMPUTE WS-GOT ROUNDED = IG-X(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+         COMPUTE WS-GOT ROUNDED = IG-Y(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K + 4) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+         COMPUTE WS-GOT ROUNDED = IG-U(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K + 8) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+         COMPUTE WS-GOT ROUNDED = IG-V(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K + 12) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     .
  END PROGRAM TEST-ITEM-GUI.
  COPY CLTEST.
