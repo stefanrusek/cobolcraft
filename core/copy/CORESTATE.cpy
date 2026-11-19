@@ -629,6 +629,14 @@
        10 EN-CG-WEATHER      BINARY-LONG.        *> copper golem: weathering state 0 unaffected, 1 exposed, 2 weathered, 3 oxidized (metadata 16)
        10 EN-CG-NEXT         BINARY-LONG.        *> copper golem: nextWeatheringTick (game time), -2 waxed, -1 unscheduled
        10 EN-CG-ANT          BINARY-LONG.        *> copper golem: the item id in the antenna slot (0 empty); its main hand is EN-ITEM and EN-ITEM-COUNT
+*>     --- 002-lane-p49j-b: arrows (core/src/arrows.cob; docs/protocol/44 part 8 section 7) ---
+       10 EN-ARW-CRIT         BINARY-LONG.        *> arrow: 1 when critical (metadata 8 bit 1)
+       10 EN-ARW-PIERCE       BINARY-LONG.        *> arrow: the pierce level (metadata 9)
+       10 EN-ARW-IGN-N        BINARY-LONG.        *> arrow: entities in the piercing ignore set
+       10 EN-ARW-IGN          BINARY-LONG OCCURS 5 TIMES.   *> arrow: entity ids already pierced
+       10 EN-ARW-PUNCH        BINARY-LONG.        *> arrow: the weapon's knockback k in thousandths (Punch), 0 none
+       10 EN-ARW-SHAKE        BINARY-LONG.        *> arrow: shakeTime, 7 after it stuck
+       10 EN-ARW-PICKUP       BINARY-LONG.        *> arrow: pickup mode 0 disallowed, 1 allowed, 2 creative only
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

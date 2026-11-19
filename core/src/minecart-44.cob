@@ -658,8 +658,9 @@
  END PROGRAM MC-ALONG.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MC-EXPLODE.
-*> USING row, slot: the TNT cart's explode (4.6): radius 4.0 + 1.0 x nextDouble x 1.5 x min(horizontal speed, 5), no fire; the cart is gone (an explosion only with tnt_explodes).
+ PROGRAM-ID. MC-EXPLODE-SQ.
+*> USING row, slot, speed squared (FLOAT-LONG): the TNT cart's explode(source, speedSqr) (4.6): s = min(sqrt(speedSqr), 5.0), radius 4.0 + 1.0 x nextDouble x 1.5 x s, no fire; the cart is gone
+*> (an explosion only with tnt_explodes).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -679,9 +680,10 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT.
+ 01 L-SPEED2               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-SPEED2.
      CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
-     COMPUTE WS-S = FUNCTION MIN(5.0, FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW)))
+     COMPUTE WS-S = FUNCTION MIN(5.0, FUNCTION SQRT(L-SPEED2))
      CALL "XP-RANDOM" USING WS-SALT WS-THOUSAND WS-R
      COMPUTE WS-POWER = 4.0 + WS-R / 1000 * 1.5 * WS-S
      MOVE EN-DIM(L-ROW) TO WS-DIM
@@ -692,6 +694,22 @@
      IF WS-RULE NOT = 0
          CALL "EXPLODE-RUN" USING WS-DIM WS-X WS-Y WS-Z WS-POWER WS-DESTROY WS-NONE
      END-IF
+     GOBACK.
+ END PROGRAM MC-EXPLODE-SQ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MC-EXPLODE.
+*> USING row, slot: MC-EXPLODE-SQ at the cart's horizontal speed squared.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SPEED2              FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT.
+     COMPUTE WS-SPEED2 = EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW)
+     CALL "MC-EXPLODE-SQ" USING L-ROW L-SLOT WS-SPEED2
      GOBACK.
  END PROGRAM MC-EXPLODE.
 
@@ -756,6 +774,8 @@
  01 WS-H2                  FLOAT-LONG.
  01 WS-YAW                 FLOAT-LONG.
  01 WS-D                   FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -786,6 +806,7 @@
      END-IF
      IF WS-KIND > 0
          CALL "MC-ALONG" USING L-ROW WS-SLOT WS-BX WS-BY WS-BZ WS-KIND WS-SHAPE WS-POWERED
+         MOVE 0 TO EN-FALL(L-ROW)
          IF WS-KIND = 3
              CALL "MC-ACTIVATE" USING L-ROW WS-SLOT WS-POWERED
          END-IF
@@ -801,7 +822,21 @@
          MOVE EN-VX(L-ROW) TO WS-MX
          MOVE EN-VY(L-ROW) TO WS-MY
          MOVE EN-VZ(L-ROW) TO WS-MZ
+         MOVE EN-Y(L-ROW) TO WS-OY
          CALL "MC-MOVE" USING L-ROW WS-MX WS-MY WS-MZ WS-HHIT
+*>       The fall distance (4.6 causeFallDamage): a TNT cart that lands after falling 3 or more blocks explodes with speedSqr (distance / 10) squared.
+         IF EN-Y(L-ROW) < WS-OY
+             COMPUTE EN-FALL(L-ROW) = EN-FALL(L-ROW) + WS-OY - EN-Y(L-ROW)
+         END-IF
+         IF EN-ON-GROUND(L-ROW) = 1
+             IF PJ-I1(WS-SLOT) = 5 AND EN-FALL(L-ROW) >= 3.0
+                 COMPUTE WS-V = EN-FALL(L-ROW) / 10
+                 COMPUTE WS-H2 = WS-V * WS-V
+                 CALL "MC-EXPLODE-SQ" USING L-ROW WS-SLOT WS-H2
+                 GOBACK
+             END-IF
+             MOVE 0 TO EN-FALL(L-ROW)
+         END-IF
          IF WS-HHIT = 1
              MOVE 1 TO PJ-I7(WS-SLOT)
          ELSE

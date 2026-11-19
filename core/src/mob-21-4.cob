@@ -566,6 +566,9 @@
  COPY STDMOBS.
  COPY RULES.
  01 WS-WET                 BINARY-LONG.
+ 01 WS-MOIST               BINARY-LONG.
+ 01 WS-RAIN                BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG VALUE 600.
  01 WS-SALT                BINARY-LONG.
  01 WS-R                   FLOAT-LONG.
  01 WS-AMOUNT              BINARY-LONG.

@@ -728,6 +728,9 @@
  01 WS-DONE                BINARY-LONG.
  01 WS-ENTITY              BINARY-LONG.
  01 WS-PLAYER              BINARY-LONG.
+ 01 WS-INERTIA             FLOAT-LONG.
+ 01 WS-WATER-HEIGHT        FLOAT-LONG.
+ 01 WS-WATER-KIND          BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -748,19 +751,36 @@
          END-IF
      END-IF
      ADD 1 TO EN-COOLDOWN(L-ROW)
+*>   In water (6.4 applyInertia, 6.5 water drag, 10.3): the thrust projectiles keep 0.8 instead of 0.95, the thrown ones 0.8 instead of 0.99, a llama spit is discarded.
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "BOAT-FLUID" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-WATER-HEIGHT WS-WATER-KIND
+     IF WS-WATER-KIND > 0 AND WS-KIND = 5
+         CALL "ENTITY-REMOVE" USING L-ROW
+         GOBACK
+     END-IF
      EVALUATE WS-KIND
          WHEN 1
          WHEN 2
-*>       applyInertia: v = (v + normalize(v) x 0.1) x 0.95 (the thrust of accelerationPower 0.1).
+*>       applyInertia: v = (v + normalize(v) x 0.1) x 0.95 (the thrust of accelerationPower 0.1), 0.8 in water.
+         MOVE 0.95 TO WS-INERTIA
+         IF WS-WATER-KIND > 0
+             MOVE 0.8 TO WS-INERTIA
+         END-IF
          COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
-         COMPUTE EN-VX(L-ROW) = (EN-VX(L-ROW) + EN-VX(L-ROW) / WS-SPEED * 0.1) * 0.95
-         COMPUTE EN-VY(L-ROW) = (EN-VY(L-ROW) + EN-VY(L-ROW) / WS-SPEED * 0.1) * 0.95
-         COMPUTE EN-VZ(L-ROW) = (EN-VZ(L-ROW) + EN-VZ(L-ROW) / WS-SPEED * 0.1) * 0.95
+         COMPUTE EN-VX(L-ROW) = (EN-VX(L-ROW) + EN-VX(L-ROW) / WS-SPEED * 0.1) * WS-INERTIA
+         COMPUTE EN-VY(L-ROW) = (EN-VY(L-ROW) + EN-VY(L-ROW) / WS-SPEED * 0.1) * WS-INERTIA
+         COMPUTE EN-VZ(L-ROW) = (EN-VZ(L-ROW) + EN-VZ(L-ROW) / WS-SPEED * 0.1) * WS-INERTIA
          WHEN 3
-*>       Thrown: gravity 0.03, then drag 0.99.
-         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
-         COMPUTE EN-VY(L-ROW) = (EN-VY(L-ROW) - 0.03) * 0.99
-         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+*>       Thrown: gravity 0.03, then drag 0.99 (0.8 in water).
+         MOVE 0.99 TO WS-INERTIA
+         IF WS-WATER-KIND > 0
+             MOVE 0.8 TO WS-INERTIA
+         END-IF
+         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * WS-INERTIA
+         COMPUTE EN-VY(L-ROW) = (EN-VY(L-ROW) - 0.03) * WS-INERTIA
+         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * WS-INERTIA
          WHEN 5
 *>       Llama spit: drag 0.99, then gravity 0.06 (21 section 8.14).
          COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
