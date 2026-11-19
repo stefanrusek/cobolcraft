@@ -475,9 +475,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-CONTENT-OPEN.
-*> USING world type (PIC X(10), standard, cobolcraft or debug), generated directory (PIC X(1024), CS-GENERATED-DIR),
+*> USING world type (PIC X(10), standard, cobolcraft, debug or superflat), generated directory (PIC X(1024), CS-GENERATED-DIR),
 *> status out (BINARY-LONG CORE-WO-*): opens the content set of the type (the cobolcraft set reads nothing from the
-*> directory; a standard or debug set needs the packs check ok and loads the generated data). A set that does not
+*> directory; a standard, debug or superflat set needs the packs check ok and loads the generated data). A set that does not
 *> open is CORE-WO-PACKS-NOT-OK (FR-004): CT-PACKS-STATUS holds the packs answer.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
