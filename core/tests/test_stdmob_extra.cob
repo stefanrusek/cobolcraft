@@ -223,6 +223,23 @@
          COMPUTE WS-BY = WS-TOP + WS-I
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
      END-PERFORM
+*>   The test world has no terrain round the column, so the cell is dark only when it is shut in: since the readers of the stored sky light see the sideways spread
+*>   (LIGHT-SKY-SPREAD, lane genlimits T33320) an open cell in air beside lit air reads 14, as it does in the game. A roof and a ring of stone make it a dark cell again.
+     COMPUTE WS-BY = WS-TOP + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         COMPUTE WS-BY = WS-TOP + WS-I
+         ADD 1 TO WS-BX
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         SUBTRACT 2 FROM WS-BX
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         ADD 1 TO WS-BX
+         ADD 1 TO WS-BZ
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         SUBTRACT 2 FROM WS-BZ
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         ADD 1 TO WS-BZ
+     END-PERFORM
      CALL "STDMOB-SPAWN-RULE" USING WS-DIM WS-BX WS-BZ WS-TOP WS-R
      PERFORM COUNT-ALL
      MOVE "test stdmob extra: no spawn in a dark cell" TO TL-CASE
