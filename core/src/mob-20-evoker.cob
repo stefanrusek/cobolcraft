@@ -13,7 +13,7 @@
 *>   EVK-FANG-TICK                                     the world tick of all fangs (STDMOB-SPAWN-TICK)
 *>   VEX-STEP USING vex row                            limited life and starvation
 *> Wololo (EVK-WOLOLO-PICK, performed in EVK-STEP; the document's start condition is a target, so the fang goal always goes first: only EVK-BEGIN starts it), the fang column
-*> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7).
+*> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7); the vex flight is mob-20-vex.cob.
 *> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the knockback of an owned bite and the witch's 0.15 of magic damage, the height of a
 *> partial block in the fang cell.
  IDENTIFICATION DIVISION.
@@ -392,6 +392,10 @@
              MOVE EN-ID(L-ROW) TO VX-OWNER(WS-SLOT)
              COMPUTE VX-LIFE(WS-SLOT) = 20 * (30 + WS-DRAW)
              MOVE 0 TO VX-STARVE(WS-SLOT)
+             MOVE 1 TO VX-BOUND(WS-SLOT)
+             COMPUTE VX-BX(WS-SLOT) = FUNCTION INTEGER(WS-X)
+             COMPUTE VX-BY(WS-SLOT) = FUNCTION INTEGER(WS-Y)
+             COMPUTE VX-BZ(WS-SLOT) = FUNCTION INTEGER(WS-Z)
          END-IF
      END-PERFORM
      GOBACK.
@@ -543,7 +547,7 @@
          END-IF
      END-IF
 *>   VexChargeAttackGoal: with a living target more than 2 blocks away and a 1 in 7 draw the charge starts; a charging vex that touches its target hurts it.
-     IF EN-TARGET(L-ROW) > 0 AND VX-CHARGING(WS-SLOT) = 0
+     IF EN-TARGET(L-ROW) > 0 AND VX-CHARGING(WS-SLOT) = 0 AND EN-FLY-ON(L-ROW) = 0
          COMPUTE WS-D2 = (PL-X(EN-TARGET(L-ROW)) - EN-X(L-ROW)) ** 2 + (PL-Y(EN-TARGET(L-ROW)) - EN-Y(L-ROW)) ** 2
              + (PL-Z(EN-TARGET(L-ROW)) - EN-Z(L-ROW)) ** 2
          CALL "XP-RANDOM" USING WS-SALT WS-SEVEN WS-DRAW
@@ -552,6 +556,10 @@
          END-IF
      END-IF
      CALL "VEX-CONTACT" USING L-ROW
+*>   VexRandomMoveGoal (priority 8) wants a move control without a wish: after the charge goal had its turn.
+     IF VX-CHARGING(WS-SLOT) = 0
+         CALL "VEX-RANDOM-MOVE" USING L-ROW
+     END-IF
      GOBACK.
  END PROGRAM VEX-STEP.
 
@@ -723,12 +731,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VEX-CHARGE.
-*> USING vex row: the charge starts (VexChargeAttackGoal.start): the charging flag is set and sent. The flight to the target's eye (speed 1.0) needs the vex flying speed, which no document gives:
-*> the vex does not move yet.
+*> USING vex row: the charge starts (VexChargeAttackGoal.start): the charging flag is set and sent, and the move control is told to go to the target's eye at modifier 1.0 (VEX-FLY, 13.4.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY EVKSTATE.
+ 01 WS-P                    BINARY-LONG.
  01 WS-I                    BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
@@ -736,6 +744,13 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VX-MAX
          IF VX-ID(WS-I) = EN-ID(L-ROW)
              MOVE 1 TO VX-CHARGING(WS-I)
+*>           The control moves to the target's eye at modifier 1.0 (target player: eye 1.62 above its feet).
+             MOVE EN-TARGET(L-ROW) TO WS-P
+             MOVE PL-X(WS-P) TO EN-FLY-X(L-ROW)
+             COMPUTE EN-FLY-Y(L-ROW) = PL-Y(WS-P) + 1.62
+             MOVE PL-Z(WS-P) TO EN-FLY-Z(L-ROW)
+             MOVE 1.0 TO EN-FLY-MOD(L-ROW)
+             MOVE 1 TO EN-FLY-ON(L-ROW)
              CALL "VEX-FLAG-SEND" USING L-ROW
          END-IF
      END-PERFORM
@@ -753,6 +768,7 @@
  01 WS-SLOT                 BINARY-LONG.
  01 WS-P                    BINARY-LONG.
  01 WS-DAMAGE               BINARY-LONG VALUE 4.
+ 01 WS-D2                   FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -775,6 +791,16 @@
              CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
              MOVE 0 TO VX-CHARGING(WS-SLOT)
              CALL "VEX-FLAG-SEND" USING L-ROW
+         ELSE
+*>           Within 3 blocks of the target (distance squared below 9) the charge aims at its eye again.
+             COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+             IF WS-D2 < 9
+                 MOVE PL-X(WS-P) TO EN-FLY-X(L-ROW)
+                 COMPUTE EN-FLY-Y(L-ROW) = PL-Y(WS-P) + 1.62
+                 MOVE PL-Z(WS-P) TO EN-FLY-Z(L-ROW)
+                 MOVE 1.0 TO EN-FLY-MOD(L-ROW)
+                 MOVE 1 TO EN-FLY-ON(L-ROW)
+             END-IF
          END-IF
      END-IF
      GOBACK.

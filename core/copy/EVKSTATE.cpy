@@ -37,6 +37,10 @@
        10 VX-LIFE            BINARY-LONG.
        10 VX-STARVE          BINARY-LONG.
        10 VX-CHARGING        BINARY-LONG.
+       10 VX-BOUND           BINARY-LONG.        *> 1 when the vex has a bound origin (an evoker's summon: the block it appeared in), VX-BX/BY/BZ
+       10 VX-BX              BINARY-LONG.
+       10 VX-BY              BINARY-LONG.
+       10 VX-BZ              BINARY-LONG.
 *> RV-ENTRY: one per ravager entity id (RV-ID 0 = free): RV-STUN the stun ticks left, RV-ROAR the roar countdown, RV-ATTACK the ticks since a hit (10 down to 0), RV-SPEED the movement speed attribute in millionths (0 = not set yet: 300000; it lerps by 0.1 towards 350000 with a target, 300000 without: 13.6).
  78 RV-MAX                VALUE 32.
  01 RV-STATE EXTERNAL.

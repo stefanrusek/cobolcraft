@@ -1330,7 +1330,7 @@
                  COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
              END-IF
-             IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
+             IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND SM-KEY(WS-M) NOT = "vex" AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
                  CALL "STDMOB-ATTACK-GAP" USING WS-M EN-COOLDOWN(WS-ROW)
@@ -1425,6 +1425,11 @@
                  CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              END-IF
      END-EVALUATE
+*>   A vex flies by its move control through blocks (VEX-FLY, 20 section 13.4.1), which does its own damping: no walk, no gravity, no fall damage.
+     IF SM-KEY(WS-M) = "vex"
+         CALL "VEX-FLY" USING WS-ROW
+         GOBACK
+     END-IF
 *>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.
 *>   Over a block of friction F above 0.6 (ice, 18 section 3.2) the walk only accelerates by 0.454 x 0.21600002 / F^3 of its step, and EN-VX, EN-VZ
 *>   carry the velocity with a decay of F x 0.91.
