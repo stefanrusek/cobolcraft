@@ -5,7 +5,7 @@
  01 MODEL-RESOLVED.
     05 MR-MISSING            PIC 9.
     05 MR-ELEMENT-COUNT      BINARY-LONG.
-    05 MR-ELEMENT OCCURS 8 TIMES.
+    05 MR-ELEMENT OCCURS 16 TIMES.
        10 ME-FROM            FLOAT-SHORT OCCURS 3 TIMES.
        10 ME-TO              FLOAT-SHORT OCCURS 3 TIMES.
        10 ME-ROT-KIND        BINARY-LONG.    *> 0 none, 1 single axis, 2 Euler x, y, z
