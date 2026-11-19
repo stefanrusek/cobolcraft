@@ -305,6 +305,9 @@
          END-IF
      END-PERFORM
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+*>   The mesh credit is on as in the game's loop (CL-RUN): a frame meshes sections only while the credit of its microseconds lasts.
+     MOVE 1 TO MB-CREDIT-ON
+     MOVE CL-MESH-CREDIT-US TO MB-CREDIT
 *>   The commands below are heard only once the player is in play and loaded (a standard world takes thousands of frames for its first chunks).
      IF WS-LOCATE = SPACES
          PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > WS-MAXWAIT OR PL-LOADED = 1

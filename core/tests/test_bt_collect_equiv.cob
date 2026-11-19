@@ -178,7 +178,7 @@
      MOVE "perfsteady: the random queues ran a good number of ticks (the comparison is not of empty lists)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-TOTAL-RUN > 1000
+     IF WS-TOTAL-RUN > WS-ROUNDS * 10
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
