@@ -237,8 +237,8 @@
      PERFORM ASSERT-N
 
 *>   placements, with the parameters of dripstone_cluster in a plain cave, a roofless and floorless cave with lava, and a low roof
-     PERFORM VARYING WS-CASEN FROM 1 BY 1 UNTIL WS-CASEN > 6
-         IF WS-CASEN <= 3
+     PERFORM VARYING WS-CASEN FROM 1 BY 1 UNTIL WS-CASEN > 7
+         IF WS-CASEN <= 3 OR WS-CASEN = 7
              MOVE "minecraft:cluster" TO WS-FTKEY
              PERFORM SET-PARAMS-DOC
          ELSE
@@ -260,13 +260,15 @@
                      PERFORM LOW-ROOF-WORLD
                  WHEN 5
                      PERFORM WATER-WORLD
+                 WHEN 7
+                     PERFORM FOREIGN-ROOF-WORLD
              END-EVALUATE
              MOVE 24 TO WS-OX
              IF WS-CASEN = 1 OR WS-CASEN = 4
                  MOVE 29 TO WS-OX
              END-IF
              MOVE 66 TO WS-OY
-             IF WS-CASEN = 3
+             IF WS-CASEN = 3 OR WS-CASEN = 7
                  MOVE 64 TO WS-OY
              END-IF
              MOVE 40 TO WS-OZ
@@ -285,8 +287,10 @@
                  MOVE "35-6§6.2: a cluster with wetness 1.0 makes pools on dry floors and equals the model, eight seeds" TO WS-CASE
              WHEN 5
                  MOVE "35-6§6.2: a wet cluster over shallow water (no pool: water above the floor cell) equals the model, eight seeds" TO WS-CASE
-             WHEN OTHER
+             WHEN 6
                  MOVE "35-6§6.2: a wet cluster in the roofless, floorless cave with lava equals the model, eight seeds" TO WS-CASE
+             WHEN OTHER
+                 MOVE "35-6§2.4.3: a roof and a pillar of pointed dripstone (neither base block nor lava nor air nor water) bound the scan, so the cluster equals the model, eight seeds" TO WS-CASE
          END-EVALUATE
          MOVE WS-BAD TO WS-OBS
          MOVE 0 TO WS-EXP
@@ -595,6 +599,25 @@
      PERFORM FILL-BOX
      PERFORM SNAPSHOT
      .
+*> FOREIGN-ROOF-WORLD: LOW-ROOF-WORLD with pointed dripstone for the roof and the pillar: the scan's target is any block that is neither empty nor water (35-6 2.4.3)
+ FOREIGN-ROOF-WORLD.
+     MOVE "pointed_dripstone" TO WS-KEY
+     MOVE 20 TO WS-X0
+     MOVE 28 TO WS-X1
+     MOVE 36 TO WS-Z0
+     MOVE 44 TO WS-Z1
+     MOVE 66 TO WS-Y0
+     MOVE 69 TO WS-Y1
+     PERFORM FILL-BOX
+     MOVE 22 TO WS-X0
+     MOVE 23 TO WS-X1
+     MOVE 38 TO WS-Z0
+     MOVE 39 TO WS-Z1
+     MOVE 63 TO WS-Y0
+     MOVE 65 TO WS-Y1
+     PERFORM FILL-BOX
+     PERFORM SNAPSHOT
+     .
 *> WATER-WORLD: water y 63..64 over x 20..28, z 36..44
  WATER-WORLD.
      MOVE "water" TO WS-KEY
@@ -716,14 +739,9 @@
              MOVE 0 TO WS-GO
          END-IF
      END-PERFORM
-     MOVE WS-PX TO WS-MX
-     MOVE WS-CY TO WS-MY
-     MOVE WS-PZ TO WS-MZ
-     PERFORM MODEL-ISBASE
-     MOVE WS-D TO WS-E1
-     PERFORM M-LAVA
+*>   the target is isNeitherEmptyNorWater (2.4.3): the cell where the loop stopped is the answer when it is not empty or water (WS-D still holds the allowed flag of that cell)
      MOVE 0 TO WS-FOUND
-     IF WS-E1 = 1 OR WS-D = 1
+     IF WS-D = 0
          MOVE 1 TO WS-FOUND
          MOVE WS-CY TO WS-FOUNDY
      END-IF

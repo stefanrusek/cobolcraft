@@ -764,8 +764,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SC-SCAN.
-*> USING row, x, y, z, direction (0 down, 1 up), max steps, found out (0 none, 1 the target found), y out: Column.scan's scanDirection (2.4): from the position, move while fewer than
-*> maxSteps - 1 moves are made and the cell is air or water; then, when the cell reached is a base block (or in the replaceable set) or lava, its y is the answer.
+*> USING row, x, y, z, direction (0 down, 1 up), max steps, found out (0 none, 1 the target found), y out: Column.scan's scanDirection (2.4) of the speleothem cluster: from the position,
+*> move while fewer than maxSteps - 1 moves are made and the cell is air or water; then, when the cell reached is neither (any block, lava included: 2.4.3), its y is the answer.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY FEATDATA.
@@ -775,7 +775,6 @@
  01 WS-I                   BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
- 01 WS-CLASS               BINARY-LONG.
  01 WS-GO                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -802,9 +801,8 @@
              MOVE 0 TO WS-GO
          END-IF
      END-PERFORM
-     CALL "SP-IS-BASE" USING L-ROW WS-STATE WS-FLAG
-     CALL "FL-CLASS" USING WS-STATE WS-CLASS
-     IF WS-FLAG = 1 OR WS-CLASS = 3
+*>   the target is isNeitherEmptyNorWater (2.4.3): any other block ends the walk with its y (WS-FLAG still says whether the cell reached is empty or water)
+     IF WS-FLAG = 0
          MOVE 1 TO L-FOUND
          MOVE WS-Y TO L-OUT
      END-IF
