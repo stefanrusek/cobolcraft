@@ -384,6 +384,21 @@
        10 SG-ROW OCCURS 4 TIMES.
           15 SG-LEN          BINARY-LONG.
           15 SG-LINE-TEXT    PIC X(64).
+*>     The sign texts the server sent (Block Entity Data of a sign or hanging sign, the block entities of a Level Chunk; client/src/screens/signtext.cob): SN-ENTRY a used row of a sign's
+*>     position and is_waxed, SN-SIDE(1) its back text and SN-SIDE(2) its front text (31-3 section 2.2): the dye id of the colour (15 black), the glow flag and the four lines (byte length
+*>     and text, at most 64 bytes). The editor of 40-8 starts from them.
+       10 SN-ENTRY OCCURS 256 TIMES.
+          15 SN-USED          BINARY-LONG.
+          15 SN-X             BINARY-LONG.
+          15 SN-Y             BINARY-LONG.
+          15 SN-Z             BINARY-LONG.
+          15 SN-WAXED         BINARY-LONG.
+          15 SN-SIDE OCCURS 2 TIMES.
+             20 SN-COLOR      BINARY-LONG.
+             20 SN-GLOW       BINARY-LONG.
+             20 SN-LINE OCCURS 4 TIMES.
+                25 SN-LEN     BINARY-LONG.
+                25 SN-TEXT    PIC X(64).
 *>     The block editors (40-9): the command block screen's target, mode (0 sequence, 1 auto, 2 redstone), conditional, automatic and track flags, and the command; the jigsaw and structure packet
 *>     sources (the screens for those are not drawn yet).
 *>     The form screens (test block and jigsaw editors of 40-9): the form (1 test block, 2 jigsaw), the focused box, the box texts, the test block mode (0 to 3), the jigsaw keep flag,

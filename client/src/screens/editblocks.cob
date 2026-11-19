@@ -629,7 +629,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-ENTITY-DATA.
 *> USING CLIENT-STATE, PB-BUFFER (after the id): Block Entity Data (05a 0x06: position, block entity type VarInt, network NBT). While the command block screen is open for that position the box and the track flag
-*> follow its Command and TrackOutput (40-9 4.3); any other packet is read and dropped (the client keeps no block entity copy).
+*> follow its Command and TrackOutput (40-9 4.3); a sign's or hanging sign's text is kept (SIGN-TEXT-TAG, signtext.cob); any other packet is read and dropped.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -648,15 +648,22 @@
  01 WS-STR-LEN         BINARY-LONG.
  01 WS-BYTE                BINARY-LONG.
  01 WS-APPLY               BINARY-LONG.
+ 01 WS-BE-TYPE             BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
  PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
      CALL "PB-GET-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-TYPE
+     MOVE WS-TYPE TO WS-BE-TYPE
      MOVE 0 TO WS-APPLY
      IF PB-ERROR = 0 AND SM-SCREEN = SCR-CMDBLOCK AND EB-MC = 0 AND WS-X = EB-X AND WS-Y = EB-Y AND WS-Z = EB-Z
          MOVE 1 TO WS-APPLY
+     END-IF
+*>   A sign or hanging sign (types 7 and 8) keeps its text (signtext.cob).
+     IF PB-ERROR = 0 AND (WS-BE-TYPE = 7 OR WS-BE-TYPE = 8)
+         CALL "SIGN-TEXT-TAG" USING CLIENT-STATE WS-X WS-Y WS-Z PB-BUFFER
+         GOBACK
      END-IF
      CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
      IF PB-ERROR = 0 AND WS-TYPE = 10
