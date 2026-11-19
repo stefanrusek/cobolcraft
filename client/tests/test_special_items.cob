@@ -1,0 +1,453 @@
+*> Lane bugbeitems (T42400 and on; operator try15: "chests drop as a square (of their bottom texture)"): the items whose item definition is a code-drawn "minecraft:special" model
+*> (the chest family, the shulker boxes, the banners; 52 sections 3.5, 3.10, 4.2 to 4.5, 6.4, 6.7) are drawn as their model on the ground, in the GUI and in the hand, not as the
+*> icon of their particle texture. The expected quads come from the independent script client/tests/fixtures/gen_special_items.py (the documented cuboids, the strip and face table of
+*> 34 section 1.3, the display transforms of the docs): per kind the number of quads, the sums over all quads and selected corners (x y z and the texture coordinates in texels of the
+*> sprite over its size, times 10000, within 1), the quads that face the viewer in the GUI (cross.z below 0, 16 pixel cell: x 8 + 16 p.x, y 8 - 16 p.y) and the quads that face an eye
+*> at the origin in the hand (the firstperson transform, the model 1.5 in front). The generated vanilla pack is read from CC_GENERATED_DIR.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SPECIAL-ITEMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY TESTLIB.
+ COPY CLSQ.
+ 01 WS-GEN                 PIC X(256).
+ 01 WS-ROOT                PIC X(256).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-KINDS-DATA          PIC X(48) VALUE "chest           red_shulker_box red_banner      ".
+ 01 WS-KINDS REDEFINES WS-KINDS-DATA.
+    05 WS-KIND-NAME        PIC X(16) OCCURS 3 TIMES.
+ 01 WS-QUADS-DATA          PIC X(6) VALUE "161024".
+ 01 WS-QUADS-TABLE REDEFINES WS-QUADS-DATA.
+    05 WS-QUADS-EXPECT     PIC 99 OCCURS 3 TIMES.
+ 01 WS-SUMS-DATA.
+    05 FILLER PIC X(40) VALUE "+0320000+0335000+0432500+0185625+0165000".
+    05 FILLER PIC X(40) VALUE "+0200000+0180010+0200000+0200000+0202500".
+    05 FILLER PIC X(40) VALUE "+0480000+1120248+0513141+0385000+0331250".
+ 01 WS-SUMS-TABLE REDEFINES WS-SUMS-DATA.
+    05 WS-SUMS-ROW OCCURS 3 TIMES.
+       10 WS-SUMS-X        PIC S999V9999 SIGN LEADING SEPARATE OCCURS 5 TIMES.
+ 01 WS-ROWS-DATA.
+    05 FILLER PIC X(45) VALUE "10111+0009375+0000000+0000625+0006562+0005156".
+    05 FILLER PIC X(45) VALUE "10131+0000625+0000000+0009375+0004375+0002969".
+    05 FILLER PIC X(45) VALUE "10611+0009375+0008750+0009375+0004375+0000000".
+    05 FILLER PIC X(45) VALUE "10631+0000625+0008750+0000625+0002188+0002188".
+    05 FILLER PIC X(45) VALUE "11611+0004375+0006875+0010000+0000938+0000156".
+    05 FILLER PIC X(45) VALUE "11631+0005625+0004375+0010000+0000625+0000781".
+    05 FILLER PIC X(45) VALUE "20111+0009998+0009998+0000002+0005000+0000000".
+    05 FILLER PIC X(45) VALUE "20131+0000002+0009998+0009998+0002500+0002500".
+    05 FILLER PIC X(45) VALUE "20611+0009998+0000003+0009998+0007500+0006875".
+    05 FILLER PIC X(45) VALUE "20631+0000002+0000003+0000002+0005000+0004375".
+    05 FILLER PIC X(45) VALUE "30311+0004583+0017500+0005417+0007188+0000312".
+    05 FILLER PIC X(45) VALUE "30331+0004583+0000000+0004583+0006875+0006875".
+    05 FILLER PIC X(45) VALUE "32412+0000812+0018357+0005396+0006562+0000156".
+    05 FILLER PIC X(45) VALUE "32432+0009188+0001649+0005527+0003438+0006406".
+    05 FILLER PIC X(45) VALUE "00000+0000000+0000000+0000000+0000000+0000000".
+ 01 WS-ROWS-TABLE REDEFINES WS-ROWS-DATA.
+    05 WS-XROW OCCURS 15 TIMES.
+       10 WS-XKIND         PIC 9.
+       10 WS-XQUAD         PIC 99.
+       10 WS-XCORNER       PIC 9.
+       10 WS-XSLOT         PIC 9.
+       10 WS-XV            PIC S9(7) SIGN LEADING SEPARATE OCCURS 5 TIMES.
+ 01 WS-GUI-DATA.
+    05 FILLER PIC X(48) VALUE "08+0018128+0016588+0141872+0154237".
+    05 FILLER PIC X(48) VALUE "05+0009325+0001383+0150675+0158617".
+    05 FILLER PIC X(48) VALUE "12+0045427+0006381+0116397+0151668".
+ 01 WS-GUI-TABLE REDEFINES WS-GUI-DATA.
+    05 WS-GUI-ROW OCCURS 3 TIMES.
+       10 WS-GUI-N         PIC 99.
+       10 WS-GUI-X         PIC S9(3)V9(4) SIGN LEADING SEPARATE OCCURS 4 TIMES.
+       10 FILLER           PIC X(14).
+ 01 WS-HAND-DATA.
+    05 FILLER PIC X(40) VALUE "06-0015380+0004500-0492801".
+    05 FILLER PIC X(40) VALUE "04+0000000-0005997-0326076".
+    05 FILLER PIC X(40) VALUE "07+0005230+0110664-0600891".
+ 01 WS-HAND-TABLE REDEFINES WS-HAND-DATA.
+    05 WS-HAND-ROW OCCURS 3 TIMES.
+       10 WS-HAND-N        PIC 99.
+       10 WS-HAND-S        PIC S9(3)V9(4) SIGN LEADING SEPARATE OCCURS 3 TIMES.
+       10 FILLER           PIC X(14).
+ 01 WS-WHITE               PIC X(80).
+ 01 WS-SPRITE              BINARY-LONG OCCURS 2 TIMES.
+ 01 WS-DATE                PIC X(21).
+ 01 WS-MMDD                PIC 9(4).
+ 01 WS-XMAS                BINARY-LONG.
+ 01 WS-ID                  PIC X(80).
+ 01 WS-ID-LEN              BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-OBS                 FLOAT-LONG.
+ 01 WS-EXP                 FLOAT-LONG.
+ 01 WS-SUM                 FLOAT-LONG OCCURS 5 TIMES.
+ 01 WS-NU                  FLOAT-LONG.
+ 01 WS-NV                  FLOAT-LONG.
+ 01 WS-LABEL               PIC X(60).
+ 01 WS-BOX                 FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-GUI-VIS             BINARY-LONG.
+ 01 WS-HSUM                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-KT                  PIC 99.
+ 01 WS-QT                  PIC 99.
+ 01 WS-AT                  PIC 99.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-VAL.
+    05 WS-VV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-LIGHT               FLOAT-LONG VALUE 1.
+ 01 WS-VQ.
+    05 WS-VQV              FLOAT-LONG OCCURS 9 TIMES.
+ 01 WS-YAW                 FLOAT-LONG VALUE 0.
+ 01 WS-PITCH               FLOAT-LONG VALUE 0.
+ 01 WS-EYE-POINT.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-ENT-ID              BINARY-LONG.
+ 01 WS-ENT-TYPE            BINARY-LONG.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EY                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-ENT-YAW             FLOAT-SHORT.
+ 01 WS-A3                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-B3                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-CROSS               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-FACING              BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-U0                  FLOAT-LONG.
+ 01 WS-U1                  FLOAT-LONG.
+ 01 WS-V0                  FLOAT-LONG.
+ 01 WS-V1                  FLOAT-LONG.
+ PROCEDURE DIVISION.
+     MOVE SPACES TO WS-GEN
+     ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
+     IF WS-GEN = SPACES
+         MOVE "/tmp/cc-test/generated" TO WS-GEN
+     END-IF
+     MOVE SPACES TO WS-ROOT
+     STRING FUNCTION TRIM(WS-GEN) "/vanilla-resources" DELIMITED BY SIZE INTO WS-ROOT
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     ADD 1 TO PK-COUNT
+     INITIALIZE PK-PACK(PK-COUNT)
+     MOVE 1 TO PK-KIND(PK-COUNT)
+     MOVE 3 TO PK-LEVEL(PK-COUNT)
+     MOVE "generated/vanilla" TO PK-ID(PK-COUNT)
+     MOVE 17 TO PK-ID-LENGTH(PK-COUNT)
+     MOVE WS-ROOT TO PK-ROOT(PK-COUNT)
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ROOT)) TO PK-ROOT-LENGTH(PK-COUNT)
+     CALL "PACK-STACK-OPEN" USING CLIENT-STATE
+     CALL "PACK-SOURCE-FILES" USING CLIENT-STATE PK-COUNT
+     CALL "ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 1 TO CL-GUI-SCALE
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO CT-OPEN
+     MOVE "N" TO TL-MODE
+     MOVE FUNCTION CURRENT-DATE TO WS-DATE
+     MOVE WS-DATE(5:4) TO WS-MMDD
+     CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
+     PERFORM VARYING WS-KIND FROM 1 BY 1 UNTIL WS-KIND > 3
+         MOVE SPACES TO WS-KEY
+         MOVE WS-KIND-NAME(WS-KIND) TO WS-KEY
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM(WS-KIND) WS-ITEM-ROW WS-STATUS
+         PERFORM CHECK-QUADS
+     END-PERFORM
+     PERFORM VARYING WS-KIND FROM 1 BY 1 UNTIL WS-KIND > 3
+         PERFORM CHECK-GUI
+         PERFORM CHECK-HAND
+     END-PERFORM
+     PERFORM CHECK-GROUND
+     STOP RUN.
+
+*> The sprites of the kind (slot 1 and 2) in the atlas.
+ FIND-SPRITES.
+     MOVE SPACES TO WS-ID
+     EVALUATE WS-KIND
+         WHEN 1
+             IF WS-XMAS = 1
+                 MOVE "minecraft:entity/chest/christmas" TO WS-ID
+             ELSE
+                 MOVE "minecraft:entity/chest/normal" TO WS-ID
+             END-IF
+         WHEN 2
+             MOVE "minecraft:entity/shulker/shulker_red" TO WS-ID
+         WHEN OTHER
+             MOVE "minecraft:entity/banner/banner_base" TO WS-ID
+     END-EVALUATE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LEN
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LEN WS-SPRITE(1)
+     MOVE WS-SPRITE(1) TO WS-SPRITE(2)
+     IF WS-KIND = 3
+         MOVE SPACES TO WS-ID
+         MOVE "minecraft:entity/banner/base" TO WS-ID
+         MOVE 28 TO WS-ID-LEN
+         CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LEN WS-SPRITE(2)
+     END-IF.
+
+*> The observed value (WS-OBS) against WS-EXP: reported in units of 0.0001, equal to the expected one when within 1.
+ CHECK-NEAR.
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-EXP * 10000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OBS * 10000
+     IF FUNCTION ABS(TL-EXPECTED-N - TL-OBSERVED-N) <= 1
+         MOVE TL-EXPECTED-N TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-QUADS.
+     PERFORM FIND-SPRITES
+     CALL "SPECIAL-ITEM-QUADS" USING CLIENT-STATE WS-ITEM(WS-KIND) SQ-TABLE
+     MOVE SPACES TO TL-CASE
+     STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": number of quads of the model" DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-QUADS-EXPECT(WS-KIND) TO TL-EXPECTED-N
+     MOVE SQ-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 5
+         MOVE 0 TO WS-SUM(WS-K)
+     END-PERFORM
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > SQ-COUNT
+         MOVE 1 TO WS-S
+         IF WS-KIND = 3 AND WS-Q > 18
+             MOVE 2 TO WS-S
+         END-IF
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+             PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                 COMPUTE WS-SUM(WS-A) = WS-SUM(WS-A) + SQ-C(WS-Q, (WS-K - 1) * 3 + WS-A)
+             END-PERFORM
+             COMPUTE WS-NU = (SQ-U(WS-Q, WS-K) * AT-W - AT-X(WS-SPRITE(WS-S))) / AT-SW(WS-SPRITE(WS-S))
+             COMPUTE WS-NV = (SQ-V(WS-Q, WS-K) * AT-H - AT-Y(WS-SPRITE(WS-S))) / AT-SH(WS-SPRITE(WS-S))
+             COMPUTE WS-SUM(4) = WS-SUM(4) + WS-NU
+             COMPUTE WS-SUM(5) = WS-SUM(5) + WS-NV
+         END-PERFORM
+     END-PERFORM
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 5
+         MOVE SPACES TO TL-CASE
+         MOVE WS-K TO WS-KT
+         STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": sum over all quads, component " WS-KT DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-SUMS-X(WS-KIND, WS-K) TO WS-EXP
+         MOVE WS-SUM(WS-K) TO WS-OBS
+         PERFORM CHECK-NEAR
+     END-PERFORM
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 14
+         IF WS-XKIND(WS-R) = WS-KIND
+             MOVE WS-XQUAD(WS-R) TO WS-Q
+             MOVE WS-XCORNER(WS-R) TO WS-K
+             MOVE WS-XSLOT(WS-R) TO WS-S
+             PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 5
+                 MOVE SPACES TO TL-CASE
+                 MOVE WS-Q TO WS-QT
+                 MOVE WS-K TO WS-KT
+                 MOVE WS-A TO WS-AT
+                 STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": quad " WS-QT " corner " WS-KT " component " WS-AT
+                     DELIMITED BY SIZE INTO TL-CASE
+                 COMPUTE WS-EXP = WS-XV(WS-R, WS-A) / 10000
+                 EVALUATE WS-A
+                     WHEN 4
+                         COMPUTE WS-OBS = (SQ-U(WS-Q, WS-K) * AT-W - AT-X(WS-SPRITE(WS-S))) / AT-SW(WS-SPRITE(WS-S))
+                     WHEN 5
+                         COMPUTE WS-OBS = (SQ-V(WS-Q, WS-K) * AT-H - AT-Y(WS-SPRITE(WS-S))) / AT-SH(WS-SPRITE(WS-S))
+                     WHEN OTHER
+                         MOVE SQ-C(WS-Q, (WS-K - 1) * 3 + WS-A) TO WS-OBS
+                 END-EVALUATE
+                 PERFORM CHECK-NEAR
+             END-PERFORM
+         END-IF
+     END-PERFORM.
+
+ CHECK-GUI.
+     PERFORM FIND-SPRITES
+     MOVE 0 TO RL-IC-COUNT
+     MOVE 0 TO WS-X WS-Y
+     CALL "SPECIAL-GUI-ICON" USING CLIENT-STATE WS-KIND WS-ITEM(WS-KIND) WS-X WS-Y
+     MOVE SPACES TO TL-CASE
+     STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": GUI icon, quads that face the viewer" DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-GUI-N(WS-KIND) TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-IC-COUNT / 6
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1000 TO WS-BOX(1) WS-BOX(2)
+     MOVE -1000 TO WS-BOX(3) WS-BOX(4)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-IC-COUNT
+         IF RL-IC-X(WS-I) < WS-BOX(1)
+             MOVE RL-IC-X(WS-I) TO WS-BOX(1)
+         END-IF
+         IF RL-IC-Y(WS-I) < WS-BOX(2)
+             MOVE RL-IC-Y(WS-I) TO WS-BOX(2)
+         END-IF
+         IF RL-IC-X(WS-I) > WS-BOX(3)
+             MOVE RL-IC-X(WS-I) TO WS-BOX(3)
+         END-IF
+         IF RL-IC-Y(WS-I) > WS-BOX(4)
+             MOVE RL-IC-Y(WS-I) TO WS-BOX(4)
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         MOVE SPACES TO TL-CASE
+         MOVE WS-K TO WS-KT
+         STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": GUI icon, screen box component " WS-KT DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-GUI-X(WS-KIND, WS-K) TO WS-EXP
+         MOVE WS-BOX(WS-K) TO WS-OBS
+         PERFORM CHECK-NEAR
+     END-PERFORM.
+
+ CHECK-HAND.
+     PERFORM FIND-SPRITES
+     MOVE 0 TO RL-HAND-COUNT
+     MOVE 0 TO WS-VV(1) WS-VV(2) WS-VV(3) WS-VV(4) WS-VV(5) WS-VV(6) WS-VV(7) WS-VV(8) WS-VV(9) WS-VV(10) WS-VV(11)
+     MOVE 1 TO WS-VV(1) WS-VV(5) WS-VV(9)
+     MOVE -1.5 TO WS-VV(12)
+     CALL "HAND-VIEW-ROT" USING WS-YAW WS-PITCH WS-VQ
+     CALL "HAND-SPECIAL-MESH" USING CLIENT-STATE WS-KIND WS-ITEM(WS-KIND) WS-VAL WS-LIGHT WS-VQ
+     MOVE SPACES TO TL-CASE
+     STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": hand, quads that face the eye" DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-HAND-N(WS-KIND) TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-HAND-COUNT / 6
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-HSUM(1) WS-HSUM(2) WS-HSUM(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HAND-COUNT
+         COMPUTE WS-HSUM(1) = WS-HSUM(1) + RL-HAND-X(WS-I)
+         COMPUTE WS-HSUM(2) = WS-HSUM(2) + RL-HAND-Y(WS-I)
+         COMPUTE WS-HSUM(3) = WS-HSUM(3) + RL-HAND-Z(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+         MOVE SPACES TO TL-CASE
+         MOVE WS-K TO WS-KT
+         STRING "bugbeitems " FUNCTION TRIM(WS-KIND-NAME(WS-KIND)) ": hand, sum of the vertices, axis " WS-KT DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-HAND-S(WS-KIND, WS-K) TO WS-EXP
+         MOVE WS-HSUM(WS-K) TO WS-OBS
+         PERFORM CHECK-NEAR
+     END-PERFORM.
+
+*> A dropped chest: not the flat square of its planks (12 vertices) but its model; every triangle faces the eye, clockwise seen from outside, and its texture
+*> coordinates lie in the chest's sprite.
+ CHECK-GROUND.
+     MOVE 1 TO WS-KIND
+     PERFORM FIND-SPRITES
+     MOVE SPACES TO WS-KEY
+     MOVE "item" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ENT-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 64 TO WS-ENT-ID
+     MOVE 10.5 TO WS-EX WS-EZ
+     MOVE 64 TO WS-EY
+     MOVE 0 TO WS-ENT-YAW
+     CALL "GIF-SPAWN" USING CLIENT-STATE WS-ENT-ID WS-ENT-TYPE WS-EX WS-EY WS-EZ WS-ENT-YAW
+     MOVE WS-ITEM(1) TO EN-STACK-ITEM(1)
+     MOVE 1 TO EN-STACK-COUNT(1)
+     MOVE 0 TO CL-NOW-MS
+     MOVE 10.5 TO WS-EYE(1)
+     MOVE 66 TO WS-EYE(2)
+     MOVE 8.5 TO WS-EYE(3)
+     MOVE 0 TO RL-GI-COUNT
+     CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE WS-EYE-POINT
+     MOVE SPACES TO TL-CASE
+     MOVE "bugbeitems dropped chest: the model's quads, not the flat square of the planks (12 vertices)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-GI-COUNT > 12 AND FUNCTION MOD(RL-GI-COUNT, 6) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The chest's sprite rectangle in atlas coordinates.
+     COMPUTE WS-U0 = AT-X(WS-SPRITE(1)) / AT-W
+     COMPUTE WS-U1 = (AT-X(WS-SPRITE(1)) + AT-SW(WS-SPRITE(1))) / AT-W
+     COMPUTE WS-V0 = AT-Y(WS-SPRITE(1)) / AT-H
+     COMPUTE WS-V1 = (AT-Y(WS-SPRITE(1)) + AT-SH(WS-SPRITE(1))) / AT-H
+     MOVE 0 TO WS-INSIDE WS-FACING
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-GI-COUNT
+         IF RL-GI-U(WS-I) >= WS-U0 - 0.00001 AND RL-GI-U(WS-I) <= WS-U1 + 0.00001
+                 AND RL-GI-V(WS-I) >= WS-V0 - 0.00001 AND RL-GI-V(WS-I) <= WS-V1 + 0.00001
+             ADD 1 TO WS-INSIDE
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO TL-CASE
+     MOVE "bugbeitems dropped chest: every vertex's texture coordinates lie in the chest sprite" TO TL-CASE
+     MOVE RL-GI-COUNT TO TL-EXPECTED-N
+     MOVE WS-INSIDE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > RL-GI-COUNT / 6
+         COMPUTE WS-BASE = (WS-Q - 1) * 6
+         COMPUTE WS-A3(1) = RL-GI-X(WS-BASE + 2) - RL-GI-X(WS-BASE + 1)
+         COMPUTE WS-A3(2) = RL-GI-Y(WS-BASE + 2) - RL-GI-Y(WS-BASE + 1)
+         COMPUTE WS-A3(3) = RL-GI-Z(WS-BASE + 2) - RL-GI-Z(WS-BASE + 1)
+         COMPUTE WS-B3(1) = RL-GI-X(WS-BASE + 3) - RL-GI-X(WS-BASE + 2)
+         COMPUTE WS-B3(2) = RL-GI-Y(WS-BASE + 3) - RL-GI-Y(WS-BASE + 2)
+         COMPUTE WS-B3(3) = RL-GI-Z(WS-BASE + 3) - RL-GI-Z(WS-BASE + 2)
+         COMPUTE WS-CROSS(1) = WS-A3(2) * WS-B3(3) - WS-A3(3) * WS-B3(2)
+         COMPUTE WS-CROSS(2) = WS-A3(3) * WS-B3(1) - WS-A3(1) * WS-B3(3)
+         COMPUTE WS-CROSS(3) = WS-A3(1) * WS-B3(2) - WS-A3(2) * WS-B3(1)
+         COMPUTE WS-DOT = WS-CROSS(1) * RL-GI-X(WS-BASE + 1) + WS-CROSS(2) * RL-GI-Y(WS-BASE + 1) + WS-CROSS(3) * RL-GI-Z(WS-BASE + 1)
+         IF WS-DOT > 0
+             ADD 1 TO WS-FACING
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO TL-CASE
+     MOVE "bugbeitems dropped chest: every emitted triangle faces the eye and is clockwise seen from outside" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = RL-GI-COUNT / 6
+     MOVE WS-FACING TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-SPECIAL-ITEMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GIF-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM GIF-SPAWN.
+
+
+ COPY CLTEST.
