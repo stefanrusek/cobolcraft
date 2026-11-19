@@ -635,6 +635,9 @@
  01 WS-S-BERRY             BINARY-LONG.
  01 WS-S-MAGMA             BINARY-LONG.
  01 WS-S-POWDER            BINARY-LONG.
+ 01 WS-COLLIDED            BINARY-LONG.
+ 01 WS-OUT-X               FLOAT-LONG.
+ 01 WS-OUT-Z               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -718,6 +721,7 @@
              MOVE WS-UP TO WS-Y
          END-IF
      END-IF
+     MOVE WS-HIT TO WS-COLLIDED
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-X
      END-IF
@@ -730,11 +734,24 @@
              MOVE WS-UP TO WS-Y
          END-IF
      END-IF
+     IF WS-HIT = 1
+         MOVE 1 TO WS-COLLIDED
+     END-IF
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-Z
      END-IF
      IF WS-WET = 0 AND WS-LEGACY = 0
          COMPUTE WS-VY = (WS-VY - 0.08) * 0.98
+     END-IF
+*>   jumpOutOfFluid (18 section 3.2): a mob in water that ran into something and would find the cell 0.6 higher free jumps out of the water (vy 0.3).
+     IF WS-WET = 1 AND WS-LEGACY = 0 AND WS-COLLIDED = 1
+         COMPUTE WS-NEW = WS-Y + 0.6
+         COMPUTE WS-OUT-X = WS-X + L-HX
+         COMPUTE WS-OUT-Z = WS-Z + L-HZ
+         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-OUT-X WS-NEW WS-OUT-Z WS-HIT WS-TOP
+         IF WS-HIT = 0
+             MOVE 0.3 TO WS-VY
+         END-IF
      END-IF
      MOVE WS-VY TO EN-VY(WS-ROW)
      IF WS-X NOT = EN-X(WS-ROW) OR WS-Y NOT = EN-Y(WS-ROW) OR WS-Z NOT = EN-Z(WS-ROW)
