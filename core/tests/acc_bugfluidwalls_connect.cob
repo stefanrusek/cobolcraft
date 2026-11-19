@@ -352,7 +352,7 @@
     05 FILLER PIC X(48) VALUE "-1|1|0|stone".
     05 FILLER PIC X(110) VALUE "0|1|0|glass_pane[west=true,east=false]".
     05 FILLER PIC X(110) VALUE " ".
-    05 FILLER PIC X(72) VALUE "a sign above a straight run of walls raises the post (wall_post_override)".
+    05 FILLER PIC X(72) VALUE "a sign above a straight run of walls raises the post (wall_post_overr.)".
     05 FILLER PIC X(24) VALUE "cobblestone_wall".
     05 FILLER PIC X(48) VALUE "-1|1|0|cobblestone_wall".
     05 FILLER PIC X(48) VALUE "1|1|0|cobblestone_wall".
