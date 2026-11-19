@@ -1889,6 +1889,10 @@
          WHEN 18
          WHEN 19
              CALL "RL-PLATE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+         WHEN 31
+         WHEN 32
+         WHEN 33
+             CALL "PST-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
      END-EVALUATE
      GOBACK.
  END PROGRAM REDSTONE-HOOK.

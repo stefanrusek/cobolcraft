@@ -77,6 +77,8 @@
  01 WS-FACE                BINARY-LONG.
  01 WS-SEQ                 BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-SEED1               BINARY-DOUBLE.
+ 01 WS-SEED2               BINARY-DOUBLE.
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "PT-OPEN" USING WS-SKIP
@@ -219,6 +221,23 @@
      PERFORM DRAIN
      PERFORM COUNT-SOUND
      MOVE "acceptance US12-4 live redstone 30-5 8.4 a head above does not mute it" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   8.5 step 4: the seed of the sound is drawn from the level's random, not 0, and differs from note to note
+     CALL "RL-NOTE-SEED" USING WS-SEED1
+     CALL "RL-NOTE-SEED" USING WS-SEED2
+     MOVE 0 TO WS-P
+     IF WS-SEED1 NOT = 0 AND WS-SEED2 NOT = 0
+         MOVE 1 TO WS-P
+     END-IF
+     MOVE "acceptance US12-4 live redstone 30-5 8.5 the sound seed is drawn (not 0)" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE 0 TO WS-P
+     IF WS-SEED1 NOT = WS-SEED2
+         MOVE 1 TO WS-P
+     END-IF
+     MOVE "acceptance US12-4 live redstone 30-5 8.5 two notes have different seeds" TO WS-CASE
      MOVE "1" TO WS-EXP
      PERFORM ASSERT-POWER
      STOP RUN.

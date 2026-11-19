@@ -1,9 +1,28 @@
 *> Live redstone, the note block (docs/protocol/30-redstone-5 section 8): the rising edge of its signal plays a note through a block event (8.3, 8.4: not under a block above unless the
-*> instrument works above a note block), the block event sends the sound (8.5). The note and the instrument are those of the state: the instrument that the block below would choose (8.2)
-*> needs a per-block instrument table that the content tables of this core do not hold (the Instrument column of 24 part 2 and the other block documents, not extracted); the pitch is exact.
-*> Deviations: the seed of the sound is 0 (the level's nextLong is not drawn); no game event NOTE_BLOCK_PLAY goes out; the tune by right click and the play by left click are not wired.
+*> instrument works above a note block), the block event sends the sound (8.5). The note and the instrument are those of the state; the instrument follows the blocks above and below (8.2,
+*> RL-NOTE-SET-INSTRUMENT from the CB-INSTRUMENT column of the block table) at placement and on vertical shape updates; the pitch is exact.
+*> The seed of the sound is a deterministic draw (RL-NOTE-SEED); the game event NOTE_BLOCK_PLAY reaches the allays (RL-NOTE-PLAY); the right click tunes and plays (M44-NOTE-USE), the left click plays (RL-NOTE-ATTACK, called by BLOCK-ACTION).
 *> Entry points:
 *>   RL-NOTE-HOOK USING kind, dimension row, x, y, z, state, a, b, out    kinds 3 neighborChanged and 10 block event of a note block (out 1 when the event was handled)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-NOTE-SEED.
+*> USING seed out (BINARY-DOUBLE): the seed of a note's seeded sound (30-5 8.5 step 4: level.getRandom().nextLong()), two draws of the deterministic level draw (XP-RANDOM) as the high and the low part.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SALT                BINARY-LONG VALUE 9201.
+ 01 WS-BOUND               BINARY-LONG VALUE 2147483647.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-LO                  BINARY-LONG.
+ 01 WS-BIG                 BINARY-DOUBLE VALUE 4294967296.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SEED.
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-HI
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-LO
+     COMPUTE L-SEED = WS-HI * WS-BIG + WS-LO
+     GOBACK.
+ END PROGRAM RL-NOTE-SEED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-NOTE-SOUND.
@@ -52,6 +71,7 @@
      COMPUTE WS-PITCH = L-PITCH / 10000000
      COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
      COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     CALL "RL-NOTE-SEED" USING WS-SEED
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HOLDER
