@@ -9,14 +9,133 @@
 *> 46 section 5.1: block 1, damage_indicator 14.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PARTICLE-BUILD.
-*> USING PB-BUFFER, particle type id, option (-1 none, else the VarInt state of a block particle), override
-*> limiter (0/1), always show (0/1), x, y, z (FLOAT-LONG), the six floats (distances x y z then max speeds
-*> x y z; a table of FLOAT-SHORT), count, randomisation (0 default): the packet id 0x30 and its body.
+ PROGRAM-ID. PARTICLE-OPTION-BUILD.
+*> USING PB-BUFFER, particle type id, PARTICLE-OPTION (PARTOPT.cpy): the option bytes that follow the type id of a particle on the wire
+*> (57-client-closures-3 sections 3 and 4): none for the 106 simple types, else the layout of the 22 option-carrying types. The dust and
+*> dust colour transition scale is clamped to 0.01 .. 4.0 as the client constructor does (4.1); colours are written as the raw 32-bit word.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-SCALE               FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ COPY PARTOPT.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE PARTICLE-OPTION.
+     EVALUATE L-TYPE
+         WHEN 1
+         WHEN 2
+         WHEN 36
+         WHEN 115
+         WHEN 121
+         WHEN 125
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PO-VARINT
+         WHEN 7
+         WHEN 10
+         WHEN 28
+         WHEN 46
+         WHEN 52
+             CALL "PB-PUT-BE-INTEGER" USING PB-BUFFER PO-COLOR-1 WS-FOUR
+         WHEN 8
+         WHEN 9
+         WHEN 23
+         WHEN 56
+             CALL "PB-PUT-BE-INTEGER" USING PB-BUFFER PO-COLOR-1 WS-FOUR
+             CALL "PB-PUT-FLOAT" USING PB-BUFFER PO-FLOAT
+         WHEN 15
+         WHEN 48
+             CALL "PB-PUT-FLOAT" USING PB-BUFFER PO-FLOAT
+         WHEN 21
+         WHEN 22
+             CALL "PB-PUT-BE-INTEGER" USING PB-BUFFER PO-COLOR-1 WS-FOUR
+             IF L-TYPE = 22
+                 CALL "PB-PUT-BE-INTEGER" USING PB-BUFFER PO-COLOR-2 WS-FOUR
+             END-IF
+             EVALUATE TRUE
+                 WHEN PO-FLOAT < 0.01
+                     MOVE 0.01 TO WS-SCALE
+                 WHEN PO-FLOAT > 4.0
+                     MOVE 4.0 TO WS-SCALE
+                 WHEN OTHER
+                     MOVE PO-FLOAT TO WS-SCALE
+             END-EVALUATE
+             CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-SCALE
+         WHEN 57
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PO-VARINT
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PO-COUNT
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         WHEN 58
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PO-SOURCE
+             IF PO-SOURCE = 0
+                 CALL "PB-PUT-POSITION" USING PB-BUFFER PO-BX PO-BY PO-BZ
+             ELSE
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER PO-ENTITY
+                 CALL "PB-PUT-FLOAT" USING PB-BUFFER PO-FLOAT
+             END-IF
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PO-VARINT
+         WHEN 59
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER PO-TX
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER PO-TY
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER PO-TZ
+             CALL "PB-PUT-BE-INTEGER" USING PB-BUFFER PO-COLOR-1 WS-FOUR
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PO-VARINT
+         WHEN OTHER
+             CONTINUE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PARTICLE-OPTION-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PARTICLE-BUILD-OPT.
+*> USING PB-BUFFER, particle type id, PARTICLE-OPTION (PARTOPT.cpy, the options of any particle type), override limiter (0/1), always show
+*> (0/1), x, y, z (FLOAT-LONG), the six floats (distances x y z then max speeds x y z; a table of FLOAT-SHORT), count, randomisation
+*> (0 default): the packet id 0x30 and its body (57-client-closures-3 section 2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PACKET-ID           BINARY-LONG VALUE 48.
  01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ COPY PARTOPT.
+ 01 L-OVERRIDE             BINARY-LONG.
+ 01 L-ALWAYS               BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-SPREAD-TABLE.
+    05 L-SPREAD            FLOAT-SHORT OCCURS 6 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE PARTICLE-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z L-SPREAD-TABLE
+         L-COUNT L-RANDOM.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PARTICLE-OPTION-BUILD" USING PB-BUFFER L-TYPE PARTICLE-OPTION
+     CALL "PB-PUT-BOOL" USING PB-BUFFER L-OVERRIDE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER L-ALWAYS
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-SPREAD(WS-I)
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RANDOM
+     GOBACK.
+ END PROGRAM PARTICLE-BUILD-OPT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PARTICLE-BUILD.
+*> USING PB-BUFFER, particle type id, option (-1 none, else the VarInt state of a block particle), override
+*> limiter (0/1), always show (0/1), x, y, z (FLOAT-LONG), the six floats (distances x y z then max speeds
+*> x y z; a table of FLOAT-SHORT), count, randomisation (0 default): the packet id 0x30 and its body
+*> (PARTICLE-BUILD-OPT with a block option).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PARTOPT.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-TYPE                 BINARY-LONG.
@@ -32,28 +151,19 @@
  01 L-RANDOM               BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z L-SPREAD-TABLE
          L-COUNT L-RANDOM.
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     INITIALIZE PARTICLE-OPTION
      IF L-OPTION >= 0
-         CALL "PB-PUT-VARINT" USING PB-BUFFER L-OPTION
+         MOVE L-OPTION TO PO-VARINT
      END-IF
-     CALL "PB-PUT-BOOL" USING PB-BUFFER L-OVERRIDE
-     CALL "PB-PUT-BOOL" USING PB-BUFFER L-ALWAYS
-     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
-     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
-     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
-         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-SPREAD(WS-I)
-     END-PERFORM
-     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
-     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RANDOM
+     CALL "PARTICLE-BUILD-OPT" USING PB-BUFFER L-TYPE PARTICLE-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z
+         L-SPREAD-TABLE L-COUNT L-RANDOM
      GOBACK.
  END PROGRAM PARTICLE-BUILD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PARTICLE-SEND.
-*> USING dimension row, the arguments of PARTICLE-BUILD after the buffer: the packet to every player of
-*> the dimension within the radius (42-7 section 1.2: the distance from the centre of the player's block
+ PROGRAM-ID. PARTICLE-SEND-OPT.
+*> USING dimension row, particle type id, PARTICLE-OPTION (PARTOPT.cpy), the arguments of PARTICLE-BUILD-OPT after the option: the packet to every
+*> player of the dimension within the radius (42-7 section 1.2: the distance from the centre of the player's block
 *> to the point is below 32, or below 512 with the override limiter).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -65,6 +175,48 @@
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ COPY PARTOPT.
+ 01 L-OVERRIDE             BINARY-LONG.
+ 01 L-ALWAYS               BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-SPREAD-TABLE.
+    05 L-SPREAD            FLOAT-SHORT OCCURS 6 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-TYPE PARTICLE-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z L-SPREAD-TABLE
+         L-COUNT L-RANDOM.
+     MOVE 1024 TO WS-RADIUS-SQUARED
+     IF L-OVERRIDE = 1
+         MOVE 262144 TO WS-RADIUS-SQUARED
+     END-IF
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PARTICLE-BUILD-OPT" USING PB-BUFFER L-TYPE PARTICLE-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z
+         L-SPREAD-TABLE L-COUNT L-RANDOM
+     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM
+             COMPUTE WS-DX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 0.5 - L-X
+             COMPUTE WS-DY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 0.5 - L-Y
+             COMPUTE WS-DZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 0.5 - L-Z
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < WS-RADIUS-SQUARED
+                 CALL "CORE-SEND" USING PL-CONN(WS-PLAYER) PB-BUFFER
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM PARTICLE-SEND-OPT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PARTICLE-SEND.
+*> USING dimension row, the arguments of PARTICLE-BUILD after the buffer: PARTICLE-SEND-OPT with a block option (option -1: none).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PARTOPT.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -80,24 +232,12 @@
  01 L-RANDOM               BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-TYPE L-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z L-SPREAD-TABLE
          L-COUNT L-RANDOM.
-     MOVE 1024 TO WS-RADIUS-SQUARED
-     IF L-OVERRIDE = 1
-         MOVE 262144 TO WS-RADIUS-SQUARED
+     INITIALIZE PARTICLE-OPTION
+     IF L-OPTION >= 0
+         MOVE L-OPTION TO PO-VARINT
      END-IF
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "PARTICLE-BUILD" USING PB-BUFFER L-TYPE L-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z
+     CALL "PARTICLE-SEND-OPT" USING L-DIM L-TYPE PARTICLE-OPTION L-OVERRIDE L-ALWAYS L-X L-Y L-Z
          L-SPREAD-TABLE L-COUNT L-RANDOM
-     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM
-             COMPUTE WS-DX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 0.5 - L-X
-             COMPUTE WS-DY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 0.5 - L-Y
-             COMPUTE WS-DZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 0.5 - L-Z
-             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < WS-RADIUS-SQUARED
-                 CALL "CORE-SEND" USING PL-CONN(WS-PLAYER) PB-BUFFER
-             END-IF
-         END-IF
-     END-PERFORM
-     CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM PARTICLE-SEND.
 
