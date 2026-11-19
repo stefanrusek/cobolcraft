@@ -14,6 +14,7 @@
  COPY CITEMS.
  COPY CBLOCKS.
  COPY BESTATE.
+ COPY PLAYPKT.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  COPY PROTO REPLACING LEADING ==PB-== BY ==UP-==.
@@ -90,6 +91,14 @@
  01 WS-SIDE                BINARY-LONG.
  01 WS-MAX                 BINARY-LONG VALUE 384.
  01 WS-ID62                BINARY-LONG VALUE 62.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-BLX                 BINARY-LONG.
+ 01 WS-BLZ                 BINARY-LONG.
+ 01 WS-HANDLED             BINARY-LONG.
+ 01 WS-SIGN-STATE          BINARY-LONG.
+ 01 WS-FACE-NAME           PIC X(5).
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -368,6 +377,138 @@
      STRING FUNCTION TRIM(WS-N5) ":" FUNCTION TRIM(WS-N1) "," FUNCTION TRIM(WS-N2) "," FUNCTION TRIM(WS-N3) ","
          FUNCTION TRIM(WS-N4) DELIMITED BY SIZE INTO TL-OBSERVED
      PERFORM CHECK-T
+
+*>   A wall sign on each of the four side faces of a block: the click from the front opens the editor for the front (1), from behind for the back (0).
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 3
+         MOVE "oak_sign" TO WS-KEY112
+         PERFORM HOLD-ITEM
+         COMPUTE WS-X = WS-BX + 2 + 3 * WS-K
+         COMPUTE WS-Z = WS-BZ + 3
+         COMPUTE WS-Y = WS-FLOOR + 4
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
+         MOVE 0 TO WS-DX WS-DZ
+         EVALUATE WS-K
+             WHEN 0
+                 MOVE -1 TO WS-DZ
+                 MOVE 2 TO WS-FACE
+                 MOVE "north" TO WS-FACE-NAME
+             WHEN 1
+                 MOVE 1 TO WS-DZ
+                 MOVE 3 TO WS-FACE
+                 MOVE "south" TO WS-FACE-NAME
+             WHEN 2
+                 MOVE -1 TO WS-DX
+                 MOVE 4 TO WS-FACE
+                 MOVE "west " TO WS-FACE-NAME
+             WHEN OTHER
+                 MOVE 1 TO WS-DX
+                 MOVE 5 TO WS-FACE
+                 MOVE "east " TO WS-FACE-NAME
+         END-EVALUATE
+         CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+         PERFORM SCAN
+         COMPUTE WS-SX = WS-X + WS-DX
+         COMPUTE WS-SY = WS-Y
+         COMPUTE WS-SZ = WS-Z + WS-DZ
+         CALL "BE-FIND" USING WS-DIM WS-SX WS-SY WS-SZ WS-BE
+         MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+*>       From the front (two cells out from the sign along its facing).
+         COMPUTE PL-X(WS-PLAYER) = WS-SX + 0.5 + 2 * WS-DX
+         COMPUTE PL-Z(WS-PLAYER) = WS-SZ + 0.5 + 2 * WS-DZ
+         COMPUTE PL-Y(WS-PLAYER) = WS-Y
+         CALL "TEST-USE-ON" USING WS-CONN WS-SX WS-SY WS-SZ WS-FACE WS-SEQ
+         PERFORM SCAN
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance sign edit: a wall sign facing " FUNCTION TRIM(WS-FACE-NAME) " clicked from the front opens the front (1)"
+             DELIMITED BY SIZE INTO WS-CASE
+         COMPUTE WS-OBSERVE = WS-OPEN-COUNT * 10 + WS-OPEN-SIDE
+         MOVE 11 TO WS-EXPECT
+         PERFORM CHECK-N
+*>       A dye on a sign with no text is no applicator for it: the click falls through to the editor and no dye is used.
+         MOVE "red_dye" TO WS-KEY112
+         PERFORM HOLD-ITEM
+         CALL "TEST-USE-ON" USING WS-CONN WS-SX WS-SY WS-SZ WS-FACE WS-SEQ
+         PERFORM SCAN
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance sign edit: red dye on the blank wall sign facing " FUNCTION TRIM(WS-FACE-NAME)
+             " opens the editor and keeps the dye" DELIMITED BY SIZE INTO WS-CASE
+         MOVE "1 5" TO TL-EXPECTED
+         MOVE WS-OPEN-COUNT TO WS-N1
+         MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-N2
+         MOVE SPACES TO TL-OBSERVED
+         STRING FUNCTION TRIM(WS-N1) " " FUNCTION TRIM(WS-N2) DELIMITED BY SIZE INTO TL-OBSERVED
+         PERFORM CHECK-T
+         MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+*>       From behind (the other side of the block).
+         COMPUTE PL-X(WS-PLAYER) = WS-X + 0.5 - 2 * WS-DX
+         COMPUTE PL-Z(WS-PLAYER) = WS-Z + 0.5 - 2 * WS-DZ
+         CALL "TEST-USE-ON" USING WS-CONN WS-SX WS-SY WS-SZ WS-FACE WS-SEQ
+         PERFORM SCAN
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance sign edit: a wall sign facing " FUNCTION TRIM(WS-FACE-NAME) " clicked from behind opens the back (0)"
+             DELIMITED BY SIZE INTO WS-CASE
+         COMPUTE WS-OBSERVE = WS-OPEN-COUNT * 10 + WS-OPEN-SIDE
+         MOVE 10 TO WS-EXPECT
+         PERFORM CHECK-N
+         IF WS-K = 0
+             MOVE "Back" TO WS-LINE-1
+             MOVE 4 TO WS-LEN-1
+             MOVE SPACES TO WS-LINE-2 WS-LINE-3 WS-LINE-4
+             MOVE 0 TO WS-LEN-2 WS-LEN-3 WS-LEN-4
+             MOVE 0 TO WS-SIDE
+             PERFORM SEND-UPDATE
+             PERFORM SCAN
+             MOVE "acceptance sign edit: a Sign Update for side 0 stores the back text, the front stays empty" TO WS-CASE
+             MOVE "Back 0" TO TL-EXPECTED
+             MOVE SPACES TO TL-OBSERVED
+             MOVE BE-XI(WS-BE, 6) TO WS-N1
+             STRING BE-XT(WS-BE, 9)(1:4) " " FUNCTION TRIM(WS-N1) DELIMITED BY SIZE INTO TL-OBSERVED
+             PERFORM CHECK-T
+*>           A sneaking player holding honeycomb uses the item on the block, not the sign: the sign is not waxed; standing, it is.
+             MOVE "honeycomb" TO WS-KEY112
+             PERFORM HOLD-ITEM
+             MOVE 1 TO PL-SNEAKING(WS-PLAYER)
+             CALL "TEST-USE-ON" USING WS-CONN WS-SX WS-SY WS-SZ WS-FACE WS-SEQ
+             MOVE 0 TO PL-SNEAKING(WS-PLAYER)
+             PERFORM SCAN
+             MOVE "acceptance sign edit: honeycomb used while sneaking does not wax the sign" TO WS-CASE
+             MOVE 0 TO WS-EXPECT
+             MOVE BE-XI(WS-BE, 1) TO WS-OBSERVE
+             PERFORM CHECK-N
+         END-IF
+     END-PERFORM
+
+*>   A stone block placed through Use Item On is no sign: no editor. A sign state at a cell without block entity opens nothing and is not taken by the sign use.
+     MOVE "stone" TO WS-KEY112
+     PERFORM HOLD-ITEM
+     COMPUTE WS-X = WS-BX + 12
+     COMPUTE WS-Z = WS-BZ + 12
+     MOVE 1 TO WS-FACE
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-FLOOR WS-Z WS-FACE WS-SEQ
+     PERFORM SCAN
+     MOVE "acceptance sign edit: placing a stone block opens no sign editor" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OPEN-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "oak_sign" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE WS-STATE TO WS-SIGN-STATE
+     COMPUTE WS-Y = WS-FLOOR + 6
+     CALL "SIGN-PLACED" USING WS-CONN WS-DIM WS-X WS-Y WS-Z WS-SIGN-STATE
+     PERFORM SCAN
+     MOVE "acceptance sign edit: a sign state at a cell without block entity opens no editor" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-OPEN-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE WS-X TO PSB-BX
+     MOVE WS-Y TO PSB-BY
+     MOVE WS-Z TO PSB-BZ
+     MOVE 0 TO PSB-HAND
+     CALL "SIGN-USE" USING WS-CONN PLAY-SERVERBOUND WS-SIGN-STATE WS-HANDLED
+     MOVE "acceptance sign edit: the sign use leaves a sign state without block entity to the placement" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-HANDLED TO WS-OBSERVE
+     PERFORM CHECK-N
      STOP RUN.
 
 *> Puts five of the item WS-KEY112 in the first hotbar slot and selects it.
