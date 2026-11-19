@@ -6,6 +6,7 @@
 *>   MOB-HEALTH-LOSE USING row, amount, cause                the health lost by a hit of amount (whole points before armour): the causes that are not in the
 *>                                                          tag bypasses_armor (a player, a mob, an explosion, an arrow, lava) go through CombatRules.getDamageAfterAbsorb;
 *>                                                          the fraction is carried in EN-HEALTH-MILLI. Health 0 is for the caller to handle.
+*>   A witch takes 0.15 of magic and indirect magic damage (tag witch_resistant_to, 20 section 11; 002-lane-p49n), after armour and before the health is lowered.
 *> Open: Resistance and the protection enchantments on mobs, the Breach adjustment, the armour wear of the pieces, the killer bunny and cube armour.
 
  IDENTIFICATION DIVISION.
@@ -65,6 +66,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY RULES.
+ COPY STDMOBS.
  01 WS-ARMOR               BINARY-LONG.
  01 WS-TOUGHNESS           BINARY-LONG.
  01 WS-MILLI               BINARY-LONG.
@@ -74,6 +76,7 @@
  01 WS-E                   FLOAT-LONG.
  01 WS-LOW                 FLOAT-LONG.
  01 WS-DAMAGE              FLOAT-LONG.
+ 01 WS-M                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -96,6 +99,14 @@
              MOVE 20 TO WS-E
          END-IF
          COMPUTE WS-MILLI ROUNDED = WS-DAMAGE * (1 - WS-E / 25) * 1000
+     END-IF
+     IF L-CAUSE = CAUSE-MAGIC OR CAUSE-INDIRECT-MAGIC
+         CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+         IF WS-M > 0
+             IF SM-KEY(WS-M) = "witch"
+                 COMPUTE WS-MILLI = WS-MILLI * 15 / 100
+             END-IF
+         END-IF
      END-IF
      COMPUTE WS-TOTAL = EN-HEALTH-MILLI(L-ROW) + WS-MILLI
      COMPUTE WS-LOSS = WS-TOTAL / 1000

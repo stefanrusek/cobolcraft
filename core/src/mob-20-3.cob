@@ -228,7 +228,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HAND-KEY.
-*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 iron axe, 11 crossbow, 12 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-HAND                 BINARY-LONG.
@@ -241,7 +241,9 @@
          WHEN 3 MOVE "minecraft:iron_shovel" TO L-KEY
          WHEN 4 MOVE "minecraft:bow" TO L-KEY
          WHEN 9 MOVE "minecraft:warped_fungus_on_a_stick" TO L-KEY
-         WHEN 10 MOVE "minecraft:stone_sword" TO L-KEY
+         WHEN 10 MOVE "minecraft:iron_axe" TO L-KEY
+         WHEN 11 MOVE "minecraft:crossbow" TO L-KEY
+         WHEN 12 MOVE "minecraft:stone_sword" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -395,6 +397,7 @@
                  MOVE 1 TO WS-VALUE
              WHEN "slime"
              WHEN "magma_cube"
+             WHEN "sulfur_cube"
                  MOVE 18 TO WS-INDEX
                  MOVE MD-MDS-INT TO WS-SERIALIZER
                  MOVE EN-VARIANT(L-ROW) TO WS-VALUE
@@ -515,7 +518,7 @@
  END PROGRAM STDMOB-VARIANT-SEND.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STDMOB-FLAGS-BUILD.
+ PROGRAM-ID. STDMOB-MOBFLAGS-BUILD.
 *> USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the mob flags (index 15 BYTE: 1 no AI, 2 left-handed; 18 section 1.4): nothing is written while both are
 *> off (the default 0 is not sent at pairing).
  DATA DIVISION.
@@ -539,11 +542,11 @@
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
      GOBACK.
- END PROGRAM STDMOB-FLAGS-BUILD.
+ END PROGRAM STDMOB-MOBFLAGS-BUILD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STDMOB-FLAGS-SEND.
-*> USING tracker row: STDMOB-FLAGS-BUILD to the viewers of the row (nothing while no flag is set).
+ PROGRAM-ID. STDMOB-MOBFLAGS-SEND.
+*> USING tracker row: STDMOB-MOBFLAGS-BUILD to the viewers of the row (nothing while no flag is set).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -552,13 +555,13 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "STDMOB-FLAGS-BUILD" USING L-ROW PB-BUFFER
+     CALL "STDMOB-MOBFLAGS-BUILD" USING L-ROW PB-BUFFER
      IF PB-LENGTH > 0
          CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      END-IF
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
- END PROGRAM STDMOB-FLAGS-SEND.
+ END PROGRAM STDMOB-MOBFLAGS-SEND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HP-BUILD.
@@ -682,7 +685,7 @@
      ELSE
          MOVE 0 TO EN-LEFTY(L-ROW)
      END-IF
-     CALL "STDMOB-FLAGS-SEND" USING L-ROW
+     CALL "STDMOB-MOBFLAGS-SEND" USING L-ROW
      GOBACK.
  END PROGRAM STDMOB-FINALIZE-BASE.
 
@@ -715,6 +718,7 @@
  COPY STDMOBS.
  01 WS-M                   BINARY-LONG.
  01 WS-INHABITED           BINARY-DOUBLE VALUE 0.
+ 01 WS-GAME-TIME           BINARY-DOUBLE.
  01 WS-MOON                BINARY-LONG VALUE 0.
  01 WS-EFF                 BINARY-LONG.
  01 WS-SPECIAL             BINARY-LONG.
@@ -733,7 +737,9 @@
          GOBACK
      END-IF
      CALL "STDMOB-FINALIZE-BASE" USING L-ROW
-     CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY CW-TIME WS-INHABITED WS-MOON WS-EFF
+     *> T of 3.2 is the world game time, not the time of day.
+     COMPUTE WS-GAME-TIME = CW-GAME-TIME + CW-TICKS
+     CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY WS-GAME-TIME WS-INHABITED WS-MOON WS-EFF
      CALL "STDMOB-SPECIAL" USING WS-EFF WS-SPECIAL
      EVALUATE SM-KEY(WS-M)
          WHEN "zombie"
@@ -783,11 +789,23 @@
              END-IF
              MOVE 4 TO EN-HAND(L-ROW)
          WHEN "wither_skeleton"
-*>           Default equipment: a stone sword (44-6 section 9.4; no random enchantments).
-             MOVE 10 TO EN-HAND(L-ROW)
+*>           Default equipment: a stone sword (44-6 section 9.4; no random enchantments). EN-HAND 12: 10 and 11 are the vindicator's axe and the pillager's crossbow.
+             MOVE 12 TO EN-HAND(L-ROW)
          WHEN "slime"
          WHEN "magma_cube"
              CALL "STDMOB-SLIME-INIT" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "sulfur_cube"
+             CALL "SULFUR-CUBE-INIT" USING L-ROW
+*>           A vindicator holds an iron axe, a pillager a crossbow (20 sections 13.1 and 13.2, populateDefaultEquipmentSlots).
+         WHEN "vindicator"
+             MOVE 10 TO EN-HAND(L-ROW)
+         WHEN "pillager"
+             MOVE 11 TO EN-HAND(L-ROW)
+*>           An illusioner holds a bow (13.5), a vex an iron sword (13.4).
+         WHEN "illusioner"
+             MOVE 4 TO EN-HAND(L-ROW)
+         WHEN "vex"
+             MOVE 1 TO EN-HAND(L-ROW)
          WHEN "salmon"
          WHEN "tropical_fish"
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M

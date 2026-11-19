@@ -396,6 +396,12 @@
      COMPUTE WS-EXPECT = 600 * 1000 + 600
      COMPUTE WS-OBSERVE = EN-LOVE(WS-ROW-A) * 1000 + EN-LOVE(WS-ROW-B)
      PERFORM CHECK-N
+*>   The animals of the earlier cases stand in the same spot: overlapping mobs push each other apart (18 section 3.3), so only the pair stays.
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-TYPE(WS-N) NOT = CR-LOOSE-ITEM AND WS-N NOT = WS-ROW-A AND WS-N NOT = WS-ROW-B
+             CALL "ENTITY-REMOVE" USING WS-N
+         END-IF
+     END-PERFORM
      MOVE 0 TO EN-MOBAGE(WS-BABY) EN-VARIANT(WS-BABY)
      MOVE "mule" TO WS-WANT-KEY
      PERFORM FIND-TYPE

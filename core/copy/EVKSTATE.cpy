@@ -37,7 +37,7 @@
        10 VX-LIFE            BINARY-LONG.
        10 VX-STARVE          BINARY-LONG.
        10 VX-CHARGING        BINARY-LONG.
-*> RV-ENTRY: one per ravager entity id (RV-ID 0 = free): RV-STUN the stun ticks left, RV-ROAR the roar countdown, RV-ATTACK the ticks since a hit (10 down to 0).
+*> RV-ENTRY: one per ravager entity id (RV-ID 0 = free): RV-STUN the stun ticks left, RV-ROAR the roar countdown, RV-ATTACK the ticks since a hit (10 down to 0), RV-SPEED the movement speed attribute in millionths (0 = not set yet: 300000; it lerps by 0.1 towards 350000 with a target, 300000 without: 13.6).
  78 RV-MAX                VALUE 32.
  01 RV-STATE EXTERNAL.
     05 RV-ENTRY              OCCURS 32 TIMES.
@@ -45,6 +45,7 @@
        10 RV-STUN            BINARY-LONG.
        10 RV-ROAR            BINARY-LONG.
        10 RV-ATTACK          BINARY-LONG.
+       10 RV-SPEED           BINARY-LONG.
 *> PZ-ENTRY: thrown potions in flight (PZ-USED 1): position, velocity, the potion (1 harming, 2 healing, 3 regeneration, 4 slowness, 5 poison, 6 weakness), the thrower's entity
 *> id and the tracker row of the visible entity (0 none).
  78 PZ-MAX                VALUE 32.

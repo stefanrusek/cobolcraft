@@ -297,6 +297,10 @@
              MOVE SPACES TO WS-CASE
              STRING "acceptance undead 17-4.9a: poison on " DELIMITED BY SIZE FUNCTION TRIM(WS-SPECIES) DELIMITED BY SIZE INTO WS-CASE
              COMPUTE WS-EXP = 3 - 1 + WS-WANT-UNDEAD
+*>           A witch takes 0.15 of the poison's magic damage (20 section 11): the point is not lost whole.
+             IF WS-SPECIES = "witch"
+                 MOVE 3 TO WS-EXP
+             END-IF
              MOVE EN-HEALTH(WS-ROW) TO WS-OBS
              CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
              MOVE 9 TO WS-EFFECT

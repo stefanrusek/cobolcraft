@@ -332,6 +332,10 @@
          CALL "M44-EGG-TRAMPLE" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-EGG-PLAYER WS-EGG-TRIGGER
              WS-EGG-CAREFUL WS-EGG-NOZOMBIE WS-EGG-HIT
      END-IF
+*>   A player on the ground on a sculk shrieker sets it off (SculkShriekerBlock.stepOn; the call conditions are not documented: on the ground and not flying, not a spectator).
+     IF PL-ON-GROUND(WS-ROW) = 1 AND PL-FLYING(WS-ROW) = 0 AND PL-MODE(WS-ROW) NOT = 3
+         CALL "SHRIEKER-STEP-ON" USING WS-ROW
+     END-IF
 *>   Fall damage (17 section 4.11): floor(distance + 1e-6 - 3).
      COMPUTE WS-AMOUNT = FUNCTION INTEGER(WS-FALL + 0.000001 - RULE-SAFE-FALL)
      IF WS-AMOUNT > 0

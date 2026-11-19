@@ -13,6 +13,7 @@
  COPY BRWORLD.
  COPY STDMOBS.
  01 WS-INHABITED           BINARY-DOUBLE VALUE 0.
+ 01 WS-GAME-TIME           BINARY-DOUBLE.
  01 WS-MOON                BINARY-LONG VALUE 0.
  01 WS-EFF                 BINARY-LONG.
  01 WS-HUNGER              BINARY-LONG VALUE 16.
@@ -28,7 +29,9 @@
  PROCEDURE DIVISION USING L-PLAYER L-M.
      EVALUATE SM-HITFX(L-M)
          WHEN 1
-             CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY CW-TIME WS-INHABITED WS-MOON WS-EFF
+             *> T of 3.2 is the world game time, not the time of day.
+             COMPUTE WS-GAME-TIME = CW-GAME-TIME + CW-TICKS
+             CALL "STDMOB-DIFFICULTY" USING BW-DIFFICULTY WS-GAME-TIME WS-INHABITED WS-MOON WS-EFF
              COMPUTE WS-FLOOR = WS-EFF / 1000
              COMPUTE WS-DURATION = 140 * WS-FLOOR
              IF WS-DURATION > 0
@@ -61,12 +64,22 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
+ COPY EVKSTATE.
+ 01 WS-RV-SLOT             BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  01 L-SPEED                FLOAT-LONG.
  PROCEDURE DIVISION USING L-ROW L-M L-SPEED.
      COMPUTE L-SPEED = SM-WALK-MILLI(L-M) / 1000
+*>   A ravager's speed is its lerped movement speed attribute (13.6, RV-SPEED): squared / 0.454.
+     IF SM-KEY(L-M) = "ravager"
+         CALL "EVK-RV-FIND" USING EN-ID(L-ROW) WS-ZERO WS-RV-SLOT
+         IF WS-RV-SLOT > 0 AND RV-SPEED(WS-RV-SLOT) > 0
+             COMPUTE L-SPEED = (RV-SPEED(WS-RV-SLOT) / 1000000) ** 2 / 0.454
+         END-IF
+     END-IF
      IF EN-VARIANT(L-ROW) = 1 AND (SM-KEY(L-M) = "zombie" OR SM-KEY(L-M) = "zombie_villager" OR SM-KEY(L-M) = "husk")
          COMPUTE L-SPEED = L-SPEED * 2.25
      END-IF

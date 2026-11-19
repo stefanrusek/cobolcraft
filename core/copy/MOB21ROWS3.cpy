@@ -1,5 +1,5 @@
 *> Nether and End mobs with projectiles (lane 002-lane-mobsfull-h19; 21 sections 5.1, 5.2, 19 section 20), included by STDMOBS.cpy last; the columns are those of the rows there.
-*> SM-RANGED 4: ghast (fireball goal and flight, GHAST-TICK), 5: blaze (attack goal and height keeping, BLAZE-ATTACK), 6: shulker (SHULKER-ATTACK). SM-SPAWN 10: the any-light monster rule (no Nether biome exists yet).
+*> SM-RANGED 4: ghast (fireball goal and flight, GHAST-TICK), 5: blaze (attack goal and height keeping, BLAZE-ATTACK), 6: shulker (SHULKER-ATTACK). SM-SPAWN 10: the any-light monster rule (no Nether biome exists yet); 12 (the ghast): Ghast.checkGhastSpawnRules, rule 10 and one try in 20 (21 section 3.2).
     05 FILLER.
        10 FILLER PIC X(24) VALUE "ghast".
        10 FILLER BINARY-LONG VALUE 10.  *> max health
@@ -14,7 +14,7 @@
        10 FILLER BINARY-LONG VALUE 0.  *> fuse
        10 FILLER BINARY-LONG VALUE 0.  *> blast
        10 FILLER BINARY-LONG VALUE 4.  *> ranged (ranged 4: the ghast's fireball goal (GHAST-SHOOT, core/src/mob-21-shoot.cob); flies (GHAST-MOVE), walk speed unused)
-       10 FILLER BINARY-LONG VALUE 10.  *> spawn rule
+       10 FILLER BINARY-LONG VALUE 12.  *> spawn rule
        10 FILLER BINARY-LONG VALUE 0.  *> hit effect
     05 FILLER.
        10 FILLER PIC X(24) VALUE "blaze".

@@ -8,9 +8,9 @@
  WORKING-STORAGE SECTION.
  COPY CITEMS.
  COPY MOBS.
- 01 WN                     PIC X(32).
+ 01 WN                     PIC X(64).
  01 WL                     BINARY-LONG.
- 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-TYPE                BINARY-LONG.
  01 WS-INNER-TYPE          BINARY-LONG.
  01 WS-ELEMENT-TYPE        BINARY-LONG.
@@ -81,6 +81,121 @@
 *> Split from persistence.cob (T0331).
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-COMPOUND-KEYS.
+*> USING row, position row, PB-BUFFER (inside an entity compound): the keys of one saved entity, id first, Passengers and the End tag not included: the Pos is
+*> the one of the position row (the row itself, or its vehicle for a passenger, 45-1 section 5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY ENKEEP.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-T-FLOAT             BINARY-LONG VALUE 5.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-DOUBLE              FLOAT-LONG.
+ 01 WS-AIR                 BINARY-LONG.
+ 01 WS-UUID-INTS.
+    05 WS-UUID-INT         BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-POSITION.
+    05 WS-POSITION-INT     BINARY-LONG OCCURS 2 TIMES.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-PASS                BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-NS-KEY              PIC X(64).
+ 01 WS-NS-LENGTH           BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-UNKNOWN-COUNT       BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-KIND-ZERO           BINARY-LONG VALUE 0.
+ 01 WS-ITEM-HEALTH         BINARY-LONG VALUE 5.
+ 01 WS-LIVING              BINARY-LONG.
+ 01 WS-SLICES.
+    05 WS-SLICE OCCURS 256 TIMES.
+       10 WS-SLICE-START   BINARY-LONG.
+       10 WS-SLICE-END     BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-POINTER             USAGE POINTER.
+ 01 B-SLICE                PIC X BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-POS-ROW              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-POS-ROW PB-BUFFER.
+     MOVE "id" TO WN MOVE 2 TO WL
+     COMPUTE WS-KIND = EN-TYPE(L-ROW) + 1
+     CALL "PERSIST-NAMESPACED" USING ET-KEY(WS-KIND) ET-KEY-LENGTH(WS-KIND)
+         WS-NS-KEY WS-NS-LENGTH
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
+     MOVE "Pos" TO WN MOVE 3 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-X(L-POS-ROW)
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-Y(L-POS-ROW)
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-Z(L-POS-ROW)
+     MOVE "Motion" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-VX(L-ROW)
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-VY(L-ROW)
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-VZ(L-ROW)
+     MOVE "Rotation" TO WN MOVE 8 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-FLOAT WS-TWO
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-YAW(L-ROW)
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-PITCH(L-ROW)
+*>           The Entity base keys (45 section 5, ENTITY-BASE-WRITE): the six written every time, then the conditional ones.
+     CALL "ENTITY-BASE-WRITE" USING L-ROW PB-BUFFER
+     IF EN-TYPE(L-ROW) = CR-LOOSE-ITEM
+*>               The ItemEntity keys (45-8 section 3.1), in the table order: Health, Age and PickupDelay Shorts, then the stack.
+         MOVE "Health" TO WN MOVE 6 TO WL
+         CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-ITEM-HEALTH
+         MOVE "Age" TO WN MOVE 3 TO WL
+         CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-AGE(L-ROW)
+         MOVE "PickupDelay" TO WN MOVE 11 TO WL
+         CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-DELAY(L-ROW)
+         MOVE "Item" TO WN MOVE 4 TO WL
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+         MOVE "id" TO WN MOVE 2 TO WL
+         COMPUTE WS-KIND = EN-ITEM(L-ROW) + 1
+         CALL "PERSIST-NAMESPACED" USING IT-KEY(WS-KIND) IT-KEY-LENGTH(WS-KIND)
+             WS-NS-KEY WS-NS-LENGTH
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
+         MOVE "count" TO WN MOVE 5 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-ITEM-COUNT(L-ROW)
+         IF EK-ITEM-COMP-LEN(L-ROW) > 0
+             MOVE "components" TO WN MOVE 10 TO WL
+             CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-T-COMPOUND WN WL
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-ITEM-COMP-RAW(L-ROW) EK-ITEM-COMP-LEN(L-ROW)
+         END-IF
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         CALL "ENTITY-SPX-WRITE" USING L-ROW PB-BUFFER
+     ELSE
+*>               A LivingEntity (45-2; an armor stand, 45-9, has no Mob keys): Health, the LivingEntity keys and the Mob keys; a TNT, falling block, boat, minecart or projectile is an Entity only.
+         CALL "ENTITY-IS-LIVING" USING L-ROW WS-LIVING
+         IF WS-LIVING > 0
+             MOVE "Health" TO WN MOVE 6 TO WL
+             MOVE EN-HEALTH(L-ROW) TO WS-FLOAT
+             CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+             CALL "LIVING-NBT-WRITE" USING L-ROW PB-BUFFER
+             IF WS-LIVING = 1
+                 CALL "MOB-NBT-WRITE" USING L-ROW PB-BUFFER
+                 CALL "MOBKEEP-NBT-WRITE" USING L-ROW PB-BUFFER
+             ELSE
+                 CALL "ARMORSTAND9-NBT-WRITE" USING L-ROW PB-BUFFER
+             END-IF
+         END-IF
+         CALL "ENTITY8-NBT-WRITE" USING L-ROW PB-BUFFER
+         CALL "ENTITY-SPX-WRITE" USING L-ROW PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-COMPOUND-KEYS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-NBT-WRITE-MERGE.
 *> USING dimension row, chunk x, chunk z (BINARY-LONG), PB-BUFFER (appended to), old PB-BUFFER (the chunk's payload as the file
 *> holds it, at its root payload), found (BINARY-LONG: 1 when the old payload is given; then the entities of it that the core
@@ -119,6 +234,17 @@
  01 WS-UNKNOWN-COUNT       BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-KIND-ZERO           BINARY-LONG VALUE 0.
+ 01 WS-ITEM-HEALTH         BINARY-LONG VALUE 5.
+ 01 WS-LIVING              BINARY-LONG.
+ 01 WS-PASSENGER           BINARY-LONG.
+ 01 WS-CHAIN-TABLE.
+    05 WS-CHAIN            BINARY-LONG OCCURS 8 TIMES.
+    05 WS-STARTS           BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-DEPTH               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-POS-ROW             BINARY-LONG.
+ 01 WS-ONE-COUNT           BINARY-LONG VALUE 1.
  01 WS-SLICES.
     05 WS-SLICE OCCURS 256 TIMES.
        10 WS-SLICE-START   BINARY-LONG.
@@ -139,9 +265,10 @@
          CALL "ENTITY-UNKNOWN-SCAN" USING WK-BUFFER WS-SLICES WS-UNKNOWN-COUNT
      END-IF
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         CALL "ENTITY-IS-PASSENGER" USING WS-ROW WS-PASSENGER
          IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-DIM(WS-ROW) = L-DIM
                  AND FUNCTION INTEGER(EN-X(WS-ROW) / 16) = L-CX
-                 AND FUNCTION INTEGER(EN-Z(WS-ROW) / 16) = L-CZ
+                 AND FUNCTION INTEGER(EN-Z(WS-ROW) / 16) = L-CZ AND WS-PASSENGER = 0
              ADD 1 TO WS-COUNT
          END-IF
      END-PERFORM
@@ -161,66 +288,38 @@
          IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-DIM(WS-ROW) = L-DIM
                  AND FUNCTION INTEGER(EN-X(WS-ROW) / 16) = L-CX
                  AND FUNCTION INTEGER(EN-Z(WS-ROW) / 16) = L-CZ
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
-             MOVE PB-LENGTH TO WS-START
-             MOVE "id" TO WN MOVE 2 TO WL
-             COMPUTE WS-KIND = EN-TYPE(WS-ROW) + 1
-             CALL "PERSIST-NAMESPACED" USING ET-KEY(WS-KIND) ET-KEY-LENGTH(WS-KIND)
-                 WS-NS-KEY WS-NS-LENGTH
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
-             MOVE "Pos" TO WN MOVE 3 TO WL
-             CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-X(WS-ROW)
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-Y(WS-ROW)
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-Z(WS-ROW)
-             MOVE "Motion" TO WN MOVE 6 TO WL
-             CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-VX(WS-ROW)
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-VY(WS-ROW)
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-VZ(WS-ROW)
-             MOVE "Rotation" TO WN MOVE 8 TO WL
-             CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-FLOAT WS-TWO
-             CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-YAW(WS-ROW)
-             CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-PITCH(WS-ROW)
-*>           The Entity base keys written every time (45 section 5), in the table order.
-             MOVE "fall_distance" TO WN MOVE 13 TO WL
-             MOVE 0 TO WS-DOUBLE
-             CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WL WS-DOUBLE
-             MOVE "Fire" TO WN MOVE 4 TO WL
-             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL EN-BURN(WS-ROW)
-             MOVE "Air" TO WN MOVE 3 TO WL
-             COMPUTE WS-AIR = 300 - EN-AIR-LOST(WS-ROW)
-             CALL "NBT-WRITE-SHORT" USING PB-BUFFER WN WL WS-AIR
-             MOVE "OnGround" TO WN MOVE 8 TO WL
-             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-ON-GROUND(WS-ROW)
-             MOVE "Invulnerable" TO WN MOVE 12 TO WL
-             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-KIND-ZERO
-             MOVE "PortalCooldown" TO WN MOVE 14 TO WL
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-KIND-ZERO
-             MOVE "UUID" TO WN MOVE 4 TO WL
-             CALL "ENTITY-UUID-INTS" USING EN-UUID(WS-ROW) WS-UUID-INTS
-             CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-UUID-INTS
-             IF EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
-                 MOVE "Item" TO WN MOVE 4 TO WL
-                 CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-                 MOVE "id" TO WN MOVE 2 TO WL
-                 COMPUTE WS-KIND = EN-ITEM(WS-ROW) + 1
-                 CALL "PERSIST-NAMESPACED" USING IT-KEY(WS-KIND) IT-KEY-LENGTH(WS-KIND)
-                     WS-NS-KEY WS-NS-LENGTH
-                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
-                 MOVE "count" TO WN MOVE 5 TO WL
-                 CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-ITEM-COUNT(WS-ROW)
+*>           The entity and the passengers riding it, one inside the other (45-1 section 7: a Passengers list of the one mob that rides it, whose Pos is the vehicle's).
+             MOVE WS-ROW TO WS-CHAIN(1)
+             MOVE 1 TO WS-DEPTH
+             PERFORM UNTIL WS-DEPTH >= 8
+                 MOVE EN-PASS(WS-CHAIN(WS-DEPTH)) TO WS-NEXT
+                 IF WS-NEXT = 0
+                     EXIT PERFORM
+                 END-IF
+                 CALL "ENTITY-IS-PASSENGER" USING WS-NEXT WS-PASSENGER
+                 IF WS-PASSENGER = 0 OR EN-MOUNT(WS-NEXT) NOT = WS-CHAIN(WS-DEPTH)
+                     EXIT PERFORM
+                 END-IF
+                 ADD 1 TO WS-DEPTH
+                 MOVE WS-NEXT TO WS-CHAIN(WS-DEPTH)
+             END-PERFORM
+             PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > WS-DEPTH
+                 CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+                 MOVE PB-LENGTH TO WS-STARTS(WS-D)
+                 MOVE WS-CHAIN(WS-D) TO WS-POS-ROW
+                 IF WS-D > 1
+                     MOVE WS-CHAIN(WS-D - 1) TO WS-POS-ROW
+                 END-IF
+                 CALL "ENTITY-COMPOUND-KEYS" USING WS-CHAIN(WS-D) WS-POS-ROW PB-BUFFER
+                 IF WS-D < WS-DEPTH
+                     MOVE "Passengers" TO WN MOVE 10 TO WL
+                     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ONE-COUNT
+                 END-IF
+             END-PERFORM
+             PERFORM VARYING WS-D FROM WS-DEPTH BY -1 UNTIL WS-D < 1
+                 CALL "EXTRA-APPEND" USING WS-KIND-ZERO WS-CHAIN(WS-D) PB-BUFFER WS-STARTS(WS-D)
                  CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-                 MOVE "Age" TO WN MOVE 3 TO WL
-                 CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-AGE(WS-ROW)
-             ELSE
-                 MOVE "Health" TO WN MOVE 6 TO WL
-                 MOVE EN-HEALTH(WS-ROW) TO WS-FLOAT
-                 CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
-                 CALL "MOB-NBT-WRITE" USING WS-ROW PB-BUFFER
-             END-IF
-             CALL "EXTRA-APPEND" USING WS-KIND-ZERO WS-ROW PB-BUFFER WS-START
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+             END-PERFORM
          END-IF
      END-PERFORM
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > WS-UNKNOWN-COUNT
@@ -234,6 +333,26 @@
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      GOBACK.
  END PROGRAM ENTITY-NBT-WRITE-MERGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-IS-PASSENGER.
+*> USING row, flag out (BINARY-LONG): 1 when the row is a mob that rides a mob of the tracker (EN-MOUNT with the vehicle's entity id): it is saved inside its vehicle's
+*> compound, never on its own (45-1 section 7.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF EN-USED(L-ROW) = 1 AND EN-MOUNT(L-ROW) > 0
+         IF EN-USED(EN-MOUNT(L-ROW)) = 1 AND EN-MOUNT-ID(L-ROW) = EN-ID(EN-MOUNT(L-ROW))
+             MOVE 1 TO L-FLAG
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-IS-PASSENGER.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-NBT-WRITE.
@@ -255,8 +374,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-NBT-READ.
 *> USING dimension row (BINARY-LONG), PB-BUFFER (an entities/ chunk payload at PB-POS), outcome out
-*> (BINARY-LONG: 0 read, 1 malformed): every entity of its Entities list enters that dimension
-*> (ENTITY-NBT-ONE).
+*> (BINARY-LONG: 0 read, 1 malformed or refused): every entity of its Entities list enters that dimension
+*> (ENTITY-NBT-ONE), each with the passengers of its Passengers list riding it (45-1 section 7.3). A payload whose DataVersion is below 5023 is refused
+*> (45-1 section 1.4: the fixers are not specified); a newer one, or one without, is read as it is.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WN                     PIC X(32).
@@ -267,28 +387,78 @@
  01 WS-ELEMENT-TYPE        BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-VEHICLE             BINARY-LONG.
+ 01 WS-PASSENGERS          BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-REFUSED             BINARY-LONG.
+ 01 WS-PASS-AT             BINARY-LONG.
+ 01 WS-HOME                BINARY-LONG.
+ 01 WS-MOUNTED             BINARY-LONG.
+ 01 WS-DATA-VERSION        BINARY-LONG.
+ 01 WS-STACK-N             BINARY-LONG.
+ 01 WS-STACK.
+    05 WS-STACK-ENTRY OCCURS 16 TIMES.
+       10 WS-STACK-AT      BINARY-LONG.
+       10 WS-STACK-ROW     BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  01 L-OUTCOME              BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM PB-BUFFER L-OUTCOME.
      CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     MOVE 0 TO WS-REFUSED
      PERFORM UNTIL PB-ERROR = 1
          MOVE SPACES TO WN
          CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAPACITY WL
          IF WS-TYPE = 0
              EXIT PERFORM
          END-IF
-         IF WN = "Entities" AND WS-TYPE = 9
-             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
-                 CALL "ENTITY-NBT-ONE" USING L-DIM PB-BUFFER
-             END-PERFORM
-         ELSE
-             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
-         END-IF
+         EVALUATE TRUE
+             WHEN WN = "DataVersion" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER WS-DATA-VERSION
+                 IF WS-DATA-VERSION < 5023
+                     MOVE 1 TO WS-REFUSED
+                 END-IF
+             WHEN WN = "Entities" AND WS-TYPE = 9 AND WS-REFUSED = 0
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                     CALL "ENTITY-NBT-ONE" USING L-DIM PB-BUFFER WS-ROW WS-PASS-AT
+*>                   The passengers of the entity just read, and theirs in turn: each is created, then rides its vehicle when that exists.
+                     MOVE 0 TO WS-STACK-N
+                     IF WS-PASS-AT > 0
+                         MOVE 1 TO WS-STACK-N
+                         MOVE WS-PASS-AT TO WS-STACK-AT(1)
+                         MOVE WS-ROW TO WS-STACK-ROW(1)
+                     END-IF
+                     MOVE PB-POS TO WS-HOME
+                     PERFORM UNTIL WS-STACK-N = 0 OR PB-ERROR = 1
+                         MOVE WS-STACK-AT(WS-STACK-N) TO PB-POS
+                         MOVE WS-STACK-ROW(WS-STACK-N) TO WS-VEHICLE
+                         SUBTRACT 1 FROM WS-STACK-N
+                         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-PASSENGERS
+                         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-PASSENGERS OR PB-ERROR = 1
+                             CALL "ENTITY-NBT-ONE" USING L-DIM PB-BUFFER WS-ROW WS-PASS-AT
+                             IF WS-ROW > 0 AND WS-VEHICLE > 0
+                                 CALL "MOB-MOUNT" USING WS-ROW WS-VEHICLE WS-MOUNTED
+                             END-IF
+                             IF WS-PASS-AT > 0 AND WS-STACK-N < 16
+                                 ADD 1 TO WS-STACK-N
+                                 MOVE WS-PASS-AT TO WS-STACK-AT(WS-STACK-N)
+                                 MOVE WS-ROW TO WS-STACK-ROW(WS-STACK-N)
+                             END-IF
+                         END-PERFORM
+                     END-PERFORM
+                     MOVE WS-HOME TO PB-POS
+                 END-PERFORM
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
      END-PERFORM
      MOVE PB-ERROR TO L-OUTCOME
+     IF WS-REFUSED = 1
+         MOVE 1 TO L-OUTCOME
+     END-IF
      GOBACK.
  END PROGRAM ENTITY-NBT-READ.
 
@@ -303,9 +473,9 @@
  COPY CORESTATE.
  COPY CITEMS.
  COPY MOBS.
- 01 WN                     PIC X(32).
+ 01 WN                     PIC X(64).
  01 WL                     BINARY-LONG.
- 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-TYPE                BINARY-LONG.
  01 WS-INNER-TYPE          BINARY-LONG.
  01 WS-ELEMENT-TYPE        BINARY-LONG.
@@ -344,11 +514,35 @@
  01 WS-UUID-INTS.
     05 WS-UUID-INT         BINARY-LONG OCCURS 4 TIMES.
  01 WS-UUID                PIC X(16).
+ 01 WS-VALID               BINARY-LONG.
  COPY ENMOBDATA.
+ COPY EBDATA.
+ COPY ENKSTAGE.
+ COPY LVDATA.
+ COPY SPDATA.
+ COPY H5DATA.
+ COPY V6DATA.
+ COPY A7DATA.
+ COPY E8DATA.
+ 01 WS-SPECIES            PIC X(24).
+ 01 WS-SPECIES-KEY        PIC X(24).
+ 01 WS-COMP-CAPACITY      BINARY-LONG VALUE 512.
+ 01 WS-PASS-AT            BINARY-LONG.
+ 01 WS-DUPLICATE           BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM PB-BUFFER.
+ 01 L-ROW-OUT              BINARY-LONG.
+ 01 L-PASS-AT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM PB-BUFFER L-ROW-OUT L-PASS-AT.
+     MOVE 0 TO L-ROW-OUT L-PASS-AT WS-PASS-AT
+     INITIALIZE EB-DATA KD-DATA LV-DATA SP-DATA H5-DATA V6-DATA A7-DATA E8-DATA
+     MOVE -1 TO E8-STATE
+     MOVE 80 TO E8-FUSE
+     MOVE 2400 TO A7-MOIST
+     MOVE 1 TO SP-LEFT SP-RIGHT
+     MOVE -1 TO SP-SCUTE
      MOVE -1 TO WS-ENTITY-TYPE
      MOVE 0 TO WS-ROW
      MOVE PB-POS TO WS-START
@@ -404,6 +598,11 @@
              WHEN WN = "Age" AND WS-TYPE = 3
                  CALL "PB-GET-INT" USING PB-BUFFER WS-AGE
                  MOVE WS-AGE TO MQ-AGE
+             WHEN WN = "Age" AND WS-TYPE = 2
+                 CALL "PB-GET-SHORT" USING PB-BUFFER WS-AGE
+                 MOVE WS-AGE TO MQ-AGE
+             WHEN WN = "PickupDelay" AND WS-TYPE = 2
+                 CALL "PB-GET-SHORT" USING PB-BUFFER WS-DELAY
              WHEN WN = "Item" AND WS-TYPE = 10
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
@@ -426,20 +625,56 @@
                              END-PERFORM
                          WHEN WN = "count" AND WS-INNER-TYPE = 3
                              CALL "PB-GET-INT" USING PB-BUFFER WS-ITEM-COUNT
+                         WHEN WN = "components" AND WS-INNER-TYPE = 10
+                             CALL "ENTITY-KEEP-SLICE" USING PB-BUFFER WS-INNER-TYPE WS-COMP-CAPACITY KD-ITEM-COMP-LEN
+                                 KD-ITEM-COMP-RAW
+                             IF KD-ITEM-COMP-LEN = 1
+                                 MOVE 0 TO KD-ITEM-COMP-LEN
+                             END-IF
                          WHEN OTHER
                              CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
                      END-EVALUATE
                  END-PERFORM
+             WHEN WN = "Passengers" AND WS-TYPE = 9
+*>               The passengers are loaded by ENTITY-NBT-READ once this entity exists (45-1 section 7.3): where the list starts is handed back.
+                 MOVE PB-POS TO WS-PASS-AT
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
              WHEN OTHER
-                 CALL "MOB-NBT-KEY" USING PB-BUFFER WS-TYPE WN MQ-DATA WS-HANDLED
+                 CALL "ENTITY-BASE-KEY" USING PB-BUFFER WS-TYPE WN EB-DATA WS-HANDLED
+                 IF WS-HANDLED = 0
+                     CALL "ENTITY-KEEP-KEY" USING PB-BUFFER WS-TYPE WN KD-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "LIVING-NBT-KEY" USING PB-BUFFER WS-TYPE WN LV-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "SPECIES4-NBT-KEY" USING PB-BUFFER WS-TYPE WN SP-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "HOSTILE5-NBT-KEY" USING PB-BUFFER WS-TYPE WN H5-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "VILLAGER6-NBT-KEY" USING PB-BUFFER WS-TYPE WN V6-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "MOB-NBT-KEY" USING PB-BUFFER WS-TYPE WN MQ-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "AQUATIC7-NBT-KEY" USING PB-BUFFER WS-TYPE WN A7-DATA WS-HANDLED
+                 END-IF
+                 IF WS-HANDLED = 0
+                     CALL "ENTITY8-NBT-KEY" USING PB-BUFFER WS-TYPE WN E8-DATA WS-HANDLED
+                 END-IF
                  IF WS-HANDLED = 0
                      CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                  END-IF
          END-EVALUATE
      END-PERFORM
      MOVE PB-POS TO WS-END
+*>   Pos is clamped, Motion limited and a NaN Pos or a non-finite Rotation skips the entity (45-1 sections 5 and 6).
+     CALL "ENTITY-VALIDATE" USING WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-YAW WS-PITCH WS-VALID
      EVALUATE TRUE
-         WHEN PB-ERROR = 1
+         WHEN PB-ERROR = 1 OR WS-VALID = 0
              CONTINUE
          WHEN WS-ENTITY-TYPE = CR-LOOSE-ITEM
              CALL "GI-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-ITEM-COUNT
@@ -447,26 +682,63 @@
              MOVE WS-AGE TO EN-AGE(WS-ROW)
              MOVE WS-YAW TO EN-YAW(WS-ROW)
              MOVE WS-PITCH TO EN-PITCH(WS-ROW)
+             CALL "ENTITY-SPECIES-KEY" USING WS-ROW WS-SPECIES-KEY
+             CALL "ENTITY-SPX-READ" USING PB-BUFFER WS-START WS-END WS-SPECIES-KEY KD-DATA
          WHEN WS-ENTITY-TYPE >= MOB-FIRST-TYPE
              CALL "MOB-SPAWN" USING L-DIM WS-ENTITY-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
              COMPUTE EN-HEALTH(WS-ROW) ROUNDED = WS-HEALTH
              MOVE WS-PITCH TO EN-PITCH(WS-ROW)
+             MOVE WS-VX TO EN-VX(WS-ROW)
              MOVE WS-VY TO EN-VY(WS-ROW)
+             MOVE WS-VZ TO EN-VZ(WS-ROW)
              CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
+             CALL "LIVING-NBT-APPLY" USING WS-ROW LV-DATA
+             CALL "MOB-SPECIES-KEY" USING WS-ROW WS-SPECIES
+             CALL "ENTITY-SPECIES-KEY" USING WS-ROW WS-SPECIES-KEY
+             CALL "ENTITY-SPX-READ" USING PB-BUFFER WS-START WS-END WS-SPECIES-KEY KD-DATA
+             MOVE MQ-SIT TO SP-SIT
+             CALL "SPECIES4-NBT-APPLY" USING WS-ROW WS-SPECIES SP-DATA
+             MOVE MQ-BABY TO H5-BABY
+             CALL "HOSTILE5-NBT-APPLY" USING WS-ROW WS-SPECIES H5-DATA
+             MOVE H5-IMMUNE TO V6-IMMUNE
+             MOVE H5-TIME TO V6-TIME
+             CALL "VILLAGER6-NBT-APPLY" USING WS-ROW WS-SPECIES V6-DATA
+             MOVE MQ-VARIANT-INT TO A7-TROP
+             MOVE MQ-AGE TO A7-AGE
+             MOVE MQ-LOCKED TO A7-LOCKED
+             CALL "AQUATIC7-NBT-APPLY" USING WS-ROW WS-SPECIES A7-DATA
+             CALL "ENTITY8-NBT-APPLY" USING WS-ROW E8-DATA
              MOVE WS-GROUND-FLAG TO EN-ON-GROUND(WS-ROW)
              MOVE WS-FIRE TO EN-BURN(WS-ROW)
              IF WS-AIR < 300
                  COMPUTE EN-AIR-LOST(WS-ROW) = 300 - WS-AIR
              END-IF
      END-EVALUATE
+     IF PB-ERROR = 0 AND WS-ROW > 0
+         CALL "ENTITY-BASE-APPLY" USING WS-ROW EB-DATA
+         CALL "ENTITY-KEEP-APPLY" USING WS-ROW KD-DATA
+     END-IF
      IF PB-ERROR = 0 AND WS-ROW > 0 AND WS-UUID-SET = 1
          CALL "ENTITY-UUID-BYTES" USING WS-UUID-INTS WS-UUID
          MOVE WS-UUID TO EN-UUID(WS-ROW)
+*>       A UUID that a loaded entity already has refuses the new one (45-1 section 6: "UUID of added entity already exists").
+         MOVE 0 TO WS-DUPLICATE
+         PERFORM VARYING WS-OTHER FROM 1 BY 1 UNTIL WS-OTHER > EN-COUNT
+             IF WS-OTHER NOT = WS-ROW AND EN-USED(WS-OTHER) = 1 AND EN-UUID(WS-OTHER) = WS-UUID
+                 MOVE 1 TO WS-DUPLICATE
+             END-IF
+         END-PERFORM
+         IF WS-DUPLICATE = 1
+             CALL "ENTITY-REMOVE" USING WS-ROW
+             MOVE 0 TO WS-ROW
+         END-IF
      END-IF
 *>   The keys of the file's compound that the core does not model are kept for the next save of a 26.3 world (07 section 10.7).
      IF WS-ROW > 0
          CALL "EXTRA-CAPTURE" USING WS-KIND-ZERO WS-ROW PB-BUFFER WS-START WS-END
+         MOVE WS-ROW TO L-ROW-OUT
      END-IF
+     MOVE WS-PASS-AT TO L-PASS-AT
      GOBACK.
  END PROGRAM ENTITY-NBT-ONE.
 

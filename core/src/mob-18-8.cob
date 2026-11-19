@@ -1562,6 +1562,7 @@
 *>   A hostile mob handles no interaction except the name tag (17 section 3.7), which every living entity takes.
      IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0 AND SM-KEY(WS-M) NOT = "zombie_villager" AND SM-KEY(WS-M) NOT = "piglin"
              AND WS-KEY48 NOT = "name_tag"
+             AND SM-KEY(WS-M) NOT = "sulfur_cube"
          GOBACK
      END-IF
      COMPUTE WS-TYPE = EN-TYPE(WS-ENTITY) + 1
@@ -1636,6 +1637,8 @@
              CALL "MOB-ARMADILLO-BRUSH" USING WS-ROW WS-ENTITY
          WHEN WS-KEY = "creeper"
              CALL "STDMOB-IGNITE" USING WS-ROW WS-ENTITY WS-HELD
+         WHEN WS-KEY = "sulfur_cube"
+             CALL "SULFUR-USE" USING WS-ROW WS-ENTITY WS-HELD
          WHEN OTHER
              CALL "MOB-FEED-USE" USING WS-ROW WS-ENTITY
      END-EVALUATE

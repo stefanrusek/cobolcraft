@@ -330,7 +330,7 @@
        10 EN-FOE-ID          BINARY-LONG.
        10 EN-PET-CD          BINARY-LONG.        *> ticks until the pet's next melee hit
 *>     --- 002-lane-mobsfull-h8: main hand, helmet wear (core/src/mob-20-3.cob) ---
-       10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1), 4 bow (skeleton family, 5)
+       10 EN-HAND            BINARY-LONG.        *> main-hand item: 0 empty, 1 iron sword, 2 iron spear, 3 iron shovel (zombie weapon draw, 20 section 4.1), 4 bow (skeleton family, 5), 9 warped fungus on a stick, 10 iron axe (vindicator, 20 section 13.1), 11 crossbow (pillager, 13.2)
        10 EN-HEAD-WEAR       BINARY-LONG.        *> durability damage of the helmet worn (EN-EQUIP head slot); -1 = broken, the head is empty (20 section 3.5)
        10 EN-HEALTH-MILLI     BINARY-LONG.        *> mob health: thousandths of a point already lost beyond EN-HEALTH (an armour-reduced hit is fractional, 18 section 7.3)
        10 EN-WOLF-WET        BINARY-LONG.        *> wolf: 1 after it was in water or rain (a shake is due when it is out of it, 19 section 6.1)
@@ -614,6 +614,15 @@
        10 EN-PLAYER-MADE     BINARY-LONG.        *> iron golem: 1 when built from the pumpkin pattern (PlayerCreated: it never targets a player)
        10 EN-GOLEM-PL        BINARY-LONG.        *> iron golem: the player row it is angry at (0 none); EN-ANGER holds the ticks of anger left
        10 EN-GOLEM-FLOWER    BINARY-LONG.        *> iron golem: ticks left of the offered flower pose (OfferFlowerGoal, 400 at the start; 0 none)
+*>     --- 002-lane-p49k: the Entity base keys that the saved compound carries (45-1 section 5; core/src/entity-nbt-1.cob) ---
+       10 EN-INVULN          BINARY-LONG.        *> Invulnerable: the permanent flag (not the hit window), 1 = set
+       10 EN-PORTAL-CD       BINARY-LONG.        *> PortalCooldown: ticks left
+       10 EN-INVTIME         BINARY-LONG.        *> invulnerable_time: the post-hit counter, written only above 0
+       10 EN-SILENT          BINARY-LONG.        *> Silent
+       10 EN-NOGRAV          BINARY-LONG.        *> NoGravity
+       10 EN-GLOW            BINARY-LONG.        *> Glowing (the glowing tag)
+       10 EN-VISFIRE         BINARY-LONG.        *> HasVisualFire
+       10 EN-NAME-VIS        BINARY-LONG.        *> CustomNameVisible
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

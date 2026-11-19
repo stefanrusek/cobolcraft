@@ -603,7 +603,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LOOT-ENT-BOOLS.
-*> USING slot, object node, kind (1 type_specific/sheep: member sheared, 2 flags: any flag), result out: every member of the object is a boolean that equals the entity's state: the sheared
+*> USING slot, object node, kind (1 type_specific/sheep: member sheared, 2 flags: any flag, 3 type_specific/raider: has_raid and is_captain), result out: every member of the object is a boolean that equals the entity's state: the sheared
 *> flag of this_entity (false when it is no sheep); the flags (is_on_fire, is_baby, ...) are all false because the context holds no entity state for them (the term then holds when it asks for false).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -631,6 +631,16 @@
              ELSE
                  MOVE -1 TO WS-ACTUAL
              END-IF
+         END-IF
+         IF L-KIND = 3
+             EVALUATE WS-KEY
+                 WHEN "has_raid"
+                     MOVE LW-C-THIS-HAS-RAID TO WS-ACTUAL
+                 WHEN "is_captain"
+                     MOVE LW-C-THIS-CAPTAIN TO WS-ACTUAL
+                 WHEN OTHER
+                     MOVE -1 TO WS-ACTUAL
+             END-EVALUATE
          END-IF
          IF WS-ACTUAL NOT = WS-FLAG
              MOVE 0 TO L-RESULT
@@ -690,6 +700,12 @@
                  MOVE 1 TO WS-KIND
                  CALL "LOOT-ENT-BOOLS" USING L-SLOT WS-CHILD WS-KIND L-RESULT
                  IF LW-C-THIS-SHEEP = 0
+                     MOVE 0 TO L-RESULT
+                 END-IF
+             WHEN WS-KEY = "minecraft:type_specific/raider"
+                 MOVE 3 TO WS-KIND
+                 CALL "LOOT-ENT-BOOLS" USING L-SLOT WS-CHILD WS-KIND L-RESULT
+                 IF LW-C-THIS-RAIDER = 0
                      MOVE 0 TO L-RESULT
                  END-IF
              WHEN WS-KEY = "minecraft:flags"

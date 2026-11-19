@@ -50,27 +50,30 @@
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
-     IF EN-PERSISTENT(L-ROW) = 1
-         MOVE "PersistenceRequired" TO WN MOVE 19 TO WL
-         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-PERSISTENT(L-ROW)
+*>   The Mob keys written every time (45-2 section 3): CanPickUpLoot (true for the piglins and the pillager, which pick loot up: 45-6 sections 3 and 13; no
+*>   state here), PersistenceRequired, LeftHanded (no state here: false).
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     MOVE 0 TO WS-VALUE
+     IF WS-KEY = "piglin" OR "piglin_brute" OR "pillager"
+         MOVE 1 TO WS-VALUE
      END-IF
-*>   The mob flags (45-2 section 3): LeftHanded (bit 2 of the mob flags byte) and NoAI (bit 0), each written when set.
-     IF EN-LEFTY(L-ROW) = 1
-         MOVE "LeftHanded" TO WN MOVE 10 TO WL
-         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-LEFTY(L-ROW)
-     END-IF
+     MOVE "CanPickUpLoot" TO WN MOVE 13 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     MOVE "PersistenceRequired" TO WN MOVE 19 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-PERSISTENT(L-ROW)
+     MOVE "LeftHanded" TO WN MOVE 10 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-LEFTY(L-ROW)
      IF EN-NO-AI(L-ROW) = 1
          MOVE "NoAI" TO WN MOVE 4 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-NO-AI(L-ROW)
      END-IF
-     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
          GOBACK
      END-IF
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE SM-KIND(WS-M) TO WS-KIND
 *>   AgeableMob and Animal: every passive species but the allay and the golems.
-     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem")
+     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish")
          MOVE "Age" TO WN MOVE 3 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-MOBAGE(L-ROW)
          MOVE "ForcedAge" TO WN MOVE 9 TO WL
@@ -183,46 +186,17 @@
          MOVE "powered" TO WN MOVE 7 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-VARIANT(L-ROW)
      END-IF
-     IF WS-KEY = "slime" OR "magma_cube"
+     IF WS-KEY = "slime" OR "magma_cube" OR "sulfur_cube"
          MOVE "Size" TO WN MOVE 4 TO WL
          COMPUTE WS-VALUE = FUNCTION MAX(EN-VARIANT(L-ROW), 1) - 1
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
      END-IF
-*>   equipment: the saddle slot and the wolf's body slot (the armour with its damage component).
-     IF (EN-SADDLE(L-ROW) = 1 AND (WS-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel"))
-             OR (WS-KEY = "wolf" AND EN-WOLF-ARM(L-ROW) > 0)
-         MOVE "equipment" TO WN MOVE 9 TO WL
-         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-         IF WS-KEY = "wolf"
-             MOVE "body" TO WN MOVE 4 TO WL
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-             MOVE "id" TO WN MOVE 2 TO WL
-             COMPUTE WS-VALUE = EN-WOLF-ARM(L-ROW) + 1
-             CALL "PERSIST-NAMESPACED" USING IT-KEY(WS-VALUE) IT-KEY-LENGTH(WS-VALUE) WS-NS-KEY WS-NS-LENGTH
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
-             MOVE "count" TO WN MOVE 5 TO WL
-             MOVE 1 TO WS-VALUE
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
-             MOVE "components" TO WN MOVE 10 TO WL
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-             MOVE "minecraft:damage" TO WN MOVE 16 TO WL
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-WOLF-ARM-DMG(L-ROW)
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-         ELSE
-             MOVE "saddle" TO WN MOVE 6 TO WL
-             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-             MOVE "id" TO WN MOVE 2 TO WL
-             MOVE "minecraft:saddle" TO WS-NS-KEY
-             MOVE 16 TO WS-NS-LENGTH
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-NS-KEY WS-NS-LENGTH
-             MOVE "count" TO WN MOVE 5 TO WL
-             MOVE 1 TO WS-VALUE
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
-             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-         END-IF
-         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-     END-IF
+     CALL "SPECIES4-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+     CALL "HOSTILE5-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+     CALL "VILLAGER6-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+     CALL "AQUATIC7-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
+*>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
+     CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   A villager's own keys (44 part 3 section 3.2, 45-6 section 7): VillagerData, VillagerDataFinalized, FoodLevel, Xp, LastRestock, LastGossipDecay, RestocksToday.
      IF WS-KEY = "villager"
          CALL "MOB-VILLAGER-WRITE" USING L-ROW PB-BUFFER
@@ -405,37 +379,8 @@
                  MOVE WS-KM TO MQ-LEASH
              END-IF
          WHEN L-NAME = "equipment" AND L-TYPE = 10
-*>           The saddle slot (present: saddled) and the body slot (an item id and its damage component); the other slots are not modelled.
-             MOVE "saddle" TO WS-PATH
-             MOVE 6 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 10
-                 MOVE 1 TO MQ-SADDLE
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "body.id" TO WS-PATH
-             MOVE 7 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 8
-                 MOVE SPACES TO WS-KEY
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
-                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
-                     IF IT-KEY(WS-I) = WS-LOCAL OR IT-KEY(WS-I) = WS-BARE
-                         COMPUTE MQ-BODY = WS-I - 1
-                     END-IF
-                 END-PERFORM
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "body.components.minecraft:damage" TO WS-PATH
-             MOVE 32 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 3
-                 CALL "PB-GET-INT" USING PB-BUFFER MQ-BODY-DMG
-             END-IF
-             MOVE WS-START TO PB-POS
-             CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
+*>           The slots of MOB-EQUIP-WRITE: saddle, body, main hand and armour.
+             CALL "MOB-EQUIP-READ" USING PB-BUFFER MQ-DATA
          WHEN OTHER
              MOVE 0 TO L-HANDLED
      END-EVALUATE
@@ -460,6 +405,8 @@
  01 WS-BARE                PIC X(48).
  01 WS-LOCAL               PIC X(48).
  01 WS-I                   BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-GENE-NAMES.
     05 FILLER              PIC X(10) VALUE "normal".
     05 FILLER              PIC X(10) VALUE "lazy".
@@ -470,8 +417,6 @@
     05 FILLER              PIC X(10) VALUE "aggressive".
  01 WS-GENE-TABLE REDEFINES WS-GENE-NAMES.
     05 WS-GENE             PIC X(10) OCCURS 7 TIMES.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY ENMOBDATA.
@@ -480,7 +425,7 @@
      MOVE MQ-NOAI TO EN-NO-AI(L-ROW)
      MOVE MQ-LEFTY TO EN-LEFTY(L-ROW)
      IF EN-NO-AI(L-ROW) = 1 OR EN-LEFTY(L-ROW) = 1
-         CALL "STDMOB-FLAGS-SEND" USING L-ROW
+         CALL "STDMOB-MOBFLAGS-SEND" USING L-ROW
      END-IF
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = SPACES
@@ -488,7 +433,7 @@
      END-IF
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE SM-KIND(WS-M) TO WS-KIND
-     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem")
+     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish")
          MOVE MQ-AGE TO EN-MOBAGE(L-ROW)
          MOVE MQ-FORCED TO EN-FORCED(L-ROW)
          MOVE MQ-LOCKED TO EN-LOCKED(L-ROW)
@@ -582,7 +527,7 @@
      IF WS-KEY = "creeper"
          MOVE MQ-POWERED TO EN-VARIANT(L-ROW)
      END-IF
-     IF (WS-KEY = "slime" OR "magma_cube") AND MQ-SIZE >= 0
+     IF (WS-KEY = "slime" OR "magma_cube" OR "sulfur_cube") AND MQ-SIZE >= 0
          COMPUTE EN-VARIANT(L-ROW) = MQ-SIZE + 1
      END-IF
      IF WS-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel"
@@ -592,6 +537,9 @@
          MOVE MQ-BODY TO EN-WOLF-ARM(L-ROW)
          MOVE MQ-BODY-DMG TO EN-WOLF-ARM-DMG(L-ROW)
      END-IF
+     MOVE MQ-HAND TO EN-HAND(L-ROW)
+     MOVE MQ-EQUIP TO EN-EQUIP(L-ROW)
+     MOVE MQ-HEAD-WEAR TO EN-HEAD-WEAR(L-ROW)
      MOVE MQ-LEASH TO EN-LEASH-UUID(L-ROW)
 *>   A villager keeps the profession and level it was saved with (a template's nitwit); a profession of "none" is the default.
      IF WS-KEY = "villager" AND MQ-PROF NOT = SPACES AND MQ-PROF NOT = "none"

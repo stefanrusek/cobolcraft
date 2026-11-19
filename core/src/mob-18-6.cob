@@ -960,6 +960,8 @@
  01 WS-ALWAYS              BINARY-LONG.
  01 WS-DENIED              BINARY-LONG.
  01 WS-SPREAD              BINARY-LONG VALUE 7.
+ 01 WS-20                  BINARY-LONG VALUE 20.
+ 01 WS-GHAST-DRAW          BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-DIM                  BINARY-LONG.
@@ -980,6 +982,11 @@
      END-IF
      IF SM-SPAWN(L-ROW) = 16
          CALL "BAT-RULE-AT" USING L-STATE L-DIM L-ROW L-X L-Y L-Z L-REASON L-OK
+         GOBACK
+     END-IF
+*>   checkSulfurCubeSpawnRules is always true (20 section 18.2).
+     IF SM-SPAWN(L-ROW) = 17
+         MOVE 1 TO L-OK
          GOBACK
      END-IF
      IF SM-KIND(L-ROW) >= 2
@@ -1032,7 +1039,7 @@
          CALL "MS6-DARK-ENOUGH" USING WS-SKY WS-BLOCK WS-DRAW WS-ZERO WS-LOCAL WS-LEVEL WS-DARK
      END-IF
      MOVE 0 TO WS-OPEN-SKY
-     IF SM-SPAWN(L-ROW) = 10
+     IF SM-SPAWN(L-ROW) = 10 OR SM-SPAWN(L-ROW) = 12
 *>       The any-light monster rule (21 section 3.2): no light test, the base and the not-Peaceful tests of predicate 4.
          MOVE 4 TO WS-PRED
      END-IF
@@ -1047,6 +1054,13 @@
          END-IF
      END-IF
      CALL "MS6-RULE-CHECK" USING WS-PRED L-REASON WS-PEACEFUL WS-DARK WS-BRIGHT WS-VALID WS-GRASS WS-OPEN-SKY L-OK
+*>   Ghast.checkGhastSpawnRules (21 section 3.2): after the not-Peaceful and floor tests, one try in 20 passes (natural and chunk generation reasons).
+     IF SM-SPAWN(L-ROW) = 12 AND L-OK = 1 AND L-REASON < 2
+         CALL "XORO-NEXT-INT" USING L-STATE WS-20 WS-GHAST-DRAW
+         IF WS-GHAST-DRAW NOT = 0
+             MOVE 0 TO L-OK
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM MS6-RULE-AT.
 
@@ -1525,6 +1539,7 @@
  01 WS-S                   BINARY-LONG.
  01 WS-CAT                 BINARY-LONG.
  01 WS-PERSIST             BINARY-LONG VALUE 0.
+ 01 WS-CARRIES             BINARY-LONG.
  01 WS-ZNO                 BINARY-LONG VALUE 0.
  01 WS-ZSLOT               BINARY-LONG.
  01 WS-REMOVABLE           BINARY-LONG.
@@ -1567,9 +1582,20 @@
      IF EN-PERSISTENT(L-ROW) = 1
          MOVE 1 TO WS-PERSIST
      END-IF
+*>   An enderman that carries a block never despawns (requiresCustomPersistence, 20 section 8.1).
+     CALL "ENDER-CARRIES" USING L-ROW WS-CARRIES
+     IF WS-CARRIES = 1
+         MOVE 1 TO WS-PERSIST
+     END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
-     IF BW-DIFFICULTY = 0 AND (SM-KIND(WS-S) = 1 OR SM-KIND(WS-S) = 6)
+*>   The monster rows that are not built notInPeaceful (20 section 19.4): the piglin, the shulker and the sulfur cube (18.2) stay in Peaceful. The warden is never removed
+*>   (removeWhenFarAway false).
+     IF BW-DIFFICULTY = 0 AND (SM-KIND(WS-S) = 1 OR SM-KIND(WS-S) = 6) AND SM-KEY(WS-S) NOT = "piglin" AND SM-KEY(WS-S) NOT = "shulker"
+         AND SM-KEY(WS-S) NOT = "sulfur_cube"
          MOVE 1 TO WS-PEACEFUL
+     END-IF
+     IF SM-KEY(WS-S) = "warden"
+         MOVE 0 TO WS-REMOVABLE
      END-IF
      IF WS-IDLE-ID(L-ROW) NOT = EN-ID(L-ROW)
          MOVE EN-ID(L-ROW) TO WS-IDLE-ID(L-ROW)

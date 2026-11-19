@@ -1,0 +1,27 @@
+{
+ "type": "minecraft:entity",
+ "pools": [
+  {
+   "rolls": 1,
+   "condition": {
+    "type": "minecraft:entity_properties",
+    "entity": "this",
+    "predicate": {"minecraft:type_specific/raider": {"has_raid": true}}
+   },
+   "entries": [
+    {"type": "minecraft:item", "name": "minecraft:emerald"}
+   ]
+  },
+  {
+   "rolls": 1,
+   "condition": {
+    "type": "minecraft:entity_properties",
+    "entity": "this",
+    "predicate": {"minecraft:type_specific/raider": {"bogus": true}}
+   },
+   "entries": [
+    {"type": "minecraft:item", "name": "minecraft:diamond"}
+   ]
+  }
+ ]
+}

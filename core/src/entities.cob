@@ -298,6 +298,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY EXTRAS.
+ COPY ENKEEP.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-FATAL               PIC X(40) VALUE Z"entity table: 1024 entities".
  LINKAGE SECTION.
@@ -313,7 +314,7 @@
      IF L-ROW > EN-COUNT
          MOVE L-ROW TO EN-COUNT
      END-IF
-     INITIALIZE EN-ENTRY(L-ROW)
+     INITIALIZE EN-ENTRY(L-ROW) EK-ENTRY(L-ROW)
      MOVE 0 TO EX-E-LEN(L-ROW)
      MOVE 1 TO EN-USED(L-ROW)
      PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
@@ -370,6 +371,7 @@
  01 WS-WOOL                BINARY-LONG.
  01 WS-NEEDED              BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-FLAGS-NEEDED        BINARY-LONG.
  01 WS-IDS.
     05 WS-ID               BINARY-LONG OCCURS 16 TIMES.
  LINKAGE SECTION.
@@ -444,6 +446,15 @@
              CALL "PB-RESET" USING PB-BUFFER
              CALL "MOB-DATA-BUILD" USING L-ROW PB-BUFFER
          END-IF
+*>       The flags of a spider, enderman, pillager or sulfur cube that are not at the client's defaults (mob-20-flags.cob).
+         CALL "STDMOB-FLAGS-NEEDED" USING L-ROW WS-FLAGS-NEEDED
+         IF WS-FLAGS-NEEDED = 1
+             IF PB-LENGTH > 0
+                 CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             END-IF
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "STDMOB-FLAGS-BUILD" USING L-ROW PB-BUFFER
+         END-IF
      END-IF
      IF WS-SEES = 0 AND VW-SEEN(L-PLAYER)(L-ROW:1) = "1"
          MOVE EN-ID(L-ROW) TO WS-ID(1)
@@ -457,7 +468,7 @@
          CALL "STDMOB-EQUIP-SEND" USING L-ROW
      END-IF
      IF WS-NEW = 1 AND (EN-NO-AI(L-ROW) = 1 OR EN-LEFTY(L-ROW) = 1)
-         CALL "STDMOB-FLAGS-SEND" USING L-ROW
+         CALL "STDMOB-MOBFLAGS-SEND" USING L-ROW
      END-IF
      IF WS-NEW = 1
          CALL "STDMOB-HP-PAIR" USING L-ROW

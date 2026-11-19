@@ -32,10 +32,11 @@
     05 FILLER              PIC X(112) VALUE "minecraft:snowball".
     05 FILLER              PIC X(112) VALUE "minecraft:shulker_bullet".
     05 FILLER              PIC X(112) VALUE "minecraft:llama_spit".
+    05 FILLER              PIC X(112) VALUE "minecraft:breeze_wind_charge".
  01 WS-KEY-TABLE REDEFINES WS-KEYS.
-    05 WS-KEY              PIC X(112) OCCURS 5 TIMES.
+    05 WS-KEY              PIC X(112) OCCURS 6 TIMES.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 5 TIMES VALUE 0.
+    05 WS-ID               BINARY-LONG OCCURS 6 TIMES VALUE 0.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 PIC X(66).
@@ -49,7 +50,7 @@
          GOBACK
      END-IF
      IF WS-LOADED = 0
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
              CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY(WS-I) WS-ID(WS-I) WS-ROW WS-STATUS
          END-PERFORM
          MOVE 1 TO WS-LOADED
@@ -69,7 +70,7 @@
  01 L-KIND                 BINARY-LONG.
  PROCEDURE DIVISION USING L-TYPE L-KIND.
      MOVE 0 TO L-KIND
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 5
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
          CALL "PROJ-TYPE" USING WS-K WS-TYPE
          IF WS-TYPE > 0 AND WS-TYPE = L-TYPE
              MOVE WS-K TO L-KIND
@@ -164,6 +165,9 @@
              MOVE 1.6 TO WS-SPEED
          WHEN 5
              MOVE 1.5 TO WS-SPEED
+         WHEN 6
+*>           The breeze's wind charge: speed 0.7 (20 section 16).
+             MOVE 0.7 TO WS-SPEED
          WHEN OTHER
 *>           A shulker bullet starts at rest (BULLET-SELECT sets its aim).
              MOVE 0 TO WS-SPEED
@@ -234,6 +238,9 @@
              MOVE 4 TO WS-DAMAGE
          WHEN 5
 *>           The llama's spit hurts by 1 (21 section 8.14).
+             MOVE 1 TO WS-DAMAGE
+         WHEN 6
+*>           AbstractWindCharge.onHitEntity hurts for 1.0 (17 section 3.15); the burst (21 section 8.18: radius 3.0, TRIGGER) is open here.
              MOVE 1 TO WS-DAMAGE
          WHEN 3
 *>           The snowball hurts a blaze for 3 and nothing else (17 section 3.15).
@@ -710,6 +717,9 @@
          COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.99
          COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99 - 0.06
          COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
+         WHEN 6
+*>       The wind charge flies straight at its launch velocity (its flight is not in the documents: open).
+         CONTINUE
          WHEN OTHER
          CALL "BULLET-AIM" USING L-ROW
      END-EVALUATE
@@ -795,7 +805,7 @@
                  COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-E) / 16)
                  CALL "WORLD-FIND" USING EN-DIM(WS-E) WS-CX WS-CZ WS-CHUNK
                  CALL "PROJ-OWNER" USING WS-E WS-OWNER
-                 IF WS-KIND <= 2 AND (WS-CHUNK = 0 OR (EN-TARGET-ID(WS-E) > 0 AND WS-OWNER = 0))
+                 IF (WS-KIND <= 2 OR WS-KIND = 6) AND (WS-CHUNK = 0 OR (EN-TARGET-ID(WS-E) > 0 AND WS-OWNER = 0))
                      CALL "ENTITY-REMOVE" USING WS-E
                  ELSE
                      IF WS-CHUNK > 0

@@ -161,11 +161,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MEF-HURT.
-*> USING tracker row, amount in points: the magic or wither hurt of an effect, through the mob damage path (armor does not apply to mobs here).
+*> USING tracker row, amount in points: the magic hurt of an effect (instant damage, poison; damage type magic, 17 sections 4.9a and 4.12), through the mob damage path
+*> (armor does not apply to mobs here).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY RULES.
- 01 WS-CAUSE                BINARY-LONG VALUE CAUSE-COMMAND.
+ 01 WS-CAUSE                BINARY-LONG VALUE CAUSE-MAGIC.
  01 WS-NONE                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
@@ -174,6 +175,38 @@
      CALL "HEALTH-MOB-DAMAGE" USING L-ROW L-AMOUNT WS-CAUSE WS-NONE
      GOBACK.
  END PROGRAM MEF-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MEF-HURT-WITHER.
+*> USING tracker row, amount in points: the wither effect's hurt (damage type wither, 17 section 4.9a): not witch_resistant_to.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RULES.
+ 01 WS-CAUSE                BINARY-LONG VALUE CAUSE-WITHER.
+ 01 WS-NONE                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-AMOUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-AMOUNT.
+     CALL "HEALTH-MOB-DAMAGE" USING L-ROW L-AMOUNT WS-CAUSE WS-NONE
+     GOBACK.
+ END PROGRAM MEF-HURT-WITHER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MEF-HURT-INDIRECT.
+*> USING tracker row, amount in points: the hurt of an instant_damage effect that a thrower caused (damage type indirect_magic, 17 section 4.9a).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY RULES.
+ 01 WS-CAUSE                BINARY-LONG VALUE CAUSE-INDIRECT-MAGIC.
+ 01 WS-NONE                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-AMOUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-AMOUNT.
+     CALL "HEALTH-MOB-DAMAGE" USING L-ROW L-AMOUNT WS-CAUSE WS-NONE
+     GOBACK.
+ END PROGRAM MEF-HURT-INDIRECT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MEF-HEAL.
@@ -230,6 +263,23 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MEF-INSTANT-T.
+*> USING tracker row, effect, amplifier, t (thousandths): instant_health / instant_damage of intensity t with no thrower (damage type magic).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NO-OWNER             BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-EFFECT                BINARY-LONG.
+ 01 L-AMPLIFIER             BINARY-LONG.
+ 01 L-T                     BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EFFECT L-AMPLIFIER L-T.
+     CALL "MEF-INSTANT-OWNED" USING L-ROW L-EFFECT L-AMPLIFIER L-T WS-NO-OWNER
+     GOBACK.
+ END PROGRAM MEF-INSTANT-T.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MEF-INSTANT-OWNED.
+*> USING tracker row, effect, amplifier, t (thousandths), owned (1 when a thrower or owner entity caused it: damage type indirect_magic, else magic).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-UNDEAD               BINARY-LONG.
@@ -240,7 +290,8 @@
  01 L-EFFECT                BINARY-LONG.
  01 L-AMPLIFIER             BINARY-LONG.
  01 L-T                     BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-EFFECT L-AMPLIFIER L-T.
+ 01 L-OWNED                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EFFECT L-AMPLIFIER L-T L-OWNED.
      IF L-EFFECT NOT = 5 AND L-EFFECT NOT = 6
          GOBACK
      END-IF
@@ -255,13 +306,16 @@
          COMPUTE WS-AMOUNT = 6 * 2 ** L-AMPLIFIER
      END-IF
      COMPUTE WS-AMOUNT = (L-T * WS-AMOUNT + 500) / 1000
-     IF WS-HEAL = 1
-         CALL "MEF-HEAL" USING L-ROW WS-AMOUNT
-     ELSE
-         CALL "MEF-HURT" USING L-ROW WS-AMOUNT
-     END-IF
+     EVALUATE TRUE
+         WHEN WS-HEAL = 1
+             CALL "MEF-HEAL" USING L-ROW WS-AMOUNT
+         WHEN L-OWNED = 1
+             CALL "MEF-HURT-INDIRECT" USING L-ROW WS-AMOUNT
+         WHEN OTHER
+             CALL "MEF-HURT" USING L-ROW WS-AMOUNT
+     END-EVALUATE
      GOBACK.
- END PROGRAM MEF-INSTANT-T.
+ END PROGRAM MEF-INSTANT-OWNED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MEF-PERIODIC.
@@ -318,7 +372,7 @@
                      CALL "MEF-HURT" USING L-ROW WS-ONE
                  END-IF
              WHEN 19
-                 CALL "MEF-HURT" USING L-ROW WS-ONE
+                 CALL "MEF-HURT-WITHER" USING L-ROW WS-ONE
              WHEN OTHER
                  CALL "MEF-HEAL" USING L-ROW WS-ONE
          END-EVALUATE

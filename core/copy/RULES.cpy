@@ -70,6 +70,13 @@
  78 CAUSE-CACTUS              VALUE 19.
  78 CAUSE-HOT-FLOOR           VALUE 20.
  78 CAUSE-BERRY               VALUE 21.
+*> CAUSE-MAGIC, CAUSE-INDIRECT-MAGIC, CAUSE-WITHER (002-lane-p49n; 17 sections 4.9a and 4.12): the damage types magic (an instant_damage effect, poison; it wakes a silverfish, 20 section 9.1),
+*> indirect_magic (the same with a thrower: a witch's potion) and wither (the wither effect); a mob takes them (no RULE-CAUSE row), a witch takes 0.15 of the two magic types (20 section 11).
+ 78 CAUSE-MAGIC               VALUE 22.
+ 78 CAUSE-INDIRECT-MAGIC      VALUE 23.
+ 78 CAUSE-WITHER              VALUE 24.
+*> CAUSE-SULFUR-HOT (002-lane-p49n; 20 section 18.2): the contact damage of a hot sulfur cube (damage type sulfur_cube_hot, tag is_fire); a mob takes it, no RULE-CAUSE row.
+ 78 CAUSE-SULFUR-HOT          VALUE 25.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

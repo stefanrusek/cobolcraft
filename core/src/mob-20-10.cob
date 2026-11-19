@@ -96,12 +96,28 @@
  END PROGRAM STDMOB-SLIME-MOON.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SULFUR-CUBE-INIT.
+*> USING tracker row: a new sulfur cube has size 2 and health size x size = 4 (18.2 setSpawnSize: size 1 for a baby, 2 otherwise; there is no baby spawn here).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 2 TO EN-VARIANT(L-ROW)
+     MOVE 4 TO EN-HEALTH(L-ROW)
+     GOBACK.
+ END PROGRAM SULFUR-CUBE-INIT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SLIME-SPLIT.
+*> A sulfur cube (18.2) splits in exactly 2 (getSplitCount 2) and its width is 0.49 per size.
 *> A dying slime of size above 1: count 2 + nextInt(3); child i (size / 2, full health) stands at x + ((i mod 2) - 0.5) w, z + ((i div 2) - 0.5) w with
 *> w = half the parent width (0.52 x size / 2), y + 0.5, a random yaw (10, split on death). The draws are the hash of the entity id and the time.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
@@ -120,6 +136,8 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-ODD                 BINARY-LONG.
  01 WS-HALF                BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-CUBE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -127,13 +145,23 @@
      IF WS-SIZE <= 1
          GOBACK
      END-IF
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     MOVE 0 TO WS-CUBE
+     IF SM-KEY(WS-M) = "sulfur_cube"
+         MOVE 1 TO WS-CUBE
+     END-IF
      MOVE EN-ID(L-ROW) TO WS-ARG(1)
      MOVE CW-TIME TO WS-ARG(2)
      MOVE 31 TO WS-ARG(3)
      CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
      COMPUTE WS-N = 2 + FUNCTION MOD(WS-R, 3)
-     COMPUTE WS-CHILD = WS-SIZE / 2
      COMPUTE WS-W = 0.26 * WS-SIZE
+     IF WS-CUBE = 1
+         MOVE 2 TO WS-N
+         COMPUTE WS-W = 0.245 * WS-SIZE
+         CALL "SULFUR-SPLIT" USING L-ROW WS-N
+     END-IF
+     COMPUTE WS-CHILD = WS-SIZE / 2
      MOVE EN-DIM(L-ROW) TO WS-DIM
      MOVE EN-TYPE(L-ROW) TO WS-TYPE
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
@@ -179,6 +207,9 @@
      MOVE EN-TYPE(L-ROW) TO WS-TYPE
      CALL "STDMOB-INDEX" USING WS-TYPE WS-M
      MOVE 0 TO WS-LOOT
+     IF SM-KEY(WS-M) = "sulfur_cube"
+         CALL "SULFUR-DEATH" USING L-ROW
+     END-IF
      IF SM-KEY(WS-M) = "slime" AND EN-VARIANT(L-ROW) <= 1
          MOVE 1 TO WS-LOOT
      END-IF
@@ -213,6 +244,9 @@
  01 L-DAMAGE               BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M L-DAMAGE.
      MOVE SM-ATTACK(L-M) TO L-DAMAGE
+     IF SM-KEY(L-M) = "sulfur_cube"
+         MOVE 0 TO L-DAMAGE
+     END-IF
      IF SM-KEY(L-M) = "slime"
          MOVE 0 TO L-DAMAGE
          IF EN-VARIANT(L-ROW) > 1

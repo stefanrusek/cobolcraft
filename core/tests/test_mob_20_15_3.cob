@@ -1,0 +1,66 @@
+*> Acceptance test (002-lane-p49b; docs/protocol/20 section 15 Drops): a warden that dies drops one sculk catalyst (unconditional, count 1, no looting); the fixture table
+*> core/tests/fixtures/stdmob-loot/.../entities/warden.json is that one pool. Its health is 500: 499 leaves it alive.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-20-15-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-CATALYST            BINARY-LONG.
+ 01 WS-WARDEN              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-LOOT-DIR            PIC X(1100) VALUE "core/tests/fixtures/stdmob-loot".
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG VALUE 3.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     CALL "LOOT-LOAD" USING WS-LOOT-DIR WS-STATUS
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE "minecraft:warden" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:sculk_catalyst" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-CATALYST WS-ITEM-ROW WS-STATUS
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 6
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-WARDEN
+     MOVE "N" TO TL-MODE
+     MOVE 499 TO WS-AMOUNT
+     CALL "HEALTH-MOB-DAMAGE" USING WS-WARDEN WS-AMOUNT WS-CAUSE WS-PLAYER
+     PERFORM COUNT-CATALYSTS
+     MOVE "acceptance US15 20§15 Warden at 1 health drops nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-HURT(WS-WARDEN)
+     MOVE 1 TO WS-AMOUNT
+     CALL "HEALTH-MOB-DAMAGE" USING WS-WARDEN WS-AMOUNT WS-CAUSE WS-PLAYER
+     PERFORM COUNT-CATALYSTS
+     MOVE "acceptance US15 20§15 Warden death drops one sculk catalyst" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ COUNT-CATALYSTS.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > EN-COUNT
+         IF EN-USED(WS-INDEX) = 1 AND EN-ITEM(WS-INDEX) = WS-CATALYST
+             ADD EN-ITEM-COUNT(WS-INDEX) TO WS-COUNT
+         END-IF
+     END-PERFORM.
+ END PROGRAM TEST-MOB-20-15-3.
+ COPY CORETEST.
+ COPY MOBSPTEST.

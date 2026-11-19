@@ -123,6 +123,7 @@
  COPY CORESTATE.
  COPY STDMOBS.
  COPY LOOTCTX.
+ COPY P49NSTATE.
  01 WS-M                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
  01 WS-I                   BINARY-LONG.
@@ -151,6 +152,10 @@
          COMPUTE LC-THIS-COLOR = FUNCTION MOD(L-WOOL, 16)
          COMPUTE LC-THIS-SHEARED = (L-WOOL - LC-THIS-COLOR) / 16
      END-IF
+*>   A raider's facts for type_specific/raider (RAIDER-LOOT-SET of STDMOB-DIE).
+     MOVE PN-LOOT-RAIDER TO LC-THIS-RAIDER
+     MOVE PN-LOOT-HAS-RAID TO LC-THIS-HAS-RAID
+     MOVE PN-LOOT-CAPTAIN TO LC-THIS-CAPTAIN
      MOVE 0 TO LC-KILLER
      IF L-KILLER > 0
          MOVE 1 TO LC-KILLER
@@ -332,7 +337,7 @@
      MOVE EN-KILLER(L-ROW) TO WS-KILLED
      CALL "STDMOB-INDEX" USING WS-TYPE WS-M
      CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
-     IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube"
+     IF SM-KEY(WS-M) = "slime" OR SM-KEY(WS-M) = "magma_cube" OR SM-KEY(WS-M) = "sulfur_cube"
          CALL "STDMOB-SLIME-DIE" USING L-ROW WS-KILLED
      ELSE
          IF WS-RULE = 1
@@ -340,7 +345,9 @@
              IF SM-KEY(WS-M) = "sheep"
                  MOVE EN-WOOL(L-ROW) TO WS-WOOL
              END-IF
+             CALL "RAIDER-LOOT-SET" USING L-ROW
              CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED WS-WOOL
+             CALL "RAIDER-LOOT-CLEAR"
              CALL "FOX-DROP-HELD" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
              CALL "STDMOB-XP-GEAR" USING L-ROW WS-GEAR
@@ -525,6 +532,11 @@
 *>   SM-NEUTRAL 7: inert (the giant, 20 section 18.1: no goals and no targets are registered).
      IF SM-NEUTRAL(L-M) = 7
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+         GOBACK
+     END-IF
+*>   SM-NEUTRAL 8: the warden's target is the angriest player (WARDEN-AGGRO, 20 section 15).
+     IF SM-NEUTRAL(L-M) = 8
+         CALL "WARDEN-AGGRO" USING L-ROW
          GOBACK
      END-IF
      IF SM-NEUTRAL(L-M) = 2
@@ -1012,6 +1024,7 @@
  COPY CORESTATE.
  COPY STDMOBS.
  COPY BRWORLD.
+ 01 WS-STAYS               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
@@ -1096,7 +1109,12 @@
          GOBACK
      END-IF
      CALL "BR-WORLD-READY"
-     IF (SM-KIND(WS-M) = 1 OR SM-KIND(WS-M) = 6) AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
+*>   A monster is removed with hostile mobs off, and in Peaceful unless it is one of the monsters that are not notInPeaceful (20 section 19.4: piglin, shulker; 18.2: sulfur cube).
+     MOVE 0 TO WS-STAYS
+     IF SM-KEY(WS-M) = "sulfur_cube" OR "piglin" OR "shulker"
+         MOVE 1 TO WS-STAYS
+     END-IF
+     IF (SM-KIND(WS-M) = 1 OR SM-KIND(WS-M) = 6) AND (CS-HOSTILE-MOBS NOT = 1 OR (BW-DIFFICULTY = 0 AND WS-STAYS = 0))
          CALL "ENTITY-REMOVE" USING WS-ROW
          GOBACK
      END-IF
@@ -1132,9 +1150,29 @@
      CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "warden"
          CALL "WARDEN-DARKNESS" USING WS-ROW
+     END-IF
+*>   A spider's climbing flag follows its horizontal collision (Spider.tick, 20 section 7.1).
+     IF SM-KEY(WS-M) = "spider" OR "cave_spider"
+         CALL "SPIDER-CLIMB-TICK" USING WS-ROW
+     END-IF
+     CALL "MOB-LHBM-TICK" USING WS-ROW
+     IF SM-KEY(WS-M) = "snow_golem" OR "blaze"
+         CALL "STDMOB-WATER-HURT" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0 OR EN-HEALTH(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "sulfur_cube"
+         CALL "SULFUR-TICK" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
      END-IF
 *>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
      IF SM-KEY(WS-M) = "endermite"
@@ -1235,6 +1273,10 @@
              CALL "STDMOB-BURN" USING WS-ROW WS-M
          END-IF
          CALL "STDMOB-AGGRO" USING WS-ROW WS-M
+         IF SM-KEY(WS-M) = "enderman"
+             CALL "ENDER-CARRY-TICK" USING WS-ROW
+             CALL "ENDER-FLAGS-TICK" USING WS-ROW
+         END-IF
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
          END-IF
@@ -1355,6 +1397,12 @@
          MOVE WS-RAID-HZ TO WS-PET-HZ
          MOVE WS-RAID-WALK TO WS-PET-WALK
      END-IF
+     IF SM-KEY(WS-M) = "warden"
+         CALL "WARDEN-SONIC" USING WS-ROW WS-RV-STILL
+         IF WS-RV-STILL = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+     END-IF
      IF SM-KEY(WS-M) = "ravager"
          CALL "RAVAGER-STEP" USING WS-ROW WS-RV-STILL
          IF WS-RV-STILL = 1
@@ -1385,8 +1433,15 @@
              GOBACK
          END-IF
      END-IF
-     IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
+     IF SM-RANGED(WS-M) = 1
          CALL "STDMOB-SHOOT" USING WS-ROW WS-M WS-STOP
+     END-IF
+     IF SM-RANGED(WS-M) = 2
+         CALL "STDMOB-CROSSBOW" USING WS-ROW WS-M WS-STOP
+         CALL "PILLAGER-FLAGS-TICK" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "pillager"
+         CALL "PILLAGER-PICKUP-TICK" USING WS-ROW
      END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
@@ -1401,6 +1456,9 @@
      IF SM-RANGED(WS-M) = 6
          CALL "SHULKER-ATTACK" USING WS-ROW WS-M
      END-IF
+     IF SM-RANGED(WS-M) = 7
+         CALL "BREEZE-SHOOT" USING WS-ROW WS-M
+     END-IF
      IF SM-KEY(WS-M) = "snow_golem"
          CALL "SNOW-GOLEM-TICK" USING WS-ROW WS-M
      END-IF
@@ -1412,6 +1470,9 @@
      IF SM-FUSE(WS-M) > 0 AND WS-STOP = 0
          CALL "STDMOB-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
      END-IF
+     IF (SM-KEY(WS-M) = "vindicator" OR "pillager" OR "evoker" OR "illusioner") AND WS-STOP = 0
+         CALL "STDMOB-ILLAGER-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
+     END-IF
      EVALUATE TRUE
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.
@@ -1422,7 +1483,7 @@
                  CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
              END-IF
 *>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
-             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
+             IF SM-RANGED(WS-M) = 1
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF
@@ -1456,7 +1517,7 @@
              IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
-                 MOVE SM-ATTACK-TICKS TO EN-COOLDOWN(WS-ROW)
+                 CALL "STDMOB-ATTACK-GAP" USING WS-M EN-COOLDOWN(WS-ROW)
                  CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-M WS-DAMAGE
                  IF WS-DAMAGE > 0
                      CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-ROW
@@ -1627,6 +1688,8 @@
      IF WS-CUBE = 1
          CALL "CUBE-HOP" USING WS-ROW WS-M WS-HX WS-HZ WS-YAW
      END-IF
+     CALL "MOB-PUSH-TICK" USING WS-ROW
+     CALL "MOB-JUMP-TICK" USING WS-ROW
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
 *>   A land mob does not walk into water or lava: the path malus of 18 section 5.1 keeps it on the bank (STDMOB-WATER-GUARD).
      CALL "STDMOB-WATER-GUARD" USING WS-ROW WS-M WS-HX WS-HZ
