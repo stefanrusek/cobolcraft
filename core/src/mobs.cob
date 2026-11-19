@@ -406,9 +406,15 @@
 *> the yaw facing that direction): yaw = atan2(-dx, dz) in degrees (protocol yaw: 0 faces +Z, 90
 *> faces -X), computed as 2 x atan(-dx / (sqrt(dx^2 + dz^2) + dz)), which is 180 when the direction
 *> is exactly -Z; a zero direction leaves the yaw.
+*> The arctangent is libm's atan2(t, 1) (cc_f64_atan2_lib) and the factor 180 / pi a double: FUNCTION ATAN is libcob's multiple precision series, 150 microseconds a call, and every
+*> walking mob asks for a yaw every tick (15 percent of a village's tick); the yaw is the same single precision value (test_mob_yaw_toward_equiv).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-DEN                 FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-ATAN                FLOAT-LONG.
+ 01 WS-DEGREES             FLOAT-LONG VALUE 57.29577951308232.
  LINKAGE SECTION.
  01 L-DX                   FLOAT-LONG.
  01 L-DZ                   FLOAT-LONG.
@@ -417,7 +423,9 @@
      COMPUTE WS-DEN = FUNCTION SQRT(L-DX * L-DX + L-DZ * L-DZ) + L-DZ
      EVALUATE TRUE
          WHEN WS-DEN NOT = 0
-             COMPUTE L-YAW = 2 * FUNCTION ATAN(- L-DX / WS-DEN) * 180 / FUNCTION PI
+             COMPUTE WS-T = - L-DX / WS-DEN
+             CALL STATIC "cc_f64_atan2_lib" USING WS-T WS-ONE WS-ATAN
+             COMPUTE L-YAW = 2 * WS-ATAN * WS-DEGREES
          WHEN L-DZ < 0
              MOVE 180 TO L-YAW
      END-EVALUATE
