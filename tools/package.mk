@@ -52,6 +52,10 @@ endif
 # The shim's cc_fpfast.c calls GMP itself (every COBOL program links libcob, which links GMP).
 LDLIBS   += -L$(shell brew --prefix gmp)/lib -lgmp
 CFLAGS   := -std=c11 -Wall -Wextra -I $(REPO)/contract/include $(INCLUDES)
+# The C of the shim (the FPFAST overlay runs for every float operation of every COBOL program) is optimised in the release build like the COBOL is.
+ifeq ($(RELEASE)$(COVERAGE),10)
+CFLAGS   += -O2
+endif
 ifeq ($(COVERAGE),1)
 COBFLAGS += --coverage
 CFLAGS   += --coverage
