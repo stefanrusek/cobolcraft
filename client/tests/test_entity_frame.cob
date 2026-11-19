@@ -298,6 +298,10 @@
  01 WS-V                   BINARY-LONG.
  01 WS-STICK               BINARY-LONG.
  01 WS-STONE               BINARY-LONG.
+ 01 WS-APPLE               BINARY-LONG.
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-SAVE.
+    05 WS-SV               FLOAT-LONG OCCURS 108 TIMES.
  01 WS-INDEX               BINARY-LONG.
  01 WS-SERIAL              BINARY-LONG.
  01 WS-INT                 BINARY-LONG.
@@ -336,6 +340,10 @@
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
      MOVE "stone" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STONE WS-ITEM-ROW WS-STATUS
+     MOVE "cobblestone" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-DIRT WS-ITEM-ROW WS-STATUS
+     MOVE "apple" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-APPLE WS-ITEM-ROW WS-STATUS
      MOVE "N" TO TL-MODE
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 6
          CALL "ENTITIES-CLEAR" USING CLIENT-STATE
@@ -406,6 +414,34 @@
              CALL "TEST-ASSERT" USING TESTLIB-ASSERT
          END-IF
      END-PERFORM
+*>   A flat item whose model names no fixed entry (an apple here: the pack has no model for it) takes the default of item/generated, rotation (0, 180, 0): the same two quads as the
+*>   stick's (case 1: north, rotation 0) in the same places.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "item_frame" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     COMPUTE WS-X = WS-CX2(1) / 2
+     MOVE WS-CY1(1) TO WS-Y
+     COMPUTE WS-Z = WS-CZ2(1) / 2
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE WS-CDIR(1) TO WS-INT
+     MOVE WS-CROT(1) TO WS-INT2
+     CALL "FR-DATA" USING CLIENT-STATE WS-ID WS-INT WS-APPLE WS-INT2
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 0 TO WS-MAXD
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 12
+         COMPUTE WS-DIFF = FUNCTION ABS(RL-GI-X(WS-V) - WS-CVX(1, WS-V, 1)) + FUNCTION ABS(RL-GI-Y(WS-V) - WS-CVX(1, WS-V, 2))
+             + FUNCTION ABS(RL-GI-Z(WS-V) - WS-CVX(1, WS-V, 3))
+         IF WS-DIFF > WS-MAXD
+             MOVE WS-DIFF TO WS-MAXD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance frame: a flat item with no fixed entry takes the default (0, 180, 0): the stick's quads" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-GI-COUNT = 12 AND WS-MAXD < 0.001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A stone is a cube: 36 vertices. An empty frame draws nothing.
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE "item_frame" TO WS-KEY
@@ -421,6 +457,29 @@
      MOVE "acceptance frame with a stone: a cube of 36 vertices" TO TL-CASE
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      MOVE 36 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A block item whose model names no fixed entry (cobblestone here: the pack's model has no display data) takes the default of block/block, scale 0.5: the stone's cube in the same places.
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 36
+         MOVE RL-GI-X(WS-V) TO WS-SV(WS-V * 3 - 2)
+         MOVE RL-GI-Y(WS-V) TO WS-SV(WS-V * 3 - 1)
+         MOVE RL-GI-Z(WS-V) TO WS-SV(WS-V * 3)
+     END-PERFORM
+     CALL "FR-DATA" USING CLIENT-STATE WS-ID WS-INT WS-DIRT WS-INT2
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 0 TO WS-MAXD
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 36
+         COMPUTE WS-DIFF = FUNCTION ABS(RL-GI-X(WS-V) - WS-SV(WS-V * 3 - 2)) + FUNCTION ABS(RL-GI-Y(WS-V) - WS-SV(WS-V * 3 - 1))
+             + FUNCTION ABS(RL-GI-Z(WS-V) - WS-SV(WS-V * 3))
+         IF WS-DIFF > WS-MAXD
+             MOVE WS-DIFF TO WS-MAXD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance frame: a block item with no fixed entry takes the default (scale 0.5): the stone's cube" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-GI-COUNT = 36 AND WS-MAXD < 0.001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO EN-STACK-COUNT(1)
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE

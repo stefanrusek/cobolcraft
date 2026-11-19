@@ -746,26 +746,6 @@
  END PROGRAM EF8-DOLPHIN-ANIM.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. EF8-AXOLOTL-ANIM.
-*> USING model, state (16 FLOAT-LONG: 1 xRot, 2 yRot degrees, 3 movingFactor 0 to 1, 4 ageInTicks): the adult axolotl swimming in water (4.2 with inWaterFactor 1, onGroundFactor 0 and
-*> playingDeadFactor 0): EF8-AXOLOTL-POSE (entmodel-34-8-axolotl.cob) with those factors.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-IN.
-    05 WS-I                FLOAT-LONG OCCURS 16 TIMES.
- LINKAGE SECTION.
- COPY CLEMM.
- 01 L-IN.
-    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
- PROCEDURE DIVISION USING EMM-MODEL L-IN.
-     MOVE L-IN TO WS-IN
-     MOVE 0 TO WS-I(5) WS-I(7)
-     MOVE 1 TO WS-I(6)
-     CALL "EF8-AXOLOTL-POSE" USING EMM-MODEL WS-IN
-     GOBACK.
- END PROGRAM EF8-AXOLOTL-ANIM.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. EF8-M-NAUTILUS.
 *> USING model: the adult nautilus and zombie nautilus (34-8 6.1, texture 128 x 128): the shell (three boxes), the body and its three mouth parts.
  DATA DIVISION.
