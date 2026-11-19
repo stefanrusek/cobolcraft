@@ -38,7 +38,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-WATER-RULE.
 *> USING dim row, species row, x, y, z (BINARY-LONG feet cell), ok out (BINARY-LONG): the spawn predicates of the water animals (21 section 3.2). SM-SPAWN 7 and 8 (surface water
-*> animal; the tropical fish's any-height biome tag is open): y in [sea - 13, sea], water below and a water block above. SM-SPAWN 9 (glow squid): y at most sea - 33, raw
+*> animal): y in [sea - 13, sea], water below and a water block above; the tropical fish (SM-SPAWN 8) also passes at any height in a biome of the tag allows_tropical_fish_spawns_at_any_height
+*> (only lush_caves in the data pack; 21 section 3.2 and 4.11, lane p49t) when there is water below and a water block above. SM-SPAWN 9 (glow squid): y at most sea - 33, raw
 *> brightness (sky or block light) 0 and water at the position. The sea level is that of the dimension (DM-SEA-LEVEL).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -50,6 +51,10 @@
  01 WS-ABOVE               BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BIOME               BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-TREG                PIC X(48) VALUE "worldgen/biome".
+ 01 WS-TTAG                PIC X(112) VALUE "minecraft:allows_tropical_fish_spawns_at_any_height".
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -73,6 +78,11 @@
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-ABOVE
      IF L-Y >= DM-SEA-LEVEL(L-DIM) - 13 AND L-Y <= DM-SEA-LEVEL(L-DIM) AND WS-BELOW = 2 AND WS-ABOVE = 2
          MOVE 1 TO L-OK
+     END-IF
+     IF L-OK = 0 AND SM-SPAWN(L-ROW) = 8 AND WS-BELOW = 2 AND WS-ABOVE = 2
+         CALL "MS6-BIOME-ID-AT" USING L-DIM L-X L-Y L-Z WS-BIOME
+         CALL "CONTENT-TAG-HAS" USING WS-TREG WS-TTAG WS-BIOME WS-HAS
+         MOVE WS-HAS TO L-OK
      END-IF
      GOBACK.
  END PROGRAM MS6-WATER-RULE.
