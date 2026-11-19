@@ -2,13 +2,15 @@
 *> WD-ENTRY: one per warden entity id (WD-ID 0 = free). WD-ANGER: the anger value per player row (the anger manager, capped at 150); WD-SONIC-CD the ticks left of the sonic
 *> boom cooldown memory (0 = absent); WD-BOOM the tick of the sonic boom behaviour (0 = not running, 1 at its start, 60 total); WD-DIG-CD the ticks left of the dig cooldown memory.
  78 WD-MAX                VALUE 8.
+*> WD-ANGER is indexed by a suspect code (lane p49w): 1 to 64 a player row, 65 to 1088 a non-player entity (64 + its tracker row, so up to the 1024 rows of CORE-ENTITIES).
+ 78 WD-CODES              VALUE 1088.
  01 WD-STATE EXTERNAL.
     05 WD-ENTRY              OCCURS 8 TIMES.
        10 WD-ID              BINARY-LONG.
        10 WD-SONIC-CD        BINARY-LONG.
        10 WD-BOOM            BINARY-LONG.
        10 WD-DIG-CD          BINARY-LONG.
-       10 WD-ANGER           BINARY-LONG OCCURS 64 TIMES.
+       10 WD-ANGER           BINARY-LONG OCCURS WD-CODES TIMES.
 *> The brain (lane 002-lane-p49r; 20 section 15.4; core/src/mob-20-15b.cob): WD-ACT the active activity (0 not chosen yet; 1 EMERGE, 2 DIG, 3 ROAR, 4 FIGHT, 5 INVESTIGATE, 6 SNIFF, 7 IDLE), the
 *> memories with their ticks left (0 = absent): WD-EMERGE is_emerging, WD-DISTURB disturbance_location (its block WD-DX/DY/DZ), WD-SNIFF-CD sniff_cooldown, WD-VIB-CD vibration_cooldown,
 *> WD-PROJ-CD recent_projectile; WD-ROAR-TARGET the player row of roar_target (0 absent), WD-SNIFFING is_sniffing (0/1), WD-NEAR the player row of nearest_attackable, WD-SENSOR the ticks to the
@@ -40,3 +42,7 @@
        10 WD-V-X              FLOAT-LONG.
        10 WD-V-Y              FLOAT-LONG.
        10 WD-V-Z              FLOAT-LONG.
+*> Touch and pose (lane p49w; core/src/mob-20-15c.cob): WD-TOUCH-CD the ticks left of the touch_cooldown memory (0 = absent), WD-POSE the Pose id last sent to the viewers (0 STANDING, 11 ROARING,
+*> 12 SNIFFING, 13 EMERGING, 14 DIGGING; 53 section 1).
+       10 WD-TOUCH-CD         BINARY-LONG.
+       10 WD-POSE             BINARY-LONG.

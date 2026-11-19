@@ -1,6 +1,6 @@
 *> Hostile mobs against villagers (docs/protocol/20 sections 4, 13.1 and 13.6; lane 002-lane-mobsb5, T8906; the caller of ZV-KILLED of T8803).
 *>   MOBVS-TICK USING mob row, table row, hx out, hz out, walk out
-*> The zombie family (zombie, husk, drowned, zombie villager), vindicators and ravagers, with no player target, take the nearest live villager or wandering trader within the follow
+*> The warden fights the foe its brain chose (EN-FOE, lane p49w: WARDEN-BRAIN). The zombie family (zombie, husk, drowned, zombie villager), vindicators and ravagers, with no player target, take the nearest live villager or wandering trader within the follow
 *> range as their foe (illagers and ravagers skip baby villagers, a vindicator and a ravager must see the target; the zombie need not), walk to it (STDMOB-HEAD) and in reach hit it with
 *> the attack damage on the attack timer (EN-PET-CD). A vindicator and a ravager also take an iron golem as their foe (20 sections 13.1 and 13.6, must see). A killing blow by the zombie family goes through ZV-KILL-RULE: when it converts, ZV-KILLED replaces the villager.
 *> Gaps: the target is not kept between ticks (the nearest is picked again), the attack animation event, no knockback, the persistent-anger and alert-others lists, pillagers
@@ -64,7 +64,7 @@
          WHEN "ravager"
              MOVE 1 TO WS-ILLAGER
              MOVE 1 TO WS-SEE
-         WHEN "piglin" WHEN "hoglin" WHEN "zoglin"
+         WHEN "piglin" WHEN "hoglin" WHEN "zoglin" WHEN "warden"
              IF EN-FOE(L-ROW) = 0
                  GOBACK
              END-IF

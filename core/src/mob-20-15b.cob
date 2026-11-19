@@ -1,7 +1,7 @@
 *> The warden's brain (lane 002-lane-p49r; docs/protocol/20 section 15, 15.1, 15.4 and 44-residual-mob-questions-5 section 3). State: WD-ENTRY of WARDENSTATE.cpy. The activity is chosen at the end of a
 *> tick (the first valid of EMERGE, DIG, ROAR, FIGHT, INVESTIGATE, SNIFF, IDLE) and its behaviours start in the next one; a behaviour that has started runs to its own end whatever the activity
 *> (Roar 84, Sniffing 84, Digging 100 ticks, counted from its start tick). Memories count down at the start of a tick. Changing the activity erases the memory of the one left (is_emerging,
-*> roar_target, attack_target, disturbance_location, is_sniffing). Targets are players (EN-TARGET is a player row).
+*> roar_target, attack_target, disturbance_location, is_sniffing). The suspects of the anger manager are players and living mobs (see Suspects below).
 *>   WARDEN-CAN-TARGET USING warden row, player row, ok out: canTargetEntity for a player: alive, in the warden's dimension, not creative or spectator.
 *>   WARDEN-INCREASE USING warden row, player row, amount: increaseAngerAt: ignored unless the player can be targeted; refreshes the dig cooldown when present; adds to the anger (cap 150).
 *>   WARDEN-ACTIVE USING warden row, level out, top player out: the anger level (0 CALM, 1 AGITATED, 2 ANGRY) of the active anger (the attack target's value, else the highest) and the top
@@ -14,23 +14,42 @@
 *>   WARDEN-BRAIN USING warden row: one tick of the brain (called by STDMOB-AGGRO in the place of the old anger targeting).
 *>   WARDEN-WALK USING warden row, hx, hz (FLOAT-LONG out), walk out: 1 the investigation walks (hx, hz), 2 the warden stands (roar, sniff, emerge, dig, arrived), 0 other activities.
 *>   WARDEN-INVULNERABLE USING warden row, cause, flag out: 1 while digging or emerging, except for damage that bypasses invulnerability (out of the world, the kill command).
-*> Not here: poses, sounds, the occlusion of vibrations by wool, a non-player target (entities other than players have no anger), the look targets, the stroll pause group.
+*> Suspects (lane p49w): a suspect code is a player row (1 to 64) or 64 + the tracker row of a non-player living entity (WARDENSTATE.cpy); a non-player attack target is the foe EN-FOE / EN-FOE-ID
+*>   (a player's is EN-TARGET), fought by MOBVS-TICK (melee) and WARDEN-SONIC (boom). Vibrations are filtered by occlusion (wool, GAME-EVENT-OCCLUDED) before they are put in flight.
+*> Not here: sounds, the look targets, the stroll pause group.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WARDEN-CAN-TARGET.
+*> USING warden row, suspect code, ok out: canTargetEntity. A code is a player row (1 to 64) or 64 + the tracker row of a non-player entity (WARDENSTATE.cpy): a player must be alive, in the warden's
+*> dimension and not in creative or spectator mode; a mob must be a living standard mob (alive, in the warden's dimension, not a warden: armor stands and the other non-mob entities are not standard mobs).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
+ COPY WARDENSTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-PLAYER               BINARY-LONG.
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-PLAYER L-OK.
      MOVE 0 TO L-OK
-     IF L-PLAYER > 0
+     IF L-PLAYER > 0 AND L-PLAYER <= CORE-MAX-PLAYERS
          IF PL-USED(L-PLAYER) = 1 AND PL-STATE(L-PLAYER) = PS-ALIVE AND PL-DIM(L-PLAYER) = EN-DIM(L-ROW)
                  AND (PL-MODE(L-PLAYER) = 0 OR PL-MODE(L-PLAYER) = 2)
              MOVE 1 TO L-OK
+         END-IF
+     END-IF
+     IF L-PLAYER > CORE-MAX-PLAYERS AND L-PLAYER <= WD-CODES
+         COMPUTE WS-ROW = L-PLAYER - CORE-MAX-PLAYERS
+         IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-HEALTH(WS-ROW) > 0 AND EN-DIM(WS-ROW) = EN-DIM(L-ROW)
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+             IF WS-M > 0
+                 IF SM-KEY(WS-M) NOT = "warden"
+                     MOVE 1 TO L-OK
+                 END-IF
+             END-IF
          END-IF
      END-IF
      GOBACK.
@@ -66,32 +85,47 @@
  01 WS-P                   BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-HIGH                BINARY-LONG.
- 01 WS-TOP-VALUE           BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-TOP-KEY             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
  01 L-TOP                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-LEVEL L-TOP.
-     MOVE 0 TO L-LEVEL L-TOP WS-HIGH WS-TOP-VALUE
+     MOVE 0 TO L-LEVEL L-TOP WS-HIGH WS-TOP-KEY
      CALL "WD-FIND" USING EN-ID(L-ROW) WS-ZERO WS-SLOT
      IF WS-SLOT = 0
          GOBACK
      END-IF
-     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+*>   The suspects in the order of AngerManagement's Sorter (44-5 section 3.6): an ANGRY one first, then a player before a non-player, then the higher value; the top suspect that can be targeted.
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WD-CODES
          IF WD-ANGER(WS-SLOT, WS-P) > WS-HIGH
              MOVE WD-ANGER(WS-SLOT, WS-P) TO WS-HIGH
          END-IF
-         IF WD-ANGER(WS-SLOT, WS-P) > WS-TOP-VALUE
+         IF WD-ANGER(WS-SLOT, WS-P) > 0
              CALL "WARDEN-CAN-TARGET" USING L-ROW WS-P WS-OK
              IF WS-OK = 1
-                 MOVE WD-ANGER(WS-SLOT, WS-P) TO WS-TOP-VALUE
-                 MOVE WS-P TO L-TOP
+                 MOVE WD-ANGER(WS-SLOT, WS-P) TO WS-KEY
+                 IF WS-P <= CORE-MAX-PLAYERS
+                     ADD 2000 TO WS-KEY
+                 END-IF
+                 IF WD-ANGER(WS-SLOT, WS-P) >= 80
+                     ADD 4000 TO WS-KEY
+                 END-IF
+                 IF WS-KEY > WS-TOP-KEY
+                     MOVE WS-KEY TO WS-TOP-KEY
+                     MOVE WS-P TO L-TOP
+                 END-IF
              END-IF
          END-IF
      END-PERFORM
 *>   With an attack target the level is that of the target's own anger.
      IF EN-TARGET(L-ROW) > 0
          MOVE WD-ANGER(WS-SLOT, EN-TARGET(L-ROW)) TO WS-HIGH
+     END-IF
+     IF EN-FOE(L-ROW) > 0
+         COMPUTE WS-P = CORE-MAX-PLAYERS + EN-FOE(L-ROW)
+         MOVE WD-ANGER(WS-SLOT, WS-P) TO WS-HIGH
      END-IF
      EVALUATE TRUE
          WHEN WS-HIGH >= 80
@@ -127,7 +161,7 @@
      IF WS-LEVEL = 2 AND WS-TOP > 0
          GOBACK
      END-IF
-     IF EN-TARGET(L-ROW) > 0 AND WD-DIG-CD(WS-SLOT) > 0
+     IF (EN-TARGET(L-ROW) > 0 OR EN-FOE(L-ROW) > 0) AND WD-DIG-CD(WS-SLOT) > 0
          MOVE 1200 TO WD-DIG-CD(WS-SLOT)
      END-IF
      MOVE 100 TO WD-SNIFF-CD(WS-SLOT) WD-DISTURB(WS-SLOT)
@@ -152,6 +186,7 @@
      CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
      IF WS-SLOT > 0
          MOVE 134 TO WD-EMERGE(WS-SLOT)
+         CALL "WARDEN-POSE-SYNC" USING L-ROW WS-SLOT
      END-IF
      GOBACK.
  END PROGRAM WARDEN-EMERGE.
@@ -203,6 +238,7 @@
  01 WS-D                   FLOAT-LONG.
  01 WS-TRAVEL              BINARY-LONG.
  01 WS-REACH               BINARY-LONG.
+ 01 WS-OCCLUDED            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -234,6 +270,13 @@
      IF L-SOURCE > 0 AND WS-REACH = 1
          CALL "WARDEN-CAN-TARGET" USING L-ROW L-SOURCE WS-OK
          IF WS-OK = 0
+             MOVE 0 TO WS-REACH
+         END-IF
+     END-IF
+*>   Occlusion (30 section 3.6): all six rays between the block centres blocked by occludes_vibration_signals (wool) drops the event.
+     IF WS-REACH = 1
+         CALL "GAME-EVENT-OCCLUDED" USING EN-DIM(L-ROW) L-X L-Y L-Z WS-LX WS-LY WS-LZ WS-OCCLUDED
+         IF WS-OCCLUDED = 1
              MOVE 0 TO WS-REACH
          END-IF
      END-IF
@@ -285,12 +328,15 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WARDEN-SENSE.
-*> USING warden row, slot: the entity sensor's scan (44-5 section 3.5): the first player, nearest first, within the follow range (24) on each axis that can be targeted becomes nearest_attackable.
+*> USING warden row, slot: the entity sensor's scan (44-5 section 3.5): the first player, nearest first, within the follow range (24) on each axis that can be targeted becomes nearest_attackable; when there is
+*> none, the first non-player living entity (nearest first) that can be targeted does (WD-NEAR is the suspect code).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY WARDENSTATE.
  01 WS-P                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-D2                  FLOAT-LONG.
  01 WS-BEST                FLOAT-LONG.
@@ -313,6 +359,22 @@
              END-IF
          END-IF
      END-PERFORM
+     IF WD-NEAR(L-SLOT) = 0
+         PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+             COMPUTE WS-CODE = CORE-MAX-PLAYERS + WS-E
+             CALL "WARDEN-CAN-TARGET" USING L-ROW WS-CODE WS-OK
+             IF WS-OK = 1
+                 IF FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW)) <= 24 AND FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW)) <= 24
+                         AND FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW)) <= 24
+                     COMPUTE WS-D2 = (EN-X(WS-E) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-E) - EN-Y(L-ROW)) ** 2 + (EN-Z(WS-E) - EN-Z(L-ROW)) ** 2
+                     IF WS-D2 < WS-BEST
+                         MOVE WS-D2 TO WS-BEST
+                         MOVE WS-CODE TO WD-NEAR(L-SLOT)
+                     END-IF
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
      GOBACK.
  END PROGRAM WARDEN-SENSE.
 
@@ -402,12 +464,13 @@
  01 WS-OK                  BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-TWENTY              BINARY-LONG VALUE 20.
+ 01 WS-LIQUID              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT.
      IF WD-ACT(L-SLOT) = 5 OR WD-ACT(L-SLOT) = 6 OR WD-ACT(L-SLOT) = 7
-         IF WD-ROAR-TARGET(L-SLOT) = 0 AND EN-TARGET(L-ROW) = 0
+         IF WD-ROAR-TARGET(L-SLOT) = 0 AND EN-TARGET(L-ROW) = 0 AND EN-FOE(L-ROW) = 0
              CALL "WARDEN-ACTIVE" USING L-ROW WS-LEVEL WS-TOP
              IF WS-LEVEL = 2 AND WS-TOP > 0
                  MOVE WS-TOP TO WD-ROAR-TARGET(L-SLOT)
@@ -423,12 +486,12 @@
          END-IF
      END-IF
      IF WD-ACT(L-SLOT) = 6
-         IF WD-SNIFF(L-SLOT) = 0 AND WD-SNIFFING(L-SLOT) = 1 AND EN-TARGET(L-ROW) = 0
+         IF WD-SNIFF(L-SLOT) = 0 AND WD-SNIFFING(L-SLOT) = 1 AND EN-TARGET(L-ROW) = 0 AND EN-FOE(L-ROW) = 0
              MOVE 1 TO WD-SNIFF(L-SLOT)
          END-IF
      END-IF
      IF WD-ACT(L-SLOT) = 3
-         IF WD-ROAR(L-SLOT) = 0 AND WD-ROAR-TARGET(L-SLOT) > 0 AND EN-TARGET(L-ROW) = 0
+         IF WD-ROAR(L-SLOT) = 0 AND WD-ROAR-TARGET(L-SLOT) > 0 AND EN-TARGET(L-ROW) = 0 AND EN-FOE(L-ROW) = 0
              MOVE 1 TO WD-ROAR(L-SLOT)
              CALL "WARDEN-INCREASE" USING L-ROW WD-ROAR-TARGET(L-SLOT) WS-TWENTY
          END-IF
@@ -438,11 +501,20 @@
              MOVE 1200 TO WD-DIG-CD(L-SLOT)
          END-IF
          MOVE EN-TARGET(L-ROW) TO WS-P
+         IF WS-P = 0 AND EN-FOE(L-ROW) > 0
+             COMPUTE WS-P = CORE-MAX-PLAYERS + EN-FOE(L-ROW)
+         END-IF
          IF WS-P > 0
              CALL "WARDEN-CAN-TARGET" USING L-ROW WS-P WS-OK
+*>           The foe is the entity it was when the roar ended: a row taken by another entity since is no target.
+             IF WS-OK = 1 AND EN-FOE(L-ROW) > 0
+                 IF EN-ID(EN-FOE(L-ROW)) NOT = EN-FOE-ID(L-ROW)
+                     MOVE 0 TO WS-OK
+                 END-IF
+             END-IF
              CALL "WARDEN-ACTIVE" USING L-ROW WS-LEVEL WS-TOP
              IF WS-OK = 0 OR WS-LEVEL < 2
-                 MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+                 MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
                  IF WS-OK = 0
                      MOVE 0 TO WD-ANGER(L-SLOT, WS-P)
                  END-IF
@@ -453,8 +525,16 @@
          END-IF
      END-IF
      IF WD-ACT(L-SLOT) = 2
-         IF WD-DIGGING(L-SLOT) = 0 AND EN-TARGET(L-ROW) = 0 AND EN-ON-GROUND(L-ROW) = 1
-             MOVE 1 TO WD-DIGGING(L-SLOT)
+         IF WD-DIGGING(L-SLOT) = 0 AND EN-TARGET(L-ROW) = 0 AND EN-FOE(L-ROW) = 0
+*>           Digging starts on the ground (pose DIGGING); off the ground in a liquid it stops at once, which removes the warden (44-5 section 3.3); in the air it does not start.
+             IF EN-ON-GROUND(L-ROW) = 1
+                 MOVE 1 TO WD-DIGGING(L-SLOT)
+             ELSE
+                 CALL "WARDEN-IN-LIQUID" USING L-ROW WS-LIQUID
+                 IF WS-LIQUID = 1
+                     CALL "ENTITY-REMOVE" USING L-ROW
+                 END-IF
+             END-IF
          END-IF
      END-IF
      GOBACK.
@@ -477,6 +557,10 @@
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -506,11 +590,16 @@
      IF WD-PROJ-CD(WS-SLOT) > 0
          SUBTRACT 1 FROM WD-PROJ-CD(WS-SLOT)
      END-IF
+     IF WD-TOUCH-CD(WS-SLOT) > 0
+         SUBTRACT 1 FROM WD-TOUCH-CD(WS-SLOT)
+     END-IF
 *>   Warden.tick: the vibration ticker, before the brain.
      IF WD-V-DUE(WS-SLOT) > 0 AND CW-TICKS >= WD-V-DUE(WS-SLOT)
          MOVE 0 TO WD-V-DUE(WS-SLOT)
          CALL "WARDEN-RECEIVE" USING L-ROW WS-SLOT
      END-IF
+*>   Touching: the entities that overlap the warden's box are pushed (doPush).
+     CALL "WARDEN-TOUCH" USING L-ROW WS-SLOT
 *>   The sensor scans every 20 ticks.
      SUBTRACT 1 FROM WD-SENSOR(WS-SLOT)
      IF WD-SENSOR(WS-SLOT) <= 0
@@ -523,8 +612,15 @@
          IF WD-ROAR(WS-SLOT) > 84
              MOVE 0 TO WD-ROAR(WS-SLOT)
              IF WD-ROAR-TARGET(WS-SLOT) > 0
-                 MOVE WD-ROAR-TARGET(WS-SLOT) TO EN-TARGET(L-ROW)
-                 MOVE PL-ENTITY-ID(WD-ROAR-TARGET(WS-SLOT)) TO EN-TARGET-ID(L-ROW)
+*>               The attack target of a player is EN-TARGET; that of another entity is the foe EN-FOE (its tracker row and entity id).
+                 IF WD-ROAR-TARGET(WS-SLOT) <= CORE-MAX-PLAYERS
+                     MOVE WD-ROAR-TARGET(WS-SLOT) TO EN-TARGET(L-ROW)
+                     MOVE PL-ENTITY-ID(WD-ROAR-TARGET(WS-SLOT)) TO EN-TARGET-ID(L-ROW)
+                 ELSE
+                     COMPUTE WS-E = WD-ROAR-TARGET(WS-SLOT) - CORE-MAX-PLAYERS
+                     MOVE WS-E TO EN-FOE(L-ROW)
+                     MOVE EN-ID(WS-E) TO EN-FOE-ID(L-ROW)
+                 END-IF
                  MOVE 200 TO WD-SONIC-CD(WS-SLOT)
              END-IF
              MOVE 0 TO WD-ROAR-TARGET(WS-SLOT)
@@ -537,14 +633,24 @@
              MOVE WD-NEAR(WS-SLOT) TO WS-P
              CALL "WARDEN-CAN-TARGET" USING L-ROW WS-P WS-OK
              IF WS-OK = 1
-                 COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
-                 COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
-                 IF WS-DX * WS-DX + WS-DZ * WS-DZ < 36 AND FUNCTION ABS(PL-Y(WS-P) - EN-Y(L-ROW)) < 20
+                 IF WS-P <= CORE-MAX-PLAYERS
+                     MOVE PL-X(WS-P) TO WS-TX
+                     MOVE PL-Y(WS-P) TO WS-TY
+                     MOVE PL-Z(WS-P) TO WS-TZ
+                 ELSE
+                     COMPUTE WS-E = WS-P - CORE-MAX-PLAYERS
+                     MOVE EN-X(WS-E) TO WS-TX
+                     MOVE EN-Y(WS-E) TO WS-TY
+                     MOVE EN-Z(WS-E) TO WS-TZ
+                 END-IF
+                 COMPUTE WS-DX = WS-TX - EN-X(L-ROW)
+                 COMPUTE WS-DZ = WS-TZ - EN-Z(L-ROW)
+                 IF WS-DX * WS-DX + WS-DZ * WS-DZ < 36 AND FUNCTION ABS(WS-TY - EN-Y(L-ROW)) < 20
                      CALL "WARDEN-INCREASE" USING L-ROW WS-P WS-THIRTY-FIVE
                      IF WD-DISTURB(WS-SLOT) = 0
-                         COMPUTE WS-BX = FUNCTION INTEGER(PL-X(WS-P))
-                         COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(WS-P))
-                         COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-P))
+                         COMPUTE WS-BX = FUNCTION INTEGER(WS-TX)
+                         COMPUTE WS-BY = FUNCTION INTEGER(WS-TY)
+                         COMPUTE WS-BZ = FUNCTION INTEGER(WS-TZ)
                          CALL "WARDEN-DISTURB" USING L-ROW WS-BX WS-BY WS-BZ
                      END-IF
                  END-IF
@@ -559,9 +665,13 @@
          END-IF
      END-IF
      CALL "WARDEN-START" USING L-ROW WS-SLOT
+*>   Digging in a liquid stops at once and removes the warden.
+     IF EN-USED(L-ROW) = 0
+         GOBACK
+     END-IF
 *>   The anger manager ticks every 20 ticks of the warden: a value of 1 or less, or of a player that can no longer be targeted, is dropped, the others fall by 1.
      IF FUNCTION MOD(EN-WAKE(L-ROW), 20) = 0
-         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WD-CODES
              IF WD-ANGER(WS-SLOT, WS-P) > 0
                  CALL "WARDEN-CAN-TARGET" USING L-ROW WS-P WS-OK
                  IF WD-ANGER(WS-SLOT, WS-P) <= 1 OR WS-OK = 0
@@ -580,7 +690,7 @@
              MOVE 2 TO WS-NEW
          WHEN WD-ROAR-TARGET(WS-SLOT) > 0
              MOVE 3 TO WS-NEW
-         WHEN EN-TARGET(L-ROW) > 0
+         WHEN EN-TARGET(L-ROW) > 0 OR EN-FOE(L-ROW) > 0
              MOVE 4 TO WS-NEW
          WHEN WD-DISTURB(WS-SLOT) > 0
              MOVE 5 TO WS-NEW
@@ -596,7 +706,7 @@
              WHEN 3
                  MOVE 0 TO WD-ROAR-TARGET(WS-SLOT)
              WHEN 4
-                 MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+                 MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
              WHEN 5
                  MOVE 0 TO WD-DISTURB(WS-SLOT) WD-WALK-ON(WS-SLOT)
              WHEN 6
@@ -604,6 +714,8 @@
          END-EVALUATE
          MOVE WS-NEW TO WD-ACT(WS-SLOT)
      END-IF
+*>   The pose the state asks for is told to the viewers.
+     CALL "WARDEN-POSE-SYNC" USING L-ROW WS-SLOT
      GOBACK.
  END PROGRAM WARDEN-BRAIN.
 
