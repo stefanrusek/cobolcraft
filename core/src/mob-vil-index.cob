@@ -60,6 +60,7 @@
  COPY CBLOCKS.
  COPY VILPOIX.
  01 WS-STATE                BINARY-LONG.
+ 01 WS-TYPE                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                   BINARY-LONG.
  01 L-X                     BINARY-LONG.
@@ -72,6 +73,13 @@
      CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
      IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
          MOVE PX-BKIND(CB-S-BLOCK(WS-STATE + 1) + 1) TO L-KIND
+*>       A bed is one POI at its head block (44-3 section 1.2): the foot half is not a point of interest.
+         IF L-KIND = 1
+             CALL "Q3-STATE-POI-TYPE" USING WS-STATE WS-TYPE
+             IF WS-TYPE NOT = 13
+                 MOVE 0 TO L-KIND
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM PXI-KIND-OF.
@@ -120,6 +128,7 @@
  COPY CBLOCKS.
  COPY VILPOIX.
  01 WS-KIND                 BINARY-LONG.
+ 01 WS-TYPE                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                   BINARY-LONG.
  01 L-X                     BINARY-LONG.
@@ -130,6 +139,12 @@
      CALL "PXI-INIT"
      IF L-STATE > 0 AND L-STATE < CB-STATE-COUNT
          MOVE PX-BKIND(CB-S-BLOCK(L-STATE + 1) + 1) TO WS-KIND
+         IF WS-KIND = 1
+             CALL "Q3-STATE-POI-TYPE" USING L-STATE WS-TYPE
+             IF WS-TYPE NOT = 13
+                 MOVE 0 TO WS-KIND
+             END-IF
+         END-IF
          IF WS-KIND > 0
              CALL "PXI-ADD" USING L-DIM L-X L-Y L-Z WS-KIND
          END-IF

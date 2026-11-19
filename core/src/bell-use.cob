@@ -69,6 +69,8 @@
                  CALL "PB-PUT-BLOCK-EVENT" USING PB-BUFFER L-X L-Y L-Z WS-ACTION L-FACE WS-BLOCK
                  CALL "LEVEL-BROADCAST" USING PL-DIM(L-PLAYER) L-X L-Y L-Z WS-NONE PB-BUFFER
                  CALL "PB-FREE" USING PB-BUFFER
+*>               The villagers within 32 blocks hear it (docs 44 part 3 section 2.11a; mob-vil-bell.cob).
+                 CALL "VL-BELL-RING" USING PL-DIM(L-PLAYER) L-X L-Y L-Z
              END-IF
          END-IF
      END-IF

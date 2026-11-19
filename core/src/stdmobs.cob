@@ -954,6 +954,44 @@
  END PROGRAM STDMOB-SWELL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-SETTLED.
+*> USING tracker row, settled out: 1 for a villager asleep (VL-SLEEP) in the rest activity that is settled: on the ground, not pushed (EN-VX, EN-VZ 0), not burning, no fall distance, not riding or
+*> ridden, and whose feet rest on a solid cell (the box moved down by its vertical speed overlaps one whose top is the feet), checked every tick so that the ground going away starts the fall at once
+*> (19 section 22.8, 18 section 3.2). STDMOB-STEP then leaves out MOB-PHYSICS (it would only set the same numbers again), the friction, the fall and the egg checks, and runs the entity environment tick (fire,
+*> lava, drowning, in-wall, cramming: M182-ENV-TICK, which asks the world about about 20 cells) on one tick in 5, MOD(game tick + entity id, 5) = 0. Any other villager, awake or not settled: 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY VILSTATE.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-NEW                 FLOAT-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-FEET                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SETTLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SETTLED.
+     MOVE 0 TO L-SETTLED
+     IF EN-ON-GROUND(L-ROW) = 0 OR EN-BURN(L-ROW) > 0 OR EN-VX(L-ROW) NOT = 0 OR EN-VZ(L-ROW) NOT = 0 OR EN-FALL(L-ROW) > 0
+             OR EN-MOUNT(L-ROW) > 0 OR EN-PASS(L-ROW) > 0 OR EN-RIDER(L-ROW) > 0
+         GOBACK
+     END-IF
+     CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
+     IF WS-SLOT = 0 OR VL-SLEEP(WS-SLOT) = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-NEW = EN-Y(L-ROW) + EN-VY(L-ROW)
+     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) WS-NEW EN-Z(L-ROW) WS-HIT WS-TOP
+     COMPUTE WS-FEET = WS-TOP + 1
+     IF WS-HIT = 1 AND EN-VY(L-ROW) <= 0 AND EN-Y(L-ROW) = WS-FEET
+         MOVE 1 TO L-SETTLED
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-SETTLED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-STEP.
 *> USING tracker row: nothing for a row that is no standard mob. A hostile mob is removed while the difficulty is Peaceful or the hostile-mobs
 *> setting is off. A dying mob (health 0) counts its death ticks (EN-COOLDOWN) and vanishes at the 20th (STDMOB-VANISH). Nothing else happens in a
@@ -1007,6 +1045,8 @@
  01 WS-GZ                  BINARY-LONG.
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
+ 01 WS-V-ASLEEP            BINARY-LONG.
+ 01 WS-SETTLED             BINARY-LONG.
  01 WS-LIFE-WALK           BINARY-LONG.
  01 WS-LIFE-HX             FLOAT-LONG.
  01 WS-LIFE-HZ             FLOAT-LONG.
@@ -1135,7 +1175,14 @@
          GOBACK
      END-IF
 *>   Fire, lava, drowning, in-wall damage and cramming (18 section 2.5); a mob that dies of them is not stepped any further.
-     CALL "M182-ENV-TICK" USING WS-ROW
+*>   A villager asleep and settled (STDMOB-SETTLED) has it on one tick in 5 and no physics step between.
+     MOVE 0 TO WS-SETTLED
+     IF SM-KEY(WS-M) = "villager"
+         CALL "STDMOB-SETTLED" USING WS-ROW WS-SETTLED
+     END-IF
+     IF WS-SETTLED = 0 OR FUNCTION MOD(CW-TICKS + EN-ID(WS-ROW), 5) = 0
+         CALL "M182-ENV-TICK" USING WS-ROW
+     END-IF
      CALL "STDMOB-FIRE-SYNC" USING WS-ROW
      IF EN-HEALTH(WS-ROW) = 0
          GOBACK
@@ -1260,7 +1307,11 @@
          CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "villager"
-         CALL "VL-STEP" USING WS-ROW
+         CALL "VL-STEP" USING WS-ROW WS-V-ASLEEP
+         IF WS-V-ASLEEP = 1
+*>           A sleeping villager stays in its bed: no stroll, no path search.
+             MOVE 1 TO WS-STOP
+         END-IF
          IF EN-USED(WS-ROW) = 1
              CALL "VILLOOK-SYNC" USING WS-ROW
          END-IF
@@ -1505,18 +1556,29 @@
              IF EN-COOLDOWN(WS-ROW) > 0
                  SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
                  COMPUTE WS-GY = FUNCTION INTEGER(EN-Y(WS-ROW))
+*>               A villager walking to a point on another floor searches for a path to that floor (VL-WALK-GY), when the path is searched again.
+                 IF SM-KEY(WS-M) = "villager" AND EN-PATH-TICKS(WS-ROW) = 0
+                     CALL "VL-WALK-GY" USING WS-ROW WS-GY
+                 END-IF
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M EN-DEST-X(WS-ROW) WS-GY EN-DEST-Z(WS-ROW) WS-HX WS-HZ
                      WS-ARRIVED
 *>               The stroll goal's own speed modifier (the table speed is the chase or attack speed of modifier 1.0).
                  CALL "STDMOB-STROLL-SCALE" USING SM-KEY(WS-M) WS-STROLL-SCALE
                  COMPUTE WS-HX = WS-HX * WS-STROLL-SCALE
                  COMPUTE WS-HZ = WS-HZ * WS-STROLL-SCALE
+                 IF SM-KEY(WS-M) = "villager"
+                     CALL "VL-WALK-SCALE" USING WS-ROW WS-HX WS-HZ
+                 END-IF
                  IF WS-ARRIVED = 1
                      MOVE 0 TO EN-COOLDOWN(WS-ROW)
                  END-IF
                  CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              END-IF
      END-EVALUATE
+*>   A settled sleeper stands where it is: the physics step, friction, the fall and the egg checks would set the numbers they already have.
+     IF WS-SETTLED = 1 AND WS-V-ASLEEP = 1
+         GOBACK
+     END-IF
 *>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.
 *>   Over a block of friction F above 0.6 (ice, 18 section 3.2) the walk only accelerates by 0.454 x 0.21600002 / F^3 of its step, and EN-VX, EN-VZ
 *>   carry the velocity with a decay of F x 0.91.
@@ -2182,6 +2244,9 @@
 *> the Euclidean distance to the target, nodes never farther than 15 blocks horizontally from the start or 8 below / 15 above it. The search pops
 *> the open node of the least f at most `budget` times; it ends at the target, or when the open set is empty or the budget used, with the path to
 *> the node that came closest (the least heuristic). A start that is not standable moves down to a floor within 3 cells, else there is no path.
+*> The open list is a binary heap of node numbers (WS-HEAP, the place of a node in it WN-HPOS) ordered by f, equal f (the comparison of two FLOAT-LONG items is fuzzy: within 1e-7 counts as equal)
+*> by the lower node number: the node the scan of every node for the least f used to find (test_p49q_path compares the two on random grids). A node whose g falls moves up; the grid of
+*> node numbers is cleared cell by cell of the nodes made, not whole.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-NODES.
@@ -2197,6 +2262,22 @@
  01 WS-GRID-TABLE.
     05 WS-GRID             BINARY-LONG OCCURS 24576 TIMES.
  01 WS-NODE-COUNT          BINARY-LONG.
+ 01 WS-HEAP-TABLE.
+    05 WS-HEAP             BINARY-LONG OCCURS 1024 TIMES.
+ 01 WS-HSIZE               BINARY-LONG.
+ 01 WS-HPOS-TABLE.
+    05 WS-HPOS             BINARY-LONG OCCURS 1024 TIMES.
+ 01 WS-UP-NODE             BINARY-LONG VALUE 0.
+ 01 WS-UP-POS              BINARY-LONG.
+ 01 WS-PARENT              BINARY-LONG.
+ 01 WS-CHILD               BINARY-LONG.
+ 01 WS-MOVER               BINARY-LONG.
+ 01 WS-SIFT                BINARY-LONG.
+ 01 WS-LESS                BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-FRESH               BINARY-LONG VALUE 1.
  01 WS-POPPED              BINARY-LONG.
  01 WS-CUR                 BINARY-LONG.
  01 WS-BEST                BINARY-LONG.
@@ -2270,8 +2351,12 @@
      IF WS-FOUND = 0
          GOBACK
      END-IF
-     INITIALIZE WS-GRID-TABLE
+     IF WS-FRESH = 1
+         INITIALIZE WS-GRID-TABLE
+         MOVE 0 TO WS-FRESH
+     END-IF
      MOVE 1 TO WS-NODE-COUNT
+     MOVE 1 TO WS-HSIZE WS-HEAP(1) WS-HPOS(1)
      MOVE L-SX TO WN-X(1)
      MOVE WS-NY TO WN-Y(1)
      MOVE L-SZ TO WN-Z(1)
@@ -2287,16 +2372,60 @@
      MOVE 0 TO WS-POPPED WS-DONE
      PERFORM UNTIL WS-DONE = 1
          MOVE 0 TO WS-CUR
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NODE-COUNT
-             IF WN-STATE(WS-I) = 0 AND (WS-CUR = 0 OR WN-F(WS-I) < WN-F(WS-CUR))
-                 MOVE WS-I TO WS-CUR
-             END-IF
-         END-PERFORM
+         IF WS-HSIZE > 0
+             MOVE WS-HEAP(1) TO WS-CUR
+         END-IF
          IF WS-CUR = 0 OR WS-POPPED >= L-BUDGET
              MOVE 1 TO WS-DONE
          ELSE
              ADD 1 TO WS-POPPED
              MOVE 1 TO WN-STATE(WS-CUR)
+*>           Pop: the last node of the heap takes the place of the root and sinks.
+             MOVE WS-HEAP(WS-HSIZE) TO WS-MOVER
+             SUBTRACT 1 FROM WS-HSIZE
+             IF WS-HSIZE > 0
+                 MOVE 1 TO WS-UP-POS
+                 MOVE 1 TO WS-SIFT
+                 PERFORM UNTIL WS-SIFT = 0
+                     COMPUTE WS-CHILD = WS-UP-POS * 2
+                     IF WS-CHILD > WS-HSIZE
+                         MOVE 0 TO WS-SIFT
+                     ELSE
+                         IF WS-CHILD < WS-HSIZE
+                             MOVE WS-HEAP(WS-CHILD + 1) TO WS-A
+                             MOVE WS-HEAP(WS-CHILD) TO WS-B
+                             EVALUATE TRUE
+                                 WHEN WN-F(WS-A) < WN-F(WS-B)
+                                     ADD 1 TO WS-CHILD
+                                 WHEN WN-F(WS-B) < WN-F(WS-A)
+                                     CONTINUE
+                                 WHEN WS-A < WS-B
+                                     ADD 1 TO WS-CHILD
+                             END-EVALUATE
+                         END-IF
+                         MOVE WS-HEAP(WS-CHILD) TO WS-A
+                         EVALUATE TRUE
+                             WHEN WN-F(WS-A) < WN-F(WS-MOVER)
+                                 MOVE 1 TO WS-LESS
+                             WHEN WN-F(WS-MOVER) < WN-F(WS-A)
+                                 MOVE 0 TO WS-LESS
+                             WHEN WS-A < WS-MOVER
+                                 MOVE 1 TO WS-LESS
+                             WHEN OTHER
+                                 MOVE 0 TO WS-LESS
+                         END-EVALUATE
+                         IF WS-LESS = 1
+                             MOVE WS-A TO WS-HEAP(WS-UP-POS)
+                             MOVE WS-UP-POS TO WS-HPOS(WS-A)
+                             MOVE WS-CHILD TO WS-UP-POS
+                         ELSE
+                             MOVE 0 TO WS-SIFT
+                         END-IF
+                     END-IF
+                 END-PERFORM
+                 MOVE WS-MOVER TO WS-HEAP(WS-UP-POS)
+                 MOVE WS-UP-POS TO WS-HPOS(WS-MOVER)
+             END-IF
              IF WN-X(WS-CUR) = L-TX AND WN-Y(WS-CUR) = L-TY AND WN-Z(WS-CUR) = L-TZ
                  MOVE WS-CUR TO WS-BEST
                  MOVE 1 TO L-REACHED
@@ -2358,6 +2487,9 @@
                                      MOVE WS-TENT TO WN-G(WS-NODE-COUNT)
                                      MOVE WS-CUR TO WN-PARENT(WS-NODE-COUNT)
                                      MOVE 0 TO WN-STATE(WS-NODE-COUNT)
+                                     ADD 1 TO WS-HSIZE
+                                     MOVE WS-HSIZE TO WS-UP-POS
+                                     MOVE WS-NODE-COUNT TO WS-UP-NODE
                                      COMPUTE WS-DX = WS-NX - L-TX
                                      COMPUTE WS-DY = WS-CAND - L-TY
                                      COMPUTE WS-DZ = WS-NZ - L-TZ
@@ -2374,9 +2506,39 @@
                                      MOVE WS-TENT TO WN-G(WS-I)
                                      MOVE WS-CUR TO WN-PARENT(WS-I)
                                      COMPUTE WN-F(WS-I) = WS-TENT + 1.5 * WN-H(WS-I)
+                                     MOVE WS-I TO WS-UP-NODE
+                                     MOVE WS-HPOS(WS-I) TO WS-UP-POS
                                  END-IF
                              END-IF
                          END-IF
+                     END-IF
+*>                   A node made or whose g fell moves up the heap until its parent is not after it.
+                     IF WS-UP-NODE > 0
+                         MOVE 1 TO WS-SIFT
+                         PERFORM UNTIL WS-SIFT = 0 OR WS-UP-POS = 1
+                             COMPUTE WS-PARENT = WS-UP-POS / 2
+                             MOVE WS-HEAP(WS-PARENT) TO WS-A
+                             EVALUATE TRUE
+                                 WHEN WN-F(WS-UP-NODE) < WN-F(WS-A)
+                                     MOVE 1 TO WS-LESS
+                                 WHEN WN-F(WS-A) < WN-F(WS-UP-NODE)
+                                     MOVE 0 TO WS-LESS
+                                 WHEN WS-UP-NODE < WS-A
+                                     MOVE 1 TO WS-LESS
+                                 WHEN OTHER
+                                     MOVE 0 TO WS-LESS
+                             END-EVALUATE
+                             IF WS-LESS = 1
+                                 MOVE WS-A TO WS-HEAP(WS-UP-POS)
+                                 MOVE WS-UP-POS TO WS-HPOS(WS-A)
+                                 MOVE WS-PARENT TO WS-UP-POS
+                             ELSE
+                                 MOVE 0 TO WS-SIFT
+                             END-IF
+                         END-PERFORM
+                         MOVE WS-UP-NODE TO WS-HEAP(WS-UP-POS)
+                         MOVE WS-UP-POS TO WS-HPOS(WS-UP-NODE)
+                         MOVE 0 TO WS-UP-NODE
                      END-IF
                  END-PERFORM
              END-IF
@@ -2396,6 +2558,14 @@
          MOVE WN-X(WS-LINK(WS-I)) TO L-PX(L-COUNT)
          MOVE WN-Y(WS-LINK(WS-I)) TO L-PY(L-COUNT)
          MOVE WN-Z(WS-LINK(WS-I)) TO L-PZ(L-COUNT)
+     END-PERFORM
+*>   The grid cells of the nodes made are cleared for the next search.
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-NODE-COUNT
+         COMPUTE WS-GX = WN-X(WS-C) - L-SX + 16
+         COMPUTE WS-GZ = WN-Z(WS-C) - L-SZ + 16
+         COMPUTE WS-GY = WN-Y(WS-C) - WN-Y(1) + 8
+         COMPUTE WS-KEY = (WS-GX * 32 + WS-GZ) * 24 + WS-GY + 1
+         MOVE 0 TO WS-GRID(WS-KEY)
      END-PERFORM
      GOBACK.
  END PROGRAM STDMOB-PATH.

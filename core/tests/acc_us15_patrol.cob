@@ -29,6 +29,8 @@
  01 WS-LEADERS             BINARY-LONG.
  01 WS-NEAR                BINARY-LONG.
  01 WS-KIND2               BINARY-LONG VALUE 2.
+ 01 WS-P49-OWNER           BINARY-LONG VALUE 900001.
+ 01 WS-P49-MEET            BINARY-LONG VALUE 3.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -62,6 +64,7 @@
 *>   A village within 2 sections of the player blocks the attempt.
      COMPUTE WS-A = WS-X + 3
      CALL "PXI-ADD" USING WS-DIM WS-A WS-Y WS-Z WS-KIND2
+     CALL "VPX-CLAIM" USING WS-P49-OWNER WS-P49-MEET WS-DIM WS-A WS-Y WS-Z
      CALL "PATROL-ATTEMPT" USING WS-PLAYER WS-OX WS-OZ WS-RESULT
      MOVE "acceptance US15 20§14.1 a player in a village gets no patrol" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N

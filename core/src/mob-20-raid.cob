@@ -196,13 +196,10 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAID-IS-VILLAGE.
+*> isVillage (44-3 section 1.4): the position's section is at most 1 section (Chebyshev) from a section with an occupied village POI (Q3-LEVEL).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY VILPOIX.
- 01 WS-I                    BINARY-LONG.
- 01 WS-SX                   BINARY-LONG.
- 01 WS-SY                   BINARY-LONG.
- 01 WS-SZ                   BINARY-LONG.
+ 01 WS-ONE                  BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-DIM                   BINARY-LONG.
  01 L-X                     BINARY-LONG.
@@ -210,19 +207,7 @@
  01 L-Z                     BINARY-LONG.
  01 L-YES                   BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-YES.
-     MOVE 0 TO L-YES
-     COMPUTE WS-SX = FUNCTION INTEGER(L-X / 16)
-     COMPUTE WS-SY = FUNCTION INTEGER(L-Y / 16)
-     COMPUTE WS-SZ = FUNCTION INTEGER(L-Z / 16)
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PX-MAX OR L-YES = 1
-         IF PX-KIND(WS-I) > 0 AND PX-DIM(WS-I) = L-DIM
-             IF FUNCTION ABS(FUNCTION INTEGER(PX-X(WS-I) / 16) - WS-SX) <= 1
-                     AND FUNCTION ABS(FUNCTION INTEGER(PX-Y(WS-I) / 16) - WS-SY) <= 1
-                     AND FUNCTION ABS(FUNCTION INTEGER(PX-Z(WS-I) / 16) - WS-SZ) <= 1
-                 MOVE 1 TO L-YES
-             END-IF
-         END-IF
-     END-PERFORM
+     CALL "Q3-CLOSE-TO-VILLAGE" USING L-DIM L-X L-Y L-Z WS-ONE L-YES
      GOBACK.
  END PROGRAM RAID-IS-VILLAGE.
 
@@ -291,6 +276,10 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX OR L-SLOT > 0
              IF RD-USED(WS-I) = 0
                  INITIALIZE RD-ENTRY(WS-I)
+*>               A new Raids object starts next_id at 1 and hands out the incremented value, so the first raid of a world is id 2 (45-6 section 12.2).
+                 IF RD-NEXT-ID = 0
+                     MOVE 1 TO RD-NEXT-ID
+                 END-IF
                  ADD 1 TO RD-NEXT-ID
                  MOVE 1 TO RD-USED(WS-I)
                  MOVE RD-NEXT-ID TO RD-ID(WS-I)

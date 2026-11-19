@@ -498,7 +498,7 @@
      IF NOT (PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0)
          CALL "M44-NOTE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE WS-NOTE
      END-IF
-*>   A bell rings when it is hit as 31-4 section 4.5 says (core/src/bell-use.cob).
+*>   A bell rings when it is hit as 31-4 section 4.5 says (core/src/bell-use.cob); the villagers within 32 blocks hear it (VL-BELL-RING, called from BELL-USE).
      CALL "BELL-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE PSB-CURSOR-Y WS-BELL
 *>   A sign takes the click: the editor opens, or a dye, ink sac or honeycomb is applied (core/src/sign-edit.cob).
      CALL "SIGN-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SIGN

@@ -223,6 +223,10 @@
          END-IF
          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      END-IF
+*>   A villager's own keys (44 part 3 section 3.2, 45-6 section 7): VillagerData, VillagerDataFinalized, FoodLevel, Xp, LastRestock, LastGossipDecay, RestocksToday.
+     IF WS-KEY = "villager"
+         CALL "MOB-VILLAGER-WRITE" USING L-ROW PB-BUFFER
+     END-IF
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
      IF EN-LEASH(L-ROW) > 0
          MOVE "leash" TO WN MOVE 5 TO WL
@@ -357,7 +361,28 @@
                  CALL "PB-GET-INT" USING PB-BUFFER MQ-VLEVEL
              END-IF
              MOVE WS-START TO PB-POS
+             MOVE "type" TO WS-PATH
+             MOVE 4 TO WS-PATH-LENGTH
+             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
+             IF WS-FOUND = 8
+                 MOVE SPACES TO WS-KEY
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
+                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
+                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
+                 MOVE WS-BARE TO MQ-VTYPE
+             END-IF
+             MOVE WS-START TO PB-POS
              CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
+         WHEN L-NAME = "FoodLevel" AND L-TYPE = 1
+             CALL "PB-GET-BYTE" USING PB-BUFFER MQ-FOOD
+         WHEN L-NAME = "Xp" AND L-TYPE = 3
+             CALL "PB-GET-INT" USING PB-BUFFER MQ-VXP
+         WHEN L-NAME = "LastRestock" AND L-TYPE = 4
+             CALL "PB-GET-LONG" USING PB-BUFFER MQ-LAST-RESTOCK
+         WHEN L-NAME = "LastGossipDecay" AND L-TYPE = 4
+             CALL "PB-GET-LONG" USING PB-BUFFER MQ-LAST-DECAY
+         WHEN L-NAME = "RestocksToday" AND L-TYPE = 3
+             CALL "PB-GET-INT" USING PB-BUFFER MQ-RESTOCKS
          WHEN L-NAME = "leash" AND L-TYPE = 10
 *>           The compound {UUID: Int Array(4)}; the whole compound is skipped after the one entry is read.
              MOVE "UUID" TO WS-PATH
@@ -577,6 +602,10 @@
                  MOVE MQ-VLEVEL TO VL-LEVEL(WS-SLOT)
              END-IF
          END-IF
+     END-IF
+*>   The other saved fields of a villager (44 part 3 section 3.2): type, xp, food level, the restock clock and the restocks of the day (absent keys read 0).
+     IF WS-KEY = "villager"
+         CALL "MOB-VILLAGER-APPLY" USING L-ROW MQ-DATA
      END-IF
      GOBACK.
  END PROGRAM MOB-NBT-APPLY.

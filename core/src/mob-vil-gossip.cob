@@ -214,9 +214,14 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VLMEM.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
  01 WS-HURT                 BINARY-LONG VALUE 3.
+ 01 WS-NOW                  BINARY-LONG.
+ 01 WS-ID                   BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ 01 WS-TTL                  BINARY-LONG VALUE 40.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-ATTACKER              BINARY-LONG.
@@ -225,6 +230,11 @@
          CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
          IF WS-SLOT > 0
              CALL "VG-EVENT" USING EN-ID(L-ROW) PL-ENTITY-ID(L-ATTACKER) WS-HURT
+*>           The last damage source lives 40 ticks: hurt_by and hurt_by_entity (44 section 4.6; set at once, the 20 tick sensor scan is not waited for).
+             MOVE CW-TICKS TO WS-NOW
+             MOVE PL-ENTITY-ID(L-ATTACKER) TO WS-ID
+             CALL "VM-NOTE-TTL" USING WS-SLOT MT-HURT-BY WS-NOW WS-ID WS-TTL
+             CALL "VM-NOTE-TTL" USING WS-SLOT MT-HURT-BY-ENTITY WS-ID WS-ZERO WS-TTL
          END-IF
      END-IF
      GOBACK.
@@ -232,15 +242,18 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-STEP.
-*> USING entity row: the per-step upkeep of a villager (the daily gossip decay).
+*> USING entity row, asleep out (1 while the villager sleeps in its bed): the per-step upkeep of a villager (the daily gossip decay, the brain).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VILSTATE.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
+ 01 L-ASLEEP                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ASLEEP.
+     MOVE 0 TO L-ASLEEP
      CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
      IF WS-SLOT > 0
          CALL "VL-TICK" USING WS-SLOT
@@ -251,6 +264,7 @@
          CALL "VL-GOLEM-STEP" USING L-ROW
          CALL "VL-GOSSIP-STEP" USING L-ROW
          CALL "VL-FEAR-STEP" USING L-ROW
+         MOVE VL-SLEEP(WS-SLOT) TO L-ASLEEP
      END-IF
      GOBACK.
  END PROGRAM VL-STEP.
