@@ -214,15 +214,24 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE BL-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A chunk that has just loaded is scanned: a second bell set into the replica's cell without a note is found by BELL-SCAN.
      CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 11 TO WS-X
+     MOVE 11 TO WS-Z
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
      MOVE 0 TO WS-CX WS-CZ
-     CALL "BELL-FORGET" USING CLIENT-STATE WS-CX WS-CZ
-     MOVE "bugbeitems bell: Forget Level Chunk drops the chunk's bell" TO TL-CASE
+     CALL "BELL-SCAN" USING CLIENT-STATE WS-CX WS-CZ
+     MOVE "bugbeitems bell: scanning the loaded chunk finds both bells" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE BL-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "WORLD-FORGET" USING CLIENT-STATE WS-CX WS-CZ
+     MOVE "bugbeitems bell: Forget Level Chunk drops the chunk's bells" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE BL-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
-     CALL "BELL-CLEAR" USING CLIENT-STATE
+     CALL "BELL-SCAN" USING CLIENT-STATE WS-CX WS-CZ
+     CALL "WORLD-CLEAR" USING CLIENT-STATE
      MOVE "bugbeitems bell: clearing the replica drops the bells" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE BL-COUNT TO TL-OBSERVED-N
