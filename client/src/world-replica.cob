@@ -76,9 +76,17 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-ROW.
 *> USING CLIENT-STATE, chunk x, chunk z, row out (0 = not loaded).
+*> The row of a chunk found by the pass over the table is kept in a small table by the chunk (32 places, by a hash of x and z that keeps a 3 x 3 block of chunks apart) and taken from there while that row is in use and
+*> holds that chunk (the mesher, the tint averages and the cell reads ask for the same few chunks thousands of times a frame, and the pass is up to 700 rows at view 12);
+*> a row that was freed or taken by another chunk fails that test and the pass runs. A chunk that is not loaded is not kept.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-R                   BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-KEPT.
+    05 WS-KEPT-ROW         BINARY-LONG OCCURS 32 TIMES VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-CX                   BINARY-LONG.
@@ -86,11 +94,26 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-CX L-CZ L-ROW.
      MOVE 0 TO L-ROW
-     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT OR L-ROW > 0
+     COMPUTE WS-KEY = L-CX * 5 + L-CZ * 3
+     DIVIDE WS-KEY BY 32 GIVING WS-Q REMAINDER WS-SLOT
+     IF WS-SLOT < 0
+         ADD 32 TO WS-SLOT
+     END-IF
+     ADD 1 TO WS-SLOT
+     MOVE WS-KEPT-ROW(WS-SLOT) TO WS-R
+     IF WS-R > 0 AND WS-R <= WR-COUNT
          IF WR-USED(WS-R) = 1 AND WR-CX(WS-R) = L-CX AND WR-CZ(WS-R) = L-CZ
              MOVE WS-R TO L-ROW
          END-IF
-     END-PERFORM
+     END-IF
+     IF L-ROW = 0
+         PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT OR L-ROW > 0
+             IF WR-USED(WS-R) = 1 AND WR-CX(WS-R) = L-CX AND WR-CZ(WS-R) = L-CZ
+                 MOVE WS-R TO L-ROW
+                 MOVE WS-R TO WS-KEPT-ROW(WS-SLOT)
+             END-IF
+         END-PERFORM
+     END-IF
      GOBACK.
  END PROGRAM WORLD-ROW.
 

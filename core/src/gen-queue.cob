@@ -273,6 +273,16 @@
                      IF WS-SLICED = 0 AND L-DONE >= L-CHUNKS
                          MOVE 1 TO WS-STOP
                      END-IF
+*>                   A chunk of a cheap generator that took the tick's wall time (the limit) is the last of the tick: a flat chunk with its light costs 40 to 180 ms, and two of
+*>                   them a tick made a 100 to 360 ms tick (the frame rate of a superflat world that streams in).
+                     IF WS-SLICED = 0 AND L-DONE >= 1 AND L-LIMIT > 0 AND WS-STOP = 0
+                         MOVE FUNCTION CURRENT-DATE TO WS-CLOCK
+                         COMPUTE WS-NOW = (FUNCTION NUMVAL(WS-CLOCK(11:2)) * 60 + FUNCTION NUMVAL(WS-CLOCK(13:2))) * 100
+                             + FUNCTION NUMVAL(WS-CLOCK(15:2))
+                         IF FUNCTION MOD(WS-NOW - WS-START + 360000, 360000) >= L-LIMIT
+                             MOVE 1 TO WS-STOP
+                         END-IF
+                     END-IF
                      IF WS-STOP = 0
                          MOVE GQ-ENTRY(GQ-COUNT) TO GQ-ENTRY(WS-BEST)
                          SUBTRACT 1 FROM GQ-COUNT

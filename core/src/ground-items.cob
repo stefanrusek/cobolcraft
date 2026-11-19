@@ -321,6 +321,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
+ 01 WS-READY               PIC 9 VALUE 0.
  01 WS-REACH-XZ            FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-ITEM-HEIGHT         FLOAT-LONG.
@@ -330,16 +331,21 @@
  01 L-IN                   BINARY-LONG.
  PROCEDURE DIVISION USING L-PLAYER L-ROW L-IN.
      MOVE 0 TO L-IN
-     COMPUTE WS-REACH-XZ = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000 + 1 + ET-WIDTH-MILLI(CR-LOOSE-ITEM + 1) / 2000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
-     COMPUTE WS-ITEM-HEIGHT = ET-HEIGHT-MILLI(CR-LOOSE-ITEM + 1) / 1000
      IF PL-USED(L-PLAYER) = 1 AND PL-ENTITY-ROW(L-PLAYER) > 0 AND PL-STATE(L-PLAYER) = PS-ALIVE
              AND PL-DIM(L-PLAYER) = EN-DIM(L-ROW)
-             AND FUNCTION ABS(EN-X(L-ROW) - PL-X(L-PLAYER)) < WS-REACH-XZ
-             AND FUNCTION ABS(EN-Z(L-ROW) - PL-Z(L-PLAYER)) < WS-REACH-XZ
-             AND EN-Y(L-ROW) + WS-ITEM-HEIGHT > PL-Y(L-PLAYER) - 0.5
-             AND EN-Y(L-ROW) < PL-Y(L-PLAYER) + WS-HEIGHT + 0.5
-         MOVE 1 TO L-IN
+*>       The three sizes come from the entity table, which does not change: made once, on the first player that is near enough to be asked.
+         IF WS-READY = 0
+             COMPUTE WS-REACH-XZ = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000 + 1 + ET-WIDTH-MILLI(CR-LOOSE-ITEM + 1) / 2000
+             COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
+             COMPUTE WS-ITEM-HEIGHT = ET-HEIGHT-MILLI(CR-LOOSE-ITEM + 1) / 1000
+             MOVE 1 TO WS-READY
+         END-IF
+         IF FUNCTION ABS(EN-X(L-ROW) - PL-X(L-PLAYER)) < WS-REACH-XZ
+                 AND FUNCTION ABS(EN-Z(L-ROW) - PL-Z(L-PLAYER)) < WS-REACH-XZ
+                 AND EN-Y(L-ROW) + WS-ITEM-HEIGHT > PL-Y(L-PLAYER) - 0.5
+                 AND EN-Y(L-ROW) < PL-Y(L-PLAYER) + WS-HEIGHT + 0.5
+             MOVE 1 TO L-IN
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM GI-IN-REACH.
@@ -444,7 +450,10 @@
 *>   The players in reach, in entering order (insertion by PL-ENTERED).
      MOVE 0 TO WS-N
      PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         CALL "GI-IN-REACH" USING WS-PLAYER WS-ROW WS-IN
+         MOVE 0 TO WS-IN
+         IF PL-USED(WS-PLAYER) = 1
+             CALL "GI-IN-REACH" USING WS-PLAYER WS-ROW WS-IN
+         END-IF
          IF WS-IN = 1
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I

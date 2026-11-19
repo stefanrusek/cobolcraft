@@ -83,6 +83,13 @@
  01 WS-STATES              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
+*> The block the last search found (its id, first state, number of states and row): a state of the same block is answered after one look at its row (the standard table's tables ask for the 30 000 states in order).
+ 01 WS-M-VALID             BINARY-LONG VALUE 0.
+ 01 WS-M-ID                BINARY-LONG.
+ 01 WS-M-FIRST             BINARY-LONG.
+ 01 WS-M-STATES            BINARY-LONG.
+ 01 WS-M-ROW               PIC X(819).
+ 01 WS-CHECK               PIC X(819).
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
  01 L-ID                   BINARY-LONG.
@@ -96,6 +103,16 @@
          GOBACK
      END-IF
      MOVE CT-NOT-FOUND TO L-STATUS
+     IF WS-M-VALID = 1 AND L-STATE >= WS-M-FIRST AND L-STATE < WS-M-FIRST + WS-M-STATES
+         CALL "BLOCK-ROW-AT" USING WS-M-ID WS-CHECK WS-STATUS WS-COUNT
+         IF WS-CHECK = WS-M-ROW
+             MOVE WS-M-ID TO L-ID
+             COMPUTE L-INDEX = L-STATE - WS-M-FIRST
+             MOVE WS-M-ROW TO L-ROW
+             MOVE CT-OK TO L-STATUS
+             GOBACK
+         END-IF
+     END-IF
      CALL "BLOCK-ROW-AT" USING L-ID L-ROW WS-STATUS WS-COUNT
      MOVE 0 TO WS-LOW
      COMPUTE WS-HIGH = WS-COUNT - 1
@@ -114,6 +131,11 @@
                  COMPUTE L-INDEX = L-STATE - WS-FIRST
                  MOVE WS-ROW TO L-ROW
                  MOVE CT-OK TO L-STATUS
+                 MOVE 1 TO WS-M-VALID
+                 MOVE WS-MID TO WS-M-ID
+                 MOVE WS-FIRST TO WS-M-FIRST
+                 MOVE WS-STATES TO WS-M-STATES
+                 MOVE WS-ROW TO WS-M-ROW
          END-EVALUATE
      END-PERFORM
      GOBACK.

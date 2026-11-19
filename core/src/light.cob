@@ -386,6 +386,8 @@
  01 WS-FC                  BINARY-LONG.
  01 WS-FZ                  BINARY-LONG.
  01 WS-SECTIONS            BINARY-LONG.
+ 01 WS-FACE-ROW            BINARY-LONG.
+ 01 WS-SKIP                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -436,7 +438,21 @@
             WHEN 3 MOVE 0 TO WS-Z MOVE 0 TO WS-FX MOVE -1 TO WS-FZ
             WHEN OTHER MOVE 15 TO WS-Z MOVE 0 TO WS-FX MOVE 1 TO WS-FZ
         END-EVALUATE
-        PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+*>      A face whose neighbour is not there, or holds no block light at all, seeds nothing: its 16 x 384 cells are not looked at.
+        MOVE 1 TO WS-SKIP
+        EVALUATE WS-F
+            WHEN 1 MOVE LW-R3(4) TO WS-FACE-ROW
+            WHEN 2 MOVE LW-R3(6) TO WS-FACE-ROW
+            WHEN 3 MOVE LW-R3(2) TO WS-FACE-ROW
+            WHEN OTHER MOVE LW-R3(8) TO WS-FACE-ROW
+        END-EVALUATE
+        IF WS-FACE-ROW > 0
+            SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-FACE-ROW)
+            IF CX-BLOCK-LIGHTS NOT = LOW-VALUES
+                MOVE 0 TO WS-SKIP
+            END-IF
+        END-IF
+        PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15 OR WS-SKIP = 1
             IF WS-F < 3
                 MOVE WS-I TO WS-Z
             ELSE

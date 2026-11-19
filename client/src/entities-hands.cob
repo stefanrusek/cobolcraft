@@ -139,6 +139,8 @@
 *> arm: forwards, arm raised forwards: up, 34-3 1.4: rotate X -90 degrees), blade up-right. Lit by the light of the mob's cell.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-TRG-1              FLOAT-LONG.
+ 01 WS-PIF                FLOAT-LONG VALUE 3.141592653589793.
  COPY CLCONST.
  01 WS-K                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -199,8 +201,10 @@
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
      COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15, 0.1)
 *>   The mob's forward F = (-sin yaw, 0, cos yaw), its right axis R = up x F = (Fz, 0, -Fx); the item direction D = axis x R.
-     COMPUTE WS-FX = - FUNCTION SIN(EN-YAW(L-ROW) * FUNCTION PI / 180)
-     COMPUTE WS-FZ = FUNCTION COS(EN-YAW(L-ROW) * FUNCTION PI / 180)
+     COMPUTE WS-TRG-1 = EN-YAW(L-ROW) * WS-PIF / 180
+     COMPUTE WS-FX = - FUNCTION SIN(WS-TRG-1)
+     COMPUTE WS-TRG-1 = EN-YAW(L-ROW) * WS-PIF / 180
+     COMPUTE WS-FZ = FUNCTION COS(WS-TRG-1)
      MOVE WS-FZ TO WS-RX
      COMPUTE WS-RZ = - WS-FX
      COMPUTE WS-DX = EN-HAND-V(L-ROW, L-HAND, 5) * WS-RZ
