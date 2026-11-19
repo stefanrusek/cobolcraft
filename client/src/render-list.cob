@@ -49,7 +49,8 @@
  01 WS-TEX                 BINARY-LONG.
  01 WS-WORLD               BINARY-LONG.
  01 WS-F                   FLOAT-LONG.
- 01 WS-FOV                 FLOAT-LONG.
+ 01 WS-FOV-GROUP.
+    05 WS-FOV              FLOAT-LONG.
  01 WS-ASPECT              FLOAT-LONG.
  01 WS-NEAR                FLOAT-LONG VALUE 0.05.
  01 WS-FAR                 FLOAT-LONG VALUE 512.
@@ -69,6 +70,40 @@
  01 WS-PLANE-TABLE.
     05 WS-PLANE            FLOAT-LONG OCCURS 12 TIMES.
  01 WS-VIS                 BINARY-LONG.
+*> The four frustum planes as three coefficients each and their magnitudes (FUNCTION ABS costs half a microsecond: once a frame, not 12 times a chunk column).
+ 01 WS-PLANE-COEFFS.
+    05 WS-PC OCCURS 4 TIMES.
+       10 WS-PCX             FLOAT-LONG.
+       10 WS-PCY             FLOAT-LONG.
+       10 WS-PCZ             FLOAT-LONG.
+       10 WS-PAX             FLOAT-LONG.
+       10 WS-PAY             FLOAT-LONG.
+       10 WS-PAZ             FLOAT-LONG.
+ 01 WS-PV-SHORT-TABLE.
+    05 WS-PVS              FLOAT-SHORT OCCURS 16 TIMES.
+ 01 WS-ROW-DX              FLOAT-LONG.
+ 01 WS-ROW-DZ              FLOAT-LONG.
+ 01 WS-FZERO               FLOAT-LONG VALUE 0.
+*> The tangent of the field of view the focal term was made from (FUNCTION TAN costs 2 microseconds: made again only when the field of view changed).
+ 01 WS-FOV-DONE-GROUP.
+    05 WS-FOV-DONE         FLOAT-LONG VALUE 0.
+ 01 WS-F-DONE              FLOAT-LONG VALUE 0.
+ 01 WS-FOV-HAVE            BINARY-LONG VALUE 0.
+*> Per row (kept between frames, valid while the row's chunk is the one it was made for): the chunk's centre and corner as floats; per frame the offsets of the
+*> visible rows' corners from the eye and, per section, the offset of its lowest corner from the eye.
+ 01 WS-ROW-TABLE.
+    05 WS-RW OCCURS 2048 TIMES.
+       10 WS-RW-OK          BINARY-LONG VALUE 0.
+       10 WS-RW-CX          BINARY-LONG.
+       10 WS-RW-CZ          BINARY-LONG.
+       10 WS-RW-CENTRE-X    FLOAT-LONG.
+       10 WS-RW-CENTRE-Z    FLOAT-LONG.
+       10 WS-RW-CORNER-X    FLOAT-LONG.
+       10 WS-RW-CORNER-Z    FLOAT-LONG.
+       10 WS-RW-OFF-X       FLOAT-LONG.
+       10 WS-RW-OFF-Z       FLOAT-LONG.
+ 01 WS-SECTION-OFF-TABLE.
+    05 WS-SECTION-OFF      FLOAT-LONG OCCURS 24 TIMES.
  01 WS-P                   BINARY-LONG.
  01 WS-P1                  BINARY-LONG.
  01 WS-P2                  BINARY-LONG.
@@ -142,7 +177,12 @@
      IF PL-FOV-MOD > 0
          COMPUTE WS-FOV = CL-FOV-DEG * PL-FOV-MOD
      END-IF
-     COMPUTE WS-F = 1 / FUNCTION TAN(WS-FOV / 2 * FUNCTION PI / 180)
+     IF WS-FOV-HAVE = 0 OR WS-FOV-GROUP NOT = WS-FOV-DONE-GROUP
+         COMPUTE WS-F-DONE = 1 / FUNCTION TAN(WS-FOV / 2 * FUNCTION PI / 180)
+         MOVE WS-FOV-GROUP TO WS-FOV-DONE-GROUP
+         MOVE 1 TO WS-FOV-HAVE
+     END-IF
+     MOVE WS-F-DONE TO WS-F
      COMPUTE WS-ASPECT = FUNCTION MAX(IN-WIN-W, 1) / FUNCTION MAX(IN-WIN-H, 1)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          MOVE 0 TO RL-PROJ(WS-I) RL-VIEW(WS-I)
@@ -261,6 +301,21 @@
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 12
          MOVE WS-PLANE(WS-P) TO RL-CULL-PLANE(WS-P)
      END-PERFORM
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 4
+         COMPUTE WS-P1 = WS-P * 3 - 2
+         MOVE WS-PLANE(WS-P1) TO WS-PCX(WS-P)
+         MOVE WS-PLANE(WS-P1 + 1) TO WS-PCY(WS-P)
+         MOVE WS-PLANE(WS-P1 + 2) TO WS-PCZ(WS-P)
+         COMPUTE WS-PAX(WS-P) = FUNCTION ABS(WS-PCX(WS-P))
+         COMPUTE WS-PAY(WS-P) = FUNCTION ABS(WS-PCY(WS-P))
+         COMPUTE WS-PAZ(WS-P) = FUNCTION ABS(WS-PCZ(WS-P))
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE WS-PV(WS-I) TO WS-PVS(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+         COMPUTE WS-SECTION-OFF(WS-S) = (WS-S - 1) * 16 + PL-MIN-Y - WS-EYE(2)
+     END-PERFORM
 *>   Uploads of changed meshes; opaque draws; translucent candidates.
      MOVE 0 TO WS-TCOUNT
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
@@ -285,22 +340,29 @@
 *>       Is the column (a box of 18 x height x 18 blocks around the chunk) in view?
          MOVE 1 TO WS-VIS
          IF WS-WORLD = 1 AND WR-USED(WS-R) = 1
-             COMPUTE WS-DX = WR-CX(WS-R) * 16 + 8 - WS-EYE(1)
+             IF WS-RW-OK(WS-R) = 0 OR WS-RW-CX(WS-R) NOT = WR-CX(WS-R) OR WS-RW-CZ(WS-R) NOT = WR-CZ(WS-R)
+                 MOVE WR-CX(WS-R) TO WS-RW-CX(WS-R)
+                 MOVE WR-CZ(WS-R) TO WS-RW-CZ(WS-R)
+                 COMPUTE WS-RW-CORNER-X(WS-R) = WR-CX(WS-R) * 16
+                 COMPUTE WS-RW-CORNER-Z(WS-R) = WR-CZ(WS-R) * 16
+                 COMPUTE WS-RW-CENTRE-X(WS-R) = WR-CX(WS-R) * 16 + 8
+                 COMPUTE WS-RW-CENTRE-Z(WS-R) = WR-CZ(WS-R) * 16 + 8
+                 MOVE 1 TO WS-RW-OK(WS-R)
+             END-IF
+             COMPUTE WS-ROW-DX = WS-RW-CENTRE-X(WS-R) - WS-EYE(1)
              COMPUTE WS-DY = PL-MIN-Y + WS-HALF-H - 1 - WS-EYE(2)
-             COMPUTE WS-DZ = WR-CZ(WS-R) * 16 + 8 - WS-EYE(3)
-             PERFORM VARYING WS-P FROM 0 BY 3 UNTIL WS-P > 9 OR WS-VIS = 0
-                 COMPUTE WS-P1 = WS-P + 1
-                 COMPUTE WS-P2 = WS-P + 2
-                 COMPUTE WS-P3 = WS-P + 3
-                 MOVE WS-PLANE(WS-P1) TO WS-NX
-                 MOVE WS-PLANE(WS-P2) TO WS-NY
-                 MOVE WS-PLANE(WS-P3) TO WS-NZ
-                 COMPUTE WS-SUM = WS-NX * WS-DX + WS-NY * WS-DY + WS-NZ * WS-DZ
-                     + FUNCTION ABS(WS-NX) * 9 + FUNCTION ABS(WS-NY) * WS-HALF-H + FUNCTION ABS(WS-NZ) * 9
-                 IF WS-SUM < 0
+             COMPUTE WS-ROW-DZ = WS-RW-CENTRE-Z(WS-R) - WS-EYE(3)
+             PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 4 OR WS-VIS = 0
+                 COMPUTE WS-SUM = WS-PCX(WS-P) * WS-ROW-DX + WS-PCY(WS-P) * WS-DY + WS-PCZ(WS-P) * WS-ROW-DZ
+                     + WS-PAX(WS-P) * 9 + WS-PAY(WS-P) * WS-HALF-H + WS-PAZ(WS-P) * 9
+                 IF WS-SUM < WS-FZERO
                      MOVE 0 TO WS-VIS
                  END-IF
              END-PERFORM
+             IF WS-VIS = 1
+                 COMPUTE WS-RW-OFF-X(WS-R) = WS-RW-CORNER-X(WS-R) - WS-EYE(1)
+                 COMPUTE WS-RW-OFF-Z(WS-R) = WS-RW-CORNER-Z(WS-R) - WS-EYE(3)
+             END-IF
          END-IF
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
 *>           Most sections of a column (the air above the ground) have no mesh and nothing to upload: they are passed over at once.
@@ -325,17 +387,15 @@
                      MOVE WS-SLOT TO RL-D-SLOT(RL-DRAW-COUNT)
                      MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
                      MOVE CC-TEX-BLOCKS TO RL-D-TEX(RL-DRAW-COUNT)
-                     CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-TABLE WS-EYE-TABLE WS-R WS-S
+                     CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-SHORT-TABLE WS-PV-TABLE WS-RW-OFF-X(WS-R) WS-SECTION-OFF(WS-S) WS-RW-OFF-Z(WS-R)
                  END-IF
                  IF WR-TR-COUNT(WS-R, WS-S) > 0 AND WS-TCOUNT < 4096
                      ADD 1 TO WS-TCOUNT
                      COMPUTE WS-TSLOT(WS-TCOUNT) = WS-SLOT + 1
                      MOVE WS-R TO WS-TROW(WS-TCOUNT)
                      MOVE WS-S TO WS-TSEC(WS-TCOUNT)
-                     COMPUTE WS-DX = WR-CX(WS-R) * 16 + 8 - WS-EYE(1)
                      COMPUTE WS-DY = (WS-S - 1) * 16 + 8 + PL-MIN-Y - WS-EYE(2)
-                     COMPUTE WS-DZ = WR-CZ(WS-R) * 16 + 8 - WS-EYE(3)
-                     COMPUTE WS-TDIST(WS-TCOUNT) = WS-DX ** 2 + WS-DY ** 2 + WS-DZ ** 2
+                     COMPUTE WS-TDIST(WS-TCOUNT) = WS-ROW-DX * WS-ROW-DX + WS-DY * WS-DY + WS-ROW-DZ * WS-ROW-DZ
                  END-IF
              END-IF
            END-IF
@@ -404,7 +464,7 @@
          MOVE CC-TEX-BLOCKS TO RL-D-TEX(RL-DRAW-COUNT)
          MOVE WS-TROW(WS-I) TO WS-R
          MOVE WS-TSEC(WS-I) TO WS-S
-         CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-TABLE WS-EYE-TABLE WS-R WS-S
+         CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-SHORT-TABLE WS-PV-TABLE WS-RW-OFF-X(WS-R) WS-SECTION-OFF(WS-S) WS-RW-OFF-Z(WS-R)
      END-PERFORM
 *>   The clouds (12 section 3.6; sky-render.cob), translucent and depth tested, after the translucent sections.
      IF WS-WORLD = 1
@@ -522,32 +582,29 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SECTION-MATRIX.
-*> USING CLIENT-STATE, projection x view (16 FLOAT-LONG), eye (3 FLOAT-LONG), row, section: the
-*> last draw's matrix: projection x view x the translation by the section's lowest corner minus
-*> the eye.
+*> USING CLIENT-STATE, projection x view as 16 FLOAT-SHORT (the first 12 are copied as they are: the same conversion of the same numbers, done once a frame), the same
+*> as 16 FLOAT-LONG, the offsets of the section's lowest corner from the eye (x, y, z: FLOAT-LONG, each made once a frame or a row): the
+*> last draw's matrix: projection x view x the translation by those offsets.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-OFF                 FLOAT-LONG OCCURS 3 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-R                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
+ 01 L-PVS-TABLE.
+    05 L-PVS               FLOAT-SHORT OCCURS 16 TIMES.
  01 L-PV-TABLE.
     05 L-PV                FLOAT-LONG OCCURS 16 TIMES.
- 01 L-EYE-TABLE.
-    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
- 01 L-ROW                  BINARY-LONG.
- 01 L-S                    BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-PV-TABLE L-EYE-TABLE L-ROW L-S.
-     COMPUTE WS-OFF(1) = WR-CX(L-ROW) * 16 - L-EYE(1)
-     COMPUTE WS-OFF(2) = (L-S - 1) * 16 + PL-MIN-Y - L-EYE(2)
-     COMPUTE WS-OFF(3) = WR-CZ(L-ROW) * 16 - L-EYE(3)
+ 01 L-OFF-X                FLOAT-LONG.
+ 01 L-OFF-Y                FLOAT-LONG.
+ 01 L-OFF-Z                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PVS-TABLE L-PV-TABLE L-OFF-X L-OFF-Y L-OFF-Z.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
-         MOVE L-PV(WS-I) TO RL-D-MATRIX(RL-DRAW-COUNT, WS-I)
+         MOVE L-PVS(WS-I) TO RL-D-MATRIX(RL-DRAW-COUNT, WS-I)
      END-PERFORM
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 4
-         COMPUTE RL-D-MATRIX(RL-DRAW-COUNT, 12 + WS-R) = L-PV(WS-R) * WS-OFF(1)
-             + L-PV(4 + WS-R) * WS-OFF(2) + L-PV(8 + WS-R) * WS-OFF(3) + L-PV(12 + WS-R)
+         COMPUTE RL-D-MATRIX(RL-DRAW-COUNT, 12 + WS-R) = L-PV(WS-R) * L-OFF-X
+             + L-PV(4 + WS-R) * L-OFF-Y + L-PV(8 + WS-R) * L-OFF-Z + L-PV(12 + WS-R)
      END-PERFORM
      GOBACK.
  END PROGRAM SECTION-MATRIX.
