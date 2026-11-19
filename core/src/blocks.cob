@@ -411,6 +411,7 @@
      MOVE WS-FOUND-STATE TO WS-STATE
      CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "SIGN-PLACED" USING L-ID WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "GOLEM-BUILD" USING WS-DIM WS-X WS-Y WS-Z
      CALL "WITHER-BUILD" USING WS-DIM WS-X WS-Y WS-Z
@@ -452,6 +453,7 @@
  01 WS-NOTE                BINARY-LONG.
  01 WS-ROCKET              BINARY-LONG.
  01 WS-BELL                BINARY-LONG.
+ 01 WS-SIGN                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -498,7 +500,11 @@
      END-IF
 *>   A bell rings when it is hit as 31-4 section 4.5 says (core/src/bell-use.cob).
      CALL "BELL-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE PSB-CURSOR-Y WS-BELL
+*>   A sign takes the click: the editor opens, or a dye, ink sac or honeycomb is applied (core/src/sign-edit.cob).
+     CALL "SIGN-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SIGN
      EVALUATE TRUE
+         WHEN WS-SIGN = 1
+             CONTINUE
          WHEN WS-KNOT = 1
              CONTINUE
          WHEN WS-NOTE = 1

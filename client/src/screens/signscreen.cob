@@ -1,11 +1,11 @@
 *> The sign editor screen (docs/protocol/40-menus-8-book-and-sign-editors.md sections 1.2, 6): Open Sign Editor (05a 0x3D: Position, Side) opens it (SIGN-OPEN); SIGN-BUILD draws the title,
 *> the four lines centred on x of the GUI centre and the Done button; SIGN-INPUT takes typed characters, Backspace, Up, Down, Enter and Escape (closing); closing sends Sign Update
-*> (SIGN-CLOSE, textedit.cob) and returns to the world. The client keeps no block entity text, so the lines start empty (the sign's current text is not shown); the sign is a standing
+*> (SIGN-CLOSE, textedit.cob) and returns to the world. The lines start from the text the client holds for that sign side (signtext.cob; empty when the server sent none); the sign is a standing
 *> sign (width limit 90).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SIGN-OPEN.
-*> USING CLIENT-STATE, packet PB-BUFFER: Position, Side (Boolean, true front): the sign editor of that sign side with four empty lines.
+*> USING CLIENT-STATE, packet PB-BUFFER: Position, Side (VarInt, 1 front): the sign editor of that sign side with the lines the client holds for it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -14,14 +14,22 @@
  01 WS-Z                   BINARY-LONG.
  01 WS-FRONT               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-SIDE-ID             BINARY-LONG.
+ 01 WS-SIDE                BINARY-LONG.
  01 WS-SCREEN              BINARY-LONG VALUE SCR-SIGN.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
  PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
      CALL "PB-GET-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
-     CALL "PB-GET-BOOL" USING PB-BUFFER WS-FRONT
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SIDE-ID
      IF PB-ERROR = 0
+         MOVE 0 TO WS-FRONT
+         IF WS-SIDE-ID = 1
+             MOVE 1 TO WS-FRONT
+         END-IF
          MOVE WS-X TO SG-X
          MOVE WS-Y TO SG-Y
          MOVE WS-Z TO SG-Z
@@ -30,7 +38,17 @@
              MOVE SPACES TO SG-LINE-TEXT(WS-I)
              MOVE 0 TO SG-LEN(WS-I)
          END-PERFORM
-         MOVE 0 TO SG-LINE SG-CURSOR SG-ANCHOR BK-ADVANCE
+*>       The text the sign has on that side (1.2: the client's block entity holds it), the cursor at the end of the first line (6.2 step 3).
+         CALL "SIGN-TEXT-FIND" USING CLIENT-STATE WS-X WS-Y WS-Z WS-NO WS-ROW
+         IF WS-ROW > 0
+             COMPUTE WS-SIDE = WS-FRONT + 1
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 MOVE SN-TEXT(WS-ROW, WS-SIDE, WS-I) TO SG-LINE-TEXT(WS-I)
+                 MOVE SN-LEN(WS-ROW, WS-SIDE, WS-I) TO SG-LEN(WS-I)
+             END-PERFORM
+         END-IF
+         MOVE 0 TO SG-LINE SG-ANCHOR BK-ADVANCE
+         MOVE SG-LEN(1) TO SG-CURSOR
          MOVE 90 TO SG-MAXW
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      END-IF
@@ -66,6 +84,8 @@
  01 L-GW                   BINARY-LONG.
  01 L-GH                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+*>   The labels carry no action: WS-ACTION keeps the Done button's action from the build before.
+     MOVE ACT-NONE TO WS-ACTION
      MOVE "sign.edit" TO WS-KEY
      MOVE 9 TO WS-KEY-LENGTH
      CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH

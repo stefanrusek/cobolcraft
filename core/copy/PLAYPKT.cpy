@@ -76,3 +76,9 @@
 *>  not kept.
     05 PSB-MESSAGE-LENGTH     BINARY-LONG.
     05 PSB-MESSAGE            PIC X(768).
+*>  0x3E Sign Update (05c): the position in PSB-BX, PSB-BY, PSB-BZ, the side (VarInt, 0 back, 1 front) in PSB-DATA and the four lines (at most 384 bytes each) as
+*>  byte length and text, the layout BE3-SIGN-UPDATE takes.
+    05 PSB-SIGN-LINES.
+       10 PSB-SIGN-LINE OCCURS 4 TIMES.
+          15 PSB-SIGN-LENGTH  BINARY-LONG.
+          15 PSB-SIGN-TEXT    PIC X(384).
