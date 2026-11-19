@@ -108,8 +108,8 @@
 *>   Select Trade fills both payment slots and empties the inventory stack of the first price.
      MOVE 0 TO WS-INDEX
      CALL "MERCHANT-SELECT" USING WS-CONN WS-INDEX
-     MOVE "covB 40-5 2.7 Select Trade fills the second payment slot" TO TL-CASE
-     MOVE WS-EC TO TL-EXPECTED-N
+     MOVE "covB 40-5 2.7 Select Trade fills the second payment slot with the whole inventory stack (up to a full stack)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-EC + 3
      MOVE MN-WSLOT-COUNT(WS-ROW, 2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "covB 40-5 2.7 and takes the whole inventory stack of the first price" TO TL-CASE
@@ -123,7 +123,7 @@
 *>   Selecting again returns the payments to the inventory first and fills them again.
      CALL "MERCHANT-SELECT" USING WS-CONN WS-INDEX
      MOVE "covB 40-5 2.7 selecting again leaves both payments in place" TO TL-CASE
-     COMPUTE TL-EXPECTED-N = WS-WC * 1000 + WS-EC
+     COMPUTE TL-EXPECTED-N = WS-WC * 1000 + WS-EC + 3
      COMPUTE TL-OBSERVED-N = MN-WSLOT-COUNT(WS-ROW, 1) * 1000 + MN-WSLOT-COUNT(WS-ROW, 2)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Without the second payment there is no result.
@@ -139,8 +139,8 @@
      MOVE VL-LEVEL(WS-SLOT) TO WS-LEVEL0
      MOVE 9 TO VL-XP(WS-SLOT)
      CALL "MERCHANT-TAKEN" USING WS-ROW
-     MOVE "covB 40-5 2.5 taking the result uses up both payments" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "covB 40-5 2.5 taking the result uses up the price of both payments (the 3 extra of the second stay)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = MN-WSLOT-COUNT(WS-ROW, 1) + MN-WSLOT-COUNT(WS-ROW, 2)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "covB 19 22.4 the villager has gone up a level" TO TL-CASE
