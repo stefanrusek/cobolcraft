@@ -368,6 +368,15 @@
              IF SM-KEY(WS-M) = "llama" AND (EN-STRENGTH(L-ROW) > 0 OR EN-WOOL(L-ROW) > 0)
                  MOVE 1 TO L-NEEDED
              END-IF
+             IF SM-KEY(WS-M) = "copper_golem"
+                 MOVE 1 TO L-NEEDED
+             END-IF
+             IF SM-KEY(WS-M) = "rabbit" AND EN-WOOL(L-ROW) > 0
+                 MOVE 1 TO L-NEEDED
+             END-IF
+             IF SM-KEY(WS-M) = "polar_bear" AND EN-POLAR-STAND(L-ROW) = 1
+                 MOVE 1 TO L-NEEDED
+             END-IF
              IF SM-KEY(WS-M) = "allay" AND (EN-ALLAY-DUP(L-ROW) > 0 OR EN-ALLAY-DANCE(L-ROW) = 1)
                  MOVE 1 TO L-NEEDED
              END-IF
@@ -430,6 +439,12 @@
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     IF WS-KEY = "copper_golem"
+*>       Index 16 is the weathering state of a copper golem, not a baby flag (19 section 21).
+         CALL "CG-DATA-BUILD" USING L-ROW PB-BUFFER
+         GOBACK
+     END-IF
      CALL "MOB-DATA-VALUES" USING L-ROW WS-BABY WS-WOOL WS-NEEDED
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
@@ -482,6 +497,8 @@
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
      END-IF
      CALL "MOB-CARE-DATA" USING L-ROW PB-BUFFER
+     CALL "MOB-RABBIT-DATA" USING L-ROW PB-BUFFER
+     CALL "MOB-POLAR-DATA" USING L-ROW PB-BUFFER
      CALL "VILLOOK-DATA" USING L-ROW PB-BUFFER
      MOVE MD-MD-END TO MD-MD-INDEX
      CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
@@ -632,6 +649,8 @@
              END-IF
              CALL "XP-RANDOM" USING WS-SALT-CAT WS-BOUND-CAT WS-DRAW-CAT
              CALL "M44-CAT-VARIANT" USING WS-MOONFLAG WS-HUTFLAG WS-DRAW-CAT EN-WOOL(L-ROW)
+         WHEN "rabbit"
+             CALL "RABBIT-BORN" USING L-ROW
          WHEN "armadillo"
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
@@ -789,6 +808,8 @@
      EVALUATE WS-KEY
          WHEN "llama"
              CALL "LLAMA-BRED" USING L-A L-B WS-BABY WS-COIN
+         WHEN "rabbit"
+             CALL "RABBIT-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "fox"
              CALL "FOX-BRED" USING L-A L-B WS-BABY WS-COIN
          WHEN "panda"
@@ -1514,6 +1535,10 @@
          GOBACK
      END-IF
      CALL "DECOR-INTERACT" USING WS-ROW WS-ENTITY PSB-Y WS-USED
+     IF WS-USED = 1
+         GOBACK
+     END-IF
+     CALL "CG-USE" USING WS-ROW WS-ENTITY WS-USED
      IF WS-USED = 1
          GOBACK
      END-IF

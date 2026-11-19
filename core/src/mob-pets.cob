@@ -320,6 +320,8 @@
          END-IF
      END-IF
      IF WS-GOLEM = 0
+*>       A carved pumpkin on a copper block makes a copper golem (19 section 21).
+         CALL "COPPER-GOLEM-BUILD" USING L-DIM L-X L-Y L-Z
          GOBACK
      END-IF
      MOVE SPACES TO WS-KEY

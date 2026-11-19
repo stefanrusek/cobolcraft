@@ -1017,6 +1017,7 @@
  01 WS-PET-HX              FLOAT-LONG.
  01 WS-PET-HZ              FLOAT-LONG.
  01 WS-RIDE-DONE           BINARY-LONG.
+ 01 WS-CG-GONE             BINARY-LONG.
  01 WS-FLIER               BINARY-LONG.
  01 WS-TAD-GONE            BINARY-LONG.
  01 WS-TEMPT-WALK          BINARY-LONG.
@@ -1153,6 +1154,13 @@
              GOBACK
          END-IF
      END-IF
+     IF SM-KEY(WS-M) = "copper_golem"
+*>       The weathering clock and the statue roll of a copper golem (19 section 21); a statue is the end of this step.
+         CALL "CG-TICK" USING WS-ROW WS-CG-GONE
+         IF WS-CG-GONE = 1
+             GOBACK
+         END-IF
+     END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      MOVE 0 TO WS-HX WS-HZ WS-CHASE
      IF SM-KIND(WS-M) = 1
@@ -1181,13 +1189,20 @@
          MOVE WS-YAW TO WS-TEMPT-YAW
          CALL "MOB-TEMPT-TICK" USING WS-ROW WS-M WS-TEMPT-HX WS-TEMPT-HZ WS-TEMPT-YAW WS-TEMPT-WALK
      END-IF
-     IF SM-NEUTRAL(WS-M) = 6 AND EN-TAMED(WS-ROW) = 0
+     IF (SM-NEUTRAL(WS-M) = 6 AND EN-TAMED(WS-ROW) = 0) OR SM-NEUTRAL(WS-M) = 7
+*>       A polar bear defends its cubs before its anger is counted (POLAR-BEAR-GUARD, 19 section 9).
+         IF SM-NEUTRAL(WS-M) = 7
+             CALL "POLAR-BEAR-GUARD" USING WS-ROW
+         END-IF
          CALL "NETHER-AGGRO" USING WS-ROW WS-M
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
          END-IF
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
+         END-IF
+         IF SM-NEUTRAL(WS-M) = 7
+             CALL "POLAR-BEAR-TICK" USING WS-ROW
          END-IF
      END-IF
      IF SM-KEY(WS-M) = "wolf" AND EN-TAMED(WS-ROW) = 1
