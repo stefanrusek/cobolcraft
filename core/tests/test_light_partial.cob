@@ -3,7 +3,7 @@
 *> double, a path, farmland, snow, a carpet, a fence, a chest, a bed, a cauldron, a hopper and the like have dampening 0 or 1, never 15: light enters their cells; only a state whose occlusion shape is a full
 *> block, 15, stops it). A sealed stone room of a standard world opened from the generated vanilla data pack (CC_GENERATED_DIR, default /tmp/cc-test/generated; skipped as a pass without it), built above the
 *> terrain, a torch (emission 14) in its middle and one partial block in each of 28 cells of the rings at Manhattan distance 3 and 4 from it: the cell of each reads 14 less its distance, the cell of a
-*> double slab and of stone 0. The stand-in engine treated every state with a collision shape as opaque (CB-OPAQUE), so these cells read 0, and the faces of the client that look into them (the neighbours
+*> double slab and of stone 0; and the same 28 blocks in the open (under the sky, outside the room): the cell of each reads sky light 15, a double slab's and stone's 0. The stand-in engine treated every state with a collision shape as opaque (CB-OPAQUE), so these cells read 0, and the faces of the client that look into them (the neighbours
 *> of a stair, the stair's own treads and risers) were drawn at the 0.1 floor: black.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LIGHT-PARTIAL.
@@ -200,6 +200,10 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 28
          PERFORM PUT-TEST-BLOCK
      END-PERFORM
+*>   The same blocks in the open, in the rows z 0 and 15 of the chunk (outside the room's shell), each in a column of its own under the open sky.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 28
+         PERFORM PUT-OPEN-BLOCK
+     END-PERFORM
      CALL "LIGHT-BATCH-END"
 
 *>   The torch's own cell and the air beside it hold the light of an open room (the baseline of the table).
@@ -241,6 +245,32 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-WRONG TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Daylight: the cell of each block in the open reads the sky that reached it, 15 (the cell of a double slab or of stone, whose dampening is 15, reads 0).
+     MOVE 0 TO WS-WRONG
+     MOVE 1 TO WS-PTR
+     MOVE SPACES TO WS-BAD-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 28
+         PERFORM READ-OPEN-SKY
+         MOVE 15 TO WS-EXPECT
+         IF WS-I >= 27
+             MOVE 0 TO WS-EXPECT
+         END-IF
+         DISPLAY "light-partial open sky " FUNCTION TRIM(WS-E-KEY(WS-I)) " " FUNCTION TRIM(WS-E-PROPS(WS-I)) " sky light " WS-LEVEL
+             " expected " WS-EXPECT
+         IF WS-LEVEL NOT = WS-EXPECT
+             ADD 1 TO WS-WRONG
+             IF WS-PTR < 270
+                 STRING FUNCTION TRIM(WS-E-KEY(WS-I)) " " DELIMITED BY SIZE INTO WS-BAD-LIST WITH POINTER WS-PTR
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO TL-CASE
+     STRING "test light partial every partial block cell in the open reads sky light 15, a double slab and stone 0; wrong: "
+         FUNCTION TRIM(WS-BAD-LIST) DELIMITED BY SIZE INTO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-WRONG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> The ring offsets as numbers: each digit is the offset plus 4.
@@ -272,6 +302,52 @@
      COMPUTE WS-WZ = WS-Z0 + 7 + WS-OFF-Z(WS-I)
      COMPUTE WS-WY = WS-BASE-Y + 1
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-WX WS-WY WS-WZ WS-PUT.
+
+*> Puts test block WS-I in the open: local x (WS-I - 1) mod 16, z 0 (blocks 1 to 16) or 15 (17 to 28), at the floor level of the room.
+ PUT-OPEN-BLOCK.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" FUNCTION TRIM(WS-E-KEY(WS-I)) DELIMITED BY SIZE INTO WS-KEY
+     CALL "BLOCKS-ID-OF" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-PUT
+     IF WS-E-PROPS(WS-I) NOT = SPACES
+         PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-ID + 1) BY 1
+                 UNTIL WS-S >= CB-FIRST-STATE(WS-ID + 1) + CB-STATES(WS-ID + 1)
+             CALL "BLOCKS-STATE-PROPS" USING WS-S WS-PROPS
+             MOVE 0 TO WS-HITS WS-HITS2
+             INSPECT WS-PROPS TALLYING WS-HITS FOR ALL FUNCTION TRIM(WS-E-PROPS(WS-I))
+             INSPECT WS-PROPS TALLYING WS-HITS2 FOR ALL "waterlogged=false"
+             IF WS-HITS > 0 AND WS-HITS2 > 0
+                 MOVE WS-S TO WS-PUT
+             END-IF
+         END-PERFORM
+     END-IF
+     PERFORM OPEN-POSITION
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-WX WS-WY WS-WZ WS-PUT.
+
+*> World position of the open cell of test block WS-I.
+ OPEN-POSITION.
+     COMPUTE WS-WX = WS-X0 + FUNCTION MOD(WS-I - 1, 16)
+     IF WS-I <= 16
+         MOVE WS-Z0 TO WS-WZ
+     ELSE
+         COMPUTE WS-WZ = WS-Z0 + 15
+     END-IF
+     COMPUTE WS-WY = WS-BASE-Y + 1.
+
+*> The stored sky light of the open cell of block WS-I into WS-LEVEL.
+ READ-OPEN-SKY.
+     PERFORM OPEN-POSITION
+     COMPUTE WS-CX = (WS-WX - FUNCTION MOD(WS-WX, 16)) / 16
+     COMPUTE WS-CZ = (WS-WZ - FUNCTION MOD(WS-WZ, 16)) / 16
+     CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-ROW
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+     COMPUTE WS-CELL = (WS-WY - DM-MIN-Y(WS-DIM)) * 256 + (WS-WZ - WS-CZ * 16) * 16 + WS-WX - WS-CX * 16 + 1
+     COMPUTE WS-BYTE = 2048 + (WS-CELL - 1) / 2 + 1
+     IF FUNCTION MOD(WS-CELL, 2) = 1
+         COMPUTE WS-LEVEL = FUNCTION MOD(CE-SKY(WS-BYTE), 16)
+     ELSE
+         COMPUTE WS-LEVEL = CE-SKY(WS-BYTE) / 16
+     END-IF.
 
 *> The stored block light at the torch cell offset by WS-A, WS-B into WS-LEVEL.
  READ-CELL.
