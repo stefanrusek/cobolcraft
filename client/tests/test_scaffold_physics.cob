@@ -22,6 +22,12 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-MIN                 FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-BH                  FLOAT-LONG.
+ 01 WS-BHT                 FLOAT-LONG.
+ 01 WS-BHIT                BINARY-LONG.
  01 WS-V                   FLOAT-LONG.
  01 WS-ITEM-KEY            PIC X(112).
  01 WS-ITEM-ID             BINARY-LONG.
@@ -164,6 +170,85 @@
      MOVE 0 TO PL-PITCH
      MOVE 11 TO WS-Y
      MOVE 3 TO WS-Z
+
+*>   A shulker box facing up at (0, 9, 3) with its lid fully open (31-1 13.2: ticks 10) is the box (0,0,0,16,24,16) (51 section 3.8.8): a thin box at y 10.2 to 10.3 over it collides,
+*>   it does not over a closed one; the 45 degree ray from the eye (0.5, 12.6, 0.7) enters the extension through its north side (face 2) at y 10.3, a closed one through its top.
+     MOVE 11 TO PL-Y
+     MOVE 0.5 TO PL-X
+     MOVE 0.7 TO PL-Z
+     MOVE 45 TO PL-PITCH
+     MOVE 0 TO PL-YAW
+     MOVE 9 TO WS-Y
+     MOVE 3 TO WS-Z
+     MOVE "shulker_box" TO WS-BLOCK
+     MOVE "facing=up" TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "SHULKER-NOTE" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0.5 TO WS-BX
+     MOVE 10.2 TO WS-BY
+     MOVE 3.5 TO WS-BZ
+     MOVE 0.1 TO WS-BH
+     MOVE 0.1 TO WS-BHT
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-BH WS-BHT WS-BHIT
+     MOVE "R4 shulker box: a closed lid ends at the cell top" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BHIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast a closed shulker box is entered through its top" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = TG-HIT * 10 + TG-FACE
+     MOVE 11 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE "R4 shulker box: the client keeps the box (count, used, face up)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SB-COUNT * 1000 + SB-USED(1) * 100 + SB-FACE(1) * 10 + SB-READY
+     MOVE 1111 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE 10 TO SB-T(1) SB-TOLD(1)
+     MOVE 2 TO SB-STATUS(1)
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-BH WS-BHT WS-BHIT
+     MOVE "R4 shulker box: an open lid (up 24 pixels) collides at y 10.2" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-BHIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast an open shulker box is entered through its north side (face 2)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = TG-HIT * 10 + TG-FACE
+     MOVE 12 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO SB-USED(1)
+     SUBTRACT 1 FROM SB-COUNT
+     MOVE "stone" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO PL-PITCH
+
+*>   The collision of a fence reaches 1.5 blocks (24 pixels, 51 section 3.2): a Player dropped on a fence post lands on its top at y 11.5 (the cell below the feet is a collider too).
+     MOVE 10 TO WS-Y
+     MOVE "oak_fence" TO WS-BLOCK
+     MOVE "north=false,east=false,south=false,west=false,waterlogged=false" TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0.5 TO PL-X
+     MOVE 3.5 TO PL-Z
+     MOVE 14.0 TO PL-Y
+     MOVE 0 TO PL-VY
+     MOVE 40 TO WS-TICKS
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-TICKS
+     MOVE "R4 fence: a falling Player stands on the 24 pixel collision of a post (y 11.5)" TO TL-CASE
+     MOVE "0.5000/11.5000/3.5000" TO TL-EXPECTED
+     PERFORM ASSERT-POSITION
+     MOVE "R4 fence: standing on the post counts as on the ground" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PL-ON-GROUND TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+     MOVE 0.5 TO PL-X PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 11 TO WS-Y
+     MOVE 3 TO WS-Z
+     MOVE 0 TO PL-VY
 
 *>   The outline mesh (08 section 10.8.6): a cauldron has 13 boxes (144 vertices each); a dandelion at (3, 11, 3) is drawn moved by its offset (-0.25, 0, 0.0167).
      MOVE 64 TO UA-W UA-H

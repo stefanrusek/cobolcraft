@@ -469,8 +469,9 @@
              COMPUTE WS-LOW = FUNCTION MIN(WS-LOW, WS-LOW + L-DISTANCE)
              COMPUTE WS-HIGH = FUNCTION MAX(WS-HIGH, WS-HIGH + L-DISTANCE)
          END-IF
-         COMPUTE WS-LO-CELL(WS-A) = FUNCTION INTEGER(WS-LOW)
-         COMPUTE WS-HI-CELL(WS-A) = FUNCTION INTEGER(WS-HIGH)
+*>       One cell more all round: a shape may reach out of its cell (a fence 1.5 high, a shulker lid, 51 section 6), and its cell is a collider too.
+         COMPUTE WS-LO-CELL(WS-A) = FUNCTION INTEGER(WS-LOW) - 1
+         COMPUTE WS-HI-CELL(WS-A) = FUNCTION INTEGER(WS-HIGH) + 1
      END-PERFORM
      PERFORM VARYING WS-Y FROM WS-LO-CELL(2) BY 1 UNTIL WS-Y > WS-HI-CELL(2)
          PERFORM VARYING WS-Z FROM WS-LO-CELL(3) BY 1 UNTIL WS-Z > WS-HI-CELL(3)
@@ -679,7 +680,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-COLLIDES-BOX.
 *> USING CLIENT-STATE, feet x, y, z, half width, height (FLOAT-LONG), hit out (1 = a box of that size at that position overlaps a
-*> collision box of a cell).
+*> collision box of a cell). The cells of the box and one more all round are tested: a shape may reach out of its cell (a fence 1.5 high, a shulker lid, 51 section 6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -709,12 +710,12 @@
  01 L-HEIGHT               FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-HALF L-HEIGHT L-HIT.
-     COMPUTE WS-X0 = FUNCTION INTEGER(L-X - L-HALF + WS-EPSILON)
-     COMPUTE WS-X1 = FUNCTION INTEGER(L-X + L-HALF - WS-EPSILON)
-     COMPUTE WS-Y0 = FUNCTION INTEGER(L-Y + WS-EPSILON)
-     COMPUTE WS-Y1 = FUNCTION INTEGER(L-Y + L-HEIGHT - WS-EPSILON)
-     COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - L-HALF + WS-EPSILON)
-     COMPUTE WS-Z1 = FUNCTION INTEGER(L-Z + L-HALF - WS-EPSILON)
+     COMPUTE WS-X0 = FUNCTION INTEGER(L-X - L-HALF + WS-EPSILON) - 1
+     COMPUTE WS-X1 = FUNCTION INTEGER(L-X + L-HALF - WS-EPSILON) + 1
+     COMPUTE WS-Y0 = FUNCTION INTEGER(L-Y + WS-EPSILON) - 1
+     COMPUTE WS-Y1 = FUNCTION INTEGER(L-Y + L-HEIGHT - WS-EPSILON) + 1
+     COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - L-HALF + WS-EPSILON) - 1
+     COMPUTE WS-Z1 = FUNCTION INTEGER(L-Z + L-HALF - WS-EPSILON) + 1
      COMPUTE WS-B(1) = L-X - L-HALF
      MOVE L-Y TO WS-B(2)
      COMPUTE WS-B(3) = L-Z - L-HALF
@@ -961,6 +962,8 @@
 *>                   Scaffolding answers by the entity (51 section 3.8.5): its y when the tick began and whether it sneaks.
                      MOVE PL-CTX-DESC TO WS-DESC
                      CALL "BSH-SCAFFOLD-COLL" USING WS-STATE L-Y PL-CTX-Y WS-DESC L-SHAPE
+*>                   A shulker box is the box of its lid (51 section 3.8.8).
+                     CALL "SHULKER-SHAPE" USING CLIENT-STATE L-X L-Y L-Z WS-STATE L-SHAPE
                  END-IF
              END-IF
      END-EVALUATE

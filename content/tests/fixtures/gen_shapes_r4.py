@@ -123,6 +123,15 @@ inter('hopper', 'facing=down', '', [cv])
 for blk, p1 in (('stone', ''), ('oak_slab', 'type=bottom'), ('chest', 'type=single'), ('bell', 'attachment=floor')):
     inter(blk, p1, '', [])
 
+# shulker box (3.8.8): the box of the current tick's progress p, q = 8 p pixels, by the direction in the order of 05c (0 down, 1 up, 2 north, 3 south, 4 west, 5 east);
+# "S" rows: p1 = the direction number, p2 = the progress in tenths (the lid steps 0.1 a tick; 10 is fully open)
+for d, name in enumerate(('down', 'up', 'north', 'south', 'west', 'east')):
+    for t in range(0, 11):
+        q = F(8 * t, 10)
+        b = {'up': (0,0,0,16,16 + q,16), 'down': (0,-q,0,16,16,16), 'north': (0,0,-q,16,16,16),
+             'south': (0,0,0,16,16,16 + q), 'east': (0,0,0,16 + q,16,16), 'west': (-q,0,0,16,16,16)}[name]
+        row('shulker_box', str(d), str(t), 'S', [b])
+
 if __name__ == '__main__':
     for r in rows:
         print("|".join(r))

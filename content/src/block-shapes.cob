@@ -725,6 +725,42 @@
  END PROGRAM BSH-INTERACTION.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-SHULKER.
+*> USING direction (BINARY-LONG, the Direction order of 05c: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east), lid progress in tenths (BINARY-LONG 0 to 10), shape id out: the
+*> collision and outline shape of a shulker box with a block entity (51 section 3.8.8): the unit cube extended along the facing by q = 8 x progress pixels (the full cube
+*> when the lid is closed). The shape is stored when no equal one is, so a box takes 66 shapes at most.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-Q                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-TENTHS               BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIRECTION L-TENTHS L-ID.
+     INITIALIZE BSC-SHAPE
+     MOVE 1 TO BSC-N
+     MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
+     COMPUTE WS-Q = FUNCTION MIN(10, FUNCTION MAX(0, L-TENTHS)) * 800
+     EVALUATE L-DIRECTION
+         WHEN 0
+             COMPUTE BSC-V(1, 2) = 0 - WS-Q
+         WHEN 1
+             COMPUTE BSC-V(1, 5) = 16000 + WS-Q
+         WHEN 2
+             COMPUTE BSC-V(1, 3) = 0 - WS-Q
+         WHEN 3
+             COMPUTE BSC-V(1, 6) = 16000 + WS-Q
+         WHEN 4
+             COMPUTE BSC-V(1, 1) = 0 - WS-Q
+         WHEN OTHER
+             COMPUTE BSC-V(1, 4) = 16000 + WS-Q
+     END-EVALUATE
+     CALL "BSH-INTERN" USING L-ID
+     GOBACK.
+ END PROGRAM BSH-SHULKER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-RULES-LOAD.
 *> No parameters: splits the rows of CTBSDATA.cpy into the rule table BSR-R (classes, mode, property, value, collision, outline).
  DATA DIVISION.

@@ -137,7 +137,7 @@
          IF WS-SEEN NOT = 0
 *>           The outline of the cell for the camera entity's context (51 section 1.8.3 item 5): the light block with a light item and scaffolding with a scaffolding item
 *>           in the hand are full cubes.
-             CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-STATE WS-SHAPE
+             CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SHAPE
              EVALUATE TRUE
                  WHEN WS-SHAPE = 0
                      MOVE 0 TO WS-SEEN
@@ -235,8 +235,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TARGET-OUTLINE.
-*> USING CLIENT-STATE, state id, shape id out: the outline shape of the state for the local player's collision context (51 section 1.8.3 item 5, rules R-A5 and R-C20): the table's
-*> outline, except that the light block (BSH-CTX 1) is a full cube while the main hand holds a light item and scaffolding (BSH-CTX 2 to 4) while it holds a scaffolding item.
+*> USING CLIENT-STATE, cell x, y, z, state id, shape id out: the outline shape of the state for the local player's collision context (51 section 1.8.3 item 5, rules R-A5 and R-C20): the table's
+*> outline, except that the light block (BSH-CTX 1) is a full cube while the main hand holds a light item and scaffolding (BSH-CTX 2 to 4) while it holds a scaffolding item;
+*> a shulker box is the box of its lid (SHULKER-SHAPE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
@@ -250,10 +251,14 @@
  01 WS-HKNOWN              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  01 L-SHAPE                BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-STATE L-SHAPE.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-STATE L-SHAPE.
      CALL "BSH-OUT-ID" USING L-STATE L-SHAPE
+     CALL "SHULKER-SHAPE" USING CLIENT-STATE L-X L-Y L-Z L-STATE L-SHAPE
      IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
          IF BSH-CTX(L-STATE + 1) > 0 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
              MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-HELD-ITEM

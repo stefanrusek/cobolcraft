@@ -645,7 +645,7 @@
      MOVE TG-Y TO WS-BLOCK(2) WS-CY
      MOVE TG-Z TO WS-BLOCK(3) WS-CZ
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLK
-     CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-STATE WS-SHAPE
+     CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SHAPE
 *>   The flower family, bamboo, speleothems and the propagule are drawn moved by their offset; every other offset block keeps its outline in the cell (51 section 1.4).
      CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OF(1) WS-OF(2) WS-OF(3)
      MOVE BSH-N(WS-SHAPE + 1) TO WS-BOXES
