@@ -12,10 +12,11 @@
  78 BT-MAX-TICKS                  VALUE 65536.
  78 BT-TABLE-SIZE                 VALUE 32768.
 *> The pending ticks of every level, one table (dense: entry 1 to BT-COUNT); BT-SUB-COUNT is each dimension's subTickCount.
-*> BT-TRIG is the absolute game time (CW-TICKS) the tick is due. BT-T-CX and BT-T-CZ are the chunk of the position, set by BT-ADD (floor of x and z over 16).
+*> BT-TRIG is the absolute game time (CW-TICKS) the tick is due. BT-T-CX and BT-T-CZ are the chunk of the position, set by BT-ADD (floor of x and z over 16). BT-HB(bucket) is the first entry (0 none) of a chain through BT-T-HN of the entries whose position hashes to the bucket (BT-T-HB), kept by BT-ADD and BT-POLL: BT-HAS walks one chain in place of the whole table. A queue that is empty has no chains (BT-ADD clears the buckets when it adds to an empty table).
  01 BLOCK-TICKS EXTERNAL.
     05 BT-COUNT                  BINARY-LONG.
     05 BT-SUB-COUNT              BINARY-LONG OCCURS 5 TIMES.
+    05 BT-HB                     BINARY-LONG OCCURS 8192 TIMES.
     05 BT-TICK OCCURS 32768 TIMES.
        10 BT-T-DIM               BINARY-LONG.
        10 BT-T-TYPE              BINARY-LONG.
@@ -28,3 +29,5 @@
        10 BT-T-SUB               BINARY-LONG.
        10 BT-T-CX                BINARY-LONG.
        10 BT-T-CZ                BINARY-LONG.
+       10 BT-T-HB                BINARY-LONG.
+       10 BT-T-HN                BINARY-LONG.

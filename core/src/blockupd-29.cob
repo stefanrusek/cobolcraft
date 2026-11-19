@@ -1183,13 +1183,28 @@
  END PROGRAM LEVEL-NEIGHBOURS-ON-SET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BT-BUCKET.
+*> USING x, y, z, bucket out (BINARY-LONG): the bucket 1 to 8192 of the position in the chains of BLOCK-TICKS (BT-HB).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BUCKET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-BUCKET.
+     COMPUTE L-BUCKET = FUNCTION MOD(L-X * 73 + L-Z * 179 + L-Y * 31, 8192) + 1
+     GOBACK.
+ END PROGRAM BT-BUCKET.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BT-HAS.
 *> USING dimension row, type (1 block, 2 fluid), id, x, y, z, found out (BINARY-LONG): hasScheduledTick, 1 when a tick with that
-*> identity (type, id and position; time and priority do not count) is pending (29 section 4.1).
+*> identity (type, id and position; time and priority do not count) is pending (29 section 4.1): one chain of the position's bucket is walked.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BLOCKTICK.
  01 WS-I                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -1200,12 +1215,17 @@
  01 L-FOUND                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-TYPE L-ID L-X L-Y L-Z L-FOUND.
      MOVE 0 TO L-FOUND
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BT-COUNT
-         IF BT-T-DIM(WS-I) = L-DIM AND BT-T-TYPE(WS-I) = L-TYPE AND BT-T-ID(WS-I) = L-ID
-                 AND BT-T-X(WS-I) = L-X AND BT-T-Y(WS-I) = L-Y AND BT-T-Z(WS-I) = L-Z
-             MOVE 1 TO L-FOUND
-         END-IF
-     END-PERFORM
+     IF BT-COUNT > 0
+         CALL "BT-BUCKET" USING L-X L-Y L-Z WS-B
+         MOVE BT-HB(WS-B) TO WS-I
+         PERFORM UNTIL WS-I = 0 OR L-FOUND = 1
+             IF BT-T-DIM(WS-I) = L-DIM AND BT-T-TYPE(WS-I) = L-TYPE AND BT-T-ID(WS-I) = L-ID
+                     AND BT-T-X(WS-I) = L-X AND BT-T-Y(WS-I) = L-Y AND BT-T-Z(WS-I) = L-Z
+                 MOVE 1 TO L-FOUND
+             END-IF
+             MOVE BT-T-HN(WS-I) TO WS-I
+         END-PERFORM
+     END-IF
      GOBACK.
  END PROGRAM BT-HAS.
 
@@ -1213,12 +1233,13 @@
  PROGRAM-ID. BT-ADD.
 *> USING dimension row, type, id, x, y, z, trigger time (BINARY-DOUBLE), priority, sub-tick order, result out (BINARY-LONG):
 *> LevelChunkTicks.schedule: the tick is added only when its identity is not pending (the first schedule wins and keeps its
-*> time); result 1 when added, 0 when ignored.
+*> time); result 1 when added, 0 when ignored. A full table (BT-TABLE-SIZE) ignores it too. The tick joins the chain of its position's bucket.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BLOCKTICK.
  01 WS-FOUND               BINARY-LONG.
  01 WS-REM                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -1233,7 +1254,12 @@
  PROCEDURE DIVISION USING L-DIM L-TYPE L-ID L-X L-Y L-Z L-TRIG L-PRIO L-SUB L-RESULT.
      MOVE 0 TO L-RESULT
      CALL "BT-HAS" USING L-DIM L-TYPE L-ID L-X L-Y L-Z WS-FOUND
-     IF WS-FOUND = 0
+     IF WS-FOUND = 0 AND BT-COUNT < BT-TABLE-SIZE
+         IF BT-COUNT = 0
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8192
+                 MOVE 0 TO BT-HB(WS-I)
+             END-PERFORM
+         END-IF
          ADD 1 TO BT-COUNT
          MOVE L-DIM TO BT-T-DIM(BT-COUNT)
          MOVE L-TYPE TO BT-T-TYPE(BT-COUNT)
@@ -1252,6 +1278,9 @@
          IF WS-REM < 0
              SUBTRACT 1 FROM BT-T-CZ(BT-COUNT)
          END-IF
+         CALL "BT-BUCKET" USING L-X L-Y L-Z BT-T-HB(BT-COUNT)
+         MOVE BT-HB(BT-T-HB(BT-COUNT)) TO BT-T-HN(BT-COUNT)
+         MOVE BT-COUNT TO BT-HB(BT-T-HB(BT-COUNT))
          MOVE 1 TO L-RESULT
      END-IF
      GOBACK.
@@ -1315,14 +1344,44 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BT-POLL.
-*> USING index (BINARY-LONG): removes that pending tick (the table stays dense).
+*> USING index (BINARY-LONG): removes that pending tick (the table stays dense: the last entry takes its place, in its bucket's chain too).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BLOCKTICK.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
-     MOVE BT-TICK(BT-COUNT) TO BT-TICK(L-INDEX)
+     MOVE BT-T-HB(L-INDEX) TO WS-B
+     IF BT-HB(WS-B) = L-INDEX
+         MOVE BT-T-HN(L-INDEX) TO BT-HB(WS-B)
+     ELSE
+         MOVE BT-HB(WS-B) TO WS-J
+         PERFORM UNTIL WS-J = 0 OR BT-T-HN(WS-J) = L-INDEX
+             MOVE BT-T-HN(WS-J) TO WS-J
+         END-PERFORM
+         IF WS-J > 0
+             MOVE BT-T-HN(L-INDEX) TO BT-T-HN(WS-J)
+         END-IF
+     END-IF
+     MOVE BT-COUNT TO WS-LAST
+     IF WS-LAST NOT = L-INDEX
+         MOVE BT-T-HB(WS-LAST) TO WS-B
+         IF BT-HB(WS-B) = WS-LAST
+             MOVE L-INDEX TO BT-HB(WS-B)
+         ELSE
+             MOVE BT-HB(WS-B) TO WS-J
+             PERFORM UNTIL WS-J = 0 OR BT-T-HN(WS-J) = WS-LAST
+                 MOVE BT-T-HN(WS-J) TO WS-J
+             END-PERFORM
+             IF WS-J > 0
+                 MOVE L-INDEX TO BT-T-HN(WS-J)
+             END-IF
+         END-IF
+         MOVE BT-TICK(WS-LAST) TO BT-TICK(L-INDEX)
+     END-IF
      SUBTRACT 1 FROM BT-COUNT
      GOBACK.
  END PROGRAM BT-POLL.
