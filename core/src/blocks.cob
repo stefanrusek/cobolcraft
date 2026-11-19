@@ -18,8 +18,8 @@
 *> north/south z, west/east x; punched false); otherwise a glowtube toggles lit, and anything else
 *> does nothing. A placement is refused, with Block Update of the target's real state to the player
 *> when the target is in the height range, when the target is neither void nor replaceable (tag minecraft:replaceable), lies outside the dimension's
-*> height range or would overlap a player's or a mob's box (standin §3, the movement.cob rule:
-*> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
+*> height range or its state's collision shape would overlap the box of a player or a mob (standin §3, the movement.cob rule:
+*> positive volume, 1e-7 tolerance; a block with no collision shape, such as a torch, never does: 29 section 9.6). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
 *>
 *> Player Action, the break progress (BLOCK-ACTION, BLOCKS-TICK, BLOCK-BREAK-END) and the stage broadcast are
@@ -202,55 +202,85 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-OVERLAPS-BODY.
-*> USING dimension row, x, y, z (BINARY-LONG block position), hit out (BINARY-LONG 1 or 0): 1 when
-*> the cell overlaps with positive volume the box of a player or of a mob in that dimension (standin
-*> §3 sizes; faces within 1e-7 of each other only touch).
+*> USING dimension row, x, y, z (BINARY-LONG block position), state (BINARY-LONG, the block state that would be placed there), hit out (BINARY-LONG 1 or 0): 1 when the
+*> collision shape of the state, moved to the cell, overlaps with positive volume the box of a blocking entity in that dimension (29 section 9.6, Level.isUnobstructed:
+*> the shape is empty = nothing obstructs; the entities are the players that are not spectators, and the mobs, stand-in and standard, all living entities; item entities
+*> and the like never block; standin §3 sizes; faces within 1e-7 of each other only touch). The shape is the state's collision shape (BSH-COLL, 51-block-shapes; a full cube
+*> or the void in the cobolcraft stand-in set, as MOVE-COLLIDES-BOX reads it), so a torch, sign, ladder, button, lever, flower or rail never obstructs and a full block, slab,
+*> stair, fence or carpet obstructs when its boxes meet the entity's.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
- COPY MOBS.
+ COPY CBLOCKS.
+ COPY CONTENT.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-M                   BINARY-LONG.
+ 01 WS-STD                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
- 01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
  01 L-HIT                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-HIT.
      MOVE 0 TO L-HIT
+*>   The collision shape of the state (the cobolcraft stand-in set has no shapes: its blocks are full cubes or empty by CB-SOLID, as in movement.cob).
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLK
+         MOVE CB-SOLID(WS-BLK + 1) TO WS-SHAPE
+         IF WS-SHAPE = 1
+             CALL "BSH-ENSURE-CUBE"
+         END-IF
+     ELSE
+         CALL "BSH-COLL-ID" USING L-STATE WS-SHAPE
+     END-IF
+     IF WS-SHAPE = 0
+         GOBACK
+     END-IF
      COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
      COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
      PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM
-                 AND L-X < PL-X(WS-PLAYER) + WS-HALF - WS-EPSILON
-                 AND L-X + 1 > PL-X(WS-PLAYER) - WS-HALF + WS-EPSILON
-                 AND L-Y < PL-Y(WS-PLAYER) + WS-HEIGHT - WS-EPSILON
-                 AND L-Y + 1 > PL-Y(WS-PLAYER) + WS-EPSILON
-                 AND L-Z < PL-Z(WS-PLAYER) + WS-HALF - WS-EPSILON
-                 AND L-Z + 1 > PL-Z(WS-PLAYER) - WS-HALF + WS-EPSILON
-             MOVE 1 TO L-HIT
+         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM AND PL-MODE(WS-PLAYER) NOT = 3
+             COMPUTE WS-B(1) = PL-X(WS-PLAYER) - WS-HALF
+             MOVE PL-Y(WS-PLAYER) TO WS-B(2)
+             COMPUTE WS-B(3) = PL-Z(WS-PLAYER) - WS-HALF
+             COMPUTE WS-B(4) = PL-X(WS-PLAYER) + WS-HALF
+             COMPUTE WS-B(5) = PL-Y(WS-PLAYER) + WS-HEIGHT
+             COMPUTE WS-B(6) = PL-Z(WS-PLAYER) + WS-HALF
+             CALL "BSH-OVERLAPS" USING WS-SHAPE L-X L-Y L-Z WS-BOX WS-ONE
+             IF WS-ONE = 1
+                 MOVE 1 TO L-HIT
+             END-IF
          END-IF
      END-PERFORM
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          MOVE 0 TO WS-M
+         MOVE 0 TO WS-STD
          IF EN-USED(WS-E) = 1
              CALL "MOB-INDEX" USING EN-TYPE(WS-E) WS-M
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-STD
          END-IF
-         IF WS-M > 0 AND EN-DIM(WS-E) = L-DIM
+         IF (WS-M > 0 OR WS-STD > 0) AND EN-DIM(WS-E) = L-DIM
              COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
-             IF L-X < EN-X(WS-E) + WS-HALF - WS-EPSILON
-                     AND L-X + 1 > EN-X(WS-E) - WS-HALF + WS-EPSILON
-                     AND L-Y < EN-Y(WS-E) + WS-HEIGHT - WS-EPSILON
-                     AND L-Y + 1 > EN-Y(WS-E) + WS-EPSILON
-                     AND L-Z < EN-Z(WS-E) + WS-HALF - WS-EPSILON
-                     AND L-Z + 1 > EN-Z(WS-E) - WS-HALF + WS-EPSILON
+             COMPUTE WS-B(1) = EN-X(WS-E) - WS-HALF
+             MOVE EN-Y(WS-E) TO WS-B(2)
+             COMPUTE WS-B(3) = EN-Z(WS-E) - WS-HALF
+             COMPUTE WS-B(4) = EN-X(WS-E) + WS-HALF
+             COMPUTE WS-B(5) = EN-Y(WS-E) + WS-HEIGHT
+             COMPUTE WS-B(6) = EN-Z(WS-E) + WS-HALF
+             CALL "BSH-OVERLAPS" USING WS-SHAPE L-X L-Y L-Z WS-BOX WS-ONE
+             IF WS-ONE = 1
                  MOVE 1 TO L-HIT
              END-IF
          END-IF
@@ -333,7 +363,7 @@
          CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-REPLACEABLE
      END-IF
      IF WS-OLD = 0 OR WS-REPLACEABLE = 1
-         CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
+         MOVE 0 TO WS-HIT
      END-IF
 *>   A slab onto a slab that is not double and a multiface block onto one with a free face add to the block that is there.
      CALL "PS-MERGES" USING PLACE-CONTEXT WS-OLD WS-MERGES
@@ -358,6 +388,13 @@
          CALL "SUP-PLACE-OK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
      END-IF
      IF WS-FITS = 0
+         CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
+         GOBACK
+     END-IF
+*>   BlockItem.canPlace, second half: the state's collision shape must not meet a blocking entity (29 section 9.6, isUnobstructed with the placement context): a torch, sign,
+*>   ladder, button, lever, flower or rail goes into the cell the player's body is in, a full block, slab, stair, fence or carpet does not.
+     CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-HIT
+     IF WS-HIT = 1
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF

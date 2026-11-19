@@ -18,6 +18,7 @@
  01 WS-CONN                BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-OTHER               BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG VALUE 1.
  01 WS-I                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-TICKS               BINARY-LONG VALUE 205.
@@ -97,7 +98,7 @@
      MOVE EN-TYPE(WS-ROW) TO WS-PLAYER-TYPE
      MOVE EN-DIM(WS-OTHER) TO WS-I
      MOVE 0 TO PL-USED(CN-PLAYER(WS-CONN))
-     CALL "BLOCK-OVERLAPS-BODY" USING WS-I WS-BX WS-BY WS-BZ WS-HIT
+     CALL "BLOCK-OVERLAPS-BODY" USING WS-I WS-BX WS-BY WS-BZ WS-FULL WS-HIT
      MOVE 1 TO PL-USED(CN-PLAYER(WS-CONN))
      MOVE "test standard mobs: a vanilla-type row does not block a block placement" TO TL-CASE
      MOVE "N" TO TL-MODE
