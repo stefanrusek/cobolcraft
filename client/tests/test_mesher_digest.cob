@@ -2,7 +2,8 @@
 *> (the stand-in states and the fluid states of test_mesher_fluid), light by another hash, are meshed section by section (MESH-SECTION: faces against neighbours inside
 *> the row and across rows, fluid mesh, light of the cell a face looks into), and the opaque and translucent vertices of every section are digested (CRC-32 of the 44-byte
 *> records, summed with the section's place as weight). The digest was taken from the code before the lane's changes and must stay the same byte for byte; the CPU
-*> time of the meshing is shown (PERF) and bounded.
+*> time of the meshing is shown (PERF) and bounded. Lane bugfluidwalls changed the fluid quads on purpose (the front copy of a face has its corners reversed for the culling
+*> pipeline, the sides are made again for the inside, the top again only where shouldRenderBackwardUpFace holds; 29a 10.3), so the digest was taken again: 8248849812848199119 before.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-MESHER-DIGEST.
  DATA DIVISION.
@@ -151,7 +152,7 @@
      MOVE "T" TO TL-MODE
      MOVE "test mesher digest: the meshes of 45 sections have the digest taken before the optimisations" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED TL-OBSERVED
-     MOVE "8248849812848199119" TO TL-EXPECTED
+     MOVE "7516184377384486697" TO TL-EXPECTED
      MOVE FUNCTION TRIM(WS-D19) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test mesher digest: the sections have vertices (the digest is not of nothing)" TO TL-CASE

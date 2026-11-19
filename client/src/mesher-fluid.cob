@@ -5,7 +5,12 @@
 *> horizontal neighbours (a same-fluid neighbour 1.0 under the same fluid, else amount / 9; any other 0.0, or -1.0 when opaque).
 *> Geometry (10.3): the top 0.001 below its corner heights with the still sprite, or with the flowing sprite turned by the flow
 *> vector of 1.4 (FM-TOP-UV); the sides (flowing sprite, u 0 to 0.5, v from (1 - height) / 2 to 0.5) from the floor (0.001 when the
-*> bottom is drawn) up to their corner heights, inset 0.001; no backward copy of the top (the pipeline does not cull). Colour and
+*> bottom is drawn) up to their corner heights, inset 0.001. Winding: the translucent sections are drawn with the back faces culled and the
+*> front face of a quad is the one whose corners 1 2 3 run clockwise seen from outside (the baked faces); the corners are built in the order of
+*> the renderer (counter-clockwise, pointing out of the cell), so the front copy of a face has them reversed (WS-REV) and the copy for the inside is
+*> the renderer's order. The copy for the inside is made for the top when shouldRenderBackwardUpFace holds (a cell of the 3 x 3 above that is neither
+*> the same fluid nor a solid block) and for a side that does not take the overlay sprite (single-sided); a bottom is single-sided; a face of an
+*> opaque sprite (lava: the opaque pipeline does not cull) is made once. Colour and
 *> light (10.4): the biome water colour for water, white for lava, the larger of the cell's light and the light above for every
 *> face times the factor of its direction. Beside a block of the overlay classes (ST-OVERLAY) the water's side takes the overlay sprite. Not done (gap): the partial-shape
 *> occlusion of a neighbour (the client has no shape of a state: an opaque neighbour hides, any other does not).
@@ -115,6 +120,10 @@
  01 WS-CH                  BINARY-DOUBLE.
  01 WS-F                   BINARY-LONG.
  01 WS-FPASS               BINARY-LONG.
+ 01 WS-BACK                BINARY-LONG.
+ 01 WS-ONE-SIDED           BINARY-LONG.
+ 01 WS-AX                  BINARY-LONG.
+ 01 WS-AZ                  BINARY-LONG.
  01 WS-FNPASS              BINARY-LONG.
  01 WS-SRC                 BINARY-LONG.
  01 WS-REV-DATA            PIC X(4) VALUE "1432".
@@ -375,9 +384,31 @@
      IF WS-DR(2) = 1
          MOVE WS-E TO WS-FLOOR
      END-IF
+*>   shouldRenderBackwardUpFace (10.3): the top is also drawn for the inside when a cell of the 3 x 3 above this one is neither the same fluid nor a solid block.
+     MOVE 0 TO WS-BACK
+     IF WS-DR(1) = 1
+         MOVE 1 TO MB-LIGHT-OFF
+         PERFORM VARYING WS-AX FROM -1 BY 1 UNTIL WS-AX > 1
+             PERFORM VARYING WS-AZ FROM -1 BY 1 UNTIL WS-AZ > 1
+                 COMPUTE WS-NX = L-X + WS-AX
+                 COMPUTE WS-NY = L-Y + 1
+                 COMPUTE WS-NZ = L-Z + WS-AZ
+                 CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-A-STATE WS-A-SKY WS-A-BLOCK
+                 MOVE ST-FLUID(WS-A-STATE + 1) TO WS-A-KIND
+                 IF WS-A-KIND > 2
+                     MOVE 1 TO WS-A-KIND
+                 END-IF
+                 IF WS-A-KIND NOT = WS-KIND AND ST-OPAQUE(WS-A-STATE + 1) = 0
+                     MOVE 1 TO WS-BACK
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+         MOVE 0 TO MB-LIGHT-OFF
+     END-IF
 *>   The quads (10.3): top, bottom, north, south, west, east; corners 1 and 3 are opposite.
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
          IF WS-DR(WS-F) = 1
+             MOVE 0 TO WS-ONE-SIDED
              COMPUTE WS-C = WS-BASE + 1
              MOVE WS-SP-ID(WS-C) TO WS-SPR
              EVALUATE WS-F
@@ -413,6 +444,7 @@
                      MOVE WS-NBV(WS-F - 2) TO WS-C
                      IF WS-KIND = 1 AND WS-N-OVERLAY(WS-C) = 1 AND WS-SP-ID(3) > 0
                          MOVE WS-SP-ID(3) TO WS-SPR
+                         MOVE 1 TO WS-ONE-SIDED
                      END-IF
                      EVALUATE WS-F
                          WHEN 3
@@ -453,10 +485,10 @@
              IF WS-SPR = 0
                  MOVE 1 TO WS-SPR
              END-IF
-*>           The top is also made backward (corners reversed) as the renderer does (FluidRenderer: the backward up face): the translucent sections are
-*>           drawn with the back faces culled, and the surface is seen from under the water.
+*>           The front copy has the corners reversed (see the head); a translucent top that shows from below and a translucent side that is not the overlay one
+*>           are made again in the renderer's order, for the inside.
              MOVE 1 TO WS-FNPASS
-             IF WS-F = 1
+             IF AT-TRANSLUCENT(WS-SPR) = 1 AND ((WS-F = 1 AND WS-BACK = 1) OR (WS-F > 2 AND WS-ONE-SIDED = 0))
                  MOVE 2 TO WS-FNPASS
              END-IF
              PERFORM VARYING WS-FPASS FROM 1 BY 1 UNTIL WS-FPASS > WS-FNPASS
@@ -468,9 +500,9 @@
                  MOVE WS-TG TO FO-G(FO-COUNT)
                  MOVE WS-TB TO FO-B(FO-COUNT)
                  PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
-                     MOVE WS-C TO WS-SRC
+                     MOVE WS-REV(WS-C) TO WS-SRC
                      IF WS-FPASS = 2
-                         MOVE WS-REV(WS-C) TO WS-SRC
+                         MOVE WS-C TO WS-SRC
                      END-IF
                      COMPUTE FO-X(FO-COUNT, WS-C) = L-X + WS-PX(WS-SRC)
                      COMPUTE FO-Y(FO-COUNT, WS-C) = L-LY + WS-PY(WS-SRC)

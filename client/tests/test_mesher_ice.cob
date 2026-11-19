@@ -112,8 +112,8 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A cell of water in the air: seven quads (the top twice, the second backward, the bottom, the four sides); the sides and the bottom are
-*>   clockwise seen from outside as the blocks' faces are (the culling pipeline's front faces).
+*>   A cell of water in the air: this pack holds no water sprites, so the faces take the missing-texture sprite, which is opaque: six quads (the top, the bottom, the four sides), each
+*>   once (the copies for the inside are made for translucent sprites only; test_mesher_fluid_winding has the translucent water of the real pack).
      PERFORM CLEAR-WORLD
      MOVE "water" TO WS-KEYSTR
      CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEYSTR WS-ID WS-BLOCK-ROW WS-STATUS
@@ -124,9 +124,9 @@
      CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-WY WS-Z WS-WATER
      PERFORM MESH-ALL
      COMPUTE TL-OBSERVED-N = (WS-TR + WS-OP) / 6
-     MOVE 7 TO TL-EXPECTED-N
+     MOVE 6 TO TL-EXPECTED-N
      MOVE "N" TO TL-MODE
-     MOVE "mesher ice a cell of water in the air has seven quads: the top twice (the second backward), the bottom and four sides" TO TL-CASE
+     MOVE "mesher ice a cell of water in the air with an opaque sprite has six quads: the top, the bottom and four sides" TO TL-CASE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO WS-LO(1) WS-LO(2) WS-LO(3)
      MOVE 6 TO WS-HI(1) WS-HI(2) WS-HI(3)
