@@ -98,6 +98,7 @@
  01 WS-KNOWN               BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-CONVERTED           BINARY-LONG.
+ 01 WS-IGNITE-TICKS        BINARY-LONG VALUE 160.
  LINKAGE SECTION.
  01 L-SLOT                 BINARY-LONG.
  01 L-BOLT                 BINARY-LONG.
@@ -105,6 +106,11 @@
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-SLOT L-BOLT L-ROW L-PLAYER.
      IF L-PLAYER > 0
+*>       Entity.thunderHit: the fire counter + 1, the 8 second ignition when it is then 0, then the damage (44-9 section 2.1).
+         ADD 1 TO EN-BURN(PL-ENTITY-ROW(L-PLAYER))
+         IF EN-BURN(PL-ENTITY-ROW(L-PLAYER)) = 0
+             CALL "PLAYER-IGNITE" USING L-PLAYER WS-IGNITE-TICKS
+         END-IF
          CALL "HEALTH-HURT" USING L-PLAYER WS-DAMAGE WS-CAUSE WS-NONE WS-NONE2 WS-RESULT
          GOBACK
      END-IF
@@ -137,6 +143,9 @@
      END-EVALUATE
      IF WS-CONVERTED = 0
          ADD 1 TO EN-BURN(L-ROW)
+         IF EN-BURN(L-ROW) = 0
+             CALL "MOB-IGNITE" USING L-ROW WS-IGNITE-TICKS
+         END-IF
          MOVE 5 TO WS-POINTS
          CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-POINTS WS-CAUSE WS-NONE
          IF WS-SPECIES = "creeper"
