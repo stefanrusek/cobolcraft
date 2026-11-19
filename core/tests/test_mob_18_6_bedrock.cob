@@ -37,6 +37,8 @@
  01 WS-KEY                PIC X(112).
  01 WS-PAIRS              PIC X(160).
  01 WS-NAME               PIC X(24).
+ 01 WS-SPECIES            PIC X(24).
+ 01 WS-DENIED             BINARY-LONG.
  01 WS-TYPE               BINARY-LONG.
  01 WS-BX                 BINARY-LONG.
  01 WS-BZ                 BINARY-LONG.
@@ -87,6 +89,60 @@
      PERFORM TRY-FLOOR-NONE
      MOVE "minecraft:obsidian" TO WS-KEY
      PERFORM TRY-FLOOR-ONE
+*>   The blocks whose isValidSpawn is "always" are floors whatever the shape of their top.
+     MOVE "minecraft:soul_sand" TO WS-KEY
+     PERFORM TRY-FLOOR-ONE
+     MOVE "minecraft:mud" TO WS-KEY
+     PERFORM TRY-FLOOR-ONE
+     MOVE "minecraft:carved_pumpkin" TO WS-KEY
+     PERFORM TRY-FLOOR-ONE
+*>   (A jack o'lantern lights the cell above it, so the zombie's light rule refuses there: the floor rule is asserted directly.)
+     MOVE "minecraft:jack_o_lantern" TO WS-KEY
+     PERFORM ALWAYS-OF
+     MOVE "minecraft:redstone_lamp" TO WS-KEY
+     PERFORM TRY-FLOOR-ONE
+*>   Leaves, ice and magma are species tests: no zombie floor.
+     MOVE "minecraft:oak_leaves" TO WS-KEY
+     PERFORM TRY-FLOOR-NONE
+     MOVE "minecraft:ice" TO WS-KEY
+     PERFORM TRY-FLOOR-NONE
+     MOVE "minecraft:frosted_ice" TO WS-KEY
+     PERFORM TRY-FLOOR-NONE
+     MOVE "minecraft:magma_block" TO WS-KEY
+     PERFORM TRY-FLOOR-NONE
+     MOVE "minecraft:stone" TO WS-KEY
+     MOVE "zombie" TO WS-SPECIES
+     MOVE 0 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "minecraft:oak_leaves" TO WS-KEY
+     MOVE "ocelot" TO WS-SPECIES
+     MOVE 0 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "parrot" TO WS-SPECIES
+     PERFORM DENIED-OF
+     MOVE "zombie" TO WS-SPECIES
+     MOVE 1 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "minecraft:ice" TO WS-KEY
+     MOVE "polar_bear" TO WS-SPECIES
+     MOVE 0 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "zombie" TO WS-SPECIES
+     MOVE 1 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "minecraft:frosted_ice" TO WS-KEY
+     MOVE "polar_bear" TO WS-SPECIES
+     MOVE 0 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "minecraft:magma_block" TO WS-KEY
+     MOVE "blaze" TO WS-SPECIES
+     MOVE 0 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "zombie" TO WS-SPECIES
+     MOVE 1 TO WS-E
+     PERFORM DENIED-OF
+     MOVE "no_such_mob" TO WS-SPECIES
+     PERFORM DENIED-OF
      STOP RUN.
  CHECK-N.
      MOVE "N" TO TL-MODE
@@ -113,6 +169,29 @@
      STRING "bugcreative RQ-1.10 no zombie spawns on " DELIMITED BY SIZE FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE INTO WS-CASE
      MOVE 0 TO WS-E
      MOVE WS-PASS TO WS-O
+     PERFORM CHECK-N.
+ ALWAYS-OF.
+     MOVE SPACES TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     MOVE WS-FY TO WS-BY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-QX WS-BY WS-QZ WS-STATE
+     CALL "MS6-FLOOR-ALWAYS" USING WS-DIM WS-QX WS-BY WS-QZ WS-DENIED
+     MOVE SPACES TO WS-CASE
+     STRING "bugcreative RQ-1.10 the floor " DELIMITED BY SIZE FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE " is always valid" DELIMITED BY SIZE
+         INTO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE WS-DENIED TO WS-O
+     PERFORM CHECK-N.
+ DENIED-OF.
+     MOVE SPACES TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     MOVE WS-FY TO WS-BY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-QX WS-BY WS-QZ WS-STATE
+     CALL "MS6-FLOOR-DENIED" USING WS-DIM WS-QX WS-BY WS-QZ WS-SPECIES WS-DENIED
+     MOVE SPACES TO WS-CASE
+     STRING "bugcreative RQ-1.10 the floor " DELIMITED BY SIZE FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE " is denied to the " DELIMITED BY SIZE
+         FUNCTION TRIM(WS-SPECIES) DELIMITED BY SIZE INTO WS-CASE
+     MOVE WS-DENIED TO WS-O
      PERFORM CHECK-N.
  TRY-FLOOR-ONE.
      PERFORM TRY-FLOOR
