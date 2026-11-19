@@ -615,6 +615,26 @@ static void compare_fields(void) {
     cob_field fd1 = field_of(d1x, 4, &a4), fd2 = field_of(d2x, 4, &a4);
     wrong += cob_cmp(&fa1, &fa2) != ccfp_cmp(&fa1, &fa2) || cob_cmp(&fd1, &fd2) != ccfp_cmp(&fd1, &fd2);
     wrong_numeric += cob_numeric_cmp(&fd2, &fd1) != ccfp_numeric_cmp(&fd2, &fd1);
+    /* fields that are no float, integer or plain DISPLAY number: libcob's compare */
+    {
+        unsigned char packed[3] = {0x01, 0x23, 0x0C}, signed_trailing[] = "0123", spaced[] = "12 4", bad_sign[] = "x5", lone_sign[] = "-", scaled_down[] = "123";
+        int32_t cents = 12345;
+        const cob_field_attr a_packed = {COB_TYPE_NUMERIC_PACKED, 5, 0, COB_FLAG_HAVE_SIGN, NULL};
+        const cob_field_attr a_cents = {COB_TYPE_NUMERIC_BINARY, 9, 2, COB_FLAG_HAVE_SIGN | COB_FLAG_REAL_BINARY, NULL};
+        const cob_field_attr a_signed_trailing = {COB_TYPE_NUMERIC_DISPLAY, 4, 0, COB_FLAG_HAVE_SIGN, NULL};
+        const cob_field_attr a_spaced = {COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0, NULL};
+        const cob_field_attr a_leading = {COB_TYPE_NUMERIC_DISPLAY, 1, 0, COB_FLAG_HAVE_SIGN | COB_FLAG_SIGN_SEPARATE | COB_FLAG_SIGN_LEADING, NULL};
+        const cob_field_attr a_pad = {COB_TYPE_NUMERIC_DISPLAY, 3, -2, 0, NULL};
+        cob_field odd[] = {field_of(packed, 3, &a_packed), field_of(&cents, 4, &a_cents), field_of(signed_trailing, 4, &a_signed_trailing),
+                           field_of(spaced, 4, &a_spaced), field_of(bad_sign, 2, &a_leading), field_of(lone_sign, 1, &a_leading),
+                           field_of(scaled_down, 3, &a_pad)};
+        double v = 123.0;
+        cob_field fv = field_of(&v, sizeof v, &A_DOUBLE);
+        for (size_t i = 0; i < sizeof odd / sizeof odd[0]; i++) {
+            wrong += cob_cmp(&fv, &odd[i]) != ccfp_cmp(&fv, &odd[i]) || cob_cmp(&odd[i], &fv) != ccfp_cmp(&odd[i], &fv);
+            done += 2;
+        }
+    }
     tl_int("fpfast cob_cmp: comparisons made", 1, done > 2000);
     tl_int("fpfast cob_cmp of a float with a float, an integer or a DISPLAY number: answers other than libcob's", 0, wrong);
     tl_int("fpfast cob_numeric_cmp of a float with a float, an integer or a DISPLAY number: answers other than libcob's", 0, wrong_numeric);
@@ -1188,6 +1208,19 @@ static void decimal_into_float_exact(void) {
     }
 }
 
+/* A decimal that holds no limb yet (mpz_init, no space: libcob's own decimals are made with space) is given one by a float load. */
+static void decimal_without_space(void) {
+    double v = 2.5, got = 0.0;
+    cob_decimal raw;
+    cob_field fv = field_of(&v, sizeof v, &A_DOUBLE), fg = field_of(&got, sizeof got, &A_DOUBLE);
+    mpz_init(raw.value);
+    raw.scale = 0;
+    ccfp_decimal_set_field(&raw, &fv);
+    ccfp_decimal_get_field(&raw, &fg, 0);
+    tl_int("fpfast a float loaded into a decimal that holds no space round trips", 1, got == 2.5);
+    mpz_clear(raw.value);
+}
+
 int main(void) {
     static cob_module *module;
     static cob_global *global;
@@ -1219,5 +1252,6 @@ int main(void) {
     integer_quotients();
     pi_field();
     decimal_into_float_exact();
+    decimal_without_space();
     return 0;
 }

@@ -222,15 +222,13 @@ int ccfp_decimal_get_field(cob_decimal *d, cob_field *f, const int opt) {
         mp_limb_t magnitude = d->value->_mp_size == 0 ? 0 : d->value->_mp_d[0];
         if (magnitude < (1ULL << 53)) {
             double v = magnitude == 0 ? 0.0 : d->value->_mp_size < 0 ? -cut_quotient(magnitude, d->scale) : cut_quotient(magnitude, d->scale);
-            float s = (float)v;
+            float s = (float)v; /* below 2^53 and above -2^53: finite */
             if (COB_FIELD_TYPE(f) == COB_TYPE_NUMERIC_DOUBLE) {
                 memcpy(f->data, &v, sizeof v);
-                return 0;
-            }
-            if (isfinite(s)) {
+            } else {
                 memcpy(f->data, &s, sizeof s);
-                return 0;
             }
+            return 0;
         }
     }
     untag(d);
@@ -405,16 +403,11 @@ static int pi_state; /* 0: not asked yet, 1: kept, -1: not a field of at most 12
 static int pi_kept(void) {
     if (pi_state == 0) {
         const cob_field *pi = cob_intr_pi();
-        if (pi->size > sizeof pi_digits || COB_FIELD_TYPE(pi) != COB_TYPE_NUMERIC_DISPLAY) {
-            pi_state = -1;
-        } else {
-            pi_attr = *pi->attr;
-            memcpy(pi_digits, pi->data, pi->size);
-            pi_field.size = pi->size;
-            pi_field.data = pi_digits;
-            pi_field.attr = &pi_attr;
-            pi_state = 1;
-        }
+        int fits = pi->size <= sizeof pi_digits && COB_FIELD_TYPE(pi) == COB_TYPE_NUMERIC_DISPLAY;
+        memcpy(pi_digits, pi->data, fits ? pi->size : 0);
+        pi_attr = *pi->attr;
+        pi_field = (cob_field){fits ? pi->size : 0, pi_digits, &pi_attr};
+        pi_state = fits ? 1 : -1;
     }
     return pi_state > 0;
 }
@@ -673,17 +666,12 @@ static cob_field *quotient_field(int64_t a, int64_t b) {
         if (scale > size) {
             size = scale;
         }
-        if (size > (int)sizeof results[0].value.text) {
-            return NULL;
-        }
+        /* the number has at most 62 + 126 bits: 57 digits, 58 counted by GMP, which fit the 96 bytes of a result */
         cob_field_attr attr = {COB_TYPE_NUMERIC_DISPLAY, (unsigned short)size, (short)scale, sign_flag, NULL};
         f = result_entry((size_t)size, &attr, 1);
         memset(f->data, '0', (size_t)size);
         /* digits: the whole part (when there is one), then the decimals */
         int whole_digits = whole > 0 ? digits_of(whole) : 0;
-        if (whole_digits + scale > size) {
-            return NULL; /* the count GMP gave is lower than the digits: not a case libcob writes either */
-        }
         unsigned char *end = f->data + size;
         {
             /* the decimals cut at `scale` digits: the first `scale` of the 38 */
@@ -751,11 +739,8 @@ cob_field *ccfp_intr_binop(cob_field *f1, const int op, cob_field *f2) {
 cob_field *ccfp_intr_tan(cob_field *f) {
     double x;
     if (double_of(f, &x)) {
-        double r = tan(x);
-        if (isfinite(r)) {
-            cob_set_exception(0);
-            return double_result(r);
-        }
+        cob_set_exception(0);
+        return double_result(tan(x)); /* the tangent of a finite double is finite */
     }
     return cob_intr_tan(f);
 }
