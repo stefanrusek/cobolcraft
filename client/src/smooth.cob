@@ -27,9 +27,13 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SMOOTH-STORE.
 *> USING CLIENT-STATE: at the start of a client tick, before the player moves: the position, eye height and field of view modifier of the tick that ends are the
-*> state one tick ago (PL-O*).
+*> state one tick ago (PL-O*). The view bobbing state of 53 section 15.2 moves on here too, as vanilla does at the start of the tick's aiStep: walkDistO and bobO take the
+*> old values, and the bob amount eases 0.4 of the way to its target f (0 when the player is in the air, dead or dying, or swimming; else the smaller of 0.1 and the
+*> horizontal speed left over from the tick before: the step of that tick after the drag of ordinary ground, 0.546, 53 section 15.2). deathTime counts up while the
+*> health is 0 or less, at most to 20, and is 0 while alive (12 section 6.1 step 1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-F                   FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -39,8 +43,38 @@
      MOVE PL-EYE TO PL-OEYE
      MOVE PL-FOV-MOD TO PL-OFOV
      MOVE 1 TO PL-OSET
+     MOVE PL-WALK TO PL-WALK-O
+     MOVE PL-BOB TO PL-BOB-O
+     MOVE 0 TO WS-F
+     IF PL-ON-GROUND = 1 AND PL-HEALTH > 0 AND PL-SWIMMING = 0
+         COMPUTE WS-F = FUNCTION MIN(0.1, FUNCTION SQRT(PL-MOVE-X * PL-MOVE-X + PL-MOVE-Z * PL-MOVE-Z) * 0.546)
+     END-IF
+     COMPUTE PL-BOB = PL-BOB + (WS-F - PL-BOB) * 0.4
+     IF PL-HEALTH > 0
+         MOVE 0 TO PL-DEATH-TIME
+     END-IF
+     IF PL-HEALTH <= 0 AND PL-DEATH-TIME < 20
+         ADD 1 TO PL-DEATH-TIME
+     END-IF
      GOBACK.
  END PROGRAM SMOOTH-STORE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SMOOTH-WALK.
+*> USING CLIENT-STATE: after the player moved in a client tick (PHYS-TICK): walkDist grows by 0.6 x the horizontal distance the position changed since SMOOTH-STORE
+*> (any mode and pose, 53 section 15.2; a position correction between ticks is not walking: SMOOTH-STORE took the position after it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     COMPUTE WS-DX = PL-X - PL-OX
+     COMPUTE WS-DZ = PL-Z - PL-OZ
+     COMPUTE PL-WALK = PL-WALK + 0.6 * FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     GOBACK.
+ END PROGRAM SMOOTH-WALK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SMOOTH-PLAYER.

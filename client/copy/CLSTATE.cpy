@@ -26,6 +26,7 @@
     05 CL-HAND-KEY-LIGHT     FLOAT-LONG.
     05 CL-HAND-KEY-YAW       FLOAT-LONG.      *> the view angles it was shaded for (held items are lit in world orientation, 12 section 6.10)
     05 CL-HAND-KEY-PITCH     FLOAT-LONG.
+    05 CL-HAND-KEY-POSE      FLOAT-LONG OCCURS 12 TIMES. *> the view pose (tilt and bob, view-pose.cob) the mesh was built under
     05 CL-HAND-NOCULL        BINARY-LONG.     *> 1 keeps the quads that face away from the eye (tests and diagnostics only; 0 = back faces are dropped, 12 section 6.9)
     05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
@@ -553,6 +554,14 @@
        10 PL-OZ              FLOAT-LONG.
        10 PL-OEYE            FLOAT-LONG.
        10 PL-OFOV            FLOAT-LONG.
+*>     The view bobbing state (53 section 15.2; smooth.cob SMOOTH-STORE and SMOOTH-WALK): walkDist (0.6 x the horizontal distance moved, summed), the bob amount
+*>     (0 to 0.1, eased 0.4 a tick toward its target) and both one tick ago; the Hurt Animation yaw of the local player and deathTime, at most 20 (12 section 6.1).
+       10 PL-WALK            FLOAT-LONG.
+       10 PL-WALK-O          FLOAT-LONG.
+       10 PL-BOB             FLOAT-LONG.
+       10 PL-BOB-O           FLOAT-LONG.
+       10 PL-HURT-DIR        FLOAT-LONG.
+       10 PL-DEATH-TIME      BINARY-LONG.
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
        10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
        10 PL-ANIM-INIT       PIC 9.          *> the own figure's walk animation (54 section 1): set once the previous position is known
