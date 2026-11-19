@@ -642,6 +642,69 @@
  END PROGRAM FLUID-SPREAD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FLUID-EDGE-DEFER.
+*> USING dimension row, x, z (BINARY-LONG), flag out (BINARY-LONG): 1 when a chunk next to the cell (west, east, north or south of it, in another chunk than the cell's) is not loaded and
+*> the generation workers are to make it (WORLD-GET-DEFER, which also queues it): a fluid written there would make the chunk where the write stands, in the tick, in seconds (operator, try16:
+*> the frame rate is 0 while a world loads, the water at the border of the loaded area). 0 otherwise, also in a world without workers, where the chunk is made where the write finds it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-NCX                 BINARY-LONG.
+ 01 WS-NCZ                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DEFER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-FLAG.
+     MOVE 0 TO L-FLAG
+     COMPUTE WS-LX = FUNCTION MOD(L-X, 16)
+     COMPUTE WS-LZ = FUNCTION MOD(L-Z, 16)
+     IF WS-LX > 0 AND WS-LX < 15 AND WS-LZ > 0 AND WS-LZ < 15
+         GOBACK
+     END-IF
+     COMPUTE WS-CX = (L-X - WS-LX) / 16
+     COMPUTE WS-CZ = (L-Z - WS-LZ) / 16
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 4
+         MOVE 0 TO WS-DX WS-DZ
+         EVALUATE WS-D
+             WHEN 1
+                 MOVE -1 TO WS-DX
+             WHEN 2
+                 MOVE 1 TO WS-DX
+             WHEN 3
+                 MOVE -1 TO WS-DZ
+             WHEN OTHER
+                 MOVE 1 TO WS-DZ
+         END-EVALUATE
+         COMPUTE WS-NX = L-X + WS-DX
+         COMPUTE WS-NZ = L-Z + WS-DZ
+         COMPUTE WS-NCX = (WS-NX - FUNCTION MOD(WS-NX, 16)) / 16
+         COMPUTE WS-NCZ = (WS-NZ - FUNCTION MOD(WS-NZ, 16)) / 16
+         IF WS-NCX NOT = WS-CX OR WS-NCZ NOT = WS-CZ
+             CALL "WORLD-FIND" USING L-DIM WS-NCX WS-NCZ WS-ROW
+             IF WS-ROW = 0
+                 CALL "WORLD-GET-DEFER" USING L-DIM WS-NCX WS-NCZ WS-DEFER
+                 IF WS-DEFER = 1
+                     MOVE 1 TO L-FLAG
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FLUID-EDGE-DEFER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FLUID-TICK.
 *> USING dimension row, x, y, z, fluid (1 water, 2 lava) (BINARY-LONG): FlowingFluid.tick (2.2) for the cell at the position when it still holds that
 *> fluid: a flowing cell takes its new state (air, a changed state with the next tick scheduled at getSpreadDelay, or nothing), then it spreads.
@@ -673,6 +736,8 @@
  01 WS-DRAW                BINARY-LONG.
  01 WS-SPREAD-DELAY        BINARY-LONG.
  01 WS-HASH                BINARY-DOUBLE.
+ 01 WS-DEFER               BINARY-LONG.
+ 01 WS-RETRY               BINARY-LONG VALUE 10.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -682,6 +747,12 @@
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FLUID.
      CALL "FLUID-CELL" USING L-DIM L-X L-Y L-Z WS-STATE WS-F WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
      IF WS-F NOT = L-FLUID
+         GOBACK
+     END-IF
+*>   A neighbouring chunk that the workers are still making is not written into (that would make it here, in the tick): the tick is put back and runs once the chunk is there.
+     CALL "FLUID-EDGE-DEFER" USING L-DIM L-X L-Z WS-DEFER
+     IF WS-DEFER = 1
+         CALL "FLUID-SCHEDULE" USING L-DIM L-X L-Y L-Z L-FLUID WS-RETRY
          GOBACK
      END-IF
      MOVE 0 TO WS-SOURCE
