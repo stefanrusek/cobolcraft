@@ -65,6 +65,10 @@
  78 CAUSE-GENERIC              VALUE 16.
 *> CAUSE-IN-FIRE (002-lane-fire, T11101): standing in a fire block (damage type in_fire, 1.0, soul fire 2.0; 17 section 4.11); no RULE-CAUSE row.
  78 CAUSE-IN-FIRE              VALUE 17.
+*> CAUSE-MAGIC and CAUSE-INDIRECT-MAGIC (002-lane-p49r, 20 section 13.3.1): the damage types magic and indirect_magic of an evoker fang's bite (owner-less, and caused by the owner); both bypass
+*> armor and shields (they take no part in the armor pipeline of HEALTH-HURT), neither has a RULE-CAUSE row.
+ 78 CAUSE-MAGIC                VALUE 18.
+ 78 CAUSE-INDIRECT-MAGIC       VALUE 19.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

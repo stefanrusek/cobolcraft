@@ -14,7 +14,7 @@
 *>   VEX-STEP USING vex row                            limited life and starvation
 *> Wololo (EVK-WOLOLO-PICK, performed in EVK-STEP; the document's start condition is a target, so the fang goal always goes first: only EVK-BEGIN starts it), the fang column
 *> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7).
-*> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the vex flight (no flying speed in the documents), an owner-less magic bite, the height of a
+*> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the knockback of an owned bite and the witch's 0.15 of magic damage, the height of a
 *> partial block in the fang cell.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-FIND.
@@ -449,39 +449,42 @@
          IF FG-USED(WS-I) = 1
              SUBTRACT 1 FROM FG-WARM(WS-I)
              IF FG-WARM(WS-I) <= -8
-*>               The bite: living entities in the box inflated by 0.2; the owner's family is spared.
+*>               The bite (20 section 13.3.1): living entities in the box inflated by 0.2. An owner-less fang (no owner, or one that is gone) hurts every one of them for 6.0 with the
+*>               plain magic source; a fang with an owner spares the owner and its family and hurts the rest with indirect_magic caused by the owner (a player's damage scaled by the difficulty).
                  MOVE 0 TO WS-O
                  PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
                      IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = FG-OWNER(WS-I)
                          MOVE WS-N TO WS-O
                      END-IF
                  END-PERFORM
-                 IF WS-O > 0
-                     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
-                         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = FG-DIM(WS-I) AND PL-MODE(WS-P) < 2
-                             IF FUNCTION ABS(PL-X(WS-P) - FG-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - FG-Z(WS-I)) <= 0.75
-                                     AND PL-Y(WS-P) <= FG-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= FG-Y(WS-I)
-                                 CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-O
+                 PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
+                     IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = FG-DIM(WS-I) AND PL-MODE(WS-P) < 2
+                         IF FUNCTION ABS(PL-X(WS-P) - FG-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - FG-Z(WS-I)) <= 0.75
+                                 AND PL-Y(WS-P) <= FG-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= FG-Y(WS-I)
+                             CALL "HEALTH-MAGIC-HIT" USING WS-P WS-DAMAGE WS-O
+                         END-IF
+                     END-IF
+                 END-PERFORM
+                 PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+                     IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = FG-DIM(WS-I)
+                         CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
+                         MOVE 0 TO WS-ALLY
+                         IF WS-S > 0
+                             IF WS-O > 0 AND (WS-N = WS-O OR SM-KEY(WS-S) = "evoker" OR "vindicator" OR "pillager" OR "illusioner" OR "vex" OR "ravager")
+                                 MOVE 1 TO WS-ALLY
+                             END-IF
+                             IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - FG-X(WS-I)) <= 0.75
+                                     AND FUNCTION ABS(EN-Z(WS-N) - FG-Z(WS-I)) <= 0.75
+                                     AND EN-Y(WS-N) <= FG-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= FG-Y(WS-I)
+                                 IF WS-O = 0
+                                     CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-MAGIC WS-NONE
+                                 ELSE
+                                     CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-INDIRECT-MAGIC WS-NONE
+                                 END-IF
                              END-IF
                          END-IF
-                     END-PERFORM
-                     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
-                         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = FG-DIM(WS-I)
-                             CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
-                             MOVE 0 TO WS-ALLY
-                             IF WS-S > 0
-                                 IF SM-KEY(WS-S) = "evoker" OR "vindicator" OR "pillager" OR "illusioner" OR "vex" OR "ravager"
-                                     MOVE 1 TO WS-ALLY
-                                 END-IF
-                                 IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - FG-X(WS-I)) <= 0.75
-                                         AND FUNCTION ABS(EN-Z(WS-N) - FG-Z(WS-I)) <= 0.75
-                                         AND EN-Y(WS-N) <= FG-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= FG-Y(WS-I)
-                                     CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-MOB WS-NONE
-                                 END-IF
-                             END-IF
-                         END-IF
-                     END-PERFORM
-                 END-IF
+                     END-IF
+                 END-PERFORM
                  MOVE 0 TO FG-USED(WS-I)
              END-IF
          END-IF
