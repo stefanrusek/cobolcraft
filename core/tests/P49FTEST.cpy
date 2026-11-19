@@ -21,6 +21,7 @@
  01 WS-F1                  PIC -(6)9.99.
  01 WS-F2                  PIC -(6)9.99.
  01 WS-F3                  PIC -(6)9.99.
+ 01 WS-F4                  PIC -(6)9.99.
  01 WS-FL                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
@@ -88,6 +89,21 @@
                              COMPUTE WS-F3 ROUNDED = WS-FL
                              STRING "V" FUNCTION TRIM(WS-F1) "/" FUNCTION TRIM(WS-F2) "/" FUNCTION TRIM(WS-F3)
                                  DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                         WHEN 40
+                             MOVE PK-MX-FLOAT(1) TO WS-FL
+                             COMPUTE WS-F1 ROUNDED = WS-FL
+                             MOVE PK-MX-FLOAT(2) TO WS-FL
+                             COMPUTE WS-F2 ROUNDED = WS-FL
+                             MOVE PK-MX-FLOAT(3) TO WS-FL
+                             COMPUTE WS-F3 ROUNDED = WS-FL
+                             MOVE PK-MX-FLOAT(4) TO WS-FL
+                             COMPUTE WS-F4 ROUNDED = WS-FL
+                             STRING "Q" FUNCTION TRIM(WS-F1) "/" FUNCTION TRIM(WS-F2) "/" FUNCTION TRIM(WS-F3) "/" FUNCTION TRIM(WS-F4)
+                                 DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                         WHEN 5 WHEN 6 WHEN 41
+                             MOVE PK-MX-PRESENT TO WS-E1
+                             MOVE PK-MX-DATA-LENGTH TO WS-E2
+                             STRING "D" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                          WHEN OTHER
                              MOVE PK-MX-INT TO WS-E2
                              STRING "I" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR

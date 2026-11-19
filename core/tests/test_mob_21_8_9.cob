@@ -37,6 +37,7 @@
  01 WS-COLOUR              BINARY-LONG.
  01 WS-DIR                 BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
+ 01 WS-COMMON              PIC X(240) VALUE "8=I0,9=I0,10=I0,11=V0.00/0.00/0.00,12=V1.00/1.00/1.00,13=Q0.00/0.00/0.00/1.00,14=Q0.00/0.00/0.00/1.00,15=I0,16=I-1,17=F1.00,18=F0.00,19=F1.00,20=F0.00,21=F0.00,22=I-1,".
  01 WS-EXPECT              PIC X(400).
  01 WS-ID                  PIC Z(8)9.
  01 WS-ITEM-N              PIC Z(8)9.
@@ -166,7 +167,7 @@
      MOVE EN-ID(WS-ROW) TO WS-ID
      CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
      MOVE SPACES TO WS-EXPECT
-     STRING "1 101(" FUNCTION TRIM(WS-ID) ";23=I5)" DELIMITED BY SIZE INTO WS-EXPECT
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";" FUNCTION TRIM(WS-COMMON) "23=I5)" DELIMITED BY SIZE INTO WS-EXPECT
      MOVE "acceptance US15 minecraft:block_display 21§8.9 metadata 23 = the block state" TO TL-CASE
      MOVE WS-EXPECT TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
@@ -176,8 +177,25 @@
      MOVE EN-ID(WS-ROW) TO WS-ID
      CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
      MOVE SPACES TO WS-EXPECT
-     STRING "1 101(" FUNCTION TRIM(WS-ID) ";23=S" FUNCTION TRIM(WS-ITEM-N) "x1,24=I1)" DELIMITED BY SIZE INTO WS-EXPECT
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";" FUNCTION TRIM(WS-COMMON) "23=S" FUNCTION TRIM(WS-ITEM-N) "x1,24=I1)" DELIMITED BY SIZE INTO WS-EXPECT
      MOVE "acceptance US15 minecraft:item_display 21§8.9 metadata 23 = the stack, 24 = the display type" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   The text display: the common fields, the empty text component (a root String of length 0: 3 bytes), line width 200, background 0x40000000, opacity -1, flags 0 (21 section 8.9.3).
+     CALL "TDISPLAY-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     MOVE "minecraft:text_display" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ITEM-ROW WS-STATUS
+     MOVE "acceptance US15 minecraft:text_display 21§8.9.3 the entity is of type text_display" TO WS-CASE
+     MOVE WS-TYPE TO WS-E
+     MOVE EN-TYPE(WS-ROW) TO WS-O
+     PERFORM CHECK-N
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";" FUNCTION TRIM(WS-COMMON) "23=D0:3,24=I200,25=I1073741824,26=I-1,27=I0)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:text_display 21§8.9.3 defaults: text empty, line width 200, background 0x40000000, opacity -1, flags 0" TO TL-CASE
      MOVE WS-EXPECT TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -193,8 +211,8 @@
      PERFORM CHECK-N
      CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
      MOVE SPACES TO WS-EXPECT
-     STRING "1 101(" FUNCTION TRIM(WS-ID) ";15=I1,16=I127,18=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
-     MOVE "acceptance US15 minecraft:mannequin 21§8.16 main hand right (1), all 7 model parts (127), not immovable" TO TL-CASE
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";15=I1,16=I127,17=D0:8,18=Z0,19=D1:48)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:mannequin 21§8.16.2 main hand right (1), 127 layers, the empty profile (8 bytes), not immovable, the label description (48 bytes)" TO TL-CASE
      MOVE WS-EXPECT TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
