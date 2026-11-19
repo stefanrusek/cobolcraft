@@ -749,3 +749,122 @@
      END-IF
      GOBACK.
  END PROGRAM STDMOB-AQUATIC-FINALIZE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AQUA-ROTATE.
+*> USING x, y, z (FLOAT-LONG, in and out), xBodyRotO, yBodyRotO (degrees, FLOAT-LONG): Squid.rotateVector (42-7 section 1.4.1, lane p49t): the vector turned about the X axis by xBodyRotO x 0.017453292,
+*> then about the Y axis by -yBodyRotO x 0.017453292 (xRot: y' = y c + z s, z' = z c - y s; yRot: x' = x c + z s, z' = z c - x s).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-XROT                 FLOAT-LONG.
+ 01 L-YROT                 FLOAT-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-XROT L-YROT.
+     COMPUTE WS-ANGLE = L-XROT * 0.017453292
+     COMPUTE WS-C = FUNCTION COS(WS-ANGLE)
+     COMPUTE WS-S = FUNCTION SIN(WS-ANGLE)
+     COMPUTE WS-T = L-Y * WS-C + L-Z * WS-S
+     COMPUTE L-Z = L-Z * WS-C - L-Y * WS-S
+     MOVE WS-T TO L-Y
+     COMPUTE WS-ANGLE = 0 - L-YROT * 0.017453292
+     COMPUTE WS-C = FUNCTION COS(WS-ANGLE)
+     COMPUTE WS-S = FUNCTION SIN(WS-ANGLE)
+     COMPUTE WS-T = L-X * WS-C + L-Z * WS-S
+     COMPUTE L-Z = L-Z * WS-C - L-X * WS-S
+     MOVE WS-T TO L-X
+     GOBACK.
+ END PROGRAM AQUA-ROTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AQUA-INK.
+*> USING tracker row, attacker (player row, 0 none): Squid.spawnInk (42-7 section 1.4.1) after a squid or glow squid was hurt by an attacker: 30 Level Particles of squid_ink (76) or glow_squid_ink
+*> (109) at the ink origin (the squid's position + (0, -1, 0) rotated) + (0, 0.5, 0), count 0, the distance fields the rotated direction (r1 x 0.6 - 0.3, -1, r2 x 0.6 - 0.3) times
+*> (k + r3 x 2.0, k 0.3, a baby 0.1), speed 0.1. The squid keeps no body angles of its own: yBodyRotO is its yaw and xBodyRotO is 0; the draws are the hash of xp.cob; the squirt sound is not sent.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SPECIES             PIC X(24).
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-OPTION              BINARY-LONG VALUE -1.
+ 01 WS-OVERRIDE            BINARY-LONG VALUE 0.
+ 01 WS-ALWAYS              BINARY-LONG VALUE 0.
+ 01 WS-COUNT               BINARY-LONG VALUE 0.
+ 01 WS-RANDOM              BINARY-LONG VALUE 0.
+ 01 WS-SALT                BINARY-LONG VALUE 9651.
+ 01 WS-BOUND               BINARY-LONG VALUE 1000000.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-R1                  FLOAT-LONG.
+ 01 WS-R2                  FLOAT-LONG.
+ 01 WS-R3                  FLOAT-LONG.
+ 01 WS-K                   FLOAT-LONG.
+ 01 WS-FACTOR              FLOAT-LONG.
+ 01 WS-XROT                FLOAT-LONG VALUE 0.
+ 01 WS-YROT                FLOAT-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-SPREAD-TABLE.
+    05 WS-SPREAD           FLOAT-SHORT OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ATTACKER.
+     IF L-ATTACKER = 0
+         GOBACK
+     END-IF
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-SPECIES
+     EVALUATE WS-SPECIES
+         WHEN "squid"
+             MOVE 76 TO WS-TYPE
+         WHEN "glow_squid"
+             MOVE 109 TO WS-TYPE
+         WHEN OTHER
+             GOBACK
+     END-EVALUATE
+     MOVE EN-YAW(L-ROW) TO WS-YROT
+     MOVE 0 TO WS-OX
+     MOVE -1 TO WS-OY
+     MOVE 0 TO WS-OZ
+     CALL "AQUA-ROTATE" USING WS-OX WS-OY WS-OZ WS-XROT WS-YROT
+     COMPUTE WS-PX = EN-X(L-ROW) + WS-OX
+     COMPUTE WS-PY = EN-Y(L-ROW) + WS-OY + 0.5
+     COMPUTE WS-PZ = EN-Z(L-ROW) + WS-OZ
+     MOVE 0.3 TO WS-K
+     IF EN-AGE(L-ROW) < 0
+         MOVE 0.1 TO WS-K
+     END-IF
+     MOVE 0.1 TO WS-SPREAD(4) WS-SPREAD(5) WS-SPREAD(6)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 30
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+         COMPUTE WS-R1 = WS-DRAW / 1000000
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+         COMPUTE WS-R2 = WS-DRAW / 1000000
+         COMPUTE WS-DX = WS-R1 * 0.6 - 0.3
+         MOVE -1 TO WS-DY
+         COMPUTE WS-DZ = WS-R2 * 0.6 - 0.3
+         CALL "AQUA-ROTATE" USING WS-DX WS-DY WS-DZ WS-XROT WS-YROT
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+         COMPUTE WS-R3 = WS-DRAW / 1000000
+         COMPUTE WS-FACTOR = WS-K + WS-R3 * 2.0
+         COMPUTE WS-SPREAD(1) = WS-DX * WS-FACTOR
+         COMPUTE WS-SPREAD(2) = WS-DY * WS-FACTOR
+         COMPUTE WS-SPREAD(3) = WS-DZ * WS-FACTOR
+         CALL "PARTICLE-SEND" USING EN-DIM(L-ROW) WS-TYPE WS-OPTION WS-OVERRIDE WS-ALWAYS WS-PX WS-PY WS-PZ
+             WS-SPREAD-TABLE WS-COUNT WS-RANDOM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM AQUA-INK.
