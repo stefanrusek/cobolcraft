@@ -649,6 +649,9 @@
          IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 9
              CALL "BE-SPAWNER-TICK" USING WS-I
          END-IF
+         IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND (BE-TYPE(WS-I) = 7 OR BE-TYPE(WS-I) = 8)
+             CALL "SIGN-LOCK-TICK" USING WS-I
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM BE-TICK-ALL.

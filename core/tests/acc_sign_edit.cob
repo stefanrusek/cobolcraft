@@ -204,10 +204,7 @@
      MOVE "Hello|World||Bye" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      IF WS-BE > 0
-         MOVE BE-XI(WS-BE, 6) TO WS-N1
-         MOVE BE-XI(WS-BE, 7) TO WS-N2
-         MOVE BE-XI(WS-BE, 9) TO WS-N4
-         IF WS-N1 = 5 AND WS-N2 = 5 AND WS-N4 = 3
+         IF BE-XI(WS-BE, 6) = 5 AND BE-XI(WS-BE, 7) = 5 AND BE-XI(WS-BE, 9) = 3
              STRING BE-XT(WS-BE, 1)(1:5) "|" BE-XT(WS-BE, 2)(1:5) "||" BE-XT(WS-BE, 4)(1:3) DELIMITED BY SIZE INTO TL-OBSERVED
          END-IF
      END-IF
