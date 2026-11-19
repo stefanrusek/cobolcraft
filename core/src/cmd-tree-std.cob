@@ -1,6 +1,6 @@
 *> The standard command tree (docs/protocol/16-commands-catalog.md §2, §3): one registration program per command (CMDS-REG-<name>
 *> in core/src/cmds-*.cob), called in the order of the catalog's registration table (§2), which is the order of the children of
-*> the root (help, usage lines and the Commands packet show it). A command that is not implemented is not registered.
+*> the root (help, usage lines and the Commands packet show it): the order of 57-client-closures-4 section 6.1. A command that is not implemented is not registered.
 *>
 *> Entry point: BR-STD-TREE (no arguments): an empty tree (BR-TREE-RESET) and every form of every command
 
@@ -26,19 +26,20 @@
  PROCEDURE DIVISION.
      CALL "BR-TREE-RESET"
      CALL "BA-HOST-KIND" USING WS-KIND
+     CALL "CMDS-REG-ADVANCEMENT"
+     CALL "CMDS-REG-ATTRIBUTE"
      CALL "BR-DOC-FILL" USING WS-DOC-EXECUTE
      CALL "CMDS-REG-EXECUTE"
      CALL "CMDS-REG-BOSSBAR"
      CALL "CMDS-REG-CLEAR"
-     CALL "CMDS-REG-ADVANCEMENT"
-     CALL "CMDS-REG-ATTRIBUTE"
-     CALL "CMDS-REG-DAMAGE"
      CALL "BR-DOC-FILL" USING WS-DOC-CLONE
      CALL "CMDS-REG-CLONE"
      CALL "BR-DOC-FILL" USING WS-DOC-COMPUTE
      CALL "CMDS-REG-COMPUTE"
+     CALL "CMDS-REG-DAMAGE"
      CALL "BR-DOC-FILL" USING WS-DOC-DATA
      CALL "CMDS-REG-DATA"
+     CALL "CMDS-REG-DATAPACK"
      CALL "BR-DOC-FILL" USING WS-DOC-DEBUG
      CALL "CMDS-REG-DEBUG"
      CALL "CMDS-REG-DEFAULTGAMEMODE"
@@ -52,6 +53,7 @@
      CALL "CMDS-REG-FILL"
      CALL "CMDS-REG-FILLBIOME"
      CALL "CMDS-REG-FORCELOAD"
+     CALL "CMDS-REG-FUNCTION"
      CALL "CMDS-REG-GAMEMODE"
      CALL "CMDS-REG-GAMERULE"
      CALL "CMDS-REG-GIVE"
@@ -60,23 +62,23 @@
      CALL "CMDS-REG-KICK"
      CALL "CMDS-REG-KILL"
      CALL "CMDS-REG-LIST"
-     CALL "CMDS-REG-LOOT"
      CALL "CMDS-REG-LOCATE"
+     CALL "CMDS-REG-LOOT"
      CALL "CMDS-REG-MSG"
+     CALL "BR-DOC-FILL" USING WS-DOC-SWING
+     CALL "CMDS-REG-SWING"
      CALL "CMDS-REG-PARTICLE"
      CALL "CMDS-REG-PLACE"
      CALL "CMDS-REG-PLAYSOUND"
      CALL "CMDS-REG-POSTEFFECT"
      CALL "BR-DOC-FILL" USING WS-DOC-RANDOM
      CALL "CMDS-REG-RANDOM"
-     CALL "CMDS-REG-RECIPE"
-     CALL "CMDS-REG-RETURN"
      CALL "CMDS-REG-RELOAD"
+     CALL "CMDS-REG-RECIPE"
+     CALL "CMDS-REG-FETCHPROFILE"
+     CALL "CMDS-REG-RETURN"
      CALL "CMDS-REG-RIDE"
      CALL "CMDS-REG-ROTATE"
-     CALL "CMDS-REG-FETCHPROFILE"
-     CALL "CMDS-REG-FUNCTION"
-     CALL "CMDS-REG-DATAPACK"
      CALL "CMDS-REG-SAY"
      CALL "CMDS-REG-SCHEDULE"
      CALL "CMDS-REG-SCOREBOARD"
@@ -84,14 +86,12 @@
      CALL "CMDS-REG-VERSION"
      CALL "CMDS-REG-SETBLOCK"
      CALL "CMDS-REG-SPAWNPOINT"
+     CALL "CMDS-REG-SETWORLDSPAWN"
      CALL "CMDS-REG-SPECTATE"
      CALL "CMDS-REG-SPREADPLAYERS"
-     CALL "CMDS-REG-SETWORLDSPAWN"
      CALL "CMDS-REG-STOPSOUND"
      CALL "CMDS-REG-STOPWATCH"
      CALL "CMDS-REG-SUMMON"
-     CALL "BR-DOC-FILL" USING WS-DOC-SWING
-     CALL "CMDS-REG-SWING"
      CALL "CMDS-REG-TAG"
      CALL "CMDS-REG-TEAM"
      CALL "CMDS-REG-TEAMMSG"
