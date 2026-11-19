@@ -131,6 +131,7 @@
  COPY CBLOCKS.
  COPY DIMENSIONS.
  COPY CELLS.
+ COPY VILDOOR.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -147,6 +148,7 @@
      COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
      CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
      MOVE 1 TO L-SOLID
+     MOVE 0 TO VD-LAST-STATE
      IF WS-ROW > 0
          MOVE 0 TO WS-STATE
          IF L-Y >= DM-MIN-Y(L-DIM) AND L-Y < DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM)
@@ -155,6 +157,7 @@
          END-IF
          MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
          MOVE CB-SOLID(WS-BLK + 1) TO L-SOLID
+         MOVE WS-STATE TO VD-LAST-STATE
      END-IF
      GOBACK.
  END PROGRAM GI-SOLID-CELL.
@@ -164,11 +167,13 @@
 *> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out,
 *> top out (BINARY-LONG): hit 1 when the collision box of that entity type (ENTITYTYPES.cpy, standin
 *> §3) at that position overlaps a solid cell (GI-SOLID-CELL) with positive volume, faces within
-*> 1e-7 block counting as touching; top is then the highest y among those cells. Ground items
+*> 1e-7 block counting as touching, an open door excepted (its cell is free: a villager walks through the door it opened, VILDOOR.cpy); top is then the highest y among those cells. Ground items
 *> (GI-MOVE) and mobs (core/src/mobs.cob) move with it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
+ COPY VILDOOR.
+ 01 WS-OPEN                BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -205,6 +210,12 @@
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1
                  CALL "GI-SOLID-CELL" USING L-DIM WS-BX WS-BY WS-BZ WS-SOLID
+                 IF WS-SOLID = 1
+                     CALL "VL-DOOR-STATE-OPEN" USING VD-LAST-STATE WS-OPEN
+                     IF WS-OPEN = 1
+                         MOVE 0 TO WS-SOLID
+                     END-IF
+                 END-IF
                  IF WS-SOLID = 1
                      MOVE 1 TO L-HIT
                      MOVE WS-BY TO L-TOP

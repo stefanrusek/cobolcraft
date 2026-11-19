@@ -755,12 +755,14 @@
 *> of 0 to 6, +5 when the destination is more than 16 blocks away, +10 when more than 32: the recalculation delay of MeleeAttackGoal in 4.2) and
 *> whenever the waypoint is reached, STDMOB-PATH searches a new path from the mob's feet cell (a budget of 100 nodes), and the waypoint EN-WAY-X/-Z
 *> becomes the centre of the path's second cell; a path of one cell (the mob is at its closest) or none (no floor, nothing found) sends it straight at the
-*> destination. The velocity is the walk speed toward the waypoint. The mob has arrived when it is in the destination cell column.
+*> destination. The velocity is the walk speed toward the waypoint. The mob has arrived when it is in the destination cell column. A villager's search passes wooden doors
+*> (VD-PATH-DOORS, VILDOOR.cpy; VL-DOOR-TICK opens them).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
  COPY STDMOBS.
+ COPY VILDOOR.
  01 WS-MX                  BINARY-LONG.
  01 WS-MY                  BINARY-LONG.
  01 WS-MZ                  BINARY-LONG.
@@ -820,8 +822,12 @@
          IF ET-HEIGHT-MILLI(WS-TYPE) > 1000
              MOVE 2 TO WS-HEIGHT
          END-IF
+         IF SM-KEY(L-M) = "villager"
+             MOVE 1 TO VD-PATH-DOORS
+         END-IF
          CALL "STDMOB-PATH" USING EN-DIM(L-ROW) WS-MX WS-MY WS-MZ L-DX L-DY L-DZ WS-HEIGHT WS-BUDGET
              WS-PATH-TABLE WS-COUNT WS-REACHED
+         MOVE 0 TO VD-PATH-DOORS
          IF WS-COUNT >= 2
              COMPUTE EN-WAY-X(L-ROW) = WS-PX(2) + 0.5
              COMPUTE EN-WAY-Z(L-ROW) = WS-PZ(2) + 0.5
@@ -2292,15 +2298,17 @@
  PROGRAM-ID. STDMOB-CELL.
 *> USING dim, x, y, z (BINARY-LONG), type out (BINARY-LONG): what a walking mob meets in a cell: 0 passable (air or a block without collision), 1 solid
 *> (CB-SOLID), 2 hazard (water, lava or fire: a land mob does not path through it; 18 section 5.1 gives liquids a malus that keeps a land mob out). A cell
-*> outside the dimension's height reads as passable air above and solid below.
+*> outside the dimension's height reads as passable air above and solid below. While VD-PATH-DOORS is 1 (the path of a villager, VILDOOR.cpy) a wooden door is passable: the mob opens it (18 section 5.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CBLOCKS.
  COPY DIMENSIONS.
+ COPY VILDOOR.
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-WOODEN              BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -2320,6 +2328,13 @@
      COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
      IF CB-SOLID(WS-BLOCK) = 1
          MOVE 1 TO L-TYPE
+         IF VD-PATH-DOORS = 1
+             COMPUTE WS-N = WS-BLOCK - 1
+             CALL "VL-DOOR-BLOCK" USING WS-N WS-WOODEN
+             IF WS-WOODEN = 1
+                 MOVE 0 TO L-TYPE
+             END-IF
+         END-IF
          GOBACK
      END-IF
      MOVE 0 TO WS-N

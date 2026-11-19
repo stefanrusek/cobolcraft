@@ -159,7 +159,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-BRAIN.
-*> USING entity row: one tick of the brain of a villager. Every tick: the activity (VM-ACT-TICK), WakeUp, the index fill, the walk target (VL-WALK-TICK). Every 20 to 39 ticks (the brain beat,
+*> USING entity row: one tick of the brain of a villager. Every tick: the activity (VM-ACT-TICK), WakeUp, the index fill, the walk target (VL-WALK-TICK), the doors on its way (VL-DOOR-TICK). Every 20 to 39 ticks (the brain beat,
 *> VL-NEXT-BRAIN) the decisions of VL-BRAIN-BEAT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -224,6 +224,7 @@
          END-IF
      END-IF
      CALL "VL-WALK-TICK" USING L-ROW WS-SLOT
+     CALL "VL-DOOR-TICK" USING L-ROW WS-SLOT
      CALL "VL-SENSE" USING L-ROW WS-SLOT
      CALL "VL-CORE-TICK" USING L-ROW WS-SLOT WS-BABY
      IF WS-BABY = 1
@@ -536,10 +537,11 @@
  PROGRAM-ID. VL-CAN-REACH.
 *> USING row, x, y, z of a block, reach, ok out: canReach of AcquirePoi's path (44 section 2.1 step 6): a path search (STDMOB-PATH, 100 nodes, a villager is 2 blocks high) from the
 *> villager's feet cell ends within `reach` (Manhattan, the POI type's valid range: 1 for a bed or a workstation, 6 for a bell) of the block. The document's one search to the whole set of
-*> candidates is one search to the nearest candidate here.
+*> candidates is one search to the nearest candidate here. A villager opens wooden doors, so its search passes them (VILDOOR.cpy; an iron door stays a wall).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VILDOOR.
  01 WS-SX                   BINARY-LONG.
  01 WS-SY                   BINARY-LONG.
  01 WS-SZ                   BINARY-LONG.
@@ -565,7 +567,9 @@
      COMPUTE WS-SX = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-SY = FUNCTION INTEGER(EN-Y(L-ROW))
      COMPUTE WS-SZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     MOVE 1 TO VD-PATH-DOORS
      CALL "STDMOB-PATH" USING EN-DIM(L-ROW) WS-SX WS-SY WS-SZ L-X L-Y L-Z WS-HEIGHT WS-BUDGET WS-PATH-TABLE WS-COUNT WS-REACHED
+     MOVE 0 TO VD-PATH-DOORS
      IF WS-COUNT = 0
 *>       No floor under the villager within 3 blocks: no search is possible, so the candidate is not turned away.
          MOVE 1 TO L-OK
