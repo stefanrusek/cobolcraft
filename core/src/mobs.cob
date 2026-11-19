@@ -644,6 +644,7 @@
  01 WS-S-MAGMA             BINARY-LONG.
  01 WS-S-POWDER            BINARY-LONG.
  01 WS-COLLIDED            BINARY-LONG.
+ 01 WS-MOVED               FLOAT-LONG.
  01 WS-OUT-X               FLOAT-LONG.
  01 WS-OUT-Z               FLOAT-LONG.
  LINKAGE SECTION.
@@ -715,9 +716,11 @@
 *>           Rising into a ceiling: stop, not on the ground.
              MOVE 0 TO WS-VY WS-GROUND
          WHEN OTHER
+             COMPUTE WS-MOVED = WS-TOP + 1 - WS-Y
              COMPUTE WS-Y = WS-TOP + 1
-             MOVE 0 TO WS-VY
              MOVE 1 TO WS-GROUND
+*>           The landing: 0, or the bounce of a block with restitution (slime, a bed: 44-5 section 4.3) for a standard mob.
+             CALL "MOB-LAND-BOUNCE" USING WS-DIM WS-X WS-Y WS-Z WS-VY WS-MOVED WS-LEGACY
      END-EVALUATE
 *>   3. The moves along X and Z, each with the step-up retry.
      COMPUTE WS-NEW = WS-X + L-HX
