@@ -432,6 +432,15 @@
      MOVE "acceptance US15 19§19 OfferFlower: entity event 34 ends the pose at the viewers" TO WS-CASE
      MOVE 1 TO WS-EXPECT
      PERFORM CHECK-N
+*>   The pose holds the golem still: the stroll roll does not run while it holds out the flower (OfferFlowerGoal holds the move flag), so the walk cooldown stays 0.
+     MOVE 5 TO EN-GOLEM-FLOWER(WS-GOLEM)
+     MOVE 9 TO EN-COOLDOWN(WS-GOLEM)
+     MOVE WS-TIME-DAY TO CW-TIME
+     CALL "MOB-STEP" USING WS-GOLEM
+     MOVE "acceptance US15 19§19 OfferFlower: a golem in the pose has no walk cooldown after a step" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-COOLDOWN(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
      CALL "ENTITY-REMOVE" USING WS-VILLAGER
      CALL "ENTITY-REMOVE" USING WS-GOLEM.
 

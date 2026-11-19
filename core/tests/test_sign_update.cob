@@ -281,6 +281,22 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
      PERFORM CHECK-N
+*>   West of the sign (the x distance is measured from its west edge): three cells away keeps the lock; and the tick of the block entities (BE-TICK-ALL, the hook of the world
+*>   tick) runs the lock tick: the player seven cells west is out of reach and the lock ends there.
+     COMPUTE PL-X(WS-ROW) = BE-X(WS-SIGN) - 3
+     COMPUTE PL-Z(WS-ROW) = BE-Z(WS-SIGN)
+     PERFORM LOCK-AGAIN
+     MOVE "implementation sign editor lock 2.9: a player three cells west of the sign keeps the lock" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     COMPUTE PL-X(WS-ROW) = BE-X(WS-SIGN) - 7
+     PERFORM LOCK-AGAIN
+     CALL "BE-TICK-ALL"
+     MOVE "implementation sign editor lock 2.9: the tick of the block entities ends the lock of a player seven cells west" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
+     PERFORM CHECK-N
      MOVE "implementation sign editor lock 2.9: a sign nobody edits is left alone" TO TL-CASE
      CALL "SIGN-LOCK-TICK" USING WS-SIGN
      MOVE 0 TO TL-EXPECTED-N
