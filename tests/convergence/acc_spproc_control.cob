@@ -224,7 +224,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-FILE                PIC X(256) VALUE "build/conv-spproc-control/console.txt".
- 01 WS-LINE                PIC X(1025).
+ 01 WS-LINE                PIC X(257).
  01 WS-TEXT                PIC X(4096).
  01 WS-I                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.

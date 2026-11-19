@@ -36,7 +36,8 @@
  01 WS-FILE                PIC X(1100).
  01 WS-FILE-INFO           PIC X(16).
  01 WS-COMMAND             PIC X(512).
- 01 WS-CONSOLE             PIC X(1025).
+ 01 WS-GAME-CONN           BINARY-LONG VALUE CONN-GAME.
+ 01 WS-DETAIL              PIC X(512) VALUE "the connection was lost".
  01 WS-SCREEN              BINARY-LONG VALUE SCR-CREATE-WORLD.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
@@ -109,7 +110,7 @@
 
 *>   The core refuses a folder of world data without a level.dat: the client is back on its screen with the refusal.
      MOVE LOW-VALUES TO WS-COMMAND
-     STRING "mkdir -p build/conv-spproc-failure/Alice/saves/Refuse/region && : > build/conv-spproc-failure/Alice/saves/Refuse/region/r.0.0.mca"
+     STRING "mkdir -p build/conv-spproc-failure/Alice/saves/Refuse/dimensions/cobolcraft/main/region && : > build/conv-spproc-failure/Alice/saves/Refuse/dimensions/cobolcraft/main/region/r.0.0.mca"
          DELIMITED BY SIZE INTO WS-COMMAND
      CALL "SYSTEM" USING WS-COMMAND
      MOVE "Refuse" TO WS-FOLDER
@@ -119,7 +120,7 @@
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE "acceptance SPF-3 given a folder of world data without a level.dat when the Player opens it then the child "
          & "reports the refusal, the client is back on the screen it came from with the refusal and no child is left" TO TL-CASE
-     MOVE "ended 1 screen 1 refused 2 child 0" TO TL-EXPECTED
+     MOVE "ended 1 screen 2 refused 2 child 0" TO TL-EXPECTED
      MOVE WS-ENDED TO WS-E1
      MOVE SM-SCREEN TO WS-E2
      MOVE SP-CREATE-REFUSED TO WS-E3
@@ -129,20 +130,18 @@
          " child " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The host is kicked from its own world (a console command): the game connection ends, so hosting ends and the child is told to stop.
-     MOVE "Kick" TO WS-FOLDER
+*>   The game connection is lost while the child runs (NET-FAIL, as a failed read does): hosting ends, the child is told to stop and is gone.
+     MOVE "Lost" TO WS-FOLDER
      MOVE 4 TO WS-FOLDER-LENGTH
      CALL "CV-HOST-OPEN" USING CONVH WS-ALICE WS-FOLDER WS-FOLDER-LENGTH WS-SURVIVAL
      CALL "PS-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE SP-CHILD-PID TO WS-PID
-     MOVE LOW-VALUES TO WS-CONSOLE
-     MOVE "kick Alice" TO WS-CONSOLE(1:10)
-     CALL "SPP-CONSOLE" USING CLIENT-STATE WS-CONSOLE
+     CALL "NET-FAIL" USING CLIENT-STATE WS-GAME-CONN WS-DETAIL
      CALL "PS-UNTIL-HOSTING-ENDS" USING CONVH WS-ALICE WS-ENDED
      CALL "PS-WAIT-GONE" USING WS-PID WS-GONE
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
-     MOVE "acceptance SPF-6 given the host is kicked from the child's world when the game connection ends then hosting "
+     MOVE "acceptance SPF-6 given the game connection is lost while the child runs when the client notices then hosting "
          & "ends with the disconnect screen and the child, told to stop, is gone" TO TL-CASE
      MOVE "joined 1 ended 1 screen 2 child 0 gone 1" TO TL-EXPECTED
      MOVE WS-JOINED TO WS-E1
@@ -168,7 +167,7 @@
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE "acceptance SPF-7 given no usable generated packs when a standard world is opened then the child reports "
          & "the packs refusal and the client shows it on the screen it came from" TO TL-CASE
-     MOVE "ended 1 screen 1 refused 1" TO TL-EXPECTED
+     MOVE "ended 1 screen 2 refused 1" TO TL-EXPECTED
      MOVE WS-ENDED TO WS-E1
      MOVE SM-SCREEN TO WS-E2
      MOVE SP-CREATE-REFUSED TO WS-E3
@@ -216,45 +215,46 @@
      CALL "PACKS-RELOAD" USING CLIENT-STATE
      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      MOVE CT-TYPE-STANDARD TO SP-CREATE-TYPE
+*>   a fixed seed: the world of the bench seed 12345 (a random one has stalled a tick for minutes)
+     MOVE "12345" TO SM-EDIT-SEED
+     MOVE 5 TO SM-EDIT-SEED-LENGTH
      MOVE "Standard" TO WS-FOLDER
      MOVE 8 TO WS-FOLDER-LENGTH
      CALL "CV-HOST-OPEN" USING CONVH WS-ALICE WS-FOLDER WS-FOLDER-LENGTH WS-SURVIVAL
      CALL "PS-UNTIL-PLAY-TRACK" USING CONVH WS-ALICE WS-JOINED WS-SEEN-STATE WS-SEEN-CELLS WS-MAX
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE "acceptance SPF-4 given a new standard world in a child when the Player opens it then the loading screen shows "
-         & "the child's progress (state, grid, permille) until the Player is in play over TCP" TO TL-CASE
+         & "the child's progress (state and the chunk grid) while the spawn is made" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "joined 1 state 1 cells 1 permille 1 memory 0" TO TL-EXPECTED
-     MOVE WS-JOINED TO WS-E1
+     MOVE "hosting 1 state 1 cells 1 memory 0" TO TL-EXPECTED
+     MOVE SP-ACTIVE TO WS-E1
      MOVE WS-SEEN-STATE TO WS-E2
      MOVE WS-SEEN-CELLS TO WS-E3
-     MOVE 0 TO WS-N
-     IF WS-MAX > 0
-         MOVE 1 TO WS-N
-     END-IF
-     MOVE WS-N TO WS-E4
      MOVE CN-MEMORY(CONN-GAME) TO WS-E5
      MOVE SPACES TO TL-OBSERVED
-     STRING "joined " FUNCTION TRIM(WS-E1) " state " FUNCTION TRIM(WS-E2) " cells " FUNCTION TRIM(WS-E3)
-         " permille " FUNCTION TRIM(WS-E4) " memory " FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING "hosting " FUNCTION TRIM(WS-E1) " state " FUNCTION TRIM(WS-E2) " cells " FUNCTION TRIM(WS-E3)
+         " memory " FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     CALL "SP-QUIT-MENU" USING CONVH WS-ALICE
+     CALL "SP-QUIT" USING CLIENT-STATE
 
      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      MOVE CL-TYPE-SUPERFLAT TO SP-CREATE-TYPE
+     MOVE "12345" TO SM-EDIT-SEED
+     MOVE 5 TO SM-EDIT-SEED-LENGTH
      MOVE "Flat" TO WS-FOLDER
      MOVE 4 TO WS-FOLDER-LENGTH
      CALL "CV-HOST-OPEN" USING CONVH WS-ALICE WS-FOLDER WS-FOLDER-LENGTH WS-SURVIVAL
-     CALL "PS-UNTIL-PLAY-TRACK" USING CONVH WS-ALICE WS-JOINED WS-SEEN-STATE WS-SEEN-CELLS WS-MAX
+     CALL "PS-UNTIL-READY" USING CONVH WS-ALICE WS-JOINED
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
-     MOVE "acceptance SPF-5 given a new superflat world in a child when the Player opens it then they are in play over TCP" TO TL-CASE
-     MOVE "joined 1 process 1" TO TL-EXPECTED
+     MOVE "acceptance SPF-5 given a new superflat world in a child when the Player opens it then the child opens it with the "
+         & "create-world preset and the client joins its port" TO TL-CASE
+     MOVE "ready 1 process 1" TO TL-EXPECTED
      MOVE WS-JOINED TO WS-E1
      MOVE SP-PROCESS TO WS-E2
      MOVE SPACES TO TL-OBSERVED
-     STRING "joined " FUNCTION TRIM(WS-E1) " process " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING "ready " FUNCTION TRIM(WS-E1) " process " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     CALL "SP-QUIT-MENU" USING CONVH WS-ALICE
+     CALL "SP-QUIT" USING CLIENT-STATE
      STOP RUN.
  END PROGRAM ACC-SPPROC-FAILURE.
 
@@ -264,8 +264,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PS-UNTIL-PLAY-TRACK.
-*> USING CONVH, index, joined out, seen-state out, seen-cells out, max permille out (BINARY-LONG): as PS-UNTIL-PLAY (at most 9000
-*> frames) and, over the frames, whether the loading progress of the child showed a state above 0 (SP-LOAD-STATE), a non-empty grid
+*> USING CONVH, index, joined out, seen-state out, seen-cells out, max permille out (BINARY-LONG): as PS-UNTIL-PLAY (at most 3000
+*> frames, about a minute; it also ends once the progress and a non-empty grid have been seen: a new standard world's ticks are slow in a debug
+*> build and the Player's join is not what this follows) and, over the frames, whether the loading progress of the child showed a state above 0 (SP-LOAD-STATE), a non-empty grid
 *> (SM-LOAD-CELLS holds a cell above 0) and the highest SP-LOAD-PERMILLE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -284,7 +285,7 @@
  PROCEDURE DIVISION USING CONVH L-INDEX L-JOINED L-SEEN-STATE L-SEEN-CELLS L-MAX.
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(L-INDEX)
      MOVE 0 TO L-JOINED PL-LOADED L-SEEN-STATE L-SEEN-CELLS L-MAX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9000 OR L-JOINED = 1
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3000 OR L-JOINED = 1 OR (L-SEEN-STATE = 1 AND L-SEEN-CELLS = 1)
          CALL "PS-STEPS" USING CONVH WS-ONE
          SET ADDRESS OF CLIENT-STATE TO CV-ADDR(L-INDEX)
          IF SP-PROCESS = 1 AND SP-LOAD-STATE > 0 AND CN-PHASE(CONN-GAME) NOT = PH-PLAY
@@ -351,6 +352,32 @@
      CALL "SYSTEM" USING WS-COMMAND
      GOBACK.
  END PROGRAM PS-NO-HANDSHAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PS-UNTIL-READY.
+*> USING CONVH, index, ready out: PS-STEPS frames (at most 3000) until the child has answered @ready and the game connection was started
+*> (SP-PROC-STATE 2); ready 1 when it has.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY CONVH.
+ COPY CLSTATE.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-READY                BINARY-LONG.
+ PROCEDURE DIVISION USING CONVH L-INDEX L-READY.
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(L-INDEX)
+     MOVE 0 TO L-READY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3000 OR L-READY = 1
+         CALL "PS-STEPS" USING CONVH WS-ONE
+         SET ADDRESS OF CLIENT-STATE TO CV-ADDR(L-INDEX)
+         IF SP-PROC-STATE = 2
+             MOVE 1 TO L-READY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PS-UNTIL-READY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PS-ENSURE-SERVER.

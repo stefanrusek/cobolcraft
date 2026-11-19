@@ -22,8 +22,8 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
  01 WS-WAIT                BINARY-LONG.
- 01 WS-CONSOLE             PIC X(1025).
- 01 WS-EMPTY               PIC X(1025).
+ 01 WS-CONSOLE             PIC X(257).
+ 01 WS-EMPTY               PIC X(257).
  01 WS-ENV-NAME            PIC X(16) VALUE Z"CC_SERVER_BIN".
  01 WS-ENV-SH              PIC X(16) VALUE Z"/bin/sh".
  01 WS-ENV-BAD             PIC X(40) VALUE Z"/nonexistent/cobolcraft-server".
@@ -31,7 +31,7 @@
  01 WS-EXE-PRINTF          PIC X(24) VALUE Z"/usr/bin/printf".
  01 WS-EXE-CAT             PIC X(16) VALUE Z"/bin/cat".
  01 WS-ARGS-ECHO           PIC X(24) VALUE Z"@opened 4242".
- 01 WS-ARGS-PRINTF         PIC X(24) VALUE Z"@opened 99".
+ 01 WS-ARGS-PRINTF         PIC X(24) VALUE Z"@opened\04099".
  01 WS-ARGS-NONE           PIC X(4) VALUE LOW-VALUES.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-E1                  PIC -(9)9.
@@ -106,7 +106,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Output in pieces: a whole line from echo, then a line without newline from printf stays.
-     MOVE 0 TO SP-PORT
+     MOVE 0 TO SP-PORT SP-LINE-LENGTH
      CALL STATIC "cc_wk_proc_spawn" USING BY REFERENCE WS-EXE-ECHO BY REFERENCE WS-ARGS-ECHO BY REFERENCE WS-SLOT
          RETURNING WS-RC
      MOVE WS-SLOT TO SP-CHILD
@@ -126,7 +126,7 @@
      CALL STATIC "cc_wk_proc_stop" USING BY VALUE SP-CHILD RETURNING WS-RC
      MOVE 0 TO SP-CHILD SP-LINE-LENGTH
      MOVE "sp proc SPP-READ cuts the child's output into lines and keeps a line that has no newline yet" TO TL-CASE
-     MOVE "echo port 4242 left 0 printf port 0 left 9" TO TL-EXPECTED
+     MOVE "echo port 4242 left 0 printf port 0 left 10" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING "echo port " FUNCTION TRIM(WS-E1) " left " FUNCTION TRIM(WS-E2) " printf port " FUNCTION TRIM(WS-E3)
          " left " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED

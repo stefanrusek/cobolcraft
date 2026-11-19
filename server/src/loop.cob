@@ -95,6 +95,7 @@
  COPY COREAPI.
  01 WS-NOW                 BINARY-DOUBLE.
  01 WS-TIMEOUT             BINARY-LONG.
+ 01 WS-RAN                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "SV-NOW-MS" USING WS-NOW
      COMPUTE WS-TIMEOUT = FUNCTION MAX(0, FUNCTION MIN(SV-TICK-MS, SV-NEXT-TICK - WS-NOW))
@@ -104,11 +105,18 @@
      IF SV-PAUSED = 1
          COMPUTE SV-NEXT-TICK = WS-NOW + SV-TICK-MS
      END-IF
-     PERFORM UNTIL WS-NOW < SV-NEXT-TICK
+*>   The single-player role runs at most 3 ticks an iteration and drops a debt of more than 250 ms (as the in-process host does), so that a
+*>   slow tick never keeps the program from its input: the client's control lines and the end of its input.
+     MOVE 0 TO WS-RAN
+     PERFORM UNTIL WS-NOW < SV-NEXT-TICK OR (SV-HOSTED = 1 AND WS-RAN >= 3)
          CALL "CORE-TICK"
          ADD 1 TO SV-TICKS
+         ADD 1 TO WS-RAN
          ADD SV-TICK-MS TO SV-NEXT-TICK
      END-PERFORM
+     IF SV-HOSTED = 1 AND WS-NOW - SV-NEXT-TICK > 250
+         COMPUTE SV-NEXT-TICK = WS-NOW + SV-TICK-MS
+     END-IF
      CALL "TCP-FLUSH"
      CALL "SV-DRAIN"
      CALL "SV-HOSTED-LOAD"

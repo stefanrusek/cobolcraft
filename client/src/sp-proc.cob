@@ -131,7 +131,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPP-CONSOLE.
-*> USING CLIENT-STATE, line (PIC X(1025), a z-string): a console command for the hosted world (the screenshot start-up
+*> USING CLIENT-STATE, line (PIC X(257), a z-string, as the start-up commands hold it): a console command for the hosted world (the screenshot start-up
 *> commands), run by the child with operator permission; its replies come back as console lines.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -139,7 +139,7 @@
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
- 01 L-LINE                 PIC X(1025).
+ 01 L-LINE                 PIC X(257).
  PROCEDURE DIVISION USING CLIENT-STATE L-LINE.
      MOVE 0 TO WS-LENGTH
      INSPECT L-LINE TALLYING WS-LENGTH FOR CHARACTERS BEFORE INITIAL X"00"

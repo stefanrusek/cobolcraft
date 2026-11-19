@@ -17,7 +17,7 @@ the client renders.
 
 `cobolcraft-server` of the same build. Both programs are built into one `bin` directory (`build/<mode>/bin/cobolcraft` and
 `cobolcraft-server`; the convergence tests build both into `build/convergence/bin`), so no new target is needed. The
-client finds it as: `CC_SERVER_BIN` (explicit path), else `<directory of the running executable>/cobolcraft-server`, else
+client finds it as: `CC_SERVER_BIN` (explicit path; when set it is the only candidate), else `<directory of the running executable>/cobolcraft-server`, else
 `<directory>/../bin/cobolcraft-server` (a test program in `build/convergence/tests`). `cc_wk_self_dir` returns the
 executable's directory. When none exists, or the spawn fails, the client prints one `ERROR` line and opens the world in
 process as before (fallback, never fatal).
@@ -42,7 +42,7 @@ on the client's terminal. No game logic.
    seed text, world type, game directory, generated directory, rules), the world path as a z-string (1200 bytes) and the
    superflat preset (40 bytes, spaces = none). The child then does what `SP-OPEN` did: `GEN-WORKERS-AUTO` (so the
    generation workers fork from the server process), `FLAT-PRESET-SET`, `CORE-WORLD-OPEN`, `CORE-SAVE` of a created world.
-2. **Reply** (child to parent, standard output, one line each): `@ready <port> <created>` once the world is open and the
+2. **Reply** (child to parent, standard output, one line each): `@ready <port> <created> <pid>` once the world is open and the
    loopback listener (`127.0.0.1`, system-chosen port, a new `cc_net_listen_loopback`) is up; or `@refused <n>` and exit
    status 10 when the core refuses the world (flag minus `CORE-WORLD-OPEN`'s status).
 3. **Join**: the client opens a TCP connection to `127.0.0.1:<port>` and logs in as the Player (offline mode: the same
@@ -68,6 +68,10 @@ on the client's terminal. No game logic.
    own, the client answers with its quit-world path, as the in-process `SP-PUMP` does, so the Disconnect text the player sees
    is the same), every other line is a console line (`CORE-CONSOLE-DRAIN`, printed on the client's terminal without the
    server's time stamp).
+
+The child's loop is the server's (`SV-ITERATE`) with the in-process host's pacing: at most 3 ticks an iteration and a debt of more than 250 ms
+dropped, so a slow tick never keeps the program from its input (the control lines and the end of input). Without that a world whose ticks cost more
+than 50 ms (a new standard world's spawn area in a debug build) falls behind for good and never sees the client leave.
 
 ### The client: `client/src/sp-proc.cob`
 
