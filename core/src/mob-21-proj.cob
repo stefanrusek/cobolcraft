@@ -700,6 +700,14 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO.
+ COPY DIMENSIONS.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-BLOCK-Y             BINARY-LONG.
+ 01 WS-CHARGE-ID           BINARY-LONG.
+ 01 WS-CHARGE-DIM          BINARY-LONG.
+ 01 WS-BURST-X             FLOAT-LONG.
+ 01 WS-BURST-Y             FLOAT-LONG.
+ 01 WS-BURST-Z             FLOAT-LONG.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 128.
  01 WS-STEP                FLOAT-LONG VALUE 0.000122.
@@ -724,6 +732,21 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "PROJ-KIND" USING EN-TYPE(L-ROW) WS-KIND
+*>   A wind charge whose block y is above level.maxY + 30 bursts where it is and is discarded, before its tick (20 section 16.3).
+     IF WS-KIND = 6
+         COMPUTE WS-LIMIT = DM-MIN-Y(EN-DIM(L-ROW)) + DM-HEIGHT(EN-DIM(L-ROW)) - 1 + 30
+         COMPUTE WS-BLOCK-Y = FUNCTION INTEGER(EN-Y(L-ROW))
+         IF WS-BLOCK-Y > WS-LIMIT
+             MOVE EN-ID(L-ROW) TO WS-CHARGE-ID
+             MOVE EN-DIM(L-ROW) TO WS-CHARGE-DIM
+             MOVE EN-X(L-ROW) TO WS-BURST-X
+             MOVE EN-Y(L-ROW) TO WS-BURST-Y
+             MOVE EN-Z(L-ROW) TO WS-BURST-Z
+             CALL "ENTITY-REMOVE" USING L-ROW
+             CALL "WIND-BURST" USING WS-CHARGE-DIM WS-BURST-X WS-BURST-Y WS-BURST-Z WS-CHARGE-ID
+             GOBACK
+         END-IF
+     END-IF
      ADD 1 TO EN-COOLDOWN(L-ROW)
      EVALUATE WS-KIND
          WHEN 1
@@ -744,7 +767,7 @@
          COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.99 - 0.06
          COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
          WHEN 6
-*>       The wind charge flies straight at its launch velocity (its flight is not in the documents: open).
+*>       The wind charge flies straight at its launch velocity: no drag in air or water, no gravity (20 section 16.3).
          CONTINUE
          WHEN OTHER
          CALL "BULLET-AIM" USING L-ROW

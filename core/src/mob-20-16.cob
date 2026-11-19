@@ -76,14 +76,12 @@
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
-*>   The stop-attacking rule runs first (16.1, priority 0 of FIGHT).
-     CALL "BREEZE-STOP-CHECK" USING L-ROW
      MOVE EN-TARGET(L-ROW) TO WS-P
      MOVE 0 TO WS-D2
      IF WS-P > 0
          COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
      END-IF
-     IF WS-P = 0 OR WS-D2 >= 256 OR (EN-ON-GROUND(L-ROW) = 0 AND EN-DRAW(L-ROW) = 0)
+     IF WS-P = 0 OR WS-D2 >= 256
          IF EN-DRAW(L-ROW) = 1
              MOVE 0 TO EN-DRAW(L-ROW) EN-SHOOT-TIME(L-ROW)
          END-IF
