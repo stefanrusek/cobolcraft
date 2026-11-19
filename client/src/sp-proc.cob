@@ -89,14 +89,11 @@
          MOVE L-SETTINGS TO HS-SETTINGS
          MOVE L-PATH TO HS-PATH
          MOVE L-PRESET TO HS-PRESET
+*>       a child that is already gone shows as such to SPP-PUMP (SPP-LOST), so the write needs no check of its own
          CALL STATIC "cc_wk_proc_write" USING BY VALUE WS-SLOT BY REFERENCE WS-HANDSHAKE
              BY VALUE 5069 RETURNING WS-N
-         IF WS-N = 5069
-             MOVE 1 TO L-STARTED
-             MOVE WS-SLOT TO SP-CHILD
-         ELSE
-             CALL STATIC "cc_wk_proc_stop" USING BY VALUE WS-SLOT RETURNING WS-RC
-         END-IF
+         MOVE 1 TO L-STARTED
+         MOVE WS-SLOT TO SP-CHILD
      END-IF
      IF L-STARTED = 1
          MOVE 1 TO SP-PROCESS SP-PROC-STATE
