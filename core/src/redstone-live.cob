@@ -216,6 +216,20 @@
                  MOVE 20 TO RL-ANALOG(WS-I)
              WHEN WS-CLASS = 15
                  MOVE 21 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "jukebox"
+                 MOVE 22 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "command_block" OR "chain_command_block" OR "repeating_command_block"
+                 MOVE 23 TO RL-ANALOG(WS-I)
+             WHEN WS-CLASS = 26 OR WS-CLASS = 27
+                 MOVE 24 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 18 AND WS-BARE(WS-LEN - 17:18) = "copper_golem_statue"
+                 MOVE 25 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "creaking_heart"
+                 MOVE 26 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 6 AND WS-BARE(WS-LEN - 5:6) = "_shelf"
+                 MOVE 27 TO RL-ANALOG(WS-I)
+             WHEN WS-CLASS = 23
+                 MOVE 28 TO RL-ANALOG(WS-I)
          END-EVALUATE
 *>       the decoded states of the signal blocks
          IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 30)
@@ -1889,6 +1903,19 @@
          WHEN 18
          WHEN 19
              CALL "RL-PLATE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+         WHEN 26
+         WHEN 27
+             IF L-KIND = 7
+                 CALL "SCULK-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+             END-IF
+         WHEN 22
+             IF L-KIND = 1 OR L-KIND = 2 OR L-KIND = 7
+                 CALL "RL-ROD-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 23
+             IF L-KIND = 1 OR L-KIND = 7
+                 CALL "RL-DETECTOR-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
+             END-IF
          WHEN 31
          WHEN 32
          WHEN 33

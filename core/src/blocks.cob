@@ -295,6 +295,7 @@
  01 WS-WL-TEXT             PIC X(32).
  01 WS-WL-MODE             BINARY-LONG VALUE 2.
  01 WS-STACKED             BINARY-LONG.
+ 01 WS-EVENT-PLACE         PIC X(24) VALUE "block_place".
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -369,6 +370,8 @@
 *>   A redstone lamp, trapdoor, fence gate or door starts with the signal around its position (30 part 7 sections 3.3, 4.2, 5.2 and 6).
      CALL "REDSTONE-PLACE-STATE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   the game event block_place (a vibration the sculk sensors can hear, 30-8 3.1)
+     CALL "VIB-POST" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT-PLACE
      CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "GOLEM-BUILD" USING WS-DIM WS-X WS-Y WS-Z
      CALL "WITHER-BUILD" USING WS-DIM WS-X WS-Y WS-Z

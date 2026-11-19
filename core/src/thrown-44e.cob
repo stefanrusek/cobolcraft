@@ -214,6 +214,10 @@
      IF WS-SLOT = 0
          GOBACK
      END-IF
+*>   powerLightningRod (30-5 7.1): in the tick where life is 2 the rod at the strike position is struck
+     IF PJ-I1(WS-SLOT) = 2
+         CALL "RL-ROD-STRIKE" USING L-ROW
+     END-IF
      SUBTRACT 1 FROM PJ-I1(WS-SLOT)
      IF PJ-I1(WS-SLOT) < 0
          IF PJ-I2(WS-SLOT) = 0

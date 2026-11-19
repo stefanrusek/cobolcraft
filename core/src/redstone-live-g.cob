@@ -173,6 +173,7 @@
  01 WS-A                   BINARY-LONG VALUE 0.
  01 WS-B                   BINARY-LONG VALUE 0.
  01 WS-HEARD               BINARY-LONG.
+ 01 WS-NOTE-EVENT          PIC X(24) VALUE "note_block_play".
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -195,6 +196,7 @@
      END-IF
      IF WS-GAME = 1
          CALL "ALLAY-NOTE-EVENT" USING L-DIM L-X L-Y L-Z WS-HEARD
+         CALL "VIB-POST" USING L-DIM L-X L-Y L-Z WS-NOTE-EVENT
      END-IF
      GOBACK.
  END PROGRAM RL-NOTE-PLAY.
