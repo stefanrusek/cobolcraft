@@ -96,7 +96,7 @@
                  IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT
                      IF GS-W(WS-SPRITE-ROW) > 0
                          CALL "UI-CLIP-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
-                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W) SM-W-STATE(WS-W) SM-W-SPRITE(WS-W)
                      END-IF
                  END-IF
 *>               Without the sprite the progress is the white swatch tinted #80ff20 (the colour of the level number).
@@ -623,12 +623,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-CLIP-QUAD.
-*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels): the left width pixels of the sprite (at most its own width) and
-*> its top height pixels, not stretched: one quad over (x, y) to (x + width, y + height) on that part of the sprite.
+*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels), state, source column: the left width pixels of the sprite (at most its own width) and
+*> its top height pixels, not stretched: one quad over (x, y) to (x + width, y + height) on that part of the sprite. State 1 takes the bottom height rows of the sprite instead
+*> (the furnace flame and the brewing bubbles, anchored at the bottom: 40-2 3.2, 5); the source column is where the part starts (0 the sprite's left edge; the merchant's
+*> experience preview starts at the filled width, 40-5 2.10).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-CW                  BINARY-LONG.
  01 WS-CH                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
  01 WS-X0                  FLOAT-SHORT.
  01 WS-Y0                  FLOAT-SHORT.
  01 WS-X1                  FLOAT-SHORT.
@@ -644,17 +648,24 @@
  01 L-Y                    BINARY-LONG.
  01 L-W                    BINARY-LONG.
  01 L-H                    BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H.
-     COMPUTE WS-CW = FUNCTION MIN(L-W, GS-W(L-ROW))
+ 01 L-STATE                BINARY-LONG.
+ 01 L-SRC-X                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H L-STATE L-SRC-X.
+     COMPUTE WS-CW = FUNCTION MIN(L-W, GS-W(L-ROW) - L-SRC-X)
      COMPUTE WS-CH = FUNCTION MIN(L-H, GS-H(L-ROW))
+     MOVE 0 TO WS-SY
+     IF L-STATE = 1
+         COMPUTE WS-SY = GS-H(L-ROW) - WS-CH
+     END-IF
+     MOVE L-SRC-X TO WS-SX
      COMPUTE WS-X0 = L-X * CL-GUI-SCALE
      COMPUTE WS-Y0 = L-Y * CL-GUI-SCALE
      COMPUTE WS-X1 = (L-X + WS-CW) * CL-GUI-SCALE
      COMPUTE WS-Y1 = (L-Y + WS-CH) * CL-GUI-SCALE
-     COMPUTE WS-U0 = GS-X(L-ROW) / UA-W
-     COMPUTE WS-V0 = GS-Y(L-ROW) / UA-H
-     COMPUTE WS-U1 = (GS-X(L-ROW) + WS-CW) / UA-W
-     COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-CH) / UA-H
+     COMPUTE WS-U0 = (GS-X(L-ROW) + WS-SX) / UA-W
+     COMPUTE WS-V0 = (GS-Y(L-ROW) + WS-SY) / UA-H
+     COMPUTE WS-U1 = (GS-X(L-ROW) + WS-SX + WS-CW) / UA-W
+     COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-SY + WS-CH) / UA-H
      CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
      GOBACK.
  END PROGRAM UI-CLIP-QUAD.
