@@ -215,5 +215,13 @@
          END-IF
      END-PERFORM
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Lane bugtorchblack: a chest's quads keep the light of the cell they look into (BM-OWNLIGHT 0), not their own cell's.
+     MOVE "chest bake the quads of a chest take the light of the cell they look into" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > BM-QUAD-COUNT(1)
+         ADD BM-OWNLIGHT(1, WS-Q) TO TL-EXPECTED-N
+     END-PERFORM
+     MOVE 0 TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-CHEST-BAKE.
