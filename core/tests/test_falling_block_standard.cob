@@ -281,7 +281,31 @@
      MOVE "minecraft:gravel" TO WS-ITEM-KEY
      MOVE 0 TO WS-WANT-COUNT
      PERFORM CHECK-ITEMS
+*>   9. Fire, water and lava are free cells (3.1) and replaceable (4.3): sand resting over them falls and takes their cell, nothing drops.
+     MOVE "sand over fire falls and replaces it" TO WS-LABEL
+     MOVE "fire" TO WS-A-SPEC
+     PERFORM RUN-OVER-CELL
+     MOVE "sand over water falls and replaces it" TO WS-LABEL
+     MOVE "water" TO WS-A-SPEC
+     PERFORM RUN-OVER-CELL
+     MOVE "sand over lava falls and replaces it" TO WS-LABEL
+     MOVE "lava" TO WS-A-SPEC
+     PERFORM RUN-OVER-CELL
      STOP RUN.
+
+*> Block A at floor + 1, sand at floor + 2: the sand ends in A's cell and no item lies on the ground.
+ RUN-OVER-CELL.
+     MOVE 1 TO WS-A-DY
+     MOVE "sand" TO WS-B-SPEC
+     MOVE 2 TO WS-B-DY
+     MOVE SPACES TO WS-C-SPEC
+     PERFORM RUN-CASE
+     MOVE 1 TO WS-DY
+     MOVE "sand" TO WS-WANT-SPEC
+     PERFORM CHECK-CELL
+     MOVE "minecraft:sand" TO WS-ITEM-KEY
+     MOVE 0 TO WS-WANT-COUNT
+     PERFORM CHECK-ITEMS.
 
 *> One case: the cube above the floor is cleared and the loose entities dropped; block A at floor + A-DY (when set), block C at floor + C-DY and dx C-DX (when set), then block B at
 *> floor + B-DY is placed through BLOCK-CHANGE (it schedules its fall tick; a C equal to B is placed the same way) and the world runs 60 ticks.
