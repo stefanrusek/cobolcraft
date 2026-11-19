@@ -894,7 +894,7 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
 
     texture_t *old = &cc_vk_state.textures[tex_id];
     free(old->pixels);
-    discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set});
+    discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set, 0});
     *old = t;
     return 0;
 }
@@ -1028,7 +1028,7 @@ int32_t cc_vk_mesh(int32_t slot, const float *verts, int32_t vertex_count) {
     if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || vertex_count < 0) cc_fatal("cc_vk_mesh: invalid slot or count");
     double started = stat_now();
     mesh_t *m = &cc_vk_state.meshes[slot];
-    discard((garbage_t){m->buffer, VK_NULL_HANDLE, VK_NULL_HANDLE, m->memory, VK_NULL_HANDLE});
+    discard((garbage_t){m->buffer, VK_NULL_HANDLE, VK_NULL_HANDLE, m->memory, VK_NULL_HANDLE, 0});
     *m = (mesh_t){VK_NULL_HANDLE, VK_NULL_HANDLE, (uint32_t)vertex_count};
     if (vertex_count > 0) m->buffer = host_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, verts, (VkDeviceSize)vertex_count * sizeof(cc_vertex), &m->memory);
     stats.w.meshes++;
@@ -1281,7 +1281,7 @@ void cc_vk_shutdown(void) {
     for (int32_t slot = CC_MESH_SLOT_MIN; slot <= CC_MESH_SLOT_MAX; slot++) cc_vk_mesh(slot, NULL, 0);
     for (int i = CC_TEX_BLOCKS; i <= CC_TEX_GLINT_ARMOR; i++) {
         texture_t *t = &cc_vk_state.textures[i];
-        discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set});
+        discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set, 0});
         free(t->pixels);
         t->pixels = NULL;
     }
