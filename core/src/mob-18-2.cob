@@ -107,6 +107,60 @@
  END PROGRAM M182-FLUID.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. M182-TOUCHING.
+*> USING tracker row of a standard mob, its height (FLOAT-LONG), count out (BINARY-LONG): the cramming count of M182-ENV-TICK (3.3 pushEntities): the living entities of its dimension
+*> (a player, or a standard mob with health left) whose boxes overlap that of the mob (the horizontal reach is half the two widths, the vertical one the mob's height above and the other's
+*> height below). The rows are walked up to the highest used row (EN-COUNT) and the cheap box test comes before the species lookup that the livingness needs, which is only asked of an
+*> overlapping row; the absolute differences are taken by a sign test, where FUNCTION ABS is a libcob call: a village's environment tick spent 40 percent of itself in this loop.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-OTHER-M             BINARY-LONG.
+ 01 WS-LIVING              BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
+ 01 L-TOUCHING             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-HEIGHT L-TOUCHING.
+     MOVE 0 TO L-TOUCHING
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF WS-I NOT = L-ROW AND EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = EN-DIM(L-ROW)
+             COMPUTE WS-HALF = (ET-WIDTH-MILLI(EN-TYPE(L-ROW) + 1) + ET-WIDTH-MILLI(EN-TYPE(WS-I) + 1)) / 2000
+             COMPUTE WS-DX = EN-X(WS-I) - EN-X(L-ROW)
+             IF WS-DX < 0
+                 COMPUTE WS-DX = 0 - WS-DX
+             END-IF
+             COMPUTE WS-DZ = EN-Z(WS-I) - EN-Z(L-ROW)
+             IF WS-DZ < 0
+                 COMPUTE WS-DZ = 0 - WS-DZ
+             END-IF
+             COMPUTE WS-DY = EN-Y(WS-I) - EN-Y(L-ROW)
+             IF WS-DX < WS-HALF AND WS-DZ < WS-HALF AND WS-DY < L-HEIGHT AND WS-DY > - ET-HEIGHT-MILLI(EN-TYPE(WS-I) + 1) / 1000
+                 MOVE 0 TO WS-LIVING
+                 IF EN-PLAYER(WS-I) > 0
+                     MOVE 1 TO WS-LIVING
+                 ELSE
+                     CALL "STDMOB-INDEX" USING EN-TYPE(WS-I) WS-OTHER-M
+                     IF WS-OTHER-M > 0 AND EN-HEALTH(WS-I) > 0
+                         MOVE 1 TO WS-LIVING
+                     END-IF
+                 END-IF
+                 IF WS-LIVING = 1
+                     ADD 1 TO L-TOUCHING
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM M182-TOUCHING.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. M182-ENV-TICK.
 *> USING tracker row of a standard mob, in the order of 2.5: the fire (a fire-immune type has it cleared; water puts it out; every tick where the count is a multiple
 *> of 20 and the mob is not in lava it takes 1.0 on_fire damage, then the count falls by 1), lava (the fall distance halves; 4.0 lava damage and fifteen seconds of fire
@@ -163,13 +217,6 @@
  01 WS-TOUCHING            BINARY-LONG.
  01 WS-FREE                BINARY-LONG.
  01 WS-DAMAGE              FLOAT-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-HALF                FLOAT-LONG.
- 01 WS-DX                  FLOAT-LONG.
- 01 WS-DY                  FLOAT-LONG.
- 01 WS-DZ                  FLOAT-LONG.
- 01 WS-OTHER-M             BINARY-LONG.
- 01 WS-LIVING              BINARY-LONG.
  01 WS-BFIRE               BINARY-LONG.
  01 WS-BSNOW               BINARY-LONG.
  01 WS-HALF-W              FLOAT-LONG.
@@ -293,29 +340,7 @@
          CALL "BR-RULE-GET" USING WS-RULE-NAME WS-LIMIT
          MOVE WS-LIMIT TO WS-LIMIT-N
          IF WS-LIMIT-N > 0
-             MOVE 0 TO WS-TOUCHING
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1024
-                 IF WS-I NOT = WS-ROW AND EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = EN-DIM(WS-ROW)
-                     MOVE 0 TO WS-LIVING
-                     IF EN-PLAYER(WS-I) > 0
-                         MOVE 1 TO WS-LIVING
-                     ELSE
-                         CALL "STDMOB-INDEX" USING EN-TYPE(WS-I) WS-OTHER-M
-                         IF WS-OTHER-M > 0 AND EN-HEALTH(WS-I) > 0
-                             MOVE 1 TO WS-LIVING
-                         END-IF
-                     END-IF
-                     IF WS-LIVING = 1
-                         COMPUTE WS-HALF = (ET-WIDTH-MILLI(EN-TYPE(WS-ROW) + 1) + ET-WIDTH-MILLI(EN-TYPE(WS-I) + 1)) / 2000
-                         COMPUTE WS-DX = FUNCTION ABS(EN-X(WS-I) - EN-X(WS-ROW))
-                         COMPUTE WS-DZ = FUNCTION ABS(EN-Z(WS-I) - EN-Z(WS-ROW))
-                         COMPUTE WS-DY = EN-Y(WS-I) - EN-Y(WS-ROW)
-                         IF WS-DX < WS-HALF AND WS-DZ < WS-HALF AND WS-DY < WS-HEIGHT AND WS-DY > - ET-HEIGHT-MILLI(EN-TYPE(WS-I) + 1) / 1000
-                             ADD 1 TO WS-TOUCHING
-                         END-IF
-                     END-IF
-                 END-IF
-             END-PERFORM
+             CALL "M182-TOUCHING" USING WS-ROW WS-HEIGHT WS-TOUCHING
              MOVE WS-TOUCHING TO WS-FREE
              CALL "GR-CRAMMING" USING WS-LIMIT-N WS-TOUCHING WS-FREE WS-DRAW WS-DAMAGE
              IF WS-DAMAGE > 0

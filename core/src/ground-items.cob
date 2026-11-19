@@ -123,9 +123,14 @@
  PROGRAM-ID. GI-SOLID-CELL.
 *> USING dimension row, cell x, y, z (BINARY-LONG), solid out (BINARY-LONG 1 or 0): 1 when the cell's
 *> chunk is not loaded or its block is solid (BLOCKS.cpy SB-SOLID; void outside the height range).
+*> The state is read from the cell table of the chunk WORLD-FIND found (what WORLD-GET-BLOCK reads for a loaded chunk, void outside the height), without the second chunk lookup and the
+*> coordinate arithmetic of that call: every mob step asks it for each cell its box touches (test_gi_solid_cell_equiv).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  COPY CBLOCKS.
+ COPY DIMENSIONS.
+ COPY CELLS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -143,7 +148,11 @@
      CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
      MOVE 1 TO L-SOLID
      IF WS-ROW > 0
-         CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+         MOVE 0 TO WS-STATE
+         IF L-Y >= DM-MIN-Y(L-DIM) AND L-Y < DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM)
+             SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+             MOVE CE-STATE((L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1) TO WS-STATE
+         END-IF
          MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
          MOVE CB-SOLID(WS-BLK + 1) TO L-SOLID
      END-IF
