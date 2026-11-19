@@ -1,4 +1,4 @@
-*> The entity data of the non-mob entities (docs/protocol/21 sections 8.9 and 8.16; lane p49f, T21500 and T21510): the armor stand sends its flags (15, Byte) and six poses (16 to 21, Rotations), the item frame its
+*> The entity data of the non-mob entities (docs/protocol/21 sections 8.9 and 8.16; lane p49f, T21498): the armor stand sends its flags (15, Byte) and six poses (16 to 21, Rotations), the item frame its
 *> direction (8), item (9) and rotation (10), each sent once the state is complete and again when it changes; the interaction entity sends width, height and response (8, 9, 10), the block and item display
 *> entities their block state or stack (23, 24); the cushion its colour (8), the mannequin its main hand (15), model customisation (16) and immovable flag (18). A player who right-clicks a cushion without
 *> secondary use sits on it while nobody sits there (8.16).
