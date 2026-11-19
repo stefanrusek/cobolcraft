@@ -53,7 +53,7 @@ is the source-of-truth map. Documents 10 to 21, 22 to 53 and 55 were written fro
 | [17-tools-weapons-and-combat.md](17-tools-weapons-and-combat.md) | Item components, every tool and weapon, special uses, combat, damage types, enchantments, durability and repair |
 | [18-mob-framework.md](18-mob-framework.md) | Entity model, attributes, goals and the Brain, pathfinding, natural spawning, damage and loot, breeding, taming, leashing, tracking |
 | [19-mobs-land-friendly-and-neutral.md](19-mobs-land-friendly-and-neutral.md) | Land passive, neutral and friendly mobs, villagers and trades |
-| [20-mobs-overworld-hostile.md](20-mobs-overworld-hostile.md) | Overworld hostile mobs, raids and patrols; §15 also holds the warden's touch rule (§15.1) and its disturbance-location rules (§15.2) |
+| [20-mobs-overworld-hostile.md](20-mobs-overworld-hostile.md) | Overworld hostile mobs, raids and patrols; §15 also holds the warden's touch rule (§15.5) and its disturbance-location rules (§15.6) |
 | [21-mobs-aquatic-nether-end-bosses-and-entities.md](21-mobs-aquatic-nether-end-bosses-and-entities.md) | Aquatic, Nether and End mobs, the dragon fight, the wither, all-entities ownership table, other entities |
 | [22-extraction-tool.md](22-extraction-tool.md) | The COBOL extraction tool: jar layout facts, the generated vanilla resource pack, data pack and three disabled feature packs, version and SHA-256 check, regeneration, pack loaders; §2.8.1 the PNG survey and decoder contract |
 | [23-registry-loading.md](23-registry-loading.md) | Registry loading, codecs and tag resolution: the four registry layers, load sequence, pack precedence, client-side loading, references |
