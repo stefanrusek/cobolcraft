@@ -124,6 +124,9 @@
 *>       The creaking strolls at 0.3 against its table speed at 1.0 (20 section 17): 0.3 squared.
          WHEN L-KEY = "creaking"
              MOVE 0.09 TO L-SCALE
+*>       The breeze strolls at 0.6 against its table speed at 1.0 (20 section 16.1): 0.6 squared.
+         WHEN L-KEY = "breeze"
+             MOVE 0.36 TO L-SCALE
          WHEN OTHER
              MOVE 1 TO L-SCALE
      END-EVALUATE

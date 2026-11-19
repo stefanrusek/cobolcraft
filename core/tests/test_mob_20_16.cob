@@ -1,6 +1,6 @@
 *> Acceptance test (002-lane-p49b; docs/protocol/20 section 16): the breeze's table row and its shoot behaviour. Entity breeze: max health 30, movement speed 0.63, attack
 *> damage 3 (not used: it has no melee goal), follow range 24, experience 10, a monster with no natural spawn rule here. Shoot: starts when it stands on the ground with
-*> an attack target within 16 blocks (squared distance below 256); inhale 15 ticks, then it fires one breeze wind charge (speed 0.7 along the line from its firing point to the
+*> an attack target within 16 blocks (squared distance below 256) after a long jump armed it (p49u: test_mob_20_16_6); inhale 15 ticks, then it fires one breeze wind charge (speed 0.7 along the line from its firing point to the
 *> target), recovery 4 ticks, cooldown 10 ticks. This test counts one tick as: the start tick, 15 ticks of inhale (the charge appears on the 15th tick after the start tick), 4 of recovery, 10 of
 *> cooldown, so the second charge appears 30 ticks after the first. Not here: spread (the formula `Projectile.shoot` is not in the document), flight and explosion of the
 *> charge (21 section 8.18 reads only the explosion), long jump, slide.
@@ -90,7 +90,7 @@
      COMPUTE WS-X0 = WS-X - 8
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-MOB
      MOVE 0 TO WS-SHOTS WS-FIRST WS-SECOND WS-SEEN WS-CHARGE WS-START
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 140
          IF PL-HURT-COOLDOWN(WS-PLAYER) > 0
              SUBTRACT 1 FROM PL-HURT-COOLDOWN(WS-PLAYER)
          END-IF
@@ -129,9 +129,12 @@
          MOVE 700 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US15 20§16 Breeze second charge 30 ticks later (recovery 4, cooldown 10)" TO TL-CASE
-     MOVE 30 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = WS-SECOND - WS-FIRST
+     MOVE "acceptance US15 20§16.1 Breeze second charge needs another long jump: it comes later than the 30 ticks of recovery and cooldown" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SECOND > WS-FIRST + 30
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The charge flies straight at the player and hurts it for 1.0 (17 section 3.15); the charge is then removed.

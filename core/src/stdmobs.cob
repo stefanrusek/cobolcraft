@@ -1163,6 +1163,15 @@
      IF SM-KEY(WS-M) = "warden"
          CALL "WARDEN-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
+*>   The breeze's brain (BREEZE-BRAIN, 20 section 16.1): walk 1 slides to its walk target, 2 and 3 stand (3 facing the target); a breeze never chases.
+     IF SM-RANGED(WS-M) = 7
+         CALL "BREEZE-BRAIN" USING WS-ROW WS-M WS-PET-HX WS-PET-HZ WS-PET-WALK
+         MOVE 0 TO WS-CHASE
+         IF WS-PET-WALK = 3
+             MOVE 1 TO WS-STOP
+             MOVE 0 TO WS-PET-WALK
+         END-IF
+     END-IF
 *>   A frozen creaking stands (CAN_MOVE false: the move control does nothing).
      IF SM-KEY(WS-M) = "creaking" AND WS-FROZEN = 1
          MOVE 2 TO WS-PET-WALK
@@ -1292,9 +1301,6 @@
      END-IF
      IF SM-RANGED(WS-M) = 6
          CALL "SHULKER-ATTACK" USING WS-ROW WS-M
-     END-IF
-     IF SM-RANGED(WS-M) = 7
-         CALL "BREEZE-SHOOT" USING WS-ROW WS-M
      END-IF
      IF SM-KEY(WS-M) = "snow_golem"
          CALL "SNOW-GOLEM-TICK" USING WS-ROW WS-M

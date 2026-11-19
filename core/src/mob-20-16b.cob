@@ -432,13 +432,16 @@
 *> USING breeze row: StopAttackingIfTargetInvalid of the breeze's FIGHT activity (16.1, priority 0), one evaluation: the attack target (a player row) is erased when the breeze cannot attack it (not a survival or
 *> adventure player), when it is not alive or is in another level, or when it was not "attackable ignoring line of sight" for more than 100 evaluations: the counter EN-WAKE (starts at 0) is set to 100 when the
 *> target is attackable (alive, survival or adventure, in the dimension, within the follow range 24), else it is decremented first, and the target is kept while the counter is at least 0.
-*> Not here: the tired-of-trying-to-reach rule (200 ticks of a walk target that cannot be reached: the cant_reach_walk_target_since memory is not kept).
+*> The tired-of-trying-to-reach rule reads cant_reach_walk_target_since of BREEZESTATE.cpy (more than 200 ticks old).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY BREEZESTATE.
  01 WS-P                   BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
  01 WS-IN-RANGE            BINARY-LONG.
+ 01 WS-NO-CREATE           BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -462,6 +465,13 @@
              IF EN-WAKE(L-ROW) < 0
                  MOVE 1 TO WS-STOP
              END-IF
+         END-IF
+     END-IF
+*>   Tired of trying to reach: cant_reach_walk_target_since more than 200 ticks old.
+     CALL "BZ-FIND" USING EN-ID(L-ROW) WS-NO-CREATE WS-SLOT
+     IF WS-SLOT > 0
+         IF BZ-CANT-ON(WS-SLOT) = 1 AND CW-TICKS - BZ-CANT-AT(WS-SLOT) > 200
+             MOVE 1 TO WS-STOP
          END-IF
      END-IF
      IF WS-STOP = 1
