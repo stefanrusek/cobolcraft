@@ -53,8 +53,8 @@
          + SM-XP(WS-INDEX) * 100 + SM-KIND(WS-INDEX) * 10 + SM-SPAWN(WS-INDEX)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The pulse: a creative player 10 blocks away (no fight), the time chosen so that (id + time) mod 120 = 0.
-     MOVE 1 TO PL-MODE(WS-PLAYER)
+*>   The pulse: an adventure player 10 blocks away (no anger, no fight; 15.2: survival and adventure players only), the warden's own tick count chosen so that (id + tickCount) mod 120 = 0.
+     MOVE 2 TO PL-MODE(WS-PLAYER)
      MOVE PL-X(WS-PLAYER) TO WS-X
      MOVE PL-Y(WS-PLAYER) TO WS-Y
      MOVE PL-Z(WS-PLAYER) TO WS-Z
@@ -64,15 +64,18 @@
      COMPUTE WS-FY = FUNCTION INTEGER(WS-Y) - 1
      CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FY WS-FKIND
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-WARDEN
-     COMPUTE WS-OFF = FUNCTION MOD(EN-ID(WS-WARDEN), 120)
-     COMPUTE CW-TIME = 12000 - WS-OFF + 1
+     COMPUTE WS-OFF = FUNCTION MOD(120 - FUNCTION MOD(EN-ID(WS-WARDEN), 120), 120)
+     IF WS-OFF = 0
+         MOVE 120 TO WS-OFF
+     END-IF
+*>   The tick of the pulse is the OFF-th tick of the warden: before the (OFF - 1)th tick the count is OFF - 2.
+     COMPUTE EN-WAKE(WS-WARDEN) = WS-OFF - 2
      MOVE 0 TO EF-ON(WS-PLAYER, WS-SLOT)
      CALL "MOB-STEP" USING WS-WARDEN
      MOVE "acceptance US15 20§15 Warden no Darkness off the pulse" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE EF-ON(WS-PLAYER, WS-SLOT) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     COMPUTE CW-TIME = 12000 - WS-OFF
      CALL "MOB-STEP" USING WS-WARDEN
      MOVE "acceptance US15 20§15 Warden Darkness on the pulse (on, amplifier, duration, flags)" TO TL-CASE
      COMPUTE TL-EXPECTED-N = 1 * 10000000 + 0 * 1000000 + 260 * 10 + 4

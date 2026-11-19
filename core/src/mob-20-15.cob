@@ -1,7 +1,8 @@
 *> Warden (002-lane-p49b; docs/protocol/20-mobs-overworld-hostile.md section 15). State: WD-ENTRY of WARDENSTATE.cpy.
 *> Entry points:
 *>   WARDEN-DARKNESS USING tracker row: every 120 ticks offset by the entity id ((id + tickCount) mod 120 = 0) the warden gives every player within 20 blocks of it, in its
-*>     dimension, the Darkness effect (amplifier 0, 260 ticks, flags 4: icon, no particles). The tick count of an entity is not tracked: the world time CW-TIME stands in.
+*>     dimension, the Darkness effect (amplifier 0, 260 ticks, flags 4: icon, no particles); survival and adventure players only, squared distance below 400, renewed only when at most 199 ticks
+*>     are left; the warden counts its own ticks in EN-WAKE (20 section 15.2).
 *>   WD-FIND USING entity id, create, slot out        the state slot of a warden (0 none)
 *>   WARDEN-ANGER-ADD USING warden row, player row, amount, dig flag    AngerManager.add: ignored unless the player is alive and in survival; capped at 150; with the flag
 *>     (increaseAngerAt) the dig cooldown becomes 1200
@@ -31,19 +32,27 @@
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     IF FUNCTION MOD(EN-ID(L-ROW) + CW-TIME, 120) NOT = 0
+*>   tickCount (EN-WAKE) counts the warden's own ticks from 1; the pulse is on (id + tickCount) mod 120 = 0 (20 section 15.2).
+     ADD 1 TO EN-WAKE(L-ROW)
+     IF FUNCTION MOD(EN-ID(L-ROW) + EN-WAKE(L-ROW), 120) NOT = 0
          GOBACK
      END-IF
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
-         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND (PL-MODE(WS-P) = 0 OR PL-MODE(WS-P) = 2)
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
-             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ <= 400
-                 CALL "EFFECT-ADD" USING WS-P WS-DARKNESS WS-AMPLIFIER WS-DURATION WS-FLAGS
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < 400
+*>               The effect is given when the player has none, or when its Darkness ends within 199 ticks and is not infinite.
+                 CALL "EFFECT-LEVEL" USING WS-P WS-DARKNESS WS-LEVEL WS-LEFT
+                 IF WS-LEVEL = 0 OR (WS-LEFT >= 0 AND WS-LEFT <= 199)
+                     CALL "EFFECT-ADD" USING WS-P WS-DARKNESS WS-AMPLIFIER WS-DURATION WS-FLAGS
+                 END-IF
              END-IF
          END-IF
      END-PERFORM
@@ -258,9 +267,7 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-LEN                 FLOAT-LONG.
  01 WS-EVENT               BINARY-LONG VALUE 62.
- 01 WS-MILLI               BINARY-LONG VALUE 10000.
- 01 WS-CAUSE               BINARY-LONG VALUE CAUSE-MOB.
- 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-AMOUNT              BINARY-LONG VALUE 10.
  01 WS-RESULT              BINARY-LONG.
  01 WS-VX                  BINARY-LONG.
  01 WS-VY                  BINARY-LONG.
@@ -295,11 +302,14 @@
          COMPUTE WS-DY = PL-Y(WS-P) + 1.62 - (EN-Y(L-ROW) + 1.6)
          COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
          COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
-         CALL "HEALTH-HURT" USING WS-P WS-MILLI WS-CAUSE EN-ID(L-ROW) WS-NO-ATTACKER WS-RESULT
-         COMPUTE WS-VX = WS-DX / WS-LEN * 2500
-         COMPUTE WS-VY = WS-DY / WS-LEN * 500
-         COMPUTE WS-VZ = WS-DZ / WS-LEN * 2500
-         CALL "COMBAT-MOTION-SEND" USING WS-P WS-VX WS-VY WS-VZ
+         CALL "HEALTH-SONIC-BOOM" USING WS-P WS-AMOUNT L-ROW WS-RESULT
+*>       The extra push only when the damage call hurt the target (20 section 15).
+         IF WS-RESULT > 0
+             COMPUTE WS-VX = WS-DX / WS-LEN * 2500
+             COMPUTE WS-VY = WS-DY / WS-LEN * 500
+             COMPUTE WS-VZ = WS-DZ / WS-LEN * 2500
+             CALL "COMBAT-MOTION-SEND" USING WS-P WS-VX WS-VY WS-VZ
+         END-IF
      END-IF
      IF WD-BOOM(WS-SLOT) >= 60
          MOVE 0 TO WD-BOOM(WS-SLOT)
