@@ -526,6 +526,16 @@
      MOVE CC-TEX-UI TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HL-VERTEX(1) RL-HL-COUNT RL-HL-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
+*>   The entity hitboxes (F3+B, 34-1 section 7.5), after the highlight.
+     MOVE 0 TO RL-HB-COUNT
+     IF SM-SCREEN = SCR-WORLD AND CL-HITBOXES = 1
+         CALL "HITBOX-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     END-IF
+     MOVE MESH-SLOT-HITBOX TO WS-SLOT
+     MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HB-VERTEX(1) RL-HB-COUNT RL-HB-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
 *>   The hand (first person, world screen): a depth clear, then the held item in view space with the projection alone.
      CALL "HAND-MESH" USING CLIENT-STATE
