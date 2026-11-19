@@ -4,6 +4,7 @@
 *>     whose profession takes that workstation (VIL-PROFESSION of the block) are folded together with this villager in list order (the entity table's): the accumulated villager stays only when its xp
 *>     is strictly greater than the next one's, else the next wins; every loser's job_site is released. Run on the 20 to 39 tick brain beat (the document runs it every tick: the rule needs no
 *>     timer, so it settles at the next beat).
+*>   (VIL-PROFESSION gives "none" for a block that is no workstation: no profession takes the site.)
 *>   VL-YIELD USING row, slot        YieldJobSite (2.4): a villager that is not a baby, has no profession and holds a potential_job_site hands it to the first villager of nearest_living_entities
 *>     that holds no potential_job_site, whose profession takes the workstation and that holds no job_site and can reach the site (VL-CAN-REACH, reach 1: the document's canReachPos) or holds
 *>     this very site: this villager's claim and walk target are erased, the other gets the potential_job_site (the claim, VL-POT 1) and a walk target to it (speed s, closeness 1).
@@ -42,7 +43,7 @@
      CALL "PXI-KEY-AT" USING WS-QD WS-QX WS-QY WS-QZ WS-KEY
      MOVE SPACES TO WS-SITE-PROF
      CALL "VIL-PROFESSION" USING WS-KEY WS-SITE-PROF
-     IF WS-SITE-PROF = SPACES
+     IF WS-SITE-PROF = SPACES OR WS-SITE-PROF = "none"
          GOBACK
      END-IF
      MOVE EN-ID(L-ROW) TO WS-ACC-ID
@@ -123,7 +124,7 @@
      CALL "PXI-KEY-AT" USING WS-QD WS-QX WS-QY WS-QZ WS-KEY
      MOVE SPACES TO WS-SITE-PROF
      CALL "VIL-PROFESSION" USING WS-KEY WS-SITE-PROF
-     IF WS-SITE-PROF = SPACES
+     IF WS-SITE-PROF = SPACES OR WS-SITE-PROF = "none"
          GOBACK
      END-IF
      MOVE 0 TO WS-WIN

@@ -381,10 +381,7 @@
          CALL "VL-WALK-SET" USING L-ROW L-SLOT EN-DIM(L-ROW) WS-TX WS-TY WS-TZ WS-SPEED WS-CLOSE-1
          GOBACK
      END-IF
-*>   JumpOnBed: the activity's RunOne reaches it with its weight; it needs the nearest bed.
-     IF L-ACT = VA-PLAY AND WS-HAS = 1
-         GOBACK
-     END-IF
+*>   JumpOnBed: the activity's RunOne reaches it with its weight; it needs the nearest bed (the play branch above always ends the tick when babies are in sight).
      CALL "VM-GET" USING L-SLOT MT-NEAREST-BED WS-BED WS-QD WS-QX WS-QY WS-QZ WS-N1 WS-N2
      IF WS-BED = 0
          GOBACK
