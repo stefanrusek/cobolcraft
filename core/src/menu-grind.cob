@@ -7,7 +7,7 @@
 *>   MENU-GRIND-UPDATE USING row                  slotsChanged: the result follows the inputs
 *>   MENU-GRIND-TAKEN USING row                   onTake (4.4): experience awarded at the block, both inputs emptied
 *>   MENU-GRIND-QUICK USING row, menu slot, item out, count out   quickMoveStack (4.5)
-*> Gaps: the level event 1042 is not sent.
+*> The take sends Level Event 1042 (grindstone.use; 57-client-closures-2 section 3.2) to the players within 64 blocks of the block.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GRIND-HAS-ENCH.
@@ -363,9 +363,14 @@
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 1042.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     CALL "LEVEL-EVENT" USING MN-BENCH-DIM(L-ROW) WS-EVENT MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW)
+         WS-NONE WS-NONE2
      MOVE MN-WSLOT-ITEM(L-ROW, 1) TO WS-AI
      MOVE MN-WSLOT-VAR(L-ROW, 1) TO WS-AV
      MOVE MN-WSLOT-ITEM(L-ROW, 2) TO WS-BI

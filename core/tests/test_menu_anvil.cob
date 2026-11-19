@@ -77,6 +77,11 @@
      MOVE "test menu anvil take: units above the right stack empty it, a merge (no units) uses it up, a pure rename leaves it" TO TL-CASE
      MOVE 24 TO MN-CFAMILY(WS-PLAYER)
      MOVE 1 TO MN-WINDOW(WS-PLAYER)
+*>   the take sends the anvil's level event at the menu's block (57-client-closures-2 section 3.2): the bench is the player's own cell
+     MOVE PL-DIM(WS-PLAYER) TO MN-BENCH-DIM(WS-PLAYER)
+     COMPUTE MN-BENCH-X(WS-PLAYER) = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE MN-BENCH-Y(WS-PLAYER) = FUNCTION INTEGER(PL-Y(WS-PLAYER))
+     COMPUTE MN-BENCH-Z(WS-PLAYER) = FUNCTION INTEGER(PL-Z(WS-PLAYER))
      MOVE 3 TO MN-WSLOT-COUNT(WS-PLAYER, 2)
      MOVE 7 TO MN-WSLOT-ITEM(WS-PLAYER, 2)
      MOVE 5 TO MN-WSEL(WS-PLAYER)
