@@ -231,7 +231,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GUI-SPRITE-PATH-X.
-*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites are the last 23 rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
+*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites, then the 20 container sheets, are the last rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
 *> icons, the effect backgrounds, armour, air, the vehicle hearts, the heart containers and the 40 heart variants (type x hardcore x size x blinking),
 *> the hunger food sprites.
  DATA DIVISION.
@@ -269,6 +269,29 @@
     05 FILLER PIC X(40) VALUE "spear".
  01 WS-CSLOT-TABLE REDEFINES WS-CSLOT-NAMES.
     05 WS-CSLOT-NAME       PIC X(40) OCCURS 20 TIMES.
+ 01 WS-SHEET-NAMES.
+    05 FILLER PIC X(20) VALUE "generic_54".
+    05 FILLER PIC X(20) VALUE "shulker_box".
+    05 FILLER PIC X(20) VALUE "hopper".
+    05 FILLER PIC X(20) VALUE "dispenser".
+    05 FILLER PIC X(20) VALUE "furnace".
+    05 FILLER PIC X(20) VALUE "blast_furnace".
+    05 FILLER PIC X(20) VALUE "smoker".
+    05 FILLER PIC X(20) VALUE "brewing_stand".
+    05 FILLER PIC X(20) VALUE "crafter".
+    05 FILLER PIC X(20) VALUE "anvil".
+    05 FILLER PIC X(20) VALUE "grindstone".
+    05 FILLER PIC X(20) VALUE "smithing".
+    05 FILLER PIC X(20) VALUE "enchanting_table".
+    05 FILLER PIC X(20) VALUE "loom".
+    05 FILLER PIC X(20) VALUE "stonecutter".
+    05 FILLER PIC X(20) VALUE "cartography_table".
+    05 FILLER PIC X(20) VALUE "villager".
+    05 FILLER PIC X(20) VALUE "beacon".
+    05 FILLER PIC X(20) VALUE "horse".
+    05 FILLER PIC X(20) VALUE "nautilus".
+ 01 WS-SHEET-TABLE REDEFINES WS-SHEET-NAMES.
+    05 WS-SHEET-NAME       PIC X(20) OCCURS 20 TIMES.
  01 WS-TYPE-NAMES.
     05 FILLER              PIC X(10) VALUE "          ".
     05 FILLER              PIC X(10) VALUE "poisoned_ ".
@@ -367,9 +390,17 @@
              MOVE "hud/experience_bar_background" TO WS-NAME
          WHEN L-ROW = GSP-XP-PROGRESS
              MOVE "hud/experience_bar_progress" TO WS-NAME
+         WHEN L-ROW >= GSP-SHEET-0 AND L-ROW <= GSP-SHEET-LAST
+             COMPUTE WS-N = L-ROW - GSP-SHEET-0 + 1
          WHEN OTHER
              MOVE "hud/food_full_hunger" TO WS-NAME
      END-EVALUATE
-     STRING FUNCTION TRIM(WS-SPRITES) FUNCTION TRIM(WS-NAME) ".png" DELIMITED BY SIZE INTO L-PATH
+*>   A container sheet is a whole image under textures/gui/container (08 section 10.7: not a sprite of the gui atlas).
+     IF L-ROW >= GSP-SHEET-0 AND L-ROW <= GSP-SHEET-LAST
+         STRING "assets/minecraft/textures/gui/container/" FUNCTION TRIM(WS-SHEET-NAME(WS-N)) ".png"
+             DELIMITED BY SIZE INTO L-PATH
+     ELSE
+         STRING FUNCTION TRIM(WS-SPRITES) FUNCTION TRIM(WS-NAME) ".png" DELIMITED BY SIZE INTO L-PATH
+     END-IF
      GOBACK.
  END PROGRAM GUI-SPRITE-PATH-X.

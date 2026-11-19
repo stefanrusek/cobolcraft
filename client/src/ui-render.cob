@@ -163,8 +163,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-SHEET-QUAD.
 *> USING CLIENT-STATE, widget (a sheet region): one quad over the widget's rectangle on the region of the sheet from its origin
-*> (state 1: from (1, 1), the vanilla recipe-book panel) of the widget's size, in logical units of the 256 x 256 sheet (a sheet
-*> of a larger size scales them by its width / 256).
+*> (state 1: from (1, 1), the vanilla recipe-book panel; SM-W-SPRITE rows further down, the lower blit of the chest sheet) of the widget's size, in logical units of the
+*> sheet, 256 rows high whatever its width (the merchant's is 512 x 256): a sheet of a larger size scales them by its height / 256.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -183,17 +183,17 @@
  01 L-W                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
      MOVE SM-W-ARG(L-W) TO WS-ROW
-     IF WS-ROW >= GSP-SHEET-INVENTORY AND WS-ROW <= GSP-SHEET-BOOK
+     IF (WS-ROW >= GSP-SHEET-INVENTORY AND WS-ROW <= GSP-SHEET-BOOK) OR (WS-ROW >= GSP-SHEET-0 AND WS-ROW <= GSP-SHEET-LAST)
          IF GS-W(WS-ROW) > 0
-             COMPUTE WS-F = GS-W(WS-ROW) / 256
+             COMPUTE WS-F = GS-H(WS-ROW) / 256
              COMPUTE WS-X0 = SM-W-X(L-W) * CL-GUI-SCALE
              COMPUTE WS-Y0 = SM-W-Y(L-W) * CL-GUI-SCALE
              COMPUTE WS-X1 = (SM-W-X(L-W) + SM-W-W(L-W)) * CL-GUI-SCALE
              COMPUTE WS-Y1 = (SM-W-Y(L-W) + SM-W-H(L-W)) * CL-GUI-SCALE
              COMPUTE WS-U0 = (GS-X(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-W
-             COMPUTE WS-V0 = (GS-Y(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-H
+             COMPUTE WS-V0 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-SPRITE(L-W)) * WS-F) / UA-H
              COMPUTE WS-U1 = (GS-X(WS-ROW) + (SM-W-STATE(L-W) + SM-W-W(L-W)) * WS-F) / UA-W
-             COMPUTE WS-V1 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-H(L-W)) * WS-F) / UA-H
+             COMPUTE WS-V1 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-SPRITE(L-W) + SM-W-H(L-W)) * WS-F) / UA-H
              CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
          END-IF
      END-IF

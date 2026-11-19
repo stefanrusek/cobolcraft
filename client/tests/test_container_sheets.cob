@@ -91,6 +91,12 @@
  01 WS-GREY                BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-BARE                BINARY-LONG.
+ 01 WS-TITLE-RGB           BINARY-LONG.
+ 01 WS-EXP-1               BINARY-LONG.
+ 01 WS-EXP-2               BINARY-LONG.
+ 01 WS-EXP-EDGE            BINARY-LONG.
+ 01 WS-EDGE-CHECK          BINARY-LONG.
+ 01 WS-OWN-N               BINARY-LONG.
  01 WS-CASE-TYPE           PIC 999.
  01 WS-BASED-LEN           BINARY-LONG.
  01 B-ATLAS                PIC X(1073741824) BASED.
@@ -199,10 +205,27 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-PANEL TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The title is the first label, in the sheet's dark grey #404040 (the beacon's labels are its own).
+     MOVE 0 TO WS-TITLE-RGB
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > SM-WIDGET-COUNT OR WS-TITLE-RGB NOT = 0
+         IF SM-W-KIND(WS-Q) = WK-LABEL
+             MOVE SM-W-COLOUR(WS-Q) TO WS-TITLE-RGB
+             IF WS-TITLE-RGB = 0
+                 MOVE -1 TO WS-TITLE-RGB
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-T-TYPE(WS-I) NOT = 9
+         MOVE 4210752 TO TL-EXPECTED-N
+         MOVE SPACES TO TL-CASE
+         STRING "container sheets the title is drawn in the sheet's #404040, type " WS-CASE-TYPE DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-TITLE-RGB TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-IF
 *>   Every slot widget of the menu is a bare one on a well of the sheet (the sheets carry the wells; the mounts' own slots draw their well sprite instead).
      MOVE 0 TO WS-SLOTS WS-BAD WS-BARE
      PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > SM-WIDGET-COUNT
-         IF SM-W-KIND(WS-Q) = WK-SLOT AND SM-W-ARG(WS-Q) NOT = 36 AND NOT (SM-W-ARG(WS-Q) >= 401 AND BM-TYPE >= 100)
+         IF SM-W-KIND(WS-Q) = WK-SLOT AND SM-W-ARG(WS-Q) NOT = 36 AND SM-W-ARG(WS-Q) < 800 AND NOT (SM-W-ARG(WS-Q) >= 401 AND BM-TYPE >= 100)
              ADD 1 TO WS-SLOTS
              IF SM-W-STATE(WS-Q) = 3
                  ADD 1 TO WS-BARE
@@ -250,45 +273,76 @@
      .
 
 *> A slot widget (18 x 18, 1 pixel out of its item cell) of widget WS-Q: its position in the image, then in the sheet (the chest sheet's lower part is 126 - (18 R + 17)
-*> rows further up), must have the well's interior grey (#8B8B8B) at its corner pixels (1, 1) and (16, 16), the well's dark top-left edge (#373737) at (8, 0) and (0, 8) and its
-*> light bottom-right edge (#FFFFFF) at (8, 17) and (17, 8): the 18 x 18 well of a standard slot. A result slot's larger well (furnace family, crafter) has only the interior test.
+*> rows further up), must have the well's interior grey at its corner pixels (1, 1) and (16, 16), the well's dark top-left edge at (8, 0) and (0, 8): the 18 x 18 well of a
+*> standard slot (#8B8B8B interior, #373737 edge). The sheet's larger result wells (furnace family, loom, merchant, cartography, stonecutter) have only the interior test; the
+*> brewing stand's middle bottle well has its top edge under the tubes (interior test only); the crafter's wells are of another style (#ADADAD and #737373 inside, #383838 edge) and its result a bare frame (panel grey inside).
  CHECK-WELL.
      COMPUTE WS-SX = SM-W-X(WS-Q) - WS-LEFT
      COMPUTE WS-SY = SM-W-Y(WS-Q) - WS-TOP
      IF WS-T-TYPE(WS-I) <= 5 AND WS-SY >= 18 * (WS-T-TYPE(WS-I) + 1) + 17
          COMPUTE WS-SY = WS-SY - (18 * (WS-T-TYPE(WS-I) + 1) + 17) + 126
      END-IF
+     MOVE 139 TO WS-EXP-1
+     MOVE 139 TO WS-EXP-2
+     MOVE 55 TO WS-EXP-EDGE
+     MOVE 1 TO WS-EDGE-CHECK
+     COMPUTE WS-OWN-N = SM-W-ARG(WS-Q) - 401
+     EVALUATE TRUE
+         WHEN (WS-T-TYPE(WS-I) = 10 OR WS-T-TYPE(WS-I) = 14 OR WS-T-TYPE(WS-I) = 22) AND WS-OWN-N = 2
+             MOVE 0 TO WS-EDGE-CHECK
+         WHEN WS-T-TYPE(WS-I) = 18 AND WS-OWN-N = 3
+             MOVE 0 TO WS-EDGE-CHECK
+         WHEN WS-T-TYPE(WS-I) = 19 AND WS-OWN-N = 2
+             MOVE 0 TO WS-EDGE-CHECK
+         WHEN WS-T-TYPE(WS-I) = 23 AND WS-OWN-N = 2
+             MOVE 0 TO WS-EDGE-CHECK
+         WHEN WS-T-TYPE(WS-I) = 24 AND WS-OWN-N = 1
+             MOVE 0 TO WS-EDGE-CHECK
+         WHEN WS-T-TYPE(WS-I) = 11 AND WS-OWN-N = 1
+             MOVE 0 TO WS-EDGE-CHECK
+         WHEN WS-T-TYPE(WS-I) = 7 AND SM-W-ARG(WS-Q) >= 401 AND WS-OWN-N < 9
+             MOVE 173 TO WS-EXP-1
+             MOVE 115 TO WS-EXP-2
+             MOVE 56 TO WS-EXP-EDGE
+         WHEN WS-T-TYPE(WS-I) = 7 AND SM-W-ARG(WS-Q) >= 401
+             MOVE 198 TO WS-EXP-1
+             MOVE 198 TO WS-EXP-2
+             MOVE 0 TO WS-EDGE-CHECK
+     END-EVALUATE
      MOVE 1 TO WS-PX
      MOVE 1 TO WS-PY
      PERFORM PIXEL-GREY
-     IF WS-GREY NOT = 139
+     IF WS-GREY NOT = WS-EXP-1
          ADD 1 TO WS-BAD
          DISPLAY "  type " WS-CASE-TYPE " slot arg " SM-W-ARG(WS-Q) " at " WS-SX "," WS-SY ": corner (1,1) grey " WS-GREY
      END-IF
      MOVE 16 TO WS-PX
      MOVE 16 TO WS-PY
      PERFORM PIXEL-GREY
-     IF WS-GREY NOT = 139
+     IF WS-GREY NOT = WS-EXP-2
          ADD 1 TO WS-BAD
          DISPLAY "  type " WS-CASE-TYPE " slot arg " SM-W-ARG(WS-Q) " at " WS-SX "," WS-SY ": corner (16,16) grey " WS-GREY
      END-IF
-     MOVE 8 TO WS-PX
-     MOVE 0 TO WS-PY
-     PERFORM PIXEL-GREY
-     IF WS-GREY NOT = 55 AND NOT (WS-T-SHEET(WS-I) >= 5 AND WS-T-SHEET(WS-I) <= 9 AND WS-GREY = 139)
-         ADD 1 TO WS-BAD
-         DISPLAY "  type " WS-CASE-TYPE " slot arg " SM-W-ARG(WS-Q) " at " WS-SX "," WS-SY ": top edge grey " WS-GREY
-     END-IF
-     MOVE 0 TO WS-PX
-     MOVE 8 TO WS-PY
-     PERFORM PIXEL-GREY
-     IF WS-GREY NOT = 55 AND NOT (WS-T-SHEET(WS-I) >= 5 AND WS-T-SHEET(WS-I) <= 9 AND WS-GREY = 139)
-         ADD 1 TO WS-BAD
-         DISPLAY "  type " WS-CASE-TYPE " slot arg " SM-W-ARG(WS-Q) " at " WS-SX "," WS-SY ": left edge grey " WS-GREY
+     IF WS-EDGE-CHECK = 1
+         MOVE 8 TO WS-PX
+         MOVE 0 TO WS-PY
+         PERFORM PIXEL-GREY
+         IF WS-GREY NOT = WS-EXP-EDGE
+             ADD 1 TO WS-BAD
+             DISPLAY "  type " WS-CASE-TYPE " slot arg " SM-W-ARG(WS-Q) " at " WS-SX "," WS-SY ": top edge grey " WS-GREY
+         END-IF
+         MOVE 0 TO WS-PX
+         MOVE 8 TO WS-PY
+         PERFORM PIXEL-GREY
+         IF WS-GREY NOT = WS-EXP-EDGE
+             ADD 1 TO WS-BAD
+             DISPLAY "  type " WS-CASE-TYPE " slot arg " SM-W-ARG(WS-Q) " at " WS-SX "," WS-SY ": left edge grey " WS-GREY
+         END-IF
      END-IF
      .
 
 *> The red byte of the sheet's pixel (WS-SX + WS-PX, WS-SY + WS-PY) in the atlas (a grey is the same in the three), in WS-GREY.
+
  PIXEL-GREY.
      COMPUTE WS-W = ((GS-Y(WS-ROWNO) + (WS-SY + WS-PY) * GS-H(WS-ROWNO) / 256) * UA-W
          + GS-X(WS-ROWNO) + (WS-SX + WS-PX) * GS-H(WS-ROWNO) / 256) * 4 + 1

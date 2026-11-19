@@ -1,10 +1,11 @@
 *> The generic container screen (docs/protocol/40-menus-1-model-and-containers.md sections 2.1, 5, 7 to 10; 05a Open Screen 0x3C, Container Set Slot 0x14): the menus of the chest
 *> family (generic_9x1 to 9x6, ids 0 to 5), the dispenser and dropper (generic_3x3, 6), the hopper (16) and the shulker box (20). CONTAINER-LAYOUT is the table of
 *> 7.2, 8.2, 9.2 and 10.2 (own slot count, imageHeight, the player inventory's top Y0, a centred title); CONTAINER-SLOT-POS the position of an own slot; the screen
-*> is leftPos = (W - 176) div 2, topPos = (H - imageHeight) div 2, a panel (the sheet textures of these menus are not in the built-in pack) with the title at (8, 6)
+*> is leftPos = (W - 176) div 2, topPos = (H - imageHeight) div 2, the background of the menu's sheet (CONTAINER-BACKGROUND: textures/gui/container/<name>.png of a pack that has it, whose
+*> slot wells then carry the slots; the built-in pack has none of them, so a panel fallback) with the title at (8, 6)
 *> (centred for the dispenser) and "Inventory" at (8, imageHeight - 94), the own slots (widget argument 401 + n, menu slot n), the player's main inventory
 *> (argument 9 to 35, menu slot own + argument - 9) and hotbar (argument 0 to 8, menu slot own + 27 + argument), 18 x 18 widgets 1 pixel out of the item cell.
-*> The labels' colour #404040 is not drawn (labels have one colour).
+*> The labels' colour #404040 is drawn on a sheet (a grey luminance), not on the dark panel fallback.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTAINER-FRAME.
@@ -344,6 +345,105 @@
  END PROGRAM CONTAINER-ARG.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTAINER-BACKGROUND.
+*> USING CLIENT-STATE, menu type, left, top, image width, image height, drawn (out 1/0): the background of the menu's container screen as sheet widgets (40-1 7.5, 8, 9, 10; 40-2 1.1;
+*> 40-3 1; 40-4 1; 40-5 2.9, 3; 40-6 6.2): the region (0, 0, image width, image height) of the menu's sheet at (left, top), the chest sheet in the two blits of 40-1 7.5 (the top
+*> 18 R + 17 rows from (0, 0), the bottom 96 rows from (0, 126) below them, the last image row uncovered). The sheet of a menu type is the table below; a pack that has no such sheet
+*> (GS-W 0, the built-in pack) or a type with none (the lectern) draws nothing and gives drawn 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE WK-SHEET.
+ 01 WS-ACTION              BINARY-LONG VALUE ACT-NONE.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-LENGTH              BINARY-LONG VALUE 0.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-TOP-H               BINARY-LONG.
+ 01 WS-LOW-Y               BINARY-LONG.
+ 01 WS-LOW-H               BINARY-LONG VALUE 96.
+ 01 WS-LOW-V               BINARY-LONG VALUE 126.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-LEFT                 BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-DRAWN                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TYPE L-LEFT L-TOP L-W L-H L-DRAWN.
+     MOVE 0 TO L-DRAWN
+*>   The sheet's index in GSP-SHEET-0 order (gui-sprites.cob): generic_54, shulker_box, hopper, dispenser, furnace, blast_furnace, smoker, brewing_stand, crafter, anvil,
+*>   grindstone, smithing, enchanting_table, loom, stonecutter, cartography_table, villager, beacon, horse, nautilus.
+     MOVE 0 TO WS-K
+     EVALUATE TRUE
+         WHEN L-TYPE >= 0 AND L-TYPE <= 5
+             MOVE 1 TO WS-K
+         WHEN L-TYPE = 20
+             MOVE 2 TO WS-K
+         WHEN L-TYPE = 16
+             MOVE 3 TO WS-K
+         WHEN L-TYPE = 6
+             MOVE 4 TO WS-K
+         WHEN L-TYPE = 14
+             MOVE 5 TO WS-K
+         WHEN L-TYPE = 10
+             MOVE 6 TO WS-K
+         WHEN L-TYPE = 22
+             MOVE 7 TO WS-K
+         WHEN L-TYPE = 11
+             MOVE 8 TO WS-K
+         WHEN L-TYPE = 7
+             MOVE 9 TO WS-K
+         WHEN L-TYPE = 8
+             MOVE 10 TO WS-K
+         WHEN L-TYPE = 15
+             MOVE 11 TO WS-K
+         WHEN L-TYPE = 21
+             MOVE 12 TO WS-K
+         WHEN L-TYPE = 13
+             MOVE 13 TO WS-K
+         WHEN L-TYPE = 18
+             MOVE 14 TO WS-K
+         WHEN L-TYPE = 24
+             MOVE 15 TO WS-K
+         WHEN L-TYPE = 23
+             MOVE 16 TO WS-K
+         WHEN L-TYPE = 19
+             MOVE 17 TO WS-K
+         WHEN L-TYPE = 9
+             MOVE 18 TO WS-K
+         WHEN L-TYPE >= 100 AND L-TYPE <= 105
+             MOVE 19 TO WS-K
+         WHEN L-TYPE = 110
+             MOVE 20 TO WS-K
+     END-EVALUATE
+     IF WS-K = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-ROW = GSP-SHEET-0 + WS-K - 1
+     IF GS-W(WS-ROW) = 0
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-TEXT
+     MOVE L-H TO WS-TOP-H
+     IF L-TYPE <= 5
+         COMPUTE WS-TOP-H = 18 * (L-TYPE + 1) + 17
+     END-IF
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ROW L-LEFT L-TOP L-W WS-TOP-H
+         WS-TEXT WS-LENGTH WS-STATE
+     IF L-TYPE <= 5
+         COMPUTE WS-LOW-Y = L-TOP + WS-TOP-H
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ROW L-LEFT WS-LOW-Y L-W WS-LOW-H
+             WS-TEXT WS-LENGTH WS-STATE
+         MOVE WS-LOW-V TO SM-W-SPRITE(SM-WIDGET-COUNT)
+     END-IF
+     MOVE 1 TO L-DRAWN
+     GOBACK.
+ END PROGRAM CONTAINER-BACKGROUND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTAINER-BUILD.
 *> USING CLIENT-STATE, GUI width, GUI height: the panel of the image (CONTAINER-FRAME), the title and the inventory label, the hover highlight's back sprite
 *> (24 x 24 at the hovered slot's item cell - 4, 40-1 section 5.4), the own slots, the player's main inventory and hotbar, the highlight's front sprite and the
@@ -396,6 +496,10 @@
  01 WS-24                  BINARY-LONG VALUE 24.
  01 WS-24H                 BINARY-LONG VALUE 24.
  01 WS-LABEL-W             BINARY-LONG VALUE 160.
+ 01 WS-DRAWN               BINARY-LONG.
+ 01 WS-LABEL-RGB           BINARY-LONG VALUE 4210752.
+ 01 WS-OWN-STATE           BINARY-LONG.
+ 01 WS-PLAYER-STATE        BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
@@ -436,9 +540,20 @@
      COMPUTE WS-TOP = (L-GH - WS-H) / 2
      MOVE SPACES TO WS-TEXT
      MOVE 0 TO WS-LENGTH
-     MOVE WK-OVERLAY TO WS-KIND
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-PANEL WS-LEFT WS-TOP WS-W WS-H
-         WS-TEXT WS-LENGTH WS-STATE
+*>   The background: the menu's sheet, whose slot wells carry the slots (bare slot widgets; the mounts' sheets carry the player's wells only: 40-6 6.2 draws the saddle,
+*>   body and chest wells as sprites, the slot widgets' own); without the sheet the panel and a well under each slot.
+     CALL "CONTAINER-BACKGROUND" USING CLIENT-STATE BM-TYPE WS-LEFT WS-TOP WS-W WS-H WS-DRAWN
+     MOVE 0 TO WS-OWN-STATE WS-PLAYER-STATE
+     IF WS-DRAWN = 1
+         MOVE 3 TO WS-PLAYER-STATE
+         IF BM-TYPE < 100
+             MOVE 3 TO WS-OWN-STATE
+         END-IF
+     ELSE
+         MOVE WK-OVERLAY TO WS-KIND
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-PANEL WS-LEFT WS-TOP WS-W WS-H
+             WS-TEXT WS-LENGTH WS-STATE
+     END-IF
 *>   The title at (tx, ty), centred in the image when tx is -1 (none when ty is -1); the inventory label (none when ly is -1).
      IF WS-TY >= 0
          MOVE SM-CX-TITLE TO WS-TEXT
@@ -462,6 +577,9 @@
          MOVE 0 TO WS-ARG
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-LABEL-W WS-LABEL-H
              WS-TEXT WS-LENGTH WS-STATE
+         IF WS-DRAWN = 1
+             CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-LABEL-RGB
+         END-IF
      END-IF
      IF WS-LY >= 0
          CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-LANG-TEXT WS-LANG-LENGTH
@@ -471,6 +589,9 @@
          MOVE 0 TO WS-ARG
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-LABEL-W WS-LABEL-H
              WS-LANG-TEXT WS-LANG-LENGTH WS-STATE
+         IF WS-DRAWN = 1
+             CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-LABEL-RGB
+         END-IF
      END-IF
      CALL "MENU-DECOR" USING CLIENT-STATE WS-LEFT WS-TOP L-GW L-GH
 *>   The hovered slot: the first slot in order whose 18 x 18 cell holds the pointer.
@@ -501,11 +622,11 @@
          COMPUTE WS-Y = WS-TOP + WS-Y - 1
          IF WS-I < WS-OWN + WS-TAIL AND WS-ACTIVE = 1
              COMPUTE WS-ARG = 401 + WS-I
-             CALL "CONTAINER-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-X WS-Y
+             CALL "CONTAINER-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-X WS-Y WS-OWN-STATE
          END-IF
          IF WS-I >= WS-OWN + WS-TAIL AND WS-IY >= 0
              COMPUTE WS-ARG = WS-I - WS-OWN - WS-TAIL
-             CALL "CONTAINER-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-X WS-Y
+             CALL "CONTAINER-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-X WS-Y WS-PLAYER-STATE
          END-IF
      END-PERFORM
      IF WS-HOVER >= 0
@@ -537,7 +658,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTAINER-SLOT-ADD.
-*> USING CLIENT-STATE, widget argument, x, y (the widget's corner): an item slot widget of 18 x 18 GUI pixels.
+*> USING CLIENT-STATE, widget argument, x, y (the widget's corner), state (3 bare: the screen's sheet carries the well): an item slot widget of 18 x 18 GUI pixels.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -547,9 +668,13 @@
  01 L-ARG                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-X L-Y.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-X L-Y L-STATE.
      CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE L-ARG L-X L-Y WS-ACTION
      MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+     IF L-STATE = 3
+         MOVE 3 TO SM-W-STATE(SM-WIDGET-COUNT)
+     END-IF
      CALL "DRAG-PREVIEW-SLOT" USING CLIENT-STATE L-ARG L-X L-Y
      GOBACK.
  END PROGRAM CONTAINER-SLOT-ADD.
