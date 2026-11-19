@@ -272,6 +272,7 @@
  01 WS-DELAY               BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-RULE-KIND           BINARY-LONG VALUE 7.
+ 01 WS-ROD                 BINARY-LONG.
  01 WS-EFFECT              BINARY-LONG VALUE 9.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ZERO2               BINARY-LONG VALUE 0.
@@ -286,7 +287,10 @@
                  MOVE 1 TO WS-FOUND
              END-IF
          END-PERFORM
-         IF WS-KIND = 2 AND WS-FOUND = 0
+*>       A lightning rod (29b-3 9.2 ST) is unpowered by its scheduled tick like a button.
+         MOVE 0 TO WS-ROD
+         INSPECT CB-KEY(WS-I) TALLYING WS-ROD FOR ALL "lightning_rod"
+         IF (WS-KIND = 2 OR WS-ROD > 0) AND WS-FOUND = 0
              CALL "BU-RULE-ADD" USING WS-RULE-KIND WS-BLOCK WS-EFFECT WS-ZERO WS-ZERO2
          END-IF
      END-PERFORM

@@ -11,6 +11,8 @@
 *>   XP-ORB-VALUE USING total, value out                the largest orb tier not above the total (21 section 8.2)
 *>   XP-ORB-TYPE USING type id out                      the entity type id of experience_orb, 0 outside a standard world
 *>   XP-ORB-SPAWN USING dim, x, y, z, value, row out    a new orb with the random spawn velocity
+*>   XP-ORB-SPAWN-DIR USING dim, x, y, z, value, dx, dy, dz, row out    the same along a direction (21 section 8.2)
+*>   XP-AWARD-DIR USING dim, x, y, z, total, dx, dy, dz    awardWithDirection
 *>   XP-AWARD USING dim, x, y, z, total                 ExperienceOrb.award: split into orbs, merging into a near orb of the same value
 *>   XP-ORBS-TICK                                       the pickup of the players, then every orb's tick
 
@@ -197,16 +199,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. XP-ORB-SPAWN.
-*> USING dim, x, y, z (FLOAT-LONG), value (BINARY-LONG), row out: a new orb (21 section 8.2): count 1, age 0, a random yaw and the spawn
-*> velocity ((r x 0.2 - 0.1) x 2, r x 0.2 x 2, (r x 0.2 - 0.1) x 2); it enters the tracker.
+*> USING dim, x, y, z (FLOAT-LONG), value (BINARY-LONG), row out: a new orb (21 section 8.2) without a direction: XP-ORB-SPAWN-DIR with the zero vector.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CORESTATE.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-TYPE                BINARY-LONG.
- 01 WS-SALT                BINARY-LONG VALUE 1.
- 01 WS-BOUND               BINARY-LONG VALUE 1000.
- 01 WS-R                   BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Y              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Z              FLOAT-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -215,15 +213,42 @@
  01 L-VALUE                BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-VALUE L-ROW.
+     CALL "XP-ORB-SPAWN-DIR" USING L-DIM L-X L-Y L-Z L-VALUE WS-ZERO WS-ZERO-Y WS-ZERO-Z L-ROW
+     GOBACK.
+ END PROGRAM XP-ORB-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. XP-ORB-SPAWN-DIR.
+*> USING dim, x, y, z (FLOAT-LONG), value (BINARY-LONG), direction dx, dy, dz (FLOAT-LONG), row out: a new orb (21 section 8.2, 18 section 7.5): count 1, age 0, a random yaw and the spawn
+*> velocity ((r x 0.2 - 0.1) x 2, r x 0.2 x 2, (r x 0.2 - 0.1) x 2); it enters the tracker. With a direction other than the zero vector the velocity is reversed when it points against the
+*> direction (the dot product is negative) and the orb is moved by normalize(velocity) x 0.25 (half the 0.5 box) before the viewers hear of it. (Not done: unstuckIfPossible.)
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 1.
+ 01 WS-BOUND               BINARY-LONG VALUE 1000.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-VALUE L-DX L-DY L-DZ L-ROW.
      CALL "XP-ORB-TYPE" USING WS-TYPE
      CALL "ENTITY-ALLOC" USING WS-ROW
      CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
      MOVE WS-TYPE TO EN-TYPE(WS-ROW)
      CALL "ENTITY-SET-UUID" USING WS-ROW
      MOVE L-DIM TO EN-DIM(WS-ROW)
-     MOVE L-X TO EN-X(WS-ROW) EN-WAY-X(WS-ROW)
-     MOVE L-Y TO EN-Y(WS-ROW) EN-FLEE-X(WS-ROW)
-     MOVE L-Z TO EN-Z(WS-ROW) EN-WAY-Z(WS-ROW)
      MOVE L-VALUE TO EN-ITEM(WS-ROW)
      MOVE 1 TO EN-ITEM-COUNT(WS-ROW)
      CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R
@@ -234,14 +259,54 @@
      COMPUTE EN-VY(WS-ROW) = WS-R / 1000 * 0.2 * 2
      CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R
      COMPUTE EN-VZ(WS-ROW) = (WS-R / 1000 * 0.2 - 0.1) * 2
+     MOVE L-X TO EN-X(WS-ROW)
+     MOVE L-Y TO EN-Y(WS-ROW)
+     MOVE L-Z TO EN-Z(WS-ROW)
+     IF L-DX NOT = 0 OR L-DY NOT = 0 OR L-DZ NOT = 0
+         COMPUTE WS-DOT = EN-VX(WS-ROW) * L-DX + EN-VY(WS-ROW) * L-DY + EN-VZ(WS-ROW) * L-DZ
+         IF WS-DOT < 0
+             COMPUTE EN-VX(WS-ROW) = 0 - EN-VX(WS-ROW)
+             COMPUTE EN-VY(WS-ROW) = 0 - EN-VY(WS-ROW)
+             COMPUTE EN-VZ(WS-ROW) = 0 - EN-VZ(WS-ROW)
+         END-IF
+         COMPUTE WS-LEN = FUNCTION SQRT(EN-VX(WS-ROW) * EN-VX(WS-ROW) + EN-VY(WS-ROW) * EN-VY(WS-ROW) + EN-VZ(WS-ROW) * EN-VZ(WS-ROW))
+         IF WS-LEN > 0
+             COMPUTE EN-X(WS-ROW) = L-X + EN-VX(WS-ROW) / WS-LEN * 0.25
+             COMPUTE EN-Y(WS-ROW) = L-Y + EN-VY(WS-ROW) / WS-LEN * 0.25
+             COMPUTE EN-Z(WS-ROW) = L-Z + EN-VZ(WS-ROW) / WS-LEN * 0.25
+         END-IF
+     END-IF
+     MOVE EN-X(WS-ROW) TO EN-WAY-X(WS-ROW)
+     MOVE EN-Y(WS-ROW) TO EN-FLEE-X(WS-ROW)
+     MOVE EN-Z(WS-ROW) TO EN-WAY-Z(WS-ROW)
      CALL "ENTITY-TRACK" USING WS-ROW
      MOVE WS-ROW TO L-ROW
      GOBACK.
- END PROGRAM XP-ORB-SPAWN.
+ END PROGRAM XP-ORB-SPAWN-DIR.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. XP-AWARD.
-*> USING dim, x, y, z (FLOAT-LONG), total (BINARY-LONG): ExperienceOrb.award (18 section 7.5): while points remain, v is the largest tier not above
+*> USING dim, x, y, z (FLOAT-LONG), total (BINARY-LONG): ExperienceOrb.award (18 section 7.5), XP-AWARD-DIR with the zero vector.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Y              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Z              FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-TOTAL                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TOTAL.
+     CALL "XP-AWARD-DIR" USING L-DIM L-X L-Y L-Z L-TOTAL WS-ZERO WS-ZERO-Y WS-ZERO-Z
+     GOBACK.
+ END PROGRAM XP-AWARD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. XP-AWARD-DIR.
+*> USING dim, x, y, z (FLOAT-LONG), total (BINARY-LONG), direction dx, dy, dz (FLOAT-LONG): ExperienceOrb.awardWithDirection (the zero vector: no direction),
+*> which is ExperienceOrb.award (18 section 7.5): while points remain, v is the largest tier not above
 *> them; a draw r of 0 to 39 is made and an orb of value v within 0.5 of the position on every axis whose id minus r is a multiple of 40 takes
 *> the piece (count + 1, age 0); otherwise a new orb of value v is spawned.
  DATA DIVISION.
@@ -262,7 +327,10 @@
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
  01 L-TOTAL                BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TOTAL.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TOTAL L-DX L-DY L-DZ.
      CALL "XP-ORB-TYPE" USING WS-TYPE
      MOVE L-TOTAL TO WS-LEFT
      PERFORM UNTIL WS-LEFT <= 0
@@ -281,11 +349,11 @@
              END-IF
          END-PERFORM
          IF WS-DONE = 0
-             CALL "XP-ORB-SPAWN" USING L-DIM L-X L-Y L-Z WS-V WS-ROW
+             CALL "XP-ORB-SPAWN-DIR" USING L-DIM L-X L-Y L-Z WS-V L-DX L-DY L-DZ WS-ROW
          END-IF
      END-PERFORM
      GOBACK.
- END PROGRAM XP-AWARD.
+ END PROGRAM XP-AWARD-DIR.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. XP-ORB-MOVE.

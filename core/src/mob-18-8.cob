@@ -659,6 +659,9 @@
 *>           scuteTime: nextInt(6000) + 6000 (19 section 13).
              CALL "XP-RANDOM" USING WS-SALT-S WS-BOUND-S WS-DRAW
              COMPUTE EN-SCUTE(L-ROW) = 6000 + WS-DRAW
+         WHEN "bat"
+*>           A new bat hangs (Bat constructor, 21 section 8.10): EN-PH-PHASE 1 is the resting flag.
+             MOVE 1 TO EN-PH-PHASE(L-ROW)
          WHEN "llama"
              CALL "LLAMA-BORN" USING L-ROW
          WHEN "trader_llama"
@@ -1537,6 +1540,14 @@
          GOBACK
      END-IF
      CALL "DECOR-INTERACT" USING WS-ROW WS-ENTITY PSB-Y WS-USED
+     IF WS-USED = 1
+         GOBACK
+     END-IF
+     CALL "HG-INTERACT" USING WS-ROW WS-ENTITY WS-USED
+     IF WS-USED = 1
+         GOBACK
+     END-IF
+     CALL "CUSHION-USE" USING WS-ROW WS-ENTITY WS-USED
      IF WS-USED = 1
          GOBACK
      END-IF

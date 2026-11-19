@@ -15,6 +15,11 @@
  01 L-ROW                  BINARY-LONG.
  01 L-CAT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-CAT.
+     IF SM-SPAWN(L-ROW) = 16
+*>       The bat (SM-SPAWN 16; 12 to 14 are the aquatic rules) is the one ambient species (18 section 1.2, category 3).
+         MOVE 3 TO L-CAT
+         GOBACK
+     END-IF
      EVALUATE SM-KIND(L-ROW)
          WHEN 0
              MOVE 2 TO L-CAT

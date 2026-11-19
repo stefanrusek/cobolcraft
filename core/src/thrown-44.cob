@@ -2,7 +2,7 @@
 *> A cloud is a tracker row of the standard entity type area_effect_cloud with an entry of PROJSTATE.cpy (PJ-KIND 3): PJ-TICK its tickCount, PJ-RADIUS the stored radius,
 *> PJ-DUR duration (-1 infinite), PJ-WAIT, PJ-REAPP the reapplication delay, PJ-RPT radius per tick, PJ-ROU radius on use, PJ-DUR-USE duration on use, PJ-SCALE the potion
 *> duration scale in thousandths, PJ-FX the effects, PJ-V the victims (entity id, tick the entry expires).
-*> Gaps: the radius, waiting and particle metadata (8 to 10) are not sent (the viewers draw the default radius 3.0), canBeAffected (undead are not poisoned, and so on) is
+*> Gaps: the particle metadata (10) is not sent (radius 8 and waiting 9 are: mob-21-8-5.cob), canBeAffected (undead are not poisoned, and so on) is
 *> not tested, the effect list holds at most 4 effects and at most 16 victims are remembered (the oldest slot is reused), no packet shows a mob effect, the owner is only
 *> remembered (indirect magic damage has no cause of its own: CAUSE-COMMAND).
 *>
@@ -407,6 +407,27 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLOUD-STEP.
+*> USING tracker row: CLOUD-RUN, then the viewers are told of a changed radius or waiting flag (CLOUD-DATA-SYNC, mob-21-8-5.cob) when the cloud is still there.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "CLOUD-RUN" USING L-ROW
+     IF EN-USED(L-ROW) = 1
+         CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+         IF WS-SLOT > 0
+             CALL "CLOUD-DATA-SYNC" USING L-ROW WS-SLOT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CLOUD-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLOUD-RUN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -448,7 +469,7 @@
          END-IF
      END-IF
      GOBACK.
- END PROGRAM CLOUD-STEP.
+ END PROGRAM CLOUD-RUN.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. THROWN-SYNC.

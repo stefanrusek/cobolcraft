@@ -1,6 +1,6 @@
 *> Per-entity state of the thrown and effect entities of lane mobsb6 (core/src/thrown-44.cob; docs/protocol/44 parts 8 and 9), EXTERNAL, a side table
 *> keyed by the entity id (PJ-ENT 0 = free) so a reused tracker row never inherits it. PJ-KIND: 1 splash potion, 2 lingering potion, 3 area effect cloud,
-*> 4 ender pearl, 5 eye of ender, 6 thrown egg, 7 fishing bobber, 8 firework rocket, 9 lightning bolt, 10 minecart, 11 armor stand, 12 item frame, 13 painting.
+*> 4 ender pearl, 5 eye of ender, 6 thrown egg, 7 fishing bobber, 8 firework rocket, 9 lightning bolt, 10 minecart, 11 armor stand, 12 item frame, 13 painting; 40 thrown experience bottle (lane p49f, mob-21-8-13.cob), 41 ominous item spawner (mob-21-8-17.cob).
 *> PJ-I1 to PJ-I4 and PJ-R1 to PJ-R3 are kind specific (named in the program that owns the kind). PJ-FX is the effect list of a potion or cloud (id, amplifier, duration).
  78 PJ-MAX                VALUE 128.
  01 PJ-STATE EXTERNAL.
