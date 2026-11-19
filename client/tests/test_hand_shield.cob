@@ -1,0 +1,410 @@
+*> T28600 (lane p70e): the shield (12 section 6.12 and V24, 54 section 22.3 rule 4). SHIELD-ITEM names the item; STACK-BANNER keeps base_color 75 (the dye + 1); ENTITY-TEX-PATH gives the sprites
+*> of the shield (code 9000 shield_base, 9000 + a pattern holder the pattern under entity/shield); a shield in the main hand is the plate and the handle (2 cuboids of 36 vertices) with the display
+*> entries of item/shield (not blocking) or item/shield_blocking (the hand uses it, PL-USE-KIND 8) and L = scale (1, -1, -1); the corners of the plate's inner and outer faces are those of
+*> V24 (right hand at rest and blocking, E = 0), the left hand's from the same chain with the entries mirrored once more, all four from the independent script scratchpad/models/shield_fp.py,
+*> which reproduces the 3 x 3 blocks and constants of 6.12 and the table of V24 to five decimals. A patterned shield (a base colour or layers) draws shield_base, the base layer (sprite `base`,
+*> the base colour's diffuse tint, white without one) and each layer 0.05 pixel further toward the front, plate and handle each: 72 vertices a layer.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-HAND-SHIELD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-SHIELD              BINARY-LONG.
+ 01 WS-STICK               BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-SLOTS               BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-PATH                PIC X(64).
+ 01 WS-NAME24              PIC X(24).
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-FROM                BINARY-LONG.
+ 01 WS-TO                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-JD                  PIC 9.
+ 01 WS-CASE-NAME           PIC X(100).
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EY                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-NAME                PIC X(100).
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-EXP-DATA.
+    05 FILLER FLOAT-LONG VALUE 1.04502.
+    05 FILLER FLOAT-LONG VALUE -0.27247.
+    05 FILLER FLOAT-LONG VALUE -0.79812.
+    05 FILLER FLOAT-LONG VALUE 0.11108.
+    05 FILLER FLOAT-LONG VALUE -0.19076.
+    05 FILLER FLOAT-LONG VALUE -0.79812.
+    05 FILLER FLOAT-LONG VALUE -0.03872.
+    05 FILLER FLOAT-LONG VALUE -1.90297.
+    05 FILLER FLOAT-LONG VALUE -0.79812.
+    05 FILLER FLOAT-LONG VALUE 0.89522.
+    05 FILLER FLOAT-LONG VALUE -1.98468.
+    05 FILLER FLOAT-LONG VALUE -0.79812.
+    05 FILLER FLOAT-LONG VALUE 1.04502.
+    05 FILLER FLOAT-LONG VALUE -0.27247.
+    05 FILLER FLOAT-LONG VALUE -0.87625.
+    05 FILLER FLOAT-LONG VALUE 0.69166.
+    05 FILLER FLOAT-LONG VALUE 0.01193.
+    05 FILLER FLOAT-LONG VALUE -0.86062.
+    05 FILLER FLOAT-LONG VALUE -0.24227.
+    05 FILLER FLOAT-LONG VALUE -0.06977.
+    05 FILLER FLOAT-LONG VALUE -0.86062.
+    05 FILLER FLOAT-LONG VALUE -0.09247.
+    05 FILLER FLOAT-LONG VALUE -1.78198.
+    05 FILLER FLOAT-LONG VALUE -0.86062.
+    05 FILLER FLOAT-LONG VALUE 0.84146.
+    05 FILLER FLOAT-LONG VALUE -1.70027.
+    05 FILLER FLOAT-LONG VALUE -0.86062.
+    05 FILLER FLOAT-LONG VALUE 0.69166.
+    05 FILLER FLOAT-LONG VALUE 0.01193.
+    05 FILLER FLOAT-LONG VALUE -0.93875.
+    05 FILLER FLOAT-LONG VALUE -0.11584.
+    05 FILLER FLOAT-LONG VALUE -0.19119.
+    05 FILLER FLOAT-LONG VALUE -0.79813.
+    05 FILLER FLOAT-LONG VALUE -1.04977.
+    05 FILLER FLOAT-LONG VALUE -0.27290.
+    05 FILLER FLOAT-LONG VALUE -0.79812.
+    05 FILLER FLOAT-LONG VALUE -0.89997.
+    05 FILLER FLOAT-LONG VALUE -1.98511.
+    05 FILLER FLOAT-LONG VALUE -0.79813.
+    05 FILLER FLOAT-LONG VALUE 0.03396.
+    05 FILLER FLOAT-LONG VALUE -1.90340.
+    05 FILLER FLOAT-LONG VALUE -0.79813.
+    05 FILLER FLOAT-LONG VALUE -0.11584.
+    05 FILLER FLOAT-LONG VALUE -0.19119.
+    05 FILLER FLOAT-LONG VALUE -0.87625.
+    05 FILLER FLOAT-LONG VALUE 0.23752.
+    05 FILLER FLOAT-LONG VALUE -0.06934.
+    05 FILLER FLOAT-LONG VALUE -0.86063.
+    05 FILLER FLOAT-LONG VALUE -0.69642.
+    05 FILLER FLOAT-LONG VALUE 0.01237.
+    05 FILLER FLOAT-LONG VALUE -0.86063.
+    05 FILLER FLOAT-LONG VALUE -0.84622.
+    05 FILLER FLOAT-LONG VALUE -1.69984.
+    05 FILLER FLOAT-LONG VALUE -0.86062.
+    05 FILLER FLOAT-LONG VALUE 0.08772.
+    05 FILLER FLOAT-LONG VALUE -1.78155.
+    05 FILLER FLOAT-LONG VALUE -0.86063.
+    05 FILLER FLOAT-LONG VALUE 0.23752.
+    05 FILLER FLOAT-LONG VALUE -0.06934.
+    05 FILLER FLOAT-LONG VALUE -0.93875.
+ 01 WS-EXP REDEFINES WS-EXP-DATA.
+    05 WS-CASE OCCURS 4 TIMES.
+       10 WS-PT OCCURS 5 TIMES.
+          15 WS-C          FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     ADD 1 TO PK-COUNT
+     INITIALIZE PK-PACK(PK-COUNT)
+     MOVE 1 TO PK-KIND(PK-COUNT)
+     MOVE 3 TO PK-LEVEL(PK-COUNT)
+     MOVE "generated/vanilla" TO PK-ID(PK-COUNT)
+     MOVE 17 TO PK-ID-LENGTH(PK-COUNT)
+     MOVE "client/tests/fixtures/mini-vanilla" TO PK-ROOT(PK-COUNT)
+     MOVE 34 TO PK-ROOT-LENGTH(PK-COUNT)
+     CALL "PACK-STACK-OPEN" USING CLIENT-STATE
+     CALL "PACK-SOURCE-FILES" USING CLIENT-STATE PK-COUNT
+     CALL "ATLAS-BUILD" USING CLIENT-STATE
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO CT-OPEN
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE SCR-WORLD TO SM-SCREEN
+     MOVE 0 TO CL-CAMERA PL-MODE
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE "shield" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SHIELD WS-ITEM-ROW WS-STATUS
+     MOVE "stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
+     MOVE "N" TO TL-MODE
+*>   The item: a shield is 1; a stick, an unknown id and no item are 0.
+     CALL "SHIELD-ITEM" USING CLIENT-STATE WS-SHIELD WS-FLAG
+     MOVE "T28600 the shield item is a shield" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SHIELD-ITEM" USING CLIENT-STATE WS-STICK WS-FLAG
+     MOVE "T28600 a stick is no shield" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5000 TO WS-ID
+     CALL "SHIELD-ITEM" USING CLIENT-STATE WS-ID WS-FLAG
+     MOVE "T28600 an unknown item is no shield" TO TL-CASE
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -1 TO WS-ID
+     CALL "SHIELD-ITEM" USING CLIENT-STATE WS-ID WS-FLAG
+     MOVE "T28600 no item is no shield" TO TL-CASE
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The sprite paths: 9000 shield_base, 9001 the base layer's `base`, a pattern under entity/shield.
+     MOVE "T" TO TL-MODE
+     MOVE "shield" TO WS-NAME24
+     MOVE 9000 TO WS-CODE
+     CALL "ENTITY-TEX-PATH" USING WS-NAME24 WS-CODE WS-PATH
+     MOVE "T28600 the sprite of code 9000 is entity/shield/shield_base" TO TL-CASE
+     MOVE "textures/entity/shield/shield_base.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9001 TO WS-CODE
+     CALL "ENTITY-TEX-PATH" USING WS-NAME24 WS-CODE WS-PATH
+     MOVE "T28600 the sprite of the base layer is entity/shield/base" TO TL-CASE
+     MOVE "textures/entity/shield/base.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9032 TO WS-CODE
+     CALL "ENTITY-TEX-PATH" USING WS-NAME24 WS-CODE WS-PATH
+     MOVE "T28600 the sprite of holder 32 is entity/shield/stripe_bottom" TO TL-CASE
+     MOVE "textures/entity/shield/stripe_bottom.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+*>   base_color (75) of a stack: the dye + 1 (red, 14, is the byte 0E); none without the component.
+     MOVE 1 TO PB-ISX-COUNT
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 75 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"0E" TO PB-ISX-VALUE(1)(1:1)
+     CALL "STACK-BANNER" USING PB-ITEMSTACK-X PL-STACK-BN
+     MOVE "T28600 a stack with base_color red keeps the dye 14 + 1" TO TL-CASE
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE PL-STACK-BN-BASE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PB-ISX-ADDED-COUNT
+     CALL "STACK-BANNER" USING PB-ITEMSTACK-X PL-STACK-BN
+     MOVE "T28600 a stack with no base_color has none" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-STACK-BN-BASE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A plain shield in the main hand, at rest: the plate and the handle, the corners of V24.
+     MOVE 0 TO WS-ARG
+     MOVE 1 TO WS-COUNT
+     MOVE 0 TO WS-DAMAGE
+     CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG WS-COUNT WS-SHIELD WS-DAMAGE
+     MOVE 0 TO PL-HELD
+     COMPUTE CL-HAND-ITEM = WS-SHIELD + 1
+     MOVE CL-HAND-ITEM TO CL-ATK-LAST
+     MOVE 100 TO CL-ATK-TICKER
+     MOVE 1 TO CL-HAND-H CL-HAND-OH
+     MOVE 0 TO CL-OHAND-ITEM CL-SWING-AT CL-BOB-INIT EF-COUNT PL-USE-KIND PL-USE-HAND
+     MOVE 3000000 TO CL-NOW-MS
+     MOVE CL-NOW-MS TO CL-HAND-TICK-MS
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM COUNT-SLOTS
+     MOVE "T28600 a plain shield takes one atlas slot (shield_base_nopattern)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SLOTS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28600 the plate and the handle: 2 cuboids of 36 vertices" TO TL-CASE
+     MOVE 72 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T28600 the shield adds nothing to the item mesh" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HAND-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-FROM
+     MOVE 72 TO WS-TO
+     MOVE 1 TO WS-INDEX
+     MOVE "T28600 right hand at rest" TO WS-CASE-NAME
+     PERFORM CHECK-CASE
+*>   Blocking (the hand uses the shield, kind 8).
+     MOVE 8 TO PL-USE-KIND
+     MOVE 1 TO PL-USE-START
+     MOVE 3600000 TO PL-USE-DURATION
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE 2 TO WS-INDEX
+     MOVE "T28600 right hand blocking" TO WS-CASE-NAME
+     PERFORM CHECK-CASE
+*>   The off hand (the left side): at rest, then blocking. The empty main hand's arm comes first (72 vertices).
+     MOVE 0 TO PL-USE-KIND CL-HAND-ITEM PL-SLOT-COUNT(1)
+     MOVE 37 TO WS-ARG
+     CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG WS-COUNT WS-SHIELD WS-DAMAGE
+     MOVE 1 TO PL-OFFHAND-COUNT
+     MOVE WS-SHIELD TO PL-OFFHAND-ITEM
+     COMPUTE CL-OHAND-ITEM = WS-SHIELD + 1
+     MOVE 1 TO CL-OHAND-H CL-OHAND-OH
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28600 the off hand's shield after the arm: 144 vertices" TO TL-CASE
+     MOVE 144 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 73 TO WS-FROM
+     MOVE 144 TO WS-TO
+     MOVE 3 TO WS-INDEX
+     MOVE "T28600 left hand at rest (the entry mirrored once more)" TO WS-CASE-NAME
+     PERFORM CHECK-CASE
+     MOVE 8 TO PL-USE-KIND
+     MOVE 1 TO PL-USE-HAND
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE 4 TO WS-INDEX
+     MOVE "T28600 left hand blocking" TO WS-CASE-NAME
+     PERFORM CHECK-CASE
+*>   A patterned shield: base colour red, two layers (stripe_bottom blue 11, border white 0). Four atlas slots (9000, 9001, 9032, 9002); 4 models of 72 vertices.
+     MOVE 0 TO PL-USE-KIND PL-USE-HAND PL-OFFHAND-COUNT CL-OHAND-ITEM
+     MOVE 2 TO PB-ISX-ADDED-COUNT
+     MOVE 75 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"0E" TO PB-ISX-VALUE(1)(1:1)
+     MOVE 74 TO PB-ISX-TYPE(2)
+     MOVE 5 TO PB-ISX-VALUE-LENGTH(2)
+     MOVE X"02200B0200" TO PB-ISX-VALUE(2)(1:5)
+     CALL "STACK-BANNER" USING PB-ITEMSTACK-X PL-STACK-BN
+     MOVE 0 TO WS-ARG
+     CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG WS-COUNT WS-SHIELD WS-DAMAGE
+     COMPUTE CL-HAND-ITEM = WS-SHIELD + 1
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM COUNT-SLOTS
+     MOVE "T28600 a shield with a base colour and two layers takes five atlas slots (nopattern from before, 9000, 9001 and two patterns)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-SLOTS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28600 shield_base, the base layer and two layers: 4 models of 72 vertices" TO TL-CASE
+     MOVE 288 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The inner corner (-6, -11) of each model, each 0.05 pixel of z further toward the front: the view z is -0.79812 less 0.05 x 0.078125 per order.
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+         COMPUTE WS-FROM = WS-I * 72 + 1
+         COMPUTE WS-TO = WS-FROM + 71
+         MOVE 1.04502 TO WS-EX
+         MOVE -0.27247 TO WS-EY
+         EVALUATE WS-I
+             WHEN 0 MOVE -0.79812 TO WS-EZ
+             WHEN 1 MOVE -0.80203 TO WS-EZ
+             WHEN 2 MOVE -0.80594 TO WS-EZ
+             WHEN OTHER MOVE -0.80984 TO WS-EZ
+         END-EVALUATE
+         MOVE WS-I TO WS-JD
+         MOVE SPACES TO WS-NAME
+         STRING "T28600 the corner of model " WS-JD " lies at its order's depth" DELIMITED BY SIZE INTO WS-NAME
+         PERFORM CHECK-POINT
+     END-PERFORM
+*>   Tints: the shield_base model untinted, the base layer red B02E26, the layers blue 3C44AA and white F9FFFE.
+     MOVE 1 TO WS-INDEX
+     MOVE 1 TO WS-EX WS-EY WS-EZ
+     MOVE "T28600 the base model is untinted" TO WS-NAME
+     PERFORM CHECK-TINT
+     MOVE 73 TO WS-INDEX
+     MOVE 0.6902 TO WS-EX
+     MOVE 0.1804 TO WS-EY
+     MOVE 0.1490 TO WS-EZ
+     MOVE "T28600 the base layer is tinted red B02E26" TO WS-NAME
+     PERFORM CHECK-TINT
+     MOVE 145 TO WS-INDEX
+     MOVE 0.2353 TO WS-EX
+     MOVE 0.2667 TO WS-EY
+     MOVE 0.6667 TO WS-EZ
+     MOVE "T28600 the first layer is tinted blue 3C44AA" TO WS-NAME
+     PERFORM CHECK-TINT
+     MOVE 217 TO WS-INDEX
+     MOVE 0.9765 TO WS-EX
+     MOVE 1 TO WS-EY
+     MOVE 0.9961 TO WS-EZ
+     MOVE "T28600 the second layer is tinted white F9FFFE" TO WS-NAME
+     PERFORM CHECK-TINT
+*>   A base colour alone makes the shield patterned: shield_base and the base layer (white without a colour, here red): 144 vertices.
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     CALL "STACK-BANNER" USING PB-ITEMSTACK-X PL-STACK-BN
+     CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG WS-COUNT WS-SHIELD WS-DAMAGE
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28600 a base colour alone: shield_base and the base layer, 144 vertices" TO TL-CASE
+     MOVE 144 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A layer without a base colour: the base layer is white (F9FFFE).
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 74 TO PB-ISX-TYPE(1)
+     MOVE 5 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"02200B0200" TO PB-ISX-VALUE(1)(1:5)
+     CALL "STACK-BANNER" USING PB-ITEMSTACK-X PL-STACK-BN
+     CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG WS-COUNT WS-SHIELD WS-DAMAGE
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE 73 TO WS-INDEX
+     MOVE 0.9765 TO WS-EX
+     MOVE 1 TO WS-EY
+     MOVE 0.9961 TO WS-EZ
+     MOVE "T28600 without a base colour the base layer is white" TO WS-NAME
+     PERFORM CHECK-TINT
+*>   An inline pattern draws no layer; a model slot missing from the atlas draws nothing.
+     MOVE 0 TO EA-MT-COUNT
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28600 a shield whose sprites have no atlas slot draws nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CT-OPEN
+     STOP RUN.
+
+ COUNT-SLOTS.
+     MOVE "shield" TO WS-NAME24
+     CALL "ENTITY-MODEL-FIND" USING WS-NAME24 WS-ROW
+     MOVE 0 TO WS-SLOTS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-I) = WS-ROW
+             ADD 1 TO WS-SLOTS
+         END-IF
+     END-PERFORM.
+
+*> The five corners of case WS-INDEX (V24's plate corners and the outer one) are among the vertices WS-FROM to WS-TO of the hand mesh.
+ CHECK-CASE.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 5
+         MOVE WS-C(WS-INDEX, WS-J, 1) TO WS-EX
+         MOVE WS-C(WS-INDEX, WS-J, 2) TO WS-EY
+         MOVE WS-C(WS-INDEX, WS-J, 3) TO WS-EZ
+         MOVE WS-J TO WS-JD
+         MOVE SPACES TO WS-NAME
+         STRING FUNCTION TRIM(WS-CASE-NAME) ": corner " WS-JD DELIMITED BY SIZE INTO WS-NAME
+         PERFORM CHECK-POINT
+     END-PERFORM.
+
+ CHECK-POINT.
+     MOVE 0 TO WS-HIT
+     PERFORM VARYING WS-K FROM WS-FROM BY 1 UNTIL WS-K > WS-TO
+         IF FUNCTION ABS(RL-HA-X(WS-K) - WS-EX) < 0.0003 AND FUNCTION ABS(RL-HA-Y(WS-K) - WS-EY) < 0.0003
+                 AND FUNCTION ABS(RL-HA-Z(WS-K) - WS-EZ) < 0.0003
+             MOVE 1 TO WS-HIT
+         END-IF
+     END-PERFORM
+     MOVE WS-NAME TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HIT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Vertex WS-INDEX has the tint (WS-EX, WS-EY, WS-EZ) within 0.001.
+ CHECK-TINT.
+     MOVE WS-NAME TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(RL-HA-R(WS-INDEX) - WS-EX) < 0.001 AND FUNCTION ABS(RL-HA-G(WS-INDEX) - WS-EY) < 0.001
+             AND FUNCTION ABS(RL-HA-BLUE(WS-INDEX) - WS-EZ) < 0.001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-HAND-SHIELD.

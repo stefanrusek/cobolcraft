@@ -506,6 +506,7 @@
     05 WS-DV               FLOAT-LONG OCCURS 9 TIMES.
  01 WS-HBLOCK              BINARY-LONG.
  01 WS-BDYE                BINARY-LONG.
+ 01 WS-SHIELD              BINARY-LONG.
  01 WS-HAND-NO             BINARY-LONG.
  01 WS-HTOOL               PIC X.
  01 WS-HFOOD               BINARY-LONG.
@@ -608,15 +609,49 @@
      CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
 *>   A banner is a code-drawn model with the display entry of its base model template_banner (52 section 6.7: rotation (0, 90, 0), scale 0.375); any other code-drawn model is not drawn.
      MOVE -1 TO WS-BDYE
+     MOVE 0 TO WS-SHIELD
      IF WS-HAVE = 2
          CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE WS-ITEM WS-BDYE
          IF WS-BDYE < 0
-             GOBACK
+             CALL "SHIELD-ITEM" USING CLIENT-STATE WS-ITEM WS-SHIELD
+             IF WS-SHIELD = 0
+                 GOBACK
+             END-IF
          END-IF
          MOVE 1 TO WS-HAVE
          MOVE 0 TO WS-DV(1) WS-DV(3) WS-DV(4) WS-DV(5) WS-DV(6)
          MOVE 90 TO WS-DV(2)
          MOVE 0.375 TO WS-DV(7) WS-DV(8) WS-DV(9)
+*>       A shield (12 section 6.12): the display entries of item/shield (not blocking) and item/shield_blocking (the hand uses it, kind 8) of the hand's own context; the left entry is mirrored
+*>       once more below like any other.
+         IF WS-SHIELD = 1
+             MOVE 0 TO WS-DV(1)
+             MOVE 180 TO WS-DV(2)
+             MOVE 1.25 TO WS-DV(7) WS-DV(8) WS-DV(9)
+             IF L-KIND = 8
+                 MOVE -5 TO WS-DV(3)
+             ELSE
+                 MOVE 5 TO WS-DV(3)
+             END-IF
+             EVALUATE TRUE
+                 WHEN L-SIDE > 0 AND L-KIND NOT = 8
+                     MOVE -10 TO WS-DV(4)
+                     MOVE 1.75 TO WS-DV(5)
+                     MOVE -10 TO WS-DV(6)
+                 WHEN L-SIDE > 0
+                     MOVE -15 TO WS-DV(4)
+                     MOVE 3.25 TO WS-DV(5)
+                     MOVE -11 TO WS-DV(6)
+                 WHEN L-KIND NOT = 8
+                     MOVE 10 TO WS-DV(4)
+                     MOVE 0 TO WS-DV(5)
+                     MOVE -10 TO WS-DV(6)
+                 WHEN OTHER
+                     MOVE 5 TO WS-DV(4)
+                     MOVE 5 TO WS-DV(5)
+                     MOVE -11 TO WS-DV(6)
+             END-EVALUATE
+         END-IF
      END-IF
      IF WS-HAVE = 0
          IF WS-CUBE = 1
@@ -684,12 +719,16 @@
      CALL "HAND-M-SCALE" USING WS-M WS-AX WS-AY WS-AZ
      MOVE -0.5 TO WS-AX WS-AY WS-AZ
      CALL "HAND-M-TRANSLATE" USING WS-M WS-AX WS-AY WS-AZ
-     IF WS-BDYE >= 0
+     IF WS-BDYE >= 0 OR WS-SHIELD = 1
          MOVE 2 TO WS-HAND-NO
          IF L-ITEM1 = CL-HAND-ITEM
              MOVE 1 TO WS-HAND-NO
          END-IF
-         CALL "HAND-BANNER" USING CLIENT-STATE WS-M WS-HAND-NO WS-BDYE WS-LIGHT
+         IF WS-SHIELD = 1
+             CALL "HAND-SHIELD" USING CLIENT-STATE WS-M WS-HAND-NO WS-LIGHT
+         ELSE
+             CALL "HAND-BANNER" USING CLIENT-STATE WS-M WS-HAND-NO WS-BDYE WS-LIGHT
+         END-IF
          GOBACK
      END-IF
      MOVE 0 TO WS-LO(1) WS-LO(2) WS-LO(3)
@@ -913,6 +952,7 @@
  01 WS-LOADED              BINARY-LONG.
  01 WS-ARM                 BINARY-LONG.
  01 WS-BANNER              BINARY-LONG.
+ 01 WS-SHIELD-FLAG         BINARY-LONG.
  01 WS-ITEM-CLASS          BINARY-LONG.
  01 WS-P                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
@@ -1069,6 +1109,21 @@
          COMPUTE WS-OITEM = CL-OHAND-ITEM - 1
          CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE WS-OITEM WS-BANNER
          IF WS-BANNER >= 0
+             MOVE 0 TO WS-STILL
+         END-IF
+     END-IF
+*>   A shield in a hand is built each frame too (its mesh is the hand's, not the item mesh of the cache).
+     IF CL-HAND-ITEM > 0
+         COMPUTE WS-ITEM = CL-HAND-ITEM - 1
+         CALL "SHIELD-ITEM" USING CLIENT-STATE WS-ITEM WS-SHIELD-FLAG
+         IF WS-SHIELD-FLAG = 1
+             MOVE 0 TO WS-STILL
+         END-IF
+     END-IF
+     IF CL-OHAND-ITEM > 0
+         COMPUTE WS-OITEM = CL-OHAND-ITEM - 1
+         CALL "SHIELD-ITEM" USING CLIENT-STATE WS-OITEM WS-SHIELD-FLAG
+         IF WS-SHIELD-FLAG = 1
              MOVE 0 TO WS-STILL
          END-IF
      END-IF

@@ -8,7 +8,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STACK-BANNER.
-*> USING PB-ITEMSTACK-X, banner record out (PL-STACK-BN: the layer count, 16 pattern holders, 16 dye ids): banner_patterns 74 of the stack: a VarInt count, then per layer the holder (a VarInt: 0 and two
+*> USING PB-ITEMSTACK-X, banner record out (PL-STACK-BN: the layer count, 16 pattern holders, 16 dye ids, the base_color 75 dye id + 1 or 0): banner_patterns 74 of the stack: a VarInt count, then per layer the holder (a VarInt: 0 and two
 *> Strings for an inline pattern, else the registry position + 1) and the dye id (a VarInt). At most 16 layers are kept; a count of 128 or more (a two-byte VarInt) reads as 16 layers that are not walked
 *> (no holder), none for a stack without the component.
  DATA DIVISION.
@@ -26,9 +26,14 @@
     05 L-COUNT             BINARY-LONG.
     05 L-PAT               BINARY-LONG OCCURS 16 TIMES.
     05 L-DYE               BINARY-LONG OCCURS 16 TIMES.
+    05 L-BASE              BINARY-LONG.
  PROCEDURE DIVISION USING PB-ITEMSTACK-X L-BANNER.
-     MOVE 0 TO L-COUNT
+     MOVE 0 TO L-COUNT L-BASE
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT
+*>       base_color 75: one VarInt, the dye id (0 to 15 is one byte).
+         IF PB-ISX-TYPE(WS-K) = 75 AND PB-ISX-VALUE-LENGTH(WS-K) > 0
+             COMPUTE L-BASE = FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1))
+         END-IF
          IF PB-ISX-TYPE(WS-K) = 74 AND PB-ISX-VALUE-LENGTH(WS-K) > 0
              MOVE PB-ISX-VALUE-LENGTH(WS-K) TO WS-LEN
              COMPUTE WS-COUNT = FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1)) - 1

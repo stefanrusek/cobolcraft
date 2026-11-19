@@ -271,10 +271,12 @@
           15 PL-STACK-BN-COUNT BINARY-LONG.
           15 PL-STACK-BN-PAT   BINARY-LONG OCCURS 16 TIMES.
           15 PL-STACK-BN-DYE   BINARY-LONG OCCURS 16 TIMES.
+          15 PL-STACK-BN-BASE  BINARY-LONG.    *> base_color 75 of the stack as the dye id + 1 (a shield's base colour, 54 section 22.1), 0 = absent
        10 PL-SLOT-BN OCCURS 37 TIMES.
           15 PL-SLOT-BN-COUNT  BINARY-LONG.
           15 PL-SLOT-BN-PAT    BINARY-LONG OCCURS 16 TIMES.
           15 PL-SLOT-BN-DYE    BINARY-LONG OCCURS 16 TIMES.
+          15 PL-SLOT-BN-BASE   BINARY-LONG.
        10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
        10 PL-OFFHAND-DAMAGE  BINARY-LONG.
 *>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
@@ -733,6 +735,7 @@
 *>        the Pose id (entry 6: 0 standing, 3 swimming, 5 crouching).
           15 EN-FLAGS        BINARY-LONG.
           15 EN-POSE         BINARY-LONG.
+          15 EN-LIVING       BINARY-LONG.   *> the living entity flags byte (entry 8: bit 0 uses an item, bit 1 with the off hand), 12 section 7.5
           15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
 *>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
 *>        baby, else 1) and the position at the previous client tick (ENTITIES-ANIM-TICK). EN-MOB-FLAGS is the mob flags byte (Set Entity Data entry 15: 1 no AI,

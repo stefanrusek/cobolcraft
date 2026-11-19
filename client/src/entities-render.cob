@@ -338,15 +338,15 @@
                      END-IF
                  END-PERFORM
              END-IF
-*>           The banner a mob holds (the entity atlas holds its sprites, so the entity pass draws it): the arm frames the model just found (ENTITY-HELD-POSED).
+*>           The banner or shield a mob or a player holds (the entity atlas holds its sprites, so the entity pass draws it): the arm frames the model just found (ENTITY-HELD-POSED).
              PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 2
                  COMPUTE WS-HSLOT = WS-H
                  IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(WS-R) / 2), 2) = 1
                      COMPUTE WS-HSLOT = 3 - WS-H
                  END-IF
                  IF EN-HAND-FOK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-HSLOT) > 0
-                     CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE EN-EQ(WS-R, WS-HSLOT) WS-HDYE
-                     IF WS-HDYE >= 0
+                     CALL "HELD-ENTITY-PASS" USING CLIENT-STATE EN-EQ(WS-R, WS-HSLOT) WS-HDYE
+                     IF WS-HDYE = 1
                          CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-HSLOT) L-EYE-TABLE
                      END-IF
                  END-IF
@@ -722,9 +722,9 @@
                      COMPUTE WS-SLOT = 3 - WS-H
                  END-IF
                  IF EN-HAND-OK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-SLOT) > 0
-                     CALL "HAND-BANNER-COLOUR" USING CLIENT-STATE EN-EQ(WS-R, WS-SLOT) WS-BDYE
-*>                   A banner is drawn by the entity pass (ENTITIES-MESH).
-                     IF WS-BDYE < 0
+                     CALL "HELD-ENTITY-PASS" USING CLIENT-STATE EN-EQ(WS-R, WS-SLOT) WS-BDYE
+*>                   A banner and a shield are drawn by the entity pass (ENTITIES-MESH).
+                     IF WS-BDYE = 0
                          CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
                      END-IF
                  END-IF

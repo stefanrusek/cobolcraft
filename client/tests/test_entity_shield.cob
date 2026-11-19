@@ -1,0 +1,458 @@
+*> T28601 (lane p70e): the shield in the hand of a mob or a player in third person (12 section 6.12 "Third person"; 7.5 for the arm poses). ENTITY-HELD-POSED on an arm frame set by hand (the
+*> identity axes at (0.5, 1, 0.25) of an entity at (0.5, 0, 0.5) from the eye) puts the plate and the handle (72 vertices) through the arm turn Rx(-90) Ry(180), the translation (+-1, 2, -10) / 16,
+*> the display entry of item/shield (rotation (0, 90, 0), translation (10, 6, -4) right and (10, 6, 12) left) or item/shield_blocking ((45, 155, 0), (-3.49, 11, -2) and (11.51, 7, 2.5), the left
+*> arm's mirrored once more) and L = scale (1, -1, -1); a hand blocks when EN-LIVING says it uses an item with that hand's bit. Expected corners of the plate (V24's five points and the handle's
+*> far corner) from the independent script scratchpad/models/shield_tp.py (it reproduces the plate centres of the table of 6.12 to four decimals). The entity pass draws it (not the ground item
+*> pass), the layers come from EN-HB (a base colour or layers make the shield patterned), and a player with an item in the arm has the ITEM pose, blocking the BLOCK pose: the arm frame found
+*> when the figure was drawn against the same script (arm pivot (-5, 2, 0), Rz Ry Rx of the pose angles with the idle bob 0.1 about Z at age 0, body scale 0.9375).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-SHIELD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-EXP-DATA.
+    05 FILLER FLOAT-LONG VALUE 0.75000.
+    05 FILLER FLOAT-LONG VALUE 1.00000.
+    05 FILLER FLOAT-LONG VALUE 0.06250.
+    05 FILLER FLOAT-LONG VALUE 0.75000.
+    05 FILLER FLOAT-LONG VALUE 1.75000.
+    05 FILLER FLOAT-LONG VALUE 0.06250.
+    05 FILLER FLOAT-LONG VALUE 0.75000.
+    05 FILLER FLOAT-LONG VALUE 1.75000.
+    05 FILLER FLOAT-LONG VALUE 1.43750.
+    05 FILLER FLOAT-LONG VALUE 0.75000.
+    05 FILLER FLOAT-LONG VALUE 1.00000.
+    05 FILLER FLOAT-LONG VALUE 1.43750.
+    05 FILLER FLOAT-LONG VALUE 0.68750.
+    05 FILLER FLOAT-LONG VALUE 1.00000.
+    05 FILLER FLOAT-LONG VALUE 0.06250.
+    05 FILLER FLOAT-LONG VALUE 1.12500.
+    05 FILLER FLOAT-LONG VALUE 1.31250.
+    05 FILLER FLOAT-LONG VALUE 0.56250.
+    05 FILLER FLOAT-LONG VALUE 0.54750.
+    05 FILLER FLOAT-LONG VALUE 1.07556.
+    05 FILLER FLOAT-LONG VALUE 0.34677.
+    05 FILLER FLOAT-LONG VALUE 1.22723.
+    05 FILLER FLOAT-LONG VALUE 1.29969.
+    05 FILLER FLOAT-LONG VALUE 0.12265.
+    05 FILLER FLOAT-LONG VALUE 1.22723.
+    05 FILLER FLOAT-LONG VALUE 2.27196.
+    05 FILLER FLOAT-LONG VALUE 1.09492.
+    05 FILLER FLOAT-LONG VALUE 0.54750.
+    05 FILLER FLOAT-LONG VALUE 2.04783.
+    05 FILLER FLOAT-LONG VALUE 1.31905.
+    05 FILLER FLOAT-LONG VALUE 0.52109.
+    05 FILLER FLOAT-LONG VALUE 1.11561.
+    05 FILLER FLOAT-LONG VALUE 0.30672.
+    05 FILLER FLOAT-LONG VALUE 0.98920.
+    05 FILLER FLOAT-LONG VALUE 1.28218.
+    05 FILLER FLOAT-LONG VALUE 0.84726.
+    05 FILLER FLOAT-LONG VALUE 1.25000.
+    05 FILLER FLOAT-LONG VALUE 1.75000.
+    05 FILLER FLOAT-LONG VALUE 0.06250.
+    05 FILLER FLOAT-LONG VALUE 1.25000.
+    05 FILLER FLOAT-LONG VALUE 1.00000.
+    05 FILLER FLOAT-LONG VALUE 0.06250.
+    05 FILLER FLOAT-LONG VALUE 1.25000.
+    05 FILLER FLOAT-LONG VALUE 1.00000.
+    05 FILLER FLOAT-LONG VALUE 1.43750.
+    05 FILLER FLOAT-LONG VALUE 1.25000.
+    05 FILLER FLOAT-LONG VALUE 1.75000.
+    05 FILLER FLOAT-LONG VALUE 1.43750.
+    05 FILLER FLOAT-LONG VALUE 1.31250.
+    05 FILLER FLOAT-LONG VALUE 1.75000.
+    05 FILLER FLOAT-LONG VALUE 0.06250.
+    05 FILLER FLOAT-LONG VALUE 0.87500.
+    05 FILLER FLOAT-LONG VALUE 1.43750.
+    05 FILLER FLOAT-LONG VALUE 0.56250.
+    05 FILLER FLOAT-LONG VALUE 0.80396.
+    05 FILLER FLOAT-LONG VALUE 1.31727.
+    05 FILLER FLOAT-LONG VALUE 0.07381.
+    05 FILLER FLOAT-LONG VALUE 1.48369.
+    05 FILLER FLOAT-LONG VALUE 1.09315.
+    05 FILLER FLOAT-LONG VALUE 0.29794.
+    05 FILLER FLOAT-LONG VALUE 1.48369.
+    05 FILLER FLOAT-LONG VALUE 2.06542.
+    05 FILLER FLOAT-LONG VALUE 1.27021.
+    05 FILLER FLOAT-LONG VALUE 0.80396.
+    05 FILLER FLOAT-LONG VALUE 2.28955.
+    05 FILLER FLOAT-LONG VALUE 1.04608.
+    05 FILLER FLOAT-LONG VALUE 0.83037.
+    05 FILLER FLOAT-LONG VALUE 1.35733.
+    05 FILLER FLOAT-LONG VALUE 0.03376.
+    05 FILLER FLOAT-LONG VALUE 0.92870.
+    05 FILLER FLOAT-LONG VALUE 1.33712.
+    05 FILLER FLOAT-LONG VALUE 0.76107.
+ 01 WS-EXP REDEFINES WS-EXP-DATA.
+    05 WS-CASE OCCURS 4 TIMES.
+       10 WS-PT OCCURS 6 TIMES.
+          15 WS-CRD        FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-FRAME-DATA.
+    05 FILLER FLOAT-LONG VALUE -0.29297.
+    05 FILLER FLOAT-LONG VALUE 1.29000.
+    05 FILLER FLOAT-LONG VALUE 0.00000.
+    05 FILLER FLOAT-LONG VALUE 0.93282.
+    05 FILLER FLOAT-LONG VALUE -0.09359.
+    05 FILLER FLOAT-LONG VALUE -0.00000.
+    05 FILLER FLOAT-LONG VALUE -0.09359.
+    05 FILLER FLOAT-LONG VALUE -0.93282.
+    05 FILLER FLOAT-LONG VALUE -0.00000.
+    05 FILLER FLOAT-LONG VALUE 0.00000.
+    05 FILLER FLOAT-LONG VALUE -0.00000.
+    05 FILLER FLOAT-LONG VALUE -0.93750.
+    05 FILLER FLOAT-LONG VALUE -0.29297.
+    05 FILLER FLOAT-LONG VALUE 1.29000.
+    05 FILLER FLOAT-LONG VALUE 0.00000.
+    05 FILLER FLOAT-LONG VALUE 0.93282.
+    05 FILLER FLOAT-LONG VALUE -0.09359.
+    05 FILLER FLOAT-LONG VALUE -0.00000.
+    05 FILLER FLOAT-LONG VALUE -0.08901.
+    05 FILLER FLOAT-LONG VALUE -0.88716.
+    05 FILLER FLOAT-LONG VALUE 0.28970.
+    05 FILLER FLOAT-LONG VALUE -0.02892.
+    05 FILLER FLOAT-LONG VALUE -0.28826.
+    05 FILLER FLOAT-LONG VALUE -0.89162.
+    05 FILLER FLOAT-LONG VALUE -0.29297.
+    05 FILLER FLOAT-LONG VALUE 1.29000.
+    05 FILLER FLOAT-LONG VALUE 0.00000.
+    05 FILLER FLOAT-LONG VALUE 0.80784.
+    05 FILLER FLOAT-LONG VALUE -0.08105.
+    05 FILLER FLOAT-LONG VALUE -0.46875.
+    05 FILLER FLOAT-LONG VALUE 0.32232.
+    05 FILLER FLOAT-LONG VALUE -0.58616.
+    05 FILLER FLOAT-LONG VALUE 0.65684.
+    05 FILLER FLOAT-LONG VALUE -0.34987.
+    05 FILLER FLOAT-LONG VALUE -0.72716.
+    05 FILLER FLOAT-LONG VALUE -0.47722.
+ 01 WS-FRAMES REDEFINES WS-FRAME-DATA.
+    05 WS-FR OCCURS 3 TIMES.
+       10 WS-FV            FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG VALUE 1.
+ 01 WS-SHIELD            BINARY-LONG.
+ 01 WS-STICK             BINARY-LONG.
+ 01 WS-BLOCKED-RED                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-HAND                BINARY-LONG.
+ 01 WS-HD                  PIC 9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOTS               BINARY-LONG.
+ 01 WS-BODY                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-CASE-NAME           PIC X(100).
+ 01 WS-JD                  PIC 9.
+ 01 WS-PLAYER-ROW          BINARY-LONG.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EY                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-NAME                PIC X(100).
+ 01 WS-HNO                 BINARY-LONG.
+ 01 WS-CS                  BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-FI                  BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-MAXD                FLOAT-LONG.
+ 01 WS-MIND                FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     ADD 1 TO PK-COUNT
+     INITIALIZE PK-PACK(PK-COUNT)
+     MOVE 1 TO PK-KIND(PK-COUNT)
+     MOVE 3 TO PK-LEVEL(PK-COUNT)
+     MOVE "generated/vanilla" TO PK-ID(PK-COUNT)
+     MOVE 17 TO PK-ID-LENGTH(PK-COUNT)
+     MOVE "client/tests/fixtures/mini-vanilla" TO PK-ROOT(PK-COUNT)
+     MOVE 34 TO PK-ROOT-LENGTH(PK-COUNT)
+     CALL "PACK-STACK-OPEN" USING CLIENT-STATE
+     CALL "PACK-SOURCE-FILES" USING CLIENT-STATE PK-COUNT
+     CALL "ATLAS-BUILD" USING CLIENT-STATE
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO CT-OPEN
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CL-CAMERA
+     MOVE "shield" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SHIELD WS-ITEM-ROW WS-STATUS
+     MOVE "stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
+     MOVE "N" TO TL-MODE
+*>   The pose chain on a frame set by hand, both arms, at rest and blocking.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 1 TO WS-ID
+     MOVE "zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE WS-SHIELD TO EN-EQ(1, 1) EN-EQ(1, 2)
+     MOVE -1 TO EN-HB-BASE(1, 1) EN-HB-BASE(1, 2)
+     MOVE 0 TO EN-HB-COUNT(1, 1) EN-HB-COUNT(1, 2)
+*>   One pass of the entity mesh gives the shield its atlas slot.
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM VARYING WS-HAND FROM 1 BY 1 UNTIL WS-HAND > 2
+         MOVE 1 TO EN-HAND-FOK(1, WS-HAND)
+         MOVE 0.5 TO EN-HAND-F(1, WS-HAND, 1)
+         MOVE 1 TO EN-HAND-F(1, WS-HAND, 2)
+         MOVE 0.25 TO EN-HAND-F(1, WS-HAND, 3)
+         MOVE 0 TO EN-HAND-F(1, WS-HAND, 4) EN-HAND-F(1, WS-HAND, 5) EN-HAND-F(1, WS-HAND, 6)
+         MOVE 0 TO EN-HAND-F(1, WS-HAND, 7) EN-HAND-F(1, WS-HAND, 8) EN-HAND-F(1, WS-HAND, 9)
+         MOVE 0 TO EN-HAND-F(1, WS-HAND, 10) EN-HAND-F(1, WS-HAND, 11) EN-HAND-F(1, WS-HAND, 12)
+         MOVE 1 TO EN-HAND-F(1, WS-HAND, 4) EN-HAND-F(1, WS-HAND, 8) EN-HAND-F(1, WS-HAND, 12)
+     END-PERFORM
+     PERFORM VARYING WS-CS FROM 1 BY 1 UNTIL WS-CS > 4
+         EVALUATE WS-CS
+             WHEN 1
+                 MOVE 1 TO WS-HAND
+                 MOVE 0 TO EN-LIVING(1)
+                 MOVE "right arm at rest" TO WS-CASE-NAME
+             WHEN 2
+                 MOVE 1 TO WS-HAND
+                 MOVE 1 TO EN-LIVING(1)
+                 MOVE "right arm blocking (the main hand uses the shield)" TO WS-CASE-NAME
+             WHEN 3
+                 MOVE 2 TO WS-HAND
+                 MOVE 0 TO EN-LIVING(1)
+                 MOVE "left arm at rest" TO WS-CASE-NAME
+             WHEN OTHER
+                 MOVE 2 TO WS-HAND
+                 MOVE 3 TO EN-LIVING(1)
+                 MOVE "left arm blocking (the off hand uses the shield)" TO WS-CASE-NAME
+         END-EVALUATE
+         MOVE 0 TO RL-EN-COUNT
+         CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-ID WS-HAND WS-SHIELD WS-EYE-TABLE
+         MOVE SPACES TO TL-CASE
+         STRING "T28601 shield " FUNCTION TRIM(WS-CASE-NAME) ": the plate and the handle, 72 vertices" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 72 TO TL-EXPECTED-N
+         MOVE RL-EN-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         PERFORM CHECK-CASE
+     END-PERFORM
+*>   The other hand using the shield does not make this one block: the off hand (3) with the main hand's shield stays at rest.
+     MOVE 3 TO EN-LIVING(1)
+     MOVE 1 TO WS-HAND
+     MOVE 0 TO RL-EN-COUNT
+     CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-ID WS-HAND WS-SHIELD WS-EYE-TABLE
+     MOVE 1 TO WS-CS
+     MOVE "right arm at rest while the off hand uses an item" TO WS-CASE-NAME
+     PERFORM CHECK-CASE
+*>   An item that is no shield is no blocker: a stick in the main hand with the using flag set is not blocking.
+     CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ID 1 WS-OK
+     MOVE "T28601 the main hand uses an item at all: with the shield in it, EN-LIVING 3 (the off hand) is not blocking" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO EN-LIVING(1)
+     MOVE WS-STICK TO EN-EQ(1, 1)
+     CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ID 1 WS-OK
+     MOVE "T28601 a stick in a using hand is not blocking" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-SHIELD TO EN-EQ(1, 1)
+     CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ID 1 WS-OK
+     MOVE "T28601 a shield in the using hand is blocking" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The entity pass draws a held shield after the figure; the ground item pass does not.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-EN-COUNT TO WS-BODY
+     MOVE WS-SHIELD TO EN-EQ(1, 1)
+     MOVE -1 TO EN-HB-BASE(1, 1) EN-HB-BASE(1, 2)
+     MOVE 0 TO EN-HB-COUNT(1, 1) EN-HB-COUNT(1, 2) EN-LIVING(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "shield" TO WS-KEY
+     CALL "ENTITY-MODEL-FIND" USING WS-KEY WS-ROW
+     PERFORM COUNT-SLOTS
+     MOVE "T28601 a held plain shield takes one atlas slot" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SLOTS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T28601 a held plain shield is 72 vertices of the entity mesh" TO TL-CASE
+     MOVE 72 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-BODY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "T28601 a held shield is not in the ground item mesh" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Patterned: base colour 3 and one layer (holder 5): shield_base, the base layer and the layer, 216 vertices, four slots (the plain sprite from before and three more).
+     MOVE 3 TO EN-HB-BASE(1, 1)
+     MOVE 1 TO EN-HB-COUNT(1, 1)
+     MOVE 5 TO EN-HB-PAT(1, 1, 1)
+     MOVE 7 TO EN-HB-DYE(1, 1, 1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM COUNT-SLOTS
+     MOVE "T28601 a patterned held shield takes the plain sprite, shield_base, base and the pattern: 4 slots" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-SLOTS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T28601 a patterned held shield is 3 models of 72 vertices" TO TL-CASE
+     MOVE 216 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-BODY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A left-handed mob holds its main hand's shield in the left arm.
+     MOVE 0 TO EN-HB-COUNT(1, 1)
+     MOVE -1 TO EN-HB-BASE(1, 1)
+     MOVE 2 TO EN-MOB-FLAGS(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "T28601 a left-handed mob's main hand shield is drawn in the left arm" TO TL-CASE
+     MOVE 72 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-BODY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A player (the humanoid model "player"): the arm's frame without an item, with a stick (ITEM pose) and blocking with the shield (BLOCK pose), at age 0.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 1 TO WS-ID
+     MOVE "player" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 10.5 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 10.5 TO WS-Z
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE 0 TO EN-EQ(1, 1) EN-LIVING(1) EN-AGE(1)
+     MOVE WS-STICK TO EN-EQ(1, 2)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 1 TO WS-FI
+     MOVE "player, empty main hand (a stick in the off hand)" TO WS-CASE-NAME
+     PERFORM CHECK-FRAME
+     MOVE WS-STICK TO EN-EQ(1, 1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 2 TO WS-FI
+     MOVE "player, a stick in the main hand (ITEM pose)" TO WS-CASE-NAME
+     PERFORM CHECK-FRAME
+     MOVE WS-SHIELD TO EN-EQ(1, 1)
+     MOVE 1 TO EN-LIVING(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 3 TO WS-FI
+     MOVE "player, blocking with the shield in the main hand (BLOCK pose)" TO WS-CASE-NAME
+     PERFORM CHECK-FRAME
+     MOVE 0 TO CT-OPEN
+     STOP RUN.
+
+ COUNT-SLOTS.
+     MOVE 0 TO WS-SLOTS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-I) = WS-ROW
+             ADD 1 TO WS-SLOTS
+         END-IF
+     END-PERFORM.
+
+*> The six points of case WS-CS (the plate's four inner corners, the outer corner and the handle's far corner) are among the entity mesh's vertices.
+ CHECK-CASE.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+         MOVE WS-CRD(WS-CS, WS-K, 1) TO WS-EX
+         MOVE WS-CRD(WS-CS, WS-K, 2) TO WS-EY
+         MOVE WS-CRD(WS-CS, WS-K, 3) TO WS-EZ
+         MOVE 0 TO WS-HIT
+         PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > RL-EN-COUNT
+             IF FUNCTION ABS(RL-EN-X(WS-V) - WS-EX) < 0.0003 AND FUNCTION ABS(RL-EN-Y(WS-V) - WS-EY) < 0.0003
+                     AND FUNCTION ABS(RL-EN-Z(WS-V) - WS-EZ) < 0.0003
+                 MOVE 1 TO WS-HIT
+             END-IF
+         END-PERFORM
+         MOVE WS-K TO WS-JD
+         MOVE SPACES TO TL-CASE
+         STRING "T28601 shield " FUNCTION TRIM(WS-CASE-NAME) ": point " WS-JD DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE WS-HIT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM.
+
+*> The right arm's frame of the row (EN-HAND-F: origin, then the three axes) against frame WS-FI of the script: the three axes as unit vectors, each component within 0.0005 (the script's
+*> axes carry the avatar's scale 0.9375, which this client does not apply to the player model yet: EM2-SCALE-FACTOR has no player row).
+ CHECK-FRAME.
+     MOVE 1 TO WS-OK
+     PERFORM VARYING WS-A FROM 0 BY 1 UNTIL WS-A > 2
+         COMPUTE WS-LEN = FUNCTION SQRT(EN-HAND-F(1, 1, 4 + WS-A * 3) ** 2 + EN-HAND-F(1, 1, 5 + WS-A * 3) ** 2
+             + EN-HAND-F(1, 1, 6 + WS-A * 3) ** 2)
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+             COMPUTE WS-IDX = 3 + WS-A * 3 + WS-K
+             IF WS-LEN = 0 OR FUNCTION ABS(EN-HAND-F(1, 1, WS-IDX) / WS-LEN - WS-FV(WS-FI, WS-IDX) / 0.9375) > 0.0005
+                 MOVE 0 TO WS-OK
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE SPACES TO TL-CASE
+     STRING "T28601 " FUNCTION TRIM(WS-CASE-NAME) ": the arm frame's axes are the script's" DELIMITED BY SIZE INTO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTITY-SHIELD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+
+ COPY CLTEST.

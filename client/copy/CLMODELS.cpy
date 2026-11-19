@@ -28,13 +28,13 @@
 *>                kind of row; CL-MD-BABY of an adult armor row is the baby row of its slot. The row banner is only an atlas image holder for the sprites of a banner held
 *> in first person (hand-banner.cob; the texture codes 9000 + a pattern holder), and the rows guardian_beam and end_crystal_beam the images of the guardian's beam and the crystal beam (entities-beam.cob); The rows
 *>   item_frame and glow_item_frame (code F) draw no model: the frame's item is drawn into the ground item mesh (item-held.cob ENTITY-FRAME-EMIT, 34-9 section 10). The row shulker_box is the image holder of the shulker
-*>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). ender_dragon_eyes is the dragon's eyes layer (CL-MD-EXTRA of ender_dragon, 34-7 8.5 pass 2).
+*>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). The row shield is the image holder of the shield's sprites (hand-shield.cob: code 0 shield_base_nopattern, 9000 shield_base, 9000 + a pattern holder the pattern under entity/shield). ender_dragon_eyes is the dragon's eyes layer (CL-MD-EXTRA of ender_dragon, 34-7 8.5 pass 2).
 *> Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus
 *>   (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle
 *>   rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 218.
+ 78 CL-MODEL-COUNT           VALUE 219.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -1998,8 +1998,17 @@
     05 FILLER PIC X(64) VALUE "textures/entity/shulker/shulker.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "shield".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/shield/shield_base_nopattern.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 218 TIMES.
+    05 CL-MD OCCURS 219 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

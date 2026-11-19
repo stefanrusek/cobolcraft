@@ -171,6 +171,7 @@
              END-IF
 *>           The banners the mob holds (hand-banner.cob).
              CALL "ENTITY-BANNER-SLOTS" USING CLIENT-STATE WS-R WS-NEW
+             CALL "ENTITY-SHIELD-SLOTS" USING CLIENT-STATE WS-R WS-NEW
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
              PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
@@ -210,6 +211,7 @@
          MOVE 0 TO WS-TEX
          CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
          CALL "HAND-BANNER-SLOTS" USING CLIENT-STATE WS-NEW
+         CALL "HAND-SHIELD-SLOTS" USING CLIENT-STATE WS-NEW
      END-IF
      IF WS-NEW = 1
          CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
@@ -343,7 +345,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 36 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 37 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
@@ -391,7 +393,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 36 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 37 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -416,6 +418,8 @@
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
  01 WS-MAINARM             BINARY-LONG.
+ 01 WS-HSL                 BINARY-LONG.
+ 01 WS-BLOCKING            BINARY-LONG.
  01 WS-ANIM                PIC X.
  01 WS-POSE-KEY            PIC X(20).
  01 WS-FK                  PIC X(24).
@@ -618,6 +622,17 @@
      END-IF
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
+*>   What the hands hold decides the arm poses of a player and whether the arm frames are kept for the held items (a shield blocking is another pose): empty or not per hand, blocking per hand.
+     MOVE 0 TO WS-KN(37)
+     PERFORM VARYING WS-HSL FROM 1 BY 1 UNTIL WS-HSL > 2
+         IF EN-EQ(WS-ROW, WS-HSL) > 0
+             COMPUTE WS-KN(37) = WS-KN(37) + WS-HSL
+             CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ROW WS-HSL WS-BLOCKING
+             IF WS-BLOCKING = 1
+                 COMPUTE WS-KN(37) = WS-KN(37) + 4 * WS-HSL
+             END-IF
+         END-IF
+     END-PERFORM
 *>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
 *>   model of the same entity), 2 + n the overlay layer n. The entry whose key is the key is used; else the layer's own entry is baked again.
      MOVE 0 TO WS-HIT WS-E
@@ -759,6 +774,20 @@
                  MOVE 1 TO WS-ST(10)
              END-IF
              MOVE EN-SWIM(WS-ROW) TO WS-ST(11)
+*>           The arm poses (12 section 7.5): an arm that holds an item has the ITEM pose (1), a hand that blocks with a shield the BLOCK pose (2); the main hand is the main arm's.
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 2
+                 MOVE WS-J TO WS-HSL
+                 IF WS-MAINARM = 2
+                     COMPUTE WS-HSL = 3 - WS-J
+                 END-IF
+                 IF EN-EQ(WS-ROW, WS-HSL) > 0
+                     MOVE 1 TO WS-ST(13 + WS-J)
+                     CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ROW WS-HSL WS-BLOCKING
+                     IF WS-BLOCKING = 1
+                         MOVE 2 TO WS-ST(13 + WS-J)
+                     END-IF
+                 END-IF
+             END-PERFORM
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       The models of the codes - and Y whose animation takes only the walk state (a spider's eyes layer is posed like the spider): wolf (age scale 1),
 *>       spider and cave spider, chicken (no flap), blaze (age), enderman and its eyes (the humanoid state, nothing carried, not creepy).

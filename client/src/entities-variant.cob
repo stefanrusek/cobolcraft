@@ -317,6 +317,14 @@
 *>               A banner pattern sprite (54 section 22.3): the pattern's id under entity/banner.
                  CALL "BANNER-PATTERN-NAME" USING WS-CD WS-DIRNAME
                  STRING "textures/entity/banner/" FUNCTION TRIM(WS-DIRNAME) ".png" DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 9 AND WS-BASE = "shield" AND WS-CD <= 43
+*>               A shield sprite (54 section 22.3 rule 4): 9000 shield_base, 9001 to 9043 the pattern under entity/shield (`base` the first).
+                 IF WS-CD = 0
+                     MOVE "textures/entity/shield/shield_base.png" TO L-PATH
+                 ELSE
+                     CALL "BANNER-PATTERN-NAME" USING WS-CD WS-DIRNAME
+                     STRING "textures/entity/shield/" FUNCTION TRIM(WS-DIRNAME) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
              WHEN WS-KIND = 8 AND WS-CD = 1
 *>               A saddle: the row key is the layer type (horse_saddle, pig_saddle, strider_saddle, ...).
                  MOVE WS-BASE TO WS-DIRNAME
