@@ -18,6 +18,9 @@
  01 WS-TYPE-PEARL          BINARY-LONG.
  01 WS-TYPE-SNOW           BINARY-LONG.
  01 WS-TYPE-EGG            BINARY-LONG.
+ 01 WS-TYPE-BOAT           BINARY-LONG.
+ 01 WS-YAW0                FLOAT-SHORT VALUE 0.
+ 01 WS-PITCH60             FLOAT-SHORT VALUE 60.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
@@ -45,6 +48,8 @@
      CALL "RT-ENTITY-ID" USING WS-KEY WS-TYPE-SNOW
      MOVE "egg" TO WS-KEY
      CALL "RT-ENTITY-ID" USING WS-KEY WS-TYPE-EGG
+     MOVE "oak_boat" TO WS-KEY
+     CALL "RT-ENTITY-ID" USING WS-KEY WS-TYPE-BOAT
      MOVE 0 TO PL-YAW(WS-PLAYER) PL-PITCH(WS-PLAYER)
      MOVE WS-CX TO WS-BX
      MOVE WS-FLOOR TO WS-BY
@@ -148,6 +153,26 @@
      MOVE "acceptance bugusein 29 9: a pearl used one tick after the door click is thrown" TO WS-CASE
      MOVE 1 TO WS-EXPECT
      MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   A boat used on the ground (Use Item On the floor, then Use Item looking 60 degrees down) is placed on the surface where the pick ray meets it and used up: plain ground
+*>   takes no click, and the boat's box does not overlap the ground it stands on (44 part 8: the boat is created at the exact hit location).
+     MOVE "oak_boat" TO WS-KEY
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
+     COMPUTE WS-BY = WS-FLOOR
+     COMPUTE WS-BZ = WS-CZ
+     ADD 1 TO WS-SEQ
+     MOVE 1 TO WS-FACE
+     CALL "TEST-USE-ON" USING WS-CONN WS-BX WS-BY WS-BZ WS-FACE WS-SEQ
+     CALL "RT-USE-ITEM-AT" USING WS-CONN WS-YAW0 WS-PITCH60
+     CALL "RT-COUNT" USING WS-TYPE-BOAT WS-COUNT WS-ROW
+     MOVE "acceptance bugusein 44-8: a boat used on the stone ground is placed (one oak_boat entity)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance bugusein 44-8: and the survival player's boat is used up" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
      PERFORM CHECK-N
      STOP RUN.
 
