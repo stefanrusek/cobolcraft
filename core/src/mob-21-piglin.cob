@@ -244,7 +244,7 @@
 *> (kept: the piglin has no inventory store); food (porkchop, cooked porkchop) when it has not eaten recently: one is eaten (ATE_RECENTLY 200 ticks, PG-ATE); a loved item
 *> when it is not admiring (no loved item in the off hand): one is held and admired for 119 ticks (a gold ingot barters at the end through EN-ADMIRE-CUR, any other loved item is
 *> kept). Gaps: no walking to the item for nuggets and food, no line of sight test, babies take nothing (their stopHolding differs, 3.4), armour and other equipment is not
-*> taken (canReplaceCurrentItem is Open question 2 of doc 44 part 6), the item tag piglin_repellents has no documented contents.
+*> taken (armour has no model on a piglin), anything else that canReplaceCurrentItem accepts goes in the main hand (PGW-EQUIP, 44-6 section 3.2 step 6); the tag piglin_repellents (soul torch, lantern, campfire) is never taken.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -264,6 +264,9 @@
  01 WS-YES                  BINARY-LONG VALUE 1.
  01 WS-FITS                 BINARY-LONG.
  01 WS-LEFT                 BINARY-LONG.
+ 01 WS-ARMOUR               BINARY-LONG.
+ 01 WS-LEN                  BINARY-LONG.
+ 01 WS-EQUIPPED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ENTITY                BINARY-LONG.
  PROCEDURE DIVISION USING L-ENTITY.
@@ -291,6 +294,9 @@
                  END-IF
                  CALL "PIGLIN-LOVED" USING WS-KEY32 WS-LOVED
                  EVALUATE TRUE
+                     WHEN WS-KEY32 = "soul_torch" OR WS-KEY32 = "soul_lantern" OR WS-KEY32 = "soul_campfire"
+*>                       The item tag piglin_repellents (44-6 section 3.2 step 2): never picked up.
+                         CONTINUE
                      WHEN EN-ADMIRE-OFF(L-ENTITY) > 0 AND EN-TARGET(L-ENTITY) > 0
                          CONTINUE
                      WHEN WS-KEY32 = "gold_nugget"
@@ -323,6 +329,43 @@
                          SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
                          IF EN-ITEM-COUNT(WS-E) = 0
                              CALL "ENTITY-REMOVE" USING WS-E
+                         END-IF
+                     WHEN WS-KEY32 = "gold_nugget" OR WS-LOVED = 1 OR WS-KEY32 = "porkchop" OR WS-KEY32 = "cooked_porkchop"
+*>                       Step 5 decided these (no room, a loved item already held, eaten recently): nothing more.
+                         CONTINUE
+                     WHEN OTHER
+*>                       Step 6: canReplaceCurrentItem; the main hand takes one of the item (armour has no model on a piglin and is left).
+                         MOVE 0 TO WS-ARMOUR
+                         COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY32))
+                         IF WS-LEN > 5
+                             IF WS-KEY32(WS-LEN - 5:6) = "_boots"
+                                 MOVE 1 TO WS-ARMOUR
+                             END-IF
+                         END-IF
+                         IF WS-LEN > 6
+                             IF WS-KEY32(WS-LEN - 6:7) = "_helmet"
+                                 MOVE 1 TO WS-ARMOUR
+                             END-IF
+                         END-IF
+                         IF WS-LEN > 8
+                             IF WS-KEY32(WS-LEN - 8:9) = "_leggings"
+                                 MOVE 1 TO WS-ARMOUR
+                             END-IF
+                         END-IF
+                         IF WS-LEN > 10
+                             IF WS-KEY32(WS-LEN - 10:11) = "_chestplate"
+                                 MOVE 1 TO WS-ARMOUR
+                             END-IF
+                         END-IF
+                         IF WS-ARMOUR = 0
+                             CALL "PGW-EQUIP" USING L-ENTITY EN-ITEM(WS-E) WS-EQUIPPED
+                             IF WS-EQUIPPED = 1
+                                 MOVE 1 TO WS-DONE
+                                 SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
+                                 IF EN-ITEM-COUNT(WS-E) = 0
+                                     CALL "ENTITY-REMOVE" USING WS-E
+                                 END-IF
+                             END-IF
                          END-IF
                  END-EVALUATE
              END-IF

@@ -593,3 +593,198 @@
      END-IF
      GOBACK.
  END PROGRAM PGW-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PGW-ITEM-KEY.
+*> USING item id (BINARY-LONG), key out (PIC X(32)): the key of the item without "minecraft:"; spaces for an unknown id.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ 01 WS-FULL                PIC X(48).
+ LINKAGE SECTION.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-KEY                  PIC X(32).
+ PROCEDURE DIVISION USING L-ITEM L-KEY.
+     MOVE SPACES TO L-KEY
+     IF L-ITEM >= 0 AND L-ITEM < IT-COUNT
+         MOVE IT-KEY(L-ITEM + 1) TO WS-FULL
+         IF WS-FULL(1:10) = "minecraft:"
+             MOVE WS-FULL(11:32) TO L-KEY
+         ELSE
+             MOVE WS-FULL(1:32) TO L-KEY
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PGW-ITEM-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PGW-PREFERRED.
+*> USING key (PIC X(32), no prefix), adult (1/0), preferred out, in tag out: the item tag piglin_preferred_weapons (crossbow, golden_spear) holds the key (only for an adult: a baby has no preferred
+*> weapon type); preferred is "loved (piglin_loved) or in the tag" (44-6 section 3.2 step 6b).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LOVED               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(32).
+ 01 L-ADULT                BINARY-LONG.
+ 01 L-PREFERRED            BINARY-LONG.
+ 01 L-IN-TAG               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-ADULT L-PREFERRED L-IN-TAG.
+     MOVE 0 TO L-IN-TAG
+     IF L-ADULT = 1 AND (L-KEY = "crossbow" OR L-KEY = "golden_spear")
+         MOVE 1 TO L-IN-TAG
+     END-IF
+     CALL "PIGLIN-LOVED" USING L-KEY WS-LOVED
+     MOVE L-IN-TAG TO L-PREFERRED
+     IF WS-LOVED = 1
+         MOVE 1 TO L-PREFERRED
+     END-IF
+     GOBACK.
+ END PROGRAM PGW-PREFERRED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PGW-DAMAGE.
+*> USING key (PIC X(32), no prefix), modifier out (BINARY-LONG, 1/10000): the attack damage modifier an item adds in the main hand (the attack damage of TOOL-ITEM-STATS less the player's 1);
+*> 0 for an item with no attack_damage component. The mob's base value is the same for both items of a comparison, so it cancels (getApproximateAttributeWith, ADD_VALUE only).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY48               PIC X(48).
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-DURABILITY          BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-SPEED               BINARY-LONG.
+ 01 WS-COOLDOWN            BINARY-LONG.
+ 01 WS-MINING              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(32).
+ 01 L-MODIFIER             BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-MODIFIER.
+     MOVE 0 TO L-MODIFIER
+     MOVE SPACES TO WS-KEY48
+     MOVE L-KEY TO WS-KEY48
+     CALL "TOOL-ITEM-STATS" USING WS-KEY48 WS-FOUND WS-DURABILITY WS-DAMAGE WS-SPEED WS-COOLDOWN WS-MINING
+     IF WS-FOUND = 1
+         COMPUTE L-MODIFIER = WS-DAMAGE - 10000
+     END-IF
+     GOBACK.
+ END PROGRAM PGW-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PGW-CAN-REPLACE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ADULT               BINARY-LONG.
+ 01 WS-CAND-KEY            PIC X(32).
+ 01 WS-CUR-KEY40           PIC X(40).
+ 01 WS-CUR-KEY             PIC X(32).
+ 01 WS-EMPTY               BINARY-LONG.
+ 01 WS-CAND-PREF           BINARY-LONG.
+ 01 WS-CAND-TAG            BINARY-LONG.
+ 01 WS-CUR-PREF            BINARY-LONG.
+ 01 WS-CUR-TAG             BINARY-LONG.
+ 01 WS-DC                  BINARY-LONG.
+ 01 WS-DO                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-YES                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ITEM L-YES.
+*> USING piglin row, candidate item id, yes out: Piglin.canReplaceCurrentItem(candidate) for the main hand (44-6 section 3.2 step 6; 44-1 RQ-1.3). The candidate's slot is the main hand (armour has no
+*> model on a piglin: the caller leaves it). The three-argument rule: a preferred candidate (loved, or in piglin_preferred_weapons for an adult) replaces a current item that is not preferred; a
+*> candidate that is not preferred never replaces a preferred one; otherwise an empty hand is replaced, then compareWeapons (the preferred tag, then the attack damage, then the tie-break, which
+*> has no enchantments, wear or names to compare here and says no).
+     MOVE 0 TO L-YES
+     MOVE 1 TO WS-ADULT
+     IF EN-MOBAGE(L-ROW) < 0
+         MOVE 0 TO WS-ADULT
+     END-IF
+     CALL "PGW-ITEM-KEY" USING L-ITEM WS-CAND-KEY
+     CALL "PGW-PREFERRED" USING WS-CAND-KEY WS-ADULT WS-CAND-PREF WS-CAND-TAG
+     MOVE 0 TO WS-EMPTY WS-CUR-PREF WS-CUR-TAG
+     MOVE SPACES TO WS-CUR-KEY
+     CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-CUR-KEY40
+     IF WS-CUR-KEY40 = SPACES
+         MOVE 1 TO WS-EMPTY
+     ELSE
+         IF WS-CUR-KEY40(1:10) = "minecraft:"
+             MOVE WS-CUR-KEY40(11:30) TO WS-CUR-KEY
+         ELSE
+             MOVE WS-CUR-KEY40 TO WS-CUR-KEY
+         END-IF
+         CALL "PGW-PREFERRED" USING WS-CUR-KEY WS-ADULT WS-CUR-PREF WS-CUR-TAG
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-CAND-PREF = 1 AND WS-CUR-PREF = 0
+             MOVE 1 TO L-YES
+         WHEN WS-CAND-PREF = 0 AND WS-CUR-PREF = 1
+             MOVE 0 TO L-YES
+         WHEN WS-EMPTY = 1
+             MOVE 1 TO L-YES
+         WHEN WS-CUR-TAG = 1 AND WS-CAND-TAG = 0
+             MOVE 0 TO L-YES
+         WHEN WS-CUR-TAG = 0 AND WS-CAND-TAG = 1
+             MOVE 1 TO L-YES
+         WHEN OTHER
+             CALL "PGW-DAMAGE" USING WS-CAND-KEY WS-DC
+             CALL "PGW-DAMAGE" USING WS-CUR-KEY WS-DO
+             IF WS-DC > WS-DO
+                 MOVE 1 TO L-YES
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PGW-CAN-REPLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PGW-EQUIP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-KEY40               PIC X(40).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-OLD                 BINARY-LONG.
+ 01 WS-ROWDATA             PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 123.
+ 01 WS-BOUND               BINARY-LONG VALUE 1000.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-DELAY               BINARY-LONG VALUE 10.
+ 01 WS-DROP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-EQUIPPED             BINARY-LONG.
+*> USING piglin row, item id, equipped out: Mob.equipItemIfPossible for the main hand (44-6 section 3.2): when PGW-CAN-REPLACE says yes the old main-hand item, if there is one, is dropped as an
+*> item with the probability that max(nextFloat - 0.1, 0) < 0.085 (the draw is made only for a non-empty hand) and otherwise lost; the new item (one of it) is held (EN-HAND 1000 + the id) and the
+*> viewers get Set Equipment. The persistence and guaranteed-drop flags are not kept (open).
+ PROCEDURE DIVISION USING L-ROW L-ITEM L-EQUIPPED.
+     MOVE 0 TO L-EQUIPPED
+     CALL "PGW-CAN-REPLACE" USING L-ROW L-ITEM WS-CAN
+     IF WS-CAN = 0
+         GOBACK
+     END-IF
+     IF EN-HAND(L-ROW) NOT = 0
+         CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-KEY40
+         MOVE SPACES TO WS-KEY
+         MOVE WS-KEY40 TO WS-KEY
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-OLD WS-ROWDATA WS-STATUS
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+         IF WS-STATUS = CT-OK AND WS-DRAW < 185
+             MOVE EN-X(L-ROW) TO WS-X
+             COMPUTE WS-Y = EN-Y(L-ROW) + 1
+             MOVE EN-Z(L-ROW) TO WS-Z
+             CALL "GI-SPAWN-RANDOM" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-OLD WS-ONE WS-ZERO WS-DELAY WS-DROP
+         END-IF
+     END-IF
+     COMPUTE EN-HAND(L-ROW) = 1000 + L-ITEM
+     CALL "STDMOB-EQUIP-SEND" USING L-ROW
+     MOVE 1 TO L-EQUIPPED
+     GOBACK.
+ END PROGRAM PGW-EQUIP.

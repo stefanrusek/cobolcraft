@@ -149,6 +149,8 @@
      CALL "T-CLEAR"
      MOVE "piglin" TO WS-K24
      CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+*>   A crossbow in the main hand (preferred): a loved item does not replace it, so it goes into the inventory (3.2 step 6, lane p49s).
+     MOVE 13 TO EN-HAND(WS-A)
      CALL "GI-SPAWN-RANDOM" USING WS-DIM WS-X0 WS-Y WS-Z0 WS-BLOCK WS-ONE WS-ZERO WS-DELAY WS-DROP
      CALL "PIGLIN-PICKUP" USING WS-A
      MOVE "acceptance US15 44-6§3.2 step 3 a gold block is held and admired" TO TL-CASE
@@ -218,6 +220,7 @@
      CALL "T-CLEAR"
      MOVE "piglin" TO WS-K24
      CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     MOVE 13 TO EN-HAND(WS-A)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
          COMPUTE WS-ITEM = WS-STICK + WS-I - 1
          CALL "PGB-INV-ADD" USING WS-A WS-ITEM WS-C64 WS-LEFT

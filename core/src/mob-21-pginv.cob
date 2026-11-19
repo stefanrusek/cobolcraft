@@ -7,7 +7,7 @@
 *>   PGB-INV-FITS USING row, item, count, fits out     canAddToInventory
 *>   PGB-INV-DROP USING row                            every stack on the ground at the piglin (one block up, as an item entity); the inventory is empty
 *>   PIGLIN-DROP-INVENTORY USING row                   the death drop of a piglin (nothing for any other mob)
-*>   PGB-OFFHAND-STOP USING row, kept out              the off-hand item of an admiring piglin put away (not bartered): a currency is lost, any other item goes in the inventory
+*>   PGB-OFFHAND-STOP USING row, kept out              the off-hand item of an admiring piglin put away (not bartered): a currency is lost, any other item goes in the main hand when PGW-EQUIP says so, else in the inventory
 *>                                                     (dropped when it does not fit); kept is 1 when an item went in
 
  IDENTIFICATION DIVISION.
@@ -183,6 +183,7 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-DELAY               BINARY-LONG VALUE 10.
  01 WS-DROP                BINARY-LONG.
+ 01 WS-EQUIPPED            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-KEPT                 BINARY-LONG.
@@ -195,6 +196,12 @@
      IF PG-OFFHAND(WS-SLOT) > 0
          COMPUTE WS-ITEM = PG-OFFHAND(WS-SLOT) - 1
          MOVE 0 TO PG-OFFHAND(WS-SLOT)
+*>       equipItemIfPossible first (44-6 section 3.4 step 2): the main hand takes it when canReplaceCurrentItem says so.
+         CALL "PGW-EQUIP" USING L-ROW WS-ITEM WS-EQUIPPED
+         IF WS-EQUIPPED = 1
+             MOVE 1 TO L-KEPT
+             GOBACK
+         END-IF
          CALL "PGB-INV-ADD" USING L-ROW WS-ITEM WS-ONE WS-LEFT
          MOVE 1 TO L-KEPT
          IF WS-LEFT > 0
