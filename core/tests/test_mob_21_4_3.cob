@@ -25,6 +25,8 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-HEALTH              FLOAT-SHORT.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-J                   BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      CALL "AQ-TEST-TANK" USING WS-PLAYER WS-DIM WS-X0 WS-Y0 WS-Z0
@@ -87,7 +89,19 @@
      MOVE 20 TO PL-HEALTH(WS-PLAYER)
      MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
      MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     CALL "TEST-DRAIN-IDS" USING PL-CONN(WS-PLAYER) WS-TEXT
      PERFORM TICK
+     CALL "TEST-DRAIN-IDS" USING PL-CONN(WS-PLAYER) WS-TEXT
+     MOVE FUNCTION CONCATENATE(" ", FUNCTION TRIM(WS-TEXT), " ") TO WS-TEXT
+     MOVE 0 TO WS-J
+     INSPECT WS-TEXT TALLYING WS-J FOR ALL " 39 " ALL " 39x"
+     MOVE "acceptance US15 21§4.3 the stung player is sent Game Event 9 (packet 39; playerTouch, 4.3)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-J > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM CHECK-N
      MOVE "acceptance US15 21§4.3 a player touching an inflated pufferfish loses health" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
@@ -101,8 +115,13 @@
      PERFORM CHECK-N
      STOP RUN.
  TICK.
+*>   The fish keeps its place: it would swim away from the player (the fish avoid goal, 21 section 4.1), out of the 2-block range this test sets up.
      ADD 1 TO CW-TIME
-     CALL "MOB-STEP" USING WS-ROW.
+     CALL "MOB-STEP" USING WS-ROW
+     MOVE WS-X TO EN-X(WS-ROW)
+     MOVE WS-Y TO EN-Y(WS-ROW)
+     MOVE WS-Z TO EN-Z(WS-ROW)
+     MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW).
  CHECK-N.
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-MOB-21-4-3.

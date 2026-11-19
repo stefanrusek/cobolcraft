@@ -54,7 +54,8 @@
     05 FILLER PIC X(23) VALUE "stone       parrot    0".
     05 FILLER PIC X(23) VALUE "oak_leaves  parrot    1".
     05 FILLER PIC X(23) VALUE "jungle_log  parrot    1".
-    05 FILLER PIC X(23) VALUE "sand        turtle    1".
+*>   The platform is far above sea level + 4, where a turtle may not spawn (the height rule of 19 section 1.4; the passing case is test_mob_21_4_12).
+    05 FILLER PIC X(23) VALUE "sand        turtle    0".
     05 FILLER PIC X(23) VALUE "grass_block turtle    0".
     05 FILLER PIC X(23) VALUE "mud         frog      1".
     05 FILLER PIC X(23) VALUE "grass_block frog      1".

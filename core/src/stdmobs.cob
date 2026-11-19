@@ -69,6 +69,9 @@
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
      IF WS-M > 0
          MOVE SM-KIND(WS-M) TO L-HOSTILE
+         IF SM-KIND(WS-M) = 6
+             MOVE 1 TO L-HOSTILE
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-HOSTILE.
@@ -519,6 +522,11 @@
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      MOVE 0 TO WS-LIGHT
+*>   SM-NEUTRAL 7: inert (the giant, 20 section 18.1: no goals and no targets are registered).
+     IF SM-NEUTRAL(L-M) = 7
+         MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+         GOBACK
+     END-IF
      IF SM-NEUTRAL(L-M) = 2
          CALL "STDMOB-ENDER-AIM" USING L-ROW L-M
          GOBACK
@@ -1048,7 +1056,7 @@
          GOBACK
      END-IF
      CALL "BR-WORLD-READY"
-     IF SM-KIND(WS-M) = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
+     IF (SM-KIND(WS-M) = 1 OR SM-KIND(WS-M) = 6) AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
          CALL "ENTITY-REMOVE" USING WS-ROW
          GOBACK
      END-IF
@@ -1084,6 +1092,9 @@
      CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW
+     END-IF
+     IF SM-KEY(WS-M) = "warden"
+         CALL "WARDEN-DARKNESS" USING WS-ROW
      END-IF
 *>   An endermite lives 2400 ticks (20 section 8.2: the Lifetime counter, EN-WAKE; persistence is open).
      IF SM-KEY(WS-M) = "endermite"
@@ -1447,6 +1458,9 @@
              CONTINUE
          WHEN SM-KEY(WS-M) = "snow_golem"
 *>           A snow golem does not stroll: its stroll has probability 1.0E-5 (19 section 20).
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN SM-KEY(WS-M) = "giant"
+*>           The giant has no goals (it never strolls).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN SM-KEY(WS-M) = "iron_golem" AND EN-GOLEM-FLOWER(WS-ROW) > 0
 *>           An iron golem holding out its flower stands (OfferFlowerGoal holds the move flag).

@@ -6,8 +6,7 @@
 *> Blaze: BLAZE-ATTACK is BlazeAttackGoal (EN-SHOOT-TIME attackTime, EN-DRAW attackStep, EN-SWELL lastSeen, EN-VARIANT the charged flag, metadata 16 bit 0); BLAZE-HEIGHT the
 *> height keeping (EN-WAKE the ticks to the next offset, EN-PH-HEIGHT allowedHeightOffset) and the glide of aiStep. The blaze walks to its target like any monster (STDMOB-STEP).
 *> Snow golem: SNOW-GOLEM-TICK throws a snowball at the nearest monster within 10 blocks that it sees (EN-PET-CD the attack timer, 0 = not started).
-*> Approximations (open): the ghast's canReach sweep samples the path at three heights every half block against whole solid cells and its box is one cell for collisions, the point
-*> clamp over open void and the 64 attempts of getSuitableFlyToPosition (the first point always passes for distance 0) are left out; the thrust of the move control is along the
+*> Approximations (open): the ghast's canReach sweep samples the path at three heights every half block against whole solid cells and its box is one cell for collisions, the 64 attempts of getSuitableFlyToPosition need no loop (the first point always passes for distance 0); the point clamp is GHAST-CLAMP; the thrust of the move control is along the
 *> way to the wanted point (44 part 6 section 9.1 words it as the normalised current velocity, which would never start from rest); the blaze's eye is 1.53 (0.85 of its height),
 *> its water avoidance, path maluses and fortress spawns are open; the snow golem's dy reads "target eye - 1.1 - snowball y" once (19 section 20 subtracts a y twice); the
 *> snowball's shoot uncertainty is 0.
@@ -166,6 +165,8 @@
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
  01 WS-GROUND              BINARY-LONG VALUE 0.
+ 01 WS-MOBY                FLOAT-LONG.
+ 01 WS-NEWY                FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
 *> USING tracker row of a ghast: RandomFloatAroundGoal and GhastMoveControl (44 part 6 section 9.1) and the flight. Without a wanted point, or at one reached (distance squared below
@@ -184,6 +185,10 @@
          COMPUTE EN-PH-TY(L-ROW) = EN-Y(L-ROW) + (WS-R / 500 - 1) * 16
          CALL "XP-RANDOM" USING WS-SALT WS-B1000 WS-R
          COMPUTE EN-PH-TZ(L-ROW) = EN-Z(L-ROW) + (WS-R / 500 - 1) * 16
+*>       The point is clamped so that the ghast does not float over open void (44 part 6 section 9.1).
+         MOVE EN-Y(L-ROW) TO WS-MOBY
+         CALL "GHAST-CLAMP" USING EN-DIM(L-ROW) WS-MOBY EN-PH-TX(L-ROW) EN-PH-TY(L-ROW) EN-PH-TZ(L-ROW) WS-NEWY
+         MOVE WS-NEWY TO EN-PH-TY(L-ROW)
          MOVE 1 TO EN-PH-SET(L-ROW)
      END-IF
      SUBTRACT 1 FROM EN-PH-SCAN(L-ROW)
@@ -542,14 +547,12 @@
          END-IF
      END-IF
      IF WS-P = 0
-         IF EN-VARIANT(L-ROW) NOT = 0
-             MOVE 0 TO EN-VARIANT(L-ROW)
-             CALL "STDMOB-VARIANT-SEND" USING L-ROW
-         END-IF
+         CALL "SHULKER-PEEK" USING L-ROW
          GOBACK
      END-IF
-     IF EN-VARIANT(L-ROW) = 0
+     IF EN-VARIANT(L-ROW) NOT = 100
          MOVE 100 TO EN-VARIANT(L-ROW)
+         MOVE 0 TO EN-WAKE(L-ROW)
          MOVE 20 TO EN-SHOOT-TIME(L-ROW)
          CALL "STDMOB-VARIANT-SEND" USING L-ROW
          GOBACK

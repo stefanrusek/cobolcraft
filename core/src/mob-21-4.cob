@@ -1,7 +1,7 @@
 *> Aquatic mobs of document 21 section 4 (lane 002-lane-mobsfull-h10; with doc 44 part 7): the water animals cod, salmon, pufferfish, tropical fish (4.1 to 4.4), squid
 *> and glow squid (4.5) and dolphin (4.6). Their rows are core/copy/MOB21ROWS.cpy.
 *> Entry points:
-*>   MS6-ROW-CAT USING row, category out: the spawn category of a table row (18 section 1.2): kind 0 creature 2, 1 monster 1, 2 water creature 6, 3 water ambient 7, 4 underground 5.
+*>   MS6-ROW-CAT USING row, category out: the spawn category of a table row (18 section 1.2): kind 0 creature 2, 1 monster 1, 2 water creature 6, 3 water ambient 7, 4 underground 5, 5 axolotls 4, 6 aquatic monster 1.
 *>   STDMOB-AQUATIC-STEP USING tracker row, table row: one tick of a water animal that is alive and in a ready chunk (STDMOB-STEP calls it for SM-KIND 2 to 4).
 *>   STDMOB-AQUATIC-FINALIZE USING xoro state, tracker row, table row: the spawn variant of a salmon (4.2: small 30, medium 50, large 15) and of a tropical fish (4.4).
 *>   AQUA-STATE-SEND USING tracker row, value: Set Entity Data index 17 VarInt value to the viewers (the pufferfish's puff state).
@@ -24,6 +24,10 @@
              MOVE 6 TO L-CAT
          WHEN 3
              MOVE 7 TO L-CAT
+         WHEN 5
+             MOVE 4 TO L-CAT
+         WHEN 6
+             MOVE 1 TO L-CAT
          WHEN OTHER
              MOVE 5 TO L-CAT
      END-EVALUATE
@@ -46,6 +50,8 @@
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-SEA                 BINARY-LONG.
+ 01 WS-BAND-LOW            BINARY-LONG.
+ 01 WS-BAND-HIGH           BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -68,7 +74,14 @@
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-BELOW
      COMPUTE WS-Y = L-Y + 1
      CALL "MS6-BLOCK-KIND" USING L-DIM L-X WS-Y L-Z WS-ABOVE
-     IF L-Y >= WS-SEA - 13 AND L-Y <= WS-SEA AND WS-BELOW = 2 AND WS-ABOVE = 2
+     MOVE 13 TO WS-BAND-LOW
+     MOVE 0 TO WS-BAND-HIGH
+     IF SM-SPAWN(L-ROW) = 15
+*>       The nautilus: y from sea level - 25 to sea level - 5 (21 section 3.2).
+         MOVE 25 TO WS-BAND-LOW
+         MOVE 5 TO WS-BAND-HIGH
+     END-IF
+     IF L-Y >= WS-SEA - WS-BAND-LOW AND L-Y <= WS-SEA - WS-BAND-HIGH AND WS-BELOW = 2 AND WS-ABOVE = 2
          MOVE 1 TO L-OK
      END-IF
      GOBACK.
@@ -209,13 +222,35 @@
  01 WS-CELL-Z              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
+ 01 WS-ODDS                FLOAT-LONG.
+ 01 WS-AVOID               BINARY-LONG.
+ 01 WS-AVOID-X             FLOAT-LONG.
+ 01 WS-AVOID-Z             FLOAT-LONG.
+ 01 WS-AVOID-MOD           FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      MOVE 0 TO WS-GO WS-DX WS-DY WS-DZ
+     MOVE 0.025 TO WS-ODDS
+     IF SM-KIND(L-M) = 6
+*>       RandomStrollGoal(1, 80) of the guardians (21 section 4.8): 1 / 80 a tick.
+         MOVE 0.0125 TO WS-ODDS
+     END-IF
      MOVE EN-YAW(L-ROW) TO WS-YAW
      COMPUTE WS-TARGET = SM-WALK-MILLI(L-M) / 1000
+     MOVE 0 TO WS-AVOID
+     IF EN-FLEE(L-ROW) = 0 AND SM-KIND(L-M) = 3
+         CALL "AQUA-AVOID" USING L-ROW WS-AVOID-X WS-AVOID-Z WS-AVOID-MOD WS-AVOID
+     END-IF
+     IF WS-AVOID = 1
+*>       The avoid-player goal of the fish (4.1): away from the player at attribute x 1.4 (within 7 blocks) or 1.6.
+         COMPUTE WS-DX = EN-X(L-ROW) - WS-AVOID-X
+         COMPUTE WS-DZ = EN-Z(L-ROW) - WS-AVOID-Z
+         COMPUTE WS-TARGET = SM-WALK-MILLI(L-M) / 1000 * WS-AVOID-MOD
+         MOVE 0 TO EN-COOLDOWN(L-ROW)
+         MOVE 1 TO WS-GO
+     ELSE
      IF EN-FLEE(L-ROW) > 0
          SUBTRACT 1 FROM EN-FLEE(L-ROW)
          MOVE EN-FLEE-PLAYER(L-ROW) TO WS-P
@@ -232,7 +267,7 @@
          IF EN-COOLDOWN(L-ROW) = 0
              MOVE 1 TO WS-SALT
              CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
-             IF WS-R < 0.025
+             IF WS-R < WS-ODDS
                  COMPUTE WS-Q = WS-R * 1000000
                  COMPUTE EN-DEST-X(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
                  COMPUTE WS-Q = WS-Q / 21
@@ -258,6 +293,7 @@
              END-IF
          END-IF
      END-IF
+     END-IF
      IF WS-GO = 0
          MOVE 0 TO EN-SWIM-SPEED(L-ROW)
          GOBACK
@@ -268,6 +304,9 @@
      MOVE 0.01 TO WS-FACTOR
      IF SM-KEY(L-M) = "dolphin"
          MOVE 0.02 TO WS-FACTOR
+     END-IF
+     IF SM-KIND(L-M) = 6
+         MOVE 0.1 TO WS-FACTOR
      END-IF
      COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
      COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) - FUNCTION SIN(WS-RADIANS) * EN-SWIM-SPEED(L-ROW) * WS-FACTOR
@@ -402,13 +441,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-PUFFER.
-*> USING tracker row: 4.3 for a player (the scary-mob test of the mobs is open). A survival or adventure player within 2 blocks of its box starts the puff goal (inflateCounter 1, deflateTimer 0);
+*> USING tracker row: 4.3 for a player and, through AQUA-PUFFER-MOBS, for the mobs (scary test and sting). A survival or adventure player within 2 blocks of its box starts the puff goal (inflateCounter 1, deflateTimer 0);
 *> with none the counter returns to 0. While the counter is above 0: state 0 becomes 1, a counter above 40 makes state 1 into 2, and the counter rises; otherwise a state above 0
 *> deflates: deflateTimer above 60 turns 2 into 1, above 100 turns 1 into 0, and the timer rises. The state is EN-VARIANT; a change goes to the viewers (AQUA-STATE-SEND). With a
 *> state above 0 a player within 0.3 blocks of its box is stung: 1 + state damage (a mob hit) and, when that took health, Poison for 60 x state ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY PROTO.
  01 WS-P                   BINARY-LONG.
  01 WS-SCARY               BINARY-LONG.
  01 WS-DX                  FLOAT-LONG.
@@ -422,6 +462,12 @@
  01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
  01 WS-DURATION            BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG VALUE 6.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-STING               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT-NINE          BINARY-LONG VALUE 9.
+ 01 WS-EVENT-VALUE         FLOAT-SHORT VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -437,6 +483,10 @@
              END-IF
          END-IF
      END-PERFORM
+     IF WS-SCARY = 0
+         MOVE EN-VARIANT(L-ROW) TO WS-STATE
+         CALL "AQUA-PUFFER-MOBS" USING L-ROW WS-ZERO WS-STATE WS-SCARY
+     END-IF
      IF WS-SCARY = 1 AND EN-INFLATE(L-ROW) = 0
          MOVE 1 TO EN-INFLATE(L-ROW)
          MOVE 0 TO EN-DEFLATE(L-ROW)
@@ -482,12 +532,18 @@
                      MOVE PL-HEALTH(WS-P) TO WS-HEALTH
                      CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
                      IF PL-HEALTH(WS-P) < WS-HEALTH
+*>                       playerTouch (4.3): Game Event 9 (value 0) to the player, then Poison.
+                         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                         CALL "PLAY-GAME-EVENT-BUILD" USING WS-EVENT-NINE WS-EVENT-VALUE PB-BUFFER
+                         CALL "CORE-SEND" USING PL-CONN(WS-P) PB-BUFFER
+                         CALL "PB-FREE" USING PB-BUFFER
                          COMPUTE WS-DURATION = 60 * WS-STATE
                          CALL "EFFECT-ADD" USING WS-P WS-POISON WS-AMPLIFIER WS-DURATION WS-FLAGS
                      END-IF
                  END-IF
              END-IF
          END-PERFORM
+         CALL "AQUA-PUFFER-MOBS" USING L-ROW WS-ONE WS-STATE WS-STING
      END-IF
      GOBACK.
  END PROGRAM AQUA-PUFFER.
@@ -512,12 +568,28 @@
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-DRAG                FLOAT-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-RESET               BINARY-LONG.
+ 01 WS-DARK-OLD            BINARY-LONG.
+ 01 WS-DARK-INDEX          BINARY-LONG VALUE 18.
+ 01 WS-VARINT              BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
      CALL "FLUID-TOUCHES-WATER" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-WET
+     CALL "AQUA-GROW" USING L-ROW
      MOVE EN-YAW(L-ROW) TO WS-YAW
+*>   Air: a fish or squid 300 and 20 more (drown), the axolotl 6000 and 20 (dry out, 44 part 7 section 8.4), the guardian none (it breathes under water and flops on land, 21 section 4.8).
+     MOVE 320 TO WS-LIMIT
+     MOVE 300 TO WS-RESET
+     IF SM-KIND(L-M) = 5
+         MOVE 6020 TO WS-LIMIT
+         MOVE 6000 TO WS-RESET
+     END-IF
+     IF SM-KIND(L-M) = 6
+         MOVE 0 TO WS-LIMIT
+     END-IF
      IF WS-WET = 1
          MOVE 0 TO EN-DRY(L-ROW)
      ELSE
@@ -541,14 +613,28 @@
                  MOVE 0 TO EN-ON-GROUND(L-ROW)
              END-IF
          ELSE
-             IF EN-DRY(L-ROW) >= 320
-                 MOVE 300 TO EN-DRY(L-ROW)
+             IF WS-LIMIT > 0 AND EN-DRY(L-ROW) >= WS-LIMIT
+                 MOVE WS-RESET TO EN-DRY(L-ROW)
                  MOVE 2 TO WS-AMOUNT
                  CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-AMOUNT WS-CAUSE WS-NO-ATTACKER
              END-IF
          END-IF
          IF EN-HEALTH(L-ROW) = 0
              GOBACK
+         END-IF
+         IF SM-KIND(L-M) = 6 AND EN-ON-GROUND(L-ROW) = 1
+*>           The guardian out of water hops: velocity + ((nextFloat x 2 - 1) x 0.4, 0.5, (nextFloat x 2 - 1) x 0.4), a random yaw (21 section 4.8).
+             MOVE 13 TO WS-SALT
+             CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+             COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + (WS-R * 2 - 1) * 0.4
+             MOVE 14 TO WS-SALT
+             CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+             COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + (WS-R * 2 - 1) * 0.4
+             MOVE 15 TO WS-SALT
+             CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+             COMPUTE WS-YAW = WS-R * 360
+             COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + 0.5
+             MOVE 0 TO EN-ON-GROUND(L-ROW)
          END-IF
          IF SM-KIND(L-M) = 3 AND EN-ON-GROUND(L-ROW) = 1
              MOVE 11 TO WS-SALT
@@ -564,19 +650,31 @@
      IF SM-KEY(L-M) = "squid" OR "glow_squid"
          CALL "AQUA-SQUID" USING L-ROW WS-WET
      ELSE
-         IF WS-WET = 1
-             CALL "AQUA-SWIM" USING L-ROW L-M
-         END-IF
+         EVALUATE TRUE
+             WHEN SM-KIND(L-M) = 5
+                 CALL "AXOLOTL-TICK" USING L-ROW L-M WS-WET
+             WHEN SM-KIND(L-M) = 6
+                 CALL "GUARDIAN-TICK" USING L-ROW L-M WS-WET
+             WHEN SM-KEY(L-M) = "dolphin"
+                 CALL "DOLPHIN-TICK" USING L-ROW L-M WS-WET
+             WHEN WS-WET = 1
+                 CALL "AQUA-SWIM" USING L-ROW L-M
+         END-EVALUATE
      END-IF
      IF SM-KEY(L-M) = "pufferfish"
          CALL "AQUA-PUFFER" USING L-ROW
      END-IF
      IF SM-KEY(L-M) = "glow_squid"
+         MOVE EN-DARK(L-ROW) TO WS-DARK-OLD
          IF EN-DARK(L-ROW) > 0
              SUBTRACT 1 FROM EN-DARK(L-ROW)
          END-IF
          IF EN-HURT(L-ROW) >= RULE-HURT-WINDOW - 1 AND EN-DARK(L-ROW) = 0
              MOVE 100 TO EN-DARK(L-ROW)
+         END-IF
+*>       The dark ticks (metadata 18, VarInt) go to the viewers whenever they change.
+         IF EN-DARK(L-ROW) NOT = WS-DARK-OLD
+             CALL "AQUA-META-SEND" USING L-ROW WS-DARK-INDEX WS-VARINT EN-DARK(L-ROW)
          END-IF
      END-IF
      IF WS-WET = 0 AND SM-KEY(L-M) NOT = "squid" AND SM-KEY(L-M) NOT = "glow_squid"
@@ -721,7 +819,9 @@
          END-EVALUATE
          GOBACK
      END-IF
+     MOVE 0 TO EN-WOOL(L-ROW)
      IF WS-D < 0.9
+         MOVE 1 TO EN-WOOL(L-ROW)
          CALL "XORO-NEXT-INT" USING L-STATE WS-22 WS-N
          ADD 1 TO WS-N
          MOVE WS-C-BASE(WS-N) TO WS-BASE

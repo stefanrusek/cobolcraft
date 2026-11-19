@@ -935,6 +935,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY BRWORLD.
+ COPY DIMENSIONS.
  COPY STDMOBS.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
@@ -973,6 +974,10 @@
          CALL "STDMOB-SLIME-RULE" USING L-STATE L-DIM L-X L-Y L-Z L-REASON L-OK
          GOBACK
      END-IF
+     IF SM-SPAWN(L-ROW) >= 12 AND SM-SPAWN(L-ROW) <= 14
+         CALL "AQUA-SPAWN-RULE" USING L-STATE L-DIM L-ROW L-X L-Y L-Z L-REASON L-OK
+         GOBACK
+     END-IF
      IF SM-KIND(L-ROW) >= 2
          CALL "MS6-WATER-RULE" USING L-DIM L-ROW L-X L-Y L-Z L-OK
          GOBACK
@@ -1002,6 +1007,10 @@
      CALL "M19-SPECIES-FLOOR" USING SM-KEY(L-ROW) WS-FLOOR
      IF SM-KIND(L-ROW) = 0 AND WS-FLOOR > 1
          CALL "M19-FLOOR-AT" USING L-DIM L-X WS-BELOW L-Z WS-FLOOR WS-GRASS
+     END-IF
+*>   The turtle (19 section 1.4): also y below the sea level + 4.
+     IF WS-FLOOR = 10 AND L-Y >= DM-SEA-LEVEL(L-DIM) + 4
+         MOVE 0 TO WS-GRASS
      END-IF
      IF FUNCTION MAX(WS-SKY, WS-BLOCK) > 8
          MOVE 1 TO WS-BRIGHT
@@ -1058,7 +1067,7 @@
  PROCEDURE DIVISION USING L-STATE L-DIM L-ROW L-X L-Y L-Z L-REASON L-OK.
      MOVE 0 TO L-OK
      MOVE 1 TO WS-PLACE
-     IF SM-KIND(L-ROW) >= 2
+     IF SM-KIND(L-ROW) >= 2 OR SM-SPAWN(L-ROW) = 14
          MOVE 2 TO WS-PLACE
      END-IF
      CALL "MS6-PLACEMENT-OK" USING WS-PLACE L-DIM L-X L-Y L-Z WS-OK
@@ -1089,6 +1098,7 @@
  01 WS-PACK                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-IN-PACK             BINARY-LONG.
+ 01 WS-AQUA-DONE           BINARY-LONG.
  01 WS-MAXPACK             BINARY-LONG.
  01 WS-ENTRY               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -1229,12 +1239,13 @@
                      MOVE WS-NEW TO WS-FIRST
                  END-IF
                  CALL "M19-PACK-SHARE" USING WS-FIRST WS-NEW
+                 CALL "AQUA-PACK" USING L-STATE WS-FIRST WS-NEW WS-IN-PACK WS-AQUA-DONE
                  ADD 1 TO L-SPAWNED WS-IN-PACK
                  CALL "MS6-COST-ADD" USING L-BIOME WS-KEY24 WS-POINTS WS-PN WS-FX WS-FY WS-FZ
                  IF L-SPAWNED >= 4
                      MOVE 1 TO WS-DONE-ALL
                  END-IF
-                 IF WS-IN-PACK >= 4
+                 IF WS-IN-PACK >= 4 OR WS-AQUA-DONE = 1
                      MOVE 1 TO WS-DONE-PACK
                  END-IF
              END-IF
@@ -1553,7 +1564,7 @@
          MOVE 1 TO WS-PERSIST
      END-IF
      MOVE 0 TO WS-PEACEFUL WS-HAVE
-     IF BW-DIFFICULTY = 0 AND SM-KIND(WS-S) = 1
+     IF BW-DIFFICULTY = 0 AND (SM-KIND(WS-S) = 1 OR SM-KIND(WS-S) = 6)
          MOVE 1 TO WS-PEACEFUL
      END-IF
      IF WS-IDLE-ID(L-ROW) NOT = EN-ID(L-ROW)

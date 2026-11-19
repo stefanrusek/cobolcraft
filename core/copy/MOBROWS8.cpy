@@ -1,0 +1,37 @@
+*> Rows added by lane p49b (T15000 ff.), included by STDMOBS.cpy after MOB21ROWS3.cpy (the villager rows and the strider stay the last four). Columns as the rows there.
+*> The giant (20 section 18.1: max health 100, movement speed 0.5, attack damage 50, experience 5; no goals and no targets: SM-NEUTRAL 7 is the inert code of
+*> STDMOB-AGGRO and of the stroll; summon only: no natural spawn rule).
+*> The warden (20 section 15: max health 500, movement speed 0.3 at the fighting modifier 1.2: (0.3 x 1.2) squared / 0.454 = 285, attack damage 30, follow range 24,
+*> experience 5; no biome spawn entry; the Darkness pulse is WARDEN-DARKNESS).
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "giant".
+       10 FILLER BINARY-LONG VALUE 100.
+       10 FILLER BINARY-LONG VALUE 551.              *> 0.5 squared / 0.454 (it never walks)
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.              *> monster
+       10 FILLER BINARY-LONG VALUE 50.              *> attack damage 50 (never used: inert)
+       10 FILLER BINARY-LONG VALUE 16.              *> follow range of the Mob base (18 section 7); no goal uses it
+       10 FILLER BINARY-LONG VALUE 0.              *> does not burn
+       10 FILLER BINARY-LONG VALUE 7.              *> inert
+       10 FILLER BINARY-LONG VALUE 5.              *> experience points
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.              *> ranged kind
+       10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "warden".
+       10 FILLER BINARY-LONG VALUE 500.
+       10 FILLER BINARY-LONG VALUE 285.              *> (0.3 x 1.2) squared / 0.454
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 1.              *> monster
+       10 FILLER BINARY-LONG VALUE 30.              *> attack damage 30
+       10 FILLER BINARY-LONG VALUE 24.              *> follow range
+       10 FILLER BINARY-LONG VALUE 0.              *> fire immune, does not burn
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 5.              *> experience points
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.              *> ranged kind
+       10 FILLER BINARY-LONG VALUE 0.              *> natural spawn rule
+       10 FILLER BINARY-LONG VALUE 0.

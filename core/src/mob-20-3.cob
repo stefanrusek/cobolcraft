@@ -791,6 +791,8 @@
          WHEN "salmon"
          WHEN "tropical_fish"
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M
+         WHEN "axolotl"
+             CALL "AXOLOTL-FINALIZE" USING L-STATE L-ROW
          WHEN "spider"
          WHEN "cave_spider"
              IF SM-KEY(WS-M) = "spider"

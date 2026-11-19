@@ -216,7 +216,7 @@
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = FUNCTION MIN(WS-TOTAL, 1)
      PERFORM CHECK-N
-     MOVE "acceptance US15 21§3.3 and are all squid or dolphins (the list's nautilus has no row)" TO TL-CASE
+     MOVE "acceptance US15 21§3.3 and are all squid, dolphins or nautilus (the nautilus has a row since lane p49d)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      PERFORM CHECK-N
@@ -281,7 +281,7 @@
              IF WS-M = 0
                  ADD 1 TO WS-BAD
              ELSE
-                 IF WS-CAT = 6 AND SM-KEY(WS-M) NOT = "squid" AND SM-KEY(WS-M) NOT = "dolphin"
+                 IF WS-CAT = 6 AND SM-KEY(WS-M) NOT = "squid" AND SM-KEY(WS-M) NOT = "dolphin" AND SM-KEY(WS-M) NOT = "nautilus"
                      ADD 1 TO WS-BAD
                  END-IF
                  IF WS-CAT = 7 AND SM-KEY(WS-M) NOT = "pufferfish" AND SM-KEY(WS-M) NOT = "tropical_fish"
