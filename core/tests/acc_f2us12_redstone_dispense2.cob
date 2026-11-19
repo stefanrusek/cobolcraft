@@ -268,6 +268,131 @@
      MOVE "acceptance US12-4 dispenser 30-4 4.11 a spawn egg spawns its mob" TO WS-CASE
      MOVE "1" TO WS-EXP
      PERFORM ASSERT-POWER
+*>   flint and steel lights a candle in front (4.10 rule 3)
+     MOVE "flint_and_steel" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 27 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "candle" TO WS-K PERFORM PUT-DEF
+     PERFORM POWER-ON
+     MOVE 4 TO WS-X PERFORM READ-KEY
+     MOVE "acceptance US12-4 dispenser 30-4 4.10 rule 3 flint and steel lights the candle" TO WS-CASE
+     MOVE 0 TO WS-P
+     IF WS-PROPS(1:7) = "candle:" AND WS-PROPS(8:35) NOT = SPACES
+         MOVE 1 TO WS-P
+     END-IF
+     MOVE 0 TO WS-HITS
+     INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "lit=true"
+     MOVE WS-HITS TO WS-P
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   a lava bucket, then the empty bucket takes the lava again (4.5, 4.6)
+     MOVE "lava_bucket" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 0 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     PERFORM POWER-ON
+     MOVE 4 TO WS-X PERFORM READ-KEY
+     MOVE 0 TO WS-HITS
+     INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "lava:"
+     MOVE WS-HITS TO WS-P
+     MOVE "acceptance US12-4 dispenser 30-4 4.5 a lava bucket puts lava in front" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE "bucket" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 3 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "lava" TO WS-K PERFORM PUT-DEF
+     PERFORM POWER-ON
+     MOVE "lava_bucket" TO WS-K PERFORM FIND-ITEM
+     MOVE 0 TO WS-P
+     IF BE-SLOT-ITEM(WS-BE, 1) = WS-ITEM
+         MOVE 1 TO WS-P
+     END-IF
+     MOVE "acceptance US12-4 dispenser 30-4 4.6 the empty bucket takes the lava: the lava bucket takes the slot" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   consumeWithRemainder with items left: the empty bucket goes into another slot, or is dropped when the dispenser is full (2)
+     MOVE "water_bucket" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 6 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 2 TO BE-SLOT-COUNT(WS-BE, 1)
+     PERFORM POWER-ON
+     MOVE "bucket" TO WS-K PERFORM FIND-ITEM
+     MOVE 0 TO WS-P
+     IF BE-SLOT-ITEM(WS-BE, 2) = WS-ITEM AND BE-SLOT-COUNT(WS-BE, 2) = 1 AND BE-SLOT-COUNT(WS-BE, 1) = 1
+         MOVE 1 TO WS-P
+     END-IF
+     MOVE "acceptance US12-4 dispenser 30-4 2 with water buckets left the empty bucket goes into the next free slot" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE "stone" TO WS-K PERFORM FIND-ITEM
+     MOVE 9 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 2 TO BE-SLOT-COUNT(WS-BE, 1)
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > 9
+         MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, WS-I) MOVE 1 TO BE-SLOT-COUNT(WS-BE, WS-I)
+     END-PERFORM
+     MOVE "bucket" TO WS-K PERFORM FIND-ITEM
+     MOVE WS-ITEM TO WS-ITEM2
+     MOVE "stone" TO WS-K PERFORM FIND-ITEM
+     MOVE 0 TO WS-I
+     MOVE "water_bucket" TO WS-K PERFORM FIND-ITEM
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 1)
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > 9
+         MOVE 64 TO BE-SLOT-COUNT(WS-BE, WS-I)
+     END-PERFORM
+     PERFORM COUNT-LOOSE
+     MOVE WS-COUNT TO WS-BEFORE
+     PERFORM POWER-ON
+     PERFORM COUNT-LOOSE
+     COMPUTE WS-P = WS-COUNT - WS-BEFORE
+     MOVE "acceptance US12-4 dispenser 30-4 2 a full dispenser drops the empty bucket" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   the other minecarts and a minecart above a rail (4.22)
+     MOVE "chest_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 12 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE 100 TO WS-Y MOVE "rail" TO WS-K PERFORM PUT-DEF
+     MOVE "chest_minecart" TO WS-EKEY PERFORM COUNT-ENTITY
+     MOVE WS-ECOUNT TO WS-BEFORE
+     PERFORM POWER-ON
+     PERFORM COUNT-ENTITY
+     COMPUTE WS-P = WS-ECOUNT - WS-BEFORE
+     MOVE "acceptance US12-4 dispenser 30-4 4.22 a chest minecart comes out above a rail" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE "hopper_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 15 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "rail" TO WS-K PERFORM PUT-DEF
+     PERFORM POWER-ON
+     MOVE "furnace_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 18 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "rail" TO WS-K PERFORM PUT-DEF
+     PERFORM POWER-ON
+     MOVE "tnt_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 21 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "rail" TO WS-K PERFORM PUT-DEF
+     PERFORM POWER-ON
+     MOVE "command_block_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 24 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "rail" TO WS-K PERFORM PUT-DEF
+     PERFORM POWER-ON
+     MOVE BE-SLOT-COUNT(WS-BE, 1) TO WS-P
+     MOVE "acceptance US12-4 dispenser 30-4 4.22 a command block minecart is spent too" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
      STOP RUN.
 
  SETUP-DISPENSER.
@@ -309,6 +434,14 @@
              IF WS-EXP-TMP = WS-EKEY
                  ADD 1 TO WS-ECOUNT
              END-IF
+         END-IF
+     END-PERFORM.
+
+ COUNT-LOOSE.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = CR-LOOSE-ITEM
+             ADD 1 TO WS-COUNT
          END-IF
      END-PERFORM.
 

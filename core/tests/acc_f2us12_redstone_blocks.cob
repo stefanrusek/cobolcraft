@@ -471,6 +471,183 @@
      MOVE "acceptance US12-4 tripwire 30-8 7.1 and east false" TO WS-CASE
      MOVE "1" TO WS-EXP
      PERFORM ASSERT-POWER
+*>   more sound names (30-7 section 2 tables)
+     MOVE "crimson_fence_gate" TO WS-SKEY MOVE 1 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.nether_wood_fence_gate.open" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "bamboo_fence_gate" TO WS-SKEY MOVE 2 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.bamboo_wood_fence_gate.close" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "cherry_door" TO WS-SKEY MOVE 1 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.cherry_wood_door.open" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "cherry_pressure_plate" TO WS-SKEY MOVE 5 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.cherry_wood_pressure_plate.click_on" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "crimson_pressure_plate" TO WS-SKEY MOVE 6 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.nether_wood_pressure_plate.click_off" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "bamboo_pressure_plate" TO WS-SKEY MOVE 5 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.bamboo_wood_pressure_plate.click_on" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "tripwire_hook" TO WS-SKEY MOVE 8 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.tripwire.click_off" TO WS-EXP PERFORM ASSERT-NAME
+     MOVE "tripwire_hook" TO WS-SKEY MOVE 9 TO WS-EVN PERFORM CHECK-SOUND
+     MOVE "block.tripwire.attach" TO WS-EXP PERFORM ASSERT-NAME
+*>   30-8 3.1: resonate_n is frequency n, an event of frequency 0 is not heard
+     MOVE "resonate_7" TO WS-EVT
+     CALL "VIB-FREQUENCY" USING WS-EVT WS-VAL
+     MOVE WS-VAL TO WS-P
+     MOVE "acceptance US12-4 sculk 30-8 3.1 resonate_7 has frequency 7" TO WS-CASE
+     MOVE "7" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE 16 TO WS-Z
+     MOVE 3 TO WS-X MOVE "sculk_sensor" TO WS-K PERFORM PUT-DEF
+     MOVE "shriek" TO WS-EVT
+     MOVE 4 TO WS-X
+     CALL "VIB-POST" USING WS-DIM WS-X WS-Y WS-Z WS-EVT
+     MOVE 3 TO WS-X
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-FULL
+     MOVE "acceptance US12-4 sculk 30-8 3.1 a frequency 0 event (shriek) is not heard" TO WS-CASE
+     MOVE "sculk_sensor:power=0,sculk_sensor_phase=inactive,waterlogged=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   30-8 3.4 step 1: two events in one tick: the nearer one is kept, at equal distance the greater frequency
+     MOVE "step" TO WS-EVT
+     MOVE 8 TO WS-X
+     CALL "VIB-POST" USING WS-DIM WS-X WS-Y WS-Z WS-EVT
+     MOVE "block_place" TO WS-EVT
+     MOVE 4 TO WS-X
+     CALL "VIB-POST" USING WS-DIM WS-X WS-Y WS-Z WS-EVT
+     MOVE 3 TO WS-X
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 0 TO WS-D
+     CALL "RL-ANALOG-AT" USING WS-DIM WS-X WS-Y WS-Z WS-D WS-HAS WS-VAL
+     MOVE WS-VAL TO WS-P
+     MOVE "acceptance US12-4 sculk 30-8 3.4 the nearer event (block_place, distance 1) replaced the far one" TO WS-CASE
+     MOVE "13" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE 17 TO WS-Z
+     MOVE 3 TO WS-X MOVE "sculk_sensor" TO WS-K PERFORM PUT-DEF
+     MOVE "step" TO WS-EVT
+     MOVE 5 TO WS-X
+     CALL "VIB-POST" USING WS-DIM WS-X WS-Y WS-Z WS-EVT
+     MOVE "block_place" TO WS-EVT
+     MOVE 1 TO WS-X
+     CALL "VIB-POST" USING WS-DIM WS-X WS-Y WS-Z WS-EVT
+     MOVE 3 TO WS-X
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 0 TO WS-D
+     CALL "RL-ANALOG-AT" USING WS-DIM WS-X WS-Y WS-Z WS-D WS-HAS WS-VAL
+     MOVE WS-VAL TO WS-P
+     MOVE "acceptance US12-4 sculk 30-8 3.4 at equal distance the greater frequency (13) is kept" TO WS-CASE
+     MOVE "13" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   30-2 5.3 more: the sitting and running poses and the second slot of a shelf
+     MOVE 28 TO WS-Z
+     MOVE 3 TO WS-X MOVE "copper_golem_statue" TO WS-K PERFORM MAKE-DEF
+     MOVE "copper_golem_pose" TO WS-LN MOVE "sitting" TO WS-PV
+     CALL "SW-SET-PROP-L" USING WS-ST WS-LN WS-PV WS-ST2 WS-OLD
+     MOVE WS-ST2 TO WS-ST
+     PERFORM PUT-ST
+     PERFORM READ-ANALOG
+     MOVE "acceptance US12-4 analog 30-2 5.3 a sitting copper golem statue gives 2" TO WS-CASE
+     MOVE "2" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE "running" TO WS-PV
+     CALL "SW-SET-PROP-L" USING WS-ST WS-LN WS-PV WS-ST2 WS-OLD
+     MOVE WS-ST2 TO WS-ST
+     PERFORM PUT-ST
+     PERFORM READ-ANALOG
+     MOVE "acceptance US12-4 analog 30-2 5.3 a running one gives 3" TO WS-CASE
+     MOVE "3" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE 1 TO WS-Z
+     MOVE 8 TO WS-X
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 2) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 2)
+     MOVE 3 TO WS-D
+     CALL "RL-ANALOG-AT" USING WS-DIM WS-X WS-Y WS-Z WS-D WS-HAS WS-VAL
+     MOVE WS-VAL TO WS-P
+     MOVE "acceptance US12-4 analog 30-2 5.3 slots 1, 2 and 3 of the shelf give 7" TO WS-CASE
+     MOVE "7" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   31-2 5.6: a hopper that puts an item into an empty hopper sets its cooldown
+     MOVE 9 TO WS-Z
+     PERFORM MAKE-HOPPER
+     MOVE "stone" TO WS-K PERFORM FIND-ITEM
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE "hopper" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE2
+     MOVE 3 TO WS-X
+     MOVE 3 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE BE-SLOT-COUNT(WS-BE2, 1) TO WS-P
+     MOVE "acceptance US12-4 hopper 31-2 5.6 the item reached the empty hopper in front" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   30-5 7: lightning rods of other facings give the axis ordinals, a powered rod placed or removed
+     MOVE 11 TO WS-Z
+     MOVE 3 TO WS-X MOVE "lightning_rod" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "north" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "RL-ROD-STRUCK" USING WS-DIM WS-X WS-Y WS-Z WS-ST
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     CALL "RL-ROD-STRUCK" USING WS-DIM WS-X WS-Y WS-Z WS-ST
+     MOVE "powered" TO WS-PN MOVE "true" TO WS-PV PERFORM SET-P
+     MOVE 13 TO WS-Z
+     PERFORM PUT-ST
+     MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-FULL
+     MOVE "acceptance US12-4 sensors 30-5 7.2 a powered rod placed and removed leaves air" TO WS-CASE
+     MOVE "air:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   30-6 6.3: a check for a block that is no longer the rail does nothing
+     MOVE 14 TO WS-Z
+     MOVE 3 TO WS-X MOVE "detector_rail" TO WS-K PERFORM MAKE-DEF
+     MOVE "stone" TO WS-K PERFORM PUT-DEF
+     CALL "RL-DETECTOR-CHECK" USING WS-DIM WS-X WS-Y WS-Z WS-ST
+     PERFORM READ-FULL
+     MOVE "acceptance US12-4 sensors 30-6 6.3 a check at a cell that is not the rail changes nothing" TO WS-CASE
+     MOVE "stone:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   30-8 7.5: cutting a wire of a line with shears does not pulse the hooks; hooks of side-by-side wires
+     MOVE "shears" TO WS-K PERFORM FIND-ITEM
+     MOVE 0 TO PL-MODE(WS-ROW)
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1)
+     MOVE 20 TO WS-Z
+     PERFORM VARYING WS-NX FROM 0 BY 1 UNTIL WS-NX > 9
+         MOVE WS-NX TO WS-X
+         PERFORM VARYING WS-Y FROM 101 BY 1 UNTIL WS-Y > 103
+             MOVE "air" TO WS-K
+             PERFORM PUT-DEF
+         END-PERFORM
+     END-PERFORM
+     MOVE 101 TO WS-Y
+     MOVE 5 TO WS-X MOVE "tripwire_hook" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "west" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 2 TO WS-X MOVE "tripwire" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X MOVE "tripwire" TO WS-K PERFORM PUT-DEF
+     MOVE 4 TO WS-X MOVE "tripwire" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-X MOVE "tripwire_hook" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     MOVE 4 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 2 TO WS-X
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "REDSTONE-PLACE-STATE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-PROPS TALLYING WS-HITS FOR ALL "east=true"
+     MOVE WS-HITS TO WS-P
+     MOVE "acceptance US12-4 tripwire 30-8 7.1 a wire beside another wire has that side true" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE 3 TO WS-X MOVE 0 TO WS-FACE MOVE 9 TO WS-SEQ
+     CALL "TEST-ACTION" USING WS-ALICE WS-ZERO WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE 3 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 tripwire 30-8 7.5 cutting the line with shears does not power the hook" TO WS-CASE
+     MOVE "tripwire_hook:attached=false,facing=east,powered=false" TO WS-EXP
+     PERFORM ASSERT-PROPS
      STOP RUN.
 
  MAKE-HOPPER.

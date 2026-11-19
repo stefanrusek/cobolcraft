@@ -84,7 +84,6 @@
  01 WS-NZ                  BINARY-LONG.
  01 WS-SIGNAL              BINARY-LONG.
  01 WS-ABOVE               BINARY-LONG.
- 01 WS-DOWN                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -106,10 +105,7 @@
              END-IF
          END-IF
      END-PERFORM
-     CALL "RL-SIGNAL" USING L-DIM L-X L-Y L-Z WS-DOWN WS-SIGNAL
-     IF WS-SIGNAL > 0
-         MOVE 1 TO L-POWERED
-     END-IF
+*>   term 2, hasSignal(pos, DOWN) on the piston's own cell, is always false for a piston (2.2: it emits nothing and is no conductor), so it is not asked
      COMPUTE WS-ABOVE = L-Y + 1
      PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 5
          CALL "BU-DIRECTION" USING WS-D WS-DX WS-DY WS-DZ

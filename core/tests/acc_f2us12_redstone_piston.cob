@@ -351,6 +351,217 @@
      MOVE "acceptance US12-4 pistons 30-3 9.3 a head whose base is gone becomes air" TO WS-CASE
      MOVE "air:" TO WS-EXP
      PERFORM ASSERT-PROPS
+*>   facings: west, south, up, down and north pistons extend (30-3 1: the facing property in all six values)
+     MOVE 0 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 4 TO WS-FACE-N MOVE 0 TO WS-FLAG-N MOVE 0 TO WS-TYPE-N MOVE 5 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 4 TO WS-X MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 5 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 1 a west piston extends" TO WS-CASE
+     MOVE "piston:extended=true,facing=west" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 3 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 3 TO WS-FACE-N MOVE 3 TO WS-X
+     PERFORM PUT-PISTON
+     ADD 1 TO WS-Z MOVE "stone" TO WS-K PERFORM PUT-DEF
+     SUBTRACT 2 FROM WS-Z MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     ADD 2 TO WS-Z
+     MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 1 a south piston extends" TO WS-CASE
+     MOVE "piston:extended=true,facing=south" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 6 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 1 TO WS-FACE-N MOVE 3 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 102 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 101 TO WS-Y MOVE 4 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 1 an up piston extends" TO WS-CASE
+     MOVE "piston:extended=true,facing=up" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 9 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 3 TO WS-X MOVE 100 TO WS-Y MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-CODE MOVE 0 TO WS-FACE-N
+     MOVE 102 TO WS-Y
+     CALL "PST-STATE-OF" USING WS-CODE WS-FACE-N WS-FLAG-N WS-TYPE-N WS-ST
+     PERFORM PUT-ST
+     MOVE 101 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 102 TO WS-Y MOVE 4 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X MOVE 102 TO WS-Y PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 1 a down piston extends" TO WS-CASE
+     MOVE "piston:extended=true,facing=down" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 12 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 2 TO WS-FACE-N MOVE 3 TO WS-X
+     PERFORM PUT-PISTON
+     SUBTRACT 1 FROM WS-Z MOVE "stone" TO WS-K PERFORM PUT-DEF
+     ADD 2 TO WS-Z MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     SUBTRACT 1 FROM WS-Z
+     MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 1 a north piston extends" TO WS-CASE
+     MOVE "piston:extended=true,facing=north" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   2.3 the drop rule: the retraction asked while the block is under half way leaves it
+     MOVE 15 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 1 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 2 TO WS-X MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 8 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 2.3 a retraction asked under half way is a drop: the stone stays at x 3" TO WS-CASE
+     MOVE "stone:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 2 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 3.2 and nothing was pulled to x 2" TO WS-CASE
+     MOVE "air:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 3.2 the sticky piston is retracted" TO WS-CASE
+     MOVE "sticky_piston:extended=false,facing=east" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   3.2 a retraction cancelled by power coming back before the event: the base is marked extended again
+     MOVE 18 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 3.2 power back before the retract event: the piston stays extended" TO WS-CASE
+     MOVE "piston:extended=true,facing=east" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   3.2 an extension cancelled by the power going before the event
+     MOVE 24 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 3.2 power gone before the extend event: the piston stays retracted" TO WS-CASE
+     MOVE "piston:extended=false,facing=east" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   9.3 the head: a block update beside it reaches the base, breaking it destroys the base
+     MOVE 27 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 2 TO WS-X MOVE 102 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 101 TO WS-Y
+     MOVE 2 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 2 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 9.3 a block update beside the head leaves the head" TO WS-CASE
+     MOVE "piston_head:facing=east,short=false,type=normal" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 0 TO WS-I
+     MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 9.3 breaking the head destroys the base behind it" TO WS-CASE
+     MOVE "air:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   4.3 a block that cannot be pushed beyond the pushed one stops the push; a torch beyond is destroyed
+     MOVE 30 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 2 TO WS-X MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X MOVE "obsidian" TO WS-K PERFORM PUT-DEF
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 4.3 stone then obsidian: the push is blocked, no extension" TO WS-CASE
+     MOVE "piston:extended=false,facing=east" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 2 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 2 TO WS-X MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X MOVE "torch" TO WS-K PERFORM PUT-DEF
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 4.3 stone then a torch: the stone is pushed onto the destroyed torch's cell" TO WS-CASE
+     MOVE "stone:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   4.3 the backward chain: a slime block's neighbour block behind it joins the line (the stone beside the piston is dragged)
+     MOVE 19 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     ADD 1 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     SUBTRACT 1 FROM WS-Z
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 2 TO WS-X MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     ADD 1 TO WS-Z
+     MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-X MOVE "stone" TO WS-K PERFORM PUT-DEF
+     SUBTRACT 1 FROM WS-Z
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 2 TO WS-X ADD 1 TO WS-Z
+     PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 4.3 the stone behind the second slime block was dragged to x 2" TO WS-CASE
+     MOVE "stone:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 3 TO WS-X
+     PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 4.3 and that slime block moved to x 3" TO WS-CASE
+     MOVE "slime_block:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   3.2 a sticky piston that cannot pull what is beyond its head (obsidian) removes the head only
+     MOVE 22 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 1 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X MOVE "obsidian" TO WS-K PERFORM PUT-DEF
+     MOVE 0 TO WS-X MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 3 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 3.2 the obsidian stays where it is" TO WS-CASE
+     MOVE "obsidian:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+     MOVE 2 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 3.2 the head is removed" TO WS-CASE
+     MOVE "air:" TO WS-EXP
+     PERFORM ASSERT-PROPS
+*>   3.2 an event whose structure changed since it was queued: the move fails and nothing extends
+     MOVE 25 TO WS-Z
+     PERFORM PUT-STONE-ROW
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 2 TO WS-X MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-X MOVE "obsidian" TO WS-K PERFORM PUT-DEF
+     MOVE 6 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 1 TO WS-X PERFORM READ-FULL
+     MOVE "acceptance US12-4 pistons 30-3 6 the structure became immovable before the event: no extension" TO WS-CASE
+     MOVE "piston:extended=false,facing=east" TO WS-EXP
+     PERFORM ASSERT-PROPS
      STOP RUN.
 
  PUT-STONE-ROW.
