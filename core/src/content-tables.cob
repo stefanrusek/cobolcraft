@@ -98,7 +98,8 @@
                  COMPUTE WS-BLOCK = FUNCTION NUMVAL(CT-IR-BLOCK)
                  MOVE CB-DEFAULT-STATE(WS-BLOCK + 1) TO IT-PLACES-STATE(WS-INDEX)
              END-IF
-             IF CT-IR-BLOCK = SPACES AND CT-IR-CLASS = "BlockItem"
+             *>           A class text may carry a note after the class name ("BlockItem, item name prefix": sweet_berries, glow_berries).
+             IF CT-IR-BLOCK = SPACES AND CT-IR-CLASS(1:9) = "BlockItem"
                  CALL "ITEM-PLACED-BLOCK" USING IT-KEY(WS-INDEX) WS-BLOCK-KEY
                  IF WS-BLOCK-KEY NOT = SPACES
                      CALL "CONTENT-BLOCK-BY-KEY" USING WS-BLOCK-KEY WS-BLOCK WS-BLOCK-ROW WS-BLOCK-STATUS
@@ -325,12 +326,14 @@
     05 FILLER PIC X(48) VALUE "pitcher_crop".
     05 FILLER PIC X(48) VALUE "cocoa_beans".
     05 FILLER PIC X(48) VALUE "cocoa".
+    05 FILLER PIC X(48) VALUE "sweet_berries".
+    05 FILLER PIC X(48) VALUE "sweet_berry_bush".
     05 FILLER PIC X(48) VALUE "string".
     05 FILLER PIC X(48) VALUE "tripwire".
     05 FILLER PIC X(48) VALUE "redstone".
     05 FILLER PIC X(48) VALUE "redstone_wire".
  01 WS-TABLE REDEFINES WS-PAIRS.
-    05 WS-PAIR OCCURS 11 TIMES.
+    05 WS-PAIR OCCURS 12 TIMES.
        10 WS-ITEM            PIC X(48).
        10 WS-BLOCK           PIC X(48).
  01 WS-I                   BINARY-LONG.
@@ -339,7 +342,7 @@
  01 L-BLOCK                PIC X(112).
  PROCEDURE DIVISION USING L-ITEM L-BLOCK.
      MOVE SPACES TO L-BLOCK
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
          IF WS-ITEM(WS-I) = L-ITEM
              MOVE WS-BLOCK(WS-I) TO L-BLOCK
          END-IF

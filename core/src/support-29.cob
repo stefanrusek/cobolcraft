@@ -78,8 +78,33 @@
     05 FILLER BINARY-LONG VALUE 4096.
     05 FILLER PIC X(48) VALUE "minecraft:walls".
     05 FILLER BINARY-LONG VALUE 4096.
+*>   The ground tags of 29b part 2 section 2.2 and 12 (lane bugcrop): crops on farmland, stems, nether wart on soul sand, cocoa on a jungle log, azalea, mangrove propagule, wither rose, nether roots and sprouts.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_crops".
+    05 FILLER BINARY-LONG VALUE 8192.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_pumpkin_stem".
+    05 FILLER BINARY-LONG VALUE 16384.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_melon_stem".
+    05 FILLER BINARY-LONG VALUE 32768.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_nether_wart".
+    05 FILLER BINARY-LONG VALUE 65536.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_cocoa".
+    05 FILLER BINARY-LONG VALUE 131072.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_azalea".
+    05 FILLER BINARY-LONG VALUE 262144.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_mangrove_propagule".
+    05 FILLER BINARY-LONG VALUE 524288.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_hanging_mangrove_propagule".
+    05 FILLER BINARY-LONG VALUE 1048576.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_wither_rose".
+    05 FILLER BINARY-LONG VALUE 2097152.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_crimson_roots".
+    05 FILLER BINARY-LONG VALUE 4194304.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_warped_roots".
+    05 FILLER BINARY-LONG VALUE 8388608.
+    05 FILLER PIC X(48) VALUE "minecraft:supports_nether_sprouts".
+    05 FILLER BINARY-LONG VALUE 16777216.
  01 WS-TAG-TABLE REDEFINES WS-TAGS.
-    05 WS-TAG-ROW OCCURS 23 TIMES.
+    05 WS-TAG-ROW OCCURS 35 TIMES.
        10 WS-TAG-KEY         PIC X(48).
        10 WS-TAG-KIND        BINARY-LONG.
  PROCEDURE DIVISION.
@@ -113,6 +138,49 @@
              WHEN "minecraft:peony"
                  MOVE 13 TO SP-RULE(WS-I)
                  MOVE 1 TO SP-ARG(WS-I)
+*>           A crop stands on a block of supports_crops in light 8 or more; the pitcher crop is a double plant with the crop rule on its lower half.
+             WHEN "minecraft:wheat"
+             WHEN "minecraft:carrots"
+             WHEN "minecraft:potatoes"
+             WHEN "minecraft:beetroots"
+             WHEN "minecraft:torchflower_crop"
+                 MOVE 22 TO SP-RULE(WS-I)
+             WHEN "minecraft:pitcher_crop"
+                 MOVE 13 TO SP-RULE(WS-I)
+                 MOVE 22 TO SP-ARG(WS-I)
+*>           A block that stands on the blocks of one tag (the tag's bit is its SP-ARG): stems, nether wart, azalea, wither rose, nether roots and sprouts.
+             WHEN "minecraft:pumpkin_stem"
+             WHEN "minecraft:attached_pumpkin_stem"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 16384 TO SP-ARG(WS-I)
+             WHEN "minecraft:melon_stem"
+             WHEN "minecraft:attached_melon_stem"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 32768 TO SP-ARG(WS-I)
+             WHEN "minecraft:nether_wart"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 65536 TO SP-ARG(WS-I)
+             WHEN "minecraft:azalea"
+             WHEN "minecraft:flowering_azalea"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 262144 TO SP-ARG(WS-I)
+             WHEN "minecraft:wither_rose"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 2097152 TO SP-ARG(WS-I)
+             WHEN "minecraft:crimson_roots"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 4194304 TO SP-ARG(WS-I)
+             WHEN "minecraft:warped_roots"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 8388608 TO SP-ARG(WS-I)
+             WHEN "minecraft:nether_sprouts"
+                 MOVE 21 TO SP-RULE(WS-I)
+                 MOVE 16777216 TO SP-ARG(WS-I)
+*>           Cocoa hangs on the block its facing points to (supports_cocoa); the mangrove propagule stands on supports_mangrove_propagule, hanging from supports_hanging_mangrove_propagule.
+             WHEN "minecraft:cocoa"
+                 MOVE 23 TO SP-RULE(WS-I)
+             WHEN "minecraft:mangrove_propagule"
+                 MOVE 24 TO SP-RULE(WS-I)
              WHEN "minecraft:brown_mushroom"
              WHEN "minecraft:red_mushroom"
                  MOVE 3 TO SP-RULE(WS-I)
@@ -190,7 +258,7 @@
                  END-IF
          END-EVALUATE
      END-PERFORM
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 23
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 35
          MOVE WS-TAG-KEY(WS-J) TO WS-KEY112
          CALL "CONTENT-TAG-MEMBERS" USING WS-REGISTRY WS-KEY112 WS-COUNT WS-IDS WS-CAP WS-STATUS
          IF WS-STATUS = CT-OK
@@ -332,6 +400,11 @@
  01 WS-FACE-FOUND          BINARY-LONG.
  01 WS-ABOVE-STATE         BINARY-LONG.
  01 WS-SEA-OK              BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK-LIGHT         BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG VALUE 7.
+ 01 WS-HANGING             PIC X(24) VALUE "hanging".
  01 WS-NAME24              PIC X(24).
  01 WS-NAME48              PIC X(48).
  01 WS-SIGN-SUFFIX         PIC X(24) VALUE "hanging_sign".
@@ -553,6 +626,43 @@
 *>       a vine, glow lichen, sculk vein or resin clump holds on while one of its faces has a solid block behind it (a vine's side face also holds on a vine above that has the face)
          WHEN 20
              CALL "SUP-MULTIFACE" USING L-DIM L-X L-Y L-Z L-STATE L-OK
+*>       a block that stands on the blocks of one tag: the tag's bit is the block's SP-ARG (stems, nether wart, azalea, wither rose, nether roots and sprouts; 29b part 2 section 12)
+         WHEN 21
+             MOVE SP-ARG(WS-BLOCK) TO WS-BIT
+             CALL "SUP-HAS-BIT" USING WS-BITS WS-BIT L-OK
+*>       a crop (also the lower half of the pitcher crop): a block of supports_crops below and raw brightness 8 or more (no sky darkening: the stored light, the sky reach as the random tick reads it)
+         WHEN 22
+             MOVE 8192 TO WS-BIT
+             CALL "SUP-HAS-BIT" USING WS-BITS WS-BIT WS-FLAG
+             IF WS-FLAG = 1
+                 CALL "LIGHT-RAW" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK-LIGHT WS-LIGHT
+                 CALL "LIGHT-SKY-SPREAD" USING L-DIM L-X L-Y L-Z WS-NEAR WS-SKY
+                 COMPUTE WS-LIGHT = FUNCTION MAX(WS-BLOCK-LIGHT, WS-SKY)
+                 IF WS-LIGHT >= 8
+                     MOVE 1 TO L-OK
+                 END-IF
+             END-IF
+*>       cocoa: the block on the side of its facing is in supports_cocoa (no light test)
+         WHEN 23
+             CALL "SUP-FACING" USING L-STATE WS-FACING WS-DX WS-DZ WS-DY WS-FOUND
+             COMPUTE WS-X = L-X + WS-DX
+             COMPUTE WS-Z = L-Z + WS-DZ
+             CALL "SUP-SOLID-AT" USING L-DIM WS-X L-Y WS-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+             MOVE 131072 TO WS-BIT
+             CALL "SUP-HAS-BIT" USING WS-OTHER-BITS WS-BIT L-OK
+*>       mangrove propagule: standing, a block of supports_mangrove_propagule below; hanging, a block of supports_hanging_mangrove_propagule above
+         WHEN 24
+             MOVE SPACES TO WS-TEXT
+             CALL "BLOCK-STATE-PROP" USING WS-MODE L-STATE WS-HANGING WS-TEXT WS-FOUND
+             IF FUNCTION TRIM(WS-TEXT) = "true"
+                 COMPUTE WS-Y = L-Y + 1
+                 CALL "SUP-SOLID-AT" USING L-DIM L-X WS-Y L-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+                 MOVE 1048576 TO WS-BIT
+                 CALL "SUP-HAS-BIT" USING WS-OTHER-BITS WS-BIT L-OK
+             ELSE
+                 MOVE 524288 TO WS-BIT
+                 CALL "SUP-HAS-BIT" USING WS-BITS WS-BIT L-OK
+             END-IF
 *>       a door: its lower half stands on a solid block, its upper half on the lower half of the same door
          WHEN 17
              MOVE SPACES TO WS-TEXT
