@@ -1235,6 +1235,11 @@
  01 WS-B                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-DEATH-KEY           PIC X(64).
+ 01 WS-DEATH-LENGTH        BINARY-LONG.
+ 01 WS-DEATH-X             BINARY-LONG.
+ 01 WS-DEATH-Y             BINARY-LONG.
+ 01 WS-DEATH-Z             BINARY-LONG.
  01 WS-FLOAT               FLOAT-SHORT.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -1309,6 +1314,11 @@
                      CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
                      CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
                      CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+*>                   a death location (present after the first death, 57-client-closures-3 section 11): the dimension key and the position follow
+                     IF WS-A = 1
+                         CALL "PB-GET-IDENTIFIER" USING PK-BUFFER WS-DEATH-KEY WS-KEY-CAPACITY WS-DEATH-LENGTH
+                         CALL "PB-GET-POSITION" USING PK-BUFFER WS-DEATH-X WS-DEATH-Y WS-DEATH-Z
+                     END-IF
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-BYTE" USING PK-BUFFER WS-C
