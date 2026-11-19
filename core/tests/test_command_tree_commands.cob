@@ -1,8 +1,8 @@
 *> Test of the node counts per command of the core's command tree (docs/protocol/57-client-closures-4 sections 6.1 and 7; T2014): for each of the 86 commands of the dedicated
-*> server's tree the requirement level of its root literal and the number of nodes of its subtree (the unmerged tree nodes of the heading of each part of section 7). The 75 commands
-*> the core builds like the document are asserted against it. Eleven commands differ in grammar and are asserted against the core's own count (the fourth field of their row, named
-*> "known gap" with the vanilla count): execute (45 of 289), data (482 of 752), time (15 of 30), test (not built, 48), random (no reset branch: 7 of 16), clone (147 of 123: an
-*> older grammar), compute (26 of 21), swing (10 of 8: the older none, whack, stab words in place of the swing_animation argument), dialog (3 of 6) and debug (3 of 5), and gamerule (237 of 233: max_minecart_speed belongs to the feature minecart_improvements, which the default feature set leaves off, and has command nodes here).
+*> server's tree the requirement level of its root literal and the number of
+*> nodes of its subtree (the unmerged tree nodes of the heading of each part of section 7). Every command has the document's count: the grammars of execute, data, time, test (built from
+*> the listing by BR-DOC-FILL, the forms the core does not run report cobolcraft.command.unsupported), random, clone, compute, swing, dialog and debug were brought to it, and
+*> gamerule has the 58 rules of the default feature set (max_minecart_speed needs minecraft:minecart_improvements, BRFEAT.cpy).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COMMAND-TREE-COMMANDS.
  DATA DIVISION.
@@ -14,17 +14,17 @@
  01 WS-TABLE.
     05 FILLER              PIC X(24) VALUE "advancement 2 25".
     05 FILLER              PIC X(24) VALUE "attribute 2 24".
-    05 FILLER              PIC X(24) VALUE "execute 2 289 45".
+    05 FILLER              PIC X(24) VALUE "execute 2 289".
     05 FILLER              PIC X(24) VALUE "bossbar 2 39".
     05 FILLER              PIC X(24) VALUE "clear 2 4".
-    05 FILLER              PIC X(24) VALUE "clone 2 123 147".
-    05 FILLER              PIC X(24) VALUE "compute 2 21 26".
+    05 FILLER              PIC X(24) VALUE "clone 2 123".
+    05 FILLER              PIC X(24) VALUE "compute 2 21".
     05 FILLER              PIC X(24) VALUE "damage 2 10".
-    05 FILLER              PIC X(24) VALUE "data 2 752 482".
+    05 FILLER              PIC X(24) VALUE "data 2 752".
     05 FILLER              PIC X(24) VALUE "datapack 2 17".
-    05 FILLER              PIC X(24) VALUE "debug 3 5 3".
+    05 FILLER              PIC X(24) VALUE "debug 3 5".
     05 FILLER              PIC X(24) VALUE "defaultgamemode 2 2".
-    05 FILLER              PIC X(24) VALUE "dialog 2 6 3".
+    05 FILLER              PIC X(24) VALUE "dialog 2 6".
     05 FILLER              PIC X(24) VALUE "difficulty 2 5".
     05 FILLER              PIC X(24) VALUE "effect 2 13".
     05 FILLER              PIC X(24) VALUE "me 0 2".
@@ -35,7 +35,7 @@
     05 FILLER              PIC X(24) VALUE "forceload 2 10".
     05 FILLER              PIC X(24) VALUE "function 2 13".
     05 FILLER              PIC X(24) VALUE "gamemode 2 3".
-    05 FILLER              PIC X(24) VALUE "gamerule 2 233 237".
+    05 FILLER              PIC X(24) VALUE "gamerule 2 233".
     05 FILLER              PIC X(24) VALUE "give 2 4".
     05 FILLER              PIC X(24) VALUE "help 0 2".
     05 FILLER              PIC X(24) VALUE "item 2 103".
@@ -45,12 +45,12 @@
     05 FILLER              PIC X(24) VALUE "locate 2 7".
     05 FILLER              PIC X(24) VALUE "loot 2 121".
     05 FILLER              PIC X(24) VALUE "msg 0 3".
-    05 FILLER              PIC X(24) VALUE "swing 2 8 10".
+    05 FILLER              PIC X(24) VALUE "swing 2 8".
     05 FILLER              PIC X(24) VALUE "particle 2 10".
     05 FILLER              PIC X(24) VALUE "place 2 20".
     05 FILLER              PIC X(24) VALUE "playsound 2 68".
     05 FILLER              PIC X(24) VALUE "posteffect 2 11".
-    05 FILLER              PIC X(24) VALUE "random 0 16 7".
+    05 FILLER              PIC X(24) VALUE "random 0 16".
     05 FILLER              PIC X(24) VALUE "reload 2 1".
     05 FILLER              PIC X(24) VALUE "recipe 2 9".
     05 FILLER              PIC X(24) VALUE "fetchprofile 2 7".
@@ -75,9 +75,9 @@
     05 FILLER              PIC X(24) VALUE "teammsg 0 2".
     05 FILLER              PIC X(24) VALUE "teleport 2 12".
     05 FILLER              PIC X(24) VALUE "tellraw 2 3".
-    05 FILLER              PIC X(24) VALUE "test 0 48 0".
+    05 FILLER              PIC X(24) VALUE "test 2 48".
     05 FILLER              PIC X(24) VALUE "tick 3 12".
-    05 FILLER              PIC X(24) VALUE "time 2 30 15".
+    05 FILLER              PIC X(24) VALUE "time 2 30".
     05 FILLER              PIC X(24) VALUE "title 2 14".
     05 FILLER              PIC X(24) VALUE "trigger 0 6".
     05 FILLER              PIC X(24) VALUE "waypoint 2 13".

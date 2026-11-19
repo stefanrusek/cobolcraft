@@ -92,6 +92,8 @@
  78 MX-ANCHORED           VALUE 10.
  78 MX-IN                 VALUE 11.
  78 MX-IF                 VALUE 12.
+*> The modifier of a redirect of the document's listing that the core does not run (BR-DOC-FILL): it fails with cobolcraft.command.unsupported.
+ 78 MX-UNSUPPORTED        VALUE 99.
 *> The commands of core/src/cmds-world.cob added in the lane cmds-c (run by CX-DISPATCH-C).
  78 BC-CLONE             VALUE 301.
  78 BC-FILLBIOME         VALUE 302.
@@ -112,3 +114,5 @@
  78 BC-COMPUTE          VALUE 408.
  78 BC-STOPWATCH        VALUE 409.
  78 BC-DATAPACK         VALUE 410.
+*> The command of an executable node of the document's listing that the core does not run (BR-DOC-FILL; CX-UNSUPPORTED).
+ 78 BC-UNSUPPORTED      VALUE 999.

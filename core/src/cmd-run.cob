@@ -196,6 +196,8 @@
              CALL "CX-RIDE"
          WHEN BC-SPECTATE
              CALL "CX-SPECTATE"
+         WHEN BC-UNSUPPORTED
+             CALL "CX-UNSUPPORTED"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE

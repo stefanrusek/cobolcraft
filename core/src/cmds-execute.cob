@@ -368,6 +368,8 @@
                  MOVE 1 TO BM-COUNT
                  MOVE BR-SRC TO BM-ENTRY(1)
              END-IF
+         WHEN MX-UNSUPPORTED
+             CALL "CX-UNSUPPORTED"
          WHEN MX-IF
              CALL "CX-COND-TEST" USING WS-PASS WS-COUNT
              MOVE 1 TO WS-WANT-PASS
@@ -506,6 +508,7 @@
      CALL "BR-REG" USING WS-LEVEL WS-ZERO WS-PATH
      MOVE BR-REG-LAST-NODE TO WS-NODE
      MOVE 1 TO BR-N-REDIRECT(WS-NODE)
+     MOVE 0 TO BR-N-MODIFIER(WS-NODE)
      MOVE MX-AS TO WS-MODIFIER
      MOVE 1 TO WS-FORK
      MOVE "execute as <targets:entities>" TO WS-PATH

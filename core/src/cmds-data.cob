@@ -1512,13 +1512,13 @@
  01 WS-LAST                BINARY-LONG.
  01 WS-TARGETS.
     05 FILLER PIC X(40) VALUE "entity <target:entity>".
-    05 FILLER PIC X(40) VALUE "block <targetPos:pos>".
+    05 FILLER PIC X(40) VALUE "block <target:pos>".
     05 FILLER PIC X(40) VALUE "storage <target:resloc>".
  01 WS-TARGET-TABLE REDEFINES WS-TARGETS.
     05 WS-TARGET            PIC X(40) OCCURS 3 TIMES.
  01 WS-SOURCES.
     05 FILLER PIC X(40) VALUE "entity <source:entity>".
-    05 FILLER PIC X(40) VALUE "block <sourcePos:pos>".
+    05 FILLER PIC X(40) VALUE "block <source:pos>".
     05 FILLER PIC X(40) VALUE "storage <source:resloc>".
  01 WS-SOURCE-TABLE REDEFINES WS-SOURCES.
     05 WS-SOURCE            PIC X(40) OCCURS 3 TIMES.
@@ -2354,7 +2354,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMDS-REG-COMPUTE.
-*> The forms of compute (16 §10.9, 54 §13.1): the provider part under the sources none, default, block and entity.
+*> The forms of compute (16 §10.9, 54 §13.1, 57-client-closures-4 section 7.8): the provider part under the sources default, block and entity.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRCMD.
@@ -2362,15 +2362,14 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-COMPUTE.
  01 WS-PATH                PIC X(256).
  01 WS-PREFIXES.
-    05 FILLER               PIC X(48) VALUE "compute".
     05 FILLER               PIC X(48) VALUE "compute default".
     05 FILLER               PIC X(48) VALUE "compute block <computePos:pos>".
     05 FILLER               PIC X(48) VALUE "compute entity <computeTarget:entity>".
  01 WS-PREFIX-TABLE REDEFINES WS-PREFIXES.
-    05 WS-PREFIX            PIC X(48) OCCURS 4 TIMES.
+    05 WS-PREFIX            PIC X(48) OCCURS 3 TIMES.
  01 WS-I                   BINARY-LONG.
  PROCEDURE DIVISION.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
          MOVE SPACES TO WS-PATH
          STRING FUNCTION TRIM(WS-PREFIX(WS-I)) " float <provider:ctxfloat>" DELIMITED BY SIZE INTO WS-PATH
          CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH

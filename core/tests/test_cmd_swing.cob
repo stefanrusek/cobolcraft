@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/16-commands-catalog.md §5.14 `swing` (permission level 2) with 14a: swing <targets> mainhand|offhand and swing <targets> none|whack|stab <duration>
+*> Acceptance test of docs/protocol/16-commands-catalog.md §5.14 `swing` (permission level 2) with 14a, grammar of 57-client-closures-4 section 7.35: swing <targets> mainhand|offhand [none|whack|stab <duration>]
 *> (time, at least 1 tick) make the living targets (players and mobs) swing; commands.swing.success.single [name] / .multiple [count] is broadcast; no living target is
 *> commands.swing.failed.notliving; the result is the number of living targets. The animation packet is BLOCKED (05a does not give the Animate action of an arm swing).
 *> Opal holds operator status.
@@ -69,22 +69,22 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /swing the whack animation with a duration" TO TL-CASE
-     MOVE "swing Alice whack 20" TO WS-LINE
+     MOVE "swing Alice mainhand whack 20" TO WS-LINE
      MOVE "commands.swing.success.single(Alice)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /swing the stab animation with a duration" TO TL-CASE
-     MOVE "swing Cleo stab 5" TO WS-LINE
+     MOVE "swing Cleo offhand stab 5" TO WS-LINE
      MOVE "commands.swing.success.single(Cleo)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /swing the none animation with a duration" TO TL-CASE
-     MOVE "swing @a none 1" TO WS-LINE
+     MOVE "swing @a mainhand none 1" TO WS-LINE
      MOVE "commands.swing.success.multiple(3)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /swing a duration below one tick is out of range" TO TL-CASE
-     MOVE "swing Alice whack 0" TO WS-LINE
+     MOVE "swing Alice mainhand whack 0" TO WS-LINE
      MOVE "argument.time.tick_count_too_low(1,0) |" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT

@@ -10,6 +10,7 @@
  COPY COREAPI.
  COPY PROTO.
  COPY BRCMDA.
+ COPY BRFEAT.
  01 WS-ID-OPAL        BINARY-LONG.
  01 WS-ID-ALICE        BINARY-LONG.
  01 WS-NAME                PIC X(16).
@@ -24,6 +25,10 @@
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+*>   max_minecart_speed has command nodes only with the feature minecart_improvements (57-client-closures-4 section 4.6): the cases below run with it on.
+     MOVE 1 TO BRF-MINECART-IMPROVEMENTS
+     CALL "BR-TREE-RESET"
+     CALL "BR-STD-TREE"
      MOVE "Opal" TO WS-NAME
      MOVE 4 TO WS-NAME-LENGTH
      CALL "TEST-JOIN-OP" USING WS-NAME WS-NAME-LENGTH WS-ID-OPAL
@@ -517,6 +522,17 @@
      MOVE "gamerule pvp" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-ALICE TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 gamerule table max_minecart_speed has no command with the default feature set (only vanilla): the rule is unknown to the command" TO TL-CASE
+     MOVE 0 TO BRF-MINECART-IMPROVEMENTS
+     CALL "BR-TREE-RESET"
+     CALL "BR-STD-TREE"
+     MOVE "gamerule max_minecart_speed" TO WS-LINE
+     MOVE "command.unknown.argument() |" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 gamerule table the other 58 rules keep their commands with the default feature set" TO TL-CASE
+     MOVE "gamerule max_entity_cramming" TO WS-LINE
+     MOVE "commands.gamerule.query(max_entity_cramming,24)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      GOBACK.
  END PROGRAM TEST-CMD-GAMERULES.
 

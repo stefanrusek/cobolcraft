@@ -169,12 +169,12 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      MOVE "acceptance US13 /time query timeline day is the tick within " & "the day" TO TL-CASE
-     MOVE "time query timeline day" TO WS-LINE
+     MOVE "time query day" TO WS-LINE
      MOVE "commands.time.query.timeline(minecraft:day,23000)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /time a timeline whose period is longer than" & " the day (moon) is BLOCKED and refused" TO TL-CASE
-     MOVE "time query timeline moon" TO WS-LINE
+     MOVE "time query moon" TO WS-LINE
      MOVE "commands.time.wrong_timeline_for_clock(minecraft:moon,cobolc" & "raft:daylight)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
