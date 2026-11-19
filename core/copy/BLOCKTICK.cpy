@@ -12,7 +12,7 @@
  78 BT-MAX-TICKS                  VALUE 65536.
  78 BT-TABLE-SIZE                 VALUE 32768.
 *> The pending ticks of every level, one table (dense: entry 1 to BT-COUNT); BT-SUB-COUNT is each dimension's subTickCount.
-*> BT-TRIG is the absolute game time (CW-TICKS) the tick is due.
+*> BT-TRIG is the absolute game time (CW-TICKS) the tick is due. BT-T-CX and BT-T-CZ are the chunk of the position, set by BT-ADD (floor of x and z over 16).
  01 BLOCK-TICKS EXTERNAL.
     05 BT-COUNT                  BINARY-LONG.
     05 BT-SUB-COUNT              BINARY-LONG OCCURS 5 TIMES.
@@ -26,3 +26,5 @@
        10 BT-T-TRIG              BINARY-DOUBLE.
        10 BT-T-PRIO              BINARY-LONG.
        10 BT-T-SUB               BINARY-LONG.
+       10 BT-T-CX                BINARY-LONG.
+       10 BT-T-CZ                BINARY-LONG.

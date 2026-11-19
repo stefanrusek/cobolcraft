@@ -1218,6 +1218,7 @@
  WORKING-STORAGE SECTION.
  COPY BLOCKTICK.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-REM                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -1243,6 +1244,14 @@
          MOVE L-TRIG TO BT-T-TRIG(BT-COUNT)
          MOVE L-PRIO TO BT-T-PRIO(BT-COUNT)
          MOVE L-SUB TO BT-T-SUB(BT-COUNT)
+         DIVIDE L-X BY 16 GIVING BT-T-CX(BT-COUNT) REMAINDER WS-REM
+         IF WS-REM < 0
+             SUBTRACT 1 FROM BT-T-CX(BT-COUNT)
+         END-IF
+         DIVIDE L-Z BY 16 GIVING BT-T-CZ(BT-COUNT) REMAINDER WS-REM
+         IF WS-REM < 0
+             SUBTRACT 1 FROM BT-T-CZ(BT-COUNT)
+         END-IF
          MOVE 1 TO L-RESULT
      END-IF
      GOBACK.
@@ -1276,54 +1285,6 @@
      CALL "BT-ADD" USING L-DIM L-TYPE L-ID L-X L-Y L-Z WS-TRIG L-PRIO WS-SUB L-RESULT
      GOBACK.
  END PROGRAM BT-SCHEDULE.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BT-HEAD.
-*> USING dimension row, type, chunk x, chunk z, index out (BINARY-LONG): the head of one chunk's queue, the pending tick that
-*> sorts first by DRAIN_ORDER (trigger time, then priority, then sub-tick order); 0 when the chunk holds none.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY BLOCKTICK.
- 01 WS-I                   BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- 01 WS-BETTER              BINARY-LONG.
- LINKAGE SECTION.
- 01 L-DIM                  BINARY-LONG.
- 01 L-TYPE                 BINARY-LONG.
- 01 L-CX                   BINARY-LONG.
- 01 L-CZ                   BINARY-LONG.
- 01 L-INDEX                BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-TYPE L-CX L-CZ L-INDEX.
-     MOVE 0 TO L-INDEX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BT-COUNT
-         COMPUTE WS-CX = (BT-T-X(WS-I) - FUNCTION MOD(BT-T-X(WS-I), 16)) / 16
-         COMPUTE WS-CZ = (BT-T-Z(WS-I) - FUNCTION MOD(BT-T-Z(WS-I), 16)) / 16
-         IF BT-T-DIM(WS-I) = L-DIM AND BT-T-TYPE(WS-I) = L-TYPE AND WS-CX = L-CX AND WS-CZ = L-CZ
-             MOVE 0 TO WS-BETTER
-             IF L-INDEX = 0
-                 MOVE 1 TO WS-BETTER
-             ELSE
-                 EVALUATE TRUE
-                     WHEN BT-T-TRIG(WS-I) < BT-T-TRIG(L-INDEX)
-                         MOVE 1 TO WS-BETTER
-                     WHEN BT-T-TRIG(WS-I) > BT-T-TRIG(L-INDEX)
-                         CONTINUE
-                     WHEN BT-T-PRIO(WS-I) < BT-T-PRIO(L-INDEX)
-                         MOVE 1 TO WS-BETTER
-                     WHEN BT-T-PRIO(WS-I) > BT-T-PRIO(L-INDEX)
-                         CONTINUE
-                     WHEN BT-T-SUB(WS-I) < BT-T-SUB(L-INDEX)
-                         MOVE 1 TO WS-BETTER
-                 END-EVALUATE
-             END-IF
-             IF WS-BETTER = 1
-                 MOVE WS-I TO L-INDEX
-             END-IF
-         END-IF
-     END-PERFORM
-     GOBACK.
- END PROGRAM BT-HEAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BT-CHUNK-TICKS.
@@ -1367,59 +1328,297 @@
  END PROGRAM BT-POLL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BT-BEST-CHUNK.
-*> USING dimension row, type, chunk count, chunks, best out, head out (BINARY-LONG): among the chunks flagged in (the containers
-*> to tick) the one whose head sorts first by INTRA_TICK_DRAIN_ORDER (priority, then sub-tick order; time is ignored, every head
-*> is due); its row in the table, 0 when none is flagged, and its head's index in the tick table.
+ PROGRAM-ID. BT-COLLECT-HEAD.
+*> USING chunk slot (BINARY-LONG; BT-COLLECT-STATE): the head of the chunk's due ticks, the slot of the live one that sorts first by DRAIN_ORDER (trigger
+*> time, then priority, then sub-tick order, then the lower index of the entry); 0 when none is left.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BLOCKTICK.
+ COPY BTCOLL.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
- 01 WS-HEAD                BINARY-LONG.
  01 WS-BETTER              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CHUNK                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CHUNK.
+     MOVE 0 TO BC-C-HEAD(L-CHUNK)
+     MOVE BC-C-FIRST(L-CHUNK) TO WS-S
+     PERFORM UNTIL WS-S = 0
+         IF BC-D-LIVE(WS-S) = 1
+             MOVE BC-D-IDX(WS-S) TO WS-I
+             MOVE 0 TO WS-BETTER
+             IF BC-C-HEAD(L-CHUNK) = 0
+                 MOVE 1 TO WS-BETTER
+             ELSE
+                 MOVE BC-D-IDX(BC-C-HEAD(L-CHUNK)) TO WS-J
+                 EVALUATE TRUE
+                     WHEN BT-T-TRIG(WS-I) < BT-T-TRIG(WS-J)
+                         MOVE 1 TO WS-BETTER
+                     WHEN BT-T-TRIG(WS-I) > BT-T-TRIG(WS-J)
+                         CONTINUE
+                     WHEN BT-T-PRIO(WS-I) < BT-T-PRIO(WS-J)
+                         MOVE 1 TO WS-BETTER
+                     WHEN BT-T-PRIO(WS-I) > BT-T-PRIO(WS-J)
+                         CONTINUE
+                     WHEN BT-T-SUB(WS-I) < BT-T-SUB(WS-J)
+                         MOVE 1 TO WS-BETTER
+                     WHEN BT-T-SUB(WS-I) > BT-T-SUB(WS-J)
+                         CONTINUE
+                     WHEN WS-I < WS-J
+                         MOVE 1 TO WS-BETTER
+                 END-EVALUATE
+             END-IF
+             IF WS-BETTER = 1
+                 MOVE WS-S TO BC-C-HEAD(L-CHUNK)
+             END-IF
+         END-IF
+         MOVE BC-D-NEXT(WS-S) TO WS-S
+     END-PERFORM
+     IF BC-C-HEAD(L-CHUNK) > 0
+         MOVE BC-D-IDX(BC-C-HEAD(L-CHUNK)) TO WS-I
+         MOVE BT-T-PRIO(WS-I) TO BC-C-KP(L-CHUNK)
+         MOVE BT-T-SUB(WS-I) TO BC-C-KS(L-CHUNK)
+     END-IF
+     GOBACK.
+ END PROGRAM BT-COLLECT-HEAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BT-HEAP-PUSH.
+*> USING chunk (BINARY-LONG; BT-COLLECT-STATE): puts the chunk into the heap of the chunks to drain.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BTCOLL.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-UP                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CHUNK                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CHUNK.
+     ADD 1 TO BC-HEAP-COUNT
+     MOVE BC-HEAP-COUNT TO WS-I
+     MOVE 1 TO WS-UP
+     PERFORM UNTIL WS-UP = 0 OR WS-I = 1
+         DIVIDE WS-I BY 2 GIVING WS-P
+         MOVE 0 TO WS-UP
+         IF BC-C-KP(L-CHUNK) < BC-C-KP(BC-HEAP(WS-P))
+                 OR (BC-C-KP(L-CHUNK) = BC-C-KP(BC-HEAP(WS-P)) AND BC-C-KS(L-CHUNK) < BC-C-KS(BC-HEAP(WS-P)))
+                 OR (BC-C-KP(L-CHUNK) = BC-C-KP(BC-HEAP(WS-P)) AND BC-C-KS(L-CHUNK) = BC-C-KS(BC-HEAP(WS-P))
+                     AND L-CHUNK < BC-HEAP(WS-P))
+             MOVE BC-HEAP(WS-P) TO BC-HEAP(WS-I)
+             MOVE WS-P TO WS-I
+             MOVE 1 TO WS-UP
+         END-IF
+     END-PERFORM
+     MOVE L-CHUNK TO BC-HEAP(WS-I)
+     GOBACK.
+ END PROGRAM BT-HEAP-PUSH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BT-HEAP-POP.
+*> USING chunk out (BINARY-LONG; BT-COLLECT-STATE): takes the chunk whose head sorts first by INTRA_TICK_DRAIN_ORDER (priority, then sub-tick order; time is ignored,
+*> every head is due; the lower chunk number of equal ones) out of the heap; 0 when it is empty.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BTCOLL.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-DOWN                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CHUNK                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CHUNK.
+     MOVE 0 TO L-CHUNK
+     IF BC-HEAP-COUNT > 0
+         MOVE BC-HEAP(1) TO L-CHUNK
+         MOVE BC-HEAP(BC-HEAP-COUNT) TO WS-LAST
+         SUBTRACT 1 FROM BC-HEAP-COUNT
+         MOVE 1 TO WS-I
+         MOVE 1 TO WS-DOWN
+         PERFORM UNTIL WS-DOWN = 0
+             MOVE 0 TO WS-DOWN
+             COMPUTE WS-L = WS-I * 2
+             MOVE 0 TO WS-M
+             IF WS-L <= BC-HEAP-COUNT
+                 MOVE WS-L TO WS-M
+                 COMPUTE WS-R = WS-L + 1
+                 IF WS-R <= BC-HEAP-COUNT
+                     IF BC-C-KP(BC-HEAP(WS-R)) < BC-C-KP(BC-HEAP(WS-L))
+                             OR (BC-C-KP(BC-HEAP(WS-R)) = BC-C-KP(BC-HEAP(WS-L))
+                                 AND BC-C-KS(BC-HEAP(WS-R)) < BC-C-KS(BC-HEAP(WS-L)))
+                             OR (BC-C-KP(BC-HEAP(WS-R)) = BC-C-KP(BC-HEAP(WS-L))
+                                 AND BC-C-KS(BC-HEAP(WS-R)) = BC-C-KS(BC-HEAP(WS-L)) AND BC-HEAP(WS-R) < BC-HEAP(WS-L))
+                         MOVE WS-R TO WS-M
+                     END-IF
+                 END-IF
+                 IF BC-C-KP(BC-HEAP(WS-M)) < BC-C-KP(WS-LAST)
+                         OR (BC-C-KP(BC-HEAP(WS-M)) = BC-C-KP(WS-LAST) AND BC-C-KS(BC-HEAP(WS-M)) < BC-C-KS(WS-LAST))
+                         OR (BC-C-KP(BC-HEAP(WS-M)) = BC-C-KP(WS-LAST) AND BC-C-KS(BC-HEAP(WS-M)) = BC-C-KS(WS-LAST)
+                             AND BC-HEAP(WS-M) < WS-LAST)
+                     MOVE BC-HEAP(WS-M) TO BC-HEAP(WS-I)
+                     MOVE WS-M TO WS-I
+                     MOVE 1 TO WS-DOWN
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF BC-HEAP-COUNT > 0
+             MOVE WS-LAST TO BC-HEAP(WS-I)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BT-HEAP-POP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BT-COLLECT-POLL.
+*> USING slot, run list (BTRUN.cpy): appends the due tick of the slot to the run list and removes it from the queue (BT-POLL moves the last entry of the table
+*> into its place: the slot of that entry follows it, and the heads of the two chunks are made again).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BLOCKTICK.
+ COPY BTCOLL.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-CHUNK               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ COPY BTRUN.
+ PROCEDURE DIVISION USING L-SLOT BT-RUN-LIST.
+     MOVE BC-D-IDX(L-SLOT) TO WS-I
+     ADD 1 TO BT-R-COUNT
+     MOVE BT-T-ID(WS-I) TO BT-R-ID(BT-R-COUNT)
+     MOVE BT-T-X(WS-I) TO BT-R-X(BT-R-COUNT)
+     MOVE BT-T-Y(WS-I) TO BT-R-Y(BT-R-COUNT)
+     MOVE BT-T-Z(WS-I) TO BT-R-Z(BT-R-COUNT)
+     MOVE 0 TO BC-D-LIVE(L-SLOT)
+     MOVE 0 TO BC-AT(WS-I)
+     MOVE BC-D-CH(L-SLOT) TO WS-CHUNK
+     MOVE BT-COUNT TO WS-LAST
+     CALL "BT-POLL" USING WS-I
+     IF WS-LAST NOT = WS-I AND BC-AT(WS-LAST) > 0
+         MOVE BC-AT(WS-LAST) TO WS-MOVED
+         MOVE WS-I TO BC-D-IDX(WS-MOVED)
+         MOVE WS-MOVED TO BC-AT(WS-I)
+         MOVE 0 TO BC-AT(WS-LAST)
+         IF BC-D-CH(WS-MOVED) NOT = WS-CHUNK
+             CALL "BT-COLLECT-HEAD" USING BC-D-CH(WS-MOVED)
+         END-IF
+     END-IF
+     CALL "BT-COLLECT-HEAD" USING WS-CHUNK
+     GOBACK.
+ END PROGRAM BT-COLLECT-POLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BT-COLLECT.
+*> USING dimension row, type, maximum, run list (BTRUN.cpy): steps 1 and 2 of one call of LevelTicks.tick for one queue (29 section 4.3). 1 Select the
+*> chunks whose head is due (trigger <= CW-TICKS) and that tick (BT-CHUNK-TICKS); the others wait: only the due ticks matter (a chunk's head is its
+*> earliest tick, so it is due when the chunk has a due tick), so one pass over the table collects them, chained by chunk. 2 Drain: while fewer than the
+*> maximum are collected, take the chunk whose head has the smallest (priority, sub-tick order), poll that head unconditionally, then keep polling the
+*> same chunk while room remains, its head is due, and the head does not sort after the head of the best remaining chunk; a chunk with a due head and
+*> room left goes back.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BLOCKTICK.
+ COPY BTCOLL.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-CH                  BINARY-LONG.
+ 01 WS-LAST-CH             BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-TICKING             BINARY-LONG.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-HEAD                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
- 01 L-COUNT                BINARY-LONG.
- 01 L-CHUNKS.
-    05 L-CHUNK OCCURS 4096 TIMES.
-       10 L-C-CX           BINARY-LONG.
-       10 L-C-CZ           BINARY-LONG.
-       10 L-C-IN           BINARY-LONG.
- 01 L-BEST                 BINARY-LONG.
- 01 L-HEAD                 BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-TYPE L-COUNT L-CHUNKS L-BEST L-HEAD.
-     MOVE 0 TO L-BEST L-HEAD
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > L-COUNT
-         IF L-C-IN(WS-J) = 1
-             CALL "BT-HEAD" USING L-DIM L-TYPE L-C-CX(WS-J) L-C-CZ(WS-J) WS-HEAD
-             MOVE 0 TO WS-BETTER
-             IF L-BEST = 0
-                 MOVE 1 TO WS-BETTER
-             ELSE
-                 IF BT-T-PRIO(WS-HEAD) < BT-T-PRIO(L-HEAD)
-                         OR (BT-T-PRIO(WS-HEAD) = BT-T-PRIO(L-HEAD) AND BT-T-SUB(WS-HEAD) < BT-T-SUB(L-HEAD))
-                     MOVE 1 TO WS-BETTER
+ 01 L-MAX                  BINARY-LONG.
+ COPY BTRUN.
+ PROCEDURE DIVISION USING L-DIM L-TYPE L-MAX BT-RUN-LIST.
+     MOVE 0 TO BT-R-COUNT BC-CHUNK-COUNT BC-DUE-COUNT BC-HEAP-COUNT WS-LAST-CH
+*> Step 1: the due ticks of this queue, the distinct chunks they fall in (flagged in when they tick).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BT-COUNT
+         IF BT-T-DIM(WS-I) = L-DIM AND BT-T-TYPE(WS-I) = L-TYPE AND BT-T-TRIG(WS-I) <= CW-TICKS
+             MOVE 0 TO WS-CH
+             IF WS-LAST-CH > 0
+                 IF BC-C-CX(WS-LAST-CH) = BT-T-CX(WS-I) AND BC-C-CZ(WS-LAST-CH) = BT-T-CZ(WS-I)
+                     MOVE WS-LAST-CH TO WS-CH
                  END-IF
              END-IF
-             IF WS-BETTER = 1
-                 MOVE WS-J TO L-BEST
-                 MOVE WS-HEAD TO L-HEAD
+             IF WS-CH = 0
+                 PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > BC-CHUNK-COUNT OR WS-CH > 0
+                     IF BC-C-CX(WS-J) = BT-T-CX(WS-I) AND BC-C-CZ(WS-J) = BT-T-CZ(WS-I)
+                         MOVE WS-J TO WS-CH
+                     END-IF
+                 END-PERFORM
              END-IF
+             IF WS-CH = 0
+                 ADD 1 TO BC-CHUNK-COUNT
+                 MOVE BC-CHUNK-COUNT TO WS-CH
+                 MOVE BT-T-CX(WS-I) TO BC-C-CX(WS-CH)
+                 MOVE BT-T-CZ(WS-I) TO BC-C-CZ(WS-CH)
+                 MOVE 0 TO BC-C-FIRST(WS-CH) BC-C-HEAD(WS-CH)
+             END-IF
+             MOVE WS-CH TO WS-LAST-CH
+             ADD 1 TO BC-DUE-COUNT
+             MOVE WS-I TO BC-D-IDX(BC-DUE-COUNT)
+             MOVE BC-C-FIRST(WS-CH) TO BC-D-NEXT(BC-DUE-COUNT)
+             MOVE 1 TO BC-D-LIVE(BC-DUE-COUNT)
+             MOVE WS-CH TO BC-D-CH(BC-DUE-COUNT)
+             MOVE BC-DUE-COUNT TO BC-C-FIRST(WS-CH)
+             MOVE BC-DUE-COUNT TO BC-AT(WS-I)
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > BC-CHUNK-COUNT
+         CALL "BT-COLLECT-HEAD" USING WS-J
+         CALL "BT-CHUNK-TICKS" USING L-DIM BC-C-CX(WS-J) BC-C-CZ(WS-J) WS-TICKING
+         IF WS-TICKING = 1
+             CALL "BT-HEAP-PUSH" USING WS-J
+         END-IF
+     END-PERFORM
+*> Step 2: drain.
+     PERFORM UNTIL BT-R-COUNT >= L-MAX
+         CALL "BT-HEAP-POP" USING WS-BEST
+         IF WS-BEST = 0
+             EXIT PERFORM
+         END-IF
+         MOVE BC-C-HEAD(WS-BEST) TO WS-HEAD
+         CALL "BT-COLLECT-POLL" USING WS-HEAD BT-RUN-LIST
+         PERFORM UNTIL BT-R-COUNT >= L-MAX
+             MOVE BC-C-HEAD(WS-BEST) TO WS-HEAD
+             IF WS-HEAD = 0
+                 EXIT PERFORM
+             END-IF
+             IF BC-HEAP-COUNT > 0
+                 MOVE BC-HEAP(1) TO WS-NEXT
+                 IF BC-C-KP(WS-BEST) > BC-C-KP(WS-NEXT)
+                         OR (BC-C-KP(WS-BEST) = BC-C-KP(WS-NEXT) AND BC-C-KS(WS-BEST) > BC-C-KS(WS-NEXT))
+                     EXIT PERFORM
+                 END-IF
+             END-IF
+             CALL "BT-COLLECT-POLL" USING WS-HEAD BT-RUN-LIST
+         END-PERFORM
+         IF BC-C-HEAD(WS-BEST) > 0 AND BT-R-COUNT < L-MAX
+             CALL "BT-HEAP-PUSH" USING WS-BEST
+         END-IF
+     END-PERFORM
+*> The slot of a due tick that was not run is cleared again.
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > BC-DUE-COUNT
+         IF BC-D-LIVE(WS-SLOT) = 1
+             MOVE 0 TO BC-AT(BC-D-IDX(WS-SLOT))
          END-IF
      END-PERFORM
      GOBACK.
- END PROGRAM BT-BEST-CHUNK.
+ END PROGRAM BT-COLLECT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BT-DRAIN.
-*> USING dimension row, type, maximum, run count out (BINARY-LONG): one call of LevelTicks.tick for one queue (29 section 4.3).
-*> 1 Select the chunks whose head is due (trigger <= CW-TICKS) and that tick (BT-CHUNK-TICKS); the others wait. 2 Drain: while
-*> fewer than the maximum are collected, take the chunk whose head has the smallest (priority, sub-tick order), poll that head
-*> unconditionally, then keep polling the same chunk while room remains, its head is due, and the head does not sort after the
-*> head of the best remaining chunk; a chunk with a due head and room left goes back. 4 Run the collected ticks in order: a block
-*> tick whose block is still at its position calls the tick hook (BU-HOOK kind 7), else it is dropped; a fluid tick calls hook 9.
-*> The run count is the number of hook calls.
+*> USING dimension row, type, maximum, run count out (BINARY-LONG): one call of LevelTicks.tick for one queue (29 section 4.3): BT-COLLECT collects the
+*> ticks (steps 1 and 2), then 4 Run the collected ticks in order: a block tick whose block is still at its position calls the tick hook (BU-HOOK kind 7),
+*> else it is dropped; a fluid tick calls hook 9. The run count is the number of hook calls.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1427,122 +1626,31 @@
  COPY CBLOCKS.
  01 K-7                    BINARY-LONG VALUE 7.
  01 K-9                    BINARY-LONG VALUE 9.
- 01 WS-CHUNKS.
-    05 WS-CHUNK OCCURS 4096 TIMES.
-       10 WS-C-CX          BINARY-LONG.
-       10 WS-C-CZ          BINARY-LONG.
-       10 WS-C-IN          BINARY-LONG.
- 01 WS-CHUNK-COUNT         BINARY-LONG.
- 01 WS-RUN.
-    05 WS-R OCCURS 32768 TIMES.
-       10 WS-R-ID          BINARY-LONG.
-       10 WS-R-X           BINARY-LONG.
-       10 WS-R-Y           BINARY-LONG.
-       10 WS-R-Z           BINARY-LONG.
- 01 WS-RUN-COUNT           BINARY-LONG.
+ COPY BTRUN.
  01 WS-I                   BINARY-LONG.
- 01 WS-J                   BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- 01 WS-HEAD                BINARY-LONG.
- 01 WS-BEST                BINARY-LONG.
- 01 WS-BEST-HEAD           BINARY-LONG.
- 01 WS-NEXT                BINARY-LONG.
- 01 WS-NEXT-HEAD           BINARY-LONG.
- 01 WS-TICKING             BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ZERO2               BINARY-LONG VALUE 0.
  01 WS-OUT                 BINARY-LONG.
- 01 WS-SEEN                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
  01 L-MAX                  BINARY-LONG.
  01 L-RAN                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-TYPE L-MAX L-RAN.
-     MOVE 0 TO L-RAN WS-CHUNK-COUNT WS-RUN-COUNT
-*> Step 1: the distinct chunks of this queue; flagged in when their head is due and they tick.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BT-COUNT
-         IF BT-T-DIM(WS-I) = L-DIM AND BT-T-TYPE(WS-I) = L-TYPE
-             COMPUTE WS-CX = (BT-T-X(WS-I) - FUNCTION MOD(BT-T-X(WS-I), 16)) / 16
-             COMPUTE WS-CZ = (BT-T-Z(WS-I) - FUNCTION MOD(BT-T-Z(WS-I), 16)) / 16
-             MOVE 0 TO WS-SEEN
-             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-CHUNK-COUNT
-                 IF WS-C-CX(WS-J) = WS-CX AND WS-C-CZ(WS-J) = WS-CZ
-                     MOVE 1 TO WS-SEEN
-                 END-IF
-             END-PERFORM
-             IF WS-SEEN = 0
-                 ADD 1 TO WS-CHUNK-COUNT
-                 MOVE WS-CX TO WS-C-CX(WS-CHUNK-COUNT)
-                 MOVE WS-CZ TO WS-C-CZ(WS-CHUNK-COUNT)
-                 MOVE 0 TO WS-C-IN(WS-CHUNK-COUNT)
-                 CALL "BT-HEAD" USING L-DIM L-TYPE WS-CX WS-CZ WS-HEAD
-                 CALL "BT-CHUNK-TICKS" USING L-DIM WS-CX WS-CZ WS-TICKING
-                 IF BT-T-TRIG(WS-HEAD) <= CW-TICKS AND WS-TICKING = 1
-                     MOVE 1 TO WS-C-IN(WS-CHUNK-COUNT)
-                 END-IF
-             END-IF
-         END-IF
-     END-PERFORM
-*> Step 2: drain.
-     PERFORM UNTIL WS-RUN-COUNT >= L-MAX
-         CALL "BT-BEST-CHUNK" USING L-DIM L-TYPE WS-CHUNK-COUNT WS-CHUNKS WS-BEST WS-BEST-HEAD
-         IF WS-BEST = 0
-             EXIT PERFORM
-         END-IF
-         MOVE 0 TO WS-C-IN(WS-BEST)
-         MOVE WS-C-CX(WS-BEST) TO WS-CX
-         MOVE WS-C-CZ(WS-BEST) TO WS-CZ
-         MOVE WS-BEST-HEAD TO WS-HEAD
-         ADD 1 TO WS-RUN-COUNT
-         MOVE BT-T-ID(WS-HEAD) TO WS-R-ID(WS-RUN-COUNT)
-         MOVE BT-T-X(WS-HEAD) TO WS-R-X(WS-RUN-COUNT)
-         MOVE BT-T-Y(WS-HEAD) TO WS-R-Y(WS-RUN-COUNT)
-         MOVE BT-T-Z(WS-HEAD) TO WS-R-Z(WS-RUN-COUNT)
-         CALL "BT-POLL" USING WS-HEAD
-         PERFORM UNTIL WS-RUN-COUNT >= L-MAX
-             CALL "BT-HEAD" USING L-DIM L-TYPE WS-CX WS-CZ WS-HEAD
-             IF WS-HEAD = 0
-                 EXIT PERFORM
-             END-IF
-             IF BT-T-TRIG(WS-HEAD) > CW-TICKS
-                 EXIT PERFORM
-             END-IF
-             CALL "BT-BEST-CHUNK" USING L-DIM L-TYPE WS-CHUNK-COUNT WS-CHUNKS WS-NEXT WS-NEXT-HEAD
-             IF WS-NEXT > 0
-                 IF BT-T-PRIO(WS-HEAD) > BT-T-PRIO(WS-NEXT-HEAD)
-                         OR (BT-T-PRIO(WS-HEAD) = BT-T-PRIO(WS-NEXT-HEAD)
-                             AND BT-T-SUB(WS-HEAD) > BT-T-SUB(WS-NEXT-HEAD))
-                     EXIT PERFORM
-                 END-IF
-             END-IF
-             ADD 1 TO WS-RUN-COUNT
-             MOVE BT-T-ID(WS-HEAD) TO WS-R-ID(WS-RUN-COUNT)
-             MOVE BT-T-X(WS-HEAD) TO WS-R-X(WS-RUN-COUNT)
-             MOVE BT-T-Y(WS-HEAD) TO WS-R-Y(WS-RUN-COUNT)
-             MOVE BT-T-Z(WS-HEAD) TO WS-R-Z(WS-RUN-COUNT)
-             CALL "BT-POLL" USING WS-HEAD
-         END-PERFORM
-         CALL "BT-HEAD" USING L-DIM L-TYPE WS-CX WS-CZ WS-HEAD
-         IF WS-HEAD > 0 AND WS-RUN-COUNT < L-MAX
-             IF BT-T-TRIG(WS-HEAD) <= CW-TICKS
-                 MOVE 1 TO WS-C-IN(WS-BEST)
-             END-IF
-         END-IF
-     END-PERFORM
+     MOVE 0 TO L-RAN
+     CALL "BT-COLLECT" USING L-DIM L-TYPE L-MAX BT-RUN-LIST
 *> Step 4: run the collected ticks in order.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-RUN-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BT-R-COUNT
          IF L-TYPE = 1
-             CALL "WORLD-GET-BLOCK" USING L-DIM WS-R-X(WS-I) WS-R-Y(WS-I) WS-R-Z(WS-I) WS-STATE
-             IF CB-S-BLOCK(WS-STATE + 1) = WS-R-ID(WS-I)
-                 CALL "BU-HOOK" USING K-7 L-DIM WS-R-X(WS-I) WS-R-Y(WS-I) WS-R-Z(WS-I) WS-STATE WS-R-ID(WS-I)
+             CALL "WORLD-GET-BLOCK" USING L-DIM BT-R-X(WS-I) BT-R-Y(WS-I) BT-R-Z(WS-I) WS-STATE
+             IF CB-S-BLOCK(WS-STATE + 1) = BT-R-ID(WS-I)
+                 CALL "BU-HOOK" USING K-7 L-DIM BT-R-X(WS-I) BT-R-Y(WS-I) BT-R-Z(WS-I) WS-STATE BT-R-ID(WS-I)
                      WS-ZERO WS-OUT
                  ADD 1 TO L-RAN
              END-IF
          ELSE
-             CALL "BU-HOOK" USING K-9 L-DIM WS-R-X(WS-I) WS-R-Y(WS-I) WS-R-Z(WS-I) WS-R-ID(WS-I) WS-ZERO
+             CALL "BU-HOOK" USING K-9 L-DIM BT-R-X(WS-I) BT-R-Y(WS-I) BT-R-Z(WS-I) BT-R-ID(WS-I) WS-ZERO
                  WS-ZERO2 WS-OUT
              ADD 1 TO L-RAN
          END-IF
