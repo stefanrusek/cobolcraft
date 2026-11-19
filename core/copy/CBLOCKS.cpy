@@ -17,6 +17,9 @@
 *>               (candles 3 x candles when lit, "N when berries", copper bulbs 15/12/8/4 by weathering, sea pickles,
 *>               respawn anchors, light blocks, trial spawners, vaults, glow lichen) are BLOCKS-LIGHT-KIND and
 *>               BLOCKS-STATE-LIGHT (block-props.cob); any other text is 0.
+*>   CB-S-DAMP   the sky light dampening of each state (docs/protocol/32-light-engine.md section 7, 24 part 2 section 5.3), by the rules of L32-BLOCK-RULES:
+*>               15 when the occlusion shape is a full cube (CB-OPAQUE and an outline shape of one box), the class overrides (leaves 1, tinted glass 15, liquids 1), else 0
+*>               when the state propagates sky light down (its outline is not a full cube and its fluid is empty: plants, glass, paths, slabs, stairs), else 1.
 *> CB-EPOCH rises by one at every BLOCKS-OPEN, so a program that caches ids resolved from keys can tell.
  78 CB-MAX-BLOCKS         VALUE 1400.
  78 CB-MAX-STATES         VALUE 40000.
@@ -41,6 +44,7 @@
     05 CB-STATE OCCURS 40000 TIMES.
        10 CB-S-BLOCK         BINARY-SHORT UNSIGNED.
        10 CB-S-LIGHT         BINARY-CHAR UNSIGNED.
+       10 CB-S-DAMP          BINARY-CHAR UNSIGNED.
 
 *> Tool classes of CB-CLASS.
  78 CB-CLASS-NONE         VALUE 0.
