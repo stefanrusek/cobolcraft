@@ -48,6 +48,8 @@
      MOVE SPACES TO WS-ROOT
      STRING FUNCTION TRIM(WS-GEN) "/vanilla-resources" DELIMITED BY SIZE INTO WS-ROOT
      CALL "CL-INIT" USING CLIENT-STATE
+*>   A joined player is alive (Login sets the health): a health of 0 would be the death roll of the view pose (12 section 6.1), which these cases do not test.
+     MOVE 20 TO PL-HEALTH
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
      ADD 1 TO PK-COUNT
      INITIALIZE PK-PACK(PK-COUNT)
