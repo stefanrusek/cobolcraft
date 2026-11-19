@@ -231,7 +231,7 @@
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
-                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW)
+                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW) EN-LIVING(WS-ROW)
 *>               The walk animation and the swing start at rest (54 section 1.1); the position of the previous tick is this one.
                  MOVE 0 TO EN-WALK-SPEED-OLD(WS-ROW) EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
                  MOVE 1 TO EN-WALK-SCALE(WS-ROW)
@@ -239,7 +239,7 @@
                  MOVE WS-X TO EN-OX(WS-ROW)
                  MOVE WS-Y TO EN-OY(WS-ROW)
                  MOVE WS-Z TO EN-OZ(WS-ROW)
-                 MOVE 0 TO EN-MOB-FLAGS(WS-ROW) EN-BABY(WS-ROW)
+                 MOVE 0 TO EN-MOB-FLAGS(WS-ROW) EN-BABY(WS-ROW) EN-DARK(WS-ROW) EN-DARK-MS(WS-ROW)
                  MOVE 0 TO EN-SW-ACTIVE(WS-ROW) EN-SW-TICKS(WS-ROW) EN-SW-DUR(WS-ROW) EN-SW-HAND(WS-ROW) EN-SW-TYPE(WS-ROW)
                  MOVE 0 TO EN-SW-ANIM(WS-ROW) EN-AGE(WS-ROW)
                  MOVE 0 TO EN-SQ(WS-ROW) EN-SQ-OLD(WS-ROW) EN-SQ-TGT(WS-ROW) EN-WOG(WS-ROW)
@@ -248,6 +248,17 @@
                  COMPUTE EN-TS(WS-ROW) = 0.1 + FUNCTION MOD(WS-ID * 37, 100) / 1000
                  MOVE 0 TO EN-FA(WS-ROW)
                  MOVE 0 TO EN-TGT(WS-ROW)
+                 MOVE 0 TO EN-AX-PD(WS-ROW)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                     MOVE 0 TO EN-AX-T(WS-ROW, WS-I) EN-AX-O(WS-ROW, WS-I)
+                 END-PERFORM
+                 MOVE 0 TO EN-AX-BS(WS-ROW) EN-AX-BT(WS-ROW)
+                 MOVE 1 TO EN-HP(WS-ROW)
+                 MOVE 2 TO EN-FDIR(WS-ROW)
+                 MOVE 0 TO EN-FROT(WS-ROW)
+                 MOVE 0 TO EN-DD(WS-ROW) EN-NCI(WS-ROW) EN-BP(WS-ROW) EN-BX(WS-ROW) EN-BY(WS-ROW) EN-BZ(WS-ROW)
+                 MOVE WS-PITCH TO EN-AX-XR(WS-ROW)
+                 MOVE WS-YAW TO EN-AX-YR(WS-ROW)
                  MOVE 0 TO EN-BHT(WS-ROW) EN-BHD(WS-ROW) EN-BDM(WS-ROW) EN-BBT(WS-ROW) EN-BBM(WS-ROW) EN-BBA(WS-ROW) EN-BUW(WS-ROW)
                  MOVE 22 TO EN-FL(WS-ROW)
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)
@@ -259,7 +270,7 @@
                  END-PERFORM
                  MOVE -1 TO EN-HB-BASE(WS-ROW, 1) EN-HB-BASE(WS-ROW, 2)
                  MOVE 0 TO EN-HB-COUNT(WS-ROW, 1) EN-HB-COUNT(WS-ROW, 2)
-                 MOVE 0 TO EN-HAND-OK(WS-ROW, 1) EN-HAND-OK(WS-ROW, 2)
+                 MOVE 0 TO EN-HAND-OK(WS-ROW, 1) EN-HAND-OK(WS-ROW, 2) EN-HAND-FOK(WS-ROW, 1) EN-HAND-FOK(WS-ROW, 2)
                  MOVE 14 TO EN-X2(WS-ROW)
                  MOVE -1 TO EN-X3(WS-ROW)
                  MOVE -1 TO EN-SWELL-DIR(WS-ROW)
@@ -301,12 +312,17 @@
                      CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT MD-MD-FLOAT
                  END-IF
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END
+                     CALL "ENTITY-DRAGON-SET" USING CLIENT-STATE WS-ID MD-MD-INDEX MD-MD-SERIALIZER MD-MD-FLOAT
+                         MD-MX-POS-X MD-MX-POS-Y MD-MX-POS-Z MD-MX-PRESENT
+                 END-IF
+                 IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END
                      CALL "HUD-ENTITY-DATA" USING CLIENT-STATE WS-ID MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT
                          MD-MD-FLOAT
                  END-IF
 *>               The item stack of a stand-in loose item is entry 0; the item entity of a standard world has it as entry 8 (21 App A DATA_ITEM).
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
-                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND EN-KEY(WS-ROW) = "item"))
+                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND EN-KEY(WS-ROW) = "item")
+                             OR (MD-MD-INDEX = 9 AND EN-VANILLA(WS-ROW) = 1 AND (EN-KEY(WS-ROW) = "item_frame" OR "glow_item_frame")))
                      MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
                      MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
                  END-IF
@@ -318,6 +334,9 @@
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-INDEX = 6 AND MD-MD-SERIALIZER = PB-MDS-POSE
                      MOVE MD-MD-INT TO EN-POSE(WS-ROW)
+                 END-IF
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 8 AND MD-MD-SERIALIZER = PB-MDS-BYTE
+                     MOVE MD-MD-INT TO EN-LIVING(WS-ROW)
                  END-IF
 *>               A mob's flags byte (entry 15: bit 4 aggressive, 54 section 2.3) and an ageable mob's baby flag (entry 16, BOOLEAN).
                  IF WS-ROW > 0 AND MD-MD-INDEX = 15 AND MD-MD-SERIALIZER = PB-MDS-BYTE
@@ -332,6 +351,10 @@
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
                      IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
                          MOVE MD-MD-INT TO EN-VALUE(WS-ROW)
+                     END-IF
+                     IF MD-MD-INDEX = 18 AND EN-KEY(WS-ROW) = "glow_squid"
+                         MOVE MD-MD-INT TO EN-DARK(WS-ROW)
+                         MOVE CL-NOW-MS TO EN-DARK-MS(WS-ROW)
                      END-IF
                      IF MD-MD-INDEX = 16 AND EN-KEY(WS-ROW) = "creeper"
                          CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL

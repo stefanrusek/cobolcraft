@@ -19,6 +19,7 @@
 *> USING CLIENT-STATE: sets TG-HIT and, on a hit, TG-X, TG-Y, TG-Z, TG-FACE and TG-CX, TG-CY, TG-CZ.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
  COPY CLCONST.
  01 WS-YAW                 FLOAT-LONG.
  01 WS-PITCH               FLOAT-LONG.
@@ -63,6 +64,19 @@
     05 WS-RO               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-RDIR.
     05 WS-RD               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-ROFF.
+    05 WS-RF               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-HELD-ITEM           BINARY-LONG.
+ 01 WS-HNS                 PIC X(16).
+ 01 WS-HPATH               PIC X(40).
+ 01 WS-HMAX                BINARY-LONG.
+ 01 WS-HBLK                BINARY-LONG.
+ 01 WS-HTOOL               PIC X.
+ 01 WS-HFOOD               BINARY-LONG.
+ 01 WS-HKNOWN              BINARY-LONG.
+ 01 WS-OFX                 FLOAT-LONG.
+ 01 WS-OFY                 FLOAT-LONG.
+ 01 WS-OFZ                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -129,11 +143,26 @@
          END-IF
          IF WS-SEEN NOT = 0
              CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
+*>           The light block is targeted as a full cube while the main hand holds a light item (51 section 1.5, rule R-A5); else it has no outline.
+             IF WS-STATE < BSH-MAX-STATES AND (WS-SHAPE = 0 OR BSH-N(WS-SHAPE + 1) = 0)
+                 IF BSH-CTX(WS-STATE + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
+                     MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-HELD-ITEM
+                     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-HELD-ITEM WS-HNS WS-HPATH WS-HMAX WS-HBLK WS-HTOOL WS-HFOOD WS-HKNOWN
+                     IF WS-HKNOWN = 1 AND WS-HPATH = "light"
+                         MOVE 1 TO WS-SHAPE
+                     END-IF
+                 END-IF
+             END-IF
              EVALUATE TRUE
                  WHEN WS-SHAPE = 0
                      MOVE 0 TO WS-SEEN
                  WHEN WS-SHAPE > 1
-                     CALL "BSH-RAY" USING WS-SHAPE WS-CX WS-CY WS-CZ WS-RORG WS-RDIR WS-RT WS-RAX
+*>                   An offset plant's outline is moved by its model offset (51 section 1.4): the ray moves the other way.
+                     CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OFX WS-OFY WS-OFZ
+                     COMPUTE WS-RF(1) = WS-RO(1) - WS-OFX
+                     COMPUTE WS-RF(2) = WS-RO(2) - WS-OFY
+                     COMPUTE WS-RF(3) = WS-RO(3) - WS-OFZ
+                     CALL "BSH-RAY" USING WS-SHAPE WS-CX WS-CY WS-CZ WS-ROFF WS-RDIR WS-RT WS-RAX
                      IF WS-RT < 0 OR WS-RT > CL-REACH
                          MOVE 0 TO WS-SEEN
                      ELSE

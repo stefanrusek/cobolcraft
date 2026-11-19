@@ -94,6 +94,14 @@
                  MOVE 0 TO EN-RS(L-ROW)
              END-IF
              MOVE L-INT TO EN-TGT(L-ROW)
+*>   An item frame's direction (entry 8, DIRECTION) and the rotation of its item (entry 10, INT, stored modulo 8; 44-9 section 5.3).
+         WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 8 AND L-SERIALIZER = 12
+             MOVE L-INT TO EN-FDIR(L-ROW)
+         WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 10 AND L-SERIALIZER = 1
+             COMPUTE EN-FROT(L-ROW) = FUNCTION MOD(L-INT, 8)
+*>   An axolotl's playing-dead flag (entry 19, BOOLEAN, 19 section 18).
+         WHEN EN-KEY(L-ROW) = "axolotl" AND L-INDEX = 19 AND L-SERIALIZER = 8
+             MOVE L-INT TO EN-AX-PD(L-ROW)
          WHEN OTHER
              CONTINUE
      END-EVALUATE
@@ -227,6 +235,17 @@
      IF WS-BASE = "zvillager_nohat"
          MOVE "zombie_villager" TO WS-BASE
      END-IF
+*>   The zombie villager's armor rows take the textures of the humanoid armor rows.
+     EVALUATE WS-BASE
+         WHEN "zvil_armor_head" MOVE "armor_head" TO WS-BASE
+         WHEN "zvil_armor_chest" MOVE "armor_chest" TO WS-BASE
+         WHEN "zvil_armor_legs" MOVE "armor_legs" TO WS-BASE
+         WHEN "zvil_armor_feet" MOVE "armor_feet" TO WS-BASE
+         WHEN "piglin_armor_head" MOVE "armor_head" TO WS-BASE
+         WHEN "piglin_armor_chest" MOVE "armor_chest" TO WS-BASE
+         WHEN "piglin_armor_legs" MOVE "armor_legs" TO WS-BASE
+         WHEN "piglin_armor_feet" MOVE "armor_feet" TO WS-BASE
+     END-EVALUATE
      COMPUTE WS-KIND = FUNCTION INTEGER(L-CODE / 1000)
      COMPUTE WS-CD = FUNCTION MOD(L-CODE, 100)
      COMPUTE WS-STATE = FUNCTION MOD(FUNCTION INTEGER(L-CODE / 100), 10)
@@ -269,6 +288,10 @@
                  IF WS-BASE = "armor_legs"
                      MOVE "humanoid_leggings" TO WS-NAME
                  END-IF
+*>               A baby's pieces are all of the layer type humanoid_baby (34-2 section 1.5 step 2).
+                 IF WS-BABY NOT = SPACES
+                     MOVE "humanoid_baby" TO WS-NAME
+                 END-IF
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
@@ -288,6 +311,26 @@
                  COMPUTE WS-I = 30 + WS-CD
                  STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
                      DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 7 AND WS-BASE = "shulker_box" AND WS-CD <= 16
+*>               A shulker box's texture (52 section 4.1): the code is the colour, 16 undyed (entity/shulker/shulker.png), else shulker_<colour>.png.
+                 IF WS-CD = 16
+                     MOVE "textures/entity/shulker/shulker.png" TO L-PATH
+                 ELSE
+                     COMPUTE WS-I = 40 + WS-CD
+                     STRING "textures/entity/shulker/shulker_" FUNCTION TRIM(WS-OV(WS-I)) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
+             WHEN WS-KIND = 9 AND WS-BASE = "banner" AND WS-CD >= 1 AND WS-CD <= 43
+*>               A banner pattern sprite (54 section 22.3): the pattern's id under entity/banner.
+                 CALL "BANNER-PATTERN-NAME" USING WS-CD WS-DIRNAME
+                 STRING "textures/entity/banner/" FUNCTION TRIM(WS-DIRNAME) ".png" DELIMITED BY SIZE INTO L-PATH
+             WHEN WS-KIND = 9 AND WS-BASE = "shield" AND WS-CD <= 43
+*>               A shield sprite (54 section 22.3 rule 4): 9000 shield_base, 9001 to 9043 the pattern under entity/shield (`base` the first).
+                 IF WS-CD = 0
+                     MOVE "textures/entity/shield/shield_base.png" TO L-PATH
+                 ELSE
+                     CALL "BANNER-PATTERN-NAME" USING WS-CD WS-DIRNAME
+                     STRING "textures/entity/shield/" FUNCTION TRIM(WS-DIRNAME) ".png" DELIMITED BY SIZE INTO L-PATH
+                 END-IF
              WHEN WS-KIND = 8 AND WS-CD = 1
 *>               A saddle: the row key is the layer type (horse_saddle, pig_saddle, strider_saddle, ...).
                  MOVE WS-BASE TO WS-DIRNAME

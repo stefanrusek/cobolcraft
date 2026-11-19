@@ -35,6 +35,10 @@
     05 WS-CIV              FLOAT-LONG OCCURS 16 TIMES.
  01 WS-CO.
     05 WS-COV              FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-FX.
+    05 WS-FXI              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-FX-SITE             PIC X(24) VALUE "fangs_crit".
+ 01 WS-FX-DRAWS            BINARY-LONG VALUE 72.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -102,12 +106,19 @@
                  MOVE WS-COV(3) TO EN-SQ-TGT(WS-R)
                  MOVE WS-COV(4) TO EN-WOG(WS-R)
              END-IF
-*>           Evoker fangs (34-3 4.8): lifeTicks fall by 1 a tick once the bite started (EM3-FANGS-TICK; the crit particle burst is not made here).
+*>           Evoker fangs (34-3 4.8): lifeTicks fall by 1 a tick once the bite started (EM3-FANGS-TICK; the burst of 12 crit particles when lifeTicks reaches 14: ENTITY-MOB-PARTICLES).
              IF EN-KEY(WS-R) = "evoker_fangs"
                  MOVE EN-FA(WS-R) TO WS-CIV(1)
                  MOVE EN-FL(WS-R) TO WS-CIV(2)
                  CALL "EM3-FANGS-TICK" USING WS-CI WS-CO
                  MOVE WS-COV(1) TO EN-FL(WS-R)
+                 IF WS-COV(2) = 1
+                     MOVE EN-X(WS-R) TO WS-FXI(1)
+                     MOVE EN-Y(WS-R) TO WS-FXI(2)
+                     MOVE EN-Z(WS-R) TO WS-FXI(3)
+                     MOVE 0.5 TO WS-FXI(4)
+                     CALL "ENTITY-MOB-PARTICLES" USING CLIENT-STATE WS-FX-SITE WS-FX WS-FX-DRAWS
+                 END-IF
              END-IF
 *>           The aquatic mobs: whether the middle of the box is in water (34-8 5: a fish out of water lies on its side).
              IF EN-KEY(WS-R) = "squid" OR "glow_squid" OR "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
@@ -122,6 +133,10 @@
                  IF WS-WET = 0 AND EN-ON-GROUND(WS-R) = 1
                      MOVE 1 TO EN-DRY(WS-R)
                  END-IF
+             END-IF
+*>           The axolotl's four BinaryAnimators (34-8 4.5, baby and adult).
+             IF EN-KEY(WS-R) = "axolotl"
+                 CALL "ENTITY-AXOLOTL-TICK" USING CLIENT-STATE WS-R
              END-IF
 *>           The iron golem's attack and offer-flower ticks fall by 1 a tick (34-3 7).
              IF EN-KEY(WS-R) = "iron_golem"
@@ -139,10 +154,18 @@
                      MOVE EN-ID(WS-R) TO EN-DR-ID
                      CALL "EF7-HIST-INIT" USING EN-DR-HIST
                  END-IF
-                 COMPUTE WS-D2 = 0.2 / (FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ) * 10 + 1) * 2 ** WS-VY
-                 COMPUTE EN-TM(WS-R) = EN-TM(WS-R) + WS-D2
-                 COMPUTE WS-YW = EN-YAW(WS-R) - 360 * FUNCTION INTEGER((EN-YAW(WS-R) + 180) / 360)
-                 CALL "EF7-HIST-RECORD" USING EN-DR-HIST EN-Y(WS-R) WS-YW
+                 IF EN-HP(WS-R) > 0
+                     COMPUTE WS-D2 = 0.2 / (FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ) * 10 + 1) * 2 ** WS-VY
+                     COMPUTE EN-TM(WS-R) = EN-TM(WS-R) + WS-D2
+                     COMPUTE WS-YW = EN-YAW(WS-R) - 360 * FUNCTION INTEGER((EN-YAW(WS-R) + 180) / 360)
+                     CALL "EF7-HIST-RECORD" USING EN-DR-HIST EN-Y(WS-R) WS-YW
+                     CALL "ENTITY-DRAGON-CRYSTAL" USING CLIENT-STATE WS-R
+                 ELSE
+*>                   A dying dragon (health 0 or less): dragonDeathTime counts up (to the 200 ticks of the death animation); flapTime, the history and the crystal stay (8.1, 8.8).
+                     IF EN-DD(WS-R) < 200
+                         ADD 1 TO EN-DD(WS-R)
+                     END-IF
+                 END-IF
              END-IF
 *>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
 *>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).
@@ -251,6 +274,65 @@
      MOVE PL-Z TO PL-ANIM-OZ
      GOBACK.
  END PROGRAM ENTITIES-ANIM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-AXOLOTL-TICK.
+*> USING CLIENT-STATE, replica row of an axolotl (a baby also chooses its animation state): Axolotl.baseTick on the client (34-8 4.5): the exclusive state by priority (playing dead, in water: the cell at the middle of the box holds water,
+*> on the ground) and the moving flag (the walk speed above 1.0E-5, or a rotation different from the previous tick's) tick the four animators (EN-AX-T, EN-AX-O: 1 playing dead,
+*> 2 in water, 3 on the ground, 4 moving; EF8-BINARY-TICK); the rotation of this tick is kept for the next. Called by ENTITIES-ANIM-TICK after the walk animation.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-STATE.
+    05 WS-ST               BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-FLAGS.
+    05 WS-FL               BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-NEW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW.
+     CALL "ENTITY-IN-WATER" USING CLIENT-STATE L-ROW WS-WET
+     MOVE EN-AX-PD(L-ROW) TO WS-ST(1)
+     MOVE WS-WET TO WS-ST(2)
+     MOVE EN-ON-GROUND(L-ROW) TO WS-ST(3)
+     MOVE 0 TO WS-ST(4)
+     IF EN-WALK-SPEED(L-ROW) > 0.00001 OR EN-PITCH(L-ROW) NOT = EN-AX-XR(L-ROW) OR EN-YAW(L-ROW) NOT = EN-AX-YR(L-ROW)
+         MOVE 1 TO WS-ST(4)
+     END-IF
+     CALL "EF8-AXOLOTL-STATE" USING WS-STATE WS-FLAGS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         CALL "EF8-BINARY-TICK" USING EN-AX-T(L-ROW, WS-I) EN-AX-O(L-ROW, WS-I) WS-FL(WS-I)
+     END-PERFORM
+*>   A baby has one animation state started with startIfStopped(tickCount) (4.5): playing dead; else moving: in water and off the ground swim, out of water on the ground walk, else
+*>   walk underwater; else resting: in water off the ground idle underwater, in water on the ground idle underwater on the ground, else idle on the ground. The tick count is EN-AGE.
+     IF EN-BABY(L-ROW) = 1
+         EVALUATE TRUE
+             WHEN EN-AX-PD(L-ROW) NOT = 0
+                 MOVE 7 TO WS-NEW
+             WHEN WS-ST(4) NOT = 0 AND WS-WET NOT = 0 AND EN-ON-GROUND(L-ROW) = 0
+                 MOVE 1 TO WS-NEW
+             WHEN WS-ST(4) NOT = 0 AND WS-WET = 0 AND EN-ON-GROUND(L-ROW) NOT = 0
+                 MOVE 2 TO WS-NEW
+             WHEN WS-ST(4) NOT = 0
+                 MOVE 3 TO WS-NEW
+             WHEN WS-WET NOT = 0 AND EN-ON-GROUND(L-ROW) = 0
+                 MOVE 4 TO WS-NEW
+             WHEN WS-WET NOT = 0
+                 MOVE 5 TO WS-NEW
+             WHEN OTHER
+                 MOVE 6 TO WS-NEW
+         END-EVALUATE
+         IF WS-NEW NOT = EN-AX-BS(L-ROW)
+             MOVE WS-NEW TO EN-AX-BS(L-ROW)
+             MOVE EN-AGE(L-ROW) TO EN-AX-BT(L-ROW)
+         END-IF
+     END-IF
+     MOVE EN-PITCH(L-ROW) TO EN-AX-XR(L-ROW)
+     MOVE EN-YAW(L-ROW) TO EN-AX-YR(L-ROW)
+     GOBACK.
+ END PROGRAM ENTITY-AXOLOTL-TICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-HURT.

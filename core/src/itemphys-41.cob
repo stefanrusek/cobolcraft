@@ -1345,7 +1345,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. IP-AXIS-MOVE.
 *> USING dimension row, x, y, z (FLOAT-LONG, in and out), axis (1 x, 2 y, 3 z), delta (FLOAT-LONG), hit out (BINARY-LONG 1 or 0):
-*> moves the item box along one axis in steps of at most 0.5 block; a step into solid cells (ENTITY-BOX-HITS) ends the move flush
+*> moves the item box along one axis in steps of at most 0.5 block; a step into solid cells (ENTITY-BOX-SURFACE) ends the move flush
 *> against the cells: the box face touches the cell face.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -1360,7 +1360,7 @@
  01 WS-NY                  FLOAT-LONG.
  01 WS-NZ                  FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  01 WS-CELL                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -1389,7 +1389,7 @@
              WHEN 3
                  ADD WS-STEP TO WS-NZ
          END-EVALUATE
-         CALL "ENTITY-BOX-HITS" USING L-DIM WS-TYPE WS-NX WS-NY WS-NZ WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING L-DIM WS-TYPE WS-NX WS-NY WS-NZ WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-NX TO L-X
              MOVE WS-NY TO L-Y
@@ -1407,7 +1407,7 @@
                      COMPUTE WS-CELL = - FUNCTION INTEGER(0.0000001 - (WS-NY + WS-HEIGHT)) - 1
                      COMPUTE L-Y = WS-CELL - WS-HEIGHT
                  WHEN L-AXIS = 2
-                     COMPUTE L-Y = WS-TOP + 1
+                     MOVE WS-TOP TO L-Y
                  WHEN L-AXIS = 3 AND WS-STEP > 0
                      COMPUTE WS-CELL = - FUNCTION INTEGER(0.0000001 - (WS-NZ + WS-HALF)) - 1
                      COMPUTE L-Z = WS-CELL - WS-HALF
@@ -1442,7 +1442,7 @@
  01 WS-MID                 FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  01 WS-NO-PHYSICS          BINARY-LONG.
  01 WS-AXIS-X              BINARY-LONG VALUE 1.
  01 WS-AXIS-Y              BINARY-LONG VALUE 2.
@@ -1489,7 +1489,7 @@
              SUBTRACT 0.04 FROM WS-VY
      END-EVALUATE
 *>   6. Inside blocks: the push out of 3.4 and no collisions for the move.
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) CR-LOOSE-ITEM WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) CR-LOOSE-ITEM WS-X WS-Y WS-Z WS-HIT WS-TOP
      MOVE WS-HIT TO WS-NO-PHYSICS
      IF WS-NO-PHYSICS = 1
          COMPUTE WS-MID = WS-Y + WS-HEIGHT / 2

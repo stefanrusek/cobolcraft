@@ -314,7 +314,7 @@
  01 WS-LEVEL               FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-OLD                  BINARY-LONG.
@@ -325,7 +325,7 @@
          COMPUTE EN-BT-WLEVEL(L-ROW) = EN-Y(L-ROW) + 0.5625
          CALL "BOAT-LEVEL-ABOVE" USING L-ROW WS-LEVEL
          COMPUTE WS-Y = WS-LEVEL - 0.5625 + 0.101
-         CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) WS-Y EN-Z(L-ROW) WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) WS-Y EN-Z(L-ROW) WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-Y TO EN-Y(L-ROW)
              MOVE 0 TO EN-VY(L-ROW) EN-BT-LASTYD(L-ROW)
@@ -357,7 +357,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BOAT-MOVE.
-*> USING row: Entity.move(SELF, velocity) of a boat: the box (ENTITY-BOX-HITS) against the solid cells, axis by axis (x, z, then y: a blocked axis keeps its position and loses its
+*> USING row: Entity.move(SELF, velocity) of a boat: the box (ENTITY-BOX-SURFACE) against the solid cells, axis by axis (x, z, then y: a blocked axis keeps its position and loses its
 *> speed; falling onto a block stands the boat on it). The viewers are told by GI-SEND-MOVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -366,29 +366,29 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE 0 TO EN-ON-GROUND(L-ROW)
      COMPUTE WS-X = EN-X(L-ROW) + EN-VX(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X EN-Y(L-ROW) EN-Z(L-ROW) WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X EN-Y(L-ROW) EN-Z(L-ROW) WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE EN-X(L-ROW) TO WS-X
          MOVE 0 TO EN-VX(L-ROW)
      END-IF
      COMPUTE WS-Z = EN-Z(L-ROW) + EN-VZ(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X EN-Y(L-ROW) WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X EN-Y(L-ROW) WS-Z WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE EN-Z(L-ROW) TO WS-Z
          MOVE 0 TO EN-VZ(L-ROW)
      END-IF
      COMPUTE WS-Y = EN-Y(L-ROW) + EN-VY(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X WS-Y WS-Z WS-HIT WS-TOP
      IF WS-HIT = 1
          IF EN-VY(L-ROW) < 0
              MOVE 1 TO EN-ON-GROUND(L-ROW)
-             COMPUTE WS-Y = WS-TOP + 1
+             MOVE WS-TOP TO WS-Y
          ELSE
              MOVE EN-Y(L-ROW) TO WS-Y
          END-IF
@@ -677,7 +677,7 @@
  01 WS-WK                  BINARY-LONG.
  01 WS-CELL-TOP            FLOAT-LONG.
  01 WS-BOX-HIT             BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  01 WS-NEW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-FACING              FLOAT-LONG.
@@ -733,7 +733,7 @@
          ADD 0.02 TO WS-T
      END-PERFORM
      IF WS-HIT = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-PX WS-PY WS-PZ WS-BOX-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-PX WS-PY WS-PZ WS-BOX-HIT WS-TOP
          IF WS-BOX-HIT = 0
              MOVE PL-YAW(WS-ROW) TO WS-FACING
              CALL "BOAT-SPAWN" USING WS-DIM WS-PX WS-PY WS-PZ WS-FACING WS-ENTITY-KEY WS-NEW

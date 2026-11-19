@@ -106,6 +106,23 @@
      MOVE "test move shapes: a body walks into a ladder cell" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      PERFORM HIT-OF
+*>   Bamboo at (6, 54, 8) is moved by its model offset (+0.25, 0, -0.1167; 51 section 1.4): the body at x 6.2 (box 5.85 to 6.55) is clear of the moved stalk (6.656 to
+*>   6.844) though it would overlap the unmoved one, and the body at x 7.0 (6.65 to 7.35) collides with it.
+     MOVE "bamboo" TO WS-KEY
+     MOVE "age=0,leaves=none,stage=0" TO WS-PAIRS
+     PERFORM PLACE
+     MOVE 6.2 TO WS-X
+     MOVE 54.0 TO WS-Y
+     MOVE 8.4 TO WS-Z
+     MOVE "test move shapes: a body beside the unmoved bamboo, clear of the moved one, does not collide" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM HIT-OF
+     MOVE 7.0 TO WS-X
+     MOVE "test move shapes: a body at the moved bamboo collides" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM HIT-OF
+     MOVE 6.5 TO WS-X
+     MOVE 8.5 TO WS-Z
 *>   A full block still blocks.
      MOVE "stone" TO WS-KEY
      MOVE SPACES TO WS-PAIRS

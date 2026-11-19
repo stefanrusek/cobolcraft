@@ -177,6 +177,27 @@
  END PROGRAM STACK-FOIL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STACK-CHARGED.
+*> USING PB-ITEMSTACK-X, charged out (1 when the stack has charged_projectiles 51 with at least one projectile: a loaded crossbow, 54 section 25.4; the value starts with the VarInt count).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CHARGED              BINARY-LONG.
+ PROCEDURE DIVISION USING PB-ITEMSTACK-X L-CHARGED.
+     MOVE 0 TO L-CHARGED
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT
+         IF PB-ISX-TYPE(WS-K) = 51 AND PB-ISX-VALUE-LENGTH(WS-K) > 0
+             IF FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1)) > 1
+                 MOVE 1 TO L-CHARGED
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STACK-CHARGED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GLINT-ICON.
 *> USING CLIENT-STATE, sprite, x0, y0, x1, y1 (FLOAT-SHORT, window pixels of the icon's rectangle): the glint over an item icon (54 section 19.3). The glint is added only
 *> where the icon has texels (the item shader discards the others), so quads cover the opaque texels (alpha 26 and up: 0.1) of the sprite, one per run of a row, into

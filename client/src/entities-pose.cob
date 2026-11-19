@@ -29,6 +29,10 @@
  01 WS-ATK                 FLOAT-LONG.
  01 WS-FLW                 FLOAT-LONG.
  01 WS-WET                 FLOAT-LONG.
+ 01 WS-AXF-TABLE.
+    05 WS-AXF              FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-AXS                 FLOAT-LONG.
+ 01 WS-AXT                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-KEY                  PIC X(20).
@@ -53,6 +57,12 @@
      MOVE L-I(13) TO WS-ATK
      MOVE L-I(12) TO WS-FLW
      COMPUTE WS-WET = 1 - WS-DRY
+     MOVE L-I(5) TO WS-AXS
+     MOVE L-I(6) TO WS-AXT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
+         COMPUTE WS-P = WS-J + 7
+         MOVE L-I(WS-P) TO WS-AXF(WS-J)
+     END-PERFORM
      PERFORM VARYING WS-J FROM 5 BY 1 UNTIL WS-J > 16
          MOVE 0 TO L-I(WS-J)
      END-PERFORM
@@ -244,10 +254,21 @@
              MOVE L-AGE TO L-I(4)
              CALL "EF8-DOLPHIN-ANIM" USING EMM-MODEL L-IN
          WHEN "axolotl"
-             MOVE FUNCTION MIN(WS-WSPEED, 1) TO L-I(3)
+             MOVE WS-AXF(4) TO L-I(3)
              MOVE L-AGE TO L-I(4)
+             MOVE WS-AXF(1) TO L-I(5)
+             MOVE WS-AXF(2) TO L-I(6)
+             MOVE WS-AXF(3) TO L-I(7)
              IF WS-BABY = 0
-                 CALL "EF8-AXOLOTL-ANIM" USING EMM-MODEL L-IN
+                 CALL "EF8-AXOLOTL-POSE" USING EMM-MODEL L-IN
+             END-IF
+             IF WS-BABY = 1
+                 MOVE WS-WPOS TO L-I(1)
+                 MOVE WS-WSPEED TO L-I(2)
+                 MOVE L-AGE TO L-I(3)
+                 MOVE WS-AXS TO L-I(4)
+                 MOVE WS-AXT TO L-I(5)
+                 CALL "EF8-BABY-AXOLOTL-ANIM" USING EMM-MODEL L-IN
              END-IF
 *>       The squid's tentacles (34-8 section 2): the replica's tentacle angle (ENTITIES-ANIM-TICK).
          WHEN "squid" WHEN "glow_squid"

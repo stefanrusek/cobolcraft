@@ -52,6 +52,7 @@
      MOVE 64 TO WS-EYE(2)
      MOVE 1 TO CT-OPEN
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
 *>       A hanging arm 0.25 x 0.75 x 0.25 centred at (0.375, 1.0, 0.0): the corners in no particular order; the hand is the lower end, the direction down.
 *>       A raised arm 0.25 x 0.25 x 0.75 centred at (0.375, 1.2, 0.4): the hand is the far end, the direction +z. A crossed-arms box: its centre, the direction down.

@@ -843,12 +843,25 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DISPLAY-PARSE.
-*> USING JSON-DOC (a model file), MODEL-RESOLVED: the model's display entry for firstperson_righthand (08 section 5.6) when the chain so far has none: rotation,
-*> translation and scale (defaults 0, 0, 1) into MR-FP, MR-FP-PRESENT 1. The nearest model of the chain that names the context wins.
+*> USING JSON-DOC (a model file), MODEL-RESOLVED: the model's display entries (08 section 5.6) of the contexts the chain has none for yet: firstperson_righthand into MR-FP,
+*> thirdperson_righthand, thirdperson_lefthand and fixed into MR-DX (contexts 1 to 3 of it), each as rotation, translation and scale (defaults 0, 0, 1) with its present flag
+*> 1. The nearest model of the chain that names a context wins.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-PATH                PIC X(32) VALUE "display.firstperson_righthand".
- 01 WS-PATH-LENGTH         BINARY-LONG VALUE 29.
+ 01 WS-PATHS-DATA.
+    05 FILLER PIC X(32) VALUE "display.firstperson_righthand".
+    05 FILLER PIC X(32) VALUE "display.thirdperson_righthand".
+    05 FILLER PIC X(32) VALUE "display.thirdperson_lefthand".
+    05 FILLER PIC X(32) VALUE "display.fixed".
+ 01 WS-PATHS REDEFINES WS-PATHS-DATA.
+    05 WS-PATH             PIC X(32) OCCURS 4 TIMES.
+ 01 WS-PATH-LENGTHS.
+    05 FILLER PIC 99 VALUE 29.
+    05 FILLER PIC 99 VALUE 29.
+    05 FILLER PIC 99 VALUE 28.
+    05 FILLER PIC 99 VALUE 13.
+ 01 WS-LEN-TABLE REDEFINES WS-PATH-LENGTHS.
+    05 WS-PATH-LENGTH      PIC 99 OCCURS 4 TIMES.
  01 WS-KEYS.
     05 FILLER PIC X(12) VALUE "rotation".
     05 FILLER PIC X(12) VALUE "translation".
@@ -859,7 +872,7 @@
     05 FILLER PIC 99 VALUE 8.
     05 FILLER PIC 99 VALUE 11.
     05 FILLER PIC 99 VALUE 5.
- 01 WS-LEN-TABLE REDEFINES WS-KEY-LENGTHS.
+ 01 WS-LEN-TABLE2 REDEFINES WS-KEY-LENGTHS.
     05 WS-KEY-LEN          PIC 99 OCCURS 3 TIMES.
  01 WS-NAME                PIC X(12).
  01 WS-NAME-LENGTH         BINARY-LONG.
@@ -867,38 +880,69 @@
  01 WS-FIELD               BINARY-LONG.
  01 WS-NODE-OUT            BINARY-LONG.
  01 WS-ELEMENT             BINARY-LONG.
+ 01 WS-CTX                 BINARY-LONG.
+ 01 WS-TODO                BINARY-LONG.
  01 WS-G                   BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-PATH-NOW            PIC X(32).
+ 01 WS-LEN-NOW             BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  COPY CLMODEL.
  PROCEDURE DIVISION USING JSON-DOC MODEL-RESOLVED.
-     IF MR-FP-PRESENT = 0
-         CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
-         IF WS-NODE > 0
-             MOVE 1 TO MR-FP-PRESENT
-             PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > 3
-                 MOVE WS-KEY(WS-G) TO WS-NAME
-                 MOVE WS-KEY-LEN(WS-G) TO WS-NAME-LENGTH
-                 CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
-                 PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
-                     COMPUTE WS-K = (WS-G - 1) * 3 + WS-A
-                     IF WS-G = 3
-                         MOVE 1 TO MR-FP(WS-K)
-                     ELSE
-                         MOVE 0 TO MR-FP(WS-K)
-                     END-IF
-                     IF WS-FIELD > 0
-                         COMPUTE WS-ELEMENT = WS-A - 1
-                         CALL "JSON-ELEMENT" USING JSON-DOC WS-FIELD WS-ELEMENT WS-NODE-OUT
-                         IF WS-NODE-OUT > 0
-                             MOVE JN-NUM(WS-NODE-OUT) TO MR-FP(WS-K)
-                         END-IF
-                     END-IF
-                 END-PERFORM
-             END-PERFORM
+     PERFORM VARYING WS-CTX FROM 1 BY 1 UNTIL WS-CTX > 4
+         MOVE 0 TO WS-TODO
+         IF WS-CTX = 1 AND MR-FP-PRESENT = 0
+             MOVE 1 TO WS-TODO
          END-IF
-     END-IF
+         IF WS-CTX > 1 AND MR-DX-PRESENT(WS-CTX - 1) = 0
+             MOVE 1 TO WS-TODO
+         END-IF
+         IF WS-TODO = 1
+             MOVE WS-PATH(WS-CTX) TO WS-PATH-NOW
+             MOVE WS-PATH-LENGTH(WS-CTX) TO WS-LEN-NOW
+             CALL "JSON-FIND" USING JSON-DOC WS-PATH-NOW WS-LEN-NOW WS-NODE
+             IF WS-NODE > 0
+                 IF WS-CTX = 1
+                     MOVE 1 TO MR-FP-PRESENT
+                 ELSE
+                     MOVE 1 TO MR-DX-PRESENT(WS-CTX - 1)
+                 END-IF
+                 COMPUTE WS-BASE = (WS-CTX - 2) * 9
+                 PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > 3
+                     MOVE WS-KEY(WS-G) TO WS-NAME
+                     MOVE WS-KEY-LEN(WS-G) TO WS-NAME-LENGTH
+                     CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+                     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                         COMPUTE WS-K = (WS-G - 1) * 3 + WS-A
+                         IF WS-CTX = 1
+                             MOVE 0 TO MR-FP(WS-K)
+                             IF WS-G = 3
+                                 MOVE 1 TO MR-FP(WS-K)
+                             END-IF
+                         ELSE
+                             MOVE 0 TO MR-DX(WS-BASE + WS-K)
+                             IF WS-G = 3
+                                 MOVE 1 TO MR-DX(WS-BASE + WS-K)
+                             END-IF
+                         END-IF
+                         IF WS-FIELD > 0
+                             COMPUTE WS-ELEMENT = WS-A - 1
+                             CALL "JSON-ELEMENT" USING JSON-DOC WS-FIELD WS-ELEMENT WS-NODE-OUT
+                             IF WS-NODE-OUT > 0
+                                 IF WS-CTX = 1
+                                     MOVE JN-NUM(WS-NODE-OUT) TO MR-FP(WS-K)
+                                 ELSE
+                                     MOVE JN-NUM(WS-NODE-OUT) TO MR-DX(WS-BASE + WS-K)
+                                 END-IF
+                             END-IF
+                         END-IF
+                     END-PERFORM
+                 END-PERFORM
+             END-IF
+         END-IF
+     END-PERFORM
      GOBACK.
  END PROGRAM DISPLAY-PARSE.

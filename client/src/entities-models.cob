@@ -149,13 +149,16 @@
  01 WS-OVG                 FLOAT-LONG.
  01 WS-OVB                 FLOAT-LONG.
  01 WS-OVM                 BINARY-LONG.
+ 01 WS-PLAYER-KEY          PIC X(24).
+ COPY CLCONST.
+ COPY CONTENT.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO WS-NEW
      ADD 1 TO EA-MT-STAMP
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) NOT = "F"
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
@@ -166,6 +169,9 @@
                  CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-X WS-TEX
                  CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-X WS-TEX WS-NEW
              END-IF
+*>           The banners the mob holds (hand-banner.cob).
+             CALL "ENTITY-BANNER-SLOTS" USING CLIENT-STATE WS-R WS-NEW
+             CALL "ENTITY-SHIELD-SLOTS" USING CLIENT-STATE WS-R WS-NEW
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
              PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
@@ -178,6 +184,35 @@
              END-PERFORM
          END-IF
      END-PERFORM
+*>   The images of the shulker boxes in the replica (shulker-box.cob).
+     CALL "SHULKER-SLOTS" USING CLIENT-STATE WS-NEW
+*>   The image of the crystal beam (34-7 8.7) for a crystal with a beam target and a dragon with a nearest crystal.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND ((EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1) OR (EN-KEY(WS-R) = "ender_dragon" AND EN-NCI(WS-R) NOT = 0))
+             MOVE "end_crystal_beam" TO WS-PLAYER-KEY
+             CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
+             MOVE 0 TO WS-TEX
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         END-IF
+     END-PERFORM
+*>   The image of a guardian's beam (34-6 11.6, entities-beam.cob) for every guardian that has an attack target.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND (EN-KEY(WS-R) = "guardian" OR "elder_guardian") AND EN-TGT(WS-R) NOT = 0
+             MOVE "guardian_beam" TO WS-PLAYER-KEY
+             CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
+             MOVE 0 TO WS-TEX
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         END-IF
+     END-PERFORM
+*>   The first-person arm of an empty main hand (12 section 6.5, hand-arm.cob) wears the model row "player" with its own image: its slot, in a standard world on the world screen.
+     IF CL-CAMERA = 0 AND SM-SCREEN = SCR-WORLD AND CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE "player" TO WS-PLAYER-KEY
+         CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
+         MOVE 0 TO WS-TEX
+         CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         CALL "HAND-BANNER-SLOTS" USING CLIENT-STATE WS-NEW
+         CALL "HAND-SHIELD-SLOTS" USING CLIENT-STATE WS-NEW
+     END-IF
      IF WS-NEW = 1
          CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
      END-IF
@@ -194,9 +229,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 200 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 220 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 200 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 220 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXC                BINARY-LONG.
  01 WS-TR                  FLOAT-LONG.
@@ -244,6 +279,11 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-T                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-DARK                BINARY-LONG.
+ 01 WS-GL-INS.
+    05 WS-GL-IN            FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-GL-OUTS.
+    05 WS-GL-OUT           FLOAT-LONG OCCURS 64 TIMES.
  01 WS-BRIGHT              FLOAT-LONG.
  01 WS-SWELL               FLOAT-LONG.
  01 WS-KSWELL              FLOAT-LONG.
@@ -305,11 +345,15 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 36 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 37 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
        10 WS-BK-HL            BINARY-LONG VALUE 0.
+       10 WS-BK-HFR.
+          15 WS-BK-HFRV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
+       10 WS-BK-HFL.
+          15 WS-BK-HFLV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
        10 WS-BK-OK            BINARY-LONG VALUE 0.
        10 WS-BK-OFX           FLOAT-LONG VALUE 0.
        10 WS-BK-OFY           FLOAT-LONG VALUE 0.
@@ -349,7 +393,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 36 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 37 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -374,6 +418,8 @@
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
  01 WS-MAINARM             BINARY-LONG.
+ 01 WS-HSL                 BINARY-LONG.
+ 01 WS-BLOCKING            BINARY-LONG.
  01 WS-ANIM                PIC X.
  01 WS-POSE-KEY            PIC X(20).
  01 WS-FK                  PIC X(24).
@@ -425,6 +471,14 @@
      COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-ROW))
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW))
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
+*>   A glow squid's block light (34-8 section 2.2, EF8-GLOW-LIGHT): from its dark ticks remaining, which fall 1 a tick from the value last set (a hit sets 100).
+     IF EN-KEY(WS-ROW) = "glow_squid"
+         COMPUTE WS-DARK = FUNCTION MAX(0, EN-DARK(WS-ROW) - FUNCTION INTEGER((CL-NOW-MS - EN-DARK-MS(WS-ROW)) / 50))
+         MOVE WS-DARK TO WS-GL-IN(1)
+         MOVE WS-BLOCK TO WS-GL-IN(2)
+         CALL "EF8-GLOW-LIGHT" USING WS-GL-INS WS-GL-OUTS
+         MOVE WS-GL-OUT(1) TO WS-BLOCK
+     END-IF
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
 *>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
      MOVE 1 TO WS-HOOK-X WS-HOOK-Y
@@ -507,6 +561,8 @@
      IF EN-KEY(WS-ROW) = "ender_dragon"
          MOVE EN-DR-HEAD TO WS-KN(33)
      END-IF
+     COMPUTE WS-KN(36) = EN-AX-T(WS-ROW, 1) + EN-AX-T(WS-ROW, 2) * 11 + EN-AX-T(WS-ROW, 3) * 121 + EN-AX-T(WS-ROW, 4) * 1331
+         + EN-AX-BS(WS-ROW) * 20000 + EN-AX-BT(WS-ROW) * 200000
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
      MOVE EN-ZR(WS-ROW) TO WS-KN(26)
      MOVE EN-DRY(WS-ROW) TO WS-KN(27)
@@ -571,6 +627,17 @@
      END-IF
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
+*>   What the hands hold decides the arm poses of a player and whether the arm frames are kept for the held items (a shield blocking is another pose): empty or not per hand, blocking per hand.
+     MOVE 0 TO WS-KN(37)
+     PERFORM VARYING WS-HSL FROM 1 BY 1 UNTIL WS-HSL > 2
+         IF EN-EQ(WS-ROW, WS-HSL) > 0
+             COMPUTE WS-KN(37) = WS-KN(37) + WS-HSL
+             CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ROW WS-HSL WS-BLOCKING
+             IF WS-BLOCKING = 1
+                 COMPUTE WS-KN(37) = WS-KN(37) + 4 * WS-HSL
+             END-IF
+         END-IF
+     END-PERFORM
 *>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
 *>   model of the same entity), 2 + n the overlay layer n. The entry whose key is the key is used; else the layer's own entry is baked again.
      MOVE 0 TO WS-HIT WS-E
@@ -657,6 +724,15 @@
      MOVE EN-TM(WS-ROW) TO WS-I(14)
      MOVE EN-ATK(WS-ROW) TO WS-I(13)
      MOVE EN-FLW(WS-ROW) TO WS-I(12)
+*>   An axolotl's animator factors at the partial tick 1 (34-8 4.5): 8 playing dead, 9 in water, 10 on the ground, 11 moving.
+     IF EN-KEY(WS-ROW) = "axolotl"
+         MOVE EN-AX-BS(WS-ROW) TO WS-I(5)
+         MOVE EN-AX-BT(WS-ROW) TO WS-I(6)
+         MOVE 1 TO WS-FP
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
+             CALL "EF8-BINARY-FACTOR" USING EN-AX-T(WS-ROW, WS-J) EN-AX-O(WS-ROW, WS-J) WS-FP WS-I(WS-J + 7)
+         END-PERFORM
+     END-IF
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
@@ -702,6 +778,20 @@
                  MOVE 1 TO WS-ST(10)
              END-IF
              MOVE EN-SWIM(WS-ROW) TO WS-ST(11)
+*>           The arm poses (12 section 7.5): an arm that holds an item has the ITEM pose (1), a hand that blocks with a shield the BLOCK pose (2); the main hand is the main arm's.
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 2
+                 MOVE WS-J TO WS-HSL
+                 IF WS-MAINARM = 2
+                     COMPUTE WS-HSL = 3 - WS-J
+                 END-IF
+                 IF EN-EQ(WS-ROW, WS-HSL) > 0
+                     MOVE 1 TO WS-ST(13 + WS-J)
+                     CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ROW WS-HSL WS-BLOCKING
+                     IF WS-BLOCKING = 1
+                         MOVE 2 TO WS-ST(13 + WS-J)
+                     END-IF
+                 END-IF
+             END-PERFORM
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
 *>       The models of the codes - and Y whose animation takes only the walk state (a spider's eyes layer is posed like the spider): wolf (age scale 1),
 *>       spider and cave spider, chicken (no flap), blaze (age), enderman and its eyes (the humanoid state, nothing carried, not creepy).
@@ -719,6 +809,7 @@
                      CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
 *>               The ender dragon: flap time, the flight history at partial tick 1; not landing, not sitting.
                  WHEN "ender_dragon"
+                 WHEN "ender_dragon_eyes"
                      MOVE EN-TM(WS-ROW) TO WS-I(1)
                      MOVE 1 TO WS-I(2)
                      CALL "EF7-DRAGON-ANIM" USING EMM-MODEL EN-DR-HIST WS-IN
@@ -929,9 +1020,11 @@
 *>               The cuboid of an arm (the first of a part named right_arm, left_arm, or the crossed arms, kept as a negative index): where the held item goes.
                  IF MM-NAME(WS-P) = "right_arm" AND WS-BK-HR(WS-E) = 0
                      MOVE WS-NC TO WS-BK-HR(WS-E)
+                     CALL "ENTITY-ARM-LOCAL" USING WS-BOX-IN WS-BK-HFR(WS-E)
                  END-IF
                  IF MM-NAME(WS-P) = "left_arm" AND WS-BK-HL(WS-E) = 0
                      MOVE WS-NC TO WS-BK-HL(WS-E)
+                     CALL "ENTITY-ARM-LOCAL" USING WS-BOX-IN WS-BK-HFL(WS-E)
                  END-IF
                  IF MM-NAME(WS-P) = "arms" AND WS-BK-HR(WS-E) = 0
                      COMPUTE WS-BK-HR(WS-E) = 0 - WS-NC
@@ -1038,6 +1131,11 @@
                  MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K)
                  MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 1, WS-K + 3)
              END-PERFORM
+*>           The frame of an arm part (not of the crossed arms): where the item of 34-1 section 8.3 is placed.
+             IF WS-BK-HR(WS-E) > 0
+                 CALL "ENTITY-HAND-FRAME" USING WS-BK-CORNER(WS-E, WS-HI) WS-BK-HFR(WS-E) EN-HAND-FG(WS-ROW, 1)
+                 MOVE 1 TO EN-HAND-FOK(WS-ROW, 1)
+             END-IF
          END-IF
          IF WS-BK-HL(WS-E) > 0
              CALL "ENTITY-HAND-FIND" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) 1 WS-HP WS-HA EN-HAND-OK(WS-ROW, 2)
@@ -1045,6 +1143,8 @@
                  MOVE WS-HPV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K)
                  MOVE WS-HAV(WS-K) TO EN-HAND-V(WS-ROW, 2, WS-K + 3)
              END-PERFORM
+             CALL "ENTITY-HAND-FRAME" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) WS-BK-HFL(WS-E) EN-HAND-FG(WS-ROW, 2)
+             MOVE 1 TO EN-HAND-FOK(WS-ROW, 2)
          END-IF
      END-IF
      GOBACK.

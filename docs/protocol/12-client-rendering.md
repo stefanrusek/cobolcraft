@@ -8,7 +8,7 @@ text says "the reference client" it is describing the artifact and not requiring
 | Item | Value |
 |---|---|
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3. This is the artifact already recorded in [README.md](README.md). |
-| Method | Static reading of the shipped bytecode (`javap`), and of the text assets in the same jar (GLSL shaders under `assets/minecraft/shaders`, JSON under `data/minecraft` and `assets/minecraft`), with no execution |
+| Method | Static reading of the shipped bytecode (`javap`), and of the text assets in the same jar (GLSL shaders under `assets/minecraft/shaders`, JSON under `data/minecraft` and `assets/minecraft`), with no execution. For the hand-pose additions (6.7 to 6.14, 8.5, 8.6, V21 to V26) also the pixel data of `textures/item/wooden_pickaxe.png` and the sizes of the shield textures; worked numbers there were computed by hand-written matrix arithmetic from the constants read |
 | Related | [08-resource-packs.md](08-resource-packs.md) (pack format, models, atlases, block states), [06-chunk-format.md](06-chunk-format.md) (light data), [05a-play-clientbound-00-71.md](05a-play-clientbound-00-71.md) (Block Destruction), [04-registry-sync.md](04-registry-sync.md) (registries and ids), [18-mob-framework.md](18-mob-framework.md) (ground items), [../design/standin-content.md](../design/standin-content.md) (content of the cobolcraft world type only) |
 
 Conventions in this document:
@@ -24,8 +24,10 @@ Conventions in this document:
   it implements. Section 3.1 says which attributes exist and how they combine so either side can choose its own values.
 
 Sections: 0 Resolved: the rules apply to both world types. 1 Block lighting. 2 Texture atlas sampling. 3 Sky, fog and clouds. 4 Block-break crack overlay.
-5 The GUI. 6 First-person hand and item. 7 Third-person camera and the player model. 8 Item and block-in-hand
-rendering. 9 Validation. 10 Open questions.
+5 The GUI. 6 First-person hand and item (6.7 to 6.14: the complete matrix chain, the item mesh, the hand pass projection and
+render state, shading, block items, the shield, use-animation dispatch, and a checklist of what makes a naive client look
+scrambled). 7 Third-person camera and the player model. 8 Item and block-in-hand
+rendering (8.5 to 8.6: from item definition to quads, shading by context). 9 Validation (V21 to V26: worked numbers for the held pickaxe, the held block and the shield). 10 Open questions.
 
 ---
 
@@ -324,16 +326,18 @@ light directions are given in. The light directions (`Lighting`) are:
 
 | Setup | L0 | L1 | Space |
 |---|---|---|---|
-| LEVEL, default dimension | normalize(0.2, 1.0, −0.7) | normalize(−0.2, 1.0, 0.7) | camera/world |
-| LEVEL, nether | normalize(0.2, 1.0, −0.7) | normalize(−0.2, −1.0, 0.7) | camera/world |
+| LEVEL, default dimension | normalize(0.2, 1.0, −0.7) | normalize(−0.2, 1.0, 0.7) | world |
+| LEVEL, nether | normalize(0.2, 1.0, −0.7) | normalize(−0.2, −1.0, 0.7) | world |
 | ENTITY_IN_UI, PLAYER_SKIN (inventory entity preview) | normalize(0.2, −1.0, 1.0) | normalize(−0.2, −1.0, 0.0) | view |
 | ITEMS_FLAT | the default pair rotated by Ry(−0.3927 rad) then Rx(2.3562 rad) | same rotation | GUI |
 | ITEMS_3D | the default pair transformed by scale(1, −1, 1), then rotateYXZ(1.0821, 3.2376, 0), then rotateYXZ(−0.3927, 2.3562, 0) | same | GUI |
 
 Item and entity vertices are additionally multiplied by the light map using the entity's light coordinate (full
-bright in the GUI: the `UiLightmap`). A flat item (a plain textured quad such as a tool) is drawn with `ITEMS_FLAT`
-and appears unshaded; a 3D block item uses `ITEMS_3D`, which gives the three visible faces different brightness
-(see section 8).
+bright in the GUI: the `UiLightmap`). **In the GUI** a flat item (a tool: an extruded sprite, 6.8, not a single quad) is drawn
+with `ITEMS_FLAT` and its front face appears unshaded; a 3D block item uses `ITEMS_3D`, which gives the three visible faces
+different brightness (see section 8). **A held item in the first-person hand pass is not lit with either of these.** It uses
+the `LEVEL` pair of the table above, and its normals are in world orientation (the camera rotation is removed from them, 6.7.2),
+so a held tool or block is shaded by the sky-light direction and the shade changes with the camera yaw and pitch (6.10).
 
 ---
 
@@ -831,14 +835,23 @@ Source: `FirstPersonHandsAndItemsRenderer`, `FirstPersonHandsAndItems` (client s
 
 All transforms are applied to a pose stack whose starting frame is the camera space after the view bobbing (6.1): +x right, +y up, −z forward (into the screen), units = blocks.
 Each transform call multiplies on the right (the first listed is applied outermost, i.e. first in the chain, to the model last).
+**Sections 6.1 to 6.6 give the arm and item placement; they are complete only together with 6.7 to 6.14**, which add what the
+placement text left out: the exact matrix product and the model's own transform order (6.7), the mesh of a flat item (6.8), the
+projection, depth range and render state of the hand pass (6.9), the shading (6.10), block items (6.11), the shield (6.12) and
+the use-animation dispatch (6.13). A client that implements only 6.1 to 6.6 with 8.2 gets the pose right and still renders a
+wrong image (6.14).
 
 ### 6.1 Per-frame set-up
 
-1. View bobbing (`bobView`, applied when the camera entity is a player) with w = the interpolated walk distance (blocks, backwards-interpolated) and b = the bobbing amount (0..1):
+The order below is the order of the calls in `GameRenderer.renderItemInHand` (hurt tilt `bobHurt`, then view bobbing `bobView`) followed by the sway inside `submitHandsWithItems`.
+
+1. Hurt tilt (`bobHurt`), applied to living camera entities. While dying: rotate Z by 40 − 8000 / (min(deathTime, 20) + 200) degrees, and then continue with the hurt test below (the function returns early only when hurtTime < 0). Otherwise, with t = hurtTime / hurtDuration (it counts down from 1 to 0 and the effect only runs while hurtTime ≥ 0): k = sin(t⁴ × π); rotate Y by −hurtDir degrees; rotate Z by −k × 14 × damageTiltStrength degrees (the option, default 1.0); rotate Y by +hurtDir degrees.
+2. View bobbing (`bobView`, applied only when the option `bobView` is on and the camera entity is a player) with w = the interpolated walk distance (blocks, backwards-interpolated) and b = the bobbing amount (0..1):
    translate (sin(w·π) × b × 0.5, −|cos(w·π) × b|, 0); rotate Z by sin(w·π) × b × 3 degrees; rotate X by |cos(w·π − 0.2) × b| × 5 degrees.
-   (The option `bobView` turns this off; b is then 0.)
-2. Hurt tilt (`bobHurt`), applied to living camera entities. While dying: rotate Z by 40 − 8000 / (min(deathTime, 20) + 200) degrees and stop. Otherwise, with t = hurtTime / hurtDuration (it counts down from 1 to 0 and the effect only runs while hurtTime ≥ 0): k = sin(t⁴ × π); rotate Y by −hurtDir degrees; rotate Z by −k × 14 × damageTiltStrength degrees (the option, default 1.0); rotate Y by +hurtDir degrees.
+   (With the option off the step is skipped, as if b = 0.)
 3. Hand sway: rotate X by (cameraPitch − xBob) × 0.1 degrees, then Y by (cameraYaw − yBob) × 0.1 degrees, where xBob/yBob are the smoothed view angles that lag the real ones.
+
+At rest (no hurt, no bobbing, no mouse movement) steps 1 to 3 are the identity and the chain of 6.3 starts from the camera frame itself.
 
 ### 6.2 Equip animation (`FirstPersonHandsAndItems.tick`)
 
@@ -858,9 +871,9 @@ For a hand with side s = +1 for the right arm and −1 for the left (the arm is 
    c. rotate Z by s × sin(√p × π) × (−20) degrees;
    d. rotate X by sin(√p × π) × (−80) degrees;
    e. rotate Y by s × (−45) degrees.
-3. Draw the item with the model's display transform for `firstperson_righthand` (s = +1) or `firstperson_lefthand` (s = −1), see 8.2. (The item is drawn using the item model resolved for the context `FIRST_PERSON_*_HAND`.)
+3. Draw the item with the model's display transform for `firstperson_righthand` (s = +1) or `firstperson_lefthand` (s = −1), see 8.2, then the item definition's own `transformation` (identity for ordinary models), and then the item's quads (6.8). (The item is drawn using the item model resolved for the context `FIRST_PERSON_*_HAND`: the main hand uses the right context when the player's main arm is right and the left context when it is left; the off hand uses the other one, `FirstPersonHandsAndItems`.) The exact product, with all constants, is in 6.7.2; the "model's display transform" is **not** just a placement: it carries a −90° turn about the vertical axis for tools (6.7.3), which is why a tool is seen edge-on from the side and not face-on.
 
-At rest (p = 0, E = 0) a right-hand item is at (0.56, −0.52, −0.72) in front of the camera.
+At rest (p = 0, E = 0) a right-hand item is at (0.56, −0.52, −0.72) in front of the camera. That is the position of the origin of the display transform (the item model's centre before the display translation), not of any corner of the sprite.
 
 ### 6.4 Swing (`LivingEntity$SwingState`, `SwingAnimation`)
 
@@ -888,11 +901,240 @@ While the local player uses an item with that hand (and the use has ticks remain
 - **Crossbow, charging** (the crossbow while it is not charged and being used): step 1, then translate (s × (−0.4785682), −0.094387, 0.05731531); rotate X by −11.935; rotate Y by s × 65.3; rotate Z by s × (−9.785). Let h = min(1, e / chargeDuration). Apply B(h); translate (0, 0, h × 0.04); scale (1, 1, 1 + h × 0.2); rotate Y by −s × 45.
 - **Crossbow, not being used**: step 1, then the swing of 6.3 step 2 for the swinging hand; when the crossbow is charged and the swing progress p < 0.001 and this is the main hand: translate (s × (−0.641864), 0, 0) and rotate Y by s × 10.
 - **Trident** (thrown, charging): step 1, then translate (s × (−0.5), 0.7, 0.1); rotate X by −55; rotate Y by s × 35.3; rotate Z by s × (−9.785). Let h = min(1, e / 10). Apply B(h); translate (0, 0, h × 0.2); scale (1, 1, 1 + h × 0.2); rotate Y by −s × 45.
-- **Blocking with an item that is not a shield** (the `block` use animation): step 1, then translate (s × (−0.14142136), 0.08, 0.14142136); rotate X by −102.25; rotate Y by s × 13.365; rotate Z by s × 78.05. A shield item is only given step 1 (its model is posed by its own display transform).
-- **Brush**: `applyBrushTransform` (not reproduced; Open question 6). **Spear/thrust items**: `SpearAnimations` (not reproduced; Open question 6).
+- **Blocking with an item that is not a shield** (the `block` use animation): step 1, then translate (s × (−0.14142136), 0.08, 0.14142136); rotate X by −102.25; rotate Y by s × 13.365; rotate Z by s × 78.05. A shield item (the test is `instanceof ShieldItem`) is only given step 1 (its model is posed by its own display transform, 6.12).
+- **Brush**: `applyBrushTransform` (not reproduced; Open question 6). **Spear/thrust items**: `SpearAnimations` (`firstPersonUse` and `firstPersonAttack` are written in 34-1 §3.8; Open question 6 lists only the brush). The spear animation is flagged as having a custom arm transform, so the step 1 translate is not applied before the switch; its branch itself translates by (s × 0.56, −0.52, −0.72) (no equip term) and then calls `SpearAnimations.firstPersonUse` (6.13).
 - **Spyglass**: while scoping, neither hand is drawn at all (`isScoping` returns early); the spyglass overlay takes over the screen.
-- A use animation that matches none of the above gets only step 1; the individual mapping of the toot-horn, bundle and none animations to the two remaining branches (one that does nothing, one that applies the swing of 6.3 step 2) was not separated (Open question 6).
+- A use animation that matches none of the above gets only step 1. The mapping of the use animations to the branches is resolved in 6.13: `none`, `spyglass`, `toot_horn` and a crossbow-animation item that is not the crossbow item get nothing beyond step 1; `bundle` gets the swing of 6.3 step 2.
 - **Auto spin attack** (riptide): step 1, then translate (s × (−0.4), 0.8, 0.3); rotate Y by s × 65; rotate Z by s × (−85).
+
+### 6.7 The complete matrix chain of the hand pass
+
+**Provenance of 6.7 to 6.14, 8.5, 8.6 and V21 to V26.** They were added in a later clean-room round about the held item. Source:
+the same artifact as the README (`minecraft-26.3-client.jar`, SHA-256
+`4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`). Method: static reading of the bytecode (`javap`), of the
+JSON, GLSL and PNG assets in the jar, with no execution. The libraries JOML and LWJGL are **not** inside the jar, so any rule that
+depends on how `org.joml` composes a rotation or builds a projection is library behaviour that was not read; each such rule is
+marked "(recalled, not verified)" and listed in Open question 17, together with the plausibility checks inside the artifact that point the same way. Numbers in the
+worked examples were computed from the constants below with ordinary matrix arithmetic.
+
+#### 6.7.1 Conventions
+
+| Topic | Rule |
+|---|---|
+| Vectors and products | Points are column vectors. A pose is a 4 × 4 matrix M. Every `translate`, `scale`, `rotate` and `mulPose` call of `PoseStack$Pose` replaces M by **M · X** (right multiplication). Only the call sequence was read (which `PoseStack$Pose` method calls which `Matrix4f` or `Matrix3f` method on the pose and normal matrices); that `Matrix4f.translate/scale/rotate/mul` post-multiply is library behaviour (recalled, not verified). A vertex is transformed as M · v, so the call that is made **last** acts **first** on the vertex. |
+| Translation vs rotation | `translate` is a pure translation matrix T(t) placed in the product at that position. In M · T · R · S the vertex is scaled first, then rotated, then translated, and the translation is expressed in the axes of the frame M, not in the rotated axes. |
+| Axes and handedness | Right-handed. View space: +x right, +y up, −z forward (into the screen). Model space of an item: the 16-pixel cube, +x = east, +y = up, +z = south; the front (SOUTH) face of a flat item looks towards +z (6.8). (recalled, not verified) The matrices Rx, Ry, Rz of `Axis.XP`, `YP`, `ZP` (`Matrix4f.rotateX/Y/Z`) are the standard active rotations: Rx(a) maps +y towards +z, Ry(a) maps +z towards +x (so +x towards −z), Rz(a) maps +x towards +y. `Axis.XN`, `YN`, `ZN` use the negated angle. |
+| Euler composition | (recalled, not verified) `Quaternionf.rotationXYZ(rx, ry, rz)` (used by `ItemTransform.apply`) gives **R = Rx(rx) · Ry(ry) · Rz(rz)**: on a column vector Rz acts first, then Ry, then Rx; all three about the fixed axes of the frame (extrinsic Z, Y, X; the same matrix as intrinsic X, Y, Z). `rotationZYX(z, y, x)` (used by `ModelPart.translateAndRotate`) gives Rz · Ry · Rx. `rotationYXZ(y, x, z)` gives Ry · Rx · Rz. The reversed products are wrong (inferred, plausibility only): with Rz · Ry · Rx the third-person blocking display of the shield (6.12) puts the plate centre at head-top height with its face pointing upwards, whereas Rx · Ry · Rz puts an upright plate in front of the chest. |
+| Units | The pose stack is in blocks. Item model vertices are divided by 16 when they are baked, so an item model is the unit cube [0, 1]³ (6.8). The JSON `translation` of a display transform is divided by 16 when it is loaded and then clamped to ±5 blocks (8.2). Rotations are degrees in JSON and in `rotateDegrees`; the display transform multiplies by 0.017453292 first. |
+| Window coordinates | After the projection (6.9): ndc = (clip.x / w, clip.y / w), y up. Window fraction from the top-left corner: fx = (ndc_x + 1) / 2, fy = (1 − ndc_y) / 2. Pixels = fraction × framebuffer size. |
+
+#### 6.7.2 The chain, in order
+
+Per frame the hand pass (`GameRenderer.renderItemInHand`, called from `render3dHud` after the world has been drawn) builds one pose
+stack P and one model-view matrix V, and draws with the hand projection (6.9). A vertex of the item's mesh, in item model units
+(pixels / 16), reaches the screen as
+
+**clip = Proj_hand · V · P · v**, with **V = Q⁻¹ and P = Q · H** at the moment the item is submitted, where Q = the camera's rotation
+and H is the hand placement. Therefore V · P = H and the view-space position of a vertex is simply **H · v**.
+
+Q is the camera rotation quaternion. Read: `Camera.setRotation(yaw, pitch)` builds it with `Quaternionf.rotationYXZ(π − yaw·0.017453292, −pitch·0.017453292, 0)` (yaw and pitch in radians; yaw 0 = looking south, positive pitch = looking down). Recalled, not verified: that this call equals Ry(π − yaw) · Rx(−pitch), so Q = Ry(π − yaw) · Rx(−pitch). V is `CameraRenderState.viewRotationMatrix`, the conjugate (inverse) of Q (`Camera.getViewRotationMatrix`). The pose stack starts as the identity, is multiplied by Q (= the inverse of V) first, and V is pushed on the model-view stack (`RenderSystem.getModelViewStack`), which the draw reads when it writes the dynamic-transform uniform (`RenderType.draw` uses `getModelViewMatrixCopy`). **The Q · … · Q⁻¹ sandwich matters for the normal vector (the purpose is inferred):** the pose stack's normal matrix does not contain V, so the normals that leave the pose stack are in world orientation (6.10). Positions are unaffected, because V cancels Q exactly.
+
+H, as a left-to-right product (leftmost acts last on the vertex), for a flat item in the right hand (s = +1) at rest or swinging:
+
+| # | Factor | Value | Section |
+|---|---|---|---|
+| 1 | Hurt tilt BH | 6.1 step 1 (identity when not hurt and not dying) | 6.1 |
+| 2 | View bobbing BV | 6.1 step 2 (identity when the option is off) | 6.1 |
+| 3 | Sway, X | Rx((viewXRot − xBob) × 0.1°) | 6.1 |
+| 4 | Sway, Y | Ry((viewYRot − yBob) × 0.1°) | 6.1 |
+| 5 | Arm transform A | T(s × 0.56, −0.52 + E × (−0.6), −0.72) | 6.3 step 1 |
+| 6 | Swing (only the swinging hand, `whack` type) | T(s × (−0.4 × sin(√p π)), 0.2 × sin(√p 2π), −0.2 × sin(p π)) · Ry(s × (45 + sin(p² π) × (−20))) · Rz(s × sin(√p π) × (−20)) · Rx(sin(√p π) × (−80)) · Ry(s × (−45)) (`swingArm` then `applyItemArmAttackTransform`) | 6.3 step 2 |
+| 7 | Display transform D | T(t) · Rxyz(rx, ry, rz) · S(k) · T(−½, −½, −½); t = translation / 16, left hand mirrored (8.2) | 8.2, 6.7.3 |
+| 8 | Item transformation L | the `transformation` of the item definition, composed down the definition tree (identity for an ordinary `minecraft:model`; scale (1, −1, −1) for the shield) | 8.5 |
+| 9 | Vertex | position / 16 of the baked quad (6.8) | 6.8 |
+
+Factors 7 to 9 are exactly what `ItemStackRenderState$LayerRenderState.submit` does: it pushes the pose, applies `ItemTransform.apply(leftHand, pose)` (factor 7), multiplies by the layer's local transform (factor 8) and submits the quads. The swing is only applied to the hand whose swing is running (`SwingDescription.hand`), for the `whack` type; for other use animations 6.6 and 6.13 apply.
+
+There is **no** extra rotation, translation or scale for "tool", "handheld" or "sword" items between factors 6 and 7: the difference between `item/generated` and `item/handheld` is only their `display` data (8.2, 6.7.3). Nothing in the hand renderer depends on the item type except the use-animation branches (6.6, 6.13) and the map and empty-hand branches.
+
+#### 6.7.3 What the display transform contains for a flat item
+
+For a model that reaches `item/generated` or `item/handheld` (a tool, sword, stick, food, material) the right-hand first-person entry is
+(`models/item/handheld.json`, and the same numbers in `generated.json`): rotation (0, −90, 25), translation (1.13, 3.2, 1.13) (sixteenths), scale (0.68, 0.68, 0.68).
+So D = T(0.070625, 0.2, 0.070625) · (Ry(−90°) · Rz(25°)) · S(0.68) · T(−0.5, −0.5, −0.5) (Rx(0) is the identity). Multiplied out:
+
+| D (right hand, rows = view x, y, z) | model x | model y | model z | constant |
+|---|---|---|---|---|
+| view x | 0 | 0 | −0.68 | 0.410625 |
+| view y | 0.28738 (= 0.68 sin 25°) | 0.61629 (= 0.68 cos 25°) | 0 | −0.251835 |
+| view z | 0.61629 (= 0.68 cos 25°) | −0.28738 (= −0.68 sin 25°) | 0 | −0.093830 |
+
+and with the arm transform at rest (A = T(0.56, −0.52, −0.72)) the whole placement is **M = A · D**: the same 3 × 3 block and the constant column
+(0.970625, −0.771835, −0.813830). Reading it:
+
+- **The sprite's horizontal axis (model +x, left to right in the picture) points towards the camera and up**: (0, 0.423, 0.906) × 0.68 blocks per 16 pixels. The sprite's vertical axis (model +y, up in the picture) points up and slightly forward: (0, 0.906, −0.423) × 0.68. The sprite's front normal (model +z) is view −x: the front face looks to the left.
+- **The sprite is therefore a vertical plate in the plane x = const that runs along the line of sight, seen obliquely.** It sits to the right of the camera (x ≈ +0.61) and spans view depth from about 0.2 to 1.1 blocks. At rest it is **not** edge-on: the cosine between the front normal and the line of sight is 0.64 at the plate centre, 0.77 at the top-right corner and 0.48 at the bottom-left corner. It is foreshortened horizontally and stretched by perspective at its near end. **Orientation consequence (inferred, it depends on the composition order of Open question 17):** the head end of the sprite (high x and y) is nearer to the camera than the handle end; for example texel (10, 3) of the pickaxe is at view depth 0.634 and texel (2, 14) at 0.745. The picture is an oblique view in the lower right, handle off the bottom edge, head near the right edge. Only in the mid-swing frame of V22 (p = 0.5) is the plate close to edge-on. This is the picture that the artifact's own data produce (V21): it was computed from the read constants and not compared with a rendering, and it depends on the library rules of Open question 17. A plate seen this obliquely is therefore not by itself a sign of a client error.
+- The model's own centre (0.5, 0.5, 0.5) lands at view (0.63, −0.32, −0.65) (= A applied to the display translation).
+
+The **left hand** uses the same matrices with s = −1 in A and with the mirrored display data (rotation y and z negated, translation x negated). Which entry gets mirrored depends on the model file. **`item/handheld`** (tools, swords, the stick; the pickaxe's chain reaches it first) has its own `firstperson_lefthand` entry (0, 90, −25) with the same translation as the right hand; the mirroring is applied to it **again**, giving rotation (0, −90, 25) and translation x −1.13: the same rotation as the right hand with a mirrored position. The visible face is the back quad of the sprite (normal view +x, the camera is at x < 0). Its u still grows with +x (6.8), which seen from behind is the reversed picture; the plate is also the mirror of the right-hand plate, and the two reversals combine into an exact mirror image of the right-hand picture: a texel at model (x, y) lands at ndc (−X, Y) when the right hand's front-quad texel at the same (x, y) lands at (X, Y) (checked at three texels, e.g. (10.5, 12.5): (0.7722, −0.2293) right, (−0.7722, −0.2293) left). **`item/generated`** (the apple and other non-tool items) has **no** `firstperson_lefthand` entry (`models/item/generated.json` lists only the right-hand one), so its left hand uses the right-hand entry mirrored **once**: rotation (0, 90, −25), translation x −1.13, with the 3 × 3 block ((0, 0, 0.68), (−0.28738, 0.61629, 0), (−0.61629, −0.28738, 0)) and the constant (−0.97063, −0.48445, −0.19754) in A · D. Here the front quad is the visible one (front normal view +x) and the result is **not** an exact mirror of the right-hand picture: the same sample texel (10.5, 12.5) lands at (−0.5923, −0.3310) on the front quad (the handheld left hand gives (−0.7722, −0.2293) on the back quad). If a model's own chain has no `firstperson_lefthand` anywhere, the right-hand entry is used and mirrored once (8.2).
+
+### 6.8 The mesh of a flat item (`builtin/generated`, `ItemModelGenerator`)
+
+A flat item is **not** one quad. For every texture layer `layer0` … `layer4` (read in order, stopping at the first missing slot) the generator bakes (`ItemModelGenerator.bakeExtrudedSprite`, `getSideFaces`):
+
+1. one **front quad** (facing SOUTH, +z), 2. one **back quad** (facing NORTH, −z), and 3. one **side quad** for every edge between an opaque texel and a transparent neighbour (or the sprite border). A texel is transparent when its alpha is 0 (`SpriteContents.isTransparent`); a position outside the sprite counts as transparent; for an animated sprite the union over its unique frames is used. All quads of one layer have the same `MaterialInfo`; all quads are "unculled" (they are never removed by face culling of neighbouring blocks, which has no meaning for items).
+
+Model space is in pixels here (0 … 16 in x and y, y up; the divide by 16 happens at the end). z runs from **7.5 to 8.5**: the plate is exactly 1 pixel thick and is centred on z = 8, i.e. on the model centre. `s_x = 16 / spriteWidth`, `s_y = 16 / spriteHeight` scale a sprite pixel to model pixels (1 for a 16 × 16 sprite). A sprite pixel (x, y) is counted from the **top-left** of the image (y down); its model rectangle is x · s_x … (x + 1) · s_x and 16 − (y + 1) · s_y … 16 − y · s_y.
+
+**Front and back quad** (vertex order is the canonical order of the quad's final facing, 1.3c; the same order defines which texture coordinate each vertex gets):
+
+| Quad | Vertex 0 | Vertex 1 | Vertex 2 | Vertex 3 |
+|---|---|---|---|---|
+| Front (SOUTH, z = 8.5), position | (0, 16) | (0, 0) | (16, 0) | (16, 16) |
+| Front, texture coordinate (fraction of the sprite) | (0, 0) | (0, 1) | (1, 1) | (1, 0) |
+| Back (NORTH, z = 7.5), position | (16, 16) | (16, 0) | (0, 0) | (0, 16) |
+| Back, texture coordinate | (1, 0) | (1, 1) | (0, 1) | (0, 0) |
+
+On both quads the texture coordinate u grows with +x, so the front shows the sprite upright and un-mirrored when looked at from +z, and the back shows it **left-right reversed** (a mirror image) when looked at from −z: seen from behind, +x is on the viewer's left. Texture coordinates are fractions of the sprite (0 = top/left of the image, v grows downwards) and are mapped into the atlas rectangle of the sprite by `TextureAtlasSprite.getU(f) = u0 + (u1 − u0) · f` (and the same for v).
+
+**Side quads.** For the opaque pixel (x, y) and each of the four neighbours that is transparent, one quad, with the sprite pixel coordinates (x, y) and the model pixel rectangle above (the quad spans z 7.5 … 8.5 and one pixel edge). The final facing is the outward normal of the edge:
+
+| Neighbour that is transparent | Final facing | Plane | Vertex 0 | Vertex 1 | Vertex 2 | Vertex 3 | Texture coordinates of vertices 0 to 3 (pixel units; divide by sprite width and height) |
+|---|---|---|---|---|---|---|---|
+| above (y − 1) | UP | y = 16 − y · s_y | (min x, min z) | (min x, max z) | (max x, max z) | (max x, min z) | (x + 0.1, y + 0.1), (x + 0.1, y + 0.9), (x + 0.9, y + 0.9), (x + 0.9, y + 0.1) |
+| below (y + 1) | DOWN | y = 16 − (y + 1) · s_y | (min x, max z) | (min x, min z) | (max x, min z) | (max x, max z) | (x + 0.1, y + 0.1), (x + 0.1, y + 0.9), (x + 0.9, y + 0.9), (x + 0.9, y + 0.1) |
+| left (x − 1) | WEST | x = x · s_x | (max y, min z) | (min y, min z) | (min y, max z) | (max y, max z) | (x + 0.9, y + 0.1), (x + 0.9, y + 0.9), (x + 0.1, y + 0.9), (x + 0.1, y + 0.1) |
+| right (x + 1) | EAST | x = (x + 1) · s_x | (max y, max z) | (min y, max z) | (min y, min z) | (max y, min z) | (x + 0.9, y + 0.1), (x + 0.9, y + 0.9), (x + 0.1, y + 0.9), (x + 0.1, y + 0.1) |
+
+("min" and "max" are the true extremes on the model axes, y up; max z = 8.5, min z = 7.5.) All texture coordinates of a side quad lie **inside the pixel**, 0.1 of a pixel away from its edges, so every side wall is the flat colour of the edge texel and bilinear filtering cannot bleed a neighbour into it. Worked check, pixel (6, 2) with a transparent left neighbour: WEST quad at x = 6, y from 14 to 13, vertices (6, 14, 7.5) uv (6.9, 2.1); (6, 13, 7.5) uv (6.9, 2.9); (6, 13, 8.5) uv (6.1, 2.9); (6, 14, 8.5) uv (6.1, 2.1).
+
+**Order.** The vertex order and texture-coordinate pairing in the table above are canonical (the order of 1.3c for the quad's final facing); an implementation may emit the four corners in any order as long as each corner keeps its texture coordinate and the quad's winding follows 6.9.
+
+**Counts.** 2 + the number of exposed edges. The wooden pickaxe sprite (`textures/item/wooden_pickaxe.png`, 16 × 16, alpha only 0 or 255, 7 opaque colours) has 74 quads: 1 front, 1 back, 18 UP, 18 DOWN, 18 WEST, 18 EAST. A sprite with partially transparent texels still counts a texel as opaque when alpha ≠ 0; such a sprite is classified translucent (6.9).
+
+**Layers, tint and material.** Layer n gets tint index n. The quad colour is the item's tint list entry n when the item definition has one (08 §6.4), else white. Generated quads have no shade override and no light emission. The transparency class of a layer is computed from its sprite: opaque / transparent (alpha only 0 or 255) / translucent (other alpha values); a translucent layer is drawn in the translucent phase with blending, the others in the solid phase with a cut-off (6.9). All quads of one item model must be in one atlas, either the items atlas or the blocks atlas.
+
+**Which atlas.** A generated item's sprite is looked up in the **items atlas** (`textures/atlas/items.png`, built from `atlases/items.json`: the directory `textures/item` with prefix `item/`, plus the armour-trim permutations). `item/wooden_pickaxe` is in that atlas. The sprites of block models (6.11) are in the **blocks atlas** (`atlases/blocks.json`: `textures/block` with prefix `block/` and a few entity sprites). Each baked quad carries its own sprite and therefore its atlas; sampling a tool's UV rectangle in the blocks atlas returns unrelated block texels.
+
+### 6.9 Projection, depth range and render state of the hand pass
+
+The hand is drawn by its own pass with its own projection and a freshly cleared depth buffer, after the world and before the GUI.
+
+| Item | Value (source) |
+|---|---|
+| When | The hand is drawn only for a local player in first-person view who is awake, with the HUD shown, not in spectator mode and not in panoramic mode. |
+| Order in the frame | `renderLevel` draws the world (`LevelRenderer.render`) and then calls `render3dHud`, so the hand is drawn before `applyPostEffects`: set the hand projection, clear the depth texture to **0.0**, draw the hand's submit nodes, draw the screen effects (fire, underwater overlay) with the same projection, set the fog uniform to "none", draw the 3-D crosshair if enabled; later the GUI is drawn (after clearing the main depth to 0.0 again). When post effects are active (`appliedPostEffects` not empty) the hand is drawn with the depth attachment of a separate `hud3DTarget` and its depth is afterwards merged into the main depth by `integrate3DHudDepth`; otherwise it is drawn with the main target's depth, which was just cleared. In both cases the hand pass does **not** depth-test against the world: the world's depth is gone (or never present) and the hand always overdraws it. |
+| Colour target | the main render target's colour texture, not cleared (the world picture stays) |
+| Projection | perspective, vertical field of view `hudFov`, aspect = window width / height in pixels (`WindowRenderState`), near plane 0.05 (the literal 0.05 passed to `Projection.setupPerspective`; `Camera.PROJECTION_Z_NEAR` is 0.05), far plane `depthFar` |
+| `hudFov` | `Camera.calculateHudFov`: the constant **70.0** (`Camera.BASE_HUD_FOV`), modified only by `modifyFovBasedOnDeathOrFluid`. **It does not use the `fov` option and it ignores the sprint/speed/bow field-of-view modifier.** Modifiers: (a) when the camera entity is living and dead or dying: fov / (2 × (1 − 500 / (min(deathTime + partialTick, 20) + 500)) + 1); (b) when the camera is in lava or water: fov × (1 + fovEffectScale × (0.85714287 − 1)) (`Mth.lerp(fovEffectScale, 1, 0.85714287)`), which is × 0.857 with the option's default 1.0. Normal play: exactly 70°. |
+| `depthFar` | `Camera.update`: max(effectiveRenderDistance × 16 × 4, cloudRange × 16) blocks; the render-distance term is 768 at the default render distance 12, and 2048 if the default cloud range is 128 (read indirectly, Open questions 10 and 20), so the far plane is 2048 at default settings (inferred). The same value is the far plane of the world projection. The far plane only affects the depth values, never the x and y of a vertex. |
+| World projection, for contrast | the same near and far, vertical fov = `fov` option (30 … 110, default 70) × lerp(partial, previous, current `fovModifier`), then the same death/fluid modification (`Camera.calculateFov`); `fovModifier` is updated each tick by fovModifier += 0.5 × (target − fovModifier), clamped to 0.1 … 1.5, with target from `AbstractClientPlayer.getFieldOfViewModifier(firstPerson, fovEffectScale)` (not traced). The hand does not follow it. |
+| Matrix | Read: `Projection.getMatrix` calls `Matrix4f.setPerspective(fov·0.017453292, width/height, zFar, zNear, zZeroToOne)`, that is, with the **far value loaded before the near value** (the parameters of the library method are named zNear, zFar in that order), and `render3dHud` passes (near 0.05, far `depthFar`, `hudFov`, window width, window height) to `Projection.setupPerspective`. Recalled, not verified: the library's formula for that call, which makes it a reversed depth range. With f = 1 / tan(fov / 2), a = aspect, n = 0.05, F = far, w = −z_view: clip.x = (f / a) · x_view, clip.y = f · y_view, clip.w = w, and the window depth is d(w) = n · (F − w) / (w · (F − n)) for the zero-to-one convention (d(n) = 1, d(F) = 0). At the defaults f = 1.428148 and f / a = 0.803333 for 16:9. x and y are independent of n and F. |
+| Depth state | all item pipelines use the default depth state: compare **greater-or-equal** (reversed depth: nearer fragments have larger d) with **depth write on** (`DepthStencilState.DEFAULT`). Equality passes: coplanar layers of one item (the layers of `layer0`…`layer4` share z 7.5 … 8.5) are resolved by draw order, later wins. A client with a conventional depth range uses "less-or-equal" and clears to the far value. |
+| Face culling | A client that uses only OpenGL (or a GL-style software rasteriser) should enable back-face culling with **counter-clockwise front faces** and apply a depth convention consistently: either the reversed one stated above (clear 0, greater-or-equal) or its conventional equivalent (clear to the far value, less-or-equal) with the same ordering (nearer wins, equal passes). **Back-face culling is on** for item pipelines (`RenderPipeline` cull defaults to true and the item snippet does not change it). Front faces are those whose projected vertices, in the y-up NDC of the table above, run **counter-clockwise** in the order the quad lists them (GL backend: no front-face call, so the default counter-clockwise; Vulkan backend: `frontFace` clockwise with back culling, where the y flip of that API is applied elsewhere and was not traced, Open question 18). The canonical vertex order of 6.8 and 1.3c is counter-clockwise seen from outside the face. |
+| Pipeline of ordinary quads | `ITEM_CUTOUT` (`item_cutout`): shaders `core/item`, vertex format `ENTITY` (position, colour, uv, overlay uv, light uv, normal), quads, **no blending**, colour write all four channels, shader constant `ALPHA_CUTOUT` = 0.1: a fragment whose texture alpha < 0.1 is discarded. |
+| Pipeline of translucent quads | `ITEM_TRANSLUCENT` (`item_translucent`): the same plus blending with colour factors (source alpha, 1 − source alpha) and alpha factors (1, 1 − source alpha), results sorted on upload; the same 0.1 cut-off still discards. Also see this document's Open question 23 (order-independent transparency pipelines exist; not traced). |
+| Draw order | the quads of an item are split by `ItemQuads.split` into a translucent list and a solid list (`SubmitNodeCollection.submitItem`); the solid list goes to the solid phase and the translucent list to the translucent phase of the collector; the translucent phase is drawn after the solid one (inferred from the phase names). |
+| Textures and uniforms | sampler 0 = the atlas of the quad's sprite (6.8); sampler 1 = the overlay texture, always sampled at the `NO_OVERLAY` texel (no tint); sampler 2 = the **level** light map (1.8), not the GUI's `UiLightmap`; uniform blocks Projection (the hand projection above), DynamicTransforms (ModelViewMat = the camera view rotation V, TextureMat, ColorModulator (taken as 1, 1, 1, 1), ModelOffset), Fog, Lighting (6.10), Globals. |
+| Fog | the fog uniform that is bound when the hand is drawn was not traced (the "none" setting is installed only after the hand and the screen effects); at one block distance the world fog has no visible effect except in water, lava or blindness (Open question 19). |
+
+### 6.10 Shading of a held item (`core/item` shader, `Lighting`)
+
+Per vertex (`item.vsh`): lightAccum = min(1, (max(0, n · L0) + max(0, n · L1)) × 0.6 + 0.4); vertexColor = (colour.rgb × lightAccum, colour.a), where colour is the quad colour (white or the tint, 6.8) and n is the vertex normal that `VertexConsumer.putBakedQuad` produces: the **unit vector of the quad's final facing** transformed by the pose's normal matrix (which for rotation and uniform positive scale is just the rotation part, no renormalisation needed). Per fragment (`item.fsh`): c = texture(sampler 0); discard if c.a < 0.1; c ×= vertexColor × ColorModulator; c.rgb = mix(overlay.rgb, c.rgb, overlay.a) (identity for `NO_OVERLAY`); c ×= lightMapColor; then fog.
+
+| Quantity | Value |
+|---|---|
+| Light directions during the hand pass | the **`LEVEL`** entry of `Lighting`, set by `LevelRenderer` before the hand and not changed until the GUI sets `ITEMS_3D`: in a dimension with the default cardinal-lighting type L0 = normalize(0.2, 1.0, −0.7) = (0.16169, 0.80845, −0.56592) and L1 = normalize(−0.2, 1.0, 0.7) = (−0.16169, 0.80845, 0.56592); in the Nether type L0 as above and L1 = normalize(−0.2, −1.0, 0.7) (`Lighting.updateLevel`; the dimension type picks it). These are **world** directions. |
+| Normal space | world orientation: n_world = Q · (rotation part of H) · n_model, with Q = Ry(π − yaw) · Rx(−pitch) (6.7.2). For the pickaxe's front face n_view = R_D · (0, 0, 1) = (−1, 0, 0), so n_world = Q · (−1, 0, 0). A client that keeps normals in view space and uses the world directions above shades the item wrongly and does not change with the camera angle. |
+| Light coordinate | one value for every quad: the avatar's `lightCoords` = pack(block, sky) = block × 16 + sky × 16 × 65536 of the block that contains the player's eye position (`getLightProbePosition`, 34-1; block light forced to 15 while the player is on fire), then `QuadInstance.getLightCoordsWithEmission` with the quad's emission (0 for generated quads, the face's `light_emission` for block models). The vertex shader reads it as the two integers (block × 16, sky × 16) and samples the level light map at clamp(light / 256 + 1/32, 1/32, 31/32) on both axes (`sample_lightmap`, the same index as 1.4 and 1.8). |
+| Not used | no per-face constant table (1.1), no ambient occlusion, no `ITEMS_FLAT` and no `ITEMS_3D`. |
+
+Brightness examples (L as above, n_world as defined, camera yaw 0 = looking south, pitch 0): the pickaxe's front face 0.4970; its upward-facing edge walls 1.0; its downward-facing edge walls 0.4000; its sprite-right edge walls (view normal (0, 0.423, 0.906)) 0.9127. The front-face brightness changes with the camera: 0.4970 at yaw 0 and 180, 0.7395 at yaw 90 and 270. These factors multiply a sprite whose own colours are dark browns (the opaque texels of the wooden pickaxe range from (32, 24, 10) to (136, 102, 38)), so a correctly lit held wooden pickaxe is a **dark brown** object by design; V21, V22 and V26 give more values.
+
+### 6.11 Block items in the hand
+
+A block item (`items/<block>.json` with `minecraft:model` naming the block model, for example `block/crafting_table` or `block/dirt`) is the block model's own elements baked the usual way (08 §5): each element becomes up to six quads with the face-table order of 1.3c and the texture coordinates of the face, model positions divided by 16, with the **cull-face restriction ignored** (every face of the cube is present, `QuadCollection.getAll`); the sprites are in the blocks atlas (6.8). `block/block` supplies `firstperson_righthand`: rotation (0, 45, 0), translation (0, 0, 0), scale (0.40, 0.40, 0.40) and `firstperson_lefthand`: rotation (0, 225, 0) with the same translation and scale; the left entry is mirrored a second time on use (rotation y = −225° ≡ 135°) (8.2). A cube model (parent chain `block/cube` → `block/block`, `elements` from 0 to 16) therefore has D = T(0) · Ry(45°) · S(0.4) · T(−½, −½, −½): the cube centre sits at the arm anchor and the cube is 0.4 blocks wide. With A at rest the matrix is M = A · D:
+
+| M (right hand, rows = view x, y, z) | model x | model y | model z | constant |
+|---|---|---|---|---|
+| view x | 0.28284 | 0 | 0.28284 | 0.27716 |
+| view y | 0 | 0.40000 | 0 | −0.72000 |
+| view z | −0.28284 | 0 | 0.28284 | −0.72000 |
+
+The eight corners, their view-space positions, NDC and the visible faces are in V23. At rest the faces that face the camera are UP and WEST; SOUTH, NORTH, EAST and DOWN are back-facing and culled (SOUTH is a marginal case: the camera is just on its back side, dot −0.087). Shading uses 6.10 (LEVEL lights, world normals): at yaw 0, pitch 0 the UP face is 1.0000 and the WEST face 0.7087; the same two faces at yaw 90 are 1.0000 and 0.5715. The six faces of a cube are never lit by the per-face table of 1.1 in the hand.
+
+### 6.12 The shield (closes Open question 23 of 34-1 and the shield item of 6.6 and 7.5)
+
+**Item definition** (`items/shield.json`): a `minecraft:condition` on the property `minecraft:using_item` with `on_false` = a `minecraft:special` item whose `base` is `item/shield` and `on_true` = a `minecraft:special` item whose `base` is `item/shield_blocking`, both with the special renderer `minecraft:shield`; the condition carries the `transformation` {scale (1, −1, −1), translation 0, rotations identity}. The `base` model supplies the display data and the particle sprite; the special renderer draws the geometry. The chain is the one of 6.7.2: … · D(base model, context) · L · (the shield model's parts). L = scale(1, −1, −1) is applied **once**, and it comes from the item definition. Read: `items/shield.json` carries the transformation (scale (1, −1, −1)); `ShieldSpecialRenderer.submit` (the draw path) contains no transform call and does not touch `DEFAULT_TRANSFORMATION`, whose only occurrence in that class is its own definition; the constant is read by the data generators (`ItemModelGenerators` reads the shield's and the trident's, `BlockModelGenerators` and `BuiltInBlockModels` read the conduit's), which is where the same value gets written into the JSON; the conduit and trident renderers define their own constants. So the draw path never applies the constant a second time. The blocking model is chosen while the player is using the item.
+
+**Display data** (`models/item/shield.json` and `shield_blocking.json`; `gui_light` front; the contexts not listed are absent in `shield_blocking`; neither model has a parent, so an absent context means no display transform at all, only the −0.5 recentring of 8.2):
+
+| Context | `item/shield` rotation / translation / scale | `item/shield_blocking` |
+|---|---|---|
+| firstperson_righthand | (0, 180, 5) / (−10, 1.75, −10) / 1.25 | (0, 180, −5) / (−15, 3.25, −11) / 1.25 |
+| firstperson_lefthand | (0, 180, 5) / (10, 0, −10) / 1.25 | (0, 180, −5) / (5, 5, −11) / 1.25 |
+| thirdperson_righthand | (0, 90, 0) / (10, 6, −4) / 1 | (45, 155, 0) / (−3.49, 11, −2) / 1 |
+| thirdperson_lefthand | (0, 90, 0) / (10, 6, 12) / 1 | (45, 155, 0) / (11.51, 7, 2.5) / 1 |
+| gui | (15, −25, −5) / (2, 3, 0) / 0.65 | the same |
+| fixed | (0, 180, 0) / (−4.5, 4.5, −5) / 0.55 | none |
+| on_shelf | (0, 0, 0) / (11, 18.5, 8.7) / 1.4 | none |
+| ground | (0, 0, 0) / (2, 4, 2) / 0.25 | none |
+
+The left-hand entries are mirrored once more on use (8.2): translation x and rotation y, z negated.
+
+**Geometry** (`ShieldModel.createLayer`, 64 × 64 texture, an ordinary entity model, parts in pixels, entity model space y down): part `plate`: texture offset (0, 0), one cuboid origin (−6, −11, −2), size (12, 22, 1); part `handle`: texture offset (26, 0), one cuboid origin (−1, −3, −1), size (2, 6, 6); both with the zero pose. The cuboids use the face layout of 7.4 (the front is the face at the smallest z). Texture: `entity/shield/shield_base_nopattern.png` when the item has neither banner patterns nor a base colour, otherwise `entity/shield/shield_base.png` (both 64 × 64, in the `shield_patterns` atlas, directory `textures/entity/shield`), drawn with the entity-solid render type (pipeline `entity_solid`: shaders `core/entity`, the default depth state of 6.9 (greater-or-equal, depth write), culling **not** disabled, no blending, overlay input `NO_OVERLAY`; the pipeline and its snippet define neither `PER_FACE_LIGHTING` nor `NO_CARDINAL_LIGHTING`, so the vertex stage applies the same two-light mix as 6.10 with the `LEVEL` lights, read from `entity.vsh` and the snippet definitions); with patterns or a base colour the banner pattern layers are drawn over the plate by `BannerRenderer.submitPatterns` (patterns themselves are not covered here). An enchanted shield adds the glint. Quad colour white, light = 6.10.
+
+After L the plate occupies z from +1 to +2 and the handle z from −5 to +1, y is up, and the decorated front face (originally at z = −2) looks towards +z.
+
+**First person.** The chain is 6.7.2 with the items above and the arm transform A of 6.3 step 1 (the shield has no swing branch of its own; a shield swing, if any, comes from 6.3 step 2 for the hand that swings). While blocking the `block` use animation gives a shield only step 1 (6.6). Numbers for the right hand at rest and blocking (16:9, E = 0; the full tables are in V24):
+
+- not blocking: M = A · D · L has the 3 × 3 block ((−1.24524, −0.10894, 0), (0.10894, −1.24524, 0), (0, 0, 1.25)) and the constant (0.50315, −1.08772, −0.72000); the decorated front looks away from the player (view −z) and the player sees the inner face and the handle, which sticks out towards the camera; the plate's top edge is at view y ≈ −0.19 … −0.27, i.e. window fy 0.66 … 0.74, and the shield rises from the bottom edge, its x range about 0.48 … 1.03 of the width (cut by the right edge);
+- blocking: 3 × 3 block ((−1.24524, 0.10894, 0), (−0.10894, −1.24524, 0), (0, 0, 1.25)), constant (0.29959, −0.88502, −0.78250); the plate's top edge is at fy 0.49 … 0.56 (just below the screen centre) and its x range is 0.39 … 0.89 of the width: raised and moved towards the centre.
+
+**Third person** (`ItemInHandLayer.submitArmWithItem`): for the arm that holds the item, with the entity placement of 7.3 already applied: (1) `translateToHand`: translate/rotate by the model's root part (`root.translateAndRotate`), then by the arm part (`translateAndRotate`: translate(x/16, y/16, z/16) then the quaternion rotationZYX(zRot, yRot, xRot) = Rz · Ry · Rx; the arm pivot is (−5, 2, 0) for the right arm and (5, 2, 0) for the left; for a slim arm the part's x is moved by +0.5 (right) or −0.5 (left) pixel during this call, so the pivot is (−4.5, 2, 0) or (4.5, 2, 0), `PlayerModel.translateToHand`); (2) Rx(−90°) then Ry(180°); (3) translate(k × 1/16, 2/16, −10/16) with k = +1 for the right arm and −1 for the left (adult; a baby uses k = 0, y = 1/16 and z = −4.5/16); (4) the display transform D of the item model for the context `THIRD_PERSON_RIGHT_HAND` / `LEFT_HAND` (left mirrored again); (5) L; (6) the shield parts. Three special cases leave a held shield unchanged: a stab-type swing adjustment (spears only; a shield swings with the default whack type), the use-animation hook of the arm pose (a no-op except for the `SPEAR` pose, so nothing for `ITEM` and `BLOCK`), and a "held to the eye" replacement of the whole placement used only for the spyglass (`heldOnHead`, set by `AvatarRenderer` for the spyglass; it needs the avatar to be using an item with this arm and a swing animation below 1e-5). The arm's rotation is the arm pose of 7.5: **not blocking**, a non-empty hand has the `ITEM` pose (xRot = xRot × 0.5 − 0.31415927, yRot = 0; with the walk term zero this is xRot = −0.31416, arm raised 18° forwards); **blocking** (the hand is using an item whose use animation is `block`, `AvatarRenderer.getArmPose`) the `BLOCK` pose.
+
+The blocking pose (`HumanoidModel.poseBlockingArm(arm, isRight)`): xRot = xRot × 0.5 − 0.9424779 + clamp(head.xRot, −1.3962634, 0.43633232); yRot = (−30° for the right arm, +30° for the left, in radians: ∓0.5235988) + clamp(head.yRot, −0.5235988, 0.5235988). The three shield constants of `HumanoidModel` are exactly these clamp bounds: `HIGHEST_SHIELD_BLOCKING_ANGLE` = −1.3962634 (lower bound of the head pitch term), `LOWEST_SHIELD_BLOCKING_ANGLE` = 0.43633232 (upper bound of the head pitch term) and `HORIZONTAL_SHIELD_MOVEMENT_LIMIT` = 0.5235988 (± bound of the head yaw term). `DUCK_WALK_ROTATION` = 0.005 has nothing to do with shields: `HumanoidModel.setupAnim` assigns it to the legs after the walk swing, right leg yRot = +0.005 and zRot = +0.005, left leg yRot = −0.005 and zRot = −0.005 (rad), every frame (the constant itself is inlined as a literal).
+
+Worked third-person numbers (recomputed a second time by a point-wise method, which agrees with the matrix product to four decimals; adult wide arm, not slim; head angles 0 so the clamp terms are 0; walk term and idle bob omitted; model space in blocks = pixels / 16, y down, front = −z; conversion to the world for a body yaw of 0, i.e. facing south: offset from the feet = (0.9375 x, 0.9375 (1.501 − y), −0.9375 z), 7.3):
+
+| Case | Plate centre, model space | Plate centre, offset from the feet | Direction of the plate's long axis (top of the plate) | Outward (decorated) normal, model space |
+|---|---|---|---|---|
+| Right arm, not blocking, ITEM pose (xRot −0.31416) | (−0.5938, 0.4816, −0.1159) | (−0.557, 0.956, +0.109) | along the arm's forward direction, the top edge forward and slightly up | (−1, 0, 0): away from the body |
+| Right arm, blocking, xRot −0.9424779, yRot −0.5235988 | (−0.1264, 0.4930, −0.5740) | (−0.119, 0.945, +0.538) | nearly vertical: top edge at height 1.58, bottom edge at 0.31, i.e. an upright plate in front of the body | (0.0816, −0.1418, −0.9865): forwards |
+| Left arm, blocking, xRot −0.9424779, yRot +0.5235988 | (0.1319, 0.4638, −0.6268) | (0.124, 0.972, +0.588) | the same, upright, top 1.61, bottom 0.34 | (−0.0816, −0.1418, −0.9865): forwards |
+
+The blocking numbers describe a plate about 1.29 blocks tall standing in front of the chest and facing forwards, which is the expected look of a raised shield; the non-blocking case was computed from the same read constants and was not compared with a rendering (Open question 24). The plate is 12 pixels = 0.75 model block wide and 22 pixels = 1.375 model blocks tall, i.e. 0.703 by 1.289 blocks after the 0.9375 body scale.
+
+### 6.13 Use-animation dispatch of the first-person renderer (`FirstPersonHandsAndItemsRenderer.submitArmWithItem`)
+
+The item stack decides in this order (this resolves the mapping that Open question 6 left open for toot-horn, bundle and none):
+
+1. empty stack: the arm model (6.5) for the main hand when the player is visible; nothing for the off hand;
+2. a stack with the `map_id` component: the map renderers (not covered); 3. the crossbow item: the crossbow branches of 6.6;
+4. otherwise, if the avatar is using an item (`isUsingItem`, `useItemRemainingTicks` > 0) in this hand: let u = the stack's use animation. `ItemUseAnimation.hasCustomArmTransform()` is true for `eat`, `drink` and `spear` only; for all others step 1 of 6.3 is applied **before** the switch. The switch then does: `none` nothing more; `eat` and `drink` the eat transform of 6.6 and then step 1; `block` the non-shield transform of 6.6 (nothing for `ShieldItem`); `bow` the bow pose of 6.6; `trident` the trident pose of 6.6; `brush` `applyBrushTransform`; `bundle` the swing of 6.3 step 2 with the hand's swing progress; `spear` translate(s × 0.56, −0.52, −0.72) then `SpearAnimations.firstPersonUse`; `spyglass`, `toot_horn` and `crossbow` (for a non-crossbow item) nothing more;
+5. otherwise, if the player is in the auto-spin (riptide) state: step 1 and the translate/rotate of 6.6;
+6. otherwise step 1, and the swing: if the avatar's current swing belongs to this hand: `none` type nothing, `whack` type the swing of 6.3 step 2, `stab` type `SpearAnimations.firstPersonAttack`.
+
+Then the item is submitted with the transform of 6.7.2 (the render state of the hand's item: the `ItemStackRenderState` built for the context of 6.3 step 3) with the light coordinate of 6.10.
+
+### 6.14 What makes a naive implementation of 6.1 to 6.6 look scrambled
+
+Checklist, each row stating the rule of the artifact:
+
+| Mistake | Rule |
+|---|---|
+| Drawing the item as one 16 × 16 quad, or as a stack of unrelated quads | The mesh is the 74-quad extrusion of 6.8 for the wooden pickaxe (2 + exposed edges); front at z = 8.5/16, back at z = 7.5/16, edge walls in between. |
+| Wrong winding or inverted culling | Item pipelines cull back faces; counter-clockwise (y-up NDC) is the front. With culling inverted the client draws the back quad (the sprite left-right reversed, 6.8) and the far edge walls and discards the front: a mirrored, scrambled brown shape of the right colours. With culling off but a working depth test the nearer front quad hides the back quad (they are 0.0425 block apart), so that setting is harmless; with culling off and no depth test the reversed back quad overdraws the front. |
+| Pixel units instead of blocks | Quad positions are divided by 16 (unit cube). The display translation is divided by 16 and the arm translation is in blocks. A client that feeds 0 … 16 positions into the 0.68 scale draws an 11-block plate. |
+| Euler order | R = Rx · Ry · Rz (Z first); the display `rotation` (0, −90, 25) turns the sprite plane about the vertical axis by −90° and tilts it **within its own plane** by 25°. With Rz · Ry · Rx the 25° becomes a roll of the whole picture and the shape is at the wrong angle. |
+| Translation order | The display translation is applied **after** rotation and scale (outermost), in the axes of the arm frame; the −½ recentring is innermost. The arm translation A is outside D. |
+| UV orientation | v = 0 is the top of the sprite and grows downwards; the front quad's vertex 0 is the top-left corner with uv (0, 0). A bottom-up convention mirrors the picture vertically. |
+| Using the world FOV or projection | The hand uses vertical fov 70° (death/fluid modifications only), near 0.05, aspect = window width / height and its own cleared depth range (6.9). With a different fov the plate, which spans view depth 0.2 … 1.1 blocks at x ≈ 0.6 to the right of the axis, changes its apparent shape strongly. With the world depth buffer the hand is partly hidden or clipped by world geometry. |
+| Skipping the cleared depth, or the equal-depth rule | Clear depth before the hand; let equal depth pass (coplanar layers). |
+| Normals in view space, flat lighting, or the GUI lights | Normals in world orientation, `LEVEL` lights, brightness 0.4 … 1.0 per face (6.10). Sprite colours are dark, so a held wooden tool is genuinely dark brown. |
+| Wrong atlas | Items use the items atlas, block models the blocks atlas (6.8). |
+| Expecting the tool to be face-on | The picture computed from the artifact's data (V21): the plate is seen obliquely (cosine to the line of sight about 0.65 at its centre) from its left side in the lower right of the window; about 60 % of the opaque texel centres (41 of 68) are on screen, the handle runs off the bottom edge and the head lies near and partly beyond the right edge in 16:9. Only mid-swing (p ≈ 0.5) is the plate nearly edge-on. |
+| Missing equip or swing terms | At rest E = 0 and p = 0. The attack-strength drop (6.2) lowers the item while the cooldown recharges. |
 
 ---
 
@@ -914,7 +1156,7 @@ In the two third-person modes the camera is "detached": the local player model i
 5. The distance computation is the same for FRONT (mirrored) and BACK modes.
 6. While sleeping the camera is placed at the bed with yaw = the bed direction's yaw − 180° and pitch 0, then moved 0.15 blocks.
 
-The camera's field of view is the option `fov` (30–110, default 70), modified by `fovEffectScale` (details not traced); see Open question 9.
+The world camera's vertical field of view is the option `fov` (30–110, default 70) × the smoothed field-of-view modifier of the player (speed, drawn bow; `fovEffectScale` scales it; the modifier's own computation was not traced), then the death and fluid modification of 6.9. The near plane is 0.05 and the far plane is max(effective render distance × 64, cloud range × 16) blocks (6.9). **The first-person hand does not use this field of view**: it has its own fixed 70° (6.9). Open question 9 now only concerns the player's field-of-view modifier.
 
 ### 7.3 Where the player model is drawn (`LivingEntityRenderer`, `AvatarRenderer`)
 
@@ -983,7 +1225,7 @@ All angles in radians; walkPos = the walk animation position, walkSpeed = the wa
 |---|---|
 | EMPTY | yRot = 0 |
 | ITEM | xRot = xRot × 0.5 − 0.31415927 (π/10); yRot = 0 |
-| BLOCK (`poseBlockingArm`) | xRot = xRot × 0.5 − 0.9424779 + clamp(head.xRot, −1.3962634, 0.43633232); yRot = (−30° for the right arm, +30° for the left, in radians) + clamp(head.yRot, −0.5235988, 0.5235988) |
+| BLOCK (`poseBlockingArm`) | xRot = xRot × 0.5 − 0.9424779 + clamp(head.xRot, −1.3962634, 0.43633232); yRot = (−30° for the right arm, +30° for the left, in radians) + clamp(head.yRot, −0.5235988, 0.5235988) (the named constants and the shield placement: 6.12) |
 | BOW_AND_ARROW | right arm: yRot = −0.1 + head.yRot; left arm: yRot = 0.1 + head.yRot + 0.4; both arms xRot = −π/2 + head.xRot |
 | THROW_TRIDENT | xRot = xRot × 0.5 − π; yRot = 0 |
 | CROSSBOW_CHARGE (`animateCrossbowCharge`, with right = the holding arm) | holding arm: yRot = −0.8 (right) or +0.8 (left), xRot = −0.97079635; other arm: xRot = the holding arm's xRot, then with d = clamp(ticksUsing, 0, maxCharge) / maxCharge: other.yRot = lerp(d, 0.4, 0.85) × (+1 for right, −1 for left) and other.xRot = lerp(d, other.xRot, −π/2) |
@@ -998,7 +1240,7 @@ All angles in radians; walkPos = the walk animation position, walkSpeed = the wa
 
 ### 7.6 Cape, ears and other layers
 
-Not covered (capes, elytra, armour layers, held-item layer in third person). Third-person held items use the item's `thirdperson_righthand`/`lefthand` display transform (8.2) attached to the arm pivot.
+Not covered (capes, elytra, armour layers, held-item layer in third person). Third-person held items use the item's `thirdperson_righthand`/`lefthand` display transform (8.2) attached to the arm pivot; the exact chain from the arm part to the item model (`ItemInHandLayer`: arm part, Rx(−90°), Ry(180°), translate (±1, 2, −10)/16, display transform, item transformation) is in 6.12.
 
 ---
 
@@ -1008,20 +1250,28 @@ Not covered (capes, elytra, armour layers, held-item layer in third person). Thi
 
 A GUI item is rendered with the display context `GUI` into an off-screen item atlas cell of 16 × guiScale pixels square and then blitted to the 16 × 16 GUI-pixel cell at (x, y) with nearest filtering and premultiplied alpha (`GUI_TEXTURED_PREMULTIPLIED_ALPHA`). The view is orthographic: the model's unit cube space [0, 1]³ (before the display transform, centre (0.5, 0.5, 0.5)) maps onto the 16 × 16 cell (1 block = 16 GUI pixels), y up, with the display transform applied. Items whose model extends beyond the cell are drawn larger ("oversized") without clipping to the cell.
 
-**Flat items** (models derived from `builtin/generated`, 08 §5.7; most tools, foods, materials): the generated model's `gui_light` is `front`, the transform for `gui` is identity (the default `item/generated` has no `gui` entry), and the lighting setup is `ITEMS_FLAT`, so the quad is shaded as an unrotated sprite (effectively full brightness with the formula of 1.9 for a normal facing the camera). The 16 × 16 texture fills the cell exactly.
+**Flat items** (models derived from `builtin/generated`, 08 §5.7; most tools, foods, materials): the generated model's `gui_light` is `front`, the transform for `gui` is identity (the default `item/generated` has no `gui` entry), and the lighting setup is `ITEMS_FLAT`, so the front face is shaded as an unrotated sprite (effectively full brightness with the formula of 1.9 for a normal facing the camera). The 16 × 16 texture fills the cell exactly. The geometry is the extruded sprite of 6.8 (front and back quad and edge walls, 1 pixel thick), not a single quad; seen straight from the front only the front quad is visible, which is why the GUI icon looks flat.
 **Block items** (models derived from `block/block` with `gui_light: side`): the `gui` transform is rotation (30, 225, 0), translation (0, 0, 0), scale (0.625, 0.625, 0.625), lighting `ITEMS_3D`. The cube is seen from above-left: the visible faces are UP (brightest), the face towards the viewer on the left (NORTH or WEST depending on the 225° yaw) and on the right.
 The shading of those three faces comes from the `ITEMS_3D` light directions of 1.9 using the formula `min(1, (max(0, n·L0) + max(0, n·L1)) × 0.6 + 0.4)`.
 
 ### 8.2 Display transforms (`ItemTransform.apply`)
 
-For a context the model's `display` entry (08 §5.6) gives rotation (degrees, X, Y, Z), translation (sixteenths of a block, clamped to ±80) and scale (clamped to ±4). The pose is modified as:
+For a context the model's `display` entry (08 §5.6) gives rotation (degrees, X, Y, Z), translation (sixteenths of a block) and scale. At load (`ItemTransform$Deserializer`) the translation is multiplied by 1/16 and each component is clamped to ±5 blocks (= ±80 sixteenths), and each scale component is clamped to ±4; absent fields default to rotation 0, translation 0, scale 1. The pose M is modified by four right multiplications, in this order (6.7.1; the first one is the outermost, so on a vertex the last acts first):
 
-1. translate by (tx, ty, tz) / 16 (for left-hand contexts tx is negated);
-2. rotate by the Euler angles (rx, ry, rz) in degrees, applied as `rotationXYZ(rx, ry, rz)` (for left-hand contexts ry and rz are negated);
-3. scale by (sx, sy, sz);
-4. translate by (−0.5, −0.5, −0.5), moving the model's centre to the origin.
+M ← M · T(tx, ty, tz) · R · S(sx, sy, sz) · T(−0.5, −0.5, −0.5)
 
-A model with no entry for a context uses no transform at all (only the −0.5 translate). The context list is in 08 §5.6; the left hand falls back to the right-hand entry mirrored as above.
+1. translate by (tx, ty, tz) (already in blocks; for left-hand contexts tx is negated);
+2. rotate by R = `rotationXYZ(rx, ry, rz)` with the angles in radians (degrees × 0.017453292); (recalled, not verified) R = Rx(rx) · Ry(ry) · Rz(rz), that is, on a vertex first about z, then y, then x, all about the fixed axes of the current frame (6.7.1); for left-hand contexts ry and rz are negated before the call;
+3. scale by (sx, sy, sz) (the normal matrix of the pose is unchanged for a uniform positive scale, multiplied by the signs for a uniform scale with negative components, and divided by the scale and renormalised for a non-uniform scale: `PoseStack$Pose.scale`);
+4. translate by (−0.5, −0.5, −0.5), moving the model's centre (0.5, 0.5, 0.5) to the origin.
+
+So the model's centre is scaled and rotated about itself and then moved by the display translation; the translation is **not** rotated by R and **not** scaled by S. "Left-hand context" means `THIRD_PERSON_LEFT_HAND` or `FIRST_PERSON_LEFT_HAND` (`ItemDisplayContext.leftHand()`).
+
+**Which entry is used** (`ItemTransforms`, `ResolvedModel.findTopTransform`):
+
+- Each model file's `display` is read into nine entries. An entry that is absent is the shared "no transform" sentinel; an entry that is present counts as defined even if all its values are the defaults. If a model's own `thirdperson_lefthand` (or `firstperson_lefthand`) is the sentinel, the model's own right-hand entry is used in its place (per file, at load).
+- For a context the client takes, **independently for each context**, the first model along the chain model → parent → grandparent … whose entry for that context is not the sentinel. Nothing found: no transform, only step 4 above (the −0.5 translate): the model is just centred on the origin, unscaled, at the hand frame's origin.
+- The chosen entry is applied with the leftHand flag of the **context**: so an **explicit** left-hand entry in a file is mirrored again (translation x negated, rotation y and z negated), and a left entry that was filled in from the right entry is mirrored once. For `item/handheld` (its own firstperson_lefthand (0, 90, −25) with translation x +1.13) the entry is therefore used as rotation (0, −90, 25) and translation x −1.13, the same rotation as the right hand; for those tools that is the exact mirror image (the back quad is seen, 6.7.3). `item/generated` has no left entry of its own, so its left hand is the right entry mirrored once: rotation (0, 90, −25), translation x −1.13, front quad visible, not an exact mirror (6.7.3). The entries of other models, for example the shield's, are written to be applied with the double mirror (6.12).
 
 Vanilla defaults (`models/item/generated.json`, `handheld.json`, `block/block.json`) for reference: `item/generated` thirdperson_righthand rot (0,0,0) tr (0,3,1) sc 0.55; firstperson_righthand rot (0,−90,25) tr (1.13,3.2,1.13) sc 0.68; ground tr (0,2,0) sc 0.5; head rot (0,180,0) tr (0,13,7); fixed rot (0,180,0).
 `item/handheld` thirdperson_righthand rot (0,−90,55) tr (0,4,0.5) sc 0.85 (lefthand rot (0,90,−55)); firstperson_righthand rot (0,−90,25) tr (1.13,3.2,1.13) sc 0.68 (lefthand rot (0,90,−25)).
@@ -1035,6 +1285,23 @@ The texture coordinates are transformed (`TextureTransform.setupGlintTexturing(s
 ### 8.4 Items in the world (summary)
 
 Dropped items and items in item frames use the `ground` and `fixed` display transforms. Their lifetime, pickup delay and merge rules are in 18 §6.11; their motion and pickup box are in 41-item-entity-physics.md.
+
+### 8.5 From item definition to the render state (`ItemModelResolver`, `ItemStackRenderState`)
+
+Source and method as in the provenance note of 6.7.
+
+1. **Definition tree.** The item definition (08 §6) is baked into an `ItemModel` tree. Each branching node (`condition`, `select`, `range_dispatch`, `composite`) and each leaf has an optional `transformation`; a node composes it with the matrix it received from its parent and hands the product to its children (`Transformation.compose(parentMatrix, optional own)`; the product is parent × own, inferred). The matrix that reaches a leaf is that leaf's **local transform L** (6.7.2 factor 8). A `minecraft:model` leaf becomes a `CuboidItemModelWrapper` (the quads of the model, baked once); a `minecraft:special` leaf becomes a `SpecialModelWrapper` (a code-drawn renderer, such as the shield's) whose `base` model supplies the display data, the gui-light setting and the particle sprite.
+2. **Update.** For one stack and one `ItemDisplayContext` the resolver fills an `ItemStackRenderState` with one layer per leaf. A layer holds: the quads split into solid and translucent lists (6.9), the tint colours (one per entry of the leaf's `tints`), the foil type (none, standard, or the special foil of a special renderer), L, the **item transform** (the display entry chosen for the context, 8.2) and the `usesBlockLight` flag (the model's `gui_light` is `side`: used by the GUI only).
+3. **Submit.** Each layer is placed with the item transform for the context (8.2), then its local transform L; a special renderer draws it directly, otherwise the quads go to the submit-node collector with a copy of the pose, the light coordinate, the overlay (`NO_OVERLAY` for held items), the tints and the foil type.
+4. **Render.** `ItemFeatureRenderer` writes each quad through its own render type (the quad's material info chooses `itemCutout`, `itemTranslucent` or their glint variants for the sprite's atlas, 6.8 and 6.9), with the tint colour of the quad's tint index (white when it has none) and the pose's normal matrix (6.10). With the glint type the item is drawn a second time as in 8.3; for a special foil the decal pose is the item pose with every matrix entry multiplied by 0.5 in the GUI and by 0.75 in first-person contexts (`computeFoilDecalPose`).
+
+### 8.6 Light, normal space and depth by display context
+
+| Context | Lighting entry | Normal space | Light map | Projection and depth |
+|---|---|---|---|---|
+| GUI (the item atlas cell, 8.1) | `ITEMS_FLAT` for `gui_light` front, `ITEMS_3D` for side | GUI space | `UiLightmap` (full bright) | orthographic cell, own depth |
+| First-person hand (6.9, 6.10) | `LEVEL` | world orientation (the camera rotation is removed by the pose stack, 6.7.2) | level light map at the player's light coordinate | `hudFov` 70°, near 0.05, its own cleared depth |
+| Third-person hand, ground, fixed, head, shelf | not read item by item; the level pass keeps `LEVEL` active (inferred) | world orientation (inferred, as for entities, 1.9) | level light map at the carrier's light coordinate | the world projection and depth |
 
 ---
 
@@ -1103,6 +1370,121 @@ Sky colour at tick 6000: base `#78a7ff` × track `#ffffff` = `#78a7ff` = (0.4706
 
 **V20 Player model.** The right-arm pivot is (−5, 2, 0) (2 pixels below the neck line, y down). The head's front face is skin texels (8..16, 8..16). The model spans y_m = −8 (head top) to y_m = 24 (soles) = 32 pixels. World height of a vertex above the entity position: 0.9375 × (1.501 − y_m / 16). Soles: 0.9375 × (1.501 − 1.5) = 0.0009375. Head top: 0.9375 × (1.501 + 0.5) = 1.8759. Height from soles to head top = 0.9375 × 32 / 16 = 1.875 blocks. Against a standing hitbox of 1.8 (vanilla value, not read in this round) the head top is 0.075 above the hitbox top. The 1.501 is the 24 / 16 = 1.5 foot line plus 0.001.
 
+**V21 The wooden pickaxe at rest (right hand), 16:9.** Inputs: window 1920 × 1080 (any 16:9 size gives the same fractions), `fov` option irrelevant (hand fov 70°), camera at rest (no bobbing, hurt or sway), swing p = 0, equip E = 0, main arm right. The sprite is `textures/item/wooden_pickaxe.png` (16 × 16). Chain: M = A · D (6.7.3) with the 3 × 3 block and constant given there: view = M · (x/16, y/16, z/16) for a model-pixel point (x, y, z); that is
+
+view x = −0.68 · z/16 + 0.970625; view y = 0.28738 · x/16 + 0.61629 · y/16 − 0.771835; view z = 0.61629 · x/16 − 0.28738 · y/16 − 0.813830.
+
+Projection: f = 1.428148, f / aspect = 0.803333, near 0.05, far F = 768 for the depth column below (with F = 2048, 6.9, the depth values change by less than 4 × 10⁻⁵; x, y, ndc and fractions do not depend on F). ndc_x = 0.803333 · view x / (−view z), ndc_y = 1.428148 · view y / (−view z). Quick check of the projection: the view point (1, 0, −1) gives ndc (0.8033, 0) and depth 0.04994 (n (F − 1) / (F − n) = 0.05 × 767 / 767.95).
+
+Front quad (model z = 8.5; vertex order 6.8: v0 = top-left, v1 = bottom-left, v2 = bottom-right, v3 = top-right of the sprite):
+
+| Corner (x, y px) | view (x, y, z) | −z (= clip w) | ndc | window fraction (fx, fy from the top) | pixel at 1920 × 1080 | depth (F = 768) |
+|---|---|---|---|---|---|---|
+| v0 top-left (0, 16) | (0.60938, −0.15555, −1.10121) | 1.10121 | (0.44454, −0.20173) | (0.7223, 0.6009) | (1386.8, 648.9) | 0.045342 |
+| v1 bottom-left (0, 0) | (0.60938, −0.77183, −0.81383) | 0.81383 | (0.60152, −1.35445) | (0.8008, 1.1772) | (1537.5, 1271.4) | 0.061377 |
+| v2 bottom-right (16, 0) | (0.60938, −0.48445, −0.19754) | 0.19754 | (2.47814, −3.50244) | (1.7391, 2.2512) | (3339.0, 2431.3) | 0.253064 |
+| v3 top-right (16, 16) | (0.60938, 0.13183, −0.48492) | 0.48492 | (1.00951, 0.38827) | (1.0048, 0.3059) | (1929.1, 330.3) | 0.103051 |
+
+Back quad (model z = 7.5; 0.0425 block further along view +x; listed in the same corner order, its own vertex order is v0 = (16, 16), v1 = (16, 0), v2 = (0, 0), v3 = (0, 16)):
+
+| Corner | view (x, y, z) | ndc | window fraction | pixel | depth |
+|---|---|---|---|---|---|
+| top-left (0, 16) | (0.65187, −0.15555, −1.10121) | (0.47554, −0.20173) | (0.7378, 0.6009) | (1416.5, 648.9) | 0.045342 |
+| bottom-left (0, 0) | (0.65187, −0.77183, −0.81383) | (0.64347, −1.35445) | (0.8217, 1.1772) | (1577.7, 1271.4) | 0.061377 |
+| bottom-right (16, 0) | (0.65188, −0.48445, −0.19754) | (2.65097, −3.50244) | (1.8255, 2.2512) | (3504.9, 2431.3) | 0.253064 |
+| top-right (16, 16) | (0.65188, 0.13183, −0.48492) | (1.07991, 0.38827) | (1.0400, 0.3059) | (1996.7, 330.3) | 0.103051 |
+
+Which quads are drawn: with counter-clockwise front faces the front quad has a positive signed ndc area (+2.445) and is drawn; the back quad has −2.616 and is culled. Of the 72 edge walls 30 face the camera and are drawn: 18 EAST (the right-hand edges of the opaque texels), 6 UP and 6 DOWN; no WEST wall. (1 + 30 = 31 quads are rasterised.)
+
+Where the opaque texels land (front plane, texel centres, same corner convention; the sprite row counts from the top):
+
+| Texel (column, row) | Opaque | ndc | window fraction |
+|---|---|---|---|
+| (2, 14) handle end | yes | (0.6576, −1.2837) | (0.8288, 1.1418) off the bottom edge |
+| (5, 11) | yes | (0.7169, −1.0452) | (0.8585, 1.0226) just below the bottom edge |
+| (8, 8) | yes | (0.7881, −0.7594) | (0.8941, 0.8797) |
+| (11, 5) | yes | (0.8750, −0.4106) | (0.9375, 0.7053) |
+| (6, 2) head, left tip | yes | (0.6074, −0.2394) | (0.8037, 0.6197) |
+| (10, 3) head, top | yes | (0.7722, −0.2293) | (0.8861, 0.6146) |
+| (13, 8) head, right | yes | (1.1423, −0.8014) | (1.0712, 0.9007) off the right edge |
+| (13, 10) | yes | (1.2468, −1.1549) | (1.1234, 1.0775) off both edges |
+
+The bounding box of all opaque texels of the front quad is fx 0.7864 … 1.2511, fy 0.5276 … 1.2551 of the window. The on-screen part is therefore the **right 21.4 % of the width and the lower 47.2 % of the height**: the handle runs off the bottom edge, the head lies near and partly beyond the right edge, and the whole picture is a foreshortened plate seen obliquely from its left side. 41 of the 68 opaque texel centres (about 60 %) are inside the window. The sprite's transparent bottom-right corner (16, 0) is the point nearest to the camera (view depth 0.1975, ndc (2.48, −3.50)): it is never visible because that texel is transparent, but any code that clips or sorts by it must not fail on a vertex that far outside the screen (near plane 0.05 is not crossed).
+
+Changing a term: with equip offset E the whole picture moves down by 0.6 E blocks in view y (E = 0.5: ndc_y of v3 becomes −0.49527, fy 0.7476). With the **wrong** Euler order R = Rz · Ry · Rx the front quad's corners become (0, 16) → ndc (0.37973, −0.03008), (0, 0) → (0.61308, −0.91968), (16, 0) → (1.96060, −2.94112), (16, 16) → (1.21438, −0.09618): a different picture.
+
+**V22 The pickaxe in mid-swing.** Right hand, E = 0, swing progress p = 0.5 (6.3 step 2; q = √p = 0.70711, sin(q π) = 0.79547, sin(q 2π) = −0.96400). The swing frame origin (A · swing translate): (0.24172, −0.71278, −0.92000), the value of V18. The rotations then are Ry(30.86°), Rz(−15.91°), Rx(−63.64°), Ry(−45°) (V18), followed by D of 6.7.3. Front quad of the pickaxe, same corner convention, 16:9:
+
+| Corner | view (x, y, z) | ndc | window fraction |
+|---|---|---|---|
+| v0 top-left (0, 16) | (0.26072, −0.84294, −1.43311) | (0.14615, −0.84002) | (0.5731, 0.9200) |
+| v1 bottom-left (0, 0) | (0.40098, −0.87511, −0.76851) | (0.41915, −1.62624) | (0.7096, 1.3131) |
+| v2 bottom-right (16, 0) | (0.13026, −0.25742, −0.68148) | (0.15355, −0.53947) | (0.5768, 0.7697) |
+| v3 top-right (16, 16) | (−0.01000, −0.22526, −1.34608) | (−0.00597, −0.23899) | (0.4970, 0.6195) |
+
+The front quad's signed area is positive at p = 0, 0.25, 0.5, 0.75 and 1 (2.445, 0.234, 0.069, 0.050, 2.445): the front face stays the visible one through the swing and is nearly edge-on at p = 0.5. The opaque texels at p = 0.5 cover fx 0.516 … 0.680, fy 0.679 … 1.211 of the window.
+
+**V23 A held cube: the crafting table (`block/crafting_table`, parent `block/cube`) at rest, right hand, 16:9.** M = A · D with the table of 6.11; model corner (x, y, z) ∈ {0, 1}³ (x east, y up, z south), view = M · corner, depth with F = 768:
+
+| Corner (x, y, z) | view (x, y, z) | ndc | window fraction | depth |
+|---|---|---|---|---|
+| (0, 0, 0) | (0.27716, −0.72000, −0.72000) | (0.30924, −1.42815) | (0.6546, 1.2141) | 0.069384 |
+| (0, 0, 1) | (0.56000, −0.72000, −0.43716) | (1.02907, −2.35217) | (1.0145, 1.6761) | 0.114318 |
+| (0, 1, 0) | (0.27716, −0.32000, −0.72000) | (0.30924, −0.63473) | (0.6546, 0.8174) | 0.069384 |
+| (0, 1, 1) | (0.56000, −0.32000, −0.43716) | (1.02907, −1.04541) | (1.0145, 1.0227) | 0.114318 |
+| (1, 0, 0) | (0.56000, −0.72000, −1.00284) | (0.44859, −1.02535) | (0.7243, 1.0127) | 0.049796 |
+| (1, 0, 1) | (0.84284, −0.72000, −0.72000) | (0.94039, −1.42815) | (0.9702, 1.2141) | 0.069384 |
+| (1, 1, 0) | (0.56000, −0.32000, −1.00284) | (0.44859, −0.45571) | (0.7243, 0.7279) | 0.049796 |
+| (1, 1, 1) | (0.84284, −0.32000, −0.72000) | (0.94039, −0.63473) | (0.9702, 0.8174) | 0.069384 |
+
+Face visibility (view-space unit normal, dot of the normal with the vector from the face centre to the camera): UP (0, 1, 0), +0.32, drawn; WEST (−0.7071, 0, 0.7071), +0.705, drawn; SOUTH (0.7071, 0, 0.7071), −0.087, culled; NORTH (−0.7071, 0, −0.7071), −0.313, culled; EAST (0.7071, 0, −0.7071), −1.105, culled; DOWN (0, −1, 0), −0.72, culled. The cube centre is at view (0.56, −0.52, −0.72), ndc (0.625, −1.0316), fy 1.016: just below the bottom edge. The visible region is the top face (fx 0.65 … 1.01, fy 0.73 … 1.02) and the upper part of the west face (fx 0.65 … 1.01, fy 0.82 … 1.0 on screen); for the crafting table the top face shows `crafting_table_top` and the west face shows `crafting_table_front` (its model assigns `north` and `west` the front texture, `east` and `south` the side texture, `down` the oak planks). A dirt block (`block/dirt`) has the same geometry with one texture. Brightness: V26.
+
+**V24 The shield in the first-person hand (right hand, E = 0, 16:9).** M = A · D · L (6.12), model pixel (x, y, z) of the plate; the decorated front face is z = −2 and the inner face z = −1 (the camera sees the inner face and the handle). Inner face z = −1:
+
+| Corner (x, y) | not blocking: view (x, y, z) | ndc | window fraction | blocking: view (x, y, z) | ndc | window fraction |
+|---|---|---|---|---|---|---|
+| (−6, −11) | (1.0450, −0.2725, −0.7981) | (1.0518, −0.4875) | (1.0259, 0.7438) | (0.6917, 0.0119, −0.8606) | (0.6456, 0.0198) | (0.8228, 0.4901) |
+| (6, −11) | (0.1111, −0.1908, −0.7981) | (0.1118, −0.3413) | (0.5559, 0.6707) | (−0.2423, −0.0698, −0.8606) | (−0.2261, −0.1158) | (0.3869, 0.5579) |
+| (6, 11) | (−0.0387, −1.9030, −0.7981) | (−0.0390, −3.4051) | (0.4805, 2.2026) | (−0.0925, −1.7820, −0.8606) | (−0.0863, −2.9571) | (0.4568, 1.9785) |
+| (−6, 11) | (0.8952, −1.9847, −0.7981) | (0.9011, −3.5513) | (0.9505, 2.2757) | (0.8415, −1.7003, −0.8606) | (0.7854, −2.8215) | (0.8927, 1.9107) |
+
+The outer face (z = −2) has the same view x and y and view z −0.8762 (not blocking) and −0.9387 (blocking). Both matrices have the constant column given in 6.12; the 3 × 3 block maps model x to view −x, model y to view −y (model y is down) and model z to view +z (0.0781 view units per model pixel of z: the handle end at z = 5 px is 0.469 closer to the camera than the inner face, at view z −0.329). Left hand (entries (0, 180, 5) / (10, 0, −10) not blocking and (0, 180, −5) / (5, 5, −11) blocking, mirrored once more on use; note the not-blocking left entry has ty = 0 where the right entry has 1.75, so the left hand is not an exact mirror of the right): not blocking, M has the 3 × 3 block ((−1.24524, 0.10894, 0), (−0.10894, −1.24524, 0), (0, 0, 1.25)) and the constant (−0.50791, −1.08815, −0.72000); the inner face (z = −1) spans fx −0.028 … 0.517 and its top edge is at fy 0.671 … 0.744; blocking: constant (−0.30435, −0.88459, −0.78250), inner face fx 0.105 … 0.611, top edge fy 0.490 … 0.558.
+
+**V25 The mesh of tiny sprites (the generator's unit test).** A 1 × 1 fully opaque sprite (w = h = 1, s = 16) gives 6 quads (front, back and one wall per side). In the format "vertex: position (x, y, z in model pixels), texture coordinate (fraction of the sprite)":
+
+| Quad | v0 | v1 | v2 | v3 |
+|---|---|---|---|---|
+| front (SOUTH) | (0, 16, 8.5) (0, 0) | (0, 0, 8.5) (0, 1) | (16, 0, 8.5) (1, 1) | (16, 16, 8.5) (1, 0) |
+| back (NORTH) | (16, 16, 7.5) (1, 0) | (16, 0, 7.5) (1, 1) | (0, 0, 7.5) (0, 1) | (0, 16, 7.5) (0, 0) |
+| UP | (0, 16, 7.5) (0.1, 0.1) | (0, 16, 8.5) (0.1, 0.9) | (16, 16, 8.5) (0.9, 0.9) | (16, 16, 7.5) (0.9, 0.1) |
+| DOWN | (0, 0, 8.5) (0.1, 0.1) | (0, 0, 7.5) (0.1, 0.9) | (16, 0, 7.5) (0.9, 0.9) | (16, 0, 8.5) (0.9, 0.1) |
+| WEST (left wall) | (0, 16, 7.5) (0.9, 0.1) | (0, 0, 7.5) (0.9, 0.9) | (0, 0, 8.5) (0.1, 0.9) | (0, 16, 8.5) (0.1, 0.1) |
+| EAST (right wall) | (16, 16, 8.5) (0.9, 0.1) | (16, 0, 8.5) (0.9, 0.9) | (16, 0, 7.5) (0.1, 0.9) | (16, 16, 7.5) (0.1, 0.1) |
+
+A fully opaque 16 × 16 sprite gives 2 + 4 × 16 = 66 quads; the wooden pickaxe 74 (6.8). Two opaque texels that touch get no wall between them.
+
+**V26 Brightness of held items (the item shade of 6.10, no light-map factor).** Light directions L0 = (0.16169, 0.80845, −0.56592), L1 = (−0.16169, 0.80845, 0.56592); n_world = Ry(π − yaw) · Rx(−pitch) · n_view.
+
+| Face (pickaxe, right hand at rest) | n_view | yaw 0 / pitch 0 | yaw 90 / 0 | yaw 180 / 0 | yaw 270 / 0 | yaw 0 / pitch 45 | yaw 0 / pitch −45 |
+|---|---|---|---|---|---|---|---|
+| front (+z, drawn) | (−1, 0, 0) | 0.4970 | 0.7395 | 0.4970 | 0.7395 | 0.4970 | 0.4970 |
+| back (−z, culled) | (1, 0, 0) | 0.4970 | 0.7395 | 0.4970 | 0.7395 | 0.4970 | 0.4970 |
+| wall UP | (0, 0.9063, −0.4226) | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0.8850 | 1.0000 |
+| wall DOWN | (0, −0.9063, 0.4226) | 0.4000 | 0.4000 | 0.4000 | 0.4000 | 0.5532 | 0.4000 |
+| wall EAST (sprite right edge) | (0, 0.4226, 0.9063) | 0.9127 | 0.8100 | 0.9127 | 0.8100 | 1.0000 | 0.5532 |
+| wall WEST (sprite left edge) | (0, −0.4226, −0.9063) | 0.5027 | 0.4000 | 0.5027 | 0.4000 | 0.4000 | 0.8850 |
+
+| Face (held cube, right hand at rest) | n_view | yaw 0 / 0 | yaw 90 / 0 | yaw 180 / 0 | yaw 270 / 0 | yaw 0 / pitch 45 |
+|---|---|---|---|---|---|---|
+| UP (drawn) | (0, 1, 0) | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| WEST (drawn) | (−0.7071, 0, 0.7071) | 0.7087 | 0.5715 | 0.7087 | 0.5715 | 0.8851 |
+| SOUTH (culled) | (0.7071, 0, 0.7071) | 0.5715 | 0.7087 | 0.5715 | 0.7087 | 0.8851 |
+| NORTH (culled) | (−0.7071, 0, −0.7071) | 0.5715 | 0.7087 | 0.5715 | 0.7087 | 0.4000 |
+| EAST (culled) | (0.7071, 0, −0.7071) | 0.7087 | 0.5715 | 0.7087 | 0.5715 | 0.4000 |
+| DOWN (culled) | (0, −1, 0) | 0.4000 | 0.4000 | 0.4000 | 0.4000 | 0.4000 |
+
+The final colour of a texel is texture × tint × this brightness × the light-map colour of the player's light coordinate (1.8): in full sky light (block 0, sky 15) the light map is white. Example: the texel (106, 80, 30) of the wooden pickaxe on its front face at yaw 0, pitch 0 in full daylight: (106, 80, 30) × 0.4970 = (52.7, 39.8, 14.9) before the display gamma.
+
 ---
 
 ## 10. Open questions
@@ -1112,10 +1494,10 @@ Sky colour at tick 6000: base `#78a7ff` × track `#ffffff` = `#78a7ff` = (0.4706
 3. **Weather layers.** The grey brightness of `blend_to_gray` and the colour blended into `visual/sky_light_color` in rain and thunder, the exact meaning of the layer weight (assumed equal to the smoothed rain and thunder levels), and the star-brightness layer (3.5).
 4. **Crumbling depth bias.** Whether the 10.0 passed to the crumbling pipeline's depth state is a slope-scaled or a constant bias (4.3).
 5. **Disabled button text colour** and the over-wide label scrolling rule (5.9).
-6. **Item-use arm poses not reproduced.** Brush (`applyBrushTransform`), spear (`SpearAnimations` first and third person), and which of the toot-horn, bundle and none use animations map to the two unseparated first-person branches (6.6, 7.5).
+6. **Item-use arm poses not reproduced.** Brush (`applyBrushTransform`) was not read. The spear animations are written in 34-1 §3.8. The mapping of the toot-horn, bundle and none animations to the first-person branches is given in 6.13.
 7. **Third-person arm animation.** The `stab` swing and the last statements of the `whack` branch of `setupAttackAnimation`; swimming, elytra and crawling poses; the cape, elytra and armour layers; the skin-parts bits other than the listed layers (7.5, 7.6).
 8. **Biome colour tinting** (grass, foliage, water, the `tintindex` sources for blocks, and the `biomeBlendRadius` averaging) is not covered here; 08 has the item tint sources.
-9. **Camera and field of view.** The default of the `camera_distance` attribute for the player (4.0 inferred), `fovEffectScale` handling, the near plane and the far plane (7.2).
+9. **Camera and field of view.** The default of the `camera_distance` attribute for the player (4.0 inferred) and the player's field-of-view modifier (`AbstractClientPlayer.getFieldOfViewModifier`, 6.9) were not read. Given in 6.9: the near plane (0.05), the far plane, the death and fluid modification, and the fixed 70° hand field of view.
 10. **Option defaults read indirectly.** `cloudRange` default 128, `textureFiltering` default RGSS and `maxAnisotropyBit` default 2 (value 2^bit) were taken from the order of constructor arguments, not from named constants (2.1, 3.6).
 11. **Default values of** `chunkSectionFadeInTime`, the glint strength and glint speed options, and the `UiLightmap` values used for GUI items.
 12. **Text colour with alpha 0.** How `Font` treats a text colour whose alpha is 0 (5.10).
@@ -1123,3 +1505,16 @@ Sky colour at tick 6000: base `#78a7ff` × track `#ffffff` = `#78a7ff` = (0.4706
 14. **End skybox and end flash** (`skybox` = `end`) are not covered.
 15. **Skin conversion.** The conversion of legacy 64 × 32 skins to the 64 × 64 layout (7.4).
 16. **Vanilla player dimensions** (hitbox 0.6 × 1.8, eye height 1.62) quoted in V20 and 7.3 were not read in this round.
+
+Open questions of 6.7 to 6.14, 8.5, 8.6 and V21 to V26:
+
+17. **Library semantics (JOML, LWJGL; not inside the jar).** Marked "(recalled, not verified)" in 6.7 to 6.9 and 8.2: that `Matrix4f.rotateX/Y/Z` are the standard right-handed rotations; that `Quaternionf.rotationXYZ(x, y, z)` is Rx · Ry · Rz (and `rotationZYX` Rz · Ry · Rx, `rotationYXZ` Ry · Rx · Rz); that `Matrix4f.setPerspective(fov, aspect, zNear, zFar, zZeroToOne)` with swapped near and far is the reversed depth matrix of 6.9; that `Matrix4f.translate/scale/rotate` post-multiply. All were recalled from the libraries' documented behaviour and were not verified against library code. Evidence inside the artifact is plausibility only, not proof: (a) the right-handed reading puts the arm raised by a negative `xRot` towards the player's front (−z) and the first-person and third-person shield poses in plausible places (6.12, V24) (inferred); (b) the reversed Euler products put the blocking shield at head height facing upwards (inferred); (c) the clear value 0.0 of the depth texture and the greater-or-equal depth compare are consistent with the reversed matrix (inferred). 34-1 Open question 3 asks the same about `rotationZYX`.
+18. **Winding and y flip.** The GL backend sets no front-face state (default counter-clockwise); the Vulkan backend sets back culling with a clockwise front face and a positive-height viewport, and the y flip that makes the two agree was not traced (the projection matrix is the plain y-up OpenGL form). The rule of 6.9 (counter-clockwise in y-up NDC is the front face) is inferred from that. Read: when the extension `GL_ARB_clip_control` exists the GL backend calls `glClipControl` with the lower-left origin and the zero-to-one depth range, and neither a front-face call nor a cull-face call appears anywhere in the GL backend. A client without clip control gets the [−1, 1] depth mapping, which orders depth the same way (so the ordering rules of 6.9 hold); the exact `isZZeroToOne` plumbing into the projection was not traced further.
+19. **Fog and colour modulator during the hand pass.** Which fog uniform is bound while the hand is drawn, and the value of `ColorModulator` for item draws (taken as 1, 1, 1, 1), were not traced (6.9).
+20. **`cloudRange` default and `depthFar`.** `depthFar = max(effective render distance × 64, cloudRange × 16)`; at the default render distance 12 the first term is 768. The default of the cloud-range option is read indirectly (Open question 10: 128, which would give 2048). Only the depth column of the examples depends on it.
+21. **`AbstractClientPlayer.getFieldOfViewModifier(firstPerson, fovEffectScale)`** (the sprint, speed and bow factor of the world field of view, 6.9) was not read; the hand does not use it.
+22. **The shield model's drawing.** The banner pattern layers (`BannerRenderer.submitPatterns`, patterns drawn over the plate) were not covered, and the path from `submitModel` to the entity pipeline was not followed beyond the render type (6.12).
+23. **Translucent item sprites.** `ITEM_TRANSLUCENT` and the order-independent-transparency item pipelines (`OIT_ITEM`) exist; which one is used for the hand and how they sort translucent quads was not traced (6.9).
+24. **Third-person non-blocking shield.** 6.12 computes the plate's pose from the read constants; the result (the plate carried at the side with its long axis along the arm's forward direction and its decorated face away from the body) was not compared with an actual rendering. If it disagrees with an observed render, suspect Open question 17 first. The first-person shield claim of 6.12 and V24 (the camera sees the inner face and the handle, the decorated face points away) is likewise computed and not compared with a render; that visible face follows from the data (the Ry(180) of the display rotation and the z flip of L), not from the Euler order of Open question 17.
+25. **Shade of a held block with light emission and the `shade` flag.** `BakedQuad$MaterialInfo.shadeDirectionOverride` and `lightEmission` of block-model quads in the hand (6.10 uses the emission only through the light coordinate) were not followed further.
+26. **Inferred items of 6.7 to 8.6 not listed above.** (a) 8.5: a definition-tree node hands its children parent matrix × own transformation (the product order was inferred from the compose call). (b) 8.6: for the third-person hand, ground, fixed, head and shelf contexts the `LEVEL` setting stays active and normals are in world orientation (inferred; not read item by item). (c) 6.9: the translucent phase is drawn after the solid phase (inferred from the phase names). (d) The far plane of 2048 at default settings: Open question 20. (e) The counter-clockwise front-face rule: Open question 18. (f) The orientation consequence of 6.7.3 (head nearer than handle) and every use of the Euler order: Open question 17.

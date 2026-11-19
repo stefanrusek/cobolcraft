@@ -37,6 +37,8 @@
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "N" TO TL-MODE
+*>   These cases are about the poses and the whole mesh, not about which faces face the eye (T32900 tests that): keep the back faces.
+     MOVE 1 TO CL-HAND-NOCULL
      MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
      MOVE 1 TO PL-SLOT-ITEM(PL-HELD + 1)
      MOVE 0 TO CL-SWING-AT

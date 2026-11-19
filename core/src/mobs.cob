@@ -598,7 +598,7 @@
  PROGRAM-ID. MOB-PHYSICS.
 *> USING tracker row (BINARY-LONG) of a mob, hx, hz (FLOAT-LONG), yaw (FLOAT-SHORT): §12.2 for one
 *> tick (a standard mob: the move by the velocity it has comes first, then vy <- (vy - 0.08) x 0.98, 18 section 3.2). vy <- (vy - 0.05) x 0.96; the move along Y by vy is blocked when the mob's box
-*> (ENTITY-BOX-HITS) would overlap a solid cell: y then rests on top of the highest overlapped cell,
+*> (ENTITY-BOX-SURFACE) would overlap a collision shape: y then rests on top of the highest overlapped shape box (a slab's half cell, a carpet's pixel),
 *> vy 0, on the ground (vy is never positive: mobs do not jump, so a blocked move is downward);
 *> otherwise y moves and the mob is not on the ground. Then the moves along X by hx and along Z by
 *> hz: a blocked one is retried, for a mob on the ground, 1 block higher (step-up), else that
@@ -620,7 +620,7 @@
  01 WS-UP                  FLOAT-LONG.
  01 WS-GROUND              BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
  01 WS-WET                 BINARY-LONG.
  01 WS-DEEP                BINARY-LONG.
@@ -695,7 +695,7 @@
          END-IF
      END-IF
      COMPUTE WS-NEW = WS-Y + WS-VY
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
      EVALUATE TRUE
          WHEN WS-HIT = 0
              MOVE WS-NEW TO WS-Y
@@ -704,16 +704,16 @@
 *>           Rising into a ceiling: stop, not on the ground.
              MOVE 0 TO WS-VY WS-GROUND
          WHEN OTHER
-             COMPUTE WS-Y = WS-TOP + 1
+             MOVE WS-TOP TO WS-Y
              MOVE 0 TO WS-VY
              MOVE 1 TO WS-GROUND
      END-EVALUATE
 *>   3. The moves along X and Z, each with the step-up retry.
      COMPUTE WS-NEW = WS-X + L-HX
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
      IF WS-HIT = 1 AND WS-GROUND = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-UP TO WS-Y
          END-IF
@@ -722,10 +722,10 @@
          MOVE WS-NEW TO WS-X
      END-IF
      COMPUTE WS-NEW = WS-Z + L-HZ
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
      IF WS-HIT = 1 AND WS-GROUND = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-UP TO WS-Y
          END-IF

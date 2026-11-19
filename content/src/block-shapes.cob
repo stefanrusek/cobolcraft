@@ -8,6 +8,7 @@
 *>   BSH-COLL-ID, BSH-OUT-ID USING state id, shape id out (the full cube while the tables are not built).
 *>   BSH-OVERLAPS USING shape id, cell x, y, z, box (6 FLOAT-LONG x1 y1 z1 x2 y2 z2 in blocks), hit out (1 when a box of the shape
 *>     placed in that cell overlaps the box with positive volume, 1e-7 tolerance).
+*>   BSH-TOP USING shape id, cell x, y, z, box, hit out, top out (FLOAT-LONG: the highest y of the shape boxes the box overlaps, the surface a body rests on).
 *>   BSH-CLIP USING shape id, cell x, y, z, box, axis (1 x, 2 y, 3 z), distance (FLOAT-LONG, in and out): the move of the box along
 *>     the axis shortened to where it meets a box of the shape (a box it already overlaps or passes does not stop it).
 *>   BSH-RAY USING shape id, cell x, y, z, origin (3 FLOAT-LONG), direction (3 FLOAT-LONG), t out (FLOAT-LONG, -1 when no box is
@@ -37,7 +38,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-ADD-BOXES.
 *> USING box list text (PIC X(160): "x1 y1 z1 x2 y2 z2" items separated by ","; pixels, decimals allowed), key (BINARY-LONG 0 to 3: the
-*> yaw, 51 section 2.1), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most 12).
+*> yaw, 51 section 2.1; 4 up and 5 down, 51 section 2.2), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most 12).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
@@ -92,6 +93,17 @@
                      COMPUTE WS-N(3) = 16000 - WS-V(4)
                      MOVE WS-V(6) TO WS-N(4)
                      COMPUTE WS-N(6) = 16000 - WS-V(1)
+*>               Up and down (51 section 2.2): y becomes 16 - z and z becomes y, or y becomes z and z becomes 16 - y.
+                 WHEN 4
+                     COMPUTE WS-N(2) = 16000 - WS-V(6)
+                     COMPUTE WS-N(5) = 16000 - WS-V(3)
+                     MOVE WS-V(2) TO WS-N(3)
+                     MOVE WS-V(5) TO WS-N(6)
+                 WHEN 5
+                     MOVE WS-V(3) TO WS-N(2)
+                     MOVE WS-V(6) TO WS-N(5)
+                     COMPUTE WS-N(3) = 16000 - WS-V(5)
+                     COMPUTE WS-N(6) = 16000 - WS-V(2)
              END-EVALUATE
              IF BSC-N < BSH-MAX-BOXES
                  ADD 1 TO BSC-N
@@ -278,7 +290,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-SPECIAL.
 *> USING which (BINARY-LONG: 1 collision, 2 outline), code (PIC X(12)): the shape of a coded family (51 section 3.2: ST stairs, DR doors,
-*> TD trapdoors, FN fences, GT fence gates, WL walls, PN panes and bars, ML vines and lichen, CH chests, BD beds) from the properties of the current state,
+*> TD trapdoors, FN fences, GT fence gates, WL walls, PN panes and bars, ML vines and lichen, CH chests, BD beds, CP chorus plants, MC moss carpets) from the properties of the current state,
 *> appended to BSC-SHAPE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -319,11 +331,20 @@
     05 FILLER              PIC X(160) VALUE "0 0 0 16 1 16".
  01 WS-FACE-BOX-TABLE REDEFINES WS-FACE-BOXES.
     05 WS-FACE-BOX         PIC X(160) OCCURS 6 TIMES.
+ 01 WS-CHORUS-ARMS.
+    05 FILLER              PIC X(160) VALUE "3 3 0 13 13 8".
+    05 FILLER              PIC X(160) VALUE "8 3 3 16 13 13".
+    05 FILLER              PIC X(160) VALUE "3 3 8 13 13 16".
+    05 FILLER              PIC X(160) VALUE "0 3 3 8 13 13".
+    05 FILLER              PIC X(160) VALUE "3 8 3 13 16 13".
+    05 FILLER              PIC X(160) VALUE "3 0 3 13 8 13".
+ 01 WS-CHORUS-TABLE REDEFINES WS-CHORUS-ARMS.
+    05 WS-CHORUS-ARM       PIC X(160) OCCURS 6 TIMES.
  01 WS-NAME                PIC X(24).
  01 WS-TEXT                PIC X(160).
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
- 01 L-CODE                 PIC X(12).
+ 01 L-CODE                 PIC X(24).
  PROCEDURE DIVISION USING L-WHICH L-CODE.
      MOVE "facing" TO WS-NAME
      CALL "BSH-PROP-VALUE" USING WS-NAME WS-FACING
@@ -482,6 +503,48 @@
              END-IF
              MOVE "0 3 0 16 9 16,0 0 0 3 3 3,13 0 0 16 3 3" TO WS-TEXT
              CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
+         WHEN "CP"
+*>           A chorus plant (R-F40): the 10 pixel node and an arm toward every side that is set (the same for the collision and the outline).
+             MOVE "3 3 3 13 13 13" TO WS-TEXT
+             CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+             PERFORM VARYING WS-SIDE FROM 1 BY 1 UNTIL WS-SIDE > 6
+                 MOVE WS-FACE-NAME(WS-SIDE) TO WS-NAME
+                 CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                 IF WS-VALUE = "true"
+                     MOVE WS-CHORUS-ARM(WS-SIDE) TO WS-TEXT
+                     CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+                 END-IF
+             END-PERFORM
+         WHEN "MC"
+*>           Moss carpet (R-D2): the base sheet when bottom is set (the whole collision); the outline adds a sheet of 10 (low) or 16 (tall) pixels
+*>           on each side that is not none, and is the full cube when it holds nothing.
+             MOVE "bottom" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE = "true"
+                 MOVE "0 0 0 16 1 16" TO WS-TEXT
+                 CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+             END-IF
+             IF L-WHICH = 2
+                 PERFORM VARYING WS-SIDE FROM 1 BY 1 UNTIL WS-SIDE > 4
+                     MOVE WS-SIDE-NAME(WS-SIDE) TO WS-NAME
+                     CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                     MOVE SPACES TO WS-TEXT
+                     EVALUATE WS-VALUE
+                         WHEN "low"
+                             MOVE "0 0 0 16 10 1" TO WS-TEXT
+                         WHEN "tall"
+                             MOVE "0 0 0 16 16 1" TO WS-TEXT
+                     END-EVALUATE
+                     IF WS-TEXT NOT = SPACES
+                         COMPUTE WS-KEY = WS-SIDE - 1
+                         CALL "BSH-ADD-BOXES" USING WS-TEXT WS-KEY WS-ZERO
+                     END-IF
+                 END-PERFORM
+                 IF BSC-N = 0
+                     MOVE "0 0 0 16 16 16" TO WS-TEXT
+                     CALL "BSH-ADD-BOXES" USING WS-TEXT WS-ZERO WS-NO-MIRROR
+                 END-IF
+             END-IF
          WHEN "ML"
 *>           No collision; the outline is a one pixel sheet on every set face, the full cube when none is set.
              IF L-WHICH = 2
@@ -567,6 +630,18 @@
              CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
              CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
              CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
+*>       R: the boxes authored for north turned to the six-direction facing (rotateAll, 51 section 2.2).
+         WHEN "R"
+             MOVE "facing" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
+             EVALUATE WS-VALUE
+                 WHEN "up"
+                     MOVE 4 TO WS-KEY
+                 WHEN "down"
+                     MOVE 5 TO WS-KEY
+             END-EVALUATE
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
          WHEN "H"
              IF WS-TEXT NOT = "N"
                  MOVE SPACES TO WS-A-TEXT WS-B-TEXT
@@ -641,6 +716,14 @@
  01 WS-HITS                BINARY-LONG.
  01 WS-KEY                 PIC X(40).
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-KEY2                PIC X(40).
+ 01 WS-OFS                 BINARY-LONG.
+ 01 WS-OHITS               BINARY-LONG.
+ 01 WS-LENGTH2             BINARY-LONG.
+ 01 WS-COND1               PIC X(40).
+ 01 WS-COND2               PIC X(40).
+ 01 WS-NAME2               PIC X(24).
+ 01 WS-WANT2               PIC X(16).
  01 WS-FIRST               BINARY-LONG.
  01 WS-STATES              BINARY-LONG.
  01 WS-IDX                 BINARY-LONG.
@@ -677,7 +760,7 @@
          MOVE 0 TO BSH-HASH(WS-S)
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-MAX-STATES
-         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S)
+         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S) BSH-OFS(WS-S) BSH-CTX(WS-S)
      END-PERFORM
      INITIALIZE BSH-SHAPE(1) BSC-SHAPE
      MOVE 1 TO BSC-N
@@ -711,10 +794,14 @@
          MOVE SPACES TO WS-KEY
          STRING "|" FUNCTION TRIM(CT-BR-CLASS) "|" DELIMITED BY SIZE INTO WS-KEY
          COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(CT-BR-CLASS)) + 2
+*>       A row may also name one block by its key as "=key" (the four amethyst clusters share a class and differ in size).
+         MOVE SPACES TO WS-KEY2
+         STRING "|=" FUNCTION TRIM(CT-BR-KEY) "|" DELIMITED BY SIZE INTO WS-KEY2
+         COMPUTE WS-LENGTH2 = FUNCTION LENGTH(FUNCTION TRIM(CT-BR-KEY)) + 3
          MOVE 0 TO WS-MATCHES WS-NEEDS
          PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > BSR-N
              MOVE 0 TO WS-HITS
-             INSPECT BSR-CLASSES(WS-R) TALLYING WS-HITS FOR ALL WS-KEY(1:WS-LENGTH)
+             INSPECT BSR-CLASSES(WS-R) TALLYING WS-HITS FOR ALL WS-KEY(1:WS-LENGTH) ALL WS-KEY2(1:WS-LENGTH2)
              IF WS-HITS > 0
                  ADD 1 TO WS-MATCHES
                  MOVE WS-R TO WS-MATCH(WS-MATCHES)
@@ -743,6 +830,34 @@
              WHEN OTHER
                  MOVE 0 TO WS-SLIPPERY
          END-EVALUATE
+*>       The model offset kind of the block (51 section 1.4): the flags offset:XZ and offset:XYZ, with the two blocks that have other limits.
+         MOVE 0 TO WS-OFS
+         MOVE 0 TO WS-OHITS
+         INSPECT WS-FLAGS TALLYING WS-OHITS FOR ALL "offset:XYZ"
+         IF WS-OHITS > 0
+             MOVE 2 TO WS-OFS
+         ELSE
+             MOVE 0 TO WS-OHITS
+             INSPECT WS-FLAGS TALLYING WS-OHITS FOR ALL "offset:XZ"
+             IF WS-OHITS > 0
+                 MOVE 1 TO WS-OFS
+             END-IF
+         END-IF
+*>       The registry rows of the flowers, the grasses and the seagrass carry no offset flag, but 51 section 1.4 names them: by class.
+         IF WS-OFS = 0
+             EVALUATE FUNCTION TRIM(CT-BR-CLASS)
+                 WHEN "FlowerBlock" WHEN "WitherRoseBlock" WHEN "TallSeagrassBlock"
+                     MOVE 1 TO WS-OFS
+                 WHEN "TallGrassBlock" WHEN "ShortDryGrassBlock" WHEN "TallDryGrassBlock"
+                     MOVE 2 TO WS-OFS
+             END-EVALUATE
+         END-IF
+         EVALUATE FUNCTION TRIM(CT-BR-KEY)
+             WHEN "pointed_dripstone" WHEN "minecraft:pointed_dripstone" WHEN "sulfur_spike" WHEN "minecraft:sulfur_spike"
+                 MOVE 3 TO WS-OFS
+             WHEN "small_dripleaf" WHEN "minecraft:small_dripleaf"
+                 MOVE 4 TO WS-OFS
+         END-EVALUATE
          IF WS-NEEDS = 1
              CALL "BSH-PROPS-SPLIT" USING CT-BR-PROPS
          END-IF
@@ -759,8 +874,18 @@
                  IF BSR-PROP(WS-R) NOT = SPACES AND BSR-VAL(WS-R) NOT = SPACES AND BSR-MODE(WS-R) NOT = "S"
                      MOVE BSR-PROP(WS-R) TO WS-NAME
                      CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
-                     IF WS-VALUE NOT = BSR-VAL(WS-R)
+*>                   The value may be followed by "&name=value": a second property that must hold too.
+                     MOVE SPACES TO WS-COND1 WS-COND2 WS-NAME2 WS-WANT2
+                     UNSTRING BSR-VAL(WS-R) DELIMITED BY "&" INTO WS-COND1 WS-COND2
+                     IF WS-VALUE NOT = WS-COND1
                          MOVE 0 TO WS-APPLIES
+                     END-IF
+                     IF WS-COND2 NOT = SPACES
+                         UNSTRING WS-COND2 DELIMITED BY "=" INTO WS-NAME2 WS-WANT2
+                         CALL "BSH-PROP-VALUE" USING WS-NAME2 WS-VALUE
+                         IF WS-VALUE NOT = WS-WANT2
+                             MOVE 0 TO WS-APPLIES
+                         END-IF
                      END-IF
                  END-IF
                  IF WS-APPLIES = 1
@@ -778,6 +903,10 @@
                  MOVE 1 TO BSH-CLIMB(WS-S)
              END-IF
              MOVE WS-SLIPPERY TO BSH-SLIP(WS-S)
+             MOVE WS-OFS TO BSH-OFS(WS-S)
+             IF CT-BR-CLASS = "LightBlock"
+                 MOVE 1 TO BSH-CTX(WS-S)
+             END-IF
          END-PERFORM
      END-PERFORM
      MOVE 1 TO BSH-READY
@@ -889,6 +1018,58 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BSH-OVERLAPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-TOP.
+*> USING shape id, cell x, y, z (BINARY-LONG), box (6 FLOAT-LONG), hit out (BINARY-LONG), top out (FLOAT-LONG): hit as BSH-OVERLAPS (some box of the shape placed in the cell overlaps the box
+*> with positive volume), and top the highest y among the boxes that do (the cell's y plus the box's top in sixteenths: a slab's half cell, a carpet's pixel), 0 when none: the surface a body that
+*> overlaps the shape comes to rest on.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-OVER                FLOAT-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-CELL                FLOAT-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ 01 L-SHAPE                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BOX.
+    05 L-B                 FLOAT-LONG OCCURS 6 TIMES.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-TOP                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SHAPE L-X L-Y L-Z L-BOX L-HIT L-TOP.
+     MOVE 0 TO L-HIT
+     MOVE 0 TO L-TOP
+     MOVE L-X TO WS-CELL(1)
+     MOVE L-Y TO WS-CELL(2)
+     MOVE L-Z TO WS-CELL(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BSH-N(L-SHAPE + 1)
+         MOVE 1 TO WS-INSIDE
+         PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+             COMPUTE WS-LO = WS-CELL(WS-A) + BSH-V(L-SHAPE + 1, WS-I, WS-A) / 16000
+             COMPUTE WS-HI = WS-CELL(WS-A) + BSH-V(L-SHAPE + 1, WS-I, WS-A + 3) / 16000
+             COMPUTE WS-OVER = FUNCTION MIN(L-B(WS-A + 3), WS-HI) - FUNCTION MAX(L-B(WS-A), WS-LO)
+             IF WS-OVER <= WS-EPSILON
+                 MOVE 0 TO WS-INSIDE
+             END-IF
+         END-PERFORM
+         IF WS-INSIDE = 1
+             COMPUTE WS-HI = WS-CELL(2) + BSH-V(L-SHAPE + 1, WS-I, 5) / 16000
+             IF L-HIT = 0 OR WS-HI > L-TOP
+                 MOVE WS-HI TO L-TOP
+             END-IF
+             MOVE 1 TO L-HIT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BSH-TOP.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-CLIP.
@@ -1014,3 +1195,84 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BSH-RAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-OFFSET.
+*> USING state id, cell x, y, z (BINARY-LONG), dx, dy, dz out (FLOAT-LONG, blocks): the model offset of a block of an offset kind (51 section 1.4) at that cell; 0 for any
+*> other state. h = (int)(x 3129871) sign extended, XOR z 116129781 (64 bits), XOR y with y = 0 (both kinds take the seed at y 0, so the cell's own y is unused); seed =
+*> (h h 42317861 + h 11) >> 16 (64 bit wrap, arithmetic shift); dx = clamp(((seed AND 15) / 15 - 0.5) 0.5, -m, m), dz the same from (seed >> 8) AND 15, and for the XYZ
+*> kinds dy = ((seed >> 4 AND 15) / 15 - 1) v; m 0.25 (0.125 for kind 3), v 0.2 (0.1 for kind 4). The divisions are in 32-bit floats.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-M32                 BINARY-DOUBLE UNSIGNED VALUE 4294967296.
+ 01 WS-H63                 BINARY-DOUBLE UNSIGNED VALUE 9223372036854775808.
+ 01 WS-A                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-B                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-L                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-S                   BINARY-DOUBLE.
+ 01 WS-T                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-F                   FLOAT-SHORT.
+ 01 WS-LIMIT               FLOAT-SHORT.
+ 01 WS-MAX                 FLOAT-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-X L-Y L-Z L-DX L-DY L-DZ.
+     MOVE 0 TO L-DX L-DY L-DZ WS-KIND
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         MOVE BSH-OFS(L-STATE + 1) TO WS-KIND
+     END-IF
+     IF WS-KIND = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-A = FUNCTION MOD(L-X * 3129871, WS-M32)
+     IF WS-A >= 2147483648
+         COMPUTE WS-A = WS-A + WS-M64 - WS-M32
+     END-IF
+     COMPUTE WS-B = FUNCTION MOD(L-Z * 116129781, WS-M64)
+     CALL "CBL_XOR" USING WS-A WS-B BY VALUE 8
+     MOVE WS-B TO WS-L
+     IF WS-L >= WS-H63
+         COMPUTE WS-S = WS-L - WS-M64
+     ELSE
+         MOVE WS-L TO WS-S
+     END-IF
+     COMPUTE WS-T = FUNCTION MOD(WS-S * WS-S * 42317861 + WS-S * 11, WS-M64)
+     IF WS-T >= WS-H63
+         COMPUTE WS-S = WS-T - WS-M64
+     ELSE
+         MOVE WS-T TO WS-S
+     END-IF
+     COMPUTE WS-SEED = FUNCTION INTEGER(WS-S / 65536)
+     MOVE 0.25 TO WS-LIMIT
+     IF WS-KIND = 3
+         MOVE 0.125 TO WS-LIMIT
+     END-IF
+     MOVE WS-LIMIT TO WS-MAX
+     COMPUTE WS-N = FUNCTION MOD(WS-SEED, 16)
+     COMPUTE WS-F = WS-N / 15
+     COMPUTE L-DX = FUNCTION MAX(0 - WS-MAX, FUNCTION MIN(WS-MAX, (WS-F - 0.5) * 0.5))
+     COMPUTE WS-N = FUNCTION MOD(FUNCTION INTEGER(WS-SEED / 256), 16)
+     COMPUTE WS-F = WS-N / 15
+     COMPUTE L-DZ = FUNCTION MAX(0 - WS-MAX, FUNCTION MIN(WS-MAX, (WS-F - 0.5) * 0.5))
+     IF WS-KIND = 2 OR WS-KIND = 4
+         COMPUTE WS-N = FUNCTION MOD(FUNCTION INTEGER(WS-SEED / 16), 16)
+         COMPUTE WS-F = WS-N / 15
+         IF WS-KIND = 4
+             COMPUTE L-DY = (WS-F - 1.0) * 0.1
+         ELSE
+             COMPUTE L-DY = (WS-F - 1.0) * 0.2
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-OFFSET.

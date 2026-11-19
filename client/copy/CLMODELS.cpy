@@ -22,10 +22,19 @@
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
 *>                No-hat villager rows (villager_nohat, villager_nohat~b, zvillager_nohat, zvillager_nohat~b, code A: the villager without head cuboids, posed as the villager) are the type layer when the profession texture's hat covers the head (34-3 1.5).
 *>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
-*>                Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle rowing times
+*>                The zombie villager's armor rows (zvil_armor_head, _chest, _legs, _feet, 34-3 section 2.4) are the same, with the meshes of EMD-ZV-ARMOR.
+*>                The armor rows of a baby (armor_<slot>~b, the baby armor mesh of 34-2 section 1.4 at the baby deformations; also the baby zombie villager's) and the piglin
+*>                family's own armor rows (piglin_armor_<slot>, grow 1.02; piglin_armor_<slot>~b, the baby piglin armor at 0.7 and the arm offset (0.5, -0.5, 0)) are the same
+*>                kind of row; CL-MD-BABY of an adult armor row is the baby row of its slot. The row banner is only an atlas image holder for the sprites of a banner held
+*> in first person (hand-banner.cob; the texture codes 9000 + a pattern holder), and the rows guardian_beam and end_crystal_beam the images of the guardian's beam and the crystal beam (entities-beam.cob); The rows
+*>   item_frame and glow_item_frame (code F) draw no model: the frame's item is drawn into the ground item mesh (item-held.cob ENTITY-FRAME-EMIT, 34-9 section 10). The row shulker_box is the image holder of the shulker
+*>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). The row shield is the image holder of the shield's sprites (hand-shield.cob: code 0 shield_base_nopattern, 9000 shield_base, 9000 + a pattern holder the pattern under entity/shield). ender_dragon_eyes is the dragon's eyes layer (CL-MD-EXTRA of ender_dragon, 34-7 8.5 pass 2).
+*> Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus
+*>   (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle
+*>   rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 195.
+ 78 CL-MODEL-COUNT           VALUE 219.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(20) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -871,7 +880,7 @@
     05 FILLER PIC 999 VALUE 256.
     05 FILLER PIC X VALUE "-".
     05 FILLER PIC X(64) VALUE "textures/entity/enderdragon/dragon.png".
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 214.
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "glow_squid".
     05 FILLER PIC 9 VALUE 8.
@@ -1340,7 +1349,7 @@
     05 FILLER PIC X VALUE "A".
     05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
     05 FILLER PIC 999 VALUE 0.
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 200.
     05 FILLER PIC X(20) VALUE "armor_chest".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ARMOR_CHEST".
@@ -1349,7 +1358,7 @@
     05 FILLER PIC X VALUE "A".
     05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
     05 FILLER PIC 999 VALUE 0.
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 201.
     05 FILLER PIC X(20) VALUE "armor_legs".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ARMOR_LEGS".
@@ -1358,7 +1367,7 @@
     05 FILLER PIC X VALUE "A".
     05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_leggings/iron.png".
     05 FILLER PIC 999 VALUE 0.
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 202.
     05 FILLER PIC X(20) VALUE "armor_feet".
     05 FILLER PIC 9 VALUE 2.
     05 FILLER PIC X(24) VALUE "ARMOR_FEET".
@@ -1367,7 +1376,7 @@
     05 FILLER PIC X VALUE "A".
     05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
     05 FILLER PIC 999 VALUE 0.
-    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 203.
     05 FILLER PIC X(20) VALUE "horse_armor".
     05 FILLER PIC 9 VALUE 4.
     05 FILLER PIC X(24) VALUE "HORSE_ARMOR".
@@ -1782,8 +1791,224 @@
     05 FILLER PIC X(64) VALUE "textures/entity/zombie_villager/zombie_villager.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "zvil_armor_head".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ZVILLAGER_ARMOR_HEAD".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 200.
+    05 FILLER PIC X(20) VALUE "zvil_armor_chest".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ZVILLAGER_ARMOR_CHEST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 201.
+    05 FILLER PIC X(20) VALUE "zvil_armor_legs".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ZVILLAGER_ARMOR_LEGS".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_leggings/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 202.
+    05 FILLER PIC X(20) VALUE "zvil_armor_feet".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "ZVILLAGER_ARMOR_FEET".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 203.
+    05 FILLER PIC X(20) VALUE "armor_head~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "BABY_ARMOR_HEAD".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_chest~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "BABY_ARMOR_CHEST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_legs~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "BABY_ARMOR_LEGS".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "armor_feet~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "BABY_ARMOR_FEET".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "piglin_armor_head".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_ARMOR_HEAD".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 208.
+    05 FILLER PIC X(20) VALUE "piglin_armor_chest".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_ARMOR_CHEST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 209.
+    05 FILLER PIC X(20) VALUE "piglin_armor_legs".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_ARMOR_LEGS".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_leggings/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 210.
+    05 FILLER PIC X(20) VALUE "piglin_armor_feet".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_ARMOR_FEET".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 211.
+    05 FILLER PIC X(20) VALUE "piglin_armor_head~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_BABY_ARMOR_HEAD".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "piglin_armor_chest~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_BABY_ARMOR_CHEST".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "piglin_armor_legs~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_BABY_ARMOR_LEGS".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "piglin_armor_feet~b".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PIGLIN_BABY_ARMOR_FEET".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/equipment/humanoid_baby/iron.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "banner".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/banner/banner_base.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "guardian_beam".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/guardian/guardian_beam.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "ender_dragon_eyes".
+    05 FILLER PIC 9 VALUE 7.
+    05 FILLER PIC X(24) VALUE "ENDER_DRAGON".
+    05 FILLER PIC 999 VALUE 256.
+    05 FILLER PIC 999 VALUE 256.
+    05 FILLER PIC X VALUE "E".
+    05 FILLER PIC X(64) VALUE "textures/entity/enderdragon/dragon_eyes.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "end_crystal_beam".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC 999 VALUE 256.
+    05 FILLER PIC X VALUE "A".
+    05 FILLER PIC X(64) VALUE "textures/entity/end_crystal/end_crystal_beam.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "item_frame".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X VALUE "F".
+    05 FILLER PIC X(64) VALUE " ".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "glow_item_frame".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X VALUE "F".
+    05 FILLER PIC X(64) VALUE " ".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "shulker_box".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/shulker/shulker.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(20) VALUE "shield".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "-".
+    05 FILLER PIC X(64) VALUE "textures/entity/shield/shield_base_nopattern.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 195 TIMES.
+    05 CL-MD OCCURS 219 TIMES.
        10 CL-MD-KEY      PIC X(20).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

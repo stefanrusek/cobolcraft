@@ -131,6 +131,71 @@
      GOBACK.
  END PROGRAM ENTITY-HAND-FIND.
 
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-ARM-LOCAL.
+*> USING box (16 FLOAT-LONG as EF7-BOX-CORNERS takes it: origin x y z, size w h d, grow x y z, mirror), local out (6 FLOAT-LONG): where corner 1 of that box lies in its
+*> part's space and the signed extents to corners 2, 4 and 5: the corner's x y z in pixels (x of the far side when the box is mirrored) then the extents along x, y and z.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-X1                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-BOX.
+    05 L-B                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-LOCAL.
+    05 L-L                 FLOAT-LONG OCCURS 6 TIMES.
+ PROCEDURE DIVISION USING L-BOX L-LOCAL.
+     COMPUTE WS-X0 = L-B(1) - L-B(7)
+     COMPUTE WS-X1 = L-B(1) + L-B(4) + L-B(7)
+     IF L-B(10) NOT = 0
+         MOVE WS-X1 TO L-L(1)
+         COMPUTE L-L(4) = WS-X0 - WS-X1
+     ELSE
+         MOVE WS-X0 TO L-L(1)
+         COMPUTE L-L(4) = WS-X1 - WS-X0
+     END-IF
+     COMPUTE L-L(2) = L-B(2) - L-B(8)
+     COMPUTE L-L(3) = L-B(3) - L-B(9)
+     COMPUTE L-L(5) = L-B(5) + 2 * L-B(8)
+     COMPUTE L-L(6) = L-B(6) + 2 * L-B(9)
+     GOBACK.
+ END PROGRAM ENTITY-ARM-LOCAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-HAND-FRAME.
+*> USING the eight corners of an arm's cuboid (8 x X, Y, Z FLOAT-SHORT in the order of EF7-BOX-CORNERS, entity-relative), local (6 FLOAT-LONG of ENTITY-ARM-LOCAL), frame out (12
+*> FLOAT-LONG): the part's frame. Its axes are the corner vectors 1 to 2, 1 to 4 and 1 to 5 over the box's extents (a block long, scale included), its origin the part's pivot: corner
+*> 1 less the axes by its place in the part's space (in blocks).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CORNERS.
+    05 L-CP OCCURS 8 TIMES.
+       10 L-CX               FLOAT-SHORT.
+       10 L-CY               FLOAT-SHORT.
+       10 L-CZ               FLOAT-SHORT.
+ 01 L-LOCAL.
+    05 L-L                 FLOAT-LONG OCCURS 6 TIMES.
+ 01 L-FRAME.
+    05 L-F                 FLOAT-LONG OCCURS 12 TIMES.
+ PROCEDURE DIVISION USING L-CORNERS L-LOCAL L-FRAME.
+     COMPUTE L-F(4) = (L-CX(2) - L-CX(1)) * 16 / L-L(4)
+     COMPUTE L-F(5) = (L-CY(2) - L-CY(1)) * 16 / L-L(4)
+     COMPUTE L-F(6) = (L-CZ(2) - L-CZ(1)) * 16 / L-L(4)
+     COMPUTE L-F(7) = (L-CX(4) - L-CX(1)) * 16 / L-L(5)
+     COMPUTE L-F(8) = (L-CY(4) - L-CY(1)) * 16 / L-L(5)
+     COMPUTE L-F(9) = (L-CZ(4) - L-CZ(1)) * 16 / L-L(5)
+     COMPUTE L-F(10) = (L-CX(5) - L-CX(1)) * 16 / L-L(6)
+     COMPUTE L-F(11) = (L-CY(5) - L-CY(1)) * 16 / L-L(6)
+     COMPUTE L-F(12) = (L-CZ(5) - L-CZ(1)) * 16 / L-L(6)
+     COMPUTE L-F(1) = L-CX(1) - (L-F(4) * L-L(1) + L-F(7) * L-L(2) + L-F(10) * L-L(3)) / 16
+     COMPUTE L-F(2) = L-CY(1) - (L-F(5) * L-L(1) + L-F(8) * L-L(2) + L-F(11) * L-L(3)) / 16
+     COMPUTE L-F(3) = L-CZ(1) - (L-F(6) * L-L(1) + L-F(9) * L-L(2) + L-F(12) * L-L(3)) / 16
+     GOBACK.
+ END PROGRAM ENTITY-HAND-FRAME.
+
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-HELD-EMIT.
 *> USING CLIENT-STATE, replica row, hand (1 right arm, 2 left arm), item registry id, eye (3 FLOAT-LONG): appends the item held in the hand EN-HAND of the row to
@@ -188,6 +253,10 @@
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-HAND L-ITEM L-EYE-TABLE.
+     IF EN-HAND-FOK(L-ROW, L-HAND) = 1
+         CALL "ENTITY-HELD-POSED" USING CLIENT-STATE L-ROW L-HAND L-ITEM L-EYE-TABLE
+         GOBACK
+     END-IF
      IF RL-GI-COUNT + 12 > CL-MAX-GI-VERTICES
          GOBACK
      END-IF

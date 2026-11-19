@@ -27,6 +27,9 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-SAVED-SW            BINARY-LONG.
+ 01 WS-EO                  FLOAT-LONG.
+ 01 WS-NOGLINT             BINARY-LONG VALUE 0.
+ 01 WS-PT                  FLOAT-LONG.
  01 WS-M.
     05 FILLER              FLOAT-LONG VALUE 1.
     05 FILLER              FLOAT-LONG VALUE 0.
@@ -40,6 +43,16 @@
     05 FILLER              FLOAT-LONG VALUE 0.
     05 FILLER              FLOAT-LONG VALUE 0.
     05 FILLER              FLOAT-LONG VALUE 0.
+ 01 WS-ROT.
+    05 FILLER              FLOAT-LONG VALUE 1.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 1.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 0.
+    05 FILLER              FLOAT-LONG VALUE 1.
  01 WS-CORNERS.
     05 WS-CP               FLOAT-LONG OCCURS 12 TIMES VALUE 0.
  01 WS-UV.
@@ -51,6 +64,8 @@
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "N" TO TL-MODE
+*>   These cases are about the poses and the whole mesh, not about which faces face the eye (T32900 tests that): keep the back faces.
+     MOVE 1 TO CL-HAND-NOCULL
      MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
      MOVE 0 TO CL-SWING-AT
      MOVE 1000000 TO CL-NOW-MS
@@ -176,6 +191,8 @@
 *>   Equip: a hand that shows nothing yet lowers the item by 0.6 and lifts it in 4 ticks; a changed stack lowers it again.
      MOVE 0 TO CL-HAND-ITEM CL-HAND-H CL-HAND-OH
      MOVE 0 TO CL-HAND-TICK-MS
+     MOVE 2 TO CL-ATK-LAST
+     MOVE 100 TO CL-ATK-TICKER
      MOVE 2000000 TO CL-NOW-MS
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "T5300 a hand that shows nothing yet draws nothing at the first frame" TO TL-CASE
@@ -267,7 +284,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full mesh takes no more quads; a stalled or backwards clock restarts the equip ticks.
      MOVE 2044 TO RL-HAND-COUNT
-     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT
+     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-UV WS-NORMAL WS-LIGHT WS-NOGLINT WS-ROT
      MOVE "T5300 a mesh of 2044 vertices takes no more quad" TO TL-CASE
      MOVE 2044 TO TL-EXPECTED-N
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
@@ -305,7 +322,7 @@
      MOVE 1 TO CL-HAND-H CL-HAND-OH
      MOVE 1 TO CL-HAND-TICK-MS
      MOVE 3000000 TO CL-NOW-MS
-     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X
+     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X WS-EO WS-PT
      MOVE "T5300 after a gap of over 400 ms the equip clock restarts without ticks (E = 0)" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-X) < 0.001 AND CL-HAND-TICK-MS = CL-NOW-MS
@@ -314,7 +331,7 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5000000 TO CL-HAND-TICK-MS
-     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X
+     CALL "HAND-EQUIP" USING CLIENT-STATE WS-X WS-EO WS-PT
      MOVE "T5300 a clock that ran backwards restarts too" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
      IF CL-HAND-TICK-MS = CL-NOW-MS
