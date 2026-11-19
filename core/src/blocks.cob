@@ -320,6 +320,7 @@
  01 WS-WL-MODE             BINARY-LONG VALUE 2.
  01 WS-STACKED             BINARY-LONG.
  01 WS-MERGES              BINARY-LONG.
+ 01 WS-EVENT-PLACE         PIC X(32) VALUE "block_place".
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -412,6 +413,8 @@
      CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "SIGN-PLACED" USING L-ID WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   The game event block_place at the block centre with the player and the placed state as context (29 section 8 step 8): the warden hears it unless the state is wool.
+     CALL "GAME-EVENT-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT-PLACE CN-PLAYER(L-ID) WS-STATE
      CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "GOLEM-BUILD" USING WS-DIM WS-X WS-Y WS-Z
      CALL "WITHER-BUILD" USING WS-DIM WS-X WS-Y WS-Z

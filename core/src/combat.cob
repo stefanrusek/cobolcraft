@@ -344,6 +344,7 @@
  COPY CTOOLS.
  COPY ENCHCTX.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT-DAMAGE        PIC X(32) VALUE "entity_damage".
  01 WS-ROW                 BINARY-LONG.
  01 WS-SOURCE              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG.
@@ -512,6 +513,10 @@
      END-IF
      CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
      COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MAX(0, PL-HEALTH(WS-ROW) - WS-TAKEN / 1000)
+*>   Player.actuallyHurt fires the game event entity_damage with the hurt entity as the source (17 section 4).
+     IF PL-ENTITY-ROW(WS-ROW) > 0
+         CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE PL-ENTITY-ROW(WS-ROW)
+     END-IF
      IF L-ATTACKER > 0 AND WS-CAUSE = CAUSE-PLAYER
          COMPUTE WS-LOST = WS-TAKEN / 1000
          CALL "PARTICLE-HIT-PLAYER" USING WS-ROW WS-LOST

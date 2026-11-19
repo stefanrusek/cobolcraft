@@ -4,7 +4,7 @@
 *>     dimension, the Darkness effect (amplifier 0, 260 ticks, flags 4: icon, no particles); survival and adventure players only, squared distance below 400, renewed only when at most 199 ticks
 *>     are left; the warden counts its own ticks in EN-WAKE (20 section 15.2).
 *>   WD-FIND USING entity id, create, slot out        the state slot of a warden (0 none)
-*>   WARDEN-ANGER-ADD USING warden row, player row, amount, dig flag    AngerManager.add: ignored unless the player is alive and in survival; capped at 150; with the flag
+*>   WARDEN-ANGER-ADD USING warden row, suspect code (a player row, or 64 + the tracker row of a mob), amount, dig flag    AngerManager.add: ignored unless the suspect can be targeted (WARDEN-CAN-TARGET); capped at 150; with the flag
 *>     (increaseAngerAt) the dig cooldown becomes 1200
 *>   WARDEN-LEVEL USING warden row, level out         0 CALM (below 40), 1 AGITATED (40 to 79), 2 ANGRY (80 and above) by the top suspect
 *>   WARDEN-AGGRO is now WARDEN-BRAIN (mob-20-15b.cob): the target comes from the roar and from being hurt, not from the angriest player.
@@ -103,13 +103,15 @@
  COPY WARDENSTATE.
  01 WS-SLOT                BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-OK                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-PLAYER               BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
  01 L-DIG                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-PLAYER L-AMOUNT L-DIG.
-     IF PL-USED(L-PLAYER) NOT = 1 OR PL-STATE(L-PLAYER) NOT = PS-ALIVE OR (PL-MODE(L-PLAYER) NOT = 0 AND PL-MODE(L-PLAYER) NOT = 2)
+     CALL "WARDEN-CAN-TARGET" USING L-ROW L-PLAYER WS-OK
+     IF WS-OK = 0
          GOBACK
      END-IF
      CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
@@ -222,6 +224,11 @@
  01 WS-SLOT                BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-P                   BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-HAVE                BINARY-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
  01 WS-HDIST               FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
@@ -233,6 +240,7 @@
  01 WS-VX                  BINARY-LONG.
  01 WS-VY                  BINARY-LONG.
  01 WS-VZ                  BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-STILL                BINARY-LONG.
@@ -242,13 +250,28 @@
      IF WS-SLOT = 0
          GOBACK
      END-IF
+*>   The target: a player (EN-TARGET), else the foe (EN-FOE, another entity: the boom hurts it for 10 through the mob damage pipeline, without the knockback).
      MOVE EN-TARGET(L-ROW) TO WS-P
+     MOVE EN-FOE(L-ROW) TO WS-F
+     MOVE 0 TO WS-HAVE
+     IF WS-P > 0
+         MOVE 1 TO WS-HAVE
+         MOVE PL-X(WS-P) TO WS-TX
+         MOVE PL-Y(WS-P) TO WS-TY
+         MOVE PL-Z(WS-P) TO WS-TZ
+     END-IF
+     IF WS-P = 0 AND WS-F > 0
+         MOVE 1 TO WS-HAVE
+         MOVE EN-X(WS-F) TO WS-TX
+         MOVE EN-Y(WS-F) TO WS-TY
+         MOVE EN-Z(WS-F) TO WS-TZ
+     END-IF
      IF WD-BOOM(WS-SLOT) = 0
-         IF WS-P = 0 OR WD-SONIC-CD(WS-SLOT) > 0
+         IF WS-HAVE = 0 OR WD-SONIC-CD(WS-SLOT) > 0
              GOBACK
          END-IF
-         COMPUTE WS-HDIST = FUNCTION SQRT((PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2)
-         IF WS-HDIST >= 15 OR FUNCTION ABS(PL-Y(WS-P) - EN-Y(L-ROW)) >= 20
+         COMPUTE WS-HDIST = FUNCTION SQRT((WS-TX - EN-X(L-ROW)) ** 2 + (WS-TZ - EN-Z(L-ROW)) ** 2)
+         IF WS-HDIST >= 15 OR FUNCTION ABS(WS-TY - EN-Y(L-ROW)) >= 20
              GOBACK
          END-IF
          MOVE 1 TO WD-BOOM(WS-SLOT)
@@ -258,18 +281,22 @@
      END-IF
      MOVE 1 TO L-STILL
      ADD 1 TO WD-BOOM(WS-SLOT)
-     IF WD-BOOM(WS-SLOT) = 34 AND WS-P > 0
-         COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
-         COMPUTE WS-DY = PL-Y(WS-P) + 1.62 - (EN-Y(L-ROW) + 1.6)
-         COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
-         COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
-         CALL "HEALTH-SONIC-BOOM" USING WS-P WS-AMOUNT L-ROW WS-RESULT
-*>       The extra push only when the damage call hurt the target (20 section 15).
-         IF WS-RESULT > 0
-             COMPUTE WS-VX = WS-DX / WS-LEN * 2500
-             COMPUTE WS-VY = WS-DY / WS-LEN * 500
-             COMPUTE WS-VZ = WS-DZ / WS-LEN * 2500
-             CALL "COMBAT-MOTION-SEND" USING WS-P WS-VX WS-VY WS-VZ
+     IF WD-BOOM(WS-SLOT) = 34 AND WS-HAVE = 1
+         IF WS-P > 0
+             COMPUTE WS-DX = WS-TX - EN-X(L-ROW)
+             COMPUTE WS-DY = WS-TY + 1.62 - (EN-Y(L-ROW) + 1.6)
+             COMPUTE WS-DZ = WS-TZ - EN-Z(L-ROW)
+             COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+             CALL "HEALTH-SONIC-BOOM" USING WS-P WS-AMOUNT L-ROW WS-RESULT
+*>           The extra push only when the damage call hurt the target (20 section 15).
+             IF WS-RESULT > 0
+                 COMPUTE WS-VX = WS-DX / WS-LEN * 2500
+                 COMPUTE WS-VY = WS-DY / WS-LEN * 500
+                 COMPUTE WS-VZ = WS-DZ / WS-LEN * 2500
+                 CALL "COMBAT-MOTION-SEND" USING WS-P WS-VX WS-VY WS-VZ
+             END-IF
+         ELSE
+             CALL "HEALTH-MOB-DAMAGE" USING WS-F WS-AMOUNT CAUSE-SONIC-BOOM WS-NONE
          END-IF
      END-IF
      IF WD-BOOM(WS-SLOT) >= 60

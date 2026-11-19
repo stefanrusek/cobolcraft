@@ -260,6 +260,7 @@
  01 WS-EXHAUST             FLOAT-LONG.
  01 WS-DROP-Y              BINARY-LONG.
  01 WS-DROP-STATE          BINARY-LONG.
+ 01 WS-EVENT-DESTROY       PIC X(32) VALUE "block_destroy".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
@@ -277,6 +278,8 @@
      CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z WS-STATE L-ROW
      CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
+*>   The game event block_destroy at the block centre with the player and the old state (29 section 9 step 5).
+     CALL "GAME-EVENT-BLOCK" USING L-DIM L-X L-Y L-Z WS-EVENT-DESTROY L-ROW WS-STATE
 *>   A door or tall plant loses both halves and drops once, from its lower half.
      CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z WS-STATE WS-DROP-Y WS-DROP-STATE
      MOVE CB-S-BLOCK(WS-DROP-STATE + 1) TO WS-BLOCK
@@ -330,6 +333,7 @@
  01 WS-PLAYER-DESTROY      BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-EVENT               BINARY-LONG VALUE 2001.
+ 01 WS-EVENT-DESTROY       PIC X(32) VALUE "block_destroy".
  01 WS-NEW                 BINARY-LONG.
  01 WS-DROP-Y              BINARY-LONG.
  01 WS-DROP-STATE          BINARY-LONG.
@@ -384,6 +388,8 @@
      CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z L-STATE L-ROW
      CALL "SUP-DESTROY-STATE" USING L-STATE WS-NEW
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
+*>   The game event block_destroy at the block centre with the player and the old state (29 section 9 step 5; lane p49w).
+     CALL "GAME-EVENT-BLOCK" USING L-DIM L-X L-Y L-Z WS-EVENT-DESTROY L-ROW L-STATE
      CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z L-STATE WS-DROP-Y WS-DROP-STATE
      GOBACK.
  END PROGRAM BREAK-CREATIVE.
@@ -445,6 +451,7 @@
  01 WS-SPEED               BINARY-LONG.
  01 WS-CORRECT             BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-EVENT-DESTROY       PIC X(32) VALUE "block_destroy".
  01 WS-EFFICIENCY          BINARY-LONG.
  01 WS-HASTE               BINARY-LONG.
  01 WS-FATIGUE             BINARY-LONG.
