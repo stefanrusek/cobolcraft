@@ -47,6 +47,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CTOOLS.
+ COPY WSIM2.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
@@ -101,6 +102,12 @@
          END-IF
          MOVE WS-DESIRED TO PL-POSE(L-ROW)
      END-IF
+*>   A sleeping player (core/src/sleep-bed.cob) has the SLEEPING pose (53 section 1, id 2).
+     IF L-ROW <= 64
+         IF W2-SLEEPING(L-ROW) = 1
+             MOVE 2 TO PL-POSE(L-ROW)
+         END-IF
+     END-IF
      MOVE 0 TO PL-POSE-FLAGS(L-ROW)
 *>   Gliding (17 section 3.13): the fall flying pose (1) and the shared flag 7 (0x80, 18 section 1.4).
      IF TS-GLIDE-TICKS(L-ROW) > 0
@@ -139,6 +146,11 @@
                  CALL "CORE-SEND" USING PL-CONN(WS-VIEWER) PB-BUFFER
              END-IF
          END-PERFORM
+*>       Going to bed or getting out of it is also told to the player itself (it does not predict the pose).
+         COMPUTE WS-OLD = (WS-OLD - 1) / 256
+         IF (WS-OLD = 2 OR PL-POSE(L-ROW) = 2) AND VW-SEEN(L-ROW)(WS-TRACKER:1) NOT = "1"
+             CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM POSE-UPDATE.

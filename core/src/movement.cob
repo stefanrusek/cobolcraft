@@ -376,7 +376,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-SPRINT.
-*> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 1 sets the
+*> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 0 (STOP_SLEEPING) wakes a sleeping player, action 1 sets the
 *> sprinting flag (not for a survival player whose food is 6 or less), action 2 clears it, action 3 (START_RIDING_JUMP, the strength in
 *> PSB-DATA) jumps the mount the player rides (M44-RIDING-JUMP), action 6 (START_FALL_FLYING) starts an elytra glide (RANGED-GLIDE-START), any other action is ignored.
  DATA DIVISION.
@@ -388,6 +388,10 @@
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+*>   STOP_SLEEPING (action 0): the player gets out of the bed (stopSleepInBed, 33 section 5.3; core/src/sleep-bed.cob).
+     IF PSB-ACTION = 0
+         CALL "SLEEP-WAKE" USING CN-PLAYER(L-ID)
+     END-IF
      IF PSB-ACTION = 1 AND (PL-MODE(CN-PLAYER(L-ID)) = 1
              OR PL-FOOD(CN-PLAYER(L-ID)) > RULE-SPRINT-FOOD)
          MOVE 1 TO PL-SPRINTING(CN-PLAYER(L-ID))

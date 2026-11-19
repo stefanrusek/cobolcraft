@@ -77,6 +77,11 @@
  01 WS-TY                  BINARY-LONG.
  01 WS-TZ                  BINARY-LONG.
  01 WS-GRASS-BLOCK         BINARY-LONG.
+ 01 WS-BORDER-X            FLOAT-LONG.
+ 01 WS-BORDER-Z            FLOAT-LONG.
+ 01 WS-BORDER-SIZE         FLOAT-LONG.
+ 01 WS-BORDER-DAMAGE       FLOAT-LONG.
+ 01 WS-BORDER-SAFE         FLOAT-LONG.
  01 WS-UPDATES             PIC X(2048).
  01 WS-UPTR                BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
@@ -439,6 +444,36 @@
      STRING FUNCTION TRIM(WS-DESC1) " " FUNCTION TRIM(WS-DESC2) " " FUNCTION TRIM(WS-DESC3) " " FUNCTION TRIM(WS-DESC4)
          DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "void void foot/south head/south" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A creative player breaking a stone block: no bed rule touches it (the bed hooks leave other blocks alone).
+     PERFORM CLEAR-AREA
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y1 WS-Z WS-STONE
+     MOVE 1 TO PL-MODE(WS-ROW)
+     PERFORM DIG-FOOT
+     PERFORM DESCRIBE-ALL
+     MOVE "acceptance bed halves: a creative player breaks a stone block as before" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-DESC1) " " FUNCTION TRIM(WS-DESC2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "void void" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The head cell outside the world border (a border one block wide round the foot cell): nothing is placed.
+     PERFORM CLEAR-AREA
+     COMPUTE WS-BORDER-X = WS-X + 0.5
+     COMPUTE WS-BORDER-Z = WS-Z + 0.5
+     MOVE 1.0 TO WS-BORDER-SIZE
+     MOVE 0.2 TO WS-BORDER-DAMAGE
+     MOVE 5.0 TO WS-BORDER-SAFE
+     CALL "WORLDSIM-BORDER-SET" USING WS-DIM WS-BORDER-X WS-BORDER-Z WS-BORDER-SIZE WS-BORDER-DAMAGE WS-BORDER-SAFE
+     PERFORM PLACE-BED
+     MOVE 0.0 TO WS-BORDER-X
+     MOVE 0.0 TO WS-BORDER-Z
+     MOVE 59999968 TO WS-BORDER-SIZE
+     CALL "WORLDSIM-BORDER-SET" USING WS-DIM WS-BORDER-X WS-BORDER-Z WS-BORDER-SIZE WS-BORDER-DAMAGE WS-BORDER-SAFE
+     PERFORM DESCRIBE-ALL
+     MOVE "acceptance bed halves: a head cell outside the world border stops the placement, five beds held" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-DESC1) " " FUNCTION TRIM(WS-DESC2) " " WS-HELD-COUNT DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "void void 05" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
 *> The clients: the packets of the placement name both cells with their states, those of the break name both cells as air.

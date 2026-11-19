@@ -177,9 +177,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDSIM-SLEEP-USE.
-*> USING connection id, bed x, y, z (BINARY-LONG): AbstractBedBlock.useWithoutItem and ServerPlayer.startSleepInBed (33 sections 5.1, 5.2) for a bed of the
-*> overworld rule `sleep when dark`: not already sleeping, the range test of WS-RANGE (the clicked position stands for both halves), the cell above free
-*> (no collision), no monster check (this core has no monster-in-box rule), then WS-START decides; success sets the player sleeping with a counter of 0.
+*> USING connection id, bed x, y, z (BINARY-LONG; the clicked half): AbstractBedBlock.useWithoutItem and ServerPlayer.startSleepInBed (33 sections 5.1, 5.2) for a bed of the
+*> overworld rule `sleep when dark`: the position moves to the head half (a bed whose head half is missing is consumed with no effect), an occupied bed is refused
+*> (block.minecraft.bed.occupied), not already sleeping, the range test of WS-RANGE for either half, the cells above both halves free (no collision), no monster check
+*> (this core has no monster-in-box rule), then WS-START decides; a refusal says why as an overlay line (too_far_away, obstructed, no_sleep, not_safe); success sets the
+*> player sleeping with a counter of 0 (SLEEP-BEGIN: the pose, the sleeping position, the occupied halves). The respawn point is the head half's cell.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -215,6 +217,20 @@
  01 WS-UPDATE              BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 128.
  01 WS-SAME                BINARY-LONG.
+ 01 WS-PART                BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-HX                  BINARY-LONG.
+ 01 WS-HZ                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-HEAD-PART           BINARY-LONG.
+ 01 WS-HEAD-STATE          BINARY-LONG.
+ 01 WS-FOOT-STATE          BINARY-LONG.
+ 01 WS-OCC-NAME            PIC X(24) VALUE "occupied".
+ 01 WS-OCC-TEXT            PIC X(32).
+ 01 WS-OCC-FOUND           BINARY-LONG.
+ 01 WS-KEY40               PIC X(40).
  COPY BRWORLD.
  COPY PROTO.
  LINKAGE SECTION.
@@ -225,19 +241,53 @@
  PROCEDURE DIVISION USING L-ID L-X L-Y L-Z.
      CALL "WORLDSIM-ENSURE2"
      MOVE CN-PLAYER(L-ID) TO WS-ROW
+*>   Step 2: the position moves to the head half; the block there must be the same bed with the head part, else the use is consumed with no effect.
+     CALL "WORLD-GET-BLOCK" USING PL-DIM(WS-ROW) L-X L-Y L-Z WS-STATE
+     CALL "BED-PART" USING WS-STATE WS-PART WS-DX WS-DZ
+     MOVE L-X TO WS-HX
+     MOVE L-Z TO WS-HZ
+     MOVE L-X TO WS-FX
+     MOVE L-Z TO WS-FZ
+     IF WS-PART = 1
+         COMPUTE WS-HX = L-X + WS-DX
+         COMPUTE WS-HZ = L-Z + WS-DZ
+     END-IF
+     IF WS-PART = 2
+         COMPUTE WS-FX = L-X + WS-DX
+         COMPUTE WS-FZ = L-Z + WS-DZ
+     END-IF
+     CALL "WORLD-GET-BLOCK" USING PL-DIM(WS-ROW) WS-HX L-Y WS-HZ WS-HEAD-STATE
+     CALL "BED-PART" USING WS-HEAD-STATE WS-HEAD-PART WS-DX WS-DZ
+     IF WS-HEAD-PART NOT = 2 OR CB-S-BLOCK(WS-HEAD-STATE + 1) NOT = CB-S-BLOCK(WS-STATE + 1)
+         GOBACK
+     END-IF
+*>   Step 4: an occupied bed is refused (a villager sleeping in it is not kicked out: this core has none sleeping in a bed that a player can click).
+     CALL "PS-GET" USING WS-HEAD-STATE WS-OCC-NAME WS-OCC-TEXT WS-OCC-FOUND
+     IF WS-OCC-FOUND = 1 AND FUNCTION TRIM(WS-OCC-TEXT) = "true"
+         MOVE "block.minecraft.bed.occupied" TO WS-KEY40
+         CALL "SLEEP-MESSAGE" USING L-ID WS-KEY40
+         GOBACK
+     END-IF
      CALL "WORLDSIM-DARKEN" USING PL-DIM(WS-ROW) WS-DARKEN
      CALL "WC-OUTSIDE" USING WS-FIXED WS-DARKEN WS-SKY WS-BRIGHT WS-DARK WS-EFFECTIVE
      CALL "WS-RULE-TEST" USING WS-RULE WS-DARK WS-CAN-SLEEP
      MOVE EN-X(PL-ENTITY-ROW(WS-ROW)) TO WS-X
      MOVE EN-Y(PL-ENTITY-ROW(WS-ROW)) TO WS-Y
      MOVE EN-Z(PL-ENTITY-ROW(WS-ROW)) TO WS-Z
-     MOVE L-X TO WS-OX
+     MOVE WS-FX TO WS-OX
      MOVE L-Y TO WS-OY
-     MOVE L-Z TO WS-OZ
+     MOVE WS-FZ TO WS-OZ
      CALL "WS-RANGE" USING WS-X WS-Y WS-Z L-X L-Y L-Z WS-OX WS-OY WS-OZ WS-WITHIN
+*>   Step 4: the cells above the head half and above the foot half must hold no block with a collision shape.
      COMPUTE WS-ABOVE-Y = L-Y + 1
-     CALL "WORLD-GET-BLOCK" USING PL-DIM(WS-ROW) L-X WS-ABOVE-Y L-Z WS-STATE
      MOVE 1 TO WS-FREE
+     CALL "WORLD-GET-BLOCK" USING PL-DIM(WS-ROW) WS-HX WS-ABOVE-Y WS-HZ WS-STATE
+     IF WS-STATE NOT = 0
+         IF CB-SOLID(CB-S-BLOCK(WS-STATE + 1) + 1) = 1
+             MOVE 0 TO WS-FREE
+         END-IF
+     END-IF
+     CALL "WORLD-GET-BLOCK" USING PL-DIM(WS-ROW) WS-FX WS-ABOVE-Y WS-FZ WS-STATE
      IF WS-STATE NOT = 0
          IF CB-SOLID(CB-S-BLOCK(WS-STATE + 1) + 1) = 1
              MOVE 0 TO WS-FREE
@@ -255,15 +305,15 @@
          CALL "BR-WORLD-READY"
          MOVE 1 TO WS-SAME
          IF BW-SPAWN-SET(WS-ROW) = 0 OR BW-SPAWN-BED(WS-ROW) = 0 OR BW-SPAWN-DIM(WS-ROW) NOT = PL-DIM(WS-ROW)
-                 OR BW-SPAWN-Y(WS-ROW) NOT = L-Y OR BW-SPAWN-X(WS-ROW) NOT = L-X + 0.5 OR BW-SPAWN-Z(WS-ROW) NOT = L-Z + 0.5
+                 OR BW-SPAWN-Y(WS-ROW) NOT = L-Y OR BW-SPAWN-X(WS-ROW) NOT = WS-HX + 0.5 OR BW-SPAWN-Z(WS-ROW) NOT = WS-HZ + 0.5
              MOVE 0 TO WS-SAME
          END-IF
          MOVE 1 TO BW-SPAWN-SET(WS-ROW)
          MOVE 1 TO BW-SPAWN-BED(WS-ROW)
          MOVE PL-DIM(WS-ROW) TO BW-SPAWN-DIM(WS-ROW)
-         COMPUTE BW-SPAWN-X(WS-ROW) = L-X + 0.5
+         COMPUTE BW-SPAWN-X(WS-ROW) = WS-HX + 0.5
          MOVE L-Y TO BW-SPAWN-Y(WS-ROW)
-         COMPUTE BW-SPAWN-Z(WS-ROW) = L-Z + 0.5
+         COMPUTE BW-SPAWN-Z(WS-ROW) = WS-HZ + 0.5
          MOVE PL-YAW(WS-ROW) TO BW-SPAWN-YAW(WS-ROW)
          MOVE PL-PITCH(WS-ROW) TO BW-SPAWN-PITCH(WS-ROW)
          IF WS-SAME = 0
@@ -277,10 +327,22 @@
              CALL "PB-FREE" USING PB-BUFFER
          END-IF
      END-IF
+*>   Step 6 and the failures before it: the reason as an overlay line.
+     EVALUATE WS-RESULT
+         WHEN 2
+             MOVE "block.minecraft.bed.too_far_away" TO WS-KEY40
+             CALL "SLEEP-MESSAGE" USING L-ID WS-KEY40
+         WHEN 3
+             MOVE "block.minecraft.bed.obstructed" TO WS-KEY40
+             CALL "SLEEP-MESSAGE" USING L-ID WS-KEY40
+         WHEN 4
+             MOVE "block.minecraft.bed.no_sleep" TO WS-KEY40
+             CALL "SLEEP-MESSAGE" USING L-ID WS-KEY40
+*>       NOT_SAFE (5, block.minecraft.bed.not_safe) cannot happen here: this core has no monster-in-box rule (WS-NO is the monster argument of WS-START).
+     END-EVALUATE
      IF WS-RESULT = 0
-         MOVE 1 TO W2-SLEEPING(WS-ROW)
-         MOVE 0 TO W2-SLEEP-COUNTER(WS-ROW)
          MOVE 0 TO PL-REST(WS-ROW)
+         CALL "SLEEP-BEGIN" USING WS-ROW WS-HX L-Y WS-HZ
      END-IF
      GOBACK.
  END PROGRAM WORLDSIM-SLEEP-USE.
@@ -332,22 +394,25 @@
  01 WS-THUNDER-IN          BINARY-LONG.
  01 WS-CLEAR-IN            BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-MAIN-DIM            BINARY-LONG.
  LINKAGE SECTION.
  PROCEDURE DIVISION.
      CALL "WORLDSIM-ENSURE2"
-     CALL "WORLDSIM-DARKEN" USING WS-ONE WS-DARKEN
+*>   The overworld is the first dimension of the world: row 1 of a cobolcraft world, row 3 (minecraft:overworld) of a standard one.
+     MOVE CW-DIM(1) TO WS-MAIN-DIM
+     CALL "WORLDSIM-DARKEN" USING WS-MAIN-DIM WS-DARKEN
      CALL "WC-OUTSIDE" USING WS-FIXED WS-DARKEN WS-SKY WS-BRIGHT WS-DARK WS-EFFECTIVE
      COMPUTE WS-REFUSED = 1 - WS-DARK
      MOVE 0 TO WS-ACTIVE WS-SLEEPING WS-DEEP
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
-         IF PL-USED(WS-ROW) = 1 AND PL-ENTITY-ROW(WS-ROW) > 0 AND PL-DIM(WS-ROW) = 1
+         IF PL-USED(WS-ROW) = 1 AND PL-ENTITY-ROW(WS-ROW) > 0 AND PL-DIM(WS-ROW) = WS-MAIN-DIM
              IF PL-MODE(WS-ROW) NOT = 3
                  ADD 1 TO WS-ACTIVE
              END-IF
              IF W2-SLEEPING(WS-ROW) = 1
                  CALL "WS-COUNTER" USING W2-SLEEPING(WS-ROW) WS-REFUSED W2-SLEEP-COUNTER(WS-ROW) WS-WAKE WS-LONG
                  IF WS-WAKE = 1
-                     MOVE 0 TO W2-SLEEPING(WS-ROW) W2-SLEEP-COUNTER(WS-ROW)
+                     CALL "SLEEP-WAKE" USING WS-ROW
                  ELSE
                      ADD 1 TO WS-SLEEPING
                      ADD WS-LONG TO WS-DEEP
@@ -377,6 +442,9 @@
          CALL "PB-FREE" USING PB-BUFFER
      END-IF
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
+         IF PL-USED(WS-ROW) = 1 AND PL-ENTITY-ROW(WS-ROW) > 0
+             CALL "SLEEP-WAKE" USING WS-ROW
+         END-IF
          MOVE 0 TO W2-SLEEPING(WS-ROW) W2-SLEEP-COUNTER(WS-ROW)
      END-PERFORM
      IF WS-RESET = 1

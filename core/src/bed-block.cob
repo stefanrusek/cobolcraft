@@ -40,9 +40,6 @@
          WHEN "head"
              MOVE 2 TO L-PART
      END-EVALUATE
-     IF L-PART = 0
-         GOBACK
-     END-IF
 *>   The foot's partner lies along the facing, the head's against it.
      MOVE SPACES TO WS-TEXT
      CALL "BLOCK-STATE-PROP" USING WS-MODE L-STATE WS-FACING-NAME WS-TEXT WS-FOUND
