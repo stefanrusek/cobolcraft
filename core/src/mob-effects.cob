@@ -52,9 +52,11 @@
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
  01 WS-YES                  BINARY-LONG VALUE 1.
- 01 WS-REPLACE              BINARY-LONG.
+ 01 WS-CHANGED              BINARY-LONG.
+ 01 WS-K                    BINARY-LONG.
  01 WS-E                    BINARY-LONG.
  01 WS-SPECIES              PIC X(24).
+ COPY FXCHAIN.
  LINKAGE SECTION.
  01 L-ENT                   BINARY-LONG.
  01 L-EFFECT                BINARY-LONG.
@@ -76,28 +78,37 @@
              END-IF
          END-PERFORM
      END-IF
-     MOVE 1 TO WS-REPLACE
      CALL "MEF-FIND" USING L-ENT L-EFFECT WS-NO WS-SLOT
      IF WS-SLOT > 0
-         EVALUATE TRUE
-             WHEN L-AMPLIFIER > ME-AMP(WS-SLOT)
-                 CONTINUE
-             WHEN L-AMPLIFIER < ME-AMP(WS-SLOT)
-                 MOVE 0 TO WS-REPLACE
-             WHEN ME-DUR(WS-SLOT) = -1
-                 MOVE 0 TO WS-REPLACE
-             WHEN L-DURATION = -1 OR L-DURATION > ME-DUR(WS-SLOT)
-                 CONTINUE
-             WHEN OTHER
-                 MOVE 0 TO WS-REPLACE
-         END-EVALUATE
+*>       An active instance is updated by MobEffectInstance.update (44-x1 section 8.2): a higher amplifier replaces it (a shorter one leaves it hidden beneath), a longer equal one extends it,
+*>       a lower longer one becomes the hidden instance.
+         COMPUTE FX-N = 1 + ME-HCOUNT(WS-SLOT)
+         MOVE ME-AMP(WS-SLOT) TO FX-AMP(1)
+         MOVE ME-DUR(WS-SLOT) TO FX-DUR(1)
+         MOVE ME-FLAGS(WS-SLOT) TO FX-FLAGS(1)
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > ME-HCOUNT(WS-SLOT)
+             MOVE ME-H-AMP(WS-SLOT, WS-K) TO FX-AMP(WS-K + 1)
+             MOVE ME-H-DUR(WS-SLOT, WS-K) TO FX-DUR(WS-K + 1)
+             MOVE ME-H-FLAGS(WS-SLOT, WS-K) TO FX-FLAGS(WS-K + 1)
+         END-PERFORM
+         CALL "FX-MERGE" USING FX-CHAIN L-AMPLIFIER L-DURATION L-FLAGS WS-CHANGED
+         MOVE FX-AMP(1) TO ME-AMP(WS-SLOT)
+         MOVE FX-DUR(1) TO ME-DUR(WS-SLOT)
+         MOVE FX-FLAGS(1) TO ME-FLAGS(WS-SLOT)
+         COMPUTE ME-HCOUNT(WS-SLOT) = FX-N - 1
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > ME-HCOUNT(WS-SLOT)
+             MOVE FX-AMP(WS-K + 1) TO ME-H-AMP(WS-SLOT, WS-K)
+             MOVE FX-DUR(WS-K + 1) TO ME-H-DUR(WS-SLOT, WS-K)
+             MOVE FX-FLAGS(WS-K + 1) TO ME-H-FLAGS(WS-SLOT, WS-K)
+         END-PERFORM
      ELSE
          CALL "MEF-FIND" USING L-ENT L-EFFECT WS-YES WS-SLOT
-     END-IF
-     IF WS-SLOT > 0 AND WS-REPLACE = 1
-         MOVE L-AMPLIFIER TO ME-AMP(WS-SLOT)
-         MOVE L-DURATION TO ME-DUR(WS-SLOT)
-         MOVE L-FLAGS TO ME-FLAGS(WS-SLOT)
+         IF WS-SLOT > 0
+             MOVE L-AMPLIFIER TO ME-AMP(WS-SLOT)
+             MOVE L-DURATION TO ME-DUR(WS-SLOT)
+             MOVE L-FLAGS TO ME-FLAGS(WS-SLOT)
+             MOVE 0 TO ME-HCOUNT(WS-SLOT)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM MEF-ADD.
@@ -334,6 +345,10 @@
  COPY MOBEFFECT.
  01 WS-I                    BINARY-LONG.
  01 WS-ENT                  BINARY-LONG.
+ 01 WS-K                    BINARY-LONG.
+ 01 WS-DOWNGRADED           BINARY-LONG.
+ 01 WS-ALIVE                BINARY-LONG.
+ COPY FXCHAIN.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -341,16 +356,32 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ME-MAX
          IF ME-ENT(WS-I) = WS-ENT AND EN-USED(L-ROW) = 1 AND EN-ID(L-ROW) = WS-ENT
              CALL "MEF-PERIODIC" USING L-ROW ME-ID(WS-I) ME-AMP(WS-I) ME-DUR(WS-I)
-             EVALUATE TRUE
-                 WHEN ME-ENT(WS-I) NOT = WS-ENT
-                     CONTINUE
-                 WHEN ME-DUR(WS-I) = -1
-                     CONTINUE
-                 WHEN ME-DUR(WS-I) <= 1
+*>           tickDownDuration and downgradeToHiddenEffect (44-x1 section 11.2).
+             IF ME-ENT(WS-I) = WS-ENT
+                 COMPUTE FX-N = 1 + ME-HCOUNT(WS-I)
+                 MOVE ME-AMP(WS-I) TO FX-AMP(1)
+                 MOVE ME-DUR(WS-I) TO FX-DUR(1)
+                 MOVE ME-FLAGS(WS-I) TO FX-FLAGS(1)
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > ME-HCOUNT(WS-I)
+                     MOVE ME-H-AMP(WS-I, WS-K) TO FX-AMP(WS-K + 1)
+                     MOVE ME-H-DUR(WS-I, WS-K) TO FX-DUR(WS-K + 1)
+                     MOVE ME-H-FLAGS(WS-I, WS-K) TO FX-FLAGS(WS-K + 1)
+                 END-PERFORM
+                 CALL "FX-TICK-DOWN" USING FX-CHAIN WS-DOWNGRADED WS-ALIVE
+                 IF WS-ALIVE = 0
                      INITIALIZE ME-ENTRY(WS-I)
-                 WHEN OTHER
-                     SUBTRACT 1 FROM ME-DUR(WS-I)
-             END-EVALUATE
+                 ELSE
+                     MOVE FX-AMP(1) TO ME-AMP(WS-I)
+                     MOVE FX-DUR(1) TO ME-DUR(WS-I)
+                     MOVE FX-FLAGS(1) TO ME-FLAGS(WS-I)
+                     COMPUTE ME-HCOUNT(WS-I) = FX-N - 1
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > ME-HCOUNT(WS-I)
+                         MOVE FX-AMP(WS-K + 1) TO ME-H-AMP(WS-I, WS-K)
+                         MOVE FX-DUR(WS-K + 1) TO ME-H-DUR(WS-I, WS-K)
+                         MOVE FX-FLAGS(WS-K + 1) TO ME-H-FLAGS(WS-I, WS-K)
+                     END-PERFORM
+                 END-IF
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

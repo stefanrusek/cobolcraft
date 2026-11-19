@@ -1,4 +1,4 @@
-*> The piglin's weapons (docs/protocol/44-residual-mob-questions-6-nether.md sections 2.11, 5.7 and 5.8; 44-3 section 2.19 B; lane 002-lane-p49s, T38501 to T38515). A piglin holds a weapon
+*> The piglin's weapons (Mth.atan2 is MTH-ATAN2 of mth.cob) (docs/protocol/44-residual-mob-questions-6-nether.md sections 2.11, 5.7 and 5.8; 44-3 section 2.19 B; lane 002-lane-p49s, T38501 to T38515). A piglin holds a weapon
 *> in EN-HAND (11 golden sword, 12 golden spear, 13 crossbow, 1000 + an item id for anything picked up); PGBRAIN.cpy has the behaviour state (PG-SP-*, PG-XB-*, PG-USING).
 *> Built: the main-hand kind (PGW-HAND-KIND), LandRandomPos.getPosAway (PGW-POS-AWAY: 10 attempts, the within-radians direction, stable and water tests, the walk-target value 0
 *> of a piglin so the first survivor wins), the spawn weapon (PGW-FINALIZE: baby 0.2, else crossbow 0.5, golden spear 1/10 of the rest, else golden sword), SpearApproach, SpearAttack,
@@ -8,7 +8,6 @@
 *> using-item and charging-crossbow flags are not sent to the viewers, a navigation "done" is a position within a block, a target that is a mob (EN-FOE) is not handled here (only a
 *> player target), the walk-target value of a piglin is 0 (getWalkTargetValue), a block with a path malus other than water or lava is not rejected by getPosAway.
 *>   PGW-HAND-KIND USING row, main out (0 other, 1 crossbow, 2 spear), crossbow either hand out (0/1)
-*>   PGW-ATAN2 USING y, x (FLOAT-LONG), angle out (radians)
 *>   PGW-POS-AWAY USING row, min range, max range (FLOAT-LONG), vertical range (BINARY-LONG), from x, from z (FLOAT-LONG), found out, x out, z out
 *>   PGW-FINALIZE USING xoro state, row                    finalizeSpawn of a piglin
 *>   PGW-SHOOT USING row, player row                       one crossbow arrow
@@ -53,32 +52,6 @@
      END-IF
      GOBACK.
  END PROGRAM PGW-HAND-KIND.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. PGW-ATAN2.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- LINKAGE SECTION.
- 01 L-Y                    FLOAT-LONG.
- 01 L-X                    FLOAT-LONG.
- 01 L-ANGLE                FLOAT-LONG.
- PROCEDURE DIVISION USING L-Y L-X L-ANGLE.
-     EVALUATE TRUE
-         WHEN L-X > 0
-             COMPUTE L-ANGLE = FUNCTION ATAN(L-Y / L-X)
-         WHEN L-X < 0 AND L-Y >= 0
-             COMPUTE L-ANGLE = FUNCTION ATAN(L-Y / L-X) + FUNCTION PI
-         WHEN L-X < 0
-             COMPUTE L-ANGLE = FUNCTION ATAN(L-Y / L-X) - FUNCTION PI
-         WHEN L-Y > 0
-             COMPUTE L-ANGLE = FUNCTION PI / 2
-         WHEN L-Y < 0
-             COMPUTE L-ANGLE = 0 - FUNCTION PI / 2
-         WHEN OTHER
-             MOVE 0 TO L-ANGLE
-     END-EVALUATE
-     GOBACK.
- END PROGRAM PGW-ATAN2.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PGW-LIQUID.
@@ -165,7 +138,7 @@
      PERFORM VARYING WS-ATTEMPT FROM 1 BY 1 UNTIL WS-ATTEMPT > 10 OR WS-STOP = 1
          CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R
          COMPUTE WS-W = 2 * (WS-R / 1000000) - 1
-         CALL "PGW-ATAN2" USING WS-DZ WS-DX WS-ANGLE
+         CALL "MTH-ATAN2" USING WS-DZ WS-DX WS-ANGLE
          COMPUTE WS-ANGLE = WS-ANGLE - 1.5707963705062866 + WS-W * 1.5707963705062866
          CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R
          COMPUTE WS-DIST = (L-MIN + FUNCTION SQRT(WS-R / 1000000) * (L-MAX - L-MIN)) * 1.41421354

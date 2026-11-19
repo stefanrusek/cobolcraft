@@ -52,13 +52,18 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EFFECT-ADD.
+*> USING player row, effect, amplifier, duration, flags: LivingEntity.addEffect (44-x1 section 11.2): no active instance of the effect stores the new one; an active one is updated by
+*> MobEffectInstance.update (8.2, FX-MERGE: a higher amplifier replaces it and a shorter one leaves the old instance hidden beneath, a longer equal one extends it, a lower longer one becomes
+*> the hidden instance); the player gets the effect again when something changed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY EFFECTS.
+ COPY FXCHAIN.
  01 WS-SLOT                BINARY-LONG.
- 01 WS-REPLACE             BINARY-LONG.
  01 WS-UPDATE              BINARY-LONG VALUE 1.
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-EFFECT               BINARY-LONG.
@@ -70,27 +75,36 @@
          GOBACK
      END-IF
      COMPUTE WS-SLOT = L-EFFECT + 1
-     MOVE 1 TO WS-REPLACE
+     MOVE 1 TO WS-CHANGED
      IF EF-ON(L-ROW, WS-SLOT) = 1 AND EF-OWNER(L-ROW, WS-SLOT) = PL-ENTITY-ID(L-ROW)
-         EVALUATE TRUE
-             WHEN L-AMPLIFIER > EF-AMPLIFIER(L-ROW, WS-SLOT)
-                 CONTINUE
-             WHEN L-AMPLIFIER < EF-AMPLIFIER(L-ROW, WS-SLOT)
-                 MOVE 0 TO WS-REPLACE
-             WHEN EF-DURATION(L-ROW, WS-SLOT) = -1
-                 MOVE 0 TO WS-REPLACE
-             WHEN L-DURATION = -1 OR L-DURATION > EF-DURATION(L-ROW, WS-SLOT)
-                 CONTINUE
-             WHEN OTHER
-                 MOVE 0 TO WS-REPLACE
-         END-EVALUATE
-     END-IF
-     IF WS-REPLACE = 1
+         COMPUTE FX-N = 1 + EF-HCOUNT(L-ROW, WS-SLOT)
+         MOVE EF-AMPLIFIER(L-ROW, WS-SLOT) TO FX-AMP(1)
+         MOVE EF-DURATION(L-ROW, WS-SLOT) TO FX-DUR(1)
+         MOVE EF-FLAGS(L-ROW, WS-SLOT) TO FX-FLAGS(1)
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EF-HCOUNT(L-ROW, WS-SLOT)
+             MOVE EF-H-AMP(L-ROW, WS-SLOT, WS-K) TO FX-AMP(WS-K + 1)
+             MOVE EF-H-DUR(L-ROW, WS-SLOT, WS-K) TO FX-DUR(WS-K + 1)
+             MOVE EF-H-FLAGS(L-ROW, WS-SLOT, WS-K) TO FX-FLAGS(WS-K + 1)
+         END-PERFORM
+         CALL "FX-MERGE" USING FX-CHAIN L-AMPLIFIER L-DURATION L-FLAGS WS-CHANGED
+         MOVE FX-AMP(1) TO EF-AMPLIFIER(L-ROW, WS-SLOT)
+         MOVE FX-DUR(1) TO EF-DURATION(L-ROW, WS-SLOT)
+         MOVE FX-FLAGS(1) TO EF-FLAGS(L-ROW, WS-SLOT)
+         COMPUTE EF-HCOUNT(L-ROW, WS-SLOT) = FX-N - 1
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EF-HCOUNT(L-ROW, WS-SLOT)
+             MOVE FX-AMP(WS-K + 1) TO EF-H-AMP(L-ROW, WS-SLOT, WS-K)
+             MOVE FX-DUR(WS-K + 1) TO EF-H-DUR(L-ROW, WS-SLOT, WS-K)
+             MOVE FX-FLAGS(WS-K + 1) TO EF-H-FLAGS(L-ROW, WS-SLOT, WS-K)
+         END-PERFORM
+     ELSE
          MOVE 1 TO EF-ON(L-ROW, WS-SLOT)
          MOVE PL-ENTITY-ID(L-ROW) TO EF-OWNER(L-ROW, WS-SLOT)
          MOVE L-AMPLIFIER TO EF-AMPLIFIER(L-ROW, WS-SLOT)
          MOVE L-DURATION TO EF-DURATION(L-ROW, WS-SLOT)
          MOVE L-FLAGS TO EF-FLAGS(L-ROW, WS-SLOT)
+         MOVE 0 TO EF-HCOUNT(L-ROW, WS-SLOT)
+     END-IF
+     IF WS-CHANGED = 1
          CALL "EFFECT-SEND" USING L-ROW WS-UPDATE L-EFFECT
      END-IF
      GOBACK.
@@ -113,7 +127,7 @@
      END-IF
      COMPUTE WS-SLOT = L-EFFECT + 1
      IF EF-ON(L-ROW, WS-SLOT) = 1
-         MOVE 0 TO EF-ON(L-ROW, WS-SLOT)
+         MOVE 0 TO EF-ON(L-ROW, WS-SLOT) EF-HCOUNT(L-ROW, WS-SLOT)
          IF EF-OWNER(L-ROW, WS-SLOT) = PL-ENTITY-ID(L-ROW)
              CALL "EFFECT-SEND" USING L-ROW WS-REMOVE L-EFFECT
          END-IF
@@ -257,6 +271,11 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-EFFECT              BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-DOWNGRADED          BINARY-LONG.
+ 01 WS-ALIVE               BINARY-LONG.
+ 01 WS-UPDATE              BINARY-LONG VALUE 1.
+ COPY FXCHAIN.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
          IF PL-USED(WS-ROW) = 1
@@ -267,16 +286,39 @@
                          CALL "EFFECT-PERIODIC" USING WS-ROW WS-EFFECT EF-AMPLIFIER(WS-ROW, WS-SLOT)
                              EF-DURATION(WS-ROW, WS-SLOT)
                      END-IF
-                     EVALUATE TRUE
-                         WHEN EF-OWNER(WS-ROW, WS-SLOT) NOT = PL-ENTITY-ID(WS-ROW)
-                             MOVE 0 TO EF-ON(WS-ROW, WS-SLOT)
-                         WHEN EF-DURATION(WS-ROW, WS-SLOT) = -1
-                             CONTINUE
-                         WHEN EF-DURATION(WS-ROW, WS-SLOT) <= 1
-                             CALL "EFFECT-REMOVE" USING WS-ROW WS-EFFECT
-                         WHEN OTHER
-                             SUBTRACT 1 FROM EF-DURATION(WS-ROW, WS-SLOT)
-                     END-EVALUATE
+*>                   tickDownDuration and downgradeToHiddenEffect (44-x1 section 11.2): every hidden instance and the active one lose a tick; an active duration of 0 with a hidden
+*>                   instance takes the hidden one's values (the client gets the effect again); with none the effect ends; a duration that is a multiple of 600 is sent again.
+                     IF EF-OWNER(WS-ROW, WS-SLOT) NOT = PL-ENTITY-ID(WS-ROW)
+                         MOVE 0 TO EF-ON(WS-ROW, WS-SLOT)
+                     ELSE
+                         COMPUTE FX-N = 1 + EF-HCOUNT(WS-ROW, WS-SLOT)
+                         MOVE EF-AMPLIFIER(WS-ROW, WS-SLOT) TO FX-AMP(1)
+                         MOVE EF-DURATION(WS-ROW, WS-SLOT) TO FX-DUR(1)
+                         MOVE EF-FLAGS(WS-ROW, WS-SLOT) TO FX-FLAGS(1)
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EF-HCOUNT(WS-ROW, WS-SLOT)
+                             MOVE EF-H-AMP(WS-ROW, WS-SLOT, WS-K) TO FX-AMP(WS-K + 1)
+                             MOVE EF-H-DUR(WS-ROW, WS-SLOT, WS-K) TO FX-DUR(WS-K + 1)
+                             MOVE EF-H-FLAGS(WS-ROW, WS-SLOT, WS-K) TO FX-FLAGS(WS-K + 1)
+                         END-PERFORM
+                         CALL "FX-TICK-DOWN" USING FX-CHAIN WS-DOWNGRADED WS-ALIVE
+                         MOVE FX-AMP(1) TO EF-AMPLIFIER(WS-ROW, WS-SLOT)
+                         MOVE FX-DUR(1) TO EF-DURATION(WS-ROW, WS-SLOT)
+                         MOVE FX-FLAGS(1) TO EF-FLAGS(WS-ROW, WS-SLOT)
+                         COMPUTE EF-HCOUNT(WS-ROW, WS-SLOT) = FX-N - 1
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EF-HCOUNT(WS-ROW, WS-SLOT)
+                             MOVE FX-AMP(WS-K + 1) TO EF-H-AMP(WS-ROW, WS-SLOT, WS-K)
+                             MOVE FX-DUR(WS-K + 1) TO EF-H-DUR(WS-ROW, WS-SLOT, WS-K)
+                             MOVE FX-FLAGS(WS-K + 1) TO EF-H-FLAGS(WS-ROW, WS-SLOT, WS-K)
+                         END-PERFORM
+                         EVALUATE TRUE
+                             WHEN WS-ALIVE = 0
+                                 CALL "EFFECT-REMOVE" USING WS-ROW WS-EFFECT
+                             WHEN WS-DOWNGRADED = 1
+                                 CALL "EFFECT-SEND" USING WS-ROW WS-UPDATE WS-EFFECT
+                             WHEN EF-DURATION(WS-ROW, WS-SLOT) > 0 AND FUNCTION MOD(EF-DURATION(WS-ROW, WS-SLOT), 600) = 0
+                                 CALL "EFFECT-SEND" USING WS-ROW WS-UPDATE WS-EFFECT
+                         END-EVALUATE
+                     END-IF
                  END-IF
              END-PERFORM
          END-IF

@@ -11,3 +11,8 @@
           15 EF-AMPLIFIER   BINARY-LONG.
           15 EF-DURATION    BINARY-LONG.        *> ticks left; -1 infinite
           15 EF-FLAGS       BINARY-LONG.        *> 05b 0x87 flags: 1 ambient, 2 particles, 4 icon, 8 blend
+          15 EF-HCOUNT       BINARY-LONG.        *> hidden instances beneath the active one (44-x1 sections 8.2, 11.2): at most 4
+          15 EF-HID          OCCURS 4 TIMES.
+             20 EF-H-AMP     BINARY-LONG.
+             20 EF-H-DUR     BINARY-LONG.
+             20 EF-H-FLAGS   BINARY-LONG.

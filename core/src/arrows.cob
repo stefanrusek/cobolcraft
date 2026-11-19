@@ -50,6 +50,7 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-H                   FLOAT-LONG.
+ 01 WS-ANGLE               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -78,21 +79,11 @@
      MOVE L-BASE TO EN-ITEM(WS-ROW)
      MOVE L-OWNER TO EN-TARGET-ID(WS-ROW)
      COMPUTE WS-H = FUNCTION SQRT(L-VX * L-VX + L-VZ * L-VZ)
-     IF L-VZ = 0
-         IF L-VX >= 0
-             MOVE 90 TO EN-YAW(WS-ROW)
-         ELSE
-             MOVE -90 TO EN-YAW(WS-ROW)
-         END-IF
-     ELSE
-         COMPUTE EN-YAW(WS-ROW) = FUNCTION ATAN(L-VX / L-VZ) * 180 / FUNCTION PI
-         IF L-VZ < 0
-             COMPUTE EN-YAW(WS-ROW) = EN-YAW(WS-ROW) + 180
-         END-IF
-     END-IF
-     IF WS-H > 0
-         COMPUTE EN-PITCH(WS-ROW) = FUNCTION ATAN(L-VY / WS-H) * 180 / FUNCTION PI
-     END-IF
+*>   Projectile.updateRotation: yaw atan2(vx, vz), pitch atan2(vy, horizontal speed), Mth.atan2 in degrees (44-x1 section 11.1).
+     CALL "MTH-ATAN2-DEG" USING L-VX L-VZ WS-ANGLE
+     MOVE WS-ANGLE TO EN-YAW(WS-ROW)
+     CALL "MTH-ATAN2-DEG" USING L-VY WS-H WS-ANGLE
+     MOVE WS-ANGLE TO EN-PITCH(WS-ROW)
      CALL "ENTITY-TRACK" USING WS-ROW
      MOVE WS-ROW TO L-ROW
      GOBACK.
@@ -247,6 +238,7 @@
  01 WS-H                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-ANGLE               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -311,8 +303,8 @@
          COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.99
          COMPUTE WS-H = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
          IF WS-H > 0
-             COMPUTE WS-PITCH = FUNCTION ATAN(EN-VY(L-ROW) / WS-H) * 180 / FUNCTION PI
-             MOVE WS-PITCH TO EN-PITCH(L-ROW)
+             CALL "MTH-ATAN2-DEG" USING EN-VY(L-ROW) WS-H WS-ANGLE
+             MOVE WS-ANGLE TO EN-PITCH(L-ROW)
          END-IF
      END-IF
      IF FUNCTION ABS(EN-X(L-ROW) - EN-WAY-X(L-ROW)) >= WS-STEP OR FUNCTION ABS(EN-Y(L-ROW) - EN-FLEE-X(L-ROW)) >= WS-STEP
