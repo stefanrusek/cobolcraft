@@ -214,6 +214,8 @@
  01 WS-RATE                BINARY-LONG.
  01 WS-SUPPORTED           BINARY-LONG.
  01 WS-CLIMBING            BINARY-LONG.
+ 01 WS-FALL-FACTOR         FLOAT-LONG.
+ 01 WS-FALL-MULT           FLOAT-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -336,8 +338,13 @@
      IF PL-ON-GROUND(WS-ROW) = 1 AND PL-FLYING(WS-ROW) = 0 AND PL-MODE(WS-ROW) NOT = 3
          CALL "SHRIEKER-STEP-ON" USING WS-ROW
      END-IF
-*>   Fall damage (17 section 4.11): floor(distance + 1e-6 - 3).
-     COMPUTE WS-AMOUNT = FUNCTION INTEGER(WS-FALL + 0.000001 - RULE-SAFE-FALL)
+*>   Fall damage (17 section 4.11): floor((distance + 1e-6 - 3) x multiplier), the landed-on block's fallOn rule scaling the distance and the multiplier
+*>   (slime none, hay and honey 0.2, a bed half the distance: 24-5, fall-rules.cob).
+     MOVE 1 TO WS-FALL-FACTOR WS-FALL-MULT
+     IF WS-FALL > 0
+         CALL "FALL-LANDING-RULE" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-FALL-FACTOR WS-FALL-MULT
+     END-IF
+     COMPUTE WS-AMOUNT = FUNCTION INTEGER((WS-FALL * WS-FALL-FACTOR + 0.000001 - RULE-SAFE-FALL) * WS-FALL-MULT)
      IF WS-AMOUNT > 0
          MOVE CAUSE-FALL TO WS-CAUSE
          COMPUTE PL-FALL-DISTANCE(WS-ROW) = WS-FALL * 1000
