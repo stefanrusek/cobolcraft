@@ -553,9 +553,9 @@
        10 PL-USE-START        BINARY-DOUBLE.
        10 PL-USE-DURATION     BINARY-LONG.
        10 PL-USE-SLOT         BINARY-LONG.
-*>     A brush in use (lane bugbrush; 17 section 3.5, 25 part 8 section 7): 1 from the right press that used the held brush on a block until the button is released
-*>     (controls.cob sends release use item, which ends the server's use); the server's use also ends by itself when the view ray leaves the block.
-       10 PL-BRUSHING        PIC 9.
+*>     Held-use items of CONTROLS-INPUT (controls.cob, CONTROLS-USE-KIND kind 2): 1 from the Use Item of a spyglass, goat horn, brush, potion or ominous bottle until the right button is
+*>     released (or the item is no longer held): then Player Action 6 (release use item) is sent. A bow, crossbow, trident and shield are driven by USE-ITEM-INPUT (PL-USE-KIND above).
+       10 PL-USING           PIC 9.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
 *>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
        10 PL-RAIN            FLOAT-SHORT.
