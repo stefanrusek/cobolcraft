@@ -78,8 +78,9 @@
      MOVE 0.5 TO PL-X
      MOVE 40 TO WS-TICKS
      PERFORM WALK
+*>   The standard set's player box is 0.6 wide (half 0.3, docs/protocol/53 section 2.1, as the core's): the face of the wall at x 3 stops it at 2.7.
      MOVE "physics a one block high wall stops the Player at its face" TO TL-CASE
-     MOVE "2.6500/10.0000/0.5000" TO TL-EXPECTED
+     MOVE "2.7000/10.0000/0.5000" TO TL-EXPECTED
      PERFORM ASSERT-POSITION
 
 *>   A torch has no collision: the Player walks through it.

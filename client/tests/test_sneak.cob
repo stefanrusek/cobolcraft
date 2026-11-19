@@ -166,7 +166,7 @@
      MOVE CC-KEY-LEFT-SHIFT TO WS-KEY
      CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-UP
 
-*>   A top slab ceiling (underside 11.5) over x 3 to 8: 1.5 above the feet at 10. Standing does not fit (1.75), crouched does.
+*>   A top slab ceiling (underside 11.5) over x 3 to 8: 1.5 above the feet at 10. Standing does not fit (1.8 with the standard set), crouched does (1.5).
      PERFORM VARYING WS-X FROM 3 BY 1 UNTIL WS-X > 8
          PERFORM VARYING WS-Z FROM -4 BY 1 UNTIL WS-Z > 4
              MOVE 9 TO WS-Y
@@ -192,10 +192,10 @@
      CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-DOWN
      MOVE 60 TO WS-TICKS
      CALL "TEST-TICKS" USING CLIENT-STATE WS-TICKS
-     MOVE "standing: the Player stops at the low ceiling (box 1.75 does not fit)" TO TL-CASE
+     MOVE "standing: the Player stops at the low ceiling (box 1.8 does not fit)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF PL-X < 2.66 AND PL-X > 2.4
+     IF PL-X < 2.71 AND PL-X > 2.4
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      PERFORM ASSERT-N
