@@ -62,3 +62,6 @@
     05 GQ-SP-FX             BINARY-LONG.
     05 GQ-SP-FZ             BINARY-LONG.
     05 GQ-SP-READY          BINARY-LONG.
+*>   the origin chunk of the noise spawn finder (36-1 section 4.9), the centre of the spiral of the search
+    05 GQ-SP-OX             BINARY-LONG.
+    05 GQ-SP-OZ             BINARY-LONG.

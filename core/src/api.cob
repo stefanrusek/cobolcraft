@@ -568,6 +568,8 @@
          CALL "WORLDGEN-FREE"
          CALL "NOISES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "DENSITY-FUNCTIONS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+*>       the noise settings: the spawn_target boxes of the overworld's are the input of the noise spawn finder (36-1 section 4.9, spawn-find.cob)
+         CALL "NOISE-SETTINGS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "MATERIAL-RULES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
 *>       the feature lists of the biomes; the stage runs the placed features of the supported families (FR-GATE)
