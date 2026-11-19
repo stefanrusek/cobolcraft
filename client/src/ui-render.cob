@@ -34,11 +34,17 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-SPRITE-ROW          BINARY-LONG.
  01 WS-RGB                 BINARY-LONG.
+ 01 WS-BEHIND              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-GC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-TINT
      CALL "HB-RNG-SEED" USING CLIENT-STATE
+*>   A screen laid over the world (not the world screen itself) first dims the whole window with the gradient of 12 section 5.6.
+     CALL "SCREEN-WORLD-BEHIND" USING CLIENT-STATE WS-BEHIND
+     IF WS-BEHIND = 1 AND SM-SCREEN NOT = SCR-WORLD
+         CALL "UI-DIM-QUADS" USING CLIENT-STATE
+     END-IF
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
          MOVE SM-W-LENGTH(WS-W) TO WS-LENGTH
@@ -828,6 +834,46 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM UI-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-DIM-QUADS.
+*> USING CLIENT-STATE: the background of a screen laid over the world (12 section 5.6, 40-9 section 7A.1: the in-game screens' transparent background): a
+*> vertical gradient over the whole window from #c0101010 at the top to #d0101010 at the bottom, as 16 stacked bands of the white swatch tinted
+*> #101010 (a UI quad has one alpha), each band's alpha that of the gradient at the band's middle; the bands tile the window height exactly.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BANDS               BINARY-LONG VALUE 16.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-ZERO                FLOAT-SHORT VALUE 0.
+ 01 WS-U                   FLOAT-SHORT.
+ 01 WS-V                   FLOAT-SHORT.
+ 01 WS-U2                  FLOAT-SHORT.
+ 01 WS-V2                  FLOAT-SHORT.
+ 01 WS-ALPHA               FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     COMPUTE WS-X1 = IN-WIN-W
+     COMPUTE WS-U = (SW-WHITE * 8 + 4) / UA-W
+     COMPUTE WS-V = (UA-H - 4) / UA-H
+     MOVE WS-U TO WS-U2
+     MOVE WS-V TO WS-V2
+     MOVE 1052688 TO RL-UI-TINT
+     MOVE 0 TO RL-UI-LAYER
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= WS-BANDS
+         COMPUTE WS-ALPHA = (192 + 16 * (WS-K + 0.5) / WS-BANDS) / 255
+         COMPUTE RL-UI-FADE = 1 - WS-ALPHA
+         COMPUTE WS-Y0 = IN-WIN-H * WS-K / WS-BANDS
+         COMPUTE WS-Y1 = IN-WIN-H * (WS-K + 1) / WS-BANDS
+         CALL "UI-QUAD" USING CLIENT-STATE WS-ZERO WS-Y0 WS-X1 WS-Y1 WS-U WS-V WS-U2 WS-V2
+     END-PERFORM
+     MOVE 0 TO RL-UI-TINT RL-UI-FADE
+     GOBACK.
+ END PROGRAM UI-DIM-QUADS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-ICON-QUAD.

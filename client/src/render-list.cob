@@ -1,6 +1,7 @@
 *> The render list (data-model §13; research R4; shim-abi.md §9): RENDER-LIST-BUILD writes the
 *> frame's clear colour (the sky), projection and view matrices, the draws and the uploads. The
-*> world is drawn on the world screen and behind the pause menu: the camera is the local player's
+*> world is drawn on the world screen and behind every screen of the game (SCREEN-WORLD-BEHIND: the pause
+*> menu, the inventory, the containers, chat...; UI-RENDER dims it with the gradient of 12 section 5.6): the camera is the local player's
 *> eye (1.6 above the feet, standin-content §3) turned by yaw (0 faces +Z, 90 faces -X) and pitch
 *> (positive looks down); the projection is a 70 degree vertical perspective into Vulkan clip space
 *> (y down, depth 0 to 1, near 0.05, far 512). The draws start with the sun, the moon and the stars of a
@@ -268,10 +269,8 @@
              MOVE WS-SUM TO WS-PV(WS-C * 4 + WS-R + 1)
          END-PERFORM
      END-PERFORM
-     MOVE 0 TO WS-WORLD
-     IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-PAUSE
-         MOVE 1 TO WS-WORLD
-     END-IF
+*>   The world is drawn on the world screen and behind every screen of the game (SCREEN-WORLD-BEHIND).
+     CALL "SCREEN-WORLD-BEHIND" USING CLIENT-STATE WS-WORLD
 *>   The sky bodies first, before any terrain (12 section 3.4c; sky-render.cob): the sun, the moon and the stars, on the UI pipeline (no depth test).
      IF WS-WORLD = 1
          CALL "SKY-RENDER-BEHIND" USING CLIENT-STATE WS-PV-TABLE
