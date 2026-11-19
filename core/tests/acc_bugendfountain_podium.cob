@@ -119,8 +119,22 @@
      COMPUTE PL-Y(WS-ROW) = WS-P + 2
      MOVE 0.5 TO PL-Z(WS-ROW)
      MOVE 1 TO PL-MODE(WS-ROW)
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-IDS
+     CALL "CHUNKS-FOLLOW" USING WS-ALICE
      CALL "TEST-TICKS" USING WS-TWO
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-IDS
+     MOVE SPACES TO WS-SP
+     STRING " " WS-IDS DELIMITED BY SIZE INTO WS-SP
+     MOVE 0 TO WS-N
+     INSPECT WS-SP TALLYING WS-N FOR ALL " 46x"
+     MOVE "acceptance bugendfountain: the chunks round her new place (chunk (0, 0) among them) were sent before the fight scans" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     IF WS-N > 0
+         MOVE 1 TO TL-OBSERVED-N
+     ELSE
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Forty more ticks: the 20-tick bar syncs have her in range, the fight scans the state and builds the inactive podium.
      MOVE 0 TO WS-SENT
