@@ -978,11 +978,11 @@
  PROCEDURE DIVISION.
      MOVE "posteffect add <targets:players> <posteffect:resloc>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "posteffect remove <targets:players> <posteffect:resloc>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "posteffect clear <targets:players>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "posteffect list <target:player>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "posteffect remove <targets:players> <posteffect:resloc>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-POSTEFFECT.

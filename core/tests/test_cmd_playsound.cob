@@ -137,10 +137,20 @@
      MOVE "playsound minecraft:ambient.cave nonsense" TO WS-LINE
      MOVE "command.unknown.argument() |" TO WS-EXPECTED
      PERFORM RUN-TEXT
-     MOVE "acceptance US13 /playsound the source is required" TO TL-CASE
+*>   The sound alone is executable (the listing of 57-4 section 7 marks it): the master source, the one target, the source's position.
+     MOVE "acceptance US13 /playsound a sound alone plays on the master source to the source" TO TL-CASE
      MOVE "playsound minecraft:ambient.cave" TO WS-LINE
-     MOVE "command.unknown.command() |" TO WS-EXPECTED
+     MOVE "commands.playsound.success.single(minecraft:ambient.cave,Opal)" TO WS-EXPECTED
      PERFORM RUN-TEXT
+     MOVE "playsound minecraft:ambient.cave" TO WS-LINE
+     PERFORM FIRST-HEX
+     MOVE WS-TEXT TO WS-HEX-1
+     MOVE "playsound minecraft:ambient.cave master Opal ~ ~ ~" TO WS-LINE
+     PERFORM FIRST-HEX
+     MOVE WS-TEXT TO WS-HEX-2
+     MOVE "acceptance US13 /playsound a sound alone is the packet of the master source at the source's position" TO TL-CASE
+     MOVE WS-HEX-1 TO WS-EXPECTED
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-HEX-2
      MOVE "acceptance US13 /playsound a player below level 2 does not know the command" TO TL-CASE
      MOVE "playsound minecraft:ambient.cave master" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED

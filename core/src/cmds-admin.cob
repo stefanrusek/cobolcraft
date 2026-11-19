@@ -933,11 +933,11 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "whitelist list" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "whitelist reload" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "whitelist add <targets:profiles>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "whitelist remove <targets:profiles>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "whitelist reload" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-WHITELIST.
@@ -1607,6 +1607,7 @@
  COPY BRRUN.
  COPY PROTO.
  01 WS-NAME-HOST           PIC X(32) VALUE "hostname".
+ 01 WS-QUOTED              PIC X(256).
  01 WS-NAME-PORT           PIC X(32) VALUE "port".
  01 WS-NAME-PLAYERS        PIC X(32) VALUE "players".
  01 WS-INDEX               BINARY-LONG.
@@ -1629,6 +1630,13 @@
      COMPUTE WS-HOST-LENGTH = FUNCTION MIN(BA-END(WS-INDEX) - WS-START, 256)
      MOVE SPACES TO WS-HOST
      MOVE BR-R-LINE(WS-START + 1:WS-HOST-LENGTH) TO WS-HOST
+*>   the hostname is a phrase (57-4 section 7): a quoted one is the text between the quotes
+     IF WS-HOST-LENGTH >= 2 AND WS-HOST(1:1) = '"' AND WS-HOST(WS-HOST-LENGTH:1) = '"'
+         COMPUTE WS-HOST-LENGTH = WS-HOST-LENGTH - 2
+         MOVE WS-HOST(2:WS-HOST-LENGTH) TO WS-QUOTED
+         MOVE SPACES TO WS-HOST
+         MOVE WS-QUOTED(1:WS-HOST-LENGTH) TO WS-HOST
+     END-IF
      MOVE 25565 TO WS-PORT
      CALL "BX-FIND" USING WS-NAME-PORT WS-INDEX
      IF WS-INDEX > 0
@@ -1671,11 +1679,11 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-TRANSFER.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
-     MOVE "transfer <hostname:word>" TO WS-PATH
+     MOVE "transfer <hostname:phrase>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "transfer <hostname:word> <port:int:1:65535>" TO WS-PATH
+     MOVE "transfer <hostname:phrase> <port:int:1:65535>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "transfer <hostname:word> <port:int:1:65535> <players:players>" TO WS-PATH
+     MOVE "transfer <hostname:phrase> <port:int:1:65535> <players:players>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-TRANSFER.

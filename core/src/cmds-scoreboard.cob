@@ -1231,9 +1231,6 @@
     05 FILLER PIC X(140) VALUE "objectives list".
     05 FILLER PIC X(140) VALUE "objectives add <objective:word> <criteria:criteria>".
     05 FILLER PIC X(140) VALUE "objectives add <objective:word> <criteria:criteria> <displayName:component>".
-    05 FILLER PIC X(140) VALUE "objectives remove <objective:objective>".
-    05 FILLER PIC X(140) VALUE "objectives setdisplay <slot:dslot>".
-    05 FILLER PIC X(140) VALUE "objectives setdisplay <slot:dslot> <objective:objective>".
     05 FILLER PIC X(140) VALUE "objectives modify <objective:objective> displayname <displayName:component>".
     05 FILLER PIC X(140) VALUE "objectives modify <objective:objective> rendertype integer".
     05 FILLER PIC X(140) VALUE "objectives modify <objective:objective> rendertype hearts".
@@ -1242,6 +1239,9 @@
     05 FILLER PIC X(140) VALUE "objectives modify <objective:objective> numberformat blank".
     05 FILLER PIC X(140) VALUE "objectives modify <objective:objective> numberformat fixed <contents:component>".
     05 FILLER PIC X(140) VALUE "objectives modify <objective:objective> numberformat styled <style:style>".
+    05 FILLER PIC X(140) VALUE "objectives remove <objective:objective>".
+    05 FILLER PIC X(140) VALUE "objectives setdisplay <slot:dslot>".
+    05 FILLER PIC X(140) VALUE "objectives setdisplay <slot:dslot> <objective:objective>".
     05 FILLER PIC X(140) VALUE "players list".
     05 FILLER PIC X(140) VALUE "players list <target:holder>".
     05 FILLER PIC X(140) VALUE "players set <targets:holders> <objective:objective> <score:int>".
@@ -1251,13 +1251,13 @@
     05 FILLER PIC X(140) VALUE "players reset <targets:holders>".
     05 FILLER PIC X(140) VALUE "players reset <targets:holders> <objective:objective>".
     05 FILLER PIC X(140) VALUE "players enable <targets:holders> <objective:objective>".
-    05 FILLER PIC X(140) VALUE "players operation <targets:holders> <targetObjective:objective> <operation:operation> <source:holders> <sourceObjective:objective>".
     05 FILLER PIC X(140) VALUE "players display name <targets:holders> <objective:objective>".
     05 FILLER PIC X(140) VALUE "players display name <targets:holders> <objective:objective> <name:component>".
     05 FILLER PIC X(140) VALUE "players display numberformat <targets:holders> <objective:objective>".
     05 FILLER PIC X(140) VALUE "players display numberformat <targets:holders> <objective:objective> blank".
     05 FILLER PIC X(140) VALUE "players display numberformat <targets:holders> <objective:objective> fixed <contents:component>".
     05 FILLER PIC X(140) VALUE "players display numberformat <targets:holders> <objective:objective> styled <style:style>".
+    05 FILLER PIC X(140) VALUE "players operation <targets:holders> <targetObjective:objective> <operation:operation> <source:holders> <sourceObjective:objective>".
  01 WS-FORM-TABLE REDEFINES WS-FORMS.
     05 WS-FORM              PIC X(140) OCCURS 30 TIMES.
  PROCEDURE DIVISION.
@@ -1368,6 +1368,7 @@
  01 WS-N-TEAM              PIC X(32) VALUE "team".
  01 WS-N-RESET             PIC X(32) VALUE "reset".
  01 WS-N-VALUE             PIC X(32) VALUE "value".
+ 01 WS-N-ALLOWED           PIC X(32) VALUE "allowed".
  01 WS-N-DISPLAY           PIC X(32) VALUE "displayName".
  01 WS-N-PREFIX            PIC X(32) VALUE "prefix".
  01 WS-N-SUFFIX            PIC X(32) VALUE "suffix".
@@ -1425,9 +1426,9 @@
          PERFORM TELL-TEAM
      END-IF.
 
-*> friendlyFire (WS-OPT 3) and seeFriendlyInvisibles (4): the bool of "value".
+*> friendlyFire (WS-OPT 3) and seeFriendlyInvisibles (4): the bool of "allowed".
  DO-FLAG.
-     CALL "BX-FIND" USING WS-N-VALUE WS-INDEX
+     CALL "BX-FIND" USING WS-N-ALLOWED WS-INDEX
      MOVE BA-IVAL(WS-INDEX) TO WS-CODE
      MOVE 0 TO WS-VALUE-LENGTH
      IF WS-OPT = 3
@@ -1845,20 +1846,20 @@
     05 FILLER PIC X(100) VALUE "modify <team:team> displayName <displayName:component>".
     05 FILLER PIC X(100) VALUE "modify <team:team> color reset".
     05 FILLER PIC X(100) VALUE "modify <team:team> color <value:teamcolor>".
-    05 FILLER PIC X(100) VALUE "modify <team:team> friendlyFire <value:bool>".
-    05 FILLER PIC X(100) VALUE "modify <team:team> seeFriendlyInvisibles <value:bool>".
-    05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility always".
+    05 FILLER PIC X(100) VALUE "modify <team:team> friendlyFire <allowed:bool>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> seeFriendlyInvisibles <allowed:bool>".
     05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility never".
     05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility hideForOtherTeams".
     05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility hideForOwnTeam".
-    05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility always".
+    05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility always".
     05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility never".
     05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility hideForOtherTeams".
     05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility hideForOwnTeam".
-    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule always".
+    05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility always".
     05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule never".
-    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule pushOtherTeams".
     05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule pushOwnTeam".
+    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule pushOtherTeams".
+    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule always".
     05 FILLER PIC X(100) VALUE "modify <team:team> prefix <prefix:component>".
     05 FILLER PIC X(100) VALUE "modify <team:team> suffix <suffix:component>".
  01 WS-FORM-TABLE REDEFINES WS-FORMS.

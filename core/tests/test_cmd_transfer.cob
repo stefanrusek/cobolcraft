@@ -35,6 +35,11 @@
      MOVE "transfer example.org" TO WS-LINE
      MOVE "commands.transfer.success.single(Opal,example.org,25565)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+*>   The hostname is a phrase (57-4 section 7): a quoted one is the text between the quotes.
+     MOVE "acceptance US13 /transfer a quoted hostname is its text between the quotes (a phrase)" TO TL-CASE
+     MOVE 'transfer "my host.example" 25570' TO WS-LINE
+     MOVE "commands.transfer.success.single(Opal,my host.example,25570)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /transfer a port and a player" TO TL-CASE
      MOVE "transfer example.org 25566 Alice" TO WS-LINE
      MOVE "commands.transfer.success.single(Alice,example.org,25566)" TO WS-EXPECTED

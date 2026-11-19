@@ -58,13 +58,11 @@
      MOVE "acceptance US13 /stopsound the packet has no flags" TO TL-CASE
      MOVE "00" TO WS-EXPECTED
      PERFORM RUN-PACKET
-     MOVE "acceptance US13 /stopsound * is any source" TO TL-CASE
+*>   * alone is not executable in the listing of 57-4 section 7: it takes a sound.
+     MOVE "acceptance US13 /stopsound * alone is an incomplete command" TO TL-CASE
      MOVE "stopsound Opal *" TO WS-LINE
-     MOVE "commands.stopsound.success.sourceless.any()" TO WS-EXPECTED
+     MOVE "command.unknown.command() |" TO WS-EXPECTED
      PERFORM RUN-TEXT
-     MOVE "acceptance US13 /stopsound * sends no flags either" TO TL-CASE
-     MOVE "00" TO WS-EXPECTED
-     PERFORM RUN-PACKET
 *>   Every source: Stopped all 'x' sounds, flag 1 and the ordinal.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
          MOVE SPACES TO WS-LINE TL-CASE WS-EXPECTED

@@ -15,7 +15,7 @@
  COPY BRRUN.
  COPY PROTO.
  01 WS-NAME-MODE           PIC X(32) VALUE "gamemode".
- 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "target".
  01 WS-INDEX               BINARY-LONG.
  01 WS-MODE                BINARY-LONG.
  01 WS-MODE-PIC            PIC 9.
@@ -111,7 +111,7 @@
  PROCEDURE DIVISION.
      MOVE "gamemode <gamemode:gamemode>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "gamemode <gamemode:gamemode> <targets:players>" TO WS-PATH
+     MOVE "gamemode <gamemode:gamemode> <target:players>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-GAMEMODE.
@@ -1517,13 +1517,13 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "tick step <time:time:1>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "tick sprint <time:time:1>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "tick sprint stop" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "tick freeze" TO WS-PATH
+     MOVE "tick sprint <time:time:1>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "tick unfreeze" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick freeze" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-TICK.
@@ -1923,21 +1923,21 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-WORLDBORDER.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
-     MOVE "worldborder get" TO WS-PATH
+     MOVE "worldborder add <distance:double:-59999968:59999968>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder add <distance:double:-59999968:59999968> <time:time:0>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "worldborder set <distance:double:-59999968:59999968>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "worldborder set <distance:double:-59999968:59999968> <time:time:0>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "worldborder add <distance:double:-59999968:59999968>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "worldborder add <distance:double:-59999968:59999968> <time:time:0>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "worldborder center <pos:vec2>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "worldborder damage amount <damagePerBlock:float:0:>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "worldborder damage buffer <distance:float:0:>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder get" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "worldborder warning distance <distance:int:0:>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
