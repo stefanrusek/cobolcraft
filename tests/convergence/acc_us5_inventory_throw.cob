@@ -1,7 +1,7 @@
 *> Convergence test of the inventory-screen throws (tasks T1089; standin-content §9.1
 *> "Inventory-screen throw"; client-surface §3 controls): the host of a single-player world (Alice,
-*> survival) opens her inventory screen, presses Q over hotbar slot 0 (greystone) and drags the
-*> loam of slot 1 out of the window; a second client on a further memory connection of the same
+*> survival) opens her inventory screen, presses Q over hotbar slot 0 (greystone) and picks up the
+*> loam of slot 1 and clicks outside the window with it; a second client on a further memory connection of the same
 *> core (Bobby, at (4.5, 54, 30.5)) sees both ground items appear, and the world holds Alice's
 *> inventory without them. Updated for feature 002: the standard tp command replaces the retired relocate, and the
 *> creative throw (CC-0006): in creative a stack picked on the creative screen and released outside the window is
@@ -87,15 +87,24 @@
      CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-KEY WS-PX WS-PY
      CALL "CV-STEP" USING CONVH
 
-*>   A left drag from slot 1 released outside the window.
+*>   The loam of slot 1 is picked up by a left click on the slot (the press acts at once and its release is swallowed, 40-1 section 5.5 mouse down
+*>   and up), then thrown by a left click outside the window: the press with the stack on the cursor starts a drag, and the release of a drag with
+*>   no slot drops the carried stack (PICKUP at -999). Releasing the first press outside the window only swallows that release (the cursor keeps
+*>   the stack), so the throw is a click of its own (T4600; before it the release of the picking press outside the window threw).
      MOVE 1 TO WS-SLOT
      PERFORM SLOT-POS
      MOVE CC-EV-BUTTON-DOWN TO WS-KIND
      CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-BUTTON WS-PX WS-PY
      CALL "CV-STEP" USING CONVH
+     MOVE CC-EV-BUTTON-UP TO WS-KIND
+     CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-BUTTON WS-PX WS-PY
+     CALL "CV-STEP" USING CONVH
      MOVE CC-EV-CURSOR TO WS-KIND
      MOVE 0 TO WS-I
      CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-I WS-OUT-X WS-OUT-Y
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND
+     CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-BUTTON WS-OUT-X WS-OUT-Y
+     CALL "CV-STEP" USING CONVH
      MOVE CC-EV-BUTTON-UP TO WS-KIND
      CALL "CV-QUEUE" USING CONVH WS-ALICE WS-KIND WS-BUTTON WS-OUT-X WS-OUT-Y
      CALL "CV-STEP" USING CONVH
@@ -114,7 +123,7 @@
      MOVE PL-CARRIED-COUNT TO WS-E3
      MOVE WS-SCREEN TO WS-E4
      MOVE "convergence inventory throw given the inventory screen when Alice presses Q over "
-         & "greystone and drags the loam out of the window then Bobby sees 1 greystone and 64 "
+         & "greystone and clicks the loam out of the window then Bobby sees 1 greystone and 64 "
          & "loam on the ground and the world's inventory lacks them" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "screen 6 bobby greystone 1 loam 64 | alice cursor 0 | core 0:63x2 1:0x0" TO TL-EXPECTED
