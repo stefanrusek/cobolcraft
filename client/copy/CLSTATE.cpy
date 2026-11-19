@@ -806,7 +806,7 @@
     05 CM-STATE.
        10 CM-COUNT           BINARY-LONG.
        10 CM-ROOT            BINARY-LONG.
-       10 CM-NODE OCCURS 2048 TIMES.
+       10 CM-NODE OCCURS 4096 TIMES.
           15 CM-FLAGS        BINARY-LONG.
           15 CM-GREEDY       PIC 9.
           15 CM-PARSER       BINARY-LONG.    *> the parser id of an argument node, -1 for any other node
@@ -815,12 +815,12 @@
           15 CM-FIRST        BINARY-LONG.    *> the first child's CM-LINK row
           15 CM-CHILDREN     BINARY-LONG.
        10 CM-LINK-COUNT      BINARY-LONG.
-       10 CM-LINK            BINARY-LONG OCCURS 4096 TIMES.
+       10 CM-LINK            BINARY-LONG OCCURS 8192 TIMES.
 *>     Suggestions shown under the chat line (CHAT-SUGGEST): the command names that complete the
 *>     word being typed; the last Command Suggestion sent (transaction id, the line it asked about,
 *>     0 length = none outstanding) and the texts of its answer; the rows shown in the last frame.
        10 CS-COUNT           BINARY-LONG.
-       10 CS-ENTRY OCCURS 64 TIMES.
+       10 CS-ENTRY OCCURS 128 TIMES.
           15 CS-TEXT         PIC X(32).
           15 CS-LENGTH       BINARY-LONG.
        10 CS-TRANSACTION     BINARY-LONG.

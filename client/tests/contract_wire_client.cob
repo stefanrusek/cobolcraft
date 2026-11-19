@@ -1187,31 +1187,36 @@
 
      MOVE "contract/fixtures/wire/play-s2c-10-commands-everyone.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Commands (everyone) decodes the 6-node tree: each node's name, "
-         & "flags and children, the greedy message argument, root 0" TO TL-CASE
+     MOVE "contract wire client Commands (everyone) decodes the 26-node level 0 tree of 57-client-closures-4 section 10.1: each node's name, "
+         & "flags and children, the greedy command argument of help, the redirects of tell, w and tm, root 0" TO TL-CASE
      PERFORM COMMANDS-TEXT
-     MOVE "6 root 0 :0>1,2,3 howto:5 roster:5 murmur:1>4 player:18>5 message:6*" TO TL-EXPECTED
+     MOVE "26 root 0 :0>1,2,3,4,5,6,7,8,9,10 me:1>11 help:5>12 list:5>13 msg:1>14 tell:9 w:9 random:1>15,16 teammsg:1>17 tm:9 trigger:1>18 "
+         & "action:6 command:6* uuids:5 targets:2>19 value:1>20 roll:1>21 message:6 objective:22>22,23 message:6 range:6 range:6 add:1>24 "
+         & "set:1>25 value:6 value:6" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "contract/fixtures/wire/play-s2c-10-commands-operator.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Commands (operator) decodes the 90-node tree (replacing the "
-         & "last): the root's 24 commands in standin §16.2 order" TO TL-CASE
+     MOVE "contract wire client Commands (operator) decodes the 2396-node level 4 tree (replacing the "
+         & "last): the root's 91 commands in the order of 57-client-closures-4 section 6.1" TO TL-CASE
      PERFORM ROOT-TEXT
-     MOVE "90 root 0 howto roster murmur promote demote eject bar unbar barlist guestlist mode "
-         & "relocate supply empty vitality ration conjure sweep clock skies homestead announce "
-         & "persist shutdown" TO TL-EXPECTED
+     MOVE "2396 root 0 advancement attribute execute bossbar clear clone compute damage data datapack debug " &
+         "defaultgamemode dialog difficulty effect me enchant experience xp fill fillbiome forceload function " &
+         "gamemode gamerule give help item kick kill list locate loot msg tell w swing particle place " &
+         "playsound posteffect random reload recipe fetchprofile return ride rotate say schedule scoreboard " &
+         "seed version setblock spawnpoint setworldspawn spectate spreadplayers stopsound stopwatch summon tag " &
+         "team teammsg tm teleport tp tellraw test tick time title trigger waypoint weather worldborder ban-ip " &
+         "banlist ban deop op pardon pardon-ip perf save-all save-off save-on setidletimeout stop transfer " &
+         "whitelist" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "contract wire client Commands (operator) decodes the relocate subtree: player, then "
-         & "at x y z (dimension) and to target" TO TL-CASE
+     MOVE "contract wire client Commands (operator) decodes the msg subtree: msg, its targets argument (entity, players only) and the message argument" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
-     PERFORM VARYING WS-NODE FROM 31 BY 1 UNTIL WS-NODE > 39
-         MOVE SPACES TO WS-TEXT
-         PERFORM NODE-TEXT
-         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
-             INTO TL-OBSERVED
-     END-PERFORM
-     MOVE "player:18>32,37 at:1>33 x:2>34 y:2>35 z:6>36 dimension:22 to:1>38 target:22 "
-         & "supply:1>40" TO TL-EXPECTED
+     MOVE 34 TO WS-NODE
+     PERFORM ADD-NODE-TEXT
+     MOVE 285 TO WS-NODE
+     PERFORM ADD-NODE-TEXT
+     MOVE 633 TO WS-NODE
+     PERFORM ADD-NODE-TEXT
+     MOVE "msg:1>285 targets:2>633 message:6" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "contract/fixtures/wire/play-s2c-10-commands-level0-dedicated.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
@@ -1371,6 +1376,13 @@
          STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
              INTO TL-OBSERVED
      END-PERFORM
+     .
+
+*> TL-OBSERVED gets " <name>:<flags>[><child>,...][*]" of node WS-NODE appended.
+ ADD-NODE-TEXT.
+     MOVE SPACES TO WS-TEXT
+     PERFORM NODE-TEXT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
      .
 
 *> WS-TEXT (spaces) gets "<name>:<flags>[><child>,...][*]" of node WS-NODE (* = greedy).

@@ -1,9 +1,9 @@
 *> Acceptance test of US14-1, the client half (client-surface §3 "Chat / command: `/` opens chat
 *> with `/` typed"; docs/protocol/09-cobolcraft-profile.md §3.3 Commands, Command Suggestion(s),
 *> §5 rule 5): on the world screen `/` opens chat with `/` already on the line; the command names
-*> of the received tree (Commands, play-s2c-10-commands-everyone.hex: howto, roster, murmur) that
-*> start with the word being typed are suggested; at an argument with ask_server suggestions
-*> (/murmur Al) the client sends Command Suggestion with the line and shows the answers of the
+*> of the received tree (Commands, play-s2c-10-commands-everyone.hex, the level 0 tree of 57-client-closures-4 section 10.1: me, help, list, msg, tell, w, random, teammsg, tm,
+*> trigger) that start with the word being typed are suggested; at an argument with ask_server suggestions
+*> (/trigger ob) the client sends Command Suggestion with the line and shows the answers of the
 *> Command Suggestions that come back.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US14-SUGGESTIONS.
@@ -56,28 +56,28 @@
      STRING FUNCTION TRIM(WS-E) " " WS-SCREEN-TEXT DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE SPACES TO TL-EXPECTED
      MOVE SCR-CHAT TO WS-E
-     STRING FUNCTION TRIM(WS-E) " /|howto|murmur|roster" DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING FUNCTION TRIM(WS-E) " /|help|list|me|msg|random|teammsg|tell|tm|trigger|w" DELIMITED BY SIZE INTO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "m" TO WS-TYPED
+     MOVE "t" TO WS-TYPED
      MOVE 1 TO WS-LENGTH
      CALL "TEST-TYPE" USING CLIENT-STATE WS-TYPED WS-LENGTH
-     MOVE "acceptance US14-1 client half: when m is typed then only murmur, the command name "
-         & "matching the typed prefix, is suggested" TO TL-CASE
+     MOVE "acceptance US14-1 client half: when t is typed then only teammsg, tell, tm and trigger, the command names "
+         & "matching the typed prefix, are suggested" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-SCREEN-TEXT
      MOVE WS-SCREEN-TEXT TO TL-OBSERVED
-     MOVE "/m|murmur" TO TL-EXPECTED
+     MOVE "/t|teammsg|tell|tm|trigger" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "urmur Al" TO WS-TYPED
-     MOVE 8 TO WS-LENGTH
+     MOVE "rigger ob" TO WS-TYPED
+     MOVE 9 TO WS-LENGTH
      CALL "TEST-TYPE" USING CLIENT-STATE WS-TYPED WS-LENGTH
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
-     MOVE "acceptance US14-1 client half: when the line reaches the player argument of murmur "
+     MOVE "acceptance US14-1 client half: when the line reaches the objective argument of trigger "
          & "(ask_server suggestions) then Command Suggestion is sent with transaction 1 and the "
-         & "line /murmur Al (play-c2s-0f-command-suggestion.hex)" TO TL-CASE
+         & "line /trigger ob" TO TL-CASE
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "0f010a2f6d75726d757220416c" TO TL-EXPECTED
+     MOVE "0f010b2f74726967676572206f62" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "contract/fixtures/wire/play-s2c-0f-command-suggestions.hex" TO WS-PATH
@@ -87,7 +87,7 @@
          & "its suggestion Alice is shown" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-SCREEN-TEXT
      MOVE WS-SCREEN-TEXT TO TL-OBSERVED
-     MOVE "/murmur Al|Alice" TO TL-EXPECTED
+     MOVE "/trigger ob|Alice" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
