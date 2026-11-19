@@ -139,9 +139,23 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PXI-SCAN.
+*> The section is read straight from the chunk's cell table (the cells in the order x, z, y as before, so PXI-ADD sees the points in the same order); a call of PXI-KIND-OF for each
+*> of the 4096 cells (one PXI-INIT, two chunk lookups and the cell arithmetic of WORLD-GET-BLOCK each) cost 8 ms a section, and the villagers scan 49 chunks of 24 sections each.
+*> A cell outside the dimension's height reads as void (kind 0), as WORLD-GET-BLOCK answers it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY DIMENSIONS.
+ COPY CELLS.
  COPY VILPOIX.
+ 01 WS-LX                   BINARY-LONG.
+ 01 WS-LZ                   BINARY-LONG.
+ 01 WS-CELL                 BINARY-LONG.
+ 01 WS-STATE                BINARY-LONG.
+ 01 WS-YEND                 BINARY-LONG.
+ 01 WS-MINY                 BINARY-LONG.
+ 01 WS-MAXY                 BINARY-LONG.
  01 WS-ROW                  BINARY-LONG.
  01 WS-I                    BINARY-LONG.
  01 WS-DONE                 BINARY-LONG.
@@ -183,12 +197,25 @@
      COMPUTE WS-X0 = L-CX * 16
      COMPUTE WS-Z0 = L-CZ * 16
      COMPUTE WS-Y0 = PX-SC-SEC * 16 - 64
+     CALL "PXI-INIT"
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+     MOVE DM-MIN-Y(L-DIM) TO WS-MINY
+     COMPUTE WS-MAXY = DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM)
+     COMPUTE WS-YEND = WS-Y0 + 15
      PERFORM VARYING WS-X FROM WS-X0 BY 1 UNTIL WS-X > WS-X0 + 15
+         COMPUTE WS-LX = WS-X - WS-X0
          PERFORM VARYING WS-Z FROM WS-Z0 BY 1 UNTIL WS-Z > WS-Z0 + 15
-             PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y0 + 15
-                 CALL "PXI-KIND-OF" USING L-DIM WS-X WS-Y WS-Z WS-KIND
-                 IF WS-KIND > 0
-                     CALL "PXI-ADD" USING L-DIM WS-X WS-Y WS-Z WS-KIND
+             COMPUTE WS-LZ = WS-Z - WS-Z0
+             PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-YEND
+                 IF WS-Y >= WS-MINY AND WS-Y < WS-MAXY
+                     COMPUTE WS-CELL = (WS-Y - WS-MINY) * 256 + WS-LZ * 16 + WS-LX + 1
+                     MOVE CE-STATE(WS-CELL) TO WS-STATE
+                     IF WS-STATE > 0 AND WS-STATE < CB-STATE-COUNT
+                         MOVE PX-BKIND(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KIND
+                         IF WS-KIND > 0
+                             CALL "PXI-ADD" USING L-DIM WS-X WS-Y WS-Z WS-KIND
+                         END-IF
+                     END-IF
                  END-IF
              END-PERFORM
          END-PERFORM

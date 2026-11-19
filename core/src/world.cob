@@ -253,8 +253,9 @@
          IF WS-DEFER = 1
              GOBACK
          END-IF
+*>       a loaded chunk is the row WORLD-FIND just gave (WORLD-CHUNK-LOAD would look it up a second time to answer the same row)
+         CALL "WORLD-CHUNK-LOAD" USING L-DIM WS-CX WS-CZ WS-ROW
      END-IF
-     CALL "WORLD-CHUNK-LOAD" USING L-DIM WS-CX WS-CZ WS-ROW
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
      MOVE CE-STATE((L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1)
          TO L-STATE

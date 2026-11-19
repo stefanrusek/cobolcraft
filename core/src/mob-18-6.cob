@@ -1771,6 +1771,56 @@
  END PROGRAM MS6-BIOME-AT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS6-COLUMN-TOP.
+*> USING dim, x, z (BINARY-LONG), y out (BINARY-LONG): the height of the highest block of the column that is not air (state 0), minY - 1 when the column is all air: what
+*> walking down from the top of the dimension with WORLD-GET-BLOCK finds. A loaded chunk is read straight from its cell table (one read for each cell, not a chunk lookup and the
+*> coordinate arithmetic of a call: the column walk of every candidate chunk and category cost 25 ms of each tick with 289 chunks near the player); a chunk that is not loaded
+*> is walked with WORLD-GET-BLOCK as before (it loads the chunk, or reads void while the generation workers will make it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-MINY                BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-STATE-ID            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-Y.
+     MOVE DM-MIN-Y(L-DIM) TO WS-MINY
+     COMPUTE L-Y = WS-MINY + DM-HEIGHT(L-DIM) - 1
+     MOVE 0 TO WS-STATE-ID
+     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
+     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+     IF WS-ROW = 0
+         PERFORM UNTIL WS-STATE-ID NOT = 0 OR L-Y < WS-MINY
+             CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE-ID
+             IF WS-STATE-ID = 0
+                 SUBTRACT 1 FROM L-Y
+             END-IF
+         END-PERFORM
+         GOBACK
+     END-IF
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+     COMPUTE WS-CELL = (L-Y - WS-MINY) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1
+     PERFORM UNTIL WS-STATE-ID NOT = 0 OR L-Y < WS-MINY
+         MOVE CE-STATE(WS-CELL) TO WS-STATE-ID
+         IF WS-STATE-ID = 0
+             SUBTRACT 1 FROM L-Y
+             SUBTRACT 256 FROM WS-CELL
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MS6-COLUMN-TOP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-SPAWN-CHUNK.
 *> USING state, dim, category, chunk x, chunk z, spawned out (BINARY-LONG): spawnCategoryForChunk (6.1, 6.4): one random position of the chunk (the column
 *> is drawn from a copy of the state first so that the surface height of that column can bound y), and when y >= minY + 1 one MS6-PACK there.
@@ -1787,7 +1837,6 @@
  01 WS-MINX                BINARY-LONG.
  01 WS-MINZ                BINARY-LONG.
  01 WS-MINY                BINARY-LONG.
- 01 WS-STATE-ID            BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-BIOME               BINARY-LONG.
  LINKAGE SECTION.
@@ -1807,14 +1856,7 @@
      COMPUTE WS-X = WS-MINX + WS-A
      CALL "XORO-NEXT-INT" USING WS-STATE WS-16 WS-A
      COMPUTE WS-Z = WS-MINZ + WS-A
-     COMPUTE WS-Y = WS-MINY + DM-HEIGHT(L-DIM) - 1
-     MOVE 0 TO WS-STATE-ID
-     PERFORM UNTIL WS-STATE-ID NOT = 0 OR WS-Y < WS-MINY
-         CALL "WORLD-GET-BLOCK" USING L-DIM WS-X WS-Y WS-Z WS-STATE-ID
-         IF WS-STATE-ID = 0
-             SUBTRACT 1 FROM WS-Y
-         END-IF
-     END-PERFORM
+     CALL "MS6-COLUMN-TOP" USING L-DIM WS-X WS-Z WS-Y
      COMPUTE WS-TOP = WS-Y + 1
      CALL "MS6-RANDOM-POS" USING L-STATE WS-MINX WS-MINZ WS-MINY WS-TOP WS-X WS-Y WS-Z WS-OK
      IF WS-OK = 1
