@@ -308,3 +308,102 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM PORTAL-FACE-SEEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-TEXELS-LOAD.
+*> USING CLIENT-STATE: EP-SKY (end_sky.png, 128 x 128 in the jar), EP-PTX (end_portal.png, 256 x 256) and EP-BEAM (end_gateway_beam.png, 16 x 16) from the top-most
+*> pack that has each (8.8); the sky and the portal image are held up to 256 x 256, the beam image up to 64 x 64. EP-TEX 1 when the sky and the portal image were
+*> read, 2 when one is missing (PORTAL-COLOUR then gives the flat colour of 8.11); a missing beam image leaves EP-BEAM-W 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SKY-PATH            PIC X(256) VALUE "assets/minecraft/textures/environment/end_sky.png".
+ 01 WS-PTX-PATH            PIC X(256) VALUE "assets/minecraft/textures/entity/end_portal/end_portal.png".
+ 01 WS-BEAM-PATH           PIC X(256) VALUE "assets/minecraft/textures/entity/end_portal/end_gateway_beam.png".
+ 01 WS-SKY-LENGTH          BINARY-LONG VALUE 49.
+ 01 WS-PTX-LENGTH          BINARY-LONG VALUE 58.
+ 01 WS-BEAM-LENGTH         BINARY-LONG VALUE 64.
+ 01 WS-CAP                 BINARY-LONG VALUE 262144.
+ 01 WS-BEAM-CAP            BINARY-LONG VALUE 16384.
+ 01 WS-FOUND-SKY           BINARY-LONG.
+ 01 WS-FOUND-PTX           BINARY-LONG.
+ 01 WS-FOUND-BEAM          BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 0 TO EP-SKY-W EP-SKY-H EP-PTX-W EP-PTX-H EP-BEAM-W EP-BEAM-H
+     CALL "PACK-IMAGE" USING CLIENT-STATE WS-SKY-PATH WS-SKY-LENGTH EP-SKY WS-CAP EP-SKY-W EP-SKY-H WS-FOUND-SKY
+     CALL "PACK-IMAGE" USING CLIENT-STATE WS-PTX-PATH WS-PTX-LENGTH EP-PTX WS-CAP EP-PTX-W EP-PTX-H WS-FOUND-PTX
+     CALL "PACK-IMAGE" USING CLIENT-STATE WS-BEAM-PATH WS-BEAM-LENGTH EP-BEAM WS-BEAM-CAP EP-BEAM-W EP-BEAM-H WS-FOUND-BEAM
+     MOVE 2 TO EP-TEX
+     IF WS-FOUND-SKY = 1 AND WS-FOUND-PTX = 1 AND EP-SKY-W > 0 AND EP-SKY-H > 0 AND EP-PTX-W > 0 AND EP-PTX-H > 0
+         MOVE 1 TO EP-TEX
+     END-IF
+     GOBACK.
+ END PROGRAM PORTAL-TEXELS-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-COLOUR.
+*> USING CLIENT-STATE, layers (15 portal, 16 gateway), u0, v0 (the screen position 0..1 of the pixel), GameTime, r, g, b out: 8.7.4,
+*> colour = T0(uv0) * COLORS[0] + the sum over the layers of T1(UV(L)) * COLORS[L - 1], each texel floor(UV * size) mod size (nearest, repeat, 8.8), channel
+*> values / 255; the sum is not clamped (PORTAL-RGB8 does). Without the two images (EP-TEX not 1) the flat colour of 8.11: (6, 15, 24) / 255 for the portal,
+*> (6, 16, 26) / 255 for the gateway.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-TR                  FLOAT-LONG.
+ 01 WS-TG                  FLOAT-LONG.
+ 01 WS-TB                  FLOAT-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-SAMPLE              FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-LAYERS               BINARY-LONG.
+ 01 L-U0                   FLOAT-LONG.
+ 01 L-V0                   FLOAT-LONG.
+ 01 L-GT                   FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ 01 L-G                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-LAYERS L-U0 L-V0 L-GT L-R L-G L-B.
+     IF EP-TEX NOT = 1
+         COMPUTE L-R = 6 / 255
+         COMPUTE L-G = 15 / 255
+         COMPUTE L-B = 24 / 255
+         IF L-LAYERS > 15
+             COMPUTE L-G = 16 / 255
+             COMPUTE L-B = 26 / 255
+         END-IF
+         GOBACK
+     END-IF
+*>   The sky term: the unrotated screen position, once, with the tint of layer 1.
+     MOVE 1 TO WS-L
+     CALL "PORTAL-TINT" USING WS-L WS-TR WS-TG WS-TB
+     COMPUTE WS-X = FUNCTION MOD(FUNCTION INTEGER(L-U0 * EP-SKY-W), EP-SKY-W)
+     COMPUTE WS-Y = FUNCTION MOD(FUNCTION INTEGER(L-V0 * EP-SKY-H), EP-SKY-H)
+     COMPUTE WS-AT = (WS-Y * EP-SKY-W + WS-X) * 4 + 1
+     COMPUTE WS-BYTE = FUNCTION ORD(EP-SKY(WS-AT:1)) - 1
+     COMPUTE L-R = WS-BYTE / 255 * WS-TR
+     COMPUTE WS-BYTE = FUNCTION ORD(EP-SKY(WS-AT + 1:1)) - 1
+     COMPUTE L-G = WS-BYTE / 255 * WS-TG
+     COMPUTE WS-BYTE = FUNCTION ORD(EP-SKY(WS-AT + 2:1)) - 1
+     COMPUTE L-B = WS-BYTE / 255 * WS-TB
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > L-LAYERS
+         CALL "PORTAL-LAYER-UV" USING WS-L L-U0 L-V0 L-GT WS-U WS-V
+         CALL "PORTAL-TINT" USING WS-L WS-TR WS-TG WS-TB
+         COMPUTE WS-X = FUNCTION MOD(FUNCTION INTEGER(WS-U * EP-PTX-W), EP-PTX-W)
+         COMPUTE WS-Y = FUNCTION MOD(FUNCTION INTEGER(WS-V * EP-PTX-H), EP-PTX-H)
+         COMPUTE WS-AT = (WS-Y * EP-PTX-W + WS-X) * 4 + 1
+         COMPUTE WS-BYTE = FUNCTION ORD(EP-PTX(WS-AT:1)) - 1
+         COMPUTE L-R = L-R + WS-BYTE / 255 * WS-TR
+         COMPUTE WS-BYTE = FUNCTION ORD(EP-PTX(WS-AT + 1:1)) - 1
+         COMPUTE L-G = L-G + WS-BYTE / 255 * WS-TG
+         COMPUTE WS-BYTE = FUNCTION ORD(EP-PTX(WS-AT + 2:1)) - 1
+         COMPUTE L-B = L-B + WS-BYTE / 255 * WS-TB
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-COLOUR.

@@ -1243,6 +1243,29 @@
        10 DX-FLASH           FLOAT-LONG.     *> the end flash intensity of this tick, and the previous one
        10 DX-FLASH-OLD       FLOAT-LONG.
        10 DX-FLASH-SOUND     BINARY-LONG.    *> 1 on the tick a flash starts (its sound plays 30 ticks later)
+*>  ---- end portal and end gateway (client/src/portal-*.cob; 52 section 8) ----
+    05 EP-STATE.
+       10 EP-COUNT           BINARY-LONG.
+       10 EP-ENTRY OCCURS 1024 TIMES.     *> the block entities of type 14 and 22 (CL-MAX-PORTALS): created from the chunk list or a block change
+          15 EP-X            BINARY-LONG.
+          15 EP-Y            BINARY-LONG.
+          15 EP-Z            BINARY-LONG.
+          15 EP-TYPE         BINARY-LONG.    *> 14 end_portal, 22 end_gateway (the block entity type ids)
+          15 EP-AGE          BINARY-DOUBLE.  *> gateway: ticks since placement (the Age of the chunk list's tag, then one per client tick)
+          15 EP-COOLDOWN     BINARY-LONG.    *> gateway: teleport cooldown ticks left (0 none)
+       10 EP-BLOCKS-FOR      BINARY-LONG.    *> ST-COUNT the two block ids below were looked up for (0 = not yet)
+       10 EP-BLOCK-PORTAL    BINARY-LONG.    *> block id + 1 of end_portal (0 none)
+       10 EP-BLOCK-GATEWAY   BINARY-LONG.    *> block id + 1 of end_gateway (0 none)
+       10 EP-TEX             BINARY-LONG.    *> the texels below: 0 not read, 1 read, 2 missing
+       10 EP-SKY-W           BINARY-LONG.    *> textures/environment/end_sky.png (8.8: 128 x 128, at most 256 x 256), RGBA
+       10 EP-SKY-H           BINARY-LONG.
+       10 EP-SKY             PIC X(262144).
+       10 EP-PTX-W           BINARY-LONG.    *> textures/entity/end_portal/end_portal.png (256 x 256, at most 256 x 256), RGBA
+       10 EP-PTX-H           BINARY-LONG.
+       10 EP-PTX             PIC X(262144).
+       10 EP-BEAM-W          BINARY-LONG.    *> textures/entity/end_portal/end_gateway_beam.png (16 x 16, at most 64 x 64), RGBA
+       10 EP-BEAM-H          BINARY-LONG.
+       10 EP-BEAM            PIC X(16384).
 *>  ---- mesh frame budget (client/src/mesher.cob MESH-DIRTY) ----
     05 MB-STATE.
        10 MB-BUDGET-US       BINARY-LONG.    *> microseconds of meshing per frame (CL-INIT: CL-MESH-BUDGET-US)
@@ -1370,6 +1393,36 @@
           15 RL-HL-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-HL-G         FLOAT-SHORT.
           15 RL-HL-BLUE      FLOAT-SHORT.
+*>     The end portal and end gateway faces of the frame (eye-relative, the white swatch of texture 2, a colour on every vertex, opaque; portal-mesh.cob)
+*>     and the gateway beam's glow (translucent).
+       10 RL-EP-COUNT        BINARY-LONG.
+       10 RL-EP-UPLOADED     BINARY-LONG.
+       10 RL-EP-VERTEX OCCURS 32768 TIMES.
+          15 RL-EP-X         FLOAT-SHORT.
+          15 RL-EP-Y         FLOAT-SHORT.
+          15 RL-EP-Z         FLOAT-SHORT.
+          15 RL-EP-U         FLOAT-SHORT.
+          15 RL-EP-V         FLOAT-SHORT.
+          15 RL-EP-B         FLOAT-SHORT.
+          15 RL-EP-A         FLOAT-SHORT.
+          15 RL-EP-SKY       FLOAT-SHORT.
+          15 RL-EP-R         FLOAT-SHORT.
+          15 RL-EP-G         FLOAT-SHORT.
+          15 RL-EP-BLUE      FLOAT-SHORT.
+       10 RL-EB-COUNT        BINARY-LONG.
+       10 RL-EB-UPLOADED     BINARY-LONG.
+       10 RL-EB-VERTEX OCCURS 8192 TIMES.
+          15 RL-EB-X         FLOAT-SHORT.
+          15 RL-EB-Y         FLOAT-SHORT.
+          15 RL-EB-Z         FLOAT-SHORT.
+          15 RL-EB-U         FLOAT-SHORT.
+          15 RL-EB-V         FLOAT-SHORT.
+          15 RL-EB-B         FLOAT-SHORT.
+          15 RL-EB-A         FLOAT-SHORT.
+          15 RL-EB-SKY       FLOAT-SHORT.
+          15 RL-EB-R         FLOAT-SHORT.
+          15 RL-EB-G         FLOAT-SHORT.
+          15 RL-EB-BLUE      FLOAT-SHORT.
 *>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
        10 RL-BO-COUNT        BINARY-LONG.
        10 RL-BO-UPLOADED     BINARY-LONG.

@@ -219,6 +219,13 @@
  78 MESH-SLOT-MOON          VALUE 65012.
  78 MESH-SLOT-STARS         VALUE 65013.
  78 MESH-SLOT-CLOUDS        VALUE 65014.
+*> The end portal and end gateway faces of the frame (one mesh, eye-relative, vertex colours on the white swatch of texture 2; portal-mesh.cob) and the
+*> gateway beam's translucent glow (texture 2 as well).
+ 78 MESH-SLOT-PORTAL        VALUE 65015.
+ 78 MESH-SLOT-BEAM          VALUE 65016.
+ 78 CL-MAX-PORTAL-VERTICES  VALUE 32768.
+ 78 CL-MAX-BEAM-VERTICES    VALUE 8192.
+ 78 CL-MAX-PORTALS          VALUE 1024.    *> end portal and gateway block entities held at once
  78 SKY-STAR-COUNT          VALUE 1500.     *> 12 section 3.4c: at most 1500 quads
  78 SKY-CLOUD-VERTICES      VALUE 120000.   *> the cloud mesh's capacity in vertices
  78 SKY-CLOUD-RADIUS-MAX    VALUE 32.       *> cells meshed at most (cloudRange 128 asks 171: see sky-render.cob)
