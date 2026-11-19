@@ -649,6 +649,15 @@
        10 EN-ARW-PUNCH        BINARY-LONG.        *> arrow: the weapon's knockback k in thousandths (Punch), 0 none
        10 EN-ARW-SHAKE        BINARY-LONG.        *> arrow: shakeTime, 7 after it stuck
        10 EN-ARW-PICKUP       BINARY-LONG.        *> arrow: pickup mode 0 disallowed, 1 allowed, 2 creative only
+*>     --- 002-lane-p49y: game-event emission (core/src/game-events-move.cob; 30-8 section 14.1) ---
+       10 EN-CROUCHING       BINARY-LONG.        *> 1 while the pose is CROUCHING (a cat or ocelot: Entity.isSteppingCarefully, 30-8 section 3.5.1); nothing sets it for a mob yet
+       10 EN-MOVE-DIST       FLOAT-SHORT.        *> Entity.moveDist (float): the walked distance of the emission pass, 0 for a fresh row
+       10 EN-FLY-DIST        FLOAT-SHORT.        *> Entity.flyDist (float)
+       10 EN-NEXT-STEP       FLOAT-SHORT.        *> Entity.nextStep (float): 0 stands for the initial 1.0 of a fresh row
+       10 EN-FALL-DIST       FLOAT-LONG.         *> Entity.fallDistance: grows by the downward movement while not in water, reset on landing
+       10 EN-IN-WATER        BINARY-LONG.        *> 1 while the entity was in water at its last pass (wasTouchingWater)
+       10 EN-BORN            BINARY-DOUBLE.      *> the game tick at which the row was allocated (tickCount = CW-TICKS - EN-BORN)
+       10 EN-FALL-FLY        BINARY-LONG.        *> gliding ticks counted by the elytra_glide emitter (fallFlyTicks), 0 when not gliding
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

@@ -13,6 +13,9 @@
  COPY CORESTATE.
  COPY PROJSTATE.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
+ 01 WS-BELOW               BINARY-LONG.
  01 WS-KEY                 PIC X(48).
  01 WS-KIND                BINARY-LONG.
  01 WS-DX                  BINARY-LONG.
@@ -112,14 +115,24 @@
                      CALL "ARMOR-STAND-SPAWN" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-PLACED WS-NEW
                      IF WS-NEW > 0
                          CALL "MOB-TAKE" USING WS-ROW
+*>                       ArmorStandItem.useOn: entity_place at the stand's position, the player as the source (30-8 14.3.3)
+                         CALL "GAME-EVENT-BY" USING WS-EV-PLACE WS-NEW PL-ENTITY-ROW(WS-ROW)
                      END-IF
                  END-IF
              END-IF
          WHEN 2
              CALL "ITEM-FRAME-PLACE" USING WS-ROW PSB-BX PSB-BY PSB-BZ PSB-FACE WS-GLOW WS-NEW
+             IF WS-NEW > 0
+                 CALL "GAME-EVENT-BY" USING WS-EV-PLACE WS-NEW PL-ENTITY-ROW(WS-ROW)
+             END-IF
          WHEN 5
              IF PSB-FACE = 1
                  CALL "CRYSTAL-PLACE" USING WS-ROW PSB-BX PSB-BY PSB-BZ WS-PLACED-FLAG
+                 IF WS-PLACED-FLAG = 1
+*>                   EndCrystalItem.useOn: entity_place at the centre of the cell above the clicked block
+                     COMPUTE WS-TY = PSB-BY + 1
+                     CALL "GAME-EVENT-CELL" USING PL-DIM(WS-ROW) PSB-BX WS-TY PSB-BZ WS-EV-PLACE PL-ENTITY-ROW(WS-ROW) WS-NO-STATE
+                 END-IF
              END-IF
          WHEN 3
              CALL "PAINTING-VARIANTS" USING WS-VCOUNT WS-IDS WS-WIDTHS WS-HEIGHTS
@@ -135,6 +148,7 @@
                      CALL "PJ-FIND" USING EN-ID(WS-NEW) WS-PSLOT
                      MOVE WS-VID(PJ-I4(WS-PSLOT)) TO PJ-I4(WS-PSLOT)
                  END-IF
+                 CALL "GAME-EVENT-BY" USING WS-EV-PLACE WS-NEW PL-ENTITY-ROW(WS-ROW)
                  CALL "MOB-TAKE" USING WS-ROW
              END-IF
          WHEN OTHER
@@ -148,6 +162,10 @@
                  COMPUTE WS-Z = PSB-BZ + 0.5
                  CALL "MINECART-SPAWN" USING WS-MC PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-NEW
                  IF WS-NEW > 0
+*>                   MinecartItem.useOn: entity_place at the centre of the rail cell, the player as the source, the block below the rail as the affected state
+                     COMPUTE WS-TY = PSB-BY - 1
+                     CALL "WORLD-GET-BLOCK" USING PL-DIM(WS-ROW) PSB-BX WS-TY PSB-BZ WS-BELOW
+                     CALL "GAME-EVENT-CELL" USING PL-DIM(WS-ROW) PSB-BX PSB-BY PSB-BZ WS-EV-PLACE PL-ENTITY-ROW(WS-ROW) WS-BELOW
                      CALL "MOB-TAKE" USING WS-ROW
                  END-IF
              END-IF

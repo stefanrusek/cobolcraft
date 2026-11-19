@@ -73,6 +73,7 @@
  01 WS-SEAT                BINARY-LONG.
  01 WS-RADIANS             FLOAT-LONG.
  01 WS-V                   BINARY-LONG.
+ 01 WS-EV-DISMOUNT         PIC X(32) VALUE "entity_dismount".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -102,6 +103,7 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-SEAT                BINARY-LONG.
+ 01 WS-EV-MOUNT            PIC X(32) VALUE "entity_mount".
  LINKAGE SECTION.
  01 L-RIDER                BINARY-LONG.
  01 L-VEHICLE              BINARY-LONG.
@@ -125,6 +127,8 @@
      MOVE L-RIDER TO EN-PASS(L-VEHICLE)
      CALL "MOB-MOUNT-PLACE" USING L-RIDER
      CALL "MOB-RIDE-SEND" USING L-VEHICLE
+*>   entity_mount at the vehicle's position, the rider as the source (30-8 14.1.9)
+     CALL "GAME-EVENT-BY" USING WS-EV-MOUNT L-VEHICLE L-RIDER
      MOVE 1 TO L-MOUNTED
      GOBACK.
  END PROGRAM MOB-MOUNT.
@@ -136,6 +140,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-V                   BINARY-LONG.
+ 01 WS-EV-DISMOUNT         PIC X(32) VALUE "entity_dismount".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -145,6 +150,7 @@
          IF EN-PASS(WS-V) = L-ROW
              MOVE 0 TO EN-PASS(WS-V)
              CALL "MOB-RIDE-SEND" USING WS-V
+             CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT WS-V L-ROW
          END-IF
      END-IF
      GOBACK.

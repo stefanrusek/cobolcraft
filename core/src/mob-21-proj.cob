@@ -18,6 +18,8 @@
 *>   PROJ-KIND USING type id, kind out                      the kind of an entity type, 0 for none
 *>   PROJ-SPAWN USING kind, dim, x, y, z, dx, dy, dz (FLOAT-LONG, the direction), power, owner entity id, row out
 *>   PROJ-HIT USING projectile row, entity row, player row, x, y, z (the last free point)      the hit of an entity (one of the rows 0)
+*>   PROJ-BLOCK USING projectile row, x, y, z (the last free point), block x, y, z (the cell hit)   the hit of a block
+*>   PROJ-SHOOT-FIRST USING projectile row, kind, before the move (1 or 0)    projectile_shoot on the first tick (30-8 14.2.1)
 *>   PROJ-STEP USING projectile row                         one tick
 *>   PROJECTILES-TICK                                       every projectile (CORE-TICK, after the arrows)
 
@@ -219,6 +221,9 @@
  01 WS-FIRE-TICKS          BINARY-LONG VALUE 100.
  01 WS-HEALTH-BEFORE       FLOAT-SHORT.
  01 WS-CHARGE-ID           BINARY-LONG.
+ 01 WS-EV-LAND             PIC X(32) VALUE "projectile_land".
+ 01 WS-EV-DAMAGE           PIC X(32) VALUE "entity_damage".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -313,6 +318,12 @@
              END-IF
          END-IF
      END-IF
+*>   Projectile.onHit posts projectile_land after onHitEntity, before the class's own effect (30-8 14.2.2): at the hit location (the entity row's position, set by PROJ-STEP), the projectile as the source;
+*>   ShulkerBullet.onHit then destroys the bullet, which posts entity_damage at its position with the bullet as the source (14.2.4).
+     CALL "GAME-EVENT" USING WS-DIM EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-EV-LAND L-ROW WS-NO-STATE
+     IF WS-KIND = 4
+         CALL "GAME-EVENT" USING WS-DIM EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-EV-DAMAGE L-ROW WS-NO-STATE
+     END-IF
      MOVE EN-ITEM(L-ROW) TO WS-POWER
      MOVE EN-ID(L-ROW) TO WS-CHARGE-ID
      CALL "ENTITY-REMOVE" USING L-ROW
@@ -330,7 +341,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PROJ-BLOCK.
-*> USING projectile row, x, y, z (FLOAT-LONG, the last free point before the solid cell): the hit of a block. A large fireball explodes there (power EN-ITEM, blocks only
+*> USING projectile row, x, y, z (FLOAT-LONG, the last free point before the solid cell), block x, y, z (the solid cell): the hit of a block, with projectile_land at that cell. A large fireball explodes there (power EN-ITEM, blocks only
 *> with mob_griefing); a small fireball whose owner is a mob, with mob_griefing on, puts a fire block in that cell when it is air; the projectile is removed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -355,12 +366,19 @@
  01 WS-STATE-TEXT          PIC X(5).
  01 WS-FIRE                BINARY-LONG VALUE 0.
  01 WS-CHARGE-ID           BINARY-LONG.
+ 01 WS-EV-LAND             PIC X(32) VALUE "projectile_land".
+ 01 WS-EV-DAMAGE           PIC X(32) VALUE "entity_damage".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
+ 01 WS-HIT-STATE           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
- PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z.
+ 01 L-HX                   BINARY-LONG.
+ 01 L-HY                   BINARY-LONG.
+ 01 L-HZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-HX L-HY L-HZ.
      CALL "PROJ-KIND" USING EN-TYPE(L-ROW) WS-KIND
      CALL "PROJ-OWNER" USING L-ROW WS-OWNER-ROW
      MOVE EN-DIM(L-ROW) TO WS-DIM
@@ -370,6 +388,12 @@
      END-IF
      CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
      MOVE WS-GRIEF TO WS-DESTROY
+*>   Projectile.onHit for a block: projectile_land at the centre of the block hit with its state, the projectile as the source (30-8 14.2.2), then a shulker bullet's destroy posts entity_damage (14.2.4).
+     CALL "WORLD-GET-BLOCK" USING WS-DIM L-HX L-HY L-HZ WS-HIT-STATE
+     CALL "GAME-EVENT-CELL" USING WS-DIM L-HX L-HY L-HZ WS-EV-LAND L-ROW WS-HIT-STATE
+     IF WS-KIND = 4
+         CALL "GAME-EVENT" USING WS-DIM EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-EV-DAMAGE L-ROW WS-NO-STATE
+     END-IF
      MOVE EN-ITEM(L-ROW) TO WS-POWER
      MOVE EN-ID(L-ROW) TO WS-CHARGE-ID
      CALL "ENTITY-REMOVE" USING L-ROW
@@ -695,6 +719,27 @@
  END PROGRAM BULLET-STEER.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PROJ-SHOOT-FIRST.
+*> USING projectile row, kind, before the move (1 before PROJ-STEP moves it, 0 after): Projectile.tick's projectile_shoot on the first tick (EN-COOLDOWN 1) of every projectile (30-8 14.2.1). The owner is the
+*> source. A shulker bullet and llama spit run Projectile.tick first (the position before the move, call with 1); a fireball, a snowball and a wind charge post it after their own move and hit test (the hit
+*> location or the position after the move, call with 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-BEFORE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KIND L-BEFORE.
+     IF EN-COOLDOWN(L-ROW) = 1
+         IF (L-BEFORE = 1 AND (L-KIND = 4 OR L-KIND = 5)) OR (L-BEFORE = 0 AND L-KIND NOT = 4 AND L-KIND NOT = 5)
+             CALL "GAME-EVENT-SHOOT" USING L-ROW EN-TARGET-ID(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PROJ-SHOOT-FIRST.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PROJ-STEP.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -731,6 +776,11 @@
  01 WS-INERTIA             FLOAT-LONG.
  01 WS-WATER-HEIGHT        FLOAT-LONG.
  01 WS-WATER-KIND          BINARY-LONG.
+ 01 WS-HX                  BINARY-LONG.
+ 01 WS-HY                  BINARY-LONG.
+ 01 WS-HZ                  BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG VALUE 1.
+ 01 WS-AFTER               BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -751,6 +801,7 @@
          END-IF
      END-IF
      ADD 1 TO EN-COOLDOWN(L-ROW)
+     CALL "PROJ-SHOOT-FIRST" USING L-ROW WS-KIND WS-BEFORE
 *>   In water (6.4 applyInertia, 6.5 water drag, 10.3): the thrust projectiles keep 0.8 instead of 0.95, the thrown ones 0.8 instead of 0.99, a llama spit is discarded.
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
@@ -808,6 +859,9 @@
          CALL "GI-SOLID-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-SOLID
          IF WS-SOLID = 1
              MOVE 1 TO WS-DONE
+             MOVE WS-CX TO WS-HX
+             MOVE WS-CY TO WS-HY
+             MOVE WS-CZ TO WS-HZ
          ELSE
              CALL "ARROW-FIND-HIT" USING L-ROW WS-QX WS-QY WS-QZ WS-ENTITY WS-PLAYER
              IF WS-ENTITY > 0 OR WS-PLAYER > 0
@@ -819,17 +873,25 @@
              END-IF
          END-IF
      END-PERFORM
+*>   The projectile ends the move at the sample inside the entity it hit, at the last free point before a block, or at the new position; Projectile.tick's shoot is posted there, before the hit is resolved.
+     IF WS-DONE = 2
+         MOVE WS-QX TO EN-X(L-ROW)
+         MOVE WS-QY TO EN-Y(L-ROW)
+         MOVE WS-QZ TO EN-Z(L-ROW)
+     ELSE
+         MOVE WS-PX TO EN-X(L-ROW)
+         MOVE WS-PY TO EN-Y(L-ROW)
+         MOVE WS-PZ TO EN-Z(L-ROW)
+     END-IF
+     CALL "PROJ-SHOOT-FIRST" USING L-ROW WS-KIND WS-AFTER
      IF WS-DONE = 2
          CALL "PROJ-HIT" USING L-ROW WS-ENTITY WS-PLAYER WS-PX WS-PY WS-PZ
          GOBACK
      END-IF
      IF WS-DONE = 1
-         CALL "PROJ-BLOCK" USING L-ROW WS-PX WS-PY WS-PZ
+         CALL "PROJ-BLOCK" USING L-ROW WS-PX WS-PY WS-PZ WS-HX WS-HY WS-HZ
          GOBACK
      END-IF
-     MOVE WS-PX TO EN-X(L-ROW)
-     MOVE WS-PY TO EN-Y(L-ROW)
-     MOVE WS-PZ TO EN-Z(L-ROW)
      IF WS-KIND = 4
          CALL "BULLET-STEER" USING L-ROW
      END-IF

@@ -172,8 +172,8 @@
      COMPUTE EN-X(WS-WARDEN) = WS-BX + 0.5
      MOVE 50 TO WD-EMERGE(WS-W)
      CALL "MOB-STEP" USING WS-WARDEN
-     MOVE "an emerging warden ignores pushes" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "an emerging warden still pushes: only NoAI and the cooldown stop doPush (20 section 15.5)" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
      MOVE WD-TOUCH-CD(WS-W) TO TL-OBSERVED-N
      PERFORM CASE-LINE
      PERFORM END-SCENE

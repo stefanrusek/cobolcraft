@@ -1645,6 +1645,7 @@
  01 WS-IMMUNE              BINARY-LONG.
  01 WS-RESISTANT           BINARY-LONG.
  01 WS-HEALTH              FLOAT-LONG.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -1668,6 +1669,8 @@
              MOVE 1 TO L-RESULT
              COMPUTE WS-HEALTH = IP-I-HEALTH(L-ROW) - L-AMOUNT
              COMPUTE IP-I-HEALTH(L-ROW) = FUNCTION INTEGER-PART(WS-HEALTH)
+*>           ItemEntity.hurtServer: entity_damage at the item after its health was reduced, before it is destroyed; the causing entity is not known here (this program takes a source kind), so none (30-8 14.3.2)
+             CALL "GAME-EVENT-DAMAGED" USING L-ROW WS-NO-ATTACKER
              IF IP-I-HEALTH(L-ROW) <= 0
                  CALL "ENTITY-REMOVE" USING L-ROW
              END-IF

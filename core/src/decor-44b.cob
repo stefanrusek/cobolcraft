@@ -326,6 +326,8 @@
              CALL "DECOR-DROP-AT-FACE" USING L-ROW WS-DIR WS-ITEM
          END-IF
      END-IF
+*>   BlockAttachedEntity.kill(level, killer): entity_die at the frame, the killer (else the frame itself) as the source (30-8 14.3.2)
+     CALL "GAME-EVENT-KILLED" USING L-ROW L-PLAYER
      CALL "PJ-DROP" USING L-ROW
      GOBACK.
  END PROGRAM ITEM-FRAME-HURT.
@@ -590,6 +592,8 @@
          CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
          CALL "DECOR-DROP-AT-FACE" USING L-ROW WS-DIR WS-ITEM
      END-IF
+*>   BlockAttachedEntity.kill(level, killer): entity_die at the painting, the killer (else the painting itself) as the source (30-8 14.3.2)
+     CALL "GAME-EVENT-KILLED" USING L-ROW L-PLAYER
      CALL "PJ-DROP" USING L-ROW
      GOBACK.
  END PROGRAM PAINTING-HURT.

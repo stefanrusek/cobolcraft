@@ -153,6 +153,7 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
  LINKAGE SECTION.
  01 L-SLOT                 BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -199,6 +200,8 @@
                  CALL "MOB-SPAWN" USING HT-DIM(L-SLOT) WS-TYPE WS-X WS-Y WS-Z WS-YAW L-ROW
                  IF L-ROW > 0
                      CALL "CREAKING-BIND" USING L-ROW HT-X(L-SLOT) HT-Y(L-SLOT) HT-Z(L-SLOT)
+*>                   CreakingHeartBlockEntity.spawnProtector: entity_place at the creaking's position, the creaking as the source (30-8 14.3.3)
+                     CALL "GAME-EVENT-AT" USING WS-EV-PLACE L-ROW
                  END-IF
              END-IF
          END-IF

@@ -69,6 +69,7 @@
  01 WS-WX                  BINARY-LONG.
  01 WS-WY                  BINARY-LONG.
  01 WS-WZ                  BINARY-LONG.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "block_place".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -119,6 +120,8 @@
              CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
 *>           LEVEL-SET-BLOCK runs the onPlace hook of the egg (the sand particles, core/src/mob-44-l.cob).
              CALL "LEVEL-SET-BLOCK" USING EN-DIM(L-ROW) EN-HOME-X(L-ROW) EN-HOME-Y(L-ROW) EN-HOME-Z(L-ROW) WS-STATE WS-FLAGS WS-BUDGET WS-SET
+*>           Turtle$TurtleLayEggGoal.tick: block_place at the centre of the egg's cell, the turtle as the source, the egg's state (30-8 14.3.4)
+             CALL "GAME-EVENT-CELL" USING EN-DIM(L-ROW) EN-HOME-X(L-ROW) EN-HOME-Y(L-ROW) EN-HOME-Z(L-ROW) WS-EV-PLACE L-ROW WS-STATE
          END-IF
          MOVE 0 TO EN-TURTLE-EGG(L-ROW) EN-TURTLE-LAY(L-ROW)
          MOVE 600 TO EN-LOVE(L-ROW)

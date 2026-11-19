@@ -13,6 +13,12 @@
  COPY CREAKSTATE.
  COPY HEARTSTATE.
  COPY BRWORLD.
+ COPY GAMEEVENT.
+ 01 WS-GE0                BINARY-DOUBLE.
+ 01 WS-GK                 BINARY-DOUBLE.
+ 01 WS-GLOG               BINARY-LONG.
+ 01 WS-GPLACES            BINARY-LONG.
+ 01 WS-GOK                BINARY-LONG.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-KEY                 PIC X(112).
  01 WS-ENTITY-ROW          PIC X(66).
@@ -79,6 +85,7 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE HT-LINK(WS-SLOT) TO TL-OBSERVED-N
      PERFORM ASSERT-LINE
+     MOVE GE-COUNT TO WS-GE0
      CALL "HEART-TICK" USING WS-SLOT WS-LOGS WS-TIME WS-PERSIST
      MOVE "the body of the second tick makes the heart AWAKE (2)" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
@@ -100,6 +107,28 @@
      IF WS-CROW = 0
          STOP RUN
      END-IF
+*>   CreakingHeartBlockEntity.spawnProtector (30-8 14.3.3): entity_place at the creaking's position, the creaking as the source.
+     MOVE 0 TO WS-GPLACES WS-GOK
+     MOVE WS-GE0 TO WS-GK
+     PERFORM UNTIL WS-GK >= GE-COUNT
+         ADD 1 TO WS-GK
+         COMPUTE WS-GLOG = FUNCTION MOD(WS-GK - 1, 128) + 1
+         IF GE-L-NAME(WS-GLOG) = "entity_place"
+             ADD 1 TO WS-GPLACES
+             IF GE-L-SOURCE(WS-GLOG) = WS-CROW AND GE-L-X(WS-GLOG) = EN-X(WS-CROW) AND GE-L-Y(WS-GLOG) = EN-Y(WS-CROW)
+                     AND GE-L-Z(WS-GLOG) = EN-Z(WS-CROW)
+                 MOVE 1 TO WS-GOK
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE "the protector's spawn posts one entity_place" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-GPLACES TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     MOVE "at the creaking's position with the creaking as the source (30-8 14.3.3)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-GOK TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
      MOVE "the protector stands on top of the floor block (y = floor top + 1)" TO TL-CASE
      COMPUTE TL-EXPECTED-N = WS-FY + 1
      COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(EN-Y(WS-CROW))

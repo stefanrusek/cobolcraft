@@ -16,6 +16,8 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-EV-DESTROY          PIC X(32) VALUE "block_destroy".
+ 01 WS-NO-SOURCE           BINARY-LONG VALUE 0.
  01 WS-CHANCE              BINARY-LONG.
  01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
  01 WS-GRIEF               BINARY-DOUBLE.
@@ -81,6 +83,8 @@
                      CALL "BLOCK-STATE-PROP" USING WS-MODE-SET WS-STATE WS-PROP WS-TEXT WS-NEW
                      CALL "BLOCK-CHANGE" USING L-DIM WS-BX WS-BY WS-BZ WS-NEW
                  END-IF
+*>               TurtleEggBlock.decreaseEggs: block_destroy at the egg's centre with the state before and no source (30-8 14.3.5)
+                 CALL "GAME-EVENT-CELL" USING L-DIM WS-BX WS-BY WS-BZ WS-EV-DESTROY WS-NO-SOURCE WS-STATE
              END-IF
          END-IF
      END-IF

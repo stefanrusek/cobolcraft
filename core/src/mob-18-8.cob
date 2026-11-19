@@ -1061,6 +1061,7 @@
  01 WS-EGG-FULL            PIC X(112).
  01 WS-EGG-ITEM            BINARY-LONG.
  01 WS-EGG-ROW             PIC X(270).
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
  01 WS-STATUS              BINARY-LONG.
  01 WS-OFFSET              FLOAT-LONG VALUE 0.
  01 WS-PATCH               BINARY-LONG VALUE 0.
@@ -1101,6 +1102,8 @@
              CALL "CONTENT-ITEM-BY-KEY" USING WS-EGG-FULL WS-EGG-ITEM WS-EGG-ROW WS-STATUS
              CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WS-EGG-ITEM WS-ONE
                  WS-PATCH WS-ITEM-ENTITY
+*>           Chicken.aiStep: entity_place at the chicken's position, the chicken as the source (30-8 14.3.3)
+             CALL "GAME-EVENT-AT" USING WS-EV-PLACE L-ROW
          END-IF
      END-IF
      IF WS-KEY = "sheep"
@@ -1400,6 +1403,7 @@
  01 WS-KEY                 PIC X(24).
  01 WS-COST                BINARY-LONG VALUE 1.
  01 WS-BROKE               BINARY-LONG.
+ 01 WS-EV-SHEAR            PIC X(32) VALUE "shear".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -1413,6 +1417,9 @@
          CALL "MOB-DROP-ITEMS" USING L-ENTITY WS-KEY WS-COUNT
          CALL "MOB-DATA-SEND" USING L-ENTITY
          CALL "TOOL-HURT-STACK" USING PL-CONN(L-ROW) PL-HELD(L-ROW) WS-COST WS-BROKE
+*>       Sheep.mobInteract: shear at the sheep's position, the player as the source (30-8 14.3.9); the shearing consumed the action, so Mob.interact posts entity_interact (14.3.7)
+         CALL "GAME-EVENT-BY" USING WS-EV-SHEAR L-ENTITY PL-ENTITY-ROW(L-ROW)
+         CALL "GAME-EVENT-INTERACT" USING L-ENTITY L-ROW
      END-IF
      GOBACK.
  END PROGRAM MOB-SHEAR-USE.
@@ -1439,6 +1446,8 @@
      IF WS-KEY NOT = SPACES
          CALL "MOB-ITEM-ID" USING WS-KEY WS-ITEM
          CALL "MOB-SWAP" USING L-ROW WS-ITEM
+*>       the milking consumed the action: Mob.interact posts entity_interact at the cow, the player as the source (30-8 14.3.7)
+         CALL "GAME-EVENT-INTERACT" USING L-ENTITY L-ROW
      END-IF
      GOBACK.
  END PROGRAM MOB-MILK-USE.
@@ -1466,6 +1475,7 @@
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-COST                BINARY-LONG VALUE 1.
  01 WS-BROKE               BINARY-LONG.
+ 01 WS-EV-SHEAR            PIC X(32) VALUE "shear".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -1486,12 +1496,16 @@
              CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-COW
              MOVE EN-HEALTH(L-ENTITY) TO EN-HEALTH(WS-COW)
              MOVE EN-MOBAGE(L-ENTITY) TO EN-MOBAGE(WS-COW)
+*>           MushroomCow.mobInteract: shear at the mooshroom's position with the player as the source (30-8 14.3.9), then the consumed action's entity_interact (14.3.7); the mooshroom is replaced by the cow
+             CALL "GAME-EVENT-BY" USING WS-EV-SHEAR L-ENTITY PL-ENTITY-ROW(L-ROW)
+             CALL "GAME-EVENT-INTERACT" USING L-ENTITY L-ROW
              CALL "ENTITY-REMOVE" USING L-ENTITY
              CALL "TOOL-HURT-STACK" USING PL-CONN(L-ROW) PL-HELD(L-ROW) WS-COST WS-BROKE
          ELSE
              CALL "M19-MOOSHROOM-BOWL" USING WS-STORED WS-KEY
              CALL "MOB-ITEM-ID" USING WS-KEY WS-ITEM
              CALL "MOB-SWAP" USING L-ROW WS-ITEM
+             CALL "GAME-EVENT-INTERACT" USING L-ENTITY L-ROW
          END-IF
      END-IF
      GOBACK.
@@ -1626,15 +1640,19 @@
      IF WS-KEY = "villager" OR "wandering_trader"
          CALL "MERCHANT-INTERACT" USING WS-ROW WS-ENTITY WS-USED
          IF WS-USED = 1
+             CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
              GOBACK
          END-IF
      END-IF
+*>   Mob.interact posts entity_interact (the mob's position, the player as the source) after the common interactions (the leash) or mobInteract consumed the action (30-8 14.3.7)
      CALL "MOB-LEASH-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK
      END-IF
      CALL "MOB-RIDE-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK
      END-IF
      EVALUATE TRUE
@@ -1671,6 +1689,10 @@
          WHEN OTHER
              CALL "MOB-FEED-USE" USING WS-ROW WS-ENTITY
      END-EVALUATE
+*>   A zombie villager's golden apple and a piglin's barter are the species programs that report the action as consumed
+     IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+     END-IF
      GOBACK.
  END PROGRAM MOB-INTERACT.
 

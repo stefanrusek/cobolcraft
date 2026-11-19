@@ -84,6 +84,8 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-PEEK-SALT           BINARY-LONG VALUE 54.
  01 WS-PEEK-BOUND          BINARY-LONG VALUE 301.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
+ 01 WS-EV-ACTION           PIC X(32) VALUE "entity_action".
  COPY PROTO.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -103,6 +105,8 @@
                  CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WS-ITEM WS-ONE
                      WS-PATCH WS-ITEM-ENTITY
              END-IF
+*>           Armadillo.customServerAiStep: entity_place at the armadillo's position when it drops a scute, the armadillo as the source (30-8 14.3.3)
+             CALL "GAME-EVENT-AT" USING WS-EV-PLACE L-ROW
          END-IF
      END-IF
 *>   The danger memory counts down; every 80 ticks the surroundings are scanned.
@@ -196,6 +200,10 @@
      END-EVALUATE
      IF EN-ARMA(L-ROW) NOT = WS-OLD
          CALL "MOB-DATA-SEND" USING L-ROW
+*>       Armadillo.rollUp (idle to rolling) and rollOut (scared to unrolling): entity_action at the armadillo, itself as the source (30-8 14.3.7)
+         IF (WS-OLD = 0 AND EN-ARMA(L-ROW) = 1) OR (WS-OLD = 2 AND EN-ARMA(L-ROW) = 3)
+             CALL "GAME-EVENT-AT" USING WS-EV-ACTION L-ROW
+         END-IF
      END-IF
      IF EN-ARMA(L-ROW) > 0
          MOVE 2 TO L-WALK

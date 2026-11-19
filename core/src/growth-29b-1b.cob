@@ -259,6 +259,7 @@
  01 WS-EVENT               BINARY-LONG VALUE 1505.
  01 WS-DATA                BINARY-LONG VALUE 15.
  01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -300,6 +301,8 @@
          COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
          CALL "INV-SLOT-SEND" USING L-ID WS-HELD
          CALL "LEVEL-EVENT" USING PL-DIM(WS-ROW) WS-EVENT L-X L-Y L-Z WS-DATA WS-NONE
+*>       BoneMealItem.useOn: item_interact_finish at the player when the bone meal is applied (30-8 14.3.8)
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(WS-ROW)
      END-IF
      GOBACK.
  END PROGRAM GB-BONEMEAL-USE.

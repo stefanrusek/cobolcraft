@@ -8,6 +8,13 @@
  COPY XORO.
  COPY MOBSPAWN.
  COPY BRWORLD.
+ COPY GAMEEVENT.
+ 01 WS-GE0               BINARY-DOUBLE.
+ 01 WS-GLOG              BINARY-LONG.
+ 01 WS-GSRC              BINARY-LONG.
+ 01 WS-GX                FLOAT-LONG.
+ 01 WS-GY                FLOAT-LONG.
+ 01 WS-GZ                FLOAT-LONG.
  01 WS-CASE               PIC X(240).
  01 WS-E                  BINARY-DOUBLE.
  01 WS-O                  BINARY-DOUBLE.
@@ -179,10 +186,35 @@
      PERFORM CHECK-N
      MOVE "zombie" TO WS-KEY
      MOVE 18000 TO CW-TIME
+     MOVE GE-COUNT TO WS-GE0
      PERFORM TRY-SPAWNS
      MOVE "acceptance US15 18§6.12 Spawner block: a zombie spawner spawns in the dark" TO WS-CASE
      COMPUTE WS-E = 1
      COMPUTE WS-O = FUNCTION MIN(WS-WINS, 1)
+     PERFORM CHECK-N
+*>   BaseSpawner.serverTick (30-8 14.3.3): every spawned mob posts entity_place at the centre of the cell holding its spawn position, the mob itself as the source.
+     MOVE "acceptance US15 30-8 14.3.3 a spawner posts one entity_place for each mob it spawned" TO WS-CASE
+     COMPUTE WS-E = WS-WINS
+     COMPUTE WS-O = GE-COUNT - WS-GE0
+     PERFORM CHECK-N
+     COMPUTE WS-GLOG = FUNCTION MOD(GE-COUNT - 1, 128) + 1
+     MOVE GE-L-SOURCE(WS-GLOG) TO WS-GSRC
+     MOVE "acceptance US15 30-8 14.3.3 the last spawn's event is entity_place" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = 0
+     IF GE-L-NAME(WS-GLOG) = "entity_place"
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+     COMPUTE WS-GX = FUNCTION INTEGER(EN-X(WS-GSRC)) + 0.5
+     COMPUTE WS-GY = FUNCTION INTEGER(EN-Y(WS-GSRC)) + 0.5
+     COMPUTE WS-GZ = FUNCTION INTEGER(EN-Z(WS-GSRC)) + 0.5
+     MOVE "acceptance US15 30-8 14.3.3 its position is the centre of the mob's cell and its source the mob" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = 0
+     IF GE-L-X(WS-GLOG) = WS-GX AND GE-L-Y(WS-GLOG) = WS-GY AND GE-L-Z(WS-GLOG) = WS-GZ AND WS-GSRC > 0
+         MOVE 1 TO WS-O
+     END-IF
      PERFORM CHECK-N
      MOVE 0 TO WS-BAD
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT

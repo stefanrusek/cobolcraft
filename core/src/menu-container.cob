@@ -208,6 +208,8 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 8192.
  01 WS-PACKET-ID           BINARY-LONG VALUE 60.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-EV-OPEN             PIC X(32) VALUE "container_open".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-DIM                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-FAMILY              BINARY-LONG.
@@ -395,6 +397,10 @@
                  CALL "BE-OPEN-INC" USING WS-BE WS-RANGE WS-SPECTATOR BE-FX
              END-IF
              CALL "MENU-CONT-FX" USING WS-BE WS-DIM BE-FX
+*>           ContainerOpenersCounter: container_open when the count went 0 to 1 (FX-EVENT 1), the opening entity as the source (30-8 14.3.6)
+             IF FX-EVENT = 1
+                 CALL "GAME-EVENT-CELL" USING WS-DIM BE-X(WS-BE) BE-Y(WS-BE) BE-Z(WS-BE) WS-EV-OPEN PL-ENTITY-ROW(WS-ROW) WS-NO-STATE
+             END-IF
          END-IF
      END-PERFORM
 *>   The title: a custom name as text, else the default name; a double chest the name of 31-1 section 10.2.
@@ -442,6 +448,8 @@
  01 WS-BE                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-SPECTATOR           BINARY-LONG.
+ 01 WS-EV-CLOSE            PIC X(32) VALUE "container_close".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -467,6 +475,10 @@
                      CALL "BE-OPEN-DEC" USING WS-BE WS-SPECTATOR BE-FX
                  END-IF
                  CALL "MENU-CONT-FX" USING WS-BE MN-BENCH-DIM(L-ROW) BE-FX
+*>               container_close when the count reached 0 (FX-EVENT 2), the closing entity as the source
+                 IF FX-EVENT = 2
+                     CALL "GAME-EVENT-CELL" USING MN-BENCH-DIM(L-ROW) BE-X(WS-BE) BE-Y(WS-BE) BE-Z(WS-BE) WS-EV-CLOSE PL-ENTITY-ROW(L-ROW) WS-NO-STATE
+                 END-IF
              END-IF
          END-IF
      END-PERFORM

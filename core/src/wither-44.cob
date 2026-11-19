@@ -721,6 +721,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CBLOCKS.
+ 01 WS-EV-DESTROY          PIC X(32) VALUE "block_destroy".
  01 WS-REGISTRY            PIC X(48) VALUE "block".
  01 WS-TAG                 PIC X(112) VALUE "minecraft:wither_immune".
  01 WS-X0                  BINARY-LONG.
@@ -753,6 +754,8 @@
                      CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-IMMUNE
                      IF WS-IMMUNE = 0
                          CALL "BLOCK-CHANGE" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-AIR
+*>                       Level.destroyBlock with the wither as the breaker: block_destroy, the state before (30-8 14.3.5)
+                         CALL "GAME-EVENT-CELL" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-EV-DESTROY L-ROW WS-STATE
                          MOVE 1 TO WS-ANY
                      END-IF
                  END-IF

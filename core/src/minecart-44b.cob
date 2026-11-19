@@ -37,6 +37,7 @@
  COPY CORESTATE.
  COPY PROJSTATE.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-EV-MOUNT            PIC X(32) VALUE "entity_mount".
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -52,6 +53,7 @@
          MOVE L-ROW TO EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER))
          CALL "MINECART-SYNC" USING L-ROW
          CALL "MOB-RIDE-SEND" USING L-ROW
+         CALL "GAME-EVENT-BY" USING WS-EV-MOUNT L-ROW PL-ENTITY-ROW(L-PLAYER)
          MOVE 1 TO L-USED
      END-IF
      GOBACK.
@@ -97,6 +99,8 @@
      COMPUTE PJ-I5(WS-SLOT) = 0 - PJ-I5(WS-SLOT)
      MOVE 10 TO PJ-I4(WS-SLOT)
      COMPUTE PJ-R3(WS-SLOT) = PJ-R3(WS-SLOT) + L-AMOUNT * 10
+*>   VehicleEntity.hurtServer: entity_damage at the cart with the causing entity (the attacker) as the source (30-8 14.3.2)
+     CALL "GAME-EVENT-DAMAGED" USING L-ROW L-ATTACKER
      MOVE 0 TO WS-CREATIVE
      IF L-ATTACKER > 0
          IF PL-MODE(L-ATTACKER) = 1

@@ -220,6 +220,7 @@
  01 WS-TEN                 BINARY-LONG VALUE 10.
  01 WS-R                   BINARY-LONG.
  01 WS-NO-FIRES            BINARY-LONG VALUE 0.
+ 01 WS-EV-LIGHTNING        PIC X(32) VALUE "lightning_strike".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -229,6 +230,8 @@
      END-IF
      IF PJ-I1(WS-SLOT) = 2
          CALL "LIGHTNING-FIRST" USING L-ROW
+*>   LightningBolt.tick posts lightning_strike on the tick where its life counter equals 2 (the first), the bolt as the source (30-8 14.3.10)
+         CALL "GAME-EVENT-AT" USING WS-EV-LIGHTNING L-ROW
      END-IF
      SUBTRACT 1 FROM PJ-I1(WS-SLOT)
      IF PJ-I1(WS-SLOT) < 0

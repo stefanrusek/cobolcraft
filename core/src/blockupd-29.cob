@@ -1134,6 +1134,7 @@
  01 LS-AIR                 BINARY-LONG.
  01 LS-EVENT               BINARY-LONG.
  01 LS-NONE                BINARY-LONG.
+ 01 LS-EV-DESTROY          PIC X(32) VALUE "block_destroy".
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -1158,6 +1159,10 @@
      MOVE 3 TO LS-FLAGS
      CALL "SUP-DESTROY-STATE" USING LS-OLD LS-AIR
      CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-AIR LS-FLAGS L-BUDGET L-RESULT
+*>   Level.destroyBlock posts block_destroy only when the setBlock succeeded: the block centre, the state before, no breaker (30-8 14.3.5)
+     IF L-RESULT = 1
+         CALL "GAME-EVENT-CELL" USING L-DIM L-X L-Y L-Z LS-EV-DESTROY LS-NONE LS-OLD
+     END-IF
      GOBACK.
  END PROGRAM LEVEL-DESTROY-BLOCK.
 

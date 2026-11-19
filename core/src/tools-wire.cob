@@ -190,6 +190,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  01 WS-MENU-SLOT           BINARY-LONG.
+ 01 WS-CSLOT               BINARY-LONG.
  01 WS-OFF-KEY             PIC X(48).
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -233,6 +234,9 @@
      MOVE WS-ITEM TO PL-SLOT-ITEM(WS-ROW, WS-HELD + 1)
      MOVE WS-COUNT TO PL-SLOT-COUNT(WS-ROW, WS-HELD + 1)
      MOVE WS-VAR TO PL-SLOT-VAR(WS-ROW, WS-HELD + 1)
+*>   LivingEntity.onEquipItem: equip (or unequip) of the worn armor slot the held armor went into (30-8 14.3.8)
+     COMPUTE WS-CSLOT = WS-KIND + 35
+     CALL "GAME-EVENT-EQUIP" USING WS-ROW WS-CSLOT WS-ITEM WS-VAR MN-EQUIP-ITEM(WS-ROW, WS-KIND) MN-EQUIP-VAR(WS-ROW, WS-KIND)
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "INV-SLOT-SEND" USING L-ID WS-HELD
      COMPUTE WS-MENU-SLOT = 9 - WS-KIND
@@ -257,6 +261,8 @@
  01 WS-TX                  BINARY-LONG.
  01 WS-TY                  BINARY-LONG.
  01 WS-TZ                  BINARY-LONG.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "block_place".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-NX                  BINARY-LONG.
  01 WS-NY                  BINARY-LONG.
  01 WS-NZ                  BINARY-LONG.
@@ -303,7 +309,7 @@
          GOBACK
      END-IF
      IF WS-BLOCK-KEY = "tnt"
-         CALL "TNT-IGNITE" USING WS-DIM PSB-BX PSB-BY PSB-BZ
+         CALL "TNT-IGNITE-BY" USING WS-DIM PSB-BX PSB-BY PSB-BZ PL-ENTITY-ROW(WS-ROW)
          MOVE PL-HELD(WS-ROW) TO WS-HELD
          IF PL-MODE(WS-ROW) NOT = 1 AND L-KEY = "flint_and_steel"
              CALL "TOOL-HURT-STACK" USING L-ID WS-HELD WS-ONE WS-BROKE
@@ -384,6 +390,8 @@
      CALL "CONTENT-BLOCK-BY-KEY" USING WS-LONG-KEY WS-ID WS-ROW-TEXT WS-STATUS
      MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-FIRE-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-TX WS-TY WS-TZ WS-FIRE-STATE
+*>   FlintAndSteelItem and FireChargeItem post block_place at the fire cell with the player as the source and no state (30-8 14.3.4)
+     CALL "GAME-EVENT-BLOCK" USING WS-DIM WS-TX WS-TY WS-TZ WS-EV-PLACE WS-ROW WS-NO-STATE
      MOVE PL-HELD(WS-ROW) TO WS-HELD
      IF WS-DAMAGE > 0
          CALL "TOOL-HURT-STACK" USING L-ID WS-HELD WS-DAMAGE WS-BROKE

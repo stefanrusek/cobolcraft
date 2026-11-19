@@ -876,7 +876,9 @@
              COMPUTE WS-APPLY = WS-DMG - EN-LAST-HURT(WS-ROW)
              MOVE WS-DMG TO EN-LAST-HURT(WS-ROW)
              CALL "MOB-HEALTH-LOSE" USING WS-ROW WS-APPLY L-CAUSE
-             CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE WS-ROW
+             IF WS-APPLY > 0
+                 CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE WS-ROW
+             END-IF
              IF EN-HEALTH(WS-ROW) = 0
                  CALL "RAID-RAIDER-DIED" USING WS-ROW WS-KILLER
                  CALL "MOB-DEFEAT" USING WS-ROW
@@ -886,7 +888,9 @@
      END-IF
      CALL "MOB-HEALTH-LOSE" USING WS-ROW WS-DMG L-CAUSE
 *>   LivingEntity.actuallyHurt: the game event entity_damage with the hurt entity as the source (18 section 2).
-     CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE WS-ROW
+     IF WS-DMG > 0
+         CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE WS-ROW
+     END-IF
      IF L-ATTACKER > 0 AND L-CAUSE = CAUSE-PLAYER
          CALL "PARTICLE-HIT-MOB" USING WS-ROW WS-DMG
      END-IF

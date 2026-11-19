@@ -69,9 +69,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M44-CAMEL-SIT.
+*> USING row, now, leashed, rider, changed out: the camel sits down or stands up when the pose time is 400 ticks old, not leashed, unridden, on the ground; Camel.sitDown / standUp post entity_action at the camel
+*> with itself as the source (30-8 14.3.7).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-EV-ACTION           PIC X(32) VALUE "entity_action".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-NOW                  BINARY-LONG.
@@ -84,15 +87,18 @@
          MOVE 1 TO L-CHANGED
          COMPUTE EN-CAMEL-POSE(L-ROW) = 1 - EN-CAMEL-POSE(L-ROW)
          MOVE L-NOW TO EN-CAMEL-POSE-T(L-ROW)
+         CALL "GAME-EVENT-AT" USING WS-EV-ACTION L-ROW
      END-IF
      GOBACK.
  END PROGRAM M44-CAMEL-SIT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M44-CAMEL-DASH.
+*> USING row, started out: a dash starts when the cooldown is 0 (it becomes 55); Camel.handleStartJump posts entity_action at the camel with itself as the source (30-8 14.3.7).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-EV-ACTION           PIC X(32) VALUE "entity_action".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-STARTED              BINARY-LONG.
@@ -101,6 +107,7 @@
      IF EN-CAMEL-DASH(L-ROW) = 0
          MOVE 1 TO L-STARTED
          MOVE 55 TO EN-CAMEL-DASH(L-ROW)
+         CALL "GAME-EVENT-AT" USING WS-EV-ACTION L-ROW
      END-IF
      GOBACK.
  END PROGRAM M44-CAMEL-DASH.

@@ -146,6 +146,7 @@
  01 WS-SLOT                BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -156,12 +157,20 @@
      IF WS-SLOT = 0
          GOBACK
      END-IF
+*>   WardenAi.setDisturbanceLocation (20 section 15.6): nothing when the position is outside the world border, when getEntityAngryAt is present (the active entity while the level is ANGRY) or when an attack
+*>   target is set; else the dig cooldown is refreshed (only when present), sniff_cooldown and disturbance_location are set for 100 ticks and the walk target erased.
+     CALL "PORTAL-IN-BORDER" USING EN-DIM(L-ROW) L-X L-Z WS-INSIDE
+     IF WS-INSIDE = 0
+         GOBACK
+     END-IF
      CALL "WARDEN-ACTIVE" USING L-ROW WS-LEVEL WS-TOP
-*>   getEntityAngryAt: the active entity while the level is ANGRY.
      IF WS-LEVEL = 2 AND WS-TOP > 0
          GOBACK
      END-IF
-     IF (EN-TARGET(L-ROW) > 0 OR EN-FOE(L-ROW) > 0) AND WD-DIG-CD(WS-SLOT) > 0
+     IF EN-TARGET(L-ROW) > 0 OR EN-FOE(L-ROW) > 0
+         GOBACK
+     END-IF
+     IF WD-DIG-CD(WS-SLOT) > 0
          MOVE 1200 TO WD-DIG-CD(WS-SLOT)
      END-IF
      MOVE 100 TO WD-SNIFF-CD(WS-SLOT) WD-DISTURB(WS-SLOT)

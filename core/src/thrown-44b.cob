@@ -235,6 +235,8 @@
      END-IF
      MOVE 0 TO PJ-I1(WS-SLOT)
      MOVE L-SURVIVES TO PJ-I2(WS-SLOT)
+*>   EnderEyeItem.use: the eye is not a Projectile, so the item posts projectile_shoot itself, at the spawn position with the player as the source (30-8 14.2.1)
+     CALL "GAME-EVENT-SHOOT" USING L-ROW L-OWNER
      GOBACK.
  END PROGRAM EYE-SPAWN.
 

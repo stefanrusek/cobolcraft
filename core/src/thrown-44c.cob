@@ -430,6 +430,8 @@
  01 WS-HOOK                BINARY-LONG.
  01 WS-COST                BINARY-LONG.
  01 WS-BROKE               BINARY-LONG.
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-YAW                  FLOAT-LONG.
@@ -439,11 +441,15 @@
      CALL "BOBBER-FIND" USING PL-ENTITY-ID(WS-ROW) WS-HOOK
      IF WS-HOOK > 0
          CALL "BOBBER-RETRIEVE" USING WS-ROW WS-HOOK WS-COST
+*>       FishingRodItem.use: item_interact_finish when reeling in (30-8 14.3.8)
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(WS-ROW)
          IF WS-COST > 0
              CALL "TOOL-HURT-STACK" USING PL-CONN(WS-ROW) PL-HELD(WS-ROW) WS-COST WS-BROKE
          END-IF
      ELSE
          CALL "BOBBER-CAST" USING WS-ROW L-YAW L-PITCH WS-HOOK
+*>       FishingRodItem.use: item_interact_start when casting (30-8 14.3.8)
+         CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(WS-ROW)
      END-IF
      GOBACK.
  END PROGRAM BOBBER-USE.

@@ -422,6 +422,8 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-DISTANCE            FLOAT-LONG.
+ 01 WS-EV-ACTION           PIC X(32) VALUE "entity_action".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-KNOT                 BINARY-LONG.
@@ -432,6 +434,10 @@
      COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-KNOT))
      COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-KNOT))
      CALL "MOB-KNOT-USE" USING L-PLAYER WS-BX WS-BY WS-BZ L-OK
+*>   Entity.interact: the player tied the mobs it held to the knot: entity_action at the knot's block centre, the player as the source (30-8 14.3.7)
+     IF L-OK = 1
+         CALL "GAME-EVENT-CELL" USING EN-DIM(L-KNOT) WS-BX WS-BY WS-BZ WS-EV-ACTION PL-ENTITY-ROW(L-PLAYER) WS-NO-STATE
+     END-IF
      IF L-OK = 0 AND L-SNEAK = 0
          PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
              IF EN-USED(WS-E) = 1 AND EN-LEASH-KNOT(WS-E) = L-KNOT

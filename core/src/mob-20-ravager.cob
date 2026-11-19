@@ -147,6 +147,7 @@
  01 WS-NONE                 BINARY-LONG VALUE 0.
  01 WS-EVENT                BINARY-LONG VALUE 69.
  01 WS-CAPACITY             BINARY-LONG VALUE 64.
+ 01 WS-EV-ACTION            PIC X(32) VALUE "entity_action".
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -184,6 +185,8 @@
              END-IF
          END-IF
      END-PERFORM
+*>   Ravager.roar: entity_action at the ravager's position, itself as the source, after the knockback loop (30-8 14.3.7)
+     CALL "GAME-EVENT-AT" USING WS-EV-ACTION L-ROW
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER

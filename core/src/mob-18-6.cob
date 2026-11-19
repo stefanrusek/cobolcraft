@@ -1793,6 +1793,8 @@
  01 WS-HI-Z                FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-DIM                  BINARY-LONG.
@@ -1876,6 +1878,10 @@
      COMPUTE WS-YAW = WS-D1 * 360
      MOVE WS-IY TO WS-FY
      CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-NEW
+*>   BaseSpawner.serverTick: entity_place at the centre of the cell holding the spawn position, the spawned mob as the source (30-8 14.3.3)
+     IF WS-NEW > 0
+         CALL "GAME-EVENT-CELL" USING L-DIM WS-IX WS-IY WS-IZ WS-EV-PLACE WS-NEW WS-NO-STATE
+     END-IF
      MOVE 1 TO L-SUCCESS
      GOBACK.
  END PROGRAM MS6-SPAWNER-ATTEMPT.

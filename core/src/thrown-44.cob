@@ -502,6 +502,74 @@
  END PROGRAM THROWN-SYNC.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-SHOOT-FIRST.
+*> USING tracker row, before the move (1 before THROWN-FLY2 moves it, 0 after): Projectile.tick's projectile_shoot on the first tick (EN-COOLDOWN 1) of a thrown projectile (30-8 14.2.1), the owner as the
+*> source. ThrowableProjectile and AbstractHurtingProjectile (pearls, eggs, potions, skulls, the dragon's fireball) post it after their move and hit test (the hit location, call with 0); the fishing hook runs
+*> Projectile.tick early, so its shoot is at the position before the move (call with 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-HOOK                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-BEFORE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-BEFORE.
+     MOVE 0 TO WS-HOOK
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT > 0
+         IF PJ-KIND(WS-SLOT) = 7
+             MOVE 1 TO WS-HOOK
+         END-IF
+     END-IF
+     IF EN-COOLDOWN(L-ROW) = 1 AND WS-HOOK = L-BEFORE
+         CALL "GAME-EVENT-SHOOT" USING L-ROW EN-TARGET-ID(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM THROWN-SHOOT-FIRST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-LAND.
+*> USING tracker row, hit (1 block, 2 entity), block x, y, z (the cell hit): Projectile.onHit's projectile_land (30-8 14.2.2) for a thrown projectile that THROWN-FLY2 stopped, the projectile as the source: at the hit
+*> location (the entity row's position) for an entity, at the centre of the block hit with the block's state for a block. Posted before the class's own effect (the burst, the explosion, the discard). A fishing
+*> hook lying on the ground (PJ-I6 above 0: the bobber model runs THROWN-FLY2 for it every tick) lands once, on the tick it reached the ground.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-RESTING             BINARY-LONG.
+ 01 WS-EV-LAND             PIC X(32) VALUE "projectile_land".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
+ 01 WS-STATE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-HX                   BINARY-LONG.
+ 01 L-HY                   BINARY-LONG.
+ 01 L-HZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-HIT L-HX L-HY L-HZ.
+     MOVE 0 TO WS-RESTING
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT > 0
+         IF PJ-KIND(WS-SLOT) = 7 AND PJ-I6(WS-SLOT) > 0
+             MOVE 1 TO WS-RESTING
+         END-IF
+     END-IF
+     IF WS-RESTING = 1
+         GOBACK
+     END-IF
+     IF L-HIT = 2
+         CALL "GAME-EVENT" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-EV-LAND L-ROW WS-NO-STATE
+     ELSE
+         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) L-HX L-HY L-HZ WS-STATE
+         CALL "GAME-EVENT-CELL" USING EN-DIM(L-ROW) L-HX L-HY L-HZ WS-EV-LAND L-ROW WS-STATE
+     END-IF
+     GOBACK.
+ END PROGRAM THROWN-LAND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. THROWN-FLY2.
 *> THROWN-FLY with the drag as a parameter. USING tracker row, gravity, drag (FLOAT-LONG), hit out, entity row out, player row out (44 part 8 section 6.5): the tick count (EN-COOLDOWN) rises, gravity then drag 0.99 change the
 *> velocity, and the segment of the new velocity is walked in steps of at most 0.1 block against solid cells and against players and standard mobs other than the owner
@@ -523,6 +591,11 @@
  01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-SOLID               BINARY-LONG.
+ 01 WS-HCX                 BINARY-LONG.
+ 01 WS-HCY                 BINARY-LONG.
+ 01 WS-HCZ                 BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG VALUE 1.
+ 01 WS-AFTER               BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-GRAVITY              FLOAT-LONG.
@@ -533,6 +606,7 @@
  PROCEDURE DIVISION USING L-ROW L-GRAVITY L-DRAG L-HIT L-ENTITY L-PLAYER.
      MOVE 0 TO L-HIT L-ENTITY L-PLAYER
      ADD 1 TO EN-COOLDOWN(L-ROW)
+     CALL "THROWN-SHOOT-FIRST" USING L-ROW WS-BEFORE
      COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) - L-GRAVITY
      COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * L-DRAG
      COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * L-DRAG
@@ -552,6 +626,9 @@
          CALL "GI-SOLID-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-SOLID
          IF WS-SOLID = 1
              MOVE 1 TO L-HIT
+             MOVE WS-CX TO WS-HCX
+             MOVE WS-CY TO WS-HCY
+             MOVE WS-CZ TO WS-HCZ
          ELSE
              CALL "ARROW-FIND-HIT" USING L-ROW WS-QX WS-QY WS-QZ L-ENTITY L-PLAYER
              IF L-ENTITY > 0 OR L-PLAYER > 0
@@ -569,8 +646,11 @@
      MOVE WS-PX TO EN-X(L-ROW)
      MOVE WS-PY TO EN-Y(L-ROW)
      MOVE WS-PZ TO EN-Z(L-ROW)
+     CALL "THROWN-SHOOT-FIRST" USING L-ROW WS-AFTER
      IF L-HIT = 0
          CALL "THROWN-SYNC" USING L-ROW
+     ELSE
+         CALL "THROWN-LAND" USING L-ROW L-HIT WS-HCX WS-HCY WS-HCZ
      END-IF
      GOBACK.
  END PROGRAM THROWN-FLY2.

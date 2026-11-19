@@ -197,6 +197,7 @@
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-EVENT               BINARY-LONG.
+ 01 WS-EV-ACTION           PIC X(32) VALUE "entity_action".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-WATER                BINARY-LONG.
@@ -224,6 +225,10 @@
          CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
          CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
          CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+*>   Wolf.tick: a wolf that starts shaking off the water posts entity_action at its position, itself as the source (30-8 14.3.7)
+     IF WS-EVENT = 8
+         CALL "GAME-EVENT-AT" USING WS-EV-ACTION L-ROW
      END-IF
      GOBACK.
  END PROGRAM WOLF-WET-STEP.
