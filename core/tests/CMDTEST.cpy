@@ -36,14 +36,34 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-RUN.
+*> The command's reply: a /locate structure search that the command put off to the next ticks (cmd-locate-async.cob) is carried on with ticks (a long slice: the pace is not under test here) until it has answered.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY LOCATEQ.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-PENDING             BINARY-LONG.
+ 01 WS-SAVED               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-LINE                 PIC X(768).
  01 L-TEXT                 PIC X(4096).
  PROCEDURE DIVISION USING L-ID L-LINE L-TEXT.
      CALL "TEST-COMMAND" USING L-ID L-LINE
+     MOVE LQ-SLICE TO WS-SAVED
+     MOVE 1000000 TO LQ-SLICE
+     MOVE 1 TO WS-PENDING
+     PERFORM UNTIL WS-PENDING = 0
+         MOVE 0 TO WS-PENDING
+         PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > LQ-MAX
+             IF LQ-USED(WS-E) = 1
+                 MOVE 1 TO WS-PENDING
+             END-IF
+         END-PERFORM
+         IF WS-PENDING = 1
+             CALL "CORE-TICK"
+         END-IF
+     END-PERFORM
+     MOVE WS-SAVED TO LQ-SLICE
      CALL "TEST-DRAIN-CHAT" USING L-ID L-TEXT
      GOBACK.
  END PROGRAM TEST-RUN.

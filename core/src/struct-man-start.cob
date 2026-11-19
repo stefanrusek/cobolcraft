@@ -40,6 +40,7 @@
  PROGRAM-ID. MAN-FIND-POINT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
  COPY STRUCTPIECE.
  01 WS-USEED               BINARY-DOUBLE UNSIGNED.
  01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
@@ -99,6 +100,10 @@
 *>   the start is always valid: 36-7 section 3 step 6 refuses a lowest corner surface below y 60, but the heights are WORLD_SURFACE_WG (never under the sea level 63, struct-height.cob), so the
 *>   lowest corner is at least 62 and the refusal cannot happen
      MOVE 1 TO L-VALID
+*>   the stub only (STRUCT-STUB-OK): the layout and the pieces are not built
+     IF SD-STUB-ONLY = 1
+         GOBACK
+     END-IF
      CALL "MNG-BUILD"
      CALL "MNP-LAYOUT" USING WS-ROT L-X L-Y L-Z
      CALL "MAN-PIECES"

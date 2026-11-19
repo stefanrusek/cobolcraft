@@ -20,6 +20,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ COPY LOCATEQ.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-BAD                 BINARY-LONG.
@@ -49,7 +50,15 @@
          GOBACK
      END-IF
      MOVE CN-PLAYER(L-ID) TO WS-ROW
+*>   a line of a player that begins with locate may put its search off to the next ticks (cmd-locate-async.cob): the game must not stand still for it
+     MOVE 0 TO LQ-DIRECT
+     IF PSB-MESSAGE-LENGTH > 6
+         IF PSB-MESSAGE(1:7) = "locate "
+             MOVE 1 TO LQ-DIRECT
+         END-IF
+     END-IF
      CALL "CMD-RUN" USING WS-ROW PSB-MESSAGE PSB-MESSAGE-LENGTH
+     MOVE 0 TO LQ-DIRECT
      GOBACK.
  END PROGRAM CMD-RUN-PACKET.
 

@@ -98,36 +98,188 @@
  END PROGRAM CXC-STRUCT-WANT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. CXC-STRUCT-SET-RING.
-*> USING set row, kind, identifier, seed (BINARY-DOUBLE, the level seed reduced to signed 64 bits), source block x, source block z, ring (cells, 36-1 section 11 step 4), found out, locate x out,
-*> locate z out, squared distance out (BINARY-DOUBLE): the answer of the random_spread set in ring r: the first cell on the border of the square (ix from -r to r outer, iz inner) whose potential chunk is
-*> a structure chunk holding a start of the wanted structure; the later cells of the ring are not looked at, even when nearer.
+ PROGRAM-ID. CXC-STRUCT-CELL-HIT.
+*> USING set row, kind, identifier, seed (BINARY-DOUBLE), chunk x, chunk z (a structure chunk of the set: STRUCT-IS-CHUNK is true), hit out: 1 when the start the generation makes in the chunk for the set
+*> (STRUCT-CHUNK-STARTS-RAW: the entries in the chooser's order, the first whose generation point has a biome of the structure) is a wanted structure. The answer is that of the start list but no
+*> start is built: only the validity of the entries (STRUCT-STUB-OK: the generation point and its biome, no pieces) is asked, and only as far as it decides. The first wanted entry in the order that is
+*> valid is looked for first (an entry of the wrong biome costs a height and a biome lookup); the entries before it that are not wanted are asked only then, because any one of them valid is the
+*> set's start instead.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SET-OK              BINARY-LONG.
+ 01 WS-ANY                 BINARY-LONG.
+ 01 WS-ORDER.
+    05 WS-ORDER-ENTRY      BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-ST                  BINARY-LONG.
+ 01 WS-ON                  BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-KIND L-ID L-SEED L-CX L-CZ L-HIT.
+     MOVE 0 TO L-HIT WS-ANY WS-FIRST
+     CALL "FLAT-STRUCT-SET-OK" USING SS-KEY(L-SET) WS-SET-OK
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(L-SET)
+         MOVE SE-STRUCT(SS-EN-FIRST(L-SET) + WS-K) TO WS-ST
+         MOVE SDT-KEY(WS-ST) TO WS-KEY
+         CALL "STRUCT-GATE" USING WS-KEY WS-ON
+         IF WS-ON = 1
+             MOVE 1 TO WS-ANY
+         END-IF
+     END-PERFORM
+     IF SS-POSSIBLE(L-SET) = 0 OR WS-ANY = 0 OR WS-SET-OK = 0
+         GOBACK
+     END-IF
+     CALL "STRUCT-ENTRY-ORDER" USING L-SET L-SEED L-CX L-CZ WS-ORDER WS-N
+*>   the first wanted entry in the order that is on in the gate and valid
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N OR WS-FIRST > 0
+         MOVE SE-STRUCT(SS-EN-FIRST(L-SET) + WS-ORDER-ENTRY(WS-K) - 1) TO WS-ST
+         CALL "CXC-STRUCT-WANT" USING L-KIND L-ID WS-ST WS-WANT
+         IF WS-WANT = 1
+             MOVE SDT-KEY(WS-ST) TO WS-KEY
+             CALL "STRUCT-GATE" USING WS-KEY WS-ON
+             IF WS-ON = 1
+                 CALL "STRUCT-STUB-OK" USING WS-ST L-SEED L-CX L-CZ WS-VALID
+                 IF WS-VALID = 1
+                     MOVE WS-K TO WS-FIRST
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-FIRST = 0
+         GOBACK
+     END-IF
+*>   it is the set's start unless an entry before it (not wanted) is valid
+     MOVE 1 TO L-HIT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K >= WS-FIRST OR L-HIT = 0
+         MOVE SE-STRUCT(SS-EN-FIRST(L-SET) + WS-ORDER-ENTRY(WS-K) - 1) TO WS-ST
+         CALL "CXC-STRUCT-WANT" USING L-KIND L-ID WS-ST WS-WANT
+         IF WS-WANT = 0
+             MOVE SDT-KEY(WS-ST) TO WS-KEY
+             CALL "STRUCT-GATE" USING WS-KEY WS-ON
+             IF WS-ON = 1
+                 CALL "STRUCT-STUB-OK" USING WS-ST L-SEED L-CX L-CZ WS-VALID
+                 IF WS-VALID = 1
+                     MOVE 0 TO L-HIT
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXC-STRUCT-CELL-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-STRUCT-SET-STEP.
+*> USING set row, kind, identifier, seed (BINARY-DOUBLE, the level seed reduced to signed 64 bits), source block x, source block z, ring (cells, 36-1 section 11 step 4), cursor i, cursor j (BINARY-LONG, in and out: the
+*> next cell of the ring, (-ring, -ring) to begin), deadline (BINARY-DOUBLE: a CPU clock() value in microseconds after which the search pauses; 0 none), found out, locate x out, locate z out, squared distance out
+*> (BINARY-DOUBLE), done out: the answer of the random_spread set in ring r looked for from the cursor: the cells on the border of the square (ix from -r to r outer, iz inner) in that order, the first
+*> whose potential chunk is a structure chunk with a wanted start (CXC-STRUCT-CELL-HIT) is the answer (found 1, done 1); the later cells of the ring are not looked at, even when nearer. done 1 without found: the
+*> ring is out of cells. done 0: the deadline passed after a cell (at least one cell is looked at per call) and the cursor is at the next cell, so the next call carries on and the answer is that of one call.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
  01 WS-SPACING             BINARY-LONG.
  01 WS-CGX                 BINARY-LONG.
  01 WS-CGZ                 BINARY-LONG.
- 01 WS-K                   BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-J                   BINARY-LONG.
- 01 WS-FIRST               BINARY-LONG.
  01 WS-STEP                BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
- 01 WS-COUNT               BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-WANT                BINARY-LONG.
- 01 WS-X                   BINARY-LONG.
- 01 WS-Y                   BINARY-LONG.
- 01 WS-Z                   BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-PAUSE               BINARY-LONG.
+ 01 WS-NOW                 BINARY-DOUBLE.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
  01 WS-DX                  BINARY-DOUBLE.
  01 WS-DZ                  BINARY-DOUBLE.
- 01 WS-D2                  BINARY-DOUBLE.
- 01 WS-HIT                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-RING                 BINARY-LONG.
+ 01 L-CI                   BINARY-LONG.
+ 01 L-CJ                   BINARY-LONG.
+ 01 L-DEADLINE             BINARY-DOUBLE.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-D2                   BINARY-DOUBLE.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SET L-KIND L-ID L-SEED L-SX L-SZ L-RING L-CI L-CJ L-DEADLINE L-FOUND L-X L-Z L-D2 L-DONE.
+     MOVE 0 TO L-FOUND L-DONE WS-PAUSE
+     MOVE SS-SPACING(L-SET) TO WS-SPACING
+     COMPUTE WS-CGX = FUNCTION INTEGER(L-SX / 16 / WS-SPACING)
+     COMPUTE WS-CGZ = FUNCTION INTEGER(L-SZ / 16 / WS-SPACING)
+     PERFORM UNTIL L-DONE = 1 OR WS-PAUSE = 1
+         IF L-CI > L-RING
+             MOVE 1 TO L-DONE
+         ELSE
+             COMPUTE WS-CX = (WS-CGX + L-CI) * WS-SPACING
+             COMPUTE WS-CZ = (WS-CGZ + L-CJ) * WS-SPACING
+             CALL "STRUCT-POTENTIAL" USING L-SET L-SEED WS-CX WS-CZ WS-PX WS-PZ
+             CALL "STRUCT-IS-CHUNK" USING L-SET L-SEED WS-PX WS-PZ WS-FLAG
+             MOVE 0 TO WS-HIT
+             IF WS-FLAG = 1
+                 CALL "CXC-STRUCT-CELL-HIT" USING L-SET L-KIND L-ID L-SEED WS-PX WS-PZ WS-HIT
+             END-IF
+             IF WS-HIT = 1
+                 CALL "STRUCT-LOCATE-POS" USING L-SET WS-PX WS-PZ WS-LX WS-LY WS-LZ
+                 COMPUTE WS-DX = WS-LX - L-SX
+                 COMPUTE WS-DZ = WS-LZ - L-SZ
+                 COMPUTE L-D2 = WS-DX * WS-DX + WS-DZ * WS-DZ
+                 MOVE 1 TO L-FOUND L-DONE
+                 MOVE WS-LX TO L-X
+                 MOVE WS-LZ TO L-Z
+             ELSE
+*>               the next cell: a border row of the square steps one cell, a row between the sides only its two ends
+                 MOVE 1 TO WS-STEP
+                 IF FUNCTION ABS(L-CI) < L-RING
+                     COMPUTE WS-STEP = 2 * L-RING
+                 END-IF
+                 ADD WS-STEP TO L-CJ
+                 IF L-CJ > L-RING
+                     ADD 1 TO L-CI
+                     COMPUTE L-CJ = 0 - L-RING
+                 END-IF
+                 IF L-DEADLINE > 0
+                     CALL STATIC "clock" RETURNING WS-NOW
+                     IF WS-NOW >= L-DEADLINE
+                         MOVE 1 TO WS-PAUSE
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXC-STRUCT-SET-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-STRUCT-SET-RING.
+*> USING set row, kind, identifier, seed (BINARY-DOUBLE, the level seed reduced to signed 64 bits), source block x, source block z, ring (cells, 36-1 section 11 step 4), found out, locate x out,
+*> locate z out, squared distance out (BINARY-DOUBLE): the answer of the random_spread set in ring r (CXC-STRUCT-SET-STEP over the whole ring, no deadline).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CI                  BINARY-LONG.
+ 01 WS-CJ                  BINARY-LONG.
+ 01 WS-DEADLINE            BINARY-DOUBLE VALUE 0.
+ 01 WS-DONE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-SET                  BINARY-LONG.
  01 L-KIND                 BINARY-LONG.
@@ -141,60 +293,44 @@
  01 L-Z                    BINARY-LONG.
  01 L-D2                   BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-SET L-KIND L-ID L-SEED L-SX L-SZ L-RING L-FOUND L-X L-Z L-D2.
-     MOVE 0 TO L-FOUND L-X L-Z L-D2
-     MOVE SS-SPACING(L-SET) TO WS-SPACING
-     COMPUTE WS-CGX = FUNCTION INTEGER(L-SX / 16 / WS-SPACING)
-     COMPUTE WS-CGZ = FUNCTION INTEGER(L-SZ / 16 / WS-SPACING)
-     MOVE L-RING TO WS-K
-     COMPUTE WS-FIRST = 0 - WS-K
-     PERFORM VARYING WS-I FROM WS-FIRST BY 1 UNTIL WS-I > WS-K OR L-FOUND = 1
-         MOVE 1 TO WS-STEP
-         IF FUNCTION ABS(WS-I) < WS-K
-             COMPUTE WS-STEP = 2 * WS-K
-         END-IF
-         PERFORM VARYING WS-J FROM WS-FIRST BY WS-STEP UNTIL WS-J > WS-K OR L-FOUND = 1
-             COMPUTE WS-CX = (WS-CGX + WS-I) * WS-SPACING
-             COMPUTE WS-CZ = (WS-CGZ + WS-J) * WS-SPACING
-             CALL "STRUCT-POTENTIAL" USING L-SET L-SEED WS-CX WS-CZ WS-PX WS-PZ
-             CALL "STRUCT-IS-CHUNK" USING L-SET L-SEED WS-PX WS-PZ WS-FLAG
-             IF WS-FLAG = 1
-                 CALL "STRUCT-CHUNK-STARTS" USING L-SEED WS-PX WS-PZ WS-COUNT
-                 MOVE 0 TO WS-HIT
-                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-COUNT
-                     IF SC-SET(WS-S) = L-SET
-                         CALL "CXC-STRUCT-WANT" USING L-KIND L-ID SC-STRUCT(WS-S) WS-WANT
-                         IF WS-WANT = 1
-                             MOVE 1 TO WS-HIT
-                         END-IF
-                     END-IF
-                 END-PERFORM
-                 IF WS-HIT = 1
-                     CALL "STRUCT-LOCATE-POS" USING L-SET WS-PX WS-PZ WS-X WS-Y WS-Z
-                     COMPUTE WS-DX = WS-X - L-SX
-                     COMPUTE WS-DZ = WS-Z - L-SZ
-                     COMPUTE WS-D2 = WS-DX * WS-DX + WS-DZ * WS-DZ
-                     MOVE 1 TO L-FOUND
-                     MOVE WS-X TO L-X
-                     MOVE WS-Z TO L-Z
-                     MOVE WS-D2 TO L-D2
-                 END-IF
-             END-IF
-         END-PERFORM
-     END-PERFORM
+     MOVE 0 TO L-X L-Z L-D2
+     COMPUTE WS-CI = 0 - L-RING
+     MOVE WS-CI TO WS-CJ
+     CALL "CXC-STRUCT-SET-STEP" USING L-SET L-KIND L-ID L-SEED L-SX L-SZ L-RING WS-CI WS-CJ WS-DEADLINE L-FOUND L-X L-Z L-D2 WS-DONE
      GOBACK.
  END PROGRAM CXC-STRUCT-SET-RING.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. CXC-STRUCT-NEAREST.
-*> USING kind (1 a structure, 2 a tag), identifier (PIC X(80), with namespace, no "#"), source block x, source block z, level seed (BINARY-DOUBLE, signed: CW-SEED), found out, x out, z out,
-*> squared distance out: the nearest answer over the sets of the structure data that hold a wanted structure (radius 100 cells).
+ PROGRAM-ID. CXC-LOCATE-SETUP.
+*> No parameters: the one-time setup the chunk workers do in their own processes (generator seed, climate points, possible structure sets), run when the main process has not run it (a world loaded from
+*> disk); nothing when there is no generator data.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTDATA.
  COPY CLIMATE.
  COPY GENQUEUE.
- 01 WS-RADIUS              BINARY-LONG VALUE 100.
  01 WS-READY               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "GEN-DATA-READY" USING WS-READY
+     IF WS-READY = 1 AND SD-SET-COUNT > 0
+         CALL "GEN-WORLD-SETUP"
+         IF CL-COUNT = 0
+             CALL "OVB-BUILD"
+         END-IF
+         IF SD-POSS-DONE = 0
+             CALL "STRUCT-POSSIBLE-BUILD"
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CXC-LOCATE-SETUP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-LOCATE-CONCENTRIC.
+*> USING kind, identifier, source block x, source block z, seed, found out, x out, z out, squared distance out: step 3 of 36-1 section 11, the nearest answer over the concentric_rings sets that hold a wanted
+*> structure (STRUCT-NEAREST-RING, the eye of ender's code).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
  01 WS-ORIGIN-Y            BINARY-LONG VALUE 32.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -210,11 +346,6 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-D2                  BINARY-DOUBLE.
- 01 WS-RING                BINARY-LONG.
- 01 WS-ANSWERED            BINARY-LONG.
- 01 WS-SPREAD-COUNT        BINARY-LONG.
- 01 WS-SPREAD.
-    05 WS-SPREAD-SET       BINARY-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
  01 L-ID                   PIC X(80).
@@ -227,18 +358,6 @@
  01 L-D2                   BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-KIND L-ID L-SX L-SZ L-SEED L-FOUND L-X L-Z L-D2.
      MOVE 0 TO L-FOUND L-X L-Z L-D2
-*>   the setup of a world the chunk workers made chunks for (or that no chunk was made for yet): needs the generator data, else there is nothing to search
-     CALL "GEN-DATA-READY" USING WS-READY
-     IF WS-READY = 1 AND SD-SET-COUNT > 0
-         CALL "GEN-WORLD-SETUP"
-         IF CL-COUNT = 0
-             CALL "OVB-BUILD"
-         END-IF
-         IF SD-POSS-DONE = 0
-             CALL "STRUCT-POSSIBLE-BUILD"
-         END-IF
-     END-IF
-     MOVE 0 TO WS-SPREAD-COUNT
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
          MOVE 0 TO WS-ANY
          IF SS-KIND(WS-S) = 0
@@ -263,8 +382,32 @@
                      END-IF
                  END-IF
              END-IF
-             MOVE 0 TO WS-ANY
          END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXC-LOCATE-CONCENTRIC.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-LOCATE-SPREAD.
+*> USING kind, identifier, sets out (64 BINARY-LONG), count out: the random_spread sets of the structure data that hold a wanted structure, in set order (step 4 of 36-1 section 11 walks them).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ST                  BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-ANY                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-SETS.
+    05 L-SET               BINARY-LONG OCCURS 64 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-ID L-SETS L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > SD-SET-COUNT
+         MOVE 0 TO WS-ANY
          IF SS-KIND(WS-S) = 2
              PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= SS-EN-COUNT(WS-S)
                  MOVE SE-STRUCT(SS-EN-FIRST(WS-S) + WS-K) TO WS-ST
@@ -275,10 +418,45 @@
              END-PERFORM
          END-IF
          IF WS-ANY = 1
-             ADD 1 TO WS-SPREAD-COUNT
-             MOVE WS-S TO WS-SPREAD-SET(WS-SPREAD-COUNT)
+             ADD 1 TO L-COUNT
+             MOVE WS-S TO L-SET(L-COUNT)
          END-IF
      END-PERFORM
+     GOBACK.
+ END PROGRAM CXC-LOCATE-SPREAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-STRUCT-NEAREST.
+*> USING kind (1 a structure, 2 a tag), identifier (PIC X(80), with namespace, no "#"), source block x, source block z, level seed (BINARY-DOUBLE, signed: CW-SEED), found out, x out, z out,
+*> squared distance out: the nearest answer over the sets of the structure data that hold a wanted structure (radius 100 cells), in one call (the command carries the same search on from tick to tick:
+*> cmd-locate-async.cob, with the same programs).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RADIUS              BINARY-LONG VALUE 100.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-D2                  BINARY-DOUBLE.
+ 01 WS-RING                BINARY-LONG.
+ 01 WS-ANSWERED            BINARY-LONG.
+ 01 WS-SPREAD-COUNT        BINARY-LONG.
+ 01 WS-SPREAD.
+    05 WS-SPREAD-SET       BINARY-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-D2                   BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-KIND L-ID L-SX L-SZ L-SEED L-FOUND L-X L-Z L-D2.
+     CALL "CXC-LOCATE-SETUP"
+     CALL "CXC-LOCATE-CONCENTRIC" USING L-KIND L-ID L-SX L-SZ L-SEED L-FOUND L-X L-Z L-D2
+     CALL "CXC-LOCATE-SPREAD" USING L-KIND L-ID WS-SPREAD WS-SPREAD-COUNT
 *>   step 4: ring r over all the random_spread sets; the first ring in which any set answers ends the search, the nearest answer of that ring (and of the concentric rings) wins
      MOVE 0 TO WS-ANSWERED
      PERFORM VARYING WS-RING FROM 0 BY 1 UNTIL WS-RING > WS-RADIUS OR WS-ANSWERED = 1

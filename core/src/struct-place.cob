@@ -531,6 +531,33 @@
  END PROGRAM STRUCT-FIND-POINT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-STUB-OK.
+*> USING structure row, seed (BINARY-DOUBLE), chunk x, chunk z, valid out: 1 when the structure makes a start in the chunk (the start of 36-1 5.3: a generation point whose stub position has a biome of the structure),
+*> asked without building the pieces where the generator allows it (SD-STUB-ONLY: the jigsaw assembly, the scattered pieces' corner heights after the biome, the mansion layout). The answer is that of
+*> STRUCT-FIND-POINT followed by STRUCT-VALID-AT (the validity test of STRUCT-CHUNK-STARTS-RAW), which the locate search (cmd-locate.cob) needs for every cell it looks at.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STRUCT               BINARY-LONG.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STRUCT L-SEED L-CX L-CZ L-VALID.
+     MOVE 1 TO SD-STUB-ONLY
+     CALL "STRUCT-FIND-POINT" USING L-STRUCT L-SEED L-CX L-CZ WS-X WS-Y WS-Z L-VALID
+     MOVE 0 TO SD-STUB-ONLY
+     IF L-VALID = 1
+         CALL "STRUCT-VALID-AT" USING L-STRUCT WS-X WS-Y WS-Z L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-STUB-OK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PLACE-START.
 *> StructureStart.placeInChunk (36-1 8): every piece of the builder whose box intersects the writable area (the chunk's box from min y + 1) is post-processed in list order; the pivot and
 *> afterPlace is only the desert pyramid's (SCP-DESERT-AFTER, after the pieces).
