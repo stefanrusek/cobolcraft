@@ -905,6 +905,11 @@
          IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1
              CALL "MOB-ACTIVE" USING WS-ROW WS-ACTIVE
          END-IF
+*>       Entity.checkDespawn runs for every mob each tick, before the entity-ticking range test (18 section 6.11): a standard mob out of reach of every player
+*>       is not stepped but is still despawn-checked, else the mobs of an earlier night stand beyond 64 blocks for good and keep the monster cap (6.3) full.
+         IF WS-S > 0 AND EN-USED(WS-ROW) = 1 AND WS-ACTIVE = 0
+             CALL "MS6-DESPAWN-TICK" USING WS-ROW
+         END-IF
          IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1 AND WS-ACTIVE = 1
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I
