@@ -361,6 +361,14 @@
              MOVE PL-PITCH TO EN-PITCH(WS-R)
              MOVE 1 TO EN-ON-GROUND(WS-R)
              MOVE PL-POSE TO EN-POSE(WS-R)
+             MOVE 0 TO EN-BED-SET(WS-R)
+             IF PL-SLEEP = 1
+                 MOVE 2 TO EN-POSE(WS-R)
+                 MOVE 1 TO EN-BED-SET(WS-R)
+                 MOVE PL-BED-X TO EN-BED-X(WS-R)
+                 MOVE PL-BED-Y TO EN-BED-Y(WS-R)
+                 MOVE PL-BED-Z TO EN-BED-Z(WS-R)
+             END-IF
              MOVE PL-SWIM-AMOUNT TO EN-SWIM(WS-R)
              COMPUTE EN-FLAGS(WS-R) = PL-SWIMMING * 16
              MOVE PL-ANIM-SPEED TO EN-WALK-SPEED(WS-R)

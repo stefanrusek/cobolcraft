@@ -235,7 +235,7 @@
      CALL "SCREEN-INPUT" USING CLIENT-STATE
      CALL "DEBUG-OVERLAY-INPUT" USING CLIENT-STATE
      CALL "CAMERA-INPUT" USING CLIENT-STATE
-     IF SM-SCREEN = SCR-WORLD
+     IF SM-SCREEN = SCR-WORLD AND PL-SLEEP = 0
          CALL "PHYS-INPUT" USING CLIENT-STATE
      END-IF
 *>   A hosted world (US16): its due core ticks, unless paused; its console lines.
@@ -248,6 +248,7 @@
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-SPRINT" USING CLIENT-STATE
          CALL "CONTROLS-SNEAK" USING CLIENT-STATE
+         CALL "CONTROLS-WAKE" USING CLIENT-STATE
      END-IF
 *>   A client tick every 50 ms in play: once loaded the player moves and the server hears of it,
 *>   then Client Tick End, and the day advances one tick.
@@ -259,7 +260,9 @@
              MOVE PL-Y TO WS-PY
              MOVE PL-Z TO WS-PZ
              CALL "SMOOTH-STORE" USING CLIENT-STATE
-             CALL "PHYS-TICK" USING CLIENT-STATE
+             IF PL-SLEEP = 0
+                 CALL "PHYS-TICK" USING CLIENT-STATE
+             END-IF
              CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
              CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
              MOVE 2 TO WS-SMOOTH-MODE
