@@ -4,9 +4,11 @@
 *> byte 2048 + (cell - 1) div 2 + 1, an odd cell in the low nibble). DIM-LIGHT-BLOCK-ONLY has no sky light at all; otherwise sky light: 15 in every cell above its
 *> column's topmost non-void block and down through every cell that lets light through (dampening 0), less the dampening of the cells that take some (leaves, water)
 *> and 0 below the first occluder; no sideways spreading (LIGHT-SKY). Block light: a source of
-*> level L (SB-LIGHT) has L, a non-opaque cell has L minus the length of the shortest face-adjacent
-*> path from the source through non-opaque cells (never below 0), opaque cells other than sources
-*> have 0, and the highest level from any source wins. Light never reaches 15 blocks from its source,
+*> level L (SB-LIGHT) has L, a cell whose state does not stop light (dampening below 15, CB-S-DAMP: air, plants, leaves, water, but also the
+*> partial blocks that have a collision shape: stairs, slabs, paths, farmland, snow, carpets, fences, chests, beds, cauldrons; 32 section 5.1: a
+*> cell takes the level of the lit neighbour less max(1, dampening), only a state whose occlusion shape is a full block stops it) has L minus the
+*> length of the shortest face-adjacent path from the source through such cells (never below 0; the shapes of the faces are not consulted, so
+*> light enters a stair through its back too), cells of dampening 15 other than sources have 0, and the highest level from any source wins. Light never reaches 15 blocks from its source,
 *> so a chunk's block light depends only on the sources of its 3 x 3 chunk neighbourhood; those
 *> chunks are generated (not lit) to find them, and the spread walks generated cells only.
 *> A block change made by a player (LIGHT-SET-BLOCK) sends the light that changed in Light Update
@@ -151,7 +153,7 @@
                         COMPUTE WS-NIB = WS-V / 16
                     END-IF
                     MOVE CX-STATE(WS-CELL) TO WS-STATE
-                    MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+                    MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
                     MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
                 END-IF
             END-IF
@@ -183,11 +185,11 @@
                                 COMPUTE WS-NIB = WS-V / 16
                             END-IF
                             MOVE CX-STATE(WS-CELL) TO WS-STATE
-                            MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+                            MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
                             MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
                         END-IF
                     END-IF
-                    IF WS-NROW > 0 AND WS-OPQ = 0 AND WS-NIB < WS-L1
+                    IF WS-NROW > 0 AND WS-OPQ < 15 AND WS-NIB < WS-L1
                         MOVE WS-L1 TO WS-W
                         IF WS-ODD = 1
                             COMPUTE WS-HI = WS-V / 16
@@ -295,7 +297,7 @@
                         COMPUTE WS-NIB = WS-V / 16
                     END-IF
                     MOVE CX-STATE(WS-CELL) TO WS-STATE
-                    MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+                    MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
                     MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
                 END-IF
             END-IF
@@ -485,7 +487,7 @@
                             COMPUTE WS-NIB = WS-V / 16
                         END-IF
                         MOVE CX-STATE(WS-CELL) TO WS-STATE
-                        MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+                        MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
                         MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
                     END-IF
                 END-IF
@@ -515,11 +517,11 @@
                                 COMPUTE WS-NIB = WS-V / 16
                             END-IF
                             MOVE CX-STATE(WS-CELL) TO WS-STATE
-                            MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+                            MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
                             MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
                         END-IF
                     END-IF
-                    IF WS-OPQ = 0 AND WS-FC > WS-NIB
+                    IF WS-OPQ < 15 AND WS-FC > WS-NIB
                         MOVE WS-FC TO WS-W
                         IF WS-ODD = 1
                             COMPUTE WS-HI = WS-V / 16
@@ -665,13 +667,13 @@
                 COMPUTE WS-NIB = WS-V / 16
             END-IF
             MOVE CX-STATE(WS-CELL) TO WS-STATE
-            MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+            MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
             MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
         END-IF
     END-IF
     MOVE WS-NIB TO WS-OV
     MOVE WS-EMIT TO WS-NV
-    IF WS-OPQ = 0
+    IF WS-OPQ < 15
         MOVE 0 TO WS-INFLOW
         PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
             COMPUTE WS-NX = WS-PX + WS-DIR-X(WS-D)
@@ -699,7 +701,7 @@
                         COMPUTE WS-NIB = WS-V / 16
                     END-IF
                     MOVE CX-STATE(WS-CELL) TO WS-STATE
-                    MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+                    MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
                     MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
                 END-IF
             END-IF
@@ -736,7 +738,7 @@
                 COMPUTE WS-NIB = WS-V / 16
             END-IF
             MOVE CX-STATE(WS-CELL) TO WS-STATE
-            MOVE CB-OPAQUE(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-OPQ
+            MOVE CB-S-DAMP(WS-STATE + 1) TO WS-OPQ
             MOVE CB-S-LIGHT(WS-STATE + 1) TO WS-EMIT
         END-IF
     END-IF
@@ -1036,7 +1038,6 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-TOP-Y               BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
- 01 WS-BLK                 BINARY-LONG.
  01 WS-B                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
@@ -1118,8 +1119,7 @@
                          COMPUTE WS-CELL = WS-NY * 256 + (WS-NZ - WS-CZ * 16) * 16
                              + WS-NX - WS-CX * 16 + 1
                          MOVE CX-STATE(WS-CELL) TO WS-STATE
-                         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
-                         IF CB-OPAQUE(WS-BLK + 1) = 0
+                         IF CB-S-DAMP(WS-STATE + 1) < 15
                              ADD 1 TO WS-TAIL
                              MOVE WS-NX TO WS-QX(WS-TAIL)
                              MOVE WS-NY TO WS-QY(WS-TAIL)
