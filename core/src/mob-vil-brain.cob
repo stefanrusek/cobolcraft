@@ -537,7 +537,7 @@
  PROGRAM-ID. VL-CAN-REACH.
 *> USING row, x, y, z of a block, reach, ok out: canReach of AcquirePoi's path (44 section 2.1 step 6): a path search (STDMOB-PATH, 100 nodes, a villager is 2 blocks high) from the
 *> villager's feet cell ends within `reach` (Manhattan, the POI type's valid range: 1 for a bed or a workstation, 6 for a bell) of the block. The document's one search to the whole set of
-*> candidates is one search to the nearest candidate here. A villager opens wooden doors, so its search passes them (VILDOOR.cpy; an iron door stays a wall).
+*> candidates is one search to the nearest candidate here, continued from where a search ended up to 4 times (one search sees 15 blocks, the follow range is 48). A villager opens wooden doors, so its search passes them (VILDOOR.cpy; an iron door stays a wall).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -550,6 +550,8 @@
  01 WS-COUNT                BINARY-LONG.
  01 WS-REACHED              BINARY-LONG.
  01 WS-DIST                 BINARY-LONG.
+ 01 WS-HOP                  BINARY-LONG.
+ 01 WS-STOP                 BINARY-LONG.
  01 WS-PATH-TABLE.
     05 WS-PATH OCCURS 128 TIMES.
        10 WS-PX             BINARY-LONG.
@@ -568,17 +570,31 @@
      COMPUTE WS-SY = FUNCTION INTEGER(EN-Y(L-ROW))
      COMPUTE WS-SZ = FUNCTION INTEGER(EN-Z(L-ROW))
      MOVE 1 TO VD-PATH-DOORS
-     CALL "STDMOB-PATH" USING EN-DIM(L-ROW) WS-SX WS-SY WS-SZ L-X L-Y L-Z WS-HEIGHT WS-BUDGET WS-PATH-TABLE WS-COUNT WS-REACHED
-     MOVE 0 TO VD-PATH-DOORS
-     IF WS-COUNT = 0
-*>       No floor under the villager within 3 blocks: no search is possible, so the candidate is not turned away.
-         MOVE 1 TO L-OK
-     ELSE
-         COMPUTE WS-DIST = FUNCTION ABS(WS-PX(WS-COUNT) - L-X) + FUNCTION ABS(WS-PY(WS-COUNT) - L-Y) + FUNCTION ABS(WS-PZ(WS-COUNT) - L-Z)
-         IF WS-REACHED = 1 OR WS-DIST <= L-REACH
-             MOVE 1 TO L-OK
+*>   One search sees at most 15 blocks round its start (STDMOB-PATH), a villager's follow range is 48 (44-3 section 2.1 step 5): a search that ends short of the candidate goes on from the cell it
+*>   reached (up to 4 hops, so 48 blocks and more), and gives up when a hop makes no progress.
+     MOVE 0 TO WS-HOP WS-STOP
+     PERFORM UNTIL WS-STOP = 1
+         ADD 1 TO WS-HOP
+         CALL "STDMOB-PATH" USING EN-DIM(L-ROW) WS-SX WS-SY WS-SZ L-X L-Y L-Z WS-HEIGHT WS-BUDGET WS-PATH-TABLE WS-COUNT WS-REACHED
+         IF WS-COUNT = 0
+*>           No floor under the villager within 3 blocks: no search is possible, so the candidate is not turned away.
+             MOVE 1 TO L-OK WS-STOP
+         ELSE
+             COMPUTE WS-DIST = FUNCTION ABS(WS-PX(WS-COUNT) - L-X) + FUNCTION ABS(WS-PY(WS-COUNT) - L-Y) + FUNCTION ABS(WS-PZ(WS-COUNT) - L-Z)
+             IF WS-REACHED = 1 OR WS-DIST <= L-REACH
+                 MOVE 1 TO L-OK WS-STOP
+             ELSE
+                 IF WS-COUNT = 1 OR WS-HOP >= 4
+                     MOVE 1 TO WS-STOP
+                 ELSE
+                     MOVE WS-PX(WS-COUNT) TO WS-SX
+                     MOVE WS-PY(WS-COUNT) TO WS-SY
+                     MOVE WS-PZ(WS-COUNT) TO WS-SZ
+                 END-IF
+             END-IF
          END-IF
-     END-IF
+     END-PERFORM
+     MOVE 0 TO VD-PATH-DOORS
      GOBACK.
  END PROGRAM VL-CAN-REACH.
 
