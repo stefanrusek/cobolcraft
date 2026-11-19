@@ -464,6 +464,10 @@
      IF L-KIND = 7
          CALL "SHRIEKER-HOOK" USING L-DIM L-X L-Y L-Z L-STATE
      END-IF
+*>   A wall, fence, pane or bars changes its sides when the neighbour in that direction changed (connect-29.cob).
+     IF L-KIND = 4 AND L-OUT = L-STATE
+         CALL "CONN-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-A L-OUT
+     END-IF
 *>   A block that needs support (support-29.cob) becomes air when its neighbour change took the support away (the update engine destroys it with its drops).
      IF L-KIND = 4 AND L-OUT = L-STATE
          CALL "SUP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-OUT

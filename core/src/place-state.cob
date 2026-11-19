@@ -469,5 +469,7 @@
          WHEN 18
              CALL "PS-BED" USING PLACE-CONTEXT
      END-EVALUATE
+*>   A wall, fence, pane or bars takes its sides from the neighbours (connect-29.cob; any other block is left as it is).
+     CALL "CONN-PLACE" USING PC-DIM PC-X PC-Y PC-Z PC-STATE
      GOBACK.
  END PROGRAM PLACE-STATE.
