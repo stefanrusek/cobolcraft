@@ -212,7 +212,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-KEY                 PIC X(48).
  01 WS-DONE                BINARY-LONG.
- 01 WS-MODE                BINARY-LONG VALUE 1.
+ 01 WS-MODE                BINARY-LONG VALUE 2.
  01 WS-DROP                BINARY-LONG VALUE 0.
  01 WS-DROPPED             BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
@@ -268,7 +268,7 @@
  01 WS-Y                   BINARY-LONG VALUE 75.
  01 WS-Z                   BINARY-LONG.
  01 WS-A                   FLOAT-LONG.
- 01 WS-MODE                BINARY-LONG VALUE 1.
+ 01 WS-MODE                BINARY-LONG VALUE 2.
  01 WS-EVENT               BINARY-LONG VALUE 3000.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-NONE2               BINARY-LONG VALUE 0.
@@ -522,7 +522,7 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
- 01 WS-MODE                BINARY-LONG VALUE 1.
+ 01 WS-MODE                BINARY-LONG VALUE 2.
  01 WS-SEED                BINARY-DOUBLE UNSIGNED.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
