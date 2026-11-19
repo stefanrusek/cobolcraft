@@ -171,6 +171,45 @@
          MOVE 1 TO WS-OBSERVE
      END-IF
      PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-GOLEM
+*>   A cow standing on the ground is thrown up by 0.4 (17 section 4.6 step 5) and a sprinting player adds 0.5 along the facing (K), a golem takes neither.
+     MOVE "cow" TO WS-MOBKEY
+     PERFORM SPAWN-MOB
+     MOVE WS-MOB TO WS-GOLEM
+     PERFORM KEEP-ALIVE
+     CALL "TEST-TICKS" USING WS-THIRTEEN
+     MOVE 1 TO PL-SPRINTING(WS-PLAYER)
+     PERFORM HIT-MOB
+     MOVE 0 TO PL-SPRINTING(WS-PLAYER)
+     MOVE "acceptance US15 17§4.6 a cow on the ground is thrown up by a hit (vertical speed 0.4)" TO WS-CASE
+     MOVE 400 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(EN-VY(WS-GOLEM) * 1000 + 0.5)
+     PERFORM CHECK-N
+     COMPUTE WS-N = FUNCTION INTEGER(FUNCTION SQRT(EN-VX(WS-GOLEM) ** 2 + EN-VZ(WS-GOLEM) ** 2) * 100)
+     MOVE "acceptance US15 17§4.6 a sprinting hit adds 0.5 along the facing (0.4 away + 0.5 ahead: at least 0.6)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-N >= 60
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-GOLEM
+     MOVE "iron_golem" TO WS-MOBKEY
+     PERFORM SPAWN-MOB
+     MOVE WS-MOB TO WS-GOLEM
+     PERFORM KEEP-ALIVE
+     CALL "TEST-TICKS" USING WS-THIRTEEN
+     MOVE 1 TO PL-SPRINTING(WS-PLAYER)
+     PERFORM HIT-MOB
+     MOVE 0 TO PL-SPRINTING(WS-PLAYER)
+*>   (A mob standing on the ground has the vertical speed of gravity, so only the horizontal motion and a rise are compared.)
+     COMPUTE WS-OBSERVE = FUNCTION INTEGER(FUNCTION ABS(EN-VX(WS-GOLEM)) * 1000) + FUNCTION INTEGER(FUNCTION ABS(EN-VZ(WS-GOLEM)) * 1000)
+     IF EN-VY(WS-GOLEM) > 0
+         ADD 1000 TO WS-OBSERVE
+     END-IF
+     MOVE "acceptance US15 17§4.6 a sprinting hit does not move an iron golem either" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-N
      CALL "ENTITY-REMOVE" USING WS-GOLEM.
 
  TEST-BUILD-FLAG.
@@ -270,6 +309,28 @@
      PERFORM CHECK-N
      CALL "ENTITY-REMOVE" USING WS-GOLEM
      PERFORM RESPAWN-PLAYER
+*>   The anger ends when the player is no valid target any more (creative mode) or when its player row is lost.
+     MOVE "iron_golem" TO WS-MOBKEY
+     PERFORM SPAWN-MOB
+     MOVE WS-MOB TO WS-GOLEM
+     MOVE 300 TO EN-ANGER(WS-GOLEM)
+     MOVE WS-PLAYER TO EN-GOLEM-PL(WS-GOLEM)
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     MOVE 0 TO WS-HX WS-HZ WS-WALK
+     CALL "GOLEM-TICK" USING WS-GOLEM WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44p3§6 a golem is no longer angry at a player who turned creative" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = EN-ANGER(WS-GOLEM) + EN-GOLEM-PL(WS-GOLEM)
+     PERFORM CHECK-N
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 5 TO EN-ANGER(WS-GOLEM)
+     MOVE 0 TO EN-GOLEM-PL(WS-GOLEM)
+     CALL "GOLEM-TICK" USING WS-GOLEM WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44p3§6 anger with no player row ends at once" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-ANGER(WS-GOLEM) TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-GOLEM
 *>   A built golem (PlayerCreated) never targets a player, even one that hit it (19 section 19, 44 part 3 section 6).
      PERFORM BUILD-GOLEM
      MOVE WS-HEALTH0 TO PL-HEALTH(WS-PLAYER)
@@ -435,6 +496,7 @@
  HIT-MOB.
      PERFORM KEEP-ALIVE
      MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 0 TO PL-YAW(WS-PLAYER)
      COMPUTE PL-X(WS-PLAYER) = EN-X(WS-GOLEM) + 1.5
      MOVE EN-Z(WS-GOLEM) TO PL-Z(WS-PLAYER)
      MOVE EN-Y(WS-GOLEM) TO PL-Y(WS-PLAYER)
