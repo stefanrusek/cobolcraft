@@ -14,7 +14,7 @@
        10 FILLER BINARY-LONG VALUE 0.  *> fuse
        10 FILLER BINARY-LONG VALUE 0.  *> blast
        10 FILLER BINARY-LONG VALUE 4.  *> ranged (ranged 4: the ghast's fireball goal (GHAST-SHOOT, core/src/mob-21-shoot.cob); flies (GHAST-MOVE), walk speed unused)
-       10 FILLER BINARY-LONG VALUE 12.  *> spawn rule
+       10 FILLER BINARY-LONG VALUE 18.  *> spawn rule
        10 FILLER BINARY-LONG VALUE 0.  *> hit effect
     05 FILLER.
        10 FILLER PIC X(24) VALUE "blaze".

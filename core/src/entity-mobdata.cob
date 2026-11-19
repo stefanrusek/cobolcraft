@@ -197,10 +197,8 @@
      CALL "AQUATIC7-NBT-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
      CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
-*>   A villager's own keys (44 part 3 section 3.2, 45-6 section 7): VillagerData, VillagerDataFinalized, FoodLevel, Xp, LastRestock, LastGossipDecay, RestocksToday.
-     IF WS-KEY = "villager"
-         CALL "MOB-VILLAGER-WRITE" USING L-ROW PB-BUFFER
-     END-IF
+*>   A villager's keys are written by VILLAGER6-NBT-WRITE above (lane p49k: VillagerData, FoodLevel, Xp, LastRestock, LastGossipDecay, RestocksToday); MOB-VILLAGER-WRITE of lane p49h
+*>   wrote the same keys a second time and is no longer called.
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
      IF EN-LEASH(L-ROW) > 0
          MOVE "leash" TO WN MOVE 5 TO WL

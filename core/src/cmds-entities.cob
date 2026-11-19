@@ -325,6 +325,8 @@
  01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
  01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-BEFORE              BINARY-LONG.
+ 01 WS-ROW-OUT             BINARY-LONG.
+ 01 WS-PASS-OUT            BINARY-LONG.
  01 WS-STD-ROW             BINARY-LONG.
  PROCEDURE DIVISION.
      GO TO MAIN-LINE.
@@ -404,7 +406,7 @@
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      MOVE 0 TO PB-POS
      MOVE CW-NEXT-ENTITY-ID TO WS-BEFORE
-     CALL "ENTITY-NBT-ONE" USING BS-DIM PB-BUFFER
+     CALL "ENTITY-NBT-ONE" USING BS-DIM PB-BUFFER WS-ROW-OUT WS-PASS-OUT
      CALL "PB-FREE" USING PB-BUFFER
      CALL "NBX-FREE" USING WS-NODE
      MOVE 0 TO WS-NEW
@@ -420,6 +422,10 @@
          END-IF
          MOVE EN-YAW(WS-NEW) TO WS-YAW
          CALL "ENTITY-MOVE" USING WS-NEW WS-X WS-Y WS-Z WS-YAW EN-PITCH(WS-NEW) EN-ON-GROUND(WS-NEW)
+     ELSE
+*>       An NBT the entity loader refuses (a Pos list that is not three doubles, 45-1 section 5): the mob still stands at the position of the command, as in the game
+*>       (16 section 5.8; the loader there reads the missing numbers as 0 and the command moves the entity), without the keys of the NBT.
+         CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
      END-IF.
 
  MAIN-LINE.
