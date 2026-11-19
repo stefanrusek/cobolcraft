@@ -167,7 +167,8 @@
              STRING "count " SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) "@" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) " "
                  DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
          END-IF
-         IF SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-W(WS-I) = 9 AND SM-W-H(WS-I) = 2 AND SM-W-Y(WS-I) < 100
+*>       The strike-through is state 4 of the first cost's slot widget (UI-SLOT draws it at (7, 12) of the item): no widget of its own.
+         IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-STATE(WS-I) = 4 AND SM-W-Y(WS-I) < 80
              MOVE SM-W-X(WS-I) TO WS-E1
              MOVE SM-W-Y(WS-I) TO WS-E2
              STRING "strike@" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
@@ -183,8 +184,8 @@
      COMPUTE WS-D1 = 32 + 31 - WS-N
      MOVE WS-D1 TO WS-E2
      MOVE SPACES TO TL-EXPECTED
-     STRING "count 3@" FUNCTION TRIM(WS-E1) ":65 strike@39:68 count 2@" FUNCTION TRIM(WS-E2) ":85 strike@39:88 " DELIMITED BY SIZE INTO TL-EXPECTED
-     MOVE "acceptance US12 40-5§2.10 a price that differs from the base: the modified count (3 and 2) is drawn at x + 31 - width, y + 9 and the discount strike-through 9 x 2 at (x + 7, y + 12)" TO TL-CASE
+     STRING "strike@32:56 count 3@" FUNCTION TRIM(WS-E1) ":65 strike@32:76 count 2@" FUNCTION TRIM(WS-E2) ":85 " DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE "acceptance US12 40-5§2.10 a price that differs from the base: the modified count (3 and 2) is drawn at x + 31 - width, y + 9 and the first cost's slot carries the strike-through (state 4: 9 x 2 at (x + 7, y + 12), drawn by UI-SLOT)" TO TL-CASE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   An unchanged price (no demand, no special price): the plain item with its count 2 and neither the modified count nor the strike-through.
      MOVE 0 TO MO-DEMAND(1) MO-SPECIAL(1)
@@ -195,7 +196,7 @@
          IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) = 801
              STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
          END-IF
-         IF SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-W(WS-I) = 9 AND SM-W-H(WS-I) = 2 AND SM-W-Y(WS-I) = 68
+         IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) = 801 AND SM-W-STATE(WS-I) = 4
              STRING " strike" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
          END-IF
      END-PERFORM

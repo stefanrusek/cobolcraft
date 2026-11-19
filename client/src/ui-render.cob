@@ -284,6 +284,7 @@
  01 WS-BARSW               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-NINE                BINARY-LONG VALUE 9.
  01 WS-THIRTEEN            BINARY-LONG VALUE 13.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-FOIL                BINARY-LONG.
@@ -322,7 +323,7 @@
      IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
 *>       State 3 is a bare slot: the screen's own art (the hotbar sprite) carries the well.
-         IF SM-W-STATE(L-W) = 3
+         IF SM-W-STATE(L-W) = 3 OR SM-W-STATE(L-W) = 4
              CONTINUE
          ELSE
              IF GS-W(GSP-SLOT) > 0
@@ -403,6 +404,15 @@
                  MOVE 0 TO RL-UI-LAYER
              END-IF
          END-IF
+     END-IF
+*>   State 4 is a bare slot whose count is crossed out (a merchant row's first cost at a discount, 40-5 section 2.10): the strike-through 9 x 2 at (7, 12) of
+*>   the item, opaque red, on the layer over the icons and the count.
+     IF SM-W-STATE(L-W) = 4 AND WS-COUNT > 0
+         COMPUTE WS-X = SM-W-X(L-W) + 7
+         COMPUTE WS-Y = SM-W-Y(L-W) + 12
+         MOVE 1 TO RL-UI-LAYER
+         CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-NINE WS-TWO SW-BAR-0
+         MOVE 0 TO RL-UI-LAYER
      END-IF
      GOBACK.
  END PROGRAM UI-SLOT.
