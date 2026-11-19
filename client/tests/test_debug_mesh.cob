@@ -39,6 +39,17 @@
  01 WS-ZHITS               BINARY-LONG.
  01 WS-ZOK                 BINARY-LONG.
  01 WS-ZH                  BINARY-LONG.
+ 01 WS-FRAME-KEY           PIC X(112).
+ 01 WS-FRAME-ID            BINARY-LONG.
+ 01 WS-FRAME-ROW           PIC X(819).
+ 01 WS-FRAME-STATUS        BINARY-LONG.
+ 01 WS-FRAME-FIRST         BINARY-LONG.
+ 01 WS-FRAME-SLOT          BINARY-LONG.
+ 01 WS-FRAME-QUADS.
+    05 WS-FQ               BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-FQ-MIN-EYE          BINARY-LONG.
+ 01 WS-FQ-MAX-EMPTY        BINARY-LONG.
+ 01 WS-FQ-ZERO             BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-GEN
      ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -75,6 +86,13 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the end_portal_frame states (eye true x 4 facings, then eye false x 4; 24-4 section 6.20) are watched while the sweep bakes them
+     MOVE SPACES TO WS-FRAME-KEY
+     MOVE "end_portal_frame" TO WS-FRAME-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-FRAME-KEY WS-FRAME-ID WS-FRAME-ROW WS-FRAME-STATUS
+     MOVE WS-FRAME-ROW TO CT-BLOCK-ROW
+     COMPUTE WS-FRAME-FIRST = FUNCTION NUMVAL(CT-BR-FIRST-STATE)
+     INITIALIZE WS-FRAME-QUADS
      PERFORM VARYING WS-FIRST FROM 1 BY WS-BATCH UNTIL WS-FIRST >= CT-STATE-COUNT
          CALL "MODELS-BAKE" USING CLIENT-STATE
          PERFORM VARYING WS-STATE FROM WS-FIRST BY 1 UNTIL WS-STATE >= WS-FIRST + WS-BATCH OR WS-STATE >= CT-STATE-COUNT
@@ -84,6 +102,10 @@
                      PERFORM CHECK-ZERO-QUADS
                  END-IF
                  ADD 1 TO WS-CHECKED
+                 IF WS-STATE >= WS-FRAME-FIRST AND WS-STATE < WS-FRAME-FIRST + 8
+                     COMPUTE WS-FRAME-SLOT = WS-STATE - WS-FRAME-FIRST + 1
+                     MOVE BM-QUAD-COUNT(WS-ROW) TO WS-FQ(WS-FRAME-SLOT)
+                 END-IF
                  MOVE 0 TO WS-STRIPES
                  PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > BM-QUAD-COUNT(WS-ROW)
                      IF BM-SPRITE(WS-ROW, WS-Q) = 1
@@ -109,6 +131,31 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   operator report try15 (end portal frames): the filled frame draws its eye, every facing
+     MOVE 999 TO WS-FQ-MIN-EYE
+     MOVE 0 TO WS-FQ-MAX-EMPTY WS-FQ-ZERO
+     PERFORM VARYING WS-FRAME-SLOT FROM 1 BY 1 UNTIL WS-FRAME-SLOT > 8
+         IF WS-FQ(WS-FRAME-SLOT) = 0
+             ADD 1 TO WS-FQ-ZERO
+         END-IF
+         IF WS-FRAME-SLOT <= 4 AND WS-FQ(WS-FRAME-SLOT) < WS-FQ-MIN-EYE
+             MOVE WS-FQ(WS-FRAME-SLOT) TO WS-FQ-MIN-EYE
+         END-IF
+         IF WS-FRAME-SLOT > 4 AND WS-FQ(WS-FRAME-SLOT) > WS-FQ-MAX-EMPTY
+             MOVE WS-FQ(WS-FRAME-SLOT) TO WS-FQ-MAX-EMPTY
+         END-IF
+     END-PERFORM
+     MOVE "debug mesh the 8 end_portal_frame states all bake quads" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FQ-ZERO TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "debug mesh a frame with an eye (eye true, every facing) bakes more quads than an empty frame (the eye's box)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-FQ-MIN-EYE > WS-FQ-MAX-EMPTY
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE SPACES TO TL-CASE
      STRING "debug mesh every state that bakes no quad is a fluid, an air or invisible block, a block-entity block or a wall's unreachable "
          "state, blocks: " FUNCTION TRIM(WS-ZERO-LIST) DELIMITED BY SIZE INTO TL-CASE

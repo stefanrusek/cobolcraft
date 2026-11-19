@@ -196,6 +196,9 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 2.
+ 01 WS-BUDGET              BINARY-LONG VALUE 512.
+ 01 WS-SET                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -215,7 +218,9 @@
      END-IF
      MOVE 1 TO L-RESULT
      CALL "PORTAL-FRAME-STATE" USING WS-ONE WS-FACING WS-NEW
-     CALL "WORLD-SET-BLOCK" USING L-DIM L-X L-Y L-Z WS-NEW
+*>   Level.setBlock with flags 2 (39 7.2 step 2): the change joins the tick's change set, so every viewer gets the Block Update of the frame with its eye.
+     CALL "WORLDSIM-ENSURE"
+     CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z WS-NEW WS-FLAGS WS-BUDGET WS-SET
 *>   the candidates are the cells from the clicked frame to + (4, 4, 4); the first ring that matches wins
      PERFORM VARYING WS-CX FROM L-X BY 1 UNTIL WS-CX > L-X + 4 OR L-RESULT = 2
          PERFORM VARYING WS-CY FROM L-Y BY 1 UNTIL WS-CY > L-Y + 4 OR L-RESULT = 2
@@ -241,7 +246,7 @@
                  IF WS-OLD NOT = 0
                      ADD 1 TO L-DESTROYED
                  END-IF
-                 CALL "WORLD-SET-BLOCK" USING L-DIM WS-X L-CORNER-Y WS-Z WS-PORTAL
+                 CALL "LEVEL-SET-BLOCK" USING L-DIM WS-X L-CORNER-Y WS-Z WS-PORTAL WS-FLAGS WS-BUDGET WS-SET
              END-PERFORM
          END-PERFORM
      END-IF
