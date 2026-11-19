@@ -156,6 +156,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VILSTATE.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-ZERO                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
@@ -166,6 +167,14 @@
      MOVE 0 TO L-USED
      CALL "VL-FIND" USING EN-ID(L-ENTITY) WS-ZERO WS-SLOT
      IF WS-SLOT = 0
+         GOBACK
+     END-IF
+*>   19 section 22.4 (mobInteract): a sleeping villager ignores the click; a baby is refused (the head shake: consumed, no window).
+     IF VL-KIND(WS-SLOT) = 1 AND VL-SLEEP(WS-SLOT) = 1
+         GOBACK
+     END-IF
+     IF VL-KIND(WS-SLOT) = 1 AND EN-VARIANT(L-ENTITY) = 1
+         MOVE 1 TO L-USED
          GOBACK
      END-IF
      CALL "VL-ENSURE" USING WS-SLOT
