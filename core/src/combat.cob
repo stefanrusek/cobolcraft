@@ -450,8 +450,17 @@
      COMPUTE PL-LAST-HURT(WS-ROW) = WS-IN / 1000
      MOVE WS-APPLY TO WS-TAKEN
      IF WS-CAUSE = CAUSE-PLAYER OR WS-CAUSE = CAUSE-MOB OR WS-CAUSE = CAUSE-EXPLOSION OR WS-CAUSE = CAUSE-ARROW
+             OR WS-CAUSE = CAUSE-MAGIC OR WS-CAUSE = CAUSE-INDIRECT-MAGIC OR WS-CAUSE = CAUSE-SONIC-BOOM OR WS-CAUSE = CAUSE-WIND-CHARGE
          MOVE 1 TO EC-DIRECT
          EVALUATE WS-CAUSE
+             WHEN CAUSE-WIND-CHARGE
+                 MOVE "wind_charge" TO EC-DAMAGE-KEY
+             WHEN CAUSE-MAGIC
+                 MOVE "magic" TO EC-DAMAGE-KEY
+             WHEN CAUSE-INDIRECT-MAGIC
+                 MOVE "indirect_magic" TO EC-DAMAGE-KEY
+             WHEN CAUSE-SONIC-BOOM
+                 MOVE "sonic_boom" TO EC-DAMAGE-KEY
              WHEN CAUSE-MOB
                  MOVE "mob_attack" TO EC-DAMAGE-KEY
              WHEN CAUSE-EXPLOSION
@@ -465,6 +474,14 @@
          MOVE "player" TO EC-VICTIM-KEY
          CALL "COMBAT-ARMOR-STATS" USING WS-ROW ENCH-CTX WS-ARMOR WS-TOUGHNESS WS-KNOCKBACK WS-PROTECTION
          COMPUTE WS-POINTS = WS-PROTECTION / 10000
+*>       Magic, indirect magic and the sonic boom are in the tag bypasses_armor; the sonic boom is also in bypasses_enchantments (20 sections 13.3.1 and 15.3). Resistance applies to all three.
+         MOVE 0 TO WS-BYPASS-ARMOR
+         IF WS-CAUSE = CAUSE-MAGIC OR WS-CAUSE = CAUSE-INDIRECT-MAGIC OR WS-CAUSE = CAUSE-SONIC-BOOM
+             MOVE 1 TO WS-BYPASS-ARMOR
+         END-IF
+         IF WS-CAUSE = CAUSE-SONIC-BOOM
+             MOVE 0 TO WS-POINTS
+         END-IF
          CALL "EFFECT-LEVEL" USING WS-ROW WS-RESISTANCE-ID WS-LEVEL WS-TICKS
          COMPUTE WS-RESISTANCE = WS-LEVEL - 1
          IF WS-ARMOR > 0 OR WS-POINTS > 0 OR WS-RESISTANCE >= 0

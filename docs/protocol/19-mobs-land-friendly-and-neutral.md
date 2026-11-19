@@ -1041,7 +1041,7 @@ Core behaviours (§22.3) implement the job cycle (all read). `AcquirePoi` (read)
 | Interaction | not for villager spawn eggs, dead, trading or baby: main-hand interaction awards the "talked" statistic; if there are no offers returns CONSUME; else sets the trading player and opens the merchant screen with level 1 (SUCCESS_SERVER). `showProgressBar` is false (no level bar) |
 | Trade XP | `rewardTradeXp`: when the offer rewards experience, an orb of `3 + nextInt(4)` XP at the trader; no levels |
 | Despawn | `despawnDelay` is decremented each tick while it is above 0 and the trader is not trading; at 0 the entity is discarded; the spawner sets 48000 |
-| Spawner | `WanderingTraderSpawner` (world spawner, runs when the game rule `spawn_wandering_traders` is true): every 1200 ticks decrement the stored spawn delay by 1200; when it is 0 or less: reset the delay to 24000, set the spawn chance to `clamp(chance + 25, 25, 75)`, and if `nextInt(100) <= chance` try to spawn; a successful spawn resets the chance to 25 (the defaults are `DEFAULT_SPAWN_DELAY` 24000 and `MIN_SPAWN_CHANCE` 25; other constants: chance step 25, maximum 75, one-in-10 gate, 10 position attempts, tick delay 1200). `spawn`: pick a random online player (none: report success); with probability 9/10 abort this attempt (`nextInt(10) != 0` returns false); find the nearest `meeting` POI within 48 blocks of the player (else use the player's position); choose a spawn position near it: up to 10 tries at a random offset of up to +-48 on x and z (`nextInt(96) - 48`) at the `MOTION_BLOCKING_NO_LEAVES` height with the wandering trader's placement type `ON_GROUND` valid; the area (1 x 2 x 1 above) must have empty collision; the biome must not be in tag `without_wandering_trader_spawns` (`the_void`); spawn with reason EVENT; then spawn 2 trader llamas (each: random position within 4 blocks, spawn reason EVENT, leashed to the trader); the trader gets despawn delay 48000, wander target = the chosen centre, and home restriction radius 16 |
+| Spawner | `WanderingTraderSpawner` (world spawner, runs when the game rule `spawn_wandering_traders` is true): every 1200 ticks decrement the stored spawn delay by 1200; when it is 0 or less: reset the delay to 24000, set the stored spawn chance to `clamp(old + 25, 25, 75)` (saved before the roll), and if `nextInt(100) <= old` (the value **before** the raise; 25.4) try to spawn; a successful spawn resets the chance to 25 (the defaults are `DEFAULT_SPAWN_DELAY` 24000 and `MIN_SPAWN_CHANCE` 25; other constants: chance step 25, maximum 75, one-in-10 gate, 10 position attempts, tick delay 1200). `spawn`: pick a random online player (none: report success); with probability 9/10 abort this attempt (`nextInt(10) != 0` returns false); find the nearest `meeting` POI within 48 blocks of the player (else use the player's position); choose a spawn position near it: up to 10 tries at a random offset of up to +-48 on x and z (`nextInt(96) - 48`) at the `MOTION_BLOCKING_NO_LEAVES` height with the wandering trader's placement type `ON_GROUND` valid; the area (1 x 2 x 1 above) must have empty collision; the biome must not be in tag `without_wandering_trader_spawns` (`the_void`); spawn with reason EVENT; then spawn 2 trader llamas (each: random position within 4 blocks, spawn reason EVENT, leashed to the trader); the trader gets despawn delay 48000, wander target = the chosen centre, and home restriction radius 16 |
 | Drops | none (empty table); XP none by the trader's own death rules |
 
 ## 24. Villager and wandering-trader trade data
@@ -1550,7 +1550,17 @@ Jump check: a spawned horse with draws 1, 1, 1 has jump strength 0.4 + 0.2 x 3 =
 
 ### 25.4 Wandering trader spawn chance
 
-Start: chance 25 (`MIN_SPAWN_CHANCE`). Day 1 timer fires: chance = clamp(25 + 25, 25, 75) = 50; roll `nextInt(100)`: spawn attempt if the roll is 0 to 50 (51 percent), then the 9 in 10 abort step leaves a 5.1 percent chance (0.51 x 0.1) of an actual spawn; on a successful spawn the chance returns to 25; on failure the chance stays at 50 and the next firing (24000 ticks later) makes it 75.
+The artifact (`WanderingTraderSpawner.tick`) stores the raised value `clamp(old + 25, 25, 75)` **before** the roll but compares the roll `nextInt(100)` with the **old** value (it keeps `old` in its own local). The spawn attempt happens when `r <= old` (inclusive), so the chance of reaching the placement step is `(old + 1) / 100`.
+
+Cycle table (one firing per 24000 ticks, stored chance starts at 25; the placement step then aborts 9 times in 10 with `nextInt(10) != 0`, so the chance of an actual spawn attempt per firing is `(old + 1) / 100 x 0.1`):
+
+| Firing | stored chance before (`old`) | stored after the firing's update | roll succeeds when | chance to reach placement | times the 1 in 10 gate |
+|---|---|---|---|---|---|
+| 1 | 25 | 50 | `r` 0 to 25 | 26 percent | 2.6 percent |
+| 2 (after a failure) | 50 | 75 | `r` 0 to 50 | 51 percent | 5.1 percent |
+| 3 and later | 75 | 75 (clamped) | `r` 0 to 75 | 76 percent | 7.6 percent |
+
+A call to `spawn` that returns true (a trader was spawned, or no player is online: `spawn` returns true then) resets the stored chance to 25; a false return (the 9 in 10 abort, no valid position within 10 tries, not enough space, a biome in `without_wandering_trader_spawns`, or a failed entity creation) leaves the raised chance. Example: stored delay 1200 and chance 25 at a cycle: delay becomes 24000, chance becomes 50, roll 25 passes (`25 <= 25`), roll 26 does not.
 
 ### 25.5 Mooshroom milk and shears
 
@@ -1575,7 +1585,7 @@ Each item states what is unresolved and what was searched. No statement in the b
 
 1. Happy ghast and bat are covered in 21 (cross-reference: happy ghast, id 59, creature, 4 x 4, `Animal` based, food `happy_ghast_food` = snowball; bat, ambient). Nautilus (ids 89, 156) belongs to 21 as an aquatic mob. This document covers none of them beyond this note.
 2. Axolotl is left to 21 (§18 gives only its metadata and spawner for the cross-check).
-3. Sound event names per mob were not tabulated; they are the `SoundEvents` constants referenced by each class.
+3. Resolved (18 section 2.4.1): the ambient sound event, interval, volume and pitch of every mob are tabulated in [18](18-mob-framework.md) section 2.4.1.
 4. Spawn: the contents of block tag `axolotls_spawnable_on` and of `valid_spawn` for `Mob.checkMobSpawnRules` users (villager, wandering trader, iron golem, snow golem) were not read; `armadillo_spawnable_on` was read (§1.4).
 5. Ocelot appears in the `monster` category lists of jungle and bamboo jungle in the 26.3 data (read data); the monster mob cap consequence is in 18 framework: natural spawning algorithm.
 6. Biome entries listed twice (chicken in jungle, bamboo jungle, sparse jungle) were read as two entries; combining by weight is the natural reading but the spawn picker was not traced.
@@ -1595,7 +1605,7 @@ Each item states what is unresolved and what was searched. No statement in the b
 20. Sniffer: what breeding produces and how the egg hatches, and the internals of `Searching`, `Scenting`, `Sniffing`, `FeelingHappy`.
 21. Allay: what makes an allay dance (jukebox / note-block listening), the liked-noteblock behaviour and `GoAndGiveItemsToTarget`; how allays first appear (structure placement) is not stated in this document.
 22. Bee: pollination, nest entry and exit timings, `BeeGrowCrop`, the anger share radius; only the goal list, constants, sting, water and hive-entry rules were read.
-23. Parrot: shoulder-landing rules and shoulder-parrot storage; the imitation sound map; dance behaviour beyond the 3.46-block jukebox check.
+23. Parrot: shoulder-landing rules and shoulder-parrot storage; dance behaviour beyond the 3.46-block jukebox check. (The imitation sound map is read: 18 section 2.4.2.)
 24. Iron golem: `DefendVillageTarget`, `MoveBackToVillage` details and the effect of the player-created flag on targeting.
 25. Snow golem: whether melting biomes also suppress the snow trail.
 26. Copper golem: which of the two container predicates is the source and which is the destination (one is block tag `copper_chests`, the other chest or trapped chest); transport parameters (stack size moved, timing) beyond the quoted callbacks.

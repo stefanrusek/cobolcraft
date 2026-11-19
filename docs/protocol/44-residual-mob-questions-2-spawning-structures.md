@@ -4,7 +4,7 @@
 |---|---|
 | Covers | Round RS26, part 2. The spawner block (`BaseSpawner`: tick, spawn data, delay arithmetic, spawn eggs on spawners); the trial spawner (states, configuration, ominous variant); the spawn egg item components; the five custom spawners and their gating; how a spawn list is picked (`WeightedList`, duplicate entries); how the biome attribute `natural_mob_spawns` is combined (`overlay`); structure `spawn_overrides` and the "piece" versus "full" bounding-box rule for all 52 structures; spawns placed by structure pieces and templates (mineshaft, fortress, stronghold, mansion, bastion, villages, igloo, pillager outpost, trial chambers); the contents of the spawn tags; the ocelot-in-the-monster-list consequence (`jungle` and `bamboo_jungle` only); cross-references for the Turtle, Slime and Animal predicates. Closes 18 Open questions 4 and 17, 19 Open questions 4, 5, 6 and 35, 20 Open question 12, 21 Open questions 2, 3, 6 and 22. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the JSON and structure NBT data inside the jar, with no execution. A statement is read from the artifact unless it is marked "(inferred)" or names an open question. Each fact was read in this round; no item is marked "(recalled, not verified)". The items marked "(inferred)" are the odds arithmetic of 10.5, the statement in 10.9 that structure-block markers are filtered by the template's ignore setting, and the block names attributed to the `isValidSpawn` lambdas in 11. |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the JSON and structure NBT data inside the jar, with no execution. A statement is read from the artifact unless it is marked "(inferred)" or names an open question. Each fact was read from the artifact; no item is marked "(recalled, not verified)". The items marked "(inferred)" are the odds arithmetic of 10.5, the statement in 10.9 that structure-block markers are filtered by the template's ignore setting, and the block names attributed to the `isValidSpawn` lambdas in 11. |
 | Status | Written by the reader for the story "all the standard mobs exist and have their standard behavior" (`tickets/CC-0001-client-polish.md`) and the gaps GAP-31 and GAP-18 of `docs/design/README.md` Part 5 |
 
 Class names in backticks say where a fact was read; they are not the design. Following the operator's data-versus-code
@@ -62,7 +62,7 @@ is described. The raid-side logic of villages (raids, bells, villager brain) is 
 `BaseSpawner` is the engine of the mob spawner block (`SpawnerBlockEntity`, block entity type `mob_spawner`) and of the
 spawner minecart. 18 §6.12 (spawn eggs, spawner blocks and trial spawners) gives the attempt
 steps; this section adds every field, default, saved name and the parts that section did not give. All values were
-re-read in this round and agree with 18 §6.12.
+re-read and agree with 18 §6.12.
 
 ### 2.1 Fields, defaults and saved names
 
@@ -561,16 +561,19 @@ For a candidate position `P` and a category `C` (the category of the list being 
    5, magma cube 3 with count 4).
 2. Otherwise `ChunkGenerator.getMobsAt(level, structureManager, C, P)`:
    a. `getAllStructuresAt(P)`: the structure references stored in the chunk of `P` (the map from structure to the set
-      of chunk positions of its starts that reach this chunk; status `STRUCTURE_REFERENCES`);
+      of chunk positions of its starts that reach this chunk; status `STRUCTURE_REFERENCES`; how a chunk gets a
+      reference and in what order the map is walked is 8.5);
    b. for each entry in that map's iteration order: read the structure's `spawn_overrides` entry for `C`; skip the
       structure if it has none; otherwise load each referenced start (`STRUCTURE_STARTS` status; only valid starts
       count) and test it: with `bounding_box` = `piece`, the start qualifies when **any of its pieces' bounding boxes**
       contains the block position (`structureHasPieceAt`, inclusive box test); with `bounding_box` = `full`, when the
-      **start's overall bounding box** contains it (`BoundingBox.isInside`). The first qualifying structure in the
+      **start's overall bounding box** contains it (`BoundingBox.isInside`; this overall box is the piece union
+      **inflated by 12 on every axis** for a structure whose terrain adaptation is not `none`, 8.2 and 8.5). The first qualifying structure in the
       iteration returns **that override's spawn list** as the result; the biome list is **replaced**, not added to;
    c. if no structure qualifies, the result is `getMobsToSpawn(C)` of the `natural_mob_spawns` value at `P` (7.3).
 3. The caller (`getRandomSpawnMobAt`) first applies, for `C = WATER_AMBIENT` in a biome in the tag
-   `reduce_water_ambient_spawns` (contents: `#minecraft:is_river`; read next to `without_wandering_trader_spawns` = `the_void`, §6, and `without_zombie_sieges` = `mushroom_fields`, §13), a 0.98 chance of returning nothing (`nextFloat < 0.98`), then draws one entry
+   `reduce_water_ambient_spawns` (contents: the single reference `#minecraft:is_river`, whose members are the two
+   biomes `minecraft:river` and `minecraft:frozen_river`, read from `data/minecraft/tags/worldgen/biome/`; read next to `without_wandering_trader_spawns` = `the_void`, §6, and `without_zombie_sieges` = `mushroom_fields`, §13), a 0.98 chance of returning nothing (`nextFloat < 0.98`), then draws one entry
    from the list (7.1). `canSpawnMobAt` is `contains` on the same list.
 
 An override whose spawn list is **empty** (8.3) therefore removes all natural spawns of that category inside the
@@ -583,8 +586,20 @@ qualifying box: the list is empty, the draw returns nothing and the pack ends (1
 | `piece` | the position lies inside at least one piece's box | only the built parts count: rooms, corridors, houses; gaps and the surroundings inside the overall box do not |
 | `full` | the position lies inside the structure start's single overall box | the whole axis-aligned region counts, including air around the structure |
 
-Both tests are inclusive (`BoundingBox.isInside`). The start's overall box is the union of its pieces' boxes
-(`StructureStart.getBoundingBox`), so `full` is never smaller than `piece`.
+Both tests are inclusive (`BoundingBox.isInside`). The start's overall box (`StructureStart.getBoundingBox`, computed
+once and cached) is the union of its pieces' boxes passed through `Structure.adjustBoundingBox`: when the structure's
+`terrain_adaptation` is anything other than `none`, the union is inflated by **12 blocks on each of the six faces**
+(min coordinates minus 12, max coordinates plus 12; `BoundingBox.inflatedBy(12)`); with `none` it is the plain union.
+`terrain_adaptation` is read from the structure's JSON and defaults to `none` when the key is absent. No structure
+class overrides `adjustBoundingBox` (the rule is the base class's; the whole `levelgen/structure` package was searched).
+So `full` is never smaller than `piece`.
+
+Of the three structures that use `full`: `monument` has no
+`terrain_adaptation` (plain union), `pillager_outpost` has `beard_thin` and `ancient_city` has `beard_box` (both
+inflated by 12 on every axis, so spawns are suppressed or replaced up to 12 blocks outside the built pieces, above and
+below as well). The `piece` structures (`fortress`, `swamp_hut`, `trial_chambers`) are unaffected: piece boxes are never
+inflated (`trial_chambers` has `encapsulate`, `swamp_hut` and `fortress` none). The fortress rule of 8.1 step 1 uses the
+overall box of the fortress start (`none`, so the plain union).
 
 ### 8.3 All 52 structures
 
@@ -621,6 +636,74 @@ neither matches, the biome list applies (the Nether biomes' own tables in 18 app
 and crimson forest). Hoglin and zoglin weights in structures: neither the fortress nor any other structure lists
 hoglins or zoglins in `spawn_overrides`; the bastion remnant has no override; the only preplaced hoglin is the one
 entity of the template `bastion/mobs/hoglin` (10.5).
+
+### 8.5 The structure query API: references, starts, piece boxes and the walk order
+
+This is the data model behind 8.1 step 2. All of it is in `StructureManager`, `ChunkAccess`, `ChunkGenerator.createReferences`,
+`StructureStart`, `PiecesContainer` and `BoundingBox`.
+
+**Stored data.**
+
+| Item | Meaning |
+|---|---|
+| start map of a chunk (`getAllStarts`) | `Structure` to `StructureStart`: the structure starts that **began** in this chunk (a start has an anchor chunk, the chunk it was generated for). Set at status `STRUCTURE_STARTS`. |
+| reference map of a chunk (`getAllReferences`) | `Structure` to a `LongSet` of **packed chunk positions** (`ChunkPos.pack(x, z)`): the anchor chunks of the starts that reach this chunk. Held in a fastutil `Object2ObjectOpenHashMap` keyed by the `Structure` object (no stable key order, see below). Set at status `STRUCTURE_REFERENCES`. |
+| `StructureStart.getPieces()` | the ordered piece list; each piece has its own `BoundingBox` (`StructurePiece.getBoundingBox`) |
+| `StructureStart.isValid()` | true when the start has at least one piece (a start with no pieces is the shared `INVALID_START` and is skipped everywhere) |
+| `StructureStart.getBoundingBox()` | the union of all piece boxes (`PiecesContainer.calculateBoundingBox`), then `Structure.adjustBoundingBox` (8.2); cached after the first call |
+
+**Writing the reference map (`ChunkGenerator.createReferences`, status `STRUCTURE_REFERENCES`).** For the chunk `C` being
+processed, visit every chunk `S` with `|S.x - C.x| <= 8` and `|S.z - C.z| <= 8` (a 17 by 17 square, x in the outer loop,
+z in the inner loop, both ascending), and for every valid start whose anchor chunk is `S`: if the start's **overall
+(adjusted) bounding box intersects the 16 by 16 block footprint of `C` in x and z only** (`BoundingBox.intersects(minX,
+minZ, maxX, maxZ)`, inclusive; y is ignored), add the packed position of `S` to the reference set of that start's
+structure in `C`. A start is therefore referenced by exactly the chunks whose footprint its (inflated) box overlaps, found
+within 8 chunks of its anchor. Consequently `full`-type tests can only succeed in chunks that carry the reference, and a
+position inside the inflated 12-block margin is covered because the margin is part of the box used here.
+
+**Reading (`getAllStructuresAt(pos)`).** The chunk is `(floor(pos.x / 16), floor(pos.z / 16))`; the chunk is loaded to at least
+status `STRUCTURE_REFERENCES`; the result is the chunk's reference map (read-only view).
+
+**`fillStartsForStructure(structure, positions, consumer)`.** For each packed position in the set, load that chunk to
+status `STRUCTURE_STARTS`, take its start for the structure, and when it exists and is valid pass it to the consumer. The
+`LongSet` is iterated in its own order (a fastutil hash set of longs: no stable order). In `getMobsAt` the consumer sets a
+shared flag once any start passes the box test and never un-sets it, so **the order of starts inside one structure does
+not matter**: the structure qualifies when any of its referenced starts passes.
+
+**Box tests.**
+
+| Query | Rule |
+|---|---|
+| `structureHasPieceAt(x, y, z, start)` (the `piece` test) | true when any piece's box contains the block, inclusive on all three axes (`BoundingBox.isInside(x, y, z)`: `min <= v <= max` for x, y, z) |
+| `start.getBoundingBox().isInside(pos)` (the `full` test) | the same inclusive test on the overall adjusted box, all three axes |
+| `getStructureAt(pos, structure)` (fortress rule 8.1 step 1) | from the chunk of `pos`: the first valid start of that structure, in the reference-set walk order, whose overall box contains `pos`; `INVALID_START` otherwise; the rule asks only `isValid` of the result |
+| `getStructureWithPieceAt(pos, structure)` | the same walk with the piece test instead; not used by `mobsAt` |
+
+**Walk order of `mobsAt` and what it settles.** `getMobsAt` walks the reference map's entries in the map's iteration
+order; for each entry whose structure has a `spawn_overrides` entry for the category it runs the box test as above, and
+the **first structure that qualifies ends the search and its spawn list is returned**. The map is keyed by `Structure`
+objects, and `Structure` defines no `equals` or `hashCode` (read: neither is declared in the class), so the key hash is the
+object identity hash and the iteration order of the map is **not reproducible from the data**. The order can only change
+the result where two structures that both have an override for the category qualify at the same block. Of the 52
+structures only six have overrides (8.3), and they live in different dimensions or generate under different rules
+(fortress in the Nether; monument in deep ocean; swamp hut in swamp; pillager outpost on land; ancient city in deep dark;
+trial chambers underground), so overlaps are possible only between, for example, an outpost's inflated box and a swamp
+hut, or an ancient city's inflated box and a trial chamber. **Implementers MUST pick a fixed order** for these rare
+overlaps; the order used by the jar is not specified by the artifact. A recommended deterministic choice (a decision, not
+read): the order of the structure ids in the structure registry (`data/minecraft/worldgen/structure/`, alphabetical by
+file name). The cost of a wrong choice is limited to which of two override lists is used at those few blocks.
+
+**Worked examples (constructed inputs; the arithmetic follows the rules above).**
+
+1. A pillager outpost whose pieces span x 100 to 140, y 62 to 80, z 200 to 230 has an overall box x 88 to 152, y 50 to
+   92, z 188 to 242 (`beard_thin`, inflated by 12). The block (90, 85, 190) is inside the box, so a `monster` draw there
+   returns the outpost list (pillager 1, count 1) although no piece covers it.
+2. A trial chamber with the same extents: `piece` test, so the block (90, 85, 190) is not covered; only blocks inside one
+   piece box are.
+3. A start with anchor chunk (0, 0) and an overall (adjusted) box of x -40 to 70, z 0 to 20: the x range overlaps the
+   footprints of chunks x = -3 to 4 (-40 divided by 16 rounds down to -3; 70 divided by 16 rounds down to 4) and the z
+   range those of chunk z = 0 and 1 (0 to 15 and 16 to 31). Those sixteen chunks (8 in x times 2 in z) each carry the reference (position of
+   chunk (0, 0)); chunk x = 5 does not, so the structure is never tested for a block there.
 
 ## 9. The ocelot in the monster list (19 Open questions 5 and 35)
 
@@ -873,7 +956,7 @@ wandering trader, iron golem and snow golem do not use it.
 | `Slime.checkSlimeSpawnRules` | 20 §10 (slime) and 20 §3.4 | surface alternative (swamp tag, `50 < y < 70`, moon-scaled chance) or the slime-chunk alternative, spawner reasons go to the standable-block test |
 | `Ocelot.checkOcelotSpawnRules` | 19 §5.2 | passes with probability 2/3, then ground rules |
 
-No predicate in this table was re-derived in this round; they are cited so that 21 Open question 6 can be closed by
+No predicate in this table was re-derived; they are cited so that 21 Open question 6 can be closed by
 reference.
 
 ## 13. Villages: the spawn rules that depend on the village test
@@ -967,7 +1050,9 @@ chicken with the count of that entry (4); `contains(chicken entry)` is true.
 3. Nether fortress at a nether-bricks floor: `FORTRESS_ENEMIES`; on a non-brick floor (for example soul sand) inside a
    piece box: the same five entries by the data override; on soul sand in an overall box but outside every piece box:
    the Nether biome's monster list (for crimson forest, zombified piglin, hoglin and piglin).
-4. Ancient city overall box: every category empty: no natural spawns at all inside the box.
+4. Ancient city overall box (the piece union inflated by 12 on every axis, 8.2): every category empty: no natural spawns at
+   all inside the box, including the 12-block margin around the built pieces. The same margin applies to a pillager
+   outpost's `monster` list.
 
 ### 14.6 Overlay
 
@@ -997,7 +1082,7 @@ What was checked and how.
 | Fortress list parity | compared `FORTRESS_ENEMIES` static initialiser with the fortress JSON | identical entries |
 | Biome `natural_mob_spawns` | parsed 67 biome files (counted by prefix) | all 67 carry the attribute with modifier `overlay`; no other data file mentions it |
 | Spawner structure pieces | read `MineShaftCorridor`, `MonsterThrone`, `PortalRoom`, `WoodlandMansionPiece.handleDataMarker` | rules and coordinates as stated |
-| Template mobs | parsed all 1511 structure NBT files (gzip NBT reader written for this round, outside the repository) | counts in 10.5 are exact for this jar |
+| Template mobs | parsed all 1511 structure NBT files (gzip NBT reader outside the repository) | counts in 10.5 are exact for this jar |
 | Custom spawner values vs 20 and 19 | compared phantom, patrol and trader constants | agree (6) |
 | Cross-check with 18 §6 | compared the spawn cost, cap and category semantics | 18 §6.5 step 4 and §6.7 are refined by 7.3, 8.1 and 9 (type category versus list category; spawn costs read from the attribute at the position) |
 | Trial spawner pairs | parsed all 14 normal and ominous file pairs | 4.2 states which keys differ per pair (5 pairs differ in totals; both files of a pair set `simultaneous_mobs_added_per_player` where it is set) |
@@ -1022,3 +1107,5 @@ from the formulas of 2.3 and 4.2 and the tick order of 4.4.
    monuments and pillager outposts; the full set is fortress (piece), monument, pillager outpost, swamp hut, ancient
    city and trial chambers (see 8.3), and 18 OQ 17 should not say step 4 uses the fortress case only. 18 §6.12 (trial
    spawner bullet) and 18 OQ 4 should point to 44-2 sections 4 to 6.
+5. Closed: the overall-box inflation and the query API are in 8.2 and 8.5. Not determinable from the jar: the walk order of the per-chunk reference map when two structures with overrides both qualify (the key is hashed by object identity; 8.5), so the order for those rare overlaps is a decision for the implementer.
+6. Closed: `reduce_water_ambient_spawns` is `#minecraft:is_river` (members `river`, `frozen_river`; 8.1 step 3).

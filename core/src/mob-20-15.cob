@@ -1,13 +1,13 @@
 *> Warden (002-lane-p49b; docs/protocol/20-mobs-overworld-hostile.md section 15). State: WD-ENTRY of WARDENSTATE.cpy.
 *> Entry points:
 *>   WARDEN-DARKNESS USING tracker row: every 120 ticks offset by the entity id ((id + tickCount) mod 120 = 0) the warden gives every player within 20 blocks of it, in its
-*>     dimension, the Darkness effect (amplifier 0, 260 ticks, flags 4: icon, no particles). The tick count of an entity is not tracked: the world time CW-TIME stands in.
+*>     dimension, the Darkness effect (amplifier 0, 260 ticks, flags 4: icon, no particles); survival and adventure players only, squared distance below 400, renewed only when at most 199 ticks
+*>     are left; the warden counts its own ticks in EN-WAKE (20 section 15.2).
 *>   WD-FIND USING entity id, create, slot out        the state slot of a warden (0 none)
 *>   WARDEN-ANGER-ADD USING warden row, player row, amount, dig flag    AngerManager.add: ignored unless the player is alive and in survival; capped at 150; with the flag
 *>     (increaseAngerAt) the dig cooldown becomes 1200
 *>   WARDEN-LEVEL USING warden row, level out         0 CALM (below 40), 1 AGITATED (40 to 79), 2 ANGRY (80 and above) by the top suspect
-*>   WARDEN-AGGRO USING warden row: the manager tick (every 20 ticks of CW-TIME each value falls by 1 and a value of 1 or less is dropped), the cooldown memories count down, and
-*>     the target is the alive survival player of the dimension with the highest anger (none when nobody is angry: a warden does not take targets by sight)
+*>   WARDEN-AGGRO is now WARDEN-BRAIN (mob-20-15b.cob): the target comes from the roar and from being hurt, not from the angriest player.
 *>   WARDEN-HURT USING warden row, attacker player row: hurt by a player: its anger +100 (ANGRY 80 + 20, no sound); with no target and the attacker within 5 blocks, the attacker
 *>     becomes the target and the sonic boom cooldown is 200
 *>   WARDEN-MELEE USING warden row: a melee hit (entity event 4) sets the sonic boom cooldown to 40
@@ -31,19 +31,27 @@
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     IF FUNCTION MOD(EN-ID(L-ROW) + CW-TIME, 120) NOT = 0
+*>   tickCount (EN-WAKE) counts the warden's own ticks from 1; the pulse is on (id + tickCount) mod 120 = 0 (20 section 15.2).
+     ADD 1 TO EN-WAKE(L-ROW)
+     IF FUNCTION MOD(EN-ID(L-ROW) + EN-WAKE(L-ROW), 120) NOT = 0
          GOBACK
      END-IF
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
-         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND (PL-MODE(WS-P) = 0 OR PL-MODE(WS-P) = 2)
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
-             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ <= 400
-                 CALL "EFFECT-ADD" USING WS-P WS-DARKNESS WS-AMPLIFIER WS-DURATION WS-FLAGS
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < 400
+*>               The effect is given when the player has none, or when its Darkness ends within 199 ticks and is not infinite.
+                 CALL "EFFECT-LEVEL" USING WS-P WS-DARKNESS WS-LEVEL WS-LEFT
+                 IF WS-LEVEL = 0 OR (WS-LEFT >= 0 AND WS-LEFT <= 199)
+                     CALL "EFFECT-ADD" USING WS-P WS-DARKNESS WS-AMPLIFIER WS-DURATION WS-FLAGS
+                 END-IF
              END-IF
          END-IF
      END-PERFORM
@@ -56,6 +64,9 @@
  WORKING-STORAGE SECTION.
  COPY WARDENSTATE.
  01 WS-I                   BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 94.
+ 01 WS-B20                 BINARY-LONG VALUE 20.
+ 01 WS-DRAW                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-CREATE               BINARY-LONG.
@@ -72,6 +83,11 @@
              IF WD-ID(WS-I) = 0
                  INITIALIZE WD-ENTRY(WS-I)
                  MOVE L-ID TO WD-ID(WS-I)
+*>               finalizeSpawn: the dig cooldown memory 1200; the brain starts in IDLE and its entity sensor in a draw of 0 to 19 (20 section 15, 44-5 section 3.5).
+                 MOVE 1200 TO WD-DIG-CD(WS-I)
+                 MOVE 7 TO WD-ACT(WS-I)
+                 CALL "XP-RANDOM" USING WS-SALT WS-B20 WS-DRAW
+                 MOVE WS-DRAW TO WD-SENSOR(WS-I)
                  MOVE WS-I TO L-SLOT
              END-IF
          END-PERFORM
@@ -93,14 +109,15 @@
  01 L-AMOUNT               BINARY-LONG.
  01 L-DIG                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-PLAYER L-AMOUNT L-DIG.
-     IF PL-USED(L-PLAYER) NOT = 1 OR PL-STATE(L-PLAYER) NOT = PS-ALIVE OR PL-MODE(L-PLAYER) NOT = 0
+     IF PL-USED(L-PLAYER) NOT = 1 OR PL-STATE(L-PLAYER) NOT = PS-ALIVE OR (PL-MODE(L-PLAYER) NOT = 0 AND PL-MODE(L-PLAYER) NOT = 2)
          GOBACK
      END-IF
      CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
      IF WS-SLOT = 0
          GOBACK
      END-IF
-     IF L-DIG = 1
+*>   The dig cooldown is refreshed only while the memory is present (44-5 section 3.3).
+     IF L-DIG = 1 AND WD-DIG-CD(WS-SLOT) > 0
          MOVE 1200 TO WD-DIG-CD(WS-SLOT)
      END-IF
      COMPUTE WD-ANGER(WS-SLOT, L-PLAYER) = FUNCTION MIN(150, WD-ANGER(WS-SLOT, L-PLAYER) + L-AMOUNT)
@@ -141,54 +158,6 @@
  END PROGRAM WARDEN-LEVEL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. WARDEN-AGGRO.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY WARDENSTATE.
- 01 WS-SLOT                BINARY-LONG.
- 01 WS-ONE                 BINARY-LONG VALUE 1.
- 01 WS-P                   BINARY-LONG.
- 01 WS-BEST                BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
- LINKAGE SECTION.
- 01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
-     CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
-     IF WS-SLOT = 0
-         GOBACK
-     END-IF
-     IF WD-SONIC-CD(WS-SLOT) > 0
-         SUBTRACT 1 FROM WD-SONIC-CD(WS-SLOT)
-     END-IF
-     IF WD-DIG-CD(WS-SLOT) > 0
-         SUBTRACT 1 FROM WD-DIG-CD(WS-SLOT)
-     END-IF
-     MOVE 0 TO WS-BEST WS-TOP
-     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
-         IF WD-ANGER(WS-SLOT, WS-P) > 0 AND FUNCTION MOD(CW-TIME, 20) = 0
-             COMPUTE WD-ANGER(WS-SLOT, WS-P) = WD-ANGER(WS-SLOT, WS-P) - 1
-             IF WD-ANGER(WS-SLOT, WS-P) <= 1
-                 MOVE 0 TO WD-ANGER(WS-SLOT, WS-P)
-             END-IF
-         END-IF
-         IF WD-ANGER(WS-SLOT, WS-P) > WS-TOP
-             IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-MODE(WS-P) = 0 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
-                 MOVE WD-ANGER(WS-SLOT, WS-P) TO WS-TOP
-                 MOVE WS-P TO WS-BEST
-             END-IF
-         END-IF
-     END-PERFORM
-     MOVE WS-BEST TO EN-TARGET(L-ROW)
-     IF WS-BEST > 0
-         MOVE PL-ENTITY-ID(WS-BEST) TO EN-TARGET-ID(L-ROW)
-     ELSE
-         MOVE 0 TO EN-TARGET-ID(L-ROW)
-     END-IF
-     GOBACK.
- END PROGRAM WARDEN-AGGRO.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. WARDEN-HURT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -219,6 +188,7 @@
          CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
          IF WS-SLOT > 0
              MOVE 200 TO WD-SONIC-CD(WS-SLOT)
+             MOVE 0 TO WD-ROAR-TARGET(WS-SLOT)
          END-IF
      END-IF
      GOBACK.
@@ -258,9 +228,7 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-LEN                 FLOAT-LONG.
  01 WS-EVENT               BINARY-LONG VALUE 62.
- 01 WS-MILLI               BINARY-LONG VALUE 10000.
- 01 WS-CAUSE               BINARY-LONG VALUE CAUSE-MOB.
- 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-AMOUNT              BINARY-LONG VALUE 10.
  01 WS-RESULT              BINARY-LONG.
  01 WS-VX                  BINARY-LONG.
  01 WS-VY                  BINARY-LONG.
@@ -295,11 +263,14 @@
          COMPUTE WS-DY = PL-Y(WS-P) + 1.62 - (EN-Y(L-ROW) + 1.6)
          COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
          COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
-         CALL "HEALTH-HURT" USING WS-P WS-MILLI WS-CAUSE EN-ID(L-ROW) WS-NO-ATTACKER WS-RESULT
-         COMPUTE WS-VX = WS-DX / WS-LEN * 2500
-         COMPUTE WS-VY = WS-DY / WS-LEN * 500
-         COMPUTE WS-VZ = WS-DZ / WS-LEN * 2500
-         CALL "COMBAT-MOTION-SEND" USING WS-P WS-VX WS-VY WS-VZ
+         CALL "HEALTH-SONIC-BOOM" USING WS-P WS-AMOUNT L-ROW WS-RESULT
+*>       The extra push only when the damage call hurt the target (20 section 15).
+         IF WS-RESULT > 0
+             COMPUTE WS-VX = WS-DX / WS-LEN * 2500
+             COMPUTE WS-VY = WS-DY / WS-LEN * 500
+             COMPUTE WS-VZ = WS-DZ / WS-LEN * 2500
+             CALL "COMBAT-MOTION-SEND" USING WS-P WS-VX WS-VY WS-VZ
+         END-IF
      END-IF
      IF WD-BOOM(WS-SLOT) >= 60
          MOVE 0 TO WD-BOOM(WS-SLOT)

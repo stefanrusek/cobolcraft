@@ -204,6 +204,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   VEX-STEP: a vex with a distant target starts charging within 100 steps (1 in 7), one next to it does not start but hits when charging.
      MOVE 0 TO VX-CHARGING(1)
+*>   The charge goal needs a move control without a wish (13.4): the VEX-CHARGE above left one, the vex has not flown here.
+     MOVE 0 TO EN-FLY-ON(WS-V)
      MOVE 0 TO WS-FOUND
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 100 OR WS-FOUND = 1
          CALL "VEX-STEP" USING WS-V

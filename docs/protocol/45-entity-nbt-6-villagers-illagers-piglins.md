@@ -266,6 +266,8 @@ Roll rule (`WanderingTraderSpawner.tick`, read; run only while the game rule `sp
 4. The roll is a uniform integer `r` in 0 to 99 (`nextInt(100)`). If `r > old` the cycle ends; the spawn is attempted when `r <= old` (inclusive, and the comparison uses the OLD chance, not the raised one).
 5. A spawn attempt that returns true resets `spawn_chance` to 25. The attempt returns true when no player is online (nothing is spawned in that case); when a player is picked it first returns false with probability 9/10 (a 1 in 10 draw, `nextInt(10)` equal to 0 continues) and otherwise proceeds with the placement search (19 §23, 44 part 3 §9). A false return leaves the raised chance in place.
 
+(Chance to reach the placement step per firing: 26, 51, 76, 76 percent, each times the 1 in 10 gate of step 5.)
+
 Example: stored `spawn_delay` 1200, `spawn_chance` 25. At the cycle: `new_delay` 0, so `spawn_delay` becomes 24000 and `spawn_chance` becomes 50; roll `r = 25` is `<= 25`, so a spawn is attempted. If it fails, the next cycle (20 minutes of game time later) rolls against 50.
 
 ## 10. Zombie villager (shared helpers only)

@@ -13,8 +13,8 @@
 *>   EVK-FANG-TICK                                     the world tick of all fangs (STDMOB-SPAWN-TICK)
 *>   VEX-STEP USING vex row                            limited life and starvation
 *> Wololo (EVK-WOLOLO-PICK, performed in EVK-STEP; the document's start condition is a target, so the fang goal always goes first: only EVK-BEGIN starts it), the fang column
-*> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7).
-*> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the vex flight (no flying speed in the documents), an owner-less magic bite, the height of a
+*> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7); the vex flight is mob-20-vex.cob.
+*> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the knockback of an owned bite and the witch's 0.15 of magic damage, the height of a
 *> partial block in the fang cell.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-FIND.
@@ -392,6 +392,10 @@
              MOVE EN-ID(L-ROW) TO VX-OWNER(WS-SLOT)
              COMPUTE VX-LIFE(WS-SLOT) = 20 * (30 + WS-DRAW)
              MOVE 0 TO VX-STARVE(WS-SLOT)
+             MOVE 1 TO VX-BOUND(WS-SLOT)
+             COMPUTE VX-BX(WS-SLOT) = FUNCTION INTEGER(WS-X)
+             COMPUTE VX-BY(WS-SLOT) = FUNCTION INTEGER(WS-Y)
+             COMPUTE VX-BZ(WS-SLOT) = FUNCTION INTEGER(WS-Z)
          END-IF
      END-PERFORM
      GOBACK.
@@ -449,39 +453,42 @@
          IF FG-USED(WS-I) = 1
              SUBTRACT 1 FROM FG-WARM(WS-I)
              IF FG-WARM(WS-I) <= -8
-*>               The bite: living entities in the box inflated by 0.2; the owner's family is spared.
+*>               The bite (20 section 13.3.1): living entities in the box inflated by 0.2. An owner-less fang (no owner, or one that is gone) hurts every one of them for 6.0 with the
+*>               plain magic source; a fang with an owner spares the owner and its family and hurts the rest with indirect_magic caused by the owner (a player's damage scaled by the difficulty).
                  MOVE 0 TO WS-O
                  PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
                      IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = FG-OWNER(WS-I)
                          MOVE WS-N TO WS-O
                      END-IF
                  END-PERFORM
-                 IF WS-O > 0
-                     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
-                         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = FG-DIM(WS-I) AND PL-MODE(WS-P) < 2
-                             IF FUNCTION ABS(PL-X(WS-P) - FG-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - FG-Z(WS-I)) <= 0.75
-                                     AND PL-Y(WS-P) <= FG-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= FG-Y(WS-I)
-                                 CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-O
+                 PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 64
+                     IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = FG-DIM(WS-I) AND PL-MODE(WS-P) < 2
+                         IF FUNCTION ABS(PL-X(WS-P) - FG-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - FG-Z(WS-I)) <= 0.75
+                                 AND PL-Y(WS-P) <= FG-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= FG-Y(WS-I)
+                             CALL "HEALTH-MAGIC-HIT" USING WS-P WS-DAMAGE WS-O
+                         END-IF
+                     END-IF
+                 END-PERFORM
+                 PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+                     IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = FG-DIM(WS-I)
+                         CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
+                         MOVE 0 TO WS-ALLY
+                         IF WS-S > 0
+                             IF WS-O > 0 AND (WS-N = WS-O OR SM-KEY(WS-S) = "evoker" OR "vindicator" OR "pillager" OR "illusioner" OR "vex" OR "ravager")
+                                 MOVE 1 TO WS-ALLY
+                             END-IF
+                             IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - FG-X(WS-I)) <= 0.75
+                                     AND FUNCTION ABS(EN-Z(WS-N) - FG-Z(WS-I)) <= 0.75
+                                     AND EN-Y(WS-N) <= FG-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= FG-Y(WS-I)
+                                 IF WS-O = 0
+                                     CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-MAGIC WS-NONE
+                                 ELSE
+                                     CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-INDIRECT-MAGIC WS-NONE
+                                 END-IF
                              END-IF
                          END-IF
-                     END-PERFORM
-                     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
-                         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = FG-DIM(WS-I)
-                             CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
-                             MOVE 0 TO WS-ALLY
-                             IF WS-S > 0
-                                 IF SM-KEY(WS-S) = "evoker" OR "vindicator" OR "pillager" OR "illusioner" OR "vex" OR "ravager"
-                                     MOVE 1 TO WS-ALLY
-                                 END-IF
-                                 IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - FG-X(WS-I)) <= 0.75
-                                         AND FUNCTION ABS(EN-Z(WS-N) - FG-Z(WS-I)) <= 0.75
-                                         AND EN-Y(WS-N) <= FG-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= FG-Y(WS-I)
-                                     CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-MOB WS-NONE
-                                 END-IF
-                             END-IF
-                         END-IF
-                     END-PERFORM
-                 END-IF
+                     END-IF
+                 END-PERFORM
                  MOVE 0 TO FG-USED(WS-I)
              END-IF
          END-IF
@@ -540,7 +547,7 @@
          END-IF
      END-IF
 *>   VexChargeAttackGoal: with a living target more than 2 blocks away and a 1 in 7 draw the charge starts; a charging vex that touches its target hurts it.
-     IF EN-TARGET(L-ROW) > 0 AND VX-CHARGING(WS-SLOT) = 0
+     IF EN-TARGET(L-ROW) > 0 AND VX-CHARGING(WS-SLOT) = 0 AND EN-FLY-ON(L-ROW) = 0
          COMPUTE WS-D2 = (PL-X(EN-TARGET(L-ROW)) - EN-X(L-ROW)) ** 2 + (PL-Y(EN-TARGET(L-ROW)) - EN-Y(L-ROW)) ** 2
              + (PL-Z(EN-TARGET(L-ROW)) - EN-Z(L-ROW)) ** 2
          CALL "XP-RANDOM" USING WS-SALT WS-SEVEN WS-DRAW
@@ -549,6 +556,10 @@
          END-IF
      END-IF
      CALL "VEX-CONTACT" USING L-ROW
+*>   VexRandomMoveGoal (priority 8) wants a move control without a wish: after the charge goal had its turn.
+     IF VX-CHARGING(WS-SLOT) = 0
+         CALL "VEX-RANDOM-MOVE" USING L-ROW
+     END-IF
      GOBACK.
  END PROGRAM VEX-STEP.
 
@@ -720,12 +731,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VEX-CHARGE.
-*> USING vex row: the charge starts (VexChargeAttackGoal.start): the charging flag is set and sent. The flight to the target's eye (speed 1.0) needs the vex flying speed, which no document gives:
-*> the vex does not move yet.
+*> USING vex row: the charge starts (VexChargeAttackGoal.start): the charging flag is set and sent, and the move control is told to go to the target's eye at modifier 1.0 (VEX-FLY, 13.4.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY EVKSTATE.
+ 01 WS-P                    BINARY-LONG.
  01 WS-I                    BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
@@ -733,6 +744,13 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VX-MAX
          IF VX-ID(WS-I) = EN-ID(L-ROW)
              MOVE 1 TO VX-CHARGING(WS-I)
+*>           The control moves to the target's eye at modifier 1.0 (target player: eye 1.62 above its feet).
+             MOVE EN-TARGET(L-ROW) TO WS-P
+             MOVE PL-X(WS-P) TO EN-FLY-X(L-ROW)
+             COMPUTE EN-FLY-Y(L-ROW) = PL-Y(WS-P) + 1.62
+             MOVE PL-Z(WS-P) TO EN-FLY-Z(L-ROW)
+             MOVE 1.0 TO EN-FLY-MOD(L-ROW)
+             MOVE 1 TO EN-FLY-ON(L-ROW)
              CALL "VEX-FLAG-SEND" USING L-ROW
          END-IF
      END-PERFORM
@@ -750,6 +768,7 @@
  01 WS-SLOT                 BINARY-LONG.
  01 WS-P                    BINARY-LONG.
  01 WS-DAMAGE               BINARY-LONG VALUE 4.
+ 01 WS-D2                   FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -772,6 +791,16 @@
              CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
              MOVE 0 TO VX-CHARGING(WS-SLOT)
              CALL "VEX-FLAG-SEND" USING L-ROW
+         ELSE
+*>           Within 3 blocks of the target (distance squared below 9) the charge aims at its eye again.
+             COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+             IF WS-D2 < 9
+                 MOVE PL-X(WS-P) TO EN-FLY-X(L-ROW)
+                 COMPUTE EN-FLY-Y(L-ROW) = PL-Y(WS-P) + 1.62
+                 MOVE PL-Z(WS-P) TO EN-FLY-Z(L-ROW)
+                 MOVE 1.0 TO EN-FLY-MOD(L-ROW)
+                 MOVE 1 TO EN-FLY-ON(L-ROW)
+             END-IF
          END-IF
      END-IF
      GOBACK.

@@ -77,6 +77,10 @@
  78 CAUSE-WITHER              VALUE 24.
 *> CAUSE-SULFUR-HOT (002-lane-p49n; 20 section 18.2): the contact damage of a hot sulfur cube (damage type sulfur_cube_hot, tag is_fire); a mob takes it, no RULE-CAUSE row.
  78 CAUSE-SULFUR-HOT          VALUE 25.
+*> CAUSE-SONIC-BOOM (002-lane-p49r, 20 section 15.3): the warden's sonic boom: scaled by the difficulty (scaling always), bypasses armor and enchantments, not Resistance; no RULE-CAUSE row.
+ 78 CAUSE-SONIC-BOOM           VALUE 26.
+*> CAUSE-WIND-CHARGE (002-lane-p49r, 20 section 16.3): the direct hit of a breeze's wind charge (damage type wind_charge, 1.0 scaled by the difficulty for a player; armor applies); no RULE-CAUSE row.
+ 78 CAUSE-WIND-CHARGE           VALUE 27.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).

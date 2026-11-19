@@ -54,6 +54,8 @@
 *>     attacker player row (0 none)                       (BINARY-LONG each)
 *>   HEALTH-DIE USING player row, cause, attacker player row (0 none)
 *>   HEALTH-ATTACK USING connection id, PLAY-SERVERBOUND  Attack
+*>   HEALTH-SONIC-BOOM USING player row, amount, warden tracker row, result out                  the warden's sonic boom on a player
+*>   HEALTH-MAGIC-HIT USING player row, amount, owner mob tracker row (0 none)    an evoker fang's bite on a player (magic / indirect_magic)
 *>   HEALTH-MOB-DAMAGE USING mob tracker row, amount, cause, attacker player row (0 none)
 *>     (BINARY-LONG each)
 *>   HEALTH-RESPAWN USING connection id, PLAY-SERVERBOUND Client Command
@@ -227,6 +229,7 @@
              MOVE "death.attack.player" TO WS-KEY
              MOVE 2 TO WS-ARGS
          WHEN CAUSE-MOB
+         WHEN CAUSE-WIND-CHARGE
              MOVE "death.attack.mob" TO WS-KEY
              MOVE 2 TO WS-ARGS
          WHEN CAUSE-FALL
@@ -248,6 +251,14 @@
          WHEN CAUSE-ARROW
 *>           death.attack.arrow: the victim and the shooter (PL-KILLER-NAME set by the arrow)
              MOVE "death.attack.arrow" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-INDIRECT-MAGIC
+*>           death.attack.indirectMagic: the victim and the caster (PL-KILLER-NAME set by HEALTH-MAGIC-HIT)
+             MOVE "death.attack.indirectMagic" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-SONIC-BOOM
+*>           death.attack.sonic_boom: the victim and the warden (PL-KILLER-NAME set by HEALTH-SONIC-BOOM)
+             MOVE "death.attack.sonic_boom" TO WS-KEY
              MOVE 2 TO WS-ARGS
          WHEN CAUSE-EXPLOSION
 *>           death.attack.explosion; with an attacker (a creeper: PL-KILLER-NAME set by the blast) death.attack.explosion.player
@@ -272,6 +283,8 @@
                      MOVE "death.attack.lava" TO WS-KEY
                  WHEN CAUSE-IN-FIRE
                      MOVE "death.attack.inFire" TO WS-KEY
+                 WHEN CAUSE-MAGIC
+                     MOVE "death.attack.magic" TO WS-KEY
                  WHEN OTHER
                      MOVE "death.attack.generic" TO WS-KEY
              END-EVALUATE
@@ -292,7 +305,9 @@
      MOVE PL-NAME(L-ROW) TO PB-TX-ARG-VALUE(1)
      MOVE PL-NAME-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(1)
      IF WS-ARGS > 1
-         IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB OR L-CAUSE = CAUSE-ARROW OR (L-CAUSE = CAUSE-EXPLOSION AND PL-KILLER-LENGTH(L-ROW) > 0)
+         IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB OR L-CAUSE = CAUSE-ARROW OR L-CAUSE = CAUSE-INDIRECT-MAGIC
+                 OR L-CAUSE = CAUSE-SONIC-BOOM OR L-CAUSE = CAUSE-WIND-CHARGE
+                 OR (L-CAUSE = CAUSE-EXPLOSION AND PL-KILLER-LENGTH(L-ROW) > 0)
              MOVE PL-KILLER-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
              MOVE PL-KILLER-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
          ELSE
@@ -582,6 +597,10 @@
              MOVE "minecraft:wither" TO WS-WANTED
          WHEN CAUSE-SULFUR-HOT
              MOVE "minecraft:sulfur_cube_hot" TO WS-WANTED
+         WHEN CAUSE-SONIC-BOOM
+             MOVE "minecraft:sonic_boom" TO WS-WANTED
+         WHEN CAUSE-WIND-CHARGE
+             MOVE "minecraft:wind_charge" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE
@@ -647,6 +666,96 @@
  END PROGRAM HEALTH-MOB-HIT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. HEALTH-MAGIC-HIT.
+*> USING player row, amount (BINARY-LONG points), owner mob tracker row (0 = none): the bite of an evoker fang on a player (20 section 13.3.1). Without an owner the damage source is
+*> `magic` (no causing entity, so no difficulty scaling: the amount as it is), with one it is `indirect_magic` caused by the owner and scaled by the difficulty like a mob's hit (Peaceful 0, Easy
+*> min(d / 2 + 1, d), Normal d, Hard 3d / 2). Both bypass armor (only player, mob, explosion and arrow hits go through the armor pipeline of HEALTH-HURT) and shields.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY BRWORLD.
+ 01 WS-MILLI               BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-SOURCE              BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-AMOUNT L-OWNER.
+     IF L-OWNER = 0
+         COMPUTE WS-MILLI = L-AMOUNT * 1000
+         CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-MAGIC WS-SOURCE WS-NO-ATTACKER WS-RESULT
+         GOBACK
+     END-IF
+     CALL "BR-WORLD-READY"
+     COMPUTE WS-FULL = L-AMOUNT * 1000
+     COMPUTE WS-HALF = L-AMOUNT * 500 + 1000
+     EVALUATE BW-DIFFICULTY
+         WHEN 0
+             GOBACK
+         WHEN 1
+             COMPUTE WS-MILLI = FUNCTION MIN(WS-HALF, WS-FULL)
+         WHEN 2
+             MOVE WS-FULL TO WS-MILLI
+         WHEN OTHER
+             COMPUTE WS-MILLI = L-AMOUNT * 1500
+     END-EVALUATE
+     CALL "STDMOB-NAME" USING EN-TYPE(L-OWNER) PL-KILLER-NAME(L-PLAYER) PL-KILLER-LENGTH(L-PLAYER)
+     MOVE 0 TO PL-KILLER-ITEM-LENGTH(L-PLAYER)
+     MOVE PL-KILLER-NAME(L-PLAYER) TO PL-CREDIT-NAME(L-PLAYER)
+     MOVE PL-KILLER-LENGTH(L-PLAYER) TO PL-CREDIT-LENGTH(L-PLAYER)
+     MOVE CW-TICKS TO PL-CREDIT-TICK(L-PLAYER)
+     CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-INDIRECT-MAGIC EN-ID(L-OWNER) WS-NO-ATTACKER WS-RESULT
+     GOBACK.
+ END PROGRAM HEALTH-MAGIC-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HEALTH-SONIC-BOOM.
+*> USING player row, amount (BINARY-LONG points), warden tracker row, result out (HEALTH-HURT's: 0 not hurt): the sonic boom on a player (20 section 15.3). The damage type scales with
+*> difficulty always (Peaceful 0, Easy min(d / 2 + 1, d), Normal d, Hard 3d / 2) and bypasses armor and enchantments but not Resistance (HEALTH-HURT, CAUSE-SONIC-BOOM); the warden is the source.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY BRWORLD.
+ 01 WS-MILLI               BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-WARDEN               BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-AMOUNT L-WARDEN L-RESULT.
+     MOVE 0 TO L-RESULT
+     CALL "BR-WORLD-READY"
+     COMPUTE WS-FULL = L-AMOUNT * 1000
+     COMPUTE WS-HALF = L-AMOUNT * 500 + 1000
+     EVALUATE BW-DIFFICULTY
+         WHEN 0
+             GOBACK
+         WHEN 1
+             COMPUTE WS-MILLI = FUNCTION MIN(WS-HALF, WS-FULL)
+         WHEN 2
+             MOVE WS-FULL TO WS-MILLI
+         WHEN OTHER
+             COMPUTE WS-MILLI = L-AMOUNT * 1500
+     END-EVALUATE
+     CALL "STDMOB-NAME" USING EN-TYPE(L-WARDEN) PL-KILLER-NAME(L-PLAYER) PL-KILLER-LENGTH(L-PLAYER)
+     MOVE 0 TO PL-KILLER-ITEM-LENGTH(L-PLAYER)
+     MOVE PL-KILLER-NAME(L-PLAYER) TO PL-CREDIT-NAME(L-PLAYER)
+     MOVE PL-KILLER-LENGTH(L-PLAYER) TO PL-CREDIT-LENGTH(L-PLAYER)
+     MOVE CW-TICKS TO PL-CREDIT-TICK(L-PLAYER)
+     CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-SONIC-BOOM EN-ID(L-WARDEN) WS-NO-ATTACKER L-RESULT
+     GOBACK.
+ END PROGRAM HEALTH-SONIC-BOOM.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-MOB-DAMAGE.
 *> USING mob tracker row, amount, cause (RULES.cpy CAUSE-*), attacker player row (0 = none)
 *> (BINARY-LONG each): the mob damage rules above.
@@ -692,6 +801,8 @@
          GOBACK
      END-IF
      CALL "SULFUR-HURT" USING WS-ROW L-CAUSE WS-WITHER
+*>   A digging or emerging warden is invulnerable except to damage that bypasses invulnerability (20 section 15).
+     CALL "WARDEN-INVULNERABLE" USING WS-ROW L-CAUSE WS-WITHER
      IF WS-WITHER = 1
          GOBACK
      END-IF

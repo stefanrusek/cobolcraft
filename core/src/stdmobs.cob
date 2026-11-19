@@ -534,9 +534,14 @@
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
          GOBACK
      END-IF
-*>   SM-NEUTRAL 8: the warden's target is the angriest player (WARDEN-AGGRO, 20 section 15).
+*>   SM-NEUTRAL 8: the warden's brain (WARDEN-BRAIN, 20 section 15): its target comes from the roar and from being hurt.
      IF SM-NEUTRAL(L-M) = 8
-         CALL "WARDEN-AGGRO" USING L-ROW
+         CALL "WARDEN-BRAIN" USING L-ROW
+         GOBACK
+     END-IF
+*>   SM-NEUTRAL 9: the creaking's target is whoever looks at it (CREAKING-BRAIN, 20 section 17).
+     IF SM-NEUTRAL(L-M) = 9
+         CALL "CREAKING-BRAIN" USING L-ROW
          GOBACK
      END-IF
      IF SM-NEUTRAL(L-M) = 2
@@ -1037,6 +1042,7 @@
  01 WS-STROLL-SCALE        FLOAT-LONG.
  01 WS-STROLL-ROLL         BINARY-LONG.
  01 WS-CUBE                BINARY-LONG.
+ 01 WS-FROZEN              BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
@@ -1277,11 +1283,22 @@
              CALL "ENDER-CARRY-TICK" USING WS-ROW
              CALL "ENDER-FLAGS-TICK" USING WS-ROW
          END-IF
+*>       A warden that has dug in is gone (WARDEN-BRAIN).
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
          END-IF
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
+         END-IF
+*>       A creaking that cannot move does not walk or attack (its FIGHT activity is not valid, 20 section 17).
+         IF SM-KEY(WS-M) = "creaking"
+             CALL "CREAKING-FROZEN" USING WS-ROW WS-FROZEN
+             IF WS-FROZEN = 1
+                 MOVE 0 TO WS-CHASE
+             END-IF
          END-IF
      END-IF
      MOVE 0 TO WS-VS-WALK
@@ -1321,6 +1338,13 @@
      END-IF
      IF SM-KEY(WS-M) = "bee"
          CALL "BEE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "warden"
+         CALL "WARDEN-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+*>   A frozen creaking stands (CAN_MOVE false: the move control does nothing).
+     IF SM-KEY(WS-M) = "creaking" AND WS-FROZEN = 1
+         MOVE 2 TO WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "turtle"
          CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
@@ -1500,7 +1524,10 @@
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(WS-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
-             CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+*>           A cube turns by lookAt(target, 10, 10) in CUBE-HOP (20 section 10.1), not at once.
+             IF WS-CUBE = 0
+                 CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+             END-IF
              MOVE EN-ID(WS-ROW) TO WS-ARG(1)
              MOVE CW-TIME TO WS-ARG(2)
              MOVE 19 TO WS-ARG(3)
@@ -1514,7 +1541,7 @@
                  COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
              END-IF
-             IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
+             IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND SM-KEY(WS-M) NOT = "vex" AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
                  CALL "STDMOB-ATTACK-GAP" USING WS-M EN-COOLDOWN(WS-ROW)
@@ -1646,6 +1673,11 @@
      END-EVALUATE
 *>   A settled sleeper stands where it is: the physics step, friction, the fall and the egg checks would set the numbers they already have.
      IF WS-SETTLED = 1 AND WS-V-ASLEEP = 1
+         GOBACK
+     END-IF
+*>   A vex flies by its move control through blocks (VEX-FLY, 20 section 13.4.1), which does its own damping: no walk, no gravity, no fall damage.
+     IF SM-KEY(WS-M) = "vex"
+         CALL "VEX-FLY" USING WS-ROW
          GOBACK
      END-IF
 *>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.

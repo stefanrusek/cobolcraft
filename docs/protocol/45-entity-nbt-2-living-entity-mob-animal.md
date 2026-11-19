@@ -163,14 +163,35 @@ The icon is what the locator bar (13 / 12) shows for this entity. It is written 
 | `leash` | `Compound {UUID: Int Array(4)}` or `Int Array(3)` | none | only when leashed | Form, load behaviour and pending restoration are in 45-1 §10.1. When the loaded compound has no `leash` and the mob currently has leash data, the leash is removed. |
 | `home_radius` | Int | -1 | only when a home exists (`hasHome`: radius != -1) | The radius in blocks the mob stays within. -1 means "no home". |
 | `home_pos` | `Int Array(3)` | `[0,0,0]` | only together with `home_radius` | Centre of the home area. Read only when `home_radius` >= 0. |
-| `LeftHanded` | Byte (boolean) | false | always | Handedness. Stored in the mob-flags metadata byte as bit 2 (value 2). |
+| `LeftHanded` | Byte (boolean) | false | always | Handedness. Stored in the mob-flags metadata byte as flag value 2. |
 | `DeathLootTable` | String (loot table key) | none: use the entity type's own table | only when an override is set | Overrides the loot table used on death. |
 | `DeathLootTableSeed` | Long | 0 | only when not 0 | Seed handed to the loot context for the death table (the loot engine is [18](18-mob-framework.md) §7.6). |
-| `NoAI` | Byte (boolean) | false | only when true | Disabled AI. Stored in the mob-flags byte as bit 0 (value 1). |
+| `NoAI` | Byte (boolean) | false | only when true | Disabled AI. Stored in the mob-flags byte as flag value 1. |
 
 The mob-flags metadata byte (`DATA_MOB_FLAGS_ID`) has three bits: 1 no AI, 2 left-handed, 4 aggressive. The aggressive bit is NOT saved: it is recomputed at runtime (so a saved mob restarts non-aggressive until its goals or brain set it). The attack target is not saved either (Mob has no `Target` key; revenge and anger are saved only through `last_hurt_by_mob` (2.1), the Brain memories (8) and the `NeutralMob` keys (7)).
 
 The writer emits `CanPickUpLoot`, `PersistenceRequired`, `drop_chances`, `leash`, `home_radius` and `home_pos`, `LeftHanded`, `DeathLootTable`, `DeathLootTableSeed`, `NoAI` in this order after the `LivingEntity` keys. The loader reads `CanPickUpLoot`, `PersistenceRequired`, `drop_chances`, `leash`, `home_radius`, `home_pos`, `LeftHanded`, `DeathLootTable`, `DeathLootTableSeed`, `NoAI`.
+
+### 3.0 `NoAI` and `LeftHanded`: where each is set, saved and read
+
+Artifact: the jar recorded in [README](README.md) (SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`); read from `Mob`, `Bucketable`, `ConversionType`, `EntityDataAccessor`, `NbtPredicate`, `SummonCommand`.
+
+| Aspect | `NoAI` | `LeftHanded` |
+|---|---|---|
+| Storage | flag value 1 of the mob-flags metadata byte (slot 15) | flag value 2 of the same byte; the aggressive flag is value 4 |
+| Setters | `Mob.setNoAi(boolean)`: reads the byte, sets or clears the bit, writes the byte back | `Mob.setLeftHanded(boolean)`, the same way |
+| NBT write (`addAdditionalSaveData`) | key `NoAI`, Byte, **only when true** (a false value writes nothing); last key of the `Mob` block | key `LeftHanded`, Byte, **always** written, between `home_pos` and `DeathLootTable` |
+| NBT read (`readAdditionalSaveData`) | `getBooleanOr("NoAI", false)` then `setNoAi`: a missing key **clears** the flag | `getBooleanOr("LeftHanded", false)` then `setLeftHanded`: a missing key clears the flag |
+| Default | false (AI on) | false; `Mob.finalizeSpawn` sets it true with probability 0.05 (`nextFloat() < 0.05`, 18 §7.1), so a freshly spawned mob that goes through `finalizeSpawn` may be left-handed |
+
+Who else touches the flags:
+- `/summon <type> <pos> {NBT}`: the NBT compound (copied, with `id` added) is loaded by `EntityType.loadEntityRecursive` through the entity's `load`, i.e. `readAdditionalSaveData`; so `{NoAI:1b}` or `{LeftHanded:1b}` in the command sets the flag. `finalizeSpawn` (which rolls the left-hand chance, equipment and so on) runs after the load only when the command was given **no** NBT argument: the command's three forms were read, `summon <type>` and `summon <type> <pos>` pass `randomizeProperties` true (with an empty compound) and `summon <type> <pos> <nbt>` passes false. So `/summon zombie ~ ~ ~ {}` is not randomised, and `/summon zombie` is.
+- `/data get entity <target>`: returns the entity's full saved compound (`Entity.saveWithoutId`, plus `SelectedItem` for players), so a mob shows `LeftHanded:0b` always and `NoAI:1b` only when set.
+- `/data modify|merge|remove entity <target> ...`: the changed compound is applied with `Entity.load` on the existing entity (the UUID is preserved), i.e. through the same read path, so `/data merge entity @e[type=zombie,limit=1] {NoAI:1b}` sets the flag at once and `/data remove ... NoAI` followed by the load sets it back to **false**. Players are refused (`ERROR_NO_PLAYERS`).
+- Buckets (`Bucketable.saveDefaultDataToBucketTag`): the `bucket_entity_data` compound gets `NoAI` (Byte, only when true), `Silent`, `NoGravity`, `Glowing`, `Invulnerable`, `PersistenceRequired` (each only when true) and `Health` (always). **`LeftHanded` is not part of the bucket data.** `loadDefaultDataFromBucketTag` reads `NoAI` as an optional Boolean and applies only when present (so releasing a bucket without the key leaves the freshly created mob's own value).
+- Conversion (`ConversionType` common copy, 18 §4.10): `setLeftHanded(old.isLeftHanded())` and `setNoAi(old.isNoAi())` on the new mob, always, so a zombified or drowned or cured mob keeps both flags.
+- Runtime effect of `NoAI`: no goals, navigation, controls or travel (18 §2.10); the zombie-family conversion timers, hoglin and piglin zombification checks skip a `NoAI` mob (45-5, 45-6).
+- Runtime effect of `LeftHanded`: `Mob.getMainArm` returns the left arm (the renderers' use of it was not traced here). Not saved in buckets, not randomised on load.
 
 ### 3.1 `drop_chances`
 

@@ -193,6 +193,7 @@
  COPY CORESTATE.
  COPY RULES.
  COPY STDMOBS.
+ COPY BRWORLD.
  01 WS-M                   BINARY-LONG.
  01 WS-LEVITATION          BINARY-LONG VALUE 24.
  01 WS-AMPLIFIER           BINARY-LONG VALUE 0.
@@ -217,6 +218,7 @@
  01 WS-OLD-BURN            BINARY-LONG.
  01 WS-FIRE-TICKS          BINARY-LONG VALUE 100.
  01 WS-HEALTH-BEFORE       FLOAT-SHORT.
+ 01 WS-CHARGE-ID           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -283,6 +285,19 @@
              IF WS-KIND = 2
                  CALL "PLAYER-IGNITE" USING L-PLAYER WS-FIRE-TICKS
              END-IF
+*>           The wind charge's damage type wind_charge scales with the difficulty for a player (Peaceful 0, Easy min(d / 2 + 1, d), Normal d, Hard 3d / 2; 20 section 16.3).
+             IF WS-KIND = 6
+                 MOVE CAUSE-WIND-CHARGE TO WS-CAUSE
+                 CALL "BR-WORLD-READY"
+                 EVALUATE BW-DIFFICULTY
+                     WHEN 0
+                         MOVE 0 TO WS-MILLI
+                     WHEN 1
+                         COMPUTE WS-MILLI = FUNCTION MIN(WS-DAMAGE * 500 + 1000, WS-DAMAGE * 1000)
+                     WHEN 3
+                         COMPUTE WS-MILLI = WS-DAMAGE * 1500
+                 END-EVALUATE
+             END-IF
              CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI WS-CAUSE WS-OWNER-ID WS-OWNER-PLAYER WS-RESULT
              IF WS-KIND = 2 AND PL-HEALTH(L-PLAYER) >= WS-HEALTH-BEFORE AND PL-ENTITY-ROW(L-PLAYER) > 0
                  MOVE WS-OLD-BURN TO EN-BURN(PL-ENTITY-ROW(L-PLAYER))
@@ -299,11 +314,16 @@
          END-IF
      END-IF
      MOVE EN-ITEM(L-ROW) TO WS-POWER
+     MOVE EN-ID(L-ROW) TO WS-CHARGE-ID
      CALL "ENTITY-REMOVE" USING L-ROW
      IF WS-KIND = 1
          CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
          MOVE WS-GRIEF TO WS-DESTROY
          CALL "EXPLODE-RUN" USING WS-DIM L-X L-Y L-Z WS-POWER WS-DESTROY WS-SOURCE
+     END-IF
+*>   A wind charge bursts where it hit (16.3).
+     IF WS-KIND = 6
+         CALL "WIND-BURST" USING WS-DIM L-X L-Y L-Z WS-CHARGE-ID
      END-IF
      GOBACK.
  END PROGRAM PROJ-HIT.
@@ -334,6 +354,7 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-STATE-TEXT          PIC X(5).
  01 WS-FIRE                BINARY-LONG VALUE 0.
+ 01 WS-CHARGE-ID           BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -350,9 +371,14 @@
      CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
      MOVE WS-GRIEF TO WS-DESTROY
      MOVE EN-ITEM(L-ROW) TO WS-POWER
+     MOVE EN-ID(L-ROW) TO WS-CHARGE-ID
      CALL "ENTITY-REMOVE" USING L-ROW
      IF WS-KIND = 1
          CALL "EXPLODE-RUN" USING WS-DIM L-X L-Y L-Z WS-POWER WS-DESTROY WS-SOURCE
+     END-IF
+*>   A wind charge bursts in front of the block it hit (16.3).
+     IF WS-KIND = 6
+         CALL "WIND-BURST" USING WS-DIM L-X L-Y L-Z WS-CHARGE-ID
      END-IF
      IF WS-KIND = 2 AND WS-M > 0 AND WS-DESTROY = 1
          COMPUTE WS-CX = FUNCTION INTEGER(L-X)
