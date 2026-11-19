@@ -27,6 +27,15 @@
     05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/banner_patterns.json".
  01 WS-DEF-TABLE REDEFINES WS-DEFS.
     05 WS-DEF              PIC X(48) OCCURS 6 TIMES.
+ 01 WS-HEADS-DATA.
+    05 FILLER PIC X(40) VALUE "entity/skeleton/skeleton".
+    05 FILLER PIC X(40) VALUE "entity/skeleton/wither_skeleton".
+    05 FILLER PIC X(40) VALUE "entity/creeper/creeper".
+    05 FILLER PIC X(40) VALUE "entity/zombie/zombie".
+    05 FILLER PIC X(40) VALUE "entity/player/slim/steve".
+ 01 WS-HEADS REDEFINES WS-HEADS-DATA.
+    05 WS-HEAD-TEXTURE     PIC X(40) OCCURS 5 TIMES.
+ 01 WS-HAS                 BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
@@ -192,6 +201,34 @@
 *>   Sizes, then rows of sprites in order, as wide as the pack's sprites need: 128 pixels, doubled
 *>   while the area of all the sprites would not fill a square of that width (at most 4096 pixels), and
 *>   at least as wide as the widest sprite.
+*>   The entity textures the head items are drawn with (item-special.cob, 34-2 1.6.1: the skeleton, wither skeleton, creeper, zombie, and the default skin of the player head) are sprites
+*>   of their own: no atlas definition lists them, and the entity atlas is another texture than the item pipelines bind.
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > 5
+         MOVE SPACES TO WS-DIR
+         MOVE WS-HEAD-TEXTURE(WS-Q) TO WS-DIR
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-DIR)) TO WS-DIR-LENGTH
+         CALL "ATLAS-RESOURCE-ID" USING WS-DIR WS-DIR-LENGTH WS-ID WS-ID-LENGTH WS-PATH WS-PATH-LENGTH
+*>       Only when a pack of the stack holds the file (the built-in pack has none of them).
+         MOVE 0 TO WS-HAS
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PK-COUNT
+             CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P WS-PATH WS-PATH-LENGTH WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE 1 TO WS-HAS
+             END-IF
+         END-PERFORM
+         CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+         IF WS-HAS = 1 AND WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+             ADD 1 TO AT-SPRITE-COUNT
+             MOVE AT-SPRITE-COUNT TO WS-S
+         END-IF
+         IF WS-HAS = 1 AND WS-S > 0
+             INITIALIZE AT-SPRITE(WS-S)
+             MOVE WS-ID TO AT-NAME(WS-S)
+             MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+             MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+             MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          CALL "ATLAS-LOAD-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
              WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND AT-PACK(WS-S) WS-ANIMATED

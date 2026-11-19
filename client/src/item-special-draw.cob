@@ -5,7 +5,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPECIAL-ITEM-DISPLAY.
-*> USING kind (1 the chest family and 2 the shulker boxes: template_chest and template_shulker_box, 3 the banners: template_banner), context (1 gui, 2 ground, 3 firstperson_righthand),
+*> USING kind (1 the chest family and 2 the shulker boxes: template_chest and template_shulker_box, 3 the banners: template_banner, 4 the heads: template_skull, which has no
+*> firstperson_righthand entry: no transform), context (1 gui, 2 ground, 3 firstperson_righthand),
 *> values out (9 FLOAT-LONG: rotation x y z in degrees, translation x y z in sixteenths, scale x y z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -16,8 +17,11 @@
     05 FILLER PIC X(72) VALUE "+0300000+0200000+0000000+0000000-0032500+0000000+0005325+0005325+0005325".
     05 FILLER PIC X(72) VALUE "+0000000+0000000+0000000+0000000+0010000+0000000+0002500+0002500+0002500".
     05 FILLER PIC X(72) VALUE "+0000000+0900000+0000000+0000000+0000000+0000000+0003750+0003750+0003750".
+    05 FILLER PIC X(72) VALUE "+0300000+0450000+0000000+0000000+0030000+0000000+0010000+0010000+0010000".
+    05 FILLER PIC X(72) VALUE "+0000000+0000000+0000000+0000000+0030000+0000000+0005000+0005000+0005000".
+    05 FILLER PIC X(72) VALUE "+0000000+0000000+0000000+0000000+0000000+0000000+0010000+0010000+0010000".
  01 WS-TABLE REDEFINES WS-DATA.
-    05 WS-ROW OCCURS 6 TIMES.
+    05 WS-ROW OCCURS 9 TIMES.
        10 WS-V             PIC S999V9999 SIGN LEADING SEPARATE OCCURS 9 TIMES.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -30,6 +34,9 @@
      COMPUTE WS-R = L-CONTEXT
      IF L-KIND = 3
          COMPUTE WS-R = L-CONTEXT + 3
+     END-IF
+     IF L-KIND = 4
+         COMPUTE WS-R = L-CONTEXT + 6
      END-IF
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 9
          MOVE WS-V(WS-R, WS-K) TO L-VALUE(WS-K)

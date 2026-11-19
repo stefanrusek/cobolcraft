@@ -36,11 +36,14 @@
     05 FILLER PIC X(24) VALUE "copper_chest            ".
     05 FILLER PIC X(24) VALUE "waxed_oxidized_copper_ch".
     05 FILLER PIC X(24) VALUE "dirt                    ".
+    05 FILLER PIC X(24) VALUE "skeleton_skull          ".
+    05 FILLER PIC X(24) VALUE "wither_skeleton_skull   ".
+    05 FILLER PIC X(24) VALUE "player_head             ".
  01 WS-NAMES REDEFINES WS-NAMES-DATA.
-    05 WS-NAME             PIC X(24) OCCURS 6 TIMES.
- 01 WS-WANT-DATA           PIC X(24) VALUE "216 214 100 100 100 000 ".
+    05 WS-NAME             PIC X(24) OCCURS 9 TIMES.
+ 01 WS-WANT-DATA           PIC X(36) VALUE "216 214 100 100 100 000 400 401 404 ".
  01 WS-WANT REDEFINES WS-WANT-DATA.
-    05 WS-WANT-ROW         OCCURS 6 TIMES.
+    05 WS-WANT-ROW         OCCURS 9 TIMES.
        10 WS-WANT-KIND     PIC 9.
        10 WS-WANT-DYE      PIC 99.
        10 FILLER           PIC X.
@@ -51,8 +54,11 @@
     05 FILLER PIC X(48) VALUE "minecraft:entity/chest/copper                   ".
     05 FILLER PIC X(48) VALUE "minecraft:entity/chest/copper_oxidized          ".
     05 FILLER PIC X(48) VALUE "                                                ".
+    05 FILLER PIC X(48) VALUE "minecraft:entity/skeleton/skeleton              ".
+    05 FILLER PIC X(48) VALUE "minecraft:entity/skeleton/wither_skeleton       ".
+    05 FILLER PIC X(48) VALUE "minecraft:entity/player/slim/steve              ".
  01 WS-IDS REDEFINES WS-IDS-DATA.
-    05 WS-IDX              PIC X(48) OCCURS 6 TIMES.
+    05 WS-IDX              PIC X(48) OCCURS 9 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-KEYS.
@@ -174,7 +180,7 @@
      MOVE WS-RPATH(1:WS-RPATHLEN) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   SPECIAL-ITEM-KIND.
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
          MOVE SPACES TO WS-KEY
          MOVE WS-NAME(WS-I) TO WS-KEY
          IF WS-I = 5
@@ -188,7 +194,7 @@
          MOVE WS-WANT-KIND(WS-I) TO TL-EXPECTED-N
          MOVE WS-KIND TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-         IF WS-KIND = 2
+         IF WS-KIND = 2 OR WS-KIND = 4
              MOVE SPACES TO TL-CASE
              STRING "bugbeitems dye of " FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE INTO TL-CASE
              MOVE WS-WANT-DYE(WS-I) TO TL-EXPECTED-N

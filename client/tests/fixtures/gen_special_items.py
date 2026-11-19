@@ -21,7 +21,7 @@ FACES = [  # direction, corners (letters), minU, minV, maxU, maxV as indices int
 ]
 
 
-def cuboid(o, size, tex, pivot, tsize, exchange, hide=(), grow=0.0, xrot=0.0):
+def cuboid(o, size, tex, pivot, tsize, exchange, hide=(), grow=0.0, xrot=0.0, theight=None):
     ox, oy, oz = o
     w, h, d = size
     u, v = tex
@@ -49,6 +49,8 @@ def cuboid(o, size, tex, pivot, tsize, exchange, hide=(), grow=0.0, xrot=0.0):
                 cz = pz + dy * math.sin(xrot) + dz * math.cos(xrot)
             pts.append((cx, cy, cz))
         uv = [(U[mxu], V[mnv]), (U[mnu], V[mnv]), (U[mnu], V[mxv]), (U[mxu], V[mxv])]
+        if theight:
+            uv = [(a, b * tsize / theight) for a, b in uv]  # v in texels of a square texture of the width
         if not exchange:
             # the letters of a y-down model wind the other way once the model is turned into the world (a proper rotation): the vertices
             # 0, 3, 2, 1 (each with its own texture corner) are clockwise seen from outside, the winding of the terrain.
@@ -107,6 +109,18 @@ def rotate_quads(quads, pivot, rx_deg, rz_deg):
     return out
 
 
+def head_mob():
+    """The skeleton, wither skeleton and creeper heads (34-2 1.6.1): one cuboid, 64 x 32; the item definition's T (0.5, 0, 0.5), S (1, -1, -1)."""
+    return place(cuboid((-4, -8, -4), (8, 8, 8), (0, 0), (0, 0, 0), 64, False, theight=32), (0.5, 0, 0.5), (1, -1, -1))
+
+
+def head_humanoid():
+    """The zombie and player heads: the head and the hat (tex (32, 0), grow 0.25), 64 x 64."""
+    q = cuboid((-4, -8, -4), (8, 8, 8), (0, 0), (0, 0, 0), 64, False)
+    q += cuboid((-4, -8, -4), (8, 8, 8), (32, 0), (0, 0, 0), 64, False, grow=0.25)
+    return place(q, (0.5, 0, 0.5), (1, -1, -1))
+
+
 def bell(rx_deg=0.0, rz_deg=0.0):
     q = []
     q += cuboid((-3, -6, -3), (6, 7, 6), (0, 0), (8, 12, 8), 32, True)
@@ -162,8 +176,13 @@ def show(name, quads, want):
 DISPLAY = {  # kind -> context -> (rotation, translation in sixteenths, scale); 52 sections 3.10, 4.5 and 6.7
     "chest": {"gui": ((30, 45, 0), (0, 0, 0), 0.625), "ground": ((0, 0, 0), (0, 3, 0), 0.25), "hand": ((0, 315, 0), (0, 0, 0), 0.4)},
     "shulker": {"gui": ((30, 45, 0), (0, 0, 0), 0.625), "ground": ((0, 0, 0), (0, 3, 0), 0.25), "hand": ((0, 315, 0), (0, 0, 0), 0.4)},
+    "creeper": {"gui": ((30, 45, 0), (0, 3, 0), 1.0), "ground": ((0, 0, 0), (0, 3, 0), 0.5), "hand": ((0, 0, 0), (0, 0, 0), 1.0)},
+    "zombie": {"gui": ((30, 45, 0), (0, 3, 0), 1.0), "ground": ((0, 0, 0), (0, 3, 0), 0.5), "hand": ((0, 0, 0), (0, 0, 0), 1.0)},
     "banner": {"gui": ((30, 20, 0), (0, -3.25, 0), 0.5325), "ground": ((0, 0, 0), (0, 1, 0), 0.25), "hand": ((0, 90, 0), (0, 0, 0), 0.375)},
 }
+
+
+KINDS = {}
 
 
 def mat_mul(a, b):
@@ -200,7 +219,7 @@ def cross(pts):
 
 def gui_visible(kind):
     """Quads facing the viewer (cross.z < 0, the view along -z) with the gui display, and the screen box of a 16 pixel cell at (0, 0): x 8 + 16 p.x, y 8 - 16 p.y."""
-    quads = transformed({"chest": chest, "shulker": shulker, "banner": banner}[kind](), kind, "gui")
+    quads = transformed(KINDS[kind](), kind, "gui")
     vis = [i + 1 for i, q in enumerate(quads) if cross(q[1])[2] < 0]
     xs = [8 + 16 * p[0] for i in vis for p in quads[i - 1][1]]
     ys = [8 - 16 * p[1] for i in vis for p in quads[i - 1][1]]
@@ -208,25 +227,31 @@ def gui_visible(kind):
 
 
 def hand_visible(kind, offset=(0, 0, -1.5)):
-    """Quads facing an eye at the origin with the firstperson display and the model moved by offset: cross . c1 > 0; the sum of their corner coordinates."""
-    quads = transformed({"chest": chest, "shulker": shulker, "banner": banner}[kind](), kind, "hand", offset)
+    """Quads facing an eye at the origin with the firstperson display and the model moved by offset: cross . c1 > 0; the sums over the six vertices (corners 1 2 3 1 3 4) of
+    those quads, per axis."""
+    quads = transformed(KINDS[kind](), kind, "hand", offset)
     vis = []
+    sums = [0.0, 0.0, 0.0]
     for i, q in enumerate(quads):
         c = cross(q[1])
         if sum(c[k] * q[1][0][k] for k in range(3)) > 0:
             vis.append(i + 1)
-    sums = [sum(p[k] for i in vis for p in quads[i - 1][1]) for k in range(3)]
+            for ci in (0, 1, 2, 0, 2, 3):
+                for k in range(3):
+                    sums[k] += q[1][ci][k]
     return vis, sums
 
+
+KINDS.update({"chest": chest, "shulker": shulker, "banner": banner, "creeper": head_mob, "zombie": head_humanoid})
 
 if __name__ == "__main__":
     if sys.argv[1:2] == ["bellmesh"]:
         for t, d in ((0, 0), (5, 3), (20, 5), (13, 2), (7, 4)):
             print("bellmesh ticks", t, "dir", d, bell_mesh(t, d, (10, 64, 10), (10.5, 66, 8.5)))
         sys.exit(0)
-    kinds = sys.argv[1:] or ["chest", "shulker", "banner", "bell"]
+    kinds = sys.argv[1:] or ["chest", "shulker", "banner", "creeper", "zombie", "bell"]
     for k in kinds:
         if k in DISPLAY:
             print(k, "gui visible", *gui_visible(k))
             print(k, "hand visible", *hand_visible(k))
-        show(k, {"chest": chest, "shulker": shulker, "banner": banner, "bell": bell}[k](), range(1, 40))
+        show(k, {**KINDS, "bell": bell}[k](), range(1, 40))

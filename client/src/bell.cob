@@ -310,7 +310,7 @@
                      COMPUTE SP-RX = WS-XROT * 180 / FUNCTION PI
                      COMPUTE SP-RZ = WS-ZROT * 180 / FUNCTION PI
                      MOVE WS-SPRITE TO SP-SPRITE
-                     MOVE 32 TO SP-TSIZE
+                     MOVE 32 TO SP-TSIZE SP-THEIGHT
                      MOVE 1 TO SP-EXCH
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
                          MOVE 0 TO SP-T(WS-K)

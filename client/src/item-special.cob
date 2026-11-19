@@ -49,7 +49,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPECIAL-ITEM-KIND.
-*> USING CLIENT-STATE, item id, kind out (0 an item drawn from its icon or block model, 1 the chest family, 2 a shulker box, 3 a banner), sprite id 1 and its length, sprite id 2 and
+*> USING CLIENT-STATE, item id, kind out (0 an item drawn from its icon or block model, 1 the chest family, 2 a shulker box, 3 a banner, 4 a head), sprite id 1 and its length, sprite id 2 and
 *> its length (PIC X(80) ids of the block atlas: the chest texture of 52 3.3 (the date of the christmas texture is read from the clock) or the shulker texture of 4.1, or the banner's
 *> pole and cloth `banner_base` and the white `base` layer the dye tints, 6.3), dye out (the shulker box's dye with 16 undyed, the banner's dye). The standard set's item names are
 *> the keys (a set of the cobolcraft world type has none of these).
@@ -118,6 +118,33 @@
              MOVE WS-DATE(5:4) TO WS-MMDD
              CALL "CHEST-CHRISTMAS" USING WS-MMDD WS-XMAS
              CALL "CHEST-TEXTURE" USING WS-BLOCK-NAME WS-TYPE WS-XMAS L-ID1 L-LEN1
+         WHEN WS-NAME = "skeleton_skull" OR WS-NAME = "wither_skeleton_skull" OR WS-NAME = "creeper_head" OR WS-NAME = "zombie_head"
+                 OR WS-NAME = "player_head"
+*>           A head (34-2 1.6.1): the kind 4, the model in L-DYE (0 skeleton, 1 wither skeleton, 2 creeper: the mob head of 64 x 32; 3 zombie, 4 player: the humanoid head with its hat of 64 x 64)
+*>           and the entity texture the atlas holds for it (the player's is the default skin of 47 section 2, entry 6).
+             MOVE 4 TO L-KIND
+             EVALUATE WS-NAME
+                 WHEN "skeleton_skull"
+                     MOVE 0 TO L-DYE
+                     MOVE "minecraft:entity/skeleton/skeleton" TO L-ID1
+                     MOVE 34 TO L-LEN1
+                 WHEN "wither_skeleton_skull"
+                     MOVE 1 TO L-DYE
+                     MOVE "minecraft:entity/skeleton/wither_skeleton" TO L-ID1
+                     MOVE 41 TO L-LEN1
+                 WHEN "creeper_head"
+                     MOVE 2 TO L-DYE
+                     MOVE "minecraft:entity/creeper/creeper" TO L-ID1
+                     MOVE 32 TO L-LEN1
+                 WHEN "zombie_head"
+                     MOVE 3 TO L-DYE
+                     MOVE "minecraft:entity/zombie/zombie" TO L-ID1
+                     MOVE 30 TO L-LEN1
+                 WHEN OTHER
+                     MOVE 4 TO L-DYE
+                     MOVE "minecraft:entity/player/slim/steve" TO L-ID1
+                     MOVE 34 TO L-LEN1
+             END-EVALUATE
          WHEN WS-NAME = "shulker_box"
              MOVE 2 TO L-KIND
              MOVE 16 TO L-DYE
@@ -284,16 +311,16 @@
                  EVALUATE WS-N
                      WHEN 1
                          COMPUTE WS-U16 = WS-U(WS-FMAXU(WS-K) + 1) * 16 / SP-TSIZE
-                         COMPUTE WS-V16 = WS-V(WS-FMINV(WS-K) + 1) * 16 / SP-TSIZE
+                         COMPUTE WS-V16 = WS-V(WS-FMINV(WS-K) + 1) * 16 / SP-THEIGHT
                      WHEN 2
                          COMPUTE WS-U16 = WS-U(WS-FMINU(WS-K) + 1) * 16 / SP-TSIZE
-                         COMPUTE WS-V16 = WS-V(WS-FMINV(WS-K) + 1) * 16 / SP-TSIZE
+                         COMPUTE WS-V16 = WS-V(WS-FMINV(WS-K) + 1) * 16 / SP-THEIGHT
                      WHEN 3
                          COMPUTE WS-U16 = WS-U(WS-FMINU(WS-K) + 1) * 16 / SP-TSIZE
-                         COMPUTE WS-V16 = WS-V(WS-FMAXV(WS-K) + 1) * 16 / SP-TSIZE
+                         COMPUTE WS-V16 = WS-V(WS-FMAXV(WS-K) + 1) * 16 / SP-THEIGHT
                      WHEN OTHER
                          COMPUTE WS-U16 = WS-U(WS-FMAXU(WS-K) + 1) * 16 / SP-TSIZE
-                         COMPUTE WS-V16 = WS-V(WS-FMAXV(WS-K) + 1) * 16 / SP-TSIZE
+                         COMPUTE WS-V16 = WS-V(WS-FMAXV(WS-K) + 1) * 16 / SP-THEIGHT
                  END-EVALUATE
                  CALL "ATLAS-UV" USING CLIENT-STATE SP-SPRITE WS-U16 WS-V16 SQ-U(SQ-COUNT, WS-J) SQ-V(SQ-COUNT, WS-J)
              END-PERFORM
@@ -364,8 +391,10 @@
     05 FILLER PIC X(95) VALUE "-0010-0044-0001+0020+0002+0002+0000+0042+0000+0000+0000+0000+0000+0000+0000+0000+0000+0000+0001".
     05 FILLER PIC X(95) VALUE "-0010+0000-0002+0020+0040+0001+0000+0000+0000-0044+0000+0000-0044+0000-0045+0000+0000+0000+0001".
     05 FILLER PIC X(95) VALUE "-0010+0000-0002+0020+0040+0001+0000+0000+0000-0044+0000+0000-0044+0000-0045+0000+0000+0005+0002".
+    05 FILLER PIC X(95) VALUE "-0004-0008-0004+0008+0008+0008+0000+0000+0000+0000+0000+0000+0000+0000+0000+0000+0000+0000+0001".
+    05 FILLER PIC X(95) VALUE "-0004-0008-0004+0008+0008+0008+0032+0000+0000+0000+0000+0000+0000+0000+0000+0000+0000+0025+0001".
  01 WS-ROWS REDEFINES WS-ROWS-DATA.
-    05 WS-ROW OCCURS 9 TIMES.
+    05 WS-ROW OCCURS 11 TIMES.
        10 WS-F             PIC S9(4) SIGN LEADING SEPARATE OCCURS 19 TIMES.
 *> The diffuse colour of each dye (52 6.3), red green blue as three digits each.
  01 WS-COLOURS-DATA        PIC X(144) VALUE "249255254249128029199078189058179218254216061128199031243139170071079082157157151022156156137050184060068170131084050094124022176046038029029033".
@@ -385,6 +414,7 @@
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-EXCH                BINARY-LONG.
+ 01 WS-THEIGHT             BINARY-LONG.
  01 WS-TX                  FLOAT-LONG OCCURS 3 TIMES.
  01 WS-SX                  FLOAT-LONG OCCURS 3 TIMES.
  COPY CLSQP.
@@ -411,6 +441,7 @@
      END-IF
      MOVE 0 TO WS-TX(1) WS-TX(2) WS-TX(3)
      MOVE 1 TO WS-SX(1) WS-SX(2) WS-SX(3)
+     MOVE 64 TO WS-THEIGHT
      MOVE 1 TO WS-FIRST WS-EXCH
      MOVE 3 TO WS-LAST
      EVALUATE WS-KIND
@@ -422,6 +453,18 @@
              MOVE 1.4995 TO WS-TX(2)
              MOVE 0.9995 TO WS-SX(1)
              MOVE -0.9995 TO WS-SX(2) WS-SX(3)
+         WHEN 4
+*>           The head is the first row, the hat of a humanoid head the second (grown 0.25 pixel); y down like the banner, the item's own transformation T (0.5, 0, 0.5), S (1, -1, -1).
+             MOVE 10 TO WS-FIRST
+             MOVE 10 TO WS-LAST
+             MOVE 32 TO WS-THEIGHT
+             IF WS-DYE >= 3
+                 MOVE 11 TO WS-LAST
+                 MOVE 64 TO WS-THEIGHT
+             END-IF
+             MOVE 0 TO WS-EXCH
+             MOVE 0.5 TO WS-TX(1) WS-TX(3)
+             MOVE -1 TO WS-SX(2) WS-SX(3)
          WHEN 3
              MOVE 6 TO WS-FIRST
              MOVE 9 TO WS-LAST
@@ -438,6 +481,7 @@
              MOVE 1 TO SP-TINT(WS-K)
          END-PERFORM
          MOVE 64 TO SP-TSIZE
+         MOVE WS-THEIGHT TO SP-THEIGHT
          MOVE WS-EXCH TO SP-EXCH
          IF SP-SPRITE = 2
              MOVE WS-SPRITE2 TO SP-SPRITE
