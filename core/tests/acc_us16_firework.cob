@@ -61,6 +61,8 @@
      COMPUTE EN-Y(WS-ROW) = EN-Y(WS-PIG) + 0.45
      MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
      MOVE EN-Z(WS-PIG) TO EN-Z(WS-ROW)
+*>   Shot at an angle (PJ-I5 1): it does not accelerate (21 section 8.7), so it stays at the pig's height until it explodes.
+     MOVE 1 TO PJ-I5(WS-SLOT)
      MOVE PJ-I2(WS-SLOT) TO WS-I
      MOVE EN-HEALTH(WS-PIG) TO WS-H1
      MOVE EN-HEALTH(WS-PIG2) TO WS-H2

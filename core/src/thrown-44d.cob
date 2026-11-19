@@ -3,7 +3,7 @@
 *> life passes the lifetime it explodes: Entity Event 17 to the viewers, the damage D = 5 + 2 x stars (0 without stars) to the attached entity, and D x sqrt((5 - distance) / 5) to the other living
 *> entities within 5 blocks that the rocket sees (the distance and the sight line go to the entity's mid height); mobs lose whole points (rounded), players are hurt through HEALTH-HURT
 *> (CAUSE-EXPLOSION: the fireworks damage type does not exist here).
-*> Gaps: the rocket's acceleration (not in the documents), the launch noise, riding an elytra boost (gliding does not exist in the core), the star effects (colour, shape, trail, twinkle,
+*> PJ-I5 1: shot at an angle (no acceleration). Gaps: the horizontal-collision factor of the acceleration, the launch noise, riding an elytra boost (gliding does not exist in the core), the star effects (colour, shape, trail, twinkle,
 *> particles), sampled collider heights, the explosion sounds, the firework item with stars (item stacks carry no components, so a player's rocket has duration 1 and no star), and use
 *> on a block.
 *>
@@ -207,6 +207,13 @@
      IF PJ-I1(WS-SLOT) > PJ-I2(WS-SLOT)
          CALL "FIREWORK-EXPLODE" USING L-ROW
          GOBACK
+     END-IF
+*>   A rocket that is not attached to an entity (PJ-I4) and was not shot at an angle (PJ-I5, the crossbow and the dispenser) accelerates (21 section 8.7): horizontally by 15 percent a tick,
+*>   upward by 0.04 a tick; it then moves by the new velocity and keeps it. (The factor 1.0 of a rocket that had a horizontal collision is not modelled: the step does not collide.)
+     IF PJ-I4(WS-SLOT) = 0 AND PJ-I5(WS-SLOT) = 0
+         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 1.15
+         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + 0.04
+         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 1.15
      END-IF
      COMPUTE EN-X(L-ROW) = EN-X(L-ROW) + EN-VX(L-ROW)
      COMPUTE EN-Y(L-ROW) = EN-Y(L-ROW) + EN-VY(L-ROW)
