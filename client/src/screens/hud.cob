@@ -241,7 +241,7 @@
                  IF WS-I < 5
                      MOVE 1 TO SM-W-COLOUR(SM-WIDGET-COUNT)
                  ELSE
-                     MOVE 8454176 TO SM-W-COLOUR(SM-WIDGET-COUNT)
+                     MOVE 8453920 TO SM-W-COLOUR(SM-WIDGET-COUNT)
                  END-IF
              END-PERFORM
          END-IF

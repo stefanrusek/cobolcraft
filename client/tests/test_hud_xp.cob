@@ -117,7 +117,7 @@
          IF SM-W-KIND(WS-I) = WK-LABEL AND SM-W-ARG(WS-I) = 78
              ADD 1 TO WS-LABELS
              MOVE SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) TO WS-LABEL-TEXT
-             IF SM-W-COLOUR(WS-I) = 8454176
+             IF SM-W-COLOUR(WS-I) = 8453920
                  MOVE SM-W-Y(WS-I) TO WS-GREEN-Y
                  MOVE SM-W-X(WS-I) TO WS-LABEL-X
              ELSE
@@ -128,7 +128,7 @@
 *>   The offsets of the black copies from the green one (the green one is drawn last, so it is known after the loop).
      MOVE 0 TO WS-BLACKS
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF SM-W-KIND(WS-I) = WK-LABEL AND SM-W-ARG(WS-I) = 78 AND SM-W-COLOUR(WS-I) NOT = 8454176
+         IF SM-W-KIND(WS-I) = WK-LABEL AND SM-W-ARG(WS-I) = 78 AND SM-W-COLOUR(WS-I) NOT = 8453920
              ADD 1 TO WS-BLACKS
              EVALUATE TRUE
                  WHEN SM-W-X(WS-I) = WS-LABEL-X + 1 AND SM-W-Y(WS-I) = WS-GREEN-Y

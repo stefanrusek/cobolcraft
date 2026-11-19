@@ -37,7 +37,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-GC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-DARK RL-UI-TINT
+     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-GC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-TINT
      CALL "HB-RNG-SEED" USING CLIENT-STATE
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
@@ -96,7 +96,7 @@
 *>               Without the sprite the progress is the white swatch tinted #80ff20 (the colour of the level number).
                  IF WS-SPRITE-ROW = GSP-XP-PROGRESS AND GS-W(GSP-XP-PROGRESS) = 0
                      MOVE SW-WHITE TO WS-SWATCH
-                     MOVE 8454176 TO SM-W-COLOUR(WS-W)
+                     MOVE 8453920 TO SM-W-COLOUR(WS-W)
                  END-IF
                  MOVE 0 TO WS-LENGTH
              WHEN SM-W-KIND(WS-W) = WK-IMAGE
@@ -803,7 +803,7 @@
                  MOVE L-V1 TO B-V(WS-COUNT)
              END-IF
              MOVE 0 TO B-Z(WS-COUNT)
-             COMPUTE B-B(WS-COUNT) = 1 - RL-UI-DARK
+             MOVE 1 TO B-B(WS-COUNT)
              COMPUTE B-A(WS-COUNT) = 1 - RL-UI-FADE
              MOVE 0 TO B-SKY(WS-COUNT)
              MOVE WS-TR TO B-R(WS-COUNT)
@@ -862,13 +862,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-TEXT-C.
-*> USING CLIENT-STATE, text, length, x, y, colour (RGB integer): UI-TEXT with the glyphs at the grey luminance of the colour (the
-*> vertex carries one brightness, so #404040 is 0.251 and white 1); the brightness is restored afterwards.
+*> USING CLIENT-STATE, text, length, x, y, colour (RGB integer): UI-TEXT with the glyphs tinted by the colour (the UI pipeline ignores vertex
+*> brightness, shim-abi section 9: texel x tint; a colour of 0 is no tint, white); the tint is cleared afterwards.
  DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-R                   BINARY-LONG.
- 01 WS-G                   BINARY-LONG.
- 01 WS-B                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-TEXT                 PIC X(256).
@@ -877,12 +873,9 @@
  01 L-Y                    BINARY-LONG.
  01 L-RGB                  BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y L-RGB.
-     COMPUTE WS-R = L-RGB / 65536
-     COMPUTE WS-G = FUNCTION MOD(L-RGB / 256, 256)
-     COMPUTE WS-B = FUNCTION MOD(L-RGB, 256)
-     COMPUTE RL-UI-DARK = 1 - (WS-R * 299 + WS-G * 587 + WS-B * 114) / 255000
+     MOVE L-RGB TO RL-UI-TINT
      CALL "UI-TEXT" USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y
-     MOVE 0 TO RL-UI-DARK
+     MOVE 0 TO RL-UI-TINT
      GOBACK.
  END PROGRAM UI-TEXT-C.
 

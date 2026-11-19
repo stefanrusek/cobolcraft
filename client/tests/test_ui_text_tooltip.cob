@@ -50,28 +50,28 @@
      MOVE 2 TO WS-LENGTH
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z WS-Z2 WS-X WS-Y WS-Z3 WS-Z4 WS-TEXT WS-LENGTH WS-Z5
      CALL "UI-RENDER" USING CLIENT-STATE
-     COMPUTE WS-MILLI ROUNDED = RL-UI-B(1) * 1000
-     MOVE "acceptance US12 12§5.6 a label with no colour is drawn white (brightness 1)" TO TL-CASE
+     COMPUTE WS-MILLI ROUNDED = RL-UI-R(1) * 1000
+     MOVE "acceptance US12 12§5.6 a label with no colour is drawn white (tint 1)" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      MOVE WS-MILLI TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4210752 TO WS-RGB
      CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-RGB
      CALL "UI-RENDER" USING CLIENT-STATE
-     COMPUTE WS-MILLI ROUNDED = RL-UI-B(1) * 1000
-     MOVE "acceptance US12 12§5.6 a label coloured #404040 is drawn at brightness 0.251" TO TL-CASE
+     COMPUTE WS-MILLI ROUNDED = RL-UI-R(1) * 1000
+     MOVE "acceptance US12 12§5.6 a label coloured #404040 is drawn at tint 0.251" TO TL-CASE
      MOVE 251 TO TL-EXPECTED-N
      MOVE WS-MILLI TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 12§5.6 the colour applies to every glyph of the text and to no other widget (second glyph too)" TO TL-CASE
-     COMPUTE WS-MILLI ROUNDED = RL-UI-B(RL-UI-COUNT) * 1000
+     COMPUTE WS-MILLI ROUNDED = RL-UI-R(RL-UI-COUNT) * 1000
      MOVE 251 TO TL-EXPECTED-N
      MOVE WS-MILLI TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO SM-WIDGET-COUNT
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z WS-Z2 WS-X WS-Y WS-Z3 WS-Z4 WS-TEXT WS-LENGTH WS-Z5
      CALL "UI-RENDER" USING CLIENT-STATE
-     COMPUTE WS-MILLI ROUNDED = RL-UI-B(1) * 1000
+     COMPUTE WS-MILLI ROUNDED = RL-UI-R(1) * 1000
      MOVE "acceptance US12 12§5.6 a widget added after a coloured one starts white again" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      MOVE WS-MILLI TO TL-OBSERVED-N
@@ -167,8 +167,8 @@
      END-IF
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     COMPUTE WS-MILLI ROUNDED = RL-UT-B(RL-UT-COUNT) * 1000
-     MOVE "acceptance US12 12§5.8 the last glyph of the line has the line's colour brightness (0.251)" TO TL-CASE
+     COMPUTE WS-MILLI ROUNDED = RL-UT-R(RL-UT-COUNT) * 1000
+     MOVE "acceptance US12 12§5.8 the last glyph of the line has the line's colour as its tint (0.251)" TO TL-CASE
      MOVE 251 TO TL-EXPECTED-N
      MOVE WS-MILLI TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
