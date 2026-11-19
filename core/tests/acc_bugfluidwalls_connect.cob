@@ -352,8 +352,24 @@
     05 FILLER PIC X(48) VALUE "-1|1|0|stone".
     05 FILLER PIC X(110) VALUE "0|1|0|glass_pane[west=true,east=false]".
     05 FILLER PIC X(110) VALUE " ".
+    05 FILLER PIC X(72) VALUE "a sign above a straight run of walls raises the post (wall_post_override)".
+    05 FILLER PIC X(24) VALUE "cobblestone_wall".
+    05 FILLER PIC X(48) VALUE "-1|1|0|cobblestone_wall".
+    05 FILLER PIC X(48) VALUE "1|1|0|cobblestone_wall".
+    05 FILLER PIC X(48) VALUE "0|2|-1|stone".
+    05 FILLER PIC X(48) VALUE "0|2|0|oak_wall_sign[facing=south]".
+    05 FILLER PIC X(110) VALUE "0|1|0|cobblestone_wall[west=low,east=low,up=true]".
+    05 FILLER PIC X(110) VALUE " ".
+    05 FILLER PIC X(72) VALUE "a stone block placed beside a wall connects the wall".
+    05 FILLER PIC X(24) VALUE "stone".
+    05 FILLER PIC X(48) VALUE "-1|1|0|cobblestone_wall".
+    05 FILLER PIC X(48) VALUE " ".
+    05 FILLER PIC X(48) VALUE " ".
+    05 FILLER PIC X(48) VALUE " ".
+    05 FILLER PIC X(110) VALUE "0|1|0|stone".
+    05 FILLER PIC X(110) VALUE "-1|1|0|cobblestone_wall[east=low,up=true]".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-CASE-ROW OCCURS 35 TIMES.
+    05 WS-CASE-ROW OCCURS 37 TIMES.
        10 WS-C-LABEL       PIC X(72).
        10 WS-C-ITEM        PIC X(24).
        10 WS-C-PRE         PIC X(48) OCCURS 3 TIMES.
@@ -413,7 +429,7 @@
      COMPUTE WS-PX = WS-BX + 6
      COMPUTE WS-PY = WS-FLOOR + 4
      COMPUTE WS-PZ = WS-BZ + 6
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 35
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 37
          PERFORM RUN-CASE
      END-PERFORM
      STOP RUN.
