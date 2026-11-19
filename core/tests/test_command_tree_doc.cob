@@ -4,7 +4,8 @@
 *> core/tests/fixtures/gen_command_tree.py: the listings with the {Tn} and {=Tn} marks expanded, the gamerule rows of the default feature set). The core's lines are also
 *> written to build/command-tree-core.txt. Every command is asserted against its listing except those of WS-KNOWN, which have the document's node counts and differ in the names
 *> of arguments, the order of children or the parser ids of arguments (outside the lane that made the counts equal): the last case pins that set, so that a command that comes
-*> to equal its listing, or a command that starts to differ, changes it.
+*> to equal its listing, or a command that starts to differ, changes it. A second pass builds a tree of the commands of WS-FILL alone with BR-DOC-FILL (no hand registration): their nodes
+*> equal the listing too, with every executable node marked as not run (every kind of property and provider of the listings: greedy and phrase strings, the four providers).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COMMAND-TREE-DOC.
  ENVIRONMENT DIVISION.
@@ -129,6 +130,9 @@
  01 WS-ROOTS               BINARY-LONG.
  01 WS-ORDER-OK            BINARY-LONG.
  01 WS-KNOWN              PIC X(400).
+ 01 WS-FILL               PIC X(120) VALUE " advancement datapack stopsound posteffect test execute ".
+ 01 WS-FILL-ONLY           BINARY-LONG VALUE 0.
+ 01 WS-FILL-NAME           PIC X(32).
  01 WS-DIFFERING           PIC X(400).
  01 WS-DIFFERING-PTR       BINARY-LONG.
  01 WS-PATTERN             PIC X(66).
@@ -199,6 +203,28 @@
      MOVE FUNCTION TRIM(TL-EXPECTED) TO TL-EXPECTED
      MOVE FUNCTION TRIM(WS-DIFFERING) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The second pass: the filled commands alone.
+     MOVE 1 TO WS-FILL-ONLY
+     CALL "BR-TREE-RESET"
+     MOVE "advancement" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     MOVE "datapack" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     MOVE "stopsound" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     MOVE "posteffect" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     MOVE "test" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     MOVE "execute" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     MOVE "nosuchcommand" TO WS-FILL-NAME
+     CALL "BR-DOC-FILL" USING WS-FILL-NAME
+     PERFORM DUMP-CORE
+     MOVE 1 TO WS-FX
+     PERFORM UNTIL WS-FX > WS-FX-COUNT
+         PERFORM COMPARE-ROOT
+     END-PERFORM
      STOP RUN.
 
 *> The fixture lines into the table.
@@ -244,6 +270,7 @@
              END-IF
          END-IF
      END-PERFORM
+     IF WS-FILL-ONLY = 0
      OPEN OUTPUT DUMP-FILE
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CR-COUNT
          MOVE WS-CR-DEPTH(WS-I) TO WS-DEPTH-EDIT
@@ -251,7 +278,8 @@
          STRING FUNCTION TRIM(WS-DEPTH-EDIT) " " FUNCTION TRIM(WS-CR-TEXT(WS-I) TRAILING) DELIMITED BY SIZE INTO DUMP-RECORD
          WRITE DUMP-RECORD
      END-PERFORM
-     CLOSE DUMP-FILE.
+     CLOSE DUMP-FILE
+     END-IF.
 
 *> The text of the node WS-NODE in the document's notation.
  NODE-TEXT.
@@ -381,6 +409,29 @@
      PERFORM UNTIL WS-FX-END > WS-FX-COUNT OR WS-FX-DEPTH(WS-FX-END) = 0
          ADD 1 TO WS-FX-END
      END-PERFORM
+     MOVE 0 TO WS-LENGTH
+     INSPECT WS-FX-TEXT(WS-FX) TALLYING WS-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+     MOVE SPACES TO WS-PATTERN
+     STRING " " WS-FX-TEXT(WS-FX)(1:WS-LENGTH) " " DELIMITED BY SIZE INTO WS-PATTERN
+     MOVE 0 TO WS-IS-KNOWN
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 120 - WS-LENGTH - 1 OR WS-IS-KNOWN = 1
+         IF WS-FILL(WS-K:WS-LENGTH + 2) = WS-PATTERN(1:WS-LENGTH + 2)
+             MOVE 1 TO WS-IS-KNOWN
+         END-IF
+     END-PERFORM
+     IF WS-FILL-ONLY = 1 AND WS-IS-KNOWN = 0
+         MOVE WS-FX-END TO WS-FX
+     ELSE
+         PERFORM COMPARE-BODY
+     END-IF.
+
+*> The fixture command at WS-FX against the core's root of that name (the second pass: its case names say fill only).
+ COMPARE-BODY.
+     MOVE WS-FX TO WS-FX-END
+     ADD 1 TO WS-FX-END
+     PERFORM UNTIL WS-FX-END > WS-FX-COUNT OR WS-FX-DEPTH(WS-FX-END) = 0
+         ADD 1 TO WS-FX-END
+     END-PERFORM
 *>   the name of the root: the text up to the first space
      MOVE 0 TO WS-LENGTH
      INSPECT WS-FX-TEXT(WS-FX) TALLYING WS-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
@@ -406,8 +457,13 @@
          END-PERFORM
      END-IF
      MOVE SPACES TO TL-CASE TL-EXPECTED TL-OBSERVED
-     STRING "test command tree doc " WS-NAME(1:WS-LENGTH) " has the nodes of the document's listing (57-4 section 7)"
-         DELIMITED BY SIZE INTO TL-CASE
+     IF WS-FILL-ONLY = 0
+         STRING "test command tree doc " WS-NAME(1:WS-LENGTH) " has the nodes of the document's listing (57-4 section 7)"
+             DELIMITED BY SIZE INTO TL-CASE
+     ELSE
+         STRING "test command tree doc fill only " WS-NAME(1:WS-LENGTH) " built by BR-DOC-FILL alone has the nodes of the document's listing"
+             DELIMITED BY SIZE INTO TL-CASE
+     END-IF
      IF WS-CR = 0
          MOVE "present" TO TL-EXPECTED
          MOVE "no such root" TO TL-OBSERVED
@@ -451,7 +507,7 @@
              MOVE 1 TO WS-IS-KNOWN
          END-IF
      END-PERFORM
-     IF WS-IS-KNOWN = 0
+     IF WS-IS-KNOWN = 0 OR WS-FILL-ONLY = 1
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      ELSE
          IF TL-EXPECTED NOT = TL-OBSERVED
