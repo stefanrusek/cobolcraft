@@ -144,9 +144,68 @@
  END PROGRAM PORTAL-BE-FORGET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-BE-AGE.
+*> USING data (the chunk list's data bytes), offset (the bytes before the tag), length, age out (BINARY-DOUBLE): the Age of the tag, the network form of a
+*> compound (07: no name, the entries, an End tag); the gateway's carries Age (a long), ExactTeleport (a byte) and exit_portal (an int array of 3), walked entry by
+*> entry; 0 when it has no Age or does not parse.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-TAG                 BINARY-LONG.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-STOP                BINARY-LONG.
+ 01 WS-IS-AGE              BINARY-LONG.
+ 01 WS-LEN4                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-DATA                 PIC X(262144).
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-AGE                  BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-DATA L-OFFSET L-LENGTH L-AGE.
+     MOVE 0 TO L-AGE
+     COMPUTE WS-POS = L-OFFSET + 2
+     COMPUTE WS-END = L-OFFSET + L-LENGTH
+     MOVE 0 TO WS-STOP
+     PERFORM UNTIL WS-STOP = 1 OR WS-POS > WS-END
+         COMPUTE WS-TAG = FUNCTION ORD(L-DATA(WS-POS:1)) - 1
+         IF WS-TAG = 0
+             MOVE 1 TO WS-STOP
+         ELSE
+             COMPUTE WS-NAME-LENGTH = (FUNCTION ORD(L-DATA(WS-POS + 1:1)) - 1) * 256 + FUNCTION ORD(L-DATA(WS-POS + 2:1)) - 1
+             MOVE 0 TO WS-IS-AGE
+             IF WS-TAG = 4 AND WS-NAME-LENGTH = 3 AND L-DATA(WS-POS + 3:3) = "Age"
+                 MOVE 1 TO WS-IS-AGE
+             END-IF
+             COMPUTE WS-POS = WS-POS + 3 + WS-NAME-LENGTH
+             EVALUATE WS-TAG
+                 WHEN 4
+                     IF WS-IS-AGE = 1
+                         MOVE 0 TO L-AGE
+                         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 7
+                             COMPUTE WS-BYTE = FUNCTION ORD(L-DATA(WS-POS + WS-K:1)) - 1
+                             COMPUTE L-AGE = L-AGE * 256 + WS-BYTE
+                         END-PERFORM
+                     END-IF
+                     ADD 8 TO WS-POS
+                 WHEN 1
+                     ADD 1 TO WS-POS
+                 WHEN 11
+                     COMPUTE WS-LEN4 = (FUNCTION ORD(L-DATA(WS-POS:1)) - 1) * 16777216 + (FUNCTION ORD(L-DATA(WS-POS + 1:1)) - 1) * 65536
+                         + (FUNCTION ORD(L-DATA(WS-POS + 2:1)) - 1) * 256 + FUNCTION ORD(L-DATA(WS-POS + 3:1)) - 1
+                     COMPUTE WS-POS = WS-POS + 4 + WS-LEN4 * 4
+                 WHEN OTHER
+                     MOVE 1 TO WS-STOP
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-BE-AGE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PORTAL-BE-CHUNK.
-*> The tag of an entry is the network form of a compound (07: no name, the entries, an End tag); the gateway's carries Age (a long), ExactTeleport (a byte) and
-*> exit_portal (an int array of 3): walked entry by entry, only Age is kept.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-E                   BINARY-LONG.
@@ -158,15 +217,6 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-AGE                 BINARY-DOUBLE.
- 01 WS-POS                 BINARY-LONG.
- 01 WS-END                 BINARY-LONG.
- 01 WS-TAG                 BINARY-LONG.
- 01 WS-NAME-LENGTH         BINARY-LONG.
- 01 WS-K                   BINARY-LONG.
- 01 WS-BYTE                BINARY-LONG.
- 01 WS-SKIP                BINARY-LONG.
- 01 WS-IS-AGE              BINARY-LONG.
- 01 WS-LEN4                BINARY-DOUBLE.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-CX                   BINARY-LONG.
@@ -188,51 +238,13 @@
              COMPUTE WS-Z = L-CZ * 16 + L-HEAD(WS-AT + 3)
              MOVE 0 TO WS-AGE
              IF WS-TYPE = 22 AND WS-LENGTH > 0
-                 PERFORM READ-AGE
+                 CALL "PORTAL-BE-AGE" USING L-DATA WS-OFFSET WS-LENGTH WS-AGE
              END-IF
              CALL "PORTAL-BE-SET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-TYPE WS-AGE
          END-IF
          ADD WS-LENGTH TO WS-OFFSET
      END-PERFORM
      GOBACK.
-
-*> READ-AGE: the Age of the tag at L-DATA(WS-OFFSET + 1:WS-LENGTH) into WS-AGE (0 when it has none or does not parse).
- READ-AGE.
-     COMPUTE WS-POS = WS-OFFSET + 2
-     COMPUTE WS-END = WS-OFFSET + WS-LENGTH
-     MOVE 0 TO WS-SKIP
-     PERFORM UNTIL WS-SKIP = 1 OR WS-POS > WS-END
-         COMPUTE WS-TAG = FUNCTION ORD(L-DATA(WS-POS:1)) - 1
-         IF WS-TAG = 0
-             MOVE 1 TO WS-SKIP
-         ELSE
-             COMPUTE WS-NAME-LENGTH = (FUNCTION ORD(L-DATA(WS-POS + 1:1)) - 1) * 256 + FUNCTION ORD(L-DATA(WS-POS + 2:1)) - 1
-             MOVE 0 TO WS-IS-AGE
-             IF WS-TAG = 4 AND WS-NAME-LENGTH = 3 AND L-DATA(WS-POS + 3:3) = "Age"
-                 MOVE 1 TO WS-IS-AGE
-             END-IF
-             COMPUTE WS-POS = WS-POS + 3 + WS-NAME-LENGTH
-             EVALUATE WS-TAG
-                 WHEN 4
-                     IF WS-IS-AGE = 1
-                         MOVE 0 TO WS-AGE
-                         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 7
-                             COMPUTE WS-BYTE = FUNCTION ORD(L-DATA(WS-POS + WS-K:1)) - 1
-                             COMPUTE WS-AGE = WS-AGE * 256 + WS-BYTE
-                         END-PERFORM
-                     END-IF
-                     ADD 8 TO WS-POS
-                 WHEN 1
-                     ADD 1 TO WS-POS
-                 WHEN 11
-                     COMPUTE WS-LEN4 = (FUNCTION ORD(L-DATA(WS-POS:1)) - 1) * 16777216 + (FUNCTION ORD(L-DATA(WS-POS + 1:1)) - 1) * 65536
-                         + (FUNCTION ORD(L-DATA(WS-POS + 2:1)) - 1) * 256 + FUNCTION ORD(L-DATA(WS-POS + 3:1)) - 1
-                     COMPUTE WS-POS = WS-POS + 4 + WS-LEN4 * 4
-                 WHEN OTHER
-                     MOVE 1 TO WS-SKIP
-             END-EVALUATE
-         END-IF
-     END-PERFORM.
  END PROGRAM PORTAL-BE-CHUNK.
 
  IDENTIFICATION DIVISION.
