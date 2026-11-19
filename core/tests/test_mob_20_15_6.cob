@@ -504,7 +504,7 @@
      END-IF
      PERFORM CASE-LINE
      CALL "ENTITY-REMOVE" USING WS-WARDEN
-*>   A disturbance while it has an attack target refreshes the present dig cooldown (and arriving at the walk target ends the walk).
+*>   A disturbance while it has an attack target changes nothing (20 section 15.6 condition 3: the dig cooldown keeps its 5 ticks).
      PERFORM NEW-WARDEN
      MOVE 0 TO PL-MODE(WS-PLAYER)
      MOVE WS-PLAYER TO EN-TARGET(WS-WARDEN)
@@ -513,8 +513,8 @@
      COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
      COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
      CALL "WARDEN-DISTURB" USING WS-WARDEN WS-BX WS-BY WS-BZ
-     MOVE "a disturbance with an attack target refreshes the dig cooldown to 1200" TO TL-CASE
-     MOVE 1200 TO TL-EXPECTED-N
+     MOVE "a disturbance with an attack target changes nothing: the dig cooldown stays 5 (15.6 condition 3)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
      MOVE WD-DIG-CD(WS-W) TO TL-OBSERVED-N
      PERFORM CASE-LINE
      CALL "ENTITY-REMOVE" USING WS-WARDEN
