@@ -414,7 +414,8 @@
          MOVE 0 TO WS-BM
          IF WS-STATE > 0
              IF BM-MODE = 1 AND WS-STATE < CL-MAX-BAKED
-                 COMPUTE WS-BM = WS-STATE + 1
+                 MOVE WS-STATE TO WS-BM
+                     ADD 1 TO WS-BM
              END-IF
              IF BM-MODE = 2 AND WS-STATE < CL-MAX-STATES
                  MOVE BM-SLOT(WS-STATE + 1) TO WS-BM
@@ -426,7 +427,8 @@
 *>       A cell of water or lava draws the fluid mesh (MESH-FLUID, 29a section 10); a liquid block has no baked model.
          IF WS-STATE > 0
              IF ST-FLUID(WS-STATE + 1) > 0
-                 COMPUTE WS-Y = WS-SEC-Y + WS-LY
+                 MOVE WS-SEC-Y TO WS-Y
+                 ADD WS-LY TO WS-Y
                  CALL "MESH-FLUID" USING CLIENT-STATE L-ROW WS-X WS-Y WS-Z WS-LY WS-HEIGHT WS-STATE FLUID-OUT
                  PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > FO-COUNT
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
@@ -466,8 +468,10 @@
              END-IF
          END-IF
          IF WS-BM > 0
-             COMPUTE WS-Y = WS-SEC-Y + WS-LY
-             COMPUTE WS-ROW-STATE = WS-STATE + 1
+             MOVE WS-SEC-Y TO WS-Y
+             ADD WS-LY TO WS-Y
+             MOVE WS-STATE TO WS-ROW-STATE
+             ADD 1 TO WS-ROW-STATE
              MOVE 0 TO WS-HIDDEN
              IF ST-OPAQUE(WS-ROW-STATE) = 1
                  CALL "MESH-HIDDEN" USING CLIENT-STATE L-ROW WS-NEIGHBOURS WS-HEIGHT WS-X WS-Y WS-Z
@@ -662,6 +666,12 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-TABLES-READY        BINARY-LONG VALUE 0.
+ 01 WS-Y-TABLE.
+    05 WS-Y256             BINARY-LONG OCCURS 400 TIMES.
+ 01 WS-Z-TABLE.
+    05 WS-Z16              BINARY-LONG OCCURS 16 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -673,11 +683,25 @@
  01 L-Z                    BINARY-LONG.
  01 L-HIDDEN               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-NEIGHBOURS L-HEIGHT L-X L-Y L-Z L-HIDDEN.
+     IF WS-TABLES-READY = 0
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 399
+             COMPUTE WS-Y256(WS-K + 1) = WS-K * 256
+         END-PERFORM
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 15
+             COMPUTE WS-Z16(WS-K + 1) = WS-K * 16
+         END-PERFORM
+         MOVE 1 TO WS-TABLES-READY
+     END-IF
      MOVE 1 TO L-HIDDEN
      SET ADDRESS OF CE-CHUNK TO WR-ADDR(L-ROW)
+     MOVE L-HEIGHT TO WS-LIMIT
+     SUBTRACT 1 FROM WS-LIMIT
 *>   A cell inside the row (not on a side of it, not at the bottom or top): its six neighbours are cells of the row.
-     IF L-X >= 1 AND L-X <= 14 AND L-Z >= 1 AND L-Z <= 14 AND L-Y >= 1 AND L-Y < L-HEIGHT - 1
-         COMPUTE WS-K = L-Y * 256 + L-Z * 16 + L-X + 1
+     IF L-X >= 1 AND L-X <= 14 AND L-Z >= 1 AND L-Z <= 14 AND L-Y >= 1 AND L-Y < WS-LIMIT
+         MOVE WS-Y256(L-Y + 1) TO WS-K
+         ADD WS-Z16(L-Z + 1) TO WS-K
+         ADD L-X TO WS-K
+         ADD 1 TO WS-K
          IF ST-OPAQUE(CE-STATE(WS-K - 1) + 1) = 0 OR ST-OPAQUE(CE-STATE(WS-K + 1) + 1) = 0
                  OR ST-OPAQUE(CE-STATE(WS-K - 16) + 1) = 0 OR ST-OPAQUE(CE-STATE(WS-K + 16) + 1) = 0
                  OR ST-OPAQUE(CE-STATE(WS-K - 256) + 1) = 0 OR ST-OPAQUE(CE-STATE(WS-K + 256) + 1) = 0
@@ -691,7 +715,10 @@
          COMPUTE WS-NZ = L-Z + WS-DZ(WS-D) - 1
          IF WS-NX >= 0 AND WS-NX <= 15 AND WS-NZ >= 0 AND WS-NZ <= 15
                  AND WS-NY >= 0 AND WS-NY < L-HEIGHT
-             COMPUTE WS-K = WS-NY * 256 + WS-NZ * 16 + WS-NX + 1
+             MOVE WS-Y256(WS-NY + 1) TO WS-K
+             ADD WS-Z16(WS-NZ + 1) TO WS-K
+             ADD WS-NX TO WS-K
+             ADD 1 TO WS-K
              MOVE CE-STATE(WS-K) TO WS-STATE
          ELSE
              CALL "MESH-CELL" USING CLIENT-STATE L-ROW L-NEIGHBOURS L-HEIGHT L-X L-Y L-Z WS-D
@@ -725,6 +752,21 @@
  01 WS-HALF                BINARY-LONG.
  01 WS-ODD                 BINARY-LONG.
  01 WS-NIB                 BINARY-LONG.
+*> Tables of the index arithmetic and of the nibbles (made on the first call): each decimal COMPUTE or DIVIDE costs a hundred nanoseconds, a table read and an ADD
+*> a few, and this runs for every neighbour of every visible face.
+ 01 WS-TABLES-READY        BINARY-LONG VALUE 0.
+ 01 WS-Y-TABLE.
+    05 WS-Y256             BINARY-LONG OCCURS 400 TIMES.
+    05 WS-Y128             BINARY-LONG OCCURS 400 TIMES.
+ 01 WS-Z-TABLE.
+    05 WS-Z16              BINARY-LONG OCCURS 16 TIMES.
+    05 WS-Z8               BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-X-TABLE.
+    05 WS-XH               BINARY-LONG OCCURS 16 TIMES.
+    05 WS-XO               BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-NIBBLES.
+    05 WS-LOW              BINARY-LONG OCCURS 256 TIMES.
+    05 WS-HIGH             BINARY-LONG OCCURS 256 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -740,6 +782,25 @@
  01 L-BLOCK                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-NEIGHBOURS L-HEIGHT L-X L-Y L-Z L-D L-STATE
          L-SKY L-BLOCK.
+     IF WS-TABLES-READY = 0
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 399
+             COMPUTE WS-Y256(WS-K + 1) = WS-K * 256
+             COMPUTE WS-Y128(WS-K + 1) = WS-K * 128
+         END-PERFORM
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 15
+             COMPUTE WS-Z16(WS-K + 1) = WS-K * 16
+             COMPUTE WS-Z8(WS-K + 1) = WS-K * 8
+             DIVIDE WS-K BY 2 GIVING WS-HALF REMAINDER WS-ODD
+             MOVE WS-HALF TO WS-XH(WS-K + 1)
+             MOVE WS-ODD TO WS-XO(WS-K + 1)
+         END-PERFORM
+         PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 255
+             DIVIDE WS-K BY 16 GIVING WS-NIB REMAINDER WS-ODD
+             MOVE WS-NIB TO WS-HIGH(WS-K + 1)
+             MOVE WS-ODD TO WS-LOW(WS-K + 1)
+         END-PERFORM
+         MOVE 1 TO WS-TABLES-READY
+     END-IF
      MOVE L-X TO WS-NX
      MOVE L-Y TO WS-NY
      MOVE L-Z TO WS-NZ
@@ -781,22 +842,28 @@
              CONTINUE
          WHEN OTHER
              SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
-             COMPUTE WS-K = WS-NY * 256 + WS-NZ * 16 + WS-NX
+             MOVE WS-Y256(WS-NY + 1) TO WS-K
+             ADD WS-Z16(WS-NZ + 1) TO WS-K
+             ADD WS-NX TO WS-K
              MOVE CE-STATE(WS-K + 1) TO L-STATE
 *>           The light byte holds two cells, the even one in the low nibble; the first light section
 *>           (CE-LIGHT-BYTES bytes) is the one below the dimension.
-             DIVIDE WS-K BY 2 GIVING WS-HALF REMAINDER WS-ODD
-             MOVE CE-SKY(CE-LIGHT-BYTES + WS-HALF + 1) TO WS-BYTE
+             MOVE WS-Y128(WS-NY + 1) TO WS-HALF
+             ADD WS-Z8(WS-NZ + 1) TO WS-HALF
+             ADD WS-XH(WS-NX + 1) TO WS-HALF
+             MOVE WS-XO(WS-NX + 1) TO WS-ODD
+             ADD CE-LIGHT-BYTES TO WS-HALF
+             MOVE CE-SKY(WS-HALF + 1) TO WS-BYTE
              IF WS-ODD = 0
-                 DIVIDE WS-BYTE BY 16 GIVING WS-NIB REMAINDER L-SKY
+                 MOVE WS-LOW(WS-BYTE + 1) TO L-SKY
              ELSE
-                 DIVIDE WS-BYTE BY 16 GIVING L-SKY
+                 MOVE WS-HIGH(WS-BYTE + 1) TO L-SKY
              END-IF
-             MOVE CE-BLOCK-LIGHT(CE-LIGHT-BYTES + WS-HALF + 1) TO WS-BYTE
+             MOVE CE-BLOCK-LIGHT(WS-HALF + 1) TO WS-BYTE
              IF WS-ODD = 0
-                 DIVIDE WS-BYTE BY 16 GIVING WS-NIB REMAINDER L-BLOCK
+                 MOVE WS-LOW(WS-BYTE + 1) TO L-BLOCK
              ELSE
-                 DIVIDE WS-BYTE BY 16 GIVING L-BLOCK
+                 MOVE WS-HIGH(WS-BYTE + 1) TO L-BLOCK
              END-IF
 *>           CC-0007 stopgap (sky-stopgap.cob): the sky light assumed where the core sent none (0); remove with it.
              IF L-SKY = 0

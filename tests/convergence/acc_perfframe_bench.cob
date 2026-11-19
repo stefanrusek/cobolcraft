@@ -7,7 +7,8 @@
 *> opaque and translucent mesh, summed over the sections keyed by chunk and section: independent of the row order; the world is the same every run: fixed seed,
 *> no random ticks, no mobs yet).
 *> PF_VIEW (default 3) is the view distance, PF_MOBS (default 24) the mobs summoned, PF_FRAMES (default 100) the frames measured, PF_SEED the seed text,
-*> PF_DIR (a folder name under build/) keeps two runs apart; PF_TRACE=1 prints the phase times of every frame; the DIGEST line is what two builds are compared by.
+*> PF_FRAME_MS (default 25) is the time one measured frame stands for: the core ticks once per 50 ms, so at 25 every other frame carries a tick and the mean is that of a game at
+*> 40 frames a second (50 puts a tick in every frame). PF_DIR (a folder name under build/) keeps two runs apart; PF_TRACE=1 prints the phase times of every frame; the DIGEST line is what two builds are compared by.
 *> The cases hold the digests of the section meshes (a change of the mesher that changes one vertex fails them; a change of the world generator moves them
 *> too, and its new values are then the ones to take) and that the frame has vertices to measure.
  IDENTIFICATION DIVISION.
@@ -37,6 +38,8 @@
  01 WS-TRACE               BINARY-LONG VALUE 0.
  01 WS-F                   BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
+ 01 WS-FRAME-MS            BINARY-LONG VALUE 25.
+ 01 WS-BACK                BINARY-LONG VALUE 25.
  01 WS-PASSES              BINARY-LONG VALUE 1.
  01 WS-K                   BINARY-LONG.
  01 WS-R                   BINARY-LONG.
@@ -139,6 +142,12 @@
      IF WS-ENV NOT = SPACES
          COMPUTE WS-FRAMES = FUNCTION NUMVAL(WS-ENV)
      END-IF
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "PF_FRAME_MS"
+     IF WS-ENV NOT = SPACES
+         COMPUTE WS-FRAME-MS = FUNCTION NUMVAL(WS-ENV)
+     END-IF
+     COMPUTE WS-BACK = 50 - WS-FRAME-MS
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "PF_TRACE"
      IF WS-ENV NOT = SPACES
@@ -324,6 +333,7 @@
 *>   The measured frames. CV-STEP is the whole of CL-STEP with the core tick; the phases are then run again on the same state.
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > WS-FRAMES
          MOVE RL-EN-BAKES TO WS-BAKES0
+         SUBTRACT WS-BACK FROM CV-NOW
          CALL STATIC "clock" RETURNING WS-T0
          CALL "CV-STEP" USING CONVH
          CALL STATIC "clock" RETURNING WS-T1
