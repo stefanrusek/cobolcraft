@@ -259,6 +259,28 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
      PERFORM CHECK-N
+*>   Other sides of the box: below it (the eye 2.4 under the sign: within), one cell north of it (within), seven cells south (out).
+     COMPUTE PL-X(WS-ROW) = BE-X(WS-SIGN) + 0.5
+     COMPUTE PL-Z(WS-ROW) = BE-Z(WS-SIGN) + 0.5
+     COMPUTE PL-Y(WS-ROW) = BE-Y(WS-SIGN) - 4
+     PERFORM LOCK-AGAIN
+     MOVE "implementation sign editor lock 2.9: a player four cells below the sign (eye 2.4 under it) keeps the lock" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     COMPUTE PL-Y(WS-ROW) = BE-Y(WS-SIGN)
+     COMPUTE PL-Z(WS-ROW) = BE-Z(WS-SIGN) - 3
+     PERFORM LOCK-AGAIN
+     MOVE "implementation sign editor lock 2.9: a player three cells north of the sign keeps the lock" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+     COMPUTE PL-Z(WS-ROW) = BE-Z(WS-SIGN) + 7
+     PERFORM LOCK-AGAIN
+     MOVE "implementation sign editor lock 2.9: a player seven cells south of the sign loses the lock" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BE-XI(WS-SIGN, 3) TO TL-OBSERVED-N
+     PERFORM CHECK-N
      MOVE "implementation sign editor lock 2.9: a sign nobody edits is left alone" TO TL-CASE
      CALL "SIGN-LOCK-TICK" USING WS-SIGN
      MOVE 0 TO TL-EXPECTED-N
@@ -294,6 +316,13 @@
      MOVE "0/-1 4/-1 3/-1 1/14 0/-1 0/-1 2/-1 1/0 0/-1" TO TL-EXPECTED
      PERFORM CHECK-T
      STOP RUN.
+
+*> The sign WS-SIGN is locked for Alice and the lock tick runs.
+ LOCK-AGAIN.
+     MOVE 1 TO BE-XI(WS-SIGN, 3)
+     MOVE SPACES TO BE-XT(WS-SIGN, 17)
+     MOVE PL-UUID(WS-ROW) TO BE-XT(WS-SIGN, 17)(1:16)
+     CALL "SIGN-LOCK-TICK" USING WS-SIGN.
 
 *> Builds Sign Update from WS-SX, WS-SY, WS-SZ, the four lines WS-LINE-n of WS-LEN-n bytes and WS-SIDE in PB-BUFFER.
  BUILD-UPDATE.
