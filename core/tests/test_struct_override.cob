@@ -32,6 +32,7 @@
  01 WS-Y1                  BINARY-LONG.
  01 WS-Z1                  BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
+ 01 WS-ADAPT               BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-SEED                BINARY-DOUBLE UNSIGNED VALUE 99.
  01 WS-KEY                 PIC X(80).
@@ -300,6 +301,28 @@
      MOVE "test struct override: an outpost (3) and an ancient city (5) ask once each, trial chambers (6) per piece touching the chunk: 3 boxes" TO TL-CASE
      COMPUTE TL-OBSERVED-N = GEL-BOX-COUNT * 1000 + GEL-B-KIND(1) * 100 + GEL-B-KIND(2) * 10 + GEL-B-KIND(3)
      MOVE 3356 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   STRUCT-OVR-NOTE-ADAPT (44-2 8.2 and 8.5): the overall box of an outpost or an ancient city (terrain adaptation beard) is inflated by 12 on every face before it is asked for, and it reaches the
+*>   chunk (-1, 0) that the plain union (x from 0) does not; with no adaptation the box stays as it is.
+     MOVE 0 TO GEL-BOX-COUNT
+     MOVE -1 TO WS-CX
+     MOVE "minecraft:pillager_outpost" TO WS-KEY
+     MOVE 0 TO WS-ADAPT
+     CALL "STRUCT-OVR-NOTE-ADAPT" USING WS-KEY WS-CX WS-CZ WS-BOX WS-ADAPT
+     MOVE "test struct override: without terrain adaptation the box does not reach the chunk to the west" TO TL-CASE
+     MOVE GEL-BOX-COUNT TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-ADAPT
+     CALL "STRUCT-OVR-NOTE-ADAPT" USING WS-KEY WS-CX WS-CZ WS-BOX WS-ADAPT
+     MOVE "test struct override: with terrain adaptation the box is inflated by 12 and reaches the chunk to the west" TO TL-CASE
+     MOVE GEL-BOX-COUNT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test struct override: the asked-for box is the union moved 12 out on every face (x -12 to 58, y -12 to 82, z -12 to 60)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = GEL-B-MIN-X(1) + GEL-B-MAX-X(1) + GEL-B-MIN-Y(1) + GEL-B-MAX-Y(1) + GEL-B-MIN-Z(1) + GEL-B-MAX-Z(1)
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-EXPECTED-N = -12 + 58 - 12 + 82 - 12 + 60
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

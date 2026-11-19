@@ -987,6 +987,7 @@
  01 WS-PICKED              BINARY-LONG.
  01 WS-LIST                BINARY-LONG.
  01 WS-OENTRY              BINARY-LONG.
+ 01 WS-REDUCED             BINARY-LONG.
  01 WS-POINTS.
     05 WS-PT               OCCURS 64 TIMES.
        10 WS-PT-X          FLOAT-LONG.
@@ -1051,22 +1052,33 @@
              IF WS-OK = 1 AND WS-PICKED = 0
                  MOVE 1 TO WS-PICKED
 *>               a structure that overrides the lists at the position replaces the biome's list (44-2 8.1 step 2b); an empty list draws nothing
-                 CALL "SO-LOOKUP" USING L-DIM WS-X L-PY WS-Z L-CAT WS-LIST
-                 IF WS-LIST > 0
-                     CALL "SO-PICK" USING L-STATE WS-LIST WS-OENTRY
-                     IF WS-OENTRY > 0
-                         MOVE SO-E-KEY(WS-OENTRY) TO WS-KEY24
-                         MOVE WS-KEY24 TO WS-KEY48
-                         CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
-                         CALL "SO-PACK-SIZE" USING L-STATE WS-OENTRY WS-MAXPACK
+*>               NaturalSpawner.getRandomSpawnMobAt first (44-2 section 8.1 step 3): for the category water_ambient in a biome of the tag reduce_water_ambient_spawns
+*>               (#minecraft:is_river: river and frozen_river) a roll nextFloat < 0.98 returns nothing; only then is the list drawn
+                 MOVE 0 TO WS-REDUCED
+                 IF L-CAT = 7 AND (SPB-NAME(L-BIOME) = "river" OR SPB-NAME(L-BIOME) = "frozen_river")
+                     CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-DBL
+                     IF WS-DBL < 0.98
+                         MOVE 1 TO WS-REDUCED
                      END-IF
-                 ELSE
-                     CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
-                     IF WS-ENTRY > 0
-                         MOVE SPE-KEY(WS-ENTRY) TO WS-KEY24
-                         MOVE WS-KEY24 TO WS-KEY48
-                         CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
-                         CALL "MS6-PACK-SIZE" USING L-STATE WS-ENTRY WS-MAXPACK
+                 END-IF
+                 IF WS-REDUCED = 0
+                     CALL "SO-LOOKUP" USING L-DIM WS-X L-PY WS-Z L-CAT WS-LIST
+                     IF WS-LIST > 0
+                         CALL "SO-PICK" USING L-STATE WS-LIST WS-OENTRY
+                         IF WS-OENTRY > 0
+                             MOVE SO-E-KEY(WS-OENTRY) TO WS-KEY24
+                             MOVE WS-KEY24 TO WS-KEY48
+                             CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+                             CALL "SO-PACK-SIZE" USING L-STATE WS-OENTRY WS-MAXPACK
+                         END-IF
+                     ELSE
+                         CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
+                         IF WS-ENTRY > 0
+                             MOVE SPE-KEY(WS-ENTRY) TO WS-KEY24
+                             MOVE WS-KEY24 TO WS-KEY48
+                             CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+                             CALL "MS6-PACK-SIZE" USING L-STATE WS-ENTRY WS-MAXPACK
+                         END-IF
                      END-IF
                  END-IF
                  IF WS-ROW = 0
