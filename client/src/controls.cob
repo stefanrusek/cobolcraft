@@ -54,7 +54,7 @@
  01 WS-IBLOCK              BINARY-LONG.
  01 WS-ITOOL               PIC X.
  01 WS-IFOOD               BINARY-LONG.
- 01 WS-IS-BUCKET           BINARY-LONG.
+ 01 WS-IS-AIR-USE           BINARY-LONG.
  01 WS-NS                  PIC X(16).
  01 WS-PATH                PIC X(40).
  01 WS-MAX                 BINARY-LONG.
@@ -70,11 +70,16 @@
          MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-ITEM
      END-IF
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-IBLOCK WS-ITOOL WS-IFOOD
-     MOVE 0 TO WS-IS-BUCKET
+     MOVE 0 TO WS-IS-AIR-USE
      IF WS-ITEM > 0
          CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX WS-IB2 WS-IT2 WS-IF2 WS-KNOWN
          IF WS-PATH = "bucket" OR WS-PATH = "water_bucket" OR WS-PATH = "lava_bucket"
-             MOVE 1 TO WS-IS-BUCKET
+             MOVE 1 TO WS-IS-AIR-USE
+         END-IF
+*>       The thrown items (THROWN-ITEM-USE: the server throws them on Use Item, with or without a target block; 25 section 6.3, 21 section 8.12).
+         IF WS-PATH = "ender_eye" OR WS-PATH = "ender_pearl" OR WS-PATH = "egg" OR WS-PATH = "snowball"
+                 OR WS-PATH = "splash_potion" OR WS-PATH = "lingering_potion" OR WS-PATH = "fishing_rod"
+             MOVE 1 TO WS-IS-AIR-USE
          END-IF
      END-IF
      MOVE 0 TO WS-STATE
@@ -93,8 +98,8 @@
          CALL "BOOK-USE-CHECK" USING CLIENT-STATE WS-ITEM
      END-IF
 *>   Use: Use Item On is sent for any block aimed at, whatever the hand holds (the server decides: it opens a menu, toggles a switch,
-*>   places the held block or does nothing; the sneaking rule is the server's, 29 section 9). A food item or a bucket held on the
-*>   world screen then also sends Use Item (eaten, or the fluid ray), which the server answers when the block did not take the click.
+*>   places the held block or does nothing; the sneaking rule is the server's, 29 section 9). A food item, a bucket or a thrown item held on the
+*>   world screen then also sends Use Item (eaten, the fluid ray, the throw), which the server answers when the block did not take the click.
      IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
          CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
      END-IF
@@ -102,8 +107,8 @@
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD
                  AND WS-IFOOD > 0 AND PL-EATING = 0
              CALL "CONTROLS-SEND-EAT" USING CLIENT-STATE
-*>       A bucket: Use Item, the server casts the fluid ray (29a section 7.2).
-         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-IS-BUCKET = 1
+*>       A bucket (the server casts the fluid ray, 29a section 7.2) or a thrown item (an ender eye, pearl, egg, snowball, potion, fishing rod): Use Item.
+         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-IS-AIR-USE = 1
              CALL "CONTROLS-SEND-BUCKET" USING CLIENT-STATE
      END-EVALUATE
 *>   Eating ends when the button is released; early, the server is told.
