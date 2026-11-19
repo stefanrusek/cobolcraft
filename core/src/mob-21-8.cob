@@ -390,12 +390,95 @@
  END PROGRAM FB-SPAWN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FB-CELL-FREE.
+*> USING dimension row, x, y, z (BINARY-LONG), replaceable out, free out: the two questions a falling block asks of a cell (29b part 1 sections 3.1 and 4.3). Replaceable is
+*> BlockState.canBeReplaced (the registry flag, 24 part 1 section 10.1: air, short grass, water, lava, fire, snow ... and not a torch, a flower or a slab); a liquid block counts too.
+*> Free is FallingBlock.isFree: air, fire (the block tag fire: fire and soul fire), a liquid block or a replaceable block. A cell that merely has no collision (a torch) is neither.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-LAVA                BINARY-LONG.
+ 01 WS-WATER-FIRST         BINARY-LONG.
+ 01 WS-LAVA-FIRST          BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG.
+ 01 WS-FIRE                BINARY-LONG.
+ 01 WS-LIQUID              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-REPLACEABLE          BINARY-LONG.
+ 01 L-FREE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-REPLACEABLE L-FREE.
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+     CALL "FLUID-ROLES" USING WS-WATER WS-LAVA WS-WATER-FIRST WS-LAVA-FIRST
+     MOVE 0 TO WS-AIR WS-FIRE WS-LIQUID
+     IF WS-STATE = 0
+         MOVE 1 TO WS-AIR
+     END-IF
+     IF CB-KEY(WS-BLOCK) = "fire" OR CB-KEY(WS-BLOCK) = "soul_fire" OR CB-KEY(WS-BLOCK) = "minecraft:fire" OR CB-KEY(WS-BLOCK) = "minecraft:soul_fire"
+         MOVE 1 TO WS-FIRE
+     END-IF
+     IF WS-WATER >= 0 AND WS-BLOCK = WS-WATER + 1
+         MOVE 1 TO WS-LIQUID
+     END-IF
+     IF WS-LAVA >= 0 AND WS-BLOCK = WS-LAVA + 1
+         MOVE 1 TO WS-LIQUID
+     END-IF
+     MOVE 0 TO L-REPLACEABLE
+     IF WS-AIR = 1 OR WS-LIQUID = 1 OR CB-REPLACEABLE(WS-BLOCK) = 1
+         MOVE 1 TO L-REPLACEABLE
+     END-IF
+     CALL "GB-IS-FREE" USING WS-AIR WS-FIRE WS-LIQUID L-REPLACEABLE L-FREE
+     GOBACK.
+ END PROGRAM FB-CELL-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FB-DROP-ITEM.
+*> USING row: spawnAtLocation of the block's item (29b part 1 section 4.5): one item of the falling block's block at the entity's position, offset 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-KEY48               PIC X(48).
+ 01 WS-FULL                PIC X(48).
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ITEM-ENTITY         BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ONE-B               BINARY-LONG VALUE 1.
+ 01 WS-ZERO-D              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-E              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-F              FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE CB-S-BLOCK(EN-FB-STATE(L-ROW) + 1) TO WS-BLOCK
+     MOVE CB-KEY(WS-BLOCK + 1) TO WS-KEY48
+     CALL "KEY-NAMESPACED" USING WS-KEY48 WS-FULL
+     MOVE WS-FULL TO WS-ITEM-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "GI-SPAWN" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-ZERO-D WS-ZERO-E WS-ZERO-F
+         WS-ITEM WS-ONE WS-ONE-B WS-ITEM-ENTITY
+     GOBACK.
+ END PROGRAM FB-DROP-ITEM.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FB-STEP.
 *> USING row: one server tick of a falling block (29b part 1 section 4.2): time + 1; gravity 0.04, the move (the box against solid cells per axis as TNT-STEP); on the ground
-*> (4.3) the velocity takes (0.7, -0.5, 0.7) and, unless cancelDrop, the block is placed in the entity's cell (the cell is free and the cell below is not) and the entity ends; in the air
+*> (4.3) the velocity takes (0.7, -0.5, 0.7) and, unless cancelDrop, the block is placed in the entity's cell (the cell is replaceable and the cell below is not free) and the entity ends; in the air
 *> the expiry of 4.4 (time above 100 outside the height range, or above 600) drops the block's item with the rule entity_drops and ends the entity; the drag 0.98f follows.
-*> Open: concrete powder reaching water, the damage to entities (anvils), Add Transient Block, block entity data, cannot-place drops (the free-cell test is the absence of a collision
-*> shape, so a landing cell is always replaceable here).
+*> The block is placed only when the block in the landing cell is replaceable (the registry flag: FB-CELL-FREE) and the cell below is not free; otherwise the entity ends and, with
+*> the rule entity_drops, the block's item drops (4.3 step 6) while the block in the cell stays.
+*> Open: concrete powder reaching water, the damage to entities (anvils), Add Transient Block, block entity data.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -415,13 +498,9 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
- 01 WS-STATE               BINARY-LONG.
- 01 WS-FLUID               BINARY-LONG.
- 01 WS-KIND                BINARY-LONG.
- 01 WS-AMOUNT              BINARY-LONG.
- 01 WS-FALLING             BINARY-LONG.
- 01 WS-SOLID               BINARY-LONG.
  01 WS-HOLDS               BINARY-LONG.
+ 01 WS-HOLDS-B             BINARY-LONG.
+ 01 WS-FREE                BINARY-LONG.
  01 WS-BELOW-FREE          BINARY-LONG.
  01 WS-NO                  BINARY-LONG VALUE 0.
  01 WS-YES                 BINARY-LONG VALUE 1.
@@ -433,21 +512,8 @@
  01 WS-MAX-Y               BINARY-LONG.
  01 WS-EXPIRED             BINARY-LONG.
  01 WS-DROP                BINARY-LONG.
- 01 WS-FULL                PIC X(48).
- 01 WS-KEY48               PIC X(48).
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-ITEM-KEY            PIC X(112).
- 01 WS-ITEM                BINARY-LONG.
- 01 WS-ITEM-ROW            PIC X(270).
- 01 WS-STATUS              BINARY-LONG.
  01 WS-ITEM-ENTITY         BINARY-LONG.
- 01 WS-ONE                 BINARY-LONG VALUE 1.
- 01 WS-ZERO-D              FLOAT-LONG VALUE 0.
- 01 WS-ZERO-E              FLOAT-LONG VALUE 0.
- 01 WS-ZERO-F              FLOAT-LONG VALUE 0.
- 01 WS-ONE-B               BINARY-LONG VALUE 1.
  01 WS-YES-B               BINARY-LONG VALUE 1.
- 01 WS-YES-C               BINARY-LONG VALUE 1.
  01 WS-ENDED               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -485,15 +551,21 @@
          COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.7
          COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.7
          COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * -0.5
-         CALL "FLUID-CELL" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
+*>       canReplace: the block in the landing cell is replaceable (a torch, a flower, a slab is not); the cell below must not be free (29b part 1 section 4.3 steps 4 to 6).
+         CALL "FB-CELL-FREE" USING WS-DIM WS-BX WS-BY WS-BZ WS-HOLDS WS-FREE
          COMPUTE WS-BELOW = WS-BY - 1
-         CALL "FLUID-CELL" USING WS-DIM WS-BX WS-BELOW WS-BZ WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID
-             WS-BELOW-FREE
+         CALL "FB-CELL-FREE" USING WS-DIM WS-BX WS-BELOW WS-BZ WS-HOLDS-B WS-BELOW-FREE
+         CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
+         MOVE WS-RULE TO WS-DROP
          MOVE 1 TO WS-WRITE
-         CALL "GB-LAND" USING WS-NO EN-FB-CANCEL(L-ROW) WS-HOLDS WS-YES WS-BELOW-FREE WS-YES-B WS-YES-C WS-WRITE WS-ACTION
-         IF WS-ACTION = 2
-             CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ EN-FB-STATE(L-ROW) WS-FLAGS WS-BUDGET WS-WRITE
-         END-IF
+         CALL "GB-LAND" USING WS-NO EN-FB-CANCEL(L-ROW) WS-HOLDS WS-YES WS-BELOW-FREE WS-YES-B WS-DROP WS-WRITE WS-ACTION
+         EVALUATE WS-ACTION
+             WHEN 2
+                 CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ EN-FB-STATE(L-ROW) WS-FLAGS WS-BUDGET WS-WRITE
+             WHEN 5
+*>               Cannot be placed: the falling block is discarded and its own item drops, the block in the cell stays (4.3 step 6, 4.5).
+                 CALL "FB-DROP-ITEM" USING L-ROW
+         END-EVALUATE
          MOVE 1 TO WS-ENDED
          CALL "ENTITY-REMOVE" USING L-ROW
      ELSE
@@ -502,13 +574,7 @@
          CALL "GB-EXPIRY" USING EN-FB-TIME(L-ROW) WS-BY WS-MIN-Y WS-MAX-Y WS-YES WS-DROP WS-EXPIRED WS-ITEM-ENTITY
          IF WS-EXPIRED = 1
              IF WS-ITEM-ENTITY = 1
-                 MOVE CB-S-BLOCK(EN-FB-STATE(L-ROW) + 1) TO WS-BLOCK
-                 MOVE CB-KEY(WS-BLOCK + 1) TO WS-KEY48
-                 CALL "KEY-NAMESPACED" USING WS-KEY48 WS-FULL
-                 MOVE WS-FULL TO WS-ITEM-KEY
-                 CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
-                 CALL "GI-SPAWN" USING WS-DIM EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-ZERO-D WS-ZERO-E WS-ZERO-F
-                     WS-ITEM WS-ONE WS-ONE-B WS-ITEM-ENTITY
+                 CALL "FB-DROP-ITEM" USING L-ROW
              END-IF
              MOVE 1 TO WS-ENDED
              CALL "ENTITY-REMOVE" USING L-ROW
