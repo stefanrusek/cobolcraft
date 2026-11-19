@@ -16,8 +16,8 @@
 *> state and keeps the break running: it breaks when progress reaches 1.0 (delayed destroy). ABORT, a new START at
 *> another position, a changed held item, a changed target block (another player broke it first) and death or
 *> travel end the break with stage 255, the byte -1, which removes the overlay. A block without a break time
-*> (void) or an unbreakable one (the baseplate) is never broken. Creative: START breaks at once and gives
-*> no item. Every answered action ends with Block Changed Ack of its sequence. A survival break leaves the block's
+*> (void) or an unbreakable one (bedrock, the baseplate) is never broken by a survival or adventure player. Creative: START
+*> breaks at once, whatever the hardness (BREAK-CREATIVE, 13 section 2.5 and 29 section 10.4), and gives no item. Every answered action ends with Block Changed Ack of its sequence. A survival break leaves the block's
 *> item on the ground (GI-BLOCK-YIELD) and adds 0.025 exhaustion.
 *>
 *> Entry points:
@@ -253,7 +253,8 @@
  COPY CORESTATE.
  COPY RULES.
  COPY CBLOCKS.
- 01 WS-VOID                BINARY-LONG VALUE 0.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 2001.
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-EXHAUST             FLOAT-LONG.
@@ -271,7 +272,11 @@
      CALL "BLOCK-BREAK-END" USING L-ROW
 *>   playerWillDestroy: breaking a block guarded by piglins angers the idle ones around (44-6 section 2.9).
      CALL "PIGLIN-GUARDED-BREAK" USING L-ROW WS-STATE
-     CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-VOID
+*>   playerWillDestroy: the destroy effect (level event 2001 with the state's id) goes to everybody but the breaker; removeBlock leaves the water
+*>   of a waterlogged block or a water plant (29 sections 2.2 and 10.4).
+     CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z WS-STATE L-ROW
+     CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
+     CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
 *>   A door or tall plant loses both halves and drops once, from its lower half.
      CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z WS-STATE WS-DROP-Y WS-DROP-STATE
      MOVE CB-S-BLOCK(WS-DROP-STATE + 1) TO WS-BLOCK
@@ -285,6 +290,103 @@
      CALL "COMBAT-BREAK-WEAR" USING L-ROW
      GOBACK.
  END PROGRAM BREAK-FINISH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BREAK-CREATIVE.
+*> USING connection id, player row, dimension, x, y, z, state (BINARY-LONG): the break of a creative player on Start Destroy Block (13 section 2.5,
+*> 29 section 10.4): whatever the hardness of the block (bedrock, barrier, end portal frame, light, reinforced deepslate: -1), unless the main hand
+*> holds a sword, a trident or a mace (Item.canDestroyBlock: those items have a tool component that cannot destroy blocks in creative) or the block is a
+*> game master block (command blocks, structure block, jigsaw, test blocks) and the player does not hold the game master permission (command
+*> level 2 or more): the block stays and the player is sent its real state. Otherwise the destroy effect (level event 2001, the breaker excluded), the
+*> piglins guarding it, the removal (the water of a waterlogged block stays, both halves of a door or tall plant go) and nothing else: no item, no tool
+*> wear, no exhaustion.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY CITEMS.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-SHORT               PIC X(48).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-TOOL                BINARY-LONG.
+ 01 WS-ALLOWS              BINARY-LONG.
+ 01 WS-CREATIVE            BINARY-LONG VALUE 1.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-GM                  BINARY-LONG.
+ 01 WS-CAN-GM              BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-GAMEMASTER          BINARY-LONG VALUE 2.
+ 01 WS-RESTRICTED          BINARY-LONG VALUE 0.
+ 01 WS-REMOVED             BINARY-LONG VALUE 1.
+ 01 WS-PREVENTS            BINARY-LONG VALUE 1.
+ 01 WS-CORRECT             BINARY-LONG VALUE 1.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-NOTIFY              BINARY-LONG.
+ 01 WS-WILL                BINARY-LONG.
+ 01 WS-REMOVE              BINARY-LONG.
+ 01 WS-HOOK                BINARY-LONG.
+ 01 WS-MINE                BINARY-LONG.
+ 01 WS-PLAYER-DESTROY      BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 2001.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-DROP-Y              BINARY-LONG.
+ 01 WS-DROP-STATE          BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ROW L-DIM L-X L-Y L-Z L-STATE.
+*>   The held item: a sword, a trident or a mace has a tool component that cannot destroy blocks in creative (17 section 1.3).
+     MOVE 0 TO WS-ITEM WS-TOOL WS-ALLOWS
+     IF PL-SLOT-COUNT(L-ROW, PL-HELD(L-ROW) + 1) > 0
+         MOVE PL-SLOT-ITEM(L-ROW, PL-HELD(L-ROW) + 1) TO WS-ITEM
+     END-IF
+     MOVE SPACES TO WS-SHORT
+     IF WS-ITEM > 0 AND WS-ITEM < IT-COUNT
+         MOVE IT-KEY(WS-ITEM + 1) TO WS-SHORT
+     END-IF
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-SHORT))
+     IF WS-SHORT = "mace" OR "trident"
+         MOVE 1 TO WS-TOOL
+     END-IF
+     IF WS-LEN >= 6
+         IF WS-SHORT(WS-LEN - 5:6) = "_sword"
+             MOVE 1 TO WS-TOOL
+         END-IF
+     END-IF
+     CALL "BK-CAN-DESTROY" USING WS-TOOL WS-ALLOWS WS-CREATIVE WS-CAN
+*>   The game master blocks (31-6 section 11.1: creative and the game master permission).
+     COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
+     MOVE CB-KEY(WS-BLOCK) TO WS-KEY
+     MOVE 0 TO WS-GM
+     IF WS-KEY = "command_block" OR "repeating_command_block" OR "chain_command_block" OR "structure_block" OR "jigsaw"
+             OR "test_block" OR "test_instance_block"
+         MOVE 1 TO WS-GM
+     END-IF
+     CALL "BR-SOURCE-LEVEL" USING L-ROW WS-LEVEL
+     MOVE 0 TO WS-CAN-GM
+     IF WS-LEVEL >= WS-GAMEMASTER
+         MOVE 1 TO WS-CAN-GM
+     END-IF
+     CALL "BK-DESTROY" USING WS-CAN WS-GM WS-CAN-GM WS-RESTRICTED WS-REMOVED WS-PREVENTS WS-CORRECT WS-RESULT WS-NOTIFY WS-WILL
+         WS-REMOVE WS-HOOK WS-MINE WS-PLAYER-DESTROY
+     IF WS-RESULT = 0
+         CALL "BLOCK-TELL" USING L-ID L-X L-Y L-Z
+         GOBACK
+     END-IF
+     CALL "PIGLIN-GUARDED-BREAK" USING L-ROW L-STATE
+     CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z L-STATE L-ROW
+     CALL "SUP-DESTROY-STATE" USING L-STATE WS-NEW
+     CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
+     CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z L-STATE WS-DROP-Y WS-DROP-STATE
+     GOBACK.
+ END PROGRAM BREAK-CREATIVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BREAK-TOOL-INPUTS.
@@ -351,13 +453,10 @@
  01 WS-STAGE               BINARY-LONG.
  01 WS-ACCEPTED            BINARY-LONG.
  01 WS-K                   BINARY-LONG.
- 01 WS-VOID                BINARY-LONG VALUE 0.
  01 WS-HARDNESS            BINARY-LONG.
  01 WS-STEP                FLOAT-LONG.
  01 WS-P32                 FLOAT-SHORT.
  01 WS-NO-TICKS            BINARY-LONG VALUE 0.
- 01 WS-DROP-Y              BINARY-LONG.
- 01 WS-DROP-STATE          BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -373,13 +472,15 @@
      EVALUATE TRUE
          WHEN PSB-ACTION = 2
              CALL "BLOCK-BREAK-END" USING WS-ROW
-*>       The void and an unbreakable block (hardness below 0) are never broken; a hardness of 0 (torch, mushroom, grass, flower,
-*>       sugar cane) is not unbreakable: its progress per tick is infinite (13 section 2.1), so Start breaks it at once.
-         WHEN WS-STATE = 0 OR WS-HARDNESS < 0
+         WHEN WS-STATE = 0
              CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
+*>       Creative breaks at once whatever the hardness (bedrock included), before the hardness test (13 section 2.5).
          WHEN PSB-ACTION = 0 AND PL-MODE(WS-ROW) = 1
-             CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
-             CALL "DOUBLE-BREAK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE WS-DROP-Y WS-DROP-STATE
+             CALL "BREAK-CREATIVE" USING L-ID WS-ROW WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
+*>       An unbreakable block (hardness below 0) is never broken by survival or adventure; a hardness of 0 (torch, mushroom, grass,
+*>       flower, sugar cane) is not unbreakable: its progress per tick is infinite (13 section 2.1), so Start breaks it at once.
+         WHEN WS-HARDNESS < 0
+             CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
          WHEN PSB-ACTION = 0 AND WS-HARDNESS = 0
              CALL "BLOCK-BREAK-END" USING WS-ROW
              CALL "BREAK-FINISH" USING WS-ROW WS-DIM PSB-BX PSB-BY PSB-BZ

@@ -81,7 +81,7 @@
      MOVE 3 TO WS-ACTION
      PERFORM ACT
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
-     MOVE "5(1,20,100,20=255) 49(1,1) 1 101 103 8(20,100,20=0)" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 47 49(1,1) 1 101 103 8(20,100,20=0)" TO TL-EXPECTED
      PERFORM CHECK-PREFIX
 
      MOVE "acceptance US8-2 given a started break when it is aborted then the viewers and the "

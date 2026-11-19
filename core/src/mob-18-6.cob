@@ -677,12 +677,91 @@
  END PROGRAM MS6-BLOCK-KIND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS6-FLOOR-ALWAYS.
+*> USING dim, x, y, z (the floor cell), ok out (BINARY-LONG): 1 when the block sets isValidSpawn to "always" (44 part 1 RQ-1.10: soul sand, carved pumpkin, jack o'lantern,
+*> redstone lamp, mud): a valid floor for every species whatever the shape of its top face.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-OK.
+     MOVE 0 TO L-OK
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     IF WS-STATE = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+     IF CB-KEY(WS-BLOCK) = "soul_sand" OR "carved_pumpkin" OR "jack_o_lantern" OR "redstone_lamp" OR "mud"
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM MS6-FLOOR-ALWAYS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS6-FLOOR-DENIED.
+*> USING dim, x, y, z (the floor cell), species key (PIC X(24), the STDMOBS key), denied out (BINARY-LONG): 1 when the block's isValidSpawn is a species test that the species fails
+*> (44 part 1 RQ-1.10): leaves allow only the ocelot and the parrot, ice and frosted ice only the polar bear, magma block only the fire immune types (M1-FLAGS bit 1 of the mob table).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY MOB181.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-LEAVES              BINARY-LONG.
+ 01 WS-R1                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ 01 L-DENIED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-KEY L-DENIED.
+     MOVE 0 TO L-DENIED
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     IF WS-STATE = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+     MOVE 0 TO WS-LEAVES
+     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-LEAVES FOR ALL "_leaves"
+     EVALUATE TRUE
+         WHEN WS-LEAVES > 0
+             IF L-KEY NOT = "ocelot" AND L-KEY NOT = "parrot"
+                 MOVE 1 TO L-DENIED
+             END-IF
+         WHEN CB-KEY(WS-BLOCK) = "ice" OR "frosted_ice"
+             IF L-KEY NOT = "polar_bear"
+                 MOVE 1 TO L-DENIED
+             END-IF
+         WHEN CB-KEY(WS-BLOCK) = "magma_block"
+             CALL "M181-FIND" USING L-KEY WS-R1
+             MOVE 1 TO L-DENIED
+             IF WS-R1 > 0
+                 IF FUNCTION MOD(M1-FLAGS(WS-R1), 2) = 1
+                     MOVE 0 TO L-DENIED
+                 END-IF
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM MS6-FLOOR-DENIED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-STURDY-TOP.
 *> USING dim, x, y, z, ok out (BINARY-LONG): for the cell of a full solid block (MS6-BLOCK-KIND 1), whether its top face is sturdy, the part of Block.isValidSpawn (18 section 6.8: the top face is sturdy
 *> and the light emission is below 14) that the collision flag does not tell. The core keeps no face shapes (24 section 5.2), so the blocks whose top face is smaller than the cell are named by their keys:
 *> beds, carpets, farmland, paths, cauldrons, fences, walls, panes and bars, doors and trapdoors, chests and the workstations and lights of a village (campfire, lantern, bell, anvil, grindstone,
-*> composter, lectern, hopper, brewing stand, flower pots), and the stairs and slabs that do not hold their full face up (a stair with half top, a slab of type top or double does). The light emission
-*> and the blocks that override isValidSpawn (soul sand, mud, carved pumpkin, jack o'lantern, redstone lamp) are not modelled.
+*> composter, lectern, hopper, brewing stand, flower pots), and the stairs and slabs that do not hold their full face up (a stair with half top, a slab of type top or double does). The blocks that set
+*> isValidSpawn to "never" (44 part 1 RQ-1.10: bedrock, glass, tinted glass, the stained glass, barrier, moving piston, scaffolding, chorus flower, the trapdoors and the copper grates) are never a floor,
+*> though their top face is sturdy (the Nether roof and the bedrock layers hold no spawn). The light emission and the blocks that override isValidSpawn the other way (soul sand, mud, carved pumpkin,
+*> jack o'lantern, redstone lamp: always; leaves, ice and magma: for some species) are not modelled.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
@@ -707,6 +786,11 @@
      INSPECT CB-KEY(WS-BLOCK) TALLYING WS-SMALL FOR ALL "_bed" ALL "carpet" ALL "farmland" ALL "dirt_path" ALL "cauldron" ALL "_fence" ALL "_wall" ALL "_pane"
          ALL "iron_bars" ALL "_door" ALL "chest" ALL "campfire" ALL "lantern" ALL "bell" ALL "anvil" ALL "grindstone" ALL "composter" ALL "lectern" ALL "hopper"
          ALL "brewing_stand" ALL "flower_pot" ALL "potted_" ALL "stonecutter"
+         ALL "bedrock" ALL "tinted_glass" ALL "stained_glass" ALL "barrier" ALL "moving_piston" ALL "scaffolding" ALL "chorus_flower" ALL "_trapdoor"
+         ALL "copper_grate"
+     IF CB-KEY(WS-BLOCK) = "glass"
+         ADD 1 TO WS-SMALL
+     END-IF
      IF WS-SMALL > 0
          MOVE 0 TO L-OK
          GOBACK
@@ -726,7 +810,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-PLACEMENT-OK.
 *> USING placement (1 ON_GROUND, 2 IN_WATER, 3 IN_LAVA, 4 NO_RESTRICTIONS), dim, x, y, z, ok out (BINARY-LONG): SpawnPlacements.isSpawnPositionOk (6.9).
-*> ON_GROUND: a solid block below with a sturdy top face (MS6-STURDY-TOP) and valid empty blocks (kind 0: no full block, fluid, fire or rail) at the position and above it. IN_WATER: water at
+*> ON_GROUND: a solid block below with a sturdy top face (MS6-STURDY-TOP; the blocks that are always valid, MS6-FLOOR-ALWAYS, need neither) and valid empty blocks (kind 0: no full block, fluid, fire or rail) at the position and above it. IN_WATER: water at
 *> the position and no full block above. IN_LAVA: lava at the position. The world border is not modelled (the dimension is unbounded here).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -734,6 +818,7 @@
  01 WS-ABOVE               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
  01 WS-STURDY              BINARY-LONG.
+ 01 WS-ALWAYS              BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-PLACE                BINARY-LONG.
@@ -753,9 +838,10 @@
      IF WS-BELOW = 1
          CALL "MS6-STURDY-TOP" USING L-DIM L-X WS-Y L-Z WS-STURDY
      END-IF
+     CALL "MS6-FLOOR-ALWAYS" USING L-DIM L-X WS-Y L-Z WS-ALWAYS
      EVALUATE L-PLACE
          WHEN 1
-             IF WS-KIND = 0 AND WS-ABOVE = 0 AND WS-BELOW = 1 AND WS-STURDY = 1
+             IF WS-KIND = 0 AND WS-ABOVE = 0 AND ((WS-BELOW = 1 AND WS-STURDY = 1) OR WS-ALWAYS = 1)
                  MOVE 1 TO L-OK
              END-IF
          WHEN 2
@@ -843,7 +929,8 @@
  PROGRAM-ID. MS6-RULE-AT.
 *> USING state, dim, species row (STDMOBS.cpy), x, y, z (BINARY-LONG feet cell), reason (0 natural, 1 chunk generation, 2 spawner, 3 trial), ok out
 *> (BINARY-LONG): SpawnPlacements.checkSpawnRules (6.8) of a monster (kind 1: the Overworld light gate, the spawn light level a uniform 0 to 7) or an
-*> animal (kind 0: raw brightness above 8 and grass below) at the cell. The draws are nextInt(32) and nextInt(8), only for monsters.
+*> animal (kind 0: raw brightness above 8 and grass below) at the cell. The draws are nextInt(32) and nextInt(8), only for monsters. The floor is valid
+*> when it is a full solid block or an "always" floor (MS6-FLOOR-ALWAYS) and the species passes the floor's species test (MS6-FLOOR-DENIED).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -869,6 +956,8 @@
  01 WS-OPEN-SKY            BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
  01 WS-RAW                 BINARY-LONG.
+ 01 WS-ALWAYS              BINARY-LONG.
+ 01 WS-DENIED              BINARY-LONG.
  01 WS-SPREAD              BINARY-LONG VALUE 7.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
@@ -899,6 +988,15 @@
      MOVE 0 TO WS-VALID WS-BRIGHT WS-DARK WS-PEACEFUL
      IF WS-KIND = 1
          MOVE 1 TO WS-VALID
+     END-IF
+*>   The floors whose isValidSpawn is "always" or a species test (44 part 1 RQ-1.10).
+     CALL "MS6-FLOOR-ALWAYS" USING L-DIM L-X WS-BELOW L-Z WS-ALWAYS
+     IF WS-ALWAYS = 1
+         MOVE 1 TO WS-VALID
+     END-IF
+     CALL "MS6-FLOOR-DENIED" USING L-DIM L-X WS-BELOW L-Z SM-KEY(L-ROW) WS-DENIED
+     IF WS-DENIED = 1
+         MOVE 0 TO WS-VALID
      END-IF
      CALL "MS6-IS-GRASS" USING L-DIM L-X WS-BELOW L-Z WS-GRASS
      CALL "M19-SPECIES-FLOOR" USING SM-KEY(L-ROW) WS-FLOOR

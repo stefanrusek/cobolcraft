@@ -67,7 +67,7 @@ came from is listed under the table.
 | Block id | Key | Properties | Solid / collides | Opaque (occludes faces, blocks light) | Light emitted | Hardness (core §5.1) | Mineable tag | Notes |
 |---|---|---|---|---|---|---|---|---|
 | 0 | `cobolcraft:void` | none | no | no | 0 | n/a | none | Empty space. Not targetable, not breakable, not placeable. |
-| 1 | `cobolcraft:baseplate` | none | yes | yes | 0 | -1.0 (unbreakable) | none | Bottom layer of every dimension (y = 0). Creative may place it but nobody may break it (13 §2.5, §2.6). |
+| 1 | `cobolcraft:baseplate` | none | yes | yes | 0 | -1.0 (unbreakable) | none | Bottom layer of every dimension (y = 0). Survival and adventure players cannot break it; a creative player breaks it at once like any block (13 §2.5: the server breaks on Start Destroy Block whatever the hardness; operator decision of try15), unless the held item is a sword, a trident or a mace. |
 | 2 | `cobolcraft:greystone` | none | yes | yes | 0 | 1.5 | `mineable/pickaxe` | Bulk underground fill. |
 | 3 | `cobolcraft:loam` | none | yes | yes | 0 | 0.5 | `mineable/shovel` | Subsoil. |
 | 4 | `cobolcraft:turf` | none | yes | yes | 0 | 0.6 | `mineable/shovel` | Top surface on higher ground. Different top, side and bottom faces. |
@@ -154,7 +154,7 @@ Total: **18 block states**. Consequences for chunk encoding (06 §5.3):
   `glowtube` with no block item held toggles `lit`; with a block item held it places against the glowtube
   as against any other block. Use Item On with a non-block item held (tools, food, `dump_shard`) places
   nothing.
-- Breaking sets the position to state 0 (`void`). `baseplate` refuses (hardness -1.0, §1.1).
+- Breaking sets the position to state 0 (`void`). `baseplate` refuses survival and adventure (hardness -1.0, §1.1) but not creative (13 §2.5).
 - **Block yields (FR-002).** The yield of a block is its item, one of it, from the block's loot table (core §5.6); the
   dropped stack is an item entity with the shared rules (18 §6.11: pickup delay 10, lifetime 6000, merging; §9). The
   block's item is the item that places it (§2): block id 2–9 → item id 2–9 (every `cardstack` state →
