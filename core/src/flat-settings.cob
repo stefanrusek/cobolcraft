@@ -348,8 +348,13 @@
  COPY CORESTATE.
  COPY FLATSET.
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-VOID                PIC X(40) VALUE "the_void".
  PROCEDURE DIVISION.
      IF CW-WORLD-TYPE = "superflat"
+*>       A world whose declared generator this core cannot make (WORLD-TYPE-DECIDE, FS-FALLBACK): its chunks are the void preset's, whatever the file says.
+         IF FS-FALLBACK = 1
+             CALL "FLAT-PRESET-SET" USING WS-VOID WS-STATUS
+         END-IF
          IF FS-PENDING = 1
              MOVE 0 TO FS-PENDING
              MOVE -1 TO FS-STAMP
@@ -389,6 +394,10 @@
  01 WS-PATH-LENGTH         BINARY-LONG.
  PROCEDURE DIVISION.
      IF CW-WORLD-TYPE NOT = "superflat"
+         GOBACK
+     END-IF
+*>   A world of the 26.3 layout keeps the file as the game wrote it (VANILLA-SAVED-WRITE keeps its dimensions map: the nether and end stems, a generator of a mod).
+     IF CW-LAYOUT = 1
          GOBACK
      END-IF
      IF FS-LOADED = 0
