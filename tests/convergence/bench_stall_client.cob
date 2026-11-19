@@ -5,7 +5,7 @@
 *> leaves, since the core's generation workers run in real time. The meshing is paid for from the credit as in the running client (MB-CREDIT-ON). Each phase prints the longest frame, the number of
 *> frames over 100 ms of CPU, the CPU of all its frames and the frame at which the replica first held every chunk of the view with nothing to mesh; ST_TRACE=1 prints every frame over 100 ms
 *> (CPU or wall), 2 also the progress every 100 frames. ST_TYPE standard (default) or superflat, ST_VIEW (default 4), ST_FRAMES (default 1200: the most frames of a phase; a phase ends 100
-*> frames after the world is complete), ST_LIMIT_MS (default 150: the cases' budget of the longest frame).
+*> frames after the world is complete), ST_LIMIT_MS (default 150: the cases' budget of the longest frame), ST_DIR (folder under build/, default conv-stall-bench).
 *> Not an acceptance test: the file is not named acc_ and is built by hand (the release libraries, scratchpad lane scripts); it prints `STALL ...` lines.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BENCH-STALL-CLIENT.
@@ -55,6 +55,8 @@
     05 ST-SUM              BINARY-DOUBLE.
     05 ST-FULL-AT          BINARY-LONG.
     05 ST-FULL-US          BINARY-DOUBLE.
+    05 ST-QUIET-AT         BINARY-LONG.
+    05 ST-QUIET-US         BINARY-DOUBLE.
  01 WS-LOAD-MAX            BINARY-DOUBLE.
  01 WS-LOAD-OVER           BINARY-LONG.
  01 WS-LOAD-FULL-AT        BINARY-LONG.
@@ -82,6 +84,13 @@
      ACCEPT WS-ENV FROM ENVIRONMENT "ST_LIMIT_MS"
      IF WS-ENV NOT = SPACES
          COMPUTE WS-LIMIT-US = FUNCTION NUMVAL(WS-ENV) * 1000
+     END-IF
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "ST_DIR"
+     IF WS-ENV NOT = SPACES
+         MOVE SPACES TO WS-DIR
+         STRING "build/" FUNCTION TRIM(WS-ENV) DELIMITED BY SIZE INTO WS-DIR
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-DIR TRAILING)) TO WS-DIR-LENGTH
      END-IF
      CALL "CV-INIT" USING CONVH WS-DIR WS-DIR-LENGTH
      CALL "CV-CLIENT-ADD" USING CONVH WS-NAME WS-NAME-LENGTH WS-ALICE
@@ -205,15 +214,17 @@
     05 L-SUM               BINARY-DOUBLE.
     05 L-FULL-AT           BINARY-LONG.
     05 L-FULL-US           BINARY-DOUBLE.
+    05 L-QUIET-AT          BINARY-LONG.
+    05 L-QUIET-US          BINARY-DOUBLE.
  PROCEDURE DIVISION USING CONVH L-INDEX L-VIEW L-FRAMES L-TRACE L-LIMIT L-LABEL L-STATS.
-     MOVE 0 TO L-MAX L-MAX-AT L-OVER L-SUM L-FULL-AT L-FULL-US WS-WALL-MAX WS-WALL-OVER
+     MOVE 0 TO L-MAX L-MAX-AT L-OVER L-SUM L-FULL-AT L-FULL-US L-QUIET-AT L-QUIET-US WS-WALL-MAX WS-WALL-OVER
      COMPUTE WS-WANT = (2 * L-VIEW + 1) * (2 * L-VIEW + 1)
      MOVE SPACES TO WS-PACE-ENV
      ACCEPT WS-PACE-ENV FROM ENVIRONMENT "ST_PACE_MS"
      IF WS-PACE-ENV NOT = SPACES
          COMPUTE WS-PACE-MS = FUNCTION NUMVAL(WS-PACE-ENV)
      END-IF
-     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > L-FRAMES OR (L-FULL-AT > 0 AND WS-F > L-FULL-AT + 100)
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > L-FRAMES OR (L-QUIET-AT > 0 AND WS-F > L-QUIET-AT + 50)
 *>       A frame stands for WS-PACE-MS of real time (a window at about 60 frames a second): the frame clock advances by that, the core
 *>       ticks once per 50 ms of it, and the loop waits out what a quick frame leaves (the core's generation workers run in real time).
          CALL "SV-NOW-MS" USING WS-W0
@@ -255,9 +266,13 @@
                  END-PERFORM
              END-IF
          END-PERFORM
-         IF L-FULL-AT = 0 AND WS-DIRTY = 0 AND WS-CHUNKS >= WS-WANT AND PL-LOADED = 1
+         IF L-FULL-AT = 0 AND WS-CHUNKS >= WS-WANT AND PL-LOADED = 1
              MOVE WS-F TO L-FULL-AT
              MOVE L-SUM TO L-FULL-US
+         END-IF
+         IF L-FULL-AT > 0 AND L-QUIET-AT = 0 AND WS-DIRTY = 0
+             MOVE WS-F TO L-QUIET-AT
+             MOVE L-SUM TO L-QUIET-US
          END-IF
          IF L-TRACE = 2 AND FUNCTION MOD(WS-F, 100) = 0
              MOVE WS-F TO WS-D9
@@ -280,7 +295,10 @@
      MOVE L-FULL-AT TO WS-D9D
      MOVE L-FULL-US TO WS-D9E
      DISPLAY "STALL " FUNCTION TRIM(L-LABEL) " frames " L-FRAMES " max-us " WS-D9 " at " WS-D9B " over-100ms " WS-D9C
-         " full-at-frame " WS-D9D " cpu-us-to-full " WS-D9E
+         " chunks-complete-at-frame " WS-D9D " cpu-us-to-there " WS-D9E
+     MOVE L-QUIET-AT TO WS-D9
+     MOVE L-QUIET-US TO WS-D9B
+     DISPLAY "STALL " FUNCTION TRIM(L-LABEL) " nothing-left-to-mesh-at-frame " WS-D9 " cpu-us-to-there " WS-D9B
      MOVE L-SUM TO WS-D9
      DISPLAY "STALL " FUNCTION TRIM(L-LABEL) " cpu-us-total " WS-D9 " wall-ms-max " WS-WALL-MAX " wall-frames-over-100ms " WS-WALL-OVER
      MOVE WS-CHUNKS TO WS-D9
