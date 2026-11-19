@@ -29,6 +29,7 @@
  01 WS-ATK                 FLOAT-LONG.
  01 WS-FLW                 FLOAT-LONG.
  01 WS-WET                 FLOAT-LONG.
+ 01 WS-NAME                PIC X(24).
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-KEY                  PIC X(20).
@@ -119,10 +120,20 @@
              MOVE WS-BABY TO L-I(6)
              CALL "EF5-BEE-ANIM" USING EMM-MODEL L-IN
          WHEN "armadillo"
+*>           34-5 10.3: hiding in the shell (input 12 of the caller), the start ticks of the roll-out (13), roll-up (14) and peek (15) animation states.
              MOVE L-AGE TO L-I(5)
-             MOVE WS-STOP TO L-I(7) L-I(8) L-I(9)
+             MOVE WS-FLW TO L-I(6)
+             MOVE WS-ATK TO L-I(7)
+             MOVE WS-TMOVE TO L-I(8)
+             MOVE WS-DRY TO L-I(9)
              MOVE WS-BABY TO L-I(10)
              CALL "EF5-ARMADILLO-ANIM" USING EMM-MODEL L-IN
+*>           In the shell the body's own cuboids are not drawn (skipDraw, output 11).
+             IF L-I(11) NOT = 0
+                 MOVE "body" TO WS-NAME
+                 CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-J
+                 MOVE 0 TO MM-NCUBES(WS-J)
+             END-IF
          WHEN "frog"
              MOVE WS-WPOS TO L-I(1)
              MOVE WS-WSPEED TO L-I(2)

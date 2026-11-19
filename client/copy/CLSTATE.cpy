@@ -769,6 +769,15 @@
           15 EN-CREEPY       PIC 9.
           15 EN-ATK          BINARY-LONG.
           15 EN-FLW          BINARY-LONG.
+*>        The armadillo (34-5 10.3, ENTITY-ARMADILLO-SET and ENTITIES-ANIM-TICK): ARMADILLO_STATE (Set Entity Data entry 18, serializer 36: 0 idle, 1 rolling, 2 scared,
+*>        3 unrolling), inStateTicks (client ticks since the state changed), the start ticks of the roll-out, roll-up and peek animation states (-2147483648 is stopped)
+*>        and the "peek received" flag of Entity Event 64.
+          15 EN-ARMA         BINARY-LONG.
+          15 EN-ARMA-TICKS   BINARY-LONG.
+          15 EN-ARMA-OUT     BINARY-LONG.
+          15 EN-ARMA-UP      BINARY-LONG.
+          15 EN-ARMA-PEEK    BINARY-LONG.
+          15 EN-ARMA-RCV     BINARY-LONG.
 *>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
 *>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
 *>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the

@@ -132,6 +132,22 @@
                      SUBTRACT 1 FROM EN-FLW(WS-R)
                  END-IF
              END-IF
+*>           The armadillo (34-5 10.3 setupAnimationStates): inStateTicks counts up, then the roll-out, roll-up and peek animation states follow the state.
+             IF EN-KEY(WS-R) = "armadillo"
+                 ADD 1 TO EN-ARMA-TICKS(WS-R)
+                 MOVE EN-ARMA(WS-R) TO WS-CIV(1)
+                 MOVE EN-ARMA-TICKS(WS-R) TO WS-CIV(2)
+                 MOVE EN-AGE(WS-R) TO WS-CIV(3)
+                 MOVE EN-ARMA-OUT(WS-R) TO WS-CIV(4)
+                 MOVE EN-ARMA-UP(WS-R) TO WS-CIV(5)
+                 MOVE EN-ARMA-PEEK(WS-R) TO WS-CIV(6)
+                 MOVE EN-ARMA-RCV(WS-R) TO WS-CIV(7)
+                 CALL "EF5-ARMADILLO-STATES" USING WS-CI WS-CO
+                 MOVE WS-COV(1) TO EN-ARMA-OUT(WS-R)
+                 MOVE WS-COV(2) TO EN-ARMA-UP(WS-R)
+                 MOVE WS-COV(3) TO EN-ARMA-PEEK(WS-R)
+                 MOVE WS-COV(4) TO EN-ARMA-RCV(WS-R)
+             END-IF
 *>           The ender dragon (34-7 8.1, 8.8): the flap time (no phase or wall data in the replica: not sitting, not in a wall) and one history sample (y, yaw wrapped to
 *>           -180 to 180) a tick; a dragon with another id than the history's owner restarts the ring.
              IF EN-KEY(WS-R) = "ender_dragon"
@@ -386,7 +402,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-EVENT.
-*> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 19 resets a squid's tentacle movement to 0 ("squid animation sync"), 4 starts the bite of evoker
+*> USING CLIENT-STATE, entity id, event (18 section 9 Entity Event): 64 on an armadillo is the peek (34-5 10.3); 19 resets a squid's tentacle movement to 0 ("squid animation sync"), 4 starts the bite of evoker
 *> fangs; an iron golem's 4 (attack tick 10), 11 (offer flower 400) and 34 (stop). Another event or an unknown id changes nothing.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -400,6 +416,10 @@
      IF WS-ROW > 0
          IF L-EVENT = 19
              MOVE 0 TO EN-TM(WS-ROW)
+         END-IF
+*>       Entity Event 64 on an armadillo: the peek was received (34-5 10.3); the next tick restarts the peek animation.
+         IF L-EVENT = 64 AND EN-KEY(WS-ROW) = "armadillo"
+             MOVE 1 TO EN-ARMA-RCV(WS-ROW)
          END-IF
          IF L-EVENT = 4 AND EN-KEY(WS-ROW) = "evoker_fangs"
              MOVE 1 TO EN-FA(WS-ROW)
@@ -441,6 +461,28 @@
      MOVE WS-COV(1) TO L-P
      GOBACK.
  END PROGRAM ENTITY-FANGS-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-ARMADILLO-SET.
+*> USING CLIENT-STATE, replica row, entry index, serializer, int value: ARMADILLO_STATE (19 section 13, entry 18, serializer 36, a VarInt: 0 idle, 1 rolling,
+*> 2 scared, 3 unrolling) of an armadillo. A new state restarts inStateTicks (34-5 10.3; the document does not say when the client resets it: a change of the
+*> synched state is the only event the replica sees). Another entry or another mob changes nothing.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SERIALIZER           BINARY-LONG.
+ 01 L-INT                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-INT.
+     IF EN-KEY(L-ROW) = "armadillo" AND L-INDEX = 18 AND L-SERIALIZER = 36 AND L-INT >= 0 AND L-INT <= 3
+         IF L-INT NOT = EN-ARMA(L-ROW)
+             MOVE L-INT TO EN-ARMA(L-ROW)
+             MOVE 0 TO EN-ARMA-TICKS(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-ARMADILLO-SET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-BOAT-SET.
