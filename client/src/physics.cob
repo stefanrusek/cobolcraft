@@ -23,8 +23,8 @@
 *>   - an elytra glide (17 section 3.13; physics-glide.cob): Space pressed in the air with an elytra worn starts it (PHYS-GLIDE-START, from PHYS-INPUT, survival-like players without
 *>     mayfly only: the double press of 1.4 is theirs), and while PL-GLIDING PHYS-GLIDE replaces the walking step of PHYS-TICK; Set Entity Motion of the local player is PLAYER-MOTION-SET.
 *> The flying speeds, jump speed, gravity, flying toggle and mouse factor are recorded in standin
-*> §11.4 with the walking speed. The box is the operator's
-*> collision box: 0.7 wide, 1.75 high, centred on the feet position; it overlaps a cell when the
+*> §11.4 with the walking speed. The box is the player's
+*> collision box (PHYS-STAND-BOX: 0.6 wide and 1.8 high with a standard content set like the core's, the cobolcraft stand-in set's operator 0.7 x 1.75), centred on the feet position; it overlaps a cell when the
 *> overlap exceeds 1e-7 in every axis (core/src/movement.cob counts touching faces the same way).
 *> A cell's collision shape is the one of its state (CTBSHAPE.cpy; a full cube when no content set is open); a cell of a chunk the
 *> client does not have is a full cube, as for mobs (standin §12.2); outside the dimension's height range nothing collides.
@@ -645,7 +645,7 @@
  01 L-HALF                 FLOAT-LONG.
  01 L-HEIGHT               FLOAT-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-HALF L-HEIGHT.
-     MOVE 0.35 TO L-HALF
+     CALL "PHYS-STAND-BOX" USING L-HALF L-HEIGHT
      EVALUATE PL-POSE
          WHEN 5
              MOVE 1.5 TO L-HEIGHT
@@ -655,11 +655,31 @@
          WHEN 1
              MOVE 0.3 TO L-HALF
              MOVE 0.6 TO L-HEIGHT
-         WHEN OTHER
-             MOVE 1.75 TO L-HEIGHT
      END-EVALUATE
      GOBACK.
  END PROGRAM PHYS-BOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-STAND-BOX.
+*> USING half width out, height out (FLOAT-LONG): the standing box of the Player: the one the core's movement check uses (core/src/movement.cob reads
+*> the width and height of the set's player entity): 0.6 x 1.8 for a standard (or debug) content set (docs/protocol/53 section 2.1), 0.7 x 1.75 for
+*> the cobolcraft stand-in set (standin-content section 3) and while no set is open. A narrower or taller box than the core's is how a step onto a carpet
+*> or a slab was taken by the client and refused by the core (Player Position, every frame: the shake).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ LINKAGE SECTION.
+ 01 L-HALF                 FLOAT-LONG.
+ 01 L-HEIGHT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-HALF L-HEIGHT.
+     MOVE 0.35 TO L-HALF
+     MOVE 1.75 TO L-HEIGHT
+     IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE 0.3 TO L-HALF
+         MOVE 1.8 TO L-HEIGHT
+     END-IF
+     GOBACK.
+ END PROGRAM PHYS-STAND-BOX.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-COLLIDES.
@@ -840,8 +860,8 @@
  01 WS-CROUCH-FITS         BINARY-LONG.
  01 WS-SWIM-FITS           BINARY-LONG.
  01 WS-TARGET              FLOAT-LONG.
- 01 WS-HALF-S              FLOAT-LONG VALUE 0.35.
- 01 WS-HEIGHT-STAND        FLOAT-LONG VALUE 1.75.
+ 01 WS-HALF-S              FLOAT-LONG.
+ 01 WS-HEIGHT-STAND        FLOAT-LONG.
  01 WS-HEIGHT-CROUCH       FLOAT-LONG VALUE 1.5.
  01 WS-HALF-SWIM           FLOAT-LONG VALUE 0.3.
  01 WS-HEIGHT-SWIM         FLOAT-LONG VALUE 0.6.
@@ -849,6 +869,7 @@
  COPY CLSTATE.
  01 L-SHIFT                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-SHIFT.
+     CALL "PHYS-STAND-BOX" USING WS-HALF-S WS-HEIGHT-STAND
      CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE PL-X PL-Y PL-Z WS-HALF-SWIM WS-HEIGHT-SWIM WS-HIT
      MOVE 1 TO WS-SWIM-FITS
      IF WS-HIT = 1
