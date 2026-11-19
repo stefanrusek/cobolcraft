@@ -206,6 +206,13 @@
          CALL "VL-BED-OCCUPY" USING EN-ID(L-ROW) WS-ZERO
          CALL "MOB-DATA-SEND" USING L-ROW
      END-IF
+*>   A sleeping villager lies where it started sleeping, on its bed (19 section 22.8): the stroll of the mob step neither starts nor goes on (the cooldown is held at 1 and
+*>   the destination is its own cell), so it does not wander off while it is flagged asleep and refuses a trade (22.4) (lane bugnighttrade).
+     IF VL-SLEEP(WS-SLOT) = 1
+         COMPUTE EN-DEST-X(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))
+         COMPUTE EN-DEST-Z(L-ROW) = FUNCTION INTEGER(EN-Z(L-ROW))
+         MOVE 1 TO EN-COOLDOWN(L-ROW)
+     END-IF
 *>   The index fills while villagers live: one section of the chunk round the villager every 5 ticks (7 x 7 chunks, one after the other).
      IF FUNCTION MOD(CW-TICKS + EN-ID(L-ROW), 5) = 0
 *>     The scan in progress goes on first (one chunk after the other: 24 calls finish it), then the chunk of the villager, then the round of the 7 x 7.
@@ -508,6 +515,12 @@
  01 WS-N2                   BINARY-LONG.
  01 WS-D2                   FLOAT-LONG.
  01 WS-ONE-FLAG             BINARY-LONG VALUE 1.
+ 01 WS-SX                   FLOAT-LONG.
+ 01 WS-SY                   FLOAT-LONG.
+ 01 WS-SZ                   FLOAT-LONG.
+ 01 WS-SYAW                 FLOAT-SHORT.
+ 01 WS-SPITCH               FLOAT-SHORT.
+ 01 WS-SGROUND              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-SLOT                  BINARY-LONG.
@@ -526,6 +539,14 @@
          MOVE 1 TO VL-SLEEP(L-SLOT)
          MOVE CW-TICKS TO VL-LAST-SLEPT(L-SLOT)
          CALL "VL-BED-OCCUPY" USING EN-ID(L-ROW) WS-ONE-FLAG
+*>       startSleeping puts the villager at the bed position (22.8): the middle of the bed block, on the mattress (51 R-E3: 9 sixteenths) (lane bugnighttrade).
+         COMPUTE WS-SX = WS-QX + 0.5
+         COMPUTE WS-SY = WS-QY + 0.5625
+         COMPUTE WS-SZ = WS-QZ + 0.5
+         MOVE EN-YAW(L-ROW) TO WS-SYAW
+         MOVE EN-PITCH(L-ROW) TO WS-SPITCH
+         MOVE EN-ON-GROUND(L-ROW) TO WS-SGROUND
+         CALL "ENTITY-MOVE" USING L-ROW WS-SX WS-SY WS-SZ WS-SYAW WS-SPITCH WS-SGROUND
          CALL "MOB-DATA-SEND" USING L-ROW
          CALL "VL-WALK-STOP" USING L-ROW L-SLOT
          CALL "VM-ERASE" USING L-SLOT MT-CANT-REACH-SINCE
