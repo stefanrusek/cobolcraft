@@ -163,3 +163,102 @@
      MOVE WS-DF(WS-PATTERN-COLOUR + 1) TO L-O(7)
      GOBACK.
  END PROGRAM EF8-TROPICAL-DECODE.
+
+*> Boats of 34-8 section 7 that are not mesh rows:
+*>   EF8-M-BOAT-PATCH USING model: the water patch layer boat#water_patch (7.1, texture 0 x 0), a depth-only mask that is never textured;
+*>   EF8-BOAT-SEAT IN(raft 1 or boat 0, chest 1 or 0, passenger count, index of this passenger, passenger is an animal) OUT(x, y, z of the seat before the rotation about Y,
+*>   maximum passengers) (7.5); EF8-BOAT-LEASH IN(box width, box height) OUT(x, y, z of the leash offset) (7.5);
+*>   EF8-BOAT-PATCH-DRAWN IN(raft, under water) OUT(1 when the water patch is submitted: a boat that is not under water; a raft has none) (7.4 step 7).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF8-M-BOAT-PATCH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS1.
+    05 FILLER PIC X(100) VALUE "P water_patch root 0 -3 1 1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C water_patch 0 0 -14 -9 -3 28 16 3 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 78 TIMES.
+ 01 WS-ROWS1-R REDEFINES WS-ROWS1.
+    05 WS-ROW1             PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N1                  BINARY-LONG VALUE 2.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS1-R WS-N1 WS-ZERO
+     MOVE 0 TO MM-TEXW
+     MOVE 0 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF8-M-BOAT-PATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF8-BOAT-SEAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-XO                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     IF L-I(1) = 1
+         COMPUTE L-O(2) = 0.5625 * 0.8888889
+     ELSE
+         COMPUTE L-O(2) = 0.5625 / 3
+     END-IF
+     MOVE 0 TO WS-XO
+     IF L-I(3) <= 1
+         IF L-I(2) = 1
+             MOVE 0.15 TO WS-XO
+         END-IF
+     ELSE
+         IF L-I(4) = 0
+             MOVE 0.2 TO WS-XO
+         ELSE
+             MOVE -0.6 TO WS-XO
+         END-IF
+         IF L-I(5) = 1
+             ADD 0.2 TO WS-XO
+         END-IF
+     END-IF
+     MOVE 0 TO L-O(1)
+     MOVE WS-XO TO L-O(3)
+     MOVE 2 TO L-O(4)
+     IF L-I(2) = 1
+         MOVE 1 TO L-O(4)
+     END-IF
+     GOBACK.
+ END PROGRAM EF8-BOAT-SEAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF8-BOAT-LEASH.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     COMPUTE L-O(2) = 0.88 * L-I(2)
+     COMPUTE L-O(3) = 0.64 * L-I(1)
+     GOBACK.
+ END PROGRAM EF8-BOAT-LEASH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF8-BOAT-PATCH-DRAWN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(1) = 0 AND L-I(2) = 0
+         MOVE 1 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF8-BOAT-PATCH-DRAWN.
