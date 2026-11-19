@@ -1073,7 +1073,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 153 TIMES.
+       10 GS-ROW OCCURS 173 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.
