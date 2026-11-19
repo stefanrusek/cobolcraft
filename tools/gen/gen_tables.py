@@ -16,6 +16,7 @@ of every column as level-78 constants. Test infrastructure, stdlib only. Values 
 a column the documents do not give for a row stays blank (spaces).
 """
 import argparse
+import fnmatch
 import os
 import re
 import sys
@@ -234,6 +235,34 @@ def assign_keys(blocks, idkey, weathering):
 
 
 PROSE_FLAGS = {}
+# Rows of the per-part tables that state flag text but name no block the generator could find: a lost row would leave
+# its blocks with blank flags (a flower the core treats as solid), so build_blocks turns each one into a problem.
+UNRESOLVED = []
+
+
+def descriptor_targets(raw, by_key, by_field, by_fieldno):
+    """Blocks of a row whose first cell names them without a plain backticked key: an ordinal or an ordinal range
+    ("140 to 154 the fifteen flowers", "119 each `<colour>_bed`": the ordinal is the Appendix A field number), a field
+    name in capitals ("`COPPER_BARS` (8 blocks)") or a pattern ("all 11 `*_BUTTON`", "`FLOWER_POT` and all 30
+    `POTTED_*`"; the patterns also match blocks of later parts that have a row of their own, so the caller applies a
+    pattern row after every row with a key)."""
+    found = []
+    match = re.match(r"\s*(\d+)(?: to (\d+))?(?![\d`])", raw)
+    if match:
+        low = int(match.group(1))
+        high = int(match.group(2) or low)
+        for n in range(low, high + 1):
+            found.extend(by_fieldno.get(n, []))
+        return found
+    for token in re.findall(r"`([A-Za-z_0-9*]+)`", raw):
+        token = token.lower()
+        if "*" in token:
+            found.extend(b for k, b in by_key.items() if fnmatch.fnmatchcase(k, token))
+        elif token in by_field:
+            found.extend(by_field[token])
+        elif token in by_key:
+            found.append(by_key[token])
+    return found
 
 
 def collect_block_attrs(docs, blocks):
@@ -246,6 +275,7 @@ def collect_block_attrs(docs, blocks):
     for b in blocks:
         by_fieldno.setdefault(b["field"], []).append(b)
     attrs = {b["id"]: {} for b in blocks}
+    late = []
 
     def put(targets, values, whole_field):
         for b in targets:
@@ -256,6 +286,11 @@ def collect_block_attrs(docs, blocks):
                     # kept only where they say the block cannot occlude (24 part 1 section 5.2: noOcclusion and noCollision clear
                     # canOcclude), so a member does not draw as a full cube that hides its neighbours' faces.
                     v = " ".join(t for t in ("noOcclusion", "noCollision") if re.search(r"\b%s\b" % t, v))
+                if k == "flags":
+                    # Consumers look for a flag as a word (" replaceable ", see core/src/block-props.cob): the documents
+                    # separate flags by commas or semicolons in some parts, so "replaceable, noCollision" read as no flag
+                    # ("noCollision(also no occlude)" is the word noCollision: no collision clears can-occlude too).
+                    v = " ".join(re.sub(r"\(also no occlude\)", "", re.sub(r"[,;]", " ", v)).split())
                 if v == "" or (k in ("map", "default", "props") and whole_field and b["count"] > 1):
                     continue
                 slot.setdefault(k, v)
@@ -309,6 +344,13 @@ def collect_block_attrs(docs, blocks):
                         if k in by_key:
                             targets.append(by_key[k])
                     if not targets:
+                        targets = descriptor_targets(table_raw(path, table, r), by_key, by_field, by_fieldno)
+                        whole = len(targets) > 1
+                        if hr is not None and hr < len(r) and r[hr].startswith("as "):
+                            continue  # "as the wool block of the colour": a copy row, it states no value of its own
+                    if not targets:
+                        if values.get("flags"):
+                            UNRESOLVED.append("%s: %s" % (os.path.basename(path), r[0]))
                         continue
                     # Part 2 defaults stated in the column notes: blank instrument is HARP, blank sound is STONE.
                     values.setdefault("instrument", "")
@@ -331,9 +373,20 @@ def collect_block_attrs(docs, blocks):
                         whole = len(targets) > 1
                     elif name in by_key:
                         targets = [by_key[name]]
+                if not targets and fi is not None and fi < len(r) and oi is None:
+                    # A row of a field in capitals or a pattern: its flags only, after every row with a key (below).
+                    targets = descriptor_targets(table_raw(path, table, r), by_key, by_field, by_fieldno)
+                    if targets and values.get("flags"):
+                        late.append((targets, {"flags": values["flags"]}))
+                    if targets:
+                        continue
                 if not targets:
+                    if values.get("flags"):
+                        UNRESOLVED.append("%s: %s" % (os.path.basename(path), r[0]))
                     continue
                 put(targets, values, whole)
+    for targets, values in late:
+        put(targets, values, len(targets) > 1)
     return attrs
 
 
@@ -721,7 +774,9 @@ def build_blocks(docs):
     appendix = read_appendix(parts[7])
     blocks = expand_fields(appendix, None)
     problems = assign_keys(blocks, collect_block_keys(docs), weathering_table(parts[7]))
+    del UNRESOLVED[:]
     attrs = collect_block_attrs(docs, blocks)
+    problems.extend("flags of a row reach no block: " + u for u in UNRESOLVED)
     gaps, family_problems, verified, unverified = complete_blocks(blocks, attrs, collect_block_classes(docs), docs)
     problems.extend(family_problems)
     stated = {}
