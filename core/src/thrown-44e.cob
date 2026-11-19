@@ -3,7 +3,7 @@
 *> only every player and mob in the box +- 3 horizontally, -3 to +9 vertically gets thunderHit (LIGHTNING-HIT): the default is the 5.0 damage (a mob loses 5 points, a player 5.0 through
 *> HEALTH-HURT, CAUSE-COMMAND) and a fire counter of +1 (EN-BURN); a creeper becomes powered (EN-VARIANT 1) after it; a pig (not Peaceful) becomes a zombified_piglin and a villager (not
 *> Peaceful) a witch, neither taking damage; a turtle dies; a mooshroom swaps red and brown once per bolt (the bolt's PJ-V list) and takes nothing.
-*> Gaps: spawnFire(4) (the placement rule is not in the documents), powering a lightning rod, clearing copper oxidation and wax (44 part 9 section 9.3 of 29b-3 gives the walks; not built here),
+*> Gaps: powering a lightning rod, clearing copper oxidation and wax (44 part 9 section 9.3 of 29b-3 gives the walks; not built here),
 *> the game event, the advancement for players within 15 blocks, sounds, the copper golem, armor stands and item frames (not entities of this core), the witch's finalizeSpawn, the zombified piglin's
 *> default equipment, releasing the villager's points of interest, thunderHit on dropped items and other non-mob entities, igniteForSeconds(8) for a counter of -1.
 *>
@@ -98,6 +98,7 @@
  01 WS-KNOWN               BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-CONVERTED           BINARY-LONG.
+ 01 WS-IGNITE-TICKS        BINARY-LONG VALUE 160.
  LINKAGE SECTION.
  01 L-SLOT                 BINARY-LONG.
  01 L-BOLT                 BINARY-LONG.
@@ -105,6 +106,11 @@
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-SLOT L-BOLT L-ROW L-PLAYER.
      IF L-PLAYER > 0
+*>       Entity.thunderHit: the fire counter + 1, the 8 second ignition when it is then 0, then the damage (44-9 section 2.1).
+         ADD 1 TO EN-BURN(PL-ENTITY-ROW(L-PLAYER))
+         IF EN-BURN(PL-ENTITY-ROW(L-PLAYER)) = 0
+             CALL "PLAYER-IGNITE" USING L-PLAYER WS-IGNITE-TICKS
+         END-IF
          CALL "HEALTH-HURT" USING L-PLAYER WS-DAMAGE WS-CAUSE WS-NONE WS-NONE2 WS-RESULT
          GOBACK
      END-IF
@@ -140,6 +146,9 @@
      END-EVALUATE
      IF WS-CONVERTED = 0
          ADD 1 TO EN-BURN(L-ROW)
+         IF EN-BURN(L-ROW) = 0
+             CALL "MOB-IGNITE" USING L-ROW WS-IGNITE-TICKS
+         END-IF
          MOVE 5 TO WS-POINTS
          CALL "HEALTH-MOB-DAMAGE" USING L-ROW WS-POINTS WS-CAUSE WS-NONE
          IF WS-SPECIES = "creeper"
@@ -210,6 +219,7 @@
  01 WS-SALT                BINARY-LONG VALUE 9092.
  01 WS-TEN                 BINARY-LONG VALUE 10.
  01 WS-R                   BINARY-LONG.
+ 01 WS-NO-FIRES            BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -230,6 +240,8 @@
          IF PJ-I1(WS-SLOT) < 0 - WS-R
              SUBTRACT 1 FROM PJ-I2(WS-SLOT)
              MOVE 1 TO PJ-I1(WS-SLOT)
+*>           A flash calls spawnFire(0) at every difficulty (21 section 8.6).
+             CALL "LIGHTNING-SPAWN-FIRE" USING L-ROW WS-NO-FIRES
          END-IF
      END-IF
      IF PJ-I1(WS-SLOT) >= 0 AND PJ-I3(WS-SLOT) = 0

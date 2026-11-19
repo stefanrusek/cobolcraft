@@ -1294,6 +1294,8 @@
                  END-IF
                  CALL "M19-PACK-SHARE" USING WS-FIRST WS-NEW
                  CALL "AQUA-PACK" USING L-STATE WS-FIRST WS-NEW WS-IN-PACK WS-AQUA-DONE
+*>               A school of fish: the first leads, the others follow it (21 section 4.1.1, lane p49t).
+                 CALL "FISH-PACK-JOIN" USING WS-FIRST WS-NEW
                  ADD 1 TO L-SPAWNED WS-IN-PACK
                  CALL "MS6-COST-ADD" USING L-BIOME WS-KEY24 WS-POINTS WS-PN WS-FX WS-FY WS-FZ
                  IF L-SPAWNED >= 4
@@ -1912,9 +1914,8 @@
  END PROGRAM MS6-EGG-SPAWN.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MS6-BIOME-AT.
-*> USING dim, x, y, z (BINARY-LONG), biome row out (BINARY-LONG): the row of MOBSPAWN.cpy's biome table for the biome of the cell (the chunk's biome cell of
-*> that 4 x 4 x 4 block). A biome the table does not hold (a chunk that is not loaded, or a biome of another set) uses the plains list.
+ PROGRAM-ID. MS6-BIOME-ID-AT.
+*> USING dim, x, y, z (BINARY-LONG), biome id out (BINARY-LONG): the id (index into CORE-BIOMES, 0 based) of the chunk's biome cell of that 4 x 4 x 4 block, -1 when the chunk is not loaded (lane p49t).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1928,16 +1929,14 @@
  01 WS-LZ                  BINARY-LONG.
  01 WS-LY                  BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
- 01 WS-ID                  BINARY-LONG.
- 01 WS-KEY                 PIC X(48).
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- 01 L-BIOME                BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-BIOME.
-     MOVE SPACES TO WS-KEY
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ID.
+     MOVE -1 TO L-ID
      COMPUTE WS-CX = FUNCTION INTEGER(L-X / 16)
      COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
      CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-CHUNK
@@ -1948,7 +1947,30 @@
          COMPUTE WS-LY = FUNCTION MIN(FUNCTION MAX(L-Y - DM-MIN-Y(L-DIM), 0), DM-HEIGHT(L-DIM) - 1)
          COMPUTE WS-INDEX = FUNCTION INTEGER(WS-LY / 16) * 64 + FUNCTION MOD(FUNCTION INTEGER(WS-LY / 4), 4) * 16
              + FUNCTION INTEGER(WS-LZ / 4) * 4 + FUNCTION INTEGER(WS-LX / 4) + 1
-         MOVE CE-BIOME(WS-INDEX) TO WS-ID
+         MOVE CE-BIOME(WS-INDEX) TO L-ID
+     END-IF
+     GOBACK.
+ END PROGRAM MS6-BIOME-ID-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MS6-BIOME-AT.
+*> USING dim, x, y, z (BINARY-LONG), biome row out (BINARY-LONG): the row of MOBSPAWN.cpy's biome table for the biome of the cell (the chunk's biome cell of
+*> that 4 x 4 x 4 block). A biome the table does not hold (a chunk that is not loaded, or a biome of another set) uses the plains list.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BIOME                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-BIOME.
+     MOVE SPACES TO WS-KEY
+     CALL "MS6-BIOME-ID-AT" USING L-DIM L-X L-Y L-Z WS-ID
+     IF WS-ID >= 0
          COMPUTE WS-ID = FUNCTION MIN(WS-ID, CBI-MAX - 1)
          MOVE CBI-KEY(WS-ID + 1) TO WS-KEY
      END-IF

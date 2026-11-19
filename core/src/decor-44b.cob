@@ -16,6 +16,8 @@
 *>   ITEM-FRAME-INTERACT USING frame row, player row, done out
 *>   ITEM-FRAME-SIGNAL USING frame row, signal out
 *>   ITEM-FRAME-HURT USING frame row, attacker player row (0 none), explosion (0 or 1), done out
+*>   HANGING-CENTRE USING direction (data value), block x, y, z, width, height, centre x, y, z out (FLOAT-LONG) (lane p49t, 45-9 section 6.3): where a hanging entity of that size stands in that cell: the
+*>     cell's centre moved 0.46875 against the facing, an even width 0.5 along the counter-clockwise direction, an even height 0.5 up (a frame is 1 x 1 here, so no shift)
 *>   PAINTING-PLACE USING dim, clicked x, y, z, face, candidate count, widths (table of 64), heights (table of 64), row out (0 none); PJ-I4 of the painting is the index of the chosen candidate
 *>   PAINTING-HURT USING painting row, attacker player row, done out
 
@@ -424,6 +426,53 @@
  END PROGRAM PAINTING-FITS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. HANGING-CENTRE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-OFF-W               FLOAT-LONG.
+ 01 WS-OFF-H               FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BY                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIR L-BX L-BY L-BZ L-WIDTH L-HEIGHT L-X L-Y L-Z.
+     CALL "DECOR-STEP" USING L-DIR WS-DX WS-DY WS-DZ
+     MOVE 0 TO WS-OFF-W WS-OFF-H WS-CX WS-CZ
+     IF FUNCTION MOD(L-WIDTH, 2) = 0
+         MOVE 0.5 TO WS-OFF-W
+     END-IF
+     IF FUNCTION MOD(L-HEIGHT, 2) = 0
+         MOVE 0.5 TO WS-OFF-H
+     END-IF
+*>   The counter-clockwise direction of north is west, of west south, of south east, of east north.
+     EVALUATE L-DIR
+         WHEN 2
+             MOVE -1 TO WS-CX
+         WHEN 4
+             MOVE 1 TO WS-CZ
+         WHEN 3
+             MOVE 1 TO WS-CX
+         WHEN 5
+             MOVE -1 TO WS-CZ
+     END-EVALUATE
+     COMPUTE L-X = L-BX + 0.5 - WS-DX * 0.46875 + WS-OFF-W * WS-CX
+     COMPUTE L-Y = L-BY + 0.5 - WS-DY * 0.46875 + WS-OFF-H
+     COMPUTE L-Z = L-BZ + 0.5 - WS-DZ * 0.46875 + WS-OFF-W * WS-CZ
+     GOBACK.
+ END PROGRAM HANGING-CENTRE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PAINTING-PLACE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -450,10 +499,6 @@
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
- 01 WS-OFF-W               FLOAT-LONG.
- 01 WS-OFF-H               FLOAT-LONG.
- 01 WS-TX2                 BINARY-LONG.
- 01 WS-TZ2                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -506,27 +551,7 @@
              SUBTRACT 1 FROM WS-R
          END-IF
      END-PERFORM
-     MOVE 0 TO WS-OFF-W WS-OFF-H
-     IF FUNCTION MOD(L-W(WS-PICK), 2) = 0
-         MOVE 0.5 TO WS-OFF-W
-     END-IF
-     IF FUNCTION MOD(L-H(WS-PICK), 2) = 0
-         MOVE 0.5 TO WS-OFF-H
-     END-IF
-     MOVE 0 TO WS-TX2 WS-TZ2
-     EVALUATE L-FACE
-         WHEN 2
-             MOVE -1 TO WS-TX2
-         WHEN 4
-             MOVE 1 TO WS-TZ2
-         WHEN 3
-             MOVE 1 TO WS-TX2
-         WHEN OTHER
-             MOVE -1 TO WS-TZ2
-     END-EVALUATE
-     COMPUTE WS-X = WS-TX + 0.5 - WS-DX * 0.46875 + WS-OFF-W * WS-TX2
-     COMPUTE WS-Y = WS-TY + 0.5 + WS-OFF-H
-     COMPUTE WS-Z = WS-TZ + 0.5 - WS-DZ * 0.46875 + WS-OFF-W * WS-TZ2
+     CALL "HANGING-CENTRE" USING L-FACE WS-TX WS-TY WS-TZ L-W(WS-PICK) L-H(WS-PICK) WS-X WS-Y WS-Z
      CALL "DECOR-SPAWN" USING WS-KIND WS-KEY L-DIM WS-X WS-Y WS-Z L-FACE L-ROW
      IF L-ROW > 0
          CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT

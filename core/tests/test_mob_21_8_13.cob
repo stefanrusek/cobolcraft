@@ -205,9 +205,12 @@
      PERFORM CHECK-N
      IF WS-ROW > 0
          COMPUTE WS-DIST = FUNCTION SQRT(EN-VX(WS-ROW) ** 2 + EN-VY(WS-ROW) ** 2 + EN-VZ(WS-ROW) ** 2)
-         MOVE "acceptance US15 minecraft:experience_bottle 25§10.1 the throw speed is 0.7 (millionths)" TO WS-CASE
-         MOVE 700000 TO WS-E
-         COMPUTE WS-O = FUNCTION INTEGER(WS-DIST * 1000000 + 0.5)
+         MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 the throw speed is 0.7 within the inaccuracy (0.65 to 0.75)" TO WS-CASE
+         MOVE 1 TO WS-E
+         MOVE 0 TO WS-O
+         IF WS-DIST > 0.65 AND WS-DIST < 0.75
+             MOVE 1 TO WS-O
+         END-IF
          PERFORM CHECK-N
          MOVE "acceptance US15 minecraft:experience_bottle 25§10.1 the bottle is a PJ-KIND 40 entry" TO WS-CASE
          MOVE 40 TO WS-E
@@ -219,6 +222,49 @@
          PERFORM CHECK-N
          CALL "PJ-DROP" USING WS-ROW
      END-IF
+*>   The inaccuracy (21 section 8.13): 20 more throws all leave within 0.7 x (1 +- 0.06), with the offset direction (20 degrees up) and not all the same velocity.
+     MOVE 0 TO WS-MIN WS-MAX WS-DISTINCT
+     MOVE 1 TO WS-O
+     MOVE 0 TO WS-NX WS-NY WS-NZ
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 20
+         MOVE 3 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+         CALL "TEST-USE-ITEM" USING WS-CONN
+         MOVE 0 TO WS-ROW
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-BOTTLE-TYPE
+                 MOVE WS-I TO WS-ROW
+             END-IF
+         END-PERFORM
+         IF WS-ROW > 0
+             COMPUTE WS-DIST = FUNCTION SQRT(EN-VX(WS-ROW) ** 2 + EN-VY(WS-ROW) ** 2 + EN-VZ(WS-ROW) ** 2)
+             IF WS-DIST < 0.658 OR WS-DIST > 0.742
+                 MOVE 0 TO WS-O
+             END-IF
+             IF EN-VY(WS-ROW) < 0.15 OR EN-VY(WS-ROW) > 0.33
+                 ADD 1 TO WS-MIN
+             END-IF
+             IF WS-J > 1 AND (EN-VX(WS-ROW) NOT = WS-NX OR EN-VY(WS-ROW) NOT = WS-NY OR EN-VZ(WS-ROW) NOT = WS-NZ)
+                 ADD 1 TO WS-DISTINCT
+             END-IF
+             MOVE EN-VX(WS-ROW) TO WS-NX
+             MOVE EN-VY(WS-ROW) TO WS-NY
+             MOVE EN-VZ(WS-ROW) TO WS-NZ
+             CALL "PJ-DROP" USING WS-ROW
+         ELSE
+             MOVE 0 TO WS-O
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 20 throws: every speed is within 6 percent of 0.7" TO WS-CASE
+     MOVE 1 TO WS-E
+     PERFORM CHECK-N
+     MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 20 throws: every one rises (offset -20 degrees)" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-MIN TO WS-O
+     PERFORM CHECK-N
+     MOVE "acceptance US15 minecraft:experience_bottle 21§8.13 20 throws: the velocities differ (inaccuracy 1.0)" TO WS-CASE
+     MOVE 19 TO WS-E
+     MOVE WS-DISTINCT TO WS-O
+     PERFORM CHECK-N
 *>   Flight: gravity 0.07 then drag 0.99 on a bottle that was thrown level.
      COMPUTE WS-X = PL-X(WS-PLAYER) + 10
      COMPUTE WS-Y = WS-FY + 20

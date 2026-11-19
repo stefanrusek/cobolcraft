@@ -2,7 +2,7 @@
 *> water animal (cod, salmon, pufferfish, squid, dolphin, tropical fish) needs y in [sea - 13, sea], water below and water above; a glow squid y <= sea - 33, raw brightness 0 and
 *> water at the position. The category lists of a warm ocean give squid and dolphin (water creature, 6), pufferfish and tropical fish (water ambient, 7); plains gives glow squid only
 *> (underground water creature, 5) and nothing in 6 or 7. A water ambient mob despawns beyond 64 blocks, a water creature beyond 128. Open: the biome tag
-*> allows_tropical_fish_spawns_at_any_height (tropical fish use the surface rule only), babies.
+*> allows_tropical_fish_spawns_at_any_height babies. The tropical fish passes at any height in a biome of that tag (21 section 3.2; lane p49t).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-MOB-21-3.
  DATA DIVISION.
@@ -54,6 +54,12 @@
  01 WS-J                   BINARY-LONG.
  01 WS-LO                  BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
+ 01 WS-BIOME-ID             BINARY-LONG.
+ 01 WS-TAG-REG              PIC X(48) VALUE "worldgen/biome".
+ 01 WS-TAG-NAME             PIC X(112) VALUE "minecraft:allows_tropical_fish_spawns_at_any_height".
+ 01 WS-TAG-ONE              BINARY-LONG VALUE 1.
+ 01 WS-TAG-MEMBERS.
+    05 WS-TAG-MEMBER        BINARY-LONG OCCURS 4 TIMES.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -150,9 +156,48 @@
      CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
      COMPUTE WS-X = WS-PX + 20
      COMPUTE WS-Y = WS-SEA - 5
-     MOVE "acceptance US15 21§3.2 minecraft:tropical_fish uses the surface rule (any-height tag open)" TO TL-CASE
+     MOVE "acceptance US15 21§3.2 minecraft:tropical_fish passes the surface rule" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM RULE
+*>   Deep water (the glow squid column, 30 blocks from the player): below the band, so no tropical fish and no cod, until the cell's biome is in the tag allows_tropical_fish_spawns_at_any_height.
+     COMPUTE WS-X = WS-PX + 30
+     COMPUTE WS-Y = WS-SEA - 34
+     MOVE "acceptance US15 21§3.2 tropical fish below the band in a biome without the any-height tag fails" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM RULE
+     CALL "MS6-BIOME-ID-AT" USING WS-DIM WS-X WS-Y WS-Z WS-BIOME-ID
+     MOVE "acceptance US15 21§3.2 the cell's biome is known (a loaded chunk)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-BIOME-ID >= 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM CHECK-N
+     MOVE WS-BIOME-ID TO WS-TAG-MEMBER(1)
+     CALL "TAG-PUT" USING WS-TAG-REG WS-TAG-NAME WS-TAG-ONE WS-TAG-MEMBERS WS-STATUS
+     MOVE "acceptance US15 21§3.2 and 4.11 tropical fish below the band in a biome with the tag passes (water below and above)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM RULE
+     COMPUTE WS-Y = WS-SEA - 30
+     MOVE "acceptance US15 21§3.2 tropical fish in the tagged biome still needs a water block above (rock above the column top)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM RULE
+     COMPUTE WS-Y = WS-SEA - 31
+     MOVE "acceptance US15 21§3.2 tropical fish in the tagged biome inside the water column passes" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM RULE
+     COMPUTE WS-Y = WS-SEA - 45
+     MOVE "acceptance US15 21§3.2 tropical fish in tagged rock (no water below) fails" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM RULE
+     MOVE "cod" TO WS-KEY48
+     CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+     COMPUTE WS-Y = WS-SEA - 34
+     MOVE "acceptance US15 21§3.2 a cod does not use the tag: below the band it fails" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM RULE
+     MOVE "tropical_fish" TO WS-KEY48
+     CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
 *>   Glow squid: deep enough, dark, in water.
      MOVE "glow_squid" TO WS-KEY48
      CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW

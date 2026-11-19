@@ -70,6 +70,10 @@
          WHEN 3
              MOVE 17 TO WS-EFFECT
              MOVE 600 TO WS-DURATION
+         WHEN 4
+*>           A spectral arrow (17 section 3.9): Glowing, amplifier 0, 200 ticks.
+             MOVE 23 TO WS-EFFECT
+             MOVE 200 TO WS-DURATION
          WHEN OTHER
              GOBACK
      END-EVALUATE

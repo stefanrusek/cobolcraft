@@ -714,6 +714,25 @@
  END PROGRAM SNOW-GOLEM-TICK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SHULKER-PEEK-STEP.
+*> USING tracker row: Shulker.updatePeekAmount (44-9 section 11): the current peek (EN-PEEK-CUR) moves 0.05 a tick toward the raw peek x 0.01 (EN-VARIANT / 100), clamped at it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-TARGET              FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     COMPUTE WS-TARGET = EN-VARIANT(L-ROW) * 0.01
+     IF EN-PEEK-CUR(L-ROW) > WS-TARGET
+         COMPUTE EN-PEEK-CUR(L-ROW) = FUNCTION MAX(EN-PEEK-CUR(L-ROW) - 0.05, WS-TARGET)
+     ELSE
+         COMPUTE EN-PEEK-CUR(L-ROW) = FUNCTION MIN(EN-PEEK-CUR(L-ROW) + 0.05, WS-TARGET)
+     END-IF
+     GOBACK.
+ END PROGRAM SHULKER-PEEK-STEP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SHULKER-ATTACK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -740,9 +759,10 @@
  01 L-M                    BINARY-LONG.
 *> USING tracker row, table row of a shulker: ShulkerAttackGoal (21 section 6.2). A target at distance squared 400 or more (20 blocks) is dropped. Without a target the lid closes (raw
 *> peek EN-VARIANT 0). The first tick with a target opens the lid (raw peek 100) and sets attackTime (EN-SHOOT-TIME) to 20; then it counts down and at 0 a bullet leaves
-*> (BULLET-SELECT with the axis of the attach face, DOWN here, so Y) and attackTime is 20 + nextInt(10) x 10 (20 + (nextInt(10) x 20) / 2). The bullet starts at the shulker's
-*> middle (feet + 0.5; open: the exact start is not in the docs), at rest, homing on the player (EN-FOE-ID).
+*> (BULLET-SELECT with the axis of the attach face, DOWN here, so Y) and attackTime is 20 + nextInt(10) x 10 (20 + (nextInt(10) x 20) / 2). The bullet starts at the centre of the shulker's current box
+*> (21 section 6.2, the lid peek EN-PEEK-CUR moves 0.05 a tick), at rest, homing on the player (EN-FOE-ID).
  PROCEDURE DIVISION USING L-ROW L-M.
+     CALL "SHULKER-PEEK-STEP" USING L-ROW
      MOVE EN-TARGET(L-ROW) TO WS-P
      IF WS-P > 0
          COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
@@ -766,7 +786,8 @@
          MOVE EN-DIM(L-ROW) TO WS-DIM
          MOVE EN-ID(L-ROW) TO WS-OWNER
          MOVE EN-X(L-ROW) TO WS-X
-         COMPUTE WS-Y = EN-Y(L-ROW) + 0.5
+*>       The centre of the shulker's current box (21 section 6.2): attached to the floor the box is the unit cube extended up by physical(peek) = 0.5 - sin((0.5 + peek) pi) x 0.5.
+         COMPUTE WS-Y = EN-Y(L-ROW) + (1 + 0.5 - FUNCTION SIN((0.5 + EN-PEEK-CUR(L-ROW)) * FUNCTION PI) * 0.5) / 2
          MOVE EN-Z(L-ROW) TO WS-Z
          CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-UP WS-ZERO WS-ZERO2 WS-POWER WS-OWNER WS-BULLET
          MOVE EN-TARGET-ID(L-ROW) TO EN-FOE-ID(WS-BULLET)

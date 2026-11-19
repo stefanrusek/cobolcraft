@@ -22,6 +22,7 @@
  01 WS-KEY                 PIC X(112).
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-SKELETON-TYPE       BINARY-LONG.
+ 01 WS-FAMILY-PROBE         BINARY-LONG.
  01 WS-ARROW-TYPE          BINARY-LONG.
  01 WS-PIG-TYPE            BINARY-LONG.
  01 WS-SKELETON            BINARY-LONG.
@@ -69,6 +70,12 @@
      CALL "ARROWS-TICK"
      MOVE "N" TO TL-MODE
      MOVE "test arrow: a world of the stand-in set has no arrow type" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-ARROW-TYPE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-FAMILY-PROBE
+     CALL "ARROW-FAMILY-TYPE" USING WS-FAMILY-PROBE WS-ARROW-TYPE
+     MOVE "test arrow: a world of the stand-in set has no arrow family type either" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-ARROW-TYPE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

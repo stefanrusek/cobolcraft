@@ -6,7 +6,7 @@
 *> the centre to its eyes; a flying player has multiplier 0; the players within 64 blocks get the Explode packet (particle gust_emitter_small 34 below radius 2, gust_emitter_large 33 else; no blocks).
 *> Not done: triggering the blocks in the burst (levers, buttons, doors, trapdoors, gates, candles: the per-block rules of 24 are given but the exploded-position walk with the immune set
 *> blocks_wind_charge_explosions is not built), redirecting a charge by attack, the no-deflect window, the box 0.15 below the position (the flight uses the thrown entities' 0.25 box), pushes of
-*> non-mob entities (items, arrows, boats), the burst sounds (the identifiers of the two wind_burst sound events are not in the documents; the Explode packet carries the generic explode sound),
+*> non-mob entities (items, arrows, boats), the burst sounds are the registered holders of 21 section 8.18 (lane p49t),
 *> the dispenser launch (30-4 4.1 gives it: position, 6.6666665 uncertainty, power 1.0), the breeze that shoots it (20 section 8).
 *>
 *>   WIND-SPAWN USING breeze (0 or 1), dim, x, y, z, vx, vy, vz (FLOAT-LONG), owner entity id, row out
@@ -75,8 +75,7 @@
  01 WS-PARTICLE            BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-DATA                PIC X(64).
- 01 WS-SOUND               PIC X(32) VALUE "minecraft:entity.generic.explode".
- 01 WS-SOUND-LENGTH        BINARY-LONG VALUE 32.
+ 01 WS-HOLDER              BINARY-LONG.
  01 WS-TRUE                BINARY-LONG VALUE 1.
  01 WS-FALSE               BINARY-LONG VALUE 0.
  LINKAGE SECTION.
@@ -110,9 +109,12 @@
          CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
      END-IF
      CALL "PB-PUT-PARTICLE" USING PB-BUFFER WS-PARTICLE WS-NONE WS-DATA
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-NONE
-     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-SOUND WS-SOUND-LENGTH
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+*>   The explosion sound as a registered holder (id + 1): entity.wind_charge.wind_burst 1776 for the wind charge, entity.breeze.wind_burst 210 for the breeze's (21 section 8.18, 46).
+     COMPUTE WS-HOLDER = 1777
+     IF L-RADIUS >= 2
+         COMPUTE WS-HOLDER = 211
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HOLDER
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-NONE
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-TRUE
      GOBACK.

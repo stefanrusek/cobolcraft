@@ -5,8 +5,9 @@
 *> height, PJ-I1 response: 8 and 9 Float, 10 Boolean), 45 cushion (PJ-I1 dye colour: 8), 46 mannequin (PJ-I1 main hand 1 right, PJ-I2 model customisation 127, PJ-I3 immovable: 15 humanoid arm, 16 Byte, 18
 *> Boolean), 10 minecart (PJ-I4 hurt time, PJ-I5 hurt direction, PJ-R3 damage: 8 and 9 VarInt, 10 Float; a furnace minecart (PJ-I1 4) 13 fuel Boolean), 51 boat paddles (PJ-I1 left, PJ-I2 right: 11 and 12 Boolean), 47 block display (PJ-I1 block state: 23), 48 item display (PJ-I1 item, PJ-I2 display type: 23 stack, 24 Byte).
 *> A cushion is sat on by CUSHION-USE (MOB-INTERACT: no secondary use, nobody sits there, the player rides nothing).
-*> Not done: the defaults of the display fields 8 to 22 (the documents name the fields, not their defaults, so nothing is sent for them), the text display (the component default), the mannequin's profile (17)
-*> and description (19: its component value and the profile default are not in the documents), the painting variant, the interaction entity's attack and interaction records and its response (8.9 gives constants
+*> Lane p49t (T39050): the display entities send the defaults of the common fields 8 to 22 (21 section 8.9.3: DISPLAY-COMMON-PUT) before their own fields; kind 49 is the text display (TDISPLAY-SPAWN:
+*> 23 the empty component (the root String of length 0, 3 bytes), 24 line width 200, 25 background 0x40000000, 26 opacity -1, 27 flags 0); the mannequin also sends 17 the empty profile (8 zero bytes) and 19 the
+*> description (Boolean true and the network NBT compound {translate: entity.minecraft.mannequin.label}; 21 section 8.16.2). Not done: the painting variant, the interaction entity's attack and interaction records and its response (8.9 gives constants
 *> only), the cushion placement (Cushion.canBePlacedAt and the tag cushion_uses_collision_shape are not in the documents), its seat position, breaking and drop (the break is 8.16 but the item-drop rule
 *> entity_drops, lightning invulnerability and build permission are not wired), the mannequin's NBT (profile, hidden_layers, pose, description), the marker (never sent), the sounds, the entity NBT of all of them.
 *>
@@ -18,6 +19,14 @@
 *>   INTERACTION-SPAWN USING dim, x, y, z, width, height (FLOAT-LONG), response, row out
 *>   BDISPLAY-SPAWN USING dim, x, y, z, block state, row out
 *>   IDISPLAY-SPAWN USING dim, x, y, z, item, display type, row out
+*>   INTERACTION-ATTACK USING player row, entity row, done out   Interaction.skipAttackInteraction (21 section 8.9.2): the attack record (PJ-I2 the player's entity id, PJ-POSE(1) the game time), the attack is
+*>     skipped and the entity cannot be damaged (done 1 whatever the response flag: with response true the normal processing continues and hurtServer still fails)
+*>   INTERACTION-USE USING player row, entity row, done out      Interaction.interact on the server: the interaction record (PJ-I4, PJ-POSE(2)); consumed
+*>   INTERACTION-LAST USING entity row, which (1 attacker, 2 target), player row out   getLastAttacker / getTarget: the player of the record, 0 when never set or not online
+*>   TDISPLAY-SPAWN USING dim, x, y, z, row out
+*>   DECOR-PUT-DATA USING PB-BUFFER, index, serializer, present, data (PIC X(64)), length    a metadata entry whose value bytes are given verbatim (component, profile)
+*>   DECOR-PUT-QUAT USING PB-BUFFER, index, x, y, z, w (FLOAT-LONG)                           a Quaternion entry (serializer 40)
+*>   DISPLAY-COMMON-PUT USING PB-BUFFER                                                      entries 8 to 22 with the defaults of 21 section 8.9.3
 *>   MANNEQUIN-SPAWN USING dim, x, y, z, row out
 *>   CUSHION-SPAWN USING dim, x, y, z, dye colour, row out
 *>   CUSHION-USE USING player row, entity row, used out
@@ -92,6 +101,118 @@
  END PROGRAM DECOR-PUT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. DECOR-PUT-DATA.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SERIALIZER           BINARY-LONG.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-DATA                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-INDEX L-SERIALIZER L-PRESENT L-DATA L-LENGTH.
+     INITIALIZE MD-METADATA-ENTRY-X
+     MOVE L-INDEX TO MD-MX-INDEX
+     MOVE L-SERIALIZER TO MD-MX-SERIALIZER
+     MOVE L-PRESENT TO MD-MX-PRESENT
+     MOVE L-LENGTH TO MD-MX-DATA-LENGTH
+     MOVE L-DATA(1:L-LENGTH) TO MD-MX-DATA(1:L-LENGTH)
+     CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     GOBACK.
+ END PROGRAM DECOR-PUT-DATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DECOR-PUT-QUAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-W                    FLOAT-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-INDEX L-X L-Y L-Z L-W.
+     INITIALIZE MD-METADATA-ENTRY-X
+     MOVE L-INDEX TO MD-MX-INDEX
+     MOVE 40 TO MD-MX-SERIALIZER
+     MOVE L-X TO MD-MX-FLOAT(1)
+     MOVE L-Y TO MD-MX-FLOAT(2)
+     MOVE L-Z TO MD-MX-FLOAT(3)
+     MOVE L-W TO MD-MX-FLOAT(4)
+     CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     GOBACK.
+ END PROGRAM DECOR-PUT-QUAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DISPLAY-COMMON-PUT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SER                 BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-F1                  FLOAT-LONG.
+ 01 WS-F2                  FLOAT-LONG.
+ 01 WS-F3                  FLOAT-LONG.
+ 01 WS-COUNT               BINARY-LONG VALUE 0.
+ 01 WS-ITEM                BINARY-LONG VALUE 0.
+ 01 WS-W                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+*>   8 to 10 interpolation start delta, duration and pos-rot duration (VarInt 0), 11 translation (0, 0, 0), 12 scale (1, 1, 1), 13 and 14 the rotations (identity), 15 billboard Byte 0, 16 brightness -1,
+*>   17 view range 1.0, 18 shadow radius 0.0, 19 shadow strength 1.0, 20 width 0.0, 21 height 0.0, 22 glow colour -1 (21 section 8.9.3).
+     MOVE 1 TO WS-SER
+     MOVE 0 TO WS-INT WS-F1 WS-F2 WS-F3
+     PERFORM VARYING WS-INDEX FROM 8 BY 1 UNTIL WS-INDEX > 10
+         CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     END-PERFORM
+     MOVE 39 TO WS-SER
+     MOVE 11 TO WS-INDEX
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 12 TO WS-INDEX
+     MOVE 1 TO WS-F1 WS-F2 WS-F3
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 0 TO WS-F1 WS-F2 WS-F3
+     MOVE 1 TO WS-W
+     MOVE 13 TO WS-INDEX
+     CALL "DECOR-PUT-QUAT" USING PB-BUFFER WS-INDEX WS-F1 WS-F2 WS-F3 WS-W
+     MOVE 14 TO WS-INDEX
+     CALL "DECOR-PUT-QUAT" USING PB-BUFFER WS-INDEX WS-F1 WS-F2 WS-F3 WS-W
+     MOVE 15 TO WS-INDEX
+     MOVE 0 TO WS-SER
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 16 TO WS-INDEX
+     MOVE 1 TO WS-SER
+     MOVE -1 TO WS-INT
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 0 TO WS-INT
+     MOVE 3 TO WS-SER
+     MOVE 17 TO WS-INDEX
+     MOVE 1 TO WS-F1
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 18 TO WS-INDEX
+     MOVE 0 TO WS-F1
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 19 TO WS-INDEX
+     MOVE 1 TO WS-F1
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 0 TO WS-F1
+     MOVE 20 TO WS-INDEX
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 21 TO WS-INDEX
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     MOVE 22 TO WS-INDEX
+     MOVE 1 TO WS-SER
+     MOVE -1 TO WS-INT
+     CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+     GOBACK.
+ END PROGRAM DISPLAY-COMMON-PUT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. DECOR-SIG.
 *> 1 + MOD of a weighted sum of the state that is sent; never 0.
  DATA DIVISION.
@@ -123,6 +244,8 @@
              COMPUTE WS-SUM = PJ-I1(L-SLOT) + 2 * PJ-I2(L-SLOT)
          WHEN 12
              COMPUTE WS-SUM = PJ-I1(L-SLOT) + 8 * PJ-I3(L-SLOT) + 64 * PJ-I2(L-SLOT)
+         WHEN 13
+             COMPUTE WS-SUM = PJ-I1(L-SLOT) + 8 * PJ-I4(L-SLOT)
          WHEN OTHER
              MOVE PJ-I1(L-SLOT) TO WS-SUM
      END-EVALUATE
@@ -149,6 +272,11 @@
  01 WS-I                   BINARY-LONG.
  01 WS-END                 BINARY-LONG VALUE 255.
  01 WS-SIG                 BINARY-LONG.
+ 01 WS-DATA                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-EMPTY-TEXT          PIC X(3) VALUE LOW-VALUES.
+ 01 WS-LABEL               PIC X(32) VALUE "entity.minecraft.mannequin.label".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
@@ -222,6 +350,15 @@
              MOVE 12 TO WS-SER
              MOVE PJ-I1(WS-SLOT) TO WS-INT
              CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+*>           9 the variant: a Holder, VarInt registry id + 1 (21 section 8.9.1; ids of 127 or more would need two bytes: the registry has 51 entries). PJ-I4 is the registry id (0: the first entry).
+             MOVE LOW-VALUES TO WS-DATA
+             COMPUTE WS-INT = PJ-I4(WS-SLOT) + 1
+             MOVE FUNCTION CHAR(WS-INT + 1) TO WS-DATA(1:1)
+             MOVE 1 TO WS-LENGTH
+             MOVE 0 TO WS-PRESENT
+             MOVE 9 TO WS-INDEX
+             MOVE 34 TO WS-SER
+             CALL "DECOR-PUT-DATA" USING PB-BUFFER WS-INDEX WS-SER WS-PRESENT WS-DATA WS-LENGTH
          WHEN 44
              MOVE 8 TO WS-INDEX
              MOVE 3 TO WS-SER
@@ -248,16 +385,60 @@
              MOVE 0 TO WS-SER
              MOVE PJ-I2(WS-SLOT) TO WS-INT
              CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+*>           17 the empty profile: Either partial (false), no name, no id, no properties, four absent skin patch fields = 8 zero bytes (21 section 8.16.2).
+             MOVE LOW-VALUES TO WS-DATA
+             MOVE 8 TO WS-LENGTH
+             MOVE 0 TO WS-PRESENT
+             MOVE 17 TO WS-INDEX
+             MOVE 41 TO WS-SER
+             CALL "DECOR-PUT-DATA" USING PB-BUFFER WS-INDEX WS-SER WS-PRESENT WS-DATA WS-LENGTH
              MOVE 18 TO WS-INDEX
              MOVE 8 TO WS-SER
              MOVE PJ-I3(WS-SLOT) TO WS-INT
              CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+*>           19 the description: Optional component present, the network NBT compound {translate: "entity.minecraft.mannequin.label"} (tag 10, then String tag 8 named "translate").
+             MOVE LOW-VALUES TO WS-DATA
+             MOVE X"0A08" TO WS-DATA(1:2)
+             MOVE X"0009" TO WS-DATA(3:2)
+             MOVE "translate" TO WS-DATA(5:9)
+             MOVE X"0020" TO WS-DATA(14:2)
+             MOVE WS-LABEL TO WS-DATA(16:32)
+             MOVE 48 TO WS-LENGTH
+             MOVE 1 TO WS-PRESENT
+             MOVE 19 TO WS-INDEX
+             MOVE 6 TO WS-SER
+             CALL "DECOR-PUT-DATA" USING PB-BUFFER WS-INDEX WS-SER WS-PRESENT WS-DATA WS-LENGTH
          WHEN 47
+             CALL "DISPLAY-COMMON-PUT" USING PB-BUFFER
              MOVE 23 TO WS-INDEX
              MOVE 14 TO WS-SER
              MOVE PJ-I1(WS-SLOT) TO WS-INT
              CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+         WHEN 49
+*>           The text display (21 section 8.9.3): the empty component (the network NBT root String tag 8 of length 0), line width 200, background 0x40000000, opacity -1, flags 0.
+             CALL "DISPLAY-COMMON-PUT" USING PB-BUFFER
+             MOVE X"080000" TO WS-DATA
+             MOVE 3 TO WS-LENGTH
+             MOVE 0 TO WS-PRESENT
+             MOVE 23 TO WS-INDEX
+             MOVE 5 TO WS-SER
+             CALL "DECOR-PUT-DATA" USING PB-BUFFER WS-INDEX WS-SER WS-PRESENT WS-DATA WS-LENGTH
+             MOVE 24 TO WS-INDEX
+             MOVE 1 TO WS-SER
+             MOVE 200 TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             MOVE 25 TO WS-INDEX
+             MOVE 1073741824 TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             MOVE 26 TO WS-INDEX
+             MOVE 0 TO WS-SER
+             MOVE -1 TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+             MOVE 27 TO WS-INDEX
+             MOVE 0 TO WS-INT
+             CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
          WHEN 48
+             CALL "DISPLAY-COMMON-PUT" USING PB-BUFFER
              MOVE 23 TO WS-INDEX
              MOVE 7 TO WS-SER
              MOVE 1 TO WS-COUNT
@@ -386,6 +567,30 @@
  END PROGRAM IDISPLAY-SPAWN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. TDISPLAY-SPAWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROJSTATE.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:text_display".
+ 01 WS-KIND                BINARY-LONG VALUE 49.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ROW.
+     CALL "DECOR-NEW" USING WS-KIND WS-KEY L-DIM L-X L-Y L-Z L-ROW WS-SLOT
+     IF L-ROW > 0
+         MOVE 1 TO PJ-I1(WS-SLOT)
+         CALL "ENTITY-TRACK" USING L-ROW
+         CALL "DECOR-DATA-SYNC" USING L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM TDISPLAY-SPAWN.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MANNEQUIN-SPAWN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -507,3 +712,76 @@
      CALL "DECOR-DATA-SYNC" USING WS-BOAT
      GOBACK.
  END PROGRAM BOAT-PADDLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INTERACTION-ATTACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW L-DONE.
+     MOVE 1 TO L-DONE
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     MOVE PL-ENTITY-ID(L-PLAYER) TO PJ-I2(WS-SLOT)
+     COMPUTE PJ-POSE(WS-SLOT, 1) = CW-GAME-TIME + CW-TICKS
+     GOBACK.
+ END PROGRAM INTERACTION-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INTERACTION-USE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW L-DONE.
+     MOVE 1 TO L-DONE
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     MOVE PL-ENTITY-ID(L-PLAYER) TO PJ-I4(WS-SLOT)
+     COMPUTE PJ-POSE(WS-SLOT, 2) = CW-GAME-TIME + CW-TICKS
+     GOBACK.
+ END PROGRAM INTERACTION-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INTERACTION-LAST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WHICH                BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WHICH L-PLAYER.
+     MOVE 0 TO L-PLAYER
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     IF L-WHICH = 1
+         MOVE PJ-I2(WS-SLOT) TO WS-ID
+     ELSE
+         MOVE PJ-I4(WS-SLOT) TO WS-ID
+     END-IF
+     IF WS-ID = 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR L-PLAYER > 0
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ID(WS-P) = WS-ID
+             MOVE WS-P TO L-PLAYER
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM INTERACTION-LAST.

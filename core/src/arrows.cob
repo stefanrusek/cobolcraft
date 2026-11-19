@@ -13,6 +13,9 @@
 *>
 *> Entry points:
 *>   ARROW-TYPE USING type id out                       the entity type id of arrow, 0 outside a standard world
+*>   ARROW-FAMILY-TYPE USING family (1 arrow, 2 spectral_arrow, 3 trident), type id out   0 outside a standard world (lane p49t)
+*>   ARROW-FAMILY USING type id, family out             1 to 3 when the entity type is one of the arrow family, else 0
+*>   ARROW-SPAWN-AS USING family, dim, x, y, z, vx, vy, vz, base damage, owner, row out   ARROW-SPAWN for a member of the family (a spectral arrow has EN-VARIANT 4: Glowing)
 *>   ARROW-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), base damage (thousandths), owner entity id, row out
 *>   ARROW-STEP USING tracker row                       one tick of one arrow or thrown trident (ranged-trident.cob)
 *>   ARROW-SEND USING tracker row                       Teleport Entity to the viewers when it moved
@@ -44,6 +47,124 @@
      MOVE WS-ID TO L-TYPE
      GOBACK.
  END PROGRAM ARROW-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-FAMILY-TYPE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-KEYS.
+    05 FILLER              PIC X(112) VALUE "minecraft:arrow".
+    05 FILLER              PIC X(112) VALUE "minecraft:spectral_arrow".
+    05 FILLER              PIC X(112) VALUE "minecraft:trident".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY              PIC X(112) OCCURS 3 TIMES.
+ 01 WS-ROW                 PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-IDS.
+    05 WS-ID               BINARY-LONG OCCURS 3 TIMES VALUE 0.
+ 01 WS-DONE.
+    05 WS-LOADED           BINARY-LONG OCCURS 3 TIMES VALUE 0.
+ LINKAGE SECTION.
+ 01 L-FAMILY               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FAMILY L-TYPE.
+     MOVE 0 TO L-TYPE
+     IF CT-OPEN = 0 OR CT-SET-TYPE = CT-TYPE-COBOLCRAFT OR CT-SET-TYPE = CT-TYPE-DEBUG OR L-FAMILY < 1 OR L-FAMILY > 3
+         GOBACK
+     END-IF
+     IF WS-LOADED(L-FAMILY) = 0
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY(L-FAMILY) WS-ID(L-FAMILY) WS-ROW WS-STATUS
+         MOVE 1 TO WS-LOADED(L-FAMILY)
+     END-IF
+     MOVE WS-ID(L-FAMILY) TO L-TYPE
+     GOBACK.
+ END PROGRAM ARROW-FAMILY-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-FAMILY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-FAMILY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-FAMILY.
+     MOVE 0 TO L-FAMILY
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 3
+         CALL "ARROW-FAMILY-TYPE" USING WS-F WS-TYPE
+         IF WS-TYPE > 0 AND WS-TYPE = L-TYPE
+             MOVE WS-F TO L-FAMILY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ARROW-FAMILY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-SPAWN-AS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-FAMILY               BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+*> USING family (1 arrow, 2 spectral_arrow, 3 trident), dim, x, y, z, vx, vy, vz, base damage (thousandths), owner entity id, row out: a new arrow of the family with that velocity, facing along it
+*> (lane p49t; the hit, drag and pickup of the family are those of the arrows of the ranged lane).
+ PROCEDURE DIVISION USING L-FAMILY L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-BASE L-OWNER L-ROW.
+     CALL "ARROW-FAMILY-TYPE" USING L-FAMILY WS-TYPE
+     CALL "ENTITY-ALLOC" USING WS-ROW
+     CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
+     MOVE WS-TYPE TO EN-TYPE(WS-ROW)
+     CALL "ENTITY-SET-UUID" USING WS-ROW
+     MOVE L-DIM TO EN-DIM(WS-ROW)
+     MOVE L-X TO EN-X(WS-ROW) EN-WAY-X(WS-ROW)
+     MOVE L-Y TO EN-Y(WS-ROW) EN-FLEE-X(WS-ROW)
+     MOVE L-Z TO EN-Z(WS-ROW) EN-WAY-Z(WS-ROW)
+     MOVE L-VX TO EN-VX(WS-ROW)
+     MOVE L-VY TO EN-VY(WS-ROW)
+     MOVE L-VZ TO EN-VZ(WS-ROW)
+     MOVE L-BASE TO EN-ITEM(WS-ROW)
+     MOVE L-OWNER TO EN-TARGET-ID(WS-ROW)
+     COMPUTE WS-H = FUNCTION SQRT(L-VX * L-VX + L-VZ * L-VZ)
+     IF L-VZ = 0
+         IF L-VX >= 0
+             MOVE 90 TO EN-YAW(WS-ROW)
+         ELSE
+             MOVE -90 TO EN-YAW(WS-ROW)
+         END-IF
+     ELSE
+         COMPUTE EN-YAW(WS-ROW) = FUNCTION ATAN(L-VX / L-VZ) * 180 / FUNCTION PI
+         IF L-VZ < 0
+             COMPUTE EN-YAW(WS-ROW) = EN-YAW(WS-ROW) + 180
+         END-IF
+     END-IF
+     IF WS-H > 0
+         COMPUTE EN-PITCH(WS-ROW) = FUNCTION ATAN(L-VY / WS-H) * 180 / FUNCTION PI
+     END-IF
+     IF L-FAMILY = 2
+         MOVE 4 TO EN-VARIANT(WS-ROW)
+     END-IF
+*>   A thrown trident is the trident of the ranged lane (ranged-trident.cob: EN-IS-TRIDENT, its hit, Loyalty and pickup run there).
+     IF L-FAMILY = 3
+         MOVE 1 TO EN-IS-TRIDENT(WS-ROW)
+     END-IF
+     CALL "ENTITY-TRACK" USING WS-ROW
+     MOVE WS-ROW TO L-ROW
+     GOBACK.
+ END PROGRAM ARROW-SPAWN-AS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROW-SPAWN.

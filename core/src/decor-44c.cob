@@ -4,7 +4,7 @@
 *>     variants are open) and the minecart items on a rail (44 part 8 section 4: at the rail height 0.0625, 0.5 higher on a slope; the spawner cart has no item); one item is used up.
 *>   DECOR-INTERACT USING player row, entity row, hit y (FLOAT-LONG), done out: MOB-INTERACT's hook: armor stand, item frame, and coal or charcoal on a furnace minecart (MINECART-FUEL; boarding a
 *>     plain minecart is open).
-*>   DECOR-ATTACK USING player row, entity row, done out: HEALTH-ATTACK's hook: armor stand (ARMOR-STAND-HIT), item frame (ITEM-FRAME-HURT), painting (PAINTING-HURT).
+*>   DECOR-ATTACK USING player row, entity row, done out: HEALTH-ATTACK's hook: armor stand (ARMOR-STAND-HIT), item frame (ITEM-FRAME-HURT), painting (PAINTING-HURT), interaction (INTERACTION-ATTACK, mob-21-8-9.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DECOR-ITEM-USE.
@@ -183,6 +183,8 @@
              CALL "ARMOR-STAND-INTERACT" USING L-ROW L-PLAYER L-HITY L-DONE
          WHEN 12
              CALL "ITEM-FRAME-INTERACT" USING L-ROW L-PLAYER L-DONE
+         WHEN 44
+             CALL "INTERACTION-USE" USING L-PLAYER L-ROW L-DONE
          WHEN 10
              MOVE SPACES TO WS-KEY
              COMPUTE WS-HELD = PL-HELD(L-PLAYER) + 1
@@ -237,6 +239,8 @@
          WHEN 16
              CALL "CRYSTAL-HURT" USING L-ROW WS-NO WS-NO2 L-PLAYER L-DONE
              MOVE 1 TO L-DONE
+         WHEN 44
+             CALL "INTERACTION-ATTACK" USING L-PLAYER L-ROW L-DONE
      END-EVALUATE
      GOBACK.
  END PROGRAM DECOR-ATTACK.

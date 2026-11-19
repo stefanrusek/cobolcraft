@@ -1,9 +1,11 @@
 *> The throwing of items by players and the tick of the thrown entities of lane 002-lane-mobsb6 (17 section 3.15, 44 part 8 sections 6.1 and 6.5).
 *> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob) and ender_eye (EYE-ITEM-USE, thrown-44g.cob) and experience_bottle (speed 0.7, offset -20, mob-21-8-13.cob). The projectile
 *> starts at (x, eye y - 0.1, z) of the player, moves along (-sin(yaw) cos(pitch), -sin(pitch + offset), cos(yaw) cos(pitch)) normalised and scaled by the speed; a survival
-*> player's stack loses one. Gaps: the inaccuracy (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled;
+*> player's stack loses one. Gaps: the inaccuracy of all but the experience bottle (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled;
 *> a thrown potion has the contents of the thrown stack's potion_contents (POTION-LOAD, potion-load.cob; a stack without it is a water bottle).
 *>
+*>   THROWN-JITTER USING vx vy vz (FLOAT-LONG, in: any vector of the wanted direction; out), power, inaccuracy (FLOAT-LONG)   Projectile.shoot (21 section 8.13, 8.17.1): the normalised direction plus
+*>     triangle(0, 0.0172275 x inaccuracy) = 0.0172275 x inaccuracy x (nextDouble - nextDouble) on each axis (x, y, z), times the power
 *>   THROWN-DIRECTION USING yaw, pitch, offset (degrees, FLOAT-LONG), speed (FLOAT-LONG), vx vy vz out (FLOAT-LONG)
 *>   THROWN-ITEM-USE USING connection id, PLAY-SERVERBOUND, done out
 *>   THROWN-TICK                                          every thrown entity (CORE-TICK, after the projectiles)
@@ -42,6 +44,43 @@
  END PROGRAM THROWN-DIRECTION.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. THROWN-JITTER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SALT                BINARY-LONG VALUE 9631.
+ 01 WS-BOUND               BINARY-LONG VALUE 1000000.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-SPREAD              FLOAT-LONG.
+ 01 WS-NX                  FLOAT-LONG.
+ 01 WS-NY                  FLOAT-LONG.
+ 01 WS-NZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-POWER                FLOAT-LONG.
+ 01 L-INACCURACY           FLOAT-LONG.
+ PROCEDURE DIVISION USING L-VX L-VY L-VZ L-POWER L-INACCURACY.
+     COMPUTE WS-LEN = FUNCTION SQRT(L-VX * L-VX + L-VY * L-VY + L-VZ * L-VZ)
+     COMPUTE WS-SPREAD = 0.0172275 * L-INACCURACY
+     COMPUTE WS-NX = L-VX / WS-LEN
+     COMPUTE WS-NY = L-VY / WS-LEN
+     COMPUTE WS-NZ = L-VZ / WS-LEN
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-A
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-B
+     COMPUTE L-VX = (WS-NX + WS-SPREAD * (WS-A - WS-B) / 1000000) * L-POWER
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-A
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-B
+     COMPUTE L-VY = (WS-NY + WS-SPREAD * (WS-A - WS-B) / 1000000) * L-POWER
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-A
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-B
+     COMPUTE L-VZ = (WS-NZ + WS-SPREAD * (WS-A - WS-B) / 1000000) * L-POWER
+     GOBACK.
+ END PROGRAM THROWN-JITTER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. THROWN-ITEM-USE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -66,6 +105,7 @@
  01 WS-PJ                  BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-EKEY                PIC X(112).
+ 01 WS-INACCURACY          FLOAT-LONG VALUE 1.0.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -149,7 +189,9 @@
              MOVE "minecraft:egg" TO WS-EKEY
              CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
          WHEN 7
-*>           The experience bottle (21 section 8.13, 25-6 section 10.1): PJ-KIND 40, offset -20 degrees, power 0.7.
+*>           The experience bottle (21 section 8.13, 25-6 section 10.1): PJ-KIND 40, offset -20 degrees, power 0.7, inaccuracy 1.0 (the shooter's own motion is not added: the core keeps no
+*>           player velocity).
+             CALL "THROWN-JITTER" USING WS-VX WS-VY WS-VZ WS-SPEED WS-INACCURACY
              MOVE 40 TO WS-PJ
              MOVE "minecraft:experience_bottle" TO WS-EKEY
              CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
