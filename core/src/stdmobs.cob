@@ -497,6 +497,10 @@
          END-IF
      ELSE
          CALL "STDMOB-TARGET" USING L-ROW L-M
+*>       The breeze's second StartAttacking (priority 1, 20 section 16.1): the mob that hurt it.
+         IF SM-RANGED(L-M) = 7
+             CALL "BREEZE-HURT-BY" USING L-ROW
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM STDMOB-AGGRO.

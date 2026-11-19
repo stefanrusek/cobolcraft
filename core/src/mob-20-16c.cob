@@ -17,7 +17,10 @@
 *>     and free of a malus (inside a collider, a dangerous block below, water in the cell), scored by BREEZE-LIGHT-SCORE of the cell's light, the best by BREEZE-AWAY-BEST.
 *>   BREEZE-BRAIN USING breeze row, table row, hx, hz out (FLOAT-LONG), walk out: one tick of the brain (called by STDMOB-STEP in the place of BREEZE-SHOOT). walk 0 the mob strolls as usual, 1 it walks
 *>     (hx, hz), 2 it stands (inhaling, flying), 3 it stands facing its target. Not here: the sounds, the look-at-target sink's head turn, the Jump Boost bonus, a Levitation effect for ShootWhenStuck,
-*>     the vertical drag of a flight with discard friction, the hurt_by StartAttacking finder and the DoNothing pause group of the idle stroll (STDMOB-AGGRO and the generic stroll do those).
+*>     the vertical drag of a flight with discard friction, the DoNothing pause group of the idle stroll (the generic stroll of STDMOB-STEP stands in, at 0.6) and the iron golem as a target
+*>     (attack targets are player rows here; the hurt_by memory is the player that last hit the breeze, EN-KILLER, not any living attacker).
+*>   BREEZE-HURT-BY USING breeze row: the IDLE StartAttacking of priority 1 (16.1), called by STDMOB-AGGRO after the nearest-attackable scan found nobody: the player of the hurt_by memory (EN-KILLER, kept
+*>     100 ticks: EN-KILLER-AGE above 0) becomes the attack target when the breeze can attack it (alive, survival or adventure, in the breeze's dimension), whatever its distance.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BZ-FIND.
@@ -472,6 +475,26 @@
      END-IF
      GOBACK.
  END PROGRAM BREEZE-SLIDE-POINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BREEZE-HURT-BY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-P                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE EN-KILLER(L-ROW) TO WS-P
+     IF EN-TARGET(L-ROW) = 0 AND WS-P > 0 AND EN-KILLER-AGE(L-ROW) > 0
+         IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+                 AND (PL-MODE(WS-P) = 0 OR PL-MODE(WS-P) = 2)
+             MOVE WS-P TO EN-TARGET(L-ROW)
+             MOVE PL-ENTITY-ID(WS-P) TO EN-TARGET-ID(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BREEZE-HURT-BY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BREEZE-BRAIN.
