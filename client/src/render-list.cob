@@ -49,6 +49,8 @@
  01 WS-TEX                 BINARY-LONG.
  01 WS-WORLD               BINARY-LONG.
  01 WS-F                   FLOAT-LONG.
+ 01 WS-FOV-MOD             FLOAT-LONG.
+ 01 WS-SMOOTH-MODE         BINARY-LONG.
  01 WS-FOV-GROUP.
     05 WS-FOV              FLOAT-LONG.
  01 WS-ASPECT              FLOAT-LONG.
@@ -174,8 +176,9 @@
      CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VIEW-YAW WS-VIEW-PITCH WS-EYE-TABLE
 *>   Projection (column-major).
      MOVE CL-FOV-DEG TO WS-FOV
-     IF PL-FOV-MOD > 0
-         COMPUTE WS-FOV = CL-FOV-DEG * PL-FOV-MOD
+     CALL "SMOOTH-FOV" USING CLIENT-STATE WS-FOV-MOD
+     IF WS-FOV-MOD > 0
+         COMPUTE WS-FOV = CL-FOV-DEG * WS-FOV-MOD
      END-IF
      IF WS-FOV-HAVE = 0 OR WS-FOV-GROUP NOT = WS-FOV-DONE-GROUP
          COMPUTE WS-F-DONE = 1 / FUNCTION TAN(WS-FOV / 2 * FUNCTION PI / 180)
@@ -405,6 +408,9 @@
 *>   sections; the slot is uploaded while it has vertices and once more when it no longer has
 *>   (freed).
      MOVE 0 TO RL-EN-COUNT RL-GL-COUNT
+*>   The replica rows are at the partial tick from here to the end of the ground items (smooth.cob; put back below).
+     MOVE 1 TO WS-SMOOTH-MODE
+     CALL "SMOOTH-ENTITIES" USING CLIENT-STATE WS-SMOOTH-MODE
      IF WS-WORLD = 1
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-IF
@@ -476,6 +482,8 @@
      IF WS-WORLD = 1
          CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-IF
+     MOVE 0 TO WS-SMOOTH-MODE
+     CALL "SMOOTH-ENTITIES" USING CLIENT-STATE WS-SMOOTH-MODE
      MOVE MESH-SLOT-GROUND-ITEMS TO WS-SLOT
      MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
      MOVE CC-TEX-BLOCKS TO WS-TEX
