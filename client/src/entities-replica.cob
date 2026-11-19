@@ -299,6 +299,10 @@
                          MD-MX-INT-2 MD-MX-INT-3 MD-MX-LONG
                  END-IF
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END AND WS-ROW > 0
+                     CALL "ENTITY-NAME-SET" USING CLIENT-STATE WS-ROW MD-MD-INDEX MD-MD-SERIALIZER MD-MX-PRESENT
+                         MD-MX-DATA-LENGTH MD-MX-DATA
+                 END-IF
+                 IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END AND WS-ROW > 0
                      CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW MD-MD-INDEX MD-MD-SERIALIZER MD-MD-INT MD-MD-FLOAT
                  END-IF
                  IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END

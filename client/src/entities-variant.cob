@@ -160,8 +160,41 @@
                  CONTINUE
          END-EVALUATE
      END-IF
+*>   A rabbit named Toast (EN-X1 1, ENTITY-NAME-SET) wears the toast skin, whatever its variant: code 9 (34-4 12.1).
+     IF EN-KEY(L-ROW) = "rabbit" AND WS-BASE = "rabbit" AND EN-X1(L-ROW) = 1
+         MOVE 9 TO L-CODE
+     END-IF
      GOBACK.
  END PROGRAM ENTITY-TEX-CODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-NAME-SET.
+*> USING CLIENT-STATE, replica row, entry index, serializer, present (PIC 9), data length, data (the entry's bytes: a network NBT text component): the custom name (entry 2, OPTIONAL_COMPONENT)
+*> of a rabbit selects its skin: the name Toast, as a string tag or as the compound {text: "Toast"}, sets EN-X1 to 1, any other name or none sets it to 0 (34-4 12.1: the custom name string equals Toast).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STRING-TOAST        PIC X(8) VALUE X"080005546F617374".
+ 01 WS-COMPOUND-TOAST      PIC X(16) VALUE X"0A080004746578740005546F61737400".
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SERIALIZER           BINARY-LONG.
+ 01 L-PRESENT              PIC 9.
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-DATA                 PIC X(512).
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-PRESENT L-LENGTH L-DATA.
+     IF EN-KEY(L-ROW) = "rabbit" AND L-INDEX = 2 AND L-SERIALIZER = 6
+         MOVE 0 TO EN-X1(L-ROW)
+         IF L-PRESENT = 1 AND L-LENGTH = 8 AND L-DATA(1:8) = WS-STRING-TOAST
+             MOVE 1 TO EN-X1(L-ROW)
+         END-IF
+         IF L-PRESENT = 1 AND L-LENGTH = 16 AND L-DATA(1:16) = WS-COMPOUND-TOAST
+             MOVE 1 TO EN-X1(L-ROW)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-NAME-SET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-TEX-PATH.
@@ -351,12 +384,17 @@
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "rabbit"
-                 IF WS-CD <= 8
+*>               Codes 1 to 7 and 8 (the killer bunny, caerbannog) are the variants; 9 is the rabbit named Toast.
+                 IF WS-CD <= 9
                      COMPUTE WS-I = 34 + WS-CD
                      IF WS-CD = 8
                          MOVE 41 TO WS-I
                      END-IF
-                     STRING "textures/entity/rabbit/rabbit_" FUNCTION TRIM(WS-NM(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
+                     MOVE WS-NM(WS-I) TO WS-NAME
+                     IF WS-CD = 9
+                         MOVE "toast" TO WS-NAME
+                     END-IF
+                     STRING "textures/entity/rabbit/rabbit_" FUNCTION TRIM(WS-NAME) FUNCTION TRIM(WS-BABY) ".png"
                          DELIMITED BY SIZE INTO L-PATH
                  END-IF
              WHEN "axolotl"
