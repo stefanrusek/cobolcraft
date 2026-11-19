@@ -30,6 +30,11 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-BLK                 BINARY-LONG.
  01 WS-DIFFER              BINARY-LONG VALUE 0.
+ 01 WS-PLANTED.
+    05 WS-PLANT            OCCURS 120 TIMES.
+       10 WS-PLX           BINARY-LONG.
+       10 WS-PLY           BINARY-LONG.
+       10 WS-PLZ           BINARY-LONG.
  01 WS-SOLIDS              BINARY-LONG VALUE 0.
  01 WS-OPEN                BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
@@ -57,6 +62,16 @@
          PERFORM DRAW
          COMPUTE WS-STATE = FUNCTION MOD(WS-PICK, 4) + 1
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE-OF(WS-STATE)
+         MOVE WS-X TO WS-PLX(WS-I)
+         MOVE WS-Y TO WS-PLY(WS-I)
+         MOVE WS-Z TO WS-PLZ(WS-I)
+     END-PERFORM
+*>   the planted cells themselves, then drawn ones
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 120
+         MOVE WS-PLX(WS-I) TO WS-X
+         MOVE WS-PLY(WS-I) TO WS-Y
+         MOVE WS-PLZ(WS-I) TO WS-Z
+         PERFORM COMPARE-CELL
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
          PERFORM DRAW
@@ -84,7 +99,7 @@
      PERFORM COMPARE-CELL
      MOVE -64 TO WS-Y
      PERFORM COMPARE-CELL
-     MOVE "bugvlag GI-SOLID-CELL answers as the WORLD-GET-BLOCK version on 310 cells" TO TL-CASE
+     MOVE "bugvlag GI-SOLID-CELL answers as the WORLD-GET-BLOCK version on 430 cells" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-DIFFER TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

@@ -1,5 +1,5 @@
 *> Equivalence test (002-lane-bugvlag): M182-TOUCHING (the cramming count of the environment tick: the walk to the highest used row, the box test before the species lookup, the sign test for
-*> the absolute differences) counts what the loop it replaced counted (every row of 1024, STDMOB-INDEX first, FUNCTION ABS). 56 mobs of seven species are put in a 7 x 7 block area over the
+*> the absolute differences) counts what the loop it replaced counted (every row of 1024, STDMOB-INDEX first, FUNCTION ABS). 56 mobs of seven species are put in a 2.5 x 2.5 block area at the
 *> player at drawn positions, so that many boxes overlap; six are dead (health 0), four are in another dimension, and the player is one of the rows. For every used row the two counts must be equal.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-M182-TOUCHING-EQUIV.
@@ -27,6 +27,11 @@
  01 WS-ROWS                BINARY-LONG VALUE 0.
  01 WS-SUM                 BINARY-LONG VALUE 0.
  01 WS-OTHER               BINARY-LONG.
+ 01 WS-EKEY                PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-LIVING              BINARY-LONG.
  01 WS-OTHER-M             BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
@@ -46,14 +51,17 @@
      MOVE "sheep" TO WS-KEY(7)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 56
          PERFORM DRAW
-         COMPUTE WS-X = PL-X(WS-PLAYER) - 3.5 + WS-PICK / 4681
+         COMPUTE WS-X = PL-X(WS-PLAYER) - 1.25 + WS-PICK / 13107
          PERFORM DRAW
-         COMPUTE WS-Z = PL-Z(WS-PLAYER) - 3.5 + WS-PICK / 4681
+         COMPUTE WS-Z = PL-Z(WS-PLAYER) - 1.25 + WS-PICK / 13107
          PERFORM DRAW
-         COMPUTE WS-Y = PL-Y(WS-PLAYER) + WS-PICK / 10923
+         COMPUTE WS-Y = PL-Y(WS-PLAYER) + WS-PICK / 16384
          PERFORM DRAW
          COMPUTE WS-PICK = FUNCTION MOD(WS-PICK, 7) + 1
-         CALL "MS6-EGG-SPAWN" USING WS-DIM WS-KEY(WS-PICK) WS-X WS-Y WS-Z WS-NEW-ROW
+         MOVE SPACES TO WS-EKEY
+         STRING "minecraft:" DELIMITED BY SIZE WS-KEY(WS-PICK) DELIMITED BY SPACE INTO WS-EKEY
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-EKEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW-ROW
          IF WS-I <= 6
              MOVE 0 TO EN-HEALTH(WS-NEW-ROW)
          END-IF
