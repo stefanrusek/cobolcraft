@@ -8,6 +8,7 @@
 *>   BSH-COLL-ID, BSH-OUT-ID USING state id, shape id out (the full cube while the tables are not built).
 *>   BSH-OVERLAPS USING shape id, cell x, y, z, box (6 FLOAT-LONG x1 y1 z1 x2 y2 z2 in blocks), hit out (1 when a box of the shape
 *>     placed in that cell overlaps the box with positive volume, 1e-7 tolerance).
+*>   BSH-TOP-OVER USING shape id, cell x, y, z, box, top out (FLOAT-LONG: -1000000 when no box of the shape overlaps the box, else the highest top face among the boxes that do)
 *>   BSH-CLIP USING shape id, cell x, y, z, box, axis (1 x, 2 y, 3 z), distance (FLOAT-LONG, in and out): the move of the box along
 *>     the axis shortened to where it meets a box of the shape (a box it already overlaps or passes does not stop it).
 *>   BSH-RAY USING shape id, cell x, y, z, origin (3 FLOAT-LONG), direction (3 FLOAT-LONG), t out (FLOAT-LONG, -1 when no box is
@@ -889,6 +890,54 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BSH-OVERLAPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-TOP-OVER.
+*> USING shape id, cell x, y, z (BINARY-LONG), box (6 FLOAT-LONG), top out (FLOAT-LONG): the height an entity box rests on (the shape's part under the box): -1000000 when no box of
+*> the shape overlaps the box with positive volume (as BSH-OVERLAPS), else the greatest top face (y in blocks, the cell's y included) among the boxes that do.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-OVER                FLOAT-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-CELL                FLOAT-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ 01 L-SHAPE                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BOX.
+    05 L-B                 FLOAT-LONG OCCURS 6 TIMES.
+ 01 L-TOP                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SHAPE L-X L-Y L-Z L-BOX L-TOP.
+     MOVE -1000000 TO L-TOP
+     MOVE L-X TO WS-CELL(1)
+     MOVE L-Y TO WS-CELL(2)
+     MOVE L-Z TO WS-CELL(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BSH-N(L-SHAPE + 1)
+         MOVE 1 TO WS-INSIDE
+         PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+             COMPUTE WS-LO = WS-CELL(WS-A) + BSH-V(L-SHAPE + 1, WS-I, WS-A) / 16000
+             COMPUTE WS-HI = WS-CELL(WS-A) + BSH-V(L-SHAPE + 1, WS-I, WS-A + 3) / 16000
+             COMPUTE WS-OVER = FUNCTION MIN(L-B(WS-A + 3), WS-HI) - FUNCTION MAX(L-B(WS-A), WS-LO)
+             IF WS-OVER <= WS-EPSILON
+                 MOVE 0 TO WS-INSIDE
+             END-IF
+         END-PERFORM
+         IF WS-INSIDE = 1
+             COMPUTE WS-HI = WS-CELL(2) + BSH-V(L-SHAPE + 1, WS-I, 5) / 16000
+             IF WS-HI > L-TOP
+                 MOVE WS-HI TO L-TOP
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BSH-TOP-OVER.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-CLIP.

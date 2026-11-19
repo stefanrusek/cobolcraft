@@ -257,6 +257,7 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP-Y               FLOAT-LONG.
  01 WS-POWER               FLOAT-LONG VALUE 4.
  01 WS-DESTROY             BINARY-LONG VALUE 1.
  01 WS-NONE                BINARY-LONG VALUE 0.
@@ -283,11 +284,11 @@
          MOVE 0 TO EN-VZ(L-ROW)
      END-IF
      COMPUTE WS-Y = EN-Y(L-ROW) + EN-VY(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP WS-TOP-Y
      IF WS-HIT = 1
          IF EN-VY(L-ROW) < 0
              MOVE 1 TO EN-ON-GROUND(L-ROW)
-             COMPUTE WS-Y = WS-TOP + 1
+             MOVE WS-TOP-Y TO WS-Y
          ELSE
              MOVE EN-Y(L-ROW) TO WS-Y
          END-IF
@@ -409,6 +410,7 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP-Y               FLOAT-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-BX                  BINARY-LONG.
@@ -470,10 +472,10 @@
          MOVE 0 TO EN-VZ(L-ROW)
      END-IF
      COMPUTE WS-Y = EN-Y(L-ROW) + EN-VY(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP WS-TOP-Y
      IF WS-HIT = 1
          MOVE 1 TO EN-ON-GROUND(L-ROW)
-         COMPUTE WS-Y = WS-TOP + 1
+         MOVE WS-TOP-Y TO WS-Y
      END-IF
      COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
      COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
