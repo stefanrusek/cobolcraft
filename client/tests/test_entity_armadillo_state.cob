@@ -1,0 +1,279 @@
+*> Implementation test (002-lane-bugarmadillo; docs/protocol/34-entity-models-5-wild-companion-animals-small-creatures.md section 10.3, 19 section 13 State,
+*> 44 part 4 section 12): the replica of an armadillo keeps ARMADILLO_STATE (Set Entity Data entry 18, serializer 36: 0 idle, 1 rolling, 2 scared, 3 unrolling),
+*> counts inStateTicks up each client tick, runs setupAnimationStates (roll-up, roll-out and peek start ticks, Entity Event 64 = peek) and the model draws what
+*> that gives: hiding in the shell (the body's own cuboids are not drawn, the legs and tail are hidden, the cube is drawn) and the keyframe animations.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-ARMADILLO-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ID                  BINARY-LONG VALUE 1.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 12.5.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-REST                BINARY-DOUBLE.
+ 01 WS-A                   BINARY-DOUBLE.
+ 01 WS-B                   BINARY-DOUBLE.
+ 01 WS-C                   BINARY-DOUBLE.
+ 01 WS-SCARED              BINARY-DOUBLE.
+ 01 WS-CUBES-REST          BINARY-LONG.
+ 01 WS-CUBES-SCARED        BINARY-LONG.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U PL-YAW
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     MOVE "armadillo" TO WS-KEY
+     CALL "ARS-SPAWN" USING CLIENT-STATE WS-ID WS-KEY WS-X WS-Y WS-Z
+
+*>   At rest (idle): the mesh without the shell.
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-REST WS-CUBES-REST
+     MOVE "armadillo state: a new armadillo is idle (0)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-ARMA(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Set Entity Data entry 18 (ARMADILLO_STATE, serializer 36) = 2 scared.
+     MOVE 2 TO WS-STATE
+     CALL "ARS-DATA" USING CLIENT-STATE WS-ID WS-STATE
+     MOVE "armadillo state: Set Entity Data 18 = 2 is kept by the replica" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE EN-ARMA(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "armadillo state: inStateTicks counts up each client tick (1 after the first)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-ARMA-TICKS(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-SCARED WS-CUBES-SCARED
+     MOVE "armadillo state: scared, the model is rolled up (the mesh is not the idle mesh)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SCARED NOT = WS-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "armadillo state: scared, the body's own cuboids are skipped, legs and tail hidden, the cube drawn (34-5 10.2)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-CUBES-SCARED < WS-CUBES-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 60 TO WS-N
+     PERFORM WS-N TIMES
+         CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-SCARED WS-CUBES-SCARED
+
+*>   Entity Event 64 (peek): the peek animation restarts, so two ticks later the mesh moves, and much later it is the scared mesh again.
+     MOVE 64 TO WS-EVENT
+     CALL "ENTITY-EVENT" USING CLIENT-STATE WS-ID WS-EVENT
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-A WS-N
+     MOVE "armadillo state: Entity Event 64 starts the peek animation (the scared mesh moves)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-A NOT = WS-SCARED
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 60 TO WS-N
+     PERFORM WS-N TIMES
+         CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-A WS-N
+     MOVE "armadillo state: and the peek is over after 60 ticks (the scared mesh again)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-A = WS-SCARED
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Rolling (1): the roll-up animation plays; the shell shows once inStateTicks is above 5.
+     MOVE 1 TO WS-STATE
+     CALL "ARS-DATA" USING CLIENT-STATE WS-ID WS-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-A WS-N
+     MOVE "armadillo state: rolling, early (inStateTicks 2): not yet in the shell, the mesh differs from idle (roll-up animation)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-A NOT = WS-REST AND WS-N = WS-CUBES-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-N
+     PERFORM WS-N TIMES
+         CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-B WS-N
+     MOVE "armadillo state: rolling, inStateTicks 7: the animation moved on and the body is hidden in the shell" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-B NOT = WS-A AND WS-N < WS-CUBES-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Unrolling (3): the roll-out animation plays, the shell shows until inStateTicks 26; then idle again is the idle mesh.
+     MOVE 3 TO WS-STATE
+     CALL "ARS-DATA" USING CLIENT-STATE WS-ID WS-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-C WS-N
+     MOVE "armadillo state: unrolling, inStateTicks 2: in the shell, the roll-out animation moves it" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-C NOT = WS-B AND WS-N < WS-CUBES-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 30 TO WS-N
+     PERFORM WS-N TIMES
+         CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-C WS-N
+     MOVE "armadillo state: unrolling, inStateTicks 32: out of the shell (the body is drawn again)" TO TL-CASE
+     MOVE WS-CUBES-REST TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-STATE
+     CALL "ARS-DATA" USING CLIENT-STATE WS-ID WS-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ARS-SUM" USING CLIENT-STATE WS-EYE-TABLE WS-C WS-N
+     MOVE "armadillo state: idle (0) again is the idle mesh" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-C = WS-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-ENTITY-ARMADILLO-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARS-SPAWN.
+*> USING CLIENT-STATE, entity id, type key (PIC X(112)), x y z: Add Entity at rest.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-KEY                  PIC X(112).
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-KEY L-X L-Y L-Z.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "CONTENT-ENTITY-BY-KEY" USING L-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM ARS-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARS-DATA.
+*> USING CLIENT-STATE, entity id, state: Set Entity Data with the one entry 18 of serializer 36 (ARMADILLO_STATE, a VarInt).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-DATA                BINARY-LONG VALUE 101.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-STATE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     INITIALIZE MD-METADATA-ENTRY-X
+     MOVE 18 TO MD-MX-INDEX
+     MOVE 36 TO MD-MX-SERIALIZER
+     MOVE L-STATE TO MD-MX-INT
+     CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     INITIALIZE MD-METADATA-ENTRY-X
+     MOVE MD-MD-END TO MD-MX-INDEX
+     CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-DATA
+     GOBACK.
+ END PROGRAM ARS-DATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARS-SUM.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG), sum out (BINARY-DOUBLE), cuboid count out: the position-weighted sum of the frame's entity vertices
+*> (thousandths) and the number of vertices / 4 (quads).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-SUM                  BINARY-DOUBLE.
+ 01 L-QUADS                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE L-SUM L-QUADS.
+     CALL "ENTITIES-MESH" USING CLIENT-STATE L-EYE-TABLE
+     MOVE 0 TO L-SUM
+     MOVE RL-EN-COUNT TO L-QUADS
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RL-EN-COUNT
+         COMPUTE L-SUM = L-SUM + FUNCTION INTEGER((RL-EN-X(WS-K) * 1.1 + RL-EN-Y(WS-K) * 2.3 + RL-EN-Z(WS-K) * 3.7) * 1000 + 0.5)
+             * (1 + FUNCTION MOD(WS-K, 7))
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ARS-SUM.
