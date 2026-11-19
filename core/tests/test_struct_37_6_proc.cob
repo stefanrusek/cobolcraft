@@ -30,6 +30,7 @@
  01 WS-N2                  PIC 999.
  01 WS-AX                  PIC 9.
  01 WS-NAME                PIC X(48).
+ 01 WS-NAME2               PIC X(48).
  01 WS-F                   FLOAT-LONG.
  01 WS-LISTS.
     05 FILLER PIC X(40) VALUE "bastion_generic_degradation".
@@ -168,7 +169,8 @@
      .
  STRIP-NAME.
      IF WS-NAME(1:10) = "minecraft:"
-         MOVE WS-NAME(11:38) TO WS-NAME
+         MOVE WS-NAME(11:38) TO WS-NAME2
+         MOVE WS-NAME2 TO WS-NAME
      END-IF
      .
  END PROGRAM TEST-STRUCT-37-6-PROC.
