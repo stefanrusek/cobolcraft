@@ -170,6 +170,14 @@
 *>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
 *>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).
              IF EN-MODEL(WS-R) > 0
+                 IF CL-MD-ANIM(EN-MODEL(WS-R)) = "M"
+                     IF EN-BHT(WS-R) > 0
+                         SUBTRACT 1 FROM EN-BHT(WS-R)
+                     END-IF
+                     IF EN-BDM(WS-R) > 0
+                         COMPUTE EN-BDM(WS-R) = FUNCTION MAX(EN-BDM(WS-R) - 1, 0)
+                     END-IF
+                 END-IF
                  IF CL-MD-ANIM(EN-MODEL(WS-R)) = "B"
                      IF EN-BHT(WS-R) > 0
                          SUBTRACT 1 FROM EN-BHT(WS-R)
@@ -540,7 +548,7 @@
  01 L-FLOAT                FLOAT-SHORT.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-INDEX L-SERIALIZER L-INT L-FLOAT.
      IF EN-MODEL(L-ROW) > 0
-         IF CL-MD-ANIM(EN-MODEL(L-ROW)) = "B"
+         IF CL-MD-ANIM(EN-MODEL(L-ROW)) = "B" OR "M"
              EVALUATE TRUE
                  WHEN L-INDEX = 8 AND L-SERIALIZER = 1
                      MOVE L-INT TO EN-BHT(L-ROW)

@@ -63,6 +63,8 @@
              CALL "EF6-LAYER" USING EMM-MODEL WS-LAYER L-OK
          WHEN 7
              CALL "EF7-LAYER" USING EMM-MODEL WS-LAYER L-OK
+         WHEN 9
+             CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER L-OK
          WHEN OTHER
              CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER L-OK
      END-EVALUATE
@@ -229,9 +231,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 220 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 260 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 220 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 260 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXC                BINARY-LONG.
  01 WS-TR                  FLOAT-LONG.
@@ -561,6 +563,10 @@
      IF EN-KEY(WS-ROW) = "ender_dragon"
          MOVE EN-DR-HEAD TO WS-KN(33)
      END-IF
+*>   A minecart's shift (34-9 3.2) is a function of its entity id.
+     IF WS-ANIM = "M"
+         MOVE EN-ID(WS-ROW) TO WS-KN(33)
+     END-IF
      COMPUTE WS-KN(36) = EN-AX-T(WS-ROW, 1) + EN-AX-T(WS-ROW, 2) * 11 + EN-AX-T(WS-ROW, 3) * 121 + EN-AX-T(WS-ROW, 4) * 1331
          + EN-AX-BS(WS-ROW) * 20000 + EN-AX-BT(WS-ROW) * 200000
      MOVE EN-XR(WS-ROW) TO WS-KN(25)
@@ -842,6 +848,8 @@
      EVALUATE TRUE
          WHEN WS-ANIM = "B"
              CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN WS-ANIM = "M"
+             CALL "ENTITY-MINECART-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "ender_dragon"
              CALL "ENTITY-DRAGON-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "evoker_fangs"
