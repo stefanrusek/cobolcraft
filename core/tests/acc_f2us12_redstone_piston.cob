@@ -369,7 +369,7 @@
      PERFORM PUT-PISTON
      ADD 1 TO WS-Z MOVE "stone" TO WS-K PERFORM PUT-DEF
      SUBTRACT 2 FROM WS-Z MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
-     ADD 2 TO WS-Z
+     ADD 1 TO WS-Z
      MOVE 5 TO WS-TICKS PERFORM RUN-TICKS
      MOVE 3 TO WS-X PERFORM READ-FULL
      MOVE "acceptance US12-4 pistons 30-3 1 a south piston extends" TO WS-CASE
@@ -512,6 +512,15 @@
      ADD 1 TO WS-Z
      PERFORM PUT-STONE-ROW
      SUBTRACT 1 FROM WS-Z
+*>   (the floor under the slime blocks is taken away: a slime block drags the floor too)
+     MOVE 100 TO WS-Y MOVE "air" TO WS-K
+     MOVE 2 TO WS-X PERFORM PUT-DEF
+     MOVE 3 TO WS-X PERFORM PUT-DEF
+     ADD 1 TO WS-Z
+     MOVE 2 TO WS-X PERFORM PUT-DEF
+     MOVE 3 TO WS-X PERFORM PUT-DEF
+     SUBTRACT 1 FROM WS-Z
+     MOVE 101 TO WS-Y
      MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-X
      PERFORM PUT-PISTON
      MOVE 2 TO WS-X MOVE "slime_block" TO WS-K PERFORM PUT-DEF
