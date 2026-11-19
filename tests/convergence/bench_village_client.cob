@@ -82,6 +82,11 @@
        10 WS-TOP-S         BINARY-LONG.
        10 WS-TOP-V         BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-DIRTY-NOW           BINARY-LONG.
+ 01 WS-SHOWN               BINARY-LONG.
+ 01 WS-SUM-MESHED          BINARY-LONG VALUE 0.
+ 01 WS-SUM-MESH-US         BINARY-DOUBLE VALUE 0.
+ 01 WS-FRAMES-MESHED       BINARY-LONG VALUE 0.
  01 WS-VERTS               BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
  01 WS-XE                  PIC -(8)9.
@@ -267,6 +272,7 @@
      MOVE 100 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+     MOVE 0 TO WS-SHOWN
 *>   The measured frames. CV-STEP is the whole of CL-STEP with the core tick; the phases are then run again on the same state.
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > WS-FRAMES
          CALL STATIC "clock" RETURNING WS-T0
@@ -278,6 +284,30 @@
          IF WS-US > WS-MAX-STEP
              MOVE WS-US TO WS-MAX-STEP
          END-IF
+         ADD MB-MESHED TO WS-SUM-MESHED
+         IF MB-MESHED > 0
+             ADD 1 TO WS-FRAMES-MESHED
+             ADD MB-LAST-US TO WS-SUM-MESH-US
+         END-IF
+*>       the sections still dirty after the frame (what the idle MESH-DIRTY below will mesh): the first few frames list where they are
+         MOVE 0 TO WS-DIRTY-NOW
+         PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
+             IF WR-USED(WS-R) = 1
+                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+                     IF WR-DIRTY(WS-R, WS-S) = 1
+                         ADD 1 TO WS-DIRTY-NOW
+                         IF WS-F <= 12 AND WS-SHOWN < 24
+                             ADD 1 TO WS-SHOWN
+                             MOVE WS-F TO WS-D9
+                             MOVE WR-CX(WS-R) TO WS-D9B
+                             MOVE WR-CZ(WS-R) TO WS-D9C
+                             MOVE WS-S TO WS-D9D
+                             DISPLAY "VBC frame " WS-D9 " dirty section chunk " WS-D9B " " WS-D9C " section " WS-D9D
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-PERFORM
          CALL STATIC "clock" RETURNING WS-T0
          CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
          CALL STATIC "clock" RETURNING WS-T1
@@ -320,6 +350,10 @@
      MOVE WS-MEAN TO WS-D9
      MOVE EN-COUNT TO WS-D9B
      DISPLAY "VBC entity vertices a frame " WS-D9 " entity rows " WS-D9B
+     MOVE WS-FRAMES-MESHED TO WS-D9
+     MOVE WS-SUM-MESHED TO WS-D9B
+     MOVE WS-SUM-MESH-US TO WS-D9C
+     DISPLAY "VBC frames that meshed " WS-D9 " sections meshed " WS-D9B " mesh us (MB-LAST-US) " WS-D9C
      MOVE "T" TO TL-MODE
      MOVE "bench village client the frames were measured" TO TL-CASE
      MOVE "measured" TO TL-EXPECTED
