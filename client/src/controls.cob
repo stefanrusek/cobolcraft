@@ -71,6 +71,7 @@
      END-IF
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-IBLOCK WS-ITOOL WS-IFOOD
      MOVE 0 TO WS-IS-AIR-USE
+     MOVE SPACES TO WS-PATH
      IF WS-ITEM > 0
          CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX WS-IB2 WS-IT2 WS-IF2 WS-KNOWN
          IF WS-PATH = "bucket" OR WS-PATH = "water_bucket" OR WS-PATH = "lava_bucket"
@@ -111,6 +112,15 @@
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-IS-AIR-USE = 1
              CALL "CONTROLS-SEND-BUCKET" USING CLIENT-STATE
      END-EVALUATE
+*>   A brush (25 part 8 section 7): the right press that sent Use Item On at a block with the brush held starts its use; the use goes on while the button is held and the
+*>   server is told with release use item when the button comes up (the server's use lasts 200 ticks otherwise).
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND TG-HIT = 1 AND WS-PATH = "brush"
+         MOVE 1 TO PL-BRUSHING
+     END-IF
+     IF PL-BRUSHING = 1 AND IN-BUTTON-DOWN(CC-BUTTON-RIGHT + 1) = 0
+         MOVE 0 TO PL-BRUSHING
+         CALL "CONTROLS-SEND-ITEM-ACTION" USING CLIENT-STATE WS-ACTION6
+     END-IF
 *>   Eating ends when the button is released; early, the server is told.
      IF PL-EATING = 1 AND IN-BUTTON-DOWN(CC-BUTTON-RIGHT + 1) = 0
          MOVE 0 TO PL-EATING
