@@ -64,6 +64,7 @@
  01 WS-CAUSE               BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
  01 WS-POWER               FLOAT-LONG VALUE 0.1.
  01 WS-DESTROY             BINARY-LONG VALUE 0.
  01 WS-CX                  FLOAT-LONG.
@@ -233,7 +234,7 @@
      MOVE GE-COUNT TO WS-COUNT0
      MOVE 1 TO WS-AMOUNT
      MOVE CAUSE-MOB TO WS-CAUSE
-     CALL "HEALTH-DAMAGE" USING WS-PLAYER WS-AMOUNT WS-CAUSE WS-NONE WS-NONE
+     CALL "HEALTH-DAMAGE" USING WS-PLAYER WS-AMOUNT WS-CAUSE WS-NONE WS-NONE2
      MOVE "a hurt player posts entity_damage" TO TL-CASE
      MOVE "entity_damage" TO TL-EXPECTED
      MOVE GE-NAME TO TL-OBSERVED
@@ -369,7 +370,7 @@
 *>   6. The player's death: entity_die at the player (a dead player is not heard). The last scene: the death sends the death screen.
      PERFORM NEW-SCENE
      MOVE 100 TO WS-AMOUNT
-     CALL "HEALTH-DAMAGE" USING WS-PLAYER WS-AMOUNT WS-CAUSE WS-NONE WS-NONE
+     CALL "HEALTH-DAMAGE" USING WS-PLAYER WS-AMOUNT WS-CAUSE WS-NONE WS-NONE2
      MOVE "a lethal hit on a player ends with entity_die" TO TL-CASE
      MOVE "entity_die" TO TL-EXPECTED
      MOVE GE-NAME TO TL-OBSERVED
