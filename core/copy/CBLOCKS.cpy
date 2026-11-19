@@ -5,7 +5,7 @@
 *>
 *> Derived from a content row (24 part 1 section 2; the rules are in block-props.cob):
 *>   CB-SOLID    1 unless the flags hold noCollision or air.
-*>   CB-OPAQUE   0 when the flags hold noOcclusion, noCollision or air, else 1 (until the light engine of 32).
+*>   CB-OPAQUE   0 when the flags hold noOcclusion, noCollision or air, else 1 (until the light engine of 32). The block light engine no longer reads it: a cell stops block light by its state's CB-S-DAMP = 15 (a stair, slab or chest lets it in); the sky column rule of LIGHT-SKY still does.
 *>   CB-REPLACEABLE 1 when the flags hold replaceable (24 part 1 section 10.1: BlockState.canBeReplaced, the ReplaceablePredicate of world generation).
 *>   CB-BREAK-MS the hardness in milliseconds (hardness x 1000, rounded; -1 for a negative hardness = unbreakable; 0 none).
 *>   CB-CLASS    tool class from the block tags: 1 minecraft:mineable/pickaxe, 2 minecraft:mineable/shovel, else 0.
