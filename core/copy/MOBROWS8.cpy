@@ -49,7 +49,7 @@
        10 FILLER BINARY-LONG VALUE 3.              *> attack damage 3
        10 FILLER BINARY-LONG VALUE 32.              *> follow range
        10 FILLER BINARY-LONG VALUE 0.              *> does not burn
-       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 9.              *> SM-NEUTRAL 9: its target comes from being looked at (CREAKING-BRAIN, 20 section 17)
        10 FILLER BINARY-LONG VALUE -1.              *> no experience
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.

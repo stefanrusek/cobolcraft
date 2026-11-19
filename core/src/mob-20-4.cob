@@ -121,6 +121,9 @@
 *>       The warden's idle stroll is at 0.5 and its table speed is that of 1.2 (20 section 15): (0.5 / 1.2) squared.
          WHEN L-KEY = "warden"
              MOVE 0.1736111111111111 TO L-SCALE
+*>       The creaking strolls at 0.3 against its table speed at 1.0 (20 section 17): 0.3 squared.
+         WHEN L-KEY = "creaking"
+             MOVE 0.09 TO L-SCALE
          WHEN OTHER
              MOVE 1 TO L-SCALE
      END-EVALUATE

@@ -466,6 +466,11 @@
          CALL "WARDEN-BRAIN" USING L-ROW
          GOBACK
      END-IF
+*>   SM-NEUTRAL 9: the creaking's target is whoever looks at it (CREAKING-BRAIN, 20 section 17).
+     IF SM-NEUTRAL(L-M) = 9
+         CALL "CREAKING-BRAIN" USING L-ROW
+         GOBACK
+     END-IF
      IF SM-NEUTRAL(L-M) = 2
          CALL "STDMOB-ENDER-AIM" USING L-ROW L-M
          GOBACK
@@ -922,6 +927,7 @@
  01 WS-ICE-SCALE           FLOAT-LONG.
  01 WS-STROLL-SCALE        FLOAT-LONG.
  01 WS-CUBE                BINARY-LONG.
+ 01 WS-FROZEN              BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-COUNT               BINARY-LONG VALUE 3.
  01 WS-ARGS.
@@ -1108,6 +1114,13 @@
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
          END-IF
+*>       A creaking that cannot move does not walk or attack (its FIGHT activity is not valid, 20 section 17).
+         IF SM-KEY(WS-M) = "creaking"
+             CALL "CREAKING-FROZEN" USING WS-ROW WS-FROZEN
+             IF WS-FROZEN = 1
+                 MOVE 0 TO WS-CHASE
+             END-IF
+         END-IF
      END-IF
      MOVE 0 TO WS-VS-WALK
      IF SM-KIND(WS-M) = 1 AND EN-TARGET(WS-ROW) = 0
@@ -1149,6 +1162,10 @@
      END-IF
      IF SM-KEY(WS-M) = "warden"
          CALL "WARDEN-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+*>   A frozen creaking stands (CAN_MOVE false: the move control does nothing).
+     IF SM-KEY(WS-M) = "creaking" AND WS-FROZEN = 1
+         MOVE 2 TO WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "turtle"
          CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
