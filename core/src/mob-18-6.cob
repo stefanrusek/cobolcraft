@@ -681,8 +681,10 @@
 *> USING dim, x, y, z, ok out (BINARY-LONG): for the cell of a full solid block (MS6-BLOCK-KIND 1), whether its top face is sturdy, the part of Block.isValidSpawn (18 section 6.8: the top face is sturdy
 *> and the light emission is below 14) that the collision flag does not tell. The core keeps no face shapes (24 section 5.2), so the blocks whose top face is smaller than the cell are named by their keys:
 *> beds, carpets, farmland, paths, cauldrons, fences, walls, panes and bars, doors and trapdoors, chests and the workstations and lights of a village (campfire, lantern, bell, anvil, grindstone,
-*> composter, lectern, hopper, brewing stand, flower pots), and the stairs and slabs that do not hold their full face up (a stair with half top, a slab of type top or double does). The light emission
-*> and the blocks that override isValidSpawn (soul sand, mud, carved pumpkin, jack o'lantern, redstone lamp) are not modelled.
+*> composter, lectern, hopper, brewing stand, flower pots), and the stairs and slabs that do not hold their full face up (a stair with half top, a slab of type top or double does). The blocks that set
+*> isValidSpawn to "never" (44 part 1 RQ-1.10: bedrock, glass, tinted glass, the stained glass, barrier, moving piston, scaffolding, chorus flower, the trapdoors and the copper grates) are never a floor,
+*> though their top face is sturdy (the Nether roof and the bedrock layers hold no spawn). The light emission and the blocks that override isValidSpawn the other way (soul sand, mud, carved pumpkin,
+*> jack o'lantern, redstone lamp: always; leaves, ice and magma: for some species) are not modelled.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
@@ -707,6 +709,11 @@
      INSPECT CB-KEY(WS-BLOCK) TALLYING WS-SMALL FOR ALL "_bed" ALL "carpet" ALL "farmland" ALL "dirt_path" ALL "cauldron" ALL "_fence" ALL "_wall" ALL "_pane"
          ALL "iron_bars" ALL "_door" ALL "chest" ALL "campfire" ALL "lantern" ALL "bell" ALL "anvil" ALL "grindstone" ALL "composter" ALL "lectern" ALL "hopper"
          ALL "brewing_stand" ALL "flower_pot" ALL "potted_" ALL "stonecutter"
+         ALL "bedrock" ALL "tinted_glass" ALL "stained_glass" ALL "barrier" ALL "moving_piston" ALL "scaffolding" ALL "chorus_flower" ALL "_trapdoor"
+         ALL "copper_grate"
+     IF CB-KEY(WS-BLOCK) = "glass"
+         ADD 1 TO WS-SMALL
+     END-IF
      IF WS-SMALL > 0
          MOVE 0 TO L-OK
          GOBACK
