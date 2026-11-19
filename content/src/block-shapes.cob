@@ -968,6 +968,7 @@
  01 WS-OFS                 BINARY-LONG.
  01 WS-SOFS                BINARY-LONG.
  01 WS-INT                 BINARY-LONG.
+ 01 WS-LHITS               BINARY-LONG.
  01 WS-OCCV                BINARY-LONG.
  01 WS-DAMPV               BINARY-LONG.
  01 WS-LFLG                BINARY-LONG.
@@ -1123,9 +1124,9 @@
              END-EVALUATE
          END-IF
 *>       The light data reads a few properties (waterlogged, type, extended) of every block that has them.
-         MOVE 0 TO WS-HITS
-         INSPECT CT-BR-PROPS TALLYING WS-HITS FOR ALL "waterlogged" ALL "type[" ALL "extended"
-         IF WS-HITS > 0
+         MOVE 0 TO WS-LHITS
+         INSPECT CT-BR-PROPS TALLYING WS-LHITS FOR ALL "waterlogged" ALL "type[" ALL "extended"
+         IF WS-LHITS > 0
              MOVE 1 TO WS-NEEDS
          END-IF
          IF WS-NEEDS = 1

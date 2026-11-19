@@ -316,10 +316,7 @@
      MOVE PL-X TO WS-SX
      MOVE PL-Y TO WS-SY
      MOVE PL-Z TO WS-SZ
-     MOVE 1 TO WS-AXIS
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-HX WS-BX
-     MOVE 3 TO WS-AXIS
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-HZ WS-BLOCKED
+     CALL "PHYS-HORIZONTAL" USING CLIENT-STATE WS-HX WS-HZ WS-BX WS-BLOCKED
      COMPUTE PL-COLLIDED = FUNCTION MAX(WS-BX, WS-BLOCKED)
 *>   The step-up: a blocked move on the ground goes over a step of up to 0.6 (13 section 1.4).
      IF PL-COLLIDED = 1 AND PL-ON-GROUND = 1 AND PL-FLYING = 0 AND WS-FLUID = 0
@@ -567,21 +564,75 @@
  END PROGRAM PHYS-FRICTION.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PHYS-STEP-UP.
-*> USING CLIENT-STATE, start x, y, z (FLOAT-LONG: where the horizontal move began), wanted dx, dz (FLOAT-LONG), stepped out (1 when the
-*> step-up was taken): the player was stopped by a horizontal collision; from the start it rises by up to 0.6, makes the wanted move
-*> and drops back down by the height it rose. When that gets it further along the ground than the plain move did, the player
-*> keeps that position (stepped 1); otherwise the plain move is restored.
+ PROGRAM-ID. PHYS-HORIZONTAL.
+*> USING CLIENT-STATE, wanted dx, dz (FLOAT-LONG), blocked x, blocked z out (1 = that move was stopped short by a collision box): the horizontal axes of a move in the order of
+*> Direction.axisStepOrder (51 section 6.1): Z then X when |dx| < |dz|, else X then Z, each against the position the other left.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-AXIS                BINARY-LONG.
- 01 WS-UP                  FLOAT-LONG.
- 01 WS-DOWN                FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-DX L-DZ L-BX L-BZ.
+     IF FUNCTION ABS(L-DX) < FUNCTION ABS(L-DZ)
+         MOVE 3 TO WS-AXIS
+         CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DZ L-BZ
+         MOVE 1 TO WS-AXIS
+         CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DX L-BX
+     ELSE
+         MOVE 1 TO WS-AXIS
+         CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DX L-BX
+         MOVE 3 TO WS-AXIS
+         CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DZ L-BZ
+     END-IF
+     GOBACK.
+ END PROGRAM PHYS-HORIZONTAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-STEP-UP.
+*> USING CLIENT-STATE, start x, y, z (FLOAT-LONG: where the horizontal move began), wanted dx, dz (FLOAT-LONG), stepped out (1 when the step-up was taken): the player was stopped by a
+*> horizontal collision on the ground (51 section 6.1). The heights h (0 < h <= 0.6, the step height) at which a box of a collider near the move starts or ends, measured from the feet, are
+*> tried in ascending order: the player rises by h (as far as nothing above stops it), makes the wanted move in the axis order of PHYS-HORIZONTAL and keeps that position when it
+*> carried further along the ground than the plain move did (the first such height ends the search); no height does: the plain move is restored. The cells of the move itself are
+*> searched for the colliders (those only reaching into them from a neighbour are not).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-CAND-TABLE.
+    05 WS-CAND             FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-HOLD                FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-LIMIT               FLOAT-LONG VALUE 0.6000000238.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-BOX                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-OFFS.
+    05 WS-OFF              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-RISE                FLOAT-LONG.
  01 WS-BLOCKED             BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
  01 WS-P1                  FLOAT-LONG OCCURS 3 TIMES.
  01 WS-PLAIN               FLOAT-LONG.
  01 WS-STEP                FLOAT-LONG.
- 01 WS-CEILING             FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-SX                   FLOAT-LONG.
@@ -596,37 +647,61 @@
      MOVE PL-Y TO WS-P1(2)
      MOVE PL-Z TO WS-P1(3)
      COMPUTE WS-PLAIN = (PL-X - L-SX) ** 2 + (PL-Z - L-SZ) ** 2
-     MOVE L-SX TO PL-X
-     MOVE L-SY TO PL-Y
-     MOVE L-SZ TO PL-Z
-     MOVE 2 TO WS-AXIS
-     MOVE 0.6 TO WS-UP
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-UP WS-BLOCKED
-     COMPUTE WS-UP = PL-Y - L-SY
-*>   The rise is also held down by what hangs over the cells the move enters (the box swept toward the wanted move): a 1/16 lip under a
-*>   door lintel is stepped over by the rise the lintel leaves, not refused for the full 0.6 (51 section 6: passable if the entity rises by at most the step height).
-     COMPUTE PL-X = L-SX + L-DX
-     MOVE L-SY TO PL-Y
-     COMPUTE PL-Z = L-SZ + L-DZ
-     MOVE 2 TO WS-AXIS
-     MOVE 0.6 TO WS-CEILING
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-CEILING WS-BLOCKED
-     COMPUTE WS-CEILING = PL-Y - L-SY
-     MOVE L-SX TO PL-X
-     MOVE L-SZ TO PL-Z
-     COMPUTE WS-UP = FUNCTION MIN(WS-UP, WS-CEILING)
-     COMPUTE PL-Y = L-SY + WS-UP
-     MOVE 1 TO WS-AXIS
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DX WS-BLOCKED
-     MOVE 3 TO WS-AXIS
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS L-DZ WS-BLOCKED
-     MOVE 2 TO WS-AXIS
-     COMPUTE WS-DOWN = 0 - WS-UP
-     CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-DOWN WS-BLOCKED
-     COMPUTE WS-STEP = (PL-X - L-SX) ** 2 + (PL-Z - L-SZ) ** 2
-     IF WS-STEP > WS-PLAIN + 0.000000001
-         MOVE 1 TO L-STEPPED
-     ELSE
+     CALL "PHYS-BOX" USING CLIENT-STATE WS-HALF WS-HEIGHT
+*>   The heights of the colliders' boxes in the cells of the move.
+     COMPUTE WS-X0 = FUNCTION INTEGER(L-SX - WS-HALF + FUNCTION MIN(0, L-DX))
+     COMPUTE WS-X1 = FUNCTION INTEGER(L-SX + WS-HALF + FUNCTION MAX(0, L-DX))
+     COMPUTE WS-Z0 = FUNCTION INTEGER(L-SZ - WS-HALF + FUNCTION MIN(0, L-DZ))
+     COMPUTE WS-Z1 = FUNCTION INTEGER(L-SZ + WS-HALF + FUNCTION MAX(0, L-DZ))
+     COMPUTE WS-Y0 = FUNCTION INTEGER(L-SY) - 1
+     COMPUTE WS-Y1 = FUNCTION INTEGER(L-SY + WS-LIMIT) + 1
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1
+         PERFORM VARYING WS-Z FROM WS-Z0 BY 1 UNTIL WS-Z > WS-Z1
+             PERFORM VARYING WS-X FROM WS-X0 BY 1 UNTIL WS-X > WS-X1
+                 CALL "PHYS-CELL-SHAPE" USING CLIENT-STATE WS-X WS-Y WS-Z WS-SHAPE
+                 IF WS-SHAPE NOT = 0
+                     CALL "PHYS-CELL-OFFSET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-OFFS
+                     PERFORM VARYING WS-BOX FROM 1 BY 1 UNTIL WS-BOX > BSH-N(WS-SHAPE + 1)
+                         PERFORM VARYING WS-K FROM 2 BY 3 UNTIL WS-K > 5
+                             COMPUTE WS-H = WS-Y + BSH-V(WS-SHAPE + 1, WS-BOX, WS-K) / 16000 + WS-OFF(2) - L-SY
+                             IF WS-H > 0.000001 AND WS-H <= WS-LIMIT AND WS-N < 64
+                                 ADD 1 TO WS-N
+                                 MOVE WS-H TO WS-CAND(WS-N)
+                             END-IF
+                         END-PERFORM
+                     END-PERFORM
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+*>   Ascending order.
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > WS-N
+         MOVE WS-CAND(WS-I) TO WS-HOLD
+         MOVE WS-I TO WS-J
+         PERFORM UNTIL WS-J < 2
+             IF WS-CAND(WS-J - 1) <= WS-HOLD
+                 EXIT PERFORM
+             END-IF
+             MOVE WS-CAND(WS-J - 1) TO WS-CAND(WS-J)
+             SUBTRACT 1 FROM WS-J
+         END-PERFORM
+         MOVE WS-HOLD TO WS-CAND(WS-J)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR L-STEPPED = 1
+         MOVE L-SX TO PL-X
+         MOVE L-SY TO PL-Y
+         MOVE L-SZ TO PL-Z
+         MOVE 2 TO WS-AXIS
+         MOVE WS-CAND(WS-I) TO WS-RISE
+         CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-RISE WS-BLOCKED
+         CALL "PHYS-HORIZONTAL" USING CLIENT-STATE L-DX L-DZ WS-BX WS-BZ
+         COMPUTE WS-STEP = (PL-X - L-SX) ** 2 + (PL-Z - L-SZ) ** 2
+         IF WS-STEP > WS-PLAIN + 0.000000001
+             MOVE 1 TO L-STEPPED
+         END-IF
+     END-PERFORM
+     IF L-STEPPED = 0
          MOVE WS-P1(1) TO PL-X
          MOVE WS-P1(2) TO PL-Y
          MOVE WS-P1(3) TO PL-Z

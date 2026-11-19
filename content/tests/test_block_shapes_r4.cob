@@ -141,6 +141,26 @@
      MOVE "R4 scaffolding: the collision of the table (empty context) is the stable shape" TO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The climbable flag (24 part 1 section 12) is set by the block's class only: a slab and a fence (they have the waterlogged property that the light data reads) are not
+*>   climbable, a ladder and scaffolding are.
+     MOVE "oak_slab" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE "R4 shapes: a slab is not climbable" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BSH-CLIMB(WS-STATE + 1) TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "oak_fence" TO WS-KEY
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE "R4 shapes: a fence is not climbable" TO TL-CASE
+     MOVE BSH-CLIMB(WS-STATE + 1) TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "ladder" TO WS-KEY
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE "R4 shapes: a ladder is climbable" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE BSH-CLIMB(WS-STATE + 1) TO TL-OBSERVED-N
+     PERFORM ASSERT-N
 *>   Another block answers its own collision shape.
      MOVE "stone" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2
