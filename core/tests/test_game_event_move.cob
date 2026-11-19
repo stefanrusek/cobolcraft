@@ -13,6 +13,7 @@
  COPY STDMOBS.
  COPY CITEMS.
  COPY GAMEEVENT.
+ COPY GEMOVE.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-PROW                BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -68,6 +69,15 @@
  01 WS-STRIDER             BINARY-LONG.
  01 WS-MINECART            BINARY-LONG.
  01 WS-VX                  FLOAT-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-POWDER              BINARY-LONG.
+ 01 WS-ALLAY               BINARY-LONG.
+ 01 WS-BEE                 BINARY-LONG.
+ 01 WS-PHANTOM             BINARY-LONG.
+ 01 WS-VEX                 BINARY-LONG.
+ 01 WS-FLAPS               BINARY-LONG.
+ 01 WS-I0                  BINARY-LONG.
  01 WS-RAW                 BINARY-LONG VALUE 0.
  01 WS-PX0                 BINARY-LONG.
  01 WS-PX1                 BINARY-LONG.
@@ -120,6 +130,16 @@
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-STRIDER WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:minecart" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-MINECART WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:powder_snow" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-POWDER
+     MOVE "minecraft:allay" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ALLAY WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:bee" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-BEE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:phantom" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PHANTOM WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:vex" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-VEX WS-ENTITY-ROW WS-STATUS
      MOVE 12001 TO CW-TIME
      MOVE 1000 TO CW-TICKS
      COMPUTE WS-PX0 = WS-BX - 13
@@ -198,7 +218,7 @@
      MOVE 10 TO WS-CALLS
      MOVE 0 TO WS-GROUND
      PERFORM WALK
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "walking through the air: no step, no event" TO WS-WHY
      PERFORM CHECK-LIST
      MOVE "flyDist is 0.6 x the length of the movement summed (10 x 0.18 = 1.8)" TO WS-WHY
@@ -267,7 +287,7 @@
      MOVE 4 TO WS-CALLS
      MOVE 0 TO WS-GROUND
      PERFORM WALK
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "falling in the air posts nothing yet" TO WS-WHY
      PERFORM CHECK-LIST
      MOVE 1250 TO TL-EXPECTED-N
@@ -303,7 +323,7 @@
      MOVE 0.1 TO WS-LEN
      MOVE 5 TO WS-CALLS
      PERFORM WALK
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "example 8: walking on flat ground posts none" TO WS-WHY
      PERFORM CHECK-LIST
      PERFORM FREE-MOB
@@ -317,7 +337,7 @@
      MOVE 1 TO WS-CALLS
      MOVE 1 TO WS-GROUND
      PERFORM WALK
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "a bat landing after a fall posts no hit_ground" TO WS-WHY
      PERFORM CHECK-LIST
      PERFORM FREE-MOB
@@ -339,7 +359,7 @@
      MOVE 0 TO WS-DY
      MOVE 12 TO WS-CALLS
      PERFORM WALK
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "and walking posts no step: no emission pass for emission NONE, moveDist stands still" TO WS-WHY
      PERFORM CHECK-LIST
      MOVE 0 TO TL-EXPECTED-N
@@ -374,7 +394,7 @@
      MOVE 1 TO WS-GROUND
      MOVE 1 TO WS-CALLS
      PERFORM WALK-X
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "landing on the pool floor (still moving down, on the ground) posts no hit_ground" TO WS-WHY
      PERFORM CHECK-LIST
      PERFORM FREE-MOB
@@ -388,6 +408,12 @@
      PERFORM WALK-X
      MOVE " 10:swim" TO WS-EXPECT
      MOVE "above the floor in water, off the ground: moveDist > nextStep posts swim at call 10" TO WS-WHY
+     PERFORM CHECK-LIST
+     MOVE 0 TO WS-LEN
+     MOVE 1 TO WS-CALLS
+     PERFORM WALK-X
+     MOVE SPACES TO WS-EXPECT
+     MOVE "a pass with no movement in water keeps the water state and posts no splash" TO WS-WHY
      PERFORM CHECK-LIST
      PERFORM FREE-MOB
      PERFORM VARYING WS-CY FROM 201 BY 1 UNTIL WS-CY > 204
@@ -436,7 +462,7 @@
      MOVE 0.18 TO WS-LEN
      MOVE 12 TO WS-CALLS
      PERFORM WALK
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      MOVE "a rider posts nothing" TO WS-WHY
      PERFORM CHECK-LIST
      MOVE 0 TO TL-EXPECTED-N
@@ -460,7 +486,7 @@
      MOVE 12 TO WS-CALLS
      PERFORM WALK
      MOVE "a spectator (noPhysics) posts nothing" TO WS-WHY
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      PERFORM CHECK-LIST
      MOVE 0 TO PL-MODE(WS-PLAYER)
      MOVE 2 TO PL-POSE-FLAGS(WS-PLAYER)
@@ -501,9 +527,20 @@
      MOVE 11 TO WS-CALLS
      PERFORM WALK
      MOVE "a swimming player (flag) on dry ground: the step fails, no swim without water" TO WS-WHY
-     MOVE "" TO WS-EXPECT
+     MOVE SPACES TO WS-EXPECT
      PERFORM CHECK-LIST
      MOVE 0 TO PL-SWIMMING(WS-PLAYER)
+     MOVE 5 TO PL-POSE(WS-PLAYER)
+     MOVE 0 TO EN-MOVE-DIST(WS-ROWT) EN-NEXT-STEP(WS-ROWT)
+     MOVE 201 TO EN-Y(WS-ROWT)
+     MOVE 0 TO WS-GROUND
+     MOVE 11 TO WS-CALLS
+     PERFORM WALK
+     MOVE " 10:step" TO WS-EXPECT
+     MOVE "a player in the crouching pose (not the shift key) steps off the ground with no vertical movement" TO WS-WHY
+     PERFORM CHECK-LIST
+     MOVE 0 TO PL-POSE(WS-PLAYER)
+     MOVE 1 TO WS-GROUND
 
 *>  14. The crouching rule: a crouching mob with no vertical movement steps off the ground; a minecart (on rails) does too.
      PERFORM NEW-MOB
@@ -610,6 +647,97 @@
      MOVE EN-FALL-DIST(WS-ROWT) TO TL-OBSERVED-N
      PERFORM CASE-LINE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-AIR
+
+*>  17. Direct programs: powder snow and a ladder are climbable states, stone is not; a step attempt on air fails whatever else holds.
+     MOVE 1 TO WS-I
+     CALL "GAME-EVENT-CLIMBABLE" USING WS-POWDER WS-OK
+     MOVE "powder snow is climbable (isStateClimbable)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "GAME-EVENT-CLIMBABLE" USING WS-STONE WS-OK
+     MOVE "stone is not climbable" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     MOVE 1 TO MV-ON-GROUND
+     MOVE 0 TO MV-SWIMMING MV-CROUCH MV-DY MV-ROW MV-DIM
+     MOVE "zombie" TO MV-KEY
+     CALL "GAME-EVENT-STEP-TRY" USING MV-CTX WS-AIR WS-ONE WS-OK
+     MOVE "a step attempt on air fails even on the ground" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+
+*>  18. The flapping mobs over open air: an allay off the ground every pass, a bee every second tickCount, a vex every fourth, a phantom when (id mod 25 + tickCount) mod 25 = 0.
+     MOVE WS-ALLAY TO WS-TYPE
+     PERFORM NEW-MOB
+     MOVE 210 TO EN-Y(WS-ROWT)
+     MOVE 0.1 TO WS-LEN
+     MOVE 0 TO WS-GROUND
+     MOVE 1000 TO CW-TICKS
+     MOVE SPACES TO WS-LIST
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         COMPUTE CW-TICKS = 1000 + WS-I
+         PERFORM WALK-ONCE
+     END-PERFORM
+     MOVE " 1:flap 2:flap 3:flap" TO WS-EXPECT
+     MOVE "an allay off the ground flaps at every pass" TO WS-WHY
+     PERFORM CHECK-LIST
+     PERFORM FREE-MOB
+     MOVE 1000 TO CW-TICKS
+     MOVE WS-BEE TO WS-TYPE
+     PERFORM NEW-MOB
+     MOVE 210 TO EN-Y(WS-ROWT)
+     MOVE 0.1 TO WS-LEN
+     MOVE 0 TO WS-GROUND
+     MOVE SPACES TO WS-LIST
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         COMPUTE CW-TICKS = 1000 + WS-I
+         PERFORM WALK-ONCE
+     END-PERFORM
+     MOVE " 2:flap 4:flap" TO WS-EXPECT
+     MOVE "a flying bee flaps on every second tickCount" TO WS-WHY
+     PERFORM CHECK-LIST
+     PERFORM FREE-MOB
+     MOVE 1000 TO CW-TICKS
+     MOVE WS-VEX TO WS-TYPE
+     PERFORM NEW-MOB
+     MOVE 210 TO EN-Y(WS-ROWT)
+     MOVE 0.1 TO WS-LEN
+     MOVE 0 TO WS-GROUND
+     MOVE SPACES TO WS-LIST
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+         COMPUTE CW-TICKS = 1000 + WS-I
+         PERFORM WALK-ONCE
+     END-PERFORM
+     MOVE " 4:flap 8:flap" TO WS-EXPECT
+     MOVE "a vex flaps on every fourth tickCount" TO WS-WHY
+     PERFORM CHECK-LIST
+     PERFORM FREE-MOB
+     MOVE 1000 TO CW-TICKS
+     MOVE WS-PHANTOM TO WS-TYPE
+     PERFORM NEW-MOB
+     MOVE 210 TO EN-Y(WS-ROWT)
+     MOVE 0.05 TO WS-LEN
+     MOVE 0 TO WS-GROUND
+     COMPUTE WS-I0 = 25 - FUNCTION MOD(EN-ID(WS-ROWT), 25)
+     MOVE SPACES TO WS-LIST
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 25
+         COMPUTE CW-TICKS = 1000 + WS-I
+         PERFORM WALK-ONCE
+     END-PERFORM
+     MOVE WS-I0 TO WS-NUM
+     MOVE SPACES TO WS-EXPECT
+     STRING " " DELIMITED BY SIZE FUNCTION TRIM(WS-NUM) DELIMITED BY SIZE ":flap" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "a phantom flaps once in 25 ticks, when (id mod 25 + tickCount) mod 25 = 0" TO WS-WHY
+     PERFORM CHECK-LIST
+     PERFORM FREE-MOB
+     MOVE 1000 TO CW-TICKS
      STOP RUN.
 
 *> A new mob of type WS-TYPE at the left end of the floor, on it (feet 201), standing on the ground; the log counter is read before every case.

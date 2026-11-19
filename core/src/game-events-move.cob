@@ -16,7 +16,7 @@
 *>     Open questions (30-8 section 15), the simplest reading: item 17 (packet handler against the self-simulation pass): a player's flag is the packet's own on-ground flag, no extra pass with m = 0 is run; item 7:
 *>     the reflected vertical speed is not computed; the supporting block is the cell holding (x, y - 1e-5, z), the cell below when that is air and the one under it is not (fences, walls), where the legacy
 *>     cell is the same cell; else the cell holding (x, y - 0.2, z).
-*>   GAME-EVENT-ROW-KEY USING tracker row, key out (PIC X(48)): the entity type key of the row without the namespace ("player" for a player).
+*>   GAME-EVENT-ROW-KEY USING tracker row, key out (PIC X(48)): the entity type key of the row as the core's tables hold it (without the namespace; "player" for a player).
 *>   GAME-EVENT-IS-AIR USING block state, flag out: the state is air, cave air or void air (state 0 and the two other air blocks; a state not in the table counts as air).
 
  IDENTIFICATION DIVISION.
@@ -36,9 +36,6 @@
      END-IF
      IF EN-TYPE(L-ROW) >= 0 AND EN-TYPE(L-ROW) < ET-COUNT
          MOVE ET-KEY(EN-TYPE(L-ROW) + 1) TO L-KEY
-         IF L-KEY(1:10) = "minecraft:"
-             MOVE ET-KEY(EN-TYPE(L-ROW) + 1)(11:38) TO L-KEY
-         END-IF
      END-IF
      GOBACK.
  END PROGRAM GAME-EVENT-ROW-KEY.
@@ -56,9 +53,6 @@
      MOVE 1 TO L-FLAG
      IF L-STATE > 0 AND L-STATE < CB-STATE-COUNT
          MOVE CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) TO WS-KEY
-         IF WS-KEY(1:10) = "minecraft:"
-             MOVE CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1)(11:38) TO WS-KEY
-         END-IF
          IF WS-KEY NOT = "air" AND WS-KEY NOT = "cave_air" AND WS-KEY NOT = "void_air"
              MOVE 0 TO L-FLAG
          END-IF
@@ -85,7 +79,7 @@
          MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
          CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK L-FLAG
          MOVE CB-KEY(WS-BLOCK + 1) TO WS-KEY
-         IF WS-KEY = "powder_snow" OR WS-KEY = "minecraft:powder_snow"
+         IF WS-KEY = "powder_snow"
              MOVE 1 TO L-FLAG
          END-IF
      END-IF
@@ -300,9 +294,6 @@
          IF MV-DY < -0.08 AND MV-SHIFT = 0 AND L-SUPPORT > 0 AND L-SUPPORT < CB-STATE-COUNT
              MOVE CB-S-BLOCK(L-SUPPORT + 1) TO WS-BLOCK
              MOVE CB-KEY(WS-BLOCK + 1) TO WS-KEY
-             IF WS-KEY(1:10) = "minecraft:"
-                 MOVE CB-KEY(WS-BLOCK + 1)(11:38) TO WS-KEY
-             END-IF
              MOVE 0 TO WS-BOUNCY WS-N
              INSPECT WS-KEY TALLYING WS-N FOR ALL "_bed "
              IF WS-KEY = "slime_block" OR WS-KEY = "shelf_mushroom" OR WS-N > 0

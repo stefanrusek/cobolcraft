@@ -13,7 +13,7 @@
  PROGRAM-ID. WARDEN-PUSHABLE.
 *> USING warden row, entity row, code out, x, y, z out (FLOAT-LONG): EntitySelector.pushableBy(warden) for one tracker row (20 section 15.5). CODE is the suspect code of the entity (a player row, or 64 + the tracker row)
 *> when it is a candidate, else 0; X Y Z its position. The candidates: a player that is alive and not a spectator (a creative player is one), a standard mob that is alive, and a boat, raft or minecart; an item entity, an
-*> orb, an arrow and the other entities are never candidates (their isPushable is false). isPushable of a living entity is false on a climbable block; a bat is not pushable, a parrot is, a creaking only while its
+*> orb, an arrow and the other entities are never candidates (their isPushable is false). isPushable of a living entity is false on a climbable block; a bat is not pushable (the core has no bat row: it is no standard mob and never a candidate), a parrot is, a creaking only while its
 *> CAN_MOVE flag is set, a horse (the family of AbstractHorse, llamas and camels included) only without a passenger, and another warden only while it is neither digging nor emerging.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -69,8 +69,6 @@
                  COMPUTE L-CODE = CORE-MAX-PLAYERS + L-ROW
                  MOVE SM-KEY(WS-M) TO WS-KEY
                  EVALUATE TRUE
-                     WHEN WS-KEY = "bat"
-                         MOVE 0 TO L-CODE
                      WHEN WS-KEY = "creaking"
                          CALL "CREAKING-FROZEN" USING L-ROW WS-CAN
                          IF WS-CAN = 1

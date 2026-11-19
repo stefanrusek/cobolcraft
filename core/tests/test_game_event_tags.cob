@@ -151,6 +151,9 @@
  01 WS-EX                  FLOAT-LONG.
  01 WS-EY                  FLOAT-LONG.
  01 WS-EZ                  FLOAT-LONG.
+ 01 WS-EX2                 FLOAT-LONG.
+ 01 WS-EY2                 FLOAT-LONG.
+ 01 WS-EZ2                 FLOAT-LONG.
  01 WS-LX                  FLOAT-LONG.
  01 WS-LY                  FLOAT-LONG.
  01 WS-LZ                  FLOAT-LONG.
@@ -509,7 +512,10 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
      PERFORM CASE-LINE
-     CALL "GAME-EVENT-RAY" USING WS-DIM WS-EX WS-EY WS-EZ WS-EX WS-EY WS-EZ WS-HIT
+     MOVE WS-EX TO WS-EX2
+     MOVE WS-EY TO WS-EY2
+     MOVE WS-EZ TO WS-EZ2
+     CALL "GAME-EVENT-RAY" USING WS-DIM WS-EX WS-EY WS-EZ WS-EX2 WS-EY2 WS-EZ2 WS-HIT
      MOVE "two equal points visit no cell" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
