@@ -192,6 +192,13 @@
      COMPUTE TL-EXPECTED-N = 64 * 100 + 0
      COMPUTE TL-OBSERVED-N = MN-WSLOT-COUNT(WS-ROW, 1) * 100 + VL-O-USES(WS-SLOT, 3)
      PERFORM CHECK
+*>   An empty slot: nothing happens (the template of 40-1 3.6 returns the empty stack).
+     MOVE 1 TO WS-CLICK-SLOT
+     PERFORM SHIFT-CLICK
+     MOVE "acceptance bugmerchantshift 40-1 3.6 shift click on the empty second payment slot changes nothing" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 64 * 100 + 0
+     COMPUTE TL-OBSERVED-N = MN-WSLOT-COUNT(WS-ROW, 1) * 100 + MN-WSLOT-COUNT(WS-ROW, 2)
+     PERFORM CHECK
      STOP RUN.
 
 *> A villager of level 1 with its three trades, unused, 8 xp; an empty inventory with 64 emeralds in the first main inventory slot; the payments back in the inventory.
