@@ -14,6 +14,8 @@
 *>   CB-LIGHT    the light the default state emits; CB-S-LIGHT is the light of each state: a plain number in the
 *>               row's light text is that number for every state, "N ... if lit, else 0" is N where the state's
 *>               property lit is true; any other text is 0 (the light engine of 32 will define the rest).
+*>   CB-INSTRUMENT the note block instrument of the block (30-5 section 8.1 number 0 to 26, from the Instrument column of 24; blank is harp; the dyed collections that say "see 5" take the rule of 24 part 5).
+*>   CB-PUSH     the push reaction (30-3 section 5.4): 0 PUSH_PULL, 1 PUSH, 2 POPPED, 3 IMMOVEABLE (the Push column where filled, else the lists of 30-3).
 *> CB-EPOCH rises by one at every BLOCKS-OPEN, so a program that caches ids resolved from keys can tell.
  78 CB-MAX-BLOCKS         VALUE 1400.
  78 CB-MAX-STATES         VALUE 40000.
@@ -35,6 +37,8 @@
        10 CB-STATES          BINARY-LONG.
        10 CB-DEFAULT-STATE   BINARY-LONG.
        10 CB-REPLACEABLE     BINARY-LONG.
+       10 CB-INSTRUMENT      BINARY-LONG.
+       10 CB-PUSH            BINARY-LONG.
     05 CB-STATE OCCURS 40000 TIMES.
        10 CB-S-BLOCK         BINARY-SHORT UNSIGNED.
        10 CB-S-LIGHT         BINARY-CHAR UNSIGNED.
