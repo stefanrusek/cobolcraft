@@ -3,7 +3,9 @@
 *> surface, carver and ore stages of docs/protocol/10 and 11) takes its place as the stages are built, and
 *> until the terrain data are loaded it is the void placeholder (WORLDGEN-VOID-CHUNK of worldgen.cob); with them it is the
 *> resumable pipeline of gen-job.cob (GEN-STANDARD-INSTALL). The cobolcraft type keeps
-*> worldgen.cob (FR-033). The world type is the CS-WORLD-TYPE of the settings the world was opened with.
+*> worldgen.cob (FR-033). The world type is the CW-WORLD-TYPE the world decided at its open (WORLD-TYPE-DECIDE: the type of its level.dat), never the
+*> CS-WORLD-TYPE the host asked for: the client asks for cobolcraft when it opens a saved world from the list, and a superflat world reopened that way
+*> made the standard terrain of every chunk of its first batch inside the join.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDGEN-STANDARD-CHUNK.
@@ -11,7 +13,6 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY COREAPI.
  01 WS-READY               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -20,11 +21,10 @@
  01 L-CHUNK                PIC X.
  01 L-MARKER-Y             BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y.
-     MOVE CW-SETTINGS TO CORE-SETTINGS
      EVALUATE TRUE
-         WHEN CS-WORLD-TYPE = "debug"
+         WHEN CW-WORLD-TYPE = "debug"
              CALL "WORLDGEN-DEBUG-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
-         WHEN CS-WORLD-TYPE = "superflat"
+         WHEN CW-WORLD-TYPE = "superflat"
              CALL "WORLDGEN-FLAT-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
          WHEN OTHER
              CALL "GEN-DATA-READY" USING WS-READY
@@ -39,18 +39,15 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-IS-DEBUG.
-*> USING flag out (BINARY-LONG): 1 when the open world is of the hidden debug type (the CS-WORLD-TYPE of its
-*> settings), else 0.
+*> USING flag out (BINARY-LONG): 1 when the open world is of the hidden debug type (its CW-WORLD-TYPE), else 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY COREAPI.
  LINKAGE SECTION.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-FLAG.
-     MOVE CW-SETTINGS TO CORE-SETTINGS
      MOVE 0 TO L-FLAG
-     IF CS-WORLD-TYPE = "debug"
+     IF CW-WORLD-TYPE = "debug"
          MOVE 1 TO L-FLAG
      END-IF
      GOBACK.

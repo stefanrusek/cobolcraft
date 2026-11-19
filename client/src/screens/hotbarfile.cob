@@ -1,6 +1,6 @@
 *> The saved hotbars file hotbar.nbt (docs/protocol/40-menus-7-creative-inventory.md section 10): a gzip NBT compound with DataVersion (Int 5023, the current world data version of 07 section 7) and the
 *> entries "0" to "8", each a list of nine compounds: an empty slot is the empty compound, an item the compound {id: String namespace:path (the namespace is not checked when reading; the stand-in items are cobolcraft:), count: Int}. A missing, unreadable or malformed file keeps nine
-*> empty hotbars (the failures are only logged in the original, so nothing is shown here); a write that fails is ignored. The compression is gzip as for the other data files of the game folder (Open
+*> empty hotbars (the failures are only logged in the original, so nothing is shown here); a write that fails is logged as one `ERROR hotbar: <path> cannot be written` line (FR-012; a full or unwritable disk) and the game goes on. The compression is gzip as for the other data files of the game folder (Open
 *> question 7 of 40-7 leaves it unconfirmed); the stored data version is read and not used (no data fixer: an older version only reads what the layout above gives).
 
  IDENTIFICATION DIVISION.
@@ -75,6 +75,9 @@
      END-PERFORM
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      CALL "NBT-FILE-WRITE" USING WS-PATH WS-LENGTH PB-BUFFER WS-OUTCOME
+     IF WS-OUTCOME NOT = 0
+         DISPLAY "ERROR hotbar: " WS-PATH(1:WS-LENGTH) " cannot be written"
+     END-IF
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM HOTBAR-FILE-SAVE.
