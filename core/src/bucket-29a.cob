@@ -3,9 +3,10 @@
 *> in creative), sampled every 0.02: blocks with an outline (every non-air state that holds no fluid) are hit; a liquid block is ignored unless the
 *> bucket is empty and it is a source (SOURCE_ONLY), which it then picks up (the cell becomes air, the bucket the filled one; a stack of empty buckets
 *> gives one and the filled bucket goes into the inventory). A filled bucket places a source (water or lava) in the cell before the hit (the ray passed it: air or a
-*> liquid, replaceable both) and becomes an empty bucket. A creative player keeps the stack. Not done:
-*> LiquidBlockContainer targets (waterlogging by bucket), evaporation in the Nether, mob buckets, powder snow, the sounds and game events, the
-*> destroyed block's drops, spawn protection.
+*> liquid, replaceable both) and becomes an empty bucket; a water bucket aimed at a dry block with the waterlogged property waterlogs it instead (29a section 5, the
+*> block is the container), and an empty bucket aimed at a waterlogged block takes the water and leaves the block dry (kelp and seagrass hold water but give none to a bucket;
+*> the bubble column is taken). A creative player keeps the stack. Not done: evaporation in the Nether of a waterlogged block, mob buckets, powder snow, the sounds and game events,
+*> spawn protection.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUCKET-USE.
@@ -58,6 +59,14 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-EVAPORATES          BINARY-LONG.
  01 WS-FLAG-CODE           BINARY-LONG VALUE 6.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-BUBBLE-KEY          PIC X(48) VALUE "minecraft:bubble_column".
+ 01 WS-IS-BUBBLE           BINARY-LONG.
+ 01 WS-WL-NAME             PIC X(24) VALUE "waterlogged".
+ 01 WS-WL-TEXT             PIC X(32).
+ 01 WS-WL-MODE             BINARY-LONG VALUE 2.
+ 01 WS-WL-STATE            BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -139,7 +148,18 @@
              MOVE "lava_bucket" TO WS-FILLED-KEY
          END-IF
          CALL "CONTENT-ITEM-BY-KEY" USING WS-FILLED-KEY WS-FILLED-ID WS-ITEM-ROW WS-STATUS
-         CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-AIR
+*>       The source is held by the block: a waterlogged block stays and dries (BucketPickup of SimpleWaterloggedBlock), a bubble column goes, kelp and seagrass keep their water.
+         CALL "FLUID-CONTAINER" USING WS-STATE WS-CLASS WS-FULL
+         CALL "FLUID-KEY-IS" USING WS-STATE WS-BUBBLE-KEY WS-IS-BUBBLE
+         MOVE WS-AIR TO WS-NEW-STATE
+         IF WS-CLASS = 2
+             MOVE "false" TO WS-WL-TEXT
+             CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-NEW-STATE
+         END-IF
+         IF WS-CLASS = 1 AND WS-IS-BUBBLE = 0
+             GOBACK
+         END-IF
+         CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-NEW-STATE
          IF PL-MODE(WS-ROW) = 0
              IF PL-SLOT-COUNT(WS-ROW, WS-SLOT) = 1
                  MOVE WS-FILLED-ID TO PL-SLOT-ITEM(WS-ROW, WS-SLOT)
@@ -152,6 +172,22 @@
              CALL "INV-SLOT-SEND" USING L-ID WS-HELD
          END-IF
          GOBACK
+     END-IF
+*>   A water bucket aimed at a dry block that can be waterlogged fills the block (it is the container: the hit cell, not the cell before it).
+     IF WS-MODE = 1
+         CALL "FLUID-CONTAINER" USING WS-STATE WS-CLASS WS-FULL
+         IF WS-CLASS = 2 AND WS-FULL = 0
+             MOVE "true" TO WS-WL-TEXT
+             CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-WL-STATE
+             CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-WL-STATE
+             IF PL-MODE(WS-ROW) = 0
+                 CALL "CONTENT-ITEM-BY-KEY" USING WS-EMPTY-KEY WS-EMPTY-ID WS-ITEM-ROW WS-STATUS
+                 MOVE WS-EMPTY-ID TO PL-SLOT-ITEM(WS-ROW, WS-SLOT)
+                 COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
+                 CALL "INV-SLOT-SEND" USING L-ID WS-HELD
+             END-IF
+             GOBACK
+         END-IF
      END-IF
 *>   A filled bucket places a source in the cell before the hit: the ray passed it, so it holds air or a liquid (a flowing cell or a source of the
 *>   other fluid), both replaceable.

@@ -70,6 +70,7 @@
  01 WS-LINE                PIC X(160).
  01 WS-LINE-LENGTH         BINARY-LONG.
  01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
  01 WS-FATAL               PIC X(40) VALUE Z"chunk cache: 4096 chunks loaded".
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -136,6 +137,10 @@
      CALL "GBE-APPLY" USING L-DIM L-ROW
 *>   the entities the structures of this chunk asked for, made once on this thread (gen-ent.cob)
      CALL "GENT-APPLY" USING L-DIM L-ROW
+*>   the water and lava the generators wrote as sources flow: a fluid tick for each cell that can spread (fluid-post.cob, 36-1 6.5 placeBlock, 10 section 9)
+     IF WS-FOUND = 0
+         CALL "CHUNK-FLUID-POST" USING L-ROW WS-TICKS
+     END-IF
      GOBACK.
  END PROGRAM WORLD-CHUNK-LOAD.
 
