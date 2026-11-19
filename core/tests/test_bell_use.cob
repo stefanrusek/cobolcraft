@@ -63,6 +63,7 @@
     05 FILLER PIC X(32) VALUE "floor       north   1 050 0".
     05 FILLER PIC X(32) VALUE "floor       north   0 050 0".
     05 FILLER PIC X(32) VALUE "floor       north   3 090 0".
+    05 FILLER PIC X(32) VALUE "floor       south   3 050 1".
     05 FILLER PIC X(32) VALUE "floor       east    5 080 1".
     05 FILLER PIC X(32) VALUE "floor       east    3 050 0".
     05 FILLER PIC X(32) VALUE "ceiling     north   4 050 1".
@@ -71,7 +72,7 @@
     05 FILLER PIC X(32) VALUE "double_wall west    2 050 1".
     05 FILLER PIC X(32) VALUE "double_wall west    5 050 0".
  01 WS-CASES REDEFINES WS-CASES-DATA.
-    05 WS-CASE-ROW OCCURS 13 TIMES.
+    05 WS-CASE-ROW OCCURS 14 TIMES.
        10 WS-C-ATT         PIC X(12).
        10 WS-C-FAC         PIC X(8).
        10 WS-C-FACE        PIC 9.
@@ -99,7 +100,7 @@
      COMPUTE WS-BX = WS-X0 + 24
      COMPUTE WS-BY = WS-FLOOR + 1
      COMPUTE WS-BZ = WS-Z0 + 24
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 13
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 14
          MOVE WS-C-ATT(WS-I) TO WS-ATT
          MOVE WS-C-FAC(WS-I) TO WS-FAC
          MOVE WS-STATE0 TO WS-STATE
