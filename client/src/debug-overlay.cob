@@ -1,5 +1,5 @@
 *> The F3 debug overlay (US17; 13 §5; FR-018). F3 pressed toggles it (the release rule, the F3 + key combinations and the entry profile of
-*> 13 §5.1 and 5.2 are not modelled: every entry listed below is on while the overlay is). DEBUG-OVERLAY-INPUT runs every frame: the toggle, and
+*> 13 §5.2 are not modelled: every entry listed below is on while the overlay is; the release rule and F3+B of 13 §5.1 are: F3+B toggles CL-HITBOXES). DEBUG-OVERLAY-INPUT runs every frame: the toggle, and
 *> the frame rate (frames counted over each second). DEBUG-OVERLAY-ADD adds the lines to the world screen as labels, 2 GUI pixels from the
 *> edge, 9 pixels apart: on the left the game version, a blank line, then XYZ, Block, Chunk (with the region file), Facing, Section-relative and
 *> Speed (13 §5.4 formulas); on the right, right-aligned, the frame rate, a blank line, Day, Client Light and the targeted block (its
@@ -11,12 +11,26 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CCSHIM.
+ COPY CLCONST.
  01 WS-ELAPSED             BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+*>   13 section 5.1: F3 held with another key runs a combination (F3+B toggles the entity hitboxes) and swallows the key; releasing F3 toggles
+*>   the overlay unless a combination was used while it was held. A frame that holds both the press and the release (a tap) toggles at once.
      IF IN-KEY-PRESSED(CC-KEY-F3 + 1) = 1
-         COMPUTE CL-DEBUG = 1 - CL-DEBUG
+         MOVE 1 TO CL-F3-HELD
+         MOVE 0 TO CL-F3-USED
+     END-IF
+     IF CL-F3-HELD = 1 AND IN-KEY-PRESSED(CC-KEY-B + 1) = 1 AND SM-SCREEN = SCR-WORLD
+         COMPUTE CL-HITBOXES = 1 - CL-HITBOXES
+         MOVE 1 TO CL-F3-USED
+     END-IF
+     IF CL-F3-HELD = 1 AND IN-KEY-DOWN(CC-KEY-F3 + 1) = 0
+         IF CL-F3-USED = 0
+             COMPUTE CL-DEBUG = 1 - CL-DEBUG
+         END-IF
+         MOVE 0 TO CL-F3-HELD
      END-IF
      COMPUTE WS-ELAPSED = CL-NOW-MS - CL-FPS-AT
      IF WS-ELAPSED >= 1000

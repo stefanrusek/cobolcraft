@@ -31,6 +31,9 @@
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
+    05 CL-HITBOXES           PIC 9.           *> 1 = the entity hitboxes are drawn (F3+B, 13 section 5.1; hitbox-mesh.cob)
+    05 CL-F3-HELD            PIC 9.           *> 1 = F3 went down and has not been released yet (13 section 5.1: the release toggles the overlay)
+    05 CL-F3-USED            PIC 9.           *> 1 = a combination key was used while F3 was held (the release then does not toggle the overlay)
     05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
     05 CL-FPS-AT             BINARY-DOUBLE.   *> the clock when CL-FPS was last measured
     05 CL-FPS-FRAMES         BINARY-DOUBLE.   *> CL-FRAMES then
@@ -1408,6 +1411,21 @@
           15 RL-HL-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-HL-G         FLOAT-SHORT.
           15 RL-HL-BLUE      FLOAT-SHORT.
+*>     The entity hitboxes of the frame (F3+B; eye-relative, texture 2 white swatch; hitbox-mesh.cob): 64 boxes of 144 vertices.
+       10 RL-HB-COUNT        BINARY-LONG.
+       10 RL-HB-UPLOADED     BINARY-LONG.
+       10 RL-HB-VERTEX OCCURS 9216 TIMES.
+          15 RL-HB-X         FLOAT-SHORT.
+          15 RL-HB-Y         FLOAT-SHORT.
+          15 RL-HB-Z         FLOAT-SHORT.
+          15 RL-HB-U         FLOAT-SHORT.
+          15 RL-HB-V         FLOAT-SHORT.
+          15 RL-HB-B         FLOAT-SHORT.
+          15 RL-HB-A         FLOAT-SHORT.
+          15 RL-HB-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HB-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HB-G         FLOAT-SHORT.
+          15 RL-HB-BLUE      FLOAT-SHORT.
 *>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
        10 RL-BO-COUNT        BINARY-LONG.
        10 RL-BO-UPLOADED     BINARY-LONG.
