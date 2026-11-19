@@ -13,6 +13,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
+ COPY CORESTATE.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-FLAG                 BINARY-LONG.
@@ -21,6 +22,11 @@
 *>   the Nether is fed too (T6301): its chunks cost about 75 ms each, so a join or a move that made and sent the whole view in one tick stopped the game
 *>   for over a minute at view distance 12 (the queue and the workers make them over the following ticks)
      IF L-FLAG = 0 AND DM-GENERATOR(L-DIM) = DIM-GEN-NETHER
+         MOVE 1 TO L-FLAG
+     END-IF
+*>   so is the overworld of a superflat world (lane bughang): a flat chunk with its light costs 40 to 180 ms, so the first batch of the client's view (289
+*>   chunks at its view distance 8) froze the window inside the join for a minute or more. The queue makes the chunk whole (WORLD-CHUNK-LOAD, the chunk budget).
+     IF L-FLAG = 0 AND DM-GENERATOR(L-DIM) = DIM-GEN-STANDARD AND CW-WORLD-TYPE = "superflat"
          MOVE 1 TO L-FLAG
      END-IF
      GOBACK.

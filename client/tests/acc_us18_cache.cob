@@ -47,6 +47,8 @@
  01 WS-GREY-LENGTH         BINARY-LONG VALUE 26.
  01 WS-PIXEL               PIC X(32).
  01 WS-CACHED              PIC X(256).
+ 01 WS-CAPTURE             PIC X(256) VALUE "build/client-test-cache-out.txt".
+ 01 WS-CAPTURED            PIC X(4096).
  PROCEDURE DIVISION.
      MOVE LOW-VALUES TO WS-COMMAND
      STRING "rm -rf build/client-test-cache-www build/client-test-cache-www.log && mkdir -p "
@@ -148,6 +150,25 @@
      MOVE "N" TO TL-MODE
      MOVE 2 TO TL-EXPECTED-N
      MOVE WS-REQUESTS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A download that cannot be kept (the cache folder is a plain file, as a full or unwritable disk fails the same write) fails like a bad hash:
+*>   accepted, then failed download (action 2), never downloaded or loaded; the ERROR line names the file.
+     CALL "SYSTEM" USING "rm -rf build/client-test-cache/downloads; echo x > build/client-test-cache/downloads"
+     CALL "TEST-CAPTURE-START" USING WS-CAPTURE
+     PERFORM JOIN
+     CALL "TEST-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     MOVE "acceptance US18-8 a download that cannot be written to the cache is answered failed download, not downloaded or loaded" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "0600112233445566778899aabbccddee0103 0600112233445566778899aabbccddee0102" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-READ(1:75) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US18-8 a download that cannot be written to the cache prints one ERROR pack line naming the file" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     INSPECT WS-CAPTURED TALLYING TL-OBSERVED-N FOR ALL
+         "ERROR pack: build/client-test-cache/downloads/00112233-4455-6677-8899-aabbccddee01/"
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "TEST-TESTSRV-STOP"
      STOP RUN.

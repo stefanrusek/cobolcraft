@@ -78,6 +78,11 @@
  01 WS-DAY-EAVES           BINARY-LONG VALUE 0.
  01 WS-NIGHT-HOSTILE       BINARY-LONG VALUE 0.
  01 WS-BAD-FLOOR           BINARY-LONG VALUE 0.
+ 01 WS-LX                 BINARY-LONG.
+ 01 WS-LZ                 BINARY-LONG.
+ 01 WS-LCX                BINARY-LONG.
+ 01 WS-LCZ                BINARY-LONG.
+ 01 WS-LROW               BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -120,6 +125,14 @@
      MOVE -60 TO PL-Y(WS-PLAYER)
      COMPUTE PL-Z(WS-PLAYER) = WS-VZ * 16 + 8.5
      CALL "CHUNKS-FOLLOW" USING WS-CONN
+*>   A superflat overworld is fed by the generation queue over the ticks (lane bughang), so the 5 x 5 chunks round the village start are made here, at once.
+     PERFORM VARYING WS-LZ FROM -2 BY 1 UNTIL WS-LZ > 2
+         PERFORM VARYING WS-LX FROM -2 BY 1 UNTIL WS-LX > 2
+             COMPUTE WS-LCX = WS-VX + WS-LX
+             COMPUTE WS-LCZ = WS-VZ + WS-LZ
+             CALL "WORLD-CHUNK-LOAD" USING WS-DIM WS-LCX WS-LCZ WS-LROW
+         END-PERFORM
+     END-PERFORM
      PERFORM DRAIN
      DISPLAY "CENSUS after chunk generation"
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT

@@ -36,6 +36,8 @@
  01 WS-ID-LEN             BINARY-LONG.
  01 WS-E1                  PIC -(7)9.
  01 WS-E2                  PIC -(7)9.
+ 01 WS-CAPTURE             PIC X(256) VALUE "build/client-test-hotbar-out.txt".
+ 01 WS-CAPTURED            PIC X(4096).
  PROCEDURE DIVISION.
      CALL "SYSTEM" USING "rm -rf build/client-test-hotbar; mkdir -p build/client-test-hotbar"
      CALL "CL-INIT" USING CLIENT-STATE
@@ -202,6 +204,19 @@
      MOVE "acceptance US12 40-7§10 a garbage hotbar.nbt keeps nine empty hotbars" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE CR-HB-COUNT(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A save that cannot be written (the path is a directory, as an unwritable or full disk fails the same write) is one ERROR line, not silence
+*>   (FR-012): the game goes on and the hotbar stays in memory.
+     CALL "SYSTEM" USING "rm -rf build/client-test-hotbar/hotbar.nbt; mkdir build/client-test-hotbar/hotbar.nbt"
+     CALL "TEST-CAPTURE-START" USING WS-CAPTURE
+     CALL "CREATIVE-HOTBAR-SAVE" USING CLIENT-STATE WS-K
+     CALL "TEST-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     MOVE "acceptance US12 40-7§10 a hotbar.nbt that cannot be written prints one ERROR hotbar line naming the file" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "ERROR hotbar: build/client-test-hotbar/hotbar.nbt cannot be written" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE FUNCTION TRIM(WS-CAPTURED(1:90)) TO TL-OBSERVED
+     INSPECT TL-OBSERVED REPLACING ALL X"0A" BY SPACE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-HOTBAR-FILE.
