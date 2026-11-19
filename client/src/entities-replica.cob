@@ -321,7 +321,9 @@
                  END-IF
 *>               The item stack of a stand-in loose item is entry 0; the item entity of a standard world has it as entry 8 (21 App A DATA_ITEM).
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
-                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND EN-KEY(WS-ROW) = "item")
+                         AND (MD-MD-INDEX = 0 OR (MD-MD-INDEX = 8 AND EN-VANILLA(WS-ROW) = 1 AND (EN-KEY(WS-ROW) = "item" OR "snowball" OR "egg"
+                                 OR "ender_pearl" OR "splash_potion" OR "lingering_potion" OR "experience_bottle" OR "eye_of_ender" OR "fireball"
+                                 OR "small_fireball" OR "firework_rocket" OR "ominous_item_spawner"))
                              OR (MD-MD-INDEX = 9 AND EN-VANILLA(WS-ROW) = 1 AND (EN-KEY(WS-ROW) = "item_frame" OR "glow_item_frame")))
                      MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
                      MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
@@ -341,6 +343,10 @@
 *>               A mob's flags byte (entry 15: bit 4 aggressive, 54 section 2.3) and an ageable mob's baby flag (entry 16, BOOLEAN).
                  IF WS-ROW > 0 AND MD-MD-INDEX = 15 AND MD-MD-SERIALIZER = PB-MDS-BYTE
                      MOVE MD-MD-INT TO EN-MOB-FLAGS(WS-ROW)
+                 END-IF
+*>               A firework rocket's shot-at-angle flag (entry 10, BOOLEAN, 21 Appendix A) is kept in EN-X1 (34-9 section 7.2).
+                 IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-BOOLEAN AND MD-MD-INDEX = 10 AND EN-KEY(WS-ROW) = "firework_rocket"
+                     MOVE MD-MD-INT TO EN-X1(WS-ROW)
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-BOOLEAN
                      CALL "ENTITY-BABY-INDEX" USING EN-KEY(WS-ROW) WS-BABY-INDEX

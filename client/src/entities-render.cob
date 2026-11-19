@@ -738,6 +738,20 @@
              CALL "ENTITY-FRAME-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
          END-IF
      END-PERFORM
+*>   Thrown items and the firework rocket (34-9 section 7) and the ominous item spawner (9.3).
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1
+             EVALUATE EN-KEY(WS-R)
+                 WHEN "snowball" WHEN "egg" WHEN "ender_pearl" WHEN "splash_potion" WHEN "lingering_potion" WHEN "experience_bottle"
+                 WHEN "eye_of_ender" WHEN "fireball" WHEN "small_fireball" WHEN "firework_rocket"
+                     CALL "ENTITY-THROWN-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "ominous_item_spawner"
+                     CALL "ENTITY-SPAWNER-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN OTHER
+                     CONTINUE
+             END-EVALUATE
+         END-IF
+     END-PERFORM
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE
      CALL "ENTITY-FIRE-MESH" USING CLIENT-STATE L-EYE-TABLE
      GOBACK.
@@ -928,6 +942,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-F-IN.
+    05 WS-FI               FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-F-OUT.
+    05 WS-FO               FLOAT-LONG OCCURS 64 TIMES.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -1022,18 +1040,9 @@
      COMPUTE WS-AGE = CL-NOW-MS / 50
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1 AND EN-KEY(WS-R) = "item" AND EN-STACK-COUNT(WS-R) > 0
-             EVALUATE TRUE
-                 WHEN EN-STACK-COUNT(WS-R) <= 1
-                     MOVE 1 TO WS-COPIES
-                 WHEN EN-STACK-COUNT(WS-R) <= 16
-                     MOVE 2 TO WS-COPIES
-                 WHEN EN-STACK-COUNT(WS-R) <= 32
-                     MOVE 3 TO WS-COPIES
-                 WHEN EN-STACK-COUNT(WS-R) <= 48
-                     MOVE 4 TO WS-COPIES
-                 WHEN OTHER
-                     MOVE 5 TO WS-COPIES
-             END-EVALUATE
+             MOVE EN-STACK-COUNT(WS-R) TO WS-FI(1)
+             CALL "EF9-ITEM-COPIES" USING WS-F-IN WS-F-OUT
+             MOVE WS-FO(1) TO WS-COPIES
              IF RL-GI-COUNT + 12 * WS-COPIES <= CL-MAX-GI-VERTICES
                  CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-SPRITE
                  MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE

@@ -95,8 +95,12 @@ class RT:
                  'CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH')
     def mesh(self):
         self.raw('CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE', 'MOVE RL-EN-COUNT TO WS-LAST', 'CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE')
-    def extent(self, name, ext, n=None):
-        if n is not None: self.check(name + ' vertices', n, 'RL-EN-COUNT')
+    def gimesh(self, count=None, item=4):
+        self.raw('MOVE %d TO EN-STACK-ITEM(1)' % item)
+        if count is not None: self.raw('MOVE %d TO EN-STACK-COUNT(1)' % count)
+        self.raw('CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE', 'MOVE RL-GI-COUNT TO WS-LAST', 'CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE')
+    def extent(self, name, ext, n=None, count='RL-EN-COUNT'):
+        if n is not None: self.check(name + ' vertices', n, count)
         for k, lab in enumerate(('min x', 'max x', 'min y', 'max y', 'min z', 'max z')):
             self.check('%s %s (thousandths)' % (name, lab), ext[k], 'WS-R(%d)' % (k + 1))
     def render(self):
