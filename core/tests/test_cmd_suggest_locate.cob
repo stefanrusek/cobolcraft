@@ -32,6 +32,10 @@
  01 WS-VILLAGES            BINARY-LONG.
  01 WS-HASHES              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(112).
+ 01 WS-TAG-COUNT           BINARY-LONG.
+ 01 WS-TAG-NAMES.
+    05 WS-TAG-NAME         PIC X(64) OCCURS 256 TIMES.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE SPACES TO WS-ENV
@@ -150,6 +154,32 @@
      PERFORM HAS-WORD
      MOVE "minecraft:ancient_city" TO WS-WORD
      PERFORM HAS-WORD
+
+*>   the tag lister: a registry with a tag folder, one without, one of another namespace
+     MOVE SPACES TO WS-REGISTRY
+     MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
+     CALL "BR-SUGGEST-TAGS" USING WS-REGISTRY WS-TAG-COUNT WS-TAG-NAMES
+     MOVE "suggest locate: the structure tags are listed (more than 10, the first is minecraft:abandoned_camp)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-TAG-COUNT > 10 AND WS-TAG-NAME(1) = "minecraft:abandoned_camp"
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-REGISTRY
+     MOVE "minecraft:worldgen/no_such_registry" TO WS-REGISTRY
+     CALL "BR-SUGGEST-TAGS" USING WS-REGISTRY WS-TAG-COUNT WS-TAG-NAMES
+     MOVE "suggest locate: a registry without a tag folder has no tags" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-TAG-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-REGISTRY
+     MOVE "cobolcraft:worldgen/structure" TO WS-REGISTRY
+     CALL "BR-SUGGEST-TAGS" USING WS-REGISTRY WS-TAG-COUNT WS-TAG-NAMES
+     MOVE "suggest locate: a registry of another namespace has no tags" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-TAG-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> The line WS-LINE (WS-LENGTH bytes) is asked about at its end and the answer is in WS-TEXT.
