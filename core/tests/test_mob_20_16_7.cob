@@ -54,7 +54,17 @@
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-BAD                 BINARY-LONG.
  01 WS-PICKED              BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
  01 WS-DOT                 FLOAT-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-LO-X                BINARY-LONG.
+ 01 WS-HI-X                BINARY-LONG.
+ 01 WS-LO-Z                BINARY-LONG.
+ 01 WS-HI-Z                BINARY-LONG.
  01 WS-DANGER              BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-LABEL               PIC X(160).
@@ -183,6 +193,60 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-MOB
+
+
+*>   Water in the candidate cells is a malus (WATER is not 0): with the whole layer of water around the breeze no candidate is valid.
+     MOVE "minecraft:water" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-WATER
+     COMPUTE WS-Y = WS-FY + 1
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-MOB
+     COMPUTE WS-LO-X = WS-FX + 12
+     COMPUTE WS-HI-X = WS-FX + 28
+     COMPUTE WS-LO-Z = WS-FZ + 12
+     COMPUTE WS-HI-Z = WS-FZ + 28
+     COMPUTE WS-BY = WS-FY + 1
+     PERFORM VARYING WS-BX FROM WS-LO-X BY 1 UNTIL WS-BX > WS-HI-X
+         PERFORM VARYING WS-BZ FROM WS-LO-Z BY 1 UNTIL WS-BZ > WS-HI-Z
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-WATER
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO WS-PICKED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 30
+         CALL "BREEZE-AWAY-PICK" USING WS-MOB WS-TX WS-TZ WS-OK WS-BX WS-BY WS-BZ
+         ADD WS-OK TO WS-PICKED
+     END-PERFORM
+     MOVE "acceptance US15 20§16.5 water in every candidate cell is a malus: no pick" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-PICKED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-BY = WS-FY + 1
+     PERFORM VARYING WS-BX FROM WS-LO-X BY 1 UNTIL WS-BX > WS-HI-X
+         PERFORM VARYING WS-BZ FROM WS-LO-Z BY 1 UNTIL WS-BZ > WS-HI-Z
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+         END-PERFORM
+     END-PERFORM
+
+*>   The slide point (16.5): a target 3 blocks away (inside the inner circle): the away cell when in sight and farther from the target, else the point behind it or the middle-circle point; a target 6
+*>   blocks away: the point behind it (head yaw 0: on its -z side) or the middle-circle point. 40 draws each: the point is always 4 to 8 blocks from the target (the away cell: farther than the breeze, within 5 blocks per axis of it: at most 10.2 from the target).
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
+         COMPUTE WS-TX = WS-X + 3 * WS-K
+         MOVE WS-TX TO PL-X(WS-PLAYER)
+         MOVE WS-Y TO PL-Y(WS-PLAYER)
+         MOVE WS-Z TO PL-Z(WS-PLAYER)
+         MOVE 0 TO PL-YAW(WS-PLAYER) WS-BAD
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
+             CALL "BREEZE-SLIDE-POINT" USING WS-MOB WS-PLAYER WS-PX WS-PY WS-PZ
+             COMPUTE WS-DIST = FUNCTION SQRT((WS-PX - WS-TX) ** 2 + (WS-PZ - WS-Z) ** 2)
+             IF WS-DIST > 10.2 OR WS-DIST < 2.99 OR (WS-K = 2 AND (WS-DIST < 3.99 OR WS-DIST > 8.01))
+                 ADD 1 TO WS-BAD
+             END-IF
+         END-PERFORM
+         MOVE "acceptance US15 20§16.5 40 slide points of a target 3 or 6 blocks away lie within the allowed band of it" TO TL-CASE
+         MOVE 0 TO TL-EXPECTED-N
+         MOVE WS-BAD TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
      CALL "ENTITY-REMOVE" USING WS-MOB
 
 *>   The snap: from 3 blocks above the floor top the ray down hits the top face (y = FY + 1): containing is the cell FY + 1, above is FY + 2. A point inside a ceiling block of the cell above: the ray down finds nothing in 10 blocks over air, then up.

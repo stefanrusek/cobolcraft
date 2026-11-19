@@ -34,7 +34,7 @@
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
- 01 WS-FSIZE               BINARY-LONG VALUE 40.
+ 01 WS-FSIZE               BINARY-LONG VALUE 64.
  01 WS-FKIND               BINARY-LONG VALUE 1.
  01 WS-DISTANCE            BINARY-LONG.
  01 WS-WATER               BINARY-LONG.
@@ -63,6 +63,12 @@
  01 WS-SCALE               FLOAT-LONG.
  01 WS-KEY24               PIC X(24).
  01 WS-LABEL               PIC X(160).
+ 01 WS-HONEY               BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-SEEN-POSE           BINARY-LONG.
+ 01 WS-SEEN-JSET           BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-WALL-X              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -74,8 +80,8 @@
      MOVE PL-X(WS-PLAYER) TO WS-X
      MOVE PL-Y(WS-PLAYER) TO WS-Y
      MOVE PL-Z(WS-PLAYER) TO WS-Z
-     COMPUTE WS-FX = FUNCTION INTEGER(WS-X) - 20
-     COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) - 20
+     COMPUTE WS-FX = FUNCTION INTEGER(WS-X) - 32
+     COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) - 32
      COMPUTE WS-FY = FUNCTION INTEGER(WS-Y) - 1
      CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FY WS-FKIND
 
@@ -301,6 +307,162 @@
      COMPUTE TL-OBSERVED-N = EN-TARGET(WS-MOB) * 10 + BZ-CANT-ON(WS-SLOT)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-MOB
+
+
+*>   The jump vector can fail: a target 23.5 blocks away, looking toward the breeze's far side (head yaw 90 = -x ... the point behind it lies farther away): every angle needs more than 1.4: the pose goes back to STANDING
+*>   with no cooldown after the inhale.
+     MOVE 90 TO PL-YAW(WS-PLAYER)
+     MOVE 23.5 TO WS-DISTANCE
+     PERFORM SPAWN-BREEZE
+     MOVE 0 TO WS-SEEN-POSE WS-SEEN-JSET
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         PERFORM STEP-MOB
+         CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+         IF BZ-POSE(WS-SLOT) = 2
+             MOVE 1 TO WS-SEEN-POSE
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§16.4 a jump with no feasible angle ends back in STANDING after the inhale, no cooldown, no flight" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-SEEN-POSE * 1000 + BZ-POSE(WS-SLOT) * 100 + BZ-JSET(WS-SLOT) * 10 + BZ-CD(WS-SLOT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     MOVE 0 TO PL-YAW(WS-PLAYER)
+
+*>   hurt_by present: the landing's cooldown is 2. A flight that has run 200 ticks ends (the behaviour's maximum duration).
+     MOVE 10 TO WS-DISTANCE
+     PERFORM SPAWN-BREEZE
+     MOVE 0 TO WS-LAND-AT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60 OR WS-LAND-AT > 0
+         MOVE 100 TO EN-KILLER-AGE(WS-MOB)
+         PERFORM STEP-MOB
+         CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+         IF WS-PREV-POSE = 2 AND BZ-POSE(WS-SLOT) = 0
+             MOVE WS-I TO WS-LAND-AT
+         END-IF
+         MOVE BZ-POSE(WS-SLOT) TO WS-PREV-POSE
+     END-PERFORM
+     MOVE "acceptance US15 20§16.4 with the hurt_by memory the landing's jump cooldown is 2" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE BZ-CD(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     PERFORM SPAWN-BREEZE
+     MOVE 0 TO WS-PREV-POSE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 14 OR WS-PREV-POSE = 2
+         PERFORM STEP-MOB
+         CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+         MOVE BZ-POSE(WS-SLOT) TO WS-PREV-POSE
+     END-PERFORM
+     MOVE 200 TO BZ-RUN(WS-SLOT)
+     PERFORM STEP-MOB
+     MOVE "acceptance US15 20§16.4 a flight that has run 200 ticks ends (STANDING, jump target gone)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BZ-POSE(WS-SLOT) * 10 + BZ-JSET(WS-SLOT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-MOB
+
+*>   A target exactly 24 blocks away is kept by the stop rule (counter 100) and by the targeting, but LongJump.canRun erases it (closerThan 24 is strict).
+     MOVE 24 TO WS-DISTANCE
+     PERFORM SPAWN-BREEZE
+     MOVE 100 TO EN-WAKE(WS-MOB)
+     PERFORM STEP-MOB
+     MOVE "acceptance US15 20§16.4 step 5: a target exactly 24 blocks away is not within the follow range: erased" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-TARGET(WS-MOB) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-MOB
+
+*>   Step 7: standing in a honey block, or a block among the four above the breeze's block, rules the jump out.
+     MOVE "minecraft:honey_block" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-HONEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
+     MOVE 10 TO WS-DISTANCE
+     PERFORM SPAWN-BREEZE
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-MOB))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-MOB))
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-MOB))
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-HONEY
+     PERFORM STEP-MOB
+     CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+     MOVE "acceptance US15 20§16.4 step 7: a breeze in a honey block does not jump" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BZ-POSE(WS-SLOT) * 10 + BZ-JSET(WS-SLOT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     PERFORM SPAWN-BREEZE
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-MOB))
+     COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(WS-MOB)) + 3
+     COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(WS-MOB))
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE
+     PERFORM STEP-MOB
+     CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+     MOVE "acceptance US15 20§16.4 step 7: a stone block 3 above the breeze's block does not allow the jump" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BZ-POSE(WS-SLOT) * 10 + BZ-JSET(WS-SLOT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+     CALL "ENTITY-REMOVE" USING WS-MOB
+
+*>   Step 10: a stone wall (9 high) between the breeze and its target blocks both sight lines: no inhale in 5 ticks.
+     MOVE 10 TO WS-DISTANCE
+     PERFORM SPAWN-BREEZE
+     COMPUTE WS-WALL-X = FUNCTION INTEGER(EN-X(WS-MOB)) + 5
+     PERFORM VARYING WS-BZ FROM WS-FZ BY 1 UNTIL WS-BZ >= WS-FZ + WS-FSIZE
+         PERFORM VARYING WS-BY FROM WS-FY BY 1 UNTIL WS-BY > WS-FY + 12
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-WALL-X WS-BY WS-BZ WS-STONE
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO WS-SEEN-POSE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         PERFORM STEP-MOB
+         CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+         IF BZ-POSE(WS-SLOT) = 1
+             MOVE 1 TO WS-SEEN-POSE
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§16.4 step 10: with a wall in the line of sight the jump does not start" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SEEN-POSE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-BZ FROM WS-FZ BY 1 UNTIL WS-BZ >= WS-FZ + WS-FSIZE
+         PERFORM VARYING WS-BY FROM WS-FY BY 1 UNTIL WS-BY > WS-FY + 12
+             IF WS-BY = WS-FY
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-WALL-X WS-BY WS-BZ WS-STONE
+             ELSE
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-WALL-X WS-BY WS-BZ WS-AIR
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "ENTITY-REMOVE" USING WS-MOB
+
+*>   The walk target of a slide inside a solid block is not reachable: the cant-reach memory is set. The target is exactly 4 blocks away (too close for the jump, not within the inner circle), the layer
+*>   above the floor is stone but for the breeze's cell.
+     COMPUTE WS-K = WS-FY + 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-K WS-FKIND
+     MOVE 4 TO WS-DISTANCE
+     PERFORM SPAWN-BREEZE
+     PERFORM STEP-MOB
+     CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ZERO WS-SLOT
+     MOVE "acceptance US15 16.1 a slide point inside a solid block is unreachable: cant_reach_walk_target_since is set" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BZ-WALK(WS-SLOT) * 10 + BZ-CANT-ON(WS-SLOT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FY WS-FKIND
+
+*>   All 16 slots hold live breezes: a 17th takes the first slot over.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 17
+         COMPUTE WS-X0 = WS-X + 20 + WS-K
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-MOB
+         CALL "BZ-FIND" USING EN-ID(WS-MOB) WS-ONE WS-SLOT
+     END-PERFORM
+     MOVE "acceptance US15 20§16 the 17th live breeze takes slot 1 over" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The idle stroll goes at 0.6: the factor against the table speed is its square.
      MOVE "breeze" TO WS-KEY24

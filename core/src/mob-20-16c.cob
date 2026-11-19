@@ -1,6 +1,6 @@
 *> The breeze's brain (lane 002-lane-p49u; docs/protocol/20 section 16.1, 16.4, 16.5): the wiring of the shoot, long jump, slide and idle behaviours that the programs of mob-20-16.cob and mob-20-16b.cob
 *> compute. State: BZ-ENTRY of BREEZESTATE.cpy.
-*>   BZ-FIND USING entity id, create, slot out: the state slot of a breeze (0 none; a free slot or one whose entity is gone is taken when create is 1).
+*>   BZ-FIND USING entity id, create, slot out: the state slot of a breeze (0 none; a free slot or one whose entity is gone is taken when create is 1, the first when all 16 are live).
 *>   BREEZE-LIGHT-SCORE USING level (BINARY-LONG, the raw brightness), score out (FLOAT-LONG): getWalkTargetValue of a Monster as 20 section 16.5 states it: 0.5 minus the light-dependent magic
 *>     value (b = level / 15, v = b / (4 - 3 b), the Overworld ambient light 0; 18 section 6.8 and 32 give the value as v minus 0.5: the two documents disagree on the sign, this follows 20).
 *>   BREEZE-AWAY-BEST USING oks (10 BINARY-LONG), scores (10 FLOAT-LONG), best out: RandomPos.generateRandomPos over up to 10 candidates: the highest score wins (strictly greater), 0 when none is valid.
@@ -55,6 +55,12 @@
                  MOVE WS-I TO L-SLOT
              END-IF
          END-PERFORM
+*>       Every slot holds a live breeze: the first one is taken over.
+         IF L-SLOT = 0
+             INITIALIZE BZ-ENTRY(1)
+             MOVE L-ID TO BZ-ID(1)
+             MOVE 1 TO L-SLOT
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM BZ-FIND.
