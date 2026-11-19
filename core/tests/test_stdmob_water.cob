@@ -343,6 +343,61 @@
      MOVE 2 TO WS-E
      COMPUTE WS-O ROUNDED = WS-HX * 10
      PERFORM CHECK-N
+
+*>   7. A step into a water cell at the feet level (not only over water) is cancelled too, on both axes; a mob in water that runs into the bank on the z axis jumps out.
+     CALL "ENTITY-REMOVE" USING WS-R
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-BX - 0.6
+     COMPUTE WS-Y = WS-BY
+     COMPUTE WS-Z = WS-BZ + 0.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW(1)
+     MOVE WS-ROW(1) TO WS-R
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-R) WS-M
+     MOVE 1 TO EN-ON-GROUND(WS-R)
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-WATER
+     MOVE 0.2 TO WS-HX
+     MOVE 0 TO WS-HZ
+     CALL "STDMOB-WATER-GUARD" USING WS-R WS-M WS-HX WS-HZ
+     MOVE "acceptance US15 18§5.1 a cow cannot step east into a water cell at its own feet level" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-HX TO WS-O
+     PERFORM CHECK-N
+     COMPUTE WS-CELL-X = WS-BX + 3
+     COMPUTE WS-CELL-Z = WS-BZ - 8
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CELL-X WS-BY WS-CELL-Z WS-WATER
+     COMPUTE EN-X(WS-R) = WS-BX + 3.5
+     COMPUTE EN-Z(WS-R) = WS-BZ - 8.7
+     MOVE 0 TO WS-HX
+     MOVE 0.3 TO WS-HZ
+     CALL "STDMOB-WATER-GUARD" USING WS-R WS-M WS-HX WS-HZ
+     MOVE "acceptance US15 18§5.1 a cow cannot step south into a water cell at its own feet level" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-HZ TO WS-O
+     PERFORM CHECK-N
+     COMPUTE EN-X(WS-R) = WS-BX + 5.5
+     COMPUTE EN-Y(WS-R) = WS-FY
+     COMPUTE EN-Z(WS-R) = WS-BZ + 0.5
+     MOVE 1 TO EN-ON-GROUND(WS-R)
+     MOVE 0.2 TO WS-HX
+     MOVE 0 TO WS-HZ
+     CALL "STDMOB-WATER-GUARD" USING WS-R WS-M WS-HX WS-HZ
+     MOVE "acceptance US15 18§5.1 a cow standing in the shallow water is not held back (it walks out)" TO WS-CASE
+     MOVE 2 TO WS-E
+     COMPUTE WS-O ROUNDED = WS-HX * 10
+     PERFORM CHECK-N
+     COMPUTE EN-X(WS-R) = WS-BX + 11.5
+     COMPUTE EN-Y(WS-R) = WS-FY + 0.45
+     COMPUTE EN-Z(WS-R) = WS-BZ + 8.6
+     MOVE 0 TO EN-VY(WS-R) EN-ON-GROUND(WS-R)
+     MOVE 0 TO WS-HX
+     MOVE 0.3 TO WS-HZ
+     MOVE EN-YAW(WS-R) TO WS-YAW
+     CALL "MOB-PHYSICS" USING WS-R WS-HX WS-HZ WS-YAW
+     MOVE "acceptance US15 18§3.2 a cow in the deep end pushing north against the bank (z blocked) jumps out of the fluid (vy 0.3)" TO WS-CASE
+     MOVE 3 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-VY(WS-R) * 10
+     PERFORM CHECK-N
      STOP RUN.
 
  COUNT-WET.
