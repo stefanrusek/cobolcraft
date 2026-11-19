@@ -1,7 +1,7 @@
 *> The workstation screens' own drawing and clicks (docs/protocol/40-menus-2-furnaces-brewing-crafter.md sections 3, 5, 7; 40-menus-3 and 40-menus-4 as noted): MENU-DECOR adds
 *> the progress pictures a menu type has to the container screen, from the menu's data slots (BM-DATA). The sprites (flame, arrows, bubbles, bars, error icons, the crafter's
-*> disabled slot and indicator) are not in the built-in pack (builtin-ui-art.md does not list the container sprites of the workstations), so each is a panel fallback: a WK-OVERLAY
-*> rectangle of the sprite's drawn size at its place. CRAFTER-TOGGLE is the crafter's slot toggle (7.2) and CLP-SLOT-STATE builds Container Slot State Changed (05c 0x14).
+*> disabled slot and indicator, the empty-slot icons) are the pack's (DECOR-SPRITE and DECOR-CLIP, decor.cob); the built-in pack has none of them (builtin-ui-art.md does not list
+*> the container sprites of the workstations), so there each is a panel fallback: a WK-OVERLAY rectangle of the sprite's drawn size at its place. CRAFTER-TOGGLE is the crafter's slot toggle (7.2) and CLP-SLOT-STATE builds Container Slot State Changed (05c 0x14).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-DECOR.
@@ -44,6 +44,16 @@
  01 WS-BOX-H               BINARY-LONG VALUE 12.
  01 WS-SLOT-X              BINARY-LONG.
  01 WS-SLOT-Y              BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
+ 01 WS-LIT-ROW             BINARY-LONG.
+ 01 WS-BURN-ROW            BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-BOTTOM              BINARY-LONG.
+ 01 WS-SRC-X               BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-SIZE16              BINARY-LONG VALUE 16.
+ 01 WS-SIZE16H             BINARY-LONG VALUE 16.
  01 WS-BUBBLES             PIC X(14) VALUE "29242016110600".
  01 WS-BUBBLE-TABLE REDEFINES WS-BUBBLES.
     05 WS-BUBBLE           PIC 99 OCCURS 7 TIMES.
@@ -68,9 +78,15 @@
                  COMPUTE WS-X = L-LEFT + 56
                  COMPUTE WS-Y = L-TOP + 36 + 14 - WS-H
                  MOVE 14 TO WS-W
-                 MOVE SW-BAR-0 TO WS-SWATCH
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 MOVE 1 TO WS-BOTTOM
+                 MOVE 0 TO WS-SRC-X
+                 CALL "DECOR-FURNACE-ROWS" USING BM-TYPE WS-LIT-ROW WS-BURN-ROW
+                 CALL "DECOR-CLIP" USING CLIENT-STATE WS-LIT-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC-X WS-DRAWN
+                 IF WS-DRAWN = 0
+                     MOVE SW-BAR-0 TO WS-SWATCH
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
              END-IF
              IF BM-DATA(3) > 0 AND BM-DATA(4) > 0
                  COMPUTE WS-P = FUNCTION MIN(BM-DATA(3), BM-DATA(4))
@@ -78,20 +94,45 @@
                  COMPUTE WS-X = L-LEFT + 79
                  COMPUTE WS-Y = L-TOP + 34
                  MOVE 16 TO WS-H
-                 MOVE SW-WHITE TO WS-SWATCH
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 MOVE 0 TO WS-BOTTOM WS-SRC-X
+                 CALL "DECOR-FURNACE-ROWS" USING BM-TYPE WS-LIT-ROW WS-BURN-ROW
+                 CALL "DECOR-CLIP" USING CLIENT-STATE WS-BURN-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC-X WS-DRAWN
+                 IF WS-DRAWN = 0
+                     MOVE SW-WHITE TO WS-SWATCH
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
              END-IF
          WHEN BM-TYPE = 11
-*>           5: the fuel bar ceilDiv(18 f, T) of 18 x 4, then (while a brew runs) the arrow trunc(28 (1 - b / B)) rows of 9 x 28 and the bubbles.
+*>           4.2 the empty-slot icons (16 x 16 at the slot's item cell: the potion in the three bottle slots, the brewing fuel in the fuel slot), then 5: the fuel bar
+*>           ceilDiv(18 f, T) of 18 x 4, then (while a brew runs) the arrow trunc(28 (1 - b / B)) rows of 9 x 28 and the bubbles.
+             MOVE 0 TO WS-I
+             PERFORM UNTIL WS-I > 4
+                 IF WS-I NOT = 3 AND BX-COUNT(WS-I + 1) = 0
+                     CALL "CONTAINER-SLOT-POS" USING BM-TYPE WS-I WS-PX WS-PY
+                     COMPUTE WS-X = L-LEFT + WS-PX
+                     COMPUTE WS-Y = L-TOP + WS-PY
+                     MOVE GSP-SLOT-POTION TO WS-ROW
+                     IF WS-I = 4
+                         MOVE GSP-SLOT-BREW-FUEL TO WS-ROW
+                     END-IF
+                     CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-SIZE16 WS-SIZE16H WS-DRAWN
+                 END-IF
+                 ADD 1 TO WS-I
+             END-PERFORM
              IF BM-DATA(4) > 0 AND BM-DATA(2) > 0
                  COMPUTE WS-W = FUNCTION MIN((18 * BM-DATA(2) + BM-DATA(4) - 1) / BM-DATA(4), 18)
                  COMPUTE WS-X = L-LEFT + 60
                  COMPUTE WS-Y = L-TOP + 44
                  MOVE 4 TO WS-H
-                 MOVE SW-WHITE TO WS-SWATCH
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 MOVE 0 TO WS-BOTTOM WS-SRC-X
+                 MOVE GSP-BREW-FUEL TO WS-ROW
+                 CALL "DECOR-CLIP" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC-X WS-DRAWN
+                 IF WS-DRAWN = 0
+                     MOVE SW-WHITE TO WS-SWATCH
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
              END-IF
              IF BM-DATA(1) > 0 AND BM-DATA(3) > 0
                  COMPUTE WS-H = 28 * (BM-DATA(3) - BM-DATA(1)) / BM-DATA(3)
@@ -99,9 +140,14 @@
                      COMPUTE WS-X = L-LEFT + 97
                      COMPUTE WS-Y = L-TOP + 16
                      MOVE 9 TO WS-W
-                     MOVE SW-WHITE TO WS-SWATCH
-                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                         WS-TEXT WS-LENGTH WS-STATE
+                     MOVE 0 TO WS-BOTTOM WS-SRC-X
+                     MOVE GSP-BREW-ARROW TO WS-ROW
+                     CALL "DECOR-CLIP" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC-X WS-DRAWN
+                     IF WS-DRAWN = 0
+                         MOVE SW-WHITE TO WS-SWATCH
+                         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                             WS-TEXT WS-LENGTH WS-STATE
+                     END-IF
                  END-IF
                  COMPUTE WS-D = BM-DATA(1) / 2
                  COMPUTE WS-IDX = FUNCTION MOD(WS-D, 7) + 1
@@ -110,9 +156,15 @@
                      COMPUTE WS-X = L-LEFT + 63
                      COMPUTE WS-Y = L-TOP + 14 + 29 - WS-H
                      MOVE 12 TO WS-W
-                     COMPUTE WS-SWATCH = SW-BAR-0 + 23
-                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                         WS-TEXT WS-LENGTH WS-STATE
+                     MOVE 1 TO WS-BOTTOM
+                     MOVE 0 TO WS-SRC-X
+                     MOVE GSP-BREW-BUBBLES TO WS-ROW
+                     CALL "DECOR-CLIP" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC-X WS-DRAWN
+                     IF WS-DRAWN = 0
+                         COMPUTE WS-SWATCH = SW-BAR-0 + 23
+                         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                             WS-TEXT WS-LENGTH WS-STATE
+                     END-IF
                  END-IF
              END-IF
          WHEN BM-TYPE >= 100
@@ -125,12 +177,19 @@
                  COMPUTE WS-Y = L-TOP + 20
                  MOVE 110 TO WS-W
                  MOVE 16 TO WS-H
-                 MOVE SW-PANEL TO WS-SWATCH
+                 MOVE GSP-ANVIL-FIELD-OFF TO WS-ROW
                  IF BX-COUNT(1) > 0
-                     MOVE SW-BLACK TO WS-SWATCH
+                     MOVE GSP-ANVIL-FIELD TO WS-ROW
                  END-IF
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+                 IF WS-DRAWN = 0
+                     MOVE SW-PANEL TO WS-SWATCH
+                     IF BX-COUNT(1) > 0
+                         MOVE SW-BLACK TO WS-SWATCH
+                     END-IF
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
                  IF BX-COUNT(1) > 0 AND AN-NAME-LENGTH > 0 AND AN-ID = BM-ID
                      MOVE AN-NAME TO WS-TEXT
                      COMPUTE WS-X = L-LEFT + 62
@@ -148,13 +207,18 @@
              IF WS-CAN-ERROR = 1
                  COMPUTE WS-X = L-LEFT + 99
                  COMPUTE WS-Y = L-TOP + 45
+                 MOVE GSP-ANVIL-ERROR TO WS-ROW
                  IF BM-TYPE = 15
                      COMPUTE WS-X = L-LEFT + 92
                      COMPUTE WS-Y = L-TOP + 31
+                     MOVE GSP-GRIND-ERROR TO WS-ROW
                  END-IF
-                 MOVE SW-HURT TO WS-SWATCH
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-ICON-W WS-ICON-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-ICON-W WS-ICON-H WS-DRAWN
+                 IF WS-DRAWN = 0
+                     MOVE SW-HURT TO WS-SWATCH
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-ICON-W WS-ICON-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
              END-IF
 *>           3.8 the anvil's cost: nothing for cost <= 0, "Too Expensive!" from 40 without infinite materials, nothing without a result, else the cost.
              MOVE SPACES TO WS-LINE
@@ -201,7 +265,11 @@
                  CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-RGB
              END-IF
          WHEN BM-TYPE = 13
-*>           2.9: the three option rows (108 x 19 at (60, 14 + 19 i)), the cost right-aligned to x 166 at y 23 + 19 i, and for an enabled row the click area (button i).
+*>           2.9: the three option rows (108 x 19 at (60, 14 + 19 i): the disabled sprite for a cost 0 or a row that cannot be paid, the highlighted one for an enabled row under the
+*>           pointer, else the normal one; the 16 x 16 level icon at (61, 15 + 19 i), the disabled one on a disabled row, none for a cost 0), the cost right-aligned to x 166 at
+*>           y 23 + 19 i, and for an enabled row the click area (button i).
+             COMPUTE WS-PX = IN-CURSOR-X / CL-GUI-SCALE
+             COMPUTE WS-PY = IN-CURSOR-Y / CL-GUI-SCALE
              PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2
                  COMPUTE WS-X = L-LEFT + 60
                  COMPUTE WS-Y = L-TOP + 14 + 19 * WS-I
@@ -213,8 +281,28 @@
                      MOVE 1 TO WS-CAN-ERROR
                      MOVE SW-BUTTON TO WS-SWATCH
                  END-IF
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 MOVE GSP-ENCH-SLOT-OFF TO WS-ROW
+                 IF WS-CAN-ERROR = 1
+                     MOVE GSP-ENCH-SLOT TO WS-ROW
+                     IF WS-PX >= WS-X AND WS-PX < WS-X + 108 AND WS-PY >= WS-Y AND WS-PY < WS-Y + 19
+                         MOVE GSP-ENCH-SLOT-HI TO WS-ROW
+                     END-IF
+                 END-IF
+                 CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+                 IF WS-DRAWN = 0
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 ELSE
+                     IF BM-DATA(WS-I + 1) > 0
+                         COMPUTE WS-ROW = GSP-ENCH-LEVEL-OFF-1 + WS-I
+                         IF WS-CAN-ERROR = 1
+                             COMPUTE WS-ROW = GSP-ENCH-LEVEL-1 + WS-I
+                         END-IF
+                         COMPUTE WS-X = L-LEFT + 61
+                         COMPUTE WS-Y = L-TOP + 15 + 19 * WS-I
+                         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-SIZE16 WS-SIZE16H WS-DRAWN
+                     END-IF
+                 END-IF
                  IF BM-DATA(WS-I + 1) > 0
                      MOVE BM-DATA(WS-I + 1) TO WS-COST
                      MOVE SPACES TO WS-LINE
@@ -246,15 +334,23 @@
              END-PERFORM
          WHEN BM-TYPE = 24
              CALL "STONECUTTER-DECOR" USING CLIENT-STATE L-LEFT L-TOP
+         WHEN BM-TYPE = 18
+             CALL "LOOM-DECOR" USING CLIENT-STATE L-LEFT L-TOP
+         WHEN BM-TYPE = 23
+             CALL "CARTOGRAPHY-DECOR" USING CLIENT-STATE L-LEFT L-TOP
          WHEN BM-TYPE = 21
              CALL "SMITH-CYCLE-DRAW" USING CLIENT-STATE L-LEFT L-TOP
 *>           5.5 the smithing error icon at (65, 46) while the error flag (data 0) is 1.
              IF BM-DATA(1) = 1
                  COMPUTE WS-X = L-LEFT + 65
                  COMPUTE WS-Y = L-TOP + 46
-                 MOVE SW-HURT TO WS-SWATCH
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-ICON-W WS-ICON-H
-                     WS-TEXT WS-LENGTH WS-STATE
+                 MOVE GSP-SMITH-ERROR TO WS-ROW
+                 CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-ICON-W WS-ICON-H WS-DRAWN
+                 IF WS-DRAWN = 0
+                     MOVE SW-HURT TO WS-SWATCH
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-ICON-W WS-ICON-H
+                         WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
              END-IF
          WHEN BM-TYPE = 19
              CALL "MERCHANT-DECOR" USING CLIENT-STATE L-LEFT L-TOP
@@ -270,20 +366,31 @@
                      COMPUTE WS-X = L-LEFT + WS-SLOT-X - 1
                      COMPUTE WS-Y = L-TOP + WS-SLOT-Y - 1
                      MOVE 18 TO WS-W WS-H
-                     MOVE SW-BLACK TO WS-SWATCH
-                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                         WS-TEXT WS-LENGTH WS-STATE
+                     MOVE GSP-CRAFTER-DISABLED TO WS-ROW
+                     CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+                     IF WS-DRAWN = 0
+                         MOVE SW-BLACK TO WS-SWATCH
+                         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                             WS-TEXT WS-LENGTH WS-STATE
+                     END-IF
                  END-IF
              END-PERFORM
              COMPUTE WS-X = L-GW / 2 + 9
              COMPUTE WS-Y = L-GH / 2 - 48
              MOVE 16 TO WS-W WS-H
-             MOVE SW-BAR-0 TO WS-SWATCH
+             MOVE GSP-CRAFTER-UNPOWERED TO WS-ROW
              IF BM-DATA(10) = 1
-                 COMPUTE WS-SWATCH = SW-BAR-0 + 23
+                 MOVE GSP-CRAFTER-POWERED TO WS-ROW
              END-IF
-             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
-                 WS-TEXT WS-LENGTH WS-STATE
+             CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+             IF WS-DRAWN = 0
+                 MOVE SW-BAR-0 TO WS-SWATCH
+                 IF BM-DATA(10) = 1
+                     COMPUTE WS-SWATCH = SW-BAR-0 + 23
+                 END-IF
+                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                     WS-TEXT WS-LENGTH WS-STATE
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM MENU-DECOR.

@@ -1,5 +1,6 @@
-*> The merchant, beacon and lectern screens (docs/protocol/40-menus-5-merchant-beacon-lectern.md). The sprites of these screens (villager.png, beacon.png, the buttons and arrows) are not in the
-*> built-in pack, so each is a swatch overlay of the sprite's drawn size; icons are the mob-effect sprites where the pack has them. MENU-DECOR (workstation.cob) calls MERCHANT-DECOR,
+*> The merchant, beacon and lectern screens (docs/protocol/40-menus-5-merchant-beacon-lectern.md). The sprites of these screens (the villager and beacon sprites, the plain buttons) are the
+*> pack's (DECOR-SPRITE and DECOR-CLIP, decor.cob); the built-in pack has none of them, so there each is a swatch overlay of the sprite's drawn size; icons are the mob-effect sprites
+*> where the pack has them. MENU-DECOR (workstation.cob) calls MERCHANT-DECOR,
 *> BEACON-DECOR and LECTERN-DECOR; MENU-ACTION handles the actions of their buttons; MENU-EXTRA-INPUT the merchant's wheel and scroller drag.
 
  IDENTIFICATION DIVISION.
@@ -183,6 +184,12 @@
  01 WS-LABEL-H             BINARY-LONG VALUE 9.
  01 WS-MX                  BINARY-LONG.
  01 WS-MY                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
+ 01 WS-BOTTOM              BINARY-LONG VALUE 0.
+ 01 WS-SRC                 BINARY-LONG.
+ 01 WS-ARROW-W             BINARY-LONG VALUE 10.
+ 01 WS-ARROW-H             BINARY-LONG VALUE 9.
  01 WS-XP-TABLE.
     05 FILLER              BINARY-LONG VALUE 0.
     05 FILLER              BINARY-LONG VALUE 10.
@@ -199,17 +206,30 @@
      GO TO MAIN-FLOW.
 
  BUTTONS-AND-ROWS.
+     COMPUTE WS-MX = IN-CURSOR-X / CL-GUI-SCALE
+     COMPUTE WS-MY = IN-CURSOR-Y / CL-GUI-SCALE
      PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 6 OR WS-K >= MC-COUNT
          COMPUTE WS-X = L-LEFT + 5
          COMPUTE WS-Y = L-TOP + 18 + 20 * WS-K
          MOVE 88 TO WS-W
          MOVE 20 TO WS-H
-         MOVE SW-BUTTON TO WS-SWATCH
-         IF MC-SELECTED = WS-K + MC-SCROLL
-             MOVE SW-SELECTED TO WS-SWATCH
+*>       The plain button sprite (12 5.9): the disabled one for the selected offer's button, the highlighted one under the pointer, else the normal one.
+         MOVE GSP-BUTTON TO WS-ROW
+         EVALUATE TRUE
+             WHEN MC-SELECTED = WS-K + MC-SCROLL
+                 MOVE GSP-BUTTON-OFF TO WS-ROW
+             WHEN WS-MX >= WS-X AND WS-MX < WS-X + 88 AND WS-MY >= WS-Y AND WS-MY < WS-Y + 20
+                 MOVE GSP-BUTTON-HI TO WS-ROW
+         END-EVALUATE
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+         IF WS-DRAWN = 0
+             MOVE SW-BUTTON TO WS-SWATCH
+             IF MC-SELECTED = WS-K + MC-SCROLL
+                 MOVE SW-SELECTED TO WS-SWATCH
+             END-IF
+             MOVE WK-OVERLAY TO WS-KIND
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
          END-IF
-         MOVE WK-OVERLAY TO WS-KIND
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
          MOVE WK-IMAGE TO WS-KIND
          MOVE ACT-TRADE-SELECT TO WS-ACTION
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-K WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
@@ -242,12 +262,17 @@
          COMPUTE WS-Y = L-TOP + 22 + 20 * WS-R
          MOVE 10 TO WS-W
          MOVE 9 TO WS-H
+         MOVE GSP-VIL-ARROW TO WS-ROW
          MOVE SW-WHITE TO WS-SWATCH
          IF MO-OUT(WS-I) = 1 OR MO-USES(WS-I) >= MO-MAX(WS-I)
              MOVE SW-HURT TO WS-SWATCH
+             MOVE GSP-VIL-ARROW-OFF TO WS-ROW
          END-IF
-         MOVE WK-OVERLAY TO WS-KIND
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+         IF WS-DRAWN = 0
+             MOVE WK-OVERLAY TO WS-KIND
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         END-IF
          COMPUTE WS-X = L-LEFT + 73
          COMPUTE WS-Y = L-TOP + 19 + 20 * WS-R
          ADD 2 TO WS-N
@@ -357,6 +382,7 @@
      MOVE 27 TO WS-H
      COMPUTE WS-X = L-LEFT + 94
      MOVE WK-OVERLAY TO WS-KIND
+     MOVE GSP-VIL-SCROLLER TO WS-ROW
      IF WS-N > 1
          COMPUTE WS-T = 139 - (27 + (WS-N - 1) * 139 / WS-N)
          COMPUTE WS-STEP = 1 + WS-T / WS-N + 139 / WS-N
@@ -368,9 +394,13 @@
      ELSE
          MOVE 0 TO WS-T
          MOVE SW-BLACK TO WS-SWATCH
+         MOVE GSP-VIL-SCROLLER-OFF TO WS-ROW
      END-IF
      COMPUTE WS-Y = L-TOP + 18 + WS-T
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+     IF WS-DRAWN = 0
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     END-IF
      .
 
 *> 2.10 the XP bar (nothing at level 5 and over or without the progress flag).
@@ -380,9 +410,13 @@
          COMPUTE WS-Y = L-TOP + 16
          MOVE 102 TO WS-W
          MOVE 5 TO WS-H
+         MOVE GSP-VIL-XP-BACK TO WS-ROW
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
          MOVE SW-BLACK TO WS-SWATCH
          MOVE WK-OVERLAY TO WS-KIND
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         IF WS-DRAWN = 0
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         END-IF
          MOVE WS-XPT(MC-LEVEL) TO WS-MIN
          MOVE WS-XPT(MC-LEVEL + 1) TO WS-MAX
          IF MC-XP >= WS-MIN
@@ -390,8 +424,13 @@
              COMPUTE WS-CUR = FUNCTION MIN(FUNCTION INTEGER(WS-SCALE * (MC-XP - WS-MIN)), 102)
              IF WS-CUR > 0
                  MOVE WS-CUR TO WS-W
-                 COMPUTE WS-SWATCH = SW-BAR-0 + 23
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+                 MOVE 0 TO WS-SRC
+                 MOVE GSP-VIL-XP-CURRENT TO WS-ROW
+                 CALL "DECOR-CLIP" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC WS-DRAWN
+                 IF WS-DRAWN = 0
+                     COMPUTE WS-SWATCH = SW-BAR-0 + 23
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+                 END-IF
              END-IF
              MOVE 0 TO WS-FUTURE
              IF BX-COUNT(3) > 0 AND MC-SELECTED >= 0 AND MC-SELECTED < MC-COUNT
@@ -401,8 +440,13 @@
                  COMPUTE WS-W = FUNCTION MIN(FUNCTION INTEGER(WS-FUTURE * WS-SCALE), 102 - WS-CUR)
                  IF WS-W > 0
                      COMPUTE WS-X = L-LEFT + 136 + WS-CUR
-                     MOVE SW-WHITE TO WS-SWATCH
-                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+                     MOVE WS-CUR TO WS-SRC
+                     MOVE GSP-VIL-XP-RESULT TO WS-ROW
+                     CALL "DECOR-CLIP" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC WS-DRAWN
+                     IF WS-DRAWN = 0
+                         MOVE SW-WHITE TO WS-SWATCH
+                         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+                     END-IF
                  END-IF
              END-IF
          END-IF
@@ -418,9 +462,13 @@
              COMPUTE WS-Y = L-TOP + 35
              MOVE 28 TO WS-W
              MOVE 21 TO WS-H
-             MOVE SW-HURT TO WS-SWATCH
-             MOVE WK-OVERLAY TO WS-KIND
-             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+             MOVE GSP-VIL-OUT TO WS-ROW
+             CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+             IF WS-DRAWN = 0
+                 MOVE SW-HURT TO WS-SWATCH
+                 MOVE WK-OVERLAY TO WS-KIND
+                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+             END-IF
              COMPUTE WS-MX = IN-CURSOR-X / CL-GUI-SCALE
              COMPUTE WS-MY = IN-CURSOR-Y / CL-GUI-SCALE
              IF MC-RESTOCK = 1 AND WS-MX >= L-LEFT + 186 AND WS-MX < L-LEFT + 208
@@ -556,6 +604,8 @@
  01 WS-SIZE                BINARY-LONG VALUE 18.
  01 WS-SIZE2               BINARY-LONG VALUE 18.
  01 WS-NOACT               BINARY-LONG VALUE 0.
+ 01 WS-SPR                 BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-LEFT                 BINARY-LONG.
@@ -586,18 +636,32 @@
      SUBTRACT 2 FROM WS-X WS-Y
      .
 
-*> The 22 x 22 box: disabled swatch black, selected the selected swatch, else the button swatch; a WK-IMAGE click area while active and not selected.
+*> The 22 x 22 box (3.7): the pack's button_disabled when inactive, else button_selected when selected, else button_highlighted under the pointer, else button; without them
+*> (the built-in pack) the disabled swatch black, selected the selected swatch, else the button swatch. A WK-IMAGE click area while active and not selected.
  BUTTON-BOX.
      MOVE 22 TO WS-W WS-H
-     MOVE SW-BUTTON TO WS-SWATCH
-     IF WS-ACTIVE = 0
-         MOVE SW-BLACK TO WS-SWATCH
+     EVALUATE TRUE
+         WHEN WS-ACTIVE = 0
+             MOVE GSP-BEACON-OFF TO WS-SPR
+         WHEN WS-SELECTED = 1
+             MOVE GSP-BEACON-SEL TO WS-SPR
+         WHEN WS-MX >= WS-X AND WS-MX < WS-X + 22 AND WS-MY >= WS-Y AND WS-MY < WS-Y + 22
+             MOVE GSP-BEACON-HI TO WS-SPR
+         WHEN OTHER
+             MOVE GSP-BEACON-BUTTON TO WS-SPR
+     END-EVALUATE
+     CALL "DECOR-SPRITE" USING CLIENT-STATE WS-SPR WS-X WS-Y WS-W WS-H WS-DRAWN
+     IF WS-DRAWN = 0
+         MOVE SW-BUTTON TO WS-SWATCH
+         IF WS-ACTIVE = 0
+             MOVE SW-BLACK TO WS-SWATCH
+         END-IF
+         IF WS-SELECTED = 1
+             MOVE SW-SELECTED TO WS-SWATCH
+         END-IF
+         MOVE WK-OVERLAY TO WS-KIND
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-NOACT WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
      END-IF
-     IF WS-SELECTED = 1
-         MOVE SW-SELECTED TO WS-SWATCH
-     END-IF
-     MOVE WK-OVERLAY TO WS-KIND
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-NOACT WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
      IF WS-ACTIVE = 1 AND WS-SELECTED = 0
          MOVE WK-IMAGE TO WS-KIND
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
@@ -746,11 +810,19 @@
      MOVE SPACES TO WS-TEXT
      MOVE 0 TO WS-LENGTH WS-STATE
      COMPUTE WS-X = L-LEFT + 166
-     MOVE SW-SELECTED TO WS-SWATCH
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     MOVE GSP-BEACON-CONFIRM TO WS-SPR
+     CALL "DECOR-SPRITE" USING CLIENT-STATE WS-SPR WS-X WS-Y WS-W WS-H WS-DRAWN
+     IF WS-DRAWN = 0
+         MOVE SW-SELECTED TO WS-SWATCH
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     END-IF
      COMPUTE WS-X = L-LEFT + 192
-     MOVE SW-HURT TO WS-SWATCH
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     MOVE GSP-BEACON-CANCEL TO WS-SPR
+     CALL "DECOR-SPRITE" USING CLIENT-STATE WS-SPR WS-X WS-Y WS-W WS-H WS-DRAWN
+     IF WS-DRAWN = 0
+         MOVE SW-HURT TO WS-SWATCH
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     END-IF
 *>   The payment strip: netherite ingot, emerald, diamond, gold ingot and iron ingot at y + 109 and x + 20, 41, 63, 86, 108, as bare items (display stacks 1 to 5).
      MOVE "netherite_ingot  emerald          diamond          gold_ingot       iron_ingot       " TO WS-PAY-KEYS
      MOVE 20 TO WS-PAY-DX(1)
