@@ -14,6 +14,15 @@
  COPY COREAPI.
  COPY BLOCKTICK.
  COPY BTRUN.
+ 01 WS-PREV.
+    05 WS-P-DIM            BINARY-LONG VALUE 1.
+    05 WS-P-TYPE           BINARY-LONG VALUE 1.
+    05 WS-P-X              BINARY-LONG VALUE 0.
+    05 WS-P-Y              BINARY-LONG VALUE 0.
+    05 WS-P-Z              BINARY-LONG VALUE 0.
+    05 WS-P-TRIG           BINARY-DOUBLE VALUE 1000.
+    05 WS-P-PRIO           BINARY-LONG VALUE 0.
+    05 WS-P-SUB            BINARY-LONG VALUE 0.
  01 WS-NEW-RUN.
     05 WS-NEW-COUNT        BINARY-LONG.
     05 WS-NEW-ROW OCCURS 32768 TIMES.
@@ -95,6 +104,27 @@
              COMPUTE WS-ID = FUNCTION MOD(WS-Q, 50)
              MOVE BT-SUB-COUNT(WS-DIM) TO WS-SUB
              ADD 1 TO BT-SUB-COUNT(WS-DIM)
+*>           one tick in eight is a twin of the one before: the same chunk, time, priority and sub-tick order at another height (the lower index of the two goes first)
+             PERFORM NEXT-RANDOM
+             IF FUNCTION MOD(WS-Q, 8) = 0 AND WS-I > 1
+                 SUBTRACT 1 FROM BT-SUB-COUNT(WS-DIM)
+                 MOVE WS-P-DIM TO WS-DIM
+                 MOVE WS-P-TYPE TO WS-TYPE
+                 MOVE WS-P-X TO WS-X
+                 MOVE WS-P-Z TO WS-Z
+                 COMPUTE WS-Y = WS-P-Y + 1
+                 MOVE WS-P-TRIG TO WS-TRIG
+                 MOVE WS-P-PRIO TO WS-PRIO
+                 MOVE WS-P-SUB TO WS-SUB
+             END-IF
+             MOVE WS-DIM TO WS-P-DIM
+             MOVE WS-TYPE TO WS-P-TYPE
+             MOVE WS-X TO WS-P-X
+             MOVE WS-Y TO WS-P-Y
+             MOVE WS-Z TO WS-P-Z
+             MOVE WS-TRIG TO WS-P-TRIG
+             MOVE WS-PRIO TO WS-P-PRIO
+             MOVE WS-SUB TO WS-P-SUB
              CALL "BT-ADD" USING WS-DIM WS-TYPE WS-ID WS-X WS-Y WS-Z WS-TRIG WS-PRIO WS-SUB WS-RESULT
          END-PERFORM
          PERFORM NEXT-RANDOM

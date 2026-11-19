@@ -305,6 +305,15 @@
          END-IF
      END-PERFORM
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+*>   The commands below are heard only once the player is in play and loaded (a standard world takes thousands of frames for its first chunks).
+     IF WS-LOCATE = SPACES
+         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > WS-MAXWAIT OR PL-LOADED = 1
+             CALL "CV-STEP" USING CONVH
+             SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+         END-PERFORM
+         MOVE WS-F TO WS-D9
+         DISPLAY "BS player loaded after " WS-D9 " frames"
+     END-IF
 
      IF WS-LOCATE NOT = SPACES
          MOVE SPACES TO WS-TEXT
