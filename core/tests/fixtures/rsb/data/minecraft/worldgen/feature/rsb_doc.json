@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:replace_single_block",
+  "targets": [
+    {
+      "target": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 0.5
+      },
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "target": {
+        "predicate_type": "minecraft:block_match",
+        "block": "minecraft:stone"
+      },
+      "state": "minecraft:mossy_cobblestone"
+    },
+    {
+      "target": {
+        "predicate_type": "minecraft:tag_match",
+        "tag": "minecraft:rsb_dirt"
+      },
+      "state": "minecraft:coarse_dirt"
+    }
+  ]
+}

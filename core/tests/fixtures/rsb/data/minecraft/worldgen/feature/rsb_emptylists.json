@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:replace_single_block",
+  "targets": [
+    {
+      "target": {
+        "predicate_type": "minecraft:all_of",
+        "rules": []
+      },
+      "state": "minecraft:granite"
+    },
+    {
+      "target": {
+        "predicate_type": "minecraft:any_of",
+        "rules": []
+      },
+      "state": "minecraft:diorite"
+    }
+  ]
+}

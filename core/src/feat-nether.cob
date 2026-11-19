@@ -2,7 +2,7 @@
 *> FD-STEP-NODE and FR-STEP: the basalt columns), single_block_pillar (44, FD-PILLAR-NODE and FR-PILLAR), random_neighbor_spread (35, FD-NSPREAD-NODE and FR-NSPREAD) and
 *> projected_random_patchy_square (33, FD-PATCHY-NODE and FR-PATCHY). Each takes a row of FD-WA (the generic row of FEATDATA.cpy; the fields are named in each node's header). Compile
 *> failures (a missing member, a provider or predicate the compiler cannot read, a block table without the blocks) make the feature unsupported (FD-BAD, the caller sets type -1).
-*> replace_single_block (35-4 7.5) is not compiled: its rule tests are not read (no element of the data uses it).
+*> replace_single_block (35-4 7.5) is in feat-replace.cob.
 *>
 *> Entry points: F* NODE USING doc, node, row out; FR-* USING state, feature, x, y, z, result out.
 
