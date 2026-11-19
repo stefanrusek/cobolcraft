@@ -55,6 +55,9 @@
      MOVE "facing=north,occupied=false,part=head" TO WS-PAIRS
      CALL "VT-PLACE" USING WS-DIM WS-X WS-Y WS-Z WS-KEY WS-PAIRS
      CALL "VT-SCAN" USING WS-DIM WS-X0 WS-Z0
+     COMPUTE WS-X = WS-X0 + 6
+     COMPUTE WS-Z = WS-Z0 + 4
+     CALL "VT-SCAN-KEEP" USING WS-DIM WS-X WS-Z
      CALL "VT-SPAWN" USING WS-DIM WS-X0 WS-Y WS-Z0 WS-K1 WS-S1
      COMPUTE WS-X = WS-X0 + 3
      CALL "VT-SPAWN" USING WS-DIM WS-X WS-Y WS-Z0 WS-K2 WS-S2
@@ -138,6 +141,12 @@
 *>   A baby that is chased flees to a position of a village (a claimed bed makes the sections round it a village): walk_target at 0.6 (1.2 s), closeness 0.
      CALL "VL-WALK-STOP" USING WS-K1 WS-S1
      CALL "VL-WALK-STOP" USING WS-K2 WS-S2
+     MOVE 0 TO VM-T(WS-S1, TM-JUMP-ON) VM-T(WS-S2, TM-JUMP-ON)
+     MOVE WS-Y TO EN-Y(WS-K1) EN-Y(WS-K2)
+     COMPUTE EN-X(WS-K1) = WS-X0 + 1.5
+     COMPUTE EN-Z(WS-K1) = WS-Z0 + 0.5
+     COMPUTE EN-X(WS-K2) = WS-X0 + 3.5
+     COMPUTE EN-Z(WS-K2) = WS-Z0 + 0.5
      CALL "VM-ERASE" USING WS-S2 MT-INTERACTION-TARGET
      COMPUTE WS-X = WS-X0 + 6
      COMPUTE WS-Z = WS-Z0 + 4

@@ -18,6 +18,7 @@
  01 WS-Z0                  BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-SK                  BINARY-LONG.
  01 WS-AD                  BINARY-LONG.
@@ -30,6 +31,8 @@
  01 WS-JUMPS               BINARY-LONG.
  01 WS-WAS-UP              BINARY-LONG.
  01 WS-LIMIT               FLOAT-LONG.
+ 01 WS-STARTED             BINARY-LONG VALUE 0.
+ 01 WS-ENDED               BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -42,6 +45,9 @@
      MOVE "facing=north,occupied=false,part=head" TO WS-PAIRS
      CALL "VT-PLACE" USING WS-DIM WS-X WS-Y WS-Z0 WS-KEY WS-PAIRS
      CALL "VT-SCAN" USING WS-DIM WS-X0 WS-Z0
+     COMPUTE WS-X = WS-X0 + 5
+     COMPUTE WS-Z = WS-Z0
+     CALL "VT-SCAN-KEEP" USING WS-DIM WS-X WS-Z
      CALL "VT-SPAWN" USING WS-DIM WS-X0 WS-Y WS-Z0 WS-K WS-SK
      COMPUTE WS-X = WS-X0 - 5
      CALL "VT-SPAWN" USING WS-DIM WS-X WS-Y WS-Z0 WS-AD WS-SAD
@@ -61,8 +67,14 @@
          IF EN-Y(WS-AD) > WS-MAX-AD
              MOVE EN-Y(WS-AD) TO WS-MAX-AD
          END-IF
-*>       Count the jumps: leaving the bed top upwards (feet more than 0.3 above the top while within 1.5 blocks of the bed).
-         IF EN-Y(WS-K) > WS-TOP + 0.3 AND FUNCTION ABS(EN-X(WS-K) - (WS-X0 + 5.5)) < 1.5
+*>       Count the jumps of the first run of the behaviour (TM-JUMP-ON 1 until it ends): leaving the bed top upwards (feet more than 0.3 above the top while within 1.5 blocks of the bed).
+         IF VM-T(WS-SK, TM-JUMP-ON) = 1
+             MOVE 1 TO WS-STARTED
+         END-IF
+         IF WS-STARTED = 1 AND VM-T(WS-SK, TM-JUMP-ON) = 0
+             MOVE 1 TO WS-ENDED
+         END-IF
+         IF WS-ENDED = 0 AND EN-Y(WS-K) > WS-TOP + 0.3 AND FUNCTION ABS(EN-X(WS-K) - (WS-X0 + 5.5)) < 1.5
              IF WS-WAS-UP = 0
                  ADD 1 TO WS-JUMPS
              END-IF
@@ -78,7 +90,7 @@
          MOVE 1 TO WS-O
      END-IF
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     MOVE "acceptance US15 44-3§2.9 it jumped 3 to 6 times" TO WS-CASE
+     MOVE "acceptance US15 44-3§2.9 the first run of the behaviour made 3 to 6 jumps" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE 0 TO WS-O
      IF WS-JUMPS >= 3 AND WS-JUMPS <= 6

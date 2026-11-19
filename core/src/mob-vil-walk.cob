@@ -118,6 +118,7 @@
  PROGRAM-ID. VL-WALK-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-COLUMN              BINARY-LONG.
  COPY VLMEM.
  COPY CORESTATE.
  01 WS-PRESENT              BINARY-LONG.
@@ -145,11 +146,16 @@
      IF WS-LIMIT < 1
          MOVE 1 TO WS-LIMIT
      END-IF
+*>   A closeness of 0 (a walk to a block: JumpOnBed, a flee position) is arrived at in the block's column; the path walk's own arrival (STDMOB-HEAD) is the same test.
+     MOVE 0 TO WS-COLUMN
+     IF WS-CLOSE = 0 AND FUNCTION INTEGER(EN-X(L-ROW)) = WS-X AND FUNCTION INTEGER(EN-Z(L-ROW)) = WS-Z
+         MOVE 1 TO WS-COLUMN
+     END-IF
      EVALUATE TRUE
          WHEN WS-DIM NOT = EN-DIM(L-ROW)
 *>           Another dimension: nothing to walk to.
              CALL "VM-ERASE" USING L-SLOT MT-WALK-TARGET
-         WHEN WS-D2 <= WS-LIMIT * WS-LIMIT
+         WHEN WS-D2 <= WS-LIMIT * WS-LIMIT AND (WS-CLOSE > 0 OR WS-COLUMN = 1)
 *>           Arrived.
              CALL "VM-ERASE" USING L-SLOT MT-WALK-TARGET
              CALL "VM-ERASE" USING L-SLOT MT-CANT-REACH-SINCE

@@ -83,6 +83,10 @@
  78 TM-BEET-SEEDS         VALUE 47.
  78 TM-BEETROOT           VALUE 48.
  78 TM-FARM-MODE          VALUE 49.
+ 78 TM-JUMP-ON            VALUE 50.
+ 78 TM-JUMP-BUDGET        VALUE 51.
+ 78 TM-JUMP-LEFT          VALUE 52.
+ 78 TM-JUMP-COOL          VALUE 53.
  01 VM-STATE EXTERNAL.
     05 VM-V                  OCCURS 256 TIMES.
        10 VM-ACT             BINARY-LONG.
