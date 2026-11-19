@@ -1,7 +1,7 @@
 *> Acceptance test of the world state machines of docs/protocol/33 wired into the tick (specs 002 phase 41, doc 33 sections 3, 5 and 7): the clock stands
 *> still with advance_time false and runs at its rate, the world border of a level moves between sizes over its duration and hurts a survival player whose box
 *> lies outside it, and a player who uses a bed at night sleeps, counts to 100 and, being enough, skips the night: the clock moves to the next day's tick 0, the
-*> sleepers wake and a rain is reset. The cobolcraft world has no bed, so the test adds one to the block table.
+*> sleepers wake and a rain is reset. The bed is the whole red_bed of the standard block tables (foot at (10, 100, 10) facing north, head at (10, 100, 9)).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US12-WORLDSIM-STATE.
  DATA DIVISION.
@@ -36,6 +36,14 @@
  01 WS-N                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-BED                 BINARY-LONG.
+ 01 WS-HEAD-STATE          BINARY-LONG.
+ 01 WS-HEAD-Z              BINARY-LONG.
+ 01 WS-BED-KEY             PIC X(112).
+ 01 WS-BED-ID              BINARY-LONG.
+ 01 WS-BED-ROW             PIC X(819).
+ 01 WS-BED-STATUS          BINARY-LONG.
+ 01 WS-PART-NAME           PIC X(24) VALUE "part".
+ 01 WS-HEAD-TEXT           PIC X(32) VALUE "head".
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
@@ -51,6 +59,8 @@
      MOVE 2 TO CS-VIEW-DISTANCE
      MOVE 0 TO CS-HOSTILE-MOBS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
      MOVE CN-PLAYER(WS-CONN) TO WS-ROW
      MOVE PL-ENTITY-ROW(WS-ROW) TO WS-EROW
@@ -124,6 +134,8 @@
      MOVE 100 TO WS-Y
      MOVE 10 TO WS-Z
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-BED
+     COMPUTE WS-HEAD-Z = WS-Z - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-HEAD-Z WS-HEAD-STATE
      MOVE 9.5 TO EN-X(WS-EROW)
      MOVE 100.0 TO EN-Y(WS-EROW)
      MOVE 9.5 TO EN-Z(WS-EROW)
@@ -223,21 +235,13 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
-*> Adds "minecraft:red_bed" (one state, no collision) to the block tables; WS-BED is its state.
+*> The whole red_bed of the standard tables: WS-BED is the foot state (facing north), WS-HEAD-STATE the head half's.
  INSTALL-BED.
-     COMPUTE WS-N = CB-BLOCK-COUNT + 1
-     MOVE "minecraft:red_bed" TO CB-KEY(WS-N)
-     MOVE 17 TO CB-KEY-LENGTH(WS-N)
-     MOVE 0 TO CB-SOLID(WS-N) CB-OPAQUE(WS-N) CB-LIGHT(WS-N) CB-CLASS(WS-N) CB-TOOL-REQ(WS-N) CB-NEED-TIER(WS-N)
-     MOVE -1 TO CB-BREAK-MS(WS-N)
-     MOVE CB-STATE-COUNT TO WS-BED
-     MOVE WS-BED TO CB-FIRST-STATE(WS-N) CB-DEFAULT-STATE(WS-N)
-     MOVE 1 TO CB-STATES(WS-N)
-     COMPUTE CB-S-BLOCK(WS-BED + 1) = WS-N - 1
-     MOVE 0 TO CB-S-LIGHT(WS-BED + 1)
-     ADD 1 TO CB-BLOCK-COUNT
-     ADD 1 TO CB-STATE-COUNT
-     ADD 1 TO CB-EPOCH.
+     MOVE "minecraft:red_bed" TO WS-BED-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-BED-KEY WS-BED-ID WS-BED-ROW WS-BED-STATUS
+     MOVE CB-DEFAULT-STATE(WS-BED-ID + 1) TO WS-BED
+     MOVE WS-BED TO WS-HEAD-STATE
+     CALL "PS-PUT" USING WS-HEAD-STATE WS-PART-NAME WS-HEAD-TEXT.
  END PROGRAM ACC-US12-WORLDSIM-STATE.
 
  COPY CORETEST.

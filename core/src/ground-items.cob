@@ -160,15 +160,18 @@
  END PROGRAM GI-SOLID-CELL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. ENTITY-BOX-HITS.
-*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out,
-*> top out (BINARY-LONG): hit 1 when the collision box of that entity type (ENTITYTYPES.cpy, standin
-*> §3) at that position overlaps a solid cell (GI-SOLID-CELL) with positive volume, faces within
-*> 1e-7 block counting as touching; top is then the highest y among those cells. Ground items
-*> (GI-MOVE) and mobs (core/src/mobs.cob) move with it.
+ PROGRAM-ID. ENTITY-BOX-HITS-Y.
+*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out, top out (BINARY-LONG), top y out (FLOAT-LONG): hit 1 when the collision
+*> box of that entity type (ENTITYTYPES.cpy, standin §3) at that position overlaps a collision shape with positive volume, faces within 1e-7 block counting as touching;
+*> top is then the cell of the highest overlapped cell and top y the height of the highest overlapped top face (a bed is 0.5625 above its cell, a path block 0.9375, a full
+*> block 1.0, as a body standing on it rests). A cell is solid by GI-SOLID-CELL (an unloaded chunk is a full block); in a set that has collision shapes (not the
+*> cobolcraft stand-in set, whose blocks are full cubes) a solid cell counts by the shape of its state (BSH-COLL-ID, BSH-TOP-OVER: the same shapes as the player's
+*> movement, MOVE-COLLIDES-BOX), so a bed, a slab, a path block or a soul sand block is not a full cube for a mob or a ground item. Ground items (GI-MOVE) and mobs
+*> (core/src/mobs.cob) move with it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
+ COPY CONTENT.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -182,6 +185,11 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-SOLID               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-CELL-TOP            FLOAT-LONG.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -190,7 +198,8 @@
  01 L-Z                    FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
  01 L-TOP                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP.
+ 01 L-TOP-Y                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP L-TOP-Y.
      MOVE 0 TO L-HIT
      COMPUTE WS-HALF = ET-WIDTH-MILLI(L-TYPE + 1) / 2000
      COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(L-TYPE + 1) / 1000
@@ -201,17 +210,60 @@
      COMPUTE WS-Y1 = - FUNCTION INTEGER(WS-EPSILON - (L-Y + WS-HEIGHT)) - 1
      COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - WS-HALF + WS-EPSILON)
      COMPUTE WS-Z1 = - FUNCTION INTEGER(WS-EPSILON - (L-Z + WS-HALF)) - 1
+     COMPUTE WS-B(1) = L-X - WS-HALF
+     MOVE L-Y TO WS-B(2)
+     COMPUTE WS-B(3) = L-Z - WS-HALF
+     COMPUTE WS-B(4) = L-X + WS-HALF
+     COMPUTE WS-B(5) = L-Y + WS-HEIGHT
+     COMPUTE WS-B(6) = L-Z + WS-HALF
+     MOVE -1000000 TO L-TOP-Y
      PERFORM VARYING WS-BY FROM WS-Y0 BY 1 UNTIL WS-BY > WS-Y1
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1
                  CALL "GI-SOLID-CELL" USING L-DIM WS-BX WS-BY WS-BZ WS-SOLID
                  IF WS-SOLID = 1
-                     MOVE 1 TO L-HIT
-                     MOVE WS-BY TO L-TOP
+*>                   A full cell unless the set has shapes and the state has a part shape: then the box must meet the shape.
+                     COMPUTE WS-CELL-TOP = WS-BY + 1
+                     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                         CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
+                         IF WS-STATE NOT = 0
+                             CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+                             IF WS-SHAPE > 1
+                                 CALL "BSH-TOP-OVER" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-BOX WS-CELL-TOP
+                             END-IF
+                         END-IF
+                     END-IF
+                     IF WS-CELL-TOP > -999999
+                         MOVE 1 TO L-HIT
+                         MOVE WS-BY TO L-TOP
+                         IF WS-CELL-TOP > L-TOP-Y
+                             MOVE WS-CELL-TOP TO L-TOP-Y
+                         END-IF
+                     END-IF
                  END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-BOX-HITS-Y.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BOX-HITS.
+*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out, top out (BINARY-LONG): ENTITY-BOX-HITS-Y without the height of the top face; top is
+*> the cell of the highest overlapped shape.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TOP-Y               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP.
+     CALL "ENTITY-BOX-HITS-Y" USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP WS-TOP-Y
      GOBACK.
  END PROGRAM ENTITY-BOX-HITS.
 

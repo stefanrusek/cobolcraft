@@ -383,6 +383,8 @@
      CALL "PIGLIN-GUARDED-BREAK" USING L-ROW L-STATE
      CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z L-STATE L-ROW
      CALL "SUP-DESTROY-STATE" USING L-STATE WS-NEW
+*>   BedBlock.playerWillDestroy: the head half of a broken foot goes first, without drops (the shape update of the foot's removal would drop it).
+     CALL "BED-CREATIVE-BREAK" USING L-DIM L-X L-Y L-Z L-STATE L-ROW
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
      CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z L-STATE WS-DROP-Y WS-DROP-STATE
      GOBACK.

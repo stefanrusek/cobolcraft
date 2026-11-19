@@ -1,4 +1,4 @@
-*> Acceptance test (lane fixa, A4; 33 sections 5.1 and 5.2): a right-click on a bed sets the respawn point of the player (also by day, when it cannot
+*> Acceptance test (lane fixa, A4; 33 sections 5.1 and 5.2; lane bugbed: the bed is a whole bed, head half beyond the foot): a right-click on a bed sets the respawn point of the player (also by day, when it cannot
 *> sleep), and a respawn after death goes to the bed while it is still there, else to the world spawn.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-BED-SPAWN.
@@ -21,6 +21,10 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-STATE-TEXT          PIC X(5).
  01 WS-BED                 BINARY-LONG.
+ 01 WS-HEAD-STATE          BINARY-LONG.
+ 01 WS-HZ                  BINARY-LONG.
+ 01 WS-PART-NAME           PIC X(24) VALUE "part".
+ 01 WS-HEAD-TEXT           PIC X(32) VALUE "head".
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -49,6 +53,11 @@
      COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(WS-PLAYER))
      COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-BED
+*>   The head half goes beyond the foot, along the facing (north by default): a bed with only a foot half is not used (33 section 5.2).
+     MOVE WS-BED TO WS-HEAD-STATE
+     CALL "PS-PUT" USING WS-HEAD-STATE WS-PART-NAME WS-HEAD-TEXT
+     COMPUTE WS-HZ = WS-BZ - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-HZ WS-HEAD-STATE
      MOVE 6000 TO CW-TIME
      MOVE "N" TO TL-MODE
      MOVE 0 TO PL-HELD(WS-PLAYER)
@@ -72,6 +81,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The bed is gone: the world spawn.
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-HZ WS-AIR
      MOVE PS-DEAD TO PL-STATE(WS-PLAYER)
      CALL "TEST-CLIENT-COMMAND" USING WS-CONN WS-ACTION
      MOVE "acceptance bed: without the bed the respawn is at the world spawn" TO TL-CASE
