@@ -86,6 +86,9 @@
  01 WS-ID-LENGTH           BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
+ 01 WS-AX                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-S                    BINARY-LONG.
@@ -124,6 +127,44 @@
 *>                   What the mesher reads without float arithmetic: the corners' place in sixteenths and
 *>                   atlas coordinates (BM-FAST).
                      MOVE BM-QUAD-COUNT(L-S) TO WS-N
+*>                   12 section 1.3 step 2: the light of a quad is that of the neighbour cell in the direction of its face only when
+*>                   the quad is flat in its own axis and on the border of the block on that side; any other quad (a torch, a plant, the
+*>                   top of a slab) takes the light of its own cell. (The full-cube exception is the mesher's: it reads ST-OPAQUE.)
+                     EVALUATE QD-SHADE
+                         WHEN DIR-DOWN
+                         WHEN DIR-UP
+                             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                                 MOVE QD-Y(WS-C) TO WS-AX(WS-C)
+                             END-PERFORM
+                         WHEN DIR-NORTH
+                         WHEN DIR-SOUTH
+                             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                                 MOVE QD-Z(WS-C) TO WS-AX(WS-C)
+                             END-PERFORM
+                         WHEN OTHER
+                             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                                 MOVE QD-X(WS-C) TO WS-AX(WS-C)
+                             END-PERFORM
+                     END-EVALUATE
+                     MOVE WS-AX(1) TO WS-LO
+                     MOVE WS-AX(1) TO WS-HI
+                     PERFORM VARYING WS-C FROM 2 BY 1 UNTIL WS-C > 4
+                         IF WS-AX(WS-C) < WS-LO
+                             MOVE WS-AX(WS-C) TO WS-LO
+                         END-IF
+                         IF WS-AX(WS-C) > WS-HI
+                             MOVE WS-AX(WS-C) TO WS-HI
+                         END-IF
+                     END-PERFORM
+                     MOVE 1 TO BM-OWNLIGHT(L-S, WS-N)
+                     IF WS-HI - WS-LO < 0.0001
+                         IF (QD-SHADE = DIR-DOWN OR QD-SHADE = DIR-NORTH OR QD-SHADE = DIR-WEST) AND WS-LO < 0.0001
+                             MOVE 0 TO BM-OWNLIGHT(L-S, WS-N)
+                         END-IF
+                         IF (QD-SHADE = DIR-UP OR QD-SHADE = DIR-SOUTH OR QD-SHADE = DIR-EAST) AND WS-HI > 0.9999
+                             MOVE 0 TO BM-OWNLIGHT(L-S, WS-N)
+                         END-IF
+                     END-IF
                      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
                          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE QD-U(WS-C) QD-V(WS-C)
                              BM-AU(L-S, WS-N, WS-C) BM-AV(L-S, WS-N, WS-C)

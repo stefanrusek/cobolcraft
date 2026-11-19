@@ -1160,6 +1160,7 @@
 *>       and the atlas): per corner the position in sixteenths of a block (-1 when it is not a whole number of them,
 *>       or outside 0 to 16) and the atlas texture coordinates.
        10 BM-FAST OCCURS 24 TIMES.
+          15 BM-OWNLIGHT     BINARY-LONG.    *> 1 = the quad takes the light of its own cell (12 1.3 step 2: it is not flat on the border of the block), else of the cell it looks into
           15 BM-FCORNER OCCURS 4 TIMES.
              20 BM-IX       BINARY-LONG.
              20 BM-IY       BINARY-LONG.
