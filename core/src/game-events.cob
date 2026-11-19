@@ -38,92 +38,232 @@
  END PROGRAM GAME-EVENT-FREQUENCY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GAME-EVENT-LISTENS.
+ PROGRAM-ID. GAME-EVENT-IN-TAG.
+*> USING tag name (PIC X(32), without minecraft:), event name, flag out: the member lists of the game event tags (30-8 section 3.5.1): vibrations (every event with a non-zero frequency),
+*> warden_can_listen (vibrations minus flap, plus shriek and sculk_sensor_tendrils_clicking), ignore_vibrations_sneaking (hit_ground, projectile_shoot, step, swim, item_interact_start,
+*> item_interact_finish), shrieker_can_listen (sculk_sensor_tendrils_clicking), allay_can_listen (note_block_play). Any other tag name has no member.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-FREQ                BINARY-LONG.
  LINKAGE SECTION.
+ 01 L-TAG                  PIC X(32).
+ 01 L-EVENT                PIC X(32).
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAG L-EVENT L-FLAG.
+     MOVE 0 TO L-FLAG
+     CALL "GAME-EVENT-FREQUENCY" USING L-EVENT WS-FREQ
+     EVALUATE L-TAG
+         WHEN "vibrations"
+             IF WS-FREQ > 0
+                 MOVE 1 TO L-FLAG
+             END-IF
+         WHEN "warden_can_listen"
+             IF (WS-FREQ > 0 AND L-EVENT NOT = "flap") OR L-EVENT = "shriek"
+                     OR L-EVENT = "sculk_sensor_tendrils_clicking"
+                 MOVE 1 TO L-FLAG
+             END-IF
+         WHEN "ignore_vibrations_sneaking"
+             IF L-EVENT = "hit_ground" OR L-EVENT = "projectile_shoot" OR L-EVENT = "step"
+                     OR L-EVENT = "swim" OR L-EVENT = "item_interact_start" OR L-EVENT = "item_interact_finish"
+                 MOVE 1 TO L-FLAG
+             END-IF
+         WHEN "shrieker_can_listen"
+             IF L-EVENT = "sculk_sensor_tendrils_clicking"
+                 MOVE 1 TO L-FLAG
+             END-IF
+         WHEN "allay_can_listen"
+             IF L-EVENT = "note_block_play"
+                 MOVE 1 TO L-FLAG
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GAME-EVENT-IN-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-LISTENS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TAG                 PIC X(32) VALUE "warden_can_listen".
+ LINKAGE SECTION.
  01 L-EVENT                PIC X(32).
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-EVENT L-FLAG.
-     CALL "GAME-EVENT-FREQUENCY" USING L-EVENT WS-FREQ
-     MOVE 0 TO L-FLAG
-     IF WS-FREQ > 0 AND L-EVENT NOT = "flap"
-         MOVE 1 TO L-FLAG
-     END-IF
-     IF L-EVENT = "shriek" OR L-EVENT = "sculk_sensor_tendrils_clicking"
-         MOVE 1 TO L-FLAG
-     END-IF
+     CALL "GAME-EVENT-IN-TAG" USING WS-TAG L-EVENT L-FLAG
      GOBACK.
  END PROGRAM GAME-EVENT-LISTENS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GAME-EVENT-SNEAKS.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TAG                 PIC X(32) VALUE "ignore_vibrations_sneaking".
  LINKAGE SECTION.
  01 L-EVENT                PIC X(32).
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-EVENT L-FLAG.
-     MOVE 0 TO L-FLAG
-     IF L-EVENT = "step"
-         MOVE 1 TO L-FLAG
-     END-IF
+     CALL "GAME-EVENT-IN-TAG" USING WS-TAG L-EVENT L-FLAG
      GOBACK.
  END PROGRAM GAME-EVENT-SNEAKS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GAME-EVENT-TAGGED.
+ PROGRAM-ID. GAME-EVENT-WOOL-KEY.
+*> USING key (PIC X(48), with minecraft:), tag selector (1 dampens_vibrations: the 64 <colour>_wool, _carpet, _wool_slab and _wool_stairs; 2 occludes_vibration_signals: the 16 <colour>_wool), flag out.
+*> The block tag lists of 30-8 section 3.5.1; the item tag dampens_vibrations has the same four families.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COLOURS.
+    05 FILLER              PIC X(11) VALUE "white".
+    05 FILLER              PIC X(11) VALUE "orange".
+    05 FILLER              PIC X(11) VALUE "magenta".
+    05 FILLER              PIC X(11) VALUE "light_blue".
+    05 FILLER              PIC X(11) VALUE "yellow".
+    05 FILLER              PIC X(11) VALUE "lime".
+    05 FILLER              PIC X(11) VALUE "pink".
+    05 FILLER              PIC X(11) VALUE "gray".
+    05 FILLER              PIC X(11) VALUE "light_gray".
+    05 FILLER              PIC X(11) VALUE "cyan".
+    05 FILLER              PIC X(11) VALUE "purple".
+    05 FILLER              PIC X(11) VALUE "blue".
+    05 FILLER              PIC X(11) VALUE "brown".
+    05 FILLER              PIC X(11) VALUE "green".
+    05 FILLER              PIC X(11) VALUE "red".
+    05 FILLER              PIC X(11) VALUE "black".
+ 01 WS-COLOUR-TABLE REDEFINES WS-COLOURS.
+    05 WS-COLOUR           PIC X(11) OCCURS 16 TIMES.
+ 01 WS-WANT                PIC X(48).
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-WOOLISH             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TAG L-FLAG.
+     MOVE 0 TO L-FLAG
+     MOVE L-KEY TO WS-KEY
+     IF WS-KEY(1:10) = "minecraft:"
+         MOVE L-KEY(11:38) TO WS-KEY
+     END-IF
+     MOVE 0 TO WS-WOOLISH
+     INSPECT WS-KEY TALLYING WS-WOOLISH FOR ALL "wool" ALL "carpet"
+     IF WS-WOOLISH = 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 16
+         MOVE SPACES TO WS-WANT
+         STRING FUNCTION TRIM(WS-COLOUR(WS-C)) DELIMITED BY SIZE
+             "_wool" DELIMITED BY SIZE INTO WS-WANT
+         IF WS-KEY = WS-WANT
+             MOVE 1 TO L-FLAG
+         END-IF
+         IF L-TAG = 1
+             MOVE SPACES TO WS-WANT
+             STRING FUNCTION TRIM(WS-COLOUR(WS-C)) DELIMITED BY SIZE
+                 "_carpet" DELIMITED BY SIZE INTO WS-WANT
+             IF WS-KEY = WS-WANT
+                 MOVE 1 TO L-FLAG
+             END-IF
+             MOVE SPACES TO WS-WANT
+             STRING FUNCTION TRIM(WS-COLOUR(WS-C)) DELIMITED BY SIZE
+                 "_wool_slab" DELIMITED BY SIZE INTO WS-WANT
+             IF WS-KEY = WS-WANT
+                 MOVE 1 TO L-FLAG
+             END-IF
+             MOVE SPACES TO WS-WANT
+             STRING FUNCTION TRIM(WS-COLOUR(WS-C)) DELIMITED BY SIZE
+                 "_wool_stairs" DELIMITED BY SIZE INTO WS-WANT
+             IF WS-KEY = WS-WANT
+                 MOVE 1 TO L-FLAG
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GAME-EVENT-WOOL-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-IN-BLOCK-TAG.
+*> USING block state id, tag selector (1 dampens_vibrations, 2 occludes_vibration_signals, 3 vibration_resonators), flag out: the member lists of the block tags (30-8 section 3.5.1; GAME-EVENT-WOOL-KEY,
+*> vibration_resonators is amethyst_block). The block is read by its key in the core's block table (CB-KEY), so the lists hold in every world.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
- 01 WS-REGISTRY            PIC X(48) VALUE "block".
- 01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-TAG L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF L-STATE <= 0 OR L-STATE >= CB-STATE-COUNT
+         GOBACK
+     END-IF
+     MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
+     MOVE CB-KEY(WS-BLOCK + 1) TO WS-KEY
+     IF L-TAG = 3
+         IF WS-KEY = "amethyst_block" OR WS-KEY = "minecraft:amethyst_block"
+             MOVE 1 TO L-FLAG
+         END-IF
+         GOBACK
+     END-IF
+     CALL "GAME-EVENT-WOOL-KEY" USING WS-KEY L-TAG L-FLAG
+     GOBACK.
+ END PROGRAM GAME-EVENT-IN-BLOCK-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-TAGGED.
+*> USING dim, x, y, z (BINARY-LONG cell), tag selector (GAME-EVENT-IN-BLOCK-TAG: 1 dampens_vibrations, 2 occludes_vibration_signals, 3 vibration_resonators), flag out: the block at the cell is in that block tag.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STATE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- 01 L-TAG                  PIC X(112).
+ 01 L-TAG                  BINARY-LONG.
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TAG L-FLAG.
      MOVE 0 TO L-FLAG
      CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
      IF WS-STATE > 0
-         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
-         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY L-TAG WS-BLOCK L-FLAG
+         CALL "GAME-EVENT-IN-BLOCK-TAG" USING WS-STATE L-TAG L-FLAG
      END-IF
      GOBACK.
  END PROGRAM GAME-EVENT-TAGGED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GAME-EVENT-RAY.
+*> USING dim, start xyz, end xyz (FLOAT-LONG), hit out: BlockGetter.isBlockInLine with the occludes_vibration_signals predicate (31-8 section 3.6.2 and 3.6.3). Equal points: no cell, a miss. The segment is
+*> extended by 1e-7 of its vector at both ends (S = A - 1e-7 (B - A), T = B + 1e-7 (B - A)), the cell floor(S) is tested first, then at every step the axis with the smallest tmax <= 1 is crossed (a tie goes to Z over Y
+*> over X) and the new cell tested; the cell holding T is the last. A cell holding wool (the block tag member list) ends the walk with a hit.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-TAG                 PIC X(112) VALUE "minecraft:occludes_vibration_signals".
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CY                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- 01 WS-FX                  BINARY-LONG.
- 01 WS-FY                  BINARY-LONG.
- 01 WS-FZ                  BINARY-LONG.
- 01 WS-SX                  BINARY-LONG.
- 01 WS-SY                  BINARY-LONG.
- 01 WS-SZ                  BINARY-LONG.
- 01 WS-DX                  FLOAT-LONG.
- 01 WS-DY                  FLOAT-LONG.
- 01 WS-DZ                  FLOAT-LONG.
- 01 WS-TX                  FLOAT-LONG.
- 01 WS-TY                  FLOAT-LONG.
- 01 WS-TZ                  FLOAT-LONG.
- 01 WS-DTX                 FLOAT-LONG.
- 01 WS-DTY                 FLOAT-LONG.
- 01 WS-DTZ                 FLOAT-LONG.
- 01 WS-BIG                 FLOAT-LONG VALUE 1000000.
- 01 WS-TAGGED              BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
+ 01 WS-EXTEND              FLOAT-LONG VALUE 0.0000001.
+ 01 WS-BIG                 FLOAT-LONG VALUE 1000000000000000000000000000000.
+ 01 WS-TAG                 BINARY-LONG VALUE 2.
+ 01 WS-S1                  FLOAT-LONG.
+ 01 WS-S2                  FLOAT-LONG.
+ 01 WS-S3                  FLOAT-LONG.
+ 01 WS-D1                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-D3                  FLOAT-LONG.
+ 01 WS-SG1                 BINARY-LONG.
+ 01 WS-SG2                 BINARY-LONG.
+ 01 WS-SG3                 BINARY-LONG.
+ 01 WS-ST1                 FLOAT-LONG.
+ 01 WS-ST2                 FLOAT-LONG.
+ 01 WS-ST3                 FLOAT-LONG.
+ 01 WS-TM1                 FLOAT-LONG.
+ 01 WS-TM2                 FLOAT-LONG.
+ 01 WS-TM3                 FLOAT-LONG.
+ 01 WS-C1                  BINARY-LONG.
+ 01 WS-C2                  BINARY-LONG.
+ 01 WS-C3                  BINARY-LONG.
+ 01 WS-F1                  FLOAT-LONG.
+ 01 WS-F2                  FLOAT-LONG.
+ 01 WS-F3                  FLOAT-LONG.
  01 WS-DONE                BINARY-LONG.
- 01 WS-STEPS               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-SX                   FLOAT-LONG.
@@ -135,66 +275,78 @@
  01 L-HIT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-SX L-SY L-SZ L-EX L-EY L-EZ L-HIT.
      MOVE 0 TO L-HIT WS-DONE
-     COMPUTE WS-CX = FUNCTION INTEGER(L-SX)
-     COMPUTE WS-CY = FUNCTION INTEGER(L-SY)
-     COMPUTE WS-CZ = FUNCTION INTEGER(L-SZ)
-     COMPUTE WS-FX = FUNCTION INTEGER(L-EX)
-     COMPUTE WS-FY = FUNCTION INTEGER(L-EY)
-     COMPUTE WS-FZ = FUNCTION INTEGER(L-EZ)
-     COMPUTE WS-DX = L-EX - L-SX
-     COMPUTE WS-DY = L-EY - L-SY
-     COMPUTE WS-DZ = L-EZ - L-SZ
-     MOVE WS-BIG TO WS-TX WS-TY WS-TZ WS-DTX WS-DTY WS-DTZ
-     MOVE 0 TO WS-SX WS-SY WS-SZ
-     IF WS-DX > 0
-         MOVE 1 TO WS-SX
-         COMPUTE WS-TX = (WS-CX + 1 - L-SX) / WS-DX
-         COMPUTE WS-DTX = 1 / WS-DX
+     IF L-SX = L-EX AND L-SY = L-EY AND L-SZ = L-EZ
+         GOBACK
      END-IF
-     IF WS-DX < 0
-         MOVE -1 TO WS-SX
-         COMPUTE WS-TX = (WS-CX - L-SX) / WS-DX
-         COMPUTE WS-DTX = -1 / WS-DX
+     COMPUTE WS-S1 = L-SX - WS-EXTEND * (L-EX - L-SX)
+     COMPUTE WS-S2 = L-SY - WS-EXTEND * (L-EY - L-SY)
+     COMPUTE WS-S3 = L-SZ - WS-EXTEND * (L-EZ - L-SZ)
+     COMPUTE WS-D1 = L-EX + WS-EXTEND * (L-EX - L-SX) - WS-S1
+     COMPUTE WS-D2 = L-EY + WS-EXTEND * (L-EY - L-SY) - WS-S2
+     COMPUTE WS-D3 = L-EZ + WS-EXTEND * (L-EZ - L-SZ) - WS-S3
+     COMPUTE WS-C1 = FUNCTION INTEGER(WS-S1)
+     COMPUTE WS-C2 = FUNCTION INTEGER(WS-S2)
+     COMPUTE WS-C3 = FUNCTION INTEGER(WS-S3)
+     COMPUTE WS-F1 = WS-S1 - WS-C1
+     COMPUTE WS-F2 = WS-S2 - WS-C2
+     COMPUTE WS-F3 = WS-S3 - WS-C3
+     MOVE WS-BIG TO WS-ST1 WS-ST2 WS-ST3
+     MOVE 0 TO WS-SG1 WS-SG2 WS-SG3
+     IF WS-D1 > 0
+         MOVE 1 TO WS-SG1
+         COMPUTE WS-ST1 = 1 / WS-D1
      END-IF
-     IF WS-DY > 0
-         MOVE 1 TO WS-SY
-         COMPUTE WS-TY = (WS-CY + 1 - L-SY) / WS-DY
-         COMPUTE WS-DTY = 1 / WS-DY
+     IF WS-D1 < 0
+         MOVE -1 TO WS-SG1
+         COMPUTE WS-ST1 = -1 / WS-D1
      END-IF
-     IF WS-DY < 0
-         MOVE -1 TO WS-SY
-         COMPUTE WS-TY = (WS-CY - L-SY) / WS-DY
-         COMPUTE WS-DTY = -1 / WS-DY
+     IF WS-D2 > 0
+         MOVE 1 TO WS-SG2
+         COMPUTE WS-ST2 = 1 / WS-D2
      END-IF
-     IF WS-DZ > 0
-         MOVE 1 TO WS-SZ
-         COMPUTE WS-TZ = (WS-CZ + 1 - L-SZ) / WS-DZ
-         COMPUTE WS-DTZ = 1 / WS-DZ
+     IF WS-D2 < 0
+         MOVE -1 TO WS-SG2
+         COMPUTE WS-ST2 = -1 / WS-D2
      END-IF
-     IF WS-DZ < 0
-         MOVE -1 TO WS-SZ
-         COMPUTE WS-TZ = (WS-CZ - L-SZ) / WS-DZ
-         COMPUTE WS-DTZ = -1 / WS-DZ
+     IF WS-D3 > 0
+         MOVE 1 TO WS-SG3
+         COMPUTE WS-ST3 = 1 / WS-D3
      END-IF
-*>   The walk visits at most one cell more than the cells between the start and the end cell on the three axes.
-     COMPUTE WS-STEPS = FUNCTION ABS(WS-FX - WS-CX) + FUNCTION ABS(WS-FY - WS-CY) + FUNCTION ABS(WS-FZ - WS-CZ) + 1
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-STEPS OR WS-DONE = 1
-         CALL "GAME-EVENT-TAGGED" USING L-DIM WS-CX WS-CY WS-CZ WS-TAG WS-TAGGED
-         IF WS-TAGGED = 1
-             MOVE 1 TO L-HIT WS-DONE
-         END-IF
-         IF WS-DONE = 0
-             EVALUATE TRUE
-                 WHEN WS-TX <= WS-TY AND WS-TX <= WS-TZ
-                     ADD WS-SX TO WS-CX
-                     ADD WS-DTX TO WS-TX
-                 WHEN WS-TY <= WS-TZ
-                     ADD WS-SY TO WS-CY
-                     ADD WS-DTY TO WS-TY
-                 WHEN OTHER
-                     ADD WS-SZ TO WS-CZ
-                     ADD WS-DTZ TO WS-TZ
-             END-EVALUATE
+     IF WS-D3 < 0
+         MOVE -1 TO WS-SG3
+         COMPUTE WS-ST3 = -1 / WS-D3
+     END-IF
+     COMPUTE WS-TM1 = WS-ST1 * WS-F1
+     IF WS-SG1 > 0
+         COMPUTE WS-TM1 = WS-ST1 * (1 - WS-F1)
+     END-IF
+     COMPUTE WS-TM2 = WS-ST2 * WS-F2
+     IF WS-SG2 > 0
+         COMPUTE WS-TM2 = WS-ST2 * (1 - WS-F2)
+     END-IF
+     COMPUTE WS-TM3 = WS-ST3 * WS-F3
+     IF WS-SG3 > 0
+         COMPUTE WS-TM3 = WS-ST3 * (1 - WS-F3)
+     END-IF
+     CALL "GAME-EVENT-TAGGED" USING L-DIM WS-C1 WS-C2 WS-C3 WS-TAG L-HIT
+     IF L-HIT = 1
+         MOVE 1 TO WS-DONE
+     END-IF
+     PERFORM UNTIL WS-DONE = 1 OR (WS-TM1 > 1 AND WS-TM2 > 1 AND WS-TM3 > 1)
+         EVALUATE TRUE
+             WHEN WS-TM3 <= WS-TM1 AND WS-TM3 <= WS-TM2
+                 ADD WS-SG3 TO WS-C3
+                 ADD WS-ST3 TO WS-TM3
+             WHEN WS-TM2 <= WS-TM1
+                 ADD WS-SG2 TO WS-C2
+                 ADD WS-ST2 TO WS-TM2
+             WHEN OTHER
+                 ADD WS-SG1 TO WS-C1
+                 ADD WS-ST1 TO WS-TM1
+         END-EVALUATE
+         CALL "GAME-EVENT-TAGGED" USING L-DIM WS-C1 WS-C2 WS-C3 WS-TAG L-HIT
+         IF L-HIT = 1
+             MOVE 1 TO WS-DONE
          END-IF
      END-PERFORM
      GOBACK.
@@ -204,7 +356,7 @@
  PROGRAM-ID. GAME-EVENT-OCCLUDED.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-OFFSET              FLOAT-LONG VALUE 0.00001.
+ 01 WS-OFFSET              FLOAT-LONG VALUE 0.000009999999747378752.
  01 WS-EX                  FLOAT-LONG.
  01 WS-EY                  FLOAT-LONG.
  01 WS-EZ                  FLOAT-LONG.
@@ -298,12 +450,10 @@
  01 WS-P                   BINARY-LONG.
  01 WS-ARROW               BINARY-LONG.
  01 WS-TAGGED              BINARY-LONG.
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-REGISTRY            PIC X(48) VALUE "block".
- 01 WS-ITEM-REGISTRY       PIC X(48) VALUE "item".
- 01 WS-TAG                 PIC X(112) VALUE "minecraft:dampens_vibrations".
  01 WS-SOURCE              BINARY-LONG.
- COPY CBLOCKS.
+ 01 WS-DAMPENS             BINARY-LONG VALUE 1.
+ 01 WS-CAREFUL             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(48).
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -327,7 +477,7 @@
          GOBACK
      END-IF
      MOVE L-SOURCE TO WS-SOURCE
-     MOVE 0 TO WS-CODE WS-OWNER WS-SNEAK
+     MOVE 0 TO WS-CODE WS-OWNER WS-SNEAK WS-CAREFUL
      IF WS-SOURCE > 0
          IF EN-USED(WS-SOURCE) NOT = 1
              MOVE 0 TO WS-SOURCE
@@ -349,19 +499,24 @@
                      GOBACK
                  END-IF
                  MOVE WS-PLAYER TO WS-CODE
-                 CALL "GAME-EVENT-SNEAKS" USING L-EVENT WS-SNEAKS
+*>               Entity.isSteppingCarefully: the shift-key flag (30-8 section 3.5)
                  COMPUTE WS-FLAGS = PL-POSE-FLAGS(WS-PLAYER) / 2
-                 IF WS-SNEAKS = 1 AND FUNCTION MOD(WS-FLAGS, 2) = 1
-                     MOVE 1 TO WS-SNEAK
+                 IF FUNCTION MOD(WS-FLAGS, 2) = 1
+                     MOVE 1 TO WS-CAREFUL
                  END-IF
              WHEN WS-WARDEN = 1
 *>               Warden.dampensVibrations: the warden never hears its own events and a sculk sensor never hears it either
                  GOBACK
              WHEN WS-M > 0
                  COMPUTE WS-CODE = CORE-MAX-PLAYERS + WS-SOURCE
+*>               a crouching cat or ocelot is also stepping carefully (Cat and Ocelot override isSteppingCarefully with isCrouching, 30-8 section 3.5.1)
+                 IF EN-CROUCHING(WS-SOURCE) = 1 AND (SM-KEY(WS-M) = "cat" OR SM-KEY(WS-M) = "ocelot")
+                     MOVE 1 TO WS-CAREFUL
+                 END-IF
              WHEN EN-TYPE(WS-SOURCE) = CR-LOOSE-ITEM
 *>               ItemEntity.dampensVibrations: the stack is in the item tag dampens_vibrations (wool)
-                 CALL "CONTENT-TAG-HAS" USING WS-ITEM-REGISTRY WS-TAG EN-ITEM(WS-SOURCE) WS-TAGGED
+                 MOVE IT-KEY(EN-ITEM(WS-SOURCE) + 1) TO WS-ITEM-KEY
+                 CALL "GAME-EVENT-WOOL-KEY" USING WS-ITEM-KEY WS-DAMPENS WS-TAGGED
                  IF WS-TAGGED = 1
                      GOBACK
                  END-IF
@@ -377,10 +532,16 @@
                  END-IF
          END-EVALUATE
      END-IF
+*>   a careful source (shift key, crouching cat or ocelot) with an event of ignore_vibrations_sneaking is not valid (30-8 section 3.5 step 2)
+     IF WS-CAREFUL = 1
+         CALL "GAME-EVENT-SNEAKS" USING L-EVENT WS-SNEAKS
+         IF WS-SNEAKS = 1
+             GOBACK
+         END-IF
+     END-IF
 *>   the affected block state in the block tag dampens_vibrations (30 section 3.5 step 3)
      IF L-STATE > 0
-         MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
-         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-TAGGED
+         CALL "GAME-EVENT-IN-BLOCK-TAG" USING L-STATE WS-DAMPENS WS-TAGGED
          IF WS-TAGGED = 1
              GOBACK
          END-IF
