@@ -55,6 +55,7 @@
          MOVE BX-ROW(WS-I) TO WS-ROW
          IF PL-MODE(WS-ROW) NOT = WS-MODE
              ADD 1 TO WS-CHANGED
+             COMPUTE PL-PREV-MODE1(WS-ROW) = PL-MODE(WS-ROW) + 1
              MOVE WS-MODE TO PL-MODE(WS-ROW)
              MOVE 0 TO PL-FLYING(WS-ROW)
              IF WS-MODE = 3
@@ -1079,6 +1080,7 @@
          PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > 64
              IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) NOT = PS-JOINING AND PL-MODE(WS-ROW) NOT = CW-GAME-MODE
                  ADD 1 TO WS-MOVED
+                 COMPUTE PL-PREV-MODE1(WS-ROW) = PL-MODE(WS-ROW) + 1
                  MOVE CW-GAME-MODE TO PL-MODE(WS-ROW)
                  MOVE 0 TO PL-FLYING(WS-ROW)
                  MOVE CW-GAME-MODE TO WS-VALUE

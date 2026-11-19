@@ -56,8 +56,9 @@
 *>   PLAY-ARRIVE USING connection id         the arrival part of the join sequence (step 5)
 *> Builders (append id + body to the caller's PB-BUFFER):
 *>   PLAY-LOGIN-BUILD USING player row, PB-BUFFER
-*>   PLAY-SPAWN-INFO-BUILD USING dimension row, game mode (PIC 9), PB-BUFFER (no packet id)
-*>   PLAY-RESPAWN-BUILD USING dimension row, game mode (PIC 9), data to keep, PB-BUFFER
+*>   PLAY-SPAWN-INFO-ROW USING player row (0 none), dimension row, game mode (PIC 9), PB-BUFFER (no packet id; PLAY-SPAWN-INFO-BUILD is the same for no player)
+*>   PLAY-RESPAWN-ROW USING player row (0 none), dimension row, game mode (PIC 9), data to keep, PB-BUFFER (PLAY-RESPAWN-BUILD is the same for no player)
+*>   OBFUSCATE-SEED USING seed, hashed seed out (BINARY-DOUBLE each)
 *>   PLAY-ABILITIES-BUILD USING game mode, flying (PIC 9 each), PB-BUFFER
 *>   PLAY-HELD-SLOT-BUILD USING slot, PB-BUFFER
 *>   PLAY-CONTENT-BUILD USING player row, PB-BUFFER
@@ -529,13 +530,43 @@
  END PROGRAM PLAY-GET-HASHED-STACK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. OBFUSCATE-SEED.
+*> USING seed (BINARY-DOUBLE), hashed seed out (BINARY-DOUBLE): BiomeManager.obfuscateSeed (57-client-closures-3 section 10; 10 section 7.7): the
+*> first 8 bytes of SHA-256 of the 8 little-endian bytes of the seed, read as a little-endian 64-bit integer (the Login and Respawn seed field).
+*> The bytes of a BINARY-DOUBLE are little-endian on the platforms of the project, so the field is read and written as its own bytes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DATA                PIC X(8).
+ 01 WS-DATA-NUMBER REDEFINES WS-DATA BINARY-DOUBLE SIGNED.
+ 01 WS-DIGEST              PIC X(64).
+ 01 WS-DIGEST-LENGTH       BINARY-LONG UNSIGNED.
+ 01 WS-DATA-LENGTH         BINARY-DOUBLE UNSIGNED VALUE 8.
+ 01 WS-ALGORITHM           USAGE POINTER.
+ 01 WS-ENGINE              USAGE POINTER VALUE NULL.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-RESULT              PIC X(8).
+ 01 WS-RESULT-NUMBER REDEFINES WS-RESULT BINARY-DOUBLE SIGNED.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-HASHED               BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SEED L-HASHED.
+     MOVE L-SEED TO WS-DATA-NUMBER
+     CALL STATIC "EVP_sha256" RETURNING WS-ALGORITHM
+     CALL STATIC "EVP_Digest" USING BY REFERENCE WS-DATA BY VALUE WS-DATA-LENGTH
+         BY REFERENCE WS-DIGEST BY REFERENCE WS-DIGEST-LENGTH BY VALUE WS-ALGORITHM
+         BY VALUE WS-ENGINE RETURNING WS-RC
+     MOVE WS-DIGEST(1:8) TO WS-RESULT
+     MOVE WS-RESULT-NUMBER TO L-HASHED
+     GOBACK.
+ END PROGRAM OBFUSCATE-SEED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-LOGIN-BUILD.
 *> USING player row, PB-BUFFER: Login 0x32 (05a; 09 §3.2): the player's entity id, hardcore false,
 *> dimension names = every enabled dimension (CW-DIM, in order), max players 20, view and
 *> simulation distance = the configured view distance, reduced debug info false, show death screen
-*> true, limited crafting false, CommonPlayerSpawnInfo of the player's dimension (type id, key,
-*> hashed seed 0, game mode, previous game mode absent, not debug, not flat, no last death
-*> location, portal cooldown 0, sea level), online mode false, enforces secure chat false.
+*> true, limited crafting false, CommonPlayerSpawnInfo of the player's dimension (PLAY-SPAWN-INFO-ROW),
+*> online mode false, enforces secure chat false.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -590,29 +621,47 @@
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-REDUCED-FLAG
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-SHOW-DEATH
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-LIMITED-FLAG
-     CALL "PLAY-SPAWN-INFO-BUILD" USING PL-DIM(L-ROW) PL-MODE(L-ROW) PB-BUFFER
+     CALL "PLAY-SPAWN-INFO-ROW" USING L-ROW PL-DIM(L-ROW) PL-MODE(L-ROW) PB-BUFFER
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      GOBACK.
  END PROGRAM PLAY-LOGIN-BUILD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PLAY-RESPAWN-BUILD.
-*> USING dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
-*> Respawn 0x54 (05b; 09 §3.3): CommonPlayerSpawnInfo of the dimension, then the Byte data to keep
-*> (0x00 after a death, 0x03 for travel).
+ PROGRAM-ID. PLAY-RESPAWN-ROW.
+*> USING player row (0 none), dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
+*> Respawn 0x54 (05b; 09 §3.3): CommonPlayerSpawnInfo of the dimension for that player (PLAY-SPAWN-INFO-ROW), then the Byte
+*> data to keep (0x00 after a death, 0x03 for travel).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PACKET-ID           BINARY-LONG VALUE 84.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MODE                 PIC 9.
+ 01 L-KEEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-MODE L-KEEP PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PLAY-SPAWN-INFO-ROW" USING L-ROW L-DIM L-MODE PB-BUFFER
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-KEEP
+     GOBACK.
+ END PROGRAM PLAY-RESPAWN-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-RESPAWN-BUILD.
+*> USING dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
+*> PLAY-RESPAWN-ROW of no player (previous game mode and last death location absent).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  01 L-MODE                 PIC 9.
  01 L-KEEP                 BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-MODE L-KEEP PB-BUFFER.
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PLAY-SPAWN-INFO-BUILD" USING L-DIM L-MODE PB-BUFFER
-     CALL "PB-PUT-BYTE" USING PB-BUFFER L-KEEP
+     CALL "PLAY-RESPAWN-ROW" USING WS-NO-PLAYER L-DIM L-MODE L-KEEP PB-BUFFER
      GOBACK.
  END PROGRAM PLAY-RESPAWN-BUILD.
 
@@ -658,12 +707,13 @@
  END PROGRAM DIM-TYPE-ID.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
-*> USING dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
-*> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2): dimension type id, dimension key,
-*> hashed seed 0, game mode, previous game mode absent, not debug, is flat (true in every dimension of a superflat world, 56 section 5.1;
-*> false otherwise), no last death location, portal cooldown 0, sea level (-63 in the overworld of a superflat world, 56 section 4.1 and 5.2; the
-*> dimension's own otherwise).
+ PROGRAM-ID. PLAY-SPAWN-INFO-ROW.
+*> USING player row (0 none), dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
+*> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2; 57-client-closures-3 sections 8 to 11): dimension type id, dimension key,
+*> hashed seed (obfuscateSeed of the world seed, 10; 0 in a cobolcraft world by decision, 09 §3.2), game mode, previous game mode (the
+*> player's PL-PREV-MODE1: 0 none, else mode + 1), not debug, is flat (true in every dimension of a superflat world, 56 section 5.1;
+*> false otherwise), last death location (the player's: present flag, dimension key, block position; absent until the first death),
+*> portal cooldown 0, sea level (-63 in the overworld of a superflat world, 56 section 4.1 and 5.2; the dimension's own otherwise: 63, 32, 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -672,22 +722,37 @@
  01 WS-FLAT                BINARY-LONG.
  01 WS-SEA                 BINARY-LONG.
  01 WS-SEED                BINARY-DOUBLE VALUE 0.
+ 01 WS-WORLD-SEED          BINARY-DOUBLE.
  01 WS-MODE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-TYPE-ID             BINARY-LONG.
+ 01 WS-PREVIOUS            BINARY-LONG.
+ 01 WS-DEATH               BINARY-LONG.
+ 01 WS-DEATH-DIM           BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
  01 L-MODE                 PIC 9.
- PROCEDURE DIVISION USING L-DIM L-MODE PB-BUFFER.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-MODE PB-BUFFER.
      MOVE L-DIM TO WS-DIM
      CALL "DIM-TYPE-ID" USING WS-DIM WS-TYPE-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE-ID
      CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DIM) DM-KEY-LENGTH(WS-DIM)
+     MOVE 0 TO WS-SEED
+     IF CW-WORLD-TYPE NOT = "cobolcraft"
+         MOVE CW-SEED TO WS-WORLD-SEED
+         CALL "OBFUSCATE-SEED" USING WS-WORLD-SEED WS-SEED
+     END-IF
      CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
      MOVE L-MODE TO WS-MODE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MODE
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO WS-PREVIOUS WS-DEATH
+     IF L-ROW > 0
+         MOVE PL-PREV-MODE1(L-ROW) TO WS-PREVIOUS
+         MOVE PL-DEATH-HAS(L-ROW) TO WS-DEATH
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PREVIOUS
      MOVE 0 TO WS-FLAT
      MOVE DM-SEA-LEVEL(WS-DIM) TO WS-SEA
      IF CW-WORLD-TYPE = "superflat"
@@ -698,9 +763,30 @@
      END-IF
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAT
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-DEATH
+     IF WS-DEATH = 1
+         MOVE PL-DEATH-DIM(L-ROW) TO WS-DEATH-DIM
+         CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DEATH-DIM) DM-KEY-LENGTH(WS-DEATH-DIM)
+         CALL "PB-PUT-POSITION" USING PB-BUFFER PL-DEATH-X(L-ROW) PL-DEATH-Y(L-ROW) PL-DEATH-Z(L-ROW)
+     END-IF
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SEA
+     GOBACK.
+ END PROGRAM PLAY-SPAWN-INFO-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
+*> USING dimension row (BINARY-LONG), game mode (PIC 9), PB-BUFFER: PLAY-SPAWN-INFO-ROW of no player (previous game mode and
+*> last death location absent).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MODE                 PIC 9.
+ PROCEDURE DIVISION USING L-DIM L-MODE PB-BUFFER.
+     CALL "PLAY-SPAWN-INFO-ROW" USING WS-NO-PLAYER L-DIM L-MODE PB-BUFFER
      GOBACK.
  END PROGRAM PLAY-SPAWN-INFO-BUILD.
 
