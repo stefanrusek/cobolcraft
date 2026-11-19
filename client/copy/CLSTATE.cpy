@@ -1487,7 +1487,6 @@
           15 RL-PT-G         FLOAT-SHORT.
           15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
-       10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
        10 RL-UI-TINT         BINARY-LONG.    *> RGB integer multiplied into the next UI quads (0 none): the loading screen's status colours and bar
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
