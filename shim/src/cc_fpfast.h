@@ -1,4 +1,4 @@
-/* cc_fpfast: the names the generated C of a COBOL program calls instead of libcob's cob_decimal_* and cob_intr_* functions when
+/* cc_fpfast: the names the generated C of a COBOL program calls instead of libcob's cob_decimal_*, cob_intr_* and a few other functions (cob_cmp, cob_move, ...) when
  * the program is compiled with the defines of tools/package.mk (FPFAST=1, the default). Private to the shim and its
  * tests: no COBOL source calls these, and they are not part of contract/include/ccshim.h. See cc_fpfast.c. */
 #ifndef COBOLCRAFT_CC_FPFAST_H
@@ -22,5 +22,19 @@ cob_field *ccfp_intr_cos(cob_field *f);
 cob_field *ccfp_intr_sqrt(cob_field *f);
 cob_field *ccfp_intr_mod(cob_field *f1, cob_field *f2);
 cob_field *ccfp_intr_binop(cob_field *f1, const int op, cob_field *f2);
+cob_field *ccfp_intr_tan(cob_field *f);
+cob_field *ccfp_intr_atan(cob_field *f);
+cob_field *ccfp_intr_integer(cob_field *f);
+cob_field *ccfp_intr_integer_part(cob_field *f);
+cob_field *ccfp_intr_abs(cob_field *f);
+cob_field *ccfp_intr_pi(void);
+
+/* the other libcob functions the generated C calls for a number: compares, reads of a binary field, MOVE */
+int ccfp_cmp_llint(cob_field *f, const cob_s64_t n);
+int ccfp_cmp(cob_field *f1, cob_field *f2);
+int ccfp_numeric_cmp(cob_field *f1, cob_field *f2);
+int ccfp_get_int(cob_field *f);
+cob_s64_t ccfp_get_llint(cob_field *f);
+void ccfp_move(cob_field *src, cob_field *dst);
 
 #endif
