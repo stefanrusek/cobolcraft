@@ -607,6 +607,10 @@
        10 EN-TR-RETURN       BINARY-LONG.        *> a thrown trident: 1 once the return sound has played
        10 EN-IS-TRIDENT      BINARY-LONG.        *> 1 on a thrown trident (an entity of the type trident that flies like an arrow, ranged-trident.cob)
        10 EN-FROM-BUCKET     BINARY-LONG.        *> a mob released from a bucket (fromBucket)
+*>     --- 002-lane-buggolem: iron golem (core/src/mob-pets.cob GOLEM-TICK; 19 section 19, 44 part 3 section 6) ---
+       10 EN-PLAYER-MADE     BINARY-LONG.        *> iron golem: 1 when built from the pumpkin pattern (PlayerCreated: it never targets a player)
+       10 EN-GOLEM-PL        BINARY-LONG.        *> iron golem: the player row it is angry at (0 none); EN-ANGER holds the ticks of anger left
+       10 EN-GOLEM-FLOWER    BINARY-LONG.        *> iron golem: ticks left of the offered flower pose (OfferFlowerGoal, 400 at the start; 0 none)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

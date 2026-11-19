@@ -976,6 +976,7 @@
  01 WS-FRICTION            FLOAT-LONG.
  01 WS-ICE-SCALE           FLOAT-LONG.
  01 WS-STROLL-SCALE        FLOAT-LONG.
+ 01 WS-STROLL-ROLL         BINARY-LONG.
  01 WS-CUBE                BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-COUNT               BINARY-LONG VALUE 3.
@@ -1443,20 +1444,28 @@
          WHEN WS-CUBE = 1
 *>           A slime or magma cube never walks: it hops (STDMOB-CUBE-HOP below), at random or at its target.
              CONTINUE
-         WHEN SM-KEY(WS-M) = "iron_golem" OR "snow_golem"
-*>           A golem does not stroll: the iron golem's stroll and return goals need a village, the snow golem's stroll has probability 1.0E-5 (19 sections 19 and 20).
+         WHEN SM-KEY(WS-M) = "snow_golem"
+*>           A snow golem does not stroll: its stroll has probability 1.0E-5 (19 section 20).
+             MOVE 0 TO EN-COOLDOWN(WS-ROW)
+         WHEN SM-KEY(WS-M) = "iron_golem" AND EN-GOLEM-FLOWER(WS-ROW) > 0
+*>           An iron golem holding out its flower stands (OfferFlowerGoal holds the move flag).
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN OTHER
-*>           The goal selector evaluates on the ticks where (tickCount + id) mod 2 = 0 (18 section 2.7), with the roll nextInt(60) of the stroll goal.
+*>           The goal selector evaluates on the ticks where (tickCount + id) mod 2 = 0 (18 section 2.7), with the roll nextInt(60) of the stroll goal (interval 120);
+*>           the iron golem's stroll (GolemRandomStrollInVillage, interval 240, 44 part 3 section 6) rolls nextInt(120): outside a village it falls back to a random spot.
              COMPUTE WS-Q = CW-TICKS + EN-ID(WS-ROW)
              COMPUTE WS-EVAL = FUNCTION MOD(WS-Q, 2)
+             MOVE SM-STROLL-ROLL TO WS-STROLL-ROLL
+             IF SM-KEY(WS-M) = "iron_golem"
+                 COMPUTE WS-STROLL-ROLL = SM-STROLL-ROLL * 2
+             END-IF
              IF EN-COOLDOWN(WS-ROW) = 0 AND WS-EVAL = 0
                  MOVE EN-ID(WS-ROW) TO WS-ARG(1)
                  MOVE CW-TIME TO WS-ARG(2)
                  MOVE 7 TO WS-ARG(3)
                  CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
-                 IF FUNCTION MOD(WS-R, SM-STROLL-ROLL) = 0
-                     COMPUTE WS-Q = WS-R / SM-STROLL-ROLL
+                 IF FUNCTION MOD(WS-R, WS-STROLL-ROLL) = 0
+                     COMPUTE WS-Q = WS-R / WS-STROLL-ROLL
 *>                   WaterAvoidingRandomStrollGoal (18 section 4.2): a mob in water looks 15 blocks around for a land position, otherwise 10 (LandRandomPos).
                      MOVE EN-X(WS-ROW) TO WS-WX
                      MOVE EN-Y(WS-ROW) TO WS-WY

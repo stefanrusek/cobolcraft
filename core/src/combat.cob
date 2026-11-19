@@ -698,7 +698,8 @@
 *> USING mob entity row, attacker player row, extra knockback K (thousandths, 0 none): the knockback of a fresh hit on a mob (17 section 4.6): the mob's motion is
 *> halved and 0.4 away from the attacker is added horizontally (the line from the attacker to the mob; the attacker's facing when they stand on one
 *> spot), then K along the attacker's facing; a mob on the ground also rises (vertical speed min(0.4, speed / 2 + 0.4)). The motion decays in the mob's step
-*> (EN-VX, EN-VZ, EN-VY of core/copy/CORESTATE.cpy). The mob's knockback resistance is not applied (no attribute table of it is kept).
+*> (EN-VX, EN-VZ, EN-VY of core/copy/CORESTATE.cpy). Every strength is multiplied by (1 - the species' knockback_resistance) first (4.6 step 1, M187-RESIST: iron
+*> golem 1.0, hoglin 0.6, nautilus 0.3) and a strength of 0 or less stops the knockback, so an iron golem is not pushed or thrown up at all (lane buggolem, T42901).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -708,11 +709,24 @@
  01 WS-YAW                 FLOAT-LONG.
  01 WS-RAD                 FLOAT-LONG.
  01 WS-PI                  FLOAT-LONG VALUE 3.14159265358979.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-RESIST              BINARY-LONG.
+ 01 WS-FACTOR              FLOAT-LONG.
+ 01 WS-BASE                FLOAT-LONG.
+ 01 WS-EXTRA               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-MOB                  BINARY-LONG.
  01 L-ATTACKER             BINARY-LONG.
  01 L-K                    BINARY-LONG.
  PROCEDURE DIVISION USING L-MOB L-ATTACKER L-K.
+     CALL "MOB-SPECIES-KEY" USING L-MOB WS-KEY
+     CALL "M187-RESIST" USING WS-KEY WS-RESIST
+     IF WS-RESIST >= 1000
+         GOBACK
+     END-IF
+     COMPUTE WS-FACTOR = (1000 - WS-RESIST) / 1000
+     COMPUTE WS-BASE = 0.4 * WS-FACTOR
+     COMPUTE WS-EXTRA = L-K / 1000 * WS-FACTOR
      MOVE PL-YAW(L-ATTACKER) TO WS-YAW
      COMPUTE WS-RAD = WS-YAW * WS-PI / 180
      COMPUTE WS-DX = EN-X(L-MOB) - PL-X(L-ATTACKER)
@@ -723,14 +737,14 @@
          COMPUTE WS-DZ = FUNCTION COS(WS-RAD)
          MOVE 1 TO WS-LEN
      END-IF
-     COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) / 2 + WS-DX / WS-LEN * 0.4
-     COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) / 2 + WS-DZ / WS-LEN * 0.4
+     COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) / 2 + WS-DX / WS-LEN * WS-BASE
+     COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) / 2 + WS-DZ / WS-LEN * WS-BASE
      IF L-K > 0
-         COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) - FUNCTION SIN(WS-RAD) * L-K / 1000
-         COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) + FUNCTION COS(WS-RAD) * L-K / 1000
+         COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) - FUNCTION SIN(WS-RAD) * WS-EXTRA
+         COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) + FUNCTION COS(WS-RAD) * WS-EXTRA
      END-IF
      IF EN-ON-GROUND(L-MOB) = 1
-         COMPUTE EN-VY(L-MOB) = FUNCTION MIN(0.4, EN-VY(L-MOB) / 2 + 0.4)
+         COMPUTE EN-VY(L-MOB) = FUNCTION MIN(0.4, EN-VY(L-MOB) / 2 + WS-BASE)
      END-IF
      GOBACK.
  END PROGRAM COMBAT-MOB-KNOCKBACK.
