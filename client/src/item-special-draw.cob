@@ -79,7 +79,9 @@
  WORKING-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
- 01 WS-T                   BINARY-LONG.
+ 01 WS-PJ                  BINARY-LONG.
+ 01 WS-PREV                BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-COUNT                BINARY-LONG.
  01 L-KEYS.
@@ -91,10 +93,13 @@
          MOVE WS-I TO L-ORDER(WS-I)
          MOVE WS-I TO WS-J
          PERFORM UNTIL WS-J <= 1
-             IF L-KEY(L-ORDER(WS-J - 1)) > L-KEY(L-ORDER(WS-J))
-                 MOVE L-ORDER(WS-J) TO WS-T
-                 MOVE L-ORDER(WS-J - 1) TO L-ORDER(WS-J)
-                 MOVE WS-T TO L-ORDER(WS-J - 1)
+*>           The two entries are read into plain fields first (a subscript inside a subscript is miscompiled).
+             COMPUTE WS-PJ = WS-J - 1
+             MOVE L-ORDER(WS-PJ) TO WS-PREV
+             MOVE L-ORDER(WS-J) TO WS-CUR
+             IF L-KEY(WS-PREV) > L-KEY(WS-CUR)
+                 MOVE WS-CUR TO L-ORDER(WS-PJ)
+                 MOVE WS-PREV TO L-ORDER(WS-J)
                  SUBTRACT 1 FROM WS-J
              ELSE
                  MOVE 1 TO WS-J

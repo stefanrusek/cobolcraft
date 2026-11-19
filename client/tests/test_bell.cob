@@ -61,6 +61,7 @@
  01 WS-SUM                 FLOAT-LONG OCCURS 5 TIMES.
  01 WS-KT                  PIC 99.
  01 WS-CT                  PIC 99.
+ 01 WS-KEEP                BINARY-LONG.
  01 WS-EYE-POINT.
     05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
  01 WS-CAPACITY            BINARY-LONG VALUE 1024.
@@ -220,6 +221,7 @@
      MOVE 11 TO WS-Z
      CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
      MOVE 0 TO WS-CX WS-CZ
+     MOVE 0 TO BL-READY
      CALL "BELL-SCAN" USING CLIENT-STATE WS-CX WS-CZ
      MOVE "bugbeitems bell: scanning the loaded chunk finds both bells" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
@@ -235,6 +237,21 @@
      MOVE "bugbeitems bell: clearing the replica drops the bells" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE BL-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A pack without the bell sprite: the stripes of the missing texture (sprite 1) are drawn, not nothing.
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE AT-SPRITE-COUNT TO WS-KEEP
+     MOVE 1 TO AT-SPRITE-COUNT
+     MOVE 0 TO RL-GI-COUNT
+     CALL "BELL-MESH" USING CLIENT-STATE WS-EYE-POINT
+     MOVE WS-KEEP TO AT-SPRITE-COUNT
+     MOVE "bugbeitems bell: with no bell sprite the bell is still drawn (missing texture)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-GI-COUNT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
