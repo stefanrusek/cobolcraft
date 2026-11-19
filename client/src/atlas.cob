@@ -612,6 +612,19 @@
  01 WS-PTR-B               USAGE POINTER.
  01 WS-OFFSET              BINARY-LONG.
  01 WS-KEEP                BINARY-LONG.
+ 01 WS-WEIGHT              BINARY-LONG.
+ 01 WS-SUM                 BINARY-LONG.
+ 01 WS-PART                BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-QI                  BINARY-LONG.
+ 01 WS-TABLE-READY         BINARY-LONG VALUE 0.
+*> The blend of a byte is table lookups: a x keep and b x share by the byte's value, then the quotient of the sum by 1000 (256000 entries, made on the first blend).
+ 01 WS-KEEP-TABLE.
+    05 WS-KT               BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-SHARE-TABLE.
+    05 WS-ST               BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-QUOTIENT-TABLE.
+    05 WS-QT               BINARY-CHAR UNSIGNED OCCURS 256000 TIMES.
  01 B-BYTES-A BASED.
     05 BA-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
  01 B-BYTES-B BASED.
@@ -659,7 +672,18 @@
                  MOVE B-PIXELS(WS-PICTURE * WS-BYTES + 1:WS-BYTES) TO B-OUT(1:WS-BYTES)
              ELSE
 *>               The blend of two pictures, byte by byte on unsigned views (the intrinsic ORD and CHAR calls cost most of a
-*>               frame when several sprites interpolate).
+*>               frame when several sprites interpolate; so did the decimal arithmetic of (a x keep + b x share) / 1000 a byte:
+*>               the products are tables of the frame's share and the quotient a table of the sums).
+                 IF WS-TABLE-READY = 0
+                     MOVE 0 TO WS-QI
+                     PERFORM VARYING WS-Q FROM 0 BY 1 UNTIL WS-Q > 255
+                         PERFORM 1000 TIMES
+                             ADD 1 TO WS-QI
+                             MOVE WS-Q TO WS-QT(WS-QI)
+                         END-PERFORM
+                     END-PERFORM
+                     MOVE 1 TO WS-TABLE-READY
+                 END-IF
                  SET WS-PTR-A TO AN-PIXELS(WS-A)
                  COMPUTE WS-OFFSET = WS-PICTURE * WS-BYTES
                  SET WS-PTR-A UP BY WS-OFFSET
@@ -670,8 +694,19 @@
                  SET ADDRESS OF B-BYTES-B TO WS-PTR-B
                  SET ADDRESS OF B-BYTES-O TO AN-OUT(WS-A)
                  COMPUTE WS-KEEP = 1000 - WS-SHARE
+                 MOVE 0 TO WS-WEIGHT
+                 MOVE 0 TO WS-SUM
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+                     MOVE WS-WEIGHT TO WS-KT(WS-I)
+                     ADD WS-KEEP TO WS-WEIGHT
+                     MOVE WS-SUM TO WS-ST(WS-I)
+                     ADD WS-SHARE TO WS-SUM
+                 END-PERFORM
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BYTES
-                     COMPUTE BO-BYTE(WS-I) = (BA-BYTE(WS-I) * WS-KEEP + BB-BYTE(WS-I) * WS-SHARE) / 1000
+                     MOVE WS-KT(BA-BYTE(WS-I) + 1) TO WS-SUM
+                     MOVE WS-ST(BB-BYTE(WS-I) + 1) TO WS-PART
+                     ADD WS-PART TO WS-SUM
+                     MOVE WS-QT(WS-SUM + 1) TO BO-BYTE(WS-I)
                  END-PERFORM
              END-IF
              MOVE AN-SPRITE(WS-A) TO WS-S

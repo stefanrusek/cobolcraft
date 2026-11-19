@@ -1,5 +1,6 @@
 *> Cost test (lane resume, T5820): ENTITIES-MESH with 70 hostile mobs (zombie, creeper, skeleton, spider) within 40 blocks of the eye, 100 frames. The mean
-*> time of a frame's entity mesh is shown (DISPLAY "BENCH ..."), and must stay below a generous bound.
+*> time of a frame's entity mesh is shown (DISPLAY "BENCH ...": the wall clock, and the CPU time of the process, C clock(), that the bounds are tested
+*> against: a loaded machine slows the wall clock, not the work), and must stay below a generous bound.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-ENTITIES-BENCH.
  DATA DIVISION.
@@ -33,6 +34,10 @@
  01 WS-FRAMES              BINARY-LONG VALUE 100.
  01 WS-DATE                PIC X(21).
  01 WS-T0                  BINARY-DOUBLE.
+ 01 WS-C0                  BINARY-DOUBLE.
+ 01 WS-C1                  BINARY-DOUBLE.
+ 01 WS-CPU-MS              FLOAT-LONG.
+ 01 WS-CPU-TEXT            PIC -(5)9.99.
  01 WS-HUNDREDTHS          BINARY-DOUBLE.
  01 WS-MS                  FLOAT-LONG.
  01 WS-MS-TEXT             PIC -(5)9.99.
@@ -71,16 +76,21 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      PERFORM NOW
      MOVE WS-HUNDREDTHS TO WS-T0
+     CALL STATIC "clock" RETURNING WS-C0
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-FRAMES
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-PERFORM
+     CALL STATIC "clock" RETURNING WS-C1
+     COMPUTE WS-CPU-MS = (WS-C1 - WS-C0) / 1000 / WS-FRAMES
+     MOVE WS-CPU-MS TO WS-CPU-TEXT
+     DISPLAY "BENCH entities-mesh CPU ms per frame (70 mobs): " WS-CPU-TEXT
      PERFORM NOW
      COMPUTE WS-MS = (WS-HUNDREDTHS - WS-T0) * 10 / WS-FRAMES
      MOVE WS-MS TO WS-MS-TEXT
      DISPLAY "BENCH entities-mesh ms per frame (70 mobs): " WS-MS-TEXT " vertices " RL-EN-COUNT
-     COMPUTE WS-COUNT = WS-MS
+     COMPUTE WS-COUNT = WS-CPU-MS
      MOVE "N" TO TL-MODE
-     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 10 ms a frame when nothing moves" TO TL-CASE
+     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 10 ms of CPU time a frame when nothing moves" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-COUNT < 10
@@ -90,16 +100,21 @@
 *>   The eye moving every frame (every cuboid is shifted again, 24 float additions each, 0.5 microsecond apiece: the cost the offset cache saves when nothing moves).
      PERFORM NOW
      MOVE WS-HUNDREDTHS TO WS-T0
+     CALL STATIC "clock" RETURNING WS-C0
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-FRAMES
          COMPUTE WS-EYE(1) = 10 + FUNCTION MOD(WS-I, 2) * 0.05
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-PERFORM
+     CALL STATIC "clock" RETURNING WS-C1
+     COMPUTE WS-CPU-MS = (WS-C1 - WS-C0) / 1000 / WS-FRAMES
+     MOVE WS-CPU-MS TO WS-CPU-TEXT
+     DISPLAY "BENCH entities-mesh CPU ms per frame (70 mobs, the eye moving): " WS-CPU-TEXT
      PERFORM NOW
      COMPUTE WS-MS = (WS-HUNDREDTHS - WS-T0) * 10 / WS-FRAMES
      MOVE WS-MS TO WS-MS-TEXT
      DISPLAY "BENCH entities-mesh ms per frame (70 mobs, the eye moving): " WS-MS-TEXT
-     COMPUTE WS-COUNT = WS-MS
-     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 40 ms a frame when the eye moves" TO TL-CASE
+     COMPUTE WS-COUNT = WS-CPU-MS
+     MOVE "test entities bench: the entity mesh of 70 mobs costs less than 40 ms of CPU time a frame when the eye moves" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-COUNT < 40

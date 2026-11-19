@@ -202,6 +202,11 @@
  01 WS-TR                  FLOAT-LONG.
  01 WS-TG                  FLOAT-LONG.
  01 WS-TB                  FLOAT-LONG.
+ 01 WS-VCOUNT               BINARY-LONG.
+ 01 WS-VLIMIT               BINARY-LONG.
+ 01 WS-TRS                 FLOAT-SHORT.
+ 01 WS-TGS                 FLOAT-SHORT.
+ 01 WS-TBS                 FLOAT-SHORT.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -300,6 +305,25 @@
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 6 TIMES.
  01 WS-N                   BINARY-LONG.
+*> What EF7-FACE-VERTS and EF7-VERTEX-UV answer, as binary tables made by calling them once (a float compared with a literal or turned into an integer costs a
+*> quarter of a microsecond in libcob, and a cuboid asks 6 and 24 times): the corner of each of the 4 slots of a face (face 0 to 5, mirror 0 or 1) and, for each
+*> slot of the quad (0 to 3), which of the rectangle's four numbers is its u and which its v.
+ 01 WS-TABLES-READY        BINARY-LONG VALUE 0.
+ 01 WS-FACE-CORNER-TABLE.
+    05 WS-FCF OCCURS 6 TIMES.
+       10 WS-FCM OCCURS 2 TIMES.
+          15 WS-FC         BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-UV-PICK-TABLE.
+    05 WS-UVP OCCURS 4 TIMES.
+       10 WS-UVP-U         BINARY-LONG.
+       10 WS-UVP-V         BINARY-LONG.
+ 01 WS-FZERO               FLOAT-LONG VALUE 0.
+ 01 WS-FAR-SQUARED         FLOAT-LONG VALUE 4096.
+ 01 WS-OPCODES.
+    05 WS-OPC              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-SLOT-INDEX          BINARY-LONG.
+ 01 WS-MIRROR              BINARY-LONG.
+ 01 WS-PICK                BINARY-LONG.
 *> The baked mesh of each replica row, entity-relative (the pose changes with the walk state, the swing and the aggressive flag, which are in the key), kept with the key it was baked for: the cost of a frame is then a copy of the vertices with the offset to the eye
 *> (lane resume T5820: baking 70 mobs each frame took 340 ms in a debug build).
  01 WS-BAKED.
@@ -417,7 +441,7 @@
 *>   Entities beyond 64 blocks (horizontally) are not drawn: a cap standing in for the entity distance rule (13 section 9.2 Entity Distance option, 34-1 7.1 shadow fade 16 blocks), which the docs do not give as a number (open).
      COMPUTE WS-D = (EN-X(WS-ROW) - L-EYE(1)) * (EN-X(WS-ROW) - L-EYE(1))
          + (EN-Z(WS-ROW) - L-EYE(3)) * (EN-Z(WS-ROW) - L-EYE(3))
-     IF WS-D > 4096
+     IF WS-D > WS-FAR-SQUARED
          GOBACK
      END-IF
 *>   The light of the entity's cell.
@@ -610,6 +634,29 @@
              MOVE 0 TO WS-BK-N(WS-NEXT)
          END-IF
          MOVE WS-IX(WS-ROW, WS-LC) TO WS-E
+     END-IF
+     IF WS-HIT = 0 AND WS-TABLES-READY = 0
+         PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 5
+             PERFORM VARYING WS-MIRROR FROM 0 BY 1 UNTIL WS-MIRROR > 1
+                 MOVE WS-F TO WS-FI(1)
+                 MOVE WS-MIRROR TO WS-FI(2)
+                 CALL "EF7-FACE-VERTS" USING WS-FV-IN WS-FV-OUT
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                     COMPUTE WS-FC(WS-F + 1, WS-MIRROR + 1, WS-K) = WS-FO(WS-K)
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+         PERFORM VARYING WS-SLOT-INDEX FROM 0 BY 1 UNTIL WS-SLOT-INDEX > 3
+             MOVE WS-SLOT-INDEX TO WS-UI(1)
+             MOVE 1 TO WS-UI(2)
+             MOVE 2 TO WS-UI(3)
+             MOVE 3 TO WS-UI(4)
+             MOVE 4 TO WS-UI(5)
+             CALL "EF7-VERTEX-UV" USING WS-UV-IN WS-UV-OUT
+             COMPUTE WS-UVP-U(WS-SLOT-INDEX + 1) = WS-UO(1)
+             COMPUTE WS-UVP-V(WS-SLOT-INDEX + 1) = WS-UO(2)
+         END-PERFORM
+         MOVE 1 TO WS-TABLES-READY
      END-IF
      IF WS-HIT = 0
          ADD 1 TO RL-EN-BAKES
@@ -804,6 +851,7 @@
          COMPUTE WS-T = WS-SRO(WS-OB + 1) * FUNCTION PI / 180
          COMPUTE WS-OP-SIN(WS-J) = FUNCTION SIN(WS-T)
          COMPUTE WS-OP-COS(WS-J) = FUNCTION COS(WS-T)
+         COMPUTE WS-OPC(WS-J) = WS-SRO(WS-OB)
      END-PERFORM
 *>   Per part: visibility (WS-VIS(p + 1); entry 1 is the visible root's parent, so a hidden part hides its children, whose parents come
 *>   first) and the trigonometry of its rotation.
@@ -816,7 +864,7 @@
          PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
              MOVE 0 TO WS-SA(WS-P, WS-A)
              MOVE 1 TO WS-CA(WS-P, WS-A)
-             IF WS-ANG(WS-A) NOT = 0
+             IF WS-ANG(WS-A) NOT = WS-FZERO
                  COMPUTE WS-SA(WS-P, WS-A) = FUNCTION SIN(WS-ANG(WS-A))
                  COMPUTE WS-CA(WS-P, WS-A) = FUNCTION COS(WS-ANG(WS-A))
              END-IF
@@ -874,7 +922,7 @@
                      COMPUTE WS-Z = WS-Z / 16
                      PERFORM VARYING WS-J FROM WS-NOPS BY -1 UNTIL WS-J < 1
                          COMPUTE WS-OB = WS-J * 4 - 2
-                         EVALUATE WS-SRO(WS-OB)
+                         EVALUATE WS-OPC(WS-J)
                              WHEN 1
                                  COMPUTE WS-X = WS-X + WS-SRO(WS-OB + 1)
                                  COMPUTE WS-Y = WS-Y + WS-SRO(WS-OB + 2)
@@ -934,27 +982,24 @@
                  END-IF
 *>               The six faces: down, up, west, north, east, south.
                  PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 5
-                     MOVE WS-F TO WS-FI(1)
-                     MOVE MC-MIRROR(WS-P, WS-C) TO WS-FI(2)
-                     CALL "EF7-FACE-VERTS" USING WS-FV-IN WS-FV-OUT
                      COMPUTE WS-A = WS-F * 4
+                     MOVE MC-MIRROR(WS-P, WS-C) TO WS-MIRROR
                      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-                         COMPUTE WS-J = WS-FO(WS-K)
+                         MOVE WS-FC(WS-F + 1, WS-MIRROR + 1, WS-K) TO WS-J
                          MOVE WS-J TO WS-QJ(WS-K)
 *>                       A mirrored cuboid reverses the order of the corners but each corner keeps its own texel (34-1 1.3 step 7: the vertices carry their texture
 *>                       coordinates when they are reversed), so the texel of slot k is that of the unmirrored slot 5 - k: the image is flipped left to right only.
-                         IF MC-MIRROR(WS-P, WS-C) = 0
-                             COMPUTE WS-UI(1) = WS-K - 1
+                         IF WS-MIRROR = 0
+                             COMPUTE WS-SLOT-INDEX = WS-K - 1
                          ELSE
-                             COMPUTE WS-UI(1) = 4 - WS-K
+                             COMPUTE WS-SLOT-INDEX = 4 - WS-K
                          END-IF
-                         MOVE WS-RO(WS-A + 1) TO WS-UI(2)
-                         MOVE WS-RO(WS-A + 2) TO WS-UI(3)
-                         MOVE WS-RO(WS-A + 3) TO WS-UI(4)
-                         MOVE WS-RO(WS-A + 4) TO WS-UI(5)
-                         CALL "EF7-VERTEX-UV" USING WS-UV-IN WS-UV-OUT
-                         COMPUTE WS-QU(WS-K) = (EA-MT-X(WS-SLOT) + WS-UO(1) * EA-MT-W(WS-SLOT)) / EA-W
-                         COMPUTE WS-QV(WS-K) = (EA-MT-Y(WS-SLOT) + WS-UO(2) * EA-MT-H(WS-SLOT)) / EA-H
+                         MOVE WS-UVP-U(WS-SLOT-INDEX + 1) TO WS-PICK
+                         COMPUTE WS-PICK = WS-A + WS-PICK
+                         COMPUTE WS-QU(WS-K) = (EA-MT-X(WS-SLOT) + WS-RO(WS-PICK) * EA-MT-W(WS-SLOT)) / EA-W
+                         MOVE WS-UVP-V(WS-SLOT-INDEX + 1) TO WS-PICK
+                         COMPUTE WS-PICK = WS-A + WS-PICK
+                         COMPUTE WS-QV(WS-K) = (EA-MT-Y(WS-SLOT) + WS-RO(WS-PICK) * EA-MT-H(WS-SLOT)) / EA-H
                      END-PERFORM
                      COMPUTE WS-BRIGHT = FUNCTION MAX(WS-FACTOR(WS-F + 1) * WS-LIGHT, 0.1)
                      IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "Y" OR "E"
@@ -982,13 +1027,21 @@
      COMPUTE WS-OY = EN-Y(WS-ROW) - L-EYE(2)
      COMPUTE WS-OZ = EN-Z(WS-ROW) - L-EYE(3)
      CALL "ENTITY-TINT" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TR WS-TG WS-TB
+*>   The tint as the vertex fields' own type once, not converted for each of the 36 vertices of a cuboid.
+     MOVE WS-TR TO WS-TRS
+     MOVE WS-TG TO WS-TGS
+     MOVE WS-TB TO WS-TBS
 *>   The corners shifted last time are kept with the offset they were shifted by: a mob and an eye that did not move need no shifting (a float addition costs
 *>   half a microsecond: 24 of them a cuboid were two thirds of a frame of 70 mobs).
      MOVE 0 TO WS-REUSE
      IF WS-BK-OK(WS-E) = 1 AND WS-BK-OFX(WS-E) = WS-OX AND WS-BK-OFY(WS-E) = WS-OY AND WS-BK-OFZ(WS-E) = WS-OZ
          MOVE 1 TO WS-REUSE
      END-IF
-     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR RL-EN-COUNT + 36 > CL-MAX-ENTITY-VERTICES
+*>   The vertex count is kept in a field of this program while the cuboids are copied: a field of the client record costs a call to read each time it is a
+*>   subscript, and a vertex has eight such uses.
+     MOVE RL-EN-COUNT TO WS-VCOUNT
+     COMPUTE WS-VLIMIT = CL-MAX-ENTITY-VERTICES - 36
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-BK-NC(WS-E) OR WS-VCOUNT > WS-VLIMIT
          IF WS-REUSE = 1
              MOVE WS-BK-EC(WS-E, WS-C) TO WS-EC
          ELSE
@@ -1002,18 +1055,19 @@
          END-IF
          COMPUTE WS-VA = WS-C * 36 - 35
          PERFORM VARYING WS-VW FROM 0 BY 1 UNTIL WS-VW > 35
-             ADD 1 TO RL-EN-COUNT
-             MOVE WS-BK-V(WS-E, WS-VA) TO RL-EN-VERTEX(RL-EN-COUNT)
+             ADD 1 TO WS-VCOUNT
+             MOVE WS-BK-V(WS-E, WS-VA) TO RL-EN-VERTEX(WS-VCOUNT)
              MOVE WS-BK-VK(WS-E, WS-VA) TO WS-J
-             MOVE WS-ECX(WS-J) TO RL-EN-X(RL-EN-COUNT)
-             MOVE WS-ECY(WS-J) TO RL-EN-Y(RL-EN-COUNT)
-             MOVE WS-ECZ(WS-J) TO RL-EN-Z(RL-EN-COUNT)
-             MOVE WS-TR TO RL-EN-R(RL-EN-COUNT)
-             MOVE WS-TG TO RL-EN-G(RL-EN-COUNT)
-             MOVE WS-TB TO RL-EN-BLUE(RL-EN-COUNT)
+             MOVE WS-ECX(WS-J) TO RL-EN-X(WS-VCOUNT)
+             MOVE WS-ECY(WS-J) TO RL-EN-Y(WS-VCOUNT)
+             MOVE WS-ECZ(WS-J) TO RL-EN-Z(WS-VCOUNT)
+             MOVE WS-TRS TO RL-EN-R(WS-VCOUNT)
+             MOVE WS-TGS TO RL-EN-G(WS-VCOUNT)
+             MOVE WS-TBS TO RL-EN-BLUE(WS-VCOUNT)
              ADD 1 TO WS-VA
          END-PERFORM
      END-PERFORM
+     MOVE WS-VCOUNT TO RL-EN-COUNT
      IF WS-REUSE = 0 AND WS-C > WS-BK-NC(WS-E)
          MOVE 1 TO WS-BK-OK(WS-E)
          MOVE WS-OX TO WS-BK-OFX(WS-E)

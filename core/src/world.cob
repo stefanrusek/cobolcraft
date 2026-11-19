@@ -31,16 +31,33 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-HASH                BINARY-DOUBLE.
+*> The row the last successful find returned, for the next find of the same chunk (a mob's pathing asks for the one chunk thousands of times a tick): taken only while
+*> that row is in use and holds that chunk, so a chunk released since, or its row taken by another chunk, is found by the chain as before.
+ 01 WS-LAST-DIM            BINARY-LONG VALUE 0.
+ 01 WS-LAST-CX             BINARY-LONG VALUE 0.
+ 01 WS-LAST-CZ             BINARY-LONG VALUE 0.
+ 01 WS-LAST-ROW            BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-ROW.
+     IF WS-LAST-ROW > 0 AND L-CX = WS-LAST-CX AND L-CZ = WS-LAST-CZ AND L-DIM = WS-LAST-DIM
+         IF CK-USED(WS-LAST-ROW) = 1 AND CK-X(WS-LAST-ROW) = L-CX AND CK-Z(WS-LAST-ROW) = L-CZ
+                 AND CK-DIM(WS-LAST-ROW) = L-DIM
+             MOVE WS-LAST-ROW TO L-ROW
+             GOBACK
+         END-IF
+     END-IF
      COMPUTE WS-HASH = FUNCTION MOD(73 * L-CX + 1031 * L-CZ + 7 * L-DIM, CORE-MAX-CHUNKS) + 1
      MOVE CK-BUCKET(WS-HASH) TO L-ROW
      PERFORM UNTIL L-ROW = 0
          IF CK-X(L-ROW) = L-CX AND CK-Z(L-ROW) = L-CZ AND CK-DIM(L-ROW) = L-DIM
+             MOVE L-DIM TO WS-LAST-DIM
+             MOVE L-CX TO WS-LAST-CX
+             MOVE L-CZ TO WS-LAST-CZ
+             MOVE L-ROW TO WS-LAST-ROW
              GOBACK
          END-IF
          MOVE CK-NEXT(L-ROW) TO L-ROW
@@ -237,7 +254,26 @@
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-REM                 BINARY-LONG.
  01 WS-DEFER               BINARY-LONG.
+*> The chunk of the last read (a mob's pathing reads the cells round it, thousands of times a tick): while a position is inside it and its row is in use and holds
+*> that chunk, the cell is read at once, with table reads and additions in place of the chunk arithmetic and the lookup (the same cell as the slow way reads).
+ 01 WS-LAST-ROW            BINARY-LONG VALUE 0.
+ 01 WS-LAST-DIM            BINARY-LONG VALUE 0.
+ 01 WS-LAST-CX             BINARY-LONG VALUE 0.
+ 01 WS-LAST-CZ             BINARY-LONG VALUE 0.
+ 01 WS-LAST-X0             BINARY-LONG VALUE 0.
+ 01 WS-LAST-X1             BINARY-LONG VALUE 0.
+ 01 WS-LAST-Z0             BINARY-LONG VALUE 0.
+ 01 WS-LAST-Z1             BINARY-LONG VALUE 0.
+ 01 WS-MIN-Y               BINARY-LONG.
+ 01 WS-TOP-Y               BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-TABLES-READY        BINARY-LONG VALUE 0.
+ 01 WS-Y-TABLE.
+    05 WS-Y256             BINARY-LONG OCCURS 400 TIMES.
+ 01 WS-Z-TABLE.
+    05 WS-Z16              BINARY-LONG OCCURS 16 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -246,11 +282,47 @@
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
      MOVE 0 TO L-STATE
-     IF L-Y < DM-MIN-Y(L-DIM) OR L-Y >= DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM)
+     MOVE DM-MIN-Y(L-DIM) TO WS-MIN-Y
+     MOVE WS-MIN-Y TO WS-TOP-Y
+     ADD DM-HEIGHT(L-DIM) TO WS-TOP-Y
+     IF L-Y < WS-MIN-Y OR L-Y >= WS-TOP-Y
          GOBACK
      END-IF
-     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
-     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     IF WS-TABLES-READY = 0
+         PERFORM VARYING WS-CELL FROM 0 BY 1 UNTIL WS-CELL > 399
+             COMPUTE WS-Y256(WS-CELL + 1) = WS-CELL * 256
+         END-PERFORM
+         PERFORM VARYING WS-CELL FROM 0 BY 1 UNTIL WS-CELL > 15
+             COMPUTE WS-Z16(WS-CELL + 1) = WS-CELL * 16
+         END-PERFORM
+         MOVE 1 TO WS-TABLES-READY
+     END-IF
+     IF WS-LAST-ROW > 0 AND L-DIM = WS-LAST-DIM AND L-X >= WS-LAST-X0 AND L-X <= WS-LAST-X1
+             AND L-Z >= WS-LAST-Z0 AND L-Z <= WS-LAST-Z1
+         IF CK-USED(WS-LAST-ROW) = 1 AND CK-X(WS-LAST-ROW) = WS-LAST-CX AND CK-Z(WS-LAST-ROW) = WS-LAST-CZ
+                 AND CK-DIM(WS-LAST-ROW) = L-DIM
+             SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-LAST-ROW)
+             MOVE L-Y TO WS-CELL
+             SUBTRACT WS-MIN-Y FROM WS-CELL
+             MOVE WS-Y256(WS-CELL + 1) TO WS-CELL
+             MOVE L-Z TO WS-CZ
+             SUBTRACT WS-LAST-Z0 FROM WS-CZ
+             ADD WS-Z16(WS-CZ + 1) TO WS-CELL
+             ADD L-X TO WS-CELL
+             SUBTRACT WS-LAST-X0 FROM WS-CELL
+             ADD 1 TO WS-CELL
+             MOVE CE-STATE(WS-CELL) TO L-STATE
+             GOBACK
+         END-IF
+     END-IF
+     DIVIDE L-X BY 16 GIVING WS-CX REMAINDER WS-REM
+     IF WS-REM < 0
+         SUBTRACT 1 FROM WS-CX
+     END-IF
+     DIVIDE L-Z BY 16 GIVING WS-CZ REMAINDER WS-REM
+     IF WS-REM < 0
+         SUBTRACT 1 FROM WS-CZ
+     END-IF
      CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
      IF WS-ROW = 0
 *>       a chunk the generation workers will make is not made here: the read is void and the chunk is queued (WORLD-GET-DEFER)
@@ -261,6 +333,14 @@
 *>       a loaded chunk is the row WORLD-FIND just gave (WORLD-CHUNK-LOAD would look it up a second time to answer the same row)
          CALL "WORLD-CHUNK-LOAD" USING L-DIM WS-CX WS-CZ WS-ROW
      END-IF
+     MOVE WS-ROW TO WS-LAST-ROW
+     MOVE L-DIM TO WS-LAST-DIM
+     MOVE WS-CX TO WS-LAST-CX
+     MOVE WS-CZ TO WS-LAST-CZ
+     COMPUTE WS-LAST-X0 = WS-CX * 16
+     COMPUTE WS-LAST-X1 = WS-LAST-X0 + 15
+     COMPUTE WS-LAST-Z0 = WS-CZ * 16
+     COMPUTE WS-LAST-Z1 = WS-LAST-Z0 + 15
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
      MOVE CE-STATE((L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1)
          TO L-STATE
@@ -280,6 +360,7 @@
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-REM                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -291,8 +372,14 @@
      IF L-Y < DM-MIN-Y(L-DIM) OR L-Y >= DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM)
          GOBACK
      END-IF
-     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
-     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     DIVIDE L-X BY 16 GIVING WS-CX REMAINDER WS-REM
+     IF WS-REM < 0
+         SUBTRACT 1 FROM WS-CX
+     END-IF
+     DIVIDE L-Z BY 16 GIVING WS-CZ REMAINDER WS-REM
+     IF WS-REM < 0
+         SUBTRACT 1 FROM WS-CZ
+     END-IF
      CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
      IF WS-ROW > 0
          SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
