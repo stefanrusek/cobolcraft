@@ -510,20 +510,14 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GB-FALL-TICK.
 *> USING dimension row, x, y, z (BINARY-LONG): the scheduled tick of a falling block (3.1 ST, BU-HOOK effect 6): nothing unless the cell below is free and y >= the dimension's minimum
-*> y (GB-FALL-DECIDE; a cell is free when it has no collision, the air, liquids and the replaceable blocks of this approximation); then FB-SPAWN (core/src/mob-21-8.cob) clears the
+*> y (GB-FALL-DECIDE; FB-CELL-FREE: a cell is free when it is air, fire, a liquid or a replaceable block, never merely because it has no collision, so a block resting on a torch stays); then FB-SPAWN (core/src/mob-21-8.cob) clears the
 *> block's cell and starts the falling block entity (FallingBlockEntity.fall), whose ticks (FB-TICK) fly it down and place it where it lands.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY DIMENSIONS.
  01 WS-STATE               BINARY-LONG.
- 01 WS-F                   BINARY-LONG.
- 01 WS-STATE2              BINARY-LONG.
- 01 WS-KIND                BINARY-LONG.
- 01 WS-AMOUNT              BINARY-LONG.
- 01 WS-FALLING             BINARY-LONG.
- 01 WS-SOLID               BINARY-LONG.
- 01 WS-HOLDS               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
+ 01 WS-REPLACEABLE         BINARY-LONG.
  01 WS-FREE                BINARY-LONG.
  01 WS-FALLS               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -537,8 +531,7 @@
      COMPUTE WS-BELOW = L-Y - 1
      MOVE 0 TO WS-FREE
      IF WS-BELOW >= DM-MIN-Y(L-DIM)
-         CALL "FLUID-CELL" USING L-DIM L-X WS-BELOW L-Z WS-STATE2 WS-F WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
-         MOVE WS-HOLDS TO WS-FREE
+         CALL "FB-CELL-FREE" USING L-DIM L-X WS-BELOW L-Z WS-REPLACEABLE WS-FREE
      END-IF
      CALL "GB-FALL-DECIDE" USING WS-FREE L-Y DM-MIN-Y(L-DIM) WS-FALLS
      IF WS-FALLS = 0
