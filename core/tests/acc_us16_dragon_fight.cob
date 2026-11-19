@@ -40,6 +40,7 @@
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
      MOVE WS-DIM TO FR-DIM
      MOVE 1 TO FR-SCANNED
+     MOVE 1 TO FR-HAS-DRAGON
      MOVE 0 TO CW-SEED
      MOVE FUNCTION PI TO WS-PI
      MOVE "minecraft:stone" TO WS-KEY
@@ -56,16 +57,16 @@
      MOVE 0 TO PL-X(WS-PLAYER)
      MOVE 100 TO PL-Y(WS-PLAYER)
      MOVE 0 TO PL-Z(WS-PLAYER)
-     MOVE 19 TO FR-TICKS
+     MOVE 0 TO FR-TICKS
      CALL "FIGHT-TICK"
-     MOVE "acceptance US16 21 6.4.5 a player within 192 blocks of (0, 128, 0) joins the boss bar on the 20 tick sync" TO TL-CASE
+     MOVE "acceptance US16 38 9.1 item 3 a player within 192 blocks of (0, 128, 0) joins the boss bar on the first fight tick (the scan counter starts at 21)" TO TL-CASE
      MOVE 11 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = FR-BAR * 10 + FR-BAR-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 500 TO PL-X(WS-PLAYER)
-     MOVE 39 TO FR-TICKS
+     MOVE 20 TO FR-TICKS
      CALL "FIGHT-TICK"
-     MOVE "acceptance US16 21 6.4.5 a player who went beyond 192 blocks leaves the bar" TO TL-CASE
+     MOVE "acceptance US16 38 9.1 item 3 the next scan 20 ticks later: a player who went beyond 192 blocks leaves the bar" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE FR-BAR-N TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -78,9 +79,21 @@
          COMPUTE EF-GATEWAY(WS-I) = WS-I - 1
      END-PERFORM
      CALL "END-FIGHT-IO" USING WS-SET END-FIGHT
+*>   A fresh End (the fight knows no dragon): findOrCreateDragon runs on the first fight tick whose scan puts a player on the bar (38 9.1 item 7), not after 1200 ticks.
+     MOVE 0 TO DG-ENT FR-SEEN FR-TICKS FR-BAR-N FR-HAS-DRAGON
+     CALL "FIGHT-TICK"
+     MOVE "acceptance US16 38 9.1 item 7 a fresh End creates its dragon on the first fight tick with a player on the bar" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF DG-ENT > 0 AND DG-FIGHT = 1
+         MOVE 10 TO TL-OBSERVED-N
+     END-IF
+     ADD FR-HAS-DRAGON TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO DG-ENT
      MOVE 1198 TO FR-SEEN
-     MOVE 59 TO FR-TICKS
+     MOVE 1 TO FR-HAS-DRAGON
+     MOVE 60 TO FR-TICKS
      CALL "FIGHT-TICK"
      MOVE "acceptance US16 21 6.4.5 before 1200 ticks unseen no dragon is made" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N

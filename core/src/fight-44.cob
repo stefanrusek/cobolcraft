@@ -2,8 +2,8 @@
 *> end-fight-io.cob) the saved one. Every tick (FIGHT-TICK, called after THROWN-TICK): every 20 ticks the bar members (alive players within 192 blocks of (0, 128, 0)); with at least one member: the first
 *> state scan, the respawn sequence if one runs, else the unseen counter (a dragon is made after 1200 ticks), the crystal count (every 100 ticks) and the bar progress.
 *> The bar is own Boss Event packets (05a 0x09, uuid 15 zero bytes and 0xFE, translate entity.minecraft.ender_dragon, pink, progress, flags 0x06 play boss music + create world fog).
-*> Gaps: a fresh End (nothing saved, no portal, never killed) does not set the killed flag when no dragon exists yet (the docs' scan would leave a new world without a dragon): the dragon is made after the 1200
-*> ticks; the arena chunk ticket; crystal beam targets (entity data 8); the gateway's exit block entity; the fight's dragon UUID; the pillar box height range (height to height + 10, inferred); old pillar crystals
+*> A fresh End (nothing saved, no portal, never killed) makes its dragon on the first fight tick whose player scan (ticks 1, 21, 41, ...: 38 section 9.1 item 3) finds a player (item 7); a fight that has known a dragon
+*> (FR-HAS-DRAGON) makes a new one after 1200 ticks unseen. Gaps: the arena chunk ticket and the isArenaLoaded test (38 9.1 item 5: the row of 17 chunks at z = 8 and the 3 x 3 entity chunks; the core has no tickets); crystal beam targets (entity data 8); the gateway's exit block entity; the fight's dragon UUID; the pillar box height range (height to height + 10, inferred); old pillar crystals
 *> are discarded when a pillar is regenerated; the respawn explosion's random positions; the summoned-entity criterion; the 3001 and 3000 world events are sent with no extra data; a player is not pushed.
 *>
 *>   FIGHT-TICK                               one tick
@@ -335,7 +335,7 @@
      IF WS-ROW > 0
          CALL "DRAGON-ROLL" USING WS-BOUND WS-YAW
          MOVE WS-YAW TO EN-YAW(WS-ROW)
-         MOVE 1 TO DG-FIGHT
+         MOVE 1 TO DG-FIGHT FR-HAS-DRAGON
          MOVE 0 TO FR-SEEN
          CALL "END-FIGHT-IO" USING WS-GET END-FIGHT
          MOVE 0 TO EF-KILLED
@@ -775,7 +775,8 @@
      IF EF-KILLED = 0
          MOVE 1 TO FR-BAR
      END-IF
-     IF FUNCTION MOD(FR-TICKS, 20) = 0
+*>   the player scan runs on the first fight tick and every 20 ticks after it (the counter starts at 21: 38 section 9.1 item 3), so on ticks 1, 21, 41, ...
+     IF FUNCTION MOD(FR-TICKS, 20) = 1
          CALL "FIGHT-BAR-SYNC" USING WS-DIM
      END-IF
      IF FR-BAR-N = 0
@@ -796,15 +797,21 @@
      CALL "DRAGON-ROW" USING WS-ROW
      IF WS-ROW > 0
          MOVE 0 TO FR-SEEN
+         MOVE 1 TO FR-HAS-DRAGON
          COMPUTE WS-PROG = FUNCTION INTEGER(DG-HP * 1000 / 200)
          IF WS-PROG NOT = FR-PROG
              MOVE WS-PROG TO FR-PROG
              CALL "FIGHT-BAR-PACKET" USING WS-OP-PROGRESS WS-ALL
          END-IF
      ELSE
-         ADD 1 TO FR-SEEN
-         IF FR-SEEN >= 1200
+*>       findOrCreateDragon (38 9.1 item 7): a fight that knows no dragon makes one on this very tick (the first with a player on the bar); one that does counts the ticks unseen and makes it at 1200
+         IF FR-HAS-DRAGON = 0
              CALL "FIGHT-NEW-DRAGON" USING WS-DIM
+         ELSE
+             ADD 1 TO FR-SEEN
+             IF FR-SEEN >= 1200
+                 CALL "FIGHT-NEW-DRAGON" USING WS-DIM
+             END-IF
          END-IF
      END-IF
      IF FUNCTION MOD(FR-TICKS, 100) = 0
@@ -816,7 +823,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FIGHT-SCAN.
 *> USING dim: scanState: an active exit portal (an end_portal block at the stored location, else at the podium) means the dragon was killed before; else the inactive portal is built.
-*> A dragon that exists is adopted (DG-FIGHT 1). Gap: a new End with no dragon stays unkilled (see the header).
+*> A dragon that exists is adopted (DG-FIGHT 1); a new End with no dragon stays unkilled, and FIGHT-TICK makes its dragon on the same tick (38 9.1 item 7).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
