@@ -14,7 +14,6 @@
 *> Entry points:
 *>   ARROW-TYPE USING type id out                       the entity type id of arrow, 0 outside a standard world
 *>   ARROW-FAMILY-TYPE USING family (1 arrow, 2 spectral_arrow, 3 trident), type id out   0 outside a standard world (lane p49t)
-*>   ARROW-FAMILY USING type id, family out             1 to 3 when the entity type is one of the arrow family, else 0
 *>   ARROW-SPAWN-AS USING family, dim, x, y, z, vx, vy, vz, base damage, owner, row out   ARROW-SPAWN for a member of the family (a spectral arrow has EN-VARIANT 4: Glowing)
 *>   ARROW-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), base damage (thousandths), owner entity id, row out
 *>   ARROW-STEP USING tracker row                       one tick of one arrow or thrown trident (ranged-trident.cob)
@@ -80,26 +79,6 @@
      MOVE WS-ID(L-FAMILY) TO L-TYPE
      GOBACK.
  END PROGRAM ARROW-FAMILY-TYPE.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. ARROW-FAMILY.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-F                   BINARY-LONG.
- 01 WS-TYPE                BINARY-LONG.
- LINKAGE SECTION.
- 01 L-TYPE                 BINARY-LONG.
- 01 L-FAMILY               BINARY-LONG.
- PROCEDURE DIVISION USING L-TYPE L-FAMILY.
-     MOVE 0 TO L-FAMILY
-     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 3
-         CALL "ARROW-FAMILY-TYPE" USING WS-F WS-TYPE
-         IF WS-TYPE > 0 AND WS-TYPE = L-TYPE
-             MOVE WS-F TO L-FAMILY
-         END-IF
-     END-PERFORM
-     GOBACK.
- END PROGRAM ARROW-FAMILY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROW-SPAWN-AS.

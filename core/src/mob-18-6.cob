@@ -1046,17 +1046,6 @@
 *>       The any-light monster rule (21 section 3.2): no light test, the base and the not-Peaceful tests of predicate 4.
          MOVE 4 TO WS-PRED
      END-IF
-     IF SM-SPAWN(L-ROW) = 12
-*>       checkGhastSpawnRules (44-6 section 9.1), in this order: the difficulty is not Peaceful, then nextInt(20) = 0, then the generic monster rule (predicate 4 holds the
-*>       base and the not-Peaceful tests).
-         MOVE 4 TO WS-PRED
-         IF WS-PEACEFUL = 0
-             CALL "XORO-NEXT-INT" USING L-STATE WS-20 WS-DRAW
-             IF WS-DRAW NOT = 0
-                 MOVE 1 TO WS-PEACEFUL
-             END-IF
-         END-IF
-     END-IF
      IF SM-SPAWN(L-ROW) = 11
 *>       Piglin and hoglin (21 section 3.2): only the floor test of predicate 1, on Peaceful too.
          MOVE 1 TO WS-PRED
