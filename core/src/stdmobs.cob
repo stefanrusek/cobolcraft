@@ -1029,6 +1029,13 @@
  01 WS-RAID-WALK           BINARY-LONG.
  01 WS-EVAL                BINARY-LONG.
  01 WS-CONVERTED           BINARY-LONG.
+ 01 WS-WX                  FLOAT-LONG.
+ 01 WS-WY                  FLOAT-LONG.
+ 01 WS-WZ                  FLOAT-LONG.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-SPAN                BINARY-LONG.
+ 01 WS-REACH-CELLS         BINARY-LONG.
+ 01 WS-DEST-OK             BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1450,11 +1457,25 @@
                  CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
                  IF FUNCTION MOD(WS-R, SM-STROLL-ROLL) = 0
                      COMPUTE WS-Q = WS-R / SM-STROLL-ROLL
-                     COMPUTE EN-DEST-X(WS-ROW) = FUNCTION INTEGER(EN-X(WS-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
-                     COMPUTE WS-Q = WS-Q / 21
-                     COMPUTE EN-DEST-Z(WS-ROW) = FUNCTION INTEGER(EN-Z(WS-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
-                     MOVE SM-STROLL-TICKS TO EN-COOLDOWN(WS-ROW)
-                     MOVE 0 TO EN-PATH-TICKS(WS-ROW) EN-WAY-X(WS-ROW) EN-WAY-Z(WS-ROW)
+*>                   WaterAvoidingRandomStrollGoal (18 section 4.2): a mob in water looks 15 blocks around for a land position, otherwise 10 (LandRandomPos).
+                     MOVE EN-X(WS-ROW) TO WS-WX
+                     MOVE EN-Y(WS-ROW) TO WS-WY
+                     MOVE EN-Z(WS-ROW) TO WS-WZ
+                     CALL "FLUID-TOUCHES-WATER" USING EN-DIM(WS-ROW) WS-WX WS-WY WS-WZ WS-WET
+                     COMPUTE WS-SPAN = 21 + 10 * WS-WET
+                     COMPUTE WS-REACH-CELLS = 10 + 5 * WS-WET
+                     COMPUTE WS-GX = FUNCTION INTEGER(EN-X(WS-ROW)) + FUNCTION MOD(WS-Q, WS-SPAN) - WS-REACH-CELLS
+                     COMPUTE WS-Q = WS-Q / WS-SPAN
+                     COMPUTE WS-GZ = FUNCTION INTEGER(EN-Z(WS-ROW)) + FUNCTION MOD(WS-Q, WS-SPAN) - WS-REACH-CELLS
+                     COMPUTE WS-GY = FUNCTION INTEGER(EN-Y(WS-ROW))
+*>                   LandRandomPos rejects a position in water (or lava, fire) and one with water under it; the goal does not start then.
+                     CALL "STDMOB-LAND-DEST" USING EN-DIM(WS-ROW) WS-GX WS-GY WS-GZ WS-DEST-OK
+                     IF WS-DEST-OK = 1
+                         MOVE WS-GX TO EN-DEST-X(WS-ROW)
+                         MOVE WS-GZ TO EN-DEST-Z(WS-ROW)
+                         MOVE SM-STROLL-TICKS TO EN-COOLDOWN(WS-ROW)
+                         MOVE 0 TO EN-PATH-TICKS(WS-ROW) EN-WAY-X(WS-ROW) EN-WAY-Z(WS-ROW)
+                     END-IF
                  END-IF
              END-IF
              IF EN-COOLDOWN(WS-ROW) > 0
@@ -1513,6 +1534,8 @@
          CALL "CUBE-HOP" USING WS-ROW WS-M WS-HX WS-HZ WS-YAW
      END-IF
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
+*>   A land mob does not walk into water or lava: the path malus of 18 section 5.1 keeps it on the bank (STDMOB-WATER-GUARD).
+     CALL "STDMOB-WATER-GUARD" USING WS-ROW WS-M WS-HX WS-HZ
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
 *>   A mob on the ground steps on or lands on a turtle egg under it (29b part 7 section 3).
      IF EN-ON-GROUND(WS-ROW) = 1
@@ -1525,6 +1548,162 @@
      CALL "M182-FALL" USING WS-ROW WS-FALL-Y
      GOBACK.
  END PROGRAM STDMOB-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-LAND-DEST.
+*> USING dim, x, y, z (BINARY-LONG cell of a stroll position: y the mob's feet), ok out (BINARY-LONG): LandRandomPos (18 section 4.3) for the stroll goals: the
+*> position moves up out of solid (at most 7 cells), then ok is 0 when the cell is water, lava or fire or when the floor below it (the first solid cell within 4 cells
+*> down) is one of those first; a position over a drop deeper than that is accepted.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-STOP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-OK.
+     MOVE 1 TO L-OK
+     MOVE L-Y TO WS-Y
+     MOVE 1 TO WS-TYPE
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= 7 OR WS-TYPE NOT = 1
+         CALL "STDMOB-CELL" USING L-DIM L-X WS-Y L-Z WS-TYPE
+         IF WS-TYPE = 1
+             ADD 1 TO WS-Y
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-STOP
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= 5 OR WS-STOP = 1
+         CALL "STDMOB-CELL" USING L-DIM L-X WS-Y L-Z WS-TYPE
+         IF WS-TYPE = 1
+             MOVE 1 TO WS-STOP
+         END-IF
+         IF WS-TYPE = 2
+             MOVE 0 TO L-OK
+             MOVE 1 TO WS-STOP
+         END-IF
+         SUBTRACT 1 FROM WS-Y
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STDMOB-LAND-DEST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-WATER-GUARD.
+*> USING tracker row, table row, hx, hz (FLOAT-LONG, in and out): the walk of a land mob on the ground never takes its box into a cell of water, lava or fire,
+*> nor over a cell with such a liquid under it (the WATER and DAMAGING path types have a negative malus for a land mob, 18 section 5.1, so no path of its goals
+*> leaves the bank). The leading edge of the box (half the mob's width) is tested along each axis in turn, at the centre line and at both sides of the box;
+*> a component whose step enters such a cell is set to 0, so the mob slides along the shore. Not applied to a mob in the air or in water (it floats up and
+*> out, MOB-PHYSICS), to the species that swim, hop or walk on lava (drowned, turtle, frog, axolotl, strider, slime, magma cube), nor to a tame mob.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY STDMOBS.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-CELL-X              BINARY-LONG.
+ 01 WS-CELL-Y              BINARY-LONG.
+ 01 WS-CELL-Z              BINARY-LONG.
+ 01 WS-NOW-X               BINARY-LONG.
+ 01 WS-NOW-Z               BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-POINT               FLOAT-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-LEAD                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-M                    BINARY-LONG.
+ 01 L-HX                   FLOAT-LONG.
+ 01 L-HZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-M L-HX L-HZ.
+     IF EN-ON-GROUND(L-ROW) = 0 OR EN-TAMED(L-ROW) = 1
+         GOBACK
+     END-IF
+     IF SM-KEY(L-M) = "drowned" OR "turtle" OR "frog" OR "axolotl" OR "strider" OR "slime" OR "magma_cube"
+         GOBACK
+     END-IF
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     CALL "FLUID-TOUCHES-WATER" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-WET
+     IF WS-WET = 1
+         GOBACK
+     END-IF
+     COMPUTE WS-TYPE = EN-TYPE(L-ROW) + 1
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-TYPE) / 2000
+     COMPUTE WS-POINT = WS-Y + 0.001
+     COMPUTE WS-CELL-Y = FUNCTION INTEGER(WS-POINT)
+     COMPUTE WS-NOW-X = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-NOW-Z = FUNCTION INTEGER(WS-Z)
+*>   The step along X: the cells of the leading edge, three points across the box.
+     IF L-HX NOT = 0
+         MOVE WS-HALF TO WS-LEAD
+         IF L-HX < 0
+             COMPUTE WS-LEAD = - WS-HALF
+         END-IF
+         COMPUTE WS-POINT = WS-X + L-HX + WS-LEAD
+         COMPUTE WS-CELL-X = FUNCTION INTEGER(WS-POINT)
+         MOVE 0 TO WS-BAD
+         IF WS-CELL-X NOT = WS-NOW-X
+             PERFORM VARYING WS-S FROM -1 BY 1 UNTIL WS-S > 1
+                 COMPUTE WS-SIDE = WS-Z + WS-S * WS-HALF
+                 COMPUTE WS-CELL-Z = FUNCTION INTEGER(WS-SIDE)
+                 CALL "STDMOB-CELL" USING EN-DIM(L-ROW) WS-CELL-X WS-CELL-Y WS-CELL-Z WS-KIND
+                 COMPUTE WS-BELOW = WS-CELL-Y - 1
+                 IF WS-KIND = 2
+                     MOVE 1 TO WS-BAD
+                 END-IF
+                 CALL "STDMOB-CELL" USING EN-DIM(L-ROW) WS-CELL-X WS-BELOW WS-CELL-Z WS-KIND
+                 IF WS-KIND = 2
+                     MOVE 1 TO WS-BAD
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-BAD = 1
+             MOVE 0 TO L-HX
+         END-IF
+     END-IF
+*>   The step along Z, from the x the mob will have.
+     IF L-HZ NOT = 0
+         MOVE WS-HALF TO WS-LEAD
+         IF L-HZ < 0
+             COMPUTE WS-LEAD = - WS-HALF
+         END-IF
+         COMPUTE WS-POINT = WS-Z + L-HZ + WS-LEAD
+         COMPUTE WS-CELL-Z = FUNCTION INTEGER(WS-POINT)
+         MOVE 0 TO WS-BAD
+         IF WS-CELL-Z NOT = WS-NOW-Z
+             PERFORM VARYING WS-S FROM -1 BY 1 UNTIL WS-S > 1
+                 COMPUTE WS-SIDE = WS-X + L-HX + WS-S * WS-HALF
+                 COMPUTE WS-CELL-X = FUNCTION INTEGER(WS-SIDE)
+                 CALL "STDMOB-CELL" USING EN-DIM(L-ROW) WS-CELL-X WS-CELL-Y WS-CELL-Z WS-KIND
+                 COMPUTE WS-BELOW = WS-CELL-Y - 1
+                 IF WS-KIND = 2
+                     MOVE 1 TO WS-BAD
+                 END-IF
+                 CALL "STDMOB-CELL" USING EN-DIM(L-ROW) WS-CELL-X WS-BELOW WS-CELL-Z WS-KIND
+                 IF WS-KIND = 2
+                     MOVE 1 TO WS-BAD
+                 END-IF
+             END-PERFORM
+         END-IF
+         IF WS-BAD = 1
+             MOVE 0 TO L-HZ
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-WATER-GUARD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-FRICTION.
