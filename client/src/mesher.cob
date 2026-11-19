@@ -12,7 +12,10 @@
 *> the block's name, ST-BLOCK-NAME, at the cell's position in the world; the biome blend of 43 section
 *> 4): its colour as RGB multipliers. Faces whose sprite has partial alpha go to the translucent list.
 *> MESH-DIRTY meshes the dirty sections nearest the player first, until the frame's time budget
-*> (MB-BUDGET-US) is spent or the section count it is given is reached, and at least one.
+*> (MB-BUDGET-US) is spent or the section count it is given is reached, and at least one. A section never meshed since its chunk was
+*> loaded (WR-MESHED 0: a hole in the picture) goes before one only to be meshed again (the old mesh is still drawn), a section of only air
+*> (WR-KIND 1) is done at once and takes no queue place and no budget, and while a never meshed section lies within CL-MESH-NEAR of the player
+*> (MB-BOOSTED) the budget and the credit are twice the usual.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MESH-CLOCK.
@@ -34,7 +37,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MESH-DIRTY.
-*> USING CLIENT-STATE, budget (sections at most): see the header. MB-MESHED is the number meshed.
+*> USING CLIENT-STATE, budget (sections at most, CL-MESH-CANDIDATES the most): see the header. MB-MESHED is the number meshed (the sections of
+*> only air included).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -45,18 +49,26 @@
  01 WS-PCX                 BINARY-LONG.
  01 WS-PCZ                 BINARY-LONG.
  01 WS-PS                  BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
  01 WS-ROWKEY              BINARY-LONG.
+ 01 WS-LOWER               BINARY-LONG.
  01 WS-KEY                 BINARY-LONG.
  01 WS-DS                  BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-SCAN                BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-REFILL              BINARY-LONG.
+ 01 WS-LIMIT-US            BINARY-LONG.
  01 WS-CAND.
-    05 WS-C-KEY            BINARY-LONG OCCURS 64 TIMES.
-    05 WS-C-ROW            BINARY-LONG OCCURS 64 TIMES.
-    05 WS-C-SEC            BINARY-LONG OCCURS 64 TIMES.
+    05 WS-C-KEY            BINARY-LONG OCCURS 16 TIMES.
+    05 WS-C-ROW            BINARY-LONG OCCURS 16 TIMES.
+    05 WS-C-SEC            BINARY-LONG OCCURS 16 TIMES.
  01 WS-T0                  BINARY-DOUBLE.
  01 WS-U0                  BINARY-DOUBLE.
  01 WS-T1                  BINARY-DOUBLE.
+ 01 B-CELLS                PIC X(196608) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-BUDGET               BINARY-LONG.
@@ -86,11 +98,16 @@
          COMPUTE MB-CREDIT = MB-CREDIT - (WS-T1 - WS-U0)
      END-IF
 *>   With the credit on (the running client), a frame whose meshing ran long (one section of a dense chunk can take 100 ms) is paid back by
-*>   frames that mesh nothing: the average is CL-MESH-CREDIT-US a frame, and the frame rate holds while the world loads.
+*>   frames that mesh nothing: the average is CL-MESH-CREDIT-US a frame (CL-MESH-BOOST-US while the last frame found a hole near the player), and
+*>   the frame rate holds while the world loads.
+     MOVE CL-MESH-CREDIT-US TO WS-REFILL
+     IF MB-BOOSTED = 1
+         MOVE CL-MESH-BOOST-US TO WS-REFILL
+     END-IF
      IF MB-CREDIT-ON = 1
-         ADD CL-MESH-CREDIT-US TO MB-CREDIT
-         IF MB-CREDIT > CL-MESH-CREDIT-US
-             MOVE CL-MESH-CREDIT-US TO MB-CREDIT
+         ADD WS-REFILL TO MB-CREDIT
+         IF MB-CREDIT > WS-REFILL
+             MOVE WS-REFILL TO MB-CREDIT
          END-IF
          IF MB-CREDIT < 0
              MOVE 0 TO MB-LAST-US
@@ -98,54 +115,105 @@
          END-IF
      END-IF
      CALL "MESH-CLOCK" USING CLIENT-STATE WS-T0
-     MOVE FUNCTION MIN(L-BUDGET, 64) TO WS-K
+     MOVE FUNCTION MIN(L-BUDGET, CL-MESH-CANDIDATES) TO WS-K
      COMPUTE WS-PCX = FUNCTION INTEGER(PL-X / 16)
      COMPUTE WS-PCZ = FUNCTION INTEGER(PL-Z / 16)
      COMPUTE WS-PS = FUNCTION INTEGER((PL-Y - PL-MIN-Y) / 16) + 1
      MOVE 0 TO WS-N
-*>   The WS-K dirty sections nearest the player (in units of 16 blocks), nearest first.
+*>   The WS-K dirty sections that hold blocks and come first (never meshed before meshed again, each nearest the player first, in units of 16
+*>   blocks): the key is the squared distance, 100000000 more for a section already meshed. A row whose chunk is farther than every key of a full
+*>   list is passed over, a dirty section whose lower bound (its chunk's distance and its class) is not below the worst of a full list is not
+*>   looked at further. A dirty section of only air is meshed here and now.
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
          IF WR-USED(WS-R) = 1
-             COMPUTE WS-ROWKEY = (WR-CX(WS-R) - WS-PCX) * (WR-CX(WS-R) - WS-PCX)
-                 + (WR-CZ(WS-R) - WS-PCZ) * (WR-CZ(WS-R) - WS-PCZ)
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
-                 IF WR-DIRTY(WS-R, WS-S) = 1
-                     COMPUTE WS-DS = WS-S - WS-PS
-                     COMPUTE WS-KEY = WS-ROWKEY + WS-DS * WS-DS
-                     IF WS-N < WS-K
-                         ADD 1 TO WS-N
-                         MOVE WS-N TO WS-I
-                         MOVE 1 TO WS-J
-                     ELSE
-                         MOVE 0 TO WS-J
-                         IF WS-KEY < WS-C-KEY(WS-N)
-                             MOVE WS-N TO WS-I
+             COMPUTE WS-DX = WR-CX(WS-R) - WS-PCX
+             COMPUTE WS-DZ = WR-CZ(WS-R) - WS-PCZ
+             COMPUTE WS-ROWKEY = WS-DX * WS-DX + WS-DZ * WS-DZ
+             MOVE 1 TO WS-SCAN
+             IF WS-N >= WS-K
+                 IF WS-ROWKEY >= WS-C-KEY(WS-N)
+                     MOVE 0 TO WS-SCAN
+                 END-IF
+             END-IF
+             IF WS-SCAN = 1
+                 SET ADDRESS OF B-CELLS TO WR-ADDR(WS-R)
+                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+                     IF WR-DIRTY(WS-R, WS-S) = 1
+                         IF WR-KIND(WS-R, WS-S) = 0
+                             COMPUTE WS-BASE = (WS-S - 1) * 8192
+                             MOVE 2 TO WR-KIND(WS-R, WS-S)
+                             IF B-CELLS(WS-BASE + 1:8192) = LOW-VALUES
+                                 MOVE 1 TO WR-KIND(WS-R, WS-S)
+                             END-IF
+                         END-IF
+                         IF WR-KIND(WS-R, WS-S) = 1
+                             CALL "MESH-SECTION" USING CLIENT-STATE WS-R WS-S
+                             ADD 1 TO MB-MESHED
+                         ELSE
+                             MOVE WS-ROWKEY TO WS-LOWER
+                             IF WR-MESHED(WS-R, WS-S) = 1
+                                 ADD 100000000 TO WS-LOWER
+                             END-IF
                              MOVE 1 TO WS-J
+                             IF WS-N >= WS-K
+                                 IF WS-LOWER >= WS-C-KEY(WS-N)
+                                     MOVE 0 TO WS-J
+                                 END-IF
+                             END-IF
+                             IF WS-J = 1
+                                 COMPUTE WS-DS = WS-S - WS-PS
+                                 COMPUTE WS-KEY = WS-LOWER + WS-DS * WS-DS
+                                 IF WS-N < WS-K
+                                     ADD 1 TO WS-N
+                                     MOVE WS-N TO WS-I
+                                     MOVE 1 TO WS-J
+                                 ELSE
+                                     MOVE 0 TO WS-J
+                                     IF WS-KEY < WS-C-KEY(WS-N)
+                                         MOVE WS-N TO WS-I
+                                         MOVE 1 TO WS-J
+                                     END-IF
+                                 END-IF
+                                 IF WS-J = 1
+                                     PERFORM UNTIL WS-I = 1
+                                         COMPUTE WS-J = WS-I - 1
+                                         IF WS-C-KEY(WS-J) <= WS-KEY
+                                             EXIT PERFORM
+                                         END-IF
+                                         MOVE WS-C-KEY(WS-J) TO WS-C-KEY(WS-I)
+                                         MOVE WS-C-ROW(WS-J) TO WS-C-ROW(WS-I)
+                                         MOVE WS-C-SEC(WS-J) TO WS-C-SEC(WS-I)
+                                         MOVE WS-J TO WS-I
+                                     END-PERFORM
+                                     MOVE WS-KEY TO WS-C-KEY(WS-I)
+                                     MOVE WS-R TO WS-C-ROW(WS-I)
+                                     MOVE WS-S TO WS-C-SEC(WS-I)
+                                 END-IF
+                             END-IF
                          END-IF
                      END-IF
-                     IF WS-J = 1
-                         PERFORM UNTIL WS-I = 1
-                             COMPUTE WS-J = WS-I - 1
-                             IF WS-C-KEY(WS-J) <= WS-KEY
-                                 EXIT PERFORM
-                             END-IF
-                             MOVE WS-C-KEY(WS-J) TO WS-C-KEY(WS-I)
-                             MOVE WS-C-ROW(WS-J) TO WS-C-ROW(WS-I)
-                             MOVE WS-C-SEC(WS-J) TO WS-C-SEC(WS-I)
-                             MOVE WS-J TO WS-I
-                         END-PERFORM
-                         MOVE WS-KEY TO WS-C-KEY(WS-I)
-                         MOVE WS-R TO WS-C-ROW(WS-I)
-                         MOVE WS-S TO WS-C-SEC(WS-I)
-                     END-IF
-                 END-IF
-             END-PERFORM
+                 END-PERFORM
+             END-IF
          END-IF
      END-PERFORM
+*>   A never meshed section near the player: a hole in the view, closed at twice the usual cost this frame and the next ones.
+     MOVE 0 TO MB-BOOSTED MB-WAITING
+     MOVE MB-BUDGET-US TO WS-LIMIT-US
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         IF WS-C-KEY(WS-I) < 100000000
+             ADD 1 TO MB-WAITING
+         END-IF
+     END-PERFORM
+     IF WS-N > 0
+         IF WS-C-KEY(1) <= CL-MESH-NEAR
+             MOVE 1 TO MB-BOOSTED
+             COMPUTE WS-LIMIT-US = MB-BUDGET-US * 2
+         END-IF
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
          IF WS-I > 1
              CALL "MESH-CLOCK" USING CLIENT-STATE WS-T1
-             IF WS-T1 - WS-T0 >= MB-BUDGET-US
+             IF WS-T1 - WS-T0 >= WS-LIMIT-US
                  EXIT PERFORM
              END-IF
          END-IF
@@ -569,6 +637,7 @@
      MOVE 0 TO WR-DIRTY(L-ROW, L-S)
      MOVE 0 TO WR-URGENT(L-ROW, L-S)
      MOVE 1 TO WR-UPLOAD(L-ROW, L-S)
+     MOVE 1 TO WR-MESHED(L-ROW, L-S)
      GOBACK.
 
  END PROGRAM MESH-SECTION.

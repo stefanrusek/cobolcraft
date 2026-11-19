@@ -135,6 +135,7 @@
      PERFORM CLEAR-DIRTY
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 4
          MOVE 1 TO WR-DIRTY(WS-ROW(WS-R), 1)
+         MOVE 1 TO WR-MESHED(WS-ROW(WS-R), 1)
          MOVE 0 TO WR-UPLOAD(WS-ROW(WS-R), 1)
      END-PERFORM
      MOVE SPACES TO TL-OBSERVED
@@ -225,6 +226,8 @@
          PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 4
              IF WS-MARKED < 10
                  MOVE 1 TO WR-DIRTY(WS-ROW(WS-R), WS-S)
+*>               Meshed before (only to be meshed again): a never meshed section near the player doubles the budget (test_mesher_queue).
+                 MOVE 1 TO WR-MESHED(WS-ROW(WS-R), WS-S)
                  ADD 1 TO WS-MARKED
              END-IF
          END-PERFORM

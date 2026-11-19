@@ -199,6 +199,7 @@
 *>       A section with no block has no mesh to light again.
          IF WS-FULL-S(WS-S) = 1
              MOVE 1 TO WR-DIRTY(L-ROW, WS-S)
+             MOVE 0 TO WR-KIND(L-ROW, WS-S)
          END-IF
          MOVE WR-CX(L-ROW) TO WS-NX
          MOVE WR-CZ(L-ROW) TO WS-NZ

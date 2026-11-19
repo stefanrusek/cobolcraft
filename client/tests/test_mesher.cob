@@ -65,9 +65,10 @@
      CALL "TEST-LIGHT" USING CLIENT-STATE WS-ROW "0 01 11 01 00"
      MOVE 1 TO WR-DIRTY(WS-ROW, 1) WR-DIRTY(WS-ROW, 2)
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-ONE
-     MOVE "mesher one dirty section per budget unit is meshed and marked for upload" TO TL-CASE
+*>   Section 2 holds only air: the queue meshes it at once (it takes no budget unit), section 1 is the one section of the budget.
+     MOVE "mesher one dirty section per budget unit is meshed and marked for upload, a section of only air besides" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "011" TO TL-EXPECTED
+     MOVE "001" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING WR-DIRTY(WS-ROW, 1) WR-DIRTY(WS-ROW, 2) WR-UPLOAD(WS-ROW, 1) DELIMITED BY SIZE
          INTO TL-OBSERVED

@@ -710,8 +710,16 @@
 *> 3 dry foliage, 4 water), block x, y, z, radius (0 to 7), colour out. Radius 0 is the resolver's
 *> colour of the position's biome as it is; a larger radius averages the (2r + 1)^2 columns at the
 *> same y, each channel summed and divided with integer division, alpha 255.
+*> The mesher asks for one average per tinted cell (every grass top, leaf and water surface of a section), so the (2r + 1)^2 samples are read
+*> here without a call each: the chunk coordinate and the biome cell column of each x and z of the box are worked out once (a step of one block
+*> moves the cell, never a division), the chunk row is looked up again only when the sample enters another chunk, and the resolver's colour
+*> (TINT-BIOME-COLOR) is asked again only when the biome differs from the previous sample's (or the colour depends on the position: the
+*> swamp's grass noise). The samples are those of TINT-BIOME-AT: a chunk not loaded or a y outside the world reads the plains biome, a biome
+*> the table has no colours for too.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CELLS.
+ COPY CLTINT.
  01 WS-BIOME               BINARY-LONG.
  01 WS-DX                  BINARY-LONG.
  01 WS-DZ                  BINARY-LONG.
@@ -719,9 +727,36 @@
  01 WS-PZ                  BINARY-LONG.
  01 WS-COLOUR              BINARY-DOUBLE.
  01 WS-CH                  BINARY-DOUBLE.
+ 01 WS-QUOT                BINARY-DOUBLE.
  01 WS-SUM                 BINARY-DOUBLE OCCURS 3 TIMES.
+ 01 WS-CH-R                BINARY-LONG.
+ 01 WS-CH-G                BINARY-LONG.
+ 01 WS-CH-B                BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-RAD                 BINARY-LONG.
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-BIASED              BINARY-LONG.
+ 01 WS-CHUNK               BINARY-LONG.
+ 01 WS-LOCAL               BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-LY4                 BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-LAST-CX             BINARY-LONG.
+ 01 WS-LAST-CZ             BINARY-LONG.
+ 01 WS-LAST-BIOME          BINARY-LONG.
+ 01 WS-VARIES              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-QUARTERS            PIC X(16) VALUE "0000111122223333".
+ 01 WS-QUARTER-TABLE REDEFINES WS-QUARTERS.
+    05 WS-QUARTER          PIC 9 OCCURS 16 TIMES.
+ 01 WS-X-COLS.
+    05 WS-XC-CHUNK         BINARY-LONG OCCURS 15 TIMES.
+    05 WS-XC-QUARTER       BINARY-LONG OCCURS 15 TIMES.
+ 01 WS-Z-COLS.
+    05 WS-ZC-CHUNK         BINARY-LONG OCCURS 15 TIMES.
+    05 WS-ZC-QUARTER       BINARY-LONG OCCURS 15 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-RESOLVER             BINARY-LONG.
@@ -737,24 +772,90 @@
          CALL "TINT-BIOME-COLOR" USING L-RESOLVER WS-BIOME L-X L-Z L-COLOUR
          GOBACK
      END-IF
+     COMPUTE WS-WIDTH = 2 * WS-RAD + 1
+*>   The chunk and the biome cell column of each x of the box: the first by one division (biased so that it floors), the next by steps.
+     COMPUTE WS-BIASED = L-X - WS-RAD + 33554432
+     DIVIDE WS-BIASED BY 16 GIVING WS-CHUNK REMAINDER WS-LOCAL
+     SUBTRACT 2097152 FROM WS-CHUNK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-WIDTH
+         MOVE WS-CHUNK TO WS-XC-CHUNK(WS-I)
+         MOVE WS-QUARTER(WS-LOCAL + 1) TO WS-XC-QUARTER(WS-I)
+         ADD 1 TO WS-LOCAL
+         IF WS-LOCAL = 16
+             MOVE 0 TO WS-LOCAL
+             ADD 1 TO WS-CHUNK
+         END-IF
+     END-PERFORM
+     COMPUTE WS-BIASED = L-Z - WS-RAD + 33554432
+     DIVIDE WS-BIASED BY 16 GIVING WS-CHUNK REMAINDER WS-LOCAL
+     SUBTRACT 2097152 FROM WS-CHUNK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-WIDTH
+         MOVE WS-CHUNK TO WS-ZC-CHUNK(WS-I)
+         MOVE WS-QUARTER(WS-LOCAL + 1) TO WS-ZC-QUARTER(WS-I)
+         ADD 1 TO WS-LOCAL
+         IF WS-LOCAL = 16
+             MOVE 0 TO WS-LOCAL
+             ADD 1 TO WS-CHUNK
+         END-IF
+     END-PERFORM
+*>   The biome cell row (4 blocks high) of the query's y; a y outside the world reads the plains biome.
+     COMPUTE WS-LY = L-Y - PL-MIN-Y
+     MOVE 1 TO WS-INSIDE
+     IF WS-LY < 0 OR WS-LY >= PL-HEIGHT
+         MOVE 0 TO WS-INSIDE
+         MOVE 0 TO WS-LY4
+     ELSE
+         DIVIDE WS-LY BY 4 GIVING WS-LY4
+     END-IF
      MOVE 0 TO WS-SUM(1) WS-SUM(2) WS-SUM(3)
-     PERFORM VARYING WS-DX FROM 0 BY 1 UNTIL WS-DX > 2 * WS-RAD
-         PERFORM VARYING WS-DZ FROM 0 BY 1 UNTIL WS-DZ > 2 * WS-RAD
-             COMPUTE WS-PX = L-X - WS-RAD + WS-DX
-             COMPUTE WS-PZ = L-Z - WS-RAD + WS-DZ
-             CALL "TINT-BIOME-AT" USING CLIENT-STATE WS-PX L-Y WS-PZ WS-BIOME
-             CALL "TINT-BIOME-COLOR" USING L-RESOLVER WS-BIOME WS-PX WS-PZ WS-COLOUR
-             COMPUTE WS-CH = WS-COLOUR / 65536
-             COMPUTE WS-CH = FUNCTION MOD(WS-CH, 256)
-             ADD WS-CH TO WS-SUM(1)
-             COMPUTE WS-CH = WS-COLOUR / 256
-             COMPUTE WS-CH = FUNCTION MOD(WS-CH, 256)
-             ADD WS-CH TO WS-SUM(2)
-             COMPUTE WS-CH = FUNCTION MOD(WS-COLOUR, 256)
-             ADD WS-CH TO WS-SUM(3)
+     MOVE 0 TO WS-ROW WS-CH-R WS-CH-G WS-CH-B
+     MOVE -1 TO WS-LAST-BIOME
+     MOVE -999999999 TO WS-LAST-CX WS-LAST-CZ
+     MOVE 0 TO WS-VARIES
+     PERFORM VARYING WS-DX FROM 1 BY 1 UNTIL WS-DX > WS-WIDTH
+         PERFORM VARYING WS-DZ FROM 1 BY 1 UNTIL WS-DZ > WS-WIDTH
+             MOVE TT-PLAINS TO WS-BIOME
+             IF WS-INSIDE = 1
+                 IF WS-XC-CHUNK(WS-DX) NOT = WS-LAST-CX OR WS-ZC-CHUNK(WS-DZ) NOT = WS-LAST-CZ
+                     MOVE WS-XC-CHUNK(WS-DX) TO WS-LAST-CX
+                     MOVE WS-ZC-CHUNK(WS-DZ) TO WS-LAST-CZ
+                     CALL "WORLD-ROW" USING CLIENT-STATE WS-LAST-CX WS-LAST-CZ WS-ROW
+                     IF WS-ROW > 0
+                         SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+                     END-IF
+                 END-IF
+                 IF WS-ROW > 0
+                     COMPUTE WS-CELL = WS-LY4 * 16 + WS-ZC-QUARTER(WS-DZ) * 4 + WS-XC-QUARTER(WS-DX) + 1
+                     MOVE CE-BIOME(WS-CELL) TO WS-BIOME
+                     IF WS-BIOME >= TT-BIOMES
+                         MOVE TT-PLAINS TO WS-BIOME
+                     END-IF
+                 END-IF
+             END-IF
+*>           The resolver's colour of this sample: the previous one's when the biome is the same and the colour does not depend on the block.
+             IF WS-BIOME NOT = WS-LAST-BIOME OR WS-VARIES = 1
+                 COMPUTE WS-PX = L-X - WS-RAD + WS-DX - 1
+                 COMPUTE WS-PZ = L-Z - WS-RAD + WS-DZ - 1
+                 CALL "TINT-BIOME-COLOR" USING L-RESOLVER WS-BIOME WS-PX WS-PZ WS-COLOUR
+                 MOVE 0 TO WS-VARIES
+                 IF L-RESOLVER NOT = 2 AND L-RESOLVER NOT = 3 AND L-RESOLVER NOT = 4
+                     IF TB-MOD(WS-BIOME + 1) = 2
+                         MOVE 1 TO WS-VARIES
+                     END-IF
+                 END-IF
+                 DIVIDE WS-COLOUR BY 65536 GIVING WS-QUOT
+                 DIVIDE WS-QUOT BY 256 GIVING WS-CH REMAINDER WS-CH-R
+                 DIVIDE WS-COLOUR BY 256 GIVING WS-QUOT
+                 DIVIDE WS-QUOT BY 256 GIVING WS-CH REMAINDER WS-CH-G
+                 DIVIDE WS-COLOUR BY 256 GIVING WS-QUOT REMAINDER WS-CH-B
+                 MOVE WS-BIOME TO WS-LAST-BIOME
+             END-IF
+             ADD WS-CH-R TO WS-SUM(1)
+             ADD WS-CH-G TO WS-SUM(2)
+             ADD WS-CH-B TO WS-SUM(3)
          END-PERFORM
      END-PERFORM
-     COMPUTE WS-N = (2 * WS-RAD + 1) * (2 * WS-RAD + 1)
+     COMPUTE WS-N = WS-WIDTH * WS-WIDTH
      DIVIDE WS-SUM(1) BY WS-N GIVING WS-SUM(1)
      DIVIDE WS-SUM(2) BY WS-N GIVING WS-SUM(2)
      DIVIDE WS-SUM(3) BY WS-N GIVING WS-SUM(3)
