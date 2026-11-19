@@ -1344,7 +1344,7 @@
 *>     (eye-relative, texture 2); each with the vertex count last uploaded.
        10 RL-IC-COUNT        BINARY-LONG.
        10 RL-IC-UPLOADED     BINARY-LONG.
-       10 RL-IC-VERTEX OCCURS 1536 TIMES.
+       10 RL-IC-VERTEX OCCURS 6144 TIMES.
           15 RL-IC-X         FLOAT-SHORT.
           15 RL-IC-Y         FLOAT-SHORT.
           15 RL-IC-Z         FLOAT-SHORT.

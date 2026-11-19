@@ -170,31 +170,19 @@
                          CALL "JSON-STRING" USING JSON-DOC WS-FIELD WS-DIR WS-VALUE-CAP
                              WS-DIR-LENGTH
                          IF WS-DIR-LENGTH > 0
-                         MOVE 0 TO WS-Q
-                         INSPECT WS-DIR(1:WS-DIR-LENGTH) TALLYING WS-Q FOR CHARACTERS BEFORE INITIAL ":"
-                         MOVE SPACES TO WS-ID WS-PATH
-                         IF WS-Q >= WS-DIR-LENGTH
-                             STRING "minecraft:" WS-DIR(1:WS-DIR-LENGTH) DELIMITED BY SIZE INTO WS-ID
-                             STRING "assets/minecraft/textures/" WS-DIR(1:WS-DIR-LENGTH) ".png" DELIMITED BY SIZE INTO WS-PATH
-                         ELSE
-                             MOVE WS-DIR(1:WS-DIR-LENGTH) TO WS-ID
-                             STRING "assets/" WS-DIR(1:WS-Q) "/textures/" WS-DIR(WS-Q + 2:WS-DIR-LENGTH - WS-Q - 1) ".png"
-                                 DELIMITED BY SIZE INTO WS-PATH
-                         END-IF
-                         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LENGTH
-                         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
-                         CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
-                         IF WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
-                             ADD 1 TO AT-SPRITE-COUNT
-                             MOVE AT-SPRITE-COUNT TO WS-S
-                         END-IF
-                         IF WS-S > 0
-                             INITIALIZE AT-SPRITE(WS-S)
-                             MOVE WS-ID TO AT-NAME(WS-S)
-                             MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
-                             MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
-                             MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
-                         END-IF
+                             CALL "ATLAS-RESOURCE-ID" USING WS-DIR WS-DIR-LENGTH WS-ID WS-ID-LENGTH WS-PATH WS-PATH-LENGTH
+                             CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+                             IF WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+                                 ADD 1 TO AT-SPRITE-COUNT
+                                 MOVE AT-SPRITE-COUNT TO WS-S
+                             END-IF
+                             IF WS-S > 0
+                                 INITIALIZE AT-SPRITE(WS-S)
+                                 MOVE WS-ID TO AT-NAME(WS-S)
+                                 MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+                                 MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+                                 MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+                             END-IF
                          END-IF
                  END-EVALUATE
                  MOVE JN-NEXT(WS-SOURCE) TO WS-SOURCE
@@ -453,6 +441,38 @@
      END-IF
      GOBACK.
  END PROGRAM ATLAS-DIRECTORY-MATCH.
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-RESOURCE-ID.
+*> USING resource (PIC X(128), the `resource` of a "single" source: `ns:path` or `path` for minecraft), its length, sprite id out (PIC X(80): `ns:path`) and its length, texture file
+*> out (PIC X(256): assets/<ns>/textures/<path>.png) and its length.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COLON               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-RESOURCE             PIC X(128).
+ 01 L-RESOURCE-LENGTH      BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-ID-LENGTH            BINARY-LONG.
+ 01 L-PATH                 PIC X(256).
+ 01 L-PATH-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION USING L-RESOURCE L-RESOURCE-LENGTH L-ID L-ID-LENGTH L-PATH L-PATH-LENGTH.
+     MOVE 0 TO WS-COLON
+     INSPECT L-RESOURCE(1:L-RESOURCE-LENGTH) TALLYING WS-COLON FOR CHARACTERS BEFORE INITIAL ":"
+     MOVE SPACES TO L-ID L-PATH
+     IF WS-COLON >= L-RESOURCE-LENGTH
+         STRING "minecraft:" L-RESOURCE(1:L-RESOURCE-LENGTH) DELIMITED BY SIZE INTO L-ID
+         STRING "assets/minecraft/textures/" L-RESOURCE(1:L-RESOURCE-LENGTH) ".png" DELIMITED BY SIZE INTO L-PATH
+     ELSE
+         MOVE L-RESOURCE(1:L-RESOURCE-LENGTH) TO L-ID
+         STRING "assets/" L-RESOURCE(1:WS-COLON) "/textures/" L-RESOURCE(WS-COLON + 2:L-RESOURCE-LENGTH - WS-COLON - 1) ".png"
+             DELIMITED BY SIZE INTO L-PATH
+     END-IF
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-ID)) TO L-ID-LENGTH
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PATH)) TO L-PATH-LENGTH
+     GOBACK.
+ END PROGRAM ATLAS-RESOURCE-ID.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-FIND.

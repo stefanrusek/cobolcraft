@@ -297,7 +297,7 @@
  78 CL-MESH-URGENT          VALUE 8.    *> sections a frame meshes at once for block changes, whatever the credit (MESH-DIRTY)
  78 CL-MESH-CREDIT-US       VALUE 7000. *> microseconds of meshing credit each frame earns, and the most it keeps (MB-CREDIT)
  78 CL-TINT-RADIUS          VALUE 2.    *> biome blend radius (43 section 4: the biomeBlendRadius default)
- 78 CL-MAX-ICON-VERTICES    VALUE 1536.
+ 78 CL-MAX-ICON-VERTICES    VALUE 6144.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.
  78 CL-MAX-HL-VERTICES      VALUE 144.
  78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)

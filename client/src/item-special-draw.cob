@@ -151,7 +151,8 @@
  PROGRAM-ID. SPECIAL-GUI-ICON.
 *> USING CLIENT-STATE, kind, item id, x, y (the icon cell's corner in GUI pixels): the model of the item drawn with the gui display transform (52 3.10, 4.5, 6.7) into the icon layer. The cell
 *> is 16 pixels: a point of the transformed model p goes to (x + 8 + 16 p.x, y + 8 - 16 p.y) times the GUI scale (the GUI's own projection with y flipped), the quads that face the
-*> viewer (the view is along -z: cross(c2 - c1, c3 - c2).z below 0) are drawn from the far one to the near one (mean z), shaded by the two level lights of 12 section 6.10.
+*> viewer (the view is along -z: cross(c2 - c1, c3 - c2).z below 0) are drawn from the far one to the near one (mean z), shaded by the two level lights of 12 section 6.10; drawn out (1)
+*> when they all fit the icon layer, else 0 and nothing is added (the caller draws the flat icon).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -199,7 +200,9 @@
  01 L-ITEM                 BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-KIND L-ITEM L-X L-Y.
+ 01 L-DRAWN                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-KIND L-ITEM L-X L-Y L-DRAWN.
+     MOVE 0 TO L-DRAWN
      CALL "SPECIAL-ITEM-QUADS" USING CLIENT-STATE L-ITEM SQ-TABLE
      CALL "SPECIAL-ITEM-DISPLAY" USING L-KIND WS-CONTEXT WS-VAL
      CALL "SPECIAL-DISPLAY-M" USING WS-VAL WS-M
@@ -227,6 +230,11 @@
              COMPUTE WS-KEY(WS-SHOWN) = WS-ZSUM / 4
          END-IF
      END-PERFORM
+*>   Room for all of them or none: a model that does not fit the icon layer is left to the flat icon of the slot (L-DRAWN 0).
+     IF RL-IC-COUNT + 6 * WS-SHOWN > CL-MAX-ICON-VERTICES
+         GOBACK
+     END-IF
+     MOVE 1 TO L-DRAWN
      CALL "SPECIAL-SORT" USING WS-SHOWN WS-KEYS WS-ORDERS
      PERFORM VARYING WS-QI FROM 1 BY 1 UNTIL WS-QI > WS-SHOWN
          MOVE WS-SHOW(WS-ORDER(WS-QI)) TO WS-Q
@@ -339,9 +347,6 @@
  01 L-KIND                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE L-KIND.
      CALL "SPECIAL-ITEM-QUADS" USING CLIENT-STATE EN-STACK-ITEM(L-ROW) SQ-TABLE
-     IF SQ-COUNT = 0
-         GOBACK
-     END-IF
      EVALUATE TRUE
          WHEN EN-STACK-COUNT(L-ROW) <= 1
              MOVE 1 TO WS-COPIES
