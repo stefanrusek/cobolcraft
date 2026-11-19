@@ -11,6 +11,7 @@
 *>   MERCHANT-SELECT USING connection id, offer index (0 based)   Select Trade (05c 0x34, 40-5 2.7)
 *>   MERCHANT-UPDATE USING player row                the result of the selected offer (2.4 updateSellItem)
 *>   MERCHANT-TAKEN USING player row                 the result was taken: payments used up, the use counted (2.5)
+*>   MERCHANT-QUICK USING player row, menu slot, item out, count out   quickMoveStack of the merchant menu (2.8)
 *>   MERCHANT-VALID USING player row, valid out      stillValid: the merchant lives, same dimension, within 4 blocks (2.9)
 
  IDENTIFICATION DIVISION.
@@ -365,30 +366,34 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MERCHANT-FILL.
-*> USING player row, payment slot (1 or 2), item id, count wanted: moves up to that many items from the inventory slots into the payment slot.
+*> USING player row, payment slot (1 or 2), item id: the fill of one payment slot of tryMoveItems (40-5 section 2.7): the inventory is scanned in menu order
+*> (the main inventory rows first, then the hotbar) and every stack of the item moves into the payment slot until it holds a full stack.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CMENU.
+ COPY CITEMS.
  01 WS-J                    BINARY-LONG.
- 01 WS-LEFT                 BINARY-LONG.
+ 01 WS-K                    BINARY-LONG.
+ 01 WS-MAX                  BINARY-LONG.
  01 WS-TAKE                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-PAY                   BINARY-LONG.
  01 L-ITEM                  BINARY-LONG.
- 01 L-NEED                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-PAY L-ITEM L-NEED.
-     MOVE L-NEED TO WS-LEFT
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 36 OR WS-LEFT = 0
+ PROCEDURE DIVISION USING L-ROW L-PAY L-ITEM.
+     MOVE IT-MAX-STACK(L-ITEM + 1) TO WS-MAX
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 36 OR MN-WSLOT-COUNT(L-ROW, L-PAY) >= WS-MAX
+         COMPUTE WS-J = FUNCTION MOD(WS-K + 8, 36) + 1
          IF PL-SLOT-COUNT(L-ROW, WS-J) > 0 AND PL-SLOT-ITEM(L-ROW, WS-J) = L-ITEM
-             COMPUTE WS-TAKE = FUNCTION MIN(PL-SLOT-COUNT(L-ROW, WS-J), WS-LEFT)
+                 AND (MN-WSLOT-COUNT(L-ROW, L-PAY) = 0 OR MN-WSLOT-VAR(L-ROW, L-PAY) = PL-SLOT-VAR(L-ROW, WS-J))
+             COMPUTE WS-TAKE = FUNCTION MIN(PL-SLOT-COUNT(L-ROW, WS-J), WS-MAX - MN-WSLOT-COUNT(L-ROW, L-PAY))
              SUBTRACT WS-TAKE FROM PL-SLOT-COUNT(L-ROW, WS-J)
-             SUBTRACT WS-TAKE FROM WS-LEFT
              MOVE L-ITEM TO MN-WSLOT-ITEM(L-ROW, L-PAY)
+             MOVE PL-SLOT-VAR(L-ROW, WS-J) TO MN-WSLOT-VAR(L-ROW, L-PAY)
              ADD WS-TAKE TO MN-WSLOT-COUNT(L-ROW, L-PAY)
              IF PL-SLOT-COUNT(L-ROW, WS-J) = 0
-                 MOVE 0 TO PL-SLOT-ITEM(L-ROW, WS-J)
+                 MOVE 0 TO PL-SLOT-ITEM(L-ROW, WS-J) PL-SLOT-VAR(L-ROW, WS-J)
              END-IF
          END-IF
      END-PERFORM
@@ -455,11 +460,11 @@
          CALL "VL-OFFER-COST" USING WS-SLOT WS-IDX VL-O-SPECIAL(WS-SLOT, WS-IDX) WS-COST WS-COST-A
          CALL "MERCHANT-ITEM-ID" USING WS-WANT WS-ITEM-X
          MOVE 1 TO WS-I
-         CALL "MERCHANT-FILL" USING WS-ROW WS-I WS-ITEM-X WS-COST-A
+         CALL "MERCHANT-FILL" USING WS-ROW WS-I WS-ITEM-X
          IF WS-EC > 0
              CALL "MERCHANT-ITEM-ID" USING WS-EXTRA WS-ITEM-X
              MOVE 2 TO WS-I
-             CALL "MERCHANT-FILL" USING WS-ROW WS-I WS-ITEM-X WS-EC
+             CALL "MERCHANT-FILL" USING WS-ROW WS-I WS-ITEM-X
          END-IF
      END-IF
      CALL "MERCHANT-UPDATE" USING WS-ROW
@@ -468,3 +473,56 @@
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      GOBACK.
  END PROGRAM MERCHANT-SELECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MERCHANT-QUICK.
+*> USING player row, menu slot, item out, count out: quickMoveStack of the merchant menu (40-5 section 2.8, template 40-1 section 3.6). The result (slot 2) goes into the
+*> inventory slots 3 to 38 from the end and, when something moved, is taken (the trade of 2.5: payments used, use counted, xp, orb; what did not fit is lost as the
+*> result is made again); a payment slot goes into the inventory from the start; a main inventory slot (3 to 29) goes into the hotbar only, a hotbar slot into
+*> the main inventory only. Nothing is moved into the payment slots (only Select Trade fills them). The caller repeats while the result slot holds the same item.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ITEM                 BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG.
+ 01 WS-VAR                  BINARY-LONG.
+ 01 WS-LEFT                 BINARY-LONG.
+ 01 WS-MOVED                BINARY-LONG.
+ 01 WS-FIRST                BINARY-LONG.
+ 01 WS-END                  BINARY-LONG.
+ 01 WS-REV                  BINARY-LONG.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SLOT                  BINARY-LONG.
+ 01 L-RET-ITEM              BINARY-LONG.
+ 01 L-RET-COUNT             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT.
+     MOVE 0 TO L-RET-ITEM L-RET-COUNT
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
+     IF WS-COUNT = 0
+         GOBACK
+     END-IF
+     MOVE 3 TO WS-FIRST
+     MOVE 39 TO WS-END
+     MOVE 0 TO WS-REV
+     EVALUATE TRUE
+         WHEN L-SLOT = 2
+             MOVE 1 TO WS-REV
+         WHEN L-SLOT >= 3 AND L-SLOT < 30
+             MOVE 30 TO WS-FIRST
+         WHEN L-SLOT >= 30
+             MOVE 30 TO WS-END
+     END-EVALUATE
+     MOVE WS-COUNT TO WS-LEFT
+     MOVE 0 TO WS-MOVED
+     CALL "MENU-MOVE-TO-X" USING L-ROW WS-ITEM WS-LEFT WS-FIRST WS-END WS-REV WS-MOVED WS-VAR
+     IF L-SLOT = 2 AND WS-MOVED = 1
+         CALL "MENU-SET-X" USING L-ROW L-SLOT WS-ITEM WS-ZERO WS-VAR
+         CALL "MERCHANT-TAKEN" USING L-ROW
+         MOVE WS-ITEM TO L-RET-ITEM
+         MOVE WS-COUNT TO L-RET-COUNT
+     ELSE
+         CALL "MENU-QUICK-FINISH" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-LEFT WS-MOVED L-RET-ITEM L-RET-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM MERCHANT-QUICK.

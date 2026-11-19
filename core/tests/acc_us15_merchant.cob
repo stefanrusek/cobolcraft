@@ -114,8 +114,8 @@
      PERFORM CHECK
      MOVE 0 TO WS-INDEX
      CALL "MERCHANT-SELECT" USING WS-CONN WS-INDEX
-     MOVE "acceptance US15 40§2.7 Select Trade moves 24 paper into the first payment slot" TO TL-CASE
-     MOVE "24 6 0" TO TL-EXPECTED
+     MOVE "acceptance US15 40§2.7 Select Trade moves all 30 paper into the first payment slot (a full stack fill)" TO TL-CASE
+     MOVE "30 0 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-F1
      MOVE PL-SLOT-COUNT(WS-ROW, 10) TO WS-F2
@@ -153,8 +153,8 @@
      PERFORM FORMAT-3
      MOVE WS-OUT(1:3) TO TL-OBSERVED
      PERFORM CHECK
-     MOVE "acceptance US15 40§2.5 taking the result uses the payment: 0 paper left, 1 use, 2 xp" TO TL-CASE
-     MOVE "0 1 2" TO TL-EXPECTED
+     MOVE "acceptance US15 40§2.5 taking the result uses the payment: 6 paper left, 1 use, 2 xp" TO TL-CASE
+     MOVE "6 1 2" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-F1
      MOVE VL-O-USES(WS-SLOT, 1) TO WS-F2
