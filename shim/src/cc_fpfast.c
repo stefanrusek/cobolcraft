@@ -920,11 +920,9 @@ void ccfp_move(cob_field *src, cob_field *dst) {
             return;
         }
         if (have) {
-            float s = (float)v;
-            if (isfinite(s)) {
-                memcpy(dst->data, &s, sizeof s);
-                return;
-            }
+            float s = (float)v; /* a number below 2^53 in magnitude: finite */
+            memcpy(dst->data, &s, sizeof s);
+            return;
         }
     } else if ((dst_type == COB_TYPE_NUMERIC_BINARY || dst_type == COB_TYPE_NUMERIC_COMP5) && is_float_field(src) &&
                float_of(src, &v)) {
