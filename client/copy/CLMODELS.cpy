@@ -29,12 +29,12 @@
 *> in first person (hand-banner.cob; the texture codes 9000 + a pattern holder), and the rows guardian_beam and end_crystal_beam the images of the guardian's beam and the crystal beam (entities-beam.cob); The rows
 *>   item_frame and glow_item_frame (code F) draw no model: the frame's item is drawn into the ground item mesh (item-held.cob ENTITY-FRAME-EMIT, 34-9 section 10). The row shulker_box is the image holder of the shulker
 *>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). The row shield is the image holder of the shield's sprites (hand-shield.cob: code 0 shield_base_nopattern, 9000 shield_base, 9000 + a pattern holder the pattern under entity/shield). ender_dragon_eyes is the dragon's eyes layer (CL-MD-EXTRA of ender_dragon, 34-7 8.5 pass 2).
-*> The minecarts (seven rows, code M, family 9: client/src/entmodel-34-9-3.cob; the render pose is ENTITY-MINECART-SEQUENCE, 34-9 section 3.2) hurt and shake like the boats (entries 8 to 10). Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus
+*> The minecarts (seven rows, code M, family 9: client/src/entmodel-34-9-3.cob; the render pose is ENTITY-MINECART-SEQUENCE, 34-9 section 3.2) hurt and shake like the boats (entries 8 to 10). The trident (code T), the wind charges (code R: the model turns with the age), the lead knot (code X) and the cushion (code S, always the white texture: the dye is data of 44 part 9 section 8.1, not read) are family 9 rows posed by ENTITY-NONLIVING-SEQUENCE (34-9 sections 5, 6, 12, 16). Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus
 *>   (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle
 *>   rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 226.
+ 78 CL-MODEL-COUNT           VALUE 231.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(24) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -2070,8 +2070,53 @@
     05 FILLER PIC X(64) VALUE "textures/entity/minecart/minecart.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "trident".
+    05 FILLER PIC 9 VALUE 9.
+    05 FILLER PIC X(24) VALUE "TRIDENT".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "T".
+    05 FILLER PIC X(64) VALUE "textures/entity/trident/trident.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "wind_charge".
+    05 FILLER PIC 9 VALUE 9.
+    05 FILLER PIC X(24) VALUE "WIND_CHARGE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "R".
+    05 FILLER PIC X(64) VALUE "textures/entity/projectiles/wind_charge.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "breeze_wind_charge".
+    05 FILLER PIC 9 VALUE 9.
+    05 FILLER PIC X(24) VALUE "WIND_CHARGE".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "R".
+    05 FILLER PIC X(64) VALUE "textures/entity/projectiles/wind_charge.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "leash_knot".
+    05 FILLER PIC 9 VALUE 9.
+    05 FILLER PIC X(24) VALUE "LEASH_KNOT".
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC 999 VALUE 32.
+    05 FILLER PIC X VALUE "X".
+    05 FILLER PIC X(64) VALUE "textures/entity/lead_knot/lead_knot.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "cushion".
+    05 FILLER PIC 9 VALUE 9.
+    05 FILLER PIC X(24) VALUE "CUSHION".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "S".
+    05 FILLER PIC X(64) VALUE "textures/entity/cushion/white_cushion.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 226 TIMES.
+    05 CL-MD OCCURS 231 TIMES.
        10 CL-MD-KEY      PIC X(24).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

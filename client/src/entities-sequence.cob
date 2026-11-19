@@ -222,6 +222,44 @@
  END PROGRAM ENTITY-MINECART-SEQUENCE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-NONLIVING-SEQUENCE.
+*> USING CLIENT-STATE, replica row, ops out (64 FLOAT-LONG): the render pose of the trident (34-9 5.2: EF9-TRIDENT-OPS from yaw and pitch), the lead knot (12: scale (-1, -1, 1)),
+*> the cushion (16: EF9-CUSHION-OPS from the yaw, whose rotate X is code 6 there and 5 here) and the wind charges (6.2: no transform, no ops).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I.
+    05 WS-IV               FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OPS.
+    05 L-OP                FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-OPS.
+     MOVE 0 TO L-OP(1)
+     MOVE EN-YAW(L-ROW) TO WS-IV(1)
+     MOVE EN-PITCH(L-ROW) TO WS-IV(2)
+     EVALUATE EN-KEY(L-ROW)
+         WHEN "trident"
+             CALL "EF9-TRIDENT-OPS" USING WS-I L-OPS
+         WHEN "leash_knot"
+             CALL "EF9-KNOT-OPS" USING WS-I L-OPS
+         WHEN "cushion"
+             CALL "EF9-CUSHION-OPS" USING WS-I L-OPS
+             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > L-OP(1)
+                 COMPUTE WS-K = WS-N * 4 - 2
+                 IF L-OP(WS-K) = 6
+                     MOVE 5 TO L-OP(WS-K)
+                 END-IF
+             END-PERFORM
+         WHEN OTHER
+             CONTINUE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM ENTITY-NONLIVING-SEQUENCE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-DRAGON-SEQUENCE.
 *> USING CLIENT-STATE, replica row of the ender dragon, ops out (64 FLOAT-LONG): 34-7 8.5: rotate Y by -yaw(7), rotate X by (y(5) - y(10)) x 10, translate (0, 0, 1), scale
 *> (-1, -1, 1), translate (0, -1.501, 0), P(n) = the history at partial tick 1 (EF7-DRAGON-POSE-OPS; its code 6 (rotate X) is 5 here).

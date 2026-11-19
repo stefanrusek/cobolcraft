@@ -585,12 +585,12 @@
      IF WS-ANIM = "Q" OR "C" OR "Z" OR "K" OR "D" OR "P" OR "G" OR "H" OR "N"
              OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "spider" OR "cave_spider" OR "spider_eyes" OR "cave_spider_eyes" OR "wolf" OR "chicken"
              OR "blaze" OR "enderman" OR "enderman_eyes"
-             OR WS-ANIM = "W" OR "V"
+             OR WS-ANIM = "W" OR "V" OR "R"
          CALL "ENTITY-WALK-VALUES" USING CLIENT-STATE WS-ROW WS-WPOS WS-WSPEED
 *>       ageInTicks only matters to the humanoids (arm bob, zombie arm sway): the others keep a constant key.
          IF WS-ANIM = "Z" OR "K" OR "D" OR "P" OR "G" OR "H"
                  OR CL-MD-KEY(EN-MODEL(WS-ROW)) = "blaze" OR "enderman" OR "enderman_eyes"
-                 OR WS-ANIM = "V" OR "N"
+                 OR WS-ANIM = "V" OR "N" OR "R"
              MOVE EN-AGE(WS-ROW) TO WS-AGE
          END-IF
          DIVIDE EN-MOB-FLAGS(WS-ROW) BY 4 GIVING WS-OB
@@ -775,6 +775,10 @@
              MOVE WS-WPOS TO WS-I(3)
              MOVE WS-WSPEED TO WS-I(4)
              CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+*>       The wind charge (34-9 6.1): the models turn with the age in ticks.
+         WHEN "R"
+             MOVE WS-AGE TO WS-I(1)
+             CALL "EF9-WIND-ANIM" USING EMM-MODEL WS-IN
          WHEN "W"
          WHEN "V"
              CALL "ENTITY-POSE-MORE" USING EMM-MODEL WS-POSE-KEY WS-IN WS-AGE
@@ -850,6 +854,8 @@
              CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN WS-ANIM = "M"
              CALL "ENTITY-MINECART-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+         WHEN WS-ANIM = "T" OR "R" OR "X" OR "S"
+             CALL "ENTITY-NONLIVING-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "ender_dragon"
              CALL "ENTITY-DRAGON-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "evoker_fangs"
