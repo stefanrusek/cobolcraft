@@ -30,6 +30,7 @@
  01 WS-BAD                 BINARY-LONG VALUE 0.
  01 WS-CHECKS              BINARY-LONG VALUE 0.
  01 WS-ADDED               BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 0.
  01 WS-T0                  BINARY-DOUBLE.
  01 WS-T1                  BINARY-DOUBLE.
  01 WS-US                  BINARY-DOUBLE.
@@ -56,6 +57,9 @@
              WHEN OTHER
                  CONTINUE
          END-EVALUATE
+         IF BT-COUNT > WS-MAX
+             MOVE BT-COUNT TO WS-MAX
+         END-IF
          PERFORM RANDOM-IDENTITY
          PERFORM SCAN-TABLE
          CALL "BT-HAS" USING WS-DIM WS-TYPE WS-ID WS-X WS-Y WS-Z WS-FOUND
@@ -80,10 +84,10 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "perfsteady: the random operations scheduled a good number of ticks and left some pending" TO TL-CASE
+     MOVE "perfsteady: the random operations scheduled a good number of ticks and let the table grow to over 30" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-ADDED > 1000 AND BT-COUNT > 20
+     IF WS-ADDED > 1000 AND WS-MAX > 30
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -95,7 +99,8 @@
          MOVE 2 TO WS-TYPE
          MOVE 3 TO WS-ID
          COMPUTE WS-X = FUNCTION MOD(WS-I, 512) - 256
-         COMPUTE WS-Z = FUNCTION MOD(WS-I / 512, 64) - 32
+         DIVIDE WS-I BY 512 GIVING WS-Z
+         COMPUTE WS-Z = FUNCTION MOD(WS-Z, 64) - 32
          MOVE 60 TO WS-Y
          ADD 1 TO WS-SUB
          CALL "BT-ADD" USING WS-DIM WS-TYPE WS-ID WS-X WS-Y WS-Z WS-TRIG WS-PRIO WS-SUB WS-RESULT

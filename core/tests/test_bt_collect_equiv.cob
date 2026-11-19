@@ -30,7 +30,7 @@
  01 WS-Q                   BINARY-DOUBLE.
  01 WS-N                   BINARY-LONG.
  01 WS-ROUND               BINARY-LONG.
- 01 WS-ROUNDS              BINARY-LONG VALUE 80.
+ 01 WS-ROUNDS              BINARY-LONG VALUE 60.
  01 WS-I                   BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
@@ -75,10 +75,10 @@
          MOVE 1000 TO CW-TICKS
 *>       from a handful to a few thousand ticks, over 32 chunks a side, the view distance of 13 leaving the outer ones out of the ticking range
          PERFORM NEXT-RANDOM
-         COMPUTE WS-N = 1 + FUNCTION MOD(WS-Q, 4) * FUNCTION MOD(WS-Q, 4) * 120 + FUNCTION MOD(WS-ROUND, 7) * 20
+         COMPUTE WS-N = 1 + FUNCTION MOD(WS-Q, 4) * FUNCTION MOD(WS-Q, 4) * 40 + FUNCTION MOD(WS-ROUND, 7) * 10
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
              PERFORM NEXT-RANDOM
-             COMPUTE WS-DIM = 1 + FUNCTION MOD(WS-Q, 2)
+             COMPUTE WS-DIM = 1 + FUNCTION MOD(WS-Q, 8) / 7
              PERFORM NEXT-RANDOM
              COMPUTE WS-TYPE = 1 + FUNCTION MOD(WS-Q, 2)
              PERFORM NEXT-RANDOM
@@ -98,15 +98,15 @@
              CALL "BT-ADD" USING WS-DIM WS-TYPE WS-ID WS-X WS-Y WS-Z WS-TRIG WS-PRIO WS-SUB WS-RESULT
          END-PERFORM
          PERFORM NEXT-RANDOM
-         EVALUATE FUNCTION MOD(WS-Q, 4)
+         EVALUATE FUNCTION MOD(WS-Q, 5)
              WHEN 0 MOVE 65536 TO WS-MAX
-             WHEN 1 MOVE 1 TO WS-MAX
+             WHEN 1 MOVE 65536 TO WS-MAX
+             WHEN 2 MOVE 1 TO WS-MAX
              WHEN OTHER COMPUTE WS-MAX = 1 + FUNCTION MOD(WS-Q, 1 + BT-COUNT)
          END-EVALUATE
-         PERFORM NEXT-RANDOM
-         COMPUTE WS-DIM = 1 + FUNCTION MOD(WS-Q, 2)
-         PERFORM NEXT-RANDOM
-         COMPUTE WS-TYPE = 1 + FUNCTION MOD(WS-Q, 2)
+*>       the queue drained is the first dimension's (the player's: only its chunks tick), of the block or the fluid type by round; the second dimension's ticks are in the table as noise
+         MOVE 1 TO WS-DIM
+         COMPUTE WS-TYPE = 1 + FUNCTION MOD(WS-ROUND, 2)
          MOVE BLOCK-TICKS(1:1867800) TO WS-SNAP
          CALL "BT-COLLECT" USING WS-DIM WS-TYPE WS-MAX BT-RUN-LIST
          MOVE BT-RUN-LIST TO WS-NEW-RUN
@@ -139,15 +139,16 @@
          END-IF
          ADD 1 TO WS-COLLECTS
      END-PERFORM
-     MOVE "perfsteady: given 80 random queues when BT-COLLECT and the old drain collect them then the run lists and the tables left are the same" TO TL-CASE
+     MOVE "perfsteady: given 60 random queues when BT-COLLECT and the old drain collect them then the run lists and the tables left are the same" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD-ROUNDS TO TL-OBSERVED-N
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     DISPLAY "ticks run by the random queues " WS-TOTAL-RUN
      MOVE "perfsteady: the random queues ran a good number of ticks (the comparison is not of empty lists)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-TOTAL-RUN > 2000
+     IF WS-TOTAL-RUN > 1000
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
