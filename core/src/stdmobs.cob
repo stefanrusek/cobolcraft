@@ -820,6 +820,7 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-D2                  FLOAT-LONG.
  01 WS-INDEX               BINARY-LONG VALUE 16.
+ 01 WS-EV-PRIME            PIC X(32) VALUE "prime_fuse".
  01 WS-POWER               FLOAT-LONG.
  01 WS-DESTROY             BINARY-LONG VALUE 1.
  01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
@@ -858,6 +859,10 @@
      END-IF
      IF EN-IGNITED(L-ROW) = 1
          MOVE 1 TO WS-DIR
+     END-IF
+*>   Creeper.tick: the fuse starts (swell direction positive, swell counter 0): prime_fuse at the creeper, the creeper as the source (30-8 14.3.10)
+     IF WS-DIR = 1 AND EN-SWELL(L-ROW) = 0
+         CALL "GAME-EVENT-AT" USING WS-EV-PRIME L-ROW
      END-IF
      ADD WS-DIR TO EN-SWELL(L-ROW)
      IF EN-SWELL(L-ROW) < 0

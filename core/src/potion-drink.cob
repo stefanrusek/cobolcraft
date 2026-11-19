@@ -51,6 +51,7 @@
  01 WS-START               BINARY-DOUBLE.
  01 WS-HELD                BINARY-LONG.
  01 WS-START-ACTION        BINARY-LONG VALUE 1.
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -67,6 +68,7 @@
          MOVE PL-HELD(WS-ROW) TO WS-HELD
          MOVE CW-TICKS TO WS-START
          CALL "POTION-DRINK-STATE" USING WS-ROW WS-START-ACTION WS-HELD WS-START PL-ENTITY-ID(WS-ROW)
+         CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(WS-ROW)
          MOVE 1 TO L-STARTED
      END-IF
      GOBACK.
@@ -138,6 +140,8 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-AMP                 BINARY-LONG.
+ 01 WS-EV-DRINK            PIC X(32) VALUE "drink".
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  01 WS-BAD-OMEN            BINARY-LONG VALUE 30.
  01 WS-OMEN-DURATION       BINARY-LONG VALUE 120000.
  01 WS-OMEN-FLAGS          BINARY-LONG VALUE 4.
@@ -171,6 +175,9 @@
      ELSE
          CALL "POTION-APPLY" USING L-ROW PL-SLOT-VAR(L-ROW, WS-SLOT + 1)
      END-IF
+*>   Consumable.onConsume: drink (the potion and the ominous bottle animate as DRINK), then item_interact_finish, at the player (30-8 14.3.8)
+     CALL "GAME-EVENT-AT" USING WS-EV-DRINK PL-ENTITY-ROW(L-ROW)
+     CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
      IF PL-MODE(L-ROW) = 0
          IF WS-KEY = "ominous_bottle"
              CALL "INV-REMOVE" USING L-ROW WS-SLOT WS-ONE

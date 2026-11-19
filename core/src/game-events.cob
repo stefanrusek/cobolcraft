@@ -591,7 +591,9 @@
  END PROGRAM GAME-EVENT-BLOCK.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GAME-EVENT-AT.
+ PROGRAM-ID. GAME-EVENT-BY.
+*> USING event, position row, source row (0 none): Level.gameEvent(source, event, position of an entity): the position is that entity's own (a player's PL-X to PL-Z, a mob's feet), the source another entity
+*> (a rider at its vehicle's position, a projectile's owner at the projectile).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -601,19 +603,55 @@
  01 WS-STATE               BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-EVENT                PIC X(32).
+ 01 L-AT                   BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-EVENT L-AT L-SOURCE.
+     MOVE EN-X(L-AT) TO WS-X
+     MOVE EN-Y(L-AT) TO WS-Y
+     MOVE EN-Z(L-AT) TO WS-Z
+     IF EN-PLAYER(L-AT) > 0
+         MOVE PL-X(EN-PLAYER(L-AT)) TO WS-X
+         MOVE PL-Y(EN-PLAYER(L-AT)) TO WS-Y
+         MOVE PL-Z(EN-PLAYER(L-AT)) TO WS-Z
+     END-IF
+     CALL "GAME-EVENT" USING EN-DIM(L-AT) WS-X WS-Y WS-Z L-EVENT L-SOURCE WS-STATE
+     GOBACK.
+ END PROGRAM GAME-EVENT-BY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-AT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EVENT                PIC X(32).
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-EVENT L-ROW.
-     MOVE EN-X(L-ROW) TO WS-X
-     MOVE EN-Y(L-ROW) TO WS-Y
-     MOVE EN-Z(L-ROW) TO WS-Z
-     IF EN-PLAYER(L-ROW) > 0
-         MOVE PL-X(EN-PLAYER(L-ROW)) TO WS-X
-         MOVE PL-Y(EN-PLAYER(L-ROW)) TO WS-Y
-         MOVE PL-Z(EN-PLAYER(L-ROW)) TO WS-Z
-     END-IF
-     CALL "GAME-EVENT" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z L-EVENT L-ROW WS-STATE
+     CALL "GAME-EVENT-BY" USING L-EVENT L-ROW L-ROW
      GOBACK.
  END PROGRAM GAME-EVENT-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-CELL.
+*> USING dim, block x, y, z, event, source entity row (0 none), affected state (-1 none): Level.gameEvent(entity, event, BlockPos): the block centre, the entity (not a player row) as source.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BY                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ 01 L-EVENT                PIC X(32).
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-BX L-BY L-BZ L-EVENT L-SOURCE L-STATE.
+     COMPUTE WS-X = L-BX + 0.5
+     COMPUTE WS-Y = L-BY + 0.5
+     COMPUTE WS-Z = L-BZ + 0.5
+     CALL "GAME-EVENT" USING L-DIM WS-X WS-Y WS-Z L-EVENT L-SOURCE L-STATE
+     GOBACK.
+ END PROGRAM GAME-EVENT-CELL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GAME-EVENT-SHOOT.

@@ -94,8 +94,6 @@
          COMPUTE EN-PITCH(WS-ROW) = FUNCTION ATAN(L-VY / WS-H) * 180 / FUNCTION PI
      END-IF
      CALL "ENTITY-TRACK" USING WS-ROW
-*>   The first tick of a projectile posts projectile_shoot with the owner as the source (44-8 section 6.1): at the spawn here.
-     CALL "GAME-EVENT-SHOOT" USING WS-ROW L-OWNER
      MOVE WS-ROW TO L-ROW
      GOBACK.
  END PROGRAM ARROW-SPAWN.
@@ -122,6 +120,8 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
  01 WS-FIRE-TICKS          BINARY-LONG.
+ 01 WS-EV-LAND             PIC X(32) VALUE "projectile_land".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -168,6 +168,12 @@
                  CALL "MOB-IGNITE" USING L-ENTITY WS-FIRE-TICKS
              END-IF
          END-IF
+     END-IF
+*>   Projectile.onHit posts projectile_land after onHitEntity (30-8 14.2.2): at the hit location, the arrow as the source (the warden resolves the owner); an arrow that strikes in its first tick then
+*>   posts projectile_shoot (AbstractArrow runs its own movement before Projectile.tick, 14.2.1).
+     CALL "GAME-EVENT" USING EN-DIM(L-ARROW) EN-X(L-ARROW) EN-Y(L-ARROW) EN-Z(L-ARROW) WS-EV-LAND L-ARROW WS-NO-STATE
+     IF EN-COOLDOWN(L-ARROW) = 1
+         CALL "GAME-EVENT-SHOOT" USING L-ARROW WS-OWNER-ID
      END-IF
      CALL "ENTITY-REMOVE" USING L-ARROW
      GOBACK.
@@ -249,6 +255,8 @@
  01 WS-H                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-HIT-STATE           BINARY-LONG.
+ 01 WS-EV-LAND             PIC X(32) VALUE "projectile_land".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -288,6 +296,9 @@
          END-IF
      END-PERFORM
      IF WS-DONE = 2
+         MOVE WS-QX TO EN-X(L-ROW)
+         MOVE WS-QY TO EN-Y(L-ROW)
+         MOVE WS-QZ TO EN-Z(L-ROW)
          CALL "ARROW-HIT" USING L-ROW WS-ENTITY WS-PLAYER
          GOBACK
      END-IF
@@ -299,6 +310,9 @@
          MOVE 0 TO EN-VX(L-ROW) EN-VY(L-ROW) EN-VZ(L-ROW)
          MOVE 1 TO EN-ON-GROUND(L-ROW)
          MOVE 0 TO EN-AGE(L-ROW)
+*>       Projectile.onHit for a block: projectile_land at the centre of the block hit, the arrow as the source, the block's state (30-8 14.2.2)
+         CALL "WORLD-GET-BLOCK" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-HIT-STATE
+         CALL "GAME-EVENT-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-EV-LAND L-ROW WS-HIT-STATE
      ELSE
          MOVE WS-PX TO EN-X(L-ROW)
          MOVE WS-PY TO EN-Y(L-ROW)
@@ -311,6 +325,10 @@
              COMPUTE WS-PITCH = FUNCTION ATAN(EN-VY(L-ROW) / WS-H) * 180 / FUNCTION PI
              MOVE WS-PITCH TO EN-PITCH(L-ROW)
          END-IF
+     END-IF
+*>   Projectile.tick posts projectile_shoot on the first tick, after the arrow's own move (and after a land of that tick), at its position with the owner as the source.
+     IF EN-COOLDOWN(L-ROW) = 1
+         CALL "GAME-EVENT-SHOOT" USING L-ROW EN-TARGET-ID(L-ROW)
      END-IF
      IF FUNCTION ABS(EN-X(L-ROW) - EN-WAY-X(L-ROW)) >= WS-STEP OR FUNCTION ABS(EN-Y(L-ROW) - EN-FLEE-X(L-ROW)) >= WS-STEP
              OR FUNCTION ABS(EN-Z(L-ROW) - EN-WAY-Z(L-ROW)) >= WS-STEP

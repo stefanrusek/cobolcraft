@@ -30,6 +30,8 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-SET-ID              PIC X(64).
  01 WS-SET-LEN             BINARY-LONG.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -80,6 +82,8 @@
          COMPUTE WS-SEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
          CALL "XORO-SEED" USING WS-SEED XR-STATE
          CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW
+*>       SpawnEggItem.spawnMob: entity_place at the centre of the target cell with the player as the source (30-8 14.3.3)
+         CALL "GAME-EVENT-CELL" USING PL-DIM(WS-ROW) WS-CX WS-CY WS-CZ WS-EV-PLACE PL-ENTITY-ROW(WS-ROW) WS-NO-STATE
      END-IF
      IF PL-MODE(WS-ROW) NOT = 1
          MOVE PL-HELD(WS-ROW) TO WS-HELD

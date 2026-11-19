@@ -513,8 +513,8 @@
      END-IF
      CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
      COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MAX(0, PL-HEALTH(WS-ROW) - WS-TAKEN / 1000)
-*>   Player.actuallyHurt fires the game event entity_damage with the hurt entity as the source (17 section 4).
-     IF PL-ENTITY-ROW(WS-ROW) > 0
+*>   Player.actuallyHurt fires the game event entity_damage with the hurt entity as the source (17 section 4); a hit that is entirely absorbed (nothing left after armor, enchantments and absorption) posts none (30-8 14.3.2).
+     IF PL-ENTITY-ROW(WS-ROW) > 0 AND WS-TAKEN > 0
          CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE PL-ENTITY-ROW(WS-ROW)
      END-IF
      IF L-ATTACKER > 0 AND WS-CAUSE = CAUSE-PLAYER

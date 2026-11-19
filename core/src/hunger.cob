@@ -90,6 +90,7 @@
  01 WS-KEY                 PIC X(48).
  01 WS-ALWAYS              BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -116,6 +117,8 @@
      MOVE PL-SLOT-ITEM(WS-ROW, WS-SLOT) TO PL-EATING-ITEM(WS-ROW)
      MOVE PL-HELD(WS-ROW) TO PL-EATING-SLOT(WS-ROW)
      MOVE CW-TICKS TO PL-EATING-START(WS-ROW)
+*>   LivingEntity.startUsingItem: item_interact_start at the player (an item whose use_effects allow interact vibrations: every food, 30-8 14.3.8)
+     CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(WS-ROW)
      GOBACK.
  END PROGRAM HUNGER-USE-ITEM.
 
@@ -161,6 +164,8 @@
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-USE-TICKS           BINARY-LONG.
+ 01 WS-EV-EAT              PIC X(32) VALUE "eat".
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  01 WS-REGEN-RULE          PIC X(40) VALUE "natural_health_regeneration".
  01 WS-REGEN               BINARY-DOUBLE.
  LINKAGE SECTION.
@@ -187,6 +192,9 @@
              CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT + 1) WS-EATEN-KEY
              CALL "INV-REMOVE" USING WS-ROW WS-SLOT WS-ONE
              CALL "FOOD-EFFECTS" USING WS-ROW WS-EATEN-KEY WS-EATEN-VAR
+*>           Consumable.onConsume posts eat, then stopUsingItem item_interact_finish, both at the player (30-8 14.3.8)
+             CALL "GAME-EVENT-AT" USING WS-EV-EAT PL-ENTITY-ROW(WS-ROW)
+             CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(WS-ROW)
              COMPUTE WS-ITEM = PL-EATING-ITEM(WS-ROW) + 1
              COMPUTE WS-FOOD = PL-FOOD(WS-ROW) + IT-FOOD(WS-ITEM)
              COMPUTE PL-FOOD(WS-ROW) = FUNCTION MIN(RULE-MAX-FOOD, WS-FOOD)

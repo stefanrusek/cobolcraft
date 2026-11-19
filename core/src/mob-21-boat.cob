@@ -510,6 +510,7 @@
  01 WS-DZ                  FLOAT-LONG.
  01 WS-EYE                 FLOAT-LONG.
  01 WS-REACH               FLOAT-LONG.
+ 01 WS-EV-MOUNT            PIC X(32) VALUE "entity_mount".
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -533,6 +534,7 @@
          MOVE L-ROW TO EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER))
          CALL "BOAT-SYNC" USING L-ROW
          CALL "MOB-RIDE-SEND" USING L-ROW
+         CALL "GAME-EVENT-BY" USING WS-EV-MOUNT L-ROW PL-ENTITY-ROW(L-PLAYER)
          MOVE 1 TO L-USED
      END-IF
      GOBACK.
@@ -664,6 +666,8 @@
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
+ 01 WS-EV-PLACE            PIC X(32) VALUE "entity_place".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-PX                  FLOAT-LONG.
  01 WS-PY                  FLOAT-LONG.
  01 WS-PZ                  FLOAT-LONG.
@@ -737,6 +741,8 @@
          IF WS-BOX-HIT = 0
              MOVE PL-YAW(WS-ROW) TO WS-FACING
              CALL "BOAT-SPAWN" USING WS-DIM WS-PX WS-PY WS-PZ WS-FACING WS-ENTITY-KEY WS-NEW
+*>           BoatItem.use: entity_place at the click location, the player as the source (30-8 14.3.3)
+             CALL "GAME-EVENT" USING WS-DIM WS-PX WS-PY WS-PZ WS-EV-PLACE PL-ENTITY-ROW(WS-ROW) WS-NO-STATE
              CALL "MOB-TAKE" USING WS-ROW
          END-IF
      END-IF

@@ -225,6 +225,24 @@
  PROGRAM-ID. TNT-IGNITE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-NO-IGNITER          BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z.
+     CALL "TNT-IGNITE-BY" USING L-DIM L-X L-Y L-Z WS-NO-IGNITER
+     GOBACK.
+ END PROGRAM TNT-IGNITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TNT-IGNITE-BY.
+*> USING dim, block x, y, z, igniter entity row (0 none): TntBlock.prime: the block becomes air, a TNT is primed at its bottom centre and prime_fuse is posted at the block centre with the igniter as the source (30-8 14.3.10).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-EV-PRIME            PIC X(32) VALUE "prime_fuse".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -235,14 +253,16 @@
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z.
+ 01 L-IGNITER              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-IGNITER.
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-AIR
      COMPUTE WS-X = L-X + 0.5
      MOVE L-Y TO WS-Y
      COMPUTE WS-Z = L-Z + 0.5
      CALL "TNT-PRIME" USING L-DIM WS-X WS-Y WS-Z WS-ROW
+     CALL "GAME-EVENT-CELL" USING L-DIM L-X L-Y L-Z WS-EV-PRIME L-IGNITER WS-NO-STATE
      GOBACK.
- END PROGRAM TNT-IGNITE.
+ END PROGRAM TNT-IGNITE-BY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TNT-STEP.

@@ -1349,6 +1349,7 @@
  01 WS-KEY                 PIC X(24).
  01 WS-COST                BINARY-LONG VALUE 1.
  01 WS-BROKE               BINARY-LONG.
+ 01 WS-EV-SHEAR            PIC X(32) VALUE "shear".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -1362,6 +1363,8 @@
          CALL "MOB-DROP-ITEMS" USING L-ENTITY WS-KEY WS-COUNT
          CALL "MOB-DATA-SEND" USING L-ENTITY
          CALL "TOOL-HURT-STACK" USING PL-CONN(L-ROW) PL-HELD(L-ROW) WS-COST WS-BROKE
+*>       Sheep.mobInteract: shear at the sheep's position, the player as the source (30-8 14.3.9)
+         CALL "GAME-EVENT-BY" USING WS-EV-SHEAR L-ENTITY PL-ENTITY-ROW(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM MOB-SHEAR-USE.

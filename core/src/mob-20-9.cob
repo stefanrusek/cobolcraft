@@ -156,6 +156,7 @@
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHX                 BINARY-LONG.
  01 WS-CHZ                 BINARY-LONG.
+ 01 WS-EV-DESTROY          PIC X(32) VALUE "block_destroy".
  01 WS-READY               BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
@@ -212,6 +213,8 @@
                              CALL "BR-RULE-GET" USING WS-GRIEF WS-GRIEF-ON
                              IF WS-GRIEF-ON = 1
                                  CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-AIR
+*>                               Level.destroyBlock with the silverfish as the breaker: block_destroy, the state before (30-8 14.3.5)
+                                 CALL "GAME-EVENT-CELL" USING WS-DIM WS-CX WS-CY WS-CZ WS-EV-DESTROY L-ROW WS-STATE
                                  CALL "STDMOB-INFESTED-BREAK" USING WS-DIM WS-CX WS-CY WS-CZ WS-BLOCK WS-NO-PLAYER
                              ELSE
                                  CALL "STDMOB-HOST-STATE" USING WS-BLOCK WS-HOST

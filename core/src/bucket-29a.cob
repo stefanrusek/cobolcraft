@@ -11,6 +11,9 @@
  PROGRAM-ID. BUCKET-USE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-EV-PICKUP           PIC X(32) VALUE "fluid_pickup".
+ 01 WS-EV-PLACE            PIC X(32) VALUE "fluid_place".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  COPY CORESTATE.
  COPY CBLOCKS.
  COPY CMENU.
@@ -140,6 +143,8 @@
          END-IF
          CALL "CONTENT-ITEM-BY-KEY" USING WS-FILLED-KEY WS-FILLED-ID WS-ITEM-ROW WS-STATUS
          CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-AIR
+*>       BucketItem.use: fluid_pickup at the centre of the cell, the player as the source (30-8 14.3.9)
+         CALL "GAME-EVENT-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-EV-PICKUP WS-ROW WS-NO-STATE
          IF PL-MODE(WS-ROW) = 0
              IF PL-SLOT-COUNT(WS-ROW, WS-SLOT) = 1
                  MOVE WS-FILLED-ID TO PL-SLOT-ITEM(WS-ROW, WS-SLOT)
@@ -175,6 +180,8 @@
          CALL "NETHER-EVAPORATE" USING WS-DIM WS-LX WS-LY WS-LZ
      ELSE
          CALL "BLOCK-CHANGE" USING WS-DIM WS-LX WS-LY WS-LZ WS-NEW-STATE
+*>       BucketItem.playEmptySound: fluid_place at the centre of the filled cell, the player as the source
+         CALL "GAME-EVENT-BLOCK" USING WS-DIM WS-LX WS-LY WS-LZ WS-EV-PLACE WS-ROW WS-NO-STATE
      END-IF
      IF PL-MODE(WS-ROW) = 0
          CALL "CONTENT-ITEM-BY-KEY" USING WS-EMPTY-KEY WS-EMPTY-ID WS-ITEM-ROW WS-STATUS

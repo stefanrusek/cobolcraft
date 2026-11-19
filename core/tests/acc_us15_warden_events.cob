@@ -344,8 +344,11 @@
      COMPUTE WS-CX = WS-BX + 0.5
      MOVE 202 TO WS-CY
      COMPUTE WS-CZ = WS-BZ + 0.5
+     COMPUTE WS-CX = WS-CX + 5
      CALL "ARROW-SPAWN" USING WS-DIM WS-CX WS-CY WS-CZ WS-VX WS-VY WS-VZ WS-BASE PL-ENTITY-ID(WS-PLAYER) WS-ARROW
-     MOVE "an arrow posts projectile_shoot" TO TL-CASE
+*>   Projectile.tick posts projectile_shoot on the arrow's first tick (30-8 14.2.1), not at the spawn
+     CALL "ARROW-STEP" USING WS-ARROW
+     MOVE "an arrow posts projectile_shoot on its first tick" TO TL-CASE
      MOVE "projectile_shoot" TO TL-EXPECTED
      MOVE GE-NAME TO TL-OBSERVED
      PERFORM CASE-TEXT
@@ -359,7 +362,9 @@
      PERFORM CASE-LINE
      CALL "ENTITY-REMOVE" USING WS-ARROW
      MOVE 0 TO WS-ARROW
+     COMPUTE WS-CX = WS-CX + 5
      CALL "ARROW-SPAWN" USING WS-DIM WS-CX WS-CY WS-CZ WS-VX WS-VY WS-VZ WS-BASE WS-NONE WS-ARROW
+     CALL "ARROW-STEP" USING WS-ARROW
      MOVE "an arrow with no owner in the tracker has no source" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE GE-SOURCE TO TL-OBSERVED-N

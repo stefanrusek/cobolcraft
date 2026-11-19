@@ -138,6 +138,11 @@
  01 WS-FX                  FLOAT-LONG.
  01 WS-FZ                  FLOAT-LONG.
  01 WS-FY                  FLOAT-LONG.
+ 01 WS-DEP-X               FLOAT-LONG.
+ 01 WS-DEP-Y               FLOAT-LONG.
+ 01 WS-DEP-Z               FLOAT-LONG.
+ 01 WS-EV-TELEPORT         PIC X(32) VALUE "teleport".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
  01 WS-GROUND              BINARY-LONG.
@@ -191,8 +196,13 @@
          COMPUTE WS-OY = FUNCTION INTEGER(EN-Y(L-ROW))
          COMPUTE WS-OZ = FUNCTION INTEGER(EN-Z(L-ROW))
          CALL "LEVEL-EVENT" USING EN-DIM(L-ROW) WS-LEVEL-EVENT WS-OX WS-OY WS-OZ WS-DATA WS-NO-ONE
+         MOVE EN-X(L-ROW) TO WS-DEP-X
+         MOVE EN-Y(L-ROW) TO WS-DEP-Y
+         MOVE EN-Z(L-ROW) TO WS-DEP-Z
          CALL "ENTITY-MOVE" USING L-ROW WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-GROUND
          CALL "LEVEL-EVENT" USING EN-DIM(L-ROW) WS-LEVEL-EVENT WS-BX WS-BY WS-BZ WS-DATA WS-NO-ONE
+*>       Enderman.teleport: the game event teleport at the position before the move (the departure point), the enderman as the source (30-8 14.3.10)
+         CALL "GAME-EVENT" USING EN-DIM(L-ROW) WS-DEP-X WS-DEP-Y WS-DEP-Z WS-EV-TELEPORT L-ROW WS-NO-STATE
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
          CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
