@@ -33,6 +33,8 @@
        10 PJ-I6              BINARY-LONG.
        10 PJ-I7              BINARY-LONG.
        10 PJ-I8              BINARY-LONG.
+       10 PJ-I9              BINARY-LONG.
+       10 PJ-I10             BINARY-LONG.
        10 PJ-POSE            FLOAT-LONG OCCURS 18 TIMES.
        10 PJ-EQ              BINARY-LONG OCCURS 8 TIMES.
        10 PJ-R1              FLOAT-LONG.
