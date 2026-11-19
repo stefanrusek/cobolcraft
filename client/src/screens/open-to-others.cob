@@ -42,7 +42,7 @@
      MOVE 38 TO WS-KEY-LENGTH
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
          WS-KEY-LENGTH
-     IF SP-LISTENER > 0
+     IF SP-LISTENER > 0 OR SP-PORT > 0
 *>       Opened: one line per address, then Back to the World.
          MOVE SP-PORT TO WS-PORT
          MOVE "cobolcraft.screen.open_to_others.address" TO WS-KEY

@@ -35,6 +35,7 @@
  WORKING-STORAGE SECTION.
  COPY COREAPI.
  COPY CONTENT.
+ 01 WS-ENV                 PIC X(16).
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -48,6 +49,13 @@
      MOVE "cobolcraft" TO CS-WORLD-TYPE
      MOVE CT-TYPE-COBOLCRAFT TO SP-CREATE-TYPE
      MOVE CORE-SETTINGS TO SP-SETTINGS
+*>   CC_SP_PROCESS=1 hosts the world in a child process (sp-proc.cob, docs/design/singleplayer-process.md).
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "CC_SP_PROCESS"
+     MOVE 0 TO SP-PROCESS-PREF
+     IF WS-ENV = "1"
+         MOVE 1 TO SP-PROCESS-PREF
+     END-IF
      GOBACK.
  END PROGRAM SP-DEFAULTS.
 
@@ -65,6 +73,8 @@
  01 WS-CREATED             BINARY-LONG.
  01 WS-FLAT-PRESET         PIC X(40).
  01 WS-FLAT-STATUS         BINARY-LONG.
+ 01 WS-PRESET              PIC X(40).
+ 01 WS-STARTED             BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  01 WS-SCREEN              BINARY-LONG VALUE SCR-CONNECTING.
  LINKAGE SECTION.
@@ -103,36 +113,52 @@
              MOVE "cobolcraft" TO CS-WORLD-TYPE
      END-EVALUATE
      MOVE CORE-SETTINGS TO SP-SETTINGS
-*>   A new superflat world takes the preset of the create-world screen (the core keeps it for CORE-WORLD-OPEN: FLAT-PRESET-SET,
-*>   56 section 3); a world opened from the list reads its own saved settings.
-     IF SM-SCREEN = SCR-CREATE-WORLD AND CS-WORLD-TYPE = "superflat"
-         MOVE SPACES TO WS-FLAT-PRESET
-         MOVE SP-FLAT-PRESET TO WS-FLAT-PRESET
-         CALL "FLAT-PRESET-SET" USING WS-FLAT-PRESET WS-FLAT-STATUS
-     END-IF
-*>   a hosted world makes its standard chunks in generation worker processes, so the frame loop never waits for one (docs/design/generation-worker.md)
-     CALL "GEN-WORKERS-AUTO"
      MOVE LOW-VALUES TO WS-PATH
      STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/saves/" L-FOLDER(1:L-FOLDER-LENGTH)
          DELIMITED BY SIZE INTO WS-PATH
-     CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
-*>   A refused world (core-host-delta section 2: the flag is minus a CORE-WO status) is not hosted: the create
-*>   screen shows the refusal (builtin-ui-art 7.2) and nothing opens.
-     IF WS-CREATED < 0
-*>       1: the packs are not ok (the Minecraft content text); 2: any other refusal of the core (no world type, no level.dat).
-         MOVE 2 TO SP-CREATE-REFUSED
-         IF WS-CREATED = -1
-             MOVE 1 TO SP-CREATE-REFUSED
+*>   CC_SP_PROCESS=1: the world is opened and ticked by a child process (sp-proc.cob), which does the work of the next block.
+     MOVE 0 TO WS-STARTED
+     IF SP-PROCESS-PREF = 1
+         MOVE SPACES TO WS-PRESET
+         IF SM-SCREEN = SCR-CREATE-WORLD AND CS-WORLD-TYPE = "superflat"
+             MOVE SP-FLAT-PRESET TO WS-PRESET
          END-IF
-         GOBACK
+         MOVE SM-SCREEN TO SP-OPENED-FROM
+         CALL "SPP-START" USING CLIENT-STATE CORE-SETTINGS WS-PATH WS-PRESET WS-STARTED
      END-IF
-     IF WS-CREATED = 1
-         CALL "CORE-SAVE"
+     IF WS-STARTED = 0
+*>       A new superflat world takes the preset of the create-world screen (the core keeps it for CORE-WORLD-OPEN: FLAT-PRESET-SET,
+*>       56 section 3); a world opened from the list reads its own saved settings.
+         IF SM-SCREEN = SCR-CREATE-WORLD AND CS-WORLD-TYPE = "superflat"
+             MOVE SPACES TO WS-FLAT-PRESET
+             MOVE SP-FLAT-PRESET TO WS-FLAT-PRESET
+             CALL "FLAT-PRESET-SET" USING WS-FLAT-PRESET WS-FLAT-STATUS
+         END-IF
+*>       a hosted world makes its standard chunks in generation worker processes, so the frame loop never waits for one (docs/design/generation-worker.md)
+         CALL "GEN-WORKERS-AUTO"
+         CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
+*>       A refused world (core-host-delta section 2: the flag is minus a CORE-WO status) is not hosted: the create
+*>       screen shows the refusal (builtin-ui-art 7.2) and nothing opens.
+         IF WS-CREATED < 0
+*>           1: the packs are not ok (the Minecraft content text); 2: any other refusal of the core (no world type, no level.dat).
+             MOVE 2 TO SP-CREATE-REFUSED
+             IF WS-CREATED = -1
+                 MOVE 1 TO SP-CREATE-REFUSED
+             END-IF
+             GOBACK
+         END-IF
+         IF WS-CREATED = 1
+             CALL "CORE-SAVE"
+         END-IF
      END-IF
      MOVE 1 TO SP-ACTIVE
      MOVE 0 TO SM-LOAD-SHOWN SM-LOAD-SMOOTH SM-LOAD-TICK-MS SM-LOAD-GRID-MS PL-WAIT PL-CLOSE-DELAY
+*>   a hosted world in a child shows the loading screen from the start (its content load takes seconds)
+     IF WS-STARTED = 1
+         MOVE 1 TO SM-LOAD-SHOWN
+     END-IF
 *>   a newly created local world waits 500 ms after the level is ready before Player Loaded (docs/protocol/50 section 7.3)
-     IF WS-CREATED = 1
+     IF WS-STARTED = 0 AND WS-CREATED = 1
          MOVE 500 TO PL-CLOSE-DELAY
      END-IF
      MOVE 0 TO SP-TICKS SP-PAUSED
@@ -142,7 +168,9 @@
      MOVE L-NAME-LENGTH TO SM-CONNECT-ADDR-LENGTH
      MOVE 0 TO SM-MESSAGE-LENGTH
      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
-     CALL "NET-OPEN-MEMORY" USING CLIENT-STATE WS-CONN
+     IF WS-STARTED = 0
+         CALL "NET-OPEN-MEMORY" USING CLIENT-STATE WS-CONN
+     END-IF
      GOBACK.
  END PROGRAM SP-OPEN.
 
@@ -165,12 +193,11 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE SP-SETTINGS TO CORE-SETTINGS
-     MOVE 0 TO SP-PAUSED
-     IF (SM-SCREEN = SCR-PAUSE OR SM-SCREEN = SCR-OPEN-TO-OTHERS) AND CS-HOST-KIND = 1
-         MOVE 1 TO SP-PAUSED
-         COMPUTE SP-NEXT-TICK = CL-NOW-MS + CL-TICK-MS
+     IF SP-PROCESS = 1
+         CALL "SPP-PUMP" USING CLIENT-STATE
+         GOBACK
      END-IF
+     CALL "SP-PAUSE-UPDATE" USING CLIENT-STATE
      IF SP-LISTENER > 0
          CALL "GUEST-ACCEPT" USING CLIENT-STATE
          PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > CL-MAX-GUESTS
@@ -217,6 +244,9 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     IF SP-ACTIVE = 1 AND SP-PROCESS = 1
+         CALL "SPP-STOP" USING CLIENT-STATE
+     END-IF
      IF SP-ACTIVE = 1
          CALL "CORE-STOP" USING WS-REASON
          CALL "GUESTS-FLUSH" USING CLIENT-STATE
@@ -302,14 +332,21 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     CALL "CORE-OPEN-TO-OTHERS" USING SP-GUEST-MODE SP-GUEST-OPERATOR
+*>   A world hosted by a child process (sp-proc.cob): the child opens the world to others and listens on every interface (its port is SP-PORT).
+     IF SP-PROCESS = 1
+         CALL "SPP-OPEN-OTHERS" USING CLIENT-STATE
+     ELSE
+         CALL "CORE-OPEN-TO-OTHERS" USING SP-GUEST-MODE SP-GUEST-OPERATOR
+     END-IF
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE 2 TO CS-HOST-KIND
      MOVE SP-GUEST-MODE TO CS-GUEST-MODE
      MOVE SP-GUEST-OPERATOR TO CS-GUEST-OPERATOR
      MOVE CORE-SETTINGS TO SP-SETTINGS
-     CALL STATIC "cc_net_listen" USING BY VALUE WS-ZERO BY REFERENCE SP-LISTENER
-         BY REFERENCE SP-PORT RETURNING WS-RC
+     IF SP-PROCESS = 0
+         CALL STATIC "cc_net_listen" USING BY VALUE WS-ZERO BY REFERENCE SP-LISTENER
+             BY REFERENCE SP-PORT RETURNING WS-RC
+     END-IF
      MOVE LOW-VALUES TO WS-AREA
      CALL STATIC "cc_net_local_addresses" USING BY REFERENCE WS-AREA BY VALUE WS-CAPACITY
          RETURNING WS-COUNT

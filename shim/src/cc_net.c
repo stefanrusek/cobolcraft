@@ -57,14 +57,14 @@ static void prepare_connection(int fd) {
     set_option(fd, SOL_SOCKET, SO_NOSIGPIPE);
 }
 
-int32_t cc_net_listen(int32_t port, int32_t *handle_out, int32_t *port_out) {
+static int32_t listen_on(uint32_t address, int32_t port, int32_t *handle_out, int32_t *port_out) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) cc_fatal("cc_net_listen: socket failed");
     set_option(fd, SOL_SOCKET, SO_REUSEADDR);
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof addr);
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_addr.s_addr = htonl(address);
     addr.sin_port = htons((uint16_t)port);
     if (bind(fd, (struct sockaddr *)&addr, sizeof addr) < 0) {
         if (errno != EADDRINUSE) cc_fatal("cc_net_listen: bind failed");
@@ -78,6 +78,14 @@ int32_t cc_net_listen(int32_t port, int32_t *handle_out, int32_t *port_out) {
     *port_out = ntohs(addr.sin_port);
     *handle_out = track(fd, ST_LISTENER);
     return 0;
+}
+
+int32_t cc_net_listen(int32_t port, int32_t *handle_out, int32_t *port_out) {
+    return listen_on(INADDR_ANY, port, handle_out, port_out);
+}
+
+int32_t cc_net_listen_loopback(int32_t port, int32_t *handle_out, int32_t *port_out) {
+    return listen_on(INADDR_LOOPBACK, port, handle_out, port_out);
 }
 
 int32_t cc_net_accept(int32_t listener, int32_t *handle_out) {

@@ -9,7 +9,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TCP-LISTEN.
-*> USING port (BINARY-LONG; 0 = system-chosen): listens on 0.0.0.0:port (SV-LISTENER, SV-BOUND-PORT).
+*> USING port (BINARY-LONG; 0 = system-chosen): listens on 0.0.0.0:port (SV-LISTENER, SV-BOUND-PORT); on 127.0.0.1 only
+*> while SV-LOOPBACK is 1 (the single-player role).
 *> A port already in use is fatal: the server cannot serve (FR-012).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -20,8 +21,13 @@
  LINKAGE SECTION.
  01 L-PORT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-PORT.
-     CALL STATIC "cc_net_listen" USING BY VALUE L-PORT BY REFERENCE SV-LISTENER
-         BY REFERENCE SV-BOUND-PORT RETURNING WS-RC
+     IF SV-LOOPBACK = 1
+         CALL STATIC "cc_net_listen_loopback" USING BY VALUE L-PORT BY REFERENCE SV-LISTENER
+             BY REFERENCE SV-BOUND-PORT RETURNING WS-RC
+     ELSE
+         CALL STATIC "cc_net_listen" USING BY VALUE L-PORT BY REFERENCE SV-LISTENER
+             BY REFERENCE SV-BOUND-PORT RETURNING WS-RC
+     END-IF
      IF WS-RC NOT = 0
          MOVE L-PORT TO WS-EDIT
          MOVE LOW-VALUES TO WS-FATAL

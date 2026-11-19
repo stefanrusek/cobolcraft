@@ -23,6 +23,25 @@
  END PROGRAM SV-NOW-MS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SV-SLOTS-INIT.
+*> Empties the host state: no listener, no ticks, the console open, every connection slot free, the single-player role off
+*> (SV-HOSTED-START turns it on).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SVSTATE.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 0 TO SV-LISTENER SV-BOUND-PORT SV-TICKS SV-HOSTED SV-LOOPBACK SV-PAUSED SV-STOP-WANTED SV-STOP-ASKED
+         SV-LOAD-STATE SV-LOAD-MS
+     MOVE 1 TO SV-CONSOLE-OPEN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SV-MAX-CONNS
+         MOVE 0 TO SV-HANDLE(WS-I) SV-CORE-ID(WS-I) SV-CLOSING(WS-I) SV-OUT-PENDING(WS-I)
+         MOVE 1 TO SV-OUT-START(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SV-SLOTS-INIT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SV-START.
 *> Empties the host state, takes the settings and the port from ./cobolcraft-server.conf
 *> (SV-CONFIG-LOAD: the operator-surface §2 defaults for missing keys, the file written when absent),
@@ -35,7 +54,6 @@
  COPY COREAPI.
  01 WS-WORLD               PIC X(16) VALUE Z"./world".
  01 WS-CREATED             BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
  01 WS-NOW                 BINARY-DOUBLE.
  01 WS-LINE                PIC X(64).
  01 WS-LENGTH              BINARY-LONG.
@@ -43,12 +61,7 @@
  01 WS-PTR                 USAGE POINTER.
  PROCEDURE DIVISION.
      SET WS-PTR TO ADDRESS OF WS-LINE
-     MOVE 0 TO SV-LISTENER SV-BOUND-PORT SV-TICKS
-     MOVE 1 TO SV-CONSOLE-OPEN
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SV-MAX-CONNS
-         MOVE 0 TO SV-HANDLE(WS-I) SV-CORE-ID(WS-I) SV-CLOSING(WS-I) SV-OUT-PENDING(WS-I)
-         MOVE 1 TO SV-OUT-START(WS-I)
-     END-PERFORM
+     CALL "SV-SLOTS-INIT"
      CALL "SV-CONFIG-LOAD" USING CORE-SETTINGS SV-PORT
      MOVE CORE-SETTINGS TO SV-SETTINGS
      CALL "SV-WORLD-OPEN" USING WS-WORLD CORE-SETTINGS WS-CREATED
@@ -87,6 +100,10 @@
      COMPUTE WS-TIMEOUT = FUNCTION MAX(0, FUNCTION MIN(SV-TICK-MS, SV-NEXT-TICK - WS-NOW))
      CALL "TCP-POLL" USING WS-TIMEOUT
      CALL "SV-NOW-MS" USING WS-NOW
+*>   Paused by the client of a single-player world (@pause): no tick, and the clock is held so that resuming does not catch up.
+     IF SV-PAUSED = 1
+         COMPUTE SV-NEXT-TICK = WS-NOW + SV-TICK-MS
+     END-IF
      PERFORM UNTIL WS-NOW < SV-NEXT-TICK
          CALL "CORE-TICK"
          ADD 1 TO SV-TICKS
@@ -94,11 +111,18 @@
      END-PERFORM
      CALL "TCP-FLUSH"
      CALL "SV-DRAIN"
-*>   A stop requested by the stop command (run state 1) is carried out now (US15-2).
+     CALL "SV-HOSTED-LOAD"
+*>   A stop requested by the stop command (run state 1) is carried out now (US15-2); the single-player client is told and
+*>   answers with its own quit (@stop), as the in-process host does. The client's @stop or the end of its input stops at once.
      CALL "CORE-STATUS-GET" USING CORE-STATUS
-     IF CST-RUN-STATE = 1
-         CALL "SV-STOP"
-     END-IF
+     EVALUATE TRUE
+         WHEN SV-STOP-WANTED = 1
+             CALL "SV-STOP"
+         WHEN CST-RUN-STATE = 1 AND SV-HOSTED = 1
+             CALL "SV-HOSTED-ASK"
+         WHEN CST-RUN-STATE = 1
+             CALL "SV-STOP"
+     END-EVALUATE
      GOBACK.
  END PROGRAM SV-ITERATE.
 
@@ -153,7 +177,9 @@
 *> pending console lines displayed, then "Stopped". The caller exits after run state 2 (SV-RUN).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-REASON              PIC X(32) VALUE Z"cobolcraft.disconnect.shutdown".
+ COPY SVSTATE.
+ 01 WS-REASON              PIC X(40) VALUE Z"cobolcraft.disconnect.shutdown".
+ 01 WS-HOST-REASON         PIC X(40) VALUE Z"cobolcraft.disconnect.host_closed".
  01 WS-STOPPING            PIC X(48) VALUE "Stopping: saving world and disconnecting players".
  01 WS-STOPPED             PIC X(8) VALUE "Stopped".
  01 WS-LENGTH              BINARY-LONG.
@@ -162,7 +188,11 @@
      SET WS-PTR TO ADDRESS OF WS-STOPPING
      MOVE 48 TO WS-LENGTH
      CALL "SV-PRINT" USING WS-PTR WS-LENGTH
-     CALL "CORE-STOP" USING WS-REASON
+     IF SV-HOSTED = 1
+         CALL "CORE-STOP" USING WS-HOST-REASON
+     ELSE
+         CALL "CORE-STOP" USING WS-REASON
+     END-IF
      CALL "TCP-FLUSH"
      CALL "SV-DRAIN"
      SET WS-PTR TO ADDRESS OF WS-STOPPED
@@ -192,8 +222,17 @@
  PROGRAM-ID. SV-MAIN.
 *> The server program (cobolcraft-server, operator-surface.md §1; test-harness.md §2): SV-START in
 *> the current directory, then SV-RUN, which ends the run with the exit status. Never returns.
+*> With the argument --hosted the program is the single-player core of a client (SV-HOSTED-START, hosted.cob).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HOSTED              BINARY-LONG.
  PROCEDURE DIVISION.
-     CALL "SV-START"
+     CALL "SV-HOSTED-ARG" USING WS-HOSTED
+     IF WS-HOSTED = 1
+         CALL "SV-HOSTED-START"
+     ELSE
+         CALL "SV-START"
+     END-IF
      CALL "SV-RUN".
  END PROGRAM SV-MAIN.
 
@@ -203,6 +242,7 @@
 *> prefixed with the local time as "[HH:MM:SS] " (operator-surface §3, US13-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY SVSTATE.
  01 WS-NOW                 PIC X(21).
  01 B-TEXT                 PIC X(65536) BASED.
  LINKAGE SECTION.
@@ -211,6 +251,11 @@
  PROCEDURE DIVISION USING L-PTR L-LENGTH.
      SET ADDRESS OF B-TEXT TO L-PTR
      MOVE FUNCTION CURRENT-DATE TO WS-NOW
-     DISPLAY "[" WS-NOW(9:2) ":" WS-NOW(11:2) ":" WS-NOW(13:2) "] " B-TEXT(1:L-LENGTH)
+*>   The single-player role prints the line as it is: the client shows it on its terminal like the in-process host's lines.
+     IF SV-HOSTED = 1
+         DISPLAY B-TEXT(1:L-LENGTH)
+     ELSE
+         DISPLAY "[" WS-NOW(9:2) ":" WS-NOW(11:2) ":" WS-NOW(13:2) "] " B-TEXT(1:L-LENGTH)
+     END-IF
      GOBACK.
  END PROGRAM SV-PRINT.

@@ -101,6 +101,8 @@ _Noreturn void cc_fatal(const char *what);
 
 /* §3 cc_net: TCP sockets (non-blocking, TCP_NODELAY on every connection). */
 int32_t cc_net_listen(int32_t port, int32_t *handle_out, int32_t *port_out);
+/* cc_net_listen_loopback: as cc_net_listen but binds 127.0.0.1 only (the single-player child process, which no other machine may reach). */
+int32_t cc_net_listen_loopback(int32_t port, int32_t *handle_out, int32_t *port_out);
 int32_t cc_net_accept(int32_t listener, int32_t *handle_out);
 int32_t cc_net_connect(const char *host, int32_t port, int32_t *handle_out);
 int32_t cc_net_status(int32_t h);
@@ -269,5 +271,20 @@ int32_t cc_wk_child_write(const uint8_t *buf, int32_t n);
 void cc_wk_child_exit(void);
 /* cc_wk_cpus: the number of processors online (at least 1), for sizing the worker pool. */
 int32_t cc_wk_cpus(void);
+/* §15 child programs. cc_wk_proc_spawn starts exe (a path) with the space-separated arguments `args` (a z-string, at most 16 words),
+ * a pipe on its standard input and one on its standard output (nothing else of the caller's descriptors is inherited, standard
+ * error is), and returns 0 with a slot (1 to 4), or CC_NOTFOUND (no slot, no pipe, or the program cannot be started).
+ * cc_wk_proc_write writes all n bytes to its input (n, or -1); cc_wk_proc_read reads its output without blocking (0 with
+ * got_out > 0, CC_AGAIN when nothing is there, CC_CLOSED at end of output or for an unknown slot); cc_wk_proc_close_input ends its
+ * input; cc_wk_proc_wait waits up to timeout_ms for it to end (0 with its exit status, a signal as 128 + signal, CC_AGAIN while it
+ * runs, -1 for an unknown slot); cc_wk_proc_stop kills it when it still runs, reaps it, closes its pipes and frees the slot (-1 for
+ * an unknown slot). cc_wk_self_dir writes the directory of the running executable (no trailing slash) and returns its length, or -1. */
+int32_t cc_wk_proc_spawn(const char *exe, const char *args, int32_t *slot_out);
+int32_t cc_wk_proc_write(int32_t slot, const uint8_t *buf, int32_t n);
+int32_t cc_wk_proc_read(int32_t slot, uint8_t *buf, int32_t cap, int32_t *got_out);
+void cc_wk_proc_close_input(int32_t slot);
+int32_t cc_wk_proc_wait(int32_t slot, int32_t timeout_ms, int32_t *status_out);
+int32_t cc_wk_proc_stop(int32_t slot);
+int32_t cc_wk_self_dir(uint8_t *buf, int32_t cap);
 
 #endif

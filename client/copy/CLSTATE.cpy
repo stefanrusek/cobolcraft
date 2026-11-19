@@ -216,6 +216,27 @@
           15 GH-OUT-ADDR     USAGE POINTER.
           15 GH-OUT-START    BINARY-LONG.
           15 GH-OUT-PENDING  BINARY-LONG.
+*>     Process mode (sp-proc.cob; docs/design/singleplayer-process.md): SP-PROCESS-PREF 1 = host worlds in a child process
+*>     (CC_SP_PROCESS=1, set by SP-DEFAULTS), SP-PROCESS 1 while the hosted world runs in one, SP-CHILD its cc_wk_proc slot,
+*>     SP-PROC-STATE 1 until its @ready line, 2 once the game connection is opened, SP-PAUSE-SENT the last pause state sent,
+*>     SP-STOP-ASKED 1 when the child printed @stop-requested, SP-OPENED-FROM the screen the world was opened from, SP-LINE (SP-LINE-LENGTH
+*>     bytes) the partial line of the child's output, SP-LOAD-* the last @load line (its grid goes to SM-LOAD-CELLS).
+       10 SP-PROCESS-PREF    BINARY-LONG.
+       10 SP-PROCESS         BINARY-LONG.
+       10 SP-CHILD           BINARY-LONG.
+       10 SP-CHILD-PID       BINARY-LONG.    *> the child's process id (from its @ready line)
+       10 SP-PROC-STATE      BINARY-LONG.
+       10 SP-PAUSE-SENT      BINARY-LONG.
+       10 SP-STOP-ASKED      BINARY-LONG.
+       10 SP-OPENED-FROM          BINARY-LONG.
+       10 SP-LINE-LENGTH     BINARY-LONG.
+       10 SP-LINE            PIC X(4096).
+       10 SP-LOAD-STATE      BINARY-LONG.
+       10 SP-LOAD-READY      BINARY-LONG.
+       10 SP-LOAD-TOTAL      BINARY-LONG.
+       10 SP-LOAD-PERMILLE   BINARY-LONG.
+       10 SP-LOAD-FX         BINARY-LONG.
+       10 SP-LOAD-FZ         BINARY-LONG.
        10 WL-COUNT           BINARY-LONG.    *> the world list (saves/, client-surface §2)
        10 WL-ENTRY OCCURS 32 TIMES.
           15 WL-FOLDER       PIC X(80).
