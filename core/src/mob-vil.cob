@@ -49,6 +49,7 @@
  PROGRAM-ID. VL-REMOVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-FREE                 BINARY-LONG VALUE 0.
  COPY VILSTATE.
  01 WS-SLOT                 BINARY-LONG.
  01 WS-NO                   BINARY-LONG VALUE 0.
@@ -56,6 +57,12 @@
  01 L-ID                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ID.
      CALL "VL-FIND" USING L-ID WS-NO WS-SLOT
+     IF WS-SLOT > 0
+         IF VL-SLEEP(WS-SLOT) = 1
+*>           A villager that dies in its bed leaves the bed free.
+             CALL "VL-BED-OCCUPY" USING L-ID WS-FREE
+         END-IF
+     END-IF
      CALL "VG-FORGET" USING L-ID
      CALL "VP-RELEASE" USING L-ID
      IF WS-SLOT > 0

@@ -93,6 +93,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VILSTATE.
  01 WS-QD                   BINARY-LONG.
  01 WS-QX                   BINARY-LONG.
  01 WS-QY                   BINARY-LONG.
@@ -106,9 +107,12 @@
  01 WS-RECORD               BINARY-LONG.
  01 WS-HOME                 BINARY-LONG.
  01 WS-NOT                  BINARY-LONG VALUE 0.
- 01 WS-NOT-2                BINARY-LONG VALUE 0.
  01 WS-NOT-3                BINARY-LONG VALUE 0.
  01 WS-ACTION               BINARY-LONG.
+ 01 WS-OCCUPIED             BINARY-LONG.
+ 01 WS-SLEEPING             BINARY-LONG.
+ 01 WS-NO-SLOT              BINARY-LONG VALUE 0.
+ 01 WS-VSLOT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-KIND                  BINARY-LONG.
@@ -137,7 +141,15 @@
      IF L-KIND = 2
          MOVE 1 TO WS-HOME
      END-IF
-     CALL "Q3-VALIDATE-POI" USING WS-SAME WS-NEAR WS-RECORD WS-HOME WS-NOT WS-NOT-2 WS-NOT-3 WS-ACTION
+     MOVE 0 TO WS-OCCUPIED WS-SLEEPING
+     IF WS-HOME = 1 AND WS-NEAR = 1
+         CALL "VL-BED-IS-OCCUPIED" USING WS-QD WS-QX WS-QY WS-QZ WS-OCCUPIED
+         CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO-SLOT WS-VSLOT
+         IF WS-VSLOT > 0
+             MOVE VL-SLEEP(WS-VSLOT) TO WS-SLEEPING
+         END-IF
+     END-IF
+     CALL "Q3-VALIDATE-POI" USING WS-SAME WS-NEAR WS-RECORD WS-HOME WS-OCCUPIED WS-SLEEPING WS-NOT-3 WS-ACTION
      IF WS-ACTION NOT = 0
          CALL "VPX-RELEASE-KIND" USING EN-ID(L-ROW) L-KIND
          MOVE 1 TO L-RELEASED
@@ -151,6 +163,7 @@
 *> VL-NEXT-BRAIN) the decisions of VL-BRAIN-BEAT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-ZERO                 BINARY-LONG VALUE 0.
  COPY CORESTATE.
  COPY VILSTATE.
  COPY VILPOIX.
@@ -190,6 +203,8 @@
          MOVE 0 TO VL-SLEEP(WS-SLOT)
          MOVE CW-TICKS TO VL-LAST-WOKEN(WS-SLOT)
          COMPUTE VM-T(WS-SLOT, TM-SLEEP-OK) = CW-TICKS + 40
+         CALL "VL-BED-OCCUPY" USING EN-ID(L-ROW) WS-ZERO
+         CALL "MOB-DATA-SEND" USING L-ROW
      END-IF
 *>   The index fills while villagers live: one section of the chunk round the villager every 5 ticks (7 x 7 chunks, one after the other).
      IF FUNCTION MOD(CW-TICKS + EN-ID(L-ROW), 5) = 0
@@ -230,6 +245,7 @@
 *> point of the index within 48 blocks), AssignProfessionFromJobSite (within 2 blocks of the claimed workstation), ResetProfession, then the walk (VL-BRAIN-WALK) and the bed (VL-BRAIN-SLEEP).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-OCC                  BINARY-LONG.
  COPY CORESTATE.
  COPY VILSTATE.
  COPY VILPOIX.
@@ -278,6 +294,13 @@
      CALL "VPX-OF" USING EN-ID(L-ROW) WS-HOME WS-QD WS-QX WS-QY WS-QZ WS-FOUND
      IF WS-FOUND = 0
          CALL "PXI-NEAREST" USING EN-DIM(L-ROW) WS-PX WS-PY WS-PZ WS-KIND-BED WS-RANGE WS-QX WS-QY WS-QZ WS-FOUND
+         IF WS-FOUND = 1
+*>           The bed validity of the home entry (19 section 22.8): not occupied.
+             CALL "VL-BED-IS-OCCUPIED" USING EN-DIM(L-ROW) WS-QX WS-QY WS-QZ WS-OCC
+             IF WS-OCC = 1
+                 MOVE 0 TO WS-FOUND
+             END-IF
+         END-IF
          IF WS-FOUND = 1
              CALL "VL-ACQ-OK" USING L-ROW L-SLOT WS-INST-HOME WS-QX WS-QY WS-QZ WS-REACH-1 WS-FOUND
          END-IF
@@ -463,7 +486,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-BRAIN-SLEEP.
 *> USING entity row, slot, active activity: SleepInBed (19 section 22.8). In the rest activity a villager within 2 blocks of its home bed, not woken within 100 ticks and not within 40 ticks of the
-*> last time it stopped, goes to sleep: VL-SLEEP, last_slept = now, and the walk target ends. Gap: no sleeping pose and no bed position in the metadata, beds are not marked occupied.
+*> last time it stopped, goes to sleep: VL-SLEEP, last_slept = now, and the walk target ends. The bed is marked occupied and the pose and sleeping position go to the viewers (mob-vil-bed.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -477,6 +500,7 @@
  01 WS-N1                   BINARY-LONG.
  01 WS-N2                   BINARY-LONG.
  01 WS-D2                   FLOAT-LONG.
+ 01 WS-ONE-FLAG             BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-SLOT                  BINARY-LONG.
@@ -494,6 +518,8 @@
              AND (VL-LAST-WOKEN(L-SLOT) = 0 OR CW-TICKS - VL-LAST-WOKEN(L-SLOT) >= 100)
          MOVE 1 TO VL-SLEEP(L-SLOT)
          MOVE CW-TICKS TO VL-LAST-SLEPT(L-SLOT)
+         CALL "VL-BED-OCCUPY" USING EN-ID(L-ROW) WS-ONE-FLAG
+         CALL "MOB-DATA-SEND" USING L-ROW
          CALL "VL-WALK-STOP" USING L-ROW L-SLOT
          CALL "VM-ERASE" USING L-SLOT MT-CANT-REACH-SINCE
      END-IF
