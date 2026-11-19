@@ -52,7 +52,7 @@
  78 WK-CLIP                 VALUE 13.  *> the left w pixels of a GUI sprite (GSP-* row in the argument) at x, y, h tall, w at most the sprite's own width, not stretched
                                        *> (the experience bar's progress); never clicked
  78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
-                                       *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1))
+                                       *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1); SM-W-SPRITE adds rows to the origin's v)
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
                                        *> action the maximum in half icons; hearts grow right from x, y (the bottom
                                        *> row), food grows left (x the first icon), rows of 10 going up 10 pixels
@@ -426,7 +426,9 @@
  78 GSP-FURNACE-BURN         VALUE 151.
  78 GSP-XP-BACK             VALUE 152.  *> hud/experience_bar_background and experience_bar_progress, 182 x 5 (12 section 5)
  78 GSP-XP-PROGRESS         VALUE 153.
- 78 GSP-COUNT               VALUE 153.
+ 78 GSP-SHEET-0             VALUE 154.  *> the 20 container background sheets textures/gui/container/<name>.png (40-menus, one per screen family; CONTAINER-SHEET names them)
+ 78 GSP-SHEET-LAST          VALUE 173.
+ 78 GSP-COUNT               VALUE 173.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 
