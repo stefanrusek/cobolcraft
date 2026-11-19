@@ -487,6 +487,28 @@
  END PROGRAM WORLD-CELL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-DIRTY-ALL.
+*> USING CLIENT-STATE: every section of every loaded chunk is to be meshed (an option that changes what the mesh holds, cutoutLeaves).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SECTIONS            BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     CALL "WORLD-SECTIONS" USING CLIENT-STATE WS-SECTIONS
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
+         IF WR-USED(WS-R) = 1
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SECTIONS
+                 MOVE 1 TO WR-DIRTY(WS-R, WS-S)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WORLD-DIRTY-ALL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-SECTION-DIRTY.
 *> USING CLIENT-STATE, chunk x, chunk z, section (1-based): that section, when its chunk is loaded
 *> and it lies within the dimension, is to be meshed.
