@@ -331,9 +331,11 @@
      COMPUTE CL-HAND-ITEM = WS-ITEM + 1
      CALL "HAND-MESH" USING CLIENT-STATE
      CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
-     MOVE "standard models a code-drawn (special) model is not drawn by the hand (display 2, no vertices)" TO TL-CASE
+*>   Lane bugbeitems (T42400 and on): a code-drawn model has no display of the item definition (the answer stays 2), and the hand now draws the quads of the model's own
+*>   rows (item-special.cob, HAND-SPECIAL-MESH) where the generic path drew nothing; the old expectation of no vertices is invalid because of that intended change.
+     MOVE "standard models a code-drawn (special) model answers display 2 and the hand draws its own quads (whole quads of 6 vertices)" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-HAVE = 2 AND RL-HAND-COUNT = 0
+     IF WS-HAVE = 2 AND RL-HAND-COUNT > 0 AND FUNCTION MOD(RL-HAND-COUNT, 6) = 0
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
