@@ -413,6 +413,7 @@
  01 WS-THROW               BINARY-LONG VALUE 1.
  01 WS-KEEP-RULE           PIC X(40) VALUE "keep_inventory".
  01 WS-KEEP-INVENTORY      BINARY-DOUBLE.
+ 01 WS-EVENT-DIE           PIC X(32) VALUE "entity_die".
  01 WS-SHOW-RULE           PIC X(40) VALUE "show_death_messages".
  01 WS-SHOW-MESSAGES       BINARY-DOUBLE.
  LINKAGE SECTION.
@@ -423,6 +424,10 @@
      MOVE L-ROW TO WS-ROW
      CALL "EFFECT-CLEAR-ALL" USING WS-ROW
      MOVE PS-DEAD TO PL-STATE(WS-ROW)
+*>   LivingEntity.die: the game event entity_die at the entity before its loot (18 section 2).
+     IF PL-ENTITY-ROW(WS-ROW) > 0
+         CALL "GAME-EVENT-AT" USING WS-EVENT-DIE PL-ENTITY-ROW(WS-ROW)
+     END-IF
 *>   Player.die clears the fire (17 section 4.13.1; 44 section 4.3): the flames go out for the viewers too.
      IF PL-ENTITY-ROW(WS-ROW) > 0
          MOVE 0 TO EN-BURN(PL-ENTITY-ROW(WS-ROW))
@@ -763,6 +768,7 @@
  01 WS-ABSORBED            BINARY-LONG.
  01 WS-KILLER              BINARY-LONG.
  01 WS-WITHER              BINARY-LONG.
+ 01 WS-EVENT-DAMAGE        PIC X(32) VALUE "entity_damage".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -833,6 +839,7 @@
              COMPUTE WS-APPLY = WS-DMG - EN-LAST-HURT(WS-ROW)
              MOVE WS-DMG TO EN-LAST-HURT(WS-ROW)
              CALL "MOB-HEALTH-LOSE" USING WS-ROW WS-APPLY L-CAUSE
+             CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE WS-ROW
              IF EN-HEALTH(WS-ROW) = 0
                  CALL "RAID-RAIDER-DIED" USING WS-ROW WS-KILLER
                  CALL "MOB-DEFEAT" USING WS-ROW
@@ -841,6 +848,8 @@
          GOBACK
      END-IF
      CALL "MOB-HEALTH-LOSE" USING WS-ROW WS-DMG L-CAUSE
+*>   LivingEntity.actuallyHurt: the game event entity_damage with the hurt entity as the source (18 section 2).
+     CALL "GAME-EVENT-AT" USING WS-EVENT-DAMAGE WS-ROW
      IF L-ATTACKER > 0 AND L-CAUSE = CAUSE-PLAYER
          CALL "PARTICLE-HIT-MOB" USING WS-ROW WS-DMG
      END-IF

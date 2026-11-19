@@ -6,6 +6,8 @@
 *>   GAME-EVENT-BLOCK USING dim, bx, by, bz (BINARY-LONG), event name, player row (0 none), affected state: Level.gameEvent(player, event, pos) of a block: the position is the block
 *>     centre (30 section 2.1), the source the player's entity.
 *>   GAME-EVENT-AT USING event name, source entity row, affected state: Entity.gameEvent: the event at the position of the entity (a player's own position, a mob's feet) with the entity as its source.
+*>   GAME-EVENT-SHOOT USING projectile row, owner entity id: Projectile.tick's first game event: projectile_shoot at the projectile's position with the owner as the source (44-8 section 6.1; 0 when the
+*>     owner is not in the tracker). Called by ARROW-SPAWN.
 *>   GAME-EVENT-FREQUENCY USING event name, frequency out (30 section 3.1; BE8-FREQUENCY)
 *>   GAME-EVENT-LISTENS USING event name, flag out: the event is in the game event tag warden_can_listen (20 section 15.1: the 55 events of vibrations except flap, plus shriek and
 *>     sculk_sensor_tendrils_clicking).
@@ -292,6 +294,7 @@
  COPY CORESTATE.
  COPY CITEMS.
  COPY STDMOBS.
+ COPY GAMEEVENT.
  01 WS-FREQ                BINARY-LONG.
  01 WS-WARDEN              BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG.
@@ -320,6 +323,14 @@
  01 L-SOURCE               BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-EVENT L-SOURCE L-STATE.
+*>   The record of what was posted (GAMEEVENT.cpy).
+     ADD 1 TO GE-COUNT
+     MOVE L-EVENT TO GE-NAME
+     MOVE L-X TO GE-X
+     MOVE L-Y TO GE-Y
+     MOVE L-Z TO GE-Z
+     MOVE L-SOURCE TO GE-SOURCE
+     MOVE L-STATE TO GE-STATE
      CALL "GAME-EVENT-FREQUENCY" USING L-EVENT WS-FREQ
      CALL "GAME-EVENT-LISTENS" USING L-EVENT WS-LISTENS
      IF WS-FREQ = 0 AND WS-LISTENS = 0
@@ -444,3 +455,26 @@
      CALL "GAME-EVENT" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z L-EVENT L-ROW WS-STATE
      GOBACK.
  END PROGRAM GAME-EVENT-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-SHOOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EVENT               PIC X(32) VALUE "projectile_shoot".
+ 01 WS-STATE               BINARY-LONG VALUE -1.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-OWNER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OWNER-ID             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-OWNER-ID.
+     MOVE 0 TO WS-OWNER
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = L-OWNER-ID AND WS-E NOT = L-ROW
+             MOVE WS-E TO WS-OWNER
+         END-IF
+     END-PERFORM
+     CALL "GAME-EVENT" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-EVENT WS-OWNER WS-STATE
+     GOBACK.
+ END PROGRAM GAME-EVENT-SHOOT.

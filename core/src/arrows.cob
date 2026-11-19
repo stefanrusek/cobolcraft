@@ -94,6 +94,8 @@
          COMPUTE EN-PITCH(WS-ROW) = FUNCTION ATAN(L-VY / WS-H) * 180 / FUNCTION PI
      END-IF
      CALL "ENTITY-TRACK" USING WS-ROW
+*>   The first tick of a projectile posts projectile_shoot with the owner as the source (44-8 section 6.1): at the spawn here.
+     CALL "GAME-EVENT-SHOOT" USING WS-ROW L-OWNER
      MOVE WS-ROW TO L-ROW
      GOBACK.
  END PROGRAM ARROW-SPAWN.

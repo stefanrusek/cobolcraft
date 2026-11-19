@@ -378,6 +378,8 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-BLOCKS-SENT         BINARY-LONG.
  01 WS-IS-TNT              BINARY-LONG.
+ 01 WS-EVENT-EXPLODE       PIC X(32) VALUE "explode".
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -390,6 +392,8 @@
 *> is ((s x s + s) / 2 x 7 x 2 power + 1) with s = (1 - distance / 2 power) x seen (a player in thousandths of a point, a mob in whole points),
 *> and a hit survival player's knockback is s x the direction from the centre to its eyes (sent in the Explode packet).
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-POWER L-DESTROY L-SOURCE.
+*>   The game event explode is emitted first (20 section 6.2), at the centre with the source entity.
+     CALL "GAME-EVENT" USING L-DIM L-X L-Y L-Z WS-EVENT-EXPLODE L-SOURCE WS-NO-STATE
      INITIALIZE WS-KNOCK
      MOVE 0 TO WS-SOURCE-ID
      IF L-SOURCE > 0

@@ -127,6 +127,7 @@
  01 WS-ITEM-ROW            BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-WD                  BINARY-LONG.
+ 01 WS-EVENT-DIE           PIC X(32) VALUE "entity_die".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -134,6 +135,8 @@
      IF WS-WD = 1
          GOBACK
      END-IF
+*>   LivingEntity.die: the game event entity_die at the mob before its loot (18 section 2).
+     CALL "GAME-EVENT-AT" USING WS-EVENT-DIE L-ROW
      CALL "MOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      IF WS-M = 0
          CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-S

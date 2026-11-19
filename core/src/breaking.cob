@@ -259,6 +259,7 @@
  01 WS-EXHAUST             FLOAT-LONG.
  01 WS-DROP-Y              BINARY-LONG.
  01 WS-DROP-STATE          BINARY-LONG.
+ 01 WS-EVENT-DESTROY       PIC X(32) VALUE "block_destroy".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
@@ -270,6 +271,8 @@
      MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
      CALL "BLOCK-BREAK-END" USING L-ROW
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-VOID
+*>   The game event block_destroy at the block centre with the player and the old state (29 section 9 step 5).
+     CALL "GAME-EVENT-BLOCK" USING L-DIM L-X L-Y L-Z WS-EVENT-DESTROY L-ROW WS-STATE
 *>   A door or tall plant loses both halves and drops once, from its lower half.
      CALL "DOUBLE-BREAK" USING L-DIM L-X L-Y L-Z WS-STATE WS-DROP-Y WS-DROP-STATE
      MOVE CB-S-BLOCK(WS-DROP-STATE + 1) TO WS-BLOCK
@@ -341,6 +344,7 @@
  01 WS-SPEED               BINARY-LONG.
  01 WS-CORRECT             BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-EVENT-DESTROY       PIC X(32) VALUE "block_destroy".
  01 WS-EFFICIENCY          BINARY-LONG.
  01 WS-HASTE               BINARY-LONG.
  01 WS-FATIGUE             BINARY-LONG.
@@ -377,6 +381,7 @@
              CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
          WHEN PSB-ACTION = 0 AND PL-MODE(WS-ROW) = 1
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
+             CALL "GAME-EVENT-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-EVENT-DESTROY WS-ROW WS-STATE
              CALL "DOUBLE-BREAK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE WS-DROP-Y WS-DROP-STATE
          WHEN PSB-ACTION = 0 AND WS-HARDNESS = 0
              CALL "BLOCK-BREAK-END" USING WS-ROW
