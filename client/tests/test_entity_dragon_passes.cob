@@ -762,6 +762,37 @@
          MOVE WS-MAXD TO WS-DIFF
          PERFORM CHECK-SMALL
      END-PERFORM
+*>   No beam from a dragon whose nearest crystal is not in the replica (the crystal was removed: id 77), and none of no length (a crystal at the dragon's place, 1.1 above it at age 0, where
+*>   the bob y(0) = -1.1 brings the end to the dragon).
+     MOVE 77 TO EN-NCI(2)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance dragon beam to a removed crystal draws nothing" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-COUNT0
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "end_crystal" TO WS-KEY
+     MOVE 6 TO WS-ID
+     MOVE 10.5 TO WS-X
+     MOVE 65.1 TO WS-Y
+     MOVE 10.5 TO WS-Z
+     PERFORM SPAWN
+     MOVE 0 TO EN-AGE(1)
+     MOVE "ender_dragon" TO WS-KEY
+     MOVE 5 TO WS-ID
+     MOVE 64 TO WS-Y
+     PERFORM SPAWN
+     MOVE 8 TO EN-BOX-HALF(2)
+     MOVE 8 TO EN-BOX-HEIGHT(2)
+     MOVE 0 TO EN-AGE(2)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-EN-COUNT TO WS-COUNT0
+     MOVE 6 TO EN-NCI(2)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance dragon beam of no length draws nothing" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-COUNT0
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
      STOP RUN.
  SPAWN.
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS

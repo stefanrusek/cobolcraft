@@ -34,6 +34,66 @@
  END PROGRAM SHIELD-ITEM.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SHIELD-FIND-SLOT.
+*> USING CLIENT-STATE, model row of `shield`, texture code, slot out (the entity atlas slot EA-MT of that model and code, 0 when it has none).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CODE                 BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-CODE L-SLOT.
+     MOVE 0 TO L-SLOT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-K) = L-ROW AND EA-MT-TEX(WS-K) = L-CODE
+             MOVE WS-K TO L-SLOT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SHIELD-FIND-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SHIELD-MODEL.
+*> USING CLIENT-STATE, M (12 FLOAT-LONG: the pose with L), atlas slot, tint (3 FLOAT-LONG), light, mode (3 the hand mesh, 5 the entity mesh), order (BINARY-LONG): the plate and the handle
+*> at the order's depth, 0.05 pixel per order toward the front (smaller z).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GEOM.
+    05 WS-GV               FLOAT-LONG OCCURS 15 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-M.
+    05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-TINT.
+    05 L-TV                FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-LIGHT                FLOAT-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-ORDER                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-SLOT L-TINT L-LIGHT L-MODE L-ORDER.
+     MOVE 0 TO WS-GV(1) WS-GV(2) WS-GV(3) WS-GV(4) WS-GV(13)
+     MOVE 64 TO WS-GV(14) WS-GV(15)
+     MOVE -6 TO WS-GV(5)
+     MOVE -11 TO WS-GV(6)
+     COMPUTE WS-GV(7) = -2 - 0.05 * L-ORDER
+     MOVE 12 TO WS-GV(8)
+     MOVE 22 TO WS-GV(9)
+     MOVE 1 TO WS-GV(10)
+     MOVE 0 TO WS-GV(11) WS-GV(12)
+     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE L-M L-SLOT WS-GEOM L-TINT L-LIGHT L-MODE
+     MOVE -1 TO WS-GV(5)
+     MOVE -3 TO WS-GV(6)
+     COMPUTE WS-GV(7) = -1 - 0.05 * L-ORDER
+     MOVE 2 TO WS-GV(8)
+     MOVE 6 TO WS-GV(9) WS-GV(10)
+     MOVE 26 TO WS-GV(11)
+     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE L-M L-SLOT WS-GEOM L-TINT L-LIGHT L-MODE
+     GOBACK.
+ END PROGRAM SHIELD-MODEL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SHIELD-DRAW.
 *> USING CLIENT-STATE, M (12 FLOAT-LONG: the pose through the display transform and the recentring of the item), layers (BINARY-LONG count, 16 holders, 16 dyes, the base colour as dye id + 1
 *> or 0 for none), light 0 to 1 (FLOAT-LONG), mode (3 the hand mesh, 5 the entity mesh): the plate and the handle, then the layers of a patterned shield.
@@ -43,7 +103,6 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-CODE                BINARY-LONG.
- 01 WS-K                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-ORDER               BINARY-LONG.
  01 WS-DYE                 BINARY-LONG.
@@ -54,8 +113,6 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-M.
     05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
- 01 WS-GEOM.
-    05 WS-GV               FLOAT-LONG OCCURS 15 TIMES.
  01 WS-TINT.
     05 WS-TV               FLOAT-LONG OCCURS 3 TIMES.
  LINKAGE SECTION.
@@ -84,69 +141,42 @@
      MOVE -1 TO WS-Y WS-Z
      CALL "HAND-M-SCALE" USING WS-M WS-X WS-Y WS-Z
      MOVE 1 TO WS-TV(1) WS-TV(2) WS-TV(3)
-     MOVE 0 TO WS-GV(1) WS-GV(2) WS-GV(3) WS-GV(4) WS-GV(13)
-     MOVE 64 TO WS-GV(14) WS-GV(15)
      MOVE 0 TO WS-CODE
      IF WS-PATTERNED = 1
          MOVE 9000 TO WS-CODE
      END-IF
-     PERFORM FIND-SLOT
+     CALL "SHIELD-FIND-SLOT" USING CLIENT-STATE WS-ROW WS-CODE WS-SLOT
      IF WS-SLOT = 0
          GOBACK
      END-IF
      MOVE 0 TO WS-ORDER
-     PERFORM DRAW-MODEL
-     IF WS-PATTERNED = 0
-         GOBACK
-     END-IF
-*>   The base colour layer (the sprite `base`, order 1), then each pattern (order 2 on, its dye).
-     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N > L-COUNT OR WS-N > 16
-         IF WS-N = 0
-             MOVE 9001 TO WS-CODE
-             MOVE 0 TO WS-DYE
-             IF L-BASE > 0
-                 COMPUTE WS-DYE = L-BASE - 1
+     CALL "SHIELD-MODEL" USING CLIENT-STATE WS-M WS-SLOT WS-TINT L-LIGHT L-MODE WS-ORDER
+     IF WS-PATTERNED = 1
+*>       The base colour layer (the sprite `base`, order 1), then each pattern (order 2 on, its dye).
+         PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N > L-COUNT OR WS-N > 16
+             IF WS-N = 0
+                 MOVE 9001 TO WS-CODE
+                 MOVE 0 TO WS-DYE
+                 IF L-BASE > 0
+                     COMPUTE WS-DYE = L-BASE - 1
+                 END-IF
+                 MOVE 1 TO WS-ORDER
+             ELSE
+                 COMPUTE WS-CODE = 9000 + L-PAT(WS-N)
+                 MOVE L-DYES(WS-N) TO WS-DYE
+                 COMPUTE WS-ORDER = WS-N + 1
              END-IF
-             MOVE 1 TO WS-ORDER
-         ELSE
-             COMPUTE WS-CODE = 9000 + L-PAT(WS-N)
-             MOVE L-DYES(WS-N) TO WS-DYE
-             COMPUTE WS-ORDER = WS-N + 1
-         END-IF
-         PERFORM FIND-SLOT
-         IF WS-SLOT > 0
-             CALL "TINT-BANNER-LAYER" USING WS-ORDER WS-DYE WS-ARGB
-             COMPUTE WS-TV(1) = FUNCTION MOD(FUNCTION INTEGER(WS-ARGB / 65536), 256) / 255
-             COMPUTE WS-TV(2) = FUNCTION MOD(FUNCTION INTEGER(WS-ARGB / 256), 256) / 255
-             COMPUTE WS-TV(3) = FUNCTION MOD(WS-ARGB, 256) / 255
-             PERFORM DRAW-MODEL
-         END-IF
-     END-PERFORM
+             CALL "SHIELD-FIND-SLOT" USING CLIENT-STATE WS-ROW WS-CODE WS-SLOT
+             IF WS-SLOT > 0
+                 CALL "TINT-BANNER-LAYER" USING WS-ORDER WS-DYE WS-ARGB
+                 COMPUTE WS-TV(1) = FUNCTION MOD(FUNCTION INTEGER(WS-ARGB / 65536), 256) / 255
+                 COMPUTE WS-TV(2) = FUNCTION MOD(FUNCTION INTEGER(WS-ARGB / 256), 256) / 255
+                 COMPUTE WS-TV(3) = FUNCTION MOD(WS-ARGB, 256) / 255
+                 CALL "SHIELD-MODEL" USING CLIENT-STATE WS-M WS-SLOT WS-TINT L-LIGHT L-MODE WS-ORDER
+             END-IF
+         END-PERFORM
+     END-IF
      GOBACK.
- FIND-SLOT.
-     MOVE 0 TO WS-SLOT
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EA-MT-COUNT
-         IF EA-MT-MODEL(WS-K) = WS-ROW AND EA-MT-TEX(WS-K) = WS-CODE
-             MOVE WS-K TO WS-SLOT
-         END-IF
-     END-PERFORM.
-*> The plate and the handle at the order's depth: 0.05 pixel per order toward the front (smaller z).
- DRAW-MODEL.
-     MOVE -6 TO WS-GV(5)
-     MOVE -11 TO WS-GV(6)
-     COMPUTE WS-GV(7) = -2 - 0.05 * WS-ORDER
-     MOVE 12 TO WS-GV(8)
-     MOVE 22 TO WS-GV(9)
-     MOVE 1 TO WS-GV(10)
-     MOVE 0 TO WS-GV(11) WS-GV(12)
-     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE WS-M WS-SLOT WS-GEOM WS-TINT L-LIGHT L-MODE
-     MOVE -1 TO WS-GV(5)
-     MOVE -3 TO WS-GV(6)
-     COMPUTE WS-GV(7) = -1 - 0.05 * WS-ORDER
-     MOVE 2 TO WS-GV(8)
-     MOVE 6 TO WS-GV(9) WS-GV(10)
-     MOVE 26 TO WS-GV(11)
-     CALL "HAND-CUBOID-MODE" USING CLIENT-STATE WS-M WS-SLOT WS-GEOM WS-TINT L-LIGHT L-MODE.
  END PROGRAM SHIELD-DRAW.
 
  IDENTIFICATION DIVISION.

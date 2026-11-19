@@ -499,8 +499,8 @@
      MOVE 2 TO TL-EXPECTED-N
      MOVE SB-COUNT TO TL-OBSERVED-N
      PERFORM CHECK-N
-*>   The scan of a loaded chunk finds both again after the table is cleared.
-     MOVE 0 TO SB-COUNT
+*>   The scan of a loaded chunk finds both again after the table is cleared (and builds the state table of the boxes when it is not ready).
+     MOVE 0 TO SB-COUNT SB-READY
      MOVE 0 TO SB-USED(1) SB-USED(2)
      CALL "SHULKER-SCAN" USING CLIENT-STATE WS-CHX WS-CHZ
      MOVE "acceptance shulker scan of a chunk finds its two boxes" TO TL-CASE

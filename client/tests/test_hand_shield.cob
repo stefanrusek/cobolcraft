@@ -36,6 +36,7 @@
  01 WS-K                   BINARY-LONG.
  01 WS-JD                  PIC 9.
  01 WS-CASE-NAME           PIC X(100).
+ 01 WS-AW                  BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-EX                  FLOAT-LONG.
  01 WS-EY                  FLOAT-LONG.
@@ -352,7 +353,15 @@
      MOVE 0.9961 TO WS-EZ
      MOVE "T28600 without a base colour the base layer is white" TO WS-NAME
      PERFORM CHECK-TINT
-*>   An inline pattern draws no layer; a model slot missing from the atlas draws nothing.
+*>   An atlas that has no image, and a slot missing from it, draw nothing.
+     MOVE EA-W TO WS-AW
+     MOVE 0 TO EA-W
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "T28600 a shield with no entity atlas image draws nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-HA-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-AW TO EA-W
      MOVE 0 TO EA-MT-COUNT
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "T28600 a shield whose sprites have no atlas slot draws nothing" TO TL-CASE

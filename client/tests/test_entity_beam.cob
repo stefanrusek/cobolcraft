@@ -259,6 +259,13 @@
  01 WS-V                   BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
  01 WS-COUNT0              BINARY-LONG.
+ 01 WS-YT                  FLOAT-LONG VALUE 63.725.
+ 01 WS-QUAD.
+    05 WS-QV               FLOAT-LONG OCCURS 20 TIMES VALUE 0.
+ 01 WS-FRAME.
+    05 WS-FV               FLOAT-LONG OCCURS 12 TIMES VALUE 0.
+ 01 WS-TINTS.
+    05 WS-TV               FLOAT-LONG OCCURS 4 TIMES VALUE 0.
  01 WS-COUNT1              BINARY-LONG.
  01 WS-BM                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
@@ -421,6 +428,33 @@
      IF RL-EN-COUNT - WS-COUNT0 > 12
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     PERFORM CHECK-N
+*>   A target exactly at the guardian's eye (0.425 above its feet; a cow's centre 0.7 above its own) is a beam of no length: nothing is drawn.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 2 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-YT WS-Z WS-YAW
+     MOVE 1.4 TO EN-BOX-HEIGHT(1)
+     MOVE "guardian" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-EN-COUNT TO WS-COUNT0
+     MOVE 2 TO EN-TGT(2)
+     MOVE 30 TO EN-RS(2)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance beam of no length draws nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-EN-COUNT - WS-COUNT0
+     PERFORM CHECK-N
+*>   A full entity mesh takes no more beam quad (one quad is 12 vertices from both sides).
+     COMPUTE RL-EN-COUNT = CL-MAX-ENTITY-VERTICES - 6
+     CALL "BEAM-QUAD" USING CLIENT-STATE WS-QUAD WS-FRAME WS-TINTS
+     MOVE "acceptance beam quad on a full mesh adds nothing" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CL-MAX-ENTITY-VERTICES - 6
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
      PERFORM CHECK-N
      STOP RUN.
  CHECK-SMALL.

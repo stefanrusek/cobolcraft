@@ -416,7 +416,7 @@
          END-IF
      END-PERFORM
      COMPUTE WS-LEN = FUNCTION SQRT(L-V(1) * L-V(1) + L-V(2) * L-V(2) + L-V(3) * L-V(3))
-     IF WS-SLOT = 0 OR WS-LEN = 0
+     IF WS-SLOT = 0 OR WS-LEN < 0.00001
          GOBACK
      END-IF
      MOVE FUNCTION PI TO WS-PI
