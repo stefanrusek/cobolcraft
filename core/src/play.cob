@@ -166,6 +166,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PLAYPKT.
+ COPY CTOOLS.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -191,6 +192,10 @@
      END-IF
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      CALL "PLAY-DECODE" USING L-PACKET-ID PB-BUFFER PLAY-SERVERBOUND WS-OUTCOME
+*>   The spent click of a Use Item On (TS-CLICK-TICK) is for the Use Item that follows it at once: any other packet ends it.
+     IF WS-ROW > 0 AND L-PACKET-ID NOT = 66 AND L-PACKET-ID NOT = 67
+         MOVE 0 TO TS-CLICK-TICK(WS-ROW)
+     END-IF
      EVALUATE TRUE
          WHEN WS-OUTCOME = 1
              CALL "CORE-BAD-PACKET" USING L-ID
@@ -282,7 +287,16 @@
          WHEN L-PACKET-ID = 35
              CALL "BOAT-PADDLE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 67
-             CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+*>           The click of a Use Item On in this tick that a block took is spent (lane bugusein): the held item is not used as well.
+             MOVE 0 TO WS-WORN
+             CALL "COMBAT-TS-CHECK" USING WS-ROW
+             IF TS-CLICK-TICK(WS-ROW) = CW-TICKS + 1
+                 MOVE 1 TO WS-WORN
+                 MOVE 0 TO TS-CLICK-TICK(WS-ROW)
+             END-IF
+             IF WS-WORN = 0
+                 CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
              IF WS-WORN = 0
                  CALL "BOAT-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
