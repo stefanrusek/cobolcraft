@@ -374,6 +374,16 @@
      MOVE CC-TEX-GLINT-ARMOR TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-GL-VERTEX(1) RL-GL-COUNT RL-GL-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
+*>   The end portal and end gateway faces (52 section 8; portal-mesh.cob): opaque, depth written, eye-relative, with a colour on every vertex, on the UI atlas's white swatch.
+     MOVE 0 TO RL-EP-COUNT
+     IF WS-WORLD = 1
+         CALL "PORTAL-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-PV-TABLE
+     END-IF
+     MOVE MESH-SLOT-PORTAL TO WS-SLOT
+     MOVE CC-PIPE-OPAQUE TO WS-PIPE
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-EP-VERTEX(1) RL-EP-COUNT RL-EP-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   Translucent sections back to front (insertion sort, farthest first).
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > WS-TCOUNT
          MOVE WS-TSLOT(WS-I) TO WS-SWAP-SLOT
