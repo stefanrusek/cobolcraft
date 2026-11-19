@@ -6,7 +6,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPECIAL-ITEM-DISPLAY.
 *> USING kind (1 the chest family and 2 the shulker boxes: template_chest and template_shulker_box, 3 the banners: template_banner, 4 the heads: template_skull, which has no
-*> firstperson_righthand entry: no transform), context (1 gui, 2 ground, 3 firstperson_righthand),
+*> firstperson_righthand entry: no transform, 5 the beds: template_bed), context (1 gui, 2 ground, 3 firstperson_righthand),
 *> values out (9 FLOAT-LONG: rotation x y z in degrees, translation x y z in sixteenths, scale x y z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -20,8 +20,12 @@
     05 FILLER PIC X(72) VALUE "+0300000+0450000+0000000+0000000+0030000+0000000+0010000+0010000+0010000".
     05 FILLER PIC X(72) VALUE "+0000000+0000000+0000000+0000000+0030000+0000000+0005000+0005000+0005000".
     05 FILLER PIC X(72) VALUE "+0000000+0000000+0000000+0000000+0000000+0000000+0010000+0010000+0010000".
+*>   The bed (52 5.3, block/template_bed): gui (30, 340, 0), (2, 3, 0), 0.5325; ground (0, 180, 0), (0, 1, 2), 0.25; firstperson_righthand (30, 340, 0), (0, 3, 0), 0.375.
+    05 FILLER PIC X(72) VALUE "+0300000+3400000+0000000+0020000+0030000+0000000+0005325+0005325+0005325".
+    05 FILLER PIC X(72) VALUE "+0000000+1800000+0000000+0000000+0010000+0020000+0002500+0002500+0002500".
+    05 FILLER PIC X(72) VALUE "+0300000+3400000+0000000+0000000+0030000+0000000+0003750+0003750+0003750".
  01 WS-TABLE REDEFINES WS-DATA.
-    05 WS-ROW OCCURS 9 TIMES.
+    05 WS-ROW OCCURS 12 TIMES.
        10 WS-V             PIC S999V9999 SIGN LEADING SEPARATE OCCURS 9 TIMES.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -37,6 +41,9 @@
      END-IF
      IF L-KIND = 4
          COMPUTE WS-R = L-CONTEXT + 6
+     END-IF
+     IF L-KIND = 5
+         COMPUTE WS-R = L-CONTEXT + 9
      END-IF
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 9
          MOVE WS-V(WS-R, WS-K) TO L-VALUE(WS-K)
@@ -266,6 +273,11 @@
          END-PERFORM
          COMPUTE WS-D0 = FUNCTION MAX(0, 0.16169 * WS-N(1) + 0.808452 * WS-N(2) - 0.565916 * WS-N(3))
          COMPUTE WS-D1 = FUNCTION MAX(0, -0.16169 * WS-N(1) + 0.808452 * WS-N(2) + 0.565916 * WS-N(3))
+*>       A bed is a block model with the default gui_light side: the ITEMS_3D lights of 12 section 1.9 as ITEM-GUI-BAKE shades a block item (view space, y up).
+         IF L-KIND = 5
+             COMPUTE WS-D0 = FUNCTION MAX(0, 0.43256 * WS-N(1) + 0.642451 * WS-N(2) + 0.632573 * WS-N(3))
+             COMPUTE WS-D1 = FUNCTION MAX(0, -0.721948 * WS-N(1) + 0.547067 * WS-N(2) + 0.423684 * WS-N(3))
+         END-IF
          COMPUTE WS-SHADE = FUNCTION MIN(1, (WS-D0 + WS-D1) * 0.6 + 0.4)
          MOVE WS-SHADE TO WS-B
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
