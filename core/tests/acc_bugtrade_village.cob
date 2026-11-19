@@ -223,6 +223,9 @@
      CALL "VL-FIND" USING EN-ID(WS-ROW) WS-NO WS-SLOT
      MOVE 0 TO VL-SLEEP(WS-SLOT)
      MOVE 0 TO EN-VARIANT(WS-ROW)
+*>   The window of the earlier cases is closed first: a villager that is already trading ignores the next click (19 section 22.4; lane bugtradestop).
+     CALL "TEST-CLOSE-WIN" USING WS-CONN
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
      MOVE "1 1" TO TL-EXPECTED
      MOVE "acc bugtrade 40 2.9 the villager with a profession opens the trades again" TO TL-CASE
      PERFORM INTERACT-ROW
@@ -303,3 +306,4 @@
      END-PERFORM.
  END PROGRAM ACC-BUGTRADE-VILLAGE.
  COPY CORETEST.
+ COPY BETEST.
