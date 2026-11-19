@@ -2,12 +2,12 @@
 
 | Item | Value |
 |---|---|
-| Covers | How the client draws the blocks whose block model has no geometry and whose look comes from a block entity renderer: the chest family (`chest`, `trapped_chest`, `ender_chest` and the eight copper chests), the shulker boxes (17 blocks), the banners (base cloth and pole; 32 blocks), and the finding that beds are not block entities in this version (they are ordinary block models). For each: texture choice, model geometry (every cuboid with origin, size, texture offset), the transform from block space, light, render type, the lid animation and its inputs, and the item forms in inventories. A table of the block entity renderers not covered is in section 7. |
+| Covers | How the client draws the blocks whose block model has no geometry and whose look comes from a block entity renderer: the chest family (`chest`, `trapped_chest`, `ender_chest` and the eight copper chests), the shulker boxes (17 blocks), the banners (base cloth and pole; 32 blocks), and the finding that beds are not block entities in this version (they are ordinary block models). For each: texture choice, model geometry (every cuboid with origin, size, texture offset), the transform from block space, light, render type, the lid animation and its inputs, and the item forms in inventories. A table of the block entity renderers not covered is in section 7. Section 8 adds the End portal and the End gateway (`end_portal`, `end_gateway`): slab and cube geometry, the face rules, the layered screen-space portal shader with its tint table, the pipeline state, the gateway beam, and what a minimal client may approximate. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in the README) |
-| Method | Static reading of the shipped bytecode (`javap`), with no execution. `javap -c -p -constants` for classes and `unzip -p` for the JSON data files (block states, models, item definitions). Texture images were not read; only their file names and, from the PNG header, their pixel sizes. |
+| Method | Static reading of the shipped bytecode (`javap`), with no execution. `javap -c -p -constants` for classes and `unzip -p` for the JSON data files (block states, models, item definitions). Texture images were not read in sections 1 to 7; only their file names and, from the PNG header, their pixel sizes. Section 8 also read the shader text files and decoded the pixels of the three End textures (a throwaway decoder, outside the repository). |
 | Classes read | `net.minecraft.client.renderer.blockentity.ChestRenderer`, `ShulkerBoxRenderer` (and its inner `ShulkerBoxModel`), `BannerRenderer`, `BlockEntityRenderers`, `BlockEntityRenderDispatcher`, `BrightnessCombiner`, `WallAndGroundTransformations`; `...blockentity.state.ChestRenderState` (and `ChestMaterialType`), `ShulkerBoxRenderState`, `BannerRenderState`; `net.minecraft.client.model.object.chest.ChestModel`, `net.minecraft.client.model.object.banner.BannerModel` and `BannerFlagModel`, `net.minecraft.client.model.monster.shulker.ShulkerModel` (its `createBoxLayer`), `net.minecraft.client.renderer.MultiblockChestResources`, `Sheets`, `SpriteMapper`, `special.ChestSpecialRenderer`, `special.ShulkerBoxSpecialRenderer`, `special.BannerSpecialRenderer`, `item.SpecialModelWrapper`, `item.ItemStackRenderState$LayerRenderState`, `resources.model.cuboid.ItemTransform`, `net.minecraft.util.SpecialDates`, `net.minecraft.util.LightCoordsUtil`, `net.minecraft.core.Direction`, `net.minecraft.world.item.DyeColor`, `LevelRenderer` (the block entity loop). |
-| Round | Clean-room round "visual round 3" (chests, shulker boxes, beds, banners). Sections 1 to 6 are the specification, section 7 the renderers left for a later round, section 8 the numbered open questions. |
-| Related | 34-1 §1.3 (cuboid unwrap, used here by reference), 34-1 §1.1 (rotation conventions), 31-1 §8.3, §10 and §13 (the server side of chests and shulker boxes: block events, lid controller, shulker progress), 05a (Block Event packet, id 7), 12 (client rendering), 51 (shapes) |
+| Round | Clean-room round "visual round 3" (chests, shulker boxes, beds, banners). Sections 1 to 6 are the specification, section 7 the renderers left for a later round (the End portal and the End gateway rows now point to section 8), section 8 the End portal and gateway (round "portalrender", task T46004), section 9 the numbered open questions. |
+| Related | 31-5 §4 (the gateway block entity), 38 and 39 (the End and portals), 12 §3.3 (fog and the reversed-Z depth buffer), 50 §2.4 (the End-portal loading background, the same pipeline), 06 §3.2 (block entity list of the chunk packet), 34-1 §1.3 (cuboid unwrap, used here by reference), 34-1 §1.1 (rotation conventions), 31-1 §8.3, §10 and §13 (the server side of chests and shulker boxes: block events, lid controller, shulker progress), 05a (Block Event packet, id 7), 12 (client rendering), 51 (shapes) |
 
 ## 1. Summary and what an implementer needs to know first
 
@@ -15,6 +15,7 @@
 2. **Beds have no block entity and no renderer in this version.** `BlockEntityTypes` contains no bed type and `BlockEntityRenderers` registers none. All beds are plain JSON block models (section 5), meshed like any other block. The undyed-looking "bed texture" of older versions is replaced by per-colour 16 x 16 textures. There is also a 17th bed, `straw_bed`, with its own model.
 3. Entity model geometry for chests and shulker boxes uses the cuboid rule of **34-1 §1.3** (corner letters A to H, texture strip U0..U5 and V0..V2, per-face rectangles, vertex texture coordinates, face visibility set). This document gives only the cuboids and the transforms. Nothing in the chest path flips the model: there is **no y or z mirror** between the model and the world (section 2.2); the shulker box path does flip (section 4.3).
 4. The renderers draw with a **light** value sampled at the block entity's own position (section 2.3) and **no overlay**, white vertex colour (section 2.3).
+5. **`end_portal` and `end_gateway` are the other kind of block entity block**: render shape `INVISIBLE`, an element-less model, and a block entity renderer that draws a slab (portal: y 0.375 to 0.75, top and bottom face only) or a cube (gateway) with a screen-space layered shader, no light and no overlay (section 8). The client draws them only when the chunk packet lists their block entities (section 8.1 point 2).
 
 ## 2. Common conventions
 
@@ -482,7 +483,7 @@ World = (0.5 + (2/3) x/16, −(2/3) y/16, 0.5 − (2/3) z/16):
 
 ## 7. Block entity renderers not covered in this round
 
-Registered in `BlockEntityRenderers` (read) and not described here. Block ids come from 31-1 §3.1 (sign and shelf and skull sets are summarised there).
+Registered in `BlockEntityRenderers` (read) and not described here, except `end_portal` and `end_gateway`, which section 8 describes. Block ids come from 31-1 §3.1 (sign and shelf and skull sets are summarised there).
 
 | Block entity type | Blocks | Renderer class |
 |---|---|---|
@@ -492,8 +493,8 @@ Registered in `BlockEntityRenderers` (read) and not described here. Block ids co
 | `piston` | `moving_piston` | `PistonHeadRenderer` |
 | `enchanting_table` | `enchanting_table` | `EnchantTableRenderer` |
 | `lectern` | `lectern` | `LecternRenderer` |
-| `end_portal` | `end_portal` | `TheEndPortalRenderer` |
-| `end_gateway` | `end_gateway` | `TheEndGatewayRenderer` |
+| `end_portal` | `end_portal` | `TheEndPortalRenderer`; **specified in section 8** |
+| `end_gateway` | `end_gateway` | `TheEndGatewayRenderer` (cube and beam); **specified in section 8** |
 | `beacon` | `beacon` | `BeaconRenderer` |
 | `skull` | the 14 skull and head blocks | `SkullBlockRenderer` |
 | `structure_block` | `structure_block` | `BlockEntityWithBoundingBoxRenderer` |
@@ -510,7 +511,331 @@ Registered in `BlockEntityRenderers` (read) and not described here. Block ids co
 
 (The registration list was read through the `SHELF` entry; the class `BlockEntityRenderers` has no `BED`, `FURNACE`, `BARREL` or `HOPPER` entry. Block entity types without a renderer, such as the furnaces, hopper, barrel, jukebox, are drawn from their block models only.) Not covered here either: the break (crumbling) overlay on chests, shulker boxes and banners, `ChestRenderer`'s use for the chest minecart, the shulker mob (34), and banner pattern composition.
 
-## 8. Open questions
+## 8. End portal and end gateway
+
+Round "portalrender" (task T46004: a client drew nothing for `end_portal` and `end_gateway`, so an opened portal looked like a hole). Same artifact as the header (SHA-256 `4508d006...9a2d`). Besides `javap` this section read the shader files `rendertype_end_portal.vsh` and `.fsh` and the includes `fog.glsl`, `globals.glsl`, `matrix.glsl`, `projection.glsl` (text data, described here in formulas), `rendertype_beacon_beam.vsh` and `.fsh`, and decoded the pixels of `textures/environment/end_sky.png`, `textures/entity/end_portal/end_portal.png` and `end_gateway_beam.png` with a throwaway decoder. Classes read: `AbstractEndPortalRenderer`, `TheEndPortalRenderer`, `TheEndGatewayRenderer`, `EndPortalRenderState`, `EndGatewayRenderState`, `TheEndPortalBlockEntity`, `TheEndGatewayBlockEntity`, `EndPortalBlock`, `EndGatewayBlock`, `Blocks` (the two registrations), `BlockBehaviour` and `BlockStateBase` (default shape, occlusion), `Block.shouldRenderFace`, `FaceInfo` (and `FaceInfo$Extent`), `RenderPipelines`, `RenderTypes`, `RenderSetup` (and its builder), `AbstractTexture`, `ReloadableTexture`, `TextureContents`, `SamplerCache`, `GlobalSettingsUniform`, `GameRenderer` (the uniform update), `LevelExtractor` (block entity extraction and `gameTime`), `BlockEntityRenderDispatcher`, `BlockEntityRenderer` (interface defaults), `SectionCompiler` (block entity hand-off), `SubmitNodeCollection` and `FeatureRenderDispatcher` (phase choice and order), `BeaconRenderer` (the beam routine), `DyeColor`, `ARGB`, `Mth.frac`, `LevelLoadingScreen` (its End-portal use), `BuiltInBlockModels`, `EndCubeSpecialRenderer`, `LevelChunk` (client creation of block entities), `RenderPipeline$Builder`, `ColorTargetState`, `DepthStencilState`, `BlendFunction`, `VulkanRenderPipeline` (front face and cull mode).
+
+### 8.1 Summary: what a client needs first
+
+1. **Why the hole.** `EndPortalBlock.getRenderShape` and `EndGatewayBlock.getRenderShape` return `INVISIBLE`, and both block state files map to a model with no elements (only a particle texture `block/obsidian`). The chunk mesher (`SectionCompiler`) draws nothing for them. Everything visible comes from the block entity renderers `TheEndPortalRenderer` (block entity type `end_portal`, registry id 14) and `TheEndGatewayRenderer` (type `end_gateway`, id 22; both ids from 31-1 §3.1 and 46). Both extend `AbstractEndPortalRenderer`.
+2. **The block entity must exist on the client.** A client creates a block entity only (a) for each entry of the **block entity list of a chunk packet** (06 §3.2: packed XZ, Y, type id, optional NBT), or (b) when it applies a block change packet to a state that has a block entity (`LevelChunk.setBlockState` creates it with the block's `newBlockEntity`). A chunk packet that lists no entry for an `end_portal` or `end_gateway` block leaves the client with no block entity there, and nothing is drawn (section 8.3). A server must therefore list every such block in the chunk's block entity list, with the type id above and an empty tag (an empty compound is sent as absent, 06 §3.2); for the gateway the tag carries `Age` (31-5 §4). The gateway's update tag is the custom-only save: always `Age`, `ExactTeleport` when true and `exit_portal` when set (31-5 §4.2); **only `Age` matters for drawing** (it drives the spawn beam), the other two do not.
+3. **Portal geometry.** A flat slab: x and z from 0 to 1, y from **0.375 to 0.75** of the cell; only the **top** (y = 0.75) and the **bottom** (y = 0.375) face are drawn, always, with no neighbour test; the four side faces are never drawn (section 8.4). The outline of the block (`getShape`) is the same slab, 16 x 6 x 16 pixels at y 6 to 12; the block has no collision box (`noCollision`).
+4. **Gateway geometry.** A full unit cube (no squash); each of its six faces is drawn unless a neighbour hides it (`Block.shouldRenderFace`, section 8.5), plus the beam of section 8.9 while the gateway is spawning or cooling down.
+5. **Surface.** One custom shader, no vertex colour, no UV, no light. The texture coordinates are computed per pixel from the **screen position** (a projective texture lookup of the clip-space position), not from the world position or the cell. The colour is the sum of the `end_sky` texture (once, unrotated) and 15 (portal) or 16 (gateway) layers of the `end_portal` texture, each layer scaled, rotated and scrolled by time, each multiplied by a per-layer tint (section 8.7). Alpha is 1.
+6. **Pipeline state.** No blending, depth test "greater or equal" (reversed-Z buffer, 12 §3.3) with depth write, colour write RGBA, back-face culling, **fog applied**, solid phase (section 8.6).
+7. **Time.** The animation input is `GameTime`, a uniform equal to `((gameTime mod 24000) + partialTick) / 24000`, and 0 when the level is not being rendered (section 8.7.3).
+
+### 8.2 Block-side facts
+
+| Item | `end_portal` | `end_gateway` |
+|---|---|---|
+| Block entity class and type | `TheEndPortalBlockEntity`, `end_portal` | `TheEndGatewayBlockEntity` (extends the portal entity), `end_gateway` |
+| Block state file | one variant `""`, model `block/end_portal` | one variant `""`, model `block/end_gateway` |
+| Block model | no elements; `textures.particle` = `minecraft:block/obsidian` | same |
+| `getRenderShape` | `INVISIBLE` | `INVISIBLE` |
+| `getShape` (outline) | box (0, 6, 0)-(16, 12, 16) pixels = (0, 0.375, 0)-(1, 0.75, 1) blocks (`Block.column(16, 6, 12)`: width 16, from y 6 to y 12) | not overridden: the base default, the full cube (0, 0, 0)-(1, 1, 1) (`BlockBehaviour.getShape` returns `Shapes.block()`) |
+| Collision | `noCollision()` (no collision box) | `noCollision()` |
+| Other registration properties | map colour black, `strength(-1.0, 3600000.0)`, `noLootTable`, push reaction `IMMOVEABLE`, `lightLevel` = a function that returns the constant **15** for every state (the registration lambda is `bipush 15; ireturn`) | the same list, `lightLevel` constant **15** |
+| Occlusion | `noCollision()` is called, and `Properties.noCollision()` sets **both** `hasCollision` = false and `canOcclude` = false. `BlockStateBase.initCache` then stores the **empty shape** as the state's occlusion shape (and the empty array for the per-face occlusion shapes) whenever `canOcclude` is false. So the portal has an empty occlusion shape, although its `getShape` is the slab | the same: an **empty occlusion shape** and empty per-face shapes, although `getShape` is the full cube. The gateway is therefore **not** an occluder: neighbours are not culled against it, and it does not hide its neighbours' faces (section 8.5) |
+| `getCloneItemStack` | empty | empty |
+| `canBeReplaced(state, fluid)` | overridden; the body returns **false** (never replaceable by a fluid; 24 part 4 §6.19 agrees) | overridden; the body returns **false** |
+| Entity-inside rule | `getEntityInsideCollisionShape` = `getShape` (the slab); `entityInside` starts the portal transition, 39 | cooldown trigger, 31-5 §4.3 |
+| Particles | `animateTick`: one `smoke` particle with a random position over the cell and y offset 0.8 (presentation) | `portal` particles, 31-5 §4.3 |
+
+Pointers only: 39 covers the dimension travel and the transition, 31-5 §4 the gateway block entity (fields, tick, destination), 38 the End.
+
+### 8.3 Which renderer draws, when, and how far
+
+1. **Registration.** `BlockEntityRenderers` maps type `end_portal` to `TheEndPortalRenderer` and `end_gateway` to `TheEndGatewayRenderer` (section 7). The block entity needs the block state to be valid for its type (`BlockEntityType.isValid`), otherwise `tryExtractRenderState` returns nothing.
+2. **Extraction path.** `LevelExtractor.extractVisibleBlockEntities` walks the **visible render sections** (the sections that survived the view frustum and occlusion graph), and for each section whose mesh visibility is at least **0.3** (the fade rule of 50 §7.2) takes the block entities that `SectionCompiler.handleBlockEntity` stored in that mesh. The compiler stores every block entity it finds for the section's blocks that `hasBlockEntity`, looked up in the section copy the mesher works on: `RenderRegionCache` builds one `SectionCopy` per section of the region, and each `SectionCopy` holds an **immutable snapshot** (`ImmutableMap.copyOf`) of the whole chunk's block entity map taken when the copy is constructed; `RenderSectionRegion.getBlockEntity` is a plain `Map.get` on that snapshot and never creates a block entity. Only the chunk-packet loader creates one on lookup (mode `IMMEDIATE`). Two consequences: a block with no block entity entry stays undrawn (point 2 of section 8.1), and **a block entity that comes into existence after a section was compiled is not drawn until that section is rebuilt**, so a client that creates the block entity after a block change must mark the section dirty (the snapshot time within the rebuild task was not traced more finely, Open question 20). The second list, `ClientLevel.getGloballyRenderedBlockEntities`, is used only for renderers whose `shouldRenderOffScreen()` is true; neither End renderer overrides it (default false), so **both End blocks are drawn only when their own section is visible**. No bounding-box (`getRenderBoundingBox`) test was found on this path (Open question 24). Consequence for the gateway: its beam disappears when the section holding the gateway block is not visible, however tall the beam is.
+3. **Distance.** `BlockEntityRenderer.shouldRender(entity, cameraPos)` is true when the distance from the block's centre (x + 0.5, y + 0.5, z + 0.5) to the camera position is **less than** `getViewDistance()` blocks, a true 3D distance (`Vec3.closerThan`; the strict comparison is inferred from its name, Open question 31). `TheEndPortalRenderer` keeps the interface default **64**; `TheEndGatewayRenderer.getViewDistance()` returns **256**. (The beacon renderer, by contrast, ignores y and uses 16 x the render distance, and is off-screen; it is not used here.)
+4. **State extraction per frame.** `AbstractEndPortalRenderer.extractRenderState` first fills the common block entity state (52 §2.3), then clears `facesToShow` and, for every `Direction`, adds it when the **block entity's** `shouldRenderFace(direction)` is true (section 8.5). `TheEndGatewayRenderer` then fills the beam fields (section 8.9). Nothing is cached between frames.
+5. **Pose.** The level loop (52 §2.1) translates by (block - camera) in doubles. `TheEndPortalRenderer.submit` then multiplies the pose by the fixed transformation of section 8.4; `TheEndGatewayRenderer.submit` applies none.
+6. **Phase and order.** The cube is submitted with `submitCustomGeometry` and render type `endPortal` or `endGateway`. `SubmitNodeCollection` puts a custom-geometry submit whose render type has **no blending** into the `solid` phase, one with blending into `translucentCustomGeometry`, and outline types into `outline`. The End render types have no blending, so the cube is in the **solid phase**. `FeatureRenderDispatcher.renderAllFeatures` executes the phases in this order: solid, translucent, translucent-after-terrain, see-through, always-on-top. Within a phase submits are batched by render type (the render type is the batch key).
+
+### 8.4 Geometry
+
+**Vertex format and topology.** The pipeline binds the format `POSITION` only (three 32-bit floats; no colour, UV, normal, light or overlay) with primitive topology `QUADS`. `AbstractEndPortalRenderer.submitCube` emits, for each face of `facesToShow` in `Direction` ordinal order (**DOWN, UP, NORTH, SOUTH, WEST, EAST**), four vertices transformed by the current pose. The vertex list per face comes from `FaceInfo` applied to the unit cube from (0, 0, 0) to (1, 1, 1):
+
+| Face | Vertex 0 | Vertex 1 | Vertex 2 | Vertex 3 |
+|---|---|---|---|---|
+| DOWN | (0, 0, 1) | (0, 0, 0) | (1, 0, 0) | (1, 0, 1) |
+| UP | (0, 1, 0) | (0, 1, 1) | (1, 1, 1) | (1, 1, 0) |
+| NORTH | (1, 1, 0) | (1, 0, 0) | (0, 0, 0) | (0, 1, 0) |
+| SOUTH | (0, 1, 1) | (0, 0, 1) | (1, 0, 1) | (1, 1, 1) |
+| WEST | (0, 1, 0) | (0, 0, 0) | (0, 0, 1) | (0, 1, 1) |
+| EAST | (1, 1, 1) | (1, 0, 1) | (1, 0, 0) | (1, 1, 0) |
+
+(Read from the `FaceInfo` extents: `MIN_X` = 0 and `MAX_X` = 1 for x, likewise y and z.) Every face is **counter-clockwise when seen from outside** (checked with the cross product of the first two edges: outward normals (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1), (-1, 0, 0), (1, 0, 0)). There are no normals and no UV in the vertex data.
+
+**End portal transformation** (`TheEndPortalRenderer.TRANSFORMATION`, `BOTTOM` 0.375, `TOP` 0.75): translation (0, 0.375, 0), no rotation, scale (1, 0.375, 1). A unit-cube point (x, y, z) goes to block coordinates (x, 0.375 + 0.375 y, z), so the cube becomes the slab y in [0.375, 0.75]. With `facesToShow` = {DOWN, UP} the portal draws exactly these two quads (block coordinates, relative to the block's minimum corner):
+
+| Face | Vertices in order |
+|---|---|
+| UP (top, y = 0.75) | (0, 0.75, 0), (0, 0.75, 1), (1, 0.75, 1), (1, 0.75, 0) |
+| DOWN (bottom, y = 0.375) | (0, 0.375, 1), (0, 0.375, 0), (1, 0.375, 0), (1, 0.375, 1) |
+
+Back faces are culled (section 8.6): the top is seen only from above (camera y > 0.75 above the cell floor), the bottom only from below; a camera inside the slab sees neither. The slab matches the outline and `getShape` of section 8.2; its **y offset** is 0.375 above the cell floor and its thickness 0.375.
+
+**End gateway.** No transformation: the unit cube, x, y and z from 0 to 1, all six faces eligible.
+
+**Built-in block model path (not the chunk mesh).** `BuiltInBlockModels` also registers for `end_portal` a `special` block model of type `EndCubeSpecialRenderer.Type.PORTAL` with the portal transformation above, and for `end_gateway` the type `GATEWAY` with none. This model is used wherever the game draws a block state through the block model system outside chunk meshing (for example blocks drawn as entities or items; the callers were not traced, Open question 26). `EndCubeSpecialRenderer.submit` draws **all six faces** (`ALL_FACES`) with `endPortal` (PORTAL) or `endGateway` (GATEWAY), without a neighbour test. `AbstractEndPortalRenderer.submitSpecial` takes a fourth, integer argument (`EndCubeSpecialRenderer.submit` passes its last integer parameter): when it is non-zero the six faces are submitted a second time with the render type's `outline()` variant, each vertex carrying UV (0, 0) and that integer as its colour (the outline pass, Open question 33). The chunk mesh path ignores it (render shape `INVISIBLE`).
+
+### 8.5 Which faces are drawn
+
+| Block | Rule (`shouldRenderFace(direction)` of the block entity) |
+|---|---|
+| `end_portal` (`TheEndPortalBlockEntity`) | true if and only if the direction's axis is Y: **UP and DOWN always**, NORTH, SOUTH, WEST, EAST never. No neighbour is consulted: a block above or below the portal does not hide the faces. |
+| `end_gateway` (`TheEndGatewayBlockEntity`, overrides it) | `Block.shouldRenderFace(gateway state, state of the neighbour cell in that direction, direction)`, the same test the chunk mesher applies to ordinary blocks. |
+
+`Block.shouldRenderFace(self, neighbour, d)` as read, in this order (the first rule that applies decides). **Net effect for the gateway:** a face is hidden only when the neighbour's face occlusion shape toward it is the full-block shape constant (rule 1, an identity comparison with `Shapes.block()`) or `skipRendering` is true (never); every other neighbour leaves the face drawn.
+
+1. Let `n` be the neighbour's **occlusion shape of the face toward the gateway** (`neighbour.getFaceOcclusionShape(d.opposite)`). If `n` is the full-block shape constant, the face is **not** drawn. (A full opaque block, such as bedrock, hides it; a neighbour with `canOcclude` false has the empty shape here.)
+2. If `self.skipRendering(neighbour, d)`: not drawn. For the gateway this is the base default, **false** (the method was not overridden in `EndGatewayBlock`).
+3. If `n` is empty: **drawn** (air, glass, plants, any non-occluding block, and a missing block).
+4. Let `m` be the gateway's own occlusion shape of the face (`self.getFaceOcclusionShape(d)`). It is **always empty** (8.2: `noCollision()` cleared `canOcclude`), so this rule always fires: **drawn**.
+5. (Unreachable for the gateway: the shape comparison that would follow rule 4 is never reached because rule 4 always returns first.)
+
+Each frame the test reads the client level's block state of the neighbour cell (`level.getBlockState(pos.relative(d))`); a cell in a chunk that is not loaded gives air in the usual client behaviour (inferred, Open question 30). The gateway's `getParticleAmount` counts the faces for which this test is true (31-5 §4.3).
+
+| Neighbour of a gateway | Face toward it |
+|---|---|
+| air, glass, leaves, plants, any block with an empty occlusion shape | drawn (rule 3) |
+| bedrock, stone, any full opaque cube (face shape = the full-block constant) | not drawn (rule 1) |
+| slab, stairs, any partial opaque shape | drawn (rule 4: the gateway's own face shape is empty) |
+| another gateway | **drawn** (its occlusion shape is empty, rule 3) |
+| `end_portal` | **drawn in all six directions** (its occlusion shape is empty, rule 3) |
+
+### 8.6 Render type and pipeline state
+
+`RenderTypes.endPortal()` is the render type named `end_portal` built from the pipeline `RenderPipelines.END_PORTAL` (location `pipeline/end_portal`); `RenderTypes.endGateway()` is named `end_gateway` and uses `END_GATEWAY` (`pipeline/end_gateway`). Both come from one snippet; they differ only in the shader define `PORTAL_LAYERS`.
+
+| Property | Value (read) |
+|---|---|
+| Vertex shader, fragment shader | `core/rendertype_end_portal` (the same pair for both) |
+| Shader define `PORTAL_LAYERS` | **15** for `END_PORTAL`, **16** for `END_GATEWAY` |
+| Vertex format | `POSITION` (3 floats) |
+| Primitive topology | `QUADS` |
+| Textures | `Sampler0` = `textures/environment/end_sky.png`, `Sampler1` = `textures/entity/end_portal/end_portal.png`, for **both** render types (the gateway does not use `end_gateway_beam.png` for its cube) |
+| Uniform blocks | `Globals` (`GameTime`), `Projection`, `DynamicTransforms` (model-view matrix), `Fog` |
+| Blend | **none** (the colour target state has no blend function; the shader's alpha 1 overwrites) |
+| Colour target | RGBA8 unorm, write mask 15 (red, green, blue and alpha all written) |
+| Depth | test `GREATER_THAN_OR_EQUAL` (reversed-Z, 12 §3.3), depth **write on**; the depth state has only the compare function and the write flag (no bias, no stencil) |
+| Cull | **on** (the builder default; the snippet does not change it); polygon mode fill. Winding: faces are counter-clockwise from outside (8.4); the OpenGL backend leaves the front face at its default (counter-clockwise); the Vulkan backend sets `VK_FRONT_FACE_CLOCKWISE` with back-face culling, which is the same convention under the flipped y of Vulkan clip space (inferred, Open question 14) |
+| Light, overlay | not used: `useLightmap` and `useOverlay` are not set on the render setup, the format has no light or colour, the shader has no light-map or overlay lookup |
+| Fog | **applied** in the fragment shader (8.7.5) |
+| Outline | `AFFECTS_OUTLINE` (the type takes part in the entity outline pass; not read further, Open question 22) |
+| Phase | solid (8.3 point 6) |
+
+### 8.7 The portal surface shader
+
+#### 8.7.1 Inputs
+
+The vertex shader outputs `gl_Position = ProjMat * ModelViewMat * Position` and three varyings:
+
+- `texProj0` = (0.5 x + 0.5 w, 0.5 y + 0.5 w, z, w) of the clip-space position (x, y, z, w) (`projection_from_position`). After the perspective divide by w this is the **screen position mapped to 0..1**: `uv0` = (0.5 ndc.x + 0.5, 0.5 ndc.y + 0.5), where ndc is the normalised device position of the pixel. (The fragment shader reads these as a projective coordinate, `textureProj`: it divides the first two components by the fourth.)
+- `sphericalVertexDistance` = length(Position) and `cylindricalVertexDistance` = max(length(Position.xz), |Position.y|). `Position` is taken to be in camera-relative world coordinates because the CPU applies the pose to every vertex (8.3 point 5), so these would be the distances from the camera (inferred: the contents of the model-view matrix were not read, Open question 32).
+
+So **texture coordinates come from the screen position of each pixel, not from the world position of the surface**: the world position only decides where on the screen the surface lies. A portal seen from a different camera position shows a different part of the pattern; the pattern does not stick to the block. The sign of ndc.y relative to image rows depends on the backend clip space (Open question 15).
+
+#### 8.7.2 Per-layer coordinate
+
+For layer number L = 1 to N (N = `PORTAL_LAYERS`; the shader's loop index is L - 1), the coordinate used to read the `end_portal` texture is obtained from the screen coordinate `uv0` of 8.7.1 in this order: rotate and scale about the origin, then translate, then halve and add 0.25. The closed forms are:
+
+| Quantity | Closed form |
+|---|---|
+| k(L), scale factor | 9 - L / 2 |
+| theta(L), rotation in degrees | 8642 L^2 + 18 L (reduced modulo 360 for use; table below) |
+| t(L), translation | (17 / L, (3 + L) * GameTime) |
+
+R(theta) is the counter-clockwise rotation (x, y) -> (x cos theta - y sin theta, x sin theta + y cos theta). The values are not clamped: coordinates far outside 0..1 wrap (8.8).
+
+Combined: **UV(L) = (4.5 - L/4) * R(theta(L)) * (u0, v0) + (8.5 / L + 0.25, 0.5 * (3 + L) * GameTime + 0.25)**, with (u0, v0) = `uv0` (the scale is k / 2, the offset is t / 2 + 0.25).
+
+| L | k = 9 - L/2 | k / 2 | theta mod 360 (deg) | t.x = 17/L | x offset 8.5/L + 0.25 | tint R | tint G | tint B |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 8.5 | 4.2500 | 20 | 17.000000 | 8.750000 | 0.022087 | 0.098399 | 0.110818 |
+| 2 | 8.0 | 4.0000 | 44 | 8.500000 | 4.500000 | 0.011892 | 0.095924 | 0.089485 |
+| 3 | 7.5 | 3.7500 | 72 | 5.666667 | 3.083333 | 0.027636 | 0.101689 | 0.100326 |
+| 4 | 7.0 | 3.5000 | 104 | 4.250000 | 2.375000 | 0.046564 | 0.109883 | 0.114838 |
+| 5 | 6.5 | 3.2500 | 140 | 3.400000 | 1.950000 | 0.064901 | 0.117696 | 0.097189 |
+| 6 | 6.0 | 3.0000 | 180 | 2.833333 | 1.666667 | 0.063761 | 0.086895 | 0.123646 |
+| 7 | 5.5 | 2.7500 | 224 | 2.428571 | 1.464286 | 0.084817 | 0.111994 | 0.166380 |
+| 8 | 5.0 | 2.5000 | 272 | 2.125000 | 1.312500 | 0.097489 | 0.154120 | 0.091064 |
+| 9 | 4.5 | 2.2500 | 324 | 1.888889 | 1.194444 | 0.106152 | 0.131144 | 0.195191 |
+| 10 | 4.0 | 2.0000 | 20 | 1.700000 | 1.100000 | 0.097721 | 0.110188 | 0.187229 |
+| 11 | 3.5 | 1.7500 | 80 | 1.545455 | 1.022727 | 0.133516 | 0.138278 | 0.148582 |
+| 12 | 3.0 | 1.5000 | 144 | 1.416667 | 0.958333 | 0.070006 | 0.243332 | 0.235792 |
+| 13 | 2.5 | 1.2500 | 212 | 1.307692 | 0.903846 | 0.196766 | 0.142899 | 0.214696 |
+| 14 | 2.0 | 1.0000 | 284 | 1.214286 | 0.857143 | 0.047281 | 0.315338 | 0.321970 |
+| 15 | 1.5 | 0.7500 | 0 | 1.133333 | 0.816667 | 0.204675 | 0.390010 | 0.302066 |
+| 16 (gateway only) | 1.0 | 0.5000 | 80 | 1.062500 | 0.781250 | 0.080955 | 0.314821 | 0.661491 |
+
+The 16 tints are the shader's constant array `COLORS[0..15]`: layer L uses `COLORS[L - 1]`, and the sky term uses `COLORS[0]`. The portal (N = 15) never reads `COLORS[15]`. The y translation per tick (in UV units after the final halving) is 0.5 * (3 + L) / 24000 = (1.5 + 0.5 L) / 24000, so layer 1 moves 8.3e-5 and layer 16 moves 3.96e-4 of a texture repeat per tick (all in the +v direction of the coordinate).
+
+#### 8.7.3 Time source
+
+`GameTime` is a member of the `Globals` uniform block, written each frame by `GlobalSettingsUniform.update` from `GameRenderer`: `GameTime = (float)((levelRenderState.gameTime mod 24000) + worldPartialTicks) / 24000.0`. `levelRenderState.gameTime` is `ClientLevel.getGameTime()` (the level game time of 33; not the day time), set at extraction (`LevelExtractor.extract`); `worldPartialTicks` is the frame's partial tick (0 to 1, fractional part of the tick, **included**). When the game is not rendering the level (`shouldRenderLevel` false, for example on the loading screens) both terms are 0 and `GameTime` = 0 (inferred as the loading screen's value; Open question 27). Units: fraction of a 24000-tick day, so t.y of 8.7.2 grows by (3 + L) / 24000 per tick. `GameTime` jumps back to 0 when `gameTime mod 24000` wraps (every 20 minutes of game time), which makes the scroll jump once. The jump of layer L is (3 + L) / 2 UV units in the final coordinate (a drop of `GameTime` from just below 1 to 0): for odd L this is almost exactly a whole number of texture repeats (no visible change), for even L it is a half-integer, so the even layers visibly pop (consequence of the formulas; no smoothing was found).
+
+#### 8.7.4 Combination
+
+With `T0(uv)` the RGB (0..1) of `end_sky.png` and `T1(uv)` that of `end_portal.png` (texel fetch, 8.8):
+
+**colour = T0(uv0) * COLORS[0] + sum over L = 1..N of T1(UV(L)) * COLORS[L - 1]**, component-wise, N = 15 (portal) or 16 (gateway).
+
+The sky term uses the **unrotated** screen coordinate `uv0` once, so the end-sky image is stretched over the whole screen (it does not repeat or move). The `end_portal` image supplies all the moving layers. The alpha of both textures is ignored; the output alpha is 1.0.
+
+#### 8.7.5 Fog and output
+
+After the sum, `apply_fog` is called with colour (rgb, 1.0), the two distances of 8.7.1, and the `Fog` uniform members (`FogEnvironmentalStart`, `FogEnvironmentalEnd`, `FogRenderDistanceStart`, `FogRenderDistanceEnd`, `FogColor`; values per frame from 12 §3.3):
+
+- `linear(d, s, e)` = 0 if d <= s; 1 if d >= e; else (d - s) / (e - s);
+- `fogValue` = max(`linear`(spherical, EnvironmentalStart, EnvironmentalEnd), `linear`(cylindrical, RenderDistanceStart, RenderDistanceEnd));
+- output rgb = mix(colour, `FogColor`.rgb, `fogValue` * `FogColor`.a) = colour + (`FogColor`.rgb - colour) * (`fogValue` * `FogColor`.a); output alpha = 1.0 (the input alpha is kept).
+
+The fragment colour is written to an RGBA8 unorm target: each channel is **clamped to 0..1** and rounded to the nearest of 255 steps by the hardware (the sum can exceed 1: with every texel at 255 the layer sums are 1.275, 2.348, 2.499 for 15 layers and 1.356, 2.663, 3.161 for 16 layers, plus the sky term; for real textures it rarely does, section 8.8). No gamma conversion is applied by the shader.
+
+#### 8.7.6 Worked example (portal block, one pixel)
+
+Setup: the shader depends only on the pixel's screen coordinate `uv0` and on `GameTime`, so the example takes an **arbitrary screen position that the portal is assumed to cover**: ndc = (0.05, 0.725), giving `uv0` = (0.525, 0.8625). No camera pose is given and none is implied: a 1 x 1 slab seen from a few blocks away covers only part of the screen, and the pixel is chosen to exercise the arithmetic, not to lie on a particular slab. Level game time 1000, partial tick 0.5, so `GameTime` = 1000.5 / 24000 = **0.0416875**. The pipeline is `END_PORTAL` (N = 15). Fog value 0 (distance below the fog start). The arithmetic is exact: the angle is reduced modulo 360 degrees and sine and cosine are taken in double precision. The GPU's 32-bit arithmetic gives slightly different coordinates (Open question 16).
+
+Sky term: texel = (floor(0.525 x 128), floor(0.8625 x 128)) = (67, 110) of `end_sky.png`, pixel value (94, 68, 131). Contribution = (94, 68, 131) / 255 x `COLORS[0]` (0.022087, 0.098399, 0.110818) = (0.008142, 0.026240, 0.056930).
+
+Layers (texel = floor(UV x 256) mod 256 in `end_portal.png`; the value is the grey level read, used for red, green and blue alike):
+
+| L | UV (u, v) | texel (x, y) | value |
+|---|---|---|---|
+| 1 | (9.592972, 4.541068) | (151, 138) | 0 |
+| 2 | (3.614042, 4.294724) | (157, 75) | 0 |
+| 3 | (0.615637, 3.246932) | (157, 63) | **4** |
+| 4 | (-0.998612, 1.448523) | (0, 114) | 0 |
+| 5 | (-1.158877, -0.633812) | (215, 93) | **1** |
+| 6 | (0.091667, -2.149906) | (23, 217) | 0 |
+| 7 | (2.073382, -2.250660) | (18, 191) | 0 |
+| 8 | (3.513242, -0.757167) | (131, 62) | 0 |
+| 9 | (3.290767, 1.375802) | (74, 96) | 0 |
+| 10 | (1.496693, 2.501060) | (127, 128) | 0 |
+| 11 | (-0.304178, 1.708705) | (178, 181) | 0 |
+| 12 | (-0.439215, -0.021129) | (143, 250) | 0 |
+| 13 | (0.918634, -0.678561) | (235, 82) | **4** |
+| 14 | (1.821032, 0.303596) | (210, 77) | 0 |
+| 15 | (1.210417, 1.272063) | (53, 69) | 0 |
+
+Check of one coordinate, layer 1: k / 2 = 4.25, theta = 20 degrees, R(20 degrees) (0.525, 0.8625) = (0.525 x 0.939693 - 0.8625 x 0.342020, 0.525 x 0.342020 + 0.8625 x 0.939693) = (0.198346, 0.990045); times 4.25 = (0.842971, 4.207693); plus (8.75, 0.25 + 0.5 x 4 x 0.0416875 = 0.333375) = (9.592971, 4.541068). ✓ (the table row).
+
+Non-zero layers: L3 = 4/255 x (0.027636, 0.101689, 0.100326) = (0.000434, 0.001595, 0.001574); L5 = 1/255 x (0.064901, 0.117696, 0.097189) = (0.000255, 0.000462, 0.000381); L13 = 4/255 x (0.196766, 0.142899, 0.214696) = (0.003086, 0.002242, 0.003368). Total = sky + L3 + L5 + L13 = (0.011917, 0.030539, 0.062253). Times 255 = (3.04, 7.79, 15.88); rounded to nearest: **(3, 8, 16)**, alpha **255**, no clamping needed.
+
+Clamp case: with every sampled `end_portal` texel at 255 the 15-layer sum of the blue channel is 2.499272, so blue clamps to 255. At the other extreme, all texels 0 and the darkest sky texel (15, 11, 20) give (15, 11, 20) x `COLORS[0]` = (0.33, 1.08, 2.22) in 0..255 units, which rounds to (0, 1, 2).
+
+### 8.8 Textures and sampler
+
+| Texture | File in the jar | Format and size | Content summary |
+|---|---|---|---|
+| Sampler0, sky | `assets/minecraft/textures/environment/end_sky.png` | PNG, 8-bit palette (colour type 3), **128 x 128**, every pixel alpha 255 | the End sky; per-channel maxima 224, 216, 235; mean colour (115.3, 87.7, 155.8) |
+| Sampler1, portal | `assets/minecraft/textures/entity/end_portal/end_portal.png` | PNG, 8-bit **greyscale** (colour type 0), **256 x 256** | stars on black: 7890 of 65536 texels are non-zero (12.0 %), 80 texels are 255, mean 2.858; the first 255 texel in row-major order is (x 17, y 1) |
+
+(The Faithful pack mapping lists a 256 x 256 `end_sky` for the pack; the jar's own file is 128 x 128, and every sampling computation must use the size of the texture actually bound.) Neither file has a `.mcmeta` in the jar.
+
+**Sampler.** `RenderSetup.withTexture` binds each texture with no explicit sampler, so the texture's own sampler is used. `TextureManager.getTexture` supplies these textures (the loader class used for an identifier that is not pre-registered was not opened and is inferred to be the plain `SimpleTexture` with `TextureContents.load`, Open question 18); a reloadable texture chooses its sampler in `ReloadableTexture.setSampler`: address mode **repeat** on both axes (clamp only when the `.mcmeta` `texture.clamp` is true), filter **nearest** for minification and magnification (linear only when `texture.blur` is true), and a fifth sampler-request argument that is false (its meaning, anisotropy or mipmapping, was not decoded). Both flags default to false, so with the jar files: **nearest filtering, repeat wrapping, one mip level** (`createTexture` is called with a mip level count of 1; no mipmaps are generated). A texel is selected as `floor(UV * size) mod size` per axis (mathematical modulo, so negative coordinates wrap). Texel values are read as unsigned normalised bytes, value / 255, in a format named `RGBA8_UNORM`; no sRGB decode is applied by the sampler. Which image row is v = 0 follows the upload order of `NativeImage` (row 0 first; inferred, Open question 15). A resource pack that supplies a `.mcmeta` with `blur` or `clamp` changes the sampling of both textures.
+
+### 8.9 The end gateway beam
+
+**Block entity fields.** `age` (long, ticks since placement, saved as `Age`), `teleportCooldown` (int, client and server); constants `SPAWN_TIME` = 200, `COOLDOWN_TIME` = 40 (31-5 §4.2 and §4.3 give the tick, the block event 1 that sets `teleportCooldown` to 40 on clients, and the update tag that carries `Age`). Client tick (`beamAnimationTick`): `age += 1`, and `teleportCooldown -= 1` while it is above 0. `isSpawning` = age < 200; `isCoolingDown` = teleportCooldown > 0.
+
+**Per frame (`TheEndGatewayRenderer.extractRenderState`).** If `isSpawning`, or (`isCoolingDown` and the block entity has a level), compute the beam; otherwise `height` = 0 and no beam is submitted.
+
+| Field | Value |
+|---|---|
+| `scale0` | spawning: `getSpawnPercent(partial)` = clamp((age + partial) / 200, 0, 1); cooling: `getCooldownPercent(partial)` = 1 - clamp((teleportCooldown - partial) / 40, 0, 1) |
+| `maxY` | spawning: `level.getMaxY()` (the highest block y of the dimension; 255 in the End, whose `min_y` is 0 and `height` 256, 38; `Level.getMaxY` itself was not read, Open question 25); cooling: **50.0** |
+| `scale` (render state field) | `Mth.sin(scale0 * pi)` (the table sine of 10 §16.3), a hump from 0 to 1 to 0 |
+| `height` | floor(`scale` * `maxY`), an int |
+| `color` | spawning: `DyeColor.MAGENTA.getTextureDiffuseColor()` = **0xFFC74EBD**; cooling: `DyeColor.PURPLE...` = **0xFF8932B8** (opaque ARGB: `ARGB.opaque` of 13061821 and 8991416) |
+| `animationTime` | level present: `floorMod(gameTime, 40)` + partial (a float in [0, 41)); no level: 0 |
+
+**Submission.** `submit` first calls the beacon beam routine when `height` > 0, then the cube of 8.4 and 8.5 with render type `endGateway`. The call is `BeaconRenderer.submitBeaconBeam(pose, collector, texture, scale, animationTime, yStart, length, color, solidRadius, glowRadius)` with: texture = `textures/entity/end_portal/end_gateway_beam.png` (16 x 16, 8-bit palette, 10 distinct colours, all opaque, light blue-grey; for example texel (0, 0) = (148, 183, 180)); `scale` = the `scale` field above; `yStart` = **-height**; `length` = **2 x height**; `color` as above; `solidRadius` = **0.15**; `glowRadius` = **0.175**. The beam therefore runs from y = -height to y = +height relative to the **gateway block's floor** (y offsets in blocks from the block's minimum corner; the beam also extends below the cell), centred on the block (x and z at 0.5). The beacon itself uses the other overload that has the constants `SOLID_BEAM_RADIUS` 0.2, `BEAM_GLOW_RADIUS` 0.25 multiplied by its scale, the texture `textures/entity/beacon/beacon_beam.png`, `MAX_RENDER_Y` 2048 and `BEAM_SCALE_THRESHOLD` 96; those belong to the beacon renderer (31-5 cites it as not specified); the shared routine below is specified in full.
+
+**The beam routine** (`submitBeaconBeam`, public overload). Let `r` = solidRadius, `g` = glowRadius, `s` = scale, `t` = animationTime, `y0` = yStart, `len` = length, `y1` = y0 + len. For the gateway y1 = +height.
+
+All geometry is relative to the pose translated by (0.5, 0, 0.5) (the column of the block, x and z at its centre). With `f` = -t when `len` >= 0 (always, for the gateway) the texture scroll is `v0` = -1 + frac(0.2 f - floor(0.1 f)), which equals -1 + frac(0.2 f) because the floor term is an integer (`Mth.frac(x)` = x - floor(x)); the texture scrolls once per 5 ticks of `t`. Two prisms are drawn, each as four side quads (no top or bottom cap), u running from 0 to 1 across every side and the texture repeating along v:
+
+| Part | Pose | Corner points in (x, z) and the side quads, in drawing order (A to B) | v at y0 | v at y1 | Vertex colour | Render type |
+|---|---|---|---|---|---|---|
+| core | rotated about +Y by **2.25 t - 45 degrees** (`Axis.YP.rotationDegrees`) | P1 = (0, r), P2 = (r, 0), P3 = (-r, 0), P4 = (0, -r); quads P1 to P2, P4 to P3, P2 to P4, P3 to P1 | `v0` | `v0 + len * s * (0.5 / r)` (gateway: `v0 + 3.333 * len * s`) | `color`, alpha 255 | `beaconBeam(texture, false)` |
+| glow | not rotated (the rotation is popped first) | Q1 = (-g, -g), Q2 = (g, -g), Q3 = (-g, g), Q4 = (g, g); quads Q1 to Q2, Q4 to Q3, Q2 to Q4, Q3 to Q1 | `v0` | `v0 + len * s` (no division by the radius) | `color` with alpha replaced by **32** (`ARGB.color(32, color)`; 32/255 = 0.1255) | `beaconBeam(texture, true)` |
+
+Vertex order of every side quad from A to B, with (u0, u1) = (0, 1):
+
+| Vertex | Position | (u, v) |
+|---|---|---|
+| 1 | (A.x, y1, A.z) | (u1, v at y1) |
+| 2 | (A.x, y0, A.z) | (u1, v at y0) |
+| 3 | (B.x, y0, B.z) | (u0, v at y0) |
+| 4 | (B.x, y1, B.z) | (u0, v at y1) |
+
+Every vertex also stores overlay `NO_OVERLAY`, light **15728880** (full bright: sky 15, block 15) and the normal (0, 1, 0), but the beam shader reads only position, colour and UV0.
+
+Winding: seen from outside, the glow quads are **clockwise** and the core quads **counter-clockwise** (computed from the vertex orders; the corner order of the glow runs clockwise seen from above). With back-face culling (both beam pipelines use the default cull), the core is visible from outside and the glow shell shows its far, inner walls from outside (inferred from the winding and the front-face convention of 8.6, Open question 14).
+
+**Beam render types** (`RenderTypes.beaconBeam`, name `beacon_beam`, both with `sortOnUpload`, `Sampler0` = the texture, texture sampler as in 8.8, so nearest and repeat):
+
+| Pass | Pipeline | Format | Blend | Depth | Phase |
+|---|---|---|---|---|---|
+| core | `BEACON_BEAM_OPAQUE` (`pipeline/beacon_beam_opaque`) | `BLOCK` (shader reads position, colour, UV0) | none, RGBA write | `GREATER_THAN_OR_EQUAL`, write on | solid |
+| glow | `BEACON_BEAM_TRANSLUCENT` (`pipeline/beacon_beam_translucent`) | `BLOCK` | colour: source factor SRC_ALPHA, destination ONE_MINUS_SRC_ALPHA; alpha: source ONE, destination ONE_MINUS_SRC_ALPHA | `GREATER_THAN_OR_EQUAL`, write **off** | `translucentCustomGeometry` (the type has blending); with the improved-transparency option the OIT pipeline set `beacon_beam` replaces it (not read further, Open question 21) |
+
+**Beam fragment shader.** colour = `Sampler0`(uv) * vertexColor * `ColorModulator` (a `DynamicTransforms` uniform, assumed (1, 1, 1, 1), Open question 19), then fog with `fragmentDistance` = 1 / `gl_FragCoord.w` (the eye-space depth) used for both distances in the same `apply_fog` of 8.7.5. No light map is used. The core's alpha is 1 times the texture alpha (255); the glow's alpha is 32/255 times the texture alpha.
+
+**Worked example (spawn).** age = 60, partial = 0.25, level game time 1003, End level: `scale0` = (60 + 0.25) / 200 = 0.30125; `scale` = sin(0.30125 pi) = 0.81132; `maxY` 255; `height` = floor(0.81132 x 255 = 206.88) = **206**; `color` 0xFFC74EBD; `animationTime` = floorMod(1003, 40) + 0.25 = 3.25. The beam spans y from -206 to +206 around the block floor (len = 412); core rotation 2.25 x 3.25 - 45 = -37.6875 degrees; f = -3.25, `v0` = -1 + frac(-0.65 - floor(-0.325)) = -1 + frac(0.35) = **-0.65**; core v at the top = -0.65 + 412 x 0.81132 x 3.3333 = **1113.56**; glow v at the top = -0.65 + 412 x 0.81132 = 333.61; core colour (199, 78, 189, 255); glow colour (199, 78, 189, alpha 32). (`Mth.sin` is a table sine: the fifth decimal can differ.) **Cooling:** `teleportCooldown` = 20, partial 0.5: `scale0` = 1 - clamp(19.5 / 40) = 0.5125; `scale` = sin(0.5125 pi) = 0.99923; `height` = floor(50 x 0.99923 = 49.96) = **49**; colour purple 0xFF8932B8 (137, 50, 184).
+
+### 8.10 How the portal and the gateway relate
+
+- **Shared:** the renderer base class, the face-list submit routine, the shader pair, the two textures, the `Fog`, `Globals` and `Projection` uniforms, the pipeline snippet. Different: layer count (15 against 16, hence the extra tint `COLORS[15]`), the pose transformation (squash against none), the face rule (Y axis only against neighbour test), the view distance (64 against 256), and the beam (gateway only).
+- **No interaction.** Each block entity is drawn on its own; a portal next to a gateway has no effect on the gateway's face test (the portal's occlusion shape is empty, so the gateway's face toward it is drawn, 8.5) and matters only through the beam, which overlaps any block in its column. The portal's top is not hidden by the gateway's glow or core (the glow is translucent with depth write off; the core writes depth).
+- **Level-loading screen.** `LevelLoadingScreen` draws the End-portal background with the **same `END_PORTAL` pipeline** (15 layers, both textures with their own samplers), as one `fill` of the rectangle (0, 0, width, height) of the screen in GUI coordinates (50 §2.4). The shader maths is the same with the screen as the projected surface: `uv0` is the position on the screen. `GameTime` there is the uniform of 8.7.3 (0 while the level is not rendered). `WinScreen` (the credits) references the same two texture constants (its pipeline use was not confirmed).
+
+### 8.11 What a minimal client may approximate (design choice, not vanilla)
+
+- **Must keep:** create the block entity from the chunk list (8.1 point 2), draw the top face at y = 0.75 (and the bottom face at 0.375 if the camera can go below), with depth write, so the portal occludes what is behind it. A cell with no drawing is the bug of task T46004.
+- **May simplify (a design choice):** replace the 16 or 17 texture fetches with a flat colour or a small fixed pattern. The expected value of the true output, taken as the mean of the two images times the tints (the mean texel of `end_portal.png` 2.858 / 255, the mean of `end_sky.png`), is about **RGB (6, 15, 24)** for the portal and **(6, 16, 26)** for the gateway: a very dark teal. Real pixels are dominated by 0 texels and scattered brighter stars (8.8). Any flat approximation near these numbers is far darker than a typical "portal" art guess; the vanilla look is dark with sparse speckles.
+- **May skip:** fog (a small error), the outline pass, the `special` block model path.
+- **Gateway:** may omit the glow (a thin translucent shell) and keep the core; the beam must still stop at `height` 0 when neither spawning nor cooling down. The gateway cube may reuse the portal approximation.
+- **Do not:** treat the portal as a full cube or draw its side faces; use the cell position for texture coordinates when implementing the vanilla look (the vanilla pattern follows the screen).
+
+### 8.12 Implementer summary
+
+| Item | Value |
+|---|---|
+| Block entity type ids | `end_portal` 14, `end_gateway` 22 (chunk packet block entity list, empty tag; gateway `Age`) |
+| Portal slab | x, z 0..1; y 0.375..0.75; faces UP and DOWN only |
+| Gateway cube | 0..1 in all axes; faces by `Block.shouldRenderFace`; beam while spawning (age < 200) or cooling (cooldown > 0) |
+| Vertex order, winding | per 8.4 table; counter-clockwise from outside; back faces culled |
+| View distance | portal 64 blocks, gateway 256 blocks, 3D distance block centre to camera, strict less-than; needs the section visible (mesh visibility >= 0.3) |
+| Layers | portal 15, gateway 16; sky term uses `COLORS[0]` and the screen coordinate `uv0` |
+| Layer coordinate | UV(L) = (4.5 - L/4) R(theta(L)) uv0 + (8.5/L + 0.25, 0.5 (3 + L) GameTime + 0.25); theta(L) = 8642 L^2 + 18 L degrees |
+| Tint table | 8.7.2 (16 rows) |
+| `GameTime` | ((gameTime mod 24000) + partial) / 24000; 0 when the level is not rendered |
+| Textures | sky 128 x 128 palette; portal 256 x 256 greyscale; nearest, repeat, 1 mip level |
+| Output | rgb sum clamped to 0..1, fog by `apply_fog`, alpha 1; no blend; depth GE and write on; colour mask RGBA |
+| Beam | y from -h to +h, h = floor(sin(pi p) x (maxY or 50)); core radius 0.15, glow radius 0.175; core colour 0xFFC74EBD (spawn) or 0xFF8932B8 (cooldown), glow alpha 32; rotation 2.25 t - 45 degrees; t = floorMod(gameTime, 40) + partial; v scroll frac(-0.2 t); core v length 3.333 len s, glow v length len s |
+| Beam textures and types | `end_gateway_beam.png` (16 x 16); opaque pipeline for the core, translucent (SRC_ALPHA, ONE_MINUS_SRC_ALPHA; alpha ONE, ONE_MINUS_SRC_ALPHA; no depth write) for the glow |
+
+### 8.13 Validation (checkable facts)
+
+| # | Check |
+|---|---|
+| E1 | A world with an `end_portal` block whose chunk packet lists no block entity for it shows no portal; with the entry (type 14, empty tag) the top face appears at y + 0.75 |
+| E2 | The portal quad corners at cell (0, 64, 0) are (0, 64.75, 0), (0, 64.75, 1), (1, 64.75, 1), (1, 64.75, 0) in the order of 8.4, and the bottom ones at y 64.375 |
+| E3 | No side face of the portal is drawn at any camera position; the top face is invisible from below and the bottom face invisible from above |
+| E4 | With the camera at distance 63.9 blocks from the block centre the portal is drawn; at 64.1 it is not; for the gateway the limits are 255.9 and 256.1 |
+| E5 | A gateway with a stone block on all six sides draws no face of the cube; with air above it the UP face is drawn |
+| E6 | At `GameTime` = 0 the layer-1 coordinate of the screen point uv0 = (0.5, 0.5) is 4.25 R(20 degrees) (0.5, 0.5) + (8.75, 0.25) = (8.75 + 4.25 x 0.5 (cos 20 - sin 20), 0.25 + 4.25 x 0.5 (sin 20 + cos 20)) = (10.0201, 2.9736) |
+| E7 | Section 8.7.2: theta(15) mod 360 = 0 and theta(16) mod 360 = 80; k(16) = 1; `COLORS[15]` = (0.080955, 0.314821, 0.661491) is read only by the gateway |
+| E8 | The worked example of 8.7.6 gives (3, 8, 16, 255) (exact arithmetic; a 32-bit GPU may give (2, 7, 15), Open question 16) |
+| E9 | Gateway beam: age 60, partial 0.25: height 206; cooldown 20, partial 0.5: height 49; at age >= 200 with no cooldown no beam |
+| E10 | The glow's fragment alpha is 32/255 times the beam texture alpha; the core is opaque |
+
+## 9. Open questions
 
 1. **Chest artwork orientation.** The chest path applies no y or z flip (section 2.2), so by 34-1 §1.3 the cuboid's `DOWN` rectangle (the "top" rectangle of the standard strip) lands on the geometric bottom of each box and the `SOUTH` rectangle (not `NORTH`) on the front of the lock. Whether the 64 x 64 chest textures are authored for that orientation was not checked (pixels were not read). An implementer should render once and compare with a reference screenshot; if the lid top shows the wrong rectangle, exchange `DOWN` and `UP` rectangles and the front/back lock rectangles.
 
@@ -520,10 +845,33 @@ Registered in `BlockEntityRenderers` (read) and not described here. Block ids co
 4. `gui_light` / block-light usage of the item base models `template_chest` and `template_shulker_box` (neither has the key) was not traced; the default of `ModelRenderProperties.usesBlockLight` was not read. `template_banner` sets `gui_light` = `front`.
 5. Banner: whether `getTextureDiffuseColor` is applied as RGB with full alpha; the default attachment type of the banner special model (no item definition sets it); whether the `bannerPattern` render type is cutout or translucent; the ordering `order(n)` used between layers (the base layers draw first, patterns after) was only read as call sequence.
 6. `ChestBlock` and `CopperChestBlock` weathering: the copper material is read from `CopperChestBlock.getState()`; that the four waxed blocks are instances of the same class (so that waxing leaves the texture unchanged) is inferred from the item definitions and from 31-1 (not read in this round).
-7. `BlockEntityRenderer.shouldRender` (the draw distance of block entities) and frustum culling for these renderers were not read.
+7. `BlockEntityRenderer.shouldRender` (the draw distance of block entities) and frustum culling for the chest, shulker box and banner renderers were not read. For the End portal and gateway renderers the draw distance is read (64 and 256 blocks, 8.3 point 3); the frustum and bounding-box part is open for all renderers (Open question 24).
 8. The item definitions `waxed_exposed_copper_chest` and `waxed_weathered_copper_chest` were not opened; inferred from the pattern of the other six.
 9. `BedRenderState` exists in the artifact; no registered renderer constructs it (the registration table lists none). It may be a leftover. A bed block entity type is absent from `BlockEntityTypes`, so any bed NBT seen in saves (document 31 or 45) has no client counterpart.
 10. `Direction.getRotation` uses `rotationXYZ`; its order (Rx·Ry·Rz) is inferred from the property that the image of +Y matches each direction.
 11. The rotation sense of the shulker lid in world space (4.4) is inferred from the S(1, −1, −1) flip; the sense of the flag tilt (6.5) is the sense of a model-space X rotation under the flip of 6.2.
 12. The bed's `part` and `facing` partner geometry (head cell at foot cell + facing) is inferred from the model and item composites; the placement rules are in the block documents.
 13. Whether the chest atlas stitches the textures with a different internal size than the file size (all files are 64 x 64) is not read; the model divides by the layer's 64 x 64.
+
+Questions 14 to 33 belong to section 8 (End portal and End gateway).
+
+14. **Front-face convention.** The faces are counter-clockwise from outside (read) and culling is on (read). The Vulkan backend sets front face clockwise with back-face culling (read); the OpenGL backend was searched for a front-face call and none was found, so the default (counter-clockwise) is assumed. The consequence for the gateway glow (only its far inner walls show from outside) rests on this (8.9, the winding paragraph).
+15. **Orientation of the screen coordinate.** Which image row is v = 0 (row 0 of the PNG first, as `NativeImage` uploads) and the sign of ndc.y in the Vulkan clip space were not traced. The effect is a vertical flip of a noise pattern, not observable; the worked example of 8.7.6 assumes row 0 = v 0.
+16. **32-bit precision.** The shader works in 32-bit floats with angles up to 2.2 million degrees (L = 16) converted to radians before `cos` and `sin`; the 32-bit angle error is about 0.004 radian, shifting the layer coordinate by up to about 2 texels of the 256 texture in the largest layers. The documented example uses exact angle reduction; an emulation of 32-bit arithmetic gave (2, 7, 15) instead of (3, 8, 16) for that pixel (one texel in layer 13 moved). A client may reduce the angle exactly (the result is the mathematically intended one) or reproduce the 32-bit loss; neither is observable.
+17. (Closed.) The `lightLevel` lambdas of both blocks were read: each returns the constant 15 for every state (8.2); this agrees with 24 part 4 §6.19 (variant list V8) and 24 part 6 §6.9.
+18. **Texture loading.** The class that loads `end_sky.png` and `end_portal.png` for an identifier that is not pre-registered (inferred `SimpleTexture`), whether palette PNGs are expanded to RGBA with no colour conversion (`NativeImage` was not opened), and whether the sampler returns raw values (the format is RGBA8 unorm; no sRGB format was seen) were not traced.
+19. **`ColorModulator`.** The default of the `DynamicTransforms` uniform used by the beam shader is assumed (1, 1, 1, 1); not read.
+20. **All-invisible sections and snapshot timing.** Whether a section whose blocks are all invisible (a portal-only section, in the End mostly air) still yields a visible `SectionMesh` that carries its block entities (the extraction needs mesh visibility >= 0.3; the same gap as 50 Open question 3), and the exact moment within a rebuild at which `RenderRegionCache` constructs the `SectionCopy` snapshot, were not traced. (That the mesher's block-entity lookup is a non-creating map get on an immutable snapshot was read, 8.3 point 2.)
+21. **Improved transparency.** The OIT pipeline sets (`OIT_BEACON_BEAM`) that replace the translucent glow pipeline when the improved-transparency option is on were not read.
+22. **Outline pass.** The portal render types have `AFFECTS_OUTLINE`; the effect on the spectator and glowing outline passes was not read.
+23. (Closed.) Both `canBeReplaced` bodies were read: each returns false (8.2).
+24. **Bounding box.** No call of `getRenderBoundingBox` was found in `LevelExtractor`, `BlockEntityRenderDispatcher` or `LevelRenderer`; the visibility of a block entity rests on its section's visibility and on `shouldRender` (distance). Other callers were not searched.
+25. **`Level.getMaxY` in the End.** The body was not read; 255 is the value implied by `min_y` 0 and `height` 256 (38).
+26. **Built-in block models of the End blocks.** `BuiltInBlockModels` gives `end_portal` and `end_gateway` a special block model drawing all six faces; which game paths draw block states through it (falling blocks, displays, pistons, items) was not traced.
+27. **`GameTime` on screens.** That the uniform is 0 whenever the level is not rendered (loading screens) follows from the `GameRenderer` code read; whether the loading screen can be shown while the level is rendered behind it was not traced.
+28. (Closed.) The gateway calls `Mth.sin(double)` returning float; 10 §16.3 and its call-site table list this overload as the 65536-entry table lookup.
+29. (Closed.) The portal's occlusion shape is empty because `noCollision()` clears `canOcclude` (8.2), so its face shapes toward the gateway are empty in every direction and the gateway's face toward a portal is drawn (8.5). The earlier assumption about `Shapes.getFaceShape` is no longer needed.
+30. **Unloaded neighbours.** The gateway face test reads the neighbour's block state; the value for a cell in an unloaded chunk (assumed air) was not read.
+31. **Distance comparison.** The body of `Vec3.closerThan` (strict less-than assumed) was not read.
+32. **Model-view matrix contents.** That `Position` reaches the vertex shader in camera-relative world coordinates (so the fog distances are from the camera) follows from the CPU pose of 8.3 point 5; the `ModelViewMat` uniform (assumed to hold only the camera rotation) was not read.
+33. **Outline colour argument.** `submitSpecial`'s integer argument (a non-zero value adds an outline submit with that colour) is passed by `EndCubeSpecialRenderer.submit` from its last parameter; which caller supplies a non-zero value (for example an item or block-display outline) was not traced.
