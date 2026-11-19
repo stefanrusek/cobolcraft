@@ -229,6 +229,7 @@
              MOVE "death.attack.player" TO WS-KEY
              MOVE 2 TO WS-ARGS
          WHEN CAUSE-MOB
+         WHEN CAUSE-WIND-CHARGE
              MOVE "death.attack.mob" TO WS-KEY
              MOVE 2 TO WS-ARGS
          WHEN CAUSE-FALL
@@ -305,7 +306,7 @@
      MOVE PL-NAME-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(1)
      IF WS-ARGS > 1
          IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB OR L-CAUSE = CAUSE-ARROW OR L-CAUSE = CAUSE-INDIRECT-MAGIC
-                 OR L-CAUSE = CAUSE-SONIC-BOOM
+                 OR L-CAUSE = CAUSE-SONIC-BOOM OR L-CAUSE = CAUSE-WIND-CHARGE
                  OR (L-CAUSE = CAUSE-EXPLOSION AND PL-KILLER-LENGTH(L-ROW) > 0)
              MOVE PL-KILLER-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
              MOVE PL-KILLER-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
@@ -585,6 +586,8 @@
              MOVE "minecraft:indirect_magic" TO WS-WANTED
          WHEN CAUSE-SONIC-BOOM
              MOVE "minecraft:sonic_boom" TO WS-WANTED
+         WHEN CAUSE-WIND-CHARGE
+             MOVE "minecraft:wind_charge" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE

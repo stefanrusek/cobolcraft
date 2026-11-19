@@ -8,6 +8,7 @@
 *>     the five angles 40, 55, 60, 75, 80 shuffled (for i from 5 down to 2 swap the element i - 1 with the one at the draw) and the first that gives a vector.
 *>   BREEZE-POINT-BEHIND USING tx, ty, tz (the target's feet), head yaw (FLOAT-LONG degrees), gaussian, unit (FLOAT-LONG, nextGaussian then nextFloat), px, py, pz out:
 *>     randomPointBehindTarget: yaw = head yaw + 180 + gaussian x 45, distance 4 + 4 x unit along Vec3.directionFromRotation(0, yaw).
+*>   WIND-BURST USING dim, x, y, z (FLOAT-LONG), source entity id: the explosion of a breeze wind charge (16.3): radius 3, push only.
 *>   BREEZE-POINT-MIDDLE USING bx, by, bz (the breeze), tx, ty, tz (the target), unit (FLOAT-LONG nextDouble), px, py, pz out: the point on the line to the target (8 - 4 x unit) blocks short of it.
 
  IDENTIFICATION DIVISION.
@@ -239,3 +240,125 @@
      END-IF
      GOBACK.
  END PROGRAM BREEZE-POINT-MIDDLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WIND-BURST.
+*> USING dim, x, y, z (FLOAT-LONG, the burst centre), source entity id (the charge; 0 none): the explosion of a breeze wind charge (16.3): radius 3.0, TRIGGER, no damage to entities, no block destroyed,
+*> knockback multiplier 1.0. Every player (not a spectator, not a creative flying one) and standard mob within 2R = 6 blocks of the centre (feet distance) is pushed by (1 - distance / 6) x seen along
+*> the direction from the centre to its eyes (a mob's through EN-VX, EN-VY, EN-VZ like EXPLODE-RUN, a player's in the Explode packet to the players within 64 blocks).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-REACH               FLOAT-LONG VALUE 6.
+ 01 WS-POWER               FLOAT-LONG VALUE 3.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-WIDTH               FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-SEEN                FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-MINX                FLOAT-LONG.
+ 01 WS-MINY                FLOAT-LONG.
+ 01 WS-MINZ                FLOAT-LONG.
+ 01 WS-MAXX                FLOAT-LONG.
+ 01 WS-MAXY                FLOAT-LONG.
+ 01 WS-MAXZ                FLOAT-LONG.
+ 01 WS-BLOCKS              BINARY-LONG VALUE 0.
+ 01 WS-KNOCK.
+    05 WS-KN OCCURS 64 TIMES.
+       10 WS-KN-SET        BINARY-LONG.
+       10 WS-KN-X          FLOAT-LONG.
+       10 WS-KN-Y          FLOAT-LONG.
+       10 WS-KN-Z          FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-SOURCE.
+     INITIALIZE WS-KNOCK
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = L-DIM
+                 AND PL-MODE(WS-P) < 3 AND NOT (PL-MODE(WS-P) = 1 AND PL-FLYING(WS-P) = 1)
+             COMPUTE WS-DX = PL-X(WS-P) - L-X
+             COMPUTE WS-DY = PL-Y(WS-P) - L-Y
+             COMPUTE WS-DZ = PL-Z(WS-P) - L-Z
+             COMPUTE WS-DIST = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ) / WS-REACH
+             IF WS-DIST < 1
+                 COMPUTE WS-MINX = PL-X(WS-P) - 0.3
+                 COMPUTE WS-MAXX = PL-X(WS-P) + 0.3
+                 MOVE PL-Y(WS-P) TO WS-MINY
+                 COMPUTE WS-MAXY = PL-Y(WS-P) + 1.8
+                 COMPUTE WS-MINZ = PL-Z(WS-P) - 0.3
+                 COMPUTE WS-MAXZ = PL-Z(WS-P) + 0.3
+                 CALL "EXPLODE-SEEN" USING L-DIM L-X L-Y L-Z WS-MINX WS-MINY WS-MINZ WS-MAXX WS-MAXY WS-MAXZ WS-SEEN
+                 COMPUTE WS-S = (1 - WS-DIST) * WS-SEEN
+                 COMPUTE WS-DY = PL-Y(WS-P) + 1.62 - L-Y
+                 COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+                 IF WS-LEN > 0
+                     MOVE 1 TO WS-KN-SET(WS-P)
+                     COMPUTE WS-KN-X(WS-P) = WS-DX / WS-LEN * WS-S
+                     COMPUTE WS-KN-Y(WS-P) = WS-DY / WS-LEN * WS-S
+                     COMPUTE WS-KN-Z(WS-P) = WS-DZ / WS-LEN * WS-S
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = L-DIM AND EN-HEALTH(WS-E) > 0 AND EN-ID(WS-E) NOT = L-SOURCE
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-M
+             IF WS-M > 0
+                 COMPUTE WS-DX = EN-X(WS-E) - L-X
+                 COMPUTE WS-DY = EN-Y(WS-E) - L-Y
+                 COMPUTE WS-DZ = EN-Z(WS-E) - L-Z
+                 COMPUTE WS-DIST = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ) / WS-REACH
+                 IF WS-DIST < 1
+                     COMPUTE WS-WIDTH = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 1000
+                     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
+                     COMPUTE WS-MINX = EN-X(WS-E) - WS-WIDTH / 2
+                     COMPUTE WS-MAXX = EN-X(WS-E) + WS-WIDTH / 2
+                     MOVE EN-Y(WS-E) TO WS-MINY
+                     COMPUTE WS-MAXY = EN-Y(WS-E) + WS-HEIGHT
+                     COMPUTE WS-MINZ = EN-Z(WS-E) - WS-WIDTH / 2
+                     COMPUTE WS-MAXZ = EN-Z(WS-E) + WS-WIDTH / 2
+                     CALL "EXPLODE-SEEN" USING L-DIM L-X L-Y L-Z WS-MINX WS-MINY WS-MINZ WS-MAXX WS-MAXY WS-MAXZ WS-SEEN
+                     COMPUTE WS-S = (1 - WS-DIST) * WS-SEEN
+                     COMPUTE WS-DY = EN-Y(WS-E) + WS-HEIGHT * 0.85 - L-Y
+                     COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+                     IF WS-LEN > 0
+                         COMPUTE EN-VX(WS-E) = EN-VX(WS-E) + WS-DX / WS-LEN * WS-S
+                         COMPUTE EN-VY(WS-E) = EN-VY(WS-E) + WS-DY / WS-LEN * WS-S
+                         COMPUTE EN-VZ(WS-E) = EN-VZ(WS-E) + WS-DZ / WS-LEN * WS-S
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+*>   The Explode packet (no block, the knockback of the player) to every player within 64 blocks.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-DIM(WS-P) = L-DIM
+             COMPUTE WS-DX = PL-X(WS-P) - L-X
+             COMPUTE WS-DY = PL-Y(WS-P) - L-Y
+             COMPUTE WS-DZ = PL-Z(WS-P) - L-Z
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < 4096
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "EXPLODE-BUILD" USING L-X L-Y L-Z WS-POWER WS-BLOCKS WS-KN-SET(WS-P) WS-KN-X(WS-P) WS-KN-Y(WS-P)
+                     WS-KN-Z(WS-P) PB-BUFFER
+                 CALL "CORE-SEND" USING PL-CONN(WS-P) PB-BUFFER
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM WIND-BURST.
