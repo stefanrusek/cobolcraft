@@ -346,6 +346,7 @@
      PERFORM GIVE-ITEMS
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT-AREA
      PERFORM USE-ITEM-ON
+     CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT-AREA
      MOVE "sea_pickle" TO WS-WANT
      MOVE "pickles" TO WS-PROP
      MOVE "2" TO WS-WANT-N
@@ -400,7 +401,7 @@
      MOVE "lit" TO WS-PROP2
      MOVE "true" TO WS-TEXT
      CALL "BLOCK-STATE-PROP" USING WS-MODE-SET WS-STATE WS-PROP2 WS-TEXT WS-NEW
-     COMPUTE WS-CX = WS-BX + 5
+     COMPUTE WS-CX = WS-BX + 12
      COMPUTE WS-CZ = WS-BZ + 16
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-NEW
      MOVE WS-CX TO WS-UX
@@ -461,7 +462,52 @@
      MOVE "1" TO WS-WANT2
      MOVE "hatch" TO WS-PROP2
      MOVE "acceptance stack place: the hatch stage is kept" TO WS-CASE
-     PERFORM CHECK-PROP2.
+     PERFORM CHECK-PROP2
+*>   A player standing in the cell blocks the taller state (29 section 9.6): nothing changes, no item is used up; once the player has left, the use stacks.
+     MOVE "candle" TO WS-KEY
+     PERFORM FIND-STATE
+     COMPUTE WS-CX = WS-BX + 14
+     COMPUTE WS-CZ = WS-BZ + 12
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-FOUND-STATE
+     MOVE WS-CX TO WS-UX
+     MOVE WS-CZ TO WS-UZ
+     MOVE WS-CY TO WS-UY
+     MOVE "candle" TO WS-HAND-ITEM
+     MOVE "candle" TO WS-WANT
+     MOVE "candles" TO WS-PROP
+     PERFORM GIVE-ITEMS
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     MOVE WS-CY TO PL-Y(WS-PLAYER)
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE 4 TO WS-FACE
+     PERFORM USE-ITEM-ON
+     MOVE "1" TO WS-WANT-N
+     MOVE "acceptance stack place: a candle is not stacked while the player stands in its cell (still 1)" TO WS-CASE
+     PERFORM CHECK-COUNT
+     COMPUTE WS-EXPECT = 30
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     MOVE "acceptance stack place: the refused use kept the item" TO WS-CASE
+     PERFORM CHECK-N
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 13.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 3
+     COMPUTE PL-Z(WS-PLAYER) = WS-BZ + 15.5
+     PERFORM USE-ITEM-ON
+     MOVE "2" TO WS-WANT-N
+     MOVE "acceptance stack place: with the player gone the use makes 2 candles" TO WS-CASE
+     PERFORM CHECK-COUNT
+*>   A block without a count is placed as before (dirt on the grass).
+     MOVE "dirt" TO WS-HAND-ITEM
+     COMPUTE WS-UX = WS-BX + 14
+     COMPUTE WS-UZ = WS-BZ + 3
+     MOVE WS-FLOOR TO WS-UY
+     MOVE 1 TO WS-FACE
+     PERFORM GIVE-ITEMS
+     PERFORM USE-ITEM-ON
+     MOVE WS-UX TO WS-CX
+     MOVE WS-UZ TO WS-CZ
+     MOVE "dirt" TO WS-WANT
+     MOVE "acceptance stack place: a block without a count is placed as before" TO WS-CASE
+     PERFORM CHECK-KEY.
 
  FIND-STATE.
      MOVE 0 TO WS-FOUND-STATE

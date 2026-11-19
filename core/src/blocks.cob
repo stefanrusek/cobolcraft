@@ -383,6 +383,7 @@
  01 WS-WL-TEXT             PIC X(32).
  01 WS-WL-MODE             BINARY-LONG VALUE 2.
  01 WS-STACKED             BINARY-LONG.
+ 01 WS-COUNTED             BINARY-LONG.
  01 WS-MERGES              BINARY-LONG.
  01 WS-EVENT-PLACE         PIC X(32) VALUE "block_place".
  LINKAGE SECTION.
@@ -397,6 +398,14 @@
      CALL "SEG-STACK" USING L-ID PLAY-SERVERBOUND L-PLACED-STATE WS-STACKED
      IF WS-STACKED = 1
          MOVE 1 TO L-PLACED
+         GOBACK
+     END-IF
+*>   A sea pickle, turtle egg, candle or snow layer used on its own kind gains one (place-stack.cob; 1 placed, 2 refused with the player told).
+     CALL "STACK-PLACE" USING L-ID PLAY-SERVERBOUND L-PLACED-STATE WS-COUNTED
+     IF WS-COUNTED > 0
+         IF WS-COUNTED = 1
+             MOVE 1 TO L-PLACED
+         END-IF
          GOBACK
      END-IF
      MOVE L-PLACED-STATE TO WS-STATE
