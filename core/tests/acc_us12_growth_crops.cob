@@ -12,6 +12,7 @@
  COPY CBLOCKS.
  COPY CITEMS.
  COPY WSIM3.
+ COPY SUPSTATE.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-CONN                BINARY-LONG.
@@ -130,6 +131,13 @@
      ADD 1 TO IT-COUNT
      CALL "GB-RULES-OPEN"
      CALL "GB-RULES-OPEN"
+*>   The fixture farmland holds the support bit of the tag supports_crops (the test world has no tag data), as the shipped farmland does: a wheat plant stands on it (lane bugcrop, support-29.cob rule 22).
+     CALL "SUP-OPEN"
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > CB-BLOCK-COUNT
+         IF CB-FIRST-STATE(WS-K) = WS-FARM
+             ADD 8192 TO SP-SUP(WS-K)
+         END-IF
+     END-PERFORM
 
 *>   The raw brightness lookup.
      MOVE "acceptance US12 32 1.2 given a block light source in open air when the raw brightness is read then the sky is 15, the source's cell has its light and its neighbour one less, and a cell inside the ground has 0" TO TL-CASE
