@@ -49,7 +49,7 @@ for f in (80, 30, 9, 5, 4, 1, 0):
     if f < 10: ops.append((2, 1 + swell(f), 1 + swell(f), 1 + swell(f)))
     ops += [(3, -90, 0, 0), (1, -0.5, -0.5, 0.5), (3, 90, 0, 0)]
     pts = visible_cube(ops, pos, EYE)
-    t.extent('34-9§13.2 tnt fuse %s' % f, ext(pts), len(pts) // 4 * 6, 'RL-GI-COUNT')
+    t.extent('34-9§13.2 tnt fuse %s' % f, ext(pts), len(pts) // 4 * 6, 'RL-GI-COUNT', 1)
 # the fuse falls by 1 a tick
 t.spawn('tnt', 0, 0, 51)
 t.raw('MOVE 80 TO EN-VALUE(1)', 'CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE', 'CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE')
@@ -58,5 +58,5 @@ t.check('34-9§13.2 the fuse falls by 1 a tick', 78, 'EN-VALUE(1)')
 t.spawn('falling_block', 0, 0, 52)
 t.raw('MOVE 1 TO EN-BSTATE(1)', 'CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE', 'MOVE RL-GI-COUNT TO WS-LAST', 'CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE')
 pts = visible_cube([(1, -0.5, 0, -0.5)], pos, EYE)
-t.extent('34-9§13.1 falling stone', ext(pts), len(pts) // 4 * 6, 'RL-GI-COUNT')
+t.extent('34-9§13.1 falling stone', ext(pts), len(pts) // 4 * 6, 'RL-GI-COUNT', 1)
 t.save('test_entity_blocks_9')

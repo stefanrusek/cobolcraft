@@ -315,3 +315,78 @@
      CALL "ENTITY-CUBE-EMIT" USING CLIENT-STATE WS-ITEM WS-O WS-LIGHT WS-FLASH WS-POS L-EYE-TABLE
      GOBACK.
  END PROGRAM ENTITY-FALLING-EMIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-CART-EMIT.
+*> USING CLIENT-STATE, replica row of a minecart, eye: the block a minecart carries (34-9 3.2 step 5, EF9-MINECART-DISPLAY: furnace, spawner, command block, tnt; the chest and the hopper have no cube model
+*> and draw nothing yet) as its cube in the ground item mesh: the cart's pose operations up to the translate (and the hurt tilt), then the contents' scale 0.75, translate (-0.5, (displayOffset - 8) / 16, 0.5)
+*> and Y rotation 90. The default display state is used (a custom display block, entry 11, is not kept).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CONTENT.
+ 01 WS-I.
+    05 WS-IV               FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-C.
+    05 WS-CV               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-OPS.
+    05 WS-OP               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-KEY24               PIC X(24).
+ 01 WS-BLOCK-NAME          PIC X(24).
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-FLASH               FLOAT-LONG VALUE 0.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-POS.
+    05 WS-PV               FLOAT-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
+     MOVE EN-KEY(L-ROW) TO WS-KEY24
+     CALL "EF9-MINECART-DISPLAY" USING WS-KEY24 WS-BLOCK-NAME WS-OFFSET
+     IF WS-BLOCK-NAME = SPACES OR "chest" OR "hopper"
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-KEY
+     MOVE WS-BLOCK-NAME TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ROW-AREA WS-STATUS
+     IF WS-STATUS NOT = CT-OK
+         GOBACK
+     END-IF
+     CALL "ENTITY-MINECART-SEQUENCE" USING CLIENT-STATE L-ROW WS-OPS
+*>   The last listed operation is the model's scale (-1, -1, 1): the contents come before it.
+     COMPUTE WS-N = WS-OP(1) - 1
+     MOVE WS-OFFSET TO WS-IV(1)
+     CALL "EF9-MINECART-CONTENTS" USING WS-I WS-C
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 3
+         MOVE WS-CV(WS-J * 4 - 2) TO WS-OP((WS-N + WS-J) * 4 - 2)
+         MOVE WS-CV(WS-J * 4 - 1) TO WS-OP((WS-N + WS-J) * 4 - 1)
+         MOVE WS-CV(WS-J * 4) TO WS-OP((WS-N + WS-J) * 4)
+         MOVE WS-CV(WS-J * 4 + 1) TO WS-OP((WS-N + WS-J) * 4 + 1)
+     END-PERFORM
+     COMPUTE WS-OP(1) = WS-N + 3
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
+     COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15, 0.1)
+     MOVE EN-X(L-ROW) TO WS-PV(1)
+     MOVE EN-Y(L-ROW) TO WS-PV(2)
+     MOVE EN-Z(L-ROW) TO WS-PV(3)
+     CALL "ENTITY-CUBE-EMIT" USING CLIENT-STATE WS-ITEM WS-OPS WS-LIGHT WS-FLASH WS-POS L-EYE-TABLE
+     GOBACK.
+ END PROGRAM ENTITY-CART-EMIT.

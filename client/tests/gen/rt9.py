@@ -99,10 +99,14 @@ class RT:
         self.raw('MOVE %d TO EN-STACK-ITEM(1)' % item)
         if count is not None: self.raw('MOVE %d TO EN-STACK-COUNT(1)' % count)
         self.raw('CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE', 'MOVE RL-GI-COUNT TO WS-LAST', 'CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE')
-    def extent(self, name, ext, n=None, count='RL-EN-COUNT'):
+    def check_tol(self, name, exp, obs, tol):
+        self.raw('MOVE "%s (within %d)" TO TL-CASE' % (name.replace('"', "'"), tol), 'MOVE 1 TO TL-EXPECTED-N', 'MOVE 0 TO TL-OBSERVED-N',
+                 'IF FUNCTION ABS(%s - (%s)) <= %d' % (obs, exp, tol), '    MOVE 1 TO TL-OBSERVED-N', 'END-IF', 'CALL "TEST-ASSERT" USING TESTLIB-ASSERT')
+    def extent(self, name, ext, n=None, count='RL-EN-COUNT', tol=0):
         if n is not None: self.check(name + ' vertices', n, count)
         for k, lab in enumerate(('min x', 'max x', 'min y', 'max y', 'min z', 'max z')):
-            self.check('%s %s (thousandths)' % (name, lab), ext[k], 'WS-R(%d)' % (k + 1))
+            if tol: self.check_tol('%s %s (thousandths)' % (name, lab), ext[k], 'WS-R(%d)' % (k + 1), tol)
+            else: self.check('%s %s (thousandths)' % (name, lab), ext[k], 'WS-R(%d)' % (k + 1))
     def render(self):
         o = ['*> ' + h for h in self.header]
         o += [' IDENTIFICATION DIVISION.', ' PROGRAM-ID. %s.' % self.pid, ' DATA DIVISION.', HEAD_RT.rstrip('\n') + self.extra, ' PROCEDURE DIVISION.'] + self.body + ['     STOP RUN.', ' END PROGRAM %s.' % self.pid, ' COPY ENT9TEST.', ' COPY CLTEST.', '']

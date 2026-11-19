@@ -747,6 +747,8 @@
                      CALL "ENTITY-THROWN-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN "ominous_item_spawner"
                      CALL "ENTITY-SPAWNER-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "furnace_minecart" WHEN "spawner_minecart" WHEN "command_block_minecart" WHEN "tnt_minecart"
+                     CALL "ENTITY-CART-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN "tnt"
                      CALL "ENTITY-TNT-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN "falling_block"
