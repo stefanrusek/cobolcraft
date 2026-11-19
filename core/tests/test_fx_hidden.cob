@@ -317,6 +317,27 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "EFFECT-REMOVE" USING WS-PLAYER WS-SPEED
 
+*>   A third instance pushes the chain down: (0, 100), then (1, 50), then (2, 20) leaves two hidden instances; a takeover of the row by another player drops the effects on the next tick.
+     MOVE 0 TO WS-AMP
+     MOVE 100 TO WS-DUR
+     CALL "EFFECT-ADD" USING WS-PLAYER WS-SPEED WS-AMP WS-DUR WS-FLAGS
+     MOVE 1 TO WS-AMP
+     MOVE 50 TO WS-DUR
+     CALL "EFFECT-ADD" USING WS-PLAYER WS-SPEED WS-AMP WS-DUR WS-FLAGS
+     MOVE 2 TO WS-AMP
+     MOVE 20 TO WS-DUR
+     CALL "EFFECT-ADD" USING WS-PLAYER WS-SPEED WS-AMP WS-DUR WS-FLAGS
+     MOVE "acceptance US15 44-x1§8.2 a third instance leaves two hidden instances" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE EF-HCOUNT(WS-PLAYER, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE EF-OWNER(WS-PLAYER, 1) = EF-OWNER(WS-PLAYER, 1) + 1
+     CALL "EFFECTS-TICK"
+     MOVE "acceptance US15 44-x1§11.2 a row taken over by another player loses the old effects" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EF-ON(WS-PLAYER, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   The mob store: the same example through MEF-ADD and MEF-TICK on a mob of that entity id.
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
      MOVE PL-X(WS-PLAYER) TO WS-X
@@ -343,6 +364,30 @@
      MOVE "acceptance US15 44-x1§11.2 the mob: 1000 ticks left (200 ticks of the tick-down since the add)" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      MOVE WS-TICKS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-AMP
+     MOVE 5000 TO WS-DUR
+     CALL "MEF-ADD" USING WS-ENT WS-SPEED WS-AMP WS-DUR WS-FLAGS
+     MOVE 1 TO WS-AMP
+     MOVE 300 TO WS-DUR
+     CALL "MEF-ADD" USING WS-ENT WS-SPEED WS-AMP WS-DUR WS-FLAGS
+     MOVE 2 TO WS-AMP
+     MOVE 100 TO WS-DUR
+     CALL "MEF-ADD" USING WS-ENT WS-SPEED WS-AMP WS-DUR WS-FLAGS
+     MOVE 0 TO WS-SLOT
+     MOVE 0 TO WS-I
+     CALL "MEF-FIND" USING WS-ENT WS-SPEED WS-I WS-SLOT
+     MOVE "acceptance US15 44-x1§8.2 the mob: a third instance leaves two hidden instances" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE ME-HCOUNT(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM 100 TIMES
+         CALL "MEF-TICK" USING WS-ROW
+     END-PERFORM
+     CALL "MEF-LEVEL" USING WS-ENT WS-SPEED WS-LEVEL WS-TICKS
+     MOVE "acceptance US15 44-x1§11.2 the mob: after 100 ticks amplifier 1 takes over (level 2)" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-LEVEL TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-FX-HIDDEN.

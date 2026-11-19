@@ -286,6 +286,15 @@
      COMPUTE WS-EXP = FUNCTION INTEGER(WS-GY) + 5
      COMPUTE WS-OBS = FUNCTION INTEGER(WS-PY)
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   A column whose topmost block is water counts as a column with a height (a fluid blocks motion for the heightmap).
+     COMPUTE WS-FY = FUNCTION INTEGER(WS-GY) - 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-WATER
+     COMPUTE WS-PY = WS-GY + 5
+     CALL "GHAST-CLAMP" USING WS-ROW WS-PX WS-PY WS-PZ
+     MOVE "acceptance US15 44-6 9.1: a column topped by water is clamped like one topped by stone" TO WS-CASE
+     COMPUTE WS-EXP = FUNCTION INTEGER(WS-GY) - 5
+     COMPUTE WS-OBS = FUNCTION INTEGER(WS-PY)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
      CALL "ENTITY-REMOVE" USING WS-ROW
      STOP RUN.
  SPAWN-GHAST.

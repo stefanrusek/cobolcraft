@@ -62,12 +62,12 @@
      MOVE PL-Z(WS-ROW) TO WS-Z
      CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PROW
      MOVE "T" TO TL-MODE
-*>   A stick lies there: not loved, stays.
+*>   A stick lies there: not loved, so no admiring; an empty hand takes anything (44-6 section 3.2 step 6, lane p49s): the stick goes into the main hand.
      CALL "GI-SPAWN-RANDOM" USING PL-DIM(WS-ROW) WS-X WS-Y WS-Z WS-STICK WS-ONE WS-ZERO WS-ZERO2 WS-DROP
      CALL "PIGLIN-TICK" USING WS-PROW
      PERFORM COUNT-ITEMS
-     MOVE "acceptance US15 44§3.2 an item that is not loved is left alone" TO TL-CASE
-     MOVE "1 0" TO TL-EXPECTED
+     MOVE "acceptance US15 44§3.2 an item that is not loved is not admired; an empty hand takes it (step 6)" TO TL-CASE
+     MOVE "0 0" TO TL-EXPECTED
      MOVE WS-N TO WS-E1
      MOVE EN-ADMIRE(WS-PROW) TO WS-E2
      PERFORM CHECK-2

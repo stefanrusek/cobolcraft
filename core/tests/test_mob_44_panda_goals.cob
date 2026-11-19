@@ -47,6 +47,12 @@
  01 WS-SPEED               FLOAT-LONG.
  01 WS-STEP-ROW            BINARY-LONG.
  01 WS-SPEED-X             FLOAT-LONG.
+ 01 WS-SPEED-Y             FLOAT-LONG VALUE 0.
+ 01 WS-GAY                 FLOAT-LONG VALUE 0.5.
+ 01 WS-SPEED-Z             FLOAT-LONG VALUE 0.
+ 01 WS-BASE                BINARY-LONG VALUE 2000.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -341,6 +347,82 @@
      MOVE EN-USED(WS-DROP) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-ROW
+*>   An entity that is no table mob is left alone.
+     MOVE 0 TO WS-SPEED-X
+     CALL "ARROW-SPAWN" USING WS-DIM WS-GX WS-GAY WS-GZ WS-SPEED-X WS-SPEED-Y WS-SPEED-Z WS-BASE WS-ZERO WS-STEP-ROW
+     MOVE 5 TO WS-WALK
+     CALL "PANDA-GOALS" USING WS-STEP-ROW WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44-4§7 an arrow is no table mob: the goals do nothing (walk 0)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-WALK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-STEP-ROW
+*>   The facing decides which cell the roll test looks at: a baby and a playful adult in the middle of the floor facing every way (no assertion on the draws).
+     PERFORM SPAWN-PANDA
+     MOVE -24000 TO EN-MOBAGE(WS-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         EVALUATE FUNCTION MOD(WS-I, 3)
+             WHEN 0 MOVE 90 TO EN-YAW(WS-ROW)
+             WHEN 1 MOVE 180 TO EN-YAW(WS-ROW)
+             WHEN 2 MOVE 270 TO EN-YAW(WS-ROW)
+         END-EVALUATE
+         ADD 1 TO CW-TIME CW-TICKS
+         MOVE 0 TO EN-PANDA-FLAGS(WS-ROW)
+         MOVE 1 TO EN-ON-GROUND(WS-ROW)
+         CALL "PANDA-GOALS" USING WS-ROW WS-HX WS-HZ WS-WALK
+     END-PERFORM
+     MOVE 0 TO EN-MOBAGE(WS-ROW)
+     MOVE 3 TO EN-GENE-MAIN(WS-ROW) EN-GENE-HIDDEN(WS-ROW)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         ADD 1 TO CW-TIME CW-TICKS
+         MOVE 0 TO EN-PANDA-FLAGS(WS-ROW)
+         MOVE 1 TO EN-ON-GROUND(WS-ROW)
+         CALL "PANDA-GOALS" USING WS-ROW WS-HX WS-HZ WS-WALK
+     END-PERFORM
+     CALL "ENTITY-REMOVE" USING WS-ROW
+*>   A running sit goal with an item in the mouth and the panda not yet sitting sits down.
+     PERFORM SPAWN-PANDA
+     MOVE 1 TO EN-PANDA-SIT-GOAL(WS-ROW)
+     COMPUTE EN-PANDA-HAND(WS-ROW) = WS-BAMBOO + 1
+     CALL "PANDA-GOALS" USING WS-ROW WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44-4§7.3 a running goal with an item in the mouth sits the panda down" TO TL-CASE
+     MOVE 8 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION MOD(EN-PANDA-FLAGS(WS-ROW), 16)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   In water the goal ends at once.
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW))
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-WATER
+     CALL "PANDA-GOALS" USING WS-ROW WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44-4§7.3 in water the sit goal ends at once" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-PANDA-SIT-GOAL(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-AIR
+     CALL "ENTITY-REMOVE" USING WS-ROW
+*>   Non-lazy pandas end the goal by the 1 in 300 or the 1 in 1000 draw and wait 20 x (10 to 159) ticks (200 to 3180) afterwards.
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 6
+         PERFORM SPAWN-PANDA
+         MOVE 1 TO EN-PANDA-SIT-GOAL(WS-ROW)
+         COMPUTE EN-PANDA-HAND(WS-ROW) = WS-BAMBOO + 1
+         MOVE 0 TO WS-N
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20000 OR WS-N = 1
+             ADD 1 TO CW-TIME CW-TICKS
+             MOVE 0 TO EN-PANDA-EAT(WS-ROW)
+             CALL "PANDA-GOALS" USING WS-ROW WS-HX WS-HZ WS-WALK
+             IF EN-PANDA-SIT-GOAL(WS-ROW) = 0
+                 MOVE 1 TO WS-N
+             END-IF
+         END-PERFORM
+         ADD WS-N TO WS-K
+         CALL "ENTITY-REMOVE" USING WS-ROW
+     END-PERFORM
+     MOVE "acceptance US15 44-4§7.3 six non-lazy pandas all end the sit goal by the draws" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE WS-K TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Through MOB-STEP the panda with an item in the mouth sits.
      PERFORM SPAWN-PANDA
      COMPUTE EN-PANDA-HAND(WS-ROW) = WS-BAMBOO + 1

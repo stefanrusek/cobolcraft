@@ -1,7 +1,7 @@
 *> The visibility of a player to a mob (docs/protocol/18-mob-framework.md section 4.3 getVisibilityPercent, 44-3 section 4.7, 44-6 section 2.7 detection range; lane 002-lane-p49s, T38540 to T38545).
 *>   MOB-PLAYER-VIS USING mob row, player row, v out (FLOAT-LONG)       1.0, x 0.8 crouching (pose 5), invisible (Invisibility, effect id 13): x max(worn armour slots / 4, 0.1) x 0.7, a head item
 *>                                                                       with the mob_visibility component (skeleton skull for a skeleton, zombie head for a zombie, creeper head for a
-*>                                                                       creeper, piglin head for a piglin or brute) x 0.5; clamped to 0..10
+*>                                                                       creeper, piglin head for a piglin or brute) x 0.5; the clamp of 0 to 10 never acts (every factor is between 0 and 1)
 *>   MOB-SEE-RANGE2 USING follow range, v (FLOAT-LONG), squared range out   max(R x v, 2) squared: the squared distance a TargetingConditions test accepts (a brute: R = 12, a piglin 16)
 
  IDENTIFICATION DIVISION.
@@ -67,12 +67,6 @@
                  COMPUTE L-V = L-V * 0.5
              END-IF
          END-IF
-     END-IF
-     IF L-V > 10
-         MOVE 10 TO L-V
-     END-IF
-     IF L-V < 0
-         MOVE 0 TO L-V
      END-IF
      GOBACK.
  END PROGRAM MOB-PLAYER-VIS.

@@ -42,6 +42,7 @@
  01 WS-HELMET              BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-ROCK                BINARY-LONG.
+ 01 WS-ARMOUR              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -132,6 +133,29 @@
      CALL "GI-SPAWN-RANDOM" USING WS-DIM WS-X0 WS-Y WS-Z0 WS-HELMET WS-ONE WS-ZERO WS-DELAY WS-DROP
      CALL "PIGLIN-PICKUP" USING WS-A
      MOVE "acceptance US15 44-6§3.2 an iron helmet is left on the ground (no armour model)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-DROP) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         EVALUATE WS-I
+             WHEN 1 MOVE "iron_boots" TO WS-KEY
+             WHEN 2 MOVE "iron_leggings" TO WS-KEY
+             WHEN 3 MOVE "iron_chestplate" TO WS-KEY
+         END-EVALUATE
+         CALL "TEST-ITEM-ID" USING WS-KEY WS-ARMOUR
+         CALL "GI-SPAWN-RANDOM" USING WS-DIM WS-X0 WS-Y WS-Z0 WS-ARMOUR WS-ONE WS-ZERO WS-DELAY WS-DROP
+         CALL "PIGLIN-PICKUP" USING WS-A
+         MOVE "acceptance US15 44-6§3.2 boots, leggings and a chestplate are left on the ground too" TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE EN-USED(WS-DROP) TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   A loved item lying near a piglin that is already admiring one is not taken (step 5: no loved item in the off hand).
+     MOVE 50 TO EN-ADMIRE(WS-A)
+     CALL "GI-SPAWN-RANDOM" USING WS-DIM WS-X0 WS-Y WS-Z0 WS-BLOCK WS-ONE WS-ZERO WS-DELAY WS-DROP
+     CALL "PIGLIN-PICKUP" USING WS-A
+     MOVE "acceptance US15 44-6§3.2 step 5 an admiring piglin leaves a loved item where it lies" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE EN-USED(WS-DROP) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

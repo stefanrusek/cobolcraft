@@ -47,6 +47,9 @@
  01 WS-HX                  FLOAT-LONG.
  01 WS-HZ                  FLOAT-LONG.
  01 WS-ACTS                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-RX                  FLOAT-LONG.
  01 WS-RZ                  FLOAT-LONG.
@@ -63,6 +66,13 @@
  01 WS-ARROWS              BINARY-LONG.
  01 WS-START-X             FLOAT-LONG.
  01 WS-FAR                 FLOAT-LONG.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-V3                  FLOAT-LONG VALUE 0.
+ 01 WS-BASE                BINARY-LONG VALUE 2000.
+ 01 WS-OWNER-ID            BINARY-LONG VALUE 0.
+ 01 WS-ZTYPE               BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -80,6 +90,9 @@
      CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
      MOVE "minecraft:piglin" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:water" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-WATER
+     MOVE "minecraft:piglin" TO WS-KEY
      CALL "STDMOB-INDEX" USING WS-TYPE WS-M
      CALL "ARROW-TYPE" USING WS-ARROW-TYPE
      MOVE 2 TO BW-DIFFICULTY
@@ -287,7 +300,7 @@
      MOVE 1 TO WS-EXP
      MOVE PG-USING(WS-SLOT) TO WS-OBS
      PERFORM CHK
-     MOVE "acceptance US15 44-6 2.11: SPEAR_ENGAGE_TIME is delay_ticks + the damage max ticks (289 less this tick)" TO WS-CASE
+     MOVE "acceptance US15 44-6 2.11: SPEAR_ENGAGE_TIME is delay_ticks + damage max ticks (288 left)" TO WS-CASE
      MOVE 288 TO WS-EXP
      MOVE PG-SP-ENGAGE(WS-SLOT) TO WS-OBS
      PERFORM CHK
@@ -530,6 +543,131 @@
          MOVE 1 TO WS-OBS
      END-IF
      PERFORM CHK
+     CALL "ENTITY-REMOVE" USING WS-ROW
+
+*>   PGW-SHOOT at a target exactly at the eye (no direction): no arrow.
+     PERFORM SPAWN-PIGLIN
+     MOVE 13 TO EN-HAND(WS-ROW)
+     PERFORM COUNT-ARROWS
+     MOVE WS-ARROWS TO WS-N
+     MOVE EN-X(WS-ROW) TO PL-X(WS-PLAYER)
+     MOVE EN-Z(WS-ROW) TO PL-Z(WS-PLAYER)
+     COMPUTE PL-Y(WS-PLAYER) = EN-Y(WS-ROW) + 1.09
+     CALL "PGW-SHOOT" USING WS-ROW WS-PLAYER
+     PERFORM COUNT-ARROWS
+     MOVE "acceptance US15 44-6 5.8: a target at the eye gives no direction and no arrow" TO WS-CASE
+     MOVE WS-N TO WS-EXP
+     MOVE WS-ARROWS TO WS-OBS
+     PERFORM CHK
+*>   PGW-HEAD: within a block the navigation is done; on the point the step is zero.
+     COMPUTE WS-RX = EN-X(WS-ROW) + 0.5
+     CALL "PGW-HEAD" USING WS-ROW WS-RX EN-Z(WS-ROW) WS-WALK WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: a point within a block counts as reached" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-ACTS TO WS-OBS
+     PERFORM CHK
+     CALL "PGW-HEAD" USING WS-ROW EN-X(WS-ROW) EN-Z(WS-ROW) WS-WALK WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: on the point itself the step is zero" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS = FUNCTION ABS(WS-HX) + FUNCTION ABS(WS-HZ)
+     PERFORM CHK
+*>   Early outs of PGW-STEP: an entity that is no table mob, a mob that is no piglin, a piglin without a brain slot.
+     MOVE 6 TO WS-FAR
+     PERFORM PLACE-PLAYER
+     MOVE 1 TO WS-ACTS
+     CALL "ARROW-SPAWN" USING WS-DIM WS-GX WS-GY WS-GZ WS-V1 WS-V2 WS-V3 WS-BASE WS-OWNER-ID WS-J
+     CALL "PGW-STEP" USING WS-J WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: an arrow is no table mob: nothing acts" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-ACTS TO WS-OBS
+     PERFORM CHK
+     CALL "ENTITY-REMOVE" USING WS-J
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZTYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING WS-DIM WS-ZTYPE WS-GX WS-GY WS-GZ WS-YAW WS-J
+     MOVE WS-PLAYER TO EN-TARGET(WS-J)
+     MOVE 1 TO WS-ACTS
+     CALL "PGW-STEP" USING WS-J WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: a zombie is no piglin: nothing acts" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-ACTS TO WS-OBS
+     PERFORM CHK
+     CALL "ENTITY-REMOVE" USING WS-J
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PG-MAX
+         MOVE 900000 TO PG-ID(WS-I)
+         ADD WS-I TO PG-ID(WS-I)
+     END-PERFORM
+     MOVE 1 TO WS-ACTS
+     CALL "PGW-STEP" USING WS-ROW WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: with the brain table full a piglin has no slot: nothing acts" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-ACTS TO WS-OBS
+     PERFORM CHK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PG-MAX
+         MOVE 0 TO PG-ID(WS-I)
+     END-PERFORM
+     CALL "ENTITY-REMOVE" USING WS-ROW
+
+*>   The charge position reached ends the walk to it; the fleeing position reached ends the retreat.
+     PERFORM SPAWN-PIGLIN
+     MOVE 12 TO EN-HAND(WS-ROW)
+     CALL "PGB-SLOT" USING EN-ID(WS-ROW) WS-YES WS-SLOT
+     MOVE 6 TO WS-FAR
+     PERFORM PLACE-PLAYER
+     MOVE 2 TO PG-SP-STATUS(WS-SLOT)
+     CALL "PGW-STEP" USING WS-ROW WS-HX WS-HZ WS-ACTS
+     MOVE 1 TO PG-SP-CSET(WS-SLOT)
+     MOVE EN-X(WS-ROW) TO PG-SP-CX(WS-SLOT)
+     MOVE EN-Z(WS-ROW) TO PG-SP-CZ(WS-SLOT)
+     CALL "PGW-STEP" USING WS-ROW WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: SpearAttack erases the charge position once it is reached" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PG-SP-CSET(WS-SLOT) TO WS-OBS
+     PERFORM CHK
+     MOVE 0 TO PG-SP-RUN(WS-SLOT) PG-USING(WS-SLOT)
+     MOVE 3 TO PG-SP-STATUS(WS-SLOT)
+     PERFORM RETREAT-START
+     MOVE EN-X(WS-ROW) TO PG-SP-FX(WS-SLOT)
+     MOVE EN-Z(WS-ROW) TO PG-SP-FZ(WS-SLOT)
+     CALL "PGW-STEP" USING WS-ROW WS-HX WS-HZ WS-ACTS
+     MOVE "acceptance US15 44-6 2.11: SpearRetreat ends and erases the state once the point is reached" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PG-SP-STATUS(WS-SLOT) TO WS-OBS
+     PERFORM CHK
+     CALL "ENTITY-REMOVE" USING WS-ROW
+
+*>   getPosAway over water: every candidate cell is water and is rejected.
+     PERFORM SPAWN-PIGLIN
+     MOVE 4 TO WS-MINR
+     MOVE 6 TO WS-MAXR
+     COMPUTE WS-RX = WS-GX + 3
+     MOVE WS-GZ TO WS-RZ
+     COMPUTE WS-CX = FUNCTION INTEGER(WS-GX) - 9
+     COMPUTE WS-CZ = FUNCTION INTEGER(WS-GZ) - 9
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 18
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 18
+             COMPUTE WS-FX = WS-CX + WS-I
+             COMPUTE WS-FZ = WS-CZ + WS-J
+             COMPUTE WS-FY = FUNCTION INTEGER(WS-Y)
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-WATER
+         END-PERFORM
+     END-PERFORM
+     MOVE 1 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         CALL "PGW-POS-AWAY" USING WS-ROW WS-MINR WS-MAXR WS-V WS-RX WS-RZ WS-FOUND WS-HX WS-HZ
+     END-PERFORM
+     MOVE "acceptance US15 44-6 2.19B: when every candidate cell is water none is accepted" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-FOUND TO WS-OBS
+     PERFORM CHK
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 18
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 18
+             COMPUTE WS-FX = WS-CX + WS-I
+             COMPUTE WS-FZ = WS-CZ + WS-J
+             COMPUTE WS-FY = FUNCTION INTEGER(WS-Y)
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-AIR
+         END-PERFORM
+     END-PERFORM
      CALL "ENTITY-REMOVE" USING WS-ROW
      STOP RUN.
  SPAWN-PIGLIN.

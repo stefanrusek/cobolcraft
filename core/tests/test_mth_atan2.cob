@@ -14,6 +14,8 @@
  01 WS-DIM                 BINARY-LONG VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Y              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Z              FLOAT-LONG VALUE 0.
  01 WS-VX                  FLOAT-LONG.
  01 WS-VY                  FLOAT-LONG.
  01 WS-VZ                  FLOAT-LONG.
@@ -75,7 +77,7 @@
      MOVE 1 TO WS-VX
      MOVE -1 TO WS-VY
      MOVE 0 TO WS-VZ
-     CALL "ARROW-SPAWN" USING WS-DIM WS-ZERO WS-ZERO WS-ZERO WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ROW
+     CALL "ARROW-SPAWN" USING WS-DIM WS-ZERO WS-ZERO-Y WS-ZERO-Z WS-VX WS-VY WS-VZ WS-BASE WS-OWNER WS-ROW
      MOVE "acceptance US15 44-x1§11.1 an arrow flying east has yaw 90 (within 0.0001)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
