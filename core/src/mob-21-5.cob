@@ -92,6 +92,9 @@
                  END-IF
              END-IF
          END-IF
+         IF SM-KEY(WS-M) = "polar_bear" AND EN-MOBAGE(WS-E) < 0
+             MOVE 0 TO WS-KIN
+         END-IF
          IF WS-E NOT = L-ROW AND WS-KIN = 1 AND EN-HEALTH(WS-E) > 0
                  AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-TARGET(WS-E) = 0 AND EN-TAMED(WS-E) = 0
              COMPUTE WS-DX = FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW))
@@ -150,7 +153,13 @@
          CALL "NETHER-ALERT" USING L-ROW L-ATTACKER
          GOBACK
      END-IF
+     IF SM-KEY(WS-M) = "polar_bear" AND EN-MOBAGE(L-ROW) < 0
+*>       A hurt cub tells the adults around it (alertOther alerts only non-baby polar bears) and takes no anger itself (44 part 4 section 8).
+         CALL "NETHER-ALERT" USING L-ROW L-ATTACKER
+         GOBACK
+     END-IF
      IF SM-NEUTRAL(WS-M) = 3 OR SM-NEUTRAL(WS-M) = 4 OR SM-NEUTRAL(WS-M) = 5 OR (SM-NEUTRAL(WS-M) = 6 AND EN-TAMED(L-ROW) = 0)
+             OR SM-NEUTRAL(WS-M) = 7
          CALL "NETHER-ANGER-TICKS" USING L-ROW WS-TICKS
          MOVE WS-TICKS TO EN-ANGER(L-ROW)
          MOVE L-ATTACKER TO EN-TARGET(L-ROW)

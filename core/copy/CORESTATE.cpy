@@ -623,6 +623,12 @@
        10 EN-GLOW            BINARY-LONG.        *> Glowing (the glowing tag)
        10 EN-VISFIRE         BINARY-LONG.        *> HasVisualFire
        10 EN-NAME-VIS        BINARY-LONG.        *> CustomNameVisible
+*>     --- 002-lane-p49v: polar bear, copper golem (core/src/mob-19-9.cob, mob-19-21.cob; 19 sections 9 and 21) ---
+       10 EN-POLAR-STAND     BINARY-LONG.        *> polar bear: 1 while it stands up on its hind legs (metadata 18)
+       10 EN-CG-STATE        BINARY-LONG.        *> copper golem: golem state 0 idle, 1 getting item, 2 getting no item, 3 dropping item, 4 dropping no item (metadata 17)
+       10 EN-CG-WEATHER      BINARY-LONG.        *> copper golem: weathering state 0 unaffected, 1 exposed, 2 weathered, 3 oxidized (metadata 16)
+       10 EN-CG-NEXT         BINARY-LONG.        *> copper golem: nextWeatheringTick (game time), -2 waxed, -1 unscheduled
+       10 EN-CG-ANT          BINARY-LONG.        *> copper golem: the item id in the antenna slot (0 empty); its main hand is EN-ITEM and EN-ITEM-COUNT
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

@@ -89,8 +89,8 @@
        10 FILLER BINARY-LONG VALUE 6.
        10 FILLER BINARY-LONG VALUE 20.
        10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 7.              *> neutral 7: a polar bear is angered by a hit of a player or by a cub near it (POLAR-BEAR-GUARD), 19 section 9
        10 FILLER BINARY-LONG VALUE 0.
-       10 FILLER BINARY-LONG VALUE 0.  *> SM-XP -1: no experience
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.

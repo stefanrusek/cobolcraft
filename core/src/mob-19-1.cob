@@ -332,7 +332,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M19-PACK-SHARE.
-*> USING first row, row (BINARY-LONG): a group spawn gives every wolf, fox and llama after the first the first member's variant (19 sections 6.1, 7 and 3.7). first 0 or another species: unchanged.
+*> USING first row, row (BINARY-LONG): a group spawn gives every wolf, fox, llama and rabbit after the first the first member's variant (19 sections 6.1, 7, 3.7 and 4). first 0 or another species: unchanged.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -345,7 +345,7 @@
      IF L-FIRST > 0
          CALL "MOB-SPECIES-KEY" USING L-FIRST WS-FIRST-KEY
          CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-         IF WS-KEY = WS-FIRST-KEY AND (WS-KEY = "wolf" OR "fox" OR "llama")
+         IF WS-KEY = WS-FIRST-KEY AND (WS-KEY = "wolf" OR "fox" OR "llama" OR "rabbit")
              MOVE EN-WOOL(L-FIRST) TO EN-WOOL(L-ROW)
          END-IF
      END-IF
