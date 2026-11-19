@@ -1223,7 +1223,7 @@
          END-IF
      END-IF
      IF SM-KEY(WS-M) = "panda"
-         CALL "PANDA-TICK" USING WS-ROW
+         CALL "PANDA-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
          END-IF

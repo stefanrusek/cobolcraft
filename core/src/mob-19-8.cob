@@ -14,7 +14,7 @@
 *>   PANDA-CHILD-GENES USING a-main, a-hidden, b-present, b-main, b-hidden, draws (8), main out, hidden out
 *>   PANDA-ATTRS USING row                                     PANDA-BRED USING parent a, parent b, baby    PANDA-BORN USING row
 *>   PANDA-SNEEZE-BOUND USING trait, bound out                 PANDA-SNEEZE-DONE USING row
-*>   PANDA-HURT USING row, attacker player row                 PANDA-TICK USING row
+*>   PANDA-HURT USING row, attacker player row                 PANDA-TICK USING row, hx out, hz out, walk out
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PANDA-GENE-RANDOM.
@@ -286,7 +286,12 @@
  01 WS-DONE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
+ 01 L-HX                   FLOAT-LONG.
+ 01 L-HZ                   FLOAT-LONG.
+ 01 L-WALK                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-WALK.
+*>   The roll, lie-on-back and sit goals and handleRoll (44 part 4 sections 7.1 to 7.3, mob-44-panda.cob): the walk of this tick (to food, or standing) is theirs.
+     CALL "PANDA-GOALS" USING L-ROW L-HX L-HZ L-WALK
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
 *>   The target of a hit: kept while the player is there, in survival and within the follow range.
      IF EN-TARGET(L-ROW) > 0

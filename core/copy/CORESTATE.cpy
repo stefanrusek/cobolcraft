@@ -472,6 +472,11 @@
        10 EN-PANDA-EAT        BINARY-LONG.        *> panda: eating counter (metadata 20)
        10 EN-PANDA-T          BINARY-LONG.        *> panda: ticks of the current roll or lie on the back
        10 EN-PANDA-HAND       BINARY-LONG.        *> panda: item id held in the mouth (0 none)
+       10 EN-PANDA-RDX        FLOAT-LONG.         *> panda: the stored roll velocity rollDelta (x) while rolling (44 part 4 section 7.1)
+       10 EN-PANDA-RDZ        FLOAT-LONG.         *> panda: rollDelta (z)
+       10 EN-PANDA-LIE-CD     BINARY-LONG.        *> panda: the game tick before which PandaLieOnBackGoal may not start (cooldown stamp)
+       10 EN-PANDA-SIT-CD     BINARY-LONG.        *> panda: the game tick until which PandaSitGoal may not start (cooldown stamp)
+       10 EN-PANDA-SIT-GOAL   BINARY-LONG.        *> panda: 1 while PandaSitGoal runs
        10 EN-RAM-STATE        BINARY-LONG.        *> goat: 0 none, 1 preparing to ram, 2 ramming
        10 EN-RAM-T            BINARY-LONG.        *> goat: ticks of the prepare phase
        10 EN-RAM-CD           BINARY-LONG.        *> goat: ticks until it may ram again
