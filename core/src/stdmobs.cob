@@ -936,6 +936,9 @@
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-PGW-HX              FLOAT-LONG.
+ 01 WS-PGW-HZ              FLOAT-LONG.
+ 01 WS-PGW-ACTS            BINARY-LONG.
  01 WS-EVK-CAST            BINARY-LONG.
  01 WS-VS-WALK             BINARY-LONG.
  01 WS-ATTACK-GAP           BINARY-LONG.
@@ -1091,7 +1094,7 @@
      IF SM-KIND(WS-M) = 0
          CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
      END-IF
-     MOVE 0 TO WS-PET-WALK WS-TEMPT-WALK
+     MOVE 0 TO WS-PET-WALK WS-TEMPT-WALK WS-PGW-ACTS
 *>   The tempt goal of an animal (MOB-TEMPT-TICK, 18 section 4.7): it follows a player who holds its food.
      IF SM-KIND(WS-M) = 0
          MOVE WS-YAW TO WS-TEMPT-YAW
@@ -1154,6 +1157,13 @@
          CALL "PIGLIN-TICK" USING WS-ROW
          CALL "PIGLIN-HUNT-STEP" USING WS-ROW
          CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+         CALL "PGW-STEP" USING WS-ROW WS-PGW-HX WS-PGW-HZ WS-PGW-ACTS
+         IF WS-PGW-ACTS = 1
+*>           A piglin with a spear or a crossbow fights by its own behaviours (PGW-STEP): it stands or strafes facing the target.
+             MOVE 1 TO WS-STOP
+             MOVE WS-PGW-HX TO EN-STRAFE-X(WS-ROW)
+             MOVE WS-PGW-HZ TO EN-STRAFE-Z(WS-ROW)
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW
@@ -1255,7 +1265,7 @@
                  CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
              END-IF
 *>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
-             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2
+             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2 OR WS-PGW-ACTS = 1
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF

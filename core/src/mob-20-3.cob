@@ -228,13 +228,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HAND-KEY.
-*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 stone sword, 11 golden sword, 12 golden spear, 13 crossbow, 1000 + an item id: any item a piglin picked up), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
  LINKAGE SECTION.
  01 L-HAND                 BINARY-LONG.
  01 L-KEY                  PIC X(40).
  PROCEDURE DIVISION USING L-HAND L-KEY.
      MOVE SPACES TO L-KEY
+     IF L-HAND >= 1000 AND L-HAND - 1000 < IT-COUNT
+         IF IT-KEY(L-HAND - 1000 + 1)(1:10) = "minecraft:"
+             MOVE IT-KEY(L-HAND - 1000 + 1) TO L-KEY
+         ELSE
+             STRING "minecraft:" DELIMITED BY SIZE IT-KEY(L-HAND - 1000 + 1) DELIMITED BY SPACE INTO L-KEY
+         END-IF
+     END-IF
      EVALUATE L-HAND
          WHEN 1 MOVE "minecraft:iron_sword" TO L-KEY
          WHEN 2 MOVE "minecraft:iron_spear" TO L-KEY
@@ -242,6 +251,9 @@
          WHEN 4 MOVE "minecraft:bow" TO L-KEY
          WHEN 9 MOVE "minecraft:warped_fungus_on_a_stick" TO L-KEY
          WHEN 10 MOVE "minecraft:stone_sword" TO L-KEY
+         WHEN 11 MOVE "minecraft:golden_sword" TO L-KEY
+         WHEN 12 MOVE "minecraft:golden_spear" TO L-KEY
+         WHEN 13 MOVE "minecraft:crossbow" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -625,6 +637,8 @@
              END-IF
          WHEN "strider"
              CALL "STRIDER-JOCKEY" USING L-STATE L-ROW
+         WHEN "piglin"
+             CALL "PGW-FINALIZE" USING L-STATE L-ROW
          WHEN "phantom"
 *>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).
              COMPUTE EN-PH-AX(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))
