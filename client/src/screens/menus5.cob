@@ -256,8 +256,9 @@
      PERFORM ROW-TOOLTIP
      .
 
-*> 2.10 first-cost decorations of a changed price: the item with the base count (text "1" too) at x, the modified count right-aligned to x + 31 at y + 9 and the
-*> strike-through 9 x 2 at (x + 7, y + 12).
+*> 2.10 first-cost decorations of a changed price: the item with the base count (text "1" too) at x, crossed out by the strike-through 9 x 2 at (x + 7, y + 12)
+*> (slot state 4: UI-SLOT draws the strike over the count), and the modified count right-aligned to x + 31 at y + 9 as a label. The strike is not a widget of its own:
+*> a widget that carried the label's text would draw the modified count a second time.
  DISCOUNT-WIDGET.
      MOVE MC-DISP-COUNT(WS-N) TO WS-PRICE
      MOVE MO-A-COUNT(WS-I) TO MC-DISP-COUNT(WS-N)
@@ -268,7 +269,7 @@
      COMPUTE WS-ARG = 800 + WS-N
      MOVE WK-SLOT TO WS-KIND
      MOVE 16 TO WS-W WS-H
-     MOVE 3 TO WS-STATE
+     MOVE 4 TO WS-STATE
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
      MOVE WS-PRICE TO MC-DISP-COUNT(WS-N)
      MOVE WS-PRICE TO WS-EDIT
@@ -282,14 +283,8 @@
      MOVE WK-LABEL TO WS-KIND
      MOVE WS-LABEL-W TO WS-W
      MOVE WS-LABEL-H TO WS-H
+     MOVE 0 TO WS-STATE
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
-     COMPUTE WS-X = L-LEFT + 17
-     COMPUTE WS-Y = L-TOP + 19 + 20 * WS-R + 12
-     MOVE 9 TO WS-W
-     MOVE 2 TO WS-H
-     MOVE SW-HURT TO WS-SWATCH
-     MOVE WK-OVERLAY TO WS-KIND
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
      COMPUTE WS-Y = L-TOP + 19 + 20 * WS-R
      MOVE SPACES TO WS-TEXT
      MOVE 0 TO WS-LENGTH WS-STATE WS-ARG
