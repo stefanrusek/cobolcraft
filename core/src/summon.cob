@@ -6,7 +6,7 @@
 *> 9 item frame (sub 0) or glow item frame (sub 1), 10 painting, 11 minecart (sub 1 minecart, 2 chest, 3 hopper, 4 furnace, 5 TNT, 6 spawner, 7 command block), 12 boat, raft and their chest variants,
 *> 13 interaction, 14 block display, 15 item display, 16 mannequin, 17 cushion, 18 marker, 19 arrow, 20 snowball, 21 egg, 22 ender pearl, 23 experience bottle, 24 fireball, 25 small fireball,
 *> 26 wind charge (sub 0) and breeze wind charge (sub 1), 27 splash potion (sub 0) and lingering potion (sub 1), 28 ominous item spawner, 29 firework rocket, 30 eye of ender, 31 shulker bullet, 32 llama spit, 33 wither, 34 ender dragon.
-*> Lane p49t: 35 text display, 36 spectral arrow, 37 trident. Not created (documented gaps): evoker_fangs, wither_skull, dragon_fireball, breeze, leash_knot (the core has the knot only as a mob's
+*> Lane p49t (45-9 section 6.3): a frame or painting stands where its block position (floor of Pos), direction and size put it; a painting takes its variant from the key variant. 35 text display, 36 spectral arrow, 37 trident. Not created (documented gaps): evoker_fangs, wither_skull, dragon_fireball, breeze, leash_knot (the core has the knot only as a mob's
 *> EN-LEASH-KNOT), every mob type without a row of STDMOBS.cpy, the passengers of a non-mob entity, and the family keys the core does not model (a potion's contents, the text of a mannequin, the transformation of a display).
 *>
 *>   SUMMON-FAMILY USING entity type id, family out, sub family out       0 for a type this file does not create (also in a cobolcraft world)
@@ -499,6 +499,17 @@
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-DAMAGE              FLOAT-LONG.
  01 WS-FAMILY-ARROW        BINARY-LONG.
+ 01 WS-HBX                 BINARY-LONG.
+ 01 WS-HBY                 BINARY-LONG.
+ 01 WS-HBZ                 BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HY                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-VKEY                PIC X(48).
+ 01 WS-VID                 BINARY-LONG.
+ 01 WS-VW                  BINARY-LONG.
+ 01 WS-VH                  BINARY-LONG.
+ 01 WS-K-VARIANT           PIC X(16) VALUE "variant".
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-THREE               BINARY-LONG VALUE 3.
@@ -677,7 +688,12 @@
              CALL "SUMMON-NUM" USING L-ROOT WS-N-FACING WS-NUM WS-FOUND
              COMPUTE WS-DIR = FUNCTION MOD(FUNCTION ABS(WS-NUM), 6)
              MOVE 12 TO WS-PJ
-             CALL "DECOR-SPAWN" USING WS-PJ WS-KEY L-DIM L-X L-Y L-Z WS-DIR L-ROW
+*>           The final position derives from the block position (the floor of Pos), the direction and the size (45-9 section 6.3): the cell's centre moved 0.46875 against the facing.
+             COMPUTE WS-HBX = FUNCTION INTEGER(L-X)
+             COMPUTE WS-HBY = FUNCTION INTEGER(L-Y)
+             COMPUTE WS-HBZ = FUNCTION INTEGER(L-Z)
+             CALL "HANGING-CENTRE" USING WS-DIR WS-HBX WS-HBY WS-HBZ WS-ONE WS-ONE WS-HX WS-HY WS-HZ
+             CALL "DECOR-SPAWN" USING WS-PJ WS-KEY L-DIM WS-HX WS-HY WS-HZ WS-DIR L-ROW
              IF L-ROW > 0
                  CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
                  CALL "SUMMON-ITEM" USING L-ROOT WS-K-ITEM-UP WS-ITEM WS-COUNT
@@ -704,7 +720,22 @@
                      MOVE 5 TO WS-DIR
              END-EVALUATE
              MOVE 13 TO WS-PJ
-             CALL "DECOR-SPAWN" USING WS-PJ WS-KEY L-DIM L-X L-Y L-Z WS-DIR L-ROW
+*>           The variant (45-9 section 8.1): an id of the painting_variant registry, else the registry's first entry; the size gives the box, whose centre is derived from the block position (6.3).
+             CALL "SUMMON-TEXT" USING L-ROOT WS-K-VARIANT WS-NAME WS-NAME-LENGTH
+             MOVE WS-NAME TO WS-VKEY
+             CALL "PAINTING-VARIANT-OF" USING WS-VKEY WS-VID WS-VW WS-VH
+             COMPUTE WS-HBX = FUNCTION INTEGER(L-X)
+             COMPUTE WS-HBY = FUNCTION INTEGER(L-Y)
+             COMPUTE WS-HBZ = FUNCTION INTEGER(L-Z)
+             CALL "HANGING-CENTRE" USING WS-DIR WS-HBX WS-HBY WS-HBZ WS-VW WS-VH WS-HX WS-HY WS-HZ
+             CALL "DECOR-SPAWN" USING WS-PJ WS-KEY L-DIM WS-HX WS-HY WS-HZ WS-DIR L-ROW
+             IF L-ROW > 0
+                 CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+                 MOVE WS-VW TO PJ-I2(WS-SLOT)
+                 MOVE WS-VH TO PJ-I3(WS-SLOT)
+                 MOVE WS-VID TO PJ-I4(WS-SLOT)
+                 CALL "DECOR-DATA-SYNC" USING L-ROW
+             END-IF
          WHEN 11
              CALL "MINECART-SPAWN" USING WS-SUB L-DIM L-X L-Y L-Z L-ROW
          WHEN 12

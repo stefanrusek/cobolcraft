@@ -4,6 +4,8 @@
 *>
 *>   PAINTING-JSON-INT USING text (first byte), length, key (PIC X(20), with its quotes and colon, e.g. '"width":'), value out (0 when the key is missing)
 *>   PAINTING-VARIANTS USING count out, ids (table of 64), widths (table of 64), heights (table of 64)
+*>   PAINTING-VARIANT-OF USING key (PIC X(48), with or without minecraft:), registry id out, width out, height out (lane p49t, T39060; 21 section 8.9.1): the variant of that key; an unknown or empty key gives
+*>     the registry's first entry (id 0, VariantUtils.getAny); 1 x 1 when the registry is missing
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PAINTING-VARIANTS.
@@ -86,15 +88,59 @@
      IF WS-FOUND > 0
          COMPUTE WS-P = WS-FOUND + WS-N
          MOVE 0 TO WS-DIGIT
+*>       The data files are pretty printed ("width": 4): blanks between the colon and the digits are skipped (lane p49t: the read gave 0 for every real variant, so each was 1 x 1).
          PERFORM UNTIL WS-P > L-LEN OR WS-DIGIT = -1
              MOVE B-TEXT(WS-P:1) TO WS-CH
              IF WS-CH >= "0" AND WS-CH <= "9"
                  COMPUTE L-VALUE = L-VALUE * 10 + FUNCTION NUMVAL(WS-CH)
+                 MOVE 1 TO WS-DIGIT
                  ADD 1 TO WS-P
              ELSE
-                 MOVE -1 TO WS-DIGIT
+                 IF WS-CH = " " AND WS-DIGIT = 0
+                     ADD 1 TO WS-P
+                 ELSE
+                     MOVE -1 TO WS-DIGIT
+                 END-IF
              END-IF
          END-PERFORM
      END-IF
      GOBACK.
  END PROGRAM PAINTING-JSON-INT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PAINTING-VARIANT-OF.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-REG                 PIC X(112) VALUE "painting_variant".
+ 01 WS-REG48               PIC X(48) VALUE "painting_variant".
+ 01 WS-BARE                PIC X(48).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY-LEN             BINARY-LONG.
+ 01 WS-PAYLOAD             PIC X(4096).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY-W               PIC X(20) VALUE '"width":'.
+ 01 WS-KEY-H               PIC X(20) VALUE '"height":'.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-ID                   BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-ID L-WIDTH L-HEIGHT.
+     MOVE 0 TO L-ID
+     MOVE 1 TO L-WIDTH L-HEIGHT
+     CALL "KEY-BARE" USING L-KEY WS-BARE
+     IF WS-BARE NOT = SPACES
+         CALL "M44-VARIANT-ID" USING WS-REG48 WS-BARE L-ID
+     END-IF
+     CALL "CONTENT-REGISTRY-ENTRY" USING WS-REG L-ID WS-KEY WS-KEY-LEN WS-PAYLOAD WS-CAPACITY WS-LEN WS-STATUS
+     IF WS-LEN > 0
+         CALL "PAINTING-JSON-INT" USING WS-PAYLOAD WS-LEN WS-KEY-W L-WIDTH
+         CALL "PAINTING-JSON-INT" USING WS-PAYLOAD WS-LEN WS-KEY-H L-HEIGHT
+     END-IF
+     IF L-WIDTH = 0 OR L-HEIGHT = 0
+         MOVE 1 TO L-WIDTH L-HEIGHT
+     END-IF
+     GOBACK.
+ END PROGRAM PAINTING-VARIANT-OF.

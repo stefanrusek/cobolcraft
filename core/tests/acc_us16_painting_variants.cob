@@ -41,6 +41,15 @@
      MOVE 2 TO TL-EXPECTED-N
      MOVE WS-VALUE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Pretty printed data files have a blank after the colon.
+     MOVE '{"width": 3, "height": 5}' TO WS-TEXT
+     MOVE 24 TO WS-LEN
+     MOVE '"height":' TO WS-KEY
+     CALL "PAINTING-JSON-INT" USING WS-TEXT WS-LEN WS-KEY WS-VALUE
+     MOVE "acceptance US16 44-9 5.4 a blank after the colon is skipped (the files are pretty printed)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE '"depth":' TO WS-KEY
      CALL "PAINTING-JSON-INT" USING WS-TEXT WS-LEN WS-KEY WS-VALUE
      MOVE "acceptance US16 44-9 5.4 a missing key reads 0" TO TL-CASE

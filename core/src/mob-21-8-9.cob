@@ -230,6 +230,8 @@
              COMPUTE WS-SUM = PJ-I1(L-SLOT) + 2 * PJ-I2(L-SLOT)
          WHEN 12
              COMPUTE WS-SUM = PJ-I1(L-SLOT) + 8 * PJ-I3(L-SLOT) + 64 * PJ-I2(L-SLOT)
+         WHEN 13
+             COMPUTE WS-SUM = PJ-I1(L-SLOT) + 8 * PJ-I4(L-SLOT)
          WHEN OTHER
              MOVE PJ-I1(L-SLOT) TO WS-SUM
      END-EVALUATE
@@ -334,6 +336,15 @@
              MOVE 12 TO WS-SER
              MOVE PJ-I1(WS-SLOT) TO WS-INT
              CALL "DECOR-PUT" USING PB-BUFFER WS-INDEX WS-SER WS-INT WS-F1 WS-F2 WS-F3 WS-COUNT WS-ITEM
+*>           9 the variant: a Holder, VarInt registry id + 1 (21 section 8.9.1; ids of 127 or more would need two bytes: the registry has 51 entries). PJ-I4 is the registry id (0: the first entry).
+             MOVE LOW-VALUES TO WS-DATA
+             COMPUTE WS-INT = PJ-I4(WS-SLOT) + 1
+             MOVE FUNCTION CHAR(WS-INT + 1) TO WS-DATA(1:1)
+             MOVE 1 TO WS-LENGTH
+             MOVE 0 TO WS-PRESENT
+             MOVE 9 TO WS-INDEX
+             MOVE 34 TO WS-SER
+             CALL "DECOR-PUT-DATA" USING PB-BUFFER WS-INDEX WS-SER WS-PRESENT WS-DATA WS-LENGTH
          WHEN 44
              MOVE 8 TO WS-INDEX
              MOVE 3 TO WS-SER

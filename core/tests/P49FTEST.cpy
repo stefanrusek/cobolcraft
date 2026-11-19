@@ -100,6 +100,9 @@
                              COMPUTE WS-F4 ROUNDED = WS-FL
                              STRING "Q" FUNCTION TRIM(WS-F1) "/" FUNCTION TRIM(WS-F2) "/" FUNCTION TRIM(WS-F3) "/" FUNCTION TRIM(WS-F4)
                                  DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                         WHEN 34
+                             COMPUTE WS-E1 = FUNCTION ORD(PK-MX-DATA(1:1)) - 1
+                             STRING "P" FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                          WHEN 5 WHEN 6 WHEN 41
                              MOVE PK-MX-PRESENT TO WS-E1
                              MOVE PK-MX-DATA-LENGTH TO WS-E2
