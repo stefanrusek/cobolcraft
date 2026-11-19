@@ -172,6 +172,9 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-EV-PRIME            PIC X(32) VALUE "prime_fuse".
+ 01 WS-NO-SOURCE           BINARY-LONG VALUE 0.
+ 01 WS-NO-STATE            BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -186,6 +189,8 @@
          MOVE L-Y TO WS-Y
          COMPUTE WS-Z = L-Z + 0.5
          CALL "TNT-PRIME-FUSE" USING L-DIM WS-X WS-Y WS-Z WS-FUSE WS-ROW
+*>       An explosion chain primes the block with no igniter: prime_fuse at the block centre with no source (30-8 14.3.1 and 14.3.10)
+         CALL "GAME-EVENT-CELL" USING L-DIM L-X L-Y L-Z WS-EV-PRIME WS-NO-SOURCE WS-NO-STATE
      END-IF
      GOBACK.
  END PROGRAM TNT-WAS-EXPLODED.

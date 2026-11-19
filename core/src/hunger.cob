@@ -124,13 +124,17 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUNGER-CANCEL.
-*> USING player row (BINARY-LONG): the player stops eating; nothing is eaten.
+*> USING player row (BINARY-LONG): the player stops eating; nothing is eaten. A release while eating is LivingEntity.stopUsingItem: item_interact_finish at the player (30-8 14.3.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     IF PL-EATING-ITEM(L-ROW) > 0
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
+     END-IF
      MOVE 0 TO PL-EATING-ITEM(L-ROW)
      CALL "POTION-DRINK-CANCEL" USING L-ROW
      GOBACK.

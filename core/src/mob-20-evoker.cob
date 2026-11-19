@@ -366,6 +366,11 @@
  01 WS-Y                    FLOAT-LONG.
  01 WS-Z                    FLOAT-LONG.
  01 WS-YAW                  FLOAT-SHORT VALUE 0.
+ 01 WS-CX                   BINARY-LONG.
+ 01 WS-CY                   BINARY-LONG.
+ 01 WS-CZ                   BINARY-LONG.
+ 01 WS-EV-PLACE             PIC X(32) VALUE "entity_place".
+ 01 WS-NO-STATE             BINARY-LONG VALUE -1.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -379,6 +384,11 @@
          COMPUTE WS-Z = FUNCTION INTEGER(EN-Z(L-ROW)) + 0.5 - 2 + WS-DRAW
          COMPUTE WS-Y = FUNCTION INTEGER(EN-Y(L-ROW)) + 1
          CALL "MOB-SPAWN" USING EN-DIM(L-ROW) WS-VTYPE WS-X WS-Y WS-Z WS-YAW WS-V
+*>       EvokerSummonSpellGoal.performSpellCasting: entity_place at the centre of the vex's spawn cell, the evoker as the source (30-8 14.3.3)
+         COMPUTE WS-CX = FUNCTION INTEGER(WS-X)
+         COMPUTE WS-CY = FUNCTION INTEGER(WS-Y)
+         COMPUTE WS-CZ = FUNCTION INTEGER(WS-Z)
+         CALL "GAME-EVENT-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-EV-PLACE L-ROW WS-NO-STATE
          MOVE 90 TO WS-BOUND
          CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
          MOVE 0 TO WS-SLOT

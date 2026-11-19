@@ -185,11 +185,12 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. COMBAT-BLOCK-RAISE.
 *> USING player row, hand (0 the held slot, 1 the off-hand): Use Item with a shield (17 section 3.6): the shield is raised unless it is on its
-*> disable cooldown or already up; it blocks from the 5th tick of use.
+*> disable cooldown or already up; it blocks from the 5th tick of use. Raising it is LivingEntity.startUsingItem: item_interact_start at the player (30-8 14.3.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CTOOLS.
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HAND                 BINARY-LONG.
@@ -198,21 +199,26 @@
      IF TS-BLOCK-START(L-ROW) = 0 AND CW-TICKS + 1 >= TS-SHIELD-COOLDOWN(L-ROW)
          COMPUTE TS-BLOCK-START(L-ROW) = CW-TICKS + 1
          MOVE L-HAND TO TS-BLOCK-HAND(L-ROW)
+         CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM COMBAT-BLOCK-RAISE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. COMBAT-BLOCK-LOWER.
-*> USING player row: Player Action release (the use ends): the shield is down.
+*> USING player row: Player Action release (the use ends): the shield is down. A shield that was up ends its use: LivingEntity.stopUsingItem, item_interact_finish at the player (30-8 14.3.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CTOOLS.
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "COMBAT-TS-CHECK" USING L-ROW
+     IF TS-BLOCK-START(L-ROW) > 0
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
+     END-IF
      MOVE 0 TO TS-BLOCK-START(L-ROW)
      GOBACK.
  END PROGRAM COMBAT-BLOCK-LOWER.

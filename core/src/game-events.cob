@@ -8,6 +8,12 @@
 *>   GAME-EVENT-AT USING event name, source entity row, affected state: Entity.gameEvent: the event at the position of the entity (a player's own position, a mob's feet) with the entity as its source.
 *>   GAME-EVENT-SHOOT USING projectile row, owner entity id: Projectile.tick's first game event: projectile_shoot at the projectile's position with the owner as the source (44-8 section 6.1; 0 when the
 *>     owner is not in the tracker). Called by ARROW-SPAWN.
+*>   GAME-EVENT-OWNED USING event name, row, owner entity id: Entity.gameEvent(event, owner): the event at the entity's position with the owner (an entity id, 0 none) as the source: the shoot of every
+*>     projectile, a firework rocket's explode and an eye of ender's shoot (30-8 14.2.1 and 14.2.4).
+*>   GAME-EVENT-DAMAGED USING row, attacker player row: entity_damage of an armor stand, item entity, boat or minecart (the attacker's entity as the source). GAME-EVENT-KILLED USING row, killer player row:
+*>     entity_die of an armor stand or hanging entity (the killer, else itself, as the source).
+*>   GAME-EVENT-EQUIP USING player row, container slot, old item, old handle, new item, new handle: equip / unequip of an armor slot (LivingEntity.onEquipItem), called by the slot writers of menus.cob.
+*>   GAME-EVENT-INTERACT USING mob row, player row: entity_interact of an interaction a mob consumed (the mob's position, the player as the source).
 *>   GAME-EVENT-FREQUENCY USING event name, frequency out (30 section 3.1; BE8-FREQUENCY)
 *>   GAME-EVENT-LISTENS USING event name, flag out: the event is in the game event tag warden_can_listen (20 section 15.1: the 55 events of vibrations except flap, plus shriek and
 *>     sculk_sensor_tendrils_clicking).
@@ -657,24 +663,131 @@
  END PROGRAM GAME-EVENT-CELL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GAME-EVENT-SHOOT.
+ PROGRAM-ID. GAME-EVENT-OWNED.
+*> USING event, row, owner entity id (0 none): Entity.gameEvent(event, owner): the event at the entity's own position with the entity whose id is the owner as the source (no source when the owner is not in
+*> the tracker). The form of the projectile's projectile_shoot (30-8 14.2.1) and of a firework rocket's explode (14.2.4).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- 01 WS-EVENT               PIC X(32) VALUE "projectile_shoot".
  01 WS-STATE               BINARY-LONG VALUE -1.
  01 WS-E                   BINARY-LONG.
  01 WS-OWNER               BINARY-LONG.
  LINKAGE SECTION.
+ 01 L-EVENT                PIC X(32).
  01 L-ROW                  BINARY-LONG.
  01 L-OWNER-ID             BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-OWNER-ID.
+ PROCEDURE DIVISION USING L-EVENT L-ROW L-OWNER-ID.
      MOVE 0 TO WS-OWNER
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          IF EN-USED(WS-E) = 1 AND EN-ID(WS-E) = L-OWNER-ID AND WS-E NOT = L-ROW
              MOVE WS-E TO WS-OWNER
          END-IF
      END-PERFORM
-     CALL "GAME-EVENT" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-EVENT WS-OWNER WS-STATE
+     CALL "GAME-EVENT" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) L-EVENT WS-OWNER WS-STATE
+     GOBACK.
+ END PROGRAM GAME-EVENT-OWNED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-SHOOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-EVENT               PIC X(32) VALUE "projectile_shoot".
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OWNER-ID             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-OWNER-ID.
+     CALL "GAME-EVENT-OWNED" USING WS-EVENT L-ROW L-OWNER-ID
      GOBACK.
  END PROGRAM GAME-EVENT-SHOOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-DAMAGED.
+*> USING row, attacker player row (0 none): the entity_damage of an armor stand, an item entity, a boat or a minecart (30-8 14.3.1 and 14.3.2): at the entity's position, the causing entity (here the attacking
+*> player's entity; none when there is none) as the source, not the victim.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EVENT               PIC X(32) VALUE "entity_damage".
+ 01 WS-SOURCE              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ATTACKER.
+     MOVE 0 TO WS-SOURCE
+     IF L-ATTACKER > 0
+         MOVE PL-ENTITY-ROW(L-ATTACKER) TO WS-SOURCE
+     END-IF
+     CALL "GAME-EVENT-BY" USING WS-EVENT L-ROW WS-SOURCE
+     GOBACK.
+ END PROGRAM GAME-EVENT-DAMAGED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-KILLED.
+*> USING row, killer player row (0 none): the entity_die of an armor stand or a hanging entity (BlockAttachedEntity.kill(level, killer), 30-8 14.3.2): at the entity's position, the killer as the source when there is
+*> one, else the entity itself.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EVENT               PIC X(32) VALUE "entity_die".
+ 01 WS-SOURCE              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KILLER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KILLER.
+     MOVE L-ROW TO WS-SOURCE
+     IF L-KILLER > 0
+         MOVE PL-ENTITY-ROW(L-KILLER) TO WS-SOURCE
+     END-IF
+     CALL "GAME-EVENT-BY" USING WS-EVENT L-ROW WS-SOURCE
+     GOBACK.
+ END PROGRAM GAME-EVENT-KILLED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-EQUIP.
+*> USING player row, container slot (0 to 40), old item, old patch handle, new item, new patch handle: LivingEntity.onEquipItem (30-8 14.3.8): on the server, not for a spectator, not when the old and new stacks
+*> are the same item with the same components (the item and its patch handle; the count does not count), not on the entity's first tick (EN-BORN = CW-TICKS: the join and the restore of the saved armor), and for
+*> a player only for the humanoid armor slots (container slots 36 to 39: hand, off-hand and main inventory changes post nothing). equip when the new stack has an equippable component (the armor, the elytra
+*> and the shield by MENU-EQUIP-KIND), else unequip (an empty stack included), at the player's position with the player as the source.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EV-EQUIP            PIC X(32) VALUE "equip".
+ 01 WS-EV-UNEQUIP          PIC X(32) VALUE "unequip".
+ 01 WS-KIND                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-OLD-ITEM             BINARY-LONG.
+ 01 L-OLD-VAR              BINARY-LONG.
+ 01 L-NEW-ITEM             BINARY-LONG.
+ 01 L-NEW-VAR              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-OLD-ITEM L-OLD-VAR L-NEW-ITEM L-NEW-VAR.
+     IF L-SLOT < 36 OR L-SLOT > 39 OR PL-ENTITY-ROW(L-ROW) = 0 OR PL-MODE(L-ROW) = 3
+         GOBACK
+     END-IF
+     IF (L-OLD-ITEM = L-NEW-ITEM AND L-OLD-VAR = L-NEW-VAR) OR CW-TICKS = EN-BORN(PL-ENTITY-ROW(L-ROW))
+         GOBACK
+     END-IF
+     CALL "MENU-EQUIP-KIND" USING L-NEW-ITEM WS-KIND
+     IF WS-KIND > 0
+         CALL "GAME-EVENT-AT" USING WS-EV-EQUIP PL-ENTITY-ROW(L-ROW)
+     ELSE
+         CALL "GAME-EVENT-AT" USING WS-EV-UNEQUIP PL-ENTITY-ROW(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM GAME-EVENT-EQUIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GAME-EVENT-INTERACT.
+*> USING mob row, player row: Mob.interact's entity_interact after an interaction that consumed the action (30-8 14.3.7): at the mob's position with the interacting player as the source.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EVENT               PIC X(32) VALUE "entity_interact".
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-PLAYER.
+     CALL "GAME-EVENT-BY" USING WS-EVENT L-ROW PL-ENTITY-ROW(L-PLAYER)
+     GOBACK.
+ END PROGRAM GAME-EVENT-INTERACT.

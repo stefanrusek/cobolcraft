@@ -93,6 +93,8 @@
      COMPUTE PJ-I5(WS-SLOT) = 0 - PJ-I5(WS-SLOT)
      MOVE 10 TO PJ-I4(WS-SLOT)
      COMPUTE PJ-R3(WS-SLOT) = PJ-R3(WS-SLOT) + L-AMOUNT * 10
+*>   VehicleEntity.hurtServer: entity_damage at the cart with the causing entity (the attacker) as the source (30-8 14.3.2)
+     CALL "GAME-EVENT-DAMAGED" USING L-ROW L-ATTACKER
      MOVE 0 TO WS-CREATIVE
      IF L-ATTACKER > 0
          IF PL-MODE(L-ATTACKER) = 1

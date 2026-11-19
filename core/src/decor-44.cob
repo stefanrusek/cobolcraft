@@ -394,17 +394,21 @@
          GOBACK
      END-IF
      MOVE 1 TO L-DONE
+*>   ArmorStand.hurtServer: a creative player or a second hit within 5 ticks kills the stand (entity_die with the player as the killer); the first hit only wobbles it (entity_damage, the player as the source)
      IF PL-MODE(L-PLAYER) = 1
+         CALL "GAME-EVENT-KILLED" USING L-ROW L-PLAYER
          MOVE 2 TO WS-SELF
          CALL "ARMOR-STAND-BREAK" USING L-ROW WS-SELF
          GOBACK
      END-IF
      COMPUTE WS-DIFF = CW-TICKS - PJ-I3(WS-P)
      IF WS-DIFF <= 5
+         CALL "GAME-EVENT-KILLED" USING L-ROW L-PLAYER
          MOVE 1 TO WS-SELF
          CALL "ARMOR-STAND-BREAK" USING L-ROW WS-SELF
          GOBACK
      END-IF
+     CALL "GAME-EVENT-DAMAGED" USING L-ROW L-PLAYER
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
      CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER

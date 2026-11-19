@@ -608,6 +608,8 @@
      COMPUTE EN-BT-HDIR(L-ROW) = 0 - EN-BT-HDIR(L-ROW)
      MOVE 10 TO EN-BT-HURT(L-ROW)
      COMPUTE EN-BT-DAMAGE(L-ROW) = EN-BT-DAMAGE(L-ROW) + L-AMOUNT * 10
+*>   VehicleEntity.hurtServer: entity_damage at the boat with the causing entity (the attacker) as the source (30-8 14.3.2)
+     CALL "GAME-EVENT-DAMAGED" USING L-ROW L-ATTACKER
      MOVE 0 TO WS-CREATIVE
      IF L-ATTACKER > 0
          IF PL-MODE(L-ATTACKER) = 1

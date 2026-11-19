@@ -117,6 +117,7 @@
  01 WS-SEES                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
+ 01 WS-EV-EXPLODE          PIC X(32) VALUE "explode".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -132,6 +133,8 @@
      CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
      CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
+*>   FireworkRocketEntity.explode: explode at the rocket's position with the owner as the source, after entity event 17 and before the damage (30-8 14.2.4)
+     CALL "GAME-EVENT-OWNED" USING WS-EV-EXPLODE L-ROW PJ-OWNER(WS-SLOT)
      MOVE 0 TO WS-D
      IF PJ-I3(WS-SLOT) > 0
          CALL "TOOL-FIREWORK-DAMAGE" USING PJ-I3(WS-SLOT) WS-D
@@ -194,6 +197,10 @@
          GOBACK
      END-IF
      ADD 1 TO PJ-I1(WS-SLOT)
+*>   Projectile.tick first: projectile_shoot on the first tick at the rocket's position with the owner as the source (30-8 14.2.1)
+     IF PJ-I1(WS-SLOT) = 1
+         CALL "GAME-EVENT-SHOOT" USING L-ROW PJ-OWNER(WS-SLOT)
+     END-IF
      IF PJ-I1(WS-SLOT) > PJ-I2(WS-SLOT)
          CALL "FIREWORK-EXPLODE" USING L-ROW
          GOBACK
