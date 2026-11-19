@@ -92,7 +92,7 @@
      COMPUTE WS-TOP = (IN-WIN-H / CL-GUI-SCALE - 166) / 2
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
-     MOVE 1 TO WS-RED-OK
+     MOVE 0 TO WS-RED-OK
      PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K * 6 + 3 > RL-UT-COUNT
          COMPUTE WS-I = WS-K * 6 + 1
          COMPUTE WS-X0 = RL-UT-X(WS-I)
@@ -108,8 +108,8 @@
 *>           Opaque red: the swatch SW-BAR-0 (FF0000FF), not the 31 % red of the hurt swatch.
              COMPUTE WS-U = (SW-BAR-0 * 8 + 4) / UA-W
              COMPUTE WS-DIFF = FUNCTION ABS(RL-UT-U(WS-I) - WS-U)
-             IF WS-DIFF > 0.00001 OR RL-UT-A(WS-I) < 0.99
-                 MOVE 0 TO WS-RED-OK
+             IF WS-DIFF < 0.00001 AND RL-UT-A(WS-I) > 0.99
+                 ADD 1 TO WS-RED-OK
              END-IF
          END-IF
      END-PERFORM
@@ -118,8 +118,8 @@
      MOVE "17:31 17:51 " TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "N" TO TL-MODE
-     MOVE "bugdiscount 40-5§2.10 the strike-through is opaque red" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
+     MOVE "bugdiscount 40-5§2.10 both strike-throughs are the opaque red swatch" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
      MOVE WS-RED-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
