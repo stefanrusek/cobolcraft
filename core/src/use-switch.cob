@@ -73,14 +73,16 @@
  END PROGRAM SW-BLOCK-KIND.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. SW-SET-PROP.
+ PROGRAM-ID. SW-SET-PROP-L.
+*> USING state, property name (PIC X(32)), value (PIC X(16): "keep" and "toggle" as in SW-SET-PROP), the new state out, the old value out (spaces when the state has no such property).
+*> Every property name of the state text is kept whole (the sculk sensors' sculk_sensor_phase has 18 characters).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  01 WS-TEXT                PIC X(160).
  01 WS-OUT                 PIC X(160).
  01 WS-PAIR                PIC X(160).
- 01 WS-NAME                PIC X(16).
+ 01 WS-NAME                PIC X(32).
  01 WS-VALUE               PIC X(16).
  01 WS-KEY                 PIC X(112).
  01 WS-POS                 BINARY-LONG.
@@ -88,7 +90,7 @@
  01 WS-STATE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
- 01 L-NAME                 PIC X(16).
+ 01 L-NAME                 PIC X(32).
  01 L-VALUE                PIC X(16).
  01 L-RESULT               BINARY-LONG.
  01 L-OLD                  PIC X(16).
@@ -123,6 +125,24 @@
          MOVE CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) TO WS-KEY
          CALL "BLOCKS-STATE-OF" USING WS-KEY WS-OUT L-RESULT
      END-IF
+     GOBACK.
+ END PROGRAM SW-SET-PROP-L.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SW-SET-PROP.
+*> USING state, property name (PIC X(16)), value, the new state out, the old value out: SW-SET-PROP-L for a name of up to 16 bytes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(32).
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-NAME                 PIC X(16).
+ 01 L-VALUE                PIC X(16).
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-OLD                  PIC X(16).
+ PROCEDURE DIVISION USING L-STATE L-NAME L-VALUE L-RESULT L-OLD.
+     MOVE L-NAME TO WS-NAME
+     CALL "SW-SET-PROP-L" USING L-STATE WS-NAME L-VALUE L-RESULT L-OLD
      GOBACK.
  END PROGRAM SW-SET-PROP.
 
