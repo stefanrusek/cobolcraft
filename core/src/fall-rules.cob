@@ -10,6 +10,7 @@
 *>   FALL-ON-KEY USING key (PIC X(48)), distance factor out, damage multiplier out (FLOAT-LONG)
 *>   LV-RESTITUTE USING vy (the velocity of the move, before the collision), moved y (the collided distance), restitution (block value), suppress (BINARY-LONG, 1 for a sneaking
 *>     player), vy out: the vertical velocity of a living entity after a downward collision
+*>   FALL-LANDING-RULE USING dim, feet x, y, z (FLOAT-LONG), distance factor out, damage multiplier out: FALL-ON-KEY of the block 0.2 below the feet (getOnPosLegacy)
 *>   MOB-LAND-BOUNCE USING dim, x, y (the feet on top of the floor), z, vy (in: before the collision, out: after), moved y, legacy flag: a mob's landing
 
  IDENTIFICATION DIVISION.
@@ -138,3 +139,31 @@
      MOVE WS-RESULT TO L-VY
      GOBACK.
  END PROGRAM MOB-LAND-BOUNCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FALL-LANDING-RULE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-FACTOR               FLOAT-LONG.
+ 01 L-MULTIPLIER           FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACTOR L-MULTIPLIER.
+     MOVE 1 TO L-FACTOR L-MULTIPLIER
+     COMPUTE WS-CX = FUNCTION INTEGER(L-X)
+     COMPUTE WS-CY = FUNCTION INTEGER(L-Y - 0.2)
+     COMPUTE WS-CZ = FUNCTION INTEGER(L-Z)
+     CALL "IP-BLOCK-KEY" USING L-DIM WS-CX WS-CY WS-CZ WS-KEY WS-LENGTH
+     IF WS-LENGTH > 0
+         CALL "FALL-ON-KEY" USING WS-KEY L-FACTOR L-MULTIPLIER
+     END-IF
+     GOBACK.
+ END PROGRAM FALL-LANDING-RULE.
