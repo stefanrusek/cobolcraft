@@ -296,9 +296,6 @@
  78 CL-MESH-BUDGET-US       VALUE 4000. *> microseconds of meshing per frame (MESH-DIRTY)
  78 CL-MESH-URGENT          VALUE 8.    *> sections a frame meshes at once for block changes, whatever the credit (MESH-DIRTY)
  78 CL-MESH-CREDIT-US       VALUE 7000. *> microseconds of meshing credit each frame earns, and the most it keeps (MB-CREDIT)
- 78 CL-MESH-BOOST-US        VALUE 14000. *> the same while a section within CL-MESH-NEAR chunks of the player has never been meshed (a hole in the view: MB-BOOSTED)
- 78 CL-MESH-NEAR            VALUE 36.   *> squared distance in chunks (6 chunks) within which a never meshed section boosts the credit and the frame budget (x 2)
- 78 CL-MESH-CANDIDATES      VALUE 16.   *> dirty sections MESH-DIRTY keeps in order each frame (the nearest, never meshed ones first)
  78 CL-TINT-RADIUS          VALUE 2.    *> biome blend radius (43 section 4: the biomeBlendRadius default)
  78 CL-MAX-ICON-VERTICES    VALUE 1536.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.

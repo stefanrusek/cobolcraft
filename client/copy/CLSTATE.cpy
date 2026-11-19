@@ -638,8 +638,6 @@
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
              20 WR-URGENT    PIC 9.          *> 1 = dirty because a block changed (WORLD-BLOCK-SET): meshed ahead of the credit (T5500)
-             20 WR-MESHED    PIC 9.          *> 1 = MESH-SECTION has run for this section since its chunk was (re)loaded (0: a section whose picture is a hole, meshed before any redo)
-             20 WR-KIND      PIC 9.          *> what MESH-DIRTY found while the section was dirty: 0 not looked at (set again by every marking), 1 only air, 2 holds blocks
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.
@@ -1254,8 +1252,6 @@
        10 MB-LAST-US         BINARY-DOUBLE.  *> microseconds the last MESH-DIRTY took
        10 MB-CREDIT-ON       PIC 9.          *> 1 = meshing is paid for from a credit that each frame refills (CL-RUN sets it; 0 in tests)
        10 MB-CREDIT          BINARY-DOUBLE.  *> microseconds of meshing the next frames may spend; below 0 the frame meshes nothing
-       10 MB-BOOSTED         PIC 9.          *> 1 = the last MESH-DIRTY found a section near the player that was never meshed (a hole): this frame's credit and budget are the larger ones
-       10 MB-WAITING         BINARY-LONG.    *> candidates of the last MESH-DIRTY that were never meshed (at most the candidate count: the list was full when it is that)
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
