@@ -1072,6 +1072,8 @@
                      MOVE WS-NEW TO WS-FIRST
                  END-IF
                  CALL "M19-PACK-SHARE" USING WS-FIRST WS-NEW
+*>               A school of fish: the first leads, the others follow it (21 section 4.1.1, lane p49t).
+                 CALL "FISH-PACK-JOIN" USING WS-FIRST WS-NEW
                  ADD 1 TO L-SPAWNED WS-IN-PACK
                  CALL "MS6-COST-ADD" USING L-BIOME WS-KEY24 WS-POINTS WS-PN WS-FX WS-FY WS-FZ
                  IF L-SPAWNED >= 4

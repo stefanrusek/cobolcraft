@@ -222,6 +222,7 @@
  01 WS-CELL-Z              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
+ 01 WS-FOLLOW              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -229,6 +230,8 @@
      MOVE 0 TO WS-GO WS-DX WS-DY WS-DZ
      MOVE EN-YAW(L-ROW) TO WS-YAW
      COMPUTE WS-TARGET = SM-WALK-MILLI(L-M) / 1000
+*>   A schooling fish following its leader swims to it and has no random swim (21 section 4.1.1: canRandomSwim is false while it follows).
+     CALL "FISH-SCHOOL-STEP" USING L-ROW WS-FOLLOW
      IF EN-FLEE(L-ROW) > 0
          SUBTRACT 1 FROM EN-FLEE(L-ROW)
          MOVE EN-FLEE-PLAYER(L-ROW) TO WS-P
@@ -242,7 +245,7 @@
          MOVE 0 TO EN-COOLDOWN(L-ROW)
          MOVE 1 TO WS-GO
      ELSE
-         IF EN-COOLDOWN(L-ROW) = 0
+         IF EN-COOLDOWN(L-ROW) = 0 AND WS-FOLLOW = 0
              MOVE 1 TO WS-SALT
              CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
              IF WS-R < 0.025
