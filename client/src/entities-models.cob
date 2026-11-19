@@ -318,6 +318,7 @@
        10 WS-UVP-U         BINARY-LONG.
        10 WS-UVP-V         BINARY-LONG.
  01 WS-FZERO               FLOAT-LONG VALUE 0.
+ 01 WS-FAR-SQUARED         FLOAT-LONG VALUE 4096.
  01 WS-OPCODES.
     05 WS-OPC              BINARY-LONG OCCURS 8 TIMES.
  01 WS-SLOT-INDEX          BINARY-LONG.
@@ -440,7 +441,7 @@
 *>   Entities beyond 64 blocks (horizontally) are not drawn: a cap standing in for the entity distance rule (13 section 9.2 Entity Distance option, 34-1 7.1 shadow fade 16 blocks), which the docs do not give as a number (open).
      COMPUTE WS-D = (EN-X(WS-ROW) - L-EYE(1)) * (EN-X(WS-ROW) - L-EYE(1))
          + (EN-Z(WS-ROW) - L-EYE(3)) * (EN-Z(WS-ROW) - L-EYE(3))
-     IF WS-D > 4096
+     IF WS-D > WS-FAR-SQUARED
          GOBACK
      END-IF
 *>   The light of the entity's cell.

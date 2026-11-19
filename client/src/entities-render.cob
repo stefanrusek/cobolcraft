@@ -222,6 +222,7 @@
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
  01 WS-DOT                 FLOAT-LONG.
+ 01 WS-FZERO               FLOAT-LONG VALUE 0.
  01 WS-BOX.
     05 WS-CORNER           FLOAT-LONG OCCURS 6 TIMES.
 *> The part's strip (top-left texel), the stand-in texture size and the image's atlas rectangle.
@@ -267,7 +268,7 @@
              PERFORM VARYING WS-P FROM 0 BY 3 UNTIL WS-P > 9 OR WS-SEEN = 0
                  COMPUTE WS-DOT = RL-CULL-PLANE(WS-P + 1) * WS-DX + RL-CULL-PLANE(WS-P + 2) * WS-DY
                      + RL-CULL-PLANE(WS-P + 3) * WS-DZ + 6
-                 IF WS-DOT < 0
+                 IF WS-DOT < WS-FZERO
                      MOVE 0 TO WS-SEEN
                  END-IF
              END-PERFORM

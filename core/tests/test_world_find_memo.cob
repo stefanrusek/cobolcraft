@@ -71,9 +71,18 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   And west of x 0, where the division of the position by 16 has a negative remainder.
+     PERFORM VARYING WS-X FROM -6 BY 5 UNTIL WS-X > 4
+         MOVE -40 TO WS-Z
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+         CALL "WORLD-PEEK-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-PEEK
+         IF WS-STATE = WS-PEEK
+             ADD 1 TO WS-SAME
+         END-IF
+     END-PERFORM
      MOVE "test world find memo: get block and peek block agree on both sides of a chunk border" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 12 TO TL-EXPECTED-N
+     MOVE 15 TO TL-EXPECTED-N
      MOVE WS-SAME TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Reopening the world frees the rows: the chunk is not found, and loaded again it is.
