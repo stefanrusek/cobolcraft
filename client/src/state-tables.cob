@@ -26,6 +26,32 @@
  END PROGRAM STATE-TABLES-ENSURE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STATE-WL-VALUE.
+*> USING state code (BINARY-LONG), waterlogged out (PIC 9): 1 when the state's property waterlogged is "true", else 0 (CONTENT-STATE-PROPS of the state).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-PROPS.
+    05 WS-P-COUNT          BINARY-LONG.
+    05 WS-P-ENTRY OCCURS 16 TIMES.
+       10 WS-P-NAME        PIC X(24).
+       10 WS-P-VALUE       PIC X(32).
+ LINKAGE SECTION.
+ 01 L-CODE                 BINARY-LONG.
+ 01 L-WET                  PIC 9.
+ PROCEDURE DIVISION USING L-CODE L-WET.
+     MOVE 0 TO L-WET
+     CALL "CONTENT-STATE-PROPS" USING L-CODE WS-PROPS WS-STATUS
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-P-COUNT
+         IF WS-P-NAME(WS-P) = "waterlogged" AND WS-P-VALUE(WS-P) = "true"
+             MOVE 1 TO L-WET
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STATE-WL-VALUE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STATE-TABLES-BUILD.
 *> USING CLIENT-STATE: fills ST-OPAQUE and ST-BLOCK for every state of the set (or the stand-in
 *> table) and clears the rows above; ST-READY becomes 1.
@@ -45,16 +71,26 @@
  01 WS-ROW                 PIC X(819).
  01 WS-FLUID               PIC 9.
  01 WS-HITS                BINARY-LONG.
- 01 WS-P                   BINARY-LONG.
  01 WS-SHAPE               BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-OPP                 BINARY-LONG.
  01 WS-AT                  BINARY-LONG.
- 01 WS-PROPS.
-    05 WS-P-COUNT          BINARY-LONG.
-    05 WS-P-ENTRY OCCURS 16 TIMES.
-       10 WS-P-NAME        PIC X(24).
-       10 WS-P-VALUE       PIC X(32).
+ 01 WS-LAST-BLOCK          BINARY-LONG.
+ 01 WS-WL-STRIDE           BINARY-LONG.
+ 01 WS-WL-FIRST            PIC 9.
+ 01 WS-FIRST-CODE          BINARY-LONG.
+ 01 WS-CODE2               BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-FLIP                BINARY-LONG.
+ 01 WS-WET                 PIC 9.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-PAR                 BINARY-LONG.
+ 01 WS-Q2                  BINARY-LONG.
+ 01 WS-M-OPAQUE            PIC 9.
+ 01 WS-M-HONEY             PIC 9.
+ 01 WS-M-OVL               PIC 9.
+ 01 WS-M-WL                PIC 9.
+ 01 WS-M-FLUID             PIC 9.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -76,11 +112,40 @@
      IF CT-OPEN = 1 AND CT-STATE-COUNT > 0
 *>       The collision and outline shape of every state (51 block shapes): the content library's tables, built once per set type.
          CALL "BSH-BUILD"
+         MOVE -1 TO WS-LAST-BLOCK
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > ST-COUNT
              COMPUTE WS-CODE = WS-S - 1
              CALL "CONTENT-BLOCK-OF-STATE" USING WS-CODE WS-BLOCK WS-INDEX WS-ROW WS-STATUS
              MOVE WS-BLOCK TO ST-BLOCK(WS-S)
-             CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
+*>           Everything the rules read is in the block's row, which is the same for every state of a block: the rules are applied once to a block (a standard table has 30 000 states
+*>           of about 1 100 blocks, and the strings of the row were searched for 35 words a state).
+             IF WS-BLOCK NOT = WS-LAST-BLOCK
+                 MOVE WS-BLOCK TO WS-LAST-BLOCK
+                 MOVE 0 TO WS-WL-STRIDE
+                 CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-M-OPAQUE
+                 MOVE WS-ROW TO CT-BLOCK-ROW
+                 MOVE 0 TO WS-HITS
+                 INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "HoneyBlock"
+                 MOVE 0 TO WS-M-HONEY
+                 IF WS-HITS > 0
+                     MOVE 1 TO WS-M-HONEY
+                 END-IF
+                 CALL "STATE-FLUID-OF" USING WS-ROW WS-M-FLUID
+                 MOVE 0 TO WS-HITS
+                 INSPECT CT-BR-PROPS TALLYING WS-HITS FOR ALL "waterlogged"
+                 MOVE 0 TO WS-M-WL
+                 IF WS-HITS > 0
+                     MOVE 1 TO WS-M-WL
+                 END-IF
+                 MOVE 0 TO WS-HITS
+                 INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "Transparent" ALL "IceBlock" ALL "SlimeBlock" ALL "HoneyBlock"
+                     ALL "Leaves" ALL "StainedGlass" ALL "TintedGlass"
+                 MOVE 0 TO WS-M-OVL
+                 IF WS-HITS > 0
+                     MOVE 1 TO WS-M-OVL
+                 END-IF
+             END-IF
+             MOVE WS-M-OPAQUE TO WS-OPAQUE
 *>           A state that occludes by its shape (the class rule below: not an open or see-through class; slabs, stairs, carpets, snow layers and trapdoors are in) hides what its faces cover
 *>           (the face classes); it is opaque, hiding every face and the light, only when its outline shape is the full cube (id 1).
              IF WS-OPAQUE = 1 AND BSH-READY = 1 AND BSH-OUT(WS-S) NOT = 0
@@ -99,39 +164,44 @@
                  MOVE 1 TO ST-LIKE(WS-S)
              END-IF
 *>           HalfTransparentBlock.skipRendering hides a face against the same block whatever the outline (honey's is smaller than the cube).
-             IF WS-OPAQUE = 0 AND BSH-READY = 1
-                 MOVE WS-ROW TO CT-BLOCK-ROW
-                 MOVE 0 TO WS-HITS
-                 INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "HoneyBlock"
-                 IF WS-HITS > 0
-                     MOVE 1 TO ST-LIKE(WS-S)
-                 END-IF
+             IF WS-OPAQUE = 0 AND BSH-READY = 1 AND WS-M-HONEY = 1
+                 MOVE 1 TO ST-LIKE(WS-S)
              END-IF
              IF WS-OPAQUE = 1 AND BSH-READY = 1 AND BSH-OUT(WS-S) NOT = 1
                  MOVE 0 TO WS-OPAQUE
              END-IF
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
-             MOVE WS-ROW TO CT-BLOCK-ROW
-             CALL "STATE-FLUID-OF" USING WS-ROW WS-FLUID
+             MOVE WS-M-FLUID TO WS-FLUID
 *>           A waterlogged state (a block with the property, set true) holds water and keeps its model (4).
-             IF WS-FLUID = 0
-                 MOVE 0 TO WS-HITS
-                 INSPECT CT-BR-PROPS TALLYING WS-HITS FOR ALL "waterlogged"
-                 IF WS-HITS > 0
-                     CALL "CONTENT-STATE-PROPS" USING WS-CODE WS-PROPS WS-STATUS
-                     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-P-COUNT
-                         IF WS-P-NAME(WS-P) = "waterlogged" AND WS-P-VALUE(WS-P) = "true"
-                             MOVE 4 TO WS-FLUID
+*>           The property waterlogged is a boolean ("true" first): its value in the states of a block alternates in runs of the stride of the property, found once a block as the
+*>           first state at which it differs from that of the block's first state.
+             IF WS-FLUID = 0 AND WS-M-WL = 1
+                 IF WS-WL-STRIDE = 0
+                     COMPUTE WS-FIRST-CODE = WS-CODE - WS-INDEX
+                     CALL "STATE-WL-VALUE" USING WS-FIRST-CODE WS-WL-FIRST
+                     MOVE 4097 TO WS-FLIP
+                     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4096 OR WS-FLIP < 4097
+                         COMPUTE WS-CODE2 = WS-FIRST-CODE + WS-J
+                         CALL "STATE-WL-VALUE" USING WS-CODE2 WS-WET
+                         IF WS-WET NOT = WS-WL-FIRST
+                             MOVE WS-J TO WS-FLIP
                          END-IF
                      END-PERFORM
+                     MOVE WS-FLIP TO WS-WL-STRIDE
+                 END-IF
+                 DIVIDE WS-INDEX BY WS-WL-STRIDE GIVING WS-Q
+                 DIVIDE WS-Q BY 2 GIVING WS-Q2 REMAINDER WS-PAR
+                 MOVE WS-WL-FIRST TO WS-WET
+                 IF WS-PAR = 1
+                     COMPUTE WS-WET = 1 - WS-WL-FIRST
+                 END-IF
+                 IF WS-WET = 1
+                     MOVE 4 TO WS-FLUID
                  END-IF
              END-IF
              MOVE WS-FLUID TO ST-FLUID(WS-S)
 *>           The classes that take the overlay sprite of the water beside them (29a 10.3).
-             MOVE 0 TO WS-HITS
-             INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "Transparent" ALL "IceBlock" ALL "SlimeBlock" ALL "HoneyBlock"
-                 ALL "Leaves" ALL "StainedGlass" ALL "TintedGlass"
-             IF WS-HITS > 0
+             IF WS-M-OVL = 1
                  MOVE 1 TO ST-OVERLAY(WS-S)
              END-IF
              IF WS-FLUID > 0 AND WS-FLUID < 3

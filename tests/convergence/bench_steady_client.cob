@@ -75,6 +75,8 @@
  01 WS-D9E                 PIC -(8)9.
  01 WS-D9F                 PIC -(8)9.
  01 WS-D9G                 PIC -(8)9.
+ 01 WS-D9H                 PIC -(8)9.
+ 01 WS-D9I                 PIC -(8)9.
  01 WS-LOAD.
     05 WS-LOAD-AVG         FLOAT-LONG OCCURS 3 TIMES.
  01 WS-LOAD-1              PIC -(3)9.99.
@@ -142,6 +144,10 @@
  01 WS-KEY                 BINARY-LONG.
  01 WS-AUTOY               BINARY-LONG VALUE 0.
  01 WS-CLOCK               BINARY-LONG VALUE 0.
+ 01 WS-NOTP                BINARY-LONG VALUE 0.
+ 01 WS-SPRINT              BINARY-LONG VALUE 0.
+ 01 WS-OVER33              BINARY-LONG.
+ 01 WS-OVER66              BINARY-LONG.
  01 WS-DEBUG               BINARY-LONG VALUE 0.
  01 WS-KIND                PIC X(12) VALUE "structure".
  01 WS-DIM                 BINARY-LONG VALUE 3.
@@ -250,6 +256,16 @@
          COMPUTE WS-CLOCK = FUNCTION NUMVAL(WS-ENV)
      END-IF
      MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "BS_NOTP"
+     IF WS-ENV NOT = SPACES
+         COMPUTE WS-NOTP = FUNCTION NUMVAL(WS-ENV)
+     END-IF
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "BS_SPRINT"
+     IF WS-ENV NOT = SPACES
+         COMPUTE WS-SPRINT = FUNCTION NUMVAL(WS-ENV)
+     END-IF
+     MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "BS_DEBUG"
      IF WS-ENV NOT = SPACES
          COMPUTE WS-DEBUG = FUNCTION NUMVAL(WS-ENV)
@@ -305,6 +321,18 @@
          END-IF
      END-PERFORM
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+*>   The mesh credit is on as in the game's loop (CL-RUN): a frame meshes sections only while the credit of its microseconds lasts.
+     MOVE 1 TO MB-CREDIT-ON
+     MOVE CL-MESH-CREDIT-US TO MB-CREDIT
+*>   The commands below are heard only once the player is in play and loaded (a standard world takes thousands of frames for its first chunks).
+     IF WS-LOCATE = SPACES
+         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > WS-MAXWAIT OR PL-LOADED = 1
+             CALL "CV-STEP" USING CONVH
+             SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+         END-PERFORM
+         MOVE WS-F TO WS-D9
+         DISPLAY "BS player loaded after " WS-D9 " frames"
+     END-IF
 
      IF WS-LOCATE NOT = SPACES
          MOVE SPACES TO WS-TEXT
@@ -358,7 +386,9 @@
      STRING "/tp @s " DELIMITED BY SIZE FUNCTION TRIM(WS-XE) DELIMITED BY SIZE " " DELIMITED BY SIZE FUNCTION TRIM(WS-YE) DELIMITED BY SIZE
          " " DELIMITED BY SIZE FUNCTION TRIM(WS-ZE) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
      COMPUTE WS-TEXT-LENGTH = WS-PTR - 1
-     CALL "CV-SAY" USING CONVH WS-ALICE WS-TEXT WS-TEXT-LENGTH
+     IF WS-NOTP = 0
+         CALL "CV-SAY" USING CONVH WS-ALICE WS-TEXT WS-TEXT-LENGTH
+     END-IF
      MOVE 3 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
 *>   Every chunk arrived and every section with blocks meshed (in the order the game would: the frames run as they come).
@@ -531,6 +561,10 @@
      IF WS-WALK-FRAMES > 0
          MOVE PL-X TO WS-X0
          MOVE PL-Z TO WS-Z0
+         IF WS-SPRINT = 1
+             MOVE CC-KEY-LEFT-CONTROL TO WS-KEY
+             CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY WS-DOWN
+         END-IF
          MOVE CC-KEY-W TO WS-KEY
          CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY WS-DOWN
          SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
@@ -685,6 +719,18 @@
          COMPUTE WS-MEAN = WS-SUM-NT / WS-N-NT
          MOVE WS-MEAN TO WS-D9F
      END-IF
+     MOVE 0 TO WS-OVER33 WS-OVER66
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > WS-COUNT
+         IF WS-FR-US(WS-F) > 33000
+             ADD 1 TO WS-OVER33
+         END-IF
+         IF WS-FR-US(WS-F) > 66000
+             ADD 1 TO WS-OVER66
+         END-IF
+     END-PERFORM
+     MOVE WS-OVER33 TO WS-D9H
+     MOVE WS-OVER66 TO WS-D9I
+     DISPLAY "BS " FUNCTION TRIM(WS-LABEL) " " FUNCTION TRIM(WS-PHASE) " frames over 33 ms " WS-D9H " over 66 ms " WS-D9I
      MOVE WS-COUNT TO WS-D9G
      DISPLAY "BS " FUNCTION TRIM(WS-LABEL) " " FUNCTION TRIM(WS-PHASE) " frames " WS-D9G " us: mean " WS-D9 " p50 " WS-D9B " p99 " WS-D9C
          " max " WS-D9D " mean-tick-frames " WS-D9E " mean-other-frames " WS-D9F " load " WS-LOAD-1.

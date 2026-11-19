@@ -16,6 +16,11 @@
  01 WS-N                   BINARY-LONG.
  01 WS-BUDGET              BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-STEPS               BINARY-LONG.
+ 01 WS-CHUNKS              BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-DONE2               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -112,15 +117,20 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "test gen queue CORE-TICK generates GQ-BUDGET chunks per tick" TO TL-CASE
+     MOVE "test gen queue CORE-TICK generates one to GQ-BUDGET chunks per tick" TO TL-CASE
      MOVE 1 TO PL-DIM(1)
      MOVE 60 TO WS-CX MOVE 0 TO WS-CZ CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
      MOVE 61 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
      MOVE 62 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
      MOVE GQ-GENERATED TO WS-N
      CALL "CORE-TICK"
-     COMPUTE TL-OBSERVED-N = GQ-GENERATED - WS-N
-     MOVE GQ-BUDGET TO TL-EXPECTED-N
+*>   (the chunk that took the tick's wall time limit ends the tick's chunks: one to GQ-BUDGET are made, lane perfsteady)
+     COMPUTE WS-DONE = GQ-GENERATED - WS-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DONE >= 1 AND WS-DONE <= GQ-BUDGET
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "test gen queue a full queue ignores further wants" TO TL-CASE
@@ -140,6 +150,33 @@
      CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
      MOVE WS-DONE TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Lane perfsteady: a chunk of a cheap generator that took the wall time limit of the tick is the last of the tick (the budget is 4 chunks here, the limit 1/100 s): at least one is made,
+*>   at most four; with no limit the rest are made.
+     MOVE 1 TO PL-DIM(1)
+     MOVE 0 TO PL-DIM(2)
+     MOVE 100 TO WS-CX MOVE 0 TO WS-CZ CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 101 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 102 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 103 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 16 TO WS-STEPS
+     MOVE 4 TO WS-CHUNKS
+     MOVE 1 TO WS-LIMIT
+     CALL "GEN-QUEUE-STEPS" USING WS-STEPS WS-CHUNKS WS-LIMIT WS-RUN WS-DONE
+     MOVE "test gen queue a limit of wall time ends the tick's chunks after one: at least 1, at most 4" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DONE >= 1 AND WS-DONE <= 4
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-LIMIT
+     MOVE 4 TO WS-CHUNKS
+     CALL "GEN-QUEUE-STEPS" USING WS-STEPS WS-CHUNKS WS-LIMIT WS-RUN WS-DONE2
+     MOVE "test gen queue with no limit the chunks left in the queue are made up to the budget" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-DONE + WS-DONE2
+     MOVE 4 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-GEN-QUEUE.
