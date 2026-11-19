@@ -222,7 +222,7 @@
                  MOVE 23 TO RL-ANALOG(WS-I)
              WHEN WS-CLASS = 26 OR WS-CLASS = 27
                  MOVE 24 TO RL-ANALOG(WS-I)
-             WHEN WS-LEN >= 18 AND WS-BARE(WS-LEN - 17:18) = "copper_golem_statue"
+             WHEN WS-LEN >= 19 AND WS-BARE(WS-LEN - 18:19) = "copper_golem_statue"
                  MOVE 25 TO RL-ANALOG(WS-I)
              WHEN WS-BARE = "creaking_heart"
                  MOVE 26 TO RL-ANALOG(WS-I)
