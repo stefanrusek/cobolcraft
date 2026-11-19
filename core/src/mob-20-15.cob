@@ -7,8 +7,7 @@
 *>   WARDEN-ANGER-ADD USING warden row, player row, amount, dig flag    AngerManager.add: ignored unless the player is alive and in survival; capped at 150; with the flag
 *>     (increaseAngerAt) the dig cooldown becomes 1200
 *>   WARDEN-LEVEL USING warden row, level out         0 CALM (below 40), 1 AGITATED (40 to 79), 2 ANGRY (80 and above) by the top suspect
-*>   WARDEN-AGGRO USING warden row: the manager tick (every 20 ticks of CW-TIME each value falls by 1 and a value of 1 or less is dropped), the cooldown memories count down, and
-*>     the target is the alive survival player of the dimension with the highest anger (none when nobody is angry: a warden does not take targets by sight)
+*>   WARDEN-AGGRO is now WARDEN-BRAIN (mob-20-15b.cob): the target comes from the roar and from being hurt, not from the angriest player.
 *>   WARDEN-HURT USING warden row, attacker player row: hurt by a player: its anger +100 (ANGRY 80 + 20, no sound); with no target and the attacker within 5 blocks, the attacker
 *>     becomes the target and the sonic boom cooldown is 200
 *>   WARDEN-MELEE USING warden row: a melee hit (entity event 4) sets the sonic boom cooldown to 40
@@ -65,6 +64,9 @@
  WORKING-STORAGE SECTION.
  COPY WARDENSTATE.
  01 WS-I                   BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 94.
+ 01 WS-B20                 BINARY-LONG VALUE 20.
+ 01 WS-DRAW                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-CREATE               BINARY-LONG.
@@ -81,6 +83,11 @@
              IF WD-ID(WS-I) = 0
                  INITIALIZE WD-ENTRY(WS-I)
                  MOVE L-ID TO WD-ID(WS-I)
+*>               finalizeSpawn: the dig cooldown memory 1200; the brain starts in IDLE and its entity sensor in a draw of 0 to 19 (20 section 15, 44-5 section 3.5).
+                 MOVE 1200 TO WD-DIG-CD(WS-I)
+                 MOVE 7 TO WD-ACT(WS-I)
+                 CALL "XP-RANDOM" USING WS-SALT WS-B20 WS-DRAW
+                 MOVE WS-DRAW TO WD-SENSOR(WS-I)
                  MOVE WS-I TO L-SLOT
              END-IF
          END-PERFORM
@@ -102,14 +109,15 @@
  01 L-AMOUNT               BINARY-LONG.
  01 L-DIG                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-PLAYER L-AMOUNT L-DIG.
-     IF PL-USED(L-PLAYER) NOT = 1 OR PL-STATE(L-PLAYER) NOT = PS-ALIVE OR PL-MODE(L-PLAYER) NOT = 0
+     IF PL-USED(L-PLAYER) NOT = 1 OR PL-STATE(L-PLAYER) NOT = PS-ALIVE OR (PL-MODE(L-PLAYER) NOT = 0 AND PL-MODE(L-PLAYER) NOT = 2)
          GOBACK
      END-IF
      CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
      IF WS-SLOT = 0
          GOBACK
      END-IF
-     IF L-DIG = 1
+*>   The dig cooldown is refreshed only while the memory is present (44-5 section 3.3).
+     IF L-DIG = 1 AND WD-DIG-CD(WS-SLOT) > 0
          MOVE 1200 TO WD-DIG-CD(WS-SLOT)
      END-IF
      COMPUTE WD-ANGER(WS-SLOT, L-PLAYER) = FUNCTION MIN(150, WD-ANGER(WS-SLOT, L-PLAYER) + L-AMOUNT)
@@ -150,54 +158,6 @@
  END PROGRAM WARDEN-LEVEL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. WARDEN-AGGRO.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY WARDENSTATE.
- 01 WS-SLOT                BINARY-LONG.
- 01 WS-ONE                 BINARY-LONG VALUE 1.
- 01 WS-P                   BINARY-LONG.
- 01 WS-BEST                BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
- LINKAGE SECTION.
- 01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
-     CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
-     IF WS-SLOT = 0
-         GOBACK
-     END-IF
-     IF WD-SONIC-CD(WS-SLOT) > 0
-         SUBTRACT 1 FROM WD-SONIC-CD(WS-SLOT)
-     END-IF
-     IF WD-DIG-CD(WS-SLOT) > 0
-         SUBTRACT 1 FROM WD-DIG-CD(WS-SLOT)
-     END-IF
-     MOVE 0 TO WS-BEST WS-TOP
-     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
-         IF WD-ANGER(WS-SLOT, WS-P) > 0 AND FUNCTION MOD(CW-TIME, 20) = 0
-             COMPUTE WD-ANGER(WS-SLOT, WS-P) = WD-ANGER(WS-SLOT, WS-P) - 1
-             IF WD-ANGER(WS-SLOT, WS-P) <= 1
-                 MOVE 0 TO WD-ANGER(WS-SLOT, WS-P)
-             END-IF
-         END-IF
-         IF WD-ANGER(WS-SLOT, WS-P) > WS-TOP
-             IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-MODE(WS-P) = 0 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
-                 MOVE WD-ANGER(WS-SLOT, WS-P) TO WS-TOP
-                 MOVE WS-P TO WS-BEST
-             END-IF
-         END-IF
-     END-PERFORM
-     MOVE WS-BEST TO EN-TARGET(L-ROW)
-     IF WS-BEST > 0
-         MOVE PL-ENTITY-ID(WS-BEST) TO EN-TARGET-ID(L-ROW)
-     ELSE
-         MOVE 0 TO EN-TARGET-ID(L-ROW)
-     END-IF
-     GOBACK.
- END PROGRAM WARDEN-AGGRO.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. WARDEN-HURT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -228,6 +188,7 @@
          CALL "WD-FIND" USING EN-ID(L-ROW) WS-ONE WS-SLOT
          IF WS-SLOT > 0
              MOVE 200 TO WD-SONIC-CD(WS-SLOT)
+             MOVE 0 TO WD-ROAR-TARGET(WS-SLOT)
          END-IF
      END-IF
      GOBACK.

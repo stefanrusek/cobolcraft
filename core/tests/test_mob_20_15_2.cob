@@ -103,13 +103,20 @@
      MOVE 150 TO TL-EXPECTED-N
      MOVE WD-ANGER(WS-W, WS-PLAYER) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 0 TO WD-DIG-CD(WS-W)
+     MOVE 5 TO WD-DIG-CD(WS-W)
      MOVE 1 TO WS-AMOUNT
      CALL "WARDEN-ANGER-ADD" USING WS-WARDEN WS-PLAYER WS-AMOUNT WS-ONE
-     MOVE "acceptance US15 20§15 Warden a sensed player sets the dig cooldown 1200" TO TL-CASE
+     MOVE "acceptance US15 20§15 Warden a sensed player refreshes the present dig cooldown to 1200" TO TL-CASE
      MOVE 1200 TO TL-EXPECTED-N
      MOVE WD-DIG-CD(WS-W) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WD-DIG-CD(WS-W)
+     CALL "WARDEN-ANGER-ADD" USING WS-WARDEN WS-PLAYER WS-AMOUNT WS-ONE
+     MOVE "acceptance US15 20§15 Warden an expired dig cooldown is not created again (44-5 3.3)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WD-DIG-CD(WS-W) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5000 TO WD-DIG-CD(WS-W)
 *>   A creative player gains no anger.
      MOVE 0 TO WD-ANGER(WS-W, WS-PLAYER)
      MOVE 1 TO PL-MODE(WS-PLAYER)
@@ -130,11 +137,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 90 TO WD-ANGER(WS-W, WS-PLAYER)
      CALL "MOB-STEP" USING WS-WARDEN
-     MOVE "acceptance US15 20§15 Warden targets the angry player" TO TL-CASE
+     MOVE "acceptance US15 20§15 Warden angry at someone roars first: no attack target yet, roar target set" TO TL-CASE
      MOVE WS-PLAYER TO TL-EXPECTED-N
-     MOVE EN-TARGET(WS-WARDEN) TO TL-OBSERVED-N
+     COMPUTE TL-OBSERVED-N = WD-ROAR-TARGET(WS-W) + EN-TARGET(WS-WARDEN)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WD-ROAR-TARGET(WS-W)
+     MOVE WS-PLAYER TO EN-TARGET(WS-WARDEN)
      MOVE 1 TO PL-MODE(WS-PLAYER)
+     CALL "MOB-STEP" USING WS-WARDEN
      CALL "MOB-STEP" USING WS-WARDEN
      MOVE "acceptance US15 20§15 Warden drops a target that turns creative" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
@@ -142,21 +152,27 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO PL-MODE(WS-PLAYER)
 
-*>   Decay on the 20-tick pulse: 3 falls to 2, 2 falls to 1 and is dropped.
+*>   Decay on the manager's tick (the warden's own tick count a multiple of 20; 44-5 3.6: a value of 1 or less is dropped, the others fall by 1): 3 falls to 2, 2 falls to 1, 1 is dropped.
      MOVE 3 TO WD-ANGER(WS-W, WS-PLAYER)
-     MOVE 12000 TO CW-TIME
+     MOVE 19 TO EN-WAKE(WS-WARDEN)
      CALL "MOB-STEP" USING WS-WARDEN
      MOVE "acceptance US15 20§15 Warden anger 3 falls to 2 on the pulse" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      MOVE WD-ANGER(WS-W, WS-PLAYER) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 12020 TO CW-TIME
+     MOVE 39 TO EN-WAKE(WS-WARDEN)
      CALL "MOB-STEP" USING WS-WARDEN
-     MOVE "acceptance US15 20§15 Warden anger 2 falls to 1 and is dropped" TO TL-CASE
+     MOVE "acceptance US15 20§15 Warden anger 2 falls to 1 (kept)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WD-ANGER(WS-W, WS-PLAYER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 59 TO EN-WAKE(WS-WARDEN)
+     CALL "MOB-STEP" USING WS-WARDEN
+     MOVE "acceptance US15 20§15 Warden anger 1 is dropped on the next pulse" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WD-ANGER(WS-W, WS-PLAYER) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 12001 TO CW-TIME
+     MOVE 5 TO EN-WAKE(WS-WARDEN)
      MOVE 5 TO WD-ANGER(WS-W, WS-PLAYER)
      CALL "MOB-STEP" USING WS-WARDEN
      MOVE "acceptance US15 20§15 Warden anger does not fall off the pulse" TO TL-CASE
@@ -205,6 +221,8 @@
              SUBTRACT 1 FROM PL-HURT-COOLDOWN(WS-PLAYER)
          END-IF
          MOVE 100 TO WD-ANGER(WS-W, WS-PLAYER)
+         MOVE WS-PLAYER TO EN-TARGET(WS-WARDEN)
+         MOVE PL-ENTITY-ID(WS-PLAYER) TO EN-TARGET-ID(WS-WARDEN)
          COMPUTE EN-X(WS-WARDEN) = WS-X + 1
          MOVE 0 TO EN-VX(WS-WARDEN) EN-VZ(WS-WARDEN)
          CALL "MOB-STEP" USING WS-WARDEN
@@ -240,6 +258,8 @@
      MOVE 0 TO WS-START WS-FIRE WS-END WS-CD-AT-END
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 80 OR WS-END > 0
          MOVE 100 TO WD-ANGER(WS-W, WS-PLAYER)
+         MOVE WS-PLAYER TO EN-TARGET(WS-WARDEN)
+         MOVE PL-ENTITY-ID(WS-PLAYER) TO EN-TARGET-ID(WS-WARDEN)
          COMPUTE EN-X(WS-WARDEN) = WS-X + 8
          CALL "MOB-STEP" USING WS-WARDEN
          IF WS-START = 0 AND WD-BOOM(WS-W) = 1

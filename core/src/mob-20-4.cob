@@ -105,7 +105,7 @@
 *> USING key (PIC X(24), the species), scale out (FLOAT-LONG): the factor of the stroll's walk against the table speed SM-WALK-MILLI (which is the speed of the chase
 *> or attack goal at modifier 1.0). The motion goes with the square of the speed (18 section 3.2.1), so the factor is the square of the stroll goal's speed modifier:
 *> creeper, spider and cave spider 0.8 (20 sections 6.1 and 7.1), vindicator and pillager 0.6 (20 sections 13.1 and 13.2), ravager 0.4 (20 section 13.6),
-*> piglin 0.6 idle movement and hoglin 0.4 idle movement (21 sections 5.5.1 and 5.5.2); every other species strolls at its table speed (factor 1).
+*> piglin 0.6 idle movement and hoglin 0.4 idle movement (21 sections 5.5.1 and 5.5.2), warden 0.5 against its 1.2 (20 section 15); every other species strolls at its table speed (factor 1).
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(24).
@@ -118,6 +118,9 @@
              MOVE 0.36 TO L-SCALE
          WHEN L-KEY = "ravager" OR "hoglin"
              MOVE 0.16 TO L-SCALE
+*>       The warden's idle stroll is at 0.5 and its table speed is that of 1.2 (20 section 15): (0.5 / 1.2) squared.
+         WHEN L-KEY = "warden"
+             MOVE 0.1736111111111111 TO L-SCALE
          WHEN OTHER
              MOVE 1 TO L-SCALE
      END-EVALUATE

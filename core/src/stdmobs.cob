@@ -461,9 +461,9 @@
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
          GOBACK
      END-IF
-*>   SM-NEUTRAL 8: the warden's target is the angriest player (WARDEN-AGGRO, 20 section 15).
+*>   SM-NEUTRAL 8: the warden's brain (WARDEN-BRAIN, 20 section 15): its target comes from the roar and from being hurt.
      IF SM-NEUTRAL(L-M) = 8
-         CALL "WARDEN-AGGRO" USING L-ROW
+         CALL "WARDEN-BRAIN" USING L-ROW
          GOBACK
      END-IF
      IF SM-NEUTRAL(L-M) = 2
@@ -1098,6 +1098,10 @@
              CALL "STDMOB-BURN" USING WS-ROW WS-M
          END-IF
          CALL "STDMOB-AGGRO" USING WS-ROW WS-M
+*>       A warden that has dug in is gone (WARDEN-BRAIN).
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
          END-IF
@@ -1142,6 +1146,9 @@
      END-IF
      IF SM-KEY(WS-M) = "bee"
          CALL "BEE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+     END-IF
+     IF SM-KEY(WS-M) = "warden"
+         CALL "WARDEN-WALK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
      IF SM-KEY(WS-M) = "turtle"
          CALL "TURTLE-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
