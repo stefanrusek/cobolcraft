@@ -679,12 +679,11 @@
              MOVE WS-WPOS TO WS-I(3)
              MOVE WS-WSPEED TO WS-I(4)
              MOVE WS-AGE TO WS-I(5)
-             CALL "EF8-NAUTILUS-ANIM" USING EMM-MODEL WS-IN
-             IF CL-MD-KEY(WS-K) = "zombie_nautilus~w" AND EN-EQ(WS-ROW, 7) > 0
-                 MOVE "corals" TO WS-FK
-                 CALL "EMM-FIND" USING EMM-MODEL WS-FK WS-HK
-                 MOVE 0 TO MM-VISIBLE(WS-HK)
+             MOVE 0 TO WS-I(6)
+             IF EN-EQ(WS-ROW, 7) > 0
+                 MOVE 1 TO WS-I(6)
              END-IF
+             CALL "EF8-NAUTILUS-ANIM" USING EMM-MODEL WS-IN
          WHEN "B"
              MOVE WS-WPOS TO WS-I(3)
              MOVE WS-WSPEED TO WS-I(4)

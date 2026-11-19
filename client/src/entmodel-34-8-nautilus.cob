@@ -128,7 +128,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EF8-NAUTILUS-ANIM.
-*> USING model, state (16 FLOAT-LONG: 1 xRot, 2 yRot degrees, 3 walk position, 4 walk speed, 5 ageInTicks): reset first, then body.yRot and body.xRot set to the
+*> USING model, state (16 FLOAT-LONG: 1 xRot, 2 yRot degrees, 3 walk position, 4 walk speed, 5 ageInTicks, 6 body armor worn 1 or 0: the coral part of the warm zombie nautilus is hidden, 6.4): reset first, then body.yRot and body.xRot set to the
 *> state's angles clamped to -10 to 10 degrees (6.3 step 1) and SWIMMING.applyWalk(pos + age / 5, speed + 0.2, 2, 3) (step 2): time (long)((pos + age / 5) x 100) ms,
 *> looped over 1 s, strength min((speed + 0.2) x 3, 1); each of the eight channels of A.2 (part 1 body, 2 upper mouth, 3 inner mouth, 4 lower mouth; target 1 x rotation in
 *> degrees, 2 3 4 scale x y z, values at the times 0, 0.5, 0.75, 0.875, 1 in tenths) is interpolated linearly and added, times the strength (a scale as the factor minus 1).
@@ -173,6 +173,11 @@
     05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
  PROCEDURE DIVISION USING EMM-MODEL L-IN.
      CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "corals" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-P
+     IF WS-P > 0 AND L-I(6) = 1
+         MOVE 0 TO MM-VISIBLE(WS-P)
+     END-IF
      MOVE "body" TO WS-NAME
      CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-PI(1)
      MOVE "upper_mouth" TO WS-NAME
