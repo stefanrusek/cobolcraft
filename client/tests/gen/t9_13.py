@@ -1,7 +1,7 @@
 from g9 import *
 import math
 t = mk9(13, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 13 (falling blocks and primed TNT): the TNT submit (translate, swell scale below f = 10, Y rotations, worked values of 13.2), the white flash overlay,",
-             "the falling block's translation, shouldRender (the landed state hides the entity) and the block position of the lookup."])
+             "the falling block's translation, shouldRender (the landed state hides the entity) and the block position of the lookup."], title='falling blocks and primed TNT')
 def swell(f):
     s = max(0.0, min(1.0, 1 - f / 10)); s = s * s; s = s * s; return s * 0.3
 for f in (-1, -0.5, 0, 0.5, 4.9, 5, 9, 9.99, 10, 12, 80):

@@ -88,6 +88,7 @@ class RT:
         self.raw('CALL "CL-INIT" USING CLIENT-STATE', 'MOVE 0 TO PK-COUNT', 'CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE', 'MOVE 256 TO PL-HEIGHT', 'MOVE 0 TO SK-U',
                  'MOVE 10 TO WS-EYE(1) WS-EYE(3)', 'MOVE 64 TO WS-EYE(2)', 'MOVE 1 TO CT-OPEN', 'MOVE CT-TYPE-STANDARD TO CT-SET-TYPE', 'MOVE "N" TO TL-MODE')
     def check(self, name, exp, obs):
+        name = re.sub(r'^34-9§(\d+)[0-9.]* ', r'acceptance US15 34-9§\1 ', name)
         self.raw('MOVE "%s" TO TL-CASE' % name.replace('"', "'"), 'MOVE %s TO TL-EXPECTED-N' % exp, 'MOVE %s TO TL-OBSERVED-N' % obs, 'CALL "TEST-ASSERT" USING TESTLIB-ASSERT')
     def spawn(self, key, yaw=0, pitch=0, ident=7):
         self.raw('CALL "ENTITIES-CLEAR" USING CLIENT-STATE', 'MOVE 0 TO EA-MT-COUNT', 'MOVE SPACES TO WS-KEY', 'MOVE "%s" TO WS-KEY' % key,
@@ -100,6 +101,7 @@ class RT:
         if count is not None: self.raw('MOVE %d TO EN-STACK-COUNT(1)' % count)
         self.raw('CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE', 'MOVE RL-GI-COUNT TO WS-LAST', 'CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE')
     def check_tol(self, name, exp, obs, tol):
+        name = re.sub(r'^34-9§(\d+)[0-9.]* ', r'acceptance US15 34-9§\1 ', name)
         self.raw('MOVE "%s (within %d)" TO TL-CASE' % (name.replace('"', "'"), tol), 'MOVE 1 TO TL-EXPECTED-N', 'MOVE 0 TO TL-OBSERVED-N',
                  'IF FUNCTION ABS(%s - (%s)) <= %d' % (obs, exp, tol), '    MOVE 1 TO TL-OBSERVED-N', 'END-IF', 'CALL "TEST-ASSERT" USING TESTLIB-ASSERT')
     def extent(self, name, ext, n=None, count='RL-EN-COUNT', tol=0):

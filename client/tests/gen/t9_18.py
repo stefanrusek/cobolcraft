@@ -1,7 +1,7 @@
 from g9 import *
 D = 0.017453292
 t = mk9(18, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 18 (worn equipment, cross-reference): the elytra model (both wings, deformation 1.0, the right wing mirrored), the baby elytra (the same scaled by 0.5),",
-             "the elytra setupAnim (crouching raises the left wing to y 3; the right wing mirrors yaw and roll) and the shield model (plate and handle)."])
+             "the elytra setupAnim (crouching raises the left wing to y 3; the right wing mirrors yaw and roll) and the shield model (plate and handle)."], title='worn equipment')
 txt = [l for l in open(REPO + DOCS[9]).read().split('\n') if l.startswith('`ElytraModel`')][0]
 rows = []
 for m in re.finditer(r'`(left_wing|right_wing)` tex \((\d+), (\d+)\)( mirrored,)? (?:cuboid )?origin \(([^)]*)\),? size (\d+) x (\d+) x (\d+), deformation ([0-9.]+), pose off \(([^)]*)\), rot \(([^)]*)\)', txt):

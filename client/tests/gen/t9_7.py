@@ -6,7 +6,7 @@ def msin(x): return f32(math.sin((int(x * 10430.378350470453) & 65535) / 10430.3
 def mcos(x): return f32(math.sin((int(x * 10430.378350470453 + 16384.0) & 65535) / 10430.378350470453))
 t = mk9(7, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md sections 7 and 8: the arguments of ThrownItemRenderer for each type (the 1.1 table and Validation 2), the block light of a full bright item, the quad of the flat item model with",
             "the scale and the firework's rotations, the fishing hook's quad (8 step 1), the fishing line vertices and normals (8 step 2, Validation 7), the swing factor, the holding arm and the hand position of the third person (the table sine and cosine of 34-9 section 2)."],
-        extra='\n 01 WS-KEY               PIC X(24).')
+        extra='\n 01 WS-KEY               PIC X(24).', title='thrown items and firework')
 # the thrown types and arguments from the table of 1.1
 thrown = {}
 for r in table9('### 1.1', 0):
@@ -31,6 +31,7 @@ for sc in (1, 3, 0.75):
             if ang: p = rotz(roty(rotx(p, math.pi / 2), math.pi), math.pi)
             out += [v + 0.0 for v in p]
         t.call('EF9-THROWN-QUAD', [sc, ang], out, '7.1/7.2 quad for scale %s shot at an angle %d (12 corner values)' % (sc, ang))
+t.sec(8, 'fishing hook')
 # hook quad
 txt = [l for l in open(REPO + DOCS[9]).read().split('\n') if l.startswith('1. push; scale 0.5; rotate by the camera orientation')][0]
 uv = re.search(r'= (\(0, 0, 0, 1\), \(1, 0, 1, 1\), \(1, 1, 1, 0\), \(0, 1, 0, 0\))', txt).group(1)

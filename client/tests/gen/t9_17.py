@@ -2,7 +2,7 @@ from g9 import *
 import math
 D = 0.017453292
 t = mk9(17, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 17 (display entities): the billboard orientation table (the four constraints, Validation 11), the brightness override unpacked, the item display's Y rotation, the text display's flag bits,",
-             "layout (line height 10, height = lines x 10 - 1, translate (1 - width / 2, -height), the default background's alpha 63) and the lines' x for the three alignments, with the worked example of two lines of widths 40 and 60 centred, and the text colour."])
+             "layout (line height 10, height = lines x 10 - 1, translate (1 - width / 2, -height), the default background's alpha 63) and the lines' x for the three alignments, with the worked example of two lines of widths 40 and 60 centred, and the text colour."], title='display entities')
 doc = open(REPO + DOCS[9]).read()
 tab = doc[doc.index('| Constraint (id, 44 part 9) | yaw | pitch |'):]
 rows = [r for r in tab.split('\n')[2:6]]

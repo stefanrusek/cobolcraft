@@ -2,7 +2,7 @@ from g9 import *
 import math
 D = 0.017453292
 t = mk9(5, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md sections 5 and 6: 5.1 the trident model part by part (the four heads are children of the pole, the right spike mirrored), 5.2 its submit (rotate Y by yRot - 90, rotate Z by xRot + 90),",
-            "culling box and texture, 5.3 the spin-attack effect model and its setupAnim (box0 at -50 and box1 at -55 degrees a tick, wrapped), 6.1 the wind charge model and its setupAnim (the pose rotation of `wind` is replaced), 6.2 the texture scroll."])
+            "culling box and texture, 5.3 the spin-attack effect model and its setupAnim (box0 at -50 and box1 at -55 degrees a tick, wrapped), 6.1 the wind charge model and its setupAnim (the pose rotation of `wind` is replaced), 6.2 the texture scroll."], title='trident and spin attack')
 # 5.1
 rows = ['P pole root 0 0 0 0 0 0']
 for r in table9('### 5.1'):
@@ -30,6 +30,7 @@ def wrap(x): return x - 360 * math.floor((x + 180) / 360)
 for age in (0, 1, 3.5, 7.2, 10, 100.25, 1000.5):
     t.raw('MOVE "PLAYER_SPIN_ATTACK" TO WS-LAYER', 'CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK'); t.setin([age]); t.raw('CALL "EF9-SPIN-ANIM" USING EMM-MODEL WS-IN')
     for i in (0, 1): t.cur('box%d' % i, 'yrot', wrap(age * -(45 + (i + 1) * 5)) * D)
+t.sec(6, 'wind charge')
 # 6.1 wind charge
 wrows = ['P bone root 0 0 0 0 0 0']
 for r in table9('### 6.1'):

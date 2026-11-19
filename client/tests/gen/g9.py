@@ -23,8 +23,20 @@ def rot_cell(s):
         m = re.search(ax + r'\s*=\s*' + NUMR, s)
         if m: r[k] = m.group(1)
     return r
-def mk9(n, header, extra=''):
-    t = T('TEST-ENTMODEL-34-9-%d' % n, 'acceptance US15 34-9§%d' % n, header, extra_ws=WSX + extra, ck=True)
+class T9(T):
+    """cases are named 'acceptance US15 34-9§<n> <title>: <name>' (the review command of T3554 greps that text); sec() changes <n> and <title> for the cases that follow"""
+    def sec(self, n, title):
+        self.prefix = 'acceptance US15 34-9§%s %s' % (n, title)
+        self.raw('MOVE "%s" TO WS-PFX' % self.prefix)
+    def render(self):
+        s = T.render(self)
+        s = s.replace(' 01 WS-NAME                PIC X(160).', ' 01 WS-NAME                PIC X(160).\n 01 WS-PFX                 PIC X(100).', 1)
+        s = s.replace('STRING "%s: " FUNCTION TRIM(WS-NAME)' % self.prefix0, 'STRING FUNCTION TRIM(WS-PFX) ": " FUNCTION TRIM(WS-NAME)')
+        s = s.replace(' PROCEDURE DIVISION.\n', ' PROCEDURE DIVISION.\n     MOVE "%s" TO WS-PFX\n' % self.prefix0, 1)
+        return s
+def mk9(n, header, extra='', title='entity models'):
+    t = T9('TEST-ENTMODEL-34-9-%d' % n, 'acceptance US15 34-9§%d %s' % (n, title), header, extra_ws=WSX + extra, ck=True)
+    t.prefix0 = t.prefix
     t.LP = 'EF9-LAYER'
     return t
 def save9(t, n):

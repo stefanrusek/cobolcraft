@@ -2,7 +2,7 @@ from g9 import *
 import math,re
 t = mk9(3, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 3 (minecarts): 3.1 the shared MinecartModel part by part for the seven layers, 3.2 the offsetSeed shifts (Validation 3 and the formula with 64-bit wrapping),",
             "the render pose of the new movement behaviour (offset, Y rotation, Z rotation, the hurt tilt, scale), the display block transform of step 5, the culling box growth, the default display block and offset per type, the passenger attachment, and 13.2's swell",
-            "and isLit as the TNT minecart contents use them (Validation 5)."], extra='\n 01 WS-KEY               PIC X(24).\n 01 WS-BLOCK-NAME         PIC X(24).\n 01 WS-OFFSET             BINARY-LONG.')
+            "and isLit as the TNT minecart contents use them (Validation 5)."], extra='\n 01 WS-KEY               PIC X(24).\n 01 WS-BLOCK-NAME         PIC X(24).\n 01 WS-OFFSET             BINARY-LONG.', title='minecarts')
 t.extra_ws += ''
 # 3.1 the model
 rows = []
@@ -56,6 +56,7 @@ for key, blk, off in (('minecart', '', 6), ('chest_minecart', 'chest', 8), ('fur
     t.text('3.2 default display block of %s' % key, blk, 'WS-BLOCK-NAME'); t.num('3.2 default display offset of %s' % key, off, 'WS-OFFSET')
 t.call('EF9-MINECART-PASSENGER', [0], [0, 0.1875, 0], '1.3 passenger attachment of an ordinary rider')
 t.call('EF9-MINECART-PASSENGER', [1], [0, 0, 0], '1.3 passenger attachment of a villager or a wandering trader')
+t.sec(13, 'falling blocks and primed TNT')
 # 13.2 swell and isLit (Validation 5, worked values)
 def swell(f):
     s = max(0.0, min(1.0, 1 - f / 10)); s = s * s; s = s * s; return s * 0.3

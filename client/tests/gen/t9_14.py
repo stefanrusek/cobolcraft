@@ -11,7 +11,7 @@ def icon(v):
         if v >= th: return ic
     return 0
 t = mk9(14, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 14 (experience orb): getIcon from the value (the tiers read from the document), the uv rectangle of an icon in the 4 x 4 sheet, the colour of the quad",
-             "(integers r, g = 255, b, alpha 128, with the table sine of 34-9 section 2), the block light clamp(block + 7, 0, 15), the worked examples and Validation 6."])
+             "(integers r, g = 255, b, alpha 128, with the table sine of 34-9 section 2), the block light clamp(block + 7, 0, 15), the worked examples and Validation 6."], title='experience orb')
 for v in (0, 1, 2, 3, 6, 7, 16, 17, 20, 36, 37, 72, 73, 148, 149, 306, 307, 616, 617, 1236, 1237, 2476, 2477, 100000):
     t.call('EF9-ORB-ICON', [v], [icon(v)], '14 icon of value %d' % v)
 assert icon(20) == 3 and icon(1237) == 9  # Validation 6 says value 2 gives icon 1, which contradicts the tier table (>= 3: 1): the table is followed

@@ -7,6 +7,7 @@
  COPY CLEMM.
  COPY TESTLIB.
  01 WS-NAME                PIC X(160).
+ 01 WS-PFX                 PIC X(100).
  01 WS-E                   FLOAT-LONG.
  01 WS-O                   FLOAT-LONG.
  01 WS-IN.
@@ -29,6 +30,7 @@
  01 WS-FL                BINARY-LONG.
  01 WS-KEY               PIC X(24).
  PROCEDURE DIVISION.
+     MOVE "acceptance US15 34-9§7 thrown items and firework" TO WS-PFX
      MOVE "snowball" TO WS-KEY
      CALL "EF9-THROWN" USING WS-KEY WS-OUT
      MOVE "1.1 snowball is a thrown item" TO WS-NAME
@@ -502,6 +504,7 @@
      MOVE 0.09375 TO WS-E
      MOVE WS-OV(12) TO WS-O
      PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-9§8 fishing hook" TO WS-PFX
      CALL "EF9-HOOK-QUAD" USING WS-IN WS-OUT
      MOVE "8.1 hook quad (x, y, u, v of the four vertices) [1]" TO WS-NAME
      MOVE -0.25 TO WS-E
@@ -1607,7 +1610,7 @@
 
  CHECK-NUM.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US15 34-9§7: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     STRING "acceptance US15 34-9§8 fishing hook: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      IF FUNCTION ABS(WS-O - WS-E) <= 0.00002
          MOVE WS-E TO WS-O
@@ -1618,7 +1621,7 @@
 
  CHECK-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US15 34-9§7: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     STRING "acceptance US15 34-9§8 fishing hook: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-ENTMODEL-34-9-7.

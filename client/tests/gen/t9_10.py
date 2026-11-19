@@ -5,7 +5,7 @@ STEP = {0: (0, -1, 0), 1: (0, 1, 0), 2: (0, 0, -1), 3: (0, 0, 1), 4: (-1, 0, 0),
 DATA2D = {3: 0, 4: 1, 2: 2, 5: 3}   # SOUTH 0, WEST 1, NORTH 2, EAST 3 (11 and Open question 10)
 t = mk9(10, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md sections 10 and 11 (item frame and painting): the render offset, the frame's submit (step x 0.46875, X and Y rotations by direction, translate 0.5 or 0.4375,",
              "the map branch and the item branch), the lights of a glow frame (max(5, block), 15728880, 15728850), the worked example and Validation 8; the painting's Y rotation, the block position of each cell's light and the vertices of the six faces of a cell",
-             "(the table of 11 evaluated symbolically, Validation 9)."])
+             "(the table of 11 evaluated symbolically, Validation 9)."], title='item frame')
 doc = open(REPO + DOCS[9]).read().split('\n')
 for d, (sx, sy, sz) in STEP.items():
     t.call('EF9-FRAME-OFFSET', [sx, sz], [sx * 0.3, -0.25, sz * 0.3], '10 render offset of direction %d' % d)
@@ -24,6 +24,7 @@ for d in range(6):
         t.call('EF9-FRAME-OPS', [d, invisible, rot, has_map], frame_ops(d, invisible, rot, has_map), '10 submit for direction %d invisible %d rotation %d map %d' % (d, invisible, rot, has_map))
 for glow, bl in ((0, 3), (0, 12), (1, 3), (1, 5), (1, 14)):
     t.call('EF9-FRAME-LIGHT', [glow, bl], [max(5, bl) if glow else bl, 15728880 if glow else 0, 15728850 if glow else 0], '10 lights of glow %d block light %d' % (glow, bl))
+t.sec(11, 'painting')
 # 11
 for d in (3, 4, 2, 5):
     t.call('EF9-PAINTING-ROT', [d], [180 - DATA2D[d] * 90], '11 Y rotation of direction %d' % d)

@@ -59,43 +59,43 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 vertices" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 min x (thousandths)" TO TL-CASE
      MOVE 350 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 max x (thousandths)" TO TL-CASE
      MOVE 650 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 min y (thousandths)" TO TL-CASE
      MOVE 25 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 max y (thousandths)" TO TL-CASE
      MOVE 325 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 min z (thousandths)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 (icon 3) camera yaw 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 (icon 3) camera yaw 0 max z (thousandths)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 red x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 red x 255" TO TL-CASE
      MOVE 127 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-R(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 green x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 green x 255" TO TL-CASE
      MOVE 255 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-G(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 20 blue x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 blue x 255" TO TL-CASE
      MOVE 3 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-BLUE(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -106,22 +106,22 @@
          END-IF
      END-PERFORM
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 20 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 750 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 20 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 20 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 20 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 20 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 250 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -140,43 +140,43 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 vertices" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 min x (thousandths)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 max x (thousandths)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 min y (thousandths)" TO TL-CASE
      MOVE 25 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 max y (thousandths)" TO TL-CASE
      MOVE 325 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 min z (thousandths)" TO TL-CASE
      MOVE 350 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 (icon 9) camera yaw 90 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 (icon 9) camera yaw 90 max z (thousandths)" TO TL-CASE
      MOVE 650 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 red x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 red x 255" TO TL-CASE
      MOVE 94 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-R(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 green x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 green x 255" TO TL-CASE
      MOVE 255 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-G(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 1237 blue x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 blue x 255" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-BLUE(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -187,22 +187,22 @@
          END-IF
      END-PERFORM
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 1237 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 250 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 1237 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 1237 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 1237 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 1237 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 750 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -221,43 +221,43 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 vertices" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 min x (thousandths)" TO TL-CASE
      MOVE 374 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 max x (thousandths)" TO TL-CASE
      MOVE 626 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 min y (thousandths)" TO TL-CASE
      MOVE 25 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 max y (thousandths)" TO TL-CASE
      MOVE 325 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 min z (thousandths)" TO TL-CASE
      MOVE 418 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 (icon 2) camera yaw 33 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 (icon 2) camera yaw 33 max z (thousandths)" TO TL-CASE
      MOVE 582 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 red x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 red x 255" TO TL-CASE
      MOVE 25 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-R(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 green x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 green x 255" TO TL-CASE
      MOVE 255 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-G(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 7 blue x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 blue x 255" TO TL-CASE
      MOVE 48 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-BLUE(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -268,22 +268,22 @@
          END-IF
      END-PERFORM
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 7 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 7 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 750 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 7 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 7 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 7 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 250 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -302,43 +302,43 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 vertices" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 min x (thousandths)" TO TL-CASE
      MOVE 350 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 max x (thousandths)" TO TL-CASE
      MOVE 650 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 min y (thousandths)" TO TL-CASE
      MOVE 25 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 max y (thousandths)" TO TL-CASE
      MOVE 325 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 min z (thousandths)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 (icon 10) camera yaw 180 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 (icon 10) camera yaw 180 max z (thousandths)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 red x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 red x 255" TO TL-CASE
      MOVE 254 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-R(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 green x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 green x 255" TO TL-CASE
      MOVE 255 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-G(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§14 orb value 2477 blue x 255" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 blue x 255" TO TL-CASE
      MOVE 10 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(RL-EN-BLUE(1) * 255 + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -349,22 +349,22 @@
          END-IF
      END-PERFORM
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 2477 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 min u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-U(1) RL-EN-U(2) RL-EN-U(3) RL-EN-U(4) RL-EN-U(5) RL-EN-U(6)) * EA-W - EA-MT-X(WS-SLOT)) / EA-MT-W(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 2477 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 max u of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 750 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MIN(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 2477 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 min v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 500 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-EXPECT = (FUNCTION MAX(RL-EN-V(1) RL-EN-V(2) RL-EN-V(3) RL-EN-V(4) RL-EN-V(5) RL-EN-V(6)) * EA-H - EA-MT-Y(WS-SLOT)) / EA-MT-H(WS-SLOT) * 1000
-     MOVE "34-9§14 orb value 2477 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
+     MOVE "acceptance US15 34-9§14 orb value 2477 max v of the icon (thousandths of the icon sheet)" TO TL-CASE
      MOVE 750 TO TL-EXPECTED-N
      MOVE FUNCTION INTEGER(WS-EXPECT + 0.5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

@@ -12,7 +12,8 @@
 *>   CL-MD-ANIM   the setupAnim program run before drawing, with the state the replica has (head pitch, head yaw relative to the body;
 *>                walk animation and age in ticks are not tracked and are 0): Q quadruped (EF4-COW-ANIM, EF4-QUAD-POSE of 34-4 2.2), C creeper
 *>                (EF6-CREEPER-ANIM), Z zombie and K skeleton (EMD-ANIM variants 1 and 2), D drowned, P piglin, G zombified piglin (variants 5, 3, 4), Y an eyes layer (the
-*>                posed model again, full bright, 34-1 8.5), E the same for the eyes layers posed as the mob that has them (phantom_eyes, breeze_eyes: the pose program of the entity's own row), - none: the model is drawn in its rest pose;
+*>                posed model again, full bright, 34-1 8.5), E the same for the eyes layers posed as the mob that has them (phantom_eyes, breeze_eyes: the pose program of the
+*>   entity's own row), - none: the model is drawn in its rest pose;
 *>   CL-MD-PATH   the texture image in the pack stack, relative to assets/minecraft/, from the renderer facts of the documents
 *>                (EF6-CREEPER-TEXTURE, EMD-RENDERER, EF7-BLAZE-TEXTURE, EF8-SQUID-TEXTURE, EF6-SPIDER-TEXTURE); spaces for a type whose texture
 *>                the replica cannot choose (the cow, pig and wolf textures come from a variant registry entry that the replica does not hold; a
@@ -20,17 +21,25 @@
 *>   CL-MD-BABY   the row of the baby model of the type (0 none: the adult model is drawn for a baby); rows whose key ends in ~b are baby rows and no
 *>                entity type. Babies are drawn from that row with its own atlas slot (EN-BABY, entities-render.cob ENTITIES-MESH); the variant
 *>                of a type (horse colour, cat breed, ...) is not in the replica: the row's texture is the default variant of the document.
-*>                No-hat villager rows (villager_nohat, villager_nohat~b, zvillager_nohat, zvillager_nohat~b, code A: the villager without head cuboids, posed as the villager) are the type layer when the profession texture's hat covers the head (34-3 1.5).
+*>                No-hat villager rows (villager_nohat, villager_nohat~b, zvillager_nohat, zvillager_nohat~b, code A: the villager without head cuboids, posed as the villager) are
+*>   the type layer when the profession texture's hat covers the head (34-3 1.5).
 *>                Armor rows (armor_head, armor_chest, armor_legs, armor_feet, code A: posed as the mob that wears them) are drawn by ENTITY-OVERLAY, no entity type.
 *>                The zombie villager's armor rows (zvil_armor_head, _chest, _legs, _feet, 34-3 section 2.4) are the same, with the meshes of EMD-ZV-ARMOR.
 *>                The armor rows of a baby (armor_<slot>~b, the baby armor mesh of 34-2 section 1.4 at the baby deformations; also the baby zombie villager's) and the piglin
 *>                family's own armor rows (piglin_armor_<slot>, grow 1.02; piglin_armor_<slot>~b, the baby piglin armor at 0.7 and the arm offset (0.5, -0.5, 0)) are the same
 *>                kind of row; CL-MD-BABY of an adult armor row is the baby row of its slot. The row banner is only an atlas image holder for the sprites of a banner held
-*> in first person (hand-banner.cob; the texture codes 9000 + a pattern holder), and the rows guardian_beam and end_crystal_beam the images of the guardian's beam and the crystal beam (entities-beam.cob); The rows
-*>   item_frame and glow_item_frame (code F) draw no model: the frame's item is drawn into the ground item mesh (item-held.cob ENTITY-FRAME-EMIT, 34-9 section 10). The row shulker_box is the image holder of the shulker
-*>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). The row shield is the image holder of the shield's sprites (hand-shield.cob: code 0 shield_base_nopattern, 9000 shield_base, 9000 + a pattern holder the pattern under entity/shield). ender_dragon_eyes is the dragon's eyes layer (CL-MD-EXTRA of ender_dragon, 34-7 8.5 pass 2).
-*> The minecarts (seven rows, code M, family 9: client/src/entmodel-34-9-3.cob; the render pose is ENTITY-MINECART-SEQUENCE, 34-9 section 3.2) hurt and shake like the boats (entries 8 to 10). The trident (code T), the wind charges (code R: the model turns with the age), the lead knot (code X) and the cushion (code S, always the white texture: the dye is data of 44 part 9 section 8.1, not read) are family 9 rows posed by ENTITY-NONLIVING-SEQUENCE (34-9 sections 5, 6, 12, 16). Aquatic rows (dolphin, axolotl, fish: client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus
-*>   (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B, client/src/entmodel-34-8-boat.cob) are posed by their paddle
+*> in first person (hand-banner.cob; the texture codes 9000 + a pattern holder), and the rows guardian_beam and end_crystal_beam the images of the guardian's beam and the crystal
+*>   beam (entities-beam.cob); The rows
+*>   item_frame and glow_item_frame (code F) draw no model: the frame's item is drawn into the ground item mesh (item-held.cob ENTITY-FRAME-EMIT, 34-9 section 10). The row
+*>   shulker_box is the image holder of the shulker
+*>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). The row shield is the image holder of the shield's sprites (hand-shield.cob: code
+*>   0 shield_base_nopattern, 9000 shield_base, 9000 + a pattern holder the pattern under entity/shield). ender_dragon_eyes is the dragon's eyes layer (CL-MD-EXTRA of ender_dragon, 34-7 8.5 pass 2).
+*> The minecarts (seven rows, code M, family 9: client/src/entmodel-34-9-3.cob; the render pose is ENTITY-MINECART-SEQUENCE, 34-9 section 3.2) hurt and shake like the boats
+*>   (entries 8 to 10). The trident (code T), the wind charges (code R: the model turns with the age), the lead knot (code X) and the cushion (code S, always the white texture:
+*>   the dye is data of 44 part 9 section 8.1, not read) are family 9 rows posed by ENTITY-NONLIVING-SEQUENCE (34-9 sections 5, 6, 12, 16). Aquatic rows (dolphin, axolotl, fish:
+*>   client/src/entmodel-34-8-3.cob) are code V; the nautilus rows are code N (EF8-NAUTILUS-ANIM: body angle clamp and swim keyframes), with the warm zombie nautilus
+*>   (zombie_nautilus~w, entry 21 value 1), the nautilus_saddle and nautilus_armor layer rows (code A); the boats, chest boats and rafts (22 rows, code B,
+*>   client/src/entmodel-34-8-boat.cob) are posed by their paddle
 *>   rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).

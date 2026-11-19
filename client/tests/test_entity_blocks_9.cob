@@ -72,46 +72,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 80 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 80 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 80 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-1000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 80 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 80 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 80 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 80 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 80 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-2000)) <= 1
@@ -131,46 +131,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 30 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 30 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 30 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-1000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 30 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 30 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 30 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 30 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 30 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-2000)) <= 1
@@ -190,46 +190,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 9 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 9 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 9 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-1000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 9 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 9 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 9 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 9 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 9 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-2000)) <= 1
@@ -249,46 +249,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 5 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 5 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2009)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 5 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-991)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 5 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3009)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 5 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-1991)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 5 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3009)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 5 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 5 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-1991)) <= 1
@@ -308,46 +308,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 4 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 4 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2019)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 4 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-981)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 4 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3019)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 4 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-1981)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 4 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3019)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 4 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 4 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-1981)) <= 1
@@ -367,46 +367,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 1 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 1 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2098)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 1 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-902)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 1 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3098)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 1 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-1902)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 1 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3098)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 1 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 1 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-1902)) <= 1
@@ -426,46 +426,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.2 tnt fuse 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 0 min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2150)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 0 max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-850)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 0 min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3150)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 0 max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-1850)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 0 min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3150)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.2 tnt fuse 0 max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 tnt fuse 0 max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-1850)) <= 1
@@ -484,7 +484,7 @@
      MOVE 80 TO EN-VALUE(1)
      CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
      CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
-     MOVE "34-9§13.2 the fuse falls by 1 a tick" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 the fuse falls by 1 a tick" TO TL-CASE
      MOVE 78 TO TL-EXPECTED-N
      MOVE EN-VALUE(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -501,46 +501,46 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-GI-COUNT TO WS-LAST
      CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§13.1 falling stone vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone vertices" TO TL-CASE
      MOVE 18 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.1 falling stone min x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone min x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(1) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.1 falling stone max x (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone max x (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(2) - (-1000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.1 falling stone min y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone min y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(3) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.1 falling stone max y (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone max y (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(4) - (-2000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.1 falling stone min z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone min z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(5) - (-3000)) <= 1
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§13.1 falling stone max z (thousandths) (within 1)" TO TL-CASE
+     MOVE "acceptance US15 34-9§13 falling stone max z (thousandths) (within 1)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(WS-R(6) - (-2000)) <= 1

@@ -53,31 +53,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE -125 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 1125 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE 62 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 687 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 minecart id 7 yaw 0 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 minecart id 7 yaw 0 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 1001 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -93,31 +93,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 1001 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE 62 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 687 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE -125 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 chest_minecart id 8 yaw 90 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 chest_minecart id 8 yaw 90 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 1125 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -133,31 +133,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 min x (thousandths)" TO TL-CASE
      MOVE -253 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 max x (thousandths)" TO TL-CASE
      MOVE 1436 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 min y (thousandths)" TO TL-CASE
      MOVE -155 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 max y (thousandths)" TO TL-CASE
      MOVE 860 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 min z (thousandths)" TO TL-CASE
      MOVE -436 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 tnt_minecart id 100 yaw 45 pitch 20 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 100 yaw 45 pitch 20 max z (thousandths)" TO TL-CASE
      MOVE 1252 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -173,31 +173,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 min x (thousandths)" TO TL-CASE
      MOVE -212 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 max x (thousandths)" TO TL-CASE
      MOVE 1481 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 min y (thousandths)" TO TL-CASE
      MOVE -258 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 max y (thousandths)" TO TL-CASE
      MOVE 909 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 min z (thousandths)" TO TL-CASE
      MOVE -478 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hopper_minecart id 1 yaw -135 pitch -30 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hopper_minecart id 1 yaw -135 pitch -30 max z (thousandths)" TO TL-CASE
      MOVE 1216 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -213,31 +213,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 min x (thousandths)" TO TL-CASE
      MOVE -233 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 max x (thousandths)" TO TL-CASE
      MOVE 1106 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 min y (thousandths)" TO TL-CASE
      MOVE -48 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 max y (thousandths)" TO TL-CASE
      MOVE 784 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 min z (thousandths)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 furnace_minecart id 2 yaw 180 pitch 10 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 2 yaw 180 pitch 10 max z (thousandths)" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -253,31 +253,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE -203 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 1202 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE 63 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 688 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE -100 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 spawner_minecart id 3 yaw 10 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 3 yaw 10 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 1102 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -293,31 +293,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 min x (thousandths)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 max x (thousandths)" TO TL-CASE
      MOVE 1000 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 min y (thousandths)" TO TL-CASE
      MOVE 7 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 max y (thousandths)" TO TL-CASE
      MOVE 739 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 min z (thousandths)" TO TL-CASE
      MOVE -183 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 command_block_minecart id 5 yaw 270 pitch -5 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 5 yaw 270 pitch -5 max z (thousandths)" TO TL-CASE
      MOVE 1117 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -345,31 +345,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks min x (thousandths)" TO TL-CASE
      MOVE -309 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks max x (thousandths)" TO TL-CASE
      MOVE 1308 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks min y (thousandths)" TO TL-CASE
      MOVE 3 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks max y (thousandths)" TO TL-CASE
      MOVE 746 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks min z (thousandths)" TO TL-CASE
      MOVE -275 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 0 ticks max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 0 ticks max z (thousandths)" TO TL-CASE
      MOVE 1276 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -400,31 +400,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks min x (thousandths)" TO TL-CASE
      MOVE -293 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks max x (thousandths)" TO TL-CASE
      MOVE 1293 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks min y (thousandths)" TO TL-CASE
      MOVE 56 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks max y (thousandths)" TO TL-CASE
      MOVE 693 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks min z (thousandths)" TO TL-CASE
      MOVE -248 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction -1 damage 8 after 3 ticks max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction -1 damage 8 after 3 ticks max z (thousandths)" TO TL-CASE
      MOVE 1249 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -457,31 +457,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks min x (thousandths)" TO TL-CASE
      MOVE -292 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks max x (thousandths)" TO TL-CASE
      MOVE 1291 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks min y (thousandths)" TO TL-CASE
      MOVE 62 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks max y (thousandths)" TO TL-CASE
      MOVE 687 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks min z (thousandths)" TO TL-CASE
      MOVE -245 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 6 direction 1 damage 30 after 5 ticks max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 6 direction 1 damage 30 after 5 ticks max z (thousandths)" TO TL-CASE
      MOVE 1246 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -519,31 +519,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks vertices" TO TL-CASE
      MOVE 180 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks min x (thousandths)" TO TL-CASE
      MOVE -292 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks max x (thousandths)" TO TL-CASE
      MOVE 1291 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks min y (thousandths)" TO TL-CASE
      MOVE 62 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks max y (thousandths)" TO TL-CASE
      MOVE 687 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks min z (thousandths)" TO TL-CASE
      MOVE -245 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§3.2 hurt time 10 direction 1 damage 20 after 10 ticks max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§3 hurt time 10 direction 1 damage 20 after 10 ticks max z (thousandths)" TO TL-CASE
      MOVE 1246 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

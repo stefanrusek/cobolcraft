@@ -3,7 +3,7 @@ import math
 from jr9 import JR
 D = 0.017453292
 t = mk9(9, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 9 (dropped items, clusters, the ominous item spawner): renderedAmount from the table of 9.1 and Validation 4, seedFor (187 for an empty stack),",
-            "the bob, base and spin of 9.2 (steps 1 and 2), submitMultipleFromCount for thick and flat models (the draws of the Java LCG, generator vectors of Validation 10 checked in gen/jr9.py), and 9.3 (grow over 50 ticks, spin in degrees, fixed full bright light)."])
+            "the bob, base and spin of 9.2 (steps 1 and 2), submitMultipleFromCount for thick and flat models (the draws of the Java LCG, generator vectors of Validation 10 checked in gen/jr9.py), and 9.3 (grow over 50 ticks, spin in degrees, fixed full bright light)."], title='dropped items and clusters')
 rows = table9('### 9.1')
 ranges = []
 for r in rows:

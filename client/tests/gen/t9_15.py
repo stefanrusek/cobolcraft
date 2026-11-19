@@ -1,7 +1,7 @@
 from g9 import *
 from jr9 import JR
 t = mk9(15, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 15 (lightning bolt): the path table (seed 0 reproduces the worked example and Validation 10), every layer step of the four passes (the trunk and the two branches with their",
-             "draws and widths, 14 steps a pass) and the vertices of the four quads of a layer for the document's flag sets, for several seeds; the generator is the Java LCG of 10 section 2.6 written in gen/jr9.py (its first values are checked against Validation 10)."])
+             "draws and widths, 14 steps a pass) and the vertices of the four quads of a layer for the document's flag sets, for several seeds; the generator is the Java LCG of 10 section 2.6 written in gen/jr9.py (its first values are checked against Validation 10)."], title='lightning bolt')
 def path(seed):
     r = JR(seed); xs = [0] * 8; zs = [0] * 8; x = z = 0
     for i in range(7, -1, -1):

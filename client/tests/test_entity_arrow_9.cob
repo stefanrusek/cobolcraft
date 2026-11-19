@@ -53,31 +53,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE 341 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 659 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE -159 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 159 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE -175 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 0 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 0 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 725 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -93,31 +93,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE -175 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 725 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE -159 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 159 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE 341 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 90 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 90 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 659 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -133,31 +133,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 min x (thousandths)" TO TL-CASE
      MOVE 278 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 max x (thousandths)" TO TL-CASE
      MOVE 998 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 min y (thousandths)" TO TL-CASE
      MOVE -447 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 max y (thousandths)" TO TL-CASE
      MOVE 181 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 min z (thousandths)" TO TL-CASE
      MOVE 278 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw -135 pitch 30 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw -135 pitch 30 max z (thousandths)" TO TL-CASE
      MOVE 998 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -173,31 +173,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 min x (thousandths)" TO TL-CASE
      MOVE 156 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 max x (thousandths)" TO TL-CASE
      MOVE 685 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 min y (thousandths)" TO TL-CASE
      MOVE -235 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 max y (thousandths)" TO TL-CASE
      MOVE 624 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 min z (thousandths)" TO TL-CASE
      MOVE 156 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 45 pitch -60 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 45 pitch -60 max z (thousandths)" TO TL-CASE
      MOVE 685 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -213,31 +213,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 min x (thousandths)" TO TL-CASE
      MOVE 344 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 max x (thousandths)" TO TL-CASE
      MOVE 854 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 min y (thousandths)" TO TL-CASE
      MOVE -314 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 max y (thousandths)" TO TL-CASE
      MOVE 135 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 min z (thousandths)" TO TL-CASE
      MOVE 249 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 arrow yaw 200 pitch 15 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 arrow yaw 200 pitch 15 max z (thousandths)" TO TL-CASE
      MOVE 1159 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -253,31 +253,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE 341 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 659 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE -159 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 159 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE -175 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 0 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 0 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 725 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -293,31 +293,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 min x (thousandths)" TO TL-CASE
      MOVE -175 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 max x (thousandths)" TO TL-CASE
      MOVE 725 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 min y (thousandths)" TO TL-CASE
      MOVE -159 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 max y (thousandths)" TO TL-CASE
      MOVE 159 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 min z (thousandths)" TO TL-CASE
      MOVE 341 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 90 pitch 0 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 90 pitch 0 max z (thousandths)" TO TL-CASE
      MOVE 659 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -333,31 +333,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 min x (thousandths)" TO TL-CASE
      MOVE 278 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 max x (thousandths)" TO TL-CASE
      MOVE 998 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 min y (thousandths)" TO TL-CASE
      MOVE -447 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 max y (thousandths)" TO TL-CASE
      MOVE 181 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 min z (thousandths)" TO TL-CASE
      MOVE 278 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw -135 pitch 30 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw -135 pitch 30 max z (thousandths)" TO TL-CASE
      MOVE 998 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -373,31 +373,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 min x (thousandths)" TO TL-CASE
      MOVE 156 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 max x (thousandths)" TO TL-CASE
      MOVE 685 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 min y (thousandths)" TO TL-CASE
      MOVE -235 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 max y (thousandths)" TO TL-CASE
      MOVE 624 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 min z (thousandths)" TO TL-CASE
      MOVE 156 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 45 pitch -60 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 45 pitch -60 max z (thousandths)" TO TL-CASE
      MOVE 685 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -413,31 +413,31 @@
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "E9-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 vertices" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 min x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 min x (thousandths)" TO TL-CASE
      MOVE 344 TO TL-EXPECTED-N
      MOVE WS-R(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 max x (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 max x (thousandths)" TO TL-CASE
      MOVE 854 TO TL-EXPECTED-N
      MOVE WS-R(2) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 min y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 min y (thousandths)" TO TL-CASE
      MOVE -314 TO TL-EXPECTED-N
      MOVE WS-R(3) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 max y (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 max y (thousandths)" TO TL-CASE
      MOVE 135 TO TL-EXPECTED-N
      MOVE WS-R(4) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 min z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 min z (thousandths)" TO TL-CASE
      MOVE 249 TO TL-EXPECTED-N
      MOVE WS-R(5) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "34-9§4.2 spectral_arrow yaw 200 pitch 15 max z (thousandths)" TO TL-CASE
+     MOVE "acceptance US15 34-9§4 spectral_arrow yaw 200 pitch 15 max z (thousandths)" TO TL-CASE
      MOVE 1159 TO TL-EXPECTED-N
      MOVE WS-R(6) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

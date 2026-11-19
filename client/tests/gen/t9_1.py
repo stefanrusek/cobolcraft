@@ -1,7 +1,7 @@
 from s9_1 import *
 t = mk9(1, ["Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 1 (the renderer registry): the renderer class of each type of the 1.1 table, the three types that draw nothing (1.2 and Validation 1), the shadow radius and strength of 1.3",
             "and the hitbox and eye height of each type of the 1.3 table; a type this document does not own is not known."],
-        extra='\n 01 WS-KEY               PIC X(24).\n 01 WS-CLASS             PIC X(40).')
+        extra='\n 01 WS-KEY               PIC X(24).\n 01 WS-CLASS             PIC X(40).', title='renderer registry')
 rs = renderers()
 assert len(rs) == 36 or len(rs) > 30, len(rs)
 for k, c in rs:
