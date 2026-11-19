@@ -1,5 +1,5 @@
 *> Implementation test (002-lane-mobsfull-h20; docs/protocol/19-mobs-land-friendly-and-neutral.md section 13): the armadillo. A new adult has scuteTime 6000 to 11999; at 0 it drops one armadillo
-*> scute (a baby does not) and draws the next time; every 80 ticks it looks for danger within 7 x 2 x 7 blocks (a sprinting player, an undead mob) and a hit by a player is danger too, kept 80
+*> scute (a baby does not) and draws the next time; every 5 ticks it looks for danger within 7 x 2 x 7 blocks (a sprinting player, an undead mob) and a hit by a player is danger too, kept 80
 *> ticks (danger_detected_recently); danger rolls it up (state 1 for 10 ticks, then 2 scared) and when the memory is gone it unrolls (3 for 30 ticks, then 0); a rolled armadillo stands still;
 *> while scared the damage is (amount - 1) / 2.
  IDENTIFICATION DIVISION.
