@@ -92,11 +92,54 @@ def banner():
     return q
 
 
-def bell():
+def rotate_quads(quads, pivot, rx_deg, rz_deg):
+    """Quads (pixel points) turned about the pivot: X by rx, then Z by rz (degrees)."""
+    a, b = math.radians(rx_deg), math.radians(rz_deg)
+    out = []
+    for name, pts, uv, tsize in quads:
+        pp = []
+        for x, y, z in pts:
+            dx, dy, dz = x - pivot[0], y - pivot[1], z - pivot[2]
+            ey, ez = dy * math.cos(a) - dz * math.sin(a), dy * math.sin(a) + dz * math.cos(a)
+            ex, ey2 = dx * math.cos(b) - ey * math.sin(b), dx * math.sin(b) + ey * math.cos(b)
+            pp.append((pivot[0] + ex, pivot[1] + ey2, pivot[2] + ez))
+        out.append((name, pp, uv, tsize))
+    return out
+
+
+def bell(rx_deg=0.0, rz_deg=0.0):
     q = []
     q += cuboid((-3, -6, -3), (6, 7, 6), (0, 0), (8, 12, 8), 32, True)
     q += cuboid((4, 4, 4), (8, 2, 8), (0, 13), (0, 0, 0), 32, True)
+    q = rotate_quads(q, (8, 12, 8), rx_deg, rz_deg)
     return place(q, (0, 0, 0), (1, 1, 1))
+
+
+def bell_angles(ticks, direction):
+    """31-4 section 4.4: a = sin(ticks / pi) / (4 + ticks / 3); xRot -a north (2), +a south (3); zRot -a east (5), +a west (4). Degrees."""
+    a = math.sin(ticks / math.pi) / (4 + ticks / 3)
+    rx = {2: -a, 3: a}.get(direction, 0.0)
+    rz = {5: -a, 4: a}.get(direction, 0.0)
+    return math.degrees(rx), math.degrees(rz)
+
+
+def bell_mesh(ticks, direction, block, eye):
+    """The quads of a bell at the block corner that face the eye (cross . c1 above 0, c1 relative to the eye) and the sums over their six vertices (corners 1 2 3 1 3 4):
+    x y z relative to the eye, u and v in texels over 32."""
+    rx, rz = bell_angles(ticks, direction) if ticks else (0.0, 0.0)
+    vis = 0
+    sums = [0.0] * 5
+    for name, pts, uv, tsize, slot, tint in bell(rx, rz):
+        pp = [tuple(p[i] + block[i] - eye[i] for i in range(3)) for p in pts]
+        c = cross(pp)
+        if sum(c[k] * pp[0][k] for k in range(3)) > 0:
+            vis += 1
+            for ci in (0, 1, 2, 0, 2, 3):
+                for k in range(3):
+                    sums[k] += pp[ci][k]
+                sums[3] += uv[ci][0] / tsize
+                sums[4] += uv[ci][1] / tsize
+    return vis, sums
 
 
 def show(name, quads, want):
@@ -177,6 +220,10 @@ def hand_visible(kind, offset=(0, 0, -1.5)):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["bellmesh"]:
+        for t, d in ((0, 0), (5, 3), (20, 5), (13, 2), (7, 4)):
+            print("bellmesh ticks", t, "dir", d, bell_mesh(t, d, (10, 64, 10), (10.5, 66, 8.5)))
+        sys.exit(0)
     kinds = sys.argv[1:] or ["chest", "shulker", "banner", "bell"]
     for k in kinds:
         if k in DISPLAY:

@@ -159,6 +159,43 @@
                                  END-IF
                              END-PERFORM
                          END-PERFORM
+                     WHEN "single"
+                     WHEN "minecraft:single"
+*>                       One texture, the `resource` id (the bell's body, the enchanting table's book): the sprite <resource> from textures/<path>.png of its namespace.
+                         MOVE "resource" TO WS-NAME
+                         MOVE 8 TO WS-NAME-LENGTH
+                         CALL "JSON-MEMBER" USING JSON-DOC WS-SOURCE WS-NAME WS-NAME-LENGTH
+                             WS-FIELD
+                         MOVE SPACES TO WS-DIR
+                         CALL "JSON-STRING" USING JSON-DOC WS-FIELD WS-DIR WS-VALUE-CAP
+                             WS-DIR-LENGTH
+                         IF WS-DIR-LENGTH > 0
+                         MOVE 0 TO WS-Q
+                         INSPECT WS-DIR(1:WS-DIR-LENGTH) TALLYING WS-Q FOR CHARACTERS BEFORE INITIAL ":"
+                         MOVE SPACES TO WS-ID WS-PATH
+                         IF WS-Q >= WS-DIR-LENGTH
+                             STRING "minecraft:" WS-DIR(1:WS-DIR-LENGTH) DELIMITED BY SIZE INTO WS-ID
+                             STRING "assets/minecraft/textures/" WS-DIR(1:WS-DIR-LENGTH) ".png" DELIMITED BY SIZE INTO WS-PATH
+                         ELSE
+                             MOVE WS-DIR(1:WS-DIR-LENGTH) TO WS-ID
+                             STRING "assets/" WS-DIR(1:WS-Q) "/textures/" WS-DIR(WS-Q + 2:WS-DIR-LENGTH - WS-Q - 1) ".png"
+                                 DELIMITED BY SIZE INTO WS-PATH
+                         END-IF
+                         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LENGTH
+                         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
+                         CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+                         IF WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+                             ADD 1 TO AT-SPRITE-COUNT
+                             MOVE AT-SPRITE-COUNT TO WS-S
+                         END-IF
+                         IF WS-S > 0
+                             INITIALIZE AT-SPRITE(WS-S)
+                             MOVE WS-ID TO AT-NAME(WS-S)
+                             MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+                             MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+                             MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+                         END-IF
+                         END-IF
                  END-EVALUATE
                  MOVE JN-NEXT(WS-SOURCE) TO WS-SOURCE
              END-PERFORM

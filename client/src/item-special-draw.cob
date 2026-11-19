@@ -546,3 +546,95 @@
      END-PERFORM
      GOBACK.
  END PROGRAM HAND-SPECIAL-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPECIAL-EMIT-WORLD.
+*> USING CLIENT-STATE, SQ-TABLE, offset (3 FLOAT-LONG: the model's unit-cell origin relative to the eye), light 0 to 1: the quads of a block entity model into RL-GI-VERTEX (the block atlas,
+*> the pipeline without depth writes): only the quads that face the eye (cross(c2 - c1, c3 - c2) . c1 above 0), far to near by the distance of their centre, shaded by the face direction (up 1,
+*> down 0.5, north and south 0.8, west and east 0.6) times the light (at least 0.1), tinted by SQ-T; a quad that does not fit is left out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-S                   FLOAT-LONG OCCURS 576 TIMES.
+ 01 WS-KEYS.
+    05 WS-KEY              FLOAT-LONG OCCURS 48 TIMES.
+ 01 WS-ORDERS.
+    05 WS-ORDER            BINARY-LONG OCCURS 48 TIMES.
+ 01 WS-SHOW                BINARY-LONG OCCURS 48 TIMES.
+ 01 WS-SHOWN               BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-QI                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-SHADE               FLOAT-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AY                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-FACING              FLOAT-LONG.
+ 01 WS-ORD-DATA            PIC X(6) VALUE "123134".
+ 01 WS-ORD-TABLE REDEFINES WS-ORD-DATA.
+    05 WS-ORD              PIC 9 OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY CLSQ.
+ 01 L-OFFSET.
+    05 L-OF                FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-LIGHT                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE SQ-TABLE L-OFFSET L-LIGHT.
+     MOVE 0 TO WS-SHOWN
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > SQ-COUNT
+         COMPUTE WS-BASE = WS-SHOWN * 12
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 12
+             COMPUTE WS-S(WS-BASE + WS-K) = SQ-C(WS-Q, WS-K) + L-OF(FUNCTION MOD(WS-K - 1, 3) + 1)
+         END-PERFORM
+         COMPUTE WS-AX = WS-S(WS-BASE + 4) - WS-S(WS-BASE + 1)
+         COMPUTE WS-AY = WS-S(WS-BASE + 5) - WS-S(WS-BASE + 2)
+         COMPUTE WS-AZ = WS-S(WS-BASE + 6) - WS-S(WS-BASE + 3)
+         COMPUTE WS-BX = WS-S(WS-BASE + 7) - WS-S(WS-BASE + 4)
+         COMPUTE WS-BY = WS-S(WS-BASE + 8) - WS-S(WS-BASE + 5)
+         COMPUTE WS-BZ = WS-S(WS-BASE + 9) - WS-S(WS-BASE + 6)
+         COMPUTE WS-FACING = (WS-AY * WS-BZ - WS-AZ * WS-BY) * WS-S(WS-BASE + 1) + (WS-AZ * WS-BX - WS-AX * WS-BZ) * WS-S(WS-BASE + 2)
+             + (WS-AX * WS-BY - WS-AY * WS-BX) * WS-S(WS-BASE + 3)
+         IF WS-FACING > 0
+             ADD 1 TO WS-SHOWN
+             MOVE WS-Q TO WS-SHOW(WS-SHOWN)
+             MOVE 0 TO WS-DIST
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 COMPUTE WS-DIST = WS-DIST + WS-S(WS-BASE + (WS-K - 1) * 3 + 1) ** 2 + WS-S(WS-BASE + (WS-K - 1) * 3 + 2) ** 2
+                     + WS-S(WS-BASE + (WS-K - 1) * 3 + 3) ** 2
+             END-PERFORM
+             COMPUTE WS-KEY(WS-SHOWN) = 0 - WS-DIST
+         END-IF
+     END-PERFORM
+     CALL "SPECIAL-SORT" USING WS-SHOWN WS-KEYS WS-ORDERS
+     PERFORM VARYING WS-QI FROM 1 BY 1 UNTIL WS-QI > WS-SHOWN
+         MOVE WS-SHOW(WS-ORDER(WS-QI)) TO WS-Q
+         IF RL-GI-COUNT + 6 <= CL-MAX-GI-VERTICES
+             COMPUTE WS-SHADE = FUNCTION MAX(SQ-N(WS-Q, 2), 0) + 0.5 * FUNCTION MAX(0 - SQ-N(WS-Q, 2), 0)
+                 + 0.8 * FUNCTION ABS(SQ-N(WS-Q, 3)) + 0.6 * FUNCTION ABS(SQ-N(WS-Q, 1))
+             COMPUTE WS-SHADE = FUNCTION MAX(WS-SHADE * L-LIGHT, 0.1)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+                 MOVE WS-ORD(WS-I) TO WS-K
+                 ADD 1 TO RL-GI-COUNT
+                 COMPUTE WS-BASE = (WS-ORDER(WS-QI) - 1) * 12 + (WS-K - 1) * 3
+                 MOVE WS-S(WS-BASE + 1) TO RL-GI-X(RL-GI-COUNT)
+                 MOVE WS-S(WS-BASE + 2) TO RL-GI-Y(RL-GI-COUNT)
+                 MOVE WS-S(WS-BASE + 3) TO RL-GI-Z(RL-GI-COUNT)
+                 MOVE SQ-U(WS-Q, WS-K) TO RL-GI-U(RL-GI-COUNT)
+                 MOVE SQ-V(WS-Q, WS-K) TO RL-GI-V(RL-GI-COUNT)
+                 MOVE WS-SHADE TO RL-GI-B(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                 MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                 MOVE SQ-T(WS-Q, 1) TO RL-GI-R(RL-GI-COUNT)
+                 MOVE SQ-T(WS-Q, 2) TO RL-GI-G(RL-GI-COUNT)
+                 MOVE SQ-T(WS-Q, 3) TO RL-GI-BLUE(RL-GI-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SPECIAL-EMIT-WORLD.

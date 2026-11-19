@@ -34,6 +34,7 @@
          END-IF
          MOVE 0 TO WR-USED(WS-R)
      END-PERFORM
+     CALL "BELL-CLEAR" USING CLIENT-STATE
      GOBACK.
  END PROGRAM WORLD-CLEAR.
 
@@ -52,6 +53,7 @@
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-CX L-CZ.
+     CALL "BELL-FORGET" USING CLIENT-STATE L-CX L-CZ
      CALL "WORLD-ROW" USING CLIENT-STATE L-CX L-CZ WS-ROW
      IF WS-ROW > 0
          MOVE 0 TO WR-USED(WS-ROW)
@@ -367,6 +369,7 @@
              MOVE WS-BLOCK-ARRAY(WS-S) TO CE-BLOCK-LIGHTS(WS-BASE:CE-LIGHT-BYTES)
          END-IF
      END-PERFORM
+     CALL "BELL-SCAN" USING CLIENT-STATE WS-CX WS-CZ
      CALL "WORLD-DIRTY" USING CLIENT-STATE WS-CX WS-CZ
      COMPUTE WS-NX = WS-CX - 1
      CALL "WORLD-DIRTY" USING CLIENT-STATE WS-NX WS-CZ
@@ -522,6 +525,7 @@
  01 WS-LIMIT               BINARY-LONG.
  01 WS-LX                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
+ 01 WS-NOTE                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -541,6 +545,9 @@
          IF L-STATE < 0 OR L-STATE >= WS-LIMIT
              MOVE 0 TO CE-STATE(WS-CELL)
          END-IF
+*>       A bell (31-4 section 4) is noted for its renderer (bell.cob).
+         MOVE CE-STATE(WS-CELL) TO WS-NOTE
+         CALL "BELL-NOTE" USING CLIENT-STATE L-X L-Y L-Z WS-NOTE
 *>       CC-0007 stopgap (sky-stopgap.cob): the column's surface again, the sections its change lights meshed again.
          IF PL-HAS-SKY = 1
              COMPUTE WS-LX = L-X - WS-CX * 16

@@ -790,6 +790,21 @@
           15 PI-UUID         PIC X(16).
           15 PI-NAME         PIC X(16).
           15 PI-NAME-LENGTH  BINARY-LONG.
+*>  ---- bells (31-4 section 4; bell.cob): BL-IS(block id + 1) 1 for the bell block, built from the names of the state tables (BL-READY); BL-BELL the bells of the loaded chunks: BL-SID the state,
+*>       BL-SHAKING and BL-TICKS (the entity's `shaking` and `ticks`), BL-DIR the click direction in the Direction order (0 down, 1 up, 2 north, 3 south, 4 west, 5 east); BL-COUNT the bells in use ----
+    05 BL-DATA.
+       10 BL-READY           BINARY-LONG.
+       10 BL-IS              PIC 9 OCCURS 2048 TIMES.
+       10 BL-COUNT           BINARY-LONG.
+       10 BL-BELL OCCURS 32 TIMES.
+          15 BL-USED         BINARY-LONG.
+          15 BL-X            BINARY-LONG.
+          15 BL-Y            BINARY-LONG.
+          15 BL-Z            BINARY-LONG.
+          15 BL-SID          BINARY-LONG.
+          15 BL-SHAKING      BINARY-LONG.
+          15 BL-TICKS        BINARY-LONG.
+          15 BL-DIR          BINARY-LONG.
 *>  ---- chat (US6; client-surface §4; screens/chat.cob, screens/hud.cob): the line being typed
 *>       (UTF-8), the messages scrolled back while chat is open, and the messages received this
 *>       session, oldest first (the clock when each arrived, its rendered text) ----

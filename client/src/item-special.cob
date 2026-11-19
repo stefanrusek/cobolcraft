@@ -318,6 +318,35 @@
  END PROGRAM SPECIAL-CUBOID.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPECIAL-ROW-PART.
+*> USING row (PIC X(95): 19 numbers of five characters, sign and four digits), SQ-PART (CLSQP.cpy): the cuboid of a model row: origin (3), size (3), texture offset (2), shift (3), rotation
+*> pivot (3), rotation about X and about Z in hundredths of a degree, the hidden faces, the grow in hundredths of a pixel, and SP-SPRITE the row's sprite slot. The caller sets the
+*> rest (texture size, y convention, translation, scale, tint, the sprite).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW.
+    05 L-F                 PIC S9(4) SIGN LEADING SEPARATE OCCURS 19 TIMES.
+ COPY CLSQP.
+ PROCEDURE DIVISION USING L-ROW SQ-PART.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+         MOVE L-F(WS-K) TO SP-ORIGIN(WS-K)
+         MOVE L-F(WS-K + 3) TO SP-SIZE(WS-K)
+         MOVE L-F(WS-K + 8) TO SP-SHIFT(WS-K)
+         MOVE L-F(WS-K + 11) TO SP-RPIV(WS-K)
+     END-PERFORM
+     MOVE L-F(7) TO SP-TEX(1)
+     MOVE L-F(8) TO SP-TEX(2)
+     COMPUTE SP-RX = L-F(15) / 100
+     COMPUTE SP-RZ = L-F(16) / 100
+     MOVE L-F(17) TO SP-HIDE
+     MOVE L-F(18) TO SP-GROW
+     MOVE L-F(19) TO SP-SPRITE
+     GOBACK.
+ END PROGRAM SPECIAL-ROW-PART.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SPECIAL-ITEM-QUADS.
 *> USING CLIENT-STATE, item id, SQ-TABLE (CLSQ.cpy): the quads of the item's model, SQ-COUNT 0 for an item that is not code-drawn (SPECIAL-ITEM-KIND). The cuboids are the rows of 52:
 *> the chest 3.5 (bottom, lid, lock of the single chest, closed, y up; the faces inside the closed chest are left out: the bottom's top and the lid's bottom), the shulker box 4.2 with
@@ -402,29 +431,21 @@
              MOVE -0.6666667 TO WS-SX(2) WS-SX(3)
      END-EVALUATE
      PERFORM VARYING WS-R FROM WS-FIRST BY 1 UNTIL WS-R > WS-LAST
+         CALL "SPECIAL-ROW-PART" USING WS-ROW(WS-R) SQ-PART
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
-             MOVE WS-F(WS-R, WS-K) TO SP-ORIGIN(WS-K)
-             MOVE WS-F(WS-R, WS-K + 3) TO SP-SIZE(WS-K)
-             MOVE WS-F(WS-R, WS-K + 8) TO SP-SHIFT(WS-K)
-             MOVE WS-F(WS-R, WS-K + 11) TO SP-RPIV(WS-K)
              MOVE WS-TX(WS-K) TO SP-T(WS-K)
              MOVE WS-SX(WS-K) TO SP-S(WS-K)
              MOVE 1 TO SP-TINT(WS-K)
          END-PERFORM
-         MOVE WS-F(WS-R, 7) TO SP-TEX(1)
-         MOVE WS-F(WS-R, 8) TO SP-TEX(2)
-         COMPUTE SP-RX = WS-F(WS-R, 15) / 100
-         COMPUTE SP-RZ = WS-F(WS-R, 16) / 100
-         MOVE WS-F(WS-R, 17) TO SP-HIDE
-         MOVE WS-F(WS-R, 18) TO SP-GROW
          MOVE 64 TO SP-TSIZE
          MOVE WS-EXCH TO SP-EXCH
-         MOVE WS-SPRITE1 TO SP-SPRITE
-         IF WS-F(WS-R, 19) = 2
+         IF SP-SPRITE = 2
              MOVE WS-SPRITE2 TO SP-SPRITE
              PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
                  COMPUTE SP-TINT(WS-K) = WS-RGB(WS-DYE + 1, WS-K) / 255
              END-PERFORM
+         ELSE
+             MOVE WS-SPRITE1 TO SP-SPRITE
          END-IF
          CALL "SPECIAL-CUBOID" USING CLIENT-STATE SQ-TABLE SQ-PART
      END-PERFORM
