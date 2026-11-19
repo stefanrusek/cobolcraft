@@ -55,7 +55,7 @@
 *>   HEALTH-DIE USING player row, cause, attacker player row (0 none)
 *>   HEALTH-ATTACK USING connection id, PLAY-SERVERBOUND  Attack
 *>   HEALTH-SONIC-BOOM USING player row, amount, warden tracker row, result out                  the warden's sonic boom on a player
-*>   HEALTH-MAGIC-HIT USING player row, amount, owner mob tracker row (0 none)    an evoker fang's bite on a player (magic / indirect_magic)
+*>   HEALTH-MAGIC-HIT USING player row, amount, owner mob tracker row (0 none), result out    an evoker fang's bite on a player (magic / indirect_magic)
 *>   HEALTH-MOB-DAMAGE USING mob tracker row, amount, cause, attacker player row (0 none)
 *>     (BINARY-LONG each)
 *>   HEALTH-RESPAWN USING connection id, PLAY-SERVERBOUND Client Command
@@ -667,7 +667,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-MAGIC-HIT.
-*> USING player row, amount (BINARY-LONG points), owner mob tracker row (0 = none): the bite of an evoker fang on a player (20 section 13.3.1). Without an owner the damage source is
+*> USING player row, amount (BINARY-LONG points), owner mob tracker row (0 = none), result out (HEALTH-HURT's: 0 not hurt): the bite of an evoker fang on a player (20 section 13.3.1). Without an owner the damage source is
 *> `magic` (no causing entity, so no difficulty scaling: the amount as it is), with one it is `indirect_magic` caused by the owner and scaled by the difficulty like a mob's hit (Peaceful 0, Easy
 *> min(d / 2 + 1, d), Normal d, Hard 3d / 2). Both bypass armor (only player, mob, explosion and arrow hits go through the armor pipeline of HEALTH-HURT) and shields.
  DATA DIVISION.
@@ -678,17 +678,18 @@
  01 WS-MILLI               BINARY-LONG.
  01 WS-HALF                BINARY-LONG.
  01 WS-FULL                BINARY-LONG.
- 01 WS-RESULT              BINARY-LONG.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-SOURCE              BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
  01 L-OWNER                BINARY-LONG.
- PROCEDURE DIVISION USING L-PLAYER L-AMOUNT L-OWNER.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-AMOUNT L-OWNER L-RESULT.
+     MOVE 0 TO L-RESULT
      IF L-OWNER = 0
          COMPUTE WS-MILLI = L-AMOUNT * 1000
-         CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-MAGIC WS-SOURCE WS-NO-ATTACKER WS-RESULT
+         CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-MAGIC WS-SOURCE WS-NO-ATTACKER L-RESULT
          GOBACK
      END-IF
      CALL "BR-WORLD-READY"
@@ -709,7 +710,7 @@
      MOVE PL-KILLER-NAME(L-PLAYER) TO PL-CREDIT-NAME(L-PLAYER)
      MOVE PL-KILLER-LENGTH(L-PLAYER) TO PL-CREDIT-LENGTH(L-PLAYER)
      MOVE CW-TICKS TO PL-CREDIT-TICK(L-PLAYER)
-     CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-INDIRECT-MAGIC EN-ID(L-OWNER) WS-NO-ATTACKER WS-RESULT
+     CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-INDIRECT-MAGIC EN-ID(L-OWNER) WS-NO-ATTACKER L-RESULT
      GOBACK.
  END PROGRAM HEALTH-MAGIC-HIT.
 
@@ -803,6 +804,11 @@
      CALL "SULFUR-HURT" USING WS-ROW L-CAUSE WS-WITHER
 *>   A digging or emerging warden is invulnerable except to damage that bypasses invulnerability (20 section 15).
      CALL "WARDEN-INVULNERABLE" USING WS-ROW L-CAUSE WS-WITHER
+     IF WS-WITHER = 1
+         GOBACK
+     END-IF
+*>   A creaking bound to a heart takes no damage itself: the hit is the heart's creakingHurt (20 section 17, 31 section 6.6).
+     CALL "CREAKING-REDIRECT" USING WS-ROW L-CAUSE WS-WITHER
      IF WS-WITHER = 1
          GOBACK
      END-IF

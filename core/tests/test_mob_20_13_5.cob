@@ -1,0 +1,293 @@
+*> Acceptance test (lane p49x; docs/protocol/20 section 13.3.1): the evoker fang as an entity, its timeline and the knockback of an owned bite. A fang made with warm-up w is an entity of type
+*> evoker_fangs (Add Entity to its viewers) from the moment it is made; it is inert on ticks 1 to w, entity event 4 is broadcast once on tick w + 1, the bite is on tick w + 8 and the entity is
+*> discarded on tick w + 23. An owned bite (indirect_magic, which is not in no_knockback) knocks the victim back 0.4 away from the fang when the hurt lands (a player gets Set Entity Motion; a mob's
+*> motion is halved and 0.4 is added away from the fang, a mob on the ground also rises 0.4); an owner-less bite (magic: no_knockback) does not, and neither does an owned bite that does not
+*> land (Peaceful).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-20-13-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRWORLD.
+ COPY EVKSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-LABEL               PIC X(240).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-FANG-TYPE           BINARY-LONG.
+ 01 WS-EVOKER-TYPE         BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-FX0                 BINARY-LONG.
+ 01 WS-FZ0                 BINARY-LONG.
+ 01 WS-FYI                 BINARY-LONG.
+ 01 WS-FSIZE               BINARY-LONG VALUE 60.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-EVOKER              BINARY-LONG.
+ 01 WS-COW                 BINARY-LONG.
+ 01 WS-FANG                BINARY-LONG.
+ 01 WS-WARM                BINARY-LONG.
+ 01 WS-OWNER               BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-ID-TEXT             PIC Z(5)9.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-MOTION-TOKENS       BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE "N" TO TL-MODE
+     MOVE "minecraft:evoker_fangs" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-FANG-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:evoker" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-EVOKER-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX0 = FUNCTION INTEGER(PL-X(WS-PLAYER)) - 30
+     COMPUTE WS-FZ0 = FUNCTION INTEGER(PL-Z(WS-PLAYER)) - 30
+     COMPUTE WS-FYI = FUNCTION INTEGER(PL-Y(WS-PLAYER)) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX0 WS-FZ0 WS-FSIZE WS-FYI WS-FKIND
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-X = WS-X + 8
+     CALL "MOB-SPAWN" USING WS-DIM WS-EVOKER-TYPE WS-X WS-Y WS-Z WS-YAW WS-EVOKER
+*>   1. The timeline of a fang with warm-up 3, three blocks from the player (nobody in its box).
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 3
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE 3 TO WS-WARM
+     MOVE EN-ID(WS-EVOKER) TO WS-OWNER
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM FIND-FANG
+     MOVE "a fang is an entity of type evoker_fangs from the moment it is made" TO WS-LABEL
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-FANG > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM ASSERT-LINE
+     IF WS-FANG = 0
+         STOP RUN
+     END-IF
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE SPACES TO WS-TEXT
+     STRING " " DELIMITED BY SIZE FUNCTION TRIM(WS-IDS) DELIMITED BY SIZE " " DELIMITED BY SIZE INTO WS-TEXT
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL " 1 "
+     MOVE "its viewers get an Add Entity packet (id 1)" TO WS-LABEL
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     PERFORM 3 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     PERFORM EVENT-COUNT
+     MOVE "no entity event on ticks 1 to 3 (inert)" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     CALL "EVK-FANG-TICK"
+     PERFORM EVENT-COUNT
+     MOVE "entity event 4 on tick w + 1 = 4" TO WS-LABEL
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     PERFORM 5 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     PERFORM EVENT-COUNT
+     MOVE "and only once" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     PERFORM 16 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     MOVE "the fang is still there on tick w + 22 = 25" TO WS-LABEL
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-FANG) TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     CALL "EVK-FANG-TICK"
+     MOVE "and discarded on tick w + 23 = 26" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-FANG) TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FG-MAX
+         ADD FG-USED(WS-I) TO WS-N
+     END-PERFORM
+     MOVE "no fang is left" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+*>   2. The knockback of an owned bite on a player: Set Entity Motion (103) after the hurt; an owner-less bite sends none.
+     MOVE 0 TO WS-WARM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-X = WS-X - 0.5
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE EN-ID(WS-EVOKER) TO WS-OWNER
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     PERFORM MOTION-COUNT
+     MOVE "an owned bite on a player sends Set Entity Motion (103)" TO WS-LABEL
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-MOTION-TOKENS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     MOVE 0 TO WS-OWNER
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     PERFORM MOTION-COUNT
+     MOVE "an owner-less bite (magic: no knockback) sends none" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-MOTION-TOKENS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     MOVE 0 TO BW-DIFFICULTY
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     MOVE EN-ID(WS-EVOKER) TO WS-OWNER
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     PERFORM MOTION-COUNT
+     MOVE "an owned bite that does not land (Peaceful scales it to 0) sends none" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-MOTION-TOKENS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     MOVE 2 TO BW-DIFFICULTY
+*>   3. A mob: the motion is halved and 0.4 away from the fang added; on the ground it rises 0.4.
+     COMPUTE WS-X = PL-X(WS-PLAYER) - 6
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-X WS-Y WS-Z WS-YAW WS-COW
+     COMPUTE WS-X = WS-X - 0.5
+     MOVE 1 TO EN-ON-GROUND(WS-COW)
+     MOVE 0 TO EN-HURT(WS-COW)
+     MOVE 0.2 TO EN-VX(WS-COW)
+     MOVE 0 TO EN-VZ(WS-COW)
+     MOVE 0 TO EN-VY(WS-COW)
+     MOVE EN-ID(WS-EVOKER) TO WS-OWNER
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     MOVE "a cow east of an owned fang is pushed east: 0.2 / 2 + 0.4 = 0.5" TO WS-LABEL
+     MOVE 500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-COW) * 1000
+     PERFORM ASSERT-LINE
+     MOVE "and rises 0.4 from the ground" TO WS-LABEL
+     MOVE 400 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VY(WS-COW) * 1000
+     PERFORM ASSERT-LINE
+     MOVE "with no push along z" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VZ(WS-COW) * 1000
+     PERFORM ASSERT-LINE
+     MOVE 0 TO EN-VX(WS-COW) EN-VY(WS-COW) EN-VZ(WS-COW)
+     MOVE 0 TO EN-HURT(WS-COW)
+     MOVE 0 TO WS-OWNER
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     MOVE "an owner-less bite does not push the cow" TO WS-LABEL
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-COW) * 1000
+     PERFORM ASSERT-LINE
+*>   A victim exactly on the fang gets a random direction: a player is sent Set Entity Motion, a mob is pushed 0.4 whatever the direction.
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     MOVE EN-ID(WS-EVOKER) TO WS-OWNER
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     PERFORM MOTION-COUNT
+     MOVE "a player exactly on an owned fang is still knocked back (random direction)" TO WS-LABEL
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-MOTION-TOKENS TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     COMPUTE WS-X = PL-X(WS-PLAYER) - 9
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-X WS-Y WS-Z WS-YAW WS-COW
+     MOVE 1 TO EN-ON-GROUND(WS-COW)
+     MOVE 0 TO EN-HURT(WS-COW)
+     CALL "EVK-FANG-ADD" USING WS-DIM WS-X WS-Y WS-Z WS-WARM WS-OWNER
+     PERFORM 8 TIMES
+         CALL "EVK-FANG-TICK"
+     END-PERFORM
+     MOVE "a cow exactly on an owned fang is pushed 0.4 in some direction" TO WS-LABEL
+     MOVE 400 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = FUNCTION SQRT(EN-VX(WS-COW) * EN-VX(WS-COW) + EN-VZ(WS-COW) * EN-VZ(WS-COW)) * 1000
+     PERFORM ASSERT-LINE
+     STOP RUN.
+
+ FIND-FANG.
+     MOVE 0 TO WS-FANG
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = WS-FANG-TYPE
+             MOVE WS-E TO WS-FANG
+         END-IF
+     END-PERFORM
+     .
+
+*> The Entity Event 4 of the fang in the hunger text of the connection (drained here): WS-HITS.
+ EVENT-COUNT.
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+     MOVE EN-ID(WS-FANG) TO WS-ID-TEXT
+     MOVE SPACES TO WS-NEEDLE
+     STRING "event " DELIMITED BY SIZE FUNCTION TRIM(WS-ID-TEXT LEADING) DELIMITED BY SIZE " 4" DELIMITED BY SIZE INTO WS-NEEDLE
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL FUNCTION TRIM(WS-NEEDLE TRAILING)
+     .
+
+*> The number of Set Entity Motion (103) tokens in WS-IDS (a run is written 103x<n>).
+ MOTION-COUNT.
+     MOVE 0 TO WS-MOTION-TOKENS
+     MOVE SPACES TO WS-TEXT
+     STRING " " DELIMITED BY SIZE FUNCTION TRIM(WS-IDS) DELIMITED BY SIZE " " DELIMITED BY SIZE INTO WS-TEXT
+     INSPECT WS-TEXT TALLYING WS-MOTION-TOKENS FOR ALL " 103 "
+     .
+
+ ASSERT-LINE.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 20§13.3.1 Evoker fang: " DELIMITED BY SIZE FUNCTION TRIM(WS-LABEL) DELIMITED BY SIZE INTO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     .
+ END PROGRAM TEST-MOB-20-13-5.
+ COPY CORETEST.
+ COPY MOBSPTEST.

@@ -1,6 +1,7 @@
 *> The creaking hearts in play (lane 002-lane-p49r; docs/protocol/31 section 6, 44-5 section 8; core/src/mob-20-17c.cob), EXTERNAL. HT-ENTRY: one per heart (HT-USED 1): its block position and dimension,
 *> HT-LINK the entity id of its protector creaking (0 none), HT-TICKER the countdown of the state update (the body runs when its value before the decrement was below 0, then it is 20 + a draw of 0 to 4),
-*> HT-STATE 0 UPROOTED, 1 DORMANT, 2 AWAKE, HT-AGE the ticks it has existed.
+*> HT-STATE 0 UPROOTED, 1 DORMANT, 2 AWAKE, HT-AGE the ticks it has existed. HT-EMITTER the ticks left of the hurt particle trail (0 none, up to 100), HT-TX/TY/TZ the emitterTarget (the creaking's
+*> centre when it was hurt), HT-SIGNAL the cached comparator output (lane p49x, 31 section 6.2).
  78 HT-MAX                VALUE 16.
  01 HT-STATE-TABLE EXTERNAL.
     05 HT-ENTRY              OCCURS 16 TIMES.
@@ -13,3 +14,8 @@
        10 HT-TICKER          BINARY-LONG.
        10 HT-STATE           BINARY-LONG.
        10 HT-AGE             BINARY-LONG.
+       10 HT-EMITTER         BINARY-LONG.
+       10 HT-SIGNAL          BINARY-LONG.
+       10 HT-TX              FLOAT-LONG.
+       10 HT-TY              FLOAT-LONG.
+       10 HT-TZ              FLOAT-LONG.
