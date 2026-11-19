@@ -54,6 +54,7 @@
  01 WS-SPACED              PIC X(1030).
  01 WS-N60                 PIC 9.
  01 WS-N53                 PIC 9.
+ 01 WS-TICK                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-HOSTILE-MOBS
@@ -115,25 +116,38 @@
      MOVE WS-PY TO WS-BY
      COMPUTE WS-BZ = WS-PZ + 1
      MOVE "minecraft:red_bed" TO WS-KEY
+*>   The head half: the villager index lists the heads of the beds only (lane p49q).
+     MOVE "facing=north,occupied=false,part=head" TO WS-PAIRS
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     MOVE SPACES TO WS-PAIRS
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
      COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-ROW) / 16)
      COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-ROW) / 16)
      PERFORM 24 TIMES
          CALL "PXI-SCAN" USING WS-DIM WS-CX WS-CZ
      END-PERFORM
+*>   The villager brain (lane p49q) claims a bed through the AcquirePoi behaviour: some ticks of the day, not the first call.
      MOVE 3000 TO CW-TIME
      MOVE 1000 TO CW-TICKS
-     CALL "VL-BRAIN" USING WS-V1
-     CALL "VPX-OF" USING EN-ID(WS-V1) WS-HOME WS-QD WS-QX WS-QY WS-QZ WS-FOUND
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-TICK FROM 1 BY 1 UNTIL WS-TICK > 600 OR WS-FOUND = 1
+         ADD 1 TO CW-TIME
+         ADD 1 TO CW-TICKS
+         CALL "VL-BRAIN" USING WS-V1
+         CALL "VPX-OF" USING EN-ID(WS-V1) WS-HOME WS-QD WS-QX WS-QY WS-QZ WS-FOUND
+     END-PERFORM
      MOVE "N" TO TL-MODE
      MOVE "acceptance 19§22.8 the villager has claimed the bed as its home" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-FOUND TO TL-OBSERVED-N
      PERFORM CHECK
      MOVE 14000 TO CW-TIME
-     MOVE 1200 TO CW-TICKS
-     CALL "VL-BRAIN" USING WS-V1
+     MOVE 2000 TO CW-TICKS
+     PERFORM VARYING WS-TICK FROM 1 BY 1 UNTIL WS-TICK > 600 OR VL-SLEEP(WS-S1) = 1
+         ADD 1 TO CW-TIME
+         ADD 1 TO CW-TICKS
+         CALL "VL-BRAIN" USING WS-V1
+     END-PERFORM
      MOVE "acceptance 19§22.8 at night next to its bed the villager sleeps" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE VL-SLEEP(WS-S1) TO TL-OBSERVED-N
@@ -172,7 +186,8 @@
      PERFORM COUNT-OPEN
      PERFORM CHECK
 *>   It stays there while it sleeps: the stroll of the mob step is held off (cooldown 1, destination its own cell).
-     MOVE 1210 TO CW-TICKS
+     ADD 10 TO CW-TICKS
+     ADD 10 TO CW-TIME
      CALL "VL-BRAIN" USING WS-V1
      MOVE "N" TO TL-MODE
      MOVE "acceptance 19§22.8 a sleeping villager has no stroll walk running (cooldown held at 1)" TO TL-CASE
@@ -185,8 +200,11 @@
      PERFORM CHECK
 *>   Morning: it wakes and trades again.
      MOVE 2500 TO CW-TIME
-     MOVE 1300 TO CW-TICKS
-     CALL "VL-BRAIN" USING WS-V1
+     MOVE 3000 TO CW-TICKS
+     PERFORM VARYING WS-TICK FROM 1 BY 1 UNTIL WS-TICK > 100 OR VL-SLEEP(WS-S1) = 0
+         ADD 1 TO CW-TICKS
+         CALL "VL-BRAIN" USING WS-V1
+     END-PERFORM
      MOVE "acceptance 19§22.8 in the morning the villager is awake" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE VL-SLEEP(WS-S1) TO TL-OBSERVED-N
