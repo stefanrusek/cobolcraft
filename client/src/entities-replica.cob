@@ -93,8 +93,8 @@
  PROGRAM-ID. ENTITY-ATTACK-BOX.
 *> USING CLIENT-STATE, entity row, registry key (PIC X(22)), size text ("0.6 x 1.95", PIC X(15)), category (PIC X(26)): the attack box of a
 *> standard entity row (21 section 2: width x height; the box is centred on the entity's x and z, from its y up). The left button attacks a
-*> living entity (category other than MISC), a player, and the MISC entities that can be hit: boats, minecarts, armor stands, end crystals, and the MISC mobs that have
-*> health (the iron, snow and copper golems, the villager and the mannequin: 19 sections 19 to 22; lane buggolem, T42900).
+*> living entity (category other than MISC), a player, and the MISC entities that can be hit: boats, minecarts, armor stands, end crystals and the MISC living mobs
+*> (the villager, the golems, the mannequin: the registry gives them MISC but the game aims at them).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WIDTH               PIC X(15).
@@ -113,7 +113,7 @@
      COMPUTE EN-BOX-HEIGHT(L-ROW) = FUNCTION NUMVAL(WS-HEIGHT)
      MOVE 0 TO WS-N
      INSPECT L-KEY TALLYING WS-N FOR ALL "boat" ALL "raft" ALL "minecart" ALL "armor_stand" ALL "end_crystal"
-         ALL "golem" ALL "villager" ALL "mannequin"
+         ALL "villager" ALL "_golem" ALL "mannequin"
      MOVE 0 TO EN-BOX-ATTACK(L-ROW)
      IF L-CATEGORY NOT = "MISC" OR L-KEY = "player" OR WS-N > 0
          MOVE 1 TO EN-BOX-ATTACK(L-ROW)
