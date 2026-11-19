@@ -386,10 +386,13 @@
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-LIMIT               FLOAT-LONG.
  01 WS-FULL                FLOAT-LONG.
+ 01 WS-VIS                 FLOAT-LONG.
+ 01 WS-FOLLOW              FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
+     MOVE SM-FOLLOW(L-M) TO WS-FOLLOW
      COMPUTE WS-FULL = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
      MOVE EN-TARGET(L-ROW) TO WS-P
      IF WS-P > 0
@@ -414,10 +417,9 @@
                  AND PL-DIM(WS-P) = EN-DIM(L-ROW)
              COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
                  + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
-             MOVE WS-FULL TO WS-LIMIT
-             IF PL-POSE(WS-P) = 5
-                 COMPUTE WS-LIMIT = WS-FULL * 0.64
-             END-IF
+*>           TargetingConditions: the distance limit is max(follow range x visibility, 2) squared (44-3 section 4.7; mob-21-pgsee.cob).
+             CALL "MOB-PLAYER-VIS" USING L-ROW WS-P WS-VIS
+             CALL "MOB-SEE-RANGE2" USING WS-FOLLOW WS-VIS WS-LIMIT
              IF WS-D2 <= WS-LIMIT AND (WS-BEST = 0 OR WS-D2 < WS-BEST-D2
                      OR (WS-D2 = WS-BEST-D2 AND PL-ENTERED(WS-P) < PL-ENTERED(WS-BEST)))
                  MOVE WS-P TO WS-BEST

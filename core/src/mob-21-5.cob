@@ -184,6 +184,8 @@
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-GOLD                BINARY-LONG.
  01 WS-AVOIDING            BINARY-LONG.
+ 01 WS-VIS                 FLOAT-LONG.
+ 01 WS-FOLLOW              FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -199,10 +201,13 @@
      IF SM-NEUTRAL(L-M) = 4 AND EN-ANGER(L-ROW) = 0
 *>       A calm piglin attacks the nearest player in range that wears no golden armor.
          MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) WS-BEST
-         COMPUTE WS-LIMIT = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
+         MOVE SM-FOLLOW(L-M) TO WS-FOLLOW
          PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
              IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-MODE(WS-P) = 0 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
                  CALL "NETHER-GOLD-WORN" USING WS-P WS-GOLD
+*>               TargetingConditions range: max(follow range x visibility, 2) squared (44-3 section 4.7).
+                 CALL "MOB-PLAYER-VIS" USING L-ROW WS-P WS-VIS
+                 CALL "MOB-SEE-RANGE2" USING WS-FOLLOW WS-VIS WS-LIMIT
                  COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
                      + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
                  IF WS-GOLD = 0 AND WS-D2 <= WS-LIMIT AND (WS-BEST = 0 OR WS-D2 < WS-BEST-D2)

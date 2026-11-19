@@ -85,6 +85,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  01 WS-E                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-D2                  FLOAT-LONG.
@@ -98,6 +99,10 @@
  01 WS-SEES                BINARY-LONG.
  01 WS-BEST-H              FLOAT-LONG.
  01 WS-BEST-P              FLOAT-LONG.
+ 01 WS-SM                  BINARY-LONG.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-RANGE2              FLOAT-LONG.
+ 01 WS-ONE-V               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-KIND                 BINARY-LONG.
@@ -110,6 +115,13 @@
      MOVE EN-X(L-ROW) TO WS-AX
      COMPUTE WS-AY = EN-Y(L-ROW) + 1.5
      MOVE EN-Z(L-ROW) TO WS-AZ
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-SM
+     MOVE 16 TO WS-RANGE
+     IF WS-SM > 0
+         MOVE SM-FOLLOW(WS-SM) TO WS-RANGE
+     END-IF
+     MOVE 1 TO WS-ONE-V
+     CALL "MOB-SEE-RANGE2" USING WS-RANGE WS-ONE-V WS-RANGE2
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          IF WS-E NOT = L-ROW AND EN-USED(WS-E) = 1 AND EN-PLAYER(WS-E) = 0 AND EN-HEALTH(WS-E) > 0
                  AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-MOBAGE(WS-E) >= 0
@@ -117,10 +129,12 @@
              COMPUTE WS-DY = FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW))
              COMPUTE WS-DZ = FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW))
              CALL "PGAI-KIND" USING WS-E WS-K
-             IF WS-DX <= 16 AND WS-DY <= 16 AND WS-DZ <= 16 AND (WS-K = 1 OR WS-K = 2 OR WS-K = 3)
+             COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+*>           The visibility predicate (44-3 section 4.7): the candidates are the cube of the scanning mob's follow range, the test is the sphere of max(R x 1, 2) (the other is no player: v = 1)
+*>           and the ray between the eyes (the line of sight).
+             IF WS-DX <= WS-RANGE AND WS-DY <= WS-RANGE AND WS-DZ <= WS-RANGE AND WS-D2 <= WS-RANGE2 AND (WS-K = 1 OR WS-K = 2 OR WS-K = 3)
                  COMPUTE WS-BY = EN-Y(WS-E) + 1
                  CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-AX WS-AY WS-AZ EN-X(WS-E) WS-BY EN-Z(WS-E) WS-SEES
-                 COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
                  IF WS-SEES = 1 AND WS-K = 3
                      ADD 1 TO L-HOGLINS
                      IF L-HOGLIN = 0 OR WS-D2 < WS-BEST-H
