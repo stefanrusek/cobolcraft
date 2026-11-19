@@ -8,7 +8,7 @@
 *> mob in whole points) and removes the arrow; then drag 0.99 and gravity 0.05.
 *> A stray, bogged or parched arrow carries its effect in EN-VARIANT of the arrow row (STDMOB-ARROW-KIND) and a player it hits gets it (STDMOB-ARROW-APPLY, 20 section 5).
 *> Approximations (open): block hits use sample steps and not an exact voxel clip, water drag, critical arrows, piercing, Punch and Power, fire,
-*> tipped arrows, pickup of stuck arrows and the arrow count of the victim are not modelled.
+*> tipped arrows and the arrow count of the victim are not modelled; the pickup of a stuck arrow is ARROW-TOUCH (44-8 section 7.6; lane p49s).
 *>
 *> Entry points:
 *>   ARROW-TYPE USING type id out                       the entity type id of arrow, 0 outside a standard world
@@ -254,6 +254,11 @@
          ADD 1 TO EN-AGE(L-ROW)
          IF EN-AGE(L-ROW) >= 1200
              CALL "ENTITY-REMOVE" USING L-ROW
+             GOBACK
+         END-IF
+*>       A stuck arrow is picked up once its shakeTime (7 ticks) has run out (44-8 section 7.6).
+         IF EN-AGE(L-ROW) >= 7
+             CALL "ARROW-TOUCH" USING L-ROW
          END-IF
          GOBACK
      END-IF
@@ -559,3 +564,122 @@
      END-IF
      GOBACK.
  END PROGRAM STDMOB-SHOOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-IN-REACH.
+*> USING player row, arrow row, in out (BINARY-LONG 1 or 0): 1 when the arrow's box (0.5 x 0.5) meets the box of the player inflated by 1.0 horizontally and 0.5 vertically (44-8 section 7.6,
+*> Player.aiStep: a stuck arrow is collected from slightly more than one block away); the player must be alive, with a row and in the arrow's dimension; strict comparisons.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-REACH-XZ            FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-ARROW-HEIGHT        FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-IN                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW L-IN.
+     MOVE 0 TO L-IN
+     CALL "ARROW-TYPE" USING WS-TYPE
+     COMPUTE WS-REACH-XZ = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000 + 1 + ET-WIDTH-MILLI(WS-TYPE + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
+     COMPUTE WS-ARROW-HEIGHT = ET-HEIGHT-MILLI(WS-TYPE + 1) / 1000
+     IF PL-USED(L-PLAYER) = 1 AND PL-ENTITY-ROW(L-PLAYER) > 0 AND PL-STATE(L-PLAYER) = PS-ALIVE
+             AND PL-DIM(L-PLAYER) = EN-DIM(L-ROW)
+             AND FUNCTION ABS(EN-X(L-ROW) - PL-X(L-PLAYER)) < WS-REACH-XZ
+             AND FUNCTION ABS(EN-Z(L-ROW) - PL-Z(L-PLAYER)) < WS-REACH-XZ
+             AND EN-Y(L-ROW) + WS-ARROW-HEIGHT > PL-Y(L-PLAYER) - 0.5
+             AND EN-Y(L-ROW) < PL-Y(L-PLAYER) + WS-HEIGHT + 0.5
+         MOVE 1 TO L-IN
+     END-IF
+     GOBACK.
+ END PROGRAM ARROW-IN-REACH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-TOUCH.
+*> USING arrow row of a stuck arrow whose shakeTime ran out: AbstractArrow.playerTouch for the players in reach (44-8 section 7.6). The pickup mode follows the owner: an arrow whose owner is a
+*> player is ALLOWED (setOwner), any other arrow (a mob's) stays DISALLOWED and is never taken. ALLOWED puts one arrow item into the inventory (IP-INV-ADD); when the whole stack fits the
+*> viewers get Take Item Entity (1) and the arrow is removed; the taker gets Container Set Slot of the slots that changed. A tipped or spectral arrow and creative-only mode are not modelled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-OWNER-PLAYER        BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG VALUE 0.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-CHANGED             PIC 9.
+ 01 WS-BEFORE.
+    05 WS-BEFORE-SLOT OCCURS 36 TIMES.
+       10 WS-BEFORE-ITEM   BINARY-LONG.
+       10 WS-BEFORE-N      BINARY-LONG.
+       10 WS-BEFORE-VAR    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE 0 TO WS-OWNER-PLAYER
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND EN-TARGET-ID(L-ROW) NOT = 0 AND PL-ENTITY-ID(WS-P) = EN-TARGET-ID(L-ROW)
+             MOVE 1 TO WS-OWNER-PLAYER
+         END-IF
+     END-PERFORM
+     IF WS-OWNER-PLAYER = 0
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-ITEM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
+         IF IT-KEY(WS-I) = "arrow" OR IT-KEY(WS-I) = "minecraft:arrow"
+             COMPUTE WS-ITEM = WS-I - 1
+         END-IF
+     END-PERFORM
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR EN-USED(L-ROW) = 0
+         CALL "ARROW-IN-REACH" USING WS-P L-ROW WS-IN
+         IF WS-IN = 1
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+                 MOVE PL-SLOT-ITEM(WS-P, WS-S) TO WS-BEFORE-ITEM(WS-S)
+                 MOVE PL-SLOT-COUNT(WS-P, WS-S) TO WS-BEFORE-N(WS-S)
+                 MOVE PL-SLOT-VAR(WS-P, WS-S) TO WS-BEFORE-VAR(WS-S)
+             END-PERFORM
+             MOVE 1 TO WS-LEFT
+             CALL "IP-INV-ADD" USING WS-P WS-ITEM WS-LEFT WS-VAR WS-RESULT
+             IF WS-RESULT = 1
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "TAKE-ITEM-ENTITY-BUILD" USING EN-ID(L-ROW) PL-ENTITY-ID(WS-P) WS-ONE PB-BUFFER
+                 CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
+             END-IF
+             MOVE 0 TO WS-CHANGED
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+                 IF PL-SLOT-ITEM(WS-P, WS-S) NOT = WS-BEFORE-ITEM(WS-S) OR PL-SLOT-COUNT(WS-P, WS-S)
+                         NOT = WS-BEFORE-N(WS-S) OR PL-SLOT-VAR(WS-P, WS-S) NOT = WS-BEFORE-VAR(WS-S)
+                     IF WS-CHANGED = 0
+                         COMPUTE PL-STATE-ID(WS-P) = FUNCTION MOD(PL-STATE-ID(WS-P) + 1, 32768)
+                         MOVE 1 TO WS-CHANGED
+                     END-IF
+                     COMPUTE WS-SLOT = WS-S - 1
+                     CALL "INV-SLOT-SEND" USING PL-CONN(WS-P) WS-SLOT
+                 END-IF
+             END-PERFORM
+             IF WS-RESULT = 1
+                 CALL "ENTITY-REMOVE" USING L-ROW
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ARROW-TOUCH.
