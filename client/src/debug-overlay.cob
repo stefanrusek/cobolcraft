@@ -11,7 +11,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CCSHIM.
- 01 WS-ELAPSED             BINARY-LONG.
+ COPY CLCONST.
+*> The frame clock is the Unix epoch in milliseconds (about 1.7e12) and CL-FPS-AT is 0 until the first measurement, so the first elapsed time is the whole
+*> clock: a 32-bit field overflowed there and left the frame rate at 0.
+ 01 WS-ELAPSED             BINARY-DOUBLE.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
