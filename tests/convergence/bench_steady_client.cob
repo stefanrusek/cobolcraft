@@ -75,6 +75,8 @@
  01 WS-D9E                 PIC -(8)9.
  01 WS-D9F                 PIC -(8)9.
  01 WS-D9G                 PIC -(8)9.
+ 01 WS-D9H                 PIC -(8)9.
+ 01 WS-D9I                 PIC -(8)9.
  01 WS-LOAD.
     05 WS-LOAD-AVG         FLOAT-LONG OCCURS 3 TIMES.
  01 WS-LOAD-1              PIC -(3)9.99.
@@ -726,9 +728,9 @@
              ADD 1 TO WS-OVER66
          END-IF
      END-PERFORM
-     MOVE WS-OVER33 TO WS-D9
-     MOVE WS-OVER66 TO WS-D9B
-     DISPLAY "BS " FUNCTION TRIM(WS-LABEL) " " FUNCTION TRIM(WS-PHASE) " frames over 33 ms " WS-D9 " over 66 ms " WS-D9B
+     MOVE WS-OVER33 TO WS-D9H
+     MOVE WS-OVER66 TO WS-D9I
+     DISPLAY "BS " FUNCTION TRIM(WS-LABEL) " " FUNCTION TRIM(WS-PHASE) " frames over 33 ms " WS-D9H " over 66 ms " WS-D9I
      MOVE WS-COUNT TO WS-D9G
      DISPLAY "BS " FUNCTION TRIM(WS-LABEL) " " FUNCTION TRIM(WS-PHASE) " frames " WS-D9G " us: mean " WS-D9 " p50 " WS-D9B " p99 " WS-D9C
          " max " WS-D9D " mean-tick-frames " WS-D9E " mean-other-frames " WS-D9F " load " WS-LOAD-1.
