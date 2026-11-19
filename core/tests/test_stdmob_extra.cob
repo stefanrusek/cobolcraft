@@ -215,14 +215,28 @@
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   A dark cell (deep in the terrain) refuses.
+*>   A dark cell refuses: a grass cell under a closed chamber (two cells of air walled in by stone on the four sides and capped above). The chamber has to
+*>   be closed all round: the sky light spreads sideways through air (32 section 5.2, LIGHT-SKY-SPREAD), so a single column of air under a roof at the
+*>   side of open sky reads up to 14 (the test world has no terrain this deep: the cells beside the column are air under the open sky).
      COMPUTE WS-TOP = FUNCTION INTEGER(WS-Y) - 20
      COMPUTE WS-BY = WS-TOP
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-GRASS-STATE
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
          COMPUTE WS-BY = WS-TOP + WS-I
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+         ADD 1 TO WS-BX
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         SUBTRACT 2 FROM WS-BX
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         ADD 1 TO WS-BX
+         ADD 1 TO WS-BZ
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         SUBTRACT 2 FROM WS-BZ
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
+         ADD 1 TO WS-BZ
      END-PERFORM
+     COMPUTE WS-BY = WS-TOP + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE-STATE
      CALL "STDMOB-SPAWN-RULE" USING WS-DIM WS-BX WS-BZ WS-TOP WS-R
      PERFORM COUNT-ALL
      MOVE "test stdmob extra: no spawn in a dark cell" TO TL-CASE

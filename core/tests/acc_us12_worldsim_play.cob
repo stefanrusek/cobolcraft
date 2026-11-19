@@ -215,7 +215,8 @@
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      STRING " " FUNCTION TRIM(WS-LABEL) "[" FUNCTION TRIM(WS-TEXT) "]" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
 
-*> Adds "minecraft:water" (16 states, the index being the level; no collision, no light) to the block tables after the last block and state.
+*> Adds "minecraft:water" (16 states, the index being the level; no collision, no light, sky light dampening 1 as the real water has: its cells read
+*> 14 under the open sky, so placing and flowing it changes the stored light and sends Light Updates) to the block tables after the last block and state.
  INSTALL-WATER.
      COMPUTE WS-N = CB-BLOCK-COUNT + 1
      MOVE "minecraft:water" TO CB-KEY(WS-N)
@@ -228,6 +229,7 @@
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
          COMPUTE CB-S-BLOCK(WS-BASE + WS-K) = WS-N - 1
          MOVE 0 TO CB-S-LIGHT(WS-BASE + WS-K)
+         MOVE 1 TO CB-S-DAMP(WS-BASE + WS-K)
      END-PERFORM
      ADD 1 TO CB-BLOCK-COUNT
      ADD 16 TO CB-STATE-COUNT

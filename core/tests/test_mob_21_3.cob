@@ -96,13 +96,16 @@
          END-IF
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-J
      END-PERFORM
-*>   Column C (x + 30): glow squid depth, water from sea - 40 to sea - 30 in the rock.
+*>   Column C (x + 30): glow squid depth, water from sea - 40 to sea - 28 in the rock, closed by a stone at sea - 27: the sky light of a column reaches down
+*>   through water (dampening 1 a block, docs/protocol/32 section 5.2), so the cell is dark only under an occluder.
      COMPUTE WS-X = WS-PX + 30
      COMPUTE WS-LO = WS-SEA - 40
-     COMPUTE WS-HI = WS-SEA - 30
+     COMPUTE WS-HI = WS-SEA - 28
      PERFORM VARYING WS-Y FROM WS-LO BY 1 UNTIL WS-Y > WS-HI
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-WATER
      END-PERFORM
+     COMPUTE WS-Y = WS-SEA - 27
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
      MOVE SPACES TO WS-KEY
      MOVE "minecraft:cod" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COD WS-ENTITY-ROW WS-STATUS
