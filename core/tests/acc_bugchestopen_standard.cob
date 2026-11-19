@@ -64,7 +64,7 @@
  01 WS-OPEN                BINARY-LONG.
  01 WS-SIZE                BINARY-LONG.
  01 WS-MTYPE               BINARY-LONG.
- 01 WS-LABEL               PIC X(64).
+ 01 WS-LABEL               PIC X(160).
  01 WS-COPPERS.
     05 FILLER              PIC X(48) VALUE "copper_chest".
     05 FILLER              PIC X(48) VALUE "exposed_copper_chest".
@@ -142,6 +142,14 @@
      PERFORM RUN-CASE
      MOVE SPACES TO WS-UPPER
      MOVE "acceptance bugchestopen chest with air above opens" TO WS-LABEL
+     PERFORM RUN-CASE
+     MOVE "soul_sand" TO WS-UPPER
+     MOVE "acceptance bugchestopen chest under soul sand (always a conductor, 30-1 section 2.4) stays shut" TO WS-LABEL
+     MOVE "open 0" TO TL-EXPECTED
+     PERFORM RUN-CASE
+     MOVE "oak_fence" TO WS-UPPER
+     MOVE "acceptance bugchestopen chest under a fence opens" TO WS-LABEL
+     MOVE "open 1 size 27 type 2" TO TL-EXPECTED
      PERFORM RUN-CASE
      MOVE "trapped_chest" TO WS-LOWER
      MOVE "chest" TO WS-UPPER

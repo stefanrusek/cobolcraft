@@ -5,8 +5,8 @@
 *> (the slot table M2 of 40-1 section 7.2 and 8.2); MENU-LOCATE names a container slot with the kind 6 and the index slot + 1. A double chest
 *> is the first half's 27 slots then the second half's, the right half of the pair first (31-1 section 10.2: BE-CHEST-MERGE).
 *>
-*> Opening (Use Item On a container block, BLOCK-USE-ON): a chest with a conductor block above it, or a double chest with either half so,
-*> does not open; a menu already open is closed first; the container id is the next of the cycle 1 to 100 (40-1 section 4.1); startOpen
+*> Opening (Use Item On a container block, BLOCK-USE-ON): a chest (trapped, ender or copper too) with a redstone conductor block or a sitting cat above it,
+*> or a double chest with either half so (BE-CHEST-COVERED; a chest, slab, stairs or glass above does not block), does not open; a menu already open is closed first; the container id is the next of the cycle 1 to 100 (40-1 section 4.1); startOpen
 *> counts an opener on every entity and runs the effects of BEFX.cpy (Block Event 1 with the opener count to the viewers of the chunk, the
 *> open property of a barrel, the sound); Open Screen (the entity's custom name as a literal text, else its default name or container.chestDouble) and
 *> Container Set Content follow. The open and close sounds of BEFX.cpy are sent as Sound packets (BE-SOUND-SEND); its game events are not.
@@ -18,6 +18,7 @@
 *>   MENU-CONT-GET USING row, own slot (0-based), item out, count out, patch handle out
 *>   MENU-CONT-SET USING row, own slot, item, count, patch handle      (count 0 empties; the entity and its chunk are marked unsaved)
 *>   MENU-CONT-OPEN USING connection id, x, y, z, opened out           the open rules above
+*>   BE-CHEST-COVERED USING dim, x, y, z, blocked out                  isChestBlockedAt for the chest's cell
 *>   MENU-CONT-STOP USING player row                                   stopOpen on every entity, the menu stops being a container menu
 *>   MENU-CONT-VALID USING player row, valid out                       the entities are still there (the reach is MENU-STILL-VALID's)
 *>   MENU-CONT-QUICK-MOVE USING row, menu slot, item out, count out    quickMoveStack of 40-1 section 7.3 and 8.3
@@ -194,6 +195,66 @@
  END PROGRAM MENU-CONT-FX.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-CHEST-COVERED.
+*> USING dimension row, x, y, z (the chest's cell), blocked out: ChestBlock.isChestBlockedAt (31-1 section 10.2): 1 when the block above is a redstone conductor
+*> (BAT-CONDUCTOR: a chest, slab, stairs, glass or leaves above is not one) or a cat in the sitting pose has its box over the box x..x+1, y+1..y+2, z..z+1
+*> (the entity box of its type, a strict overlap; EN-SIT is its sitting pose).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY STDMOBS.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-CONDUCTOR           BINARY-LONG.
+ 01 WS-CAT                 BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-MIN-X               FLOAT-LONG.
+ 01 WS-MAX-X               FLOAT-LONG.
+ 01 WS-MIN-Z               FLOAT-LONG.
+ 01 WS-MAX-Z               FLOAT-LONG.
+ 01 WS-MAX-Y               FLOAT-LONG.
+ 01 WS-LOW-Y               FLOAT-LONG.
+ 01 WS-HIGH-Y              FLOAT-LONG.
+ 01 WS-CELL-Y              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BLOCKED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-BLOCKED.
+     COMPUTE WS-Y1 = L-Y + 1
+     CALL "BAT-CONDUCTOR" USING L-DIM L-X WS-Y1 L-Z WS-CONDUCTOR
+     MOVE 0 TO WS-CAT
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = L-DIM AND EN-SIT(WS-E) = 1
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-K
+             IF WS-K > 0 AND SM-KEY(WS-K) = "cat"
+                 COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
+                 COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
+                 COMPUTE WS-MIN-X = EN-X(WS-E) - WS-HALF
+                 COMPUTE WS-MAX-X = EN-X(WS-E) + WS-HALF
+                 COMPUTE WS-MIN-Z = EN-Z(WS-E) - WS-HALF
+                 COMPUTE WS-MAX-Z = EN-Z(WS-E) + WS-HALF
+                 COMPUTE WS-LOW-Y = EN-Y(WS-E)
+                 COMPUTE WS-MAX-Y = EN-Y(WS-E) + WS-HEIGHT
+                 COMPUTE WS-HIGH-Y = L-Y + 2
+                 MOVE WS-Y1 TO WS-CELL-Y
+                 IF WS-MIN-X < L-X + 1 AND WS-MAX-X > L-X AND WS-MIN-Z < L-Z + 1 AND WS-MAX-Z > L-Z
+                         AND WS-LOW-Y < WS-HIGH-Y AND WS-MAX-Y > WS-CELL-Y
+                     MOVE 1 TO WS-CAT
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "BE-CHEST-BLOCKED" USING WS-CONDUCTOR WS-CAT L-BLOCKED
+     GOBACK.
+ END PROGRAM BE-CHEST-COVERED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-CONT-OPEN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -224,10 +285,6 @@
  01 WS-DZ                  BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
- 01 WS-ABOVE               BINARY-LONG.
- 01 WS-Y1                  BINARY-LONG.
- 01 WS-CONDUCTOR           BINARY-LONG.
- 01 WS-NO-CAT              BINARY-LONG VALUE 0.
  01 WS-BLOCKED             BINARY-LONG.
  01 WS-CAN                 BINARY-LONG.
  01 WS-NOTIFY              BINARY-LONG.
@@ -272,11 +329,9 @@
              GOBACK
          END-IF
      END-IF
-*>   A conductor block above a chest or an ender chest keeps it closed (a double chest: either half).
+*>   A chest, trapped chest, copper chest or ender chest is shut when a redstone conductor or a sitting cat is above it (a double chest: either half).
      IF WS-FAMILY = 1 OR WS-FAMILY = 2
          PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 1
-             MOVE 0 TO WS-CONDUCTOR
-             COMPUTE WS-Y1 = L-Y + 1
              MOVE L-X TO WS-PX
              MOVE L-Z TO WS-PZ
              IF WS-I = 1 AND WS-FAMILY = 1 AND WS-TYPE NOT = 0
@@ -285,11 +340,7 @@
                  COMPUTE WS-PZ = L-Z + WS-DZ
              END-IF
              IF WS-I = 0 OR (WS-FAMILY = 1 AND WS-TYPE NOT = 0)
-                 CALL "WORLD-GET-BLOCK" USING WS-DIM WS-PX WS-Y1 WS-PZ WS-ABOVE
-                 IF CB-SOLID(CB-S-BLOCK(WS-ABOVE + 1) + 1) = 1 AND CB-OPAQUE(CB-S-BLOCK(WS-ABOVE + 1) + 1) = 1
-                     MOVE 1 TO WS-CONDUCTOR
-                 END-IF
-                 CALL "BE-CHEST-BLOCKED" USING WS-CONDUCTOR WS-NO-CAT WS-CAN
+                 CALL "BE-CHEST-COVERED" USING WS-DIM WS-PX L-Y WS-PZ WS-CAN
                  IF WS-CAN = 1
                      MOVE 1 TO WS-BLOCKED
                  END-IF

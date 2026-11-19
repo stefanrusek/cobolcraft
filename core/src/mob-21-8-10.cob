@@ -127,16 +127,19 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BAT-CONDUCTOR.
-*> A redstone conductor (30 section 2.4): a full solid block that is not on the never list of RS1-CONDUCTOR-KIND, or one on its always list.
+*> A redstone conductor (30 section 2.4): a block on the always list of RS1-CONDUCTOR-KIND, or one that is not on its never list and whose collision shape is
+*> a full cube (BSH-COLL-ID shape 1; a state of the cobolcraft stand-in set, which has no shapes, is a full cube when CB-SOLID). A slab, stairs, chest or fence is not.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
+ COPY CONTENT.
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-NAME                PIC X(40).
  01 WS-LONG                PIC X(48).
  01 WS-BARE                PIC X(48).
  01 WS-KIND                BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -157,9 +160,20 @@
      CALL "KEY-BARE" USING WS-LONG WS-BARE
      MOVE WS-BARE TO WS-NAME
      CALL "RS1-CONDUCTOR-KIND" USING WS-NAME WS-KIND
-     IF WS-KIND NOT = 1
-         MOVE 1 TO L-CONDUCTOR
-     END-IF
+     EVALUATE WS-KIND
+         WHEN 1
+             CONTINUE
+         WHEN 2
+             MOVE 1 TO L-CONDUCTOR
+         WHEN OTHER
+             MOVE 1 TO WS-SHAPE
+             IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                 CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+             END-IF
+             IF WS-SHAPE = 1
+                 MOVE 1 TO L-CONDUCTOR
+             END-IF
+     END-EVALUATE
      GOBACK.
  END PROGRAM BAT-CONDUCTOR.
 
