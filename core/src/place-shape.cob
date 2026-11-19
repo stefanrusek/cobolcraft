@@ -5,6 +5,7 @@
 *>   PS-STAIR      stairs: facing = the player's horizontal direction, half by the click, shape by the neighbours (getStairsShape)
 *>   PS-DOOR       doors: facing = the player's horizontal direction, hinge by the neighbours and the click (getHinge)
 *>   PS-TRAPDOOR   trapdoors: against the clicked side when the block is not replaced there, else facing the player
+*>   PS-BED        beds: facing = the player's horizontal direction, part foot; refused when the head cell (one step along the facing) is outside the border or taken
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PS-STAIR-AT.
@@ -315,3 +316,51 @@
      END-IF
      GOBACK.
  END PROGRAM PS-TRAPDOOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PS-BED.
+*> USING the placement context (PLACECTX.cpy): BedBlock.getStateForPlacement (24 part 2 section 5, beds): facing = the player's horizontal direction, part foot; the placement is
+*> refused (PC-FITS 0) unless the cell one step along that direction (where the head half goes) lies inside the world border and holds no block or a replaceable one.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-FACING-NAME         PIC X(24) VALUE "facing".
+ 01 WS-PART-NAME           PIC X(24) VALUE "part".
+ 01 WS-FOOT                PIC X(32) VALUE "foot".
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-OLD                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-REPLACEABLE         BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:replaceable".
+ LINKAGE SECTION.
+ COPY PLACECTX.
+ PROCEDURE DIVISION USING PLACE-CONTEXT.
+     MOVE 1 TO PC-FITS
+     CALL "PS-DIR-NAME" USING PC-HDIR WS-TEXT
+     CALL "PS-PUT" USING PC-STATE WS-FACING-NAME WS-TEXT
+     CALL "PS-PUT" USING PC-STATE WS-PART-NAME WS-FOOT
+     CALL "PS-DIR-STEP" USING PC-HDIR WS-DX WS-DY WS-DZ
+     COMPUTE WS-X = PC-X + WS-DX
+     COMPUTE WS-Z = PC-Z + WS-DZ
+     CALL "PORTAL-IN-BORDER" USING PC-DIM WS-X WS-Z WS-INSIDE
+     IF WS-INSIDE = 0
+         MOVE 0 TO PC-FITS
+         GOBACK
+     END-IF
+     CALL "WORLD-GET-BLOCK" USING PC-DIM WS-X PC-Y WS-Z WS-OLD
+     IF WS-OLD NOT = 0
+         MOVE CB-S-BLOCK(WS-OLD + 1) TO WS-BLOCK
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-REPLACEABLE
+         IF WS-REPLACEABLE = 0
+             MOVE 0 TO PC-FITS
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PS-BED.

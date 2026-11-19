@@ -232,6 +232,8 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+*>   A player who leaves asleep leaves the bed (stopSleepInBed on disconnect, 33 section 5.3): the row must not stay asleep for the next player.
+     CALL "SLEEP-FORGET" USING WS-ROW
      CALL "MENU-RELEASE" USING WS-ROW WS-BACK
      CALL "PLAYER-REMEMBER" USING WS-ROW
      CALL "OTHERS-LEAVE" USING WS-ROW

@@ -137,6 +137,7 @@
  01 WS-NEW                 FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP-Y               FLOAT-LONG.
  01 WS-GROUND              BINARY-LONG.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
  LINKAGE SECTION.
@@ -162,12 +163,12 @@
          MOVE 0 TO EN-VZ(L-ROW)
      END-IF
      COMPUTE WS-NEW = WS-Y + EN-VY(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X WS-NEW WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-X WS-NEW WS-Z WS-HIT WS-TOP WS-TOP-Y
      EVALUATE TRUE
          WHEN WS-HIT = 0
              MOVE WS-NEW TO WS-Y
          WHEN EN-VY(L-ROW) <= 0
-             COMPUTE WS-Y = WS-TOP + 1
+             MOVE WS-TOP-Y TO WS-Y
              MOVE 1 TO WS-GROUND
              MOVE 0 TO EN-VY(L-ROW)
          WHEN OTHER

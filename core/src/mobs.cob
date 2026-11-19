@@ -632,6 +632,7 @@
  01 WS-GROUND              BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP-Y               FLOAT-LONG.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
  01 WS-WET                 BINARY-LONG.
  01 WS-DEEP                BINARY-LONG.
@@ -711,7 +712,7 @@
          END-IF
      END-IF
      COMPUTE WS-NEW = WS-Y + WS-VY
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP WS-TOP-Y
      EVALUATE TRUE
          WHEN WS-HIT = 0
              MOVE WS-NEW TO WS-Y
@@ -720,14 +721,18 @@
 *>           Rising into a ceiling: stop, not on the ground.
              MOVE 0 TO WS-VY WS-GROUND
          WHEN OTHER
-             COMPUTE WS-Y = WS-TOP + 1
+             MOVE WS-TOP-Y TO WS-Y
              MOVE 0 TO WS-VY
              MOVE 1 TO WS-GROUND
      END-EVALUATE
 *>   3. The moves along X and Z, each with the step-up retry.
      COMPUTE WS-NEW = WS-X + L-HX
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP WS-TOP-Y
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
+*>   The step-up goes onto the obstacle when it is lower than the step (a bed, a slab, a path block), not a whole block above it.
+     IF WS-HIT = 1 AND WS-TOP-Y > WS-Y AND WS-TOP-Y < WS-UP
+         MOVE WS-TOP-Y TO WS-UP
+     END-IF
      IF WS-HIT = 1 AND WS-GROUND = 1
          CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-TOP
          IF WS-HIT = 0
@@ -742,8 +747,11 @@
          MOVE 1 TO WS-HCOLL
      END-IF
      COMPUTE WS-NEW = WS-Z + L-HZ
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP WS-TOP-Y
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
+     IF WS-HIT = 1 AND WS-TOP-Y > WS-Y AND WS-TOP-Y < WS-UP
+         MOVE WS-TOP-Y TO WS-UP
+     END-IF
      IF WS-HIT = 1 AND WS-GROUND = 1
          CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-TOP
          IF WS-HIT = 0

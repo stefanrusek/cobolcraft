@@ -416,6 +416,8 @@
 *>   The game event block_place at the block centre with the player and the placed state as context (29 section 8 step 8): the warden hears it unless the state is wool.
      CALL "GAME-EVENT-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT-PLACE CN-PLAYER(L-ID) WS-STATE
      CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   A bed places its head half one cell along its facing (BedBlock.setPlacedBy).
+     CALL "BED-PLACE-HEAD" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "GOLEM-BUILD" USING WS-DIM WS-X WS-Y WS-Z
      CALL "WITHER-BUILD" USING WS-DIM WS-X WS-Y WS-Z
      MOVE 1 TO L-PLACED

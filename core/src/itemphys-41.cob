@@ -1361,6 +1361,7 @@
  01 WS-NZ                  FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP-Y               FLOAT-LONG.
  01 WS-CELL                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -1389,7 +1390,7 @@
              WHEN 3
                  ADD WS-STEP TO WS-NZ
          END-EVALUATE
-         CALL "ENTITY-BOX-HITS" USING L-DIM WS-TYPE WS-NX WS-NY WS-NZ WS-HIT WS-TOP
+         CALL "ENTITY-BOX-HITS-Y" USING L-DIM WS-TYPE WS-NX WS-NY WS-NZ WS-HIT WS-TOP WS-TOP-Y
          IF WS-HIT = 0
              MOVE WS-NX TO L-X
              MOVE WS-NY TO L-Y
@@ -1407,7 +1408,7 @@
                      COMPUTE WS-CELL = - FUNCTION INTEGER(0.0000001 - (WS-NY + WS-HEIGHT)) - 1
                      COMPUTE L-Y = WS-CELL - WS-HEIGHT
                  WHEN L-AXIS = 2
-                     COMPUTE L-Y = WS-TOP + 1
+                     MOVE WS-TOP-Y TO L-Y
                  WHEN L-AXIS = 3 AND WS-STEP > 0
                      COMPUTE WS-CELL = - FUNCTION INTEGER(0.0000001 - (WS-NZ + WS-HALF)) - 1
                      COMPUTE L-Z = WS-CELL - WS-HALF
