@@ -7,6 +7,7 @@
 *> Entry points:
 *>   CONN-KIND USING name (PIC X(48), bare), kind out (0 none, 1 wall, 2 fence, 3 bars and panes, 4 fence gate), wooden out (1 for a fence that is not the nether brick one)
 *>   CONN-EXCEPTION USING name, flag out: Block.isExceptionForConnection (leaves, barrier, carved pumpkin, jack o'lantern, melon, pumpkin, shulker boxes)
+*>   CONN-CLASS USING state, kind out, wooden out, exception out: the three above for the block of a state, from a table of the block table's epoch (BU-HOOK asks for every shape update)
 *>   CONN-FACE-GRID USING state, face (0 down, 1 up, 2 north, 3 south, 4 west, 5 east), grid out (PIC X(256), "1" for each sixteenth of the face the collision shape covers)
 *>   CONN-GRID-COVERS USING grid, first a, last a, first b, last b, flag out: every sixteenth of the rectangle is covered
 *>   CONN-CONNECTS USING dimension row, x, y, z of the neighbour, side (direction from the block to the neighbour, 2 to 5), kind, wooden, connects out
@@ -96,6 +97,44 @@
      END-IF
      GOBACK.
  END PROGRAM CONN-EXCEPTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONN-CLASS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-EPOCH               BINARY-LONG VALUE -1.
+ 01 WS-TABLE.
+    05 WS-ROW OCCURS 1400 TIMES.
+       10 WS-R-KIND        BINARY-LONG.
+       10 WS-R-WOODEN      BINARY-LONG.
+       10 WS-R-EXCEPTION   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(48).
+ 01 WS-BLOCK               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-WOODEN               BINARY-LONG.
+ 01 L-EXCEPTION            BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-KIND L-WOODEN L-EXCEPTION.
+     IF WS-EPOCH NOT = CB-EPOCH
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
+             CALL "KEY-BARE" USING CB-KEY(WS-I) WS-NAME
+             CALL "CONN-KIND" USING WS-NAME WS-R-KIND(WS-I) WS-R-WOODEN(WS-I)
+             CALL "CONN-EXCEPTION" USING WS-NAME WS-R-EXCEPTION(WS-I)
+         END-PERFORM
+         MOVE CB-EPOCH TO WS-EPOCH
+     END-IF
+     MOVE 0 TO L-KIND L-WOODEN L-EXCEPTION
+     IF L-STATE >= 0 AND L-STATE < CB-STATE-COUNT
+         COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
+         MOVE WS-R-KIND(WS-BLOCK) TO L-KIND
+         MOVE WS-R-WOODEN(WS-BLOCK) TO L-WOODEN
+         MOVE WS-R-EXCEPTION(WS-BLOCK) TO L-EXCEPTION
+     END-IF
+     GOBACK.
+ END PROGRAM CONN-CLASS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONN-FACE-GRID.
@@ -234,7 +273,6 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STATE               BINARY-LONG.
- 01 WS-NAME                PIC X(48).
  01 WS-KIND                BINARY-LONG.
  01 WS-WOODEN              BINARY-LONG.
  01 WS-EXCEPTION           BINARY-LONG.
@@ -265,9 +303,7 @@
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-SIDE L-KIND L-WOODEN L-CONNECTS.
      MOVE 0 TO L-CONNECTS
      CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
-     CALL "PS-NAME-OF" USING WS-STATE WS-NAME
-     CALL "CONN-KIND" USING WS-NAME WS-KIND WS-WOODEN
-     CALL "CONN-EXCEPTION" USING WS-NAME WS-EXCEPTION
+     CALL "CONN-CLASS" USING WS-STATE WS-KIND WS-WOODEN WS-EXCEPTION
 *>   The face of the neighbour towards the block is sturdy when its collision shape covers all of it.
      CALL "PS-OPP" USING L-SIDE WS-OPP
      CALL "CONN-FACE-GRID" USING WS-STATE WS-OPP WS-GRID
@@ -347,7 +383,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ABOVE               BINARY-LONG.
  01 WS-ABOVE-Y             BINARY-LONG.
- 01 WS-ABOVE-NAME          PIC X(48).
+ 01 WS-ABOVE-EXCEPTION     BINARY-LONG.
  01 WS-ABOVE-KIND          BINARY-LONG.
  01 WS-ABOVE-WOODEN        BINARY-LONG.
  01 WS-GRID                PIC X(256).
@@ -422,8 +458,7 @@
          CALL "PS-PUT" USING L-STATE WS-SIDE-NAME(WS-I) WS-TEXT
      END-PERFORM
 *>   shouldRaisePost: a wall above with a post; a corner, an end or a junction; two tall arms in a line; else the shape above (or its tag) holds a post up.
-     CALL "PS-NAME-OF" USING WS-ABOVE WS-ABOVE-NAME
-     CALL "CONN-KIND" USING WS-ABOVE-NAME WS-ABOVE-KIND WS-ABOVE-WOODEN
+     CALL "CONN-CLASS" USING WS-ABOVE WS-ABOVE-KIND WS-ABOVE-WOODEN WS-ABOVE-EXCEPTION
      MOVE 0 TO WS-POST
      MOVE 0 TO WS-OVERRIDE
      IF WS-ABOVE > 0
@@ -480,7 +515,7 @@
  PROGRAM-ID. CONN-PLACE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-NAME                PIC X(48).
+ 01 WS-EXCEPTION           BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-WOODEN              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -507,8 +542,7 @@
  01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
-     CALL "PS-NAME-OF" USING L-STATE WS-NAME
-     CALL "CONN-KIND" USING WS-NAME WS-KIND WS-WOODEN
+     CALL "CONN-CLASS" USING L-STATE WS-KIND WS-WOODEN WS-EXCEPTION
      IF WS-KIND = 0 OR WS-KIND = 4
          GOBACK
      END-IF
@@ -532,7 +566,7 @@
  PROGRAM-ID. CONN-SHAPE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-NAME                PIC X(48).
+ 01 WS-EXCEPTION           BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-WOODEN              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -571,8 +605,7 @@
  01 L-OUT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-DIR L-OUT.
      MOVE L-STATE TO L-OUT
-     CALL "PS-NAME-OF" USING L-STATE WS-NAME
-     CALL "CONN-KIND" USING WS-NAME WS-KIND WS-WOODEN
+     CALL "CONN-CLASS" USING L-STATE WS-KIND WS-WOODEN WS-EXCEPTION
      IF WS-KIND = 0 OR WS-KIND = 4
          GOBACK
      END-IF
