@@ -357,6 +357,7 @@
        10 EN-SCH-NEXT        BINARY-LONG.        *> FollowFlockLeaderGoal nextStartTick
        10 EN-SCH-ROLLED      BINARY-LONG.        *> 1 once nextStartTick was rolled (the constructor's roll, made at the first goal tick)
        10 EN-SCH-PATH        BINARY-LONG.        *> timeToRecalcPath
+       10 EN-PEEK-CUR        FLOAT-LONG.         *> a shulker's current lid peek 0 to 1 (raw peek EN-VARIANT x 0.01 is the target; 0.05 a tick, 21 section 6.2)
 *>     --- 002-lane-mobsfull-h11: mob effects, creeper ignition, phantom flight (core/src/mob-20-6.cob, 20-7, 20-11, 20-12) ---
 *>     Effects of a mob (ticks left, -1 = no expiry, 0 = none): the spider's Hard spawn effect (20 section 7.1) and the witch's potions (20 section 11).
        10 EN-FX-SPEED          BINARY-LONG.        *> Speed: the walk speed x 1.2

@@ -23,6 +23,8 @@
  01 WS-M                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-B                   BINARY-LONG.
+ 01 WS-ROW2                BINARY-LONG.
+ 01 WS-EXP-Y               FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
@@ -165,7 +167,34 @@
      MOVE 150 TO WS-EXP
      COMPUTE WS-OBS = FUNCTION INTEGER(FUNCTION SQRT(EN-WANDER-X(WS-B) ** 2 + EN-FLEE-Z(WS-B) ** 2 + EN-WANDER-Z(WS-B) ** 2) * 1000 + 0.5)
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   The bullet starts at the centre of the shulker's current box (21 section 6.2): the lid has opened for 20 ticks (peek 1.0, physical 1.0), so the box is 2 high from the feet: y + 1.0 (x 10000).
+     MOVE "acceptance US15 21§6.2 shulker: bullet starts at the open box centre (feet + 1.0)" TO WS-CASE
+     MOVE 10000 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = (EN-Y(WS-B) - EN-Y(WS-ROW)) * 10000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 21§6.2 shulker: bullet starts above the shulker (x offset 0)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = (EN-X(WS-B) - EN-X(WS-ROW)) * 10000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
      CALL "ENTITY-REMOVE" USING WS-B
+*>   A shulker whose lid is half way (10 steps of 0.05): physical(0.5) = 0.5, then one more step to 0.55 as the shot is made: centre (1 + physical(0.55)) / 2.
+     COMPUTE WS-SX = WS-X - 10
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-SX WS-Y WS-Z WS-YAW WS-ROW2
+     MOVE WS-PLAYER TO EN-TARGET(WS-ROW2)
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO EN-TARGET-ID(WS-ROW2)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         CALL "SHULKER-ATTACK" USING WS-ROW2 WS-M
+     END-PERFORM
+     MOVE 1 TO EN-SHOOT-TIME(WS-ROW2)
+     CALL "SHULKER-ATTACK" USING WS-ROW2 WS-M
+     PERFORM COUNT-BULLETS
+     COMPUTE WS-EXP-Y = (1 + (0.5 - FUNCTION SIN((0.5 + 0.55) * FUNCTION PI) * 0.5)) / 2
+     MOVE "acceptance US15 21§6.2 shulker: lid moves 0.05 a tick: box centre at peek 0.55" TO WS-CASE
+     COMPUTE WS-EXP ROUNDED = WS-EXP-Y * 10000
+     COMPUTE WS-OBS ROUNDED = (EN-Y(WS-B) - EN-Y(WS-ROW2)) * 10000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-B
+     CALL "ENTITY-REMOVE" USING WS-ROW2
 *>   A target beyond 20 blocks (distance squared 400) is dropped and the lid closes.
      COMPUTE PL-X(WS-PLAYER) = WS-SX + 25
      CALL "SHULKER-ATTACK" USING WS-ROW WS-M
