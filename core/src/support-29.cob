@@ -181,6 +181,10 @@
                  IF WS-N > 14 AND WS-FULL(WS-N - 13:14) = "copper_lantern"
                      MOVE 19 TO SP-RULE(WS-I)
                  END-IF
+*>               A bed half needs its other half (BedBlock.updateShape: the neighbour in the connected direction must be the same bed with the other part).
+                 IF WS-N > 4 AND WS-FULL(WS-N - 3:4) = "_bed"
+                     MOVE 21 TO SP-RULE(WS-I)
+                 END-IF
 *>               A ceiling hanging sign hangs from the block above it; a wall hanging sign has no survive rule (it is placed by WallHangingSignBlock.canPlace).
                  IF WS-N > 13 AND WS-FULL(WS-N - 12:13) = "_hanging_sign"
                      MOVE 18 TO SP-RULE(WS-I)
@@ -334,6 +338,8 @@
  01 WS-SEA-OK              BINARY-LONG.
  01 WS-NAME24              PIC X(24).
  01 WS-NAME48              PIC X(48).
+ 01 WS-BED-PART            BINARY-LONG.
+ 01 WS-OTHER-PART          BINARY-LONG.
  01 WS-SIGN-SUFFIX         PIC X(24) VALUE "hanging_sign".
  01 WS-SIDE-TABLE.
     05 WS-SIDE-DX          BINARY-LONG OCCURS 4 TIMES.
@@ -553,6 +559,16 @@
 *>       a vine, glow lichen, sculk vein or resin clump holds on while one of its faces has a solid block behind it (a vine's side face also holds on a vine above that has the face)
          WHEN 20
              CALL "SUP-MULTIFACE" USING L-DIM L-X L-Y L-Z L-STATE L-OK
+*>       a bed half: the cell of the other half holds the same bed with the opposite part
+         WHEN 21
+             CALL "BED-PART" USING L-STATE WS-BED-PART WS-DX WS-DZ
+             COMPUTE WS-X = L-X + WS-DX
+             COMPUTE WS-Z = L-Z + WS-DZ
+             CALL "WORLD-GET-BLOCK" USING L-DIM WS-X L-Y WS-Z WS-STATE
+             CALL "BED-PART" USING WS-STATE WS-OTHER-PART WS-DX WS-DZ
+             IF WS-OTHER-PART + WS-BED-PART = 3 AND CB-S-BLOCK(WS-STATE + 1) + 1 = WS-BLOCK
+                 MOVE 1 TO L-OK
+             END-IF
 *>       a door: its lower half stands on a solid block, its upper half on the lower half of the same door
          WHEN 17
              MOVE SPACES TO WS-TEXT
@@ -704,6 +720,12 @@
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-OK.
      CALL "SUP-SURVIVES" USING L-DIM L-X L-Y L-Z L-STATE L-OK
+     IF L-OK = 0 AND L-STATE > 0 AND L-STATE < CB-STATE-COUNT
+*>       A bed's foot is placed before its head: its own placement rule (PS-BED) checks the head cell instead.
+         IF SP-RULE(CB-S-BLOCK(L-STATE + 1) + 1) = 21
+             MOVE 1 TO L-OK
+         END-IF
+     END-IF
      IF L-OK = 1 AND L-STATE > 0 AND L-STATE < CB-STATE-COUNT
          COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
 *>       A water plant (seagrass, tall seagrass, kelp) is placed only in a water source (LiquidBlockContainer.canPlaceLiquid: a full water).
