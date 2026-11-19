@@ -52,6 +52,8 @@
  01 WS-SUB-P               BINARY-LONG.
  01 WS-SUB-LAST            BINARY-LONG.
  01 WS-HEAD-TABLE          PIC X(12) VALUE "@p@a@r@s@e@n".
+ 01 WS-TIP                 BINARY-LONG VALUE 0.
+ 01 WS-SWAP-TIP            BINARY-LONG.
  01 WS-MODE-NAMES.
     05 FILLER               PIC X(10) VALUE "survival".
     05 FILLER               PIC X(10) VALUE "creative".
@@ -190,7 +192,8 @@
          END-EVALUATE
      END-IF.
 
-*> The online players' names, and the selector heads when the source holds level 2 (14.3).
+*> The online players' names, and the selector heads when the source holds level 2 (14.3). The heads of a score holder carry their tooltips (57-client-closures-4
+*> section 8.3: the provider of the score_holder nodes is the only ask_server provider with tooltips); the names never do.
  LIST-PLAYERS.
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 64
          IF PL-USED(WS-K) = 1 AND PL-STATE(WS-K) NOT = PS-JOINING
@@ -199,12 +202,16 @@
              PERFORM OFFER-SUB
          END-IF
      END-PERFORM
-     IF L-LEVEL >= 2 AND BR-N-TYPE(WS-CHILD) = BR-P-ENTITY
+     IF L-LEVEL >= 2 AND (BR-N-TYPE(WS-CHILD) = BR-P-ENTITY OR BR-N-TYPE(WS-CHILD) = BR-P-SCORE-HOLDER)
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
              MOVE SPACES TO WS-CANDIDATE
              MOVE WS-HEAD-TABLE(WS-K * 2 - 1:2) TO WS-CANDIDATE
              MOVE 2 TO WS-CANDIDATE-LENGTH
+             IF BR-N-TYPE(WS-CHILD) = BR-P-SCORE-HOLDER
+                 MOVE WS-K TO WS-TIP
+             END-IF
              PERFORM OFFER-SUB
+             MOVE 0 TO WS-TIP
          END-PERFORM
      END-IF.
 
@@ -317,6 +324,7 @@
          ADD 1 TO BR-SG-COUNT
          MOVE WS-CANDIDATE-LENGTH TO BR-SG-TEXT-LENGTH(BR-SG-COUNT)
          MOVE WS-CANDIDATE TO BR-SG-TEXT(BR-SG-COUNT)
+         MOVE WS-TIP TO BR-SG-TIP(BR-SG-COUNT)
      END-IF.
 
 *> A stable insertion sort by lower-case text (15a §6.4).
@@ -329,10 +337,13 @@
              IF WS-LOWER-A > WS-LOWER-B
                  MOVE BR-SG-TEXT(WS-J - 1) TO WS-SWAP-TEXT
                  MOVE BR-SG-TEXT-LENGTH(WS-J - 1) TO WS-SWAP-LENGTH
+                 MOVE BR-SG-TIP(WS-J - 1) TO WS-SWAP-TIP
                  MOVE BR-SG-TEXT(WS-J) TO BR-SG-TEXT(WS-J - 1)
                  MOVE BR-SG-TEXT-LENGTH(WS-J) TO BR-SG-TEXT-LENGTH(WS-J - 1)
+                 MOVE BR-SG-TIP(WS-J) TO BR-SG-TIP(WS-J - 1)
                  MOVE WS-SWAP-TEXT TO BR-SG-TEXT(WS-J)
                  MOVE WS-SWAP-LENGTH TO BR-SG-TEXT-LENGTH(WS-J)
+                 MOVE WS-SWAP-TIP TO BR-SG-TIP(WS-J)
                  SUBTRACT 1 FROM WS-J
              ELSE
                  MOVE 1 TO WS-J
@@ -367,9 +378,21 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==SX-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 15.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-TIP-KEYS.
+    05 FILLER              PIC X(72) VALUE "argument.entity.selector.nearestPlayer".
+    05 FILLER              PIC X(72) VALUE "argument.entity.selector.allPlayers".
+    05 FILLER              PIC X(72) VALUE "argument.entity.selector.randomPlayer".
+    05 FILLER              PIC X(72) VALUE "argument.entity.selector.self".
+    05 FILLER              PIC X(72) VALUE "argument.entity.selector.allEntities".
+    05 FILLER              PIC X(72) VALUE "argument.entity.selector.nearestEntity".
+ 01 WS-TIPS REDEFINES WS-TIP-KEYS.
+    05 WS-TIP-KEY          PIC X(72) OCCURS 6 TIMES.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
@@ -382,7 +405,14 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER BR-SG-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BR-SG-COUNT
          CALL "PB-PUT-STRING" USING PB-BUFFER BR-SG-TEXT(WS-I) BR-SG-TEXT-LENGTH(WS-I) WS-MAX
-         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+         IF BR-SG-TIP(WS-I) = 0
+             CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+         ELSE
+             CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+             MOVE WS-TIP-KEY(BR-SG-TIP(WS-I)) TO WS-KEY
+             CALL "BX-KEY" USING SX-TEXT WS-KEY
+             CALL "PB-PUT-TEXT" USING PB-BUFFER SX-TEXT
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM BR-SUGGESTIONS-BUILD.

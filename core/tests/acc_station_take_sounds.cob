@@ -256,6 +256,29 @@
      MOVE "1029 x0 chipped 1 every take sent 1030 1" TO TL-EXPECTED
      PERFORM CHECK-TEXT
 
+*>   A chipped anvil (facing offset 3) that wins the roll becomes damaged_anvil with the same facing.
+     COMPUTE WS-STATE = WS-CHIPPED + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE 0 TO WS-SEEN-1029 WS-SEEN-1030 WS-CHANGED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 400 OR WS-CHANGED = 1
+         PERFORM TAKE-ANVIL
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE-NOW
+         IF WS-STATE-NOW NOT = WS-STATE
+             MOVE 1 TO WS-CHANGED
+         END-IF
+     END-PERFORM
+     MOVE "acceptance station take sounds a chipped anvil that wins the roll becomes a damaged anvil with its facing kept" TO TL-CASE
+     COMPUTE WS-STATE = WS-DAMAGED + 3
+     MOVE 0 TO WS-E3
+     IF WS-STATE-NOW = WS-STATE
+         MOVE 1 TO WS-E3
+     END-IF
+     MOVE SPACES TO WS-TEXT
+     MOVE WS-SEEN-1029 TO WS-E2
+     STRING "damaged " FUNCTION TRIM(WS-E3) " 1029 x" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "damaged 1 1029 x0" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
+
 *>   A damaged anvil that wins the roll is removed (event 1029, no 1030 for that take).
      COMPUTE WS-STATE = WS-DAMAGED + 1
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE

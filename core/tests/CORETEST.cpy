@@ -2068,7 +2068,8 @@
                      STRING WS-WORD(1:WS-LENGTH) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  END-IF
                  IF WS-HAS NOT = 0
-                     STRING "(tooltip)" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     CALL "PB-GET-TEXT" USING PK-BUFFER PK-TEXT
+                     STRING "(tooltip:" PK-TX-VALUE(1:PK-TX-LENGTH) ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  END-IF
              END-PERFORM
              STRING "]" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
