@@ -19,6 +19,10 @@
 *>   INTERACTION-SPAWN USING dim, x, y, z, width, height (FLOAT-LONG), response, row out
 *>   BDISPLAY-SPAWN USING dim, x, y, z, block state, row out
 *>   IDISPLAY-SPAWN USING dim, x, y, z, item, display type, row out
+*>   INTERACTION-ATTACK USING player row, entity row, done out   Interaction.skipAttackInteraction (21 section 8.9.2): the attack record (PJ-I2 the player's entity id, PJ-POSE(1) the game time), the attack is
+*>     skipped and the entity cannot be damaged (done 1 whatever the response flag: with response true the normal processing continues and hurtServer still fails)
+*>   INTERACTION-USE USING player row, entity row, done out      Interaction.interact on the server: the interaction record (PJ-I4, PJ-POSE(2)); consumed
+*>   INTERACTION-LAST USING entity row, which (1 attacker, 2 target), player row out   getLastAttacker / getTarget: the player of the record, 0 when never set or not online
 *>   TDISPLAY-SPAWN USING dim, x, y, z, row out
 *>   DECOR-PUT-DATA USING PB-BUFFER, index, serializer, present, data (PIC X(64)), length    a metadata entry whose value bytes are given verbatim (component, profile)
 *>   DECOR-PUT-QUAT USING PB-BUFFER, index, x, y, z, w (FLOAT-LONG)                           a Quaternion entry (serializer 40)
@@ -698,3 +702,76 @@
      CALL "DECOR-DATA-SYNC" USING WS-BOAT
      GOBACK.
  END PROGRAM BOAT-PADDLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INTERACTION-ATTACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW L-DONE.
+     MOVE 1 TO L-DONE
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     MOVE PL-ENTITY-ID(L-PLAYER) TO PJ-I2(WS-SLOT)
+     COMPUTE PJ-POSE(WS-SLOT, 1) = CW-GAME-TIME + CW-TICKS
+     GOBACK.
+ END PROGRAM INTERACTION-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INTERACTION-USE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW L-DONE.
+     MOVE 1 TO L-DONE
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     MOVE PL-ENTITY-ID(L-PLAYER) TO PJ-I4(WS-SLOT)
+     COMPUTE PJ-POSE(WS-SLOT, 2) = CW-GAME-TIME + CW-TICKS
+     GOBACK.
+ END PROGRAM INTERACTION-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INTERACTION-LAST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WHICH                BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WHICH L-PLAYER.
+     MOVE 0 TO L-PLAYER
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     IF L-WHICH = 1
+         MOVE PJ-I2(WS-SLOT) TO WS-ID
+     ELSE
+         MOVE PJ-I4(WS-SLOT) TO WS-ID
+     END-IF
+     IF WS-ID = 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR L-PLAYER > 0
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ID(WS-P) = WS-ID
+             MOVE WS-P TO L-PLAYER
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM INTERACTION-LAST.
