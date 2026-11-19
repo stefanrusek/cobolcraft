@@ -704,6 +704,7 @@
          CALL "NETHER-HURT" USING WS-ROW L-ATTACKER
          CALL "ARMADILLO-HURT" USING WS-ROW L-ATTACKER
          CALL "PANDA-HURT" USING WS-ROW L-ATTACKER
+         CALL "GOLEM-HURT" USING WS-ROW L-ATTACKER
      END-IF
      CALL "PIGLIN-HURT" USING WS-ROW
 *>   Wolf armour absorbs the hit instead of the wolf (19 section 6.1).

@@ -7,6 +7,8 @@
 *>   GOLEM-KIND USING dim, x, y, z, kind out            the block at a position: 1 carved pumpkin or jack o'lantern, 2 iron block, 3 snow block, 0 other
 *>   GOLEM-BUILD USING dim, x, y, z                     the build patterns of the golems (19 sections 19 and 20) after a block was placed at x, y, z
 *>   GOLEM-TICK USING row, hx, hz, walk out             one tick of an iron golem: it fights the nearest hostile mob
+*>   GOLEM-HURT USING row, attacker player row          HurtByTarget: a hit by a player angers a golem that no player built
+*>   GOLEM-OFFER-TICK USING row, roll                   OfferFlower: the 400 tick flower pose at night near a villager
 *>   MOB-GOLEM-USE USING player row, entity row         an iron ingot on an iron golem repairs it
 
  IDENTIFICATION DIVISION.
@@ -345,15 +347,21 @@
      COMPUTE WS-FY = WS-Y2 + 0.05
      COMPUTE WS-FZ = L-Z + 0.5
      CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-ENTITY
+*>   The golem of the pattern is player created (PlayerCreated: it never targets a player; 44 part 3 section 6).
+     IF WS-GOLEM = 2
+         MOVE 1 TO EN-PLAYER-MADE(WS-ENTITY)
+     END-IF
      GOBACK.
  END PROGRAM GOLEM-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GOLEM-TICK.
-*> USING golem row, hx out, hz out, walk out: one tick of an iron golem (19 section 19): the attack timer counts down; the foe is the nearest alive hostile standard mob of the golem's
-*> dimension within 16 blocks (the predicate of the mob target goal was not read: every monster counts); the golem walks to it (STDMOB-HEAD at the row's speed, the chase speed 1.0) and in
-*> reach hits it for A / 2 + nextInt(int(A)) points (A = 15; whole points, so A / 2 is 7) with a 20 tick timer, entity event 4 to the viewers, and the target's vertical speed +0.4. The golem
-*> never attacks players or passive mobs here (persistent anger and DefendVillageTarget are open).
+*> USING golem row, hx out, hz out, walk out: one tick of an iron golem (19 section 19, 44 part 3 section 6): the attack timer counts down. Targets, by priority: a player it is
+*> angry at (GOLEM-HURT: HurtByTarget, the anger of EN-ANGER ticks; never a creative or spectator player) and else the nearest alive hostile standard mob of the golem's dimension
+*> within 16 blocks that is not a creeper (NearestAttackable(Mob): an Enemy that is not a creeper; canAttack). The golem walks to it (STDMOB-HEAD at the row's speed, the chase speed 1.0) and in
+*> reach hits it for A / 2 + nextInt(int(A)) points (A = 15; whole points, so A / 2 is 7) with a 20 tick timer, entity event 4 to the viewers; a mob target's vertical speed gets +0.4, a
+*> player is hurt through HEALTH-MOB-HIT (difficulty scaling, armor). Without a target the golem may offer a flower (GOLEM-OFFER-TICK, a roll of nextInt(8000) every second tick).
+*> Open: DefendVillageTarget (villager reputation), the villager and POI strolls, LookAtPlayer and RandomLookAround.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -364,6 +372,7 @@
  01 WS-N                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-F                   BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
  01 WS-D2                  FLOAT-LONG.
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
@@ -376,7 +385,12 @@
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-DRAW                BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-EVAL                BINARY-LONG.
  01 WS-SALT                BINARY-LONG VALUE 41.
+ 01 WS-OFFER-SALT          BINARY-LONG VALUE 43.
+ 01 WS-OFFER-BOUND         BINARY-LONG VALUE 8000.
  01 WS-BOUND               BINARY-LONG VALUE 15.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-EVENT               BINARY-LONG VALUE 4.
@@ -392,6 +406,47 @@
      IF EN-PET-CD(L-ROW) > 0
          SUBTRACT 1 FROM EN-PET-CD(L-ROW)
      END-IF
+     COMPUTE WS-REACH = SM-REACH-MILLI / 1000
+*>   Angry at a player who hit it (the player's row must still be the one: in play, alive, in survival or adventure mode, in this dimension).
+     IF EN-ANGER(L-ROW) > 0
+         SUBTRACT 1 FROM EN-ANGER(L-ROW)
+         MOVE EN-GOLEM-PL(L-ROW) TO WS-P
+         IF WS-P = 0
+             MOVE 0 TO EN-ANGER(L-ROW)
+         ELSE
+             IF PL-USED(WS-P) NOT = 1 OR PL-STATE(WS-P) NOT = PS-ALIVE OR PL-DIM(WS-P) NOT = EN-DIM(L-ROW)
+                     OR PL-MODE(WS-P) = 1 OR PL-MODE(WS-P) > 2
+                 MOVE 0 TO EN-ANGER(L-ROW)
+             END-IF
+         END-IF
+         IF EN-ANGER(L-ROW) = 0
+             MOVE 0 TO EN-GOLEM-PL(L-ROW)
+         END-IF
+     END-IF
+     IF EN-ANGER(L-ROW) > 0
+         COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
+         COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
+         COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
+         MOVE 1 TO L-WALK
+         IF FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH
+             COMPUTE WS-GX = FUNCTION INTEGER(PL-X(WS-P))
+             COMPUTE WS-GY = FUNCTION INTEGER(PL-Y(WS-P))
+             COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
+             CALL "STDMOB-HEAD" USING L-ROW WS-M WS-GX WS-GY WS-GZ L-HX L-HZ WS-ARRIVED
+         END-IF
+         IF EN-PET-CD(L-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH AND FUNCTION ABS(WS-DZ) <= WS-REACH
+                 AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
+             MOVE SM-ATTACK-TICKS TO EN-PET-CD(L-ROW)
+             CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+             COMPUTE WS-DAMAGE = SM-ATTACK(WS-M) / 2 + WS-DRAW
+             CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE L-ROW
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+             CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+         END-IF
+         GOBACK
+     END-IF
      MOVE EN-FOE(L-ROW) TO WS-F
      IF WS-F > 0
          IF EN-USED(WS-F) NOT = 1 OR EN-ID(WS-F) NOT = EN-FOE-ID(L-ROW) OR EN-HEALTH(WS-F) = 0
@@ -405,7 +460,7 @@
                  CALL "STDMOB-INDEX" USING EN-TYPE(WS-N) WS-S
                  COMPUTE WS-D2 = (EN-X(WS-N) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-N) - EN-Y(L-ROW)) ** 2 + (EN-Z(WS-N) - EN-Z(L-ROW)) ** 2
                  IF WS-S > 0 AND WS-D2 <= 256 AND (WS-F = 0 OR WS-D2 < WS-BEST-D2)
-                     IF SM-KIND(WS-S) = 1
+                     IF SM-KIND(WS-S) = 1 AND SM-KEY(WS-S) NOT = "creeper"
                          MOVE WS-N TO WS-F
                          MOVE WS-D2 TO WS-BEST-D2
                      END-IF
@@ -419,12 +474,20 @@
      END-IF
      MOVE EN-FOE(L-ROW) TO WS-F
      IF WS-F = 0
+*>       No target: OfferFlower rolls nextInt(8000) at each evaluation of the goal selector (every second tick, 18 section 2.7).
+         MOVE 1 TO WS-ROLL
+         COMPUTE WS-Q = CW-TICKS + EN-ID(L-ROW)
+         COMPUTE WS-EVAL = FUNCTION MOD(WS-Q, 2)
+         IF WS-EVAL = 0 AND EN-GOLEM-FLOWER(L-ROW) = 0
+             CALL "XP-RANDOM" USING WS-OFFER-SALT WS-OFFER-BOUND WS-ROLL
+         END-IF
+         CALL "GOLEM-OFFER-TICK" USING L-ROW WS-ROLL
          GOBACK
      END-IF
+     MOVE 0 TO EN-GOLEM-FLOWER(L-ROW)
      COMPUTE WS-DX = EN-X(WS-F) - EN-X(L-ROW)
      COMPUTE WS-DY = EN-Y(WS-F) - EN-Y(L-ROW)
      COMPUTE WS-DZ = EN-Z(WS-F) - EN-Z(L-ROW)
-     COMPUTE WS-REACH = SM-REACH-MILLI / 1000
      MOVE 1 TO L-WALK
      IF FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH
          COMPUTE WS-GX = FUNCTION INTEGER(EN-X(WS-F))
@@ -448,6 +511,108 @@
  END PROGRAM GOLEM-TICK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GOLEM-HURT.
+*> USING golem row, attacker player row (BINARY-LONG): HurtByTarget of the iron golem (44 part 3 section 6): a golem not built by a player (PlayerCreated clear) that a player hurt is angry at
+*> that player for 20 to 39 seconds (400 to 780 ticks, the uniform range of the persistent anger). A player-created golem never targets a player (canAttack), and any other species ignores the call.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-SALT                BINARY-LONG VALUE 47.
+ 01 WS-BOUND               BINARY-LONG VALUE 381.
+ 01 WS-DRAW                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ATTACKER.
+     CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
+     IF WS-KEY NOT = "iron_golem" OR EN-PLAYER-MADE(L-ROW) = 1
+         GOBACK
+     END-IF
+     CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+     COMPUTE EN-ANGER(L-ROW) = 400 + WS-DRAW
+     MOVE L-ATTACKER TO EN-GOLEM-PL(L-ROW)
+     MOVE 0 TO EN-GOLEM-FLOWER(L-ROW)
+     GOBACK.
+ END PROGRAM GOLEM-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GOLEM-EVENT.
+*> USING row, event id (BINARY-LONG): Entity Event of the golem's entity to the players that see it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EVENT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) L-EVENT PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM GOLEM-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GOLEM-OFFER-TICK.
+*> USING golem row, roll (BINARY-LONG, the draw of nextInt(8000)): OfferFlowerGoal of the iron golem (19 section 19, 44 part 3 section 6). While the pose lasts (EN-GOLEM-FLOWER ticks left, 400 at
+*> the start) it counts down and Entity Event 34 ends it at 0. Otherwise, with the roll 0, at night (not isBrightOutside: the night's darkening of STDMOB-DARKEN at 4 or more) and a villager or a
+*> copper golem (the tag candidate_for_iron_golem_gift) within 6 blocks and inside the gift box (the golem's box inflated by 6, 2, 6), the pose starts with Entity Event 11. Nothing is given to a
+*> villager; a copper golem's antenna slot is not modelled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-DARK                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-START               BINARY-LONG VALUE 11.
+ 01 WS-STOP                BINARY-LONG VALUE 34.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ROLL.
+     IF EN-GOLEM-FLOWER(L-ROW) > 0
+         SUBTRACT 1 FROM EN-GOLEM-FLOWER(L-ROW)
+         IF EN-GOLEM-FLOWER(L-ROW) = 0
+             CALL "GOLEM-EVENT" USING L-ROW WS-STOP
+         END-IF
+         GOBACK
+     END-IF
+     IF L-ROLL NOT = 0
+         GOBACK
+     END-IF
+     CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
+     IF WS-DARK < 4
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT OR WS-FOUND = 1
+         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
+             CALL "MOB-SPECIES-KEY" USING WS-N WS-KEY
+             IF WS-KEY = "villager" OR "copper_golem"
+                 COMPUTE WS-DX = EN-X(WS-N) - EN-X(L-ROW)
+                 COMPUTE WS-DY = EN-Y(WS-N) - EN-Y(L-ROW)
+                 COMPUTE WS-DZ = EN-Z(WS-N) - EN-Z(L-ROW)
+                 IF FUNCTION ABS(WS-DX) <= 6 AND FUNCTION ABS(WS-DZ) <= 6 AND WS-DY >= -2 AND WS-DY <= 4.7
+                     MOVE 1 TO WS-FOUND
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-FOUND = 1
+         MOVE 400 TO EN-GOLEM-FLOWER(L-ROW)
+         CALL "GOLEM-EVENT" USING L-ROW WS-START
+     END-IF
+     GOBACK.
+ END PROGRAM GOLEM-OFFER-TICK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-GOLEM-USE.
 *> USING player row, entity row (an iron golem): an iron ingot in the main hand heals 25 points up to the maximum of 100 and is used up; a golem at its maximum health returns PASS and keeps
 *> the ingot (19 section 19; the repair sound is an open item).
@@ -467,3 +632,4 @@
      END-IF
      GOBACK.
  END PROGRAM MOB-GOLEM-USE.
+
