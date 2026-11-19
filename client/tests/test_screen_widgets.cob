@@ -17,6 +17,7 @@
  01 WS-INFO                PIC X(16).
  01 WS-ROOT                PIC X(256).
  01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
  01 WS-V1                  BINARY-LONG.
  01 WS-V3                  BINARY-LONG.
@@ -233,9 +234,9 @@
  CHECK-FURNACES.
      MOVE 176 TO WS-IMG-W
      MOVE 166 TO WS-IMG-H
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
          PERFORM RESET-STATE
-         EVALUATE WS-I
+         EVALUATE WS-K
              WHEN 1
                  MOVE 14 TO WS-TYPE-N
                  MOVE "furnace" TO WS-NAME
@@ -252,6 +253,18 @@
          MOVE 200 TO BM-DATA(4)
          PERFORM BUILD-SCREEN
          CALL "DECOR-FURNACE-ROWS" USING WS-TYPE-N WS-SPRITE WS-ROW-BURN
+         MOVE SPACES TO TL-CASE
+         STRING "furnace screens " FUNCTION TRIM(WS-NAME) ": its own flame and arrow rows" DELIMITED BY SIZE INTO TL-CASE
+         EVALUATE WS-K
+             WHEN 1
+                 COMPUTE TL-EXPECTED-N = GSP-FURNACE-LIT * 1000 + GSP-FURNACE-BURN
+             WHEN 2
+                 COMPUTE TL-EXPECTED-N = GSP-BLAST-LIT * 1000 + GSP-BLAST-BURN
+             WHEN OTHER
+                 COMPUTE TL-EXPECTED-N = GSP-SMOKER-LIT * 1000 + GSP-SMOKER-BURN
+         END-EVALUATE
+         COMPUTE TL-OBSERVED-N = WS-SPRITE * 1000 + WS-ROW-BURN
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
          MOVE 56 TO WS-DX
          MOVE 39 TO WS-DY
          MOVE 14 TO WS-DW

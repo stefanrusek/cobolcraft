@@ -213,7 +213,7 @@
          COMPUTE WS-Y = L-TOP + 18 + 20 * WS-K
          MOVE 88 TO WS-W
          MOVE 20 TO WS-H
-*>       The plain button sprite (12 5.9): the disabled one for the selected offer's button, the highlighted one under the pointer, else the normal one.
+*>       The plain button sprite (12 5.9; the built-in pack has all three): the disabled one for the selected offer's button, the highlighted one under the pointer, else the normal one.
          MOVE GSP-BUTTON TO WS-ROW
          EVALUATE TRUE
              WHEN MC-SELECTED = WS-K + MC-SCROLL
@@ -222,14 +222,6 @@
                  MOVE GSP-BUTTON-HI TO WS-ROW
          END-EVALUATE
          CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
-         IF WS-DRAWN = 0
-             MOVE SW-BUTTON TO WS-SWATCH
-             IF MC-SELECTED = WS-K + MC-SCROLL
-                 MOVE SW-SELECTED TO WS-SWATCH
-             END-IF
-             MOVE WK-OVERLAY TO WS-KIND
-             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
-         END-IF
          MOVE WK-IMAGE TO WS-KIND
          MOVE ACT-TRADE-SELECT TO WS-ACTION
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-K WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE

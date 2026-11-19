@@ -155,8 +155,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOUNT-DECOR.
 *> USING CLIENT-STATE, left, top: 6.2: the chest area (the sprite container/horse/chest_slots, not stretched: its left 18 x columns by 54 at (79, 17), only with columns above 0), the
-*> saddle frame (the container/slot sprite, 18 x 18 at (7, 17)) and the body frame (7, 35) of the active slots; a pack without these sprites (the built-in pack) gets a swatch of the
-*> same size each. The empty-slot icons are MOUNT-ICONS, after the slot widgets. The entity preview (6.4) is not drawn (a separate feature).
+*> saddle frame (the container/slot sprite, 18 x 18 at (7, 17)) and the body frame (7, 35) of the active slots; the built-in pack has the container/slot sprite, so no fallback. The empty-slot icons are MOUNT-ICONS, after the slot widgets. The entity preview (6.4) is not drawn (a separate feature).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -203,18 +202,10 @@
      IF MT-SADDLE = 1
          COMPUTE WS-Y = L-TOP + 17
          CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
-         IF WS-DRAWN = 0
-             MOVE SW-BUTTON TO WS-SWATCH
-             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
-         END-IF
      END-IF
      IF MT-BODY = 1
          COMPUTE WS-Y = L-TOP + 35
          CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
-         IF WS-DRAWN = 0
-             MOVE SW-BUTTON TO WS-SWATCH
-             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
-         END-IF
      END-IF
      GOBACK.
  END PROGRAM MOUNT-DECOR.
