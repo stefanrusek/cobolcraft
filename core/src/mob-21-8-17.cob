@@ -205,6 +205,10 @@
  01 WS-FAMILY              BINARY-LONG.
  01 WS-BASE                BINARY-LONG VALUE 2000.
  01 WS-LINGER              BINARY-LONG.
+ 01 WS-NO-BREEZE          BINARY-LONG VALUE 0.
+ 01 WS-FW-DURATION         BINARY-LONG VALUE 0.
+ 01 WS-FW-STARS            BINARY-LONG VALUE 0.
+ 01 WS-FW-ATTACHED         BINARY-LONG VALUE 0.
  01 WS-FSLOT               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-EKEY                PIC X(112).
@@ -267,7 +271,7 @@
                  COMPUTE WS-LINGER = WS-DKIND - 7
                  CALL "POTION-SPAWN" USING WS-LINGER WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
              WHEN 9
-                 CALL "FIREWORK-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-NO-DELAY WS-NO-DELAY WS-NO-DELAY WS-ID WS-NEW
+                 CALL "FIREWORK-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-FW-DURATION WS-FW-STARS WS-FW-ATTACHED WS-ID WS-NEW
                  IF WS-NEW > 0
 *>                   Shot at an angle: the velocity it was given, no acceleration (PJ-I5, 21 section 8.7).
                      MOVE WS-VX TO EN-VX(WS-NEW)
@@ -285,7 +289,7 @@
                      MOVE WS-VZ TO EN-VZ(WS-NEW)
                  END-IF
              WHEN OTHER
-                 CALL "WIND-SPAWN" USING WS-NO-DELAY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
+                 CALL "WIND-SPAWN" USING WS-NO-BREEZE WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ID WS-NEW
          END-EVALUATE
      END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(WS-X)

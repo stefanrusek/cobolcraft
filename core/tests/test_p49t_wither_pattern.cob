@@ -118,6 +118,29 @@
      MOVE 9 TO WS-E
      PERFORM CHECK-N
      CALL "ENTITY-REMOVE" USING WS-ROW
+*>   Arms along Z (north-south): forwards runs along X, yaw 0.
+     COMPUTE WS-CX = WS-X0 + 10
+     PERFORM VARYING WS-I FROM -1 BY 1 UNTIL WS-I > 1
+         COMPUTE WS-CZ = WS-Z0 + WS-I
+         COMPUTE WS-CY = WS-Y0 + 1
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-SOIL
+         COMPUTE WS-CY = WS-Y0 + 2
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-SKULL
+     END-PERFORM
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-SAND
+     COMPUTE WS-CY = WS-Y0 + 2
+     COMPUTE WS-CZ = WS-Z0 - 1
+     CALL "WITHER-BUILD" USING WS-DIM WS-CX WS-CY WS-CZ
+     PERFORM FIND-WITHER
+     MOVE "acceptance US15 21§7.1.1 arms along Z make one wither" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE WS-COUNT TO WS-O
+     PERFORM CHECK-N
+     MOVE "acceptance US15 21§7.1.1 arms along Z: the axis of forwards is X, yaw 0" TO WS-CASE
+     MOVE 0 TO WS-E
+     COMPUTE WS-O ROUNDED = EN-YAW(WS-ROW)
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-ROW
 *>   A pattern with a missing air cell (a block beside the base): no wither.
      PERFORM VARYING WS-I FROM -1 BY 1 UNTIL WS-I > 1
          COMPUTE WS-CX = WS-X0 + WS-I

@@ -19,6 +19,7 @@
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-STATUS              BINARY-LONG.
  01 WS-COD-T               BINARY-LONG.
+ 01 WS-PUFFER-T            BINARY-LONG.
  01 WS-SALMON-T            BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -35,6 +36,8 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
  01 WS-DX                  BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
  01 WS-T                   FLOAT-LONG.
  01 WS-R3                  BINARY-LONG.
  01 WS-CD                  BINARY-LONG.
@@ -72,13 +75,40 @@
      MOVE 0 TO WS-E
      MOVE WS-MAX TO WS-O
      PERFORM CHECK-N
+*>   The first goal tick of a fish rolls its start tick (200 + nextInt(200) mod 20) and counts it down once; a species that does not school is left alone.
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 40
+     COMPUTE WS-Y = PL-Y(WS-PLAYER) + 40
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-COD-T WS-X WS-Y WS-Z WS-YAW WS-F(1)
+     CALL "FISH-SCHOOL-STEP" USING WS-F(1) WS-FOLLOW
+     MOVE "acceptance US15 21§4.1.1 the first goal tick rolls the start tick: 199 to 218 left after the first countdown" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-O
+     MOVE WS-F(1) TO WS-R3
+     IF EN-SCH-ROLLED(WS-R3) = 1 AND EN-SCH-NEXT(WS-R3) >= 199 AND EN-SCH-NEXT(WS-R3) <= 218
+         MOVE 1 TO WS-O
+     END-IF
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-F(1)
+     MOVE "minecraft:pufferfish" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PUFFER-T WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING WS-DIM WS-PUFFER-T WS-X WS-Y WS-Z WS-YAW WS-F(1)
+     CALL "FISH-SCHOOL-STEP" USING WS-F(1) WS-FOLLOW
+     MOVE "acceptance US15 21§4.1 a pufferfish does not school: the step does nothing (never rolled)" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE WS-F(1) TO WS-R3
+     MOVE EN-SCH-ROLLED(WS-R3) TO WS-O
+     PERFORM CHECK-N
+     CALL "ENTITY-REMOVE" USING WS-F(1)
 *>   Five cod spawned as a group: the first is the leader, the other four follow it (schoolSize 5).
      COMPUTE WS-X = PL-X(WS-PLAYER) + 40
      COMPUTE WS-Y = PL-Y(WS-PLAYER) + 40
      MOVE PL-Z(WS-PLAYER) TO WS-Z
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
          CALL "MOB-SPAWN" USING WS-DIM WS-COD-T WS-X WS-Y WS-Z WS-YAW WS-F(WS-I)
-         CALL "FISH-PACK-JOIN" USING WS-F(1) WS-F(WS-I)
+         MOVE WS-F(1) TO WS-FIRST
+         MOVE WS-F(WS-I) TO WS-CUR
+         CALL "FISH-PACK-JOIN" USING WS-FIRST WS-CUR
      END-PERFORM
      CALL "FISH-SCHOOL-SIZE" USING WS-F(1) WS-SIZE
      MOVE "acceptance US15 21§4.1.1 5 cod spawned in one cluster: the leader's schoolSize is 5" TO WS-CASE
@@ -206,7 +236,9 @@
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
          CALL "MOB-SPAWN" USING WS-DIM WS-COD-T WS-X WS-Y WS-Z WS-YAW WS-F(WS-I)
-         CALL "FISH-PACK-JOIN" USING WS-F(1) WS-F(WS-I)
+         MOVE WS-F(1) TO WS-FIRST
+         MOVE WS-F(WS-I) TO WS-CUR
+         CALL "FISH-PACK-JOIN" USING WS-FIRST WS-CUR
      END-PERFORM
      COMPUTE WS-X = WS-X + 6
      CALL "MOB-SPAWN" USING WS-DIM WS-COD-T WS-X WS-Y WS-Z WS-YAW WS-F(4)
