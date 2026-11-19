@@ -98,6 +98,15 @@
  01 WS-BLZ                 BINARY-LONG.
  01 WS-HANDLED             BINARY-LONG.
  01 WS-SIGN-STATE          BINARY-LONG.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-PROP                PIC X(24).
+ 01 WS-PROP-TEXT           PIC X(32).
+ 01 WS-NEW-STATE           BINARY-LONG.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-BAD-FRONT           BINARY-LONG.
+ 01 WS-BAD-BACK            BINARY-LONG.
+ 01 WS-MODE-SET            BINARY-LONG VALUE 2.
  01 WS-FACE-NAME           PIC X(5).
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
@@ -477,6 +486,97 @@
              PERFORM CHECK-N
          END-IF
      END-PERFORM
+
+*>   A wall hanging sign has no plate: its hit-box centre is the middle of its cell (52-2 section 9.3: only the wall sign takes the centre of its shape), so a player standing in the cell
+*>   behind the middle of a facing-north sign (z 0.8, south of the centre 0.5; the plate centre of a wall sign, 0.9375, would put him in front) clicks the back (0); from two cells north the front (1).
+*>   A ceiling hanging sign (its default state has rotation 8: the front looks north, 52-2 section 4.3) takes the cell centre too: clicked from the south part it shows its back (0), from two cells north its front (1).
+     MOVE "oak_wall_hanging_sign" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE WS-STATE TO WS-SIGN-STATE
+     COMPUTE WS-X = WS-BX + 14
+     COMPUTE WS-Z = WS-BZ + 14
+     COMPUTE WS-Y = WS-FLOOR + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SIGN-STATE
+     MOVE "minecraft:oak_wall_hanging_sign" TO WS-KEY
+     MOVE 31 TO WS-KEY-LENGTH
+     MOVE 8 TO WS-TYPE
+     CALL "BE-CREATE" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KEY WS-KEY-LENGTH WS-BE
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 1 TO WS-FACE
+     COMPUTE PL-X(WS-PLAYER) = WS-X + 0.5
+     COMPUTE PL-Z(WS-PLAYER) = WS-Z + 0.8
+     COMPUTE PL-Y(WS-PLAYER) = WS-Y
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM SCAN
+     MOVE "acceptance sign edit: a wall hanging sign facing north clicked from the south part of its cell opens the back (0): its hit-box centre is the cell centre" TO WS-CASE
+     COMPUTE WS-OBSERVE = WS-OPEN-COUNT * 10 + WS-OPEN-SIDE
+     MOVE 10 TO WS-EXPECT
+     PERFORM CHECK-N
+     COMPUTE PL-Z(WS-PLAYER) = WS-Z - 1.5
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM SCAN
+     MOVE "acceptance sign edit: the same wall hanging sign clicked from two cells north opens the front (1)" TO WS-CASE
+     COMPUTE WS-OBSERVE = WS-OPEN-COUNT * 10 + WS-OPEN-SIDE
+     MOVE 11 TO WS-EXPECT
+     PERFORM CHECK-N
+     MOVE "oak_hanging_sign" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE WS-STATE TO WS-SIGN-STATE
+     COMPUTE WS-X = WS-BX + 16
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SIGN-STATE
+     MOVE "minecraft:oak_hanging_sign" TO WS-KEY
+     MOVE 26 TO WS-KEY-LENGTH
+     CALL "BE-CREATE" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KEY WS-KEY-LENGTH WS-BE
+     COMPUTE PL-X(WS-PLAYER) = WS-X + 0.5
+     COMPUTE PL-Z(WS-PLAYER) = WS-Z + 0.8
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM SCAN
+     MOVE "acceptance sign edit: a ceiling hanging sign of rotation 8 (front toward north) clicked from the south part of its cell opens the back (0)" TO WS-CASE
+     COMPUTE WS-OBSERVE = WS-OPEN-COUNT * 10 + WS-OPEN-SIDE
+     MOVE 10 TO WS-EXPECT
+     PERFORM CHECK-N
+     COMPUTE PL-Z(WS-PLAYER) = WS-Z - 1.5
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM SCAN
+     MOVE "acceptance sign edit: the same ceiling hanging sign clicked from two cells north opens the front (1)" TO WS-CASE
+     COMPUTE WS-OBSERVE = WS-OPEN-COUNT * 10 + WS-OPEN-SIDE
+     MOVE 11 TO WS-EXPECT
+     PERFORM CHECK-N
+
+*>   The standing sign's rotation 0 to 15 is the data value times 22.5 degrees clockwise from above, front toward (-sin a, cos a) (52-2 sections 4.3, 9.4: 0 south, 4 west, 8 north, 12 east): a player two
+*>   cells out along that direction is in front, two cells out along the opposite direction behind, for all sixteen.
+     MOVE "oak_sign" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE WS-STATE TO WS-SIGN-STATE
+     MOVE "rotation" TO WS-PROP
+     MOVE 0 TO WS-BAD-FRONT WS-BAD-BACK
+     COMPUTE WS-X = WS-BX + 20
+     COMPUTE WS-Z = WS-BZ + 20
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 15
+         MOVE WS-K TO WS-N1
+         MOVE FUNCTION TRIM(WS-N1) TO WS-PROP-TEXT
+         CALL "BLOCK-STATE-PROP" USING WS-MODE-SET WS-SIGN-STATE WS-PROP WS-PROP-TEXT WS-NEW-STATE
+         COMPUTE WS-ANGLE = WS-K * 22.5 * FUNCTION PI / 180
+         COMPUTE PL-X(WS-PLAYER) = WS-X + 0.5 - 2 * FUNCTION SIN(WS-ANGLE)
+         COMPUTE PL-Z(WS-PLAYER) = WS-Z + 0.5 + 2 * FUNCTION COS(WS-ANGLE)
+         CALL "SIGN-FACE-SIDE" USING WS-CONN WS-NEW-STATE WS-X WS-Y WS-Z WS-SIDE
+         IF WS-SIDE NOT = 1
+             ADD 1 TO WS-BAD-FRONT
+         END-IF
+         COMPUTE PL-X(WS-PLAYER) = WS-X + 0.5 + 2 * FUNCTION SIN(WS-ANGLE)
+         COMPUTE PL-Z(WS-PLAYER) = WS-Z + 0.5 - 2 * FUNCTION COS(WS-ANGLE)
+         CALL "SIGN-FACE-SIDE" USING WS-CONN WS-NEW-STATE WS-X WS-Y WS-Z WS-SIDE
+         IF WS-SIDE NOT = 0
+             ADD 1 TO WS-BAD-BACK
+         END-IF
+     END-PERFORM
+     MOVE "acceptance sign edit: a standing sign of each of the 16 rotations shows its front to a player along (-sin a, cos a), a = 22.5 x rotation" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-BAD-FRONT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance sign edit: and its back to a player on the opposite side, for all 16 rotations" TO WS-CASE
+     MOVE WS-BAD-BACK TO WS-OBSERVE
+     PERFORM CHECK-N
 
 *>   A stone block placed through Use Item On is no sign: no editor. A sign state at a cell without block entity opens nothing and is not taken by the sign use.
      MOVE "stone" TO WS-KEY112

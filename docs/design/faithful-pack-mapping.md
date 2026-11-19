@@ -566,8 +566,7 @@ Other unused content: `optifine/` (897 files); `models/item/redstone_torch.json`
 jar (`misc/enchanted_item_glint.png.mcmeta`).
 
 The pack's 30 PNG files with no counterpart in the 26.3 jar are all unused: `entity/rabbit/white_splotched`,
-12 `entity/signs/<wood>` and 12 `entity/signs/hanging/<wood>` files (the jar has sign textures only under
-`gui/signs/` and `gui/hanging_signs/`, so these look like an older sign location kept by the pack (inferred)), `gui/demo_background`, `gui/sprites/hud/locator_bar_player`, `item/custom/redstone_torch`,
+12 `entity/signs/<wood>` and 12 `entity/signs/hanging/<wood>` files (the jar has no `textures/entity/signs/` path: the sign boards of 26.3 are block models that use `textures/block/<wood>_sign.png` and `textures/block/<wood>_hanging_sign.png`, 32 x 32 for each of the 13 woods, and the editor backgrounds are under `gui/signs/` and `gui/hanging_signs/`, see 52-2 §3.7; these 24 pack files sit at a path this version never loads), `gui/demo_background`, `gui/sprites/hud/locator_bar_player`, `item/custom/redstone_torch`,
 `item/light` and `misc/enchanted_item_glint`.
 
 ### 9.7 The skin pack: id, title, level and toggle (closes Open question 11)
