@@ -119,29 +119,50 @@
  01 WS-I                   BINARY-LONG.
  01 WS-OTHER-M             BINARY-LONG.
  01 WS-LIVING              BINARY-LONG.
+ 01 WS-FAR                 BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
  01 WS-HALF                FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
+ 01 WS-MAX-WIDTH           BINARY-LONG VALUE 0.
+ 01 WS-REACH               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HEIGHT               FLOAT-LONG.
  01 L-TOUCHING             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-HEIGHT L-TOUCHING.
      MOVE 0 TO L-TOUCHING
+*>   The widest entity type of the table, found once: with it the farthest a box can reach (plus a margin that no float comparison can make up) is known once a call, and a row
+*>   farther away than that in x or in z is passed over before its own reach is made (a decimal division).
+     IF WS-MAX-WIDTH = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
+             IF ET-WIDTH-MILLI(WS-I) > WS-MAX-WIDTH
+                 MOVE ET-WIDTH-MILLI(WS-I) TO WS-MAX-WIDTH
+             END-IF
+         END-PERFORM
+         IF WS-MAX-WIDTH = 0
+             MOVE 1 TO WS-MAX-WIDTH
+         END-IF
+     END-IF
+     COMPUTE WS-REACH = (ET-WIDTH-MILLI(EN-TYPE(L-ROW) + 1) + WS-MAX-WIDTH) / 2000 + 0.001
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
          IF WS-I NOT = L-ROW AND EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = EN-DIM(L-ROW)
-             COMPUTE WS-HALF = (ET-WIDTH-MILLI(EN-TYPE(L-ROW) + 1) + ET-WIDTH-MILLI(EN-TYPE(WS-I) + 1)) / 2000
              COMPUTE WS-DX = EN-X(WS-I) - EN-X(L-ROW)
-             IF WS-DX < 0
+             IF WS-DX < WS-ZERO
                  COMPUTE WS-DX = 0 - WS-DX
              END-IF
              COMPUTE WS-DZ = EN-Z(WS-I) - EN-Z(L-ROW)
-             IF WS-DZ < 0
+             IF WS-DZ < WS-ZERO
                  COMPUTE WS-DZ = 0 - WS-DZ
              END-IF
              COMPUTE WS-DY = EN-Y(WS-I) - EN-Y(L-ROW)
-             IF WS-DX < WS-HALF AND WS-DZ < WS-HALF AND WS-DY < L-HEIGHT AND WS-DY > - ET-HEIGHT-MILLI(EN-TYPE(WS-I) + 1) / 1000
+             MOVE 1 TO WS-FAR
+             IF WS-DX < WS-REACH AND WS-DZ < WS-REACH
+                 MOVE 0 TO WS-FAR
+                 COMPUTE WS-HALF = (ET-WIDTH-MILLI(EN-TYPE(L-ROW) + 1) + ET-WIDTH-MILLI(EN-TYPE(WS-I) + 1)) / 2000
+             END-IF
+             IF WS-FAR = 0 AND WS-DX < WS-HALF AND WS-DZ < WS-HALF AND WS-DY < L-HEIGHT AND WS-DY > - ET-HEIGHT-MILLI(EN-TYPE(WS-I) + 1) / 1000
                  MOVE 0 TO WS-LIVING
                  IF EN-PLAYER(WS-I) > 0
                      MOVE 1 TO WS-LIVING

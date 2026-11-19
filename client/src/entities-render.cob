@@ -433,6 +433,8 @@
 *> appends the box's 36 vertices to RL-EN-VERTEX.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-TRG-1              FLOAT-LONG.
+ 01 WS-PIF                FLOAT-LONG VALUE 3.141592653589793.
 *> Per face (front, back, left, right, top, bottom): the corners top-left, top-right,
 *> bottom-right, bottom-left as x, y, z picks (0 = from, 1 = to).
  01 WS-CORNER-DATA.
@@ -509,8 +511,10 @@
      COMPUTE WS-W = L-TO(1) - L-FROM(1)
      COMPUTE WS-H = L-TO(2) - L-FROM(2)
      COMPUTE WS-D = L-TO(3) - L-FROM(3)
-     COMPUTE WS-COS = FUNCTION COS(EN-YAW(L-ROW) * FUNCTION PI / 180)
-     COMPUTE WS-SIN = FUNCTION SIN(EN-YAW(L-ROW) * FUNCTION PI / 180)
+     COMPUTE WS-TRG-1 = EN-YAW(L-ROW) * WS-PIF / 180
+     COMPUTE WS-COS = FUNCTION COS(WS-TRG-1)
+     COMPUTE WS-TRG-1 = EN-YAW(L-ROW) * WS-PIF / 180
+     COMPUTE WS-SIN = FUNCTION SIN(WS-TRG-1)
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
@@ -588,6 +592,8 @@
 *> USING CLIENT-STATE, eye (3 FLOAT-LONG): RL-GI-VERTEX and RL-GI-COUNT for this frame.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-TRG-1              FLOAT-LONG.
+ 01 WS-PIF                FLOAT-LONG VALUE 3.141592653589793.
  COPY CLCONST.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -626,8 +632,10 @@
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
      MOVE 0 TO RL-GI-COUNT
-     COMPUTE WS-RX = - FUNCTION COS(PL-YAW * FUNCTION PI / 180)
-     COMPUTE WS-RZ = - FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
+     COMPUTE WS-TRG-1 = PL-YAW * WS-PIF / 180
+     COMPUTE WS-RX = - FUNCTION COS(WS-TRG-1)
+     COMPUTE WS-TRG-1 = PL-YAW * WS-PIF / 180
+     COMPUTE WS-RZ = - FUNCTION SIN(WS-TRG-1)
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
 *>       The item entity of a cobolcraft world is the stand-in type ET-LOOSE-ITEM (EN-VANILLA 0; type id 1 of a standard set is a boat, so
 *>       a standard row is never one). The dropped item of a standard set (EN-VANILLA 1, key `item`) is drawn by VANILLA-ITEMS-MESH below.
@@ -908,6 +916,8 @@
 *> full brightness, alpha 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-TRG-1              FLOAT-LONG.
+ 01 WS-PIF                FLOAT-LONG VALUE 3.141592653589793.
  COPY CLCONST.
  01 WS-IN.
     05 WS-I                FLOAT-LONG OCCURS 16 TIMES.
@@ -961,8 +971,10 @@
          GOBACK
      END-IF
      MOVE WS-O(2) TO WS-S
-     COMPUTE WS-CY = FUNCTION COS(PL-YAW * FUNCTION PI / 180)
-     COMPUTE WS-SY = FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
+     COMPUTE WS-TRG-1 = PL-YAW * WS-PIF / 180
+     COMPUTE WS-CY = FUNCTION COS(WS-TRG-1)
+     COMPUTE WS-TRG-1 = PL-YAW * WS-PIF / 180
+     COMPUTE WS-SY = FUNCTION SIN(WS-TRG-1)
      PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= WS-N
          COMPUTE WS-BASE = 5 + WS-K * 5
          COMPUTE WS-HALF = WS-O(WS-BASE) * WS-S
@@ -1028,6 +1040,7 @@
 *> direction (up 1, down 0.5, north and south 0.8, west and east 0.6; tint: none, a gap of the item tint sources).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-TRG-1              FLOAT-LONG.
  COPY CLCONST.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -1164,9 +1177,12 @@
                  CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
                  COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15, 0.1)
                  COMPUTE WS-PHASE = FUNCTION MOD(EN-ID(WS-R), 64) / 64 * 2 * FUNCTION PI
-                 COMPUTE WS-BOB = FUNCTION SIN(WS-AGE / 10 + WS-PHASE) * 0.1 + 0.1 + 0.1875
-                 COMPUTE WS-SPIN-SIN = FUNCTION SIN(WS-AGE / 20 + WS-PHASE)
-                 COMPUTE WS-SPIN-COS = FUNCTION COS(WS-AGE / 20 + WS-PHASE)
+                 COMPUTE WS-TRG-1 = WS-AGE / 10 + WS-PHASE
+                 COMPUTE WS-BOB = FUNCTION SIN(WS-TRG-1) * 0.1 + 0.1 + 0.1875
+                 COMPUTE WS-TRG-1 = WS-AGE / 20 + WS-PHASE
+                 COMPUTE WS-SPIN-SIN = FUNCTION SIN(WS-TRG-1)
+                 COMPUTE WS-TRG-1 = WS-AGE / 20 + WS-PHASE
+                 COMPUTE WS-SPIN-COS = FUNCTION COS(WS-TRG-1)
                  COMPUTE WS-Z0 = 0 - 0.046875 * (WS-COPIES - 1) / 2
                  MOVE EN-STACK-ITEM(WS-R) TO WS-SEED
                  CALL "JRAND-SET-SEED" USING WS-STATE WS-SEED
