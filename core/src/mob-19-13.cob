@@ -1,12 +1,12 @@
 *> Armadillo (002-lane-mobsfull-h20; docs/protocol/19-mobs-land-friendly-and-neutral.md section 13): scutes, danger and the rolled-up states.
 *> - scuteTime (EN-SCUTE) is nextInt(6000) + 6000 at birth (MOB-BORN) and counts down for an adult; at 0 one armadillo scute drops (the table gameplay/armadillo_shed, which is not in the content
 *>   set, like gameplay/chicken_lay) while the game rule mob_drops is true, and the next time is drawn again.
-*> - Every 80 ticks (EN-ARMA-SCAN) the armadillo looks for danger: a sprinting player (not a spectator) or an undead mob in the box of 7 blocks horizontally and 2 vertically around it (the centre
+*> - Every 5 ticks (EN-ARMA-SCAN; the sensor armadillo_scare_detected, 44 part 1 RQ-1.34 and part 4 section 1.5) the armadillo looks for danger: a sprinting player or a passenger (not a spectator) or an undead mob in the box of 7 blocks horizontally and 2 vertically around it (the centre
 *>   distances stand in for the box intersection), and a hit by a player is danger too. Danger is remembered for 80 ticks (EN-DANGER, danger_detected_recently).
 *> - Danger rolls an idle armadillo up: state 1 (EN-ARMA, metadata 18, ARMADILLO_STATE) for 10 ticks, then 2 scared; when the memory is gone it unrolls: state 3 for 30 ticks, then 0. A rolled
 *>   armadillo does not walk. While scared the damage of a hit is (amount - 1) / 2 (ARMADILLO-REDUCE; whole points).
 *> Open items: brushing (loot brush/armadillo), the 50-tick duration of the scared state as such (here it lasts as long as the danger memory), ArmadilloPanic against other attackers than players,
-*> the spectator rule (no spectator mode exists), can-stay-rolled-up and the panic_environmental_causes, a danger check that is randomly offset at spawn, the box intersection by real boxes.
+*> can-stay-rolled-up and the panic_environmental_causes, a danger check that is randomly offset at spawn, the box intersection by real boxes.
 *>
 *> Entry points:
 *>   ARMADILLO-TICK USING row, walk out      one tick; walk 2 when the armadillo is rolled up (stands still), else 0
@@ -79,6 +79,7 @@
  01 WS-OTHER               PIC X(24).
  01 WS-UNDEAD              BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
+ 01 WS-SCARY               BINARY-LONG.
  01 WS-AROUND              BINARY-LONG.
  01 WS-EVENT               BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
@@ -110,10 +111,21 @@
          SUBTRACT 1 FROM EN-DANGER(L-ROW)
      END-IF
      ADD 1 TO EN-ARMA-SCAN(L-ROW)
-     IF EN-ARMA-SCAN(L-ROW) >= 80
+     IF EN-ARMA-SCAN(L-ROW) >= 5
          MOVE 0 TO EN-ARMA-SCAN(L-ROW)
          PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
-             IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND PL-SPRINTING(WS-P) = 1
+             MOVE 0 TO WS-SCARY
+             IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ROW) AND PL-MODE(WS-P) NOT = 3
+                 IF PL-SPRINTING(WS-P) = 1
+                     MOVE 1 TO WS-SCARY
+                 END-IF
+                 IF PL-ENTITY-ROW(WS-P) > 0
+                     IF EN-VEHICLE(PL-ENTITY-ROW(WS-P)) > 0
+                         MOVE 1 TO WS-SCARY
+                     END-IF
+                 END-IF
+             END-IF
+             IF WS-SCARY = 1
                  COMPUTE WS-DX = FUNCTION ABS(PL-X(WS-P) - EN-X(L-ROW))
                  COMPUTE WS-DY = FUNCTION ABS(PL-Y(WS-P) - EN-Y(L-ROW))
                  COMPUTE WS-DZ = FUNCTION ABS(PL-Z(WS-P) - EN-Z(L-ROW))

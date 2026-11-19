@@ -392,6 +392,10 @@
  01 WS-WSPEED              FLOAT-LONG.
  01 WS-SWP                 FLOAT-LONG.
  01 WS-AGE                 FLOAT-LONG.
+ 01 WS-AH-IN.
+    05 WS-AHI              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-AH-OUT.
+    05 WS-AHO              FLOAT-LONG OCCURS 64 TIMES.
  01 WS-CARRIED             BINARY-LONG.
  01 WS-CREEPY              BINARY-LONG.
  01 WS-SWT                 BINARY-LONG.
@@ -518,7 +522,7 @@
      MOVE EA-MT-H(WS-SLOT) TO WS-KN(14)
      MOVE EN-POSE(WS-ROW) TO WS-KN(15)
      MOVE EN-SWIM(WS-ROW) TO WS-KN(16)
-     COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW)
+     COMPUTE WS-KN(24) = EN-SQ(WS-ROW) + EN-TA(WS-ROW) + EN-ARMA(WS-ROW)
      MOVE EN-TM(WS-ROW) TO WS-KN(29)
      COMPUTE WS-KN(34) = EN-CARRY(WS-ROW) * 10 + EN-CREEPY(WS-ROW)
      COMPUTE WS-KN(35) = EN-ATK(WS-ROW) * 1000 + EN-FLW(WS-ROW)
@@ -567,6 +571,10 @@
                  COMPUTE WS-SWARM = 3 - WS-MAINARM
              END-IF
          END-IF
+     END-IF
+*>   An armadillo that is not idle animates with its age (34-5 10.3: roll-up, roll-out and peek start ticks count from it).
+     IF EN-KEY(WS-ROW) = "armadillo" AND EN-ARMA(WS-ROW) > 0
+         MOVE EN-AGE(WS-ROW) TO WS-AGE
      END-IF
 *>   A boat (code B): the rowing time of each paddle (7.3 getRowingTime at partial 1): the paddle position while the paddle is held, else 0 (the replica keeps the
 *>   left position in EN-WALK-POS, the right in EN-WALK-SPEED, the held flags in EN-X1 and EN-X2).
@@ -699,6 +707,17 @@
      MOVE EN-TM(WS-ROW) TO WS-I(14)
      MOVE EN-ATK(WS-ROW) TO WS-I(13)
      MOVE EN-FLW(WS-ROW) TO WS-I(12)
+*>   The armadillo's inputs of ENTITY-POSE-MORE: 12 hiding in the shell (shouldHideInShell of the state and inStateTicks), 13 the roll-out, 14 the roll-up and
+*>   15 the peek start tick (-2147483648 is stopped).
+     IF EN-KEY(WS-ROW) = "armadillo"
+         MOVE EN-ARMA(WS-ROW) TO WS-AHI(1)
+         MOVE EN-ARMA-TICKS(WS-ROW) TO WS-AHI(2)
+         CALL "EF5-ARMADILLO-HIDE" USING WS-AH-IN WS-AH-OUT
+         MOVE WS-AHO(1) TO WS-I(12)
+         MOVE EN-ARMA-OUT(WS-ROW) TO WS-I(13)
+         MOVE EN-ARMA-UP(WS-ROW) TO WS-I(14)
+         MOVE EN-ARMA-PEEK(WS-ROW) TO WS-I(15)
+     END-IF
      EVALUATE WS-ANIM
          WHEN "Q"
              CALL "EF4-COW-ANIM" USING EMM-MODEL WS-IN
