@@ -649,7 +649,12 @@
          IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 9
              CALL "BE-SPAWNER-TICK" USING WS-I
          END-IF
+*>       The creaking heart (31 section 6, mob-20-17d.cob).
+         IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 10
+             CALL "HEART-RUN" USING WS-I
+         END-IF
      END-PERFORM
+     CALL "HEART-SWEEP"
      GOBACK.
  END PROGRAM BE-TICK-ALL.
 

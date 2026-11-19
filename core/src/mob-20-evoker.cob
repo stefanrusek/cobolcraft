@@ -14,8 +14,9 @@
 *>   VEX-STEP USING vex row                            limited life and starvation
 *> Wololo (EVK-WOLOLO-PICK, performed in EVK-STEP; the document's start condition is a target, so the fang goal always goes first: only EVK-BEGIN starts it), the fang column
 *> (EVK-FANG-COLUMN), the spell id metadata 17 (EVK-SPELL-SEND), the vex charge flag and contact attack (VEX-CHARGE, VEX-CONTACT: lane mobsb7); the vex flight is mob-20-vex.cob.
-*> Gaps: the fang as a visible entity and its life counter (a fang is removed at its bite), the knockback of an owned bite and the witch's 0.15 of magic damage, the height of a
-*> partial block in the fang cell.
+*> The fang is an entity (evoker_fangs, Add Entity from its creation, entity event 4 on the first tick of the bite phase, discarded 23 bite-phase ticks later), an owned bite knocks the victim back
+*> (COMBAT-POINT-KNOCKBACK, COMBAT-POINT-KNOCKBACK-MOB in combat.cob) and a witch takes 15 percent of its damage (MOB-HEALTH-LOSE).
+*> Gaps: the yaw of the fang entity (the caller passes none), the height of a partial block in the fang cell.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-FIND.
  DATA DIVISION.
@@ -403,11 +404,20 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-FANG-ADD.
+*> USING dim, x, y, z, warm-up, owner entity id: a fang (20 section 13.3.1): the entity evoker_fangs from now on (Add Entity to its viewers; its yaw is 0: the caller does not pass one), the warm-up
+*> counter, entity event 4 not sent yet and lifeTicks 22.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY CORESTATE.
  COPY EVKSTATE.
  01 WS-I                    BINARY-LONG.
  01 WS-DONE                 BINARY-LONG.
+ 01 WS-KEY                  PIC X(112) VALUE "minecraft:evoker_fangs".
+ 01 WS-TYPE                 BINARY-LONG.
+ 01 WS-ENTITY-ROW           PIC X(66).
+ 01 WS-STATUS               BINARY-LONG.
+ 01 WS-YAW                  FLOAT-SHORT VALUE 0.
  LINKAGE SECTION.
  01 L-DIM                   BINARY-LONG.
  01 L-X                     FLOAT-LONG.
@@ -426,6 +436,11 @@
              MOVE L-Z TO FG-Z(WS-I)
              MOVE L-WARM TO FG-WARM(WS-I)
              MOVE L-OWNER TO FG-OWNER(WS-I)
+             MOVE 0 TO FG-SENT(WS-I)
+             MOVE 22 TO FG-LIFE(WS-I)
+             CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+             CALL "MOB-SPAWN" USING L-DIM WS-TYPE L-X L-Y L-Z WS-YAW FG-ROW(WS-I)
+             MOVE EN-ID(FG-ROW(WS-I)) TO FG-EID(WS-I)
              MOVE 1 TO WS-DONE
          END-IF
      END-PERFORM
@@ -434,6 +449,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EVK-FANG-TICK.
+*> No parameters: one tick of every fang (20 section 13.3.1): the warm-up counter falls by 1 and the tick ends while it is not below 0; the tick it becomes -1 is the first of the bite phase (entity event 4
+*> to the viewers, once), the tick it becomes -8 is the bite, and lifeTicks falls by 1 on every bite-phase tick: the fang is discarded when it is below 0 (the 23rd).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -448,13 +465,18 @@
  01 WS-DAMAGE               BINARY-LONG VALUE 6.
  01 WS-NONE                 BINARY-LONG VALUE 0.
  01 WS-ALLY                 BINARY-LONG.
+ 01 WS-EVENT                BINARY-LONG VALUE 4.
+ 01 WS-RESULT               BINARY-LONG.
+ 01 WS-BEFORE               BINARY-LONG.
+ 01 WS-LIVE                 BINARY-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FG-MAX
          IF FG-USED(WS-I) = 1
              SUBTRACT 1 FROM FG-WARM(WS-I)
-             IF FG-WARM(WS-I) <= -8
+             IF FG-WARM(WS-I) = -8
 *>               The bite (20 section 13.3.1): living entities in the box inflated by 0.2. An owner-less fang (no owner, or one that is gone) hurts every one of them for 6.0 with the
-*>               plain magic source; a fang with an owner spares the owner and its family and hurts the rest with indirect_magic caused by the owner (a player's damage scaled by the difficulty).
+*>               plain magic source; a fang with an owner spares the owner and its family and hurts the rest with indirect_magic caused by the owner (a player's damage scaled by the difficulty),
+*>               and knocks back what the hurt reached (indirect_magic is not in no_knockback; magic is).
                  MOVE 0 TO WS-O
                  PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
                      IF EN-USED(WS-N) = 1 AND EN-ID(WS-N) = FG-OWNER(WS-I)
@@ -465,7 +487,10 @@
                      IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = FG-DIM(WS-I) AND PL-MODE(WS-P) < 2
                          IF FUNCTION ABS(PL-X(WS-P) - FG-X(WS-I)) <= 0.75 AND FUNCTION ABS(PL-Z(WS-P) - FG-Z(WS-I)) <= 0.75
                                  AND PL-Y(WS-P) <= FG-Y(WS-I) + 0.8 AND PL-Y(WS-P) + 1.8 >= FG-Y(WS-I)
-                             CALL "HEALTH-MAGIC-HIT" USING WS-P WS-DAMAGE WS-O
+                             CALL "HEALTH-MAGIC-HIT" USING WS-P WS-DAMAGE WS-O WS-RESULT
+                             IF WS-O > 0 AND WS-RESULT > 0
+                                 CALL "COMBAT-POINT-KNOCKBACK" USING WS-P FG-X(WS-I) FG-Z(WS-I)
+                             END-IF
                          END-IF
                      END-IF
                  END-PERFORM
@@ -480,16 +505,40 @@
                              IF WS-ALLY = 0 AND FUNCTION ABS(EN-X(WS-N) - FG-X(WS-I)) <= 0.75
                                      AND FUNCTION ABS(EN-Z(WS-N) - FG-Z(WS-I)) <= 0.75
                                      AND EN-Y(WS-N) <= FG-Y(WS-I) + 0.8 AND EN-Y(WS-N) + 1 >= FG-Y(WS-I)
+                                 COMPUTE WS-BEFORE = EN-HEALTH(WS-N) * 1000 - EN-HEALTH-MILLI(WS-N)
                                  IF WS-O = 0
                                      CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-MAGIC WS-NONE
                                  ELSE
                                      CALL "HEALTH-MOB-DAMAGE" USING WS-N WS-DAMAGE CAUSE-INDIRECT-MAGIC WS-NONE
+                                     IF EN-USED(WS-N) = 1 AND WS-BEFORE > EN-HEALTH(WS-N) * 1000 - EN-HEALTH-MILLI(WS-N)
+                                         CALL "COMBAT-POINT-KNOCKBACK-MOB" USING WS-N FG-X(WS-I) FG-Z(WS-I)
+                                     END-IF
                                  END-IF
                              END-IF
                          END-IF
                      END-IF
                  END-PERFORM
-                 MOVE 0 TO FG-USED(WS-I)
+             END-IF
+             IF FG-WARM(WS-I) < 0
+*>               The entity row is the fang's only while it still holds its entity id (rows are reused).
+                 MOVE 0 TO WS-LIVE
+                 IF EN-USED(FG-ROW(WS-I)) = 1 AND EN-ID(FG-ROW(WS-I)) = FG-EID(WS-I)
+                     MOVE 1 TO WS-LIVE
+                 END-IF
+*>               Entity event 4 on the first tick of the bite phase, before the damage tick.
+                 IF FG-SENT(WS-I) = 0
+                     IF WS-LIVE = 1
+                         CALL "WARDEN-EVENT" USING FG-ROW(WS-I) WS-EVENT
+                     END-IF
+                     MOVE 1 TO FG-SENT(WS-I)
+                 END-IF
+                 SUBTRACT 1 FROM FG-LIFE(WS-I)
+                 IF FG-LIFE(WS-I) < 0
+                     IF WS-LIVE = 1
+                         CALL "ENTITY-REMOVE" USING FG-ROW(WS-I)
+                     END-IF
+                     MOVE 0 TO FG-USED(WS-I)
+                 END-IF
              END-IF
          END-IF
      END-PERFORM

@@ -2,7 +2,8 @@
 *> EV-ENTRY: one per evoker entity id (EV-ID 0 = free): the spell being cast (0 none, 1 summon vex, 2 fangs, 3 wololo, 4 disappear, 5 blindness), EV-CAST the casting ticks left, EV-WARM the warm-up
 *> ticks left before the spell is performed, EV-NEXT the game tick from which the next spell may start, EV-LAST the entity id the illusioner last blinded.
 *> EV-PLAN: the fang layout computed by EVK-FANGS-PLAN: offsets from the evoker and the warm-up of each fang.
-*> FG-ENTRY: the live fangs (FG-USED 1), their warm-up counter and the entity id of the evoker that cast them.
+*> FG-ENTRY: the live fangs (FG-USED 1), their warm-up counter and the entity id of the evoker that cast them; FG-ROW the tracker row of the visible entity and FG-EID its entity id (a row is reused: it is the fang's only while the id matches), FG-SENT 1 once entity event 4 was
+*> sent, FG-LIFE the lifeTicks left (22 at the start, counted from the first tick of the bite phase; the fang is discarded when it falls below 0).
 *> VX-ENTRY: one per summoned vex (VX-ID 0 = free): the owner's entity id, the life ticks left and the starvation timer.
  78 EV-MAX                VALUE 32.
  78 FG-MAX                VALUE 128.
@@ -30,6 +31,10 @@
        10 FG-Z               FLOAT-LONG.
        10 FG-WARM            BINARY-LONG.
        10 FG-OWNER           BINARY-LONG.
+       10 FG-ROW             BINARY-LONG.
+       10 FG-EID             BINARY-LONG.
+       10 FG-SENT            BINARY-LONG.
+       10 FG-LIFE            BINARY-LONG.
  01 VX-STATE EXTERNAL.
     05 VX-ENTRY              OCCURS 96 TIMES.
        10 VX-ID              BINARY-LONG.

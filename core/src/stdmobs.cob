@@ -1495,6 +1495,10 @@
          CALL "CUBE-HOP" USING WS-ROW WS-M WS-HX WS-HZ WS-YAW
      END-IF
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
+*>   A creaking with a home never walks into a cell farther than 32 blocks from it (the path evaluator, 20 section 17).
+     IF SM-KEY(WS-M) = "creaking"
+         CALL "CREAKING-LEASH" USING WS-ROW WS-HX WS-HZ
+     END-IF
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
 *>   A mob on the ground steps on or lands on a turtle egg under it (29b part 7 section 3).
      IF EN-ON-GROUND(WS-ROW) = 1

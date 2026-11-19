@@ -61,6 +61,8 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY RULES.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
  01 WS-ARMOR               BINARY-LONG.
  01 WS-TOUGHNESS           BINARY-LONG.
  01 WS-MILLI               BINARY-LONG.
@@ -92,6 +94,15 @@
              MOVE 20 TO WS-E
          END-IF
          COMPUTE WS-MILLI ROUNDED = WS-DAMAGE * (1 - WS-E / 25) * 1000
+     END-IF
+*>   A witch takes 15 percent of magic, indirect magic and sonic boom damage (the damage-type tag witch_resistant_to, 20 section 11); the hurt window's difference of a second hit is scaled the same.
+     IF L-CAUSE = CAUSE-MAGIC OR CAUSE-INDIRECT-MAGIC OR CAUSE-SONIC-BOOM
+         CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+         IF WS-M > 0
+             IF SM-KEY(WS-M) = "witch"
+                 COMPUTE WS-MILLI ROUNDED = WS-MILLI * 15 / 100
+             END-IF
+         END-IF
      END-IF
      COMPUTE WS-TOTAL = EN-HEALTH-MILLI(L-ROW) + WS-MILLI
      COMPUTE WS-LOSS = WS-TOTAL / 1000

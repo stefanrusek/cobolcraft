@@ -626,6 +626,102 @@
  END PROGRAM COMBAT-KNOCKBACK-HIT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMBAT-POINT-KNOCKBACK.
+*> USING victim player row, source x, source z (FLOAT-LONG): the default knockback of a fresh hit by a damage source with a position and no attacker player (17 section 4.6 and 4.2 step 9): 0.4 away from
+*> the point (the direction is the point minus the victim), the velocity before taken as 0 (the core keeps no player velocity); a victim exactly on the point gets a random direction (the vector
+*> (nextDouble - nextDouble) x 0.01 each until it is long enough). The victim is sent the resulting Set Entity Motion.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-STRENGTH            BINARY-LONG VALUE 400.
+ 01 WS-RESIST              BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-VX                  BINARY-LONG VALUE 0.
+ 01 WS-VY                  BINARY-LONG VALUE 0.
+ 01 WS-VZ                  BINARY-LONG VALUE 0.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG.
+ 01 WS-ARMOR               BINARY-LONG.
+ 01 WS-TOUGH               BINARY-LONG.
+ 01 WS-PROT                BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 104.
+ 01 WS-B21                 BINARY-LONG VALUE 21.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ COPY ENCHCTX.
+ LINKAGE SECTION.
+ 01 L-VICTIM               BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-VICTIM L-X L-Z.
+     MOVE PL-ON-GROUND(L-VICTIM) TO WS-GROUND
+     MOVE 0 TO EC-DIRECT
+     MOVE SPACES TO EC-DAMAGE-KEY EC-VICTIM-KEY
+     MOVE -1 TO EC-VICTIM-ID
+     CALL "COMBAT-ARMOR-STATS" USING L-VICTIM ENCH-CTX WS-ARMOR WS-TOUGH WS-RESIST WS-PROT
+     COMPUTE WS-DX ROUNDED = (L-X - PL-X(L-VICTIM)) * 1000
+     COMPUTE WS-DZ ROUNDED = (L-Z - PL-Z(L-VICTIM)) * 1000
+     CALL "TOOL-KNOCKBACK" USING WS-STRENGTH WS-RESIST WS-DX WS-DZ WS-VX WS-VY WS-VZ WS-GROUND WS-NX WS-NY WS-NZ WS-STATUS
+     IF WS-STATUS = 2
+         PERFORM UNTIL WS-DX * WS-DX + WS-DZ * WS-DZ >= 10
+             CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-A
+             CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-B
+             COMPUTE WS-DX = WS-A - WS-B
+             CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-A
+             CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-B
+             COMPUTE WS-DZ = WS-A - WS-B
+         END-PERFORM
+         CALL "TOOL-KNOCKBACK" USING WS-STRENGTH WS-RESIST WS-DX WS-DZ WS-VX WS-VY WS-VZ WS-GROUND WS-NX WS-NY WS-NZ WS-STATUS
+     END-IF
+     CALL "COMBAT-MOTION-SEND" USING L-VICTIM WS-NX WS-NY WS-NZ
+     GOBACK.
+ END PROGRAM COMBAT-POINT-KNOCKBACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMBAT-POINT-KNOCKBACK-MOB.
+*> USING mob entity row, source x, source z (FLOAT-LONG): the default knockback of a fresh hit by a damage source with a position and no attacker player, on a mob (17 section 4.6): its motion is halved
+*> and 0.4 away from the point added horizontally (a mob exactly on the point gets a random direction), a mob on the ground also rises (min(0.4, speed / 2 + 0.4)). The mob's knockback
+*> resistance is not applied (no attribute table of it is kept, as in COMBAT-MOB-KNOCKBACK).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 105.
+ 01 WS-B21                 BINARY-LONG VALUE 21.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-MOB                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-MOB L-X L-Z.
+     COMPUTE WS-DX = EN-X(L-MOB) - L-X
+     COMPUTE WS-DZ = EN-Z(L-MOB) - L-Z
+     COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     PERFORM UNTIL WS-LEN * WS-LEN >= 0.00001
+         CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-A
+         CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-B
+         COMPUTE WS-DX = (WS-A - WS-B) / 1000
+         CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-A
+         CALL "XP-RANDOM" USING WS-SALT WS-B21 WS-B
+         COMPUTE WS-DZ = (WS-A - WS-B) / 1000
+         COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     END-PERFORM
+     COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) / 2 + WS-DX / WS-LEN * 0.4
+     COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) / 2 + WS-DZ / WS-LEN * 0.4
+     IF EN-ON-GROUND(L-MOB) = 1
+         COMPUTE EN-VY(L-MOB) = FUNCTION MIN(0.4, EN-VY(L-MOB) / 2 + 0.4)
+     END-IF
+     GOBACK.
+ END PROGRAM COMBAT-POINT-KNOCKBACK-MOB.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. COMBAT-SWEEP.
 *> USING attacker player row, target entity row, scaled weapon damage (thousandths), enchantment damage E (thousandths), attack strength scale
 *> (thousandths), weapon stack handle: 17 section 4.3. Every living entity of the target's dimension other than the attacker and the target that

@@ -1,14 +1,14 @@
 *> Creaking hearts and the creakings bound to them (lane 002-lane-p49r; docs/protocol/20 section 17 and 17.4, 31 section 6, 44-5 section 8, 44-x2 section 2.4). State: HT-ENTRY of HEARTSTATE.cpy and the
 *> home fields of CRK-ENTRY. The world side of a heart (the block entity table, the pale oak log test with its axis, the block state written back, the comparator output, particles, the resin spread) is
-*> not here: HEART-TICK takes the facts that need it (the logs flag).
+*> mob-20-17d.cob: HEART-TICK takes the facts that need it (the logs flag).
 *>   HEART-FIND USING dim, x, y, z, create, slot out
 *>   CREAKING-BIND USING creaking row, heart x, y, z: setTransient(home): the home position, entity event 60.
 *>   CREAKING-TEAR-DOWN USING creaking row: tearDown: IS_TEARING_DOWN (metadata 18) and the 45-tick countdown after which the creaking is removed; it cannot move meanwhile.
 *>   HEART-SPAWN-PROTECTOR USING heart slot, creaking row out: SpawnUtil.trySpawnMob (reason SPAWNER, 5 attempts, 16 horizontal, 8 vertical, ON_TOP_OF_COLLIDER_NO_LEAVES, the spawn box checked): the first
 *>     attempt whose floor is a full solid block that is not leaves with an empty block above it and room for the creaking (three free cells) gets the creaking, bound to the heart; 0 when none.
 *>   HEART-TICK USING heart slot, logs (1 when both neighbours along the axis are pale oak logs of that axis), day time, persistent (the protector's isPersistenceRequired): one tick of the block entity.
-*> Not built: the particles, sounds and the hurt callback (creakingHurt: the resin spread), the comparator output (BE5-HEART-COMPARATOR has the formula), the path restriction to 32 blocks of the home, "cannot
-*> use portals", "a player is stuck in it", and the heart's save and load of the link.
+*> The world side of a heart (the runner, the block state written back, the comparator, the particles, the hurt callback with the resin spread, the path restriction) is mob-20-17d.cob (lane p49x).
+*> Not built: "cannot use portals", "a player is stuck in it", and the heart's save and load of the link.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HEART-FIND.
@@ -232,6 +232,9 @@
  01 WS-HX                  FLOAT-LONG.
  01 WS-HZ                  FLOAT-LONG.
  01 WS-SPAWNED             BINARY-LONG.
+ 01 WS-SPAWN-KEY           PIC X(48) VALUE "minecraft:block.creaking_heart.spawn".
+ 01 WS-VOLUME              FLOAT-SHORT VALUE 1.
+ 01 WS-PITCH               FLOAT-SHORT VALUE 1.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-SLOT                 BINARY-LONG.
@@ -303,6 +306,7 @@
          IF WS-SPAWNED > 0
              MOVE EN-ID(WS-SPAWNED) TO HT-LINK(L-SLOT)
              MOVE 0 TO HT-AGE(L-SLOT)
+             CALL "HEART-SOUND" USING HT-DIM(L-SLOT) HT-X(L-SLOT) HT-Y(L-SLOT) HT-Z(L-SLOT) WS-SPAWN-KEY WS-VOLUME WS-PITCH
          END-IF
      END-IF
      GOBACK.

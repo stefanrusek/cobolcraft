@@ -102,6 +102,70 @@
  END PROGRAM PARTICLE-SEND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PARTICLE-TRAIL-SEND.
+*> USING dimension row, start x, y, z, target x, y, z (FLOAT-LONG), colour (RGB24), duration (BINARY-LONG): one trail particle (type 59, TrailParticleOption: the target as three doubles, the
+*> colour as an Int, the duration as a VarInt; the TrailParticleOption row of 42-1 and 42-5 section 2.7) sent at the start point with the override limiter and always-show flags (42-5 section 3.10), count 1, no spread, no speed,
+*> to the players of the dimension within 512 (squared 262144) of the point as PARTICLE-SEND measures it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 48.
+ 01 WS-TYPE                BINARY-LONG VALUE 59.
+ 01 WS-TRUE                BINARY-LONG VALUE 1.
+ 01 WS-COUNT               BINARY-LONG VALUE 1.
+ 01 WS-RANDOM              BINARY-LONG VALUE 0.
+ 01 WS-ZERO-FLOAT          FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-SX                   FLOAT-LONG.
+ 01 L-SY                   FLOAT-LONG.
+ 01 L-SZ                   FLOAT-LONG.
+ 01 L-TX                   FLOAT-LONG.
+ 01 L-TY                   FLOAT-LONG.
+ 01 L-TZ                   FLOAT-LONG.
+ 01 L-COLOUR               BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-SX L-SY L-SZ L-TX L-TY L-TZ L-COLOUR L-DURATION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-TX
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-TY
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-TZ
+     CALL "PB-PUT-INT" USING PB-BUFFER L-COLOUR
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-DURATION
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-TRUE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-TRUE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-SX
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-SY
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-SZ
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-ZERO-FLOAT
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-RANDOM
+     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM
+             COMPUTE WS-DX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 0.5 - L-SX
+             COMPUTE WS-DY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 0.5 - L-SY
+             COMPUTE WS-DZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 0.5 - L-SZ
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < 262144
+                 CALL "CORE-SEND" USING PL-CONN(WS-PLAYER) PB-BUFFER
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM PARTICLE-TRAIL-SEND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PARTICLE-DAMAGE-INDICATOR.
 *> USING dimension row, health lost, x, y, z (the target's x, y at half its height, z): when more than 2 was
 *> lost, damage_indicator (14), count (int)(lost * 0.5), spread 0.1, 0, 0.1, speed 0.2 on all axes, default
