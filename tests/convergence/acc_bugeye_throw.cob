@@ -18,7 +18,7 @@
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-FOLDER              PIC X(80) VALUE "EyeThrow".
  01 WS-FOLDER-LENGTH       BINARY-LONG VALUE 8.
- 01 WS-MODE                BINARY-LONG VALUE 0.
+ 01 WS-MODE                BINARY-LONG VALUE 1.
  01 WS-ALICE               BINARY-LONG.
  01 WS-JOINED              BINARY-LONG.
  01 WS-DIR-ENV             PIC X(1024).
@@ -83,6 +83,12 @@
 *>   the player is given three ender eyes and has them in the held slot
      MOVE "/give Alice ender_eye 3" TO WS-LINE
      MOVE 23 TO WS-LINE-LENGTH
+     CALL "CV-SAY" USING CONVH WS-ALICE WS-LINE WS-LINE-LENGTH
+     MOVE 10 TO WS-ROUND
+     CALL "CV-STEPS" USING CONVH WS-ROUND
+*>   and plays in survival, where a thrown eye is used up
+     MOVE "/gamemode survival" TO WS-LINE
+     MOVE 18 TO WS-LINE-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-LINE WS-LINE-LENGTH
      MOVE 10 TO WS-ROUND
      CALL "CV-STEPS" USING CONVH WS-ROUND
