@@ -1,5 +1,90 @@
 *> The commands of entities and movement (docs/protocol/16-commands-catalog.md §5): teleport (tp), and (added with their tests) kill,
-*> summon. The entities are the players (the mobs and ground items are not yet reachable by a selector: BLOCKED for BX-RESOLVE).
+*> summon. The entities are the players and the rows of CORE-ENTITIES (a selector gives a mob, a ground item or any entity /summon creates as the negated row).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-LOOK-ROW.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension out, x, y, z (FLOAT-LONG) out, yaw, pitch (FLOAT-SHORT) out: where the target of an entity command is.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-YAW L-PITCH.
+     IF L-ROW > 0
+         MOVE PL-DIM(L-ROW) TO L-DIM
+         MOVE PL-X(L-ROW) TO L-X
+         MOVE PL-Y(L-ROW) TO L-Y
+         MOVE PL-Z(L-ROW) TO L-Z
+         MOVE PL-YAW(L-ROW) TO L-YAW
+         MOVE PL-PITCH(L-ROW) TO L-PITCH
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         MOVE EN-DIM(WS-ENTITY) TO L-DIM
+         MOVE EN-X(WS-ENTITY) TO L-X
+         MOVE EN-Y(WS-ENTITY) TO L-Y
+         MOVE EN-Z(WS-ENTITY) TO L-Z
+         MOVE EN-YAW(WS-ENTITY) TO L-YAW
+         MOVE EN-PITCH(WS-ENTITY) TO L-PITCH
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-LOOK-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-PLACE-ROW.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), dimension, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT): the target goes there. A player takes the facing and is sent
+*> Player Position (CMD-MOVE-PLAYER). Any other entity in its own dimension is sent Teleport Entity at once (a standard mob would wait for its update interval in ENTITY-MOVE) and the
+*> entity tracker lets players who now see it hear of it and the others forget it; in another dimension it changes dimension (ENTITY-CHANGE-DIM: Remove to the old viewers, Add to the new).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO2               FLOAT-LONG VALUE 0.
+ 01 WS-ZERO3               FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-YAW L-PITCH.
+     IF L-ROW > 0
+         MOVE L-ROW TO WS-ROW
+         MOVE L-YAW TO PL-YAW(WS-ROW)
+         MOVE L-PITCH TO PL-PITCH(WS-ROW)
+         CALL "CMD-MOVE-PLAYER" USING WS-ROW L-DIM L-X L-Y L-Z
+         GOBACK
+     END-IF
+     COMPUTE WS-ENTITY = 0 - L-ROW
+     IF L-DIM NOT = EN-DIM(WS-ENTITY)
+         CALL "ENTITY-CHANGE-DIM" USING WS-ENTITY L-DIM L-X L-Y L-Z L-YAW L-PITCH EN-ON-GROUND(WS-ENTITY)
+         GOBACK
+     END-IF
+     MOVE L-X TO EN-X(WS-ENTITY) EN-SENT-X(WS-ENTITY)
+     MOVE L-Y TO EN-Y(WS-ENTITY) EN-SENT-Y(WS-ENTITY)
+     MOVE L-Z TO EN-Z(WS-ENTITY) EN-SENT-Z(WS-ENTITY)
+     MOVE L-YAW TO EN-YAW(WS-ENTITY) EN-SENT-YAW(WS-ENTITY)
+     MOVE L-PITCH TO EN-PITCH(WS-ENTITY) EN-SENT-PITCH(WS-ENTITY)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TELEPORT-ENTITY-BUILD" USING EN-ID(WS-ENTITY) EN-X(WS-ENTITY) EN-Y(WS-ENTITY) EN-Z(WS-ENTITY)
+         WS-ZERO WS-ZERO2 WS-ZERO3 EN-YAW(WS-ENTITY) EN-PITCH(WS-ENTITY) EN-ON-GROUND(WS-ENTITY) PB-BUFFER
+     CALL "GI-VIEWERS-SEND" USING WS-ENTITY PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "ENTITY-TRACK" USING WS-ENTITY
+     GOBACK.
+ END PROGRAM CXB-PLACE-ROW.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-TELEPORT.
@@ -9,7 +94,7 @@
 *> or a point or entity to face turns it; the player is sent Player Position (CMD-MOVE-PLAYER); a location outside the spawnable
 *> bounds is commands.teleport.invalidPosition; commands.teleport.success.location.single [name, x, y, z] or .multiple [count, x, y, z]
 *> (six decimals) and .entity.single [name, destination] or .multiple [count, destination] are broadcast; the result is the number
-*> moved. The targets are the players the selector gives; none given means the source, which must be an entity.
+*> moved. The targets are the entities the selector gives (a player, or any other entity, which takes the place at once: CXB-PLACE-ROW); none given means the source, which must be an entity.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -50,8 +135,14 @@
  01 WS-PX                  FLOAT-LONG.
  01 WS-PY                  FLOAT-LONG.
  01 WS-PZ                  FLOAT-LONG.
+ 01 WS-PX2                 FLOAT-LONG.
+ 01 WS-PY2                 FLOAT-LONG.
+ 01 WS-PZ2                 FLOAT-LONG.
+ 01 WS-DIM2                BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-YAW2                FLOAT-SHORT.
+ 01 WS-PITCH2              FLOAT-SHORT.
  01 WS-W                   FLOAT-LONG.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -65,6 +156,8 @@
  01 WS-EDIT                PIC -(10)9.999999.
  01 WS-TEXT                PIC X(24).
  01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
  01 WS-BROADCAST           BINARY-LONG VALUE 1.
  01 WS-A1                  PIC X(64).
  01 WS-A2                  PIC X(64).
@@ -90,17 +183,10 @@
 
 *> The new position of the target WS-ROW (in WS-X, WS-Y, WS-Z) and its dimension WS-DIM, from the location or the destination.
  WORK-OUT-PLACE.
-     MOVE PL-DIM(WS-ROW) TO WS-DIM
+     CALL "CXB-LOOK-ROW" USING WS-ROW WS-DIM WS-PX2 WS-PY2 WS-PZ2 WS-YAW WS-PITCH
      IF WS-DEST > 0
-         MOVE PL-DIM(WS-DEST-ROW(1)) TO WS-DIM
-         MOVE PL-X(WS-DEST-ROW(1)) TO WS-X
-         MOVE PL-Y(WS-DEST-ROW(1)) TO WS-Y
-         MOVE PL-Z(WS-DEST-ROW(1)) TO WS-Z
-         MOVE PL-YAW(WS-DEST-ROW(1)) TO WS-YAW
-         MOVE PL-PITCH(WS-DEST-ROW(1)) TO WS-PITCH
+         CALL "CXB-LOOK-ROW" USING WS-DEST-ROW(1) WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
      ELSE
-         MOVE PL-YAW(WS-ROW) TO WS-YAW
-         MOVE PL-PITCH(WS-ROW) TO WS-PITCH
          MOVE BS-DIM TO WS-DIM
          MOVE WS-LOCAL-X TO WS-X
          MOVE WS-LOCAL-Y TO WS-Y
@@ -109,12 +195,14 @@
      IF WS-ROT > 0
          MOVE BA-NUM(WS-ROT, 1) TO WS-W
          IF BA-KIND(WS-ROT, 1) = 1
-             ADD PL-YAW(WS-ROW) TO WS-W
+             CALL "CXB-LOOK-ROW" USING WS-ROW WS-DIM2 WS-PX2 WS-PY2 WS-PZ2 WS-YAW2 WS-PITCH2
+             ADD WS-YAW2 TO WS-W
          END-IF
          COMPUTE WS-YAW = FUNCTION MOD(WS-W + 180, 360) - 180
          MOVE BA-NUM(WS-ROT, 2) TO WS-W
          IF BA-KIND(WS-ROT, 2) = 1
-             ADD PL-PITCH(WS-ROW) TO WS-W
+             CALL "CXB-LOOK-ROW" USING WS-ROW WS-DIM2 WS-PX2 WS-PY2 WS-PZ2 WS-YAW2 WS-PITCH2
+             ADD WS-PITCH2 TO WS-W
          END-IF
          IF WS-W < -90
              MOVE -90 TO WS-W
@@ -154,12 +242,14 @@
      END-IF
      CALL "BX-KEY" USING PB-TEXT WS-KEY
      IF WS-MOVED = 1
-         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST-ROW) PL-NAME-LENGTH(WS-LAST-ROW)
+         CALL "CXB-SHOWN" USING WS-LAST-ROW WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
      ELSE
          CALL "CMD-TEXT-INT" USING PB-TEXT WS-MOVED
      END-IF
      IF WS-DEST > 0
-         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-DEST-ROW(1)) PL-NAME-LENGTH(WS-DEST-ROW(1))
+         CALL "CXB-SHOWN" USING WS-DEST-ROW(1) WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
      ELSE
          MOVE WS-LAST-X TO WS-W
          PERFORM FIXED-TEXT
@@ -187,9 +277,7 @@
      IF BR-R-FAILED = 0 AND WS-FACING > 0
          CALL "BX-RESOLVE" USING WS-FACING WS-FACE-ROWS
          IF BR-R-FAILED = 0
-             MOVE PL-X(WS-FACE-ROW(1)) TO WS-PX
-             MOVE PL-Y(WS-FACE-ROW(1)) TO WS-PY
-             MOVE PL-Z(WS-FACE-ROW(1)) TO WS-PZ
+             CALL "CXB-LOOK-ROW" USING WS-FACE-ROW(1) WS-DIM2 WS-PX WS-PY WS-PZ WS-YAW2 WS-PITCH2
              IF WS-ANCHOR > 0 AND BA-IVAL(WS-ANCHOR) = 1
                  ADD 1.62 TO WS-PY
              END-IF
@@ -207,9 +295,7 @@
          PERFORM WORK-OUT-PLACE
          PERFORM CHECK-BOUNDS
          IF BR-R-FAILED = 0
-             MOVE WS-YAW TO PL-YAW(WS-ROW)
-             MOVE WS-PITCH TO PL-PITCH(WS-ROW)
-             CALL "CMD-MOVE-PLAYER" USING WS-ROW WS-DIM WS-X WS-Y WS-Z
+             CALL "CXB-PLACE-ROW" USING WS-ROW WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
              ADD 1 TO WS-MOVED
              MOVE WS-X TO WS-LAST-X
              MOVE WS-Y TO WS-LAST-Y
@@ -265,8 +351,11 @@
 *> and is sent to the players who see it (MOB-SPAWN); in a standard world the mobs are the rows of STDMOBS.cpy (the key with or without minecraft:, which
 *> is its namespace); another type is entity.not_summonable [key]; a monster in Peaceful difficulty
 *> or with hostile mobs off is commands.summon.failed.peaceful; a position outside the spawnable bounds is
-*> commands.summon.invalidPosition; an NBT is loaded into a standard mob by ENTITY-NBT-ONE (the keys the core models: NoAI, LeftHanded, Health, Age ...; no finalize); NBT for another mob is cobolcraft.entity.nbt_unsupported (BLOCKED); commands.summon.success
-*> [entity key] is broadcast; the result is 1. A summoned table mob is finalized like a spawned one (STDMOB-FINALIZE: variant, armour, weapon, size).
+*> commands.summon.invalidPosition; commands.summon.success [entity key] is broadcast; the result is 1. A summoned table mob is finalized like a spawned one (STDMOB-FINALIZE: variant, armour, weapon,
+*> size) in the two forms without NBT (16 section 5.8: the finalize flag is false when NBT is given). The NBT is applied by the entity loader for a mob and a ground item (SUMMON-LOAD, core/src/summon.cob) and by
+*> the spawn program of its family for every other entity type of a standard world (SUMMON-SPAWN: items, orbs, TNT, falling blocks, clouds, lightning, crystals, armor stands, frames, paintings, minecarts, boats,
+*> interaction, display, mannequin, cushion and marker entities, arrows, thrown items, fireballs, wind charges, potions, spawners, fireworks, eyes of ender); an entity the core cannot create is entity.not_summonable,
+*> an entity the loader refuses is commands.summon.failed, a UUID already in use commands.summon.failed.uuid (45-1 section 6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -296,6 +385,12 @@
  01 WS-STD-HOSTILE         BINARY-LONG.
  01 WS-FSEED               BINARY-DOUBLE UNSIGNED.
  COPY XORO.
+ COPY NBXTREE.
+ 01 WS-FAMILY              BINARY-LONG.
+ 01 WS-SUB                 BINARY-LONG.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-UUID-NODE           BINARY-LONG.
+ 01 WS-K-UUID              PIC X(16) VALUE "UUID".
  01 WS-BARE                PIC X(48).
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -325,8 +420,6 @@
  01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
  01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-BEFORE              BINARY-LONG.
- 01 WS-ROW-OUT             BINARY-LONG.
- 01 WS-PASS-OUT            BINARY-LONG.
  01 WS-STD-ROW             BINARY-LONG.
  PROCEDURE DIVISION.
      GO TO MAIN-LINE.
@@ -361,7 +454,7 @@
              ADD 10 TO WS-ID-LENGTH
          END-IF
      END-IF
-     MOVE 0 TO WS-ET WS-MOB WS-STD WS-STD-HOSTILE
+     MOVE 0 TO WS-ET WS-MOB WS-STD WS-STD-HOSTILE WS-FAMILY WS-SUB
      MOVE WS-ID TO WS-BARE
      IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND WS-ID(1:10) = "minecraft:"
          MOVE WS-ID(11:38) TO WS-BARE
@@ -376,6 +469,7 @@
          COMPUTE WS-TYPE = WS-ET - 1
          CALL "STDMOB-INDEX" USING WS-TYPE WS-STD
          CALL "STDMOB-HOSTILE" USING WS-TYPE WS-STD-HOSTILE
+         CALL "SUMMON-FAMILY" USING WS-TYPE WS-FAMILY WS-SUB
      END-IF
      CALL "MOB-TABLE-COUNT" USING WS-MOB-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-MOB-COUNT
@@ -383,50 +477,6 @@
              MOVE WS-I TO WS-MOB
          END-IF
      END-PERFORM.
-
-*> The entity of WS-TYPE loaded from the NBT argument (16 section 5.8 steps 3 and 4): the tree is written as the compound of an entity (Pos first so that the NBT may
-*> override it, the NBT's own keys, then id), loaded by ENTITY-NBT-ONE (a mob without Health gets its full health), then moved to the position keeping its own rotation.
- SUMMON-FROM-NBT.
-     CALL "NBX-PARSE" USING BR-R-LINE BA-START(WS-NBT) BA-END(WS-NBT) WS-NODE
-     MOVE SPACES TO WS-FIND-KEY
-     MOVE "Health" TO WS-FIND-KEY
-     MOVE 6 TO WS-FIND-LENGTH
-     CALL "NBX-FIND" USING WS-NODE WS-FIND-KEY WS-FIND-LENGTH WS-HEALTH-NODE
-     CALL "PB-INIT" USING PB-BUFFER WS-NBT-CAPACITY
-     MOVE SPACES TO WS-FIND-KEY
-     MOVE "Pos" TO WS-FIND-KEY
-     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-FIND-KEY WS-POS-LENGTH WS-T-DOUBLE WS-THREE
-     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-X
-     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-Y
-     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-Z
-     CALL "NBX-TO-BUFFER" USING PB-BUFFER WS-NODE
-     MOVE SPACES TO WS-FIND-KEY
-     MOVE "id" TO WS-FIND-KEY
-     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-FIND-KEY WS-ID-KEY-LENGTH WS-ID WS-ID-LENGTH
-     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-     MOVE 0 TO PB-POS
-     MOVE CW-NEXT-ENTITY-ID TO WS-BEFORE
-     CALL "ENTITY-NBT-ONE" USING BS-DIM PB-BUFFER WS-ROW-OUT WS-PASS-OUT
-     CALL "PB-FREE" USING PB-BUFFER
-     CALL "NBX-FREE" USING WS-NODE
-     MOVE 0 TO WS-NEW
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
-         IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) >= WS-BEFORE AND EN-PLAYER(WS-I) = 0
-             MOVE WS-I TO WS-NEW
-         END-IF
-     END-PERFORM
-     IF WS-NEW > 0
-         IF WS-HEALTH-NODE = 0
-             CALL "STDMOB-INDEX" USING EN-TYPE(WS-NEW) WS-STD-ROW
-             MOVE SM-HEALTH(WS-STD-ROW) TO EN-HEALTH(WS-NEW)
-         END-IF
-         MOVE EN-YAW(WS-NEW) TO WS-YAW
-         CALL "ENTITY-MOVE" USING WS-NEW WS-X WS-Y WS-Z WS-YAW EN-PITCH(WS-NEW) EN-ON-GROUND(WS-NEW)
-     ELSE
-*>       An NBT the entity loader refuses (a Pos list that is not three doubles, 45-1 section 5): the mob still stands at the position of the command, as in the game
-*>       (16 section 5.8; the loader there reads the missing numbers as 0 and the command moves the entity), without the keys of the NBT.
-         CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
-     END-IF.
 
  MAIN-LINE.
      MOVE CW-SETTINGS TO CORE-SETTINGS
@@ -436,7 +486,7 @@
      CALL "BX-FIND" USING WS-NAME-NBT WS-NBT
      PERFORM FIND-TYPE
      EVALUATE TRUE
-         WHEN WS-MOB = 0 AND WS-STD = 0
+         WHEN WS-MOB = 0 AND WS-STD = 0 AND WS-FAMILY = 0
              MOVE "entity.not_summonable" TO WS-KEY
              MOVE 1 TO WS-N-ARGS
              MOVE SPACES TO WS-A1 WS-A2
@@ -445,9 +495,6 @@
              MOVE 0 TO WS-L2
              CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
              MOVE 1 TO BR-R-FAILED
-         WHEN WS-NBT > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2 AND WS-STD = 0
-             MOVE "cobolcraft.entity.nbt_unsupported" TO WS-KEY
-             PERFORM FAIL-PLAIN
          WHEN WS-STD-HOSTILE = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
              MOVE "commands.summon.failed.peaceful" TO WS-KEY
              PERFORM FAIL-PLAIN
@@ -472,31 +519,49 @@
          END-IF
      END-IF
      IF BR-R-FAILED = 0
-         IF WS-STD > 0
+         IF WS-STD > 0 OR WS-FAMILY > 0
              COMPUTE WS-TYPE = WS-ET - 1
          ELSE
              MOVE MB-ENTITY-TYPE(WS-MOB) TO WS-TYPE
          END-IF
-         MOVE 0 TO WS-HAS-NBT
-         IF WS-NBT > 0 AND WS-STD > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2
-             MOVE 1 TO WS-HAS-NBT
+         MOVE 0 TO WS-ROOT WS-NEW
+         IF WS-NBT > 0
+             CALL "NBX-PARSE" USING BR-R-LINE BA-START(WS-NBT) BA-END(WS-NBT) WS-ROOT
          END-IF
-         IF WS-HAS-NBT = 1
-             PERFORM SUMMON-FROM-NBT
+         EVALUATE TRUE
+             WHEN WS-FAMILY > 0
+                 CALL "SUMMON-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-ROOT WS-NEW
+             WHEN WS-ROOT > 0
+                 CALL "SUMMON-LOAD" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-ROOT WS-NEW
+             WHEN OTHER
+                 CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+                 IF WS-STD > 0
+                     COMPUTE WS-FSEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
+                     CALL "XORO-SEED" USING WS-FSEED XR-STATE
+                     CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW
+                 END-IF
+         END-EVALUATE
+         IF WS-NEW = 0
+             MOVE 0 TO WS-UUID-NODE
+             IF WS-ROOT > 0
+                 CALL "NBX-FIND-N" USING WS-ROOT WS-K-UUID WS-UUID-NODE
+             END-IF
+             IF WS-UUID-NODE > 0
+                 MOVE "commands.summon.failed.uuid" TO WS-KEY
+             ELSE
+                 MOVE "commands.summon.failed" TO WS-KEY
+             END-IF
+             PERFORM FAIL-PLAIN
          ELSE
-             CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
+             MOVE "commands.summon.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 1 TO BR-R-RESULT
          END-IF
-*>       The mob initialisation runs only without an NBT (16 section 5.8: the finalize flag is false when an NBT is given).
-         IF WS-STD > 0 AND WS-HAS-NBT = 0
-             COMPUTE WS-FSEED = EN-ID(WS-NEW) * 7919 + CW-TICKS
-             CALL "XORO-SEED" USING WS-FSEED XR-STATE
-             CALL "STDMOB-FINALIZE" USING XR-STATE WS-NEW
+         IF WS-ROOT > 0
+             CALL "NBX-FREE" USING WS-ROOT
          END-IF
-         MOVE "commands.summon.success" TO WS-KEY
-         CALL "BX-KEY" USING PB-TEXT WS-KEY
-         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
-         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
-         MOVE 1 TO BR-R-RESULT
      END-IF
      GOBACK.
  END PROGRAM CX-SUMMON.
@@ -511,11 +576,11 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-SUMMON.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
-     MOVE "summon <entity:entitytype>" TO WS-PATH
+     MOVE "summon <entity:summontype!>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "summon <entity:entitytype> <pos:vec3>" TO WS-PATH
+     MOVE "summon <entity:summontype!> <pos:vec3>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "summon <entity:entitytype> <pos:vec3> <nbt:nbt>" TO WS-PATH
+     MOVE "summon <entity:summontype!> <pos:vec3> <nbt:nbt>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SUMMON.

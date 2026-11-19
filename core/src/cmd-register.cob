@@ -195,6 +195,11 @@
          WHEN "entitytype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:entity_type" TO WS-REGISTRY
+         WHEN "summontype"
+*>           An entity type that /summon can create (SUMMON-CAN): the registry of entitytype, listed to a client that asks (the suggestion marker 64 of the flags).
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:entity_type" TO WS-REGISTRY
+             MOVE 64 TO WS-FLAGS
          WHEN "effecttype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:mob_effect" TO WS-REGISTRY

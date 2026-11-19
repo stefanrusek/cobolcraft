@@ -3,7 +3,7 @@
 *> appears at the position (the source's without one; components relative or absolute) in the source's dimension with full health and is
 *> sent to the players who see it (Add Entity); a monster in Peaceful difficulty or with hostile mobs off is commands.summon.failed.peaceful;
 *> a position outside the spawnable bounds is commands.summon.invalidPosition; commands.summon.success [entity] (broadcast); the result is 1.
-*> NBT other than {} is BLOCKED (refused). Opal holds operator status.
+*> The NBT of the command is applied by the entity loader (lane p49o). Opal holds operator status.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CMD-SUMMON.
  DATA DIVISION.
@@ -33,6 +33,8 @@
  01 WS-KEEP                BINARY-LONG.
  01 WS-KEY-TEXT            PIC X(48).
  01 WS-FIND-X              FLOAT-LONG.
+ 01 WS-HEALTH-OF           BINARY-LONG.
+ 01 WS-CURSOR              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -146,10 +148,27 @@
      MOVE "commands.summon.success(cobolcraft:sodgrazer)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
-     MOVE "acceptance US13 /summon NBT with content is refused (BLOCKED" & ")" TO TL-CASE
-     MOVE "summon cobolcraft:sodgrazer 1.0 64.0 1.0 {Health:5f}" TO WS-LINE
-     MOVE "cobolcraft.entity.nbt_unsupported()" TO WS-EXPECTED
+     MOVE "acceptance US13 /summon NBT with content is applied by the entity loader (16 5.8 step 4)" TO TL-CASE
+     MOVE "summon cobolcraft:sodgrazer 2.0 64.0 1.0 {Health:5f}" TO WS-LINE
+     MOVE "commands.summon.success(cobolcraft:sodgrazer)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /summon the Health of the NBT is the sodgrazer's health" TO TL-CASE
+     MOVE "cobolcraft:sodgrazer" TO WS-KEY-TEXT
+     MOVE 2.0 TO WS-FIND-X
+     PERFORM COUNT-MOBS
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /summon a Health of 5 is kept" TO TL-CASE
+     MOVE 5 TO WS-EXPECTED-N
+     MOVE WS-HEALTH-OF TO WS-NUM
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /summon completes the mobs of the core and not the player-like type" TO TL-CASE
+     MOVE "/summon s" TO WS-LINE
+     MOVE 9 TO WS-CURSOR
+     CALL "TEST-SUGGEST" USING WS-ID-OPAL 7 WS-LINE WS-CURSOR
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
+     MOVE "7 8 1 [cobolcraft:sodgrazer]" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /summon summon alone is incomplete" TO TL-CASE
      MOVE "summon" TO WS-LINE
@@ -176,6 +195,7 @@
              COMPUTE WS-KEEP = EN-TYPE(WS-I) + 1
              IF ET-KEY(WS-KEEP) = WS-KEY-TEXT
                  ADD 1 TO WS-NUM
+                 MOVE EN-HEALTH(WS-I) TO WS-HEALTH-OF
              END-IF
          END-IF
      END-PERFORM.
