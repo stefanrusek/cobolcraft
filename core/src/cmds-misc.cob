@@ -95,11 +95,11 @@
  PROCEDURE DIVISION.
      MOVE "random value <range:intrange>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "random value <range:intrange> <sequence:resloc>" TO WS-PATH
+     MOVE "random value <range:intrange> <sequence:resloc@2>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "random roll <range:intrange>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "random roll <range:intrange> <sequence:resloc>" TO WS-PATH
+     MOVE "random roll <range:intrange> <sequence:resloc@2>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-RANDOM.

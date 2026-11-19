@@ -813,6 +813,8 @@
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
      MOVE CW-SETTINGS TO CORE-SETTINGS
+*>   WORKING-STORAGE stays between calls: the tree is built again for every world, so the level is set each time
+     MOVE 2 TO WS-LEVEL
      IF CS-HOST-KIND > 0
          MOVE 0 TO WS-LEVEL
      END-IF
@@ -901,6 +903,8 @@
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
      MOVE CW-SETTINGS TO CORE-SETTINGS
+*>   WORKING-STORAGE stays between calls: the tree is built again for every world, so the level is set each time
+     MOVE 2 TO WS-LEVEL
      IF CS-HOST-KIND > 0
          MOVE 0 TO WS-LEVEL
      END-IF

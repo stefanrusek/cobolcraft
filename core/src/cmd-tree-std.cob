@@ -6,9 +6,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-STD-TREE.
+*> The dedicated-only commands (ban-ip, banlist, ban, deop, op, pardon, pardon-ip, perf, save-all, save-off, save-on, setidletimeout, stop, transfer, whitelist)
+*> are registered only for a dedicated server (host kind 0); publish and unpublish (CMDS-REG-LAN) only for a hosted world (57-client-closures-4 section 3.4).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-APPLIED             BINARY-LONG.
+ 01 WS-MISSING             BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "BR-TREE-RESET"
+     CALL "BA-HOST-KIND" USING WS-KIND
      CALL "CMDS-REG-EXECUTE"
      CALL "CMDS-REG-BOSSBAR"
      CALL "CMDS-REG-CLEAR"
@@ -80,20 +87,23 @@
      CALL "CMDS-REG-WEATHER"
      CALL "CMDS-REG-WORLDBORDER"
      CALL "CMDS-REG-DEV"
-     CALL "CMDS-REG-BAN-IP"
-     CALL "CMDS-REG-BANLIST"
-     CALL "CMDS-REG-BAN"
-     CALL "CMDS-REG-DEOP"
-     CALL "CMDS-REG-OP"
-     CALL "CMDS-REG-PARDON"
-     CALL "CMDS-REG-PARDON-IP"
-     CALL "CMDS-REG-PERF"
-     CALL "CMDS-REG-SAVE-ALL"
-     CALL "CMDS-REG-SAVE-SWITCH"
-     CALL "CMDS-REG-SETIDLETIMEOUT"
-     CALL "CMDS-REG-STOP"
-     CALL "CMDS-REG-TRANSFER"
-     CALL "CMDS-REG-WHITELIST"
+     IF WS-KIND = 0
+         CALL "CMDS-REG-BAN-IP"
+         CALL "CMDS-REG-BANLIST"
+         CALL "CMDS-REG-BAN"
+         CALL "CMDS-REG-DEOP"
+         CALL "CMDS-REG-OP"
+         CALL "CMDS-REG-PARDON"
+         CALL "CMDS-REG-PARDON-IP"
+         CALL "CMDS-REG-PERF"
+         CALL "CMDS-REG-SAVE-ALL"
+         CALL "CMDS-REG-SAVE-SWITCH"
+         CALL "CMDS-REG-SETIDLETIMEOUT"
+         CALL "CMDS-REG-STOP"
+         CALL "CMDS-REG-TRANSFER"
+         CALL "CMDS-REG-WHITELIST"
+     END-IF
      CALL "CMDS-REG-LAN"
+     CALL "BR-SUGGEST-APPLY" USING WS-APPLIED WS-MISSING
      GOBACK.
  END PROGRAM BR-STD-TREE.

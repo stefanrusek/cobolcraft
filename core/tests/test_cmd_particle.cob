@@ -91,11 +91,12 @@
      MOVE "particle minecraft:flame ~ ~ ~ 0 0 0 0 1 force Opal" TO WS-LINE
      MOVE "commands.particle.success(minecraft:flame)" TO WS-EXPECTED
      PERFORM RUN-TEXT
-     MOVE "acceptance US13 /particle viewers without the force word" TO TL-CASE
+     MOVE "acceptance US13 /particle viewers without the force word is no form (57-client-closures-4 section 7.36: the viewers follow force or normal)" TO TL-CASE
      MOVE "particle minecraft:flame ~ ~ ~ 0 0 0 0 1 @a" TO WS-LINE
+     MOVE "command.unknown.argument() |" TO WS-EXPECTED
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /particle no viewer selected" TO TL-CASE
-     MOVE "particle minecraft:flame ~ ~ ~ 0 0 0 0 1 @a[name=Nobody]" TO WS-LINE
+     MOVE "particle minecraft:flame ~ ~ ~ 0 0 0 0 1 force @a[name=Nobody]" TO WS-LINE
      MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
      PERFORM RUN-TEXT
 *>   The radius: 32 blocks, 512 with force.
@@ -146,12 +147,12 @@
      MOVE "Displaying particle minecraft:flame" TO WS-EXPECTED
      CALL "TEST-RUN-CONSOLE" USING WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
-     MOVE "acceptance US13 /particle completion after the count offers force, normal and the viewers" TO TL-CASE
+     MOVE "acceptance US13 /particle completion after the count offers force and normal only (the viewers come after the word)" TO TL-CASE
      MOVE "/particle minecraft:flame ~ ~ ~ 0 0 0 0 1 " TO WS-LINE
      MOVE 42 TO WS-LENGTH
      CALL "TEST-SUGGEST" USING WS-ID-OPAL WS-SUGGESTION-ID WS-LINE WS-LENGTH
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
-     MOVE "1 42 0 [@a,@e,@n,@p,@r,@s,Alice,force,normal,Opal]" TO WS-EXPECTED
+     MOVE "1 42 0 [force,normal]" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      GOBACK.
 

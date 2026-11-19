@@ -1,0 +1,388 @@
+*> Test of the saved-map files (docs/protocol/57-client-closures-2 section 4): data/minecraft/maps/<id>.dat and data/minecraft/maps/last_id.dat in the gzip NBT form of 07 section 10.3
+*> (root {DataVersion, data}). The worked example of 4.7 (a scale-0 overworld map created at (100, 200): centre (128, 256), the first map id 0, all-zero colours, the flags 1b 0b 0b,
+*> empty banner and frame lists), the centre formula, the counter (the first id 0, the next one more; a file without `map` is -1), the round trip of banners (the dye colour kept, an
+*> unreadable colour read as white) and frames, the load rules (scale clamped to 0 .. 4, colours of another length read as zeros, tracking true and the other flags false when the
+*> members are absent) and the legacy names (data/map_<n>.dat and data/idcounts.dat renamed to data/minecraft/maps/<n>.dat and last_id.dat).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MAP-DATA.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY MAPDATA.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-NBT-PATH            PIC X(128).
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-CENTER              BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-SCALE               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-DATA-LENGTH         BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-SCALE-BYTE          BINARY-LONG.
+ 01 WS-SHORT               PIC X(100).
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-INFO                PIC X(16).
+ 01 WS-FILE-INFO           PIC X(16).
+ 01 WS-DIM-LEN             BINARY-LONG VALUE 19.
+ 01 WS-ZPATH               PIC X(300).
+ 01 WS-NEW-TEXT            PIC X(3).
+ 01 WS-OLD-TEXT            PIC X(3).
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "T" TO TL-MODE
+
+*>   The centre formula: floor((v + 64) / size) x size + size / 2 - 64, size = 128 << scale.
+     MOVE 100 TO WS-X
+     MOVE 0 TO WS-SCALE
+     CALL "MAP-CENTER" USING WS-X WS-SCALE WS-CENTER
+     MOVE WS-CENTER TO WS-E1
+     MOVE 200 TO WS-X
+     CALL "MAP-CENTER" USING WS-X WS-SCALE WS-CENTER
+     MOVE WS-CENTER TO WS-E2
+     MOVE -100 TO WS-X
+     CALL "MAP-CENTER" USING WS-X WS-SCALE WS-CENTER
+     MOVE WS-CENTER TO WS-E3
+     MOVE "test map data the centre of the coordinates 100, 200 and -100 at scale 0 is 128, 256 and -128 (4.7)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "128 256 -128" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 100 TO WS-X
+     MOVE 1 TO WS-SCALE
+     CALL "MAP-CENTER" USING WS-X WS-SCALE WS-CENTER
+     MOVE WS-CENTER TO WS-E1
+     MOVE "test map data the centre of 100 at scale 1 (size 256) is 64" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "64" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The counter: no file is -1, the first id is 0.
+     CALL "MAP-LAST-ID-READ" USING WS-LAST
+     MOVE WS-LAST TO WS-E1
+     MOVE "test map data a world without last_id.dat has the counter -1" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "-1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MAP-NEXT-ID" USING WS-ID
+     CALL "MAP-NEXT-ID" USING WS-NEXT
+     MOVE WS-ID TO WS-E1
+     MOVE WS-NEXT TO WS-E2
+     MOVE "test map data the first map id is 0 and the next one 1" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "build/core-test-world/data/minecraft/maps/last_id.dat" TO WS-PATH
+     CALL "TEST-NBT-FILE" USING WS-PATH PB-BUFFER WS-ROOT
+     MOVE "data.map" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE "test map data last_id.dat holds data.map 1 after two ids" TO TL-CASE
+     MOVE WS-TEXT(1:20) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "DataVersion" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE "test map data last_id.dat holds DataVersion 5023" TO TL-CASE
+     MOVE WS-TEXT(1:20) TO TL-OBSERVED
+     MOVE "5023" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The worked example: a fresh scale-0 overworld map created at (100, 200), written as map 0.
+     MOVE "minecraft:overworld" TO WS-KEY
+     MOVE 100 TO WS-X
+     MOVE 200 TO WS-LAST
+     MOVE 0 TO WS-SCALE
+     CALL "MAP-FRESH" USING WS-KEY WS-DIM-LEN WS-X WS-LAST WS-SCALE MAP-DATA
+     MOVE 0 TO WS-ID
+     CALL "MAP-DATA-WRITE" USING WS-ID MAP-DATA
+     MOVE "build/core-test-world/data/minecraft/maps/0.dat" TO WS-PATH
+     CALL "TEST-NBT-FILE" USING WS-PATH PB-BUFFER WS-ROOT
+     MOVE "test map data the worked example 4.7: DataVersion 5023, the dimension minecraft:overworld, the centre (128, 256) as written" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "DataVersion" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     STRING FUNCTION TRIM(WS-TEXT) " " DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "data.dimension" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO WS-SHORT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-SHORT) " " FUNCTION TRIM(WS-TEXT(1:40)) " " DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "data.xCenter" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO WS-SHORT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-SHORT) " " FUNCTION TRIM(WS-TEXT(1:20)) " " DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "data.zCenter" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO WS-SHORT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-SHORT) " " FUNCTION TRIM(WS-TEXT(1:20)) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "5023 minecraft:overworld 128 256" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "data.scale" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE FUNCTION TRIM(WS-TEXT(1:20)) TO WS-SHORT
+     MOVE "data.trackingPosition" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-SHORT) " " FUNCTION TRIM(WS-TEXT(1:20)) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "data.locked" TO WS-NBT-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-NBT-PATH WS-TEXT
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO WS-SHORT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-SHORT) " " FUNCTION TRIM(WS-TEXT(1:20)) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "test map data the worked example 4.7: scale 0, trackingPosition 1, locked 0 (bytes)" TO TL-CASE
+     MOVE "0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Round trip: banners and frames survive; the colours are kept.
+     MOVE LOW-VALUES TO MD-COLORS
+     MOVE FUNCTION CHAR(27) TO MD-COLORS(1:1)
+     MOVE FUNCTION CHAR(251) TO MD-COLORS(16384:1)
+     MOVE 2 TO MD-SCALE
+     MOVE 0 TO MD-TRACKING
+     MOVE 1 TO MD-UNLIMITED MD-LOCKED
+     MOVE 2 TO MD-BANNER-COUNT
+     MOVE 5 TO MD-B-X(1)
+     MOVE 64 TO MD-B-Y(1)
+     MOVE -7 TO MD-B-Z(1)
+     MOVE "red" TO MD-B-COLOR(1)
+     MOVE 3 TO MD-B-COLOR-LENGTH(1)
+     MOVE "Home" TO MD-B-NAME(1)
+     MOVE 4 TO MD-B-NAME-LENGTH(1)
+     MOVE 9 TO MD-B-X(2)
+     MOVE 70 TO MD-B-Y(2)
+     MOVE 11 TO MD-B-Z(2)
+     MOVE "plaid" TO MD-B-COLOR(2)
+     MOVE 5 TO MD-B-COLOR-LENGTH(2)
+     MOVE 0 TO MD-B-NAME-LENGTH(2)
+     MOVE 1 TO MD-FRAME-COUNT
+     MOVE 1 TO MD-F-X(1)
+     MOVE 65 TO MD-F-Y(1)
+     MOVE 2 TO MD-F-Z(1)
+     MOVE 270 TO MD-F-ROTATION(1)
+     MOVE 4711 TO MD-F-ENTITY(1)
+     MOVE 3 TO WS-ID
+     CALL "MAP-DATA-WRITE" USING WS-ID MAP-DATA
+     INITIALIZE MAP-DATA
+     CALL "MAP-DATA-READ" USING WS-ID MAP-DATA WS-FOUND
+     MOVE WS-FOUND TO WS-E1
+     MOVE MD-SCALE TO WS-E2
+     MOVE MD-BANNER-COUNT TO WS-E3
+     MOVE "test map data map 3 reads back: found, scale 2, two banners" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 2 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE MD-TRACKING TO WS-E1
+     MOVE MD-UNLIMITED TO WS-E2
+     MOVE MD-LOCKED TO WS-E3
+     MOVE "test map data the flags tracking 0, unlimited 1, locked 1 read back" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE FUNCTION ORD(MD-COLORS(1:1)) TO WS-E1
+     MOVE FUNCTION ORD(MD-COLORS(16384:1)) TO WS-E2
+     MOVE "test map data the first and last colour bytes read back (26 and 250: ordinals plus 1)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "27 251" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE MD-B-X(1) TO WS-E1
+     MOVE MD-B-Z(1) TO WS-E2
+     MOVE "test map data the first banner: x 5, z -7, red, named Home" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " MD-B-COLOR(1)(1:MD-B-COLOR-LENGTH(1)) " " MD-B-NAME(1)(1:MD-B-NAME-LENGTH(1))
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "5 -7 red Home" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test map data the second banner has the unreadable colour plaid read as white and no name" TO TL-CASE
+     MOVE MD-B-NAME-LENGTH(2) TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING MD-B-COLOR(2)(1:MD-B-COLOR-LENGTH(2)) " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "white 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE MD-F-ROTATION(1) TO WS-E1
+     MOVE MD-F-ENTITY(1) TO WS-E2
+     MOVE MD-FRAME-COUNT TO WS-E3
+     MOVE "test map data the frame: one marker, rotation 270, entity 4711" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 270 4711" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Load rules: scale 9 is clamped to 4; colours of 100 bytes are zeros; the absent flags default (tracking 1, the others 0).
+     MOVE 7 TO WS-ID
+     PERFORM WRITE-ODD-FILE
+     INITIALIZE MAP-DATA
+     CALL "MAP-DATA-READ" USING WS-ID MAP-DATA WS-FOUND
+     MOVE MD-SCALE TO WS-E1
+     MOVE MD-TRACKING TO WS-E2
+     MOVE FUNCTION ORD(MD-COLORS(50:1)) TO WS-E3
+     MOVE "test map data a file with scale 9, 100 colour bytes and no flags reads as scale 4, tracking 1, all-zero colours (ordinal 1)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "4 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 99 TO WS-ID
+     CALL "MAP-DATA-READ" USING WS-ID MAP-DATA WS-FOUND
+     MOVE WS-FOUND TO WS-E1
+     MOVE "test map data a map without a file is not found" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Legacy names: data/map_5.dat and data/idcounts.dat move to data/minecraft/maps/5.dat and last_id.dat.
+     CALL "TEST-MAP-LEGACY"
+     CALL "MAP-LEGACY-RENAME"
+     MOVE "build/core-test-world/data/minecraft/maps/5.dat" TO WS-PATH
+     PERFORM EXISTS-CHECK
+     MOVE WS-INFO(1:3) TO WS-NEW-TEXT
+     MOVE "build/core-test-world/data/map_5.dat" TO WS-PATH
+     PERFORM EXISTS-CHECK
+     MOVE WS-INFO(1:3) TO WS-OLD-TEXT
+     MOVE "build/core-test-world/data/idcounts.dat" TO WS-PATH
+     PERFORM EXISTS-CHECK
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-NEW-TEXT) " " FUNCTION TRIM(WS-OLD-TEXT) " " FUNCTION TRIM(WS-INFO) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "test map data after the rename maps/5.dat exists and map_5.dat and idcounts.dat are gone" TO TL-CASE
+     MOVE "yes no no" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MAP-LAST-ID-READ" USING WS-LAST
+     MOVE WS-LAST TO WS-E1
+     MOVE "test map data the legacy counter file idcounts.dat (map 12) is read as last_id.dat" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "12" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ WRITE-ODD-FILE.
+     CALL "TEST-MAP-RAW" USING WS-ID.
+
+*> WS-INFO gets yes or no for the file of WS-PATH.
+ EXISTS-CHECK.
+     MOVE LOW-VALUES TO WS-ZPATH
+     MOVE FUNCTION TRIM(WS-PATH) TO WS-ZPATH
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-ZPATH WS-FILE-INFO
+     MOVE "no " TO WS-INFO
+     IF RETURN-CODE = 0
+         MOVE "yes" TO WS-INFO
+     END-IF.
+ END PROGRAM TEST-MAP-DATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MAP-RAW.
+*> USING id: writes data/minecraft/maps/<id>.dat by hand: dimension minecraft:the_nether, xCenter 0, zCenter 0, scale 9 (Byte), colors of 100 bytes, no other member.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-DIM                 PIC X(20) VALUE "minecraft:the_nether".
+ 01 WS-DIM-LENGTH          BINARY-LONG VALUE 20.
+ 01 WS-COLORS              PIC X(100) VALUE LOW-VALUES.
+ 01 WS-COUNT               BINARY-LONG VALUE 100.
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-ID-TEXT             PIC Z(8)9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "DataVersion" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-DATA-VERSION
+     MOVE "data" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "dimension" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-DIM WS-DIM-LENGTH
+     MOVE "xCenter" TO WN MOVE 7 TO WL
+     MOVE 0 TO WS-INT
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+     MOVE "zCenter" TO WN
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+     MOVE "scale" TO WN MOVE 5 TO WL
+     MOVE 9 TO WS-INT
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+     MOVE "colors" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-BYTE-ARRAY" USING PB-BUFFER WN WL WS-COUNT WS-COLORS
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE L-ID TO WS-ID-TEXT
+     MOVE SPACES TO WS-SUFFIX
+     STRING "/data/minecraft/maps/" FUNCTION TRIM(WS-ID-TEXT) ".dat" DELIMITED BY SIZE INTO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-MAP-RAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MAP-LEGACY.
+*> No parameters: writes data/map_5.dat ({data: {}}) and data/idcounts.dat ({data: {map: 12}}), the names of worlds before 26.1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "data" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "/data/map_5.dat" TO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "data" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "map" TO WN MOVE 3 TO WL
+     MOVE 12 TO WS-INT
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "/data/idcounts.dat" TO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-MAP-LEGACY.
+
+ COPY CORETEST.

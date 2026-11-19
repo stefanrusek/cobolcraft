@@ -4,7 +4,7 @@
 *> A line is words separated by single spaces. A literal is its name, with @N after it for the permission level of that node
 *> (the first word of a line gets the level the caller passes; a node that already exists keeps its attributes, 15a §2.3). An
 *> argument is <name:type> or <name:type:p1:p2>, with ! before the closing > for the custom suggestions of the server
-*> (ask_server). Types and their parameters:
+*> (ask_server) and @N after that for the node's own requirement level (a literal takes it after its name). Types and their parameters:
 *>   bool; int and long (min, max; empty = none); float and double (min, max); word, phrase, greedy (the string kinds);
 *>   entities, entity, players, player (selectors: several, one, several players, one player); profiles (game_profile);
 *>   holder and holders (score_holder, one or several); pos, colpos, vec3, vec2, rotation, angle, swizzle (coordinates);
@@ -38,6 +38,7 @@
  01 WS-TYPE-LENGTH         BINARY-LONG.
  01 WS-TYPE-ID             BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
+ 01 WS-ARG-LEVEL           BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-P1                  PIC X(24).
@@ -87,14 +88,14 @@
          ADD 1 TO WS-J
      END-PERFORM
      ADD 1 TO WS-J
-     PERFORM UNTIL L-LINE(WS-J:1) = ":" OR L-LINE(WS-J:1) = ">" OR L-LINE(WS-J:1) = "!"
+     PERFORM UNTIL L-LINE(WS-J:1) = ":" OR L-LINE(WS-J:1) = ">" OR L-LINE(WS-J:1) = "!" OR L-LINE(WS-J:1) = "@"
          ADD 1 TO WS-TYPE-LENGTH
          MOVE L-LINE(WS-J:1) TO WS-TYPE-NAME(WS-TYPE-LENGTH:1)
          ADD 1 TO WS-J
      END-PERFORM
      IF L-LINE(WS-J:1) = ":"
          ADD 1 TO WS-J
-         PERFORM UNTIL L-LINE(WS-J:1) = ":" OR L-LINE(WS-J:1) = ">" OR L-LINE(WS-J:1) = "!"
+         PERFORM UNTIL L-LINE(WS-J:1) = ":" OR L-LINE(WS-J:1) = ">" OR L-LINE(WS-J:1) = "!" OR L-LINE(WS-J:1) = "@"
              ADD 1 TO WS-P1-LENGTH
              MOVE L-LINE(WS-J:1) TO WS-P1(WS-P1-LENGTH:1)
              ADD 1 TO WS-J
@@ -102,7 +103,7 @@
      END-IF
      IF L-LINE(WS-J:1) = ":"
          ADD 1 TO WS-J
-         PERFORM UNTIL L-LINE(WS-J:1) = ">" OR L-LINE(WS-J:1) = "!"
+         PERFORM UNTIL L-LINE(WS-J:1) = ">" OR L-LINE(WS-J:1) = "!" OR L-LINE(WS-J:1) = "@"
              ADD 1 TO WS-P2-LENGTH
              MOVE L-LINE(WS-J:1) TO WS-P2(WS-P2-LENGTH:1)
              ADD 1 TO WS-J
@@ -110,11 +111,18 @@
      END-IF
      IF L-LINE(WS-J:1) = "!"
          MOVE 1 TO WS-SUGGEST
+         ADD 1 TO WS-J
+     END-IF
+*>   @N after the type, the parameters or the !: the node's own requirement level (57-client-closures-4 section 3.3)
+     MOVE 0 TO WS-ARG-LEVEL
+     IF L-LINE(WS-J:1) = "@"
+         COMPUTE WS-ARG-LEVEL = FUNCTION NUMVAL(L-LINE(WS-J + 1:1))
      END-IF
      PERFORM TYPE-OF
      MOVE BR-ARGUMENT TO WS-KIND
      CALL "BR-ADD-NODE" USING WS-PARENT WS-KIND WS-NAME WS-NAME-LENGTH WS-TYPE-ID WS-NODE WS-CREATED
      IF WS-CREATED = 1
+         MOVE WS-ARG-LEVEL TO BR-N-LEVEL(WS-NODE)
          MOVE WS-SUGGEST TO BR-N-SUGGEST(WS-NODE)
          MOVE WS-FLAGS TO BR-N-FLAGS(WS-NODE)
          MOVE WS-STRING-KIND TO BR-N-STRING-KIND(WS-NODE)
