@@ -1075,6 +1075,7 @@
  01 WS-ARRIVED             BINARY-LONG.
  01 WS-STOP                BINARY-LONG.
  01 WS-V-ASLEEP            BINARY-LONG.
+ 01 WS-V-TRADER            BINARY-LONG.
  01 WS-SETTLED             BINARY-LONG.
  01 WS-LIFE-WALK           BINARY-LONG.
  01 WS-LIFE-HX             FLOAT-LONG.
@@ -1323,7 +1324,7 @@
      IF SM-KIND(WS-M) = 1 AND EN-TARGET(WS-ROW) = 0
          CALL "MOBVS-TICK" USING WS-ROW WS-M WS-VS-HX WS-VS-HZ WS-VS-WALK
      END-IF
-     MOVE 0 TO WS-STOP WS-LIFE-WALK
+     MOVE 0 TO WS-STOP WS-LIFE-WALK WS-V-TRADER
      IF SM-KIND(WS-M) = 0
          CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
      END-IF
@@ -1422,6 +1423,8 @@
          END-IF
          IF EN-USED(WS-ROW) = 1
              CALL "VILLOOK-SYNC" USING WS-ROW
+*>           A villager whose merchant window is open stands and faces the trading player (VL-TRADER, mob-vil-trade.cob).
+             CALL "VL-TRADER" USING WS-ROW WS-V-TRADER
          END-IF
      END-IF
      IF SM-KEY(WS-M) = "hoglin"
@@ -1472,6 +1475,8 @@
          IF EN-USED(WS-ROW) = 0
              GOBACK
          END-IF
+*>       A wandering trader whose merchant window is open stands and faces the trading player as well.
+         CALL "VL-TRADER" USING WS-ROW WS-V-TRADER
      END-IF
      IF SM-KEY(WS-M) = "hoglin"
          CALL "PIGLIN-ZOMBIFY" USING WS-ROW WS-STOP
@@ -1529,6 +1534,10 @@
          CALL "STDMOB-ILLAGER-AVOID" USING WS-ROW WS-M WS-AHX WS-AHZ WS-AVOID
      END-IF
      EVALUATE TRUE
+         WHEN WS-V-TRADER > 0
+*>           The trading villager has no walk, stroll or push and looks at the player.
+             MOVE 0 TO WS-HX WS-HZ
+             CALL "VL-TRADE-FACE" USING WS-ROW WS-V-TRADER WS-YAW
          WHEN WS-STOP = 1
 *>           A swelling creeper stands still, facing its target.
              MOVE EN-TARGET(WS-ROW) TO WS-P
@@ -1751,7 +1760,9 @@
      IF WS-CUBE = 1
          CALL "CUBE-HOP" USING WS-ROW WS-M WS-HX WS-HZ WS-YAW
      END-IF
-     CALL "MOB-PUSH-TICK" USING WS-ROW
+     IF WS-V-TRADER = 0
+         CALL "MOB-PUSH-TICK" USING WS-ROW
+     END-IF
      CALL "MOB-JUMP-TICK" USING WS-ROW
      MOVE EN-ON-GROUND(WS-ROW) TO WS-WAS-GROUND
 *>   A land mob does not walk into water or lava: the path malus of 18 section 5.1 keeps it on the bank (STDMOB-WATER-GUARD).
@@ -1761,6 +1772,9 @@
          CALL "CREAKING-LEASH" USING WS-ROW WS-HX WS-HZ
      END-IF
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+     IF SM-KEY(WS-M) = "villager" OR "wandering_trader"
+         CALL "VL-TRADE-PITCH" USING WS-ROW WS-V-TRADER
+     END-IF
 *>   A mob on the ground steps on or lands on a turtle egg under it (29b part 7 section 3).
      IF EN-ON-GROUND(WS-ROW) = 1
          CALL "M44-EGG-STEP" USING WS-ROW WS-WAS-GROUND

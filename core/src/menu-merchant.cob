@@ -158,6 +158,7 @@
  COPY CORESTATE.
  COPY VILSTATE.
  01 WS-SLOT                 BINARY-LONG.
+ 01 WS-TRADER               BINARY-LONG.
  01 WS-ZERO                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
@@ -175,6 +176,11 @@
      END-IF
      IF VL-KIND(WS-SLOT) = 1 AND EN-VARIANT(L-ENTITY) = 1
          MOVE 1 TO L-USED
+         GOBACK
+     END-IF
+*>   19 section 22.4: a villager that is already trading ignores the click (the second player gets no window; VL-TRADER, mob-vil-trade.cob).
+     CALL "VL-TRADER" USING L-ENTITY WS-TRADER
+     IF WS-TRADER > 0
          GOBACK
      END-IF
      CALL "VL-ENSURE" USING WS-SLOT
