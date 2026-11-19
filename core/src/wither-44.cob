@@ -6,7 +6,7 @@
 *> Gaps: the boss bar (no Boss Event packets), the nearest player is the only target (HurtByTarget, the wither_friends tag, the random living target of the side heads), the pattern's yaw (0), eye
 *> height of the explosion (y + 3.0), block drops of the destroyed blocks, wither_immune is the block tag of the data pack (CONTENT-TAG-HAS), the owner's heal on a kill, the dangerous skull's
 *> explosion resistance cap and 0.73 inertia is used but the cap is not, pathfinding (it flies straight), the metadata 16 to 19, sounds, the second pattern (getOrCreateWitherBase), the criteria,
-*> the nether star's extended lifetime (age -6000), look and head turning.
+*> look and head turning.
 *>
 *>   WITHER-CLASS USING dim, x, y, z, class out (1 wither skull, 2 soul sand or soul soil, 3 air, 0 other)
 *>   WITHER-BUILD USING dim, x, y, z (the placed block)
@@ -429,6 +429,12 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-XP                  BINARY-LONG VALUE 50.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ZERO2               FLOAT-LONG VALUE 0.
+ 01 WS-ZERO3               FLOAT-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-DELAY               BINARY-LONG VALUE 10.
+ 01 WS-STAR-ROW            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HANDLED              BINARY-LONG.
@@ -446,7 +452,11 @@
      CALL "WITHER-BAR-END" USING L-ROW WS-SLOT
      CALL "PJ-DROP" USING L-ROW
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
-     CALL "DECOR-DROP" USING WS-DIM WS-X WS-Y WS-Z WS-ITEM
+     CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-ZERO WS-ZERO2 WS-ZERO3 WS-ITEM WS-ONE WS-DELAY WS-STAR-ROW
+*>   dropCustomDeathLoot: setExtendedLifetime (age -6000: the star lives 12000 ticks, 41 section 5.1).
+     IF WS-STAR-ROW > 0
+         MOVE -6000 TO EN-AGE(WS-STAR-ROW)
+     END-IF
      CALL "XP-AWARD" USING WS-DIM WS-X WS-Y WS-Z WS-XP
      GOBACK.
  END PROGRAM WITHER-DEATH.

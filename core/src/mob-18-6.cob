@@ -1644,9 +1644,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-SPAWNER-STEP.
-*> USING state, spawner, player-near (a player within requiredPlayerRange of the block centre), action out (BINARY-LONG): BaseSpawner.serverTick (6.12):
-*> 0 nothing (no player in range), 3 the delay was -1 and a delay was rolled, 1 a positive delay counted down, 2 the delay is up: the caller makes
-*> spawnCount attempts (MS6-SPAWNER-ATTEMPT) and, when one succeeded, rolls a delay (MS6-SPAWNER-ROLL).
+*> USING state, spawner, player-near (a player within requiredPlayerRange of the block centre), action out (BINARY-LONG): BaseSpawner.serverTick (6.12; 44 part 2
+*> section 2.2): 0 nothing (no player in range); a delay of -1 first rolls a delay and falls through with the new value; then 1 a positive delay counted down, 2 the
+*> delay is up (0): the caller makes spawnCount attempts (MS6-SPAWNER-ATTEMPT) and, when one succeeded, rolls a delay (MS6-SPAWNER-ROLL).
  DATA DIVISION.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
@@ -1665,10 +1665,10 @@
      IF L-NEAR = 0
          GOBACK
      END-IF
+     IF L-DELAY = -1
+         CALL "MS6-SPAWNER-ROLL" USING L-STATE L-SPAWNER L-DELAY
+     END-IF
      EVALUATE TRUE
-         WHEN L-DELAY = -1
-             CALL "MS6-SPAWNER-ROLL" USING L-STATE L-SPAWNER L-DELAY
-             MOVE 3 TO L-ACTION
          WHEN L-DELAY > 0
              SUBTRACT 1 FROM L-DELAY
              MOVE 1 TO L-ACTION
@@ -1680,10 +1680,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MS6-SPAWNER-ATTEMPT.
-*> USING state, dim, key (PIC X(24), the species), block x, y, z (BINARY-LONG), spawner, success out (BINARY-LONG): one spawn attempt of a spawner (6.12): the
-*> position is (bx + (nextDouble - nextDouble) x spawnRange + 0.5, by + nextInt(3) - 1, bz + ...); the box must be free (two empty cells), the rule
-*> check with the reason SPAWNER must hold (so light matters for monsters and Peaceful stops them), fewer than maxNearbyEntities of that type may stand
-*> within spawnRange of the block, and then the mob appears with a random yaw. A species without a mob row spawns nothing.
+*> USING state, dim, key (PIC X(24), the species), block x, y, z (BINARY-LONG), spawner, custom rules (5 BINARY-LONG: set, block light min, max, sky light min, max),
+*> success out (BINARY-LONG): one spawn attempt of a spawner (6.12; 44 part 2 sections 2.2 and 3): the position is (bx + (nextDouble - nextDouble) x spawnRange + 0.5,
+*> by + nextInt(3) - 1, bz + ...); the box must be free (two empty cells); the rule check with the reason SPAWNER must hold (so light matters for monsters and Peaceful
+*> stops them), or, with custom spawn rules, a non-friendly type must not be on Peaceful and the block light and the effective sky brightness (sky light less the
+*> night's darkening, or 10 in a thunderstorm) must lie in the ranges; fewer than maxNearbyEntities of that type may stand within spawnRange of the block, and then
+*> the mob appears with a random yaw. Success 1 made a mob, 0 this attempt failed (the round goes on), 2 the round ends with a rolled delay: a species without a mob
+*> row (an unknown type or one that cannot be made) or a full count box.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1737,12 +1740,19 @@
     05 L-NEARBY            BINARY-LONG.
     05 L-PRANGE            BINARY-LONG.
     05 L-SRANGE            BINARY-LONG.
+ 01 L-RULES.
+    05 L-RULE-SET          BINARY-LONG.
+    05 L-RULE-BMIN         BINARY-LONG.
+    05 L-RULE-BMAX         BINARY-LONG.
+    05 L-RULE-SMIN         BINARY-LONG.
+    05 L-RULE-SMAX         BINARY-LONG.
  01 L-SUCCESS              BINARY-LONG.
- PROCEDURE DIVISION USING L-STATE L-DIM L-KEY L-BX L-BY L-BZ L-SPAWNER L-SUCCESS.
+ PROCEDURE DIVISION USING L-STATE L-DIM L-KEY L-BX L-BY L-BZ L-SPAWNER L-RULES L-SUCCESS.
      MOVE 0 TO L-SUCCESS
      MOVE L-KEY TO WS-KEY48
      CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
      IF WS-ROW = 0
+         MOVE 2 TO L-SUCCESS
          GOBACK
      END-IF
      CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D1
@@ -1764,7 +1774,11 @@
      IF WS-K1 NOT = 0 OR WS-K2 NOT = 0 OR WS-READY = 0
          GOBACK
      END-IF
-     CALL "MS6-RULE-AT" USING L-STATE L-DIM WS-ROW WS-IX WS-IY WS-IZ WS-REASON WS-OK
+     IF L-RULE-SET = 1
+         CALL "SPW-CUSTOM-OK" USING L-DIM WS-IX WS-IY WS-IZ WS-ROW L-RULES WS-OK
+     ELSE
+         CALL "MS6-RULE-AT" USING L-STATE L-DIM WS-ROW WS-IX WS-IY WS-IZ WS-REASON WS-OK
+     END-IF
      IF WS-OK = 0
          GOBACK
      END-IF
@@ -1787,6 +1801,7 @@
          END-IF
      END-PERFORM
      IF WS-N >= L-NEARBY
+         MOVE 2 TO L-SUCCESS
          GOBACK
      END-IF
      CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D1

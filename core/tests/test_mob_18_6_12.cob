@@ -23,6 +23,12 @@
     05 WS-NEARBY            BINARY-LONG.
     05 WS-PRANGE            BINARY-LONG.
     05 WS-SRANGE            BINARY-LONG.
+ 01 WS-NORULES.
+    05 WS-NR-SET          BINARY-LONG VALUE 0.
+    05 WS-NR-BMIN         BINARY-LONG VALUE 0.
+    05 WS-NR-BMAX         BINARY-LONG VALUE 15.
+    05 WS-NR-SMIN         BINARY-LONG VALUE 0.
+    05 WS-NR-SMAX         BINARY-LONG VALUE 15.
  01 WS-NEAR              BINARY-LONG.
  01 WS-ACTION            BINARY-LONG.
  01 WS-D                 BINARY-LONG.
@@ -129,15 +135,15 @@
      MOVE 200 TO WS-MIN
      MOVE 800 TO WS-MAX
      CALL "MS6-SPAWNER-STEP" USING XR-STATE WS-SPAWNER WS-NEAR WS-ACTION
-     MOVE "acceptance US15 18§6.12 Spawner block: delay -1 rolls a delay (action 3)" TO WS-CASE
-     COMPUTE WS-E = 3
+     MOVE "acceptance US15 18§6.12 Spawner block: delay -1 rolls a delay and falls through to the count down (action 1)" TO WS-CASE
+     COMPUTE WS-E = 1
      COMPUTE WS-O = WS-ACTION
      PERFORM CHECK-N
      MOVE 0 TO WS-O
-     IF WS-DELAY >= 200 AND WS-DELAY < 800
+     IF WS-DELAY >= 199 AND WS-DELAY < 799
          MOVE 1 TO WS-O
      END-IF
-     MOVE "acceptance US15 18§6.12 Spawner block: the rolled delay lies in 200 to 799" TO WS-CASE
+     MOVE "acceptance US15 18§6.12 Spawner block: the rolled delay (200 to 799) is already counted down once, 199 to 798" TO WS-CASE
      MOVE 1 TO WS-E
      PERFORM CHECK-N
      CALL "MS-TEST-OPEN" USING WS-PLAYER
@@ -234,8 +240,10 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 200
          MOVE WS-I TO WS-SEED
          CALL "XORO-SEED" USING WS-SEED XR-STATE
-         CALL "MS6-SPAWNER-ATTEMPT" USING XR-STATE WS-DIM WS-KEY WS-BX WS-BY WS-BZ WS-SPAWNER WS-OK
-         ADD WS-OK TO WS-WINS
+         CALL "MS6-SPAWNER-ATTEMPT" USING XR-STATE WS-DIM WS-KEY WS-BX WS-BY WS-BZ WS-SPAWNER WS-NORULES WS-OK
+         IF WS-OK = 1
+             ADD 1 TO WS-WINS
+         END-IF
      END-PERFORM.
  END PROGRAM TEST-MOB-18-6-12.
  COPY CORETEST.

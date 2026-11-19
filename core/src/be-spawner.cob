@@ -5,14 +5,17 @@
 *>
 *> Entry point:
 *>   BE-SPAWNER-TICK USING index    BaseSpawner.serverTick for a live mob spawner (BE-TICK-ALL)
-*> Open: SpawnPotentials (and custom spawn rules, equipment) are not modelled (a loaded list is kept only by the unmodelled-key capture), the spawn-data entity is
-*> a species id only, a failed crowd check does not roll a delay (only a success does), level event 2004 and the spawn animation are not sent, trial spawners.
+*>   SPW-POTENTIAL-PICK USING state, index   the weighted pick of the next spawn data from SpawnPotentials after a rolled delay (44 part 2 section 2.3; q44-44-2.cob)
+*> The spawn data holds the species id and the custom spawn rules (BE-XI 10 to 14, 44 part 2 section 3). Open: equipment tables and the custom rules of a potentials entry are not
+*> modelled (a picked entry has none), the spawn-data entity is a species id only, level event 2004 and the spawn animation are not sent.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-SPAWNER-TICK.
 *> USING index: the server tick of a live mob spawner (31-7 3.4, 18 section 6.12). Nothing happens unless spawner_blocks_work holds and a player who is alive and not a
 *> spectator stands within RequiredPlayerRange of the block centre (a negative range counts any such player). MS6-SPAWNER-STEP then decides: wait, roll, or make
-*> SpawnCount attempts (MS6-SPAWNER-ATTEMPT); a spawner without a species only rolls a delay, and a round with a success rolls one too.
+*> SpawnCount attempts (MS6-SPAWNER-ATTEMPT); a spawner without a species only rolls a delay, a round with a success rolls one too, and an attempt that meets an unknown type or a
+*> full count box rolls one and ends the round. A delay of -1 is rolled first and the tick goes on with the new value (44 part 2 section 2.2); every roll is followed by the
+*> weighted pick of the next spawn data (SPW-POTENTIAL-PICK).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -46,6 +49,12 @@
     05 WS-SPV-V            BINARY-LONG OCCURS 7 TIMES.
  01 WS-J                   BINARY-LONG.
  01 WS-SLEN                BINARY-LONG.
+ 01 WS-RULES.
+    05 WS-RULE-SET         BINARY-LONG.
+    05 WS-RULE-BMIN        BINARY-LONG.
+    05 WS-RULE-BMAX        BINARY-LONG.
+    05 WS-RULE-SMIN        BINARY-LONG.
+    05 WS-RULE-SMAX        BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
@@ -70,31 +79,44 @@
          CALL "XORO-SEED" USING WS-SEED WS-STATE
          MOVE 1 TO WS-SEEDED
      END-IF
+*>   the seven values of the spawner as the MS6 programs take them (BE-XI 1 to 7), written back after the step
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 7
+         MOVE BE-XI(L-INDEX, WS-J) TO WS-SPV-V(WS-J)
+     END-PERFORM
+*>   a delay of -1 is rolled now and the tick goes on with the new value (and the next spawn data picked with it)
+     IF WS-NEAR = 1 AND WS-SPV-DELAY = -1
+         CALL "MS6-SPAWNER-ROLL" USING WS-STATE WS-SPV WS-SPV-DELAY
+         CALL "SPW-POTENTIAL-PICK" USING WS-STATE L-INDEX
+     END-IF
 *>   the species of SpawnData.entity.id without "minecraft:" (spaces when the spawn data has none)
      MOVE SPACES TO WS-SPECIES
      IF BE-XI(L-INDEX, 8) = 1 AND BE-XI(L-INDEX, 9) > 10 AND BE-XI(L-INDEX, 9) < 35 AND BE-XT(L-INDEX, 1)(1:10) = "minecraft:"
          COMPUTE WS-SLEN = BE-XI(L-INDEX, 9) - 10
          MOVE BE-XT(L-INDEX, 1)(11:WS-SLEN) TO WS-SPECIES
      END-IF
-*>   the seven values of the spawner as the MS6 programs take them (BE-XI 1 to 7), written back after the step
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 7
-         MOVE BE-XI(L-INDEX, WS-J) TO WS-SPV-V(WS-J)
-     END-PERFORM
+     MOVE BE-XI(L-INDEX, 14) TO WS-RULE-SET
+     MOVE BE-XI(L-INDEX, 10) TO WS-RULE-BMIN
+     MOVE BE-XI(L-INDEX, 11) TO WS-RULE-BMAX
+     MOVE BE-XI(L-INDEX, 12) TO WS-RULE-SMIN
+     MOVE BE-XI(L-INDEX, 13) TO WS-RULE-SMAX
      CALL "MS6-SPAWNER-STEP" USING WS-STATE WS-SPV WS-NEAR WS-ACTION
      IF WS-ACTION = 2
          IF WS-SPECIES = SPACES
              CALL "MS6-SPAWNER-ROLL" USING WS-STATE WS-SPV WS-SPV-DELAY
+             CALL "SPW-POTENTIAL-PICK" USING WS-STATE L-INDEX
          ELSE
              MOVE 0 TO WS-ANY
-             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-SPV-COUNT
+             MOVE 0 TO WS-OK
+             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-SPV-COUNT OR WS-OK = 2
                  CALL "MS6-SPAWNER-ATTEMPT" USING WS-STATE BE-DIM(L-INDEX) WS-SPECIES BE-X(L-INDEX) BE-Y(L-INDEX)
-                     BE-Z(L-INDEX) WS-SPV WS-OK
+                     BE-Z(L-INDEX) WS-SPV WS-RULES WS-OK
                  IF WS-OK = 1
                      MOVE 1 TO WS-ANY
                  END-IF
              END-PERFORM
-             IF WS-ANY = 1
+             IF WS-ANY = 1 OR WS-OK = 2
                  CALL "MS6-SPAWNER-ROLL" USING WS-STATE WS-SPV WS-SPV-DELAY
+                 CALL "SPW-POTENTIAL-PICK" USING WS-STATE L-INDEX
              END-IF
          END-IF
      END-IF
