@@ -180,7 +180,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-DEBUG-AT.
-*> USING CLIENT-STATE, index out: the first widget that is a label whose text begins "CobolCraft" (the F3 overlay's version line), else 0.
+*> USING CLIENT-STATE, index out: the first widget that is a label whose text is "CobolCraft (Minecraft 26.3)" (the F3 overlay's version line; the title screen has a label "CobolCraft"), else 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -191,8 +191,8 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-AT.
      MOVE 0 TO L-AT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF L-AT = 0 AND SM-W-KIND(WS-I) = WK-LABEL AND SM-W-LENGTH(WS-I) >= 10
-                 AND SM-W-TEXT(WS-I)(1:10) = "CobolCraft"
+         IF L-AT = 0 AND SM-W-KIND(WS-I) = WK-LABEL AND SM-W-LENGTH(WS-I) = 27
+                 AND SM-W-TEXT(WS-I)(1:27) = "CobolCraft (Minecraft 26.3)"
              MOVE WS-I TO L-AT
          END-IF
      END-PERFORM
@@ -218,3 +218,5 @@
      END-PERFORM
      GOBACK.
  END PROGRAM TEST-TERRAIN-DRAWS.
+
+ COPY CLTEST.
