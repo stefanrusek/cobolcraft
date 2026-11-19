@@ -255,6 +255,7 @@
                  MOVE 0 TO EN-AX-BS(WS-ROW) EN-AX-BT(WS-ROW)
                  MOVE 1 TO EN-HP(WS-ROW)
                  MOVE 2 TO EN-FDIR(WS-ROW)
+                 MOVE WS-DATA TO EN-BSTATE(WS-ROW)
                  MOVE 0 TO EN-FROT(WS-ROW)
                  MOVE 0 TO EN-DD(WS-ROW) EN-NCI(WS-ROW) EN-BP(WS-ROW) EN-BX(WS-ROW) EN-BY(WS-ROW) EN-BZ(WS-ROW)
                  MOVE WS-PITCH TO EN-AX-XR(WS-ROW)
@@ -355,7 +356,7 @@
                      END-IF
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
-                     IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
+                     IF MD-MD-INDEX = 8 AND (EN-KEY(WS-ROW) = "experience_orb" OR "tnt")
                          MOVE MD-MD-INT TO EN-VALUE(WS-ROW)
                      END-IF
                      IF MD-MD-INDEX = 18 AND EN-KEY(WS-ROW) = "glow_squid"

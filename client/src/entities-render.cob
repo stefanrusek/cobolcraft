@@ -747,6 +747,10 @@
                      CALL "ENTITY-THROWN-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN "ominous_item_spawner"
                      CALL "ENTITY-SPAWNER-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "tnt"
+                     CALL "ENTITY-TNT-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "falling_block"
+                     CALL "ENTITY-FALLING-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN OTHER
                      CONTINUE
              END-EVALUATE

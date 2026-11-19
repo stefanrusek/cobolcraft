@@ -169,6 +169,10 @@
              END-IF
 *>           A boat (34-8 7.3): hurt time and damage fall by 1 a tick, the bubble column wobble (the bubble multiplier rises by 0.05 with bubble time and falls by 0.1,
 *>           clamped to 0 to 1; angle 10 sin(0.5 age) x multiplier), and whether the boat is under water (water at the cell of the top of the box).
+*>           A primed TNT's fuse falls by 1 a tick (34-9 13.2: f = fuse at the partial tick 1).
+             IF EN-KEY(WS-R) = "tnt" AND EN-VALUE(WS-R) > 0
+                 SUBTRACT 1 FROM EN-VALUE(WS-R)
+             END-IF
              IF EN-MODEL(WS-R) > 0
                  IF CL-MD-ANIM(EN-MODEL(WS-R)) = "M"
                      IF EN-BHT(WS-R) > 0

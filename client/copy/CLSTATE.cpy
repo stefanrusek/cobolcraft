@@ -805,6 +805,8 @@
           15 EN-BY           BINARY-LONG.
           15 EN-BZ           BINARY-LONG.
 *>        An item frame (34-9 section 10): the direction (entry 8, DIRECTION: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east; north until told) and the rotation of the item (entry 10, 0 to 7).
+*>        The block state id of the data field of Add Entity (a falling block, 34-9 13.1; entry 9 of a tnt is not kept).
+          15 EN-BSTATE       BINARY-LONG.
           15 EN-FDIR         BINARY-LONG.
           15 EN-FROT         BINARY-LONG.
 *>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
