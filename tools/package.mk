@@ -38,14 +38,16 @@ PKG_CONFIG := PKG_CONFIG_PATH=$(shell brew --prefix)/opt/openssl@3/lib/pkgconfig
 TESTLIB  := $(REPO)/tools/testlib
 COBFLAGS := -free $(DEBUGFLAG) -std=default -fstatic-call -I $(REPO)/contract/copy $(INCLUDES)
 # FPFAST=1 (the default): the C that cobc generates for a COBOL program calls the shim's ccfp_decimal_* in place of
-# libcob's cob_decimal_*, and ccfp_intr_* in place of cob_intr_sin, cos, sqrt, mod and binop (shim/src/cc_fpfast.c:
+# libcob's cob_decimal_*, and ccfp_intr_* in place of cob_intr_sin, cos, sqrt, mod, binop, tan, atan, integer, integer_part, abs and pi, and ccfp_* in place of
+# cob_cmp_llint, cob_cmp, cob_numeric_cmp, cob_get_int, cob_get_llint and cob_move (shim/src/cc_fpfast.c:
 # arithmetic on FLOAT-LONG and FLOAT-SHORT fields in IEEE double, every other case passed on to libcob). FPFAST=0 compiles the same sources without the defines: libcob alone. The two
 # settings share build/, so a change of the setting recompiles every COBOL object ($(FPFAST_STAMP)).
 FPFAST   ?= 1
 FPFAST_NAMES := set_field get_field add sub mul div pow cmp align
-FPFAST_INTRINSICS := sin cos sqrt mod binop
+FPFAST_INTRINSICS := sin cos sqrt mod binop tan atan integer integer_part abs pi
+FPFAST_PLAIN := cmp_llint cmp numeric_cmp get_int get_llint move
 ifeq ($(FPFAST),1)
-COBFLAGS += -A "$(foreach n,$(FPFAST_NAMES),-Dcob_decimal_$(n)=ccfp_decimal_$(n)) $(foreach n,$(FPFAST_INTRINSICS),-Dcob_intr_$(n)=ccfp_intr_$(n))"
+COBFLAGS += -A "$(foreach n,$(FPFAST_NAMES),-Dcob_decimal_$(n)=ccfp_decimal_$(n)) $(foreach n,$(FPFAST_INTRINSICS),-Dcob_intr_$(n)=ccfp_intr_$(n)) $(foreach n,$(FPFAST_PLAIN),-Dcob_$(n)=ccfp_$(n))"
 endif
 # The shim's cc_fpfast.c calls GMP itself (every COBOL program links libcob, which links GMP).
 LDLIBS   += -L$(shell brew --prefix gmp)/lib -lgmp
@@ -64,7 +66,7 @@ TEST_PROGS  := $(patsubst tests/%,$(TOUT)/%,$(basename $(TESTS)))
 GENDIR      := $(BUILD)/gen/$(PKG)/tests
 GEN_PROGS   := $(patsubst $(GENDIR)/%,$(TOUT)/%,$(basename $(wildcard $(GENDIR)/*.cob)))
 TESTASSERT  := $(TOUT)/testassert.o
-FPFAST_STAMP := $(OUT)/fpfast-$(FPFAST)-$(words $(FPFAST_NAMES) $(FPFAST_INTRINSICS)).stamp
+FPFAST_STAMP := $(OUT)/fpfast-$(FPFAST)-$(words $(FPFAST_NAMES) $(FPFAST_INTRINSICS) $(FPFAST_PLAIN)).stamp
 # The shared library of the package and those of the packages it links (DEPLIBS, dependents first).
 SHLIB       := $(LIB:.a=.dylib)
 DEPSHLIBS    = $(DEPLIBS:.a=.dylib)
