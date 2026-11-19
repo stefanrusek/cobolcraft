@@ -648,8 +648,10 @@ END PROGRAM BR-SLOT-LOOKUP.
          MOVE 2 TO WS-ID-FLAGS
      END-IF
      CALL "BR-READ-ID" USING WS-ID-FLAGS WS-ID-START WS-ID-LENGTH
+*>   resource_or_tag_key returns a registry KEY (15 section 6.7, 16 section 7.7): the parser does not look the id up, the command that takes it does
+*>   (/locate structure: commands.locate.structure.invalid for an id that names no structure), so only resource and resource_or_tag are checked here.
      IF BR-E-KEY = SPACES AND BR-N-REG-LENGTH(L-NODE) > 0 AND (BR-N-TYPE(L-NODE) = BR-P-RESOURCE
-             OR BR-N-TYPE(L-NODE) = BR-P-RES-OR-TAG OR BR-N-TYPE(L-NODE) = BR-P-RES-OR-TAG-KEY)
+             OR BR-N-TYPE(L-NODE) = BR-P-RES-OR-TAG)
              AND NOT (WS-ID-START > 0 AND BR-IN-TEXT(WS-ID-START:1) = "#")
          PERFORM CHECK-REGISTRY
      END-IF.
