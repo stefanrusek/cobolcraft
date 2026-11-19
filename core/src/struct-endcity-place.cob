@@ -229,7 +229,7 @@
  01 WS-CITY-KEY            PIC X(80) VALUE "minecraft:end_city".
  01 WS-SET-KEY             PIC X(80) VALUE "minecraft:end_cities".
  01 WS-MIN-Y               BINARY-LONG VALUE 0.
- 01 WS-HEIGHT              BINARY-LONG VALUE 128.
+ 01 WS-HEIGHT              BINARY-LONG VALUE 256.
  01 WS-SEA                 BINARY-LONG VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SET                 BINARY-LONG.
