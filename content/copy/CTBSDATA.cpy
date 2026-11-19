@@ -1,5 +1,5 @@
 *> The rows of the shape rule table (docs/protocol/51-block-shapes.md sections 3 and 4), read by BSH-RULES-LOAD: classes ~ mode ~ property ~ value ~ collision ~ outline.
- 78 BSD-COUNT             VALUE 215.
+ 78 BSD-COUNT             VALUE 221.
  01 BSD-DATA.
     05 FILLER PIC X(500) VALUE "|TorchBlock|RedstoneTorchBlock|~S~~~N~6 0 6 10 10 10".
     05 FILLER PIC X(500) VALUE "|WallTorchBlock|RedstoneWallTorchBlock|~Y~facing~~N~5.5 3 11 10.5 13 16".
@@ -100,12 +100,12 @@
     05 FILLER PIC X(500) VALUE "|KelpBlock|~S~~~N~0 0 0 16 9 16".
     05 FILLER PIC X(500) VALUE "|CactusFlowerBlock|~S~~~N~1 0 1 15 12 15".
     05 FILLER PIC X(500) VALUE "|StemBlock|~H~age~~N~2 2".
-    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~north~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,6 4 0 10 8 8~=".
-    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~east~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,8 4 6 16 8 10~=".
-    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~south~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,6 4 8 10 8 16~=".
-    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~west~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,0 4 6 8 8 10~=".
-    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~down~0 10 0 16 16 2,0 10 14 16 16 16,0 10 2 2 16 14,14 10 2 16 16 14,2 10 2 14 11 14,4 4 4 12 10 12,6 0 6 10 6 10~=".
-    05 FILLER PIC X(500) VALUE "|CauldronBlock|LavaCauldronBlock|LayeredCauldronBlock|~S~~~0 0 0 4 3 4,12 0 0 16 3 4,0 0 12 4 3 16,12 0 12 16 3 16,0 3 0 16 4 16,0 4 0 16 16 2,0 4 14 16 16 16,0 4 2 2 16 14,14 4 2 16 16 14~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~north~0 10 0 16 11 16,0 11 0 2 16 16,14 11 0 16 16 16,2 11 0 14 16 2,2 11 14 14 16 16,4 4 4 12 10 12,6 4 0 10 8 8~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~east~0 10 0 16 11 16,0 11 0 2 16 16,14 11 0 16 16 16,2 11 0 14 16 2,2 11 14 14 16 16,4 4 4 12 10 12,8 4 6 16 8 10~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~south~0 10 0 16 11 16,0 11 0 2 16 16,14 11 0 16 16 16,2 11 0 14 16 2,2 11 14 14 16 16,4 4 4 12 10 12,6 4 8 10 8 16~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~west~0 10 0 16 11 16,0 11 0 2 16 16,14 11 0 16 16 16,2 11 0 14 16 2,2 11 14 14 16 16,4 4 4 12 10 12,0 4 6 8 8 10~=".
+    05 FILLER PIC X(500) VALUE "|HopperBlock|~P~facing~down~0 10 0 16 11 16,0 11 0 2 16 16,14 11 0 16 16 16,2 11 0 14 16 2,2 11 14 14 16 16,4 4 4 12 10 12,6 0 6 10 6 10~=".
+    05 FILLER PIC X(500) VALUE "|CauldronBlock|LavaCauldronBlock|LayeredCauldronBlock|~S~~~0 0 0 4 3 2,0 0 2 2 3 4,12 0 0 16 3 2,14 0 2 16 3 4,0 0 14 4 3 16,0 0 12 2 3 14,12 0 14 16 3 16,14 0 12 16 3 14,0 3 0 16 4 16,0 4 0 16 16 2,0 4 14 16 16 16,0 4 2 2 16 14,14 4 2 16 16 14~=".
     05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~0~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14".
     05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~1~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 3 16,0 3 0 16 16 2,0 3 14 16 16 16,0 3 2 2 16 14,14 3 2 16 16 14".
     05 FILLER PIC X(500) VALUE "|ComposterBlock|~P~level~2~0 0 0 16 2 16,0 2 0 16 16 2,0 2 14 16 16 16,0 2 2 2 16 14,14 2 2 16 16 14~0 0 0 16 5 16,0 5 0 16 16 2,0 5 14 16 16 16,0 5 2 2 16 14,14 5 2 16 16 14".
@@ -124,11 +124,17 @@
     05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~double_wall~5 6 5 11 13 11,4 4 4 12 6 12,7 13 0 9 15 16~=".
     05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~false~N~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16".
     05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~true~N~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16,0 0 0 16 2 16".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~north&short=true~0 0 0 16 16 4,6 6 4 10 10 16~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~north~0 0 0 16 16 4,6 6 4 10 10 20~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~south&short=true~0 0 12 16 16 16,6 6 0 10 10 12~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~south~0 0 12 16 16 16,6 6 -4 10 10 12~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~west&short=true~0 0 0 4 16 16,4 6 6 16 10 10~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~west~0 0 0 4 16 16,4 6 6 20 10 10~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~east&short=true~12 0 0 16 16 16,0 6 6 12 10 10~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~east~12 0 0 16 16 16,-4 6 6 12 10 10~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~down&short=true~0 0 0 16 4 16,6 4 6 10 16 10~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~down~0 0 0 16 4 16,6 4 6 10 20 10~=".
+    05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~up&short=true~0 12 0 16 16 16,6 0 6 10 12 10~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~up~0 12 0 16 16 16,6 -4 6 10 12 10~=".
     05 FILLER PIC X(500) VALUE "|PiglinWallSkullBlock|~Y~facing~~3 4 8 13 12 16~=".
     05 FILLER PIC X(500) VALUE "|WallSkullBlock|PlayerWallHeadBlock|WitherWallSkullBlock|~Y~facing~~4 4 8 12 12 16~=".
@@ -217,4 +223,4 @@
     05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~east~6 14 0 10 16 16~6 14 0 10 16 16,7 0 1 9 10 15".
     05 FILLER PIC X(500) VALUE "|WallHangingSignBlock|~P~facing~west~6 14 0 10 16 16~6 14 0 10 16 16,7 0 1 9 10 15".
  01 BSD-TABLE REDEFINES BSD-DATA.
-    05 BSD-ROW             PIC X(500) OCCURS 215 TIMES.
+    05 BSD-ROW             PIC X(500) OCCURS 221 TIMES.
