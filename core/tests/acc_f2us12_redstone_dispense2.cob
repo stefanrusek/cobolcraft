@@ -353,18 +353,18 @@
      MOVE "1" TO WS-EXP
      PERFORM ASSERT-POWER
 *>   the other minecarts and a minecart above a rail (4.22)
-     MOVE "chest_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE "minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
      MOVE 12 TO WS-Z
      PERFORM SETUP-DISPENSER
      MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
      MOVE 4 TO WS-X MOVE 99 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
      MOVE 100 TO WS-Y MOVE "rail" TO WS-K PERFORM PUT-DEF
-     MOVE "chest_minecart" TO WS-EKEY PERFORM COUNT-ENTITY
+     MOVE "minecart" TO WS-EKEY PERFORM COUNT-ENTITY
      MOVE WS-ECOUNT TO WS-BEFORE
      PERFORM POWER-ON
      PERFORM COUNT-ENTITY
      COMPUTE WS-P = WS-ECOUNT - WS-BEFORE
-     MOVE "acceptance US12-4 dispenser 30-4 4.22 a chest minecart comes out above a rail" TO WS-CASE
+     MOVE "acceptance US12-4 dispenser 30-4 4.22 a minecart comes out above a rail (offset -0.9)" TO WS-CASE
      MOVE "1" TO WS-EXP
      PERFORM ASSERT-POWER
      MOVE "hopper_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
