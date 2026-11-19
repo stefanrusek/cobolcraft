@@ -162,8 +162,9 @@
     05 FILLER PIC X(27) VALUE "Ecocoa                   17".
     05 FILLER PIC X(27) VALUE "S_bed                    18".
     05 FILLER PIC X(27) VALUE "Ecrafter                 19".
+    05 FILLER PIC X(27) VALUE "Ekelp                    20".
  01 WS-ROW-TABLE REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 46 TIMES.
+    05 WS-ROW OCCURS 47 TIMES.
        10 WS-ROW-KIND      PIC X.
        10 WS-ROW-TEXT      PIC X(24).
        10 WS-ROW-FAMILY    PIC 99.
@@ -173,7 +174,7 @@
  PROCEDURE DIVISION USING L-STATE L-FAMILY.
      MOVE 0 TO L-FAMILY
      CALL "PS-NAME-OF" USING L-STATE WS-NAME
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 46 OR L-FAMILY > 0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 47 OR L-FAMILY > 0
          MOVE WS-ROW-TEXT(WS-I) TO WS-SUFFIX
          MOVE 0 TO WS-FLAG
          IF WS-ROW-KIND(WS-I) = "E"
@@ -488,6 +489,9 @@
 *>       BedBlock: facing = the player's horizontal direction, the head cell must be free (BED-PLACE-HEAD places the head half after the foot).
          WHEN 18
              CALL "PS-BED" USING PLACE-CONTEXT
+*>       Kelp (GrowingPlantHeadBlock.getStateForPlacement, 29b part 4 section 3.2 step 3): a body under a head or body, else a head with a random age.
+         WHEN 20
+             CALL "PS-KELP" USING PLACE-CONTEXT
      END-EVALUATE
 *>   A wall, fence, pane or bars takes its sides from the neighbours (connect-29.cob; any other block is left as it is).
      CALL "CONN-PLACE" USING PC-DIM PC-X PC-Y PC-Z PC-STATE

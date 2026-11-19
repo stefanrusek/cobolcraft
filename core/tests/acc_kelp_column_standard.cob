@@ -62,6 +62,7 @@
  01 WS-BUDGET              BINARY-LONG VALUE 512.
  01 WS-RESULT              BINARY-LONG.
  01 WS-DROP                BINARY-LONG VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG.
  01 WS-BLOCKS-TEXT         PIC X(1024).
  01 WS-PATTERN             PIC X(80).
  01 WS-E1                  PIC -(9)9.
@@ -210,6 +211,26 @@
      COMPUTE WS-CY = WS-FLOOR + 2
      MOVE "kelp" TO WS-WANT
      MOVE "acceptance kelp column: the head above stays a kelp" TO WS-CASE
+     PERFORM CHECK-KEY
+
+*>   A head with a kelp above it that is told of a change under it becomes a body (step 7a): column 3 has a head at floor + 2 and a head at floor + 3 (set without updates),
+*>   then the cell under the lower one gets a kelp_plant written with updates.
+     COMPUTE WS-CX = WS-BX + 8
+     COMPUTE WS-CZ = WS-BZ + 2
+     COMPUTE WS-CY = WS-FLOOR + 2
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-KELP
+     COMPUTE WS-CY = WS-FLOOR + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-KELP
+     COMPUTE WS-CY = WS-FLOOR + 1
+     MOVE 3 TO WS-FLAGS
+     CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-PLANT WS-FLAGS WS-BUDGET WS-RESULT
+     COMPUTE WS-CY = WS-FLOOR + 2
+     MOVE "kelp_plant" TO WS-WANT
+     MOVE "acceptance kelp column: a head under another kelp told of a change below becomes a kelp_plant" TO WS-CASE
+     PERFORM CHECK-KEY
+     COMPUTE WS-CY = WS-FLOOR + 3
+     MOVE "kelp" TO WS-WANT
+     MOVE "acceptance kelp column: the top head of that column stays a kelp" TO WS-CASE
      PERFORM CHECK-KEY
      STOP RUN.
 
