@@ -51,11 +51,9 @@
      CALL "FALL-KEY-NAME" USING L-KEY WS-NAME WS-LENGTH
      MOVE 0 TO L-RESTITUTION
      EVALUATE TRUE
-         WHEN WS-LENGTH = 0
-             CONTINUE
-         WHEN WS-NAME(1:WS-LENGTH) = "slime_block"
+         WHEN WS-NAME = "slime_block"
              MOVE 1 TO L-RESTITUTION
-         WHEN WS-NAME(1:WS-LENGTH) = "shelf_mushroom"
+         WHEN WS-NAME = "shelf_mushroom"
              MOVE 0.75 TO L-RESTITUTION
          WHEN WS-LENGTH > 4 AND WS-NAME(WS-LENGTH - 3:4) = "_bed"
              MOVE 0.75 TO L-RESTITUTION
@@ -79,12 +77,10 @@
      CALL "FALL-KEY-NAME" USING L-KEY WS-NAME WS-LENGTH
      CALL "BOUNCE-OF-KEY" USING L-KEY WS-RESTITUTION
      EVALUATE TRUE
-         WHEN WS-LENGTH = 0
-             CONTINUE
-         WHEN WS-NAME(1:WS-LENGTH) = "slime_block"
+         WHEN WS-NAME = "slime_block"
              MOVE 0 TO L-MULTIPLIER
-         WHEN WS-NAME(1:WS-LENGTH) = "hay_block"
-         WHEN WS-NAME(1:WS-LENGTH) = "honey_block"
+         WHEN WS-NAME = "hay_block"
+         WHEN WS-NAME = "honey_block"
              MOVE 0.2 TO L-MULTIPLIER
          WHEN WS-RESTITUTION > 0
 *>           The bed family and shelf_mushroom: fallDistanceReduction 0.5.
