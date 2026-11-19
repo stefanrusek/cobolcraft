@@ -6,7 +6,7 @@
 *> 9 item frame (sub 0) or glow item frame (sub 1), 10 painting, 11 minecart (sub 1 minecart, 2 chest, 3 hopper, 4 furnace, 5 TNT, 6 spawner, 7 command block), 12 boat, raft and their chest variants,
 *> 13 interaction, 14 block display, 15 item display, 16 mannequin, 17 cushion, 18 marker, 19 arrow, 20 snowball, 21 egg, 22 ender pearl, 23 experience bottle, 24 fireball, 25 small fireball,
 *> 26 wind charge (sub 0) and breeze wind charge (sub 1), 27 splash potion (sub 0) and lingering potion (sub 1), 28 ominous item spawner, 29 firework rocket, 30 eye of ender, 31 shulker bullet, 32 llama spit, 33 wither, 34 ender dragon.
-*> Lane p49t (45-9 section 6.3): a frame or painting stands where its block position (floor of Pos), direction and size put it; a painting takes its variant from the key variant. 35 text display, 36 spectral arrow, 37 trident. Not created (documented gaps): evoker_fangs, wither_skull, dragon_fireball, breeze, leash_knot (the core has the knot only as a mob's
+*> Lane p49t (45-9 section 6.3): a frame or painting stands where its block position (floor of Pos), direction and size put it; a painting takes its variant from the key variant. 35 text display, 36 spectral arrow, 37 trident, 38 wither skull, 39 dragon fireball. Not created (documented gaps): evoker_fangs (the core keeps a fang as a record, EVK-FANG-ADD, not as an entity), breeze, leash_knot (the core has the knot only as a mob's
 *> EN-LEASH-KNOT), every mob type without a row of STDMOBS.cpy, the passengers of a non-mob entity, and the family keys the core does not model (a potion's contents, the text of a mannequin, the transformation of a display).
 *>
 *>   SUMMON-FAMILY USING entity type id, family out, sub family out       0 for a type this file does not create (also in a cobolcraft world)
@@ -236,6 +236,10 @@
              MOVE 36 TO L-FAMILY
          WHEN WS-PATH = "trident"
              MOVE 37 TO L-FAMILY
+         WHEN WS-PATH = "wither_skull"
+             MOVE 38 TO L-FAMILY
+         WHEN WS-PATH = "dragon_fireball"
+             MOVE 39 TO L-FAMILY
          WHEN OTHER
              CALL "BOAT-KIND" USING L-TYPE WS-BOAT
              IF WS-BOAT > 0
@@ -794,6 +798,12 @@
              CALL "ARROW-SPAWN" USING L-DIM L-X L-Y L-Z WS-VX WS-VY WS-VZ WS-INT WS-Z1 L-ROW
          WHEN 35
              CALL "TDISPLAY-SPAWN" USING L-DIM L-X L-Y L-Z L-ROW
+         WHEN 38
+             MOVE 15 TO WS-PJ
+             CALL "THROWN-SPAWN" USING WS-PJ WS-KEY L-DIM L-X L-Y L-Z WS-VX WS-VY WS-VZ WS-Z1 L-ROW
+         WHEN 39
+             MOVE 18 TO WS-PJ
+             CALL "THROWN-SPAWN" USING WS-PJ WS-KEY L-DIM L-X L-Y L-Z WS-VX WS-VY WS-VZ WS-Z1 L-ROW
          WHEN 36
              MOVE 2 TO WS-FAMILY-ARROW
              MOVE 2 TO WS-DAMAGE
