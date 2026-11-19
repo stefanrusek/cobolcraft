@@ -434,6 +434,44 @@
  END PROGRAM PS-LANTERN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PS-COCOA.
+*> CocoaBlock.getStateForPlacement (29b part 2 section 7): the nearest looking directions are walked; for each horizontal direction d the pod faces d, and the first state that survives (the block on
+*> the side of d is in supports_cocoa) is the result; none: nothing is placed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-CAND                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-FACING-NAME         PIC X(24) VALUE "facing".
+ 01 WS-TEXT                PIC X(32).
+ LINKAGE SECTION.
+ COPY PLACECTX.
+ PROCEDURE DIVISION USING PLACE-CONTEXT.
+     MOVE 0 TO WS-RESULT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6 OR WS-RESULT > 0
+         MOVE PC-DIR(WS-I) TO WS-D
+         IF WS-D >= 2
+             CALL "PS-DIR-NAME" USING WS-D WS-TEXT
+             MOVE PC-STATE TO WS-CAND
+             CALL "PS-PUT" USING WS-CAND WS-FACING-NAME WS-TEXT
+             CALL "SUP-SURVIVES" USING PC-DIM PC-X PC-Y PC-Z WS-CAND WS-OK
+             IF WS-OK = 1
+                 MOVE WS-CAND TO WS-RESULT
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1 TO PC-FITS
+     IF WS-RESULT = 0
+         MOVE 0 TO PC-FITS
+     ELSE
+         MOVE WS-RESULT TO PC-STATE
+     END-IF
+     GOBACK.
+ END PROGRAM PS-COCOA.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PS-MULTIFACE.
 *> VineBlock and MultifaceBlock.getStateForPlacement (24 part 4 sections 6.7 and 6.8): the base is the block already at the cell when it is the same block, else the default state; the first nearest looking
 *> direction (not down for a vine) whose face is not set and whose neighbour can hold the face sets that face. Nothing qualifies: nothing is placed.

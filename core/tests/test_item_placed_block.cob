@@ -22,6 +22,20 @@
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "test item placed block: sweet_berries plant the sweet_berry_bush, the seeds the stems, cocoa_beans the cocoa" TO TL-CASE
+     MOVE "sweet_berries" TO WS-ITEM
+     CALL "ITEM-PLACED-BLOCK" USING WS-ITEM WS-BLOCK
+     MOVE FUNCTION TRIM(WS-BLOCK) TO TL-OBSERVED
+     MOVE "pumpkin_seeds" TO WS-ITEM
+     CALL "ITEM-PLACED-BLOCK" USING WS-ITEM WS-BLOCK
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-BLOCK) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "cocoa_beans" TO WS-ITEM
+     CALL "ITEM-PLACED-BLOCK" USING WS-ITEM WS-BLOCK
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-BLOCK) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "sweet_berry_bush pumpkin_stem cocoa" TO TL-EXPECTED
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE "test item placed block: any other item names no block" TO TL-CASE
      MOVE "apple" TO WS-ITEM
      CALL "ITEM-PLACED-BLOCK" USING WS-ITEM WS-BLOCK
