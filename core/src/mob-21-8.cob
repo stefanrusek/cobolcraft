@@ -394,9 +394,14 @@
 *> USING dimension row, x, y, z (BINARY-LONG), replaceable out, free out: the two questions a falling block asks of a cell (29b part 1 sections 3.1 and 4.3). Replaceable is
 *> BlockState.canBeReplaced (the registry flag, 24 part 1 section 10.1: air, short grass, water, lava, fire, snow ... and not a torch, a flower or a slab); a liquid block counts too.
 *> Free is FallingBlock.isFree: air, fire (the block tag fire: fire and soul fire), a liquid block or a replaceable block. A cell that merely has no collision (a torch) is neither.
+*> Snow layers override the context rule (24 part 3 section 7, snow): without a snow item in hand a snow layer is replaceable only when layers is 1, so the replaceable answer of a
+*> deeper layer is false while isFree (the flag alone) stays true.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
+ 01 WS-LAYERS-NAME         PIC X(24) VALUE "layers".
+ 01 WS-LAYERS              PIC X(32).
+ 01 WS-FOUND               BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-WATER               BINARY-LONG.
@@ -435,6 +440,12 @@
          MOVE 1 TO L-REPLACEABLE
      END-IF
      CALL "GB-IS-FREE" USING WS-AIR WS-FIRE WS-LIQUID L-REPLACEABLE L-FREE
+     IF CB-KEY(WS-BLOCK) = "snow" OR CB-KEY(WS-BLOCK) = "minecraft:snow"
+         CALL "PS-GET" USING WS-STATE WS-LAYERS-NAME WS-LAYERS WS-FOUND
+         IF WS-LAYERS NOT = "1"
+             MOVE 0 TO L-REPLACEABLE
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM FB-CELL-FREE.
 
@@ -472,12 +483,118 @@
  END PROGRAM FB-DROP-ITEM.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FB-BOX-HITS.
+*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out (BINARY-LONG), top out (FLOAT-LONG): the collision of a falling block against the
+*> collision SHAPES of the cells (docs/protocol/51-block-shapes.md, the tables of BSH-BUILD; the stand-in set's blocks are full cubes by CB-SOLID), not against whole cells: hit is 1 when
+*> the entity's box at that position overlaps a box of a shape with positive volume, faces within 1e-7 block touching; top is then the highest top of the boxes it overlaps, as a y
+*> coordinate (a lantern 9 pixels high gives cell + 0.5625, a full block cell + 1). The cell below the box is scanned too (a fence's shape reaches 1.5 blocks high). A block without a
+*> collision shape (a torch, a sign, a flower) never hits, so the entity passes into its cell (29b part 1 section 4.2 steps 2 and 4: the landing cell is the one the entity ends in).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ COPY CTBSHAPE.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-OVER                FLOAT-LONG.
+ 01 WS-CELL                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-TOP                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP.
+     MOVE 0 TO L-HIT L-TOP
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(L-TYPE + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(L-TYPE + 1) / 1000
+     COMPUTE WS-X0 = FUNCTION INTEGER(L-X - WS-HALF + WS-EPSILON)
+     COMPUTE WS-X1 = - FUNCTION INTEGER(WS-EPSILON - (L-X + WS-HALF)) - 1
+     COMPUTE WS-Y0 = FUNCTION INTEGER(L-Y + WS-EPSILON) - 1
+     COMPUTE WS-Y1 = - FUNCTION INTEGER(WS-EPSILON - (L-Y + WS-HEIGHT)) - 1
+     COMPUTE WS-Z0 = FUNCTION INTEGER(L-Z - WS-HALF + WS-EPSILON)
+     COMPUTE WS-Z1 = - FUNCTION INTEGER(WS-EPSILON - (L-Z + WS-HALF)) - 1
+     COMPUTE WS-B(1) = L-X - WS-HALF
+     MOVE L-Y TO WS-B(2)
+     COMPUTE WS-B(3) = L-Z - WS-HALF
+     COMPUTE WS-B(4) = L-X + WS-HALF
+     COMPUTE WS-B(5) = L-Y + WS-HEIGHT
+     COMPUTE WS-B(6) = L-Z + WS-HALF
+     PERFORM VARYING WS-BY FROM WS-Y0 BY 1 UNTIL WS-BY > WS-Y1
+         PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1
+             PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1
+                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
+                 MOVE 0 TO WS-SHAPE
+                 IF WS-STATE NOT = 0
+*>                   The cobolcraft stand-in set has no shapes: its states are full cubes or empty by CB-SOLID (as movement.cob).
+                     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+                         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+                         MOVE CB-SOLID(WS-BLK + 1) TO WS-SHAPE
+                         IF WS-SHAPE = 1
+                             CALL "BSH-ENSURE-CUBE"
+                         END-IF
+                     ELSE
+                         CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+                     END-IF
+                 END-IF
+                 MOVE WS-BX TO WS-CELL(1)
+                 MOVE WS-BY TO WS-CELL(2)
+                 MOVE WS-BZ TO WS-CELL(3)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BSH-N(WS-SHAPE + 1)
+                     MOVE 1 TO WS-INSIDE
+                     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                         COMPUTE WS-LO = WS-CELL(WS-A) + BSH-V(WS-SHAPE + 1, WS-I, WS-A) / 16000
+                         COMPUTE WS-HI = WS-CELL(WS-A) + BSH-V(WS-SHAPE + 1, WS-I, WS-A + 3) / 16000
+                         COMPUTE WS-OVER = FUNCTION MIN(WS-B(WS-A + 3), WS-HI) - FUNCTION MAX(WS-B(WS-A), WS-LO)
+                         IF WS-OVER <= WS-EPSILON
+                             MOVE 0 TO WS-INSIDE
+                         END-IF
+                     END-PERFORM
+                     IF WS-INSIDE = 1
+                         COMPUTE WS-HI = WS-BY + BSH-V(WS-SHAPE + 1, WS-I, 5) / 16000
+                         IF L-HIT = 0 OR WS-HI > L-TOP
+                             MOVE WS-HI TO L-TOP
+                         END-IF
+                         MOVE 1 TO L-HIT
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FB-BOX-HITS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FB-STEP.
 *> USING row: one server tick of a falling block (29b part 1 section 4.2): time + 1; gravity 0.04, the move (the box against solid cells per axis as TNT-STEP); on the ground
 *> (4.3) the velocity takes (0.7, -0.5, 0.7) and, unless cancelDrop, the block is placed in the entity's cell (the cell is replaceable and the cell below is not free) and the entity ends; in the air
 *> the expiry of 4.4 (time above 100 outside the height range, or above 600) drops the block's item with the rule entity_drops and ends the entity; the drag 0.98f follows.
 *> The block is placed only when the block in the landing cell is replaceable (the registry flag: FB-CELL-FREE) and the cell below is not free; otherwise the entity ends and, with
 *> the rule entity_drops, the block's item drops (4.3 step 6) while the block in the cell stays.
+*> The move collides with the collision shapes of the cells (FB-BOX-HITS), so a block lands on top of a lantern or a carpet inside that cell, where the replace test refuses it.
 *> Open: concrete powder reaching water, the damage to entities (anvils), Add Transient Block, block entity data.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -491,7 +608,7 @@
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-BX                  BINARY-LONG.
@@ -524,22 +641,22 @@
      COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) - 0.04
      MOVE 0 TO EN-ON-GROUND(L-ROW)
      COMPUTE WS-X = EN-X(L-ROW) + EN-VX(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X EN-Y(L-ROW) EN-Z(L-ROW) WS-HIT WS-TOP
+     CALL "FB-BOX-HITS" USING WS-DIM WS-TYPE WS-X EN-Y(L-ROW) EN-Z(L-ROW) WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE EN-X(L-ROW) TO WS-X
          MOVE 0 TO EN-VX(L-ROW)
      END-IF
      COMPUTE WS-Z = EN-Z(L-ROW) + EN-VZ(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X EN-Y(L-ROW) WS-Z WS-HIT WS-TOP
+     CALL "FB-BOX-HITS" USING WS-DIM WS-TYPE WS-X EN-Y(L-ROW) WS-Z WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE EN-Z(L-ROW) TO WS-Z
          MOVE 0 TO EN-VZ(L-ROW)
      END-IF
      COMPUTE WS-Y = EN-Y(L-ROW) + EN-VY(L-ROW)
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "FB-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE 1 TO EN-ON-GROUND(L-ROW)
-         COMPUTE WS-Y = WS-TOP + 1
+         MOVE WS-TOP TO WS-Y
      END-IF
      COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
      COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
@@ -563,7 +680,11 @@
              WHEN 2
                  CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ EN-FB-STATE(L-ROW) WS-FLAGS WS-BUDGET WS-WRITE
              WHEN 5
-*>               Cannot be placed: the falling block is discarded and its own item drops, the block in the cell stays (4.3 step 6, 4.5).
+*>               Cannot be placed: the falling block is discarded and its own item drops, the block in the cell stays (4.3 step 6, 4.5). The item appears at the entity's
+*>               position after the move (the top of what it landed on), not where the tick began.
+                 MOVE WS-X TO EN-X(L-ROW)
+                 MOVE WS-Y TO EN-Y(L-ROW)
+                 MOVE WS-Z TO EN-Z(L-ROW)
                  CALL "FB-DROP-ITEM" USING L-ROW
          END-EVALUATE
          MOVE 1 TO WS-ENDED

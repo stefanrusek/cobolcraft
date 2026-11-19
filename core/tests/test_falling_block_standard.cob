@@ -73,6 +73,11 @@
  01 WS-WANT-STATE          BINARY-LONG.
  01 WS-ITEM-KEY            PIC X(112).
  01 WS-WANT-COUNT          BINARY-LONG.
+ 01 WS-ENTITY-ROW-NO        BINARY-LONG.
+ 01 WS-STEPS               BINARY-LONG.
+ 01 WS-OBSERVED-Y          BINARY-LONG.
+ 01 WS-OBSERVED-X          BINARY-LONG.
+ 01 WS-TOP-TENTHOUSANDTHS  BINARY-LONG.
  01 WS-DIGIT               PIC 99.
  01 WS-DIGIT2              PIC 99.
  PROCEDURE DIVISION.
@@ -291,7 +296,119 @@
      MOVE "sand over lava falls and replaces it" TO WS-LABEL
      MOVE "lava" TO WS-A-SPEC
      PERFORM RUN-OVER-CELL
+*>   10. Lane bugfallgravel (operator report of try15: "gravel still deletes torches, but it doesn't delete lanterns; both should break the falling gravel"). A lantern has a collision
+*>       shape (51-block-shapes R-C17: 9 pixels high standing, 10 hanging), so the falling block comes to rest on its top inside the lantern's cell (4.2 steps 2 and 4: the entity's block
+*>       position); the lantern is not replaceable, so the block is discarded and its own item drops (4.3 step 6) and the lantern stays. Before the fix the landing took only whole cells
+*>       and the gravel was placed above the lantern as on a full block.
+     MOVE "gravel falling onto a standing lantern" TO WS-LABEL
+     MOVE "lantern" TO WS-A-SPEC
+     MOVE "gravel" TO WS-B-SPEC
+     MOVE "minecraft:gravel" TO WS-ITEM-KEY
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "red sand falling onto a standing soul lantern" TO WS-LABEL
+     MOVE "soul_lantern" TO WS-A-SPEC
+     MOVE "red_sand" TO WS-B-SPEC
+     MOVE "minecraft:red_sand" TO WS-ITEM-KEY
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "concrete powder falling onto a copper lantern" TO WS-LABEL
+     MOVE "copper_lantern" TO WS-A-SPEC
+     MOVE "white_concrete_powder" TO WS-B-SPEC
+     MOVE "minecraft:white_concrete_powder" TO WS-ITEM-KEY
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "an anvil falling onto a hanging lantern state" TO WS-LABEL
+     MOVE "lantern[hanging=true]" TO WS-A-SPEC
+     MOVE "anvil" TO WS-B-SPEC
+     MOVE "minecraft:anvil" TO WS-ITEM-KEY
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "a dragon egg falling onto a lantern" TO WS-LABEL
+     MOVE "lantern" TO WS-A-SPEC
+     MOVE "dragon_egg" TO WS-B-SPEC
+     MOVE "minecraft:dragon_egg" TO WS-ITEM-KEY
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "a dropped gravel item over a standing lantern" TO WS-LABEL
+     MOVE "lantern" TO WS-A-SPEC
+     MOVE 15625 TO WS-TOP-TENTHOUSANDTHS
+     PERFORM CHECK-DROP-POSITION
+     MOVE "a dropped gravel item over a hanging lantern state" TO WS-LABEL
+     MOVE "lantern[hanging=true]" TO WS-A-SPEC
+     MOVE 16250 TO WS-TOP-TENTHOUSANDTHS
+     PERFORM CHECK-DROP-POSITION
+     MOVE "a dropped gravel item over a carpet" TO WS-LABEL
+     MOVE "white_carpet" TO WS-A-SPEC
+     MOVE 10625 TO WS-TOP-TENTHOUSANDTHS
+     PERFORM CHECK-DROP-POSITION
+     MOVE "a dropped gravel item over a torch (no collision: the floor top)" TO WS-LABEL
+     MOVE "torch" TO WS-A-SPEC
+     MOVE 10000 TO WS-TOP-TENTHOUSANDTHS
+     PERFORM CHECK-DROP-POSITION
+*>   11. Other blocks that stand in the landing cell and are not replaceable (24 part 1 section 10.1): a sign, a button, a flower have no collision (the block falls through into
+*>       their cell), a carpet and a layer of snow with 3 layers have a low collision shape (the block rests on it inside the cell); the block in the cell stays and the item drops.
+     MOVE "gravel falling onto a standing sign" TO WS-LABEL
+     MOVE "oak_sign" TO WS-A-SPEC
+     MOVE "gravel" TO WS-B-SPEC
+     MOVE "minecraft:gravel" TO WS-ITEM-KEY
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "gravel falling onto a floor button" TO WS-LABEL
+     MOVE "stone_button[face=floor]" TO WS-A-SPEC
+     MOVE "gravel" TO WS-B-SPEC
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "gravel falling onto a carpet" TO WS-LABEL
+     MOVE "white_carpet" TO WS-A-SPEC
+     MOVE "gravel" TO WS-B-SPEC
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "gravel falling onto a poppy" TO WS-LABEL
+     MOVE "poppy" TO WS-A-SPEC
+     MOVE "gravel" TO WS-B-SPEC
+     PERFORM RUN-ONTO-BLOCK
+     MOVE "gravel falling onto three layers of snow" TO WS-LABEL
+     MOVE "snow[layers=3]" TO WS-A-SPEC
+     MOVE "gravel" TO WS-B-SPEC
+     PERFORM RUN-ONTO-BLOCK
+*>   12. Replaceable cells take the falling block and drop nothing: one layer of snow (the replaceable flag; the default rule of 29 section 9.5 and the snow layer's own rule that more than one
+*>       layer is not replaceable without a snow item), tall grass and water.
+     MOVE "gravel falling onto one layer of snow replaces it" TO WS-LABEL
+     MOVE "snow[layers=1]" TO WS-A-SPEC
+     PERFORM RUN-INTO-CELL
+     MOVE "gravel falling onto tall grass replaces it" TO WS-LABEL
+     MOVE "tall_grass[half=lower]" TO WS-A-SPEC
+     PERFORM RUN-INTO-CELL
+     MOVE "gravel falling into water replaces it" TO WS-LABEL
+     MOVE "water" TO WS-A-SPEC
+     PERFORM RUN-INTO-CELL
      STOP RUN.
+
+*> Block A at floor + 1, the falling block B (WS-B-SPEC) 4 cells above it: A stays (its state is unchanged), the cell above it is empty, one item WS-ITEM-KEY lies on the
+*> ground in A's column, and no entity is left.
+ RUN-ONTO-BLOCK.
+     MOVE 1 TO WS-A-DY
+     MOVE 5 TO WS-B-DY
+     MOVE SPACES TO WS-C-SPEC
+     PERFORM RUN-CASE
+     MOVE 1 TO WS-DY
+     MOVE WS-A-SPEC TO WS-WANT-SPEC
+     PERFORM CHECK-CELL
+     MOVE 2 TO WS-DY
+     MOVE "air" TO WS-WANT-SPEC
+     PERFORM CHECK-CELL
+     MOVE 1 TO WS-WANT-COUNT
+     PERFORM CHECK-ITEMS.
+
+*> Block A at floor + 1, the falling gravel 4 cells above it: the gravel takes A's cell, no item lies on the ground, no entity is left.
+ RUN-INTO-CELL.
+     MOVE 1 TO WS-A-DY
+     MOVE "gravel" TO WS-B-SPEC
+     MOVE 5 TO WS-B-DY
+     MOVE SPACES TO WS-C-SPEC
+     PERFORM RUN-CASE
+     MOVE 1 TO WS-DY
+     MOVE "gravel" TO WS-WANT-SPEC
+     PERFORM CHECK-CELL
+     MOVE 2 TO WS-DY
+     MOVE "air" TO WS-WANT-SPEC
+     PERFORM CHECK-CELL
+     MOVE "minecraft:gravel" TO WS-ITEM-KEY
+     MOVE 0 TO WS-WANT-COUNT
+     PERFORM CHECK-ITEMS.
 
 *> Block A at floor + 1, sand at floor + 2: the sand ends in A's cell and no item lies on the ground.
  RUN-OVER-CELL.
@@ -399,6 +516,55 @@
      MOVE WS-CASE TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-FALLING TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> The spawn position of the dropped item (29b part 1 section 4.5: the entity's position after the move): block A (WS-A-SPEC) at floor + 1, a gravel block at floor + 5 made an
+*> entity with FB-SPAWN and stepped with FB-STEP alone until it ends; the gravel item then lies in A's column at floor + 1 + WS-TOP-TENTHOUSANDTHS / 10000 (the top of A's collision
+*> shape: the entity came to rest on it) and has not moved yet (no item tick ran).
+ CHECK-DROP-POSITION.
+     MOVE "air" TO WS-B-SPEC
+     MOVE 1 TO WS-A-DY
+     MOVE 5 TO WS-B-DY
+     MOVE SPACES TO WS-C-SPEC
+     PERFORM RUN-CASE
+     MOVE "gravel" TO WS-SPEC
+     PERFORM SPEC-STATE
+     COMPUTE WS-Y = WS-FLOOR + 5
+     CALL "FB-SPAWN" USING WS-DIM WS-PX WS-Y WS-PZ WS-STATE WS-ENTITY-ROW-NO
+     MOVE 0 TO WS-STEPS
+     PERFORM UNTIL EN-USED(WS-ENTITY-ROW-NO) = 0 OR WS-STEPS > 60
+         CALL "FB-STEP" USING WS-ENTITY-ROW-NO
+         ADD 1 TO WS-STEPS
+     END-PERFORM
+     MOVE "minecraft:gravel" TO WS-ITEM-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-WANT-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE 0 TO WS-DROPPED WS-OBSERVED-Y
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EN-COUNT
+         IF EN-USED(WS-K) = 1 AND EN-PLAYER(WS-K) = 0 AND EN-ITEM-COUNT(WS-K) > 0 AND EN-ITEM(WS-K) = WS-WANT-ITEM
+             ADD 1 TO WS-DROPPED
+             COMPUTE WS-OBSERVED-Y = FUNCTION INTEGER((EN-Y(WS-K) - WS-FLOOR) * 10000 + 0.5)
+             COMPUTE WS-OBSERVED-X = FUNCTION INTEGER((EN-X(WS-K) - WS-PX) * 10000 + 0.5)
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO WS-CASE
+     STRING "test falling block standard: " FUNCTION TRIM(WS-LABEL) ": one gravel item" DELIMITED BY SIZE INTO WS-CASE
+     MOVE WS-CASE TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-DROPPED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-CASE
+     STRING "test falling block standard: " FUNCTION TRIM(WS-LABEL) ": the item appears at the top of the block it landed on (y, ten-thousandths above the floor)"
+         DELIMITED BY SIZE INTO WS-CASE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-TOP-TENTHOUSANDTHS TO TL-EXPECTED-N
+     MOVE WS-OBSERVED-Y TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-CASE
+     STRING "test falling block standard: " FUNCTION TRIM(WS-LABEL) ": the item appears in the middle of the cell (x, ten-thousandths)" DELIMITED BY SIZE INTO WS-CASE
+     MOVE WS-CASE TO TL-CASE
+     MOVE 5000 TO TL-EXPECTED-N
+     MOVE WS-OBSERVED-X TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
 *> WS-STATE: the state of WS-SPEC, "key[name=value,name=value]": the block's default state with each property set.
