@@ -125,6 +125,12 @@
  01 WS-PY                   BINARY-LONG.
  01 WS-PZ                   BINARY-LONG.
  01 WS-PD                   BINARY-LONG.
+ 01 WS-SX                   FLOAT-LONG.
+ 01 WS-SY                   FLOAT-LONG.
+ 01 WS-SZ                   FLOAT-LONG.
+ 01 WS-SYAW                 FLOAT-SHORT.
+ 01 WS-SPITCH               FLOAT-SHORT.
+ 01 WS-SGROUND              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -142,6 +148,13 @@
      IF VL-SLEEP(WS-SLOT) = 1 AND WS-ACT NOT = 3
          MOVE 0 TO VL-SLEEP(WS-SLOT)
          MOVE CW-TICKS TO VL-LAST-WOKEN(WS-SLOT)
+     END-IF
+*>   A sleeping villager lies where it started sleeping, on its bed (19 section 22.8): the stroll of the mob step neither starts nor goes on (the cooldown is held at 1 and
+*>   the destination is its own cell), so it does not wander off while it is flagged asleep and refuses a trade (22.4).
+     IF VL-SLEEP(WS-SLOT) = 1
+         COMPUTE EN-DEST-X(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))
+         COMPUTE EN-DEST-Z(L-ROW) = FUNCTION INTEGER(EN-Z(L-ROW))
+         MOVE 1 TO EN-COOLDOWN(L-ROW)
      END-IF
 *>   The index fills while villagers live: one section of the chunk round the villager every 5 ticks (7 x 7 chunks, one after the other).
      IF FUNCTION MOD(CW-TICKS + EN-ID(L-ROW), 5) = 0
@@ -265,6 +278,14 @@
              IF VL-LAST-WOKEN(WS-SLOT) = 0 OR CW-TICKS - VL-LAST-WOKEN(WS-SLOT) >= 100
                  MOVE 1 TO VL-SLEEP(WS-SLOT)
                  MOVE CW-TICKS TO VL-LAST-SLEPT(WS-SLOT)
+*>               startSleeping puts the villager at the bed position (22.8): the middle of the bed block, on the mattress (51 R-E3: 9 sixteenths).
+                 COMPUTE WS-SX = WS-QX + 0.5
+                 COMPUTE WS-SY = WS-QY + 0.5625
+                 COMPUTE WS-SZ = WS-QZ + 0.5
+                 MOVE EN-YAW(L-ROW) TO WS-SYAW
+                 MOVE EN-PITCH(L-ROW) TO WS-SPITCH
+                 MOVE EN-ON-GROUND(L-ROW) TO WS-SGROUND
+                 CALL "ENTITY-MOVE" USING L-ROW WS-SX WS-SY WS-SZ WS-SYAW WS-SPITCH WS-SGROUND
              END-IF
          END-IF
      END-IF
