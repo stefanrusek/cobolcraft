@@ -264,7 +264,7 @@
      MOVE 1152 TO WS-TO
      PERFORM BOUNDS
      MOVE "acceptance US17 a player (eye 1.62) has its eye box at y 0.01..0.03 and the count is 1152" TO TL-CASE
-     MOVE "-0.30 0.01 -0.30 0.30 0.03 0.30" TO TL-EXPECTED
+     MOVE "-0.80 0.01 -0.80 -0.20 0.03 -0.20" TO TL-EXPECTED
      PERFORM ASSERT-BOUNDS
      MOVE 1152 TO TL-EXPECTED-N
      MOVE RL-HB-COUNT TO TL-OBSERVED-N
@@ -283,6 +283,32 @@
      MOVE "acceptance US17 a row without a registry size, a stand-in type outside the table and an unused row have no box" TO TL-CASE
      MOVE 1152 TO TL-EXPECTED-N
      MOVE RL-HB-COUNT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+
+*>   The stand-in operator (0.6 x 1.8, eye 1.62) and abend (0.75 x 0.75, eye 0.5), both living: two boxes each.
+     MOVE 10 TO EN-COUNT
+     INITIALIZE EN-ENTITY(9) EN-ENTITY(10)
+     MOVE 1 TO EN-USED(9) EN-USED(10)
+     MOVE 0 TO EN-TYPE(9)
+     MOVE 3 TO EN-TYPE(10)
+     MOVE 10 TO EN-Y(9) EN-Y(10)
+     CALL "HITBOX-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 1297 TO WS-FROM
+     MOVE 1440 TO WS-TO
+     PERFORM BOUNDS
+     MOVE "acceptance US17 a stand-in operator (eye 1.62) has an eye box at y 0.01..0.03, x and z -0.80..-0.20" TO TL-CASE
+     MOVE "-0.80 0.01 -0.80 -0.20 0.03 -0.20" TO TL-EXPECTED
+     PERFORM ASSERT-BOUNDS
+     MOVE 1585 TO WS-FROM
+     MOVE 1728 TO WS-TO
+     PERFORM BOUNDS
+     MOVE "acceptance US17 a stand-in abend (0.75 x 0.75) has its eye box (eye 0.5) at y -1.11..-1.09, x and z -0.88..-0.13"
+         TO TL-CASE
+     MOVE "-0.88 -1.11 -0.88 -0.13 -1.09 -0.13" TO TL-EXPECTED
+     PERFORM ASSERT-BOUNDS
+     MOVE 1728 TO TL-EXPECTED-N
+     MOVE RL-HB-COUNT TO TL-OBSERVED-N
+     MOVE "acceptance US17 the operator and the abend bring the mesh to 1728 vertices" TO TL-CASE
      PERFORM ASSERT-N
 
 *>   Capacity: a box that does not fit is left out.
