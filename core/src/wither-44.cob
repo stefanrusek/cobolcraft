@@ -3,13 +3,15 @@
 *> EN-HEALTH in points (maximum 300). The skull: PJ-I1 dangerous, owner the wither.
 *> Build (WITHER-BUILD, called after a block is placed): a wither skull over three soul sand or soul soil over a soul sand base with air beside it, in a row along x or z, not in Peaceful: the seven
 *> blocks become air and the wither appears at the base cell's centre, y + 0.55, with 220 invulnerable ticks and 100 health.
-*> Gaps: the boss bar (no Boss Event packets), the nearest player is the only target (HurtByTarget, the wither_friends tag, the random living target of the side heads), the pattern's yaw (0), eye
+*> Gaps: the boss bar (no Boss Event packets), the nearest player is the only target (HurtByTarget, the wither_friends tag, the random living target of the side heads), eye
 *> height of the explosion (y + 3.0), block drops of the destroyed blocks, wither_immune is the block tag of the data pack (CONTENT-TAG-HAS), the owner's heal on a kill, the dangerous skull's
-*> explosion resistance cap and 0.73 inertia is used but the cap is not, pathfinding (it flies straight), the metadata 16 to 19, sounds, the second pattern (getOrCreateWitherBase), the criteria,
+*> explosion resistance cap and 0.73 inertia is used but the cap is not, pathfinding (it flies straight), the metadata 16 to 19, sounds, the criteria,
 *> look and head turning.
 *>
 *>   WITHER-CLASS USING dim, x, y, z, class out (1 wither skull, 2 soul sand or soul soil, 3 air, 0 other)
-*>   WITHER-BUILD USING dim, x, y, z (the placed block)
+*>   WITHER-BUILD USING dim, x, y, z (the placed block): the pattern search of 21 section 7.1.1, nine cells cleared, yaw by the axis of forwards (lane p49t)
+*>   WITHER-CAN-SPAWN USING dim, x, y, z, can out (the base pattern: the dispenser's canSpawnMob; the dispenser itself does not place skull blocks in this core)
+*>   WITHER-FIND USING dim, x, y, z, full, found out, forwards out, up out, origin x, y, z out
 *>   WITHER-SPAWN USING dim, x, y, z (FLOAT-LONG, the feet), row out
 *>   WITHER-SHOOT USING wither row, head, target x y z (FLOAT-LONG), dangerous, skull row out
 *>   WSKULL-STEP USING skull row
@@ -84,127 +86,261 @@
  END PROGRAM WITHER-SPAWN.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. WITHER-ROW-CHECK.
-*> USING dim, x, y, z, along x (1) or z (0), start offset (-2 to 0), ok out: the pattern with its first skull cell at the placed cell + offset along that axis.
+ PROGRAM-ID. WITHER-CELL.
+*> USING origin x, y, z, forwards, up (1 DOWN, 2 UP, 3 NORTH, 4 SOUTH, 5 WEST, 6 EAST), column, row, cell x, y, z out (BINARY-LONG): origin + column x (forwards x up) - row x up (21 section 7.1.1; one aisle).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-I                   BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- 01 WS-Y1                  BINARY-LONG.
- 01 WS-Y2                  BINARY-LONG.
+ 01 WS-STEPS.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+ 01 WS-STEP-TABLE REDEFINES WS-STEPS.
+    05 WS-STEP-OF          OCCURS 6 TIMES.
+       10 WS-SX            BINARY-LONG.
+       10 WS-SY            BINARY-LONG.
+       10 WS-SZ            BINARY-LONG.
+ 01 WS-CROSS-X             BINARY-LONG.
+ 01 WS-CROSS-Y             BINARY-LONG.
+ 01 WS-CROSS-Z             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ 01 L-FWD                  BINARY-LONG.
+ 01 L-UP                   BINARY-LONG.
+ 01 L-C                    BINARY-LONG.
+ 01 L-R                    BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-OX L-OY L-OZ L-FWD L-UP L-C L-R L-X L-Y L-Z.
+     COMPUTE WS-CROSS-X = WS-SY(L-FWD) * WS-SZ(L-UP) - WS-SZ(L-FWD) * WS-SY(L-UP)
+     COMPUTE WS-CROSS-Y = WS-SZ(L-FWD) * WS-SX(L-UP) - WS-SX(L-FWD) * WS-SZ(L-UP)
+     COMPUTE WS-CROSS-Z = WS-SX(L-FWD) * WS-SY(L-UP) - WS-SY(L-FWD) * WS-SX(L-UP)
+     COMPUTE L-X = L-OX + L-C * WS-CROSS-X - L-R * WS-SX(L-UP)
+     COMPUTE L-Y = L-OY + L-C * WS-CROSS-Y - L-R * WS-SY(L-UP)
+     COMPUTE L-Z = L-OZ + L-C * WS-CROSS-Z - L-R * WS-SZ(L-UP)
+     GOBACK.
+ END PROGRAM WITHER-CELL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WITHER-MATCH.
+*> USING dim, origin x, y, z, forwards, up, full (1 the full pattern ^^^ / ### / ~#~, 0 the base pattern with a blank top row), ok out: the nine cells against the predicates of 21 section 7.1.1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
  01 WS-CLASS               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ 01 L-FWD                  BINARY-LONG.
+ 01 L-UP                   BINARY-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-OX L-OY L-OZ L-FWD L-UP L-FULL L-OK.
+     MOVE 1 TO L-OK
+     PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 2
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 2
+             CALL "WITHER-CELL" USING L-OX L-OY L-OZ L-FWD L-UP WS-C WS-R WS-X WS-Y WS-Z
+             CALL "WITHER-CLASS" USING L-DIM WS-X WS-Y WS-Z WS-CLASS
+             IF WS-R = 0 AND L-FULL = 1 AND WS-CLASS NOT = 1
+                 MOVE 0 TO L-OK
+             END-IF
+             IF WS-R = 1 AND WS-CLASS NOT = 2
+                 MOVE 0 TO L-OK
+             END-IF
+             IF WS-R = 2 AND WS-C = 1 AND WS-CLASS NOT = 2
+                 MOVE 0 TO L-OK
+             END-IF
+             IF WS-R = 2 AND WS-C NOT = 1 AND WS-CLASS NOT = 3
+                 MOVE 0 TO L-OK
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WITHER-MATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WITHER-FIND.
+*> USING dim, x, y, z, full (1 or 0), found out, forwards out, up out, origin x, y, z out: BlockPattern.find (21 section 7.1.1): the origins from the position to position + (2, 2, 2) (x fastest, then y, then
+*> z), for each every (forwards, up) of the six directions in the order DOWN, UP, NORTH, SOUTH, WEST, EAST (forwards outer) except up equal to forwards or to its opposite; the first that matches.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-U                   BINARY-LONG.
+ 01 WS-OPPOSITE            BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
- 01 L-AXIS                 BINARY-LONG.
- 01 L-OFFSET               BINARY-LONG.
- 01 L-OK                   BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-AXIS L-OFFSET L-OK.
-     MOVE 1 TO L-OK
-     COMPUTE WS-Y1 = L-Y - 1
-     COMPUTE WS-Y2 = L-Y - 2
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2
-         IF L-AXIS = 1
-             COMPUTE WS-CX = L-X + L-OFFSET + WS-I
-             MOVE L-Z TO WS-CZ
-         ELSE
-             MOVE L-X TO WS-CX
-             COMPUTE WS-CZ = L-Z + L-OFFSET + WS-I
-         END-IF
-         CALL "WITHER-CLASS" USING L-DIM WS-CX L-Y WS-CZ WS-CLASS
-         IF WS-CLASS NOT = 1
-             MOVE 0 TO L-OK
-         END-IF
-         CALL "WITHER-CLASS" USING L-DIM WS-CX WS-Y1 WS-CZ WS-CLASS
-         IF WS-CLASS NOT = 2
-             MOVE 0 TO L-OK
-         END-IF
-         CALL "WITHER-CLASS" USING L-DIM WS-CX WS-Y2 WS-CZ WS-CLASS
-         IF WS-I = 1 AND WS-CLASS NOT = 2
-             MOVE 0 TO L-OK
-         END-IF
-         IF WS-I NOT = 1 AND WS-CLASS NOT = 3
-             MOVE 0 TO L-OK
-         END-IF
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-FWD                  BINARY-LONG.
+ 01 L-UP                   BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FULL L-FOUND L-FWD L-UP L-OX L-OY L-OZ.
+     MOVE 0 TO L-FOUND
+     PERFORM VARYING WS-OZ FROM L-Z BY 1 UNTIL WS-OZ > L-Z + 2 OR L-FOUND = 1
+         PERFORM VARYING WS-OY FROM L-Y BY 1 UNTIL WS-OY > L-Y + 2 OR L-FOUND = 1
+             PERFORM VARYING WS-OX FROM L-X BY 1 UNTIL WS-OX > L-X + 2 OR L-FOUND = 1
+                 PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6 OR L-FOUND = 1
+                     IF FUNCTION MOD(WS-F, 2) = 1
+                         COMPUTE WS-OPPOSITE = WS-F + 1
+                     ELSE
+                         COMPUTE WS-OPPOSITE = WS-F - 1
+                     END-IF
+                     PERFORM VARYING WS-U FROM 1 BY 1 UNTIL WS-U > 6 OR L-FOUND = 1
+                         IF WS-U NOT = WS-F AND WS-U NOT = WS-OPPOSITE
+                             CALL "WITHER-MATCH" USING L-DIM WS-OX WS-OY WS-OZ WS-F WS-U L-FULL WS-OK
+                             IF WS-OK = 1
+                                 MOVE 1 TO L-FOUND
+                                 MOVE WS-F TO L-FWD
+                                 MOVE WS-U TO L-UP
+                                 MOVE WS-OX TO L-OX
+                                 MOVE WS-OY TO L-OY
+                                 MOVE WS-OZ TO L-OZ
+                             END-IF
+                         END-IF
+                     END-PERFORM
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
      END-PERFORM
      GOBACK.
- END PROGRAM WITHER-ROW-CHECK.
+ END PROGRAM WITHER-FIND.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. WITHER-BUILD.
+ PROGRAM-ID. WITHER-CAN-SPAWN.
+*> USING dim, x, y, z, can out: WitherSkullBlock.canSpawnMob (21 section 7.1.1, the dispenser's test): not Peaceful, y at least the dimension's minimum + 2 and the base pattern found around the position.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRWORLD.
- 01 WS-CLASS               BINARY-LONG.
- 01 WS-AXIS                BINARY-LONG.
- 01 WS-OFFSET              BINARY-LONG.
- 01 WS-OK                  BINARY-LONG.
+ COPY DIMENSIONS.
+ 01 WS-FULL                BINARY-LONG VALUE 0.
  01 WS-FOUND               BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
+ 01 WS-FWD                 BINARY-LONG.
+ 01 WS-UP                  BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-CAN.
+     MOVE 0 TO L-CAN
+     IF BW-DIFFICULTY = 0 OR L-Y < DM-MIN-Y(L-DIM) + 2
+         GOBACK
+     END-IF
+     CALL "WITHER-FIND" USING L-DIM L-X L-Y L-Z WS-FULL WS-FOUND WS-FWD WS-UP WS-OX WS-OY WS-OZ
+     MOVE WS-FOUND TO L-CAN
+     GOBACK.
+ END PROGRAM WITHER-CAN-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WITHER-BUILD.
+*> USING dim, x, y, z (the placed block): WitherSkullBlock.checkSpawn (21 section 7.1): a wither skull at the cell, not Peaceful, y at least the minimum, and the full pattern found around it; then every
+*> one of the nine cells is cleared (column by column, row by row, with level event 2001 carrying the old state) and the wither appears at the middle cell of the bottom row (+ 0.5, + 0.55, + 0.5), yaw
+*> 0 when the axis of forwards is X and 90 otherwise.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRWORLD.
+ COPY DIMENSIONS.
+ COPY CORESTATE.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG VALUE 1.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FWD                 BINARY-LONG.
+ 01 WS-UP                  BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
- 01 WS-Y1                  BINARY-LONG.
- 01 WS-Y2                  BINARY-LONG.
+ 01 WS-OLD                 BINARY-LONG.
  01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-EVENT               BINARY-LONG VALUE 2001.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-MX                  BINARY-LONG.
+ 01 WS-MY                  BINARY-LONG.
+ 01 WS-MZ                  BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-MX                  BINARY-LONG.
- 01 WS-MZ                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z.
-     IF BW-DIFFICULTY = 0
+     IF BW-DIFFICULTY = 0 OR L-Y < DM-MIN-Y(L-DIM)
          GOBACK
      END-IF
      CALL "WITHER-CLASS" USING L-DIM L-X L-Y L-Z WS-CLASS
      IF WS-CLASS NOT = 1
          GOBACK
      END-IF
-     MOVE 0 TO WS-FOUND
-     PERFORM VARYING WS-AXIS FROM 0 BY 1 UNTIL WS-AXIS > 1 OR WS-FOUND = 1
-         PERFORM VARYING WS-OFFSET FROM -2 BY 1 UNTIL WS-OFFSET > 0 OR WS-FOUND = 1
-             CALL "WITHER-ROW-CHECK" USING L-DIM L-X L-Y L-Z WS-AXIS WS-OFFSET WS-OK
-             IF WS-OK = 1
-                 MOVE 1 TO WS-FOUND
-                 MOVE WS-AXIS TO WS-CLASS
-                 MOVE WS-OFFSET TO WS-I
-             END-IF
-         END-PERFORM
-     END-PERFORM
+     CALL "WITHER-FIND" USING L-DIM L-X L-Y L-Z WS-FULL WS-FOUND WS-FWD WS-UP WS-OX WS-OY WS-OZ
      IF WS-FOUND = 0
          GOBACK
      END-IF
-*>   The axis loop moved past the match by one step: WS-CLASS and WS-I hold the match.
-     COMPUTE WS-Y1 = L-Y - 1
-     COMPUTE WS-Y2 = L-Y - 2
-     PERFORM VARYING WS-OFFSET FROM 0 BY 1 UNTIL WS-OFFSET > 2
-         IF WS-CLASS = 1
-             COMPUTE WS-CX = L-X + WS-I + WS-OFFSET
-             MOVE L-Z TO WS-CZ
-         ELSE
-             MOVE L-X TO WS-CX
-             COMPUTE WS-CZ = L-Z + WS-I + WS-OFFSET
-         END-IF
-         CALL "BLOCK-CHANGE" USING L-DIM WS-CX L-Y WS-CZ WS-AIR
-         CALL "BLOCK-CHANGE" USING L-DIM WS-CX WS-Y1 WS-CZ WS-AIR
-         IF WS-OFFSET = 1
-             CALL "BLOCK-CHANGE" USING L-DIM WS-CX WS-Y2 WS-CZ WS-AIR
-             MOVE WS-CX TO WS-MX
-             MOVE WS-CZ TO WS-MZ
-         END-IF
+     PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 2
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 2
+             CALL "WITHER-CELL" USING WS-OX WS-OY WS-OZ WS-FWD WS-UP WS-C WS-R WS-CX WS-CY WS-CZ
+             CALL "WORLD-GET-BLOCK" USING L-DIM WS-CX WS-CY WS-CZ WS-OLD
+             CALL "BLOCK-CHANGE" USING L-DIM WS-CX WS-CY WS-CZ WS-AIR
+             CALL "LEVEL-EVENT" USING L-DIM WS-EVENT WS-CX WS-CY WS-CZ WS-OLD WS-NONE
+             IF WS-C = 1 AND WS-R = 2
+                 MOVE WS-CX TO WS-MX
+                 MOVE WS-CY TO WS-MY
+                 MOVE WS-CZ TO WS-MZ
+             END-IF
+         END-PERFORM
      END-PERFORM
      COMPUTE WS-X = WS-MX + 0.5
-     COMPUTE WS-Y = WS-Y2 + 0.55
+     COMPUTE WS-Y = WS-MY + 0.55
      COMPUTE WS-Z = WS-MZ + 0.5
      CALL "WITHER-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-ROW
+     IF WS-ROW > 0
+         MOVE 90 TO EN-YAW(WS-ROW)
+         IF WS-FWD = 5 OR WS-FWD = 6
+             MOVE 0 TO EN-YAW(WS-ROW)
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM WITHER-BUILD.
 
