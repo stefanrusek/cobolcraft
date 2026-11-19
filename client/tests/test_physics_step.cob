@@ -134,6 +134,35 @@
      CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
      MOVE 2 TO WS-X
      CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+*>   Two candidates met in descending order (a bottom slab at x 1: top 0.5, a carpet at x 2: top 0.0625; the Player moves 1.2): they are tried ascending: 0.0625 is still stopped
+*>   by the slab, 0.5 carries the Player over both (1.8, 10.5).
+     MOVE "oak_slab" TO WS-BLOCK
+     MOVE "type=bottom,waterlogged=false" TO WS-P1
+     PERFORM FIND-STATE
+     MOVE 1 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE "white_carpet" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     MOVE 2 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0.6 TO PL-X
+     MOVE 0.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE PL-X TO WS-SX
+     MOVE PL-Y TO WS-SY
+     MOVE PL-Z TO WS-SZ
+     MOVE 1.2 TO WS-DX
+     MOVE 0 TO WS-DZ
+     CALL "PHYS-HORIZONTAL" USING CLIENT-STATE WS-DX WS-DZ WS-BX WS-BZ
+     CALL "PHYS-STEP-UP" USING CLIENT-STATE WS-SX WS-SY WS-SZ WS-DX WS-DZ WS-STEPPED
+     MOVE "R4 step-up: candidates 0.5 then 0.0625 met are tried ascending: 0.0625 is stopped by the slab, 0.5 goes over both" TO TL-CASE
+     MOVE "1.8000/10.5000/0.5000" TO TL-EXPECTED
+     PERFORM ASSERT-POSITION
+     MOVE 1 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+     MOVE 2 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
      GOBACK.
 
 *> The Player at its position moves (0.2, 0): the plain move, then the step search.
