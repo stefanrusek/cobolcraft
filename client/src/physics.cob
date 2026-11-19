@@ -122,6 +122,8 @@
  01 WS-SZ                  FLOAT-LONG.
  01 WS-STEPPED             BINARY-LONG.
  01 WS-CLIMB               BINARY-LONG.
+ 01 WS-NEW-VY              FLOAT-LONG.
+ 01 WS-MOVED               FLOAT-LONG.
  01 WS-CONN                BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -265,10 +267,17 @@
          END-IF
      END-IF
      MOVE PL-VY TO WS-DY
+     MOVE PL-Y TO WS-SY
      MOVE 2 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS PL-VY WS-BLOCKED
+*>   A downward move stopped by a floor: the speed becomes the bounce of the block (slime, a bed: physics-bounce.cob) or 0.
      IF WS-BLOCKED = 1
-         MOVE 0 TO PL-VY
+         MOVE 0 TO WS-NEW-VY
+         IF WS-DY < 0 AND PL-FLYING = 0
+             COMPUTE WS-MOVED = PL-Y - WS-SY
+             CALL "PHYS-BOUNCE" USING CLIENT-STATE WS-DY WS-MOVED WS-SNEAK WS-NEW-VY
+         END-IF
+         MOVE WS-NEW-VY TO PL-VY
      END-IF
      IF PL-FLYING = 0 AND WS-FLUID = 0
          COMPUTE PL-VY = (PL-VY - 0.08) * 0.98
