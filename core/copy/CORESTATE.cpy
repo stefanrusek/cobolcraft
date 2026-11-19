@@ -587,6 +587,7 @@
        10 EN-NEXT-STEP       FLOAT-SHORT.        *> Entity.nextStep (float): 0 stands for the initial 1.0 of a fresh row
        10 EN-FALL-DIST       FLOAT-LONG.         *> Entity.fallDistance: grows by the downward movement while not in water, reset on landing
        10 EN-IN-WATER        BINARY-LONG.        *> 1 while the entity was in water at its last pass (wasTouchingWater)
+       10 EN-BORN            BINARY-DOUBLE.      *> the game tick at which the row was allocated (tickCount = CW-TICKS - EN-BORN)
        10 EN-FALL-FLY        BINARY-LONG.        *> gliding ticks counted by the elytra_glide emitter (fallFlyTicks), 0 when not gliding
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
