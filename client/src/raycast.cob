@@ -53,6 +53,7 @@
  01 WS-FAR                 FLOAT-LONG.
  01 WS-BEST                FLOAT-LONG.
  01 WS-SHAPE               BINARY-LONG.
+ 01 WS-ISHAPE              BINARY-LONG.
  01 WS-ATTACK              BINARY-LONG.
  01 WS-BOX-HALF            FLOAT-LONG.
  01 WS-BOX-HEIGHT          FLOAT-LONG.
@@ -154,6 +155,17 @@
                          MOVE WS-RAX TO WS-HAX
                      END-IF
              END-EVALUATE
+         END-IF
+*>       The interaction shape of the block (51 section 1.8.3 item 3): when its entry is nearer than the outline hit, the hit keeps its point and takes the face of the
+*>       interaction shape's entry (the cauldrons, composter, hopper and scaffolding).
+         IF WS-SEEN NOT = 0 AND WS-STATE > 0 AND WS-STATE < BSH-MAX-STATES
+             IF BSH-INT(WS-STATE + 1) > 0
+                 MOVE BSH-INT(WS-STATE + 1) TO WS-ISHAPE
+                 CALL "BSH-RAY" USING WS-ISHAPE WS-CX WS-CY WS-CZ WS-RORG WS-RDIR WS-RT WS-RAX
+                 IF WS-RT >= 0 AND WS-RT < WS-HT - 0.000000001
+                     MOVE WS-RAX TO WS-HAX
+                 END-IF
+             END-IF
          END-IF
          IF WS-SEEN NOT = 0
              MOVE 1 TO TG-HIT

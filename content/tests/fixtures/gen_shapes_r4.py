@@ -29,6 +29,7 @@ def attach(b, face):
     return b
 
 def fmt(boxes):
+    if not boxes: return '-'
     out = []
     for b in boxes:
         out.append(",".join(str(int(round(F(v) * 1000))) for v in b))
@@ -102,6 +103,26 @@ for facing in ('north', 'east', 'south', 'west', 'up', 'down'):
 # scaffolding outline static (3.8.5): context-free (empty context): Stable or Unstable
 stable = [(0,14,0,16,16,16),(0,0,0,2,16,2),(14,0,0,16,16,2),(14,0,14,16,16,16),(0,0,14,2,16,16)]
 unstable = stable + [(0,0,0,16,2,16),(0,0,0,16,2,2),(14,0,0,16,2,16),(0,0,14,16,2,16),(0,0,0,2,2,16)]
+# interaction shapes (51 section 1.8.1, 3.8.1 to 3.8.3, 3.8.5): "I" rows; the default is the empty shape
+def inter(block, p1, p2, boxes):
+    row(block, p1, p2, 'I', boxes)
+for blk in ('cauldron', 'lava_cauldron'):
+    inter(blk, '', '', [(2,4,2,14,16,14)])
+for lv in (1, 2, 3):
+    inter('water_cauldron', 'level=%d' % lv, '', [(2,4,2,14,16,14)])
+    inter('powder_snow_cauldron', 'level=%d' % lv, '', [(2,4,2,14,16,14)])
+for lv in range(9):
+    inter('composter', 'level=%d' % lv, '', [(0,0,0,16,16,16)])
+for bt in ('false', 'true'):
+    inter('scaffolding', 'distance=2', 'bottom=' + bt, [(0,0,0,16,16,16)])
+cv = (2,11,2,14,16,14)
+stub = (6,8,0,10,10,4)
+for f in ('north', 'east', 'south', 'west'):
+    inter('hopper', 'facing=' + f, '', [cv, yaw(stub, 'north' if f == 'north' else f)] if f != 'north' else [cv, stub])
+inter('hopper', 'facing=down', '', [cv])
+for blk, p1 in (('stone', ''), ('oak_slab', 'type=bottom'), ('chest', 'type=single'), ('bell', 'attachment=floor')):
+    inter(blk, p1, '', [])
+
 if __name__ == '__main__':
     for r in rows:
         print("|".join(r))

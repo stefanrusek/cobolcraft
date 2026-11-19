@@ -682,6 +682,49 @@
  END PROGRAM BSH-COMPOSE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-INTERACTION.
+*> USING block class (PIC X(32)), shape id out: the interaction shape of the current state (51 section 1.8.1; the properties of the block are split and the state's values picked):
+*> the cauldrons the inside (2,4,2,14,16,14), the composter and scaffolding the full cube, the hopper its cavity (2,11,2,14,16,14) and, for a horizontal facing, the stub
+*> (6,8,0,10,10,4) authored for north and turned by the facing (3.8.1); any other class the empty shape (0). It only refines the face of a targeting hit (1.8.3 item 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-TEXT                PIC X(240).
+ 01 WS-NAME                PIC X(24).
+ 01 WS-VALUE               PIC X(16).
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-CLASS                PIC X(32).
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CLASS L-ID.
+     MOVE 0 TO L-ID
+     INITIALIZE BSC-SHAPE
+     EVALUATE L-CLASS
+         WHEN "CauldronBlock" WHEN "LavaCauldronBlock" WHEN "LayeredCauldronBlock"
+             MOVE "2 4 2 14 16 14" TO WS-TEXT
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-ZERO
+             CALL "BSH-INTERN" USING L-ID
+         WHEN "ComposterBlock" WHEN "ScaffoldingBlock"
+             MOVE "F" TO WS-TEXT
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-ZERO
+             CALL "BSH-INTERN" USING L-ID
+         WHEN "HopperBlock"
+             MOVE "2 11 2 14 16 14" TO WS-TEXT
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-ZERO
+             MOVE "facing" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE NOT = "down"
+                 CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
+                 MOVE "6 8 0 10 10 4" TO WS-TEXT
+                 CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
+             END-IF
+             CALL "BSH-INTERN" USING L-ID
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BSH-INTERACTION.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-RULES-LOAD.
 *> No parameters: splits the rows of CTBSDATA.cpy into the rule table BSR-R (classes, mode, property, value, collision, outline).
  DATA DIVISION.
@@ -719,6 +762,7 @@
  01 WS-KEY2                PIC X(40).
  01 WS-OFS                 BINARY-LONG.
  01 WS-SOFS                BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
  01 WS-OHITS               BINARY-LONG.
  01 WS-LENGTH2             BINARY-LONG.
  01 WS-COND1               PIC X(40).
@@ -922,6 +966,11 @@
              END-IF
 *>           Scaffolding (51 section 3.8.5): the context kind 2 is distance 0, 3 a distance other than 0 without bottom, 4 a distance other than 0 with bottom
 *>           (the plate rule): BSH-SCAFFOLD-COLL decides the collision by the entity, the table holds the stable shape of the empty context.
+             EVALUATE CT-BR-CLASS
+                 WHEN "CauldronBlock" WHEN "LavaCauldronBlock" WHEN "LayeredCauldronBlock" WHEN "ComposterBlock" WHEN "ScaffoldingBlock" WHEN "HopperBlock"
+                     CALL "BSH-INTERACTION" USING CT-BR-CLASS WS-INT
+                     MOVE WS-INT TO BSH-INT(WS-S)
+             END-EVALUATE
              IF CT-BR-CLASS = "ScaffoldingBlock"
                  MOVE "distance" TO WS-NAME
                  CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE

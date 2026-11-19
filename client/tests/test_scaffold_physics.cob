@@ -115,6 +115,56 @@
      MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
      CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
 
+*>   The interaction shape refines the face of a hit (51 section 1.8.3 item 3). A cauldron at (0, 9, 3), the eye at (0.5, 12.6, 0.7) looking 45 degrees down along +Z: the ray
+*>   crosses the top of the cell at z 3.3 over the open inside and hits the inner far wall (outline, entered through the north side, face 2) at (0.5, 9.425, 3.875); the
+*>   inside box (2, 4, 2, 14, 16, 14) is entered earlier, through its top, so the reported face is the top (1) and the hit point stays on the wall.
+     MOVE 11 TO PL-Y
+     MOVE 0.5 TO PL-X
+     MOVE 0.7 TO PL-Z
+     MOVE 45 TO PL-PITCH
+     MOVE 0 TO PL-YAW
+     MOVE 9 TO WS-Y
+     MOVE 3 TO WS-Z
+     MOVE "cauldron" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast into a cauldron hits the inner wall" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = TG-HIT * 1000 + TG-X * 100 + TG-Y * 10 + TG-Z
+     MOVE 1093 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE "R4 raycast into a cauldron: the interaction shape gives the face (top), not the wall's north side" TO TL-CASE
+     MOVE TG-FACE TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE "R4 raycast into a cauldron: the cursor stays on the wall (y 0.425)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = TG-CY * 1000
+     MOVE 425 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE "composter" TO WS-BLOCK
+     MOVE "level=0" TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast into a composter: the full-cube interaction shape gives the top face" TO TL-CASE
+     MOVE TG-FACE TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     MOVE "stone" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast into a stone block: the ray enters through the top face" TO TL-CASE
+     MOVE TG-FACE TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
+     MOVE 0 TO PL-PITCH
+     MOVE 11 TO WS-Y
+     MOVE 3 TO WS-Z
+
 *>   The outline mesh (08 section 10.8.6): a cauldron has 13 boxes (144 vertices each); a dandelion at (3, 11, 3) is drawn moved by its offset (-0.25, 0, 0.0167).
      MOVE 64 TO UA-W UA-H
      MOVE 0 TO WS-EYE(1) WS-EYE(2) WS-EYE(3)

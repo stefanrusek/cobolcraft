@@ -1,5 +1,5 @@
 *> Test of the R4 block shapes of docs/protocol/51-block-shapes.md section 3.8 and rules R-E5, R-E25, R-E26 against the real content set: the rows of
-*> content/tests/fixtures/shapes_r4.txt ("block|constraint|constraint|C or O|boxes", boxes in thousandths of a pixel) come from the independent model
+*> content/tests/fixtures/shapes_r4.txt ("block|constraint|constraint|C, O or I|boxes", boxes in thousandths of a pixel) come from the independent model
 *> content/tests/fixtures/gen_shapes_r4.py, written from the document's authored boxes and the turn formulas of its section 2. The observed
 *> shape of the first state that holds the constraints is compared as a sorted list of boxes (a decomposition that differs is a different row).
  IDENTIFICATION DIVISION.
@@ -56,8 +56,8 @@
          END-READ
      END-PERFORM
      CLOSE ROWS-FILE
-     MOVE "R4 shapes: the fixture has its 204 rows" TO TL-CASE
-     MOVE 204 TO TL-EXPECTED-N
+     MOVE "R4 shapes: the fixture has its 232 rows" TO TL-CASE
+     MOVE 232 TO TL-EXPECTED-N
      MOVE WS-SEEN TO TL-OBSERVED-N
      PERFORM ASSERT-N
 
@@ -170,11 +170,14 @@
      MOVE SPACES TO WS-KEY WS-P1 WS-P2 WS-P3 WS-EXPECT
      UNSTRING ROWS-RECORD DELIMITED BY "|" INTO WS-KEY WS-P1 WS-P2 WS-WHICH WS-EXPECT
      CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
-     IF WS-WHICH = "C"
-         CALL "BSH-COLL-ID" USING WS-STATE WS-ID
-     ELSE
-         CALL "BSH-OUT-ID" USING WS-STATE WS-ID
-     END-IF
+     EVALUATE WS-WHICH
+         WHEN "C"
+             CALL "BSH-COLL-ID" USING WS-STATE WS-ID
+         WHEN "I"
+             MOVE BSH-INT(WS-STATE + 1) TO WS-ID
+         WHEN OTHER
+             CALL "BSH-OUT-ID" USING WS-STATE WS-ID
+     END-EVALUATE
      CALL "BSH-TEST-TEXT" USING WS-ID TL-OBSERVED
      CALL "BSH-TEST-SORT" USING TL-OBSERVED
      MOVE SPACES TO TL-CASE
