@@ -131,27 +131,7 @@
      MOVE 7 TO WS-E
      MOVE VL-FOOD(WS-SLOT) TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-*>   An entity row that holds no villager state writes nothing and applies nothing.
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "MOB-VILLAGER-WRITE" USING PL-ENTITY-ROW(WS-PLAYER) PB-BUFFER
-     MOVE "acceptance US15 44-3§3.2 a row without villager state writes no keys" TO WS-CASE
-     MOVE 0 TO WS-E
-     MOVE PB-LENGTH TO WS-O
-     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     MOVE 4 TO VL-TYPE(WS-SLOT)
-     MOVE SPACES TO MQ-VTYPE
-     MOVE 5 TO MQ-RESTOCKS
-     CALL "MOB-VILLAGER-APPLY" USING PL-ENTITY-ROW(WS-PLAYER) MQ-DATA
-     MOVE "acceptance US15 44-3§3.2 applying to a row without villager state changes nothing" TO WS-CASE
-     MOVE 2 TO WS-E
-     MOVE VL-RESTOCKS(WS-SLOT) TO WS-O
-     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-*>   A type of unknown name keeps the type of the villager.
-     CALL "MOB-VILLAGER-APPLY" USING WS-ROW MQ-DATA
-     MOVE "acceptance US15 44-3§3.2 a saved type of no known name keeps the villager's type" TO WS-CASE
-     MOVE 4 TO WS-E
-     MOVE VL-TYPE(WS-SLOT) TO WS-O
-     CALL "Q3-EQ" USING WS-CASE WS-E WS-O
+*>   (The write and apply programs of this lane, MOB-VILLAGER-WRITE and MOB-VILLAGER-APPLY, were superseded by VILLAGER6-NBT-WRITE and -APPLY of lane p49k and removed with their cases.)
      STOP RUN.
  END PROGRAM TEST-Q44-44-3-6.
  COPY CORETEST.

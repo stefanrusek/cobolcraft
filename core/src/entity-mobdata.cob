@@ -198,7 +198,7 @@
 *>   equipment: the main hand, the armour, the saddle slot and the wolf's body slot (MOB-EQUIP-WRITE).
      CALL "MOB-EQUIP-WRITE" USING L-ROW WS-KEY PB-BUFFER
 *>   A villager's keys are written by VILLAGER6-NBT-WRITE above (lane p49k: VillagerData, FoodLevel, Xp, LastRestock, LastGossipDecay, RestocksToday); MOB-VILLAGER-WRITE of lane p49h
-*>   wrote the same keys a second time and is no longer called.
+*>   wrote the same keys a second time and was superseded (removed).
 *>   leash: the holder's UUID (a player; the lead is restored when that player is in the dimension, MOB-LEASH-RESTORE).
      IF EN-LEASH(L-ROW) > 0
          MOVE "leash" TO WN MOVE 5 TO WL
@@ -313,48 +313,6 @@
              CALL "PB-GET-BYTE" USING PB-BUFFER MQ-NOAI
          WHEN L-NAME = "LeftHanded" AND L-TYPE = 1
              CALL "PB-GET-BYTE" USING PB-BUFFER MQ-LEFTY
-         WHEN L-NAME = "VillagerData" AND L-TYPE = 10
-*>           The compound {profession, level, type}: the profession key (without its namespace) and the level; the type follows the biome (19 section 22.1).
-             MOVE "profession" TO WS-PATH
-             MOVE 10 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 8
-                 MOVE SPACES TO WS-KEY
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
-                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
-                 MOVE WS-BARE TO MQ-PROF
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "level" TO WS-PATH
-             MOVE 5 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 3
-                 CALL "PB-GET-INT" USING PB-BUFFER MQ-VLEVEL
-             END-IF
-             MOVE WS-START TO PB-POS
-             MOVE "type" TO WS-PATH
-             MOVE 4 TO WS-PATH-LENGTH
-             CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
-             IF WS-FOUND = 8
-                 MOVE SPACES TO WS-KEY
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
-                 CALL "PERSIST-LOCAL-KEY" USING WS-KEY WS-LOCAL
-                 CALL "KEY-BARE" USING WS-LOCAL WS-BARE
-                 MOVE WS-BARE TO MQ-VTYPE
-             END-IF
-             MOVE WS-START TO PB-POS
-             CALL "NBT-READ-SKIP" USING PB-BUFFER L-TYPE
-         WHEN L-NAME = "FoodLevel" AND L-TYPE = 1
-             CALL "PB-GET-BYTE" USING PB-BUFFER MQ-FOOD
-         WHEN L-NAME = "Xp" AND L-TYPE = 3
-             CALL "PB-GET-INT" USING PB-BUFFER MQ-VXP
-         WHEN L-NAME = "LastRestock" AND L-TYPE = 4
-             CALL "PB-GET-LONG" USING PB-BUFFER MQ-LAST-RESTOCK
-         WHEN L-NAME = "LastGossipDecay" AND L-TYPE = 4
-             CALL "PB-GET-LONG" USING PB-BUFFER MQ-LAST-DECAY
-         WHEN L-NAME = "RestocksToday" AND L-TYPE = 3
-             CALL "PB-GET-INT" USING PB-BUFFER MQ-RESTOCKS
          WHEN L-NAME = "leash" AND L-TYPE = 10
 *>           The compound {UUID: Int Array(4)}; the whole compound is skipped after the one entry is read.
              MOVE "UUID" TO WS-PATH
@@ -394,7 +352,6 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY STDMOBS.
- COPY VILSTATE.
  01 WS-KEY                 PIC X(24).
  01 WS-CATKEY              PIC X(48).
  01 WS-CV                  BINARY-LONG.
@@ -403,8 +360,6 @@
  01 WS-BARE                PIC X(48).
  01 WS-LOCAL               PIC X(48).
  01 WS-I                   BINARY-LONG.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-SLOT                BINARY-LONG.
  01 WS-GENE-NAMES.
     05 FILLER              PIC X(10) VALUE "normal".
     05 FILLER              PIC X(10) VALUE "lazy".
@@ -539,20 +494,7 @@
      MOVE MQ-EQUIP TO EN-EQUIP(L-ROW)
      MOVE MQ-HEAD-WEAR TO EN-HEAD-WEAR(L-ROW)
      MOVE MQ-LEASH TO EN-LEASH-UUID(L-ROW)
-*>   A villager keeps the profession and level it was saved with (a template's nitwit); a profession of "none" is the default.
-     IF WS-KEY = "villager" AND MQ-PROF NOT = SPACES AND MQ-PROF NOT = "none"
-         CALL "VL-FIND" USING EN-ID(L-ROW) WS-ZERO WS-SLOT
-         IF WS-SLOT > 0
-             MOVE MQ-PROF TO VL-PROF(WS-SLOT)
-             IF MQ-VLEVEL > 0
-                 MOVE MQ-VLEVEL TO VL-LEVEL(WS-SLOT)
-             END-IF
-         END-IF
-     END-IF
-*>   The other saved fields of a villager (44 part 3 section 3.2): type, xp, food level, the restock clock and the restocks of the day (absent keys read 0).
-     IF WS-KEY = "villager"
-         CALL "MOB-VILLAGER-APPLY" USING L-ROW MQ-DATA
-     END-IF
+*>   A villager's saved state is applied by VILLAGER6-NBT-APPLY (lane p49k); the keys of lane p49h's reader and MOB-VILLAGER-APPLY were superseded and are gone.
      GOBACK.
  END PROGRAM MOB-NBT-APPLY.
 
