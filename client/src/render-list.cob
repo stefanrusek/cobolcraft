@@ -599,8 +599,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HIGHLIGHT-MESH.
 *> USING CLIENT-STATE, eye (3 FLOAT-LONG): the target's outline (08 section 10.8.6; 51 block shapes): for each box of the outline shape of
-*> the targeted state (a full cube when the tables hold none), on each of the six faces of the box, grown by 0.002 so it is not hidden
-*> by the faces themselves, four strips 1/32 block wide along its edges: 24 quads, 144 vertices a box (at most 12 boxes),
+*> the targeted state for the camera entity's context (TARGET-OUTLINE; a full cube when the tables hold none), on each of the six faces of the box, grown by 0.002 so it is not hidden
+*> by the faces themselves, four strips 1/32 block wide along its edges: 24 quads, 144 vertices a box (at most 16 boxes),
 *> eye-relative, on the white swatch of the UI atlas at brightness 0 (black) and alpha 0.6.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -634,6 +634,8 @@
  01 WS-SHAPE               BINARY-LONG.
  01 WS-BOXES               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-OFFS.
+    05 WS-OF               FLOAT-LONG OCCURS 3 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -643,7 +645,9 @@
      MOVE TG-Y TO WS-BLOCK(2) WS-CY
      MOVE TG-Z TO WS-BLOCK(3) WS-CZ
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLK
-     CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
+     CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-STATE WS-SHAPE
+*>   The flower family, bamboo, speleothems and the propagule are drawn moved by their offset; every other offset block keeps its outline in the cell (51 section 1.4).
+     CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OF(1) WS-OF(2) WS-OF(3)
      MOVE BSH-N(WS-SHAPE + 1) TO WS-BOXES
      IF WS-BOXES = 0
          MOVE 1 TO WS-BOXES
@@ -660,8 +664,8 @@
                  COMPUTE WS-BLO(WS-A) = BSH-V(WS-SHAPE + 1, WS-I, WS-A) / 16000
                  COMPUTE WS-BHI(WS-A) = BSH-V(WS-SHAPE + 1, WS-I, WS-A + 3) / 16000
              END-IF
-             COMPUTE WS-BLO(WS-A) = WS-BLO(WS-A) - WS-E
-             COMPUTE WS-BHI(WS-A) = WS-BHI(WS-A) + WS-E
+             COMPUTE WS-BLO(WS-A) = WS-BLO(WS-A) - WS-E + WS-OF(WS-A)
+             COMPUTE WS-BHI(WS-A) = WS-BHI(WS-A) + WS-E + WS-OF(WS-A)
          END-PERFORM
          PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
              COMPUTE WS-U-AXIS = FUNCTION MOD(WS-A, 3) + 1

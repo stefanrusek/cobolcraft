@@ -229,11 +229,11 @@
      IF PL-FLYING = 0 AND WS-FLUID = 0
          CALL "PHYS-CLIMBING" USING CLIENT-STATE WS-CLIMB
      END-IF
-     IF WS-CLIMB = 1
+     IF WS-CLIMB > 0
          COMPUTE WS-HX = FUNCTION MIN(0.15, FUNCTION MAX(-0.15, WS-HX))
          COMPUTE WS-HZ = FUNCTION MIN(0.15, FUNCTION MAX(-0.15, WS-HZ))
          COMPUTE PL-VY = FUNCTION MAX(-0.15, PL-VY)
-         IF WS-SNEAK = 1
+         IF WS-SNEAK = 1 AND WS-CLIMB = 1
              COMPUTE PL-VY = FUNCTION MAX(0, PL-VY)
          END-IF
      END-IF
@@ -250,6 +250,9 @@
          END-IF
      END-IF
      MOVE PL-VY TO WS-DY
+*>   The collision context of the tick (51 section 1.8.2): the entity bottom and the descending flag as they are when the move starts.
+     MOVE PL-Y TO PL-CTX-Y
+     MOVE WS-SNEAK TO PL-CTX-DESC
      MOVE 2 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS PL-VY WS-BLOCKED
      IF WS-BLOCKED = 1
@@ -326,7 +329,7 @@
          END-IF
      END-IF
 *>   Climbing: blocked sideways against the ladder, or Space held, the vertical speed becomes 0.2 before this tick's gravity (13 section 1.3).
-     IF WS-CLIMB = 1 AND (PL-COLLIDED = 1 OR WS-JUMP = 1)
+     IF WS-CLIMB > 0 AND (PL-COLLIDED = 1 OR WS-JUMP = 1)
          COMPUTE PL-VY = (0.2 - 0.08) * 0.98
      END-IF
 *>   The fluid's drag (18 section 3.2): water 0.8 on every axis (0.9 horizontally while sprinting) then, falling, 0.005 off the
@@ -500,7 +503,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-CLIMBING.
-*> USING CLIENT-STATE, climbing out (1 when the cell of the feet holds a climbable state: CTBSHAPE.cpy BSH-CLIMB).
+*> USING CLIENT-STATE, climbing out (1 when the cell of the feet holds a climbable state: CTBSHAPE.cpy BSH-CLIMB; 2 for scaffolding, which does not hold a sneaking
+*> Player, 53 section 5.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
@@ -521,6 +525,9 @@
      CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLOCK
      IF BSH-READY = 1 AND WS-STATE > 0 AND WS-STATE < BSH-MAX-STATES
          MOVE BSH-CLIMB(WS-STATE + 1) TO L-CLIMBING
+         IF L-CLIMBING = 1 AND BSH-CTX(WS-STATE + 1) >= 2
+             MOVE 2 TO L-CLIMBING
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM PHYS-CLIMBING.
@@ -929,6 +936,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-DESC                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -950,7 +958,9 @@
              IF WS-STATE NOT = 0
                  CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
                  IF ST-FLUID(WS-STATE + 1) = 0 OR ST-FLUID(WS-STATE + 1) = 4
-                     CALL "BSH-COLL-ID" USING WS-STATE L-SHAPE
+*>                   Scaffolding answers by the entity (51 section 3.8.5): its y when the tick began and whether it sneaks.
+                     MOVE PL-CTX-DESC TO WS-DESC
+                     CALL "BSH-SCAFFOLD-COLL" USING WS-STATE L-Y PL-CTX-Y WS-DESC L-SHAPE
                  END-IF
              END-IF
      END-EVALUATE

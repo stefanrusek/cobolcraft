@@ -2500,8 +2500,8 @@
      MOVE "scaffolding" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE "bottom=false" TO WS-P1
-     MOVE "play2 shape: scaffolding has no collision" TO WS-CASE
-     MOVE "-" TO WS-EXPECT
+     MOVE "play2 shape: scaffolding table collision is the stable shape (the empty context, 51 section 3.8.5)" TO WS-CASE
+     MOVE "0,14000,0,16000,16000,16000;0,0,0,2000,16000,2000;14000,0,0,16000,16000,2000;14000,0,14000,16000,16000,16000;0,0,14000,2000,16000,16000" TO WS-EXPECT
      PERFORM CHECK-COLL
      MOVE "scaffolding" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3

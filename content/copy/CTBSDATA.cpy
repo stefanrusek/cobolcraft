@@ -122,8 +122,8 @@
     05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~ceiling~5 6 5 11 13 11,4 4 4 12 6 12,7 13 7 9 16 9~=".
     05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~single_wall~5 6 5 11 13 11,4 4 4 12 6 12,7 13 0 9 15 13~=".
     05 FILLER PIC X(500) VALUE "|BellBlock|~Q~attachment~double_wall~5 6 5 11 13 11,4 4 4 12 6 12,7 13 0 9 15 16~=".
-    05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~false~N~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16".
-    05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~true~N~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16,0 0 0 16 2 16".
+    05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~false~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16".
+    05 FILLER PIC X(500) VALUE "|ScaffoldingBlock|~P~bottom~true~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16~0 14 0 16 16 16,0 0 0 2 16 2,14 0 0 16 16 2,14 0 14 16 16 16,0 0 14 2 16 16,0 0 0 16 2 16".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~north&short=true~0 0 0 16 16 4,6 6 4 10 10 16~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~north~0 0 0 16 16 4,6 6 4 10 10 20~=".
     05 FILLER PIC X(500) VALUE "|PistonHeadBlock|~P~facing~south&short=true~0 0 12 16 16 16,6 6 0 10 10 12~=".

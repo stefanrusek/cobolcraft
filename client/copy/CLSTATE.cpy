@@ -576,6 +576,8 @@
        10 PL-ANIM-AGE        FLOAT-LONG.
        10 PL-SWIMMING        PIC 9.          *> the swimming flag (53 section 4): sprinting in water, entered with the eyes under water
        10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
+       10 PL-CTX-Y           FLOAT-LONG.     *> the Player's y when the tick's collision context was built (51 section 1.8.2: entityBottom), read by the scaffolding rule
+       10 PL-CTX-DESC        PIC 9.          *> 1 when the shift key was down in that tick (the context's descending flag)
        10 PL-FOV-MOD         FLOAT-LONG.     *> the camera's field of view modifier (53 section 8: 1, 1.15 while sprinting; 0 = not set)
        10 PL-TAP-MS          BINARY-DOUBLE.  *> CL-NOW-MS of the last press of forward that may be the first of a double tap (0 none)
        10 PL-FWD-PREV        PIC 9.          *> forward was down in the frame before
@@ -1427,7 +1429,7 @@
           15 RL-UT-BLUE      FLOAT-SHORT.
        10 RL-HL-COUNT        BINARY-LONG.
        10 RL-HL-UPLOADED     BINARY-LONG.
-       10 RL-HL-VERTEX OCCURS 1728 TIMES.
+       10 RL-HL-VERTEX OCCURS 2304 TIMES.
           15 RL-HL-X         FLOAT-SHORT.
           15 RL-HL-Y         FLOAT-SHORT.
           15 RL-HL-Z         FLOAT-SHORT.

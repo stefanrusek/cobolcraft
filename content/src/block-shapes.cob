@@ -920,6 +920,21 @@
              IF CT-BR-CLASS = "LightBlock"
                  MOVE 1 TO BSH-CTX(WS-S)
              END-IF
+*>           Scaffolding (51 section 3.8.5): the context kind 2 is distance 0, 3 a distance other than 0 without bottom, 4 a distance other than 0 with bottom
+*>           (the plate rule): BSH-SCAFFOLD-COLL decides the collision by the entity, the table holds the stable shape of the empty context.
+             IF CT-BR-CLASS = "ScaffoldingBlock"
+                 MOVE "distance" TO WS-NAME
+                 CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                 MOVE 2 TO BSH-CTX(WS-S)
+                 IF WS-VALUE NOT = "0"
+                     MOVE "bottom" TO WS-NAME
+                     CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                     MOVE 3 TO BSH-CTX(WS-S)
+                     IF WS-VALUE = "true"
+                         MOVE 4 TO BSH-CTX(WS-S)
+                     END-IF
+                 END-IF
+             END-IF
          END-PERFORM
      END-PERFORM
      MOVE 1 TO BSH-READY
@@ -989,6 +1004,46 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM BSH-OUT-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-SCAFFOLD-COLL.
+*> USING state id, cell y (BINARY-LONG), entity bottom (FLOAT-LONG: the entity's y when its collision context was built), descending (BINARY-LONG 1 when the
+*> entity sneaks), shape id out: the collision shape of the state for that entity (51 section 3.8.5, rule R-C20). A scaffolding state: first match of (1) the entity is
+*> above the full cube of the cell (bottom > cell y + 1 - 9.999999747378752E-6) and not descending: the stable shape (the table's collision); (2) the state has a distance other
+*> than 0 and bottom set (BSH-CTX 4) and the entity is above the cell one lower (bottom > cell y - 9.999999747378752E-6): the plate (0,0,0,16,2,16); (3) nothing. Any other block
+*> answers its table collision. The two floats are compared as integers in nanoblocks (two FLOAT-LONG items compare with a relative tolerance).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-BOTTOM              BINARY-DOUBLE.
+ 01 WS-TOP                 BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-CELL-Y               BINARY-LONG.
+ 01 L-BOTTOM               FLOAT-LONG.
+ 01 L-DESC                 BINARY-LONG.
+ 01 L-SHAPE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-CELL-Y L-BOTTOM L-DESC L-SHAPE.
+     CALL "BSH-COLL-ID" USING L-STATE L-SHAPE
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         IF BSH-CTX(L-STATE + 1) >= 2
+             COMPUTE WS-BOTTOM ROUNDED = L-BOTTOM * 1000000000
+             COMPUTE WS-TOP ROUNDED = (L-CELL-Y + 1) * 1000000000 - 9999.999747378752
+             IF NOT (WS-BOTTOM > WS-TOP AND L-DESC = 0)
+                 MOVE 0 TO L-SHAPE
+                 COMPUTE WS-TOP ROUNDED = L-CELL-Y * 1000000000 - 9999.999747378752
+                 IF BSH-CTX(L-STATE + 1) = 4 AND WS-BOTTOM > WS-TOP
+                     INITIALIZE BSC-SHAPE
+                     MOVE 1 TO BSC-N
+                     MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 6)
+                     MOVE 2000 TO BSC-V(1, 5)
+                     CALL "BSH-INTERN" USING L-SHAPE
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-SCAFFOLD-COLL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-OVERLAPS.

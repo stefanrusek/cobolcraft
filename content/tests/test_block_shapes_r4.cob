@@ -28,6 +28,11 @@
  01 WS-WHICH                PIC X.
  01 WS-EXPECT               PIC X(1024).
  01 WS-SEEN                 BINARY-LONG VALUE 0.
+ 01 WS-STABLE               PIC X(200).
+ 01 WS-NAME                 PIC X(240).
+ 01 WS-FEET                 FLOAT-LONG.
+ 01 WS-DESC                 BINARY-LONG.
+ 01 WS-CELL-Y               BINARY-LONG VALUE 11.
  PROCEDURE DIVISION.
      MOVE 1 TO CT-OPEN
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
@@ -55,7 +60,110 @@
      MOVE 204 TO TL-EXPECTED-N
      MOVE WS-SEEN TO TL-OBSERVED-N
      PERFORM ASSERT-N
+
+*>   Scaffolding (51 section 3.8.5, rule R-C20): the collision depends on the entity. Stable = the top slab and four posts, Plate = (0,0,0,16,2,16).
+*>   With the empty context (no entity) the answer is Stable. The cell is at y 11 here.
+     MOVE "|0,14000,0,16000,16000,16000;0,0,0,2000,16000,2000;14000,0,0,16000,16000,2000;14000,0,14000,16000,16000,16000;0,0,14000,2000,16000,16000" TO WS-STABLE
+     MOVE "scaffolding" TO WS-KEY
+     MOVE "distance=0" TO WS-P1
+     MOVE "bottom=false" TO WS-P2
+     MOVE SPACES TO WS-P3
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE 12.0 TO WS-FEET
+     MOVE 0 TO WS-DESC
+     MOVE "R4 scaffolding distance 0: a walking entity on top stands on the stable shape" TO WS-NAME
+     PERFORM CHECK-STABLE
+     MOVE 1 TO WS-DESC
+     MOVE "R4 scaffolding distance 0: a sneaking entity on top falls through (no plate at distance 0)" TO WS-NAME
+     PERFORM CHECK-EMPTY
+     MOVE 0 TO WS-DESC
+     MOVE 11.5 TO WS-FEET
+     MOVE "R4 scaffolding distance 0: an entity inside the cell (not above the top) meets nothing" TO WS-NAME
+     PERFORM CHECK-EMPTY
+     MOVE 12.000001 TO WS-FEET
+     MOVE "R4 scaffolding: feet 1e-6 above the top still count as above (the 1e-5 tolerance)" TO WS-NAME
+     PERFORM CHECK-STABLE
+     MOVE 11.99999 TO WS-FEET
+     MOVE "R4 scaffolding: feet 1e-5 under the top are not above it" TO WS-NAME
+     PERFORM CHECK-EMPTY
+     MOVE 11.999995 TO WS-FEET
+     MOVE "R4 scaffolding: feet 5e-6 under the top are above it" TO WS-NAME
+     PERFORM CHECK-STABLE
+     MOVE "distance=3" TO WS-P1
+     MOVE "bottom=false" TO WS-P2
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE 1 TO WS-DESC
+     MOVE 12.0 TO WS-FEET
+     MOVE "R4 scaffolding distance 3 without bottom: a sneaking entity falls through" TO WS-NAME
+     PERFORM CHECK-EMPTY
+     MOVE 0 TO WS-DESC
+     MOVE "R4 scaffolding distance 3 without bottom: a walking entity on top stands on it" TO WS-NAME
+     PERFORM CHECK-STABLE
+     MOVE "bottom=true" TO WS-P2
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE 1 TO WS-DESC
+     MOVE "R4 scaffolding distance 3 bottom: a sneaking entity above the cell's own y meets the plate" TO WS-NAME
+     PERFORM CHECK-PLATE
+     MOVE 11.5 TO WS-FEET
+     MOVE "R4 scaffolding distance 3 bottom: a sneaking entity inside the cell meets the plate" TO WS-NAME
+     PERFORM CHECK-PLATE
+     MOVE 10.5 TO WS-FEET
+     MOVE "R4 scaffolding distance 3 bottom: an entity below the cell's own y meets nothing" TO WS-NAME
+     PERFORM CHECK-EMPTY
+     MOVE 0 TO WS-DESC
+     MOVE 12.0 TO WS-FEET
+     MOVE "R4 scaffolding distance 3 bottom: a walking entity on top stands on the stable shape" TO WS-NAME
+     PERFORM CHECK-STABLE
+     MOVE 11.5 TO WS-FEET
+     MOVE "R4 scaffolding distance 3 bottom: a walking entity inside the cell meets the plate" TO WS-NAME
+     PERFORM CHECK-PLATE
+*>   The empty context has no entity: the stable shape, whatever the state's own rule (the shape table's collision).
+     CALL "BSH-COLL-ID" USING WS-STATE WS-ID
+     CALL "BSH-TEST-TEXT" USING WS-ID TL-OBSERVED
+     CALL "BSH-TEST-SORT" USING TL-OBSERVED
+     MOVE WS-STABLE(2:) TO WS-EXPECT
+     CALL "BSH-TEST-SORT" USING WS-EXPECT
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE "R4 scaffolding: the collision of the table (empty context) is the stable shape" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Another block answers its own collision shape.
+     MOVE "stone" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2
+     CALL "BSH-TEST-FIND" USING WS-KEY WS-P1 WS-P2 WS-P3 WS-STATE
+     MOVE 1 TO WS-DESC
+     CALL "BSH-SCAFFOLD-COLL" USING WS-STATE WS-CELL-Y WS-FEET WS-DESC WS-ID
+     MOVE "R4 scaffolding rule: any other block answers its own collision shape" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-ID TO TL-OBSERVED-N
+     PERFORM ASSERT-N
      GOBACK.
+
+ CHECK-STABLE.
+     CALL "BSH-SCAFFOLD-COLL" USING WS-STATE WS-CELL-Y WS-FEET WS-DESC WS-ID
+     CALL "BSH-TEST-TEXT" USING WS-ID TL-OBSERVED
+     CALL "BSH-TEST-SORT" USING TL-OBSERVED
+     MOVE WS-STABLE(2:) TO WS-EXPECT
+     CALL "BSH-TEST-SORT" USING WS-EXPECT
+     PERFORM ASSERT-TEXT.
+
+ CHECK-PLATE.
+     CALL "BSH-SCAFFOLD-COLL" USING WS-STATE WS-CELL-Y WS-FEET WS-DESC WS-ID
+     CALL "BSH-TEST-TEXT" USING WS-ID TL-OBSERVED
+     MOVE "0,0,0,16000,2000,16000" TO WS-EXPECT
+     PERFORM ASSERT-TEXT.
+
+ CHECK-EMPTY.
+     CALL "BSH-SCAFFOLD-COLL" USING WS-STATE WS-CELL-Y WS-FEET WS-DESC WS-ID
+     CALL "BSH-TEST-TEXT" USING WS-ID TL-OBSERVED
+     MOVE "-" TO WS-EXPECT
+     PERFORM ASSERT-TEXT.
+
+ ASSERT-TEXT.
+     MOVE WS-NAME TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  CHECK-ROW.
      ADD 1 TO WS-SEEN
