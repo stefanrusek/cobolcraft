@@ -12,6 +12,11 @@
 *>
 *> Entry points:
 *>   ARROW-TYPE USING type id out                       the entity type id of arrow, 0 outside a standard world
+*>   ARROW-FAMILY-TYPE USING family (1 arrow, 2 spectral_arrow, 3 trident), type id out   0 outside a standard world (lane p49t, T39020)
+*>   ARROW-FAMILY USING type id, family out             1 to 3 when the entity type is one of the arrow family, else 0
+*>   ARROW-SPAWN-AS USING family, dim, x, y, z, vx, vy, vz, base damage, owner, row out   ARROW-SPAWN for a member of the family: a spectral arrow (EN-VARIANT 4: Glowing 200 ticks on a player it
+*>     hits, STDMOB-ARROW-APPLY) and a thrown trident (hurts 8 flat, is not removed by a hit, bounces back by REVERSE (velocity x -0.01, -0.1, -0.01; the yaw turns 170 to 190 degrees) and has
+*>     dealt damage then, EN-VARIANT 100: it finds no entity to hit again; 44-8 section 10)
 *>   ARROW-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), base damage (thousandths), owner entity id, row out
 *>   ARROW-STEP USING tracker row                       one tick of one arrow
 *>   ARROWS-TICK                                        every arrow (CORE-TICK)
@@ -43,7 +48,60 @@
  END PROGRAM ARROW-TYPE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. ARROW-SPAWN.
+ PROGRAM-ID. ARROW-FAMILY-TYPE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-KEYS.
+    05 FILLER              PIC X(112) VALUE "minecraft:arrow".
+    05 FILLER              PIC X(112) VALUE "minecraft:spectral_arrow".
+    05 FILLER              PIC X(112) VALUE "minecraft:trident".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY              PIC X(112) OCCURS 3 TIMES.
+ 01 WS-ROW                 PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-IDS.
+    05 WS-ID               BINARY-LONG OCCURS 3 TIMES VALUE 0.
+ 01 WS-DONE.
+    05 WS-LOADED           BINARY-LONG OCCURS 3 TIMES VALUE 0.
+ LINKAGE SECTION.
+ 01 L-FAMILY               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FAMILY L-TYPE.
+     MOVE 0 TO L-TYPE
+     IF CT-OPEN = 0 OR CT-SET-TYPE = CT-TYPE-COBOLCRAFT OR CT-SET-TYPE = CT-TYPE-DEBUG OR L-FAMILY < 1 OR L-FAMILY > 3
+         GOBACK
+     END-IF
+     IF WS-LOADED(L-FAMILY) = 0
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY(L-FAMILY) WS-ID(L-FAMILY) WS-ROW WS-STATUS
+         MOVE 1 TO WS-LOADED(L-FAMILY)
+     END-IF
+     MOVE WS-ID(L-FAMILY) TO L-TYPE
+     GOBACK.
+ END PROGRAM ARROW-FAMILY-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-FAMILY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-FAMILY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-FAMILY.
+     MOVE 0 TO L-FAMILY
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 3
+         CALL "ARROW-FAMILY-TYPE" USING WS-F WS-TYPE
+         IF WS-TYPE > 0 AND WS-TYPE = L-TYPE
+             MOVE WS-F TO L-FAMILY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ARROW-FAMILY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-SPAWN-AS.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -51,6 +109,7 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-H                   FLOAT-LONG.
  LINKAGE SECTION.
+ 01 L-FAMILY               BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
  01 L-Y                    FLOAT-LONG.
@@ -61,9 +120,9 @@
  01 L-BASE                 BINARY-LONG.
  01 L-OWNER                BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
-*> USING dim, x, y, z, vx, vy, vz, base damage (thousandths), owner entity id, row out: a new arrow with that velocity, facing along it.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-BASE L-OWNER L-ROW.
-     CALL "ARROW-TYPE" USING WS-TYPE
+*> USING family, dim, x, y, z, vx, vy, vz, base damage (thousandths), owner entity id, row out: a new arrow of the family with that velocity, facing along it.
+ PROCEDURE DIVISION USING L-FAMILY L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-BASE L-OWNER L-ROW.
+     CALL "ARROW-FAMILY-TYPE" USING L-FAMILY WS-TYPE
      CALL "ENTITY-ALLOC" USING WS-ROW
      CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
      MOVE WS-TYPE TO EN-TYPE(WS-ROW)
@@ -93,8 +152,33 @@
      IF WS-H > 0
          COMPUTE EN-PITCH(WS-ROW) = FUNCTION ATAN(L-VY / WS-H) * 180 / FUNCTION PI
      END-IF
+     IF L-FAMILY = 2
+         MOVE 4 TO EN-VARIANT(WS-ROW)
+     END-IF
      CALL "ENTITY-TRACK" USING WS-ROW
      MOVE WS-ROW TO L-ROW
+     GOBACK.
+ END PROGRAM ARROW-SPAWN-AS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-SPAWN.
+*> USING dim, x, y, z, vx, vy, vz, base damage (thousandths), owner entity id, row out: ARROW-SPAWN-AS for an arrow.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ARROW               BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-VX                   FLOAT-LONG.
+ 01 L-VY                   FLOAT-LONG.
+ 01 L-VZ                   FLOAT-LONG.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-OWNER                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-BASE L-OWNER L-ROW.
+     CALL "ARROW-SPAWN-AS" USING WS-ARROW L-DIM L-X L-Y L-Z L-VX L-VY L-VZ L-BASE L-OWNER L-ROW
      GOBACK.
  END PROGRAM ARROW-SPAWN.
 
@@ -120,15 +204,24 @@
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
  01 WS-FIRE-TICKS          BINARY-LONG.
+ 01 WS-FAMILY              BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 9641.
+ 01 WS-TWENTY              BINARY-LONG VALUE 20.
+ 01 WS-R                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-ARROW L-ENTITY L-PLAYER.
+     CALL "ARROW-FAMILY" USING EN-TYPE(L-ARROW) WS-FAMILY
      COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ARROW) * EN-VX(L-ARROW) + EN-VY(L-ARROW) * EN-VY(L-ARROW)
          + EN-VZ(L-ARROW) * EN-VZ(L-ARROW))
      COMPUTE WS-MILLI = FUNCTION INTEGER(WS-SPEED * EN-ITEM(L-ARROW) + 0.999)
      COMPUTE WS-DAMAGE = FUNCTION INTEGER((WS-MILLI + 999) / 1000)
+*>   A thrown trident hurts 8.0 whatever its speed (17 section 3.10).
+     IF WS-FAMILY = 3
+         MOVE 8 TO WS-DAMAGE
+     END-IF
      MOVE EN-TARGET-ID(L-ARROW) TO WS-OWNER-ID
      MOVE 0 TO WS-OWNER-ROW WS-OWNER-PLAYER
      PERFORM VARYING WS-O FROM 1 BY 1 UNTIL WS-O > EN-COUNT
@@ -167,7 +260,17 @@
              END-IF
          END-IF
      END-IF
-     CALL "ENTITY-REMOVE" USING L-ARROW
+     IF WS-FAMILY = 3
+*>       The trident stays: ProjectileDeflection.REVERSE (velocity x -0.01, -0.1, -0.01, yaw + 170 + nextFloat x 20) and it has dealt damage (no further entity hit).
+         COMPUTE EN-VX(L-ARROW) = EN-VX(L-ARROW) * -0.01
+         COMPUTE EN-VY(L-ARROW) = EN-VY(L-ARROW) * -0.1
+         COMPUTE EN-VZ(L-ARROW) = EN-VZ(L-ARROW) * -0.01
+         CALL "XP-RANDOM" USING WS-SALT WS-TWENTY WS-R
+         COMPUTE EN-YAW(L-ARROW) = FUNCTION MOD(EN-YAW(L-ARROW) + 170 + WS-R + 360, 360)
+         MOVE 100 TO EN-VARIANT(L-ARROW)
+     ELSE
+         CALL "ENTITY-REMOVE" USING L-ARROW
+     END-IF
      GOBACK.
  END PROGRAM ARROW-HIT.
 
@@ -185,6 +288,7 @@
  01 WS-M                   BINARY-LONG.
  01 WS-W                   FLOAT-LONG.
  01 WS-H                   FLOAT-LONG.
+ 01 WS-FAMILY              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -194,6 +298,11 @@
  01 L-PLAYER               BINARY-LONG.
  PROCEDURE DIVISION USING L-ARROW L-X L-Y L-Z L-ENTITY L-PLAYER.
      MOVE 0 TO L-ENTITY L-PLAYER
+*>   A trident that has dealt damage (EN-VARIANT 100) finds no entity (44-8 section 10 findHitEntity).
+     CALL "ARROW-FAMILY" USING EN-TYPE(L-ARROW) WS-FAMILY
+     IF WS-FAMILY = 3 AND EN-VARIANT(L-ARROW) = 100
+         GOBACK
+     END-IF
      COMPUTE WS-MARGIN = FUNCTION MAX(0, FUNCTION MIN(0.3, (EN-COOLDOWN(L-ARROW) - 2) / 20))
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR L-PLAYER > 0
          IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = EN-DIM(L-ARROW)
@@ -339,13 +448,18 @@
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
+ 01 WS-FAMILY              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "ARROW-TYPE" USING WS-TYPE
      IF WS-TYPE = 0
          GOBACK
      END-IF
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = WS-TYPE
+         MOVE 0 TO WS-FAMILY
+         IF EN-USED(WS-E) = 1
+             CALL "ARROW-FAMILY" USING EN-TYPE(WS-E) WS-FAMILY
+         END-IF
+         IF WS-FAMILY > 0
              COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-E) / 16)
              COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-E) / 16)
              CALL "WORLD-FIND" USING EN-DIM(WS-E) WS-CX WS-CZ WS-CHUNK
