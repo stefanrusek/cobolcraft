@@ -469,6 +469,10 @@
      MOVE CC-TEX-UI TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HL-VERTEX(1) RL-HL-COUNT RL-HL-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
+*>   The glow of the end gateway's beam (52 section 8.9; portal-mesh.cob): alpha 32 / 255, eye-relative, translucent.
+     MOVE MESH-SLOT-BEAM TO WS-SLOT
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-EB-VERTEX(1) RL-EB-COUNT RL-EB-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
 *>   The hand (first person, world screen): a depth clear, then the held item in view space with the projection alone.
      CALL "HAND-MESH" USING CLIENT-STATE

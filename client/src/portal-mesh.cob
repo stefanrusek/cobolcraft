@@ -28,6 +28,14 @@
     05 WS-EZ               FLOAT-LONG.
  01 WS-GT                  FLOAT-LONG.
  01 WS-PARTIAL             FLOAT-LONG.
+ 01 WS-MAX-Y               BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG.
+ 01 WS-BR                  FLOAT-LONG.
+ 01 WS-BG                  FLOAT-LONG.
+ 01 WS-BB                  FLOAT-LONG.
+ 01 WS-ROTATION            FLOAT-LONG.
+ 01 WS-COOL                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -35,7 +43,7 @@
  01 L-PV-TABLE.
     05 L-PV                FLOAT-LONG OCCURS 16 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE L-PV-TABLE.
-     MOVE 0 TO RL-EP-COUNT
+     MOVE 0 TO RL-EP-COUNT RL-EB-COUNT
      IF EP-COUNT = 0
          GOBACK
      END-IF
@@ -77,6 +85,16 @@
              PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
                  CALL "PORTAL-FACE-MESH" USING CLIENT-STATE WS-I WS-D WS-N WS-LAYERS WS-GT WS-REL L-PV-TABLE
              END-PERFORM
+*>           The gateway's beam (8.9): while it spawns or cools down; turned by 2.25 t - 45 degrees, t = (game time mod 40) + the partial tick.
+             IF WS-TYPE = 22
+                 COMPUTE WS-MAX-Y = PL-MIN-Y + PL-HEIGHT - 1
+                 MOVE EP-COOLDOWN(WS-I) TO WS-COOL
+                 CALL "PORTAL-BEAM-PARAMS" USING EP-AGE(WS-I) WS-COOL WS-PARTIAL WS-MAX-Y WS-HEIGHT WS-BR WS-BG WS-BB WS-MODE
+                 IF WS-HEIGHT > 0
+                     COMPUTE WS-ROTATION = 2.25 * (FUNCTION MOD(PL-GAME-TIME, 40) + WS-PARTIAL) - 45
+                     CALL "PORTAL-BEAM-MESH" USING CLIENT-STATE WS-REL WS-HEIGHT WS-ROTATION WS-BR WS-BG WS-BB
+                 END-IF
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
@@ -331,3 +349,173 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PORTAL-FACE-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-BEAM-MESH.
+*> USING CLIENT-STATE, the gateway's corner minus the eye (3 FLOAT-LONG), height, rotation in degrees (2.25 t - 45), colour r, g, b (0..1): the beam of 8.9 as it is
+*> drawn here: two prisms around the column of the block (x and z 0.5) from y -height to +height, no caps: the core (radius 0.15, turned by the rotation, opaque, into
+*> RL-EP) and the glow (radius 0.175, not turned, alpha 32 / 255, into RL-EB), each in the colour times the mean of the beam image (the texture's fine repeats are not
+*> drawn). A wall is drawn as the cull of 8.9 leaves it: a core wall (counter-clockwise from outside) only to an eye outside it, a glow wall (clockwise) only to an eye
+*> inside its plane, so from outside the glow shows its far and side walls from within. A beam that does not fit in the frame's vertex lists is left out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-MEAN-R              FLOAT-LONG.
+ 01 WS-MEAN-G              FLOAT-LONG.
+ 01 WS-MEAN-B              FLOAT-LONG.
+ 01 WS-CR                  FLOAT-LONG.
+ 01 WS-CG                  FLOAT-LONG.
+ 01 WS-CB                  FLOAT-LONG.
+ 01 WS-COS                 FLOAT-LONG.
+ 01 WS-SIN                 FLOAT-LONG.
+ 01 WS-RAD                 FLOAT-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-WALL                BINARY-LONG.
+ 01 WS-RADIUS              FLOAT-LONG.
+ 01 WS-PX                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-PZ                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-PAIRS               PIC X(8) VALUE "12432431".
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-MX                  FLOAT-LONG.
+ 01 WS-MZ                  FLOAT-LONG.
+ 01 WS-EX                  FLOAT-LONG.
+ 01 WS-EZ                  FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-Y0                  FLOAT-LONG.
+ 01 WS-Y1                  FLOAT-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-CORNER              PIC X(6) VALUE "123134".
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-TU                  FLOAT-SHORT.
+ 01 WS-TV                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-REL.
+    05 L-RX                FLOAT-LONG.
+    05 L-RY                FLOAT-LONG.
+    05 L-RZ                FLOAT-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-ROTATION             FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ 01 L-G                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-REL L-HEIGHT L-ROTATION L-R L-G L-B.
+     IF RL-EP-COUNT + 24 > CL-MAX-PORTAL-VERTICES OR RL-EB-COUNT + 24 > CL-MAX-BEAM-VERTICES
+         GOBACK
+     END-IF
+     COMPUTE WS-TU = 4 / UA-W
+     COMPUTE WS-TV = (UA-H - 4) / UA-H
+     CALL "PORTAL-BEAM-MEAN" USING CLIENT-STATE WS-MEAN-R WS-MEAN-G WS-MEAN-B
+     COMPUTE WS-CR = L-R * WS-MEAN-R
+     COMPUTE WS-CG = L-G * WS-MEAN-G
+     COMPUTE WS-CB = L-B * WS-MEAN-B
+     COMPUTE WS-RAD = L-ROTATION * FUNCTION PI / 180
+     COMPUTE WS-COS = FUNCTION COS(WS-RAD)
+     COMPUTE WS-SIN = FUNCTION SIN(WS-RAD)
+     COMPUTE WS-Y0 = L-RY - L-HEIGHT
+     COMPUTE WS-Y1 = L-RY + L-HEIGHT
+     COMPUTE WS-EX = 0 - L-RX - 0.5
+     COMPUTE WS-EZ = 0 - L-RZ - 0.5
+     PERFORM VARYING WS-SHAPE FROM 1 BY 1 UNTIL WS-SHAPE > 2
+*>       The corners: the core's diamond (0, r) (r, 0) (-r, 0) (0, -r) turned about +Y, the glow's square (-g, -g) (g, -g) (-g, g) (g, g).
+         IF WS-SHAPE = 1
+             MOVE 0.15 TO WS-RADIUS
+             COMPUTE WS-PX(1) = WS-RADIUS * WS-SIN
+             COMPUTE WS-PZ(1) = WS-RADIUS * WS-COS
+             COMPUTE WS-PX(2) = WS-RADIUS * WS-COS
+             COMPUTE WS-PZ(2) = 0 - WS-RADIUS * WS-SIN
+             COMPUTE WS-PX(3) = 0 - WS-PX(2)
+             COMPUTE WS-PZ(3) = 0 - WS-PZ(2)
+             COMPUTE WS-PX(4) = 0 - WS-PX(1)
+             COMPUTE WS-PZ(4) = 0 - WS-PZ(1)
+         ELSE
+             MOVE 0.175 TO WS-RADIUS
+             COMPUTE WS-PX(1) = 0 - WS-RADIUS
+             COMPUTE WS-PZ(1) = 0 - WS-RADIUS
+             MOVE WS-RADIUS TO WS-PX(2)
+             COMPUTE WS-PZ(2) = 0 - WS-RADIUS
+             COMPUTE WS-PX(3) = 0 - WS-RADIUS
+             MOVE WS-RADIUS TO WS-PZ(3)
+             MOVE WS-RADIUS TO WS-PX(4) WS-PZ(4)
+         END-IF
+         PERFORM VARYING WS-WALL FROM 0 BY 1 UNTIL WS-WALL > 3
+             MOVE FUNCTION NUMVAL(WS-PAIRS(WS-WALL * 2 + 1:1)) TO WS-A
+             MOVE FUNCTION NUMVAL(WS-PAIRS(WS-WALL * 2 + 2:1)) TO WS-B
+             MOVE WS-PX(WS-A) TO WS-AX
+             MOVE WS-PZ(WS-A) TO WS-AZ
+             MOVE WS-PX(WS-B) TO WS-BX
+             MOVE WS-PZ(WS-B) TO WS-BZ
+             COMPUTE WS-MX = (WS-AX + WS-BX) / 2
+             COMPUTE WS-MZ = (WS-AZ + WS-BZ) / 2
+             COMPUTE WS-DOT = WS-MX * (WS-EX - WS-MX) + WS-MZ * (WS-EZ - WS-MZ)
+             MOVE 0 TO WS-DRAW
+             IF WS-SHAPE = 1 AND WS-DOT > 0
+                 MOVE 1 TO WS-DRAW
+             END-IF
+             IF WS-SHAPE = 2 AND WS-DOT < 0
+                 MOVE 1 TO WS-DRAW
+             END-IF
+             IF WS-DRAW = 1
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                     MOVE FUNCTION NUMVAL(WS-CORNER(WS-K:1)) TO WS-C
+*>                   The quad (A, y1), (A, y0), (B, y0), (B, y1) of 8.9 as two triangles.
+                     EVALUATE WS-C
+                         WHEN 1
+                             MOVE WS-AX TO WS-VX
+                             MOVE WS-AZ TO WS-VZ
+                             MOVE WS-Y1 TO WS-VY
+                         WHEN 2
+                             MOVE WS-AX TO WS-VX
+                             MOVE WS-AZ TO WS-VZ
+                             MOVE WS-Y0 TO WS-VY
+                         WHEN 3
+                             MOVE WS-BX TO WS-VX
+                             MOVE WS-BZ TO WS-VZ
+                             MOVE WS-Y0 TO WS-VY
+                         WHEN OTHER
+                             MOVE WS-BX TO WS-VX
+                             MOVE WS-BZ TO WS-VZ
+                             MOVE WS-Y1 TO WS-VY
+                     END-EVALUATE
+                     IF WS-SHAPE = 1
+                         ADD 1 TO RL-EP-COUNT
+                         COMPUTE RL-EP-X(RL-EP-COUNT) = L-RX + 0.5 + WS-VX
+                         MOVE WS-VY TO RL-EP-Y(RL-EP-COUNT)
+                         COMPUTE RL-EP-Z(RL-EP-COUNT) = L-RZ + 0.5 + WS-VZ
+                         MOVE WS-TU TO RL-EP-U(RL-EP-COUNT)
+                         MOVE WS-TV TO RL-EP-V(RL-EP-COUNT)
+                         MOVE 1 TO RL-EP-B(RL-EP-COUNT)
+                         MOVE 1 TO RL-EP-A(RL-EP-COUNT)
+                         MOVE 0 TO RL-EP-SKY(RL-EP-COUNT)
+                         MOVE WS-CR TO RL-EP-R(RL-EP-COUNT)
+                         MOVE WS-CG TO RL-EP-G(RL-EP-COUNT)
+                         MOVE WS-CB TO RL-EP-BLUE(RL-EP-COUNT)
+                     ELSE
+                         ADD 1 TO RL-EB-COUNT
+                         COMPUTE RL-EB-X(RL-EB-COUNT) = L-RX + 0.5 + WS-VX
+                         MOVE WS-VY TO RL-EB-Y(RL-EB-COUNT)
+                         COMPUTE RL-EB-Z(RL-EB-COUNT) = L-RZ + 0.5 + WS-VZ
+                         MOVE WS-TU TO RL-EB-U(RL-EB-COUNT)
+                         MOVE WS-TV TO RL-EB-V(RL-EB-COUNT)
+                         MOVE 1 TO RL-EB-B(RL-EB-COUNT)
+                         COMPUTE RL-EB-A(RL-EB-COUNT) = 32 / 255
+                         MOVE 0 TO RL-EB-SKY(RL-EB-COUNT)
+                         MOVE WS-CR TO RL-EB-R(RL-EB-COUNT)
+                         MOVE WS-CG TO RL-EB-G(RL-EB-COUNT)
+                         MOVE WS-CB TO RL-EB-BLUE(RL-EB-COUNT)
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PORTAL-BEAM-MESH.

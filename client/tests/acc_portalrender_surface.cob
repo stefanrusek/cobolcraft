@@ -46,6 +46,7 @@
  01 WS-DIFF                FLOAT-LONG.
  01 WS-MILLI-A             PIC -(6)9.
  01 WS-MILLI-B             PIC -(6)9.
+ 01 WS-MILLI-C             PIC -(6)9.
  01 WS-EDIT                PIC -(4)9.9(7).
  01 WS-CORNERS.
     05 WS-CORNER           FLOAT-LONG OCCURS 12 TIMES.
@@ -58,6 +59,12 @@
  01 WS-LAYERS              BINARY-LONG.
  01 WS-GT                  FLOAT-LONG.
  01 WS-D                   BINARY-LONG.
+ 01 WS-ROTATION            FLOAT-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-CR                  FLOAT-LONG.
+ 01 WS-CG                  FLOAT-LONG.
+ 01 WS-CB                  FLOAT-LONG.
+ 01 WS-IDX                 BINARY-LONG.
  01 WS-TAG                 PIC X(40).
  01 WS-TAG-LENGTH          BINARY-LONG.
  PROCEDURE DIVISION.
@@ -547,6 +554,116 @@
      MOVE 32760 TO TL-EXPECTED-N
      MOVE RL-EP-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The beam's mean colour (8.9: drawn in the mean of the image): the fallback texel (148, 183, 180), then a 2 x 1 image (100, 0, 50) and (200, 100, 150).
+     MOVE 0 TO EP-BEAM-W EP-BEAM-H
+     CALL "PORTAL-BEAM-MEAN" USING CLIENT-STATE WS-CR WS-CG WS-CB
+     COMPUTE WS-N = WS-CR * 255 + 0.5
+     MOVE "portal beam without the image the mean red is the fallback texel's 148" TO TL-CASE
+     MOVE 148 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO EP-BEAM-W
+     MOVE 1 TO EP-BEAM-H
+     MOVE FUNCTION CHAR(101) TO EP-BEAM(1:1)
+     MOVE FUNCTION CHAR(1) TO EP-BEAM(2:1)
+     MOVE FUNCTION CHAR(51) TO EP-BEAM(3:1)
+     MOVE FUNCTION CHAR(256) TO EP-BEAM(4:1)
+     MOVE FUNCTION CHAR(201) TO EP-BEAM(5:1)
+     MOVE FUNCTION CHAR(101) TO EP-BEAM(6:1)
+     MOVE FUNCTION CHAR(151) TO EP-BEAM(7:1)
+     MOVE FUNCTION CHAR(256) TO EP-BEAM(8:1)
+     CALL "PORTAL-BEAM-MEAN" USING CLIENT-STATE WS-CR WS-CG WS-CB
+     MOVE "portal beam the mean of a 2 x 1 image (100, 0, 50) (200, 100, 150) is (150, 50, 100)" TO TL-CASE
+     COMPUTE WS-N = WS-CR * 255 + 0.5
+     COMPUTE WS-IDX = WS-CG * 255 + 0.5
+     COMPUTE WS-LAYERS = WS-CB * 255 + 0.5
+     COMPUTE TL-EXPECTED-N = 150 * 1000000 + 50 * 1000 + 100
+     COMPUTE TL-OBSERVED-N = WS-N * 1000000 + WS-IDX * 1000 + WS-LAYERS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The beam's walls: a white image, colour (1, 0.5, 0.25), height 10, turned -45 degrees (an axis-aligned core), an eye 20 blocks out on +x: the core shows its +x wall (6
+*>   vertices), the glow its far wall and its two side walls seen from within (18 vertices); the eye inside the beam sees no core wall and all four glow walls (24).
+     MOVE 1 TO EP-BEAM-W EP-BEAM-H
+     MOVE FUNCTION CHAR(256) TO EP-BEAM(1:1) EP-BEAM(2:1) EP-BEAM(3:1) EP-BEAM(4:1)
+     MOVE -20.5 TO WS-RX
+     MOVE 0 TO WS-RY
+     MOVE -0.5 TO WS-RZ
+     MOVE 10 TO WS-HEIGHT
+     MOVE -45 TO WS-ROTATION
+     MOVE 1 TO WS-CR
+     MOVE 0.5 TO WS-CG
+     MOVE 0.25 TO WS-CB
+     MOVE 0 TO RL-EP-COUNT RL-EB-COUNT
+     CALL "PORTAL-BEAM-MESH" USING CLIENT-STATE WS-REL WS-HEIGHT WS-ROTATION WS-CR WS-CG WS-CB
+     MOVE "portal beam from 20 blocks out the core shows one wall (6 vertices) and the glow three (18)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 6 * 100 + 18
+     COMPUTE TL-OBSERVED-N = RL-EP-COUNT * 100 + RL-EB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     PERFORM RANGE-OF-Y
+     MOVE "portal beam the core runs from y -10 to +10 round the block's floor" TO TL-CASE
+     MOVE "-10000 10000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "portal beam the core's colour is the colour times the mean (1, 0.5, 0.25), opaque; the glow's alpha is 32 / 255" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-MILLI-A ROUNDED = RL-EP-G(1) * 1000
+     COMPUTE WS-MILLI-B ROUNDED = RL-EB-A(1) * 1000
+     COMPUTE WS-IDX = RL-EP-A(1) * 100
+     MOVE WS-IDX TO WS-MILLI-C
+     STRING FUNCTION TRIM(WS-MILLI-A) " " FUNCTION TRIM(WS-MILLI-B) " " FUNCTION TRIM(WS-MILLI-C) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "500 125 100" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE -0.5 TO WS-RX
+     MOVE 0 TO RL-EP-COUNT RL-EB-COUNT
+     CALL "PORTAL-BEAM-MESH" USING CLIENT-STATE WS-REL WS-HEIGHT WS-ROTATION WS-CR WS-CG WS-CB
+     MOVE "portal beam from inside it no core wall is drawn and all four glow walls are (24)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0 * 100 + 24
+     COMPUTE TL-OBSERVED-N = RL-EP-COUNT * 100 + RL-EB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 32760 TO RL-EP-COUNT
+     MOVE 0 TO RL-EB-COUNT
+     CALL "PORTAL-BEAM-MESH" USING CLIENT-STATE WS-REL WS-HEIGHT WS-ROTATION WS-CR WS-CG WS-CB
+     MOVE 8190 TO RL-EB-COUNT
+     MOVE 0 TO RL-EP-COUNT
+     CALL "PORTAL-BEAM-MESH" USING CLIENT-STATE WS-REL WS-HEIGHT WS-ROTATION WS-CR WS-CG WS-CB
+     MOVE "portal beam a full vertex list takes no beam (the opaque list at 32760, the glow list at 8190)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0 * 10000 + 8190
+     COMPUTE TL-OBSERVED-N = RL-EP-COUNT * 10000 + RL-EB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The frame: the gateway of the face tests (20, 64, 3) spawning (age 100, the top of the hump), 30 blocks off, draws a beam; at age 300 with no cooldown none; cooling (20) one.
+     MOVE 1 TO EP-COUNT
+     MOVE 100 TO EP-AGE(1)
+     MOVE 0 TO EP-COOLDOWN(1)
+     MOVE 50.5 TO WS-EYE(1)
+     MOVE 64.5 TO WS-EYE(2)
+     MOVE 3.5 TO WS-EYE(3)
+     MOVE 0 TO CL-NOW-MS CL-NEXT-TICK
+     CALL "PORTAL-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-PV-TABLE
+     MOVE "portal beam a spawning gateway (age 100) draws the beam's glow" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-EB-COUNT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 300 TO EP-AGE(1)
+     CALL "PORTAL-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-PV-TABLE
+     MOVE "portal beam a gateway past its spawn time with no cooldown draws no glow (E9)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-EB-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 20 TO EP-COOLDOWN(1)
+     CALL "PORTAL-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-PV-TABLE
+     MOVE "portal beam a gateway cooling down draws the glow again" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-EB-COUNT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Textures not read yet: PORTAL-MESH reads them (no pack here: missing, the flat colour).
      MOVE 0 TO EP-TEX
      MOVE 0.01 TO WS-PV(16)

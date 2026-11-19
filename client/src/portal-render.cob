@@ -407,3 +407,86 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PORTAL-COLOUR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-BEAM-PARAMS.
+*> USING age (BINARY-DOUBLE), teleport cooldown, partial tick (FLOAT-LONG), the dimension's highest block y, height out, r, g, b out (the beam colour 0..1), mode out:
+*> 8.9 "per frame": while the gateway is spawning (age < 200) the spawn percent (age + partial) / 200 and the dimension's top y, mode 1, magenta 0xC74EBD; else while it
+*> cools down (cooldown above 0) 1 - (cooldown - partial) / 40 and 50, mode 2, purple 0x8932B8; else no beam (height 0, mode 0). height = floor(sin(percent x pi) x top y).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PERCENT             FLOAT-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-DOUBLE.
+ 01 L-COOLDOWN             BINARY-LONG.
+ 01 L-PARTIAL              FLOAT-LONG.
+ 01 L-MAX-Y                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-R                    FLOAT-LONG.
+ 01 L-G                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-COOLDOWN L-PARTIAL L-MAX-Y L-HEIGHT L-R L-G L-B L-MODE.
+     MOVE 0 TO L-HEIGHT L-MODE
+     MOVE 0 TO L-R L-G L-B
+     EVALUATE TRUE
+         WHEN L-AGE < 200
+             MOVE 1 TO L-MODE
+             COMPUTE WS-PERCENT = FUNCTION MAX(0, FUNCTION MIN(1, (L-AGE + L-PARTIAL) / 200))
+             MOVE L-MAX-Y TO WS-TOP
+             COMPUTE L-R = 199 / 255
+             COMPUTE L-G = 78 / 255
+             COMPUTE L-B = 189 / 255
+         WHEN L-COOLDOWN > 0
+             MOVE 2 TO L-MODE
+             COMPUTE WS-PERCENT = 1 - FUNCTION MAX(0, FUNCTION MIN(1, (L-COOLDOWN - L-PARTIAL) / 40))
+             MOVE 50 TO WS-TOP
+             COMPUTE L-R = 137 / 255
+             COMPUTE L-G = 50 / 255
+             COMPUTE L-B = 184 / 255
+     END-EVALUATE
+     IF L-MODE > 0
+         COMPUTE L-HEIGHT = FUNCTION INTEGER(FUNCTION SIN(WS-PERCENT * FUNCTION PI) * WS-TOP)
+     END-IF
+     GOBACK.
+ END PROGRAM PORTAL-BEAM-PARAMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PORTAL-BEAM-MEAN.
+*> USING CLIENT-STATE, r, g, b out (0..1): the mean colour of the beam image (end_gateway_beam.png, 16 x 16 and light blue-grey: 8.9). The beam's texture runs three
+*> or more repeats a block along its length, far finer than a vertex grid, so the beam is drawn in the mean colour; without the image (148, 183, 180) / 255, the
+*> image's texel (0, 0) (8.9).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-SR                  BINARY-LONG.
+ 01 WS-SG                  BINARY-LONG.
+ 01 WS-SB                  BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-R                    FLOAT-LONG.
+ 01 L-G                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-R L-G L-B.
+     IF EP-BEAM-W = 0 OR EP-BEAM-H = 0
+         COMPUTE L-R = 148 / 255
+         COMPUTE L-G = 183 / 255
+         COMPUTE L-B = 180 / 255
+         GOBACK
+     END-IF
+     COMPUTE WS-N = EP-BEAM-W * EP-BEAM-H
+     MOVE 0 TO WS-SR WS-SG WS-SB
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+         COMPUTE WS-AT = WS-I * 4 + 1
+         COMPUTE WS-SR = WS-SR + FUNCTION ORD(EP-BEAM(WS-AT:1)) - 1
+         COMPUTE WS-SG = WS-SG + FUNCTION ORD(EP-BEAM(WS-AT + 1:1)) - 1
+         COMPUTE WS-SB = WS-SB + FUNCTION ORD(EP-BEAM(WS-AT + 2:1)) - 1
+     END-PERFORM
+     COMPUTE L-R = WS-SR / WS-N / 255
+     COMPUTE L-G = WS-SG / WS-N / 255
+     COMPUTE L-B = WS-SB / WS-N / 255
+     GOBACK.
+ END PROGRAM PORTAL-BEAM-MEAN.
